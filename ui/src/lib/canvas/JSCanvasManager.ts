@@ -10,25 +10,16 @@ export class JSCanvasManager {
 
 	createCanvas(options: { code: string }) {
 		try {
-			// Create canvas element
 			this.canvas = document.createElement('canvas');
-			this.canvas.width = 200;
-			this.canvas.height = 200;
-			this.canvas.style.width = '100%';
-			this.canvas.style.height = '100%';
+			this.canvas.style.width = '200px';
+			this.canvas.style.height = '200px';
 			this.canvas.style.objectFit = 'contain';
-			
-			// Get 2D context
-			this.ctx = this.canvas.getContext('2d');
-			if (!this.ctx) {
-				throw new Error('Could not get 2D context');
-			}
 
 			// Clear container and add canvas
 			this.container.innerHTML = '';
 			this.container.appendChild(this.canvas);
 
-			// Execute the user code
+			this.setupCanvasSize();
 			this.executeCode(options.code);
 		} catch (error) {
 			console.error('Error creating canvas:', error);
@@ -38,19 +29,31 @@ export class JSCanvasManager {
 		}
 	}
 
+	private setupCanvasSize() {
+		if (!this.canvas) return;
+
+		const dpr = window.devicePixelRatio || 1;
+		const rect = this.canvas.getBoundingClientRect();
+		this.canvas.width = rect.width * dpr;
+		this.canvas.height = rect.height * dpr;
+
+		this.ctx = this.canvas.getContext('2d');
+		if (!this.ctx) {
+			throw new Error('Could not get 2D context');
+		}
+
+		this.ctx.scale(dpr, dpr);
+	}
+
 	updateCode(code: string) {
 		if (this.canvas && this.ctx) {
 			try {
-				// Stop any existing animation
 				if (this.animationId) {
 					cancelAnimationFrame(this.animationId);
 					this.animationId = null;
 				}
-				
-				// Clear canvas
+
 				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-				
-				// Execute new code
 				this.executeCode(code);
 			} catch (error) {
 				console.error('Error updating canvas code:', error);
@@ -62,13 +65,13 @@ export class JSCanvasManager {
 		if (!this.canvas || !this.ctx) return;
 
 		try {
-			// Create a context with canvas variables available
+			const rect = this.canvas.getBoundingClientRect();
+
 			const context = {
 				canvas: this.ctx,
 				ctx: this.ctx,
-				width: this.canvas.width,
-				height: this.canvas.height,
-				// Animation utilities
+				width: rect.width,
+				height: rect.height,
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					this.animationId = requestAnimationFrame(callback);
 					return this.animationId;
@@ -81,9 +84,9 @@ export class JSCanvasManager {
 				}
 			};
 
-			// Execute the user's canvas code with the context
 			const functionParams = Object.keys(context);
 			const functionArgs = Object.values(context);
+
 			const executeFunction = new Function(...functionParams, code);
 			executeFunction(...functionArgs);
 		} catch (error) {

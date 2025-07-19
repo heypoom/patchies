@@ -8,10 +8,7 @@
 	let containerElement: HTMLDivElement;
 	let canvasManager: JSCanvasManager | null = null;
 	let showEditor = $state(false);
-	let code = $state(`// HTML5 Canvas API
-// Draw graphics using the 2D rendering context
-
-// Clear canvas with a background color
+	let code = $state(`// Clear canvas with a background color
 canvas.fillStyle = '#18181b';
 canvas.fillRect(0, 0, width, height);
 

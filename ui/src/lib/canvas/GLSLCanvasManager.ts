@@ -17,41 +17,47 @@ export class GLSLCanvasManager {
 
 	createCanvas(options: { code: string }) {
 		try {
-			// Create canvas element
 			this.canvas = document.createElement('canvas');
-			this.canvas.width = 200;
-			this.canvas.height = 200;
-			this.canvas.style.width = '100%';
-			this.canvas.style.height = '100%';
+			this.canvas.style.width = '200px';
+			this.canvas.style.height = '200px';
 			this.canvas.style.objectFit = 'contain';
 
-			// Get WebGL context
-			this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
-			if (!this.gl) {
-				throw new Error('WebGL not supported');
-			}
-
-			// Set up mouse tracking
-			this.canvas.addEventListener('mousemove', (e) => {
-				const rect = this.canvas!.getBoundingClientRect();
-				this.mouseX = e.clientX - rect.left;
-				this.mouseY = this.canvas!.height - (e.clientY - rect.top); // Flip Y coordinate
-			});
-
-			// Clear container and add canvas
 			this.container.innerHTML = '';
 			this.container.appendChild(this.canvas);
+			this.setupCanvasSize();
 
-			// Create shader program
+			this.canvas.addEventListener('mousemove', (e) => {
+				const rect = this.canvas!.getBoundingClientRect();
+
+				this.mouseX = e.clientX - rect.left;
+				this.mouseY = rect.height - (e.clientY - rect.top);
+			});
+
 			this.createShaderProgram(options.code);
-
-			// Start render loop
 			this.startRenderLoop();
 		} catch (error) {
 			console.error('Error creating GLSL canvas:', error);
 			if (error instanceof Error) {
 				this.container.innerHTML = `<div class="text-red-400 text-xs p-2">Error: ${error.message}</div>`;
 			}
+		}
+	}
+
+	private setupCanvasSize() {
+		if (!this.canvas) return;
+
+		const dpr = window.devicePixelRatio || 1;
+		const rect = this.canvas.getBoundingClientRect();
+
+		this.canvas.width = rect.width * dpr;
+		this.canvas.height = rect.height * dpr;
+
+		const ctx = this.canvas.getContext('webgl');
+
+		if (ctx) {
+			this.gl = ctx;
+		} else {
+			throw new Error('WebGL not supported');
 		}
 	}
 
@@ -259,7 +265,8 @@ export class GLSLCanvasManager {
 	private showError(message: string) {
 		// Create error overlay
 		const errorDiv = document.createElement('div');
-		errorDiv.className = 'absolute inset-0 bg-zinc-900 bg-opacity-90 flex items-center justify-center p-4';
+		errorDiv.className =
+			'absolute inset-0 bg-zinc-900 bg-opacity-90 flex items-center justify-center p-4';
 		errorDiv.innerHTML = `
 			<div class="bg-red-900 border border-red-600 rounded-lg p-3 max-w-full">
 				<div class="font-mono text-xs font-medium text-red-100 mb-1">GLSL Compilation Error:</div>
