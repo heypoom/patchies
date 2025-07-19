@@ -67,23 +67,24 @@ function draw() {
 	</div>
 
 	{#if showEditor}
-		<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-			<div class="relative">
-				<div class="flex justify-end p-1">
-					<button onclick={updateSketch} class="rounded p-1 hover:bg-zinc-700">
-						<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
-					</button>
+		<div class="relative">
+			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+				<button onclick={updateSketch} class="p-1 hover:bg-zinc-700">
+					<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+				</button>
 
-					<button onclick={() => (showEditor = false)} class="rounded p-[4px] hover:bg-zinc-700">
-						<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
-					</button>
-				</div>
+				<button onclick={() => (showEditor = false)} class="p-1 hover:bg-zinc-700">
+					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
 
+			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
 				<CodeEditor
 					bind:value={code}
 					language="javascript"
 					placeholder="Write your p5.js code here..."
-					class="h-64 w-full resize-none"
+					class="nodrag h-64 w-full resize-none"
+					onrun={updateSketch}
 				/>
 			</div>
 		</div>

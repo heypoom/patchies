@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { EditorView, basicSetup } from 'codemirror';
-	import { EditorState } from '@codemirror/state';
+	import { EditorState, Prec } from '@codemirror/state';
 	import { javascript } from '@codemirror/lang-javascript';
 	import { oneDark } from '@codemirror/theme-one-dark';
+	import { keymap } from '@codemirror/view';
 
 	let {
 		value = $bindable(),
 		language = 'javascript',
 		placeholder = '',
 		class: className = '',
+		onrun = () => {},
 		...restProps
 	} = $props();
 
@@ -19,9 +21,21 @@
 	onMount(() => {
 		if (editorElement) {
 			const extensions = [
+				Prec.highest(
+					keymap.of([
+						{
+							key: 'Shift-Enter',
+							run: () => {
+								onrun();
+								return true;
+							}
+						}
+					])
+				),
 				basicSetup,
 				javascript(),
 				oneDark,
+
 				EditorView.theme({
 					'&': {
 						fontSize: '14px',
