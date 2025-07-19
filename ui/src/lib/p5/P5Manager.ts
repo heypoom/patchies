@@ -43,11 +43,13 @@ export class P5Manager {
 		const sketch = (p: p5Type) => {
 			let userSetup: (() => void) | undefined;
 			let userDraw: (() => void) | undefined;
+			let userMouseClicked: ((event: MouseEvent) => void) | undefined;
 
 			try {
-				const { setup, draw } = this.executeUserCode(p, config);
+				const { setup, draw, mouseClicked } = this.executeUserCode(p, config);
 				userSetup = setup;
 				userDraw = draw;
+				userMouseClicked = mouseClicked;
 			} catch (error) {
 				console.log('P5 code error:', error);
 			}
@@ -55,26 +57,30 @@ export class P5Manager {
 			p.setup = function () {
 				p.createCanvas(config.width || 200, config.height || 120);
 
-				if (userSetup) {
-					try {
-						userSetup.call(p);
-					} catch (error) {
-						console.log('P5 setup error:', error);
-					}
+				try {
+					userSetup?.call(p);
+				} catch (error) {
+					console.log('P5 setup error:', error);
 				}
 			};
 
 			p.draw = function () {
-				if (userDraw) {
-					try {
-						userDraw.call(p);
-					} catch (error) {
-						if (error instanceof Error) {
-							p.background(220, 100, 100);
-							p.fill(255);
-							p.text(`error: ${error.message}`, 10, 60);
-						}
+				try {
+					userDraw?.call(p);
+				} catch (error) {
+					if (error instanceof Error) {
+						p.background(220, 100, 100);
+						p.fill(255);
+						p.text(`error: ${error.message}`, 10, 60);
 					}
+				}
+			};
+
+			p.mouseClicked = function (event: MouseEvent) {
+				try {
+					userMouseClicked?.call(p, event);
+				} catch (error) {
+					console.log('P5 mouseClicked error:', error);
 				}
 			};
 		};
@@ -167,6 +173,8 @@ export class P5Manager {
 			'p5Context',
 			'messageContext',
 			`
+			var setup, draw, mouseClicked;
+
 			with (p5Context) {
 				// Inject message system functions if available
 				if (messageContext) {
@@ -176,7 +184,7 @@ export class P5Manager {
 				}
 				
 				${config.code}
-				return { setup, draw };
+				return { setup, draw, mouseClicked };
 			}
 		`
 		);
