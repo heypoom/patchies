@@ -1,0 +1,313 @@
+export class GLSLCanvasManager {
+	private canvas: HTMLCanvasElement | null = null;
+	private gl: WebGLRenderingContext | null = null;
+	private container: HTMLElement;
+	private program: WebGLProgram | null = null;
+	private animationId: number | null = null;
+	private startTime: number = Date.now();
+	private mouseX: number = 0;
+	private mouseY: number = 0;
+
+	// Uniform locations
+	private uniforms: { [key: string]: WebGLUniformLocation | null } = {};
+
+	constructor(container: HTMLElement) {
+		this.container = container;
+	}
+
+	createCanvas(options: { code: string }) {
+		try {
+			// Create canvas element
+			this.canvas = document.createElement('canvas');
+			this.canvas.width = 200;
+			this.canvas.height = 200;
+			this.canvas.style.width = '100%';
+			this.canvas.style.height = '100%';
+			this.canvas.style.objectFit = 'contain';
+
+			// Get WebGL context
+			this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+			if (!this.gl) {
+				throw new Error('WebGL not supported');
+			}
+
+			// Set up mouse tracking
+			this.canvas.addEventListener('mousemove', (e) => {
+				const rect = this.canvas!.getBoundingClientRect();
+				this.mouseX = e.clientX - rect.left;
+				this.mouseY = this.canvas!.height - (e.clientY - rect.top); // Flip Y coordinate
+			});
+
+			// Clear container and add canvas
+			this.container.innerHTML = '';
+			this.container.appendChild(this.canvas);
+
+			// Create shader program
+			this.createShaderProgram(options.code);
+
+			// Start render loop
+			this.startRenderLoop();
+		} catch (error) {
+			console.error('Error creating GLSL canvas:', error);
+			if (error instanceof Error) {
+				this.container.innerHTML = `<div class="text-red-400 text-xs p-2">Error: ${error.message}</div>`;
+			}
+		}
+	}
+
+	updateCode(code: string) {
+		if (this.gl) {
+			try {
+				// Stop current animation
+				if (this.animationId) {
+					cancelAnimationFrame(this.animationId);
+					this.animationId = null;
+				}
+
+				// Create new shader program
+				this.createShaderProgram(code);
+
+				// Restart render loop
+				this.startRenderLoop();
+			} catch (error) {
+				console.error('Error updating GLSL code:', error);
+				// Show error in UI
+				this.showError(error instanceof Error ? error.message : 'Unknown shader error');
+			}
+		}
+	}
+
+	private createShaderProgram(fragmentShaderCode: string) {
+		if (!this.gl) return;
+
+		// Vertex shader (simple quad)
+		const vertexShaderSource = `
+			attribute vec4 a_position;
+			void main() {
+				gl_Position = a_position;
+			}
+		`;
+
+		// Fragment shader with ShaderToy-compatible uniforms
+		const fragmentShaderSource = `
+			precision mediump float;
+			
+			uniform vec3 iResolution;
+			uniform float iTime;
+			uniform vec4 iMouse;
+			uniform vec4 iDate;
+			uniform float iTimeDelta;
+			uniform int iFrame;
+			
+			${fragmentShaderCode}
+			
+			void main() {
+				mainImage(gl_FragColor, gl_FragCoord.xy);
+			}
+		`;
+
+		// Compile shaders
+		const vertexShader = this.compileShader(vertexShaderSource, this.gl.VERTEX_SHADER);
+		const fragmentShader = this.compileShader(fragmentShaderSource, this.gl.FRAGMENT_SHADER);
+
+		if (!vertexShader || !fragmentShader) {
+			throw new Error('Failed to compile shaders');
+		}
+
+		// Create program
+		const program = this.gl.createProgram();
+		if (!program) {
+			throw new Error('Failed to create shader program');
+		}
+
+		this.gl.attachShader(program, vertexShader);
+		this.gl.attachShader(program, fragmentShader);
+		this.gl.linkProgram(program);
+
+		if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+			const error = this.gl.getProgramInfoLog(program);
+			throw new Error('Failed to link shader program: ' + error);
+		}
+
+		// Clean up old program
+		if (this.program) {
+			this.gl.deleteProgram(this.program);
+		}
+
+		this.program = program;
+		this.gl.useProgram(this.program);
+
+		// Set up geometry (full-screen quad)
+		this.setupGeometry();
+
+		// Get uniform locations
+		this.getUniformLocations();
+	}
+
+	private compileShader(source: string, type: number): WebGLShader | null {
+		if (!this.gl) return null;
+
+		const shader = this.gl.createShader(type);
+		if (!shader) return null;
+
+		this.gl.shaderSource(shader, source);
+		this.gl.compileShader(shader);
+
+		if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+			const error = this.gl.getShaderInfoLog(shader);
+			console.error('Shader compilation error:', error);
+			this.gl.deleteShader(shader);
+			throw new Error('Shader compilation error: ' + error);
+		}
+
+		return shader;
+	}
+
+	private setupGeometry() {
+		if (!this.gl || !this.program) return;
+
+		// Create buffer for full-screen quad
+		const positionBuffer = this.gl.createBuffer();
+		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+
+		const positions = [-1, -1, 1, -1, -1, 1, 1, 1];
+
+		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
+
+		// Set up attribute
+		const positionLocation = this.gl.getAttribLocation(this.program, 'a_position');
+		this.gl.enableVertexAttribArray(positionLocation);
+		this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 0, 0);
+	}
+
+	private getUniformLocations() {
+		if (!this.gl || !this.program) return;
+
+		this.uniforms = {
+			iResolution: this.gl.getUniformLocation(this.program, 'iResolution'),
+			iTime: this.gl.getUniformLocation(this.program, 'iTime'),
+			iMouse: this.gl.getUniformLocation(this.program, 'iMouse'),
+			iDate: this.gl.getUniformLocation(this.program, 'iDate'),
+			iTimeDelta: this.gl.getUniformLocation(this.program, 'iTimeDelta'),
+			iFrame: this.gl.getUniformLocation(this.program, 'iFrame')
+		};
+	}
+
+	private startRenderLoop() {
+		if (!this.gl || !this.program) return;
+
+		this.startTime = Date.now();
+		let frameCount = 0;
+		let lastTime = 0;
+
+		const render = (currentTime: number) => {
+			if (!this.gl || !this.canvas) return;
+
+			const time = (currentTime - this.startTime) * 0.001;
+			const timeDelta = currentTime - lastTime;
+			lastTime = currentTime;
+
+			// Set viewport
+			this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+
+			// Clear
+			this.gl.clearColor(0, 0, 0, 1);
+			this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
+			// Set uniforms
+			if (this.uniforms.iResolution) {
+				this.gl.uniform3f(this.uniforms.iResolution, this.canvas.width, this.canvas.height, 1.0);
+			}
+
+			if (this.uniforms.iTime) {
+				this.gl.uniform1f(this.uniforms.iTime, time);
+			}
+
+			if (this.uniforms.iMouse) {
+				this.gl.uniform4f(this.uniforms.iMouse, this.mouseX, this.mouseY, 0, 0);
+			}
+
+			if (this.uniforms.iDate) {
+				const date = new Date();
+				this.gl.uniform4f(
+					this.uniforms.iDate,
+					date.getFullYear(),
+					date.getMonth(),
+					date.getDate(),
+					date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds()
+				);
+			}
+
+			if (this.uniforms.iTimeDelta) {
+				this.gl.uniform1f(this.uniforms.iTimeDelta, timeDelta * 0.001);
+			}
+
+			if (this.uniforms.iFrame) {
+				this.gl.uniform1i(this.uniforms.iFrame, frameCount);
+			}
+
+			// Draw
+			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+			frameCount++;
+			this.animationId = requestAnimationFrame(render);
+		};
+
+		this.animationId = requestAnimationFrame(render);
+	}
+
+	private showError(message: string) {
+		// Create error overlay
+		const errorDiv = document.createElement('div');
+		errorDiv.className = 'absolute inset-0 bg-zinc-900 bg-opacity-90 flex items-center justify-center p-4';
+		errorDiv.innerHTML = `
+			<div class="bg-red-900 border border-red-600 rounded-lg p-3 max-w-full">
+				<div class="font-mono text-xs font-medium text-red-100 mb-1">GLSL Compilation Error:</div>
+				<div class="font-mono text-xs text-red-200 whitespace-pre-wrap break-words">${this.escapeHtml(message)}</div>
+			</div>
+		`;
+
+		// Remove existing error overlay
+		const existingError = this.container.querySelector('.absolute.inset-0');
+		if (existingError) {
+			existingError.remove();
+		}
+
+		// Position container relatively if not already
+		if (getComputedStyle(this.container).position === 'static') {
+			this.container.style.position = 'relative';
+		}
+
+		this.container.appendChild(errorDiv);
+	}
+
+	private escapeHtml(text: string): string {
+		const div = document.createElement('div');
+		div.textContent = text;
+		return div.innerHTML;
+	}
+
+	destroy() {
+		// Stop animation
+		if (this.animationId) {
+			cancelAnimationFrame(this.animationId);
+			this.animationId = null;
+		}
+
+		// Clean up WebGL resources
+		if (this.gl && this.program) {
+			this.gl.deleteProgram(this.program);
+			this.program = null;
+		}
+
+		if (this.canvas) {
+			this.canvas.remove();
+			this.canvas = null;
+		}
+
+		this.gl = null;
+
+		// Clear container
+		this.container.innerHTML = '';
+	}
+}
