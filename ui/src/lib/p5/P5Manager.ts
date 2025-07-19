@@ -87,6 +87,7 @@ export class P5Manager {
 			'random',
 			'noise',
 			'map',
+			'describe',
 			'constrain',
 			'lerp',
 			'sin',
@@ -105,7 +106,11 @@ export class P5Manager {
 			'vertex',
 			'curveVertex',
 			'bezierVertex',
-			'loadPixels'
+			'loadPixels',
+			'colorMode',
+			'angleMode',
+			'min',
+			'max'
 		];
 
 		const commonP5Properties = [
@@ -117,7 +122,9 @@ export class P5Manager {
 			'pmouseX',
 			'pmouseY',
 			'mouseIsPressed',
-			'frameCount'
+			'frameCount',
+			'width',
+			'height'
 		];
 
 		// Bind common methods
