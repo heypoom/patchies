@@ -67,7 +67,92 @@ function draw() {
 
 These constructs are exposed to JavaScript-based objects, such as `js`, `p5.canvas` and `hydra`.
 
-- `send(data)` - Sends a message with the given data to the next object in the graph.
+- `send(data)` - Sends a message with the given data to all connected outlets.
   - `send(data, {type})` - specify the data type of the message.
+  - `send(data, {outlet: 'name'})` - send to a specific named outlet.
 - `function onMessage(callback: (message) => void)` - Defines a callback that is called when a new message arrives.
+  - The message object contains: `{data, type?, timestamp, source, inlet?}`
 - `interval(callback: () => void, ms: number)` - Calls the callback every `ms` milliseconds. Does automatic cleanup when the object is unloaded. Use this instead of `setInterval` to avoid memory leaks.
+
+## Implementation Plan
+
+### Phase 1: Core Infrastructure
+
+#### Message Data Structure
+```js
+interface Message {
+  data: any;           // The actual payload
+  type?: string;       // Optional type annotation  
+  timestamp: number;   // For ordering/debugging
+  source: string;      // Source node ID
+  outlet?: string;     // Source outlet name
+  inlet?: string;      // Target inlet name (set by router)
+}
+```
+
+#### Architecture Decisions
+
+1. **Message Queues**: Each node maintains its own message queue for incoming messages.
+2. **Graph Routing**: Transform XY Flow's visual edges into a message routing graph. This maintains single source of truth while allowing message routing logic.
+3. **Execution Context**: Inject message constructs (`send`, `onMessage`, `interval`) into all JavaScript node execution contexts.
+4. **Timing**: 
+   - Messages processed immediately when received
+   - Global scheduler for `interval` function
+   - Automatic cleanup when nodes are deleted
+5. **Error Handling**:
+   - Messages to disconnected outlets are ignored
+   - `onMessage` callback errors shown visually on the node
+   - `send` becomes no-op if node is deleted
+
+#### Core Components
+
+1. **MessageSystem** - Central coordinator
+   - Tracks node connections from XY Flow graph
+   - Routes messages between nodes
+   - Manages global scheduler for intervals
+   - Handles cleanup
+
+2. **MessageQueue** - Per-node message processing
+   - Queues incoming messages
+   - Processes messages immediately
+   - Calls `onMessage` callbacks
+
+3. **MessageContext** - Injected into JS execution
+   - `send(data, options?)` function
+   - `onMessage(callback)` registration
+   - `interval(callback, ms)` with auto-cleanup
+
+### Phase 2: Integration
+
+1. **Update existing JS nodes**:
+   - `js` (JSBlockNode)
+   - `p5.canvas` (P5CanvasNode) 
+   - `hydra` (HydraNode)
+   - `js.canvas` (JSCanvasNode)
+   - `glsl.canvas` (GLSLCanvasNode - receive only)
+
+2. **FlowCanvas integration**:
+   - Listen to XY Flow edge changes
+   - Update message routing graph
+   - Handle node deletion cleanup
+
+### Phase 3: Testing
+
+1. Implement the simple use case:
+   - JS node with `interval` and `send`
+   - P5 canvas with `onMessage`
+   - Connected with XY Flow edge
+
+2. Test edge cases:
+   - Multiple connections
+   - Rapid message bursts
+   - Node deletion during message processing
+   - Error handling in callbacks
+
+### Future Enhancements
+
+- Multiple named inlets/outlets per node
+- Message type validation
+- Message throttling/rate limiting
+- Visual indicators for message flow
+- Message debugging/logging tools

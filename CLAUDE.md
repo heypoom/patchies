@@ -111,3 +111,7 @@ The `CodeEditor.svelte` component uses CodeMirror 6 with:
 - Separate business logic into utility classes when complex
 - Use TypeScript for all new code
 - Follow the pattern of UI components importing and using utility classes
+
+## Development Guidelines
+
+- Before you start to implement, always update the spec file first with the details and the plan
