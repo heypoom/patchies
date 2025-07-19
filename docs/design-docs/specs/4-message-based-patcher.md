@@ -22,6 +22,7 @@ We want to implement a system for message-based patching, with concepts such as 
   - They must be given a name.
   - They are untyped by default, which means it accepts any kind of message, and requires no validation.
   - They can be typed, which means that inlet/outlet will validate the source/destination outlet type, and throw an error if the data type mismatches.
+  - If the type of the inlet and outlet is `video`, it will use a separate [Visual Chaining](7-visual-chaining.md) system to route video sources. In that specific case, the inlet and outlet will not be used for message passing, but rather for video source routing.
 
 - **Props** are key-value pairs that defines the setting of an object.
 
