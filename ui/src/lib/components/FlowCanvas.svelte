@@ -63,25 +63,17 @@
 	</div>
 
 	<!-- Bottom toolbar for draggable nodes -->
-	<div class="border-t border-zinc-700 bg-zinc-800 p-4">
+	<div class="border-t border-zinc-700 bg-zinc-900 p-4">
 		<div class="max-w-full">
-			<div class="mb-2">
-				<h3 class="text-sm font-medium text-zinc-100">Nodes</h3>
-			</div>
 			<div class="flex gap-3">
 				<div
-					class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-700 p-3 transition-colors hover:bg-zinc-600"
+					class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 p-3 transition-colors hover:bg-zinc-600"
 					draggable={true}
 					ondragstart={(event) => {
 						event.dataTransfer?.setData('application/svelteflow', 'canvas');
 					}}
 				>
-					<div
-						class="flex h-8 w-12 items-center justify-center rounded border border-zinc-500 bg-zinc-900"
-					>
-						<div class="h-5 w-8 rounded-sm border border-zinc-600 bg-zinc-800"></div>
-					</div>
-					<span class="text-xs text-zinc-200">P5.js Canvas</span>
+					<span class="font-mono text-xs text-zinc-200">p5.canvas</span>
 				</div>
 			</div>
 		</div>
