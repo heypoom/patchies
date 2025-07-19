@@ -114,6 +114,7 @@
 			<div class="min-w-[280px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
 				<div class="mb-2 flex items-center justify-between">
 					<span class="font-mono text-xs text-zinc-400">Console</span>
+
 					<div class="flex gap-1">
 						<button onclick={executeCode} class="rounded p-1 hover:bg-zinc-700" title="Run code">
 							<Icon icon="lucide:play" class="h-3 w-3 text-zinc-300" />
@@ -129,7 +130,7 @@
 				</div>
 
 				<div
-					class="h-32 overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
+					class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 				>
 					{#if consoleOutput.length === 0}
 						<div class="italic text-zinc-500">No output yet. Run your code to see results.</div>
