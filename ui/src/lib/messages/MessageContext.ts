@@ -31,6 +31,7 @@ export class MessageContext {
 	// Create the onMessage function for this node
 	createOnMessageFunction() {
 		return (callback: MessageCallback) => {
+			// Always update the callback - this allows re-registering
 			this.messageCallback = callback;
 		};
 	}
@@ -53,13 +54,18 @@ export class MessageContext {
 		};
 	}
 
-	// Clean up when the node is destroyed
-	destroy() {
+	// Clear only intervals (for code re-execution)
+	clearIntervals() {
 		// Clear all intervals created by this node
 		for (const intervalId of this.intervals) {
 			this.messageSystem.clearInterval(intervalId);
 		}
 		this.intervals = [];
+	}
+
+	// Clean up when the node is destroyed
+	destroy() {
+		this.clearIntervals();
 
 		// Unregister the node
 		this.messageSystem.unregisterNode(this.nodeId);

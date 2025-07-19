@@ -157,7 +157,7 @@ export class P5Manager {
 				// Inject message system functions if available
 				if (messageContext) {
 					var send = messageContext.send;
-					var onMessage = messageContext.onMessage;
+					var onMessage = messageContext.onMessage ?? (() => {});
 					var interval = messageContext.interval;
 				}
 				

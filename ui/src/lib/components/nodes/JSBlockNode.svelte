@@ -7,28 +7,23 @@
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
-	
+
 	let messageContext: MessageContext;
 
 	let showEditor = $state(false);
-	let code = $state(`// Message system example - send a random color every 500ms
+	let code = $state(`
 interval(() => {
   const color = Math.random() > 0.5 ? '#ff0000' : '#00ff00';
-  console.log('Sending color:', color);
+  console.log('[color]', color);
   send(color);
-}, 500);
-
-// You can also listen for incoming messages
-onMessage((message) => {
-  console.log('Received message:', message.data);
-});`);
+}, 500);`);
 
 	let consoleOutput = $state<string[]>([]);
 
 	onMount(() => {
 		// Initialize message context
 		messageContext = new MessageContext(nodeId);
-		
+
 		// Execute code on mount
 		executeCode();
 	});
@@ -44,10 +39,10 @@ onMessage((message) => {
 		// Clear previous output
 		consoleOutput = [];
 
-		// Clean up previous message context to avoid duplicate intervals
+		// Don't recreate message context - just clear intervals to avoid duplicates
 		if (messageContext) {
-			messageContext.destroy();
-			messageContext = new MessageContext(nodeId);
+			// Clear only intervals, keep the message context alive for connections
+			messageContext.clearIntervals();
 		}
 
 		// Create a custom console that captures output
@@ -71,7 +66,7 @@ onMessage((message) => {
 		try {
 			// Get message system context
 			const messageSystemContext = messageContext.getContext();
-			
+
 			// Create a function with the user code, injecting message constructs
 			const functionParams = ['console', 'send', 'onMessage', 'interval'];
 			const functionArgs = [
@@ -85,7 +80,10 @@ onMessage((message) => {
 			// Execute with our custom console and message system
 			userFunction(...functionArgs);
 		} catch (error) {
-			consoleOutput = [...consoleOutput, `ERROR: ${error instanceof Error ? error.message : String(error)}`];
+			consoleOutput = [
+				...consoleOutput,
+				`ERROR: ${error instanceof Error ? error.message : String(error)}`
+			];
 		}
 	}
 

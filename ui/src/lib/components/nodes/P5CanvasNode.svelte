@@ -13,7 +13,7 @@
 	let p5Manager: P5Manager | null = null;
 	let messageContext: MessageContext;
 	let showEditor = $state(false);
-	let code = $state(`let color = '#ff0000';
+	let code = $state(`let color = '#ff0ff0';
 
 onMessage((m) => {
   color = m.data;
@@ -21,12 +21,12 @@ onMessage((m) => {
 
 function setup() {
   createCanvas(200, 200);
+  noStroke()
 }
 
 function draw() {
-  background(100, 200, 300);
   fill(color);
-  ellipse(width / 2, height / 2, 100, 100);
+  ellipse(100, 100, 100, 100);
 }`);
 
 	onMount(() => {
@@ -65,8 +65,6 @@ function draw() {
 <div class="relative flex gap-x-3">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
-			<Handle type="target" position={Position.Top} />
-
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
 					<div class="font-mono text-xs font-medium text-zinc-100">p5.canvas</div>
@@ -82,10 +80,13 @@ function draw() {
 			</div>
 
 			<div class="relative">
+				<Handle type="target" position={Position.Top} />
+
 				<div
 					bind:this={containerElement}
 					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
+
 				<Handle type="source" position={Position.Bottom} class="absolute" />
 			</div>
 		</div>
