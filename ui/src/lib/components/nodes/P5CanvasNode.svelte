@@ -13,21 +13,14 @@
 	let p5Manager: P5Manager | null = null;
 	let messageContext: MessageContext;
 	let showEditor = $state(false);
-	let code = $state(`let color = '#ff0ff0';
-
-onMessage((m) => {
-  color = m.data;
-	console.log('[msg]', m.data)
-})
-
-function setup() {
+	let code = $state(`function setup() {
   createCanvas(200, 200);
-  noStroke()
 }
 
 function draw() {
-  fill(color);
-  ellipse(100, 100, 100, 100);
+  background(100, 200, 300);
+  fill(255, 255, 100);
+  ellipse(100, 100, 80, 80);
 }`);
 
 	onMount(() => {

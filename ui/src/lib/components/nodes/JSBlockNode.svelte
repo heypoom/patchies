@@ -11,12 +11,7 @@
 	let messageContext: MessageContext;
 
 	let showEditor = $state(false);
-	let code = $state(`
-interval(() => {
-  const color = Math.random() > 0.5 ? '#ff0000' : '#00ff00';
-  console.log('[color]', color);
-  send(color);
-}, 500);`);
+	let code = $state(`console.log(1 + 1)`);
 
 	let consoleOutput = $state<string[]>([]);
 
