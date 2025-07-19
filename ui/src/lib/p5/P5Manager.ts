@@ -104,7 +104,8 @@ export class P5Manager {
 			'endShape',
 			'vertex',
 			'curveVertex',
-			'bezierVertex'
+			'bezierVertex',
+			'loadPixels'
 		];
 
 		const commonP5Properties = [
