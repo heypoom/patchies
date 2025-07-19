@@ -1,52 +1,54 @@
+// @ts-expect-error -- no types for hydra-synth
 import Hydra from 'hydra-synth';
-import type { Hydra as HydraTS } from 'hydra-ts';
 
 export class HydraManager {
-	private hydra: HydraTS;
-	private synth: any;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private hydra: any;
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
 
-	constructor(container: HTMLElement) {
+	constructor(container: HTMLElement, code: string) {
 		this.container = container;
-	}
 
-	createHydra(options: { code: string }) {
+		// Create canvas element
+		this.canvas = document.createElement('canvas');
+		this.canvas.width = 200;
+		this.canvas.height = 200;
+		this.canvas.style.width = '100%';
+		this.canvas.style.height = '100%';
+		this.canvas.style.objectFit = 'contain';
+
+		// Clear container and add canvas
+		this.container.innerHTML = '';
+		this.container.appendChild(this.canvas);
+
+		// Initialize Hydra in non-global mode
+		this.hydra = new Hydra({
+			canvas: this.canvas,
+			width: 200,
+			height: 200,
+			autoLoop: true,
+			makeGlobal: false,
+			detectAudio: false,
+			numSources: 4,
+			numOutputs: 4,
+			precision: 'mediump'
+		});
+
 		try {
-			// Create canvas element
-			this.canvas = document.createElement('canvas');
-			this.canvas.width = 200;
-			this.canvas.height = 200;
-			this.canvas.style.width = '100%';
-			this.canvas.style.height = '100%';
-			this.canvas.style.objectFit = 'contain';
-
-			// Clear container and add canvas
-			this.container.innerHTML = '';
-			this.container.appendChild(this.canvas);
-
-			// Initialize Hydra in non-global mode
-			this.hydra = new Hydra({
-				canvas: this.canvas,
-				width: 200,
-				height: 200,
-				autoLoop: true,
-				makeGlobal: false,
-				detectAudio: false,
-				numSources: 4,
-				numOutputs: 4,
-				precision: 'mediump'
-			});
-
-			// Get the synth instance for non-global mode
-			this.synth = this.hydra.synth;
-
 			// Execute the user code
-			this.executeCode(options.code);
+			this.executeCode(code);
 		} catch (error) {
 			console.error('Error creating Hydra sketch:', error);
-			this.container.innerHTML = `<div class="text-red-400 text-xs p-2">Error: ${error.message}</div>`;
+
+			if (error instanceof Error) {
+				this.container.innerHTML = `<div class="text-red-400 text-xs p-2">Error: ${error.message}</div>`;
+			}
 		}
+	}
+
+	get synth() {
+		return this.hydra.synth;
 	}
 
 	updateCode(code: string) {
@@ -77,6 +79,7 @@ export class HydraManager {
 			// Also destructure common functions for easier access
 			const context = {
 				h: this.synth,
+
 				// Destructure common functions for convenience
 				osc: this.synth.osc.bind(this.synth),
 				gradient: this.synth.gradient.bind(this.synth),
@@ -124,7 +127,8 @@ export class HydraManager {
 			} catch (error) {
 				console.warn('Error stopping Hydra synth:', error);
 			}
-			this.synth = null;
+
+			this.hydra.synth = null;
 		}
 
 		if (this.hydra) {

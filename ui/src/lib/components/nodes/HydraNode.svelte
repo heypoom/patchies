@@ -25,8 +25,7 @@ osc(4, 0.1, 1.2)
 
 	onMount(() => {
 		if (containerElement) {
-			hydraManager = new HydraManager(containerElement);
-			hydraManager.createHydra({ code });
+			hydraManager = new HydraManager(containerElement, code);
 		}
 	});
 

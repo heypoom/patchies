@@ -61,7 +61,6 @@
 		"@xyflow/svelte": "^1.2.2",
 		"codemirror": "^6.0.2",
 		"hydra-synth": "^1.3.29",
-		"hydra-ts": "^1.0.0",
 		"p5": "^1.11.9"
 	}
 }
