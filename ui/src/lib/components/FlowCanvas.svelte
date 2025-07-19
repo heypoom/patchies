@@ -2,10 +2,12 @@
 	import { SvelteFlow, Background, Controls, type Node, type Edge } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
+	import JSBlockNode from './nodes/JSBlockNode.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
-		canvas: P5CanvasNode
+		['p5.canvas']: P5CanvasNode,
+		['js']: JSBlockNode
 	};
 
 	// Initial nodes and edges
@@ -66,17 +68,19 @@
 	<div class="border-t border-zinc-700 bg-zinc-900 p-4">
 		<div class="max-w-full">
 			<div class="flex gap-3">
-				<div
-					role="button"
-					tabindex="0"
-					class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 p-3 transition-colors hover:bg-zinc-600"
-					draggable={true}
-					ondragstart={(event) => {
-						event.dataTransfer?.setData('application/svelteflow', 'canvas');
-					}}
-				>
-					<span class="font-mono text-xs text-zinc-200">p5.canvas</span>
-				</div>
+				{#each Object.keys(nodeTypes) as nodeType}
+					<div
+						role="button"
+						tabindex="0"
+						class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 p-3 transition-colors hover:bg-zinc-600"
+						draggable={true}
+						ondragstart={(event) => {
+							event.dataTransfer?.setData('application/svelteflow', nodeType);
+						}}
+					>
+						<span class="font-mono text-xs text-zinc-200">{nodeType}</span>
+					</div>
+				{/each}
 			</div>
 		</div>
 	</div>
