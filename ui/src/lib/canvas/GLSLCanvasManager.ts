@@ -69,7 +69,6 @@ export class GLSLCanvasManager {
 			this.canvas.height = rect.height * dpr;
 		}
 
-
 		this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
 
 		if (!this.gl) {
@@ -78,6 +77,12 @@ export class GLSLCanvasManager {
 	}
 
 	updateCode(code: string) {
+		const existingError = this.container.querySelector('.glsl-error-overlay');
+
+		if (existingError) {
+			existingError.remove();
+		}
+
 		if (this.gl) {
 			try {
 				// Stop current animation
@@ -140,7 +145,6 @@ export class GLSLCanvasManager {
 			throw new Error('Failed to compile shaders');
 		}
 
-
 		// Create program
 		const program = this.gl.createProgram();
 		if (!program) {
@@ -157,7 +161,6 @@ export class GLSLCanvasManager {
 			throw new Error('Failed to link shader program: ' + error);
 		}
 
-
 		// Clean up old program
 		if (this.program) {
 			this.gl.deleteProgram(this.program);
@@ -171,7 +174,6 @@ export class GLSLCanvasManager {
 
 		// Get uniform locations
 		this.getUniformLocations();
-
 	}
 
 	private compileShader(source: string, type: number): WebGLShader | null {
@@ -323,8 +325,10 @@ export class GLSLCanvasManager {
 	private showError(message: string) {
 		// Create error overlay
 		const errorDiv = document.createElement('div');
+
 		errorDiv.className =
-			'absolute inset-0 bg-zinc-900 bg-opacity-90 flex items-center justify-center p-4';
+			'glsl-error-overlay absolute inset-0 bg-zinc-900 bg-opacity-90 flex items-center justify-center p-4';
+
 		errorDiv.innerHTML = `
 			<div class="bg-red-900 border border-red-600 rounded-lg p-3 max-w-full">
 				<div class="font-mono text-xs font-medium text-red-100 mb-1">GLSL Compilation Error:</div>
@@ -333,7 +337,7 @@ export class GLSLCanvasManager {
 		`;
 
 		// Remove existing error overlay
-		const existingError = this.container.querySelector('.absolute.inset-0');
+		const existingError = this.container.querySelector('.glsl-error-overlay');
 		if (existingError) {
 			existingError.remove();
 		}
