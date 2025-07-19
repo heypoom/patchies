@@ -46,7 +46,6 @@ function draw() {
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<Handle type="target" position={Position.Top} />
-			<Handle type="source" position={Position.Bottom} />
 
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
@@ -62,7 +61,13 @@ function draw() {
 				</button>
 			</div>
 
-			<div bind:this={containerElement} class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"></div>
+			<div class="relative">
+				<div
+					bind:this={containerElement}
+					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
+				></div>
+				<Handle type="source" position={Position.Bottom} class="absolute" />
+			</div>
 		</div>
 	</div>
 
