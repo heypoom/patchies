@@ -67,6 +67,8 @@
 		<div class="max-w-full">
 			<div class="flex gap-3">
 				<div
+					role="button"
+					tabindex="0"
 					class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 p-3 transition-colors hover:bg-zinc-600"
 					draggable={true}
 					ondragstart={(event) => {
