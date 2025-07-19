@@ -105,7 +105,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
 				<CodeEditor
 					bind:value={code}
-					language="javascript"
+					language="glsl"
 					placeholder="Write your GLSL fragment shader here..."
 					class="nodrag h-64 w-full resize-none"
 					onrun={updateShader}

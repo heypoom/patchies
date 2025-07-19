@@ -24,17 +24,27 @@ export class GLSLCanvasManager {
 
 			this.container.innerHTML = '';
 			this.container.appendChild(this.canvas);
-			this.setupCanvasSize();
 
-			this.canvas.addEventListener('mousemove', (e) => {
-				const rect = this.canvas!.getBoundingClientRect();
+			// Wait a frame for the canvas to be laid out properly
+			requestAnimationFrame(() => {
+				try {
+					this.setupCanvasSize();
 
-				this.mouseX = e.clientX - rect.left;
-				this.mouseY = rect.height - (e.clientY - rect.top);
+					this.canvas!.addEventListener('mousemove', (e) => {
+						const rect = this.canvas!.getBoundingClientRect();
+						this.mouseX = e.clientX - rect.left;
+						this.mouseY = rect.height - (e.clientY - rect.top);
+					});
+
+					this.createShaderProgram(options.code);
+					this.startRenderLoop();
+				} catch (error) {
+					console.error('Error in delayed canvas setup:', error);
+					if (error instanceof Error) {
+						this.showError(error.message);
+					}
+				}
 			});
-
-			this.createShaderProgram(options.code);
-			this.startRenderLoop();
 		} catch (error) {
 			console.error('Error creating GLSL canvas:', error);
 			if (error instanceof Error) {
@@ -49,14 +59,20 @@ export class GLSLCanvasManager {
 		const dpr = window.devicePixelRatio || 1;
 		const rect = this.canvas.getBoundingClientRect();
 
-		this.canvas.width = rect.width * dpr;
-		this.canvas.height = rect.height * dpr;
-
-		const ctx = this.canvas.getContext('webgl');
-
-		if (ctx) {
-			this.gl = ctx;
+		// Ensure we have valid dimensions
+		if (rect.width === 0 || rect.height === 0) {
+			console.warn('Canvas has zero dimensions, using fallback');
+			this.canvas.width = 200 * dpr;
+			this.canvas.height = 200 * dpr;
 		} else {
+			this.canvas.width = rect.width * dpr;
+			this.canvas.height = rect.height * dpr;
+		}
+
+
+		this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+
+		if (!this.gl) {
 			throw new Error('WebGL not supported');
 		}
 	}
@@ -86,6 +102,8 @@ export class GLSLCanvasManager {
 	private createShaderProgram(fragmentShaderCode: string) {
 		if (!this.gl) return;
 
+		console.log('Creating shader program...');
+
 		// Vertex shader (simple quad)
 		const vertexShaderSource = `
 			attribute vec4 a_position;
@@ -108,7 +126,9 @@ export class GLSLCanvasManager {
 			${fragmentShaderCode}
 			
 			void main() {
-				mainImage(gl_FragColor, gl_FragCoord.xy);
+				vec4 fragColor = vec4(0.0);
+				mainImage(fragColor, gl_FragCoord.xy);
+				gl_FragColor = fragColor;
 			}
 		`;
 
@@ -119,6 +139,7 @@ export class GLSLCanvasManager {
 		if (!vertexShader || !fragmentShader) {
 			throw new Error('Failed to compile shaders');
 		}
+
 
 		// Create program
 		const program = this.gl.createProgram();
@@ -132,8 +153,10 @@ export class GLSLCanvasManager {
 
 		if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
 			const error = this.gl.getProgramInfoLog(program);
+			this.gl.deleteProgram(program);
 			throw new Error('Failed to link shader program: ' + error);
 		}
+
 
 		// Clean up old program
 		if (this.program) {
@@ -148,6 +171,7 @@ export class GLSLCanvasManager {
 
 		// Get uniform locations
 		this.getUniformLocations();
+
 	}
 
 	private compileShader(source: string, type: number): WebGLShader | null {
@@ -200,29 +224,39 @@ export class GLSLCanvasManager {
 	}
 
 	private startRenderLoop() {
-		if (!this.gl || !this.program) return;
+		if (!this.gl || !this.program) {
+			console.error('Cannot start render loop - missing GL or program');
+			return;
+		}
 
-		this.startTime = Date.now();
+		this.startTime = performance.now();
 		let frameCount = 0;
 		let lastTime = 0;
 
 		const render = (currentTime: number) => {
-			if (!this.gl || !this.canvas) return;
+			if (!this.gl || !this.canvas || !this.program) return;
 
 			const time = (currentTime - this.startTime) * 0.001;
 			const timeDelta = currentTime - lastTime;
 			lastTime = currentTime;
 
-			// Set viewport
+			// Set viewport - use actual canvas dimensions
 			this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
 			// Clear
 			this.gl.clearColor(0, 0, 0, 1);
 			this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
+			// Use the shader program
+			this.gl.useProgram(this.program);
+
+			// Get CSS dimensions for shader resolution uniform
+			const rect = this.canvas.getBoundingClientRect();
+
 			// Set uniforms
 			if (this.uniforms.iResolution) {
-				this.gl.uniform3f(this.uniforms.iResolution, this.canvas.width, this.canvas.height, 1.0);
+				// Use CSS dimensions for iResolution to match ShaderToy behavior
+				this.gl.uniform3f(this.uniforms.iResolution, rect.width, rect.height, 1.0);
 			}
 
 			if (this.uniforms.iTime) {
@@ -252,14 +286,38 @@ export class GLSLCanvasManager {
 				this.gl.uniform1i(this.uniforms.iFrame, frameCount);
 			}
 
-			// Draw
+			// Draw the full screen quad
 			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+			// Check for GL errors
+			const error = this.gl.getError();
+			if (error !== this.gl.NO_ERROR) {
+				console.error('WebGL error during render:', error, this.getGLErrorString(error));
+			}
 
 			frameCount++;
 			this.animationId = requestAnimationFrame(render);
 		};
 
 		this.animationId = requestAnimationFrame(render);
+	}
+
+	private getGLErrorString(error: number): string {
+		if (!this.gl) return 'Unknown';
+		switch (error) {
+			case this.gl.INVALID_ENUM:
+				return 'INVALID_ENUM';
+			case this.gl.INVALID_VALUE:
+				return 'INVALID_VALUE';
+			case this.gl.INVALID_OPERATION:
+				return 'INVALID_OPERATION';
+			case this.gl.OUT_OF_MEMORY:
+				return 'OUT_OF_MEMORY';
+			case this.gl.CONTEXT_LOST_WEBGL:
+				return 'CONTEXT_LOST_WEBGL';
+			default:
+				return `Unknown error: ${error}`;
+		}
 	}
 
 	private showError(message: string) {
