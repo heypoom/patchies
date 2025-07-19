@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { SvelteFlow, Background, Controls, type Node, type Edge } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
-	import CanvasNode from './nodes/CanvasNode.svelte';
+	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
-		canvas: CanvasNode
+		canvas: P5CanvasNode
 	};
 
 	// Initial nodes and edges
-	let nodes = $state<Node[]>([]);
-	let edges = $state<Edge[]>([]);
+	let nodes = $state.raw<Node[]>([]);
+	let edges = $state.raw<Edge[]>([]);
 
 	let nodeId = 0;
 
@@ -47,16 +47,17 @@
 
 <div class="flow-container flex h-screen w-full flex-col">
 	<!-- Main flow area -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="relative flex-1" ondrop={onDrop} ondragover={onDragOver}>
 		<SvelteFlow
-			{nodes}
-			{edges}
+			bind:nodes
+			bind:edges
 			{nodeTypes}
 			fitView
 			class="bg-zinc-900"
 			proOptions={{ hideAttribution: true }}
 		>
-			<Background color="#52525b" gap={16} />
+			<Background bgColor="#52525b" gap={16} />
 			<Controls />
 		</SvelteFlow>
 	</div>
@@ -80,7 +81,7 @@
 					>
 						<div class="h-5 w-8 rounded-sm border border-zinc-600 bg-zinc-800"></div>
 					</div>
-					<span class="text-xs text-zinc-200">JS Canvas</span>
+					<span class="text-xs text-zinc-200">P5.js Canvas</span>
 				</div>
 			</div>
 		</div>
