@@ -4,12 +4,16 @@
 	import Icon from '@iconify/svelte';
 	import { JSCanvasManager } from '$lib/canvas/JSCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+
+	// Get node data from XY Flow - nodes receive their data as props
+	let { id: nodeId }: { id: string } = $props();
 
 	let containerElement: HTMLDivElement;
 	let canvasManager: JSCanvasManager | null = null;
+	let messageContext: MessageContext;
 	let showEditor = $state(false);
-	let code = $state(`// Clear canvas with a background color
-canvas.fillStyle = '#18181b';
+	let code = $state(`canvas.fillStyle = '#18181b';
 canvas.fillRect(0, 0, width, height);
 
 // Draw a simple animated circle
@@ -21,7 +25,7 @@ function animate() {
 	canvas.fillStyle = '#18181b';
 	canvas.fillRect(0, 0, width, height);
 	
-	// Animated circle
+	// Animated circle with dynamic color
 	const time = Date.now() * 0.002;
 	const x = width/2 + Math.cos(time) * 50;
 	const y = height/2 + Math.sin(time) * 30;
@@ -44,9 +48,15 @@ animate();
 // canvas.strokeRect(10, 10, width-20, height-20);`);
 
 	onMount(() => {
+		// Initialize message context
+		messageContext = new MessageContext(nodeId);
+
 		if (containerElement) {
 			canvasManager = new JSCanvasManager(containerElement);
-			canvasManager.createCanvas({ code });
+			canvasManager.createCanvas({
+				code,
+				messageContext: messageContext.getContext()
+			});
 		}
 	});
 
@@ -54,11 +64,19 @@ animate();
 		if (canvasManager) {
 			canvasManager.destroy();
 		}
+		if (messageContext) {
+			messageContext.destroy();
+		}
 	});
 
 	function updateCanvas() {
-		if (canvasManager) {
-			canvasManager.updateCode(code);
+		if (canvasManager && messageContext) {
+			// Clear intervals to avoid duplicates
+			messageContext.clearIntervals();
+			canvasManager.updateCode({
+				code,
+				messageContext: messageContext.getContext()
+			});
 		}
 	}
 

@@ -1,13 +1,31 @@
 // @ts-expect-error -- no types for hydra-synth
 import Hydra from 'hydra-synth';
 
+interface SendMessageOptions {
+	type?: string;
+	outlet?: string;
+}
+
+interface MessageContext {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	send: (data: any, options?: SendMessageOptions) => void;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	onMessage: (callback: (message: any) => void) => void;
+	interval: (callback: () => void, ms: number) => number;
+}
+
+export interface HydraConfig {
+	code: string;
+	messageContext?: MessageContext;
+}
+
 export class HydraManager {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private hydra: any;
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
 
-	constructor(container: HTMLElement, code: string) {
+	constructor(container: HTMLElement, config: HydraConfig | string) {
 		this.container = container;
 
 		// Create canvas element
@@ -37,7 +55,9 @@ export class HydraManager {
 
 		try {
 			// Execute the user code
-			this.executeCode(code);
+			const codeString = typeof config === 'string' ? config : config.code;
+			const messageContext = typeof config === 'string' ? undefined : config.messageContext;
+			this.executeCode(codeString, messageContext);
 		} catch (error) {
 			console.error('Error creating Hydra sketch:', error);
 
@@ -51,17 +71,19 @@ export class HydraManager {
 		return this.hydra.synth;
 	}
 
-	updateCode(code: string) {
+	updateCode(config: HydraConfig | string) {
 		if (this.synth) {
 			try {
-				this.executeCode(code);
+				const codeString = typeof config === 'string' ? config : config.code;
+				const messageContext = typeof config === 'string' ? undefined : config.messageContext;
+				this.executeCode(codeString, messageContext);
 			} catch (error) {
 				console.error('Error updating Hydra code:', error);
 			}
 		}
 	}
 
-	private executeCode(code: string) {
+	private executeCode(code: string, messageContext?: MessageContext) {
 		try {
 			// Clear any existing patterns
 			if (this.synth) {
@@ -99,7 +121,14 @@ export class HydraManager {
 				o2: this.synth.o2,
 				o3: this.synth.o3,
 				// Render function
-				render: this.synth.render.bind(this.synth)
+				render: this.synth.render.bind(this.synth),
+				
+				// Message system functions (if available)
+				...(messageContext && {
+					send: messageContext.send,
+					onMessage: messageContext.onMessage,
+					interval: messageContext.interval
+				})
 			};
 
 			// Execute the user's Hydra code with the synth context
@@ -108,7 +137,6 @@ export class HydraManager {
 			const executeFunction = new Function(
 				...functionParams,
 				`
-
 				${code}
 			`
 			);

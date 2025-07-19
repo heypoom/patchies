@@ -4,28 +4,33 @@
 	import Icon from '@iconify/svelte';
 	import { HydraManager } from '$lib/hydra/HydraManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+
+	// Get node data from XY Flow - nodes receive their data as props
+	let { id: nodeId }: { id: string } = $props();
 
 	let containerElement: HTMLDivElement;
 	let hydraManager: HydraManager | null = null;
+	let messageContext: MessageContext;
 	let showEditor = $state(false);
-	let code = $state(`// Hydra visual synthesizer
-// Create oscillating patterns and visual effects
-
-// Basic oscillator with frequency, sync, and offset
-osc(4, 0.1, 1.2)
-  .color(0.5, 0.8, 1.2)
-  .rotate(0.2)
-  .modulateScale(osc(8), 0.5)
+	let code = $state(`osc(20, 0.1, 0.8)
+  .diff(osc(20, 0.05)
+  .rotate(Math.PI/2))
   .out()
 
 // Try these examples:
-// osc(20, 0.1, 0.8).diff(osc(20, 0.05).rotate(Math.PI/2)).out()
 // noise(3, 0.1).thresh(0.15, 0.04).modulateRotate(osc(1, 0.5), 0.8).out()
 // shape(4, 0.3, 0.01).repeat(2, 2).modulateKaleid(osc(4, -0.5, 0), 1).out()`);
 
 	onMount(() => {
+		// Initialize message context
+		messageContext = new MessageContext(nodeId);
+
 		if (containerElement) {
-			hydraManager = new HydraManager(containerElement, code);
+			hydraManager = new HydraManager(containerElement, {
+				code,
+				messageContext: messageContext.getContext()
+			});
 		}
 	});
 
@@ -33,11 +38,19 @@ osc(4, 0.1, 1.2)
 		if (hydraManager) {
 			hydraManager.destroy();
 		}
+		if (messageContext) {
+			messageContext.destroy();
+		}
 	});
 
 	function updateHydra() {
-		if (hydraManager) {
-			hydraManager.updateCode(code);
+		if (hydraManager && messageContext) {
+			// Clear intervals to avoid duplicates
+			messageContext.clearIntervals();
+			hydraManager.updateCode({
+				code,
+				messageContext: messageContext.getContext()
+			});
 		}
 	}
 

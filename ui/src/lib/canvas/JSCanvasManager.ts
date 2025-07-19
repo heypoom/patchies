@@ -1,3 +1,21 @@
+interface SendMessageOptions {
+	type?: string;
+	outlet?: string;
+}
+
+interface MessageContext {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	send: (data: any, options?: SendMessageOptions) => void;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	onMessage: (callback: (message: any) => void) => void;
+	interval: (callback: () => void, ms: number) => number;
+}
+
+export interface JSCanvasConfig {
+	code: string;
+	messageContext?: MessageContext;
+}
+
 export class JSCanvasManager {
 	private canvas: HTMLCanvasElement | null = null;
 	private ctx: CanvasRenderingContext2D | null = null;
@@ -8,7 +26,7 @@ export class JSCanvasManager {
 		this.container = container;
 	}
 
-	createCanvas(options: { code: string }) {
+	createCanvas(options: JSCanvasConfig | { code: string }) {
 		try {
 			this.canvas = document.createElement('canvas');
 			this.canvas.style.width = '200px';
@@ -20,7 +38,9 @@ export class JSCanvasManager {
 			this.container.appendChild(this.canvas);
 
 			this.setupCanvasSize();
-			this.executeCode(options.code);
+			const codeString = options.code;
+			const messageContext = 'messageContext' in options ? options.messageContext : undefined;
+			this.executeCode(codeString, messageContext);
 		} catch (error) {
 			console.error('Error creating canvas:', error);
 			if (error instanceof Error) {
@@ -45,7 +65,7 @@ export class JSCanvasManager {
 		this.ctx.scale(dpr, dpr);
 	}
 
-	updateCode(code: string) {
+	updateCode(options: JSCanvasConfig | string) {
 		if (this.canvas && this.ctx) {
 			try {
 				if (this.animationId) {
@@ -54,14 +74,16 @@ export class JSCanvasManager {
 				}
 
 				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-				this.executeCode(code);
+				const codeString = typeof options === 'string' ? options : options.code;
+				const messageContext = typeof options === 'string' ? undefined : options.messageContext;
+				this.executeCode(codeString, messageContext);
 			} catch (error) {
 				console.error('Error updating canvas code:', error);
 			}
 		}
 	}
 
-	private executeCode(code: string) {
+	private executeCode(code: string, messageContext?: MessageContext) {
 		if (!this.canvas || !this.ctx) return;
 
 		try {
@@ -81,7 +103,14 @@ export class JSCanvasManager {
 					if (this.animationId === id) {
 						this.animationId = null;
 					}
-				}
+				},
+				
+				// Message system functions (if available)
+				...(messageContext && {
+					send: messageContext.send,
+					onMessage: messageContext.onMessage,
+					interval: messageContext.interval
+				})
 			};
 
 			const functionParams = Object.keys(context);
