@@ -4,9 +4,14 @@
 	import Icon from '@iconify/svelte';
 	import { P5Manager } from '$lib/p5/P5Manager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+
+	// Get node data from XY Flow - nodes receive their data as props
+	let { id: nodeId }: { id: string } = $props();
 
 	let containerElement: HTMLDivElement;
 	let p5Manager: P5Manager | null = null;
+	let messageContext: MessageContext;
 	let showEditor = $state(false);
 	let code = $state(`function setup() {
   createCanvas(200, 200);
@@ -19,21 +24,33 @@ function draw() {
 }`);
 
 	onMount(() => {
-		if (containerElement) {
-			p5Manager = new P5Manager(containerElement);
-			p5Manager.createSketch({ code });
-		}
+		// Initialize message context
+		messageContext = new MessageContext(nodeId);
+
+		// Wait a tick to ensure everything is initialized
+		setTimeout(() => {
+			if (containerElement) {
+				p5Manager = new P5Manager(containerElement);
+				updateSketch();
+			}
+		}, 0);
 	});
 
 	onDestroy(() => {
 		if (p5Manager) {
 			p5Manager.destroy();
 		}
+		if (messageContext) {
+			messageContext.destroy();
+		}
 	});
 
 	function updateSketch() {
-		if (p5Manager) {
-			p5Manager.updateCode(code);
+		if (p5Manager && messageContext) {
+			p5Manager.updateCode({
+				code,
+				messageContext: messageContext.getContext()
+			});
 		}
 	}
 
@@ -45,8 +62,6 @@ function draw() {
 <div class="relative flex gap-x-3">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
-			<Handle type="target" position={Position.Top} />
-
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
 					<div class="font-mono text-xs font-medium text-zinc-100">p5.canvas</div>
@@ -62,10 +77,13 @@ function draw() {
 			</div>
 
 			<div class="relative">
+				<Handle type="target" position={Position.Top} />
+
 				<div
 					bind:this={containerElement}
 					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
+
 				<Handle type="source" position={Position.Bottom} class="absolute" />
 			</div>
 		</div>

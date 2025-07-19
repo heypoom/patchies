@@ -3,24 +3,42 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+
+	// Get node data from XY Flow - nodes receive their data as props
+	let { id: nodeId }: { id: string } = $props();
+
+	let messageContext: MessageContext;
 
 	let showEditor = $state(false);
-	let code = $state(`// Write your JavaScript code here
-console.log('Hello from JavaScript block!');
-
-// You can perform calculations
-const result = 2 + 2;
-console.log('2 + 2 =', result);
-
-// Access global variables and functions
-const numbers = [1, 2, 3, 4, 5];
-console.log('Sum:', numbers.reduce((a, b) => a + b, 0));`);
+	let code = $state(`console.log(1 + 1)`);
 
 	let consoleOutput = $state<string[]>([]);
+
+	onMount(() => {
+		// Initialize message context
+		messageContext = new MessageContext(nodeId);
+
+		// Execute code on mount
+		executeCode();
+	});
+
+	onDestroy(() => {
+		// Clean up message context
+		if (messageContext) {
+			messageContext.destroy();
+		}
+	});
 
 	function executeCode() {
 		// Clear previous output
 		consoleOutput = [];
+
+		// Don't recreate message context - just clear intervals to avoid duplicates
+		if (messageContext) {
+			// Clear only intervals, keep the message context alive for connections
+			messageContext.clearIntervals();
+		}
 
 		// Create a custom console that captures output
 		const customConsole = {
@@ -41,12 +59,26 @@ console.log('Sum:', numbers.reduce((a, b) => a + b, 0));`);
 		};
 
 		try {
-			// Create a function with the user code
-			const userFunction = new Function('console', code);
-			// Execute with our custom console
-			userFunction(customConsole);
+			// Get message system context
+			const messageSystemContext = messageContext.getContext();
+
+			// Create a function with the user code, injecting message constructs
+			const functionParams = ['console', 'send', 'onMessage', 'interval'];
+			const functionArgs = [
+				customConsole,
+				messageSystemContext.send,
+				messageSystemContext.onMessage,
+				messageSystemContext.interval
+			];
+
+			const userFunction = new Function(...functionParams, code);
+			// Execute with our custom console and message system
+			userFunction(...functionArgs);
 		} catch (error) {
-			consoleOutput = [...consoleOutput, `ERROR: ${error.message}`];
+			consoleOutput = [
+				...consoleOutput,
+				`ERROR: ${error instanceof Error ? error.message : String(error)}`
+			];
 		}
 	}
 
@@ -134,11 +166,17 @@ console.log('Sum:', numbers.reduce((a, b) => a + b, 0));`);
 
 <style>
 	:global(.svelte-flow__handle) {
+		background: rgb(156 163 175) !important;
+		border: 2px solid rgb(75 85 99) !important;
+		width: 8px !important;
+		height: 8px !important;
 	}
 
 	:global(.svelte-flow__handle.svelte-flow__handle-top) {
+		top: 0 !important;
 	}
 
 	:global(.svelte-flow__handle.svelte-flow__handle-bottom) {
+		bottom: 0 !important;
 	}
 </style>
