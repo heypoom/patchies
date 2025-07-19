@@ -9,10 +9,10 @@ export class MessageContext {
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
 		this.messageSystem = MessageSystem.getInstance();
-		
+
 		// Register this node with the message system
 		const queue = this.messageSystem.registerNode(nodeId);
-		
+
 		// Set up the onMessage callback forwarding
 		queue.addCallback((message) => {
 			if (this.messageCallback) {
@@ -23,6 +23,7 @@ export class MessageContext {
 
 	// Create the send function for this node
 	createSendFunction() {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		return (data: any, options: { type?: string; outlet?: string } = {}) => {
 			this.messageSystem.sendMessage(this.nodeId, data, options);
 		};
@@ -69,7 +70,7 @@ export class MessageContext {
 
 		// Unregister the node
 		this.messageSystem.unregisterNode(this.nodeId);
-		
+
 		// Clear callback
 		this.messageCallback = null;
 	}

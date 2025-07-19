@@ -1,4 +1,5 @@
 export interface Message {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	data: any;
 	type?: string;
 	timestamp: number;
@@ -32,7 +33,7 @@ export class MessageQueue {
 
 	receiveMessage(message: Message) {
 		// Process message immediately
-		this.callbacks.forEach(callback => {
+		this.callbacks.forEach((callback) => {
 			try {
 				callback(message);
 			} catch (error) {
@@ -51,7 +52,7 @@ export class MessageSystem {
 	private static instance: MessageSystem | null = null;
 	private messageQueues = new Map<string, MessageQueue>();
 	private connections = new Map<string, string[]>(); // nodeId -> array of connected nodeIds
-	private intervals = new Map<number, NodeJS.Timeout>();
+	private intervals = new Map<number, number>();
 	private intervalCounter = 0;
 	private deletedNodes = new Set<string>();
 
@@ -76,7 +77,7 @@ export class MessageSystem {
 	unregisterNode(nodeId: string) {
 		// Mark as deleted
 		this.deletedNodes.add(nodeId);
-		
+
 		// Clear message queue
 		const queue = this.messageQueues.get(nodeId);
 		if (queue) {
@@ -86,9 +87,9 @@ export class MessageSystem {
 
 		// Remove connections
 		this.connections.delete(nodeId);
-		
+
 		// Remove incoming connections to this node
-		for (const [sourceId, targets] of this.connections.entries()) {
+		for (const [, targets] of this.connections.entries()) {
 			const index = targets.indexOf(nodeId);
 			if (index > -1) {
 				targets.splice(index, 1);
@@ -111,6 +112,7 @@ export class MessageSystem {
 	}
 
 	// Send a message from a node
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	sendMessage(fromNodeId: string, data: any, options: { type?: string; outlet?: string } = {}) {
 		// Ignore messages from deleted nodes
 		if (this.deletedNodes.has(fromNodeId)) {
@@ -154,15 +156,5 @@ export class MessageSystem {
 			clearInterval(timeout);
 			this.intervals.delete(intervalId);
 		}
-	}
-
-	// Clear all intervals for a node (called during cleanup)
-	clearIntervalsForNode(nodeId: string) {
-		// For now, we'll clear all intervals when any node is deleted
-		// TODO: Track intervals per node for more precise cleanup
-		for (const [intervalId, timeout] of this.intervals.entries()) {
-			clearInterval(timeout);
-		}
-		this.intervals.clear();
 	}
 }

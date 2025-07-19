@@ -17,6 +17,7 @@
 
 onMessage((m) => {
   color = m.data;
+	console.log('[msg]', m.data)
 })
 
 function setup() {
@@ -33,10 +34,13 @@ function draw() {
 		// Initialize message context
 		messageContext = new MessageContext(nodeId);
 
-		if (containerElement) {
-			p5Manager = new P5Manager(containerElement);
-			updateSketch();
-		}
+		// Wait a tick to ensure everything is initialized
+		setTimeout(() => {
+			if (containerElement) {
+				p5Manager = new P5Manager(containerElement);
+				updateSketch();
+			}
+		}, 0);
 	});
 
 	onDestroy(() => {
