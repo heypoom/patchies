@@ -94,9 +94,6 @@
 <div class="relative flex gap-x-3">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
-			<Handle type="target" position={Position.Top} />
-			<Handle type="source" position={Position.Bottom} />
-
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
 					<div class="font-mono text-xs font-medium text-zinc-100">js</div>
@@ -111,7 +108,9 @@
 				</button>
 			</div>
 
-			<div class="min-w-[280px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
+			<div class="relative min-w-[280px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
+				<Handle type="target" position={Position.Top} />
+
 				<div class="mb-2 flex items-center justify-between">
 					<span class="font-mono text-xs text-zinc-400">Console</span>
 
@@ -140,6 +139,8 @@
 						{/each}
 					{/if}
 				</div>
+
+				<Handle type="source" position={Position.Bottom} />
 			</div>
 		</div>
 	</div>
