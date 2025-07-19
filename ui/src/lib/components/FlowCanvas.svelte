@@ -3,11 +3,13 @@
 	import '@xyflow/svelte/dist/style.css';
 	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
 	import JSBlockNode from './nodes/JSBlockNode.svelte';
+	import HydraNode from './nodes/HydraNode.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
 		['p5.canvas']: P5CanvasNode,
-		['js']: JSBlockNode
+		['js']: JSBlockNode,
+		['hydra']: HydraNode
 	};
 
 	// Initial nodes and edges
