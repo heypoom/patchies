@@ -1,0 +1,57 @@
+# Design Considerations
+
+Things we have to keep in mind when designing [[Patchies.app]] are.
+
+- **Real-time live collaboration.**
+  - How can two people collaborate on the same patch?
+  - How many people can join a patch at a time?
+  - If audio plays, do both participants hear them simultaneously?
+  - What data structure do we use? CRDT of sorts?
+  - Can they start a call from within the patch?
+- **AI, LLM and Virtual Agents.**
+  - What can the LLM know about the patch? What context do we provide to the LLM?
+    - Can they read the structure of the canvas, where things are?
+    - Do they know what objects are wired together? In what format? A mermaid diagram?
+  - What can the LLM do within the patch? What tool calls or MCP resources are available to them?
+    - Can they add, update and delete objects?
+    - Can they add, update and delete code?
+  - Are the virtual agents embodied (has a body that can move around), or is it separated (in just a chat sidebar?)
+    - If it is embodied, what interaction can it do?
+    - Does the virtual agent has a personality? Is it a companion of sorts? Does it have emotional states or affection states?
+    - Does it has virtual avatars that visually reflect its emotional states or personalities?
+    - How does the avatar look like? Flat shapes? Moe or Chibi characters? Fully fledged indie avatars with personalities and backstories?
+    - Can users customize their own virtual companions? Both the prompts, personalities and visuals? How deep is the level of customization?
+    - Can the LLM join as a participant in a call?
+  - What is the role of the AI?
+    - Is it to be purely to build things for you like [Lovable.dev](https://lovable.dev), or is it more like [Khan Academy](https://www.khanacademy.org) where it wants you to discover on your own?
+  - In a world where LLMs exist and tools like Gemini, Claude Code and Lovable exist and you can generate any visualizations or simulations, what's the point of patches?
+    - Is it reusability? Building your own building blocks
+    - Is it playfulness? Being able to drag things in to the canvas and play with it
+- **Real-time Audio.**
+  - How do we make sure the audio is smooth when multiple audio operators and wave generators are created at once?
+  - Is the audio cross-platform? Is it coupled to the Web Audio API? Will be later be able to make it run on native audio runtimes?
+- **Embeddability**.
+  - What does the Web Component API look like? See [[Patchies - Web Components API]]
+- **User friendliness.**
+  - How do we make the player experience good? How do we make it less daunting?
+  - How do we make the playmaker experience good? What tools should we give them? How do we make it less daunting?
+- **Self Hosting.**
+  - Do we make this program easy to self host?
+  - Bring your own AI tokens?
+  - Do we offer a Cloud for them to store their patches and sandboxes?
+- **Performance.**
+  - How do we make sure computation-intensive patches do not crash the computer? How do we make intense computations run faster?
+  - What technologies can we use? Threaded WebAssembly for heavy computations? WebGPU for parallel computations that can leverage compute shaders?
+  - Should we run subgraphs of the patches on the [[Patchies Server]] instead of relying on the client?
+    - How do we mark part of the subgraph to run on the server? How does this look visually to the user?
+- **Stability.**
+  - How do we make sure patches are super stable, and do not crash or hang?
+  - How do we recover from crashes or hangs? What states should get recovered?
+- **Cross-platform Usage.**
+  - How important is being able to run outside the web?
+  - Where can their patches run on?
+  - Arduino Nano? Raspberry Pi Zero W? ESP32?
+  - Can their patch run natively on Linux, Windows and macOS? Or can it only run on the web?
+  - What objects are platform-dependent, and what objects are cross-platform?
+  - Should we design it so that most objects are cross-platform from the ground up?
+  - Do we need to use a cross-platform language such as Rust for the engine, or is JavaScript okay for prototyping?
