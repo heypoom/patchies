@@ -1,5 +1,7 @@
 # Patchies.app
 
+<img src="./docs/images/patchies-v1-hero.png" alt="Patchies.app Hero Image" width="600" />
+
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
 Patchies is a tool for creating and playing with simulations.
