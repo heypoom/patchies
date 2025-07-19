@@ -4,24 +4,38 @@
 	import Icon from '@iconify/svelte';
 	import { P5Manager } from '$lib/p5/P5Manager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+
+	// Get node data from XY Flow - nodes receive their data as props
+	let { id: nodeId }: { id: string } = $props();
 
 	let containerElement: HTMLDivElement;
 	let p5Manager: P5Manager | null = null;
+	let messageContext: MessageContext;
 	let showEditor = $state(false);
-	let code = $state(`function setup() {
+	let code = $state(`let color = '#ff0000';
+
+onMessage((m) => {
+  color = m.data;
+})
+
+function setup() {
   createCanvas(200, 200);
 }
 
 function draw() {
   background(100, 200, 300);
-  fill(255, 255, 100);
-  ellipse(100, 100, 80, 80);
+  fill(color);
+  ellipse(width / 2, height / 2, 100, 100);
 }`);
 
 	onMount(() => {
+		// Initialize message context
+		messageContext = new MessageContext(nodeId);
+
 		if (containerElement) {
 			p5Manager = new P5Manager(containerElement);
-			p5Manager.createSketch({ code });
+			updateSketch();
 		}
 	});
 
@@ -29,11 +43,17 @@ function draw() {
 		if (p5Manager) {
 			p5Manager.destroy();
 		}
+		if (messageContext) {
+			messageContext.destroy();
+		}
 	});
 
 	function updateSketch() {
-		if (p5Manager) {
-			p5Manager.updateCode(code);
+		if (p5Manager && messageContext) {
+			p5Manager.updateCode({
+				code,
+				messageContext: messageContext.getContext()
+			});
 		}
 	}
 

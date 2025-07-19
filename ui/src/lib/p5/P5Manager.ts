@@ -5,11 +5,17 @@ export interface P5SketchConfig {
 	code: string;
 	width?: number;
 	height?: number;
+	messageContext?: {
+		send: (data: any, options?: { type?: string; outlet?: string }) => void;
+		onMessage: (callback: (message: any) => void) => void;
+		interval: (callback: () => void, ms: number) => number;
+	};
 }
 
 export class P5Manager {
 	private instance: p5Type | null = null;
 	private container: HTMLElement | null = null;
+	private config: P5SketchConfig | null = null;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
@@ -63,6 +69,7 @@ export class P5Manager {
 		};
 
 		this.instance = new p5(sketch, this.container);
+		this.config = config;
 	}
 
 	private executeUserCode(p: p5Type, code: string) {
@@ -144,19 +151,27 @@ export class P5Manager {
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
 			'p5Context',
+			'messageContext',
 			`
 			with (p5Context) {
+				// Inject message system functions if available
+				if (messageContext) {
+					var send = messageContext.send;
+					var onMessage = messageContext.onMessage;
+					var interval = messageContext.interval;
+				}
+				
 				${code}
 				return { setup, draw };
 			}
 		`
 		);
 
-		return userCode(p5Context);
+		return userCode(p5Context, this.config?.messageContext ?? {});
 	}
 
-	updateCode(code: string, width?: number, height?: number) {
-		this.createSketch({ code, width, height });
+	updateCode(config: P5SketchConfig) {
+		this.createSketch(config);
 	}
 
 	destroy() {

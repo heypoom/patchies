@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { SvelteFlow, Background, Controls, type Node, type Edge } from '@xyflow/svelte';
+	import { onDestroy } from 'svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
 	import JSBlockNode from './nodes/JSBlockNode.svelte';
 	import HydraNode from './nodes/HydraNode.svelte';
 	import JSCanvasNode from './nodes/JSCanvasNode.svelte';
 	import GLSLCanvasNode from './nodes/GLSLCanvasNode.svelte';
+	import { MessageSystem } from '$lib/messages/MessageSystem';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -21,6 +23,46 @@
 	let edges = $state.raw<Edge[]>([]);
 
 	let nodeId = 0;
+	let messageSystem = MessageSystem.getInstance();
+
+	// Track nodes and edges for message routing
+	let previousNodes = new Set<string>();
+	let previousEdges = new Set<string>();
+
+	// Update message system when nodes or edges change
+	$effect(() => {
+		// Handle node changes (deletions)
+		const currentNodes = new Set(nodes.map(n => n.id));
+		
+		// Find deleted nodes
+		for (const prevNodeId of previousNodes) {
+			if (!currentNodes.has(prevNodeId)) {
+				messageSystem.unregisterNode(prevNodeId);
+			}
+		}
+		
+		previousNodes = currentNodes;
+	});
+
+	$effect(() => {
+		// Update connections when edges change
+		const connections = edges.map(edge => ({
+			source: edge.source,
+			target: edge.target
+		}));
+		
+		messageSystem.updateConnections(connections);
+		
+		// Update previous edges tracking
+		previousEdges = new Set(edges.map(e => `${e.source}-${e.target}`));
+	});
+
+	onDestroy(() => {
+		// Clean up all nodes when component is destroyed
+		for (const node of nodes) {
+			messageSystem.unregisterNode(node.id);
+		}
+	});
 
 	// Handle drop events
 	function onDrop(event: DragEvent) {
