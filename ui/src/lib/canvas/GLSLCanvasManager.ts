@@ -11,6 +11,7 @@ export class GLSLCanvasManager {
 	private frameHandle: regl.Cancellable | null = null;
 	private mouseX: number = 0;
 	private mouseY: number = 0;
+	private dpr = window.devicePixelRatio || 1;
 
 	// Video canvas sources and textures for iChannel0-3
 	private videoCanvases: HTMLCanvasElement[] = [];
@@ -179,9 +180,7 @@ export class GLSLCanvasManager {
 
 			uniforms: {
 				iResolution: () => {
-					if (!this.canvas) return [this.width, this.height, 1];
-
-					return [this.width, this.height, 1.0];
+					return [this.width * this.dpr, this.height * this.dpr, 1.0];
 				},
 
 				iTime: ({ time }) => time,
