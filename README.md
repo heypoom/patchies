@@ -4,10 +4,12 @@
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
-Patchies is a tool for creating and playing with simulations.
+Patchies is an audio-visual for building patches on the web.
 
-Creating patches helps you to explore concepts and algorithms through play, while expressing yourself and sharing their ideas through art and creation in the process. Whether visually, auditory or thru other mediums.
+You can use audio-visual tools that you know and love: [P5.js](https://p5js.org) (Processing in JavaScript), [Hydra](https://hydra.ojack.xyz) (Video Synth), [Strudel](https://strudel.cc) (TidalCycles in JavaScript), as well as write JavaScript and GLSL fragment shaders directly.
 
-It helps you to learn in public, by creating **sandboxes** where other people can use the tools you've created to build their own simulations. You can embed patches and sandboxes in your own website to share it with the world.
+## Features
 
-This is a spiritual successor to [Visual Assembly Canvas](https://github.com/heypoom/visual-assembly-canvas), which will be integrated into Patchies soon.
+**Message Passing**: You can use `send()` and `onMessage()` functions to send and receive messages between nodes. This allows you to create complex interactions between different parts of your patch.
+
+**Video Chaining**: You can chain video nodes together to create complex video effects. For example: P5 -> Hydra -> GLSL. This allows you to create video patches that are more powerful than what you can do with a single node.
