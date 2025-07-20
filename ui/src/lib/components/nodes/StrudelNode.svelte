@@ -2,14 +2,13 @@
 	import { Handle, Position } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import { StrudelManager } from '$lib/strudel/StrudelManager';
-	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import '@strudel/repl';
 	import { MessageContext } from '$lib/messages/MessageContext';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
 
-	let strudelManager: StrudelManager | null = null;
+	let strudelElement: any = null;
 	let messageContext: MessageContext;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
@@ -18,68 +17,51 @@
 	let code = $state(`note("c a f e").jux(rev)`);
 
 	onMount(() => {
-		// Initialize message context
 		messageContext = new MessageContext(nodeId);
 
-		// Wait a tick to ensure everything is initialized
-		setTimeout(() => {
-			// Create a dummy container element for StrudelManager
-			const container = document.createElement('div');
-			strudelManager = new StrudelManager(container);
-
-			// Check initialization status periodically
-			const checkInit = setInterval(() => {
-				if (strudelManager?.getIsInitialized()) {
-					isInitialized = true;
-					clearInterval(checkInit);
-				}
-			}, 100);
-
-			// Clean up check after 10 seconds
-			setTimeout(() => clearInterval(checkInit), 10000);
-		}, 0);
+		if (strudelElement && strudelElement.editor) {
+			isInitialized = true;
+			strudelElement.editor.setCode(code);
+		}
 	});
 
 	onDestroy(() => {
-		if (strudelManager) {
-			strudelManager.destroy();
+		if (strudelElement && strudelElement.editor) {
+			strudelElement.editor.stop();
 		}
+
 		if (messageContext) {
 			messageContext.destroy();
 		}
 	});
-
-	async function updateCode() {
-		if (strudelManager && messageContext && isInitialized) {
-			try {
-				await strudelManager.updateCode({
-					code,
-					messageContext: messageContext.getContext()
-				});
-				// Clear any previous errors on successful update
-				errorMessage = null;
-				isPlaying = strudelManager.getIsPlaying();
-			} catch (error) {
-				// Capture evaluation errors
-				errorMessage = error instanceof Error ? error.message : String(error);
-				isPlaying = false;
-			}
-		}
-	}
 
 	function toggleEditor() {
 		showEditor = !showEditor;
 	}
 
 	function stop() {
-		if (strudelManager) {
-			strudelManager.stop();
-			isPlaying = false;
+		if (strudelElement && strudelElement.editor) {
+			try {
+				strudelElement.editor.stop();
+				isPlaying = false;
+				errorMessage = null;
+			} catch (error) {
+				errorMessage = error instanceof Error ? error.message : String(error);
+			}
 		}
 	}
 
 	function play() {
-		updateCode();
+		if (strudelElement && strudelElement.editor) {
+			try {
+				strudelElement.editor.evaluate();
+				isPlaying = true;
+				errorMessage = null;
+			} catch (error) {
+				errorMessage = error instanceof Error ? error.message : String(error);
+				isPlaying = false;
+			}
+		}
 	}
 </script>
 
@@ -126,23 +108,10 @@
 			<div class="relative">
 				<Handle type="target" position={Position.Top} />
 
-				<div class="flex h-20 w-20 items-center justify-center rounded-md bg-zinc-900">
-					{#if !isInitialized}
-						<div class="text-center">
-							<Icon icon="lucide:loader-2" class="mx-auto h-6 w-6 animate-spin text-zinc-400" />
-							<div class="mt-1 text-xs text-zinc-400">Initializing Strudel...</div>
-						</div>
-					{:else if isPlaying}
-						<div class="text-center">
-							<Icon icon="lucide:music" class="mx-auto h-6 w-6 text-green-400" />
-							<div class="mt-1 text-xs text-green-400">Playing</div>
-						</div>
-					{:else}
-						<div class="text-center">
-							<Icon icon="lucide:music" class="mx-auto h-6 w-6 text-zinc-400" />
-							<div class="mt-1 text-xs text-zinc-400">Ready</div>
-						</div>
-					{/if}
+				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
+					<div class="nodrag">
+						<strudel-editor {code} bind:this={strudelElement}></strudel-editor>
+					</div>
 				</div>
 
 				<!-- Error display -->
@@ -161,32 +130,4 @@
 			</div>
 		</div>
 	</div>
-
-	{#if showEditor}
-		<div class="relative">
-			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={play} class="p-1 hover:bg-zinc-700" disabled={!isInitialized}>
-					<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
-				</button>
-
-				<button onclick={stop} class="p-1 hover:bg-zinc-700" disabled={!isInitialized}>
-					<Icon icon="lucide:square" class="h-4 w-4 text-zinc-300" />
-				</button>
-
-				<button onclick={() => (showEditor = false)} class="p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
-				</button>
-			</div>
-
-			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-				<CodeEditor
-					bind:value={code}
-					language="javascript"
-					placeholder="Write your Strudel code here..."
-					class="nodrag h-32 w-full resize-none"
-					onrun={play}
-				/>
-			</div>
-		</div>
-	{/if}
 </div>
