@@ -247,11 +247,11 @@
 
 <style>
 	:global(.svelte-flow) {
-		background: rgb(24 24 27) !important;
+		background: transparent !important;
 	}
 
 	:global(.svelte-flow__background) {
-		background: rgb(24 24 27) !important;
+		background: transparent !important;
 	}
 
 	:global(.svelte-flow__controls) {
