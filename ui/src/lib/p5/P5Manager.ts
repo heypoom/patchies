@@ -188,6 +188,7 @@ export class P5Manager {
 					var send = messageContext.send;
 					var onMessage = messageContext.onMessage;
 					var interval = messageContext.interval;
+					var recv = receive = onMessage // alias for onMessage
 				}
 				
 				${config.code}
