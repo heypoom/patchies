@@ -25,6 +25,8 @@ export class HydraManager {
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
 	private videoCanvas: HTMLCanvasElement | null = null;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private activeSources: any[] = [];
 
 	constructor(container: HTMLElement, config: HydraConfig | string) {
 		this.container = container;
@@ -164,6 +166,9 @@ export class HydraManager {
 			}
 		}
 
+		// Clear active sources
+		this.activeSources = [];
+
 		if (this.hydra) {
 			this.hydra = null;
 		}
@@ -183,6 +188,13 @@ export class HydraManager {
 
 	setVideoCanvas(canvas: HTMLCanvasElement | null) {
 		this.videoCanvas = canvas;
+
+		// Reinitialize active sources with the new canvas
+		for (const source of this.activeSources) {
+			if (source && this.videoCanvas) {
+				source.init({ src: this.videoCanvas });
+			}
+		}
 	}
 
 	private createFromCanvasFunction() {
@@ -195,6 +207,11 @@ export class HydraManager {
 			// Initialize hydra's source with the canvas element
 			if (source) {
 				source.init({ src: this.videoCanvas });
+
+				// Track this source so we can reinitialize it when canvas changes
+				if (!this.activeSources.includes(source)) {
+					this.activeSources.push(source);
+				}
 			}
 
 			return this.videoCanvas;

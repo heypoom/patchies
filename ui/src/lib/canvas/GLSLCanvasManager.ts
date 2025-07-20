@@ -129,8 +129,6 @@ export class GLSLCanvasManager {
 	private createShaderProgram(fragmentShaderCode: string) {
 		if (!this.regl) return;
 
-		console.log('Creating shader program...');
-
 		// Vertex shader (simple quad)
 		const vertexShader = `
 			precision mediump float;

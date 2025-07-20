@@ -44,7 +44,10 @@ function draw() {
 			if (containerElement) {
 				p5Manager = new P5Manager(containerElement);
 				updateSketch();
-				registerVideoSource();
+				// Register after a brief delay to ensure p5.js setup is complete
+				setTimeout(() => {
+					registerVideoSource();
+				}, 100);
 			}
 		}, 0);
 	});
@@ -67,8 +70,10 @@ function draw() {
 				code,
 				messageContext: messageContext.getContext()
 			});
-			// Re-register video source since P5Manager recreates the p5.js instance
-			registerVideoSource();
+			// Re-register video source after p5.js recreates canvas
+			setTimeout(() => {
+				registerVideoSource();
+			}, 100);
 		}
 	}
 
@@ -79,8 +84,11 @@ function draw() {
 	function registerVideoSource() {
 		if (p5Manager && videoSystem) {
 			const canvas = p5Manager.getCanvas();
+
 			if (canvas) {
 				videoSystem.registerVideoSource(nodeId, canvas);
+			} else {
+				console.warn(`No canvas available for P5 node ${nodeId} during registration`);
 			}
 		}
 	}
@@ -95,7 +103,7 @@ function draw() {
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>

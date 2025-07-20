@@ -33,7 +33,6 @@
 		// Subscribe to video canvas sources
 		videoSystem.onVideoCanvas(nodeId, (canvases) => {
 			if (hydraManager && canvases.length > 0) {
-				// Use the first canvas source
 				hydraManager.setVideoCanvas(canvases[0]);
 			}
 		});
@@ -95,7 +94,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
