@@ -20,18 +20,18 @@
 
 		// Wait for the StrudelEditor to be ready
 		setTimeout(() => {
-			if (strudelEditor) {
+			if (strudelEditor?.editor) {
 				isInitialized = true;
 
 				// @ts-expect-error -- for debugging
-				window.strudel = strudelEditor.getEditor();
+				window.strudel = strudelEditor.editor;
 			}
 		}, 1000);
 	});
 
 	onDestroy(() => {
-		if (strudelEditor) {
-			strudelEditor.stop();
+		if (strudelEditor?.editor) {
+			strudelEditor.editor.stop();
 		}
 		if (messageContext) {
 			messageContext.destroy();
@@ -39,9 +39,9 @@
 	});
 
 	function stop() {
-		if (strudelEditor) {
+		if (strudelEditor?.editor) {
 			try {
-				strudelEditor.stop();
+				strudelEditor.editor.stop();
 				isPlaying = false;
 				errorMessage = null;
 			} catch (error) {
@@ -51,9 +51,9 @@
 	}
 
 	function play() {
-		if (strudelEditor) {
+		if (strudelEditor?.editor) {
 			try {
-				strudelEditor.evaluate();
+				strudelEditor.editor.evaluate();
 				isPlaying = true;
 				errorMessage = null;
 			} catch (error) {

@@ -28,73 +28,37 @@
 	let settings = codemirrorSettings.get();
 
 	onMount(() => {
-		if (typeof window === 'undefined') return;
+		const drawContext = getDrawContext();
+		const drawTime = [-2, 2];
 
-		// setTimeout makes sure the dom is ready
-		setTimeout(() => {
-			const drawContext = getDrawContext();
-			const drawTime = [-2, 2];
-
-			editor = new StrudelMirror({
-				defaultOutput: webaudioOutput,
-				getTime: () => getAudioContext().currentTime,
-				transpiler,
-				root: containerElement,
-				initialCode: '// LOADING',
-				pattern: silence,
-				drawTime,
-				drawContext,
-				prebake,
-				onUpdateState: (state) => {
-					if (onUpdateState) {
-						onUpdateState(state);
-					}
-				},
-				solo,
-				sync
-			});
-
-			// init settings
-			editor.updateSettings(settings);
-			if (code) {
-				editor.setCode(code);
-			}
+		editor = new StrudelMirror({
+			defaultOutput: webaudioOutput,
+			getTime: () => getAudioContext().currentTime,
+			transpiler,
+			root: containerElement,
+			initialCode: '// loading...',
+			pattern: silence,
+			drawTime,
+			drawContext,
+			prebake,
+			onUpdateState,
+			solo,
+			sync
 		});
+
+		editor.updateSettings(settings);
+		editor.setCode(code);
 	});
 
 	onDestroy(() => {
-		if (editor) {
-			editor.stop();
-		}
+		editor?.stop();
 	});
 
-	// Watch for code changes
 	$effect(() => {
-		if (editor && code !== undefined) {
-			editor.setCode(code);
-		}
+		editor?.setCode(code);
 	});
 
-	// Expose editor methods
-	export function evaluate() {
-		return editor?.evaluate();
-	}
-
-	export function stop() {
-		return editor?.stop();
-	}
-
-	export function setCode(newCode: string) {
-		return editor?.setCode(newCode);
-	}
-
-	export function updateSettings(newSettings: unknown) {
-		return editor?.updateSettings(newSettings);
-	}
-
-	export function getEditor() {
-		return editor;
-	}
+	export { editor };
 </script>
 
 <div bind:this={containerElement} class={className} {...props}></div>
