@@ -16,6 +16,7 @@
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
+	let errorMessage = $state<string | null>(null);
 	let code = $state(`canvas.fillStyle = '#18181b';
 canvas.fillRect(0, 0, width, height);
 
@@ -84,12 +85,19 @@ animate();
 
 	function updateCanvas() {
 		if (canvasManager && messageContext) {
-			// Clear intervals to avoid duplicates
-			messageContext.clearIntervals();
-			canvasManager.updateCode({
-				code,
-				messageContext: messageContext.getContext()
-			});
+			try {
+				// Clear intervals to avoid duplicates
+				messageContext.clearIntervals();
+				canvasManager.updateCode({
+					code,
+					messageContext: messageContext.getContext()
+				});
+				// Clear any previous errors on successful update
+				errorMessage = null;
+			} catch (error) {
+				// Capture compilation/setup errors
+				errorMessage = error instanceof Error ? error.message : String(error);
+			}
 		}
 	}
 
@@ -137,6 +145,17 @@ animate();
 					bind:this={containerElement}
 					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
+
+				<!-- Error display -->
+				{#if errorMessage}
+					<div class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2">
+						<div class="text-center">
+							<div class="text-xs font-medium text-red-100">Canvas Error:</div>
+							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>
+						</div>
+					</div>
+				{/if}
+
 				<Handle type="source" position={Position.Bottom} />
 				<VideoHandle
 					type="source"

@@ -16,6 +16,7 @@
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
+	let errorMessage = $state<string | null>(null);
 	let code = $state(`osc(20, 0.1, 0.8)
   .diff(osc(20, 0.05)
   .rotate(Math.PI/2))
@@ -56,14 +57,21 @@
 
 	function updateHydra() {
 		if (hydraManager && messageContext) {
-			// Clear intervals to avoid duplicates
-			messageContext.clearIntervals();
-			hydraManager.updateCode({
-				code,
-				messageContext: messageContext.getContext()
-			});
-			// Re-register video source to ensure stream is current
-			registerVideoSource();
+			try {
+				// Clear intervals to avoid duplicates
+				messageContext.clearIntervals();
+				hydraManager.updateCode({
+					code,
+					messageContext: messageContext.getContext()
+				});
+				// Clear any previous errors on successful update
+				errorMessage = null;
+				// Re-register video source to ensure stream is current
+				registerVideoSource();
+			} catch (error) {
+				// Capture compilation/setup errors
+				errorMessage = error instanceof Error ? error.message : String(error);
+			}
 		}
 	}
 
@@ -113,6 +121,16 @@
 					bind:this={containerElement}
 					class="min-h-[200px] min-w-[200px] rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
+
+				<!-- Error display -->
+				{#if errorMessage}
+					<div class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2">
+						<div class="text-center">
+							<div class="text-xs font-medium text-red-100">Hydra Error:</div>
+							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>
+						</div>
+					</div>
+				{/if}
 
 				<Handle type="source" position={Position.Bottom} />
 				<VideoHandle

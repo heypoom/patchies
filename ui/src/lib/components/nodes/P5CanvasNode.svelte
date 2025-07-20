@@ -16,6 +16,7 @@
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
+	let errorMessage = $state<string | null>(null);
 	let code = $state(`function setup() {
   createCanvas(200, 200);
 }
@@ -66,14 +67,21 @@ function draw() {
 
 	function updateSketch() {
 		if (p5Manager && messageContext) {
-			p5Manager.updateCode({
-				code,
-				messageContext: messageContext.getContext()
-			});
-			// Re-register video source after p5.js recreates canvas
-			setTimeout(() => {
-				registerVideoSource();
-			}, 100);
+			try {
+				p5Manager.updateCode({
+					code,
+					messageContext: messageContext.getContext()
+				});
+				// Clear any previous errors on successful update
+				errorMessage = null;
+				// Re-register video source after p5.js recreates canvas
+				setTimeout(() => {
+					registerVideoSource();
+				}, 100);
+			} catch (error) {
+				// Capture compilation/setup errors
+				errorMessage = error instanceof Error ? error.message : String(error);
+			}
 		}
 	}
 
@@ -125,6 +133,16 @@ function draw() {
 					bind:this={containerElement}
 					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
+
+				<!-- Error display -->
+				{#if errorMessage}
+					<div class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2">
+						<div class="text-center">
+							<div class="text-xs font-medium text-red-100">P5.js Error:</div>
+							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>
+						</div>
+					</div>
+				{/if}
 
 				<Handle type="source" position={Position.Bottom} class="absolute" />
 				<VideoHandle
