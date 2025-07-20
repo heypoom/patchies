@@ -54,7 +54,6 @@
 		if (strudelEditor?.editor) {
 			try {
 				strudelEditor.editor.evaluate();
-				isPlaying = true;
 				errorMessage = null;
 			} catch (error) {
 				errorMessage = error instanceof Error ? error.message : String(error);
@@ -63,8 +62,8 @@
 		}
 	}
 
-	function handleUpdateState(state: unknown) {
-		// Handle state updates from Strudel
+	function handleUpdateState(state: any) {
+		isPlaying = state.started;
 	}
 </script>
 

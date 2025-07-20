@@ -10,6 +10,8 @@
 		settings as themeSettings
 	} from '@strudel/codemirror';
 	import { prebake } from '$lib/strudel/prebake';
+	import { Prec, StateEffect } from '@codemirror/state';
+	import { keymap } from '@codemirror/view';
 
 	let {
 		code = '',
@@ -55,9 +57,27 @@
 			sync
 		});
 
+		window.strudelMirror = editor;
+
 		editor.updateSettings(settings);
 		editor.setCode(code);
 		editor.setTheme('strudelTheme');
+
+		const keymaps = Prec.highest(
+			keymap.of([
+				{
+					key: 'Shift-Enter',
+					run: () => {
+						editor.evaluate();
+						return true;
+					}
+				}
+			])
+		);
+
+		editor.editor.dispatch({
+			effects: StateEffect.appendConfig.of([keymaps])
+		});
 	});
 
 	onDestroy(() => {
