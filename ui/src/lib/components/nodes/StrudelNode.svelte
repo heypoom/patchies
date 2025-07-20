@@ -26,7 +26,7 @@
 			// Create a dummy container element for StrudelManager
 			const container = document.createElement('div');
 			strudelManager = new StrudelManager(container);
-			
+
 			// Check initialization status periodically
 			const checkInit = setInterval(() => {
 				if (strudelManager?.getIsInitialized()) {
@@ -126,7 +126,7 @@
 			<div class="relative">
 				<Handle type="target" position={Position.Top} />
 
-				<div class="flex h-20 w-48 items-center justify-center rounded-md bg-zinc-900">
+				<div class="flex h-20 w-20 items-center justify-center rounded-md bg-zinc-900">
 					{#if !isInitialized}
 						<div class="text-center">
 							<Icon icon="lucide:loader-2" class="mx-auto h-6 w-6 animate-spin text-zinc-400" />
@@ -147,7 +147,9 @@
 
 				<!-- Error display -->
 				{#if errorMessage}
-					<div class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2">
+					<div
+						class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2"
+					>
 						<div class="text-center">
 							<div class="text-xs font-medium text-red-100">Strudel Error:</div>
 							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>

@@ -93,7 +93,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={toggleEditor}
 					title="Edit code"
 				>

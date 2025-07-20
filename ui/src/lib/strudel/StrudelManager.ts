@@ -33,7 +33,7 @@ export class StrudelManager {
 	private async initializeStrudel() {
 		try {
 			await initStrudel({
-				prebake: () => samples('github:tidalcycles/dirt-samples'),
+				prebake: () => samples('github:tidalcycles/dirt-samples')
 			});
 			this.isInitialized = true;
 		} catch (error) {
@@ -76,7 +76,7 @@ export class StrudelManager {
 
 	stop() {
 		if (!this.isInitialized) return;
-		
+
 		try {
 			hush();
 			this.isPlaying = false;

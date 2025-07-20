@@ -98,7 +98,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -124,7 +124,9 @@
 
 				<!-- Error display -->
 				{#if errorMessage}
-					<div class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2">
+					<div
+						class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2"
+					>
 						<div class="text-center">
 							<div class="text-xs font-medium text-red-100">Hydra Error:</div>
 							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>

@@ -1,21 +1,17 @@
 <script lang="ts">
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import Icon from '@iconify/svelte';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	const shortcuts = [
 		{
-			category: "Navigation",
-			items: [
-				{ key: "N", description: "Create new node at cursor position" }
-			]
+			category: 'Navigation',
+			items: [{ key: 'N', description: 'Create new node at cursor position' }]
 		},
 		{
-			category: "Code Editing", 
-			items: [
-				{ key: "Shift + Enter", description: "Run code in editor" }
-			]
+			category: 'Code Editing',
+			items: [{ key: 'Shift + Enter', description: 'Run code in editor' }]
 		}
 	];
 </script>
@@ -27,20 +23,20 @@
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Keyboard Shortcuts</Dialog.Title>
-			<Dialog.Description>
-				Quick reference for available keyboard shortcuts
-			</Dialog.Description>
+			<Dialog.Description>Quick reference for available keyboard shortcuts</Dialog.Description>
 		</Dialog.Header>
-		
+
 		<div class="space-y-4">
 			{#each shortcuts as category}
 				<div>
-					<h3 class="text-sm font-medium text-zinc-200 mb-2">{category.category}</h3>
+					<h3 class="mb-2 text-sm font-medium text-zinc-200">{category.category}</h3>
 					<div class="space-y-2">
 						{#each category.items as shortcut}
 							<div class="flex items-center justify-between">
 								<span class="text-sm text-zinc-400">{shortcut.description}</span>
-								<kbd class="px-2 py-1 text-xs bg-zinc-800 border border-zinc-600 rounded font-mono text-zinc-300">
+								<kbd
+									class="rounded border border-zinc-600 bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-300"
+								>
 									{shortcut.key}
 								</kbd>
 							</div>
