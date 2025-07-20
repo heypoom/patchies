@@ -19,11 +19,7 @@
 	let code = $state(`osc(20, 0.1, 0.8)
   .diff(osc(20, 0.05)
   .rotate(Math.PI/2))
-  .out()
-
-// Try these examples:
-// noise(3, 0.1).thresh(0.15, 0.04).modulateRotate(osc(1, 0.5), 0.8).out()
-// shape(4, 0.3, 0.01).repeat(2, 2).modulateKaleid(osc(4, -0.5, 0), 1).out()`);
+  .out()`);
 
 	onMount(() => {
 		// Initialize message context and video system
