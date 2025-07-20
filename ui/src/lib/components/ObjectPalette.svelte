@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { match } from 'ts-pattern';
 
 	interface Props {
 		nodeTypes: Record<string, any>;
@@ -33,27 +34,26 @@
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
-		switch (event.key) {
-			case 'Escape':
+		match(event.key)
+			.with('Escape', () => {
 				event.preventDefault();
 				onCancel();
-				break;
-			case 'Enter':
+			})
+			.with('Enter', () => {
 				event.preventDefault();
 				const filtered = filteredNodeTypes;
 				if (filtered.length > 0) {
 					onSelect(filtered[selectedIndex]);
 				}
-				break;
-			case 'ArrowDown':
+			})
+			.with('ArrowDown', () => {
 				event.preventDefault();
 				selectedIndex = Math.min(selectedIndex + 1, filteredNodeTypes.length - 1);
-				break;
-			case 'ArrowUp':
+			})
+			.with('ArrowUp', () => {
 				event.preventDefault();
 				selectedIndex = Math.max(selectedIndex - 1, 0);
-				break;
-		}
+			});
 	}
 
 	function handleItemClick(nodeType: string) {
@@ -110,7 +110,7 @@
 					class="cursor-pointer border-l-2 px-3 py-2 text-sm transition-colors {index ===
 					selectedIndex
 						? 'border-zinc-400 bg-zinc-700 text-zinc-100'
-						: 'hover:bg-zinc-750 border-transparent text-zinc-300'}"
+						: 'border-transparent text-zinc-300 hover:bg-zinc-700'}"
 					onclick={() => handleItemClick(nodeType)}
 				>
 					<span class="font-mono">{nodeType}</span>
