@@ -13,6 +13,7 @@
 	import HydraNode from './nodes/HydraNode.svelte';
 	import JSCanvasNode from './nodes/JSCanvasNode.svelte';
 	import GLSLCanvasNode from './nodes/GLSLCanvasNode.svelte';
+	import StrudelNode from './nodes/StrudelNode.svelte';
 	import ObjectPalette from './ObjectPalette.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
@@ -25,7 +26,8 @@
 		['js']: JSBlockNode,
 		['hydra']: HydraNode,
 		['js.canvas']: JSCanvasNode,
-		['glsl.canvas']: GLSLCanvasNode
+		['glsl.canvas']: GLSLCanvasNode,
+		['strudel']: StrudelNode
 	};
 
 	// Initial nodes and edges
