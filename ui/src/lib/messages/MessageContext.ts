@@ -24,7 +24,7 @@ export class MessageContext {
 	// Create the send function for this node
 	createSendFunction() {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		return (data: any, options: { type?: string; outlet?: string } = {}) => {
+		return (data: any, options: { type?: string; to?: string } = {}) => {
 			this.messageSystem.sendMessage(this.nodeId, data, options);
 		};
 	}

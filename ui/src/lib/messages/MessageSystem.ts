@@ -113,7 +113,7 @@ export class MessageSystem {
 
 	// Send a message from a node
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	sendMessage(fromNodeId: string, data: any, options: { type?: string; outlet?: string } = {}) {
+	sendMessage(fromNodeId: string, data: any, options: { type?: string; to?: string } = {}) {
 		// Ignore messages from deleted nodes
 		if (this.deletedNodes.has(fromNodeId)) {
 			return;
@@ -124,7 +124,7 @@ export class MessageSystem {
 			type: options.type,
 			timestamp: Date.now(),
 			source: fromNodeId,
-			outlet: options.outlet
+			outlet: options.to
 		};
 
 		// Get connected nodes

@@ -3,7 +3,7 @@ import type p5Type from 'p5';
 
 interface SendMessageOptions {
 	type?: string;
-	outlet?: string;
+	to?: string;
 }
 
 interface MessageContext {

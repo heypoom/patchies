@@ -3,7 +3,7 @@ import Hydra from 'hydra-synth';
 
 interface SendMessageOptions {
 	type?: string;
-	outlet?: string;
+	to?: string;
 }
 
 interface MessageContext {
