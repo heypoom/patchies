@@ -62,6 +62,8 @@
 		editor.updateSettings(settings);
 		editor.setCode(code);
 		editor.setTheme('strudelTheme');
+		editor.setFontFamily('Menlo, monospace');
+		editor.setFontSize(15);
 
 		const keymaps = Prec.highest(
 			keymap.of([
