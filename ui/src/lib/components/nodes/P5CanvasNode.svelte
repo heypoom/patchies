@@ -31,11 +31,11 @@ function draw() {
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
 
-		// Subscribe to video streams
-		videoSystem.onVideoStreams(nodeId, (streams) => {
-			if (p5Manager && streams.length > 0) {
-				// Use the first video stream
-				p5Manager.setVideoStream(streams[0]);
+		// Subscribe to video canvas sources
+		videoSystem.onVideoCanvas(nodeId, (canvases) => {
+			if (p5Manager && canvases.length > 0) {
+				// Use the first canvas source
+				p5Manager.setVideoCanvas(canvases[0]);
 			}
 		});
 
@@ -67,6 +67,8 @@ function draw() {
 				code,
 				messageContext: messageContext.getContext()
 			});
+			// Re-register video source since P5Manager recreates the p5.js instance
+			registerVideoSource();
 		}
 	}
 

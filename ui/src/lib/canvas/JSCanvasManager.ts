@@ -21,7 +21,7 @@ export class JSCanvasManager {
 	private ctx: CanvasRenderingContext2D | null = null;
 	private container: HTMLElement;
 	private animationId: number | null = null;
-	private videoStream: MediaStream | null = null;
+	private videoCanvas: HTMLCanvasElement | null = null;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
@@ -150,23 +150,15 @@ export class JSCanvasManager {
 		return this.canvas;
 	}
 
-	setVideoStream(stream: MediaStream | null) {
-		this.videoStream = stream;
+	setVideoCanvas(canvas: HTMLCanvasElement | null) {
+		this.videoCanvas = canvas;
 	}
 
 	private createFromCanvasFunction() {
 		return () => {
-			if (this.videoStream) {
-				// Create a video element from the MediaStream
-				const video = document.createElement('video');
-				video.srcObject = this.videoStream;
-				video.autoplay = true;
-				video.muted = true;
-				video.style.display = 'none';
-				document.body.appendChild(video);
-
-				// Return the video element for use with ctx.drawImage(source, 0, 0)
-				return video;
+			if (this.videoCanvas) {
+				// Return the canvas element for direct drawing with ctx.drawImage(canvas, 0, 0)
+				return this.videoCanvas;
 			}
 			return null;
 		};

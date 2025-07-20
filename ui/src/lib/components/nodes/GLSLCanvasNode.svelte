@@ -55,11 +55,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
 
-		// Subscribe to video streams - GLSL needs to handle multiple channels
-		videoSystem.onVideoStreams(nodeId, (streams) => {
+		// Subscribe to video canvas sources - GLSL needs to handle multiple channels
+		videoSystem.onVideoCanvas(nodeId, (canvases) => {
 			if (canvasManager) {
-				// Pass all streams to GLSL manager for iChannel0-3
-				canvasManager.setVideoStreams(streams);
+				// Pass all canvases to GLSL manager for iChannel0-3
+				canvasManager.setVideoCanvases(canvases);
 			}
 		});
 

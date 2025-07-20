@@ -30,11 +30,11 @@
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
 
-		// Subscribe to video streams
-		videoSystem.onVideoStreams(nodeId, (streams) => {
-			if (hydraManager && streams.length > 0) {
-				// Use the first video stream
-				hydraManager.setVideoStream(streams[0]);
+		// Subscribe to video canvas sources
+		videoSystem.onVideoCanvas(nodeId, (canvases) => {
+			if (hydraManager && canvases.length > 0) {
+				// Use the first canvas source
+				hydraManager.setVideoCanvas(canvases[0]);
 			}
 		});
 
@@ -67,6 +67,8 @@
 				code,
 				messageContext: messageContext.getContext()
 			});
+			// Re-register video source to ensure stream is current
+			registerVideoSource();
 		}
 	}
 

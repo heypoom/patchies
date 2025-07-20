@@ -1,5 +1,5 @@
 /**
- * VideoSystem manages MediaStream connections between video nodes
+ * VideoSystem manages HTMLCanvasElement connections between video nodes
  * for the visual chaining feature.
  */
 export class VideoSystem {
@@ -8,11 +8,11 @@ export class VideoSystem {
 	// sourceNodeId -> [targetNodeIds]
 	private videoConnections = new Map<string, string[]>();
 
-	// nodeId -> MediaStream
-	private videoStreams = new Map<string, MediaStream>();
+	// nodeId -> HTMLCanvasElement
+	private canvasSources = new Map<string, HTMLCanvasElement>();
 
 	// nodeId -> callbacks
-	private videoCallbacks = new Map<string, ((streams: MediaStream[]) => void)[]>();
+	private canvasCallbacks = new Map<string, ((canvases: HTMLCanvasElement[]) => void)[]>();
 
 	private constructor() {}
 
@@ -25,17 +25,11 @@ export class VideoSystem {
 	}
 
 	/**
-	 * Register a node's canvas for video streaming
+	 * Register a node's canvas as a video source
 	 */
 	registerVideoSource(nodeId: string, canvas: HTMLCanvasElement): void {
-		try {
-			const stream = canvas.captureStream();
-			this.videoStreams.set(nodeId, stream);
-
-			this.notifyTargets(nodeId);
-		} catch (error) {
-			console.warn(`Failed to capture stream from canvas in node ${nodeId}:`, error);
-		}
+		this.canvasSources.set(nodeId, canvas);
+		this.notifyTargets(nodeId);
 	}
 
 	/**
@@ -69,17 +63,17 @@ export class VideoSystem {
 	}
 
 	/**
-	 * Subscribe to video streams for a target node
+	 * Subscribe to video canvas sources for a target node
 	 */
-	onVideoStreams(nodeId: string, callback: (streams: MediaStream[]) => void): void {
-		const callbacks = this.videoCallbacks.get(nodeId) || [];
+	onVideoCanvas(nodeId: string, callback: (canvases: HTMLCanvasElement[]) => void): void {
+		const callbacks = this.canvasCallbacks.get(nodeId) || [];
 		callbacks.push(callback);
-		this.videoCallbacks.set(nodeId, callbacks);
+		this.canvasCallbacks.set(nodeId, callbacks);
 
-		// Immediately notify with current streams
-		const streams = this.getVideoStreamsForNode(nodeId);
-		if (streams.length > 0) {
-			callback(streams);
+		// Immediately notify with current canvases
+		const canvases = this.getCanvasesForNode(nodeId);
+		if (canvases.length > 0) {
+			callback(canvases);
 		}
 	}
 
@@ -87,8 +81,8 @@ export class VideoSystem {
 	 * Unregister a node when it's destroyed
 	 */
 	unregisterNode(nodeId: string): void {
-		this.videoStreams.delete(nodeId);
-		this.videoCallbacks.delete(nodeId);
+		this.canvasSources.delete(nodeId);
+		this.canvasCallbacks.delete(nodeId);
 
 		// Remove from connections
 		this.videoConnections.delete(nodeId);
@@ -99,35 +93,35 @@ export class VideoSystem {
 	}
 
 	/**
-	 * Get video streams for a target node
+	 * Get canvas sources for a target node
 	 */
-	private getVideoStreamsForNode(nodeId: string): MediaStream[] {
-		const streams: MediaStream[] = [];
+	private getCanvasesForNode(nodeId: string): HTMLCanvasElement[] {
+		const canvases: HTMLCanvasElement[] = [];
 
 		for (const [sourceId, targets] of this.videoConnections) {
 			if (targets.includes(nodeId)) {
-				const stream = this.videoStreams.get(sourceId);
-				if (stream) {
-					streams.push(stream);
+				const canvas = this.canvasSources.get(sourceId);
+				if (canvas) {
+					canvases.push(canvas);
 				}
 			}
 		}
 
-		return streams;
+		return canvases;
 	}
 
 	/**
-	 * Notify target nodes of stream updates
+	 * Notify target nodes of canvas updates
 	 */
 	private notifyTargets(sourceId: string): void {
 		const targets = this.videoConnections.get(sourceId) || [];
 
 		for (const targetId of targets) {
-			const callbacks = this.videoCallbacks.get(targetId) || [];
-			const streams = this.getVideoStreamsForNode(targetId);
+			const callbacks = this.canvasCallbacks.get(targetId) || [];
+			const canvases = this.getCanvasesForNode(targetId);
 
 			for (const callback of callbacks) {
-				callback(streams);
+				callback(canvases);
 			}
 		}
 	}

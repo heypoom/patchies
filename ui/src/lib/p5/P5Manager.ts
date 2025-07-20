@@ -26,7 +26,7 @@ export interface P5SketchConfig {
 export class P5Manager {
 	private instance: p5Type | null = null;
 	private container: HTMLElement | null = null;
-	private videoStream: MediaStream | null = null;
+	private videoCanvas: HTMLCanvasElement | null = null;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
@@ -217,30 +217,16 @@ export class P5Manager {
 		return instance?.canvas ?? null;
 	}
 
-	setVideoStream(stream: MediaStream | null) {
-		this.videoStream = stream;
+	setVideoCanvas(canvas: HTMLCanvasElement | null) {
+		this.videoCanvas = canvas;
 	}
 
 	private createFromCanvasFunction(p: p5Type) {
 		return () => {
-			if (this.videoStream) {
-				// Create a video element from the MediaStream
-				const video = document.createElement('video');
-				video.srcObject = this.videoStream;
-				video.autoplay = true;
-				video.muted = true;
-				video.style.display = 'none';
-				document.body.appendChild(video);
-
-				// Wait for video to be ready then create p5 video element
-				video.addEventListener('loadedmetadata', () => {
-					if (p.createVideo) {
-						return p.createVideo(video.src);
-					}
-				});
-
-				// Return the video element directly for immediate use
-				return video;
+			if (this.videoCanvas) {
+				// For p5.js, we can use the canvas directly with createGraphics
+				// or draw it using image() function
+				return this.videoCanvas;
 			}
 			return null;
 		};

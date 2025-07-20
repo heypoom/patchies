@@ -55,11 +55,11 @@ animate();
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
 
-		// Subscribe to video streams
-		videoSystem.onVideoStreams(nodeId, (streams) => {
-			if (canvasManager && streams.length > 0) {
-				// Use the first video stream
-				canvasManager.setVideoStream(streams[0]);
+		// Subscribe to video canvas sources
+		videoSystem.onVideoCanvas(nodeId, (canvases) => {
+			if (canvasManager && canvases.length > 0) {
+				// Use the first canvas source
+				canvasManager.setVideoCanvas(canvases[0]);
 			}
 		});
 

@@ -12,10 +12,10 @@ export class GLSLCanvasManager {
 	private mouseX: number = 0;
 	private mouseY: number = 0;
 
-	// Video streams and textures for iChannel0-3
-	private videoStreams: MediaStream[] = [];
-	private videoElements: HTMLVideoElement[] = [];
+	// Video canvas sources and textures for iChannel0-3
+	private videoCanvases: HTMLCanvasElement[] = [];
 	private videoTextures: regl.Texture2D[] = [];
+	private fallbackTexture: regl.Texture2D | null = null;
 
 	private date = new Date();
 
@@ -80,6 +80,13 @@ export class GLSLCanvasManager {
 		this.regl = regl({
 			canvas: this.canvas,
 			extensions: ['OES_texture_float']
+		});
+
+		// Create a fallback texture with black pixels to avoid "missing image data" errors
+		this.fallbackTexture = this.regl.texture({
+			width: 1,
+			height: 1,
+			data: new Uint8Array([0, 0, 0, 255]) // Black pixel
 		});
 	}
 
@@ -197,10 +204,10 @@ export class GLSLCanvasManager {
 				iFrame: ({ tick }) => tick,
 
 				// Video texture uniforms
-				iChannel0: () => this.videoTextures[0] || this.regl!.texture(),
-				iChannel1: () => this.videoTextures[1] || this.regl!.texture(),
-				iChannel2: () => this.videoTextures[2] || this.regl!.texture(),
-				iChannel3: () => this.videoTextures[3] || this.regl!.texture()
+				iChannel0: () => this.videoTextures[0] || this.fallbackTexture,
+				iChannel1: () => this.videoTextures[1] || this.fallbackTexture,
+				iChannel2: () => this.videoTextures[2] || this.fallbackTexture,
+				iChannel3: () => this.videoTextures[3] || this.fallbackTexture
 			},
 
 			primitive: 'triangle strip',
@@ -232,22 +239,32 @@ export class GLSLCanvasManager {
 	private updateVideoTextures() {
 		if (!this.regl) return;
 
-		for (let i = 0; i < this.videoElements.length && i < 4; i++) {
-			const video = this.videoElements[i];
+		for (let i = 0; i < this.videoCanvases.length && i < 4; i++) {
+			const canvas = this.videoCanvases[i];
 
-			if (video && video.readyState >= 2) {
-				// HAVE_CURRENT_DATA
-				if (!this.videoTextures[i]) {
-					// Create texture if it doesn't exist
-					this.videoTextures[i] = this.regl.texture({
-						data: video,
-						flipY: true
-					});
-				} else {
-					// Update existing texture
-					this.videoTextures[i].subimage({
-						data: video
-					});
+			// Check if canvas has valid dimensions
+			if (canvas && canvas.width > 0 && canvas.height > 0) {
+				try {
+					if (!this.videoTextures[i]) {
+						// Create texture if it doesn't exist
+						this.videoTextures[i] = this.regl.texture({
+							data: canvas,
+							flipY: true
+						});
+					} else {
+						// Update existing texture
+						this.videoTextures[i].subimage({
+							data: canvas
+						});
+					}
+				} catch (error) {
+					console.warn(`Failed to update canvas texture ${i}:`, error);
+
+					// Clear the problematic texture
+					if (this.videoTextures[i]) {
+						this.videoTextures[i].destroy();
+						this.videoTextures[i] = null as any;
+					}
 				}
 			}
 		}
@@ -297,6 +314,12 @@ export class GLSLCanvasManager {
 		// Clean up video textures
 		this.cleanupVideoTextures();
 
+		// Clean up fallback texture
+		if (this.fallbackTexture) {
+			this.fallbackTexture.destroy();
+			this.fallbackTexture = null;
+		}
+
 		// Clean up regl
 		if (this.regl) {
 			this.regl.destroy();
@@ -316,34 +339,16 @@ export class GLSLCanvasManager {
 		return this.canvas;
 	}
 
-	setVideoStreams(streams: MediaStream[]) {
-		// Clean up existing video elements and textures
+	setVideoCanvases(canvases: HTMLCanvasElement[]) {
+		// Clean up existing textures
 		this.cleanupVideoTextures();
 
-		this.videoStreams = streams.slice(0, 4); // Only take first 4 streams for iChannel0-3
-
-		// Create video elements for each stream
-		for (let i = 0; i < this.videoStreams.length; i++) {
-			const video = document.createElement('video');
-			video.srcObject = this.videoStreams[i];
-			video.autoplay = true;
-			video.muted = true;
-			video.loop = true;
-			video.style.display = 'none';
-			document.body.appendChild(video);
-
-			this.videoElements[i] = video;
-		}
+		this.videoCanvases = canvases.slice(0, 4); // Only take first 4 canvases for iChannel0-3
 	}
 
 	private cleanupVideoTextures() {
-		// Remove video elements
-		for (const video of this.videoElements) {
-			if (video.parentNode) {
-				video.parentNode.removeChild(video);
-			}
-		}
-		this.videoElements = [];
+		// Clear canvas references
+		this.videoCanvases = [];
 
 		// Clean up regl textures
 		for (const texture of this.videoTextures) {

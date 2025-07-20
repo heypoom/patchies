@@ -24,7 +24,7 @@ export class HydraManager {
 	private hydra: any;
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
-	private videoStream: MediaStream | null = null;
+	private videoCanvas: HTMLCanvasElement | null = null;
 
 	constructor(container: HTMLElement, config: HydraConfig | string) {
 		this.container = container;
@@ -53,6 +53,9 @@ export class HydraManager {
 			numOutputs: 4,
 			precision: 'mediump'
 		});
+
+		// @ts-expect-error -- used for global access in devtools
+		window.hydra = this.hydra;
 
 		try {
 			// Execute the user code
@@ -90,13 +93,10 @@ export class HydraManager {
 			if (this.synth) {
 				// Stop all sources
 				for (let i = 0; i < 4; i++) {
-					this.synth.s?.[i].clear();
+					this.hydra.s?.[i]?.clear();
 				}
 
-				// Clear all outputs
-				for (let i = 0; i < 4; i++) {
-					this.synth.o?.[i].clear();
-				}
+				this.synth.hush();
 			}
 
 			// Create a context with Hydra synth instance available as 'h'
@@ -155,12 +155,12 @@ export class HydraManager {
 	}
 
 	destroy() {
-		if (this.synth) {
+		if (this.hydra) {
 			// Clean up Hydra synth instance
 			try {
-				this.synth.stop();
+				this.hydra.hush();
 			} catch (error) {
-				console.warn('Error stopping Hydra synth:', error);
+				console.warn('Error stopping Hydra synth:', this.synth, error);
 			}
 		}
 
@@ -181,31 +181,23 @@ export class HydraManager {
 		return this.canvas;
 	}
 
-	setVideoStream(stream: MediaStream | null) {
-		this.videoStream = stream;
+	setVideoCanvas(canvas: HTMLCanvasElement | null) {
+		this.videoCanvas = canvas;
 	}
 
 	private createFromCanvasFunction() {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		return (sourceParam?: any) => {
-			if (this.videoStream) {
-				// Create a video element from the MediaStream
-				const video = document.createElement('video');
-				video.srcObject = this.videoStream;
-				video.autoplay = true;
-				video.muted = true;
-				video.style.display = 'none';
-				document.body.appendChild(video);
-
-				// For Hydra, we need to initialize the source with the video
-				// The spec shows fromCanvas(s0) usage
-				if (sourceParam) {
-					sourceParam.init({ src: this.videoStream });
-				}
-
-				return video;
+		return (source?: any) => {
+			if (!this.videoCanvas) {
+				return null;
 			}
-			return null;
+
+			// Initialize hydra's source with the canvas element
+			if (source) {
+				source.init({ src: this.videoCanvas });
+			}
+
+			return this.videoCanvas;
 		};
 	}
 }
