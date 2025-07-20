@@ -57,8 +57,6 @@
 			sync
 		});
 
-		window.strudelMirror = editor;
-
 		editor.updateSettings(settings);
 		editor.setCode(code);
 		editor.setTheme('strudelTheme');
