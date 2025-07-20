@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 ### Core Stack
+
 - **SvelteKit 5** with TypeScript for the web application
 - **@xyflow/svelte** for the visual node editor interface
 - **p5.js** for creative coding and generative art
@@ -85,6 +86,7 @@ bun run test               # Run all tests
 ## Code Editor Integration
 
 The `CodeEditor.svelte` component uses CodeMirror 6 with:
+
 - JavaScript syntax highlighting via `@codemirror/lang-javascript`
 - One Dark theme with custom Zinc color overrides
 - Real-time code execution for p5.js sketches
@@ -111,6 +113,12 @@ The `CodeEditor.svelte` component uses CodeMirror 6 with:
 - Separate business logic into utility classes when complex
 - Use TypeScript for all new code
 - Follow the pattern of UI components importing and using utility classes
+
+## Technology Guidelines
+
+- We use Svelte 5.
+  - Only use the Svelte 5's rune syntax (`$state`, `$props`, `$effect`, etc.) and do not use Svelte 4 syntax.
+  - Read the `docs/llms/svelte-llms-small.txt` text file for how to use Svelte 5. LLMs often get confused with Svelte 4 syntax, so read this when unsure of the Svelte syntax.
 
 ## Development Guidelines
 
