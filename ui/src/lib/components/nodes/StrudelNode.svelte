@@ -22,6 +22,9 @@
 		if (strudelElement && strudelElement.editor) {
 			isInitialized = true;
 			strudelElement.editor.setCode(code);
+
+			// @ts-expect-error -- for debugging
+			window.strudel = strudelElement.editor;
 		}
 	});
 

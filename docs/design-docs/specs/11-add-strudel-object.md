@@ -51,14 +51,14 @@ We will replace the current StrudelManager class approach with the @strudel/repl
 ```svelte
 <script>
   import '@strudel/repl';
-  
+
   let strudelElement: HTMLElement;
   let code = $state(`note("c a f e").jux(rev)`);
-  
+
   function play() {
     strudelElement.editor.evaluate();
   }
-  
+
   function stop() {
     strudelElement.editor.stop();
   }
