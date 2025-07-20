@@ -103,6 +103,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 			<div class="relative">
 				<Handle type="target" position={Position.Top} />
+
 				<!-- 4 video inlets for iChannel0-3 -->
 				<VideoHandle
 					type="target"

@@ -272,12 +272,11 @@ export class GLSLCanvasManager {
 		const errorDiv = document.createElement('div');
 
 		errorDiv.className =
-			'glsl-error-overlay absolute inset-0 bg-zinc-900 bg-opacity-90 flex items-center justify-center p-4';
+			'glsl-error-overlay absolute inset-0 bg-zinc-900 bg-opacity-50 flex items-center justify-center px-2';
 
 		errorDiv.innerHTML = `
-			<div class="bg-red-900 border border-red-600 rounded-lg p-3 max-w-full">
-				<div class="font-mono text-xs font-medium text-red-100 mb-1">GLSL Compilation Error:</div>
-				<div class="font-mono text-xs text-red-200 whitespace-pre-wrap break-words">${this.escapeHtml(message)}</div>
+			<div class="bg-red-900 border border-red-600 rounded-lg px-2 py-1 max-w-full">
+				<div class="font-mono text-[8px] text-red-200 whitespace-pre-wrap break-words">${this.escapeHtml(message)}</div>
 			</div>
 		`;
 
@@ -285,11 +284,6 @@ export class GLSLCanvasManager {
 		const existingError = this.container.querySelector('.glsl-error-overlay');
 		if (existingError) {
 			existingError.remove();
-		}
-
-		// Position container relatively if not already
-		if (getComputedStyle(this.container).position === 'static') {
-			this.container.style.position = 'relative';
 		}
 
 		this.container.appendChild(errorDiv);
