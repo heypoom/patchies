@@ -4,7 +4,11 @@
 	import { getDrawContext } from '@strudel/draw';
 	import { transpiler } from '@strudel/transpiler';
 	import { getAudioContext, webaudioOutput } from '@strudel/webaudio';
-	import { StrudelMirror, codemirrorSettings } from '@strudel/codemirror';
+	import {
+		StrudelMirror,
+		codemirrorSettings,
+		settings as themeSettings
+	} from '@strudel/codemirror';
 	import { prebake } from '$lib/strudel/prebake';
 
 	let {
@@ -25,6 +29,11 @@
 
 	let containerElement: HTMLElement;
 	let editor: StrudelMirror | null = null;
+
+	for (const key in themeSettings) {
+		themeSettings[key].background = 'transparent';
+	}
+
 	let settings = codemirrorSettings.get();
 
 	onMount(() => {
@@ -48,6 +57,7 @@
 
 		editor.updateSettings(settings);
 		editor.setCode(code);
+		editor.setTheme('strudelTheme');
 	});
 
 	onDestroy(() => {

@@ -109,7 +109,7 @@
 							{code}
 							bind:this={strudelEditor}
 							onUpdateState={handleUpdateState}
-							class="h-32 w-full"
+							class="w-full"
 						/>
 					</div>
 				</div>
