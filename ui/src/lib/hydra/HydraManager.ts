@@ -92,6 +92,7 @@ export class HydraManager {
 				for (let i = 0; i < 4; i++) {
 					this.synth.s?.[i].clear();
 				}
+
 				// Clear all outputs
 				for (let i = 0; i < 4; i++) {
 					this.synth.o?.[i].clear();
@@ -138,12 +139,14 @@ export class HydraManager {
 			// Execute the user's Hydra code with the synth context
 			const functionParams = Object.keys(context);
 			const functionArgs = Object.values(context);
+
 			const executeFunction = new Function(
 				...functionParams,
 				`
 				${code}
 			`
 			);
+
 			executeFunction(...functionArgs);
 		} catch (error) {
 			console.error('Error executing Hydra code:', error);
@@ -159,8 +162,6 @@ export class HydraManager {
 			} catch (error) {
 				console.warn('Error stopping Hydra synth:', error);
 			}
-
-			this.hydra.synth = null;
 		}
 
 		if (this.hydra) {
@@ -185,8 +186,9 @@ export class HydraManager {
 	}
 
 	private createFromCanvasFunction() {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		return (sourceParam?: any) => {
-			if (this.videoStream && this.synth) {
+			if (this.videoStream) {
 				// Create a video element from the MediaStream
 				const video = document.createElement('video');
 				video.srcObject = this.videoStream;
@@ -198,7 +200,7 @@ export class HydraManager {
 				// For Hydra, we need to initialize the source with the video
 				// The spec shows fromCanvas(s0) usage
 				if (sourceParam) {
-					sourceParam.init({ src: video });
+					sourceParam.init({ src: this.videoStream });
 				}
 
 				return video;

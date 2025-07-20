@@ -4,9 +4,15 @@
  */
 export class VideoSystem {
 	private static instance: VideoSystem;
-	private videoConnections = new Map<string, string[]>(); // sourceNodeId -> [targetNodeIds]
-	private videoStreams = new Map<string, MediaStream>(); // nodeId -> MediaStream
-	private videoCallbacks = new Map<string, ((streams: MediaStream[]) => void)[]>(); // nodeId -> callbacks
+
+	// sourceNodeId -> [targetNodeIds]
+	private videoConnections = new Map<string, string[]>();
+
+	// nodeId -> MediaStream
+	private videoStreams = new Map<string, MediaStream>();
+
+	// nodeId -> callbacks
+	private videoCallbacks = new Map<string, ((streams: MediaStream[]) => void)[]>();
 
 	private constructor() {}
 
@@ -14,6 +20,7 @@ export class VideoSystem {
 		if (!VideoSystem.instance) {
 			VideoSystem.instance = new VideoSystem();
 		}
+
 		return VideoSystem.instance;
 	}
 
@@ -22,11 +29,9 @@ export class VideoSystem {
 	 */
 	registerVideoSource(nodeId: string, canvas: HTMLCanvasElement): void {
 		try {
-			// Create MediaStream from canvas at 60fps
-			const stream = canvas.captureStream(60);
+			const stream = canvas.captureStream();
 			this.videoStreams.set(nodeId, stream);
 
-			// Notify connected targets
 			this.notifyTargets(nodeId);
 		} catch (error) {
 			console.warn(`Failed to capture stream from canvas in node ${nodeId}:`, error);

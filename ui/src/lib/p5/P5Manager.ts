@@ -212,10 +212,9 @@ export class P5Manager {
 	}
 
 	getCanvas(): HTMLCanvasElement | null {
-		if (this.instance && (this.instance as any).canvas) {
-			return (this.instance as any).canvas;
-		}
-		return null;
+		const instance = this.instance as unknown as { canvas?: HTMLCanvasElement };
+
+		return instance?.canvas ?? null;
 	}
 
 	setVideoStream(stream: MediaStream | null) {

@@ -1,20 +1,20 @@
+import regl from 'regl';
+
 export class GLSLCanvasManager {
 	private canvas: HTMLCanvasElement | null = null;
-	private gl: WebGLRenderingContext | null = null;
+	private regl: regl.Regl | null = null;
 	private container: HTMLElement;
-	private program: WebGLProgram | null = null;
-	private animationId: number | null = null;
-	private startTime: number = Date.now();
+	private drawCommand: regl.DrawCommand | null = null;
+	private frameHandle: regl.Cancellable | null = null;
 	private mouseX: number = 0;
 	private mouseY: number = 0;
 
 	// Video streams and textures for iChannel0-3
 	private videoStreams: MediaStream[] = [];
 	private videoElements: HTMLVideoElement[] = [];
-	private videoTextures: WebGLTexture[] = [];
+	private videoTextures: regl.Texture2D[] = [];
 
-	// Uniform locations
-	private uniforms: { [key: string]: WebGLUniformLocation | null } = {};
+	private date = new Date();
 
 	constructor(container: HTMLElement) {
 		this.container = container;
@@ -34,13 +34,8 @@ export class GLSLCanvasManager {
 			requestAnimationFrame(() => {
 				try {
 					this.setupCanvasSize();
-
-					this.canvas!.addEventListener('mousemove', (e) => {
-						const rect = this.canvas!.getBoundingClientRect();
-						this.mouseX = e.clientX - rect.left;
-						this.mouseY = rect.height - (e.clientY - rect.top);
-					});
-
+					this.setupRegl();
+					this.setupMouseTracking();
 					this.createShaderProgram(options.code);
 					this.startRenderLoop();
 				} catch (error) {
@@ -73,14 +68,25 @@ export class GLSLCanvasManager {
 			this.canvas.width = rect.width * dpr;
 			this.canvas.height = rect.height * dpr;
 		}
+	}
 
-		this.gl =
-			(this.canvas.getContext('webgl') as WebGLRenderingContext) ||
-			(this.canvas.getContext('experimental-webgl') as WebGLRenderingContext);
+	private setupRegl() {
+		if (!this.canvas) return;
 
-		if (!this.gl) {
-			throw new Error('WebGL not supported');
-		}
+		this.regl = regl({
+			canvas: this.canvas,
+			extensions: ['OES_texture_float']
+		});
+	}
+
+	private setupMouseTracking() {
+		if (!this.canvas) return;
+
+		this.canvas.addEventListener('mousemove', (e) => {
+			const rect = this.canvas!.getBoundingClientRect();
+			this.mouseX = e.clientX - rect.left;
+			this.mouseY = rect.height - (e.clientY - rect.top);
+		});
 	}
 
 	updateCode(code: string) {
@@ -90,12 +96,12 @@ export class GLSLCanvasManager {
 			existingError.remove();
 		}
 
-		if (this.gl) {
+		if (this.regl) {
 			try {
-				// Stop current animation
-				if (this.animationId) {
-					cancelAnimationFrame(this.animationId);
-					this.animationId = null;
+				// Stop current render loop
+				if (this.frameHandle) {
+					this.frameHandle.cancel();
+					this.frameHandle = null;
 				}
 
 				// Create new shader program
@@ -112,20 +118,21 @@ export class GLSLCanvasManager {
 	}
 
 	private createShaderProgram(fragmentShaderCode: string) {
-		if (!this.gl) return;
+		if (!this.regl) return;
 
 		console.log('Creating shader program...');
 
 		// Vertex shader (simple quad)
-		const vertexShaderSource = `
-			attribute vec4 a_position;
+		const vertexShader = `
+			precision mediump float;
+			attribute vec2 position;
 			void main() {
-				gl_Position = a_position;
+				gl_Position = vec4(position, 0, 1);
 			}
 		`;
 
 		// Fragment shader with ShaderToy-compatible uniforms and textures
-		const fragmentShaderSource = `
+		const fragmentShader = `
 			precision mediump float;
 			
 			uniform vec3 iResolution;
@@ -150,195 +157,100 @@ export class GLSLCanvasManager {
 			}
 		`;
 
-		// Compile shaders
-		const vertexShader = this.compileShader(vertexShaderSource, this.gl.VERTEX_SHADER);
-		const fragmentShader = this.compileShader(fragmentShaderSource, this.gl.FRAGMENT_SHADER);
+		// Create the draw command
+		this.drawCommand = this.regl({
+			frag: fragmentShader,
+			vert: vertexShader,
 
-		if (!vertexShader || !fragmentShader) {
-			throw new Error('Failed to compile shaders');
-		}
+			attributes: {
+				position: this.regl.buffer([
+					[-1, -1],
+					[1, -1],
+					[-1, 1],
+					[1, 1]
+				])
+			},
 
-		// Create program
-		const program = this.gl.createProgram();
-		if (!program) {
-			throw new Error('Failed to create shader program');
-		}
+			uniforms: {
+				iResolution: () => {
+					if (!this.canvas) return [200, 200, 1];
+					const rect = this.canvas.getBoundingClientRect();
+					return [rect.width, rect.height, 1.0];
+				},
 
-		this.gl.attachShader(program, vertexShader);
-		this.gl.attachShader(program, fragmentShader);
-		this.gl.linkProgram(program);
+				iTime: ({ time }) => time,
 
-		if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
-			const error = this.gl.getProgramInfoLog(program);
-			this.gl.deleteProgram(program);
-			throw new Error('Failed to link shader program: ' + error);
-		}
+				iMouse: () => [this.mouseX, this.mouseY, 0, 0],
 
-		// Clean up old program
-		if (this.program) {
-			this.gl.deleteProgram(this.program);
-		}
+				iDate: () => {
+					return [
+						this.date.getFullYear(),
+						this.date.getMonth(),
+						this.date.getDate(),
+						this.date.getHours() * 3600 + this.date.getMinutes() * 60 + this.date.getSeconds()
+					];
+				},
 
-		this.program = program;
-		this.gl.useProgram(this.program);
+				iTimeDelta: ({ tick }) => tick * 0.001,
 
-		// Set up geometry (full-screen quad)
-		this.setupGeometry();
+				iFrame: ({ tick }) => tick,
 
-		// Get uniform locations
-		this.getUniformLocations();
-	}
+				// Video texture uniforms
+				iChannel0: () => this.videoTextures[0] || this.regl!.texture(),
+				iChannel1: () => this.videoTextures[1] || this.regl!.texture(),
+				iChannel2: () => this.videoTextures[2] || this.regl!.texture(),
+				iChannel3: () => this.videoTextures[3] || this.regl!.texture()
+			},
 
-	private compileShader(source: string, type: number): WebGLShader | null {
-		if (!this.gl) return null;
-
-		const shader = this.gl.createShader(type);
-		if (!shader) return null;
-
-		this.gl.shaderSource(shader, source);
-		this.gl.compileShader(shader);
-
-		if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-			const error = this.gl.getShaderInfoLog(shader);
-			console.error('Shader compilation error:', error);
-			this.gl.deleteShader(shader);
-			throw new Error('Shader compilation error: ' + error);
-		}
-
-		return shader;
-	}
-
-	private setupGeometry() {
-		if (!this.gl || !this.program) return;
-
-		// Create buffer for full-screen quad
-		const positionBuffer = this.gl.createBuffer();
-		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
-
-		const positions = [-1, -1, 1, -1, -1, 1, 1, 1];
-
-		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
-
-		// Set up attribute
-		const positionLocation = this.gl.getAttribLocation(this.program, 'a_position');
-		this.gl.enableVertexAttribArray(positionLocation);
-		this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 0, 0);
-	}
-
-	private getUniformLocations() {
-		if (!this.gl || !this.program) return;
-
-		this.uniforms = {
-			iResolution: this.gl.getUniformLocation(this.program, 'iResolution'),
-			iTime: this.gl.getUniformLocation(this.program, 'iTime'),
-			iMouse: this.gl.getUniformLocation(this.program, 'iMouse'),
-			iDate: this.gl.getUniformLocation(this.program, 'iDate'),
-			iTimeDelta: this.gl.getUniformLocation(this.program, 'iTimeDelta'),
-			iFrame: this.gl.getUniformLocation(this.program, 'iFrame'),
-			iChannel0: this.gl.getUniformLocation(this.program, 'iChannel0'),
-			iChannel1: this.gl.getUniformLocation(this.program, 'iChannel1'),
-			iChannel2: this.gl.getUniformLocation(this.program, 'iChannel2'),
-			iChannel3: this.gl.getUniformLocation(this.program, 'iChannel3')
-		};
+			primitive: 'triangle strip',
+			count: 4
+		});
 	}
 
 	private startRenderLoop() {
-		if (!this.gl || !this.program) {
-			console.error('Cannot start render loop - missing GL or program');
+		if (!this.regl || !this.drawCommand) {
+			console.error('Cannot start render loop - missing regl or draw command');
 			return;
 		}
 
-		this.startTime = performance.now();
-		let frameCount = 0;
-		let lastTime = 0;
+		// Start the render loop
 
-		const render = (currentTime: number) => {
-			if (!this.gl || !this.canvas || !this.program) return;
-
-			const time = (currentTime - this.startTime) * 0.001;
-			const timeDelta = currentTime - lastTime;
-			lastTime = currentTime;
-
-			// Set viewport - use actual canvas dimensions
-			this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-
-			// Clear
-			this.gl.clearColor(0, 0, 0, 1);
-			this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-
-			// Use the shader program
-			this.gl.useProgram(this.program);
-
-			// Get CSS dimensions for shader resolution uniform
-			const rect = this.canvas.getBoundingClientRect();
-
-			// Set uniforms
-			if (this.uniforms.iResolution) {
-				// Use CSS dimensions for iResolution to match ShaderToy behavior
-				this.gl.uniform3f(this.uniforms.iResolution, rect.width, rect.height, 1.0);
-			}
-
-			if (this.uniforms.iTime) {
-				this.gl.uniform1f(this.uniforms.iTime, time);
-			}
-
-			if (this.uniforms.iMouse) {
-				this.gl.uniform4f(this.uniforms.iMouse, this.mouseX, this.mouseY, 0, 0);
-			}
-
-			if (this.uniforms.iDate) {
-				const date = new Date();
-				this.gl.uniform4f(
-					this.uniforms.iDate,
-					date.getFullYear(),
-					date.getMonth(),
-					date.getDate(),
-					date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds()
-				);
-			}
-
-			if (this.uniforms.iTimeDelta) {
-				this.gl.uniform1f(this.uniforms.iTimeDelta, timeDelta * 0.001);
-			}
-
-			if (this.uniforms.iFrame) {
-				this.gl.uniform1i(this.uniforms.iFrame, frameCount);
-			}
-
-			// Update and bind video textures
+		this.frameHandle = this.regl.frame((context) => {
+			// Update video textures
 			this.updateVideoTextures();
 
-			// Draw the full screen quad
-			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+			// Clear the screen
+			this.regl!.clear({
+				color: [0, 0, 0, 1],
+				depth: 1
+			});
 
-			// Check for GL errors
-			const error = this.gl.getError();
-			if (error !== this.gl.NO_ERROR) {
-				console.error('WebGL error during render:', error, this.getGLErrorString(error));
-			}
-
-			frameCount++;
-			this.animationId = requestAnimationFrame(render);
-		};
-
-		this.animationId = requestAnimationFrame(render);
+			// Draw the shader
+			this.drawCommand!(context);
+		});
 	}
 
-	private getGLErrorString(error: number): string {
-		if (!this.gl) return 'Unknown';
-		switch (error) {
-			case this.gl.INVALID_ENUM:
-				return 'INVALID_ENUM';
-			case this.gl.INVALID_VALUE:
-				return 'INVALID_VALUE';
-			case this.gl.INVALID_OPERATION:
-				return 'INVALID_OPERATION';
-			case this.gl.OUT_OF_MEMORY:
-				return 'OUT_OF_MEMORY';
-			case this.gl.CONTEXT_LOST_WEBGL:
-				return 'CONTEXT_LOST_WEBGL';
-			default:
-				return `Unknown error: ${error}`;
+	private updateVideoTextures() {
+		if (!this.regl) return;
+
+		for (let i = 0; i < this.videoElements.length && i < 4; i++) {
+			const video = this.videoElements[i];
+
+			if (video && video.readyState >= 2) {
+				// HAVE_CURRENT_DATA
+				if (!this.videoTextures[i]) {
+					// Create texture if it doesn't exist
+					this.videoTextures[i] = this.regl.texture({
+						data: video,
+						flipY: true
+					});
+				} else {
+					// Update existing texture
+					this.videoTextures[i].subimage({
+						data: video
+					});
+				}
+			}
 		}
 	}
 
@@ -377,27 +289,25 @@ export class GLSLCanvasManager {
 	}
 
 	destroy() {
-		// Stop animation
-		if (this.animationId) {
-			cancelAnimationFrame(this.animationId);
-			this.animationId = null;
+		// Stop render loop
+		if (this.frameHandle) {
+			this.frameHandle.cancel();
+			this.frameHandle = null;
 		}
 
 		// Clean up video textures
 		this.cleanupVideoTextures();
 
-		// Clean up WebGL resources
-		if (this.gl && this.program) {
-			this.gl.deleteProgram(this.program);
-			this.program = null;
+		// Clean up regl
+		if (this.regl) {
+			this.regl.destroy();
+			this.regl = null;
 		}
 
 		if (this.canvas) {
 			this.canvas.remove();
 			this.canvas = null;
 		}
-
-		this.gl = null;
 
 		// Clear container
 		this.container.innerHTML = '';
@@ -424,52 +334,6 @@ export class GLSLCanvasManager {
 			document.body.appendChild(video);
 
 			this.videoElements[i] = video;
-
-			// Create WebGL texture for the video
-			if (this.gl) {
-				const texture = this.gl.createTexture();
-				if (texture) {
-					this.videoTextures[i] = texture;
-				}
-			}
-		}
-	}
-
-	private updateVideoTextures() {
-		if (!this.gl) return;
-
-		for (let i = 0; i < this.videoElements.length && i < 4; i++) {
-			const video = this.videoElements[i];
-			const texture = this.videoTextures[i];
-
-			if (video && texture && video.readyState >= 2) {
-				// HAVE_CURRENT_DATA
-				// Bind texture to the appropriate texture unit
-				this.gl.activeTexture(this.gl.TEXTURE0 + i);
-				this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-
-				// Update texture with video frame
-				this.gl.texImage2D(
-					this.gl.TEXTURE_2D,
-					0,
-					this.gl.RGBA,
-					this.gl.RGBA,
-					this.gl.UNSIGNED_BYTE,
-					video
-				);
-
-				// Set texture parameters
-				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-
-				// Set the uniform for this channel
-				const channelUniform = this.uniforms[`iChannel${i}`];
-				if (channelUniform) {
-					this.gl.uniform1i(channelUniform, i);
-				}
-			}
 		}
 	}
 
@@ -482,10 +346,10 @@ export class GLSLCanvasManager {
 		}
 		this.videoElements = [];
 
-		// Delete WebGL textures
-		if (this.gl) {
-			for (const texture of this.videoTextures) {
-				this.gl.deleteTexture(texture);
+		// Clean up regl textures
+		for (const texture of this.videoTextures) {
+			if (texture) {
+				texture.destroy();
 			}
 		}
 		this.videoTextures = [];
