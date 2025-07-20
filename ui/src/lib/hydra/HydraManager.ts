@@ -114,6 +114,7 @@ export class HydraManager {
 				noise: this.synth.noise.bind(this.synth),
 				src: this.synth.src.bind(this.synth),
 				solid: this.synth.solid.bind(this.synth),
+
 				// Sources
 				s0: this.synth.s0,
 				s1: this.synth.s1,
@@ -124,6 +125,10 @@ export class HydraManager {
 				o1: this.synth.o1,
 				o2: this.synth.o2,
 				o3: this.synth.o3,
+
+				// Audio
+				a: this.synth.a,
+
 				// Render function
 				render: this.synth.render.bind(this.synth),
 
