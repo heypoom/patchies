@@ -104,6 +104,7 @@
 
 			<div class="relative">
 				<Handle type="target" position={Position.Top} />
+
 				<VideoHandle
 					type="target"
 					position={Position.Top}
@@ -114,7 +115,7 @@
 
 				<div
 					bind:this={containerElement}
-					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
+					class="min-h-[200px] min-w-[200px] rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
 
 				<Handle type="source" position={Position.Bottom} />
