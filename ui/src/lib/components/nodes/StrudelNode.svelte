@@ -2,15 +2,14 @@
 	import { Handle, Position } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import '@strudel/repl';
+	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
 
-	let strudelElement: any = null;
+	let strudelEditor: StrudelEditor | null = null;
 	let messageContext: MessageContext;
-	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
@@ -19,36 +18,30 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 
-		if (strudelElement && strudelElement.editor) {
-			isInitialized = true;
+		// Wait for the StrudelEditor to be ready
+		setTimeout(() => {
+			if (strudelEditor) {
+				isInitialized = true;
 
-			const editor = strudelElement.editor;
-			editor.setCode(code);
-			editor.setFontFamily('Monaco, Menlo, monospace');
-
-			// @ts-expect-error -- for debugging
-			window.strudel = strudelElement.editor;
-		}
+				// @ts-expect-error -- for debugging
+				window.strudel = strudelEditor.getEditor();
+			}
+		}, 1000);
 	});
 
 	onDestroy(() => {
-		if (strudelElement && strudelElement.editor) {
-			strudelElement.editor.stop();
+		if (strudelEditor) {
+			strudelEditor.stop();
 		}
-
 		if (messageContext) {
 			messageContext.destroy();
 		}
 	});
 
-	function toggleEditor() {
-		showEditor = !showEditor;
-	}
-
 	function stop() {
-		if (strudelElement && strudelElement.editor) {
+		if (strudelEditor) {
 			try {
-				strudelElement.editor.stop();
+				strudelEditor.stop();
 				isPlaying = false;
 				errorMessage = null;
 			} catch (error) {
@@ -58,9 +51,9 @@
 	}
 
 	function play() {
-		if (strudelElement && strudelElement.editor) {
+		if (strudelEditor) {
 			try {
-				strudelElement.editor.evaluate();
+				strudelEditor.evaluate();
 				isPlaying = true;
 				errorMessage = null;
 			} catch (error) {
@@ -68,6 +61,10 @@
 				isPlaying = false;
 			}
 		}
+	}
+
+	function handleUpdateState(state: unknown) {
+		// Handle state updates from Strudel
 	}
 </script>
 
@@ -108,7 +105,12 @@
 
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
 					<div class="nodrag">
-						<strudel-editor {code} bind:this={strudelElement}></strudel-editor>
+						<StrudelEditor
+							{code}
+							bind:this={strudelEditor}
+							onUpdateState={handleUpdateState}
+							class="h-32 w-full"
+						/>
 					</div>
 				</div>
 
