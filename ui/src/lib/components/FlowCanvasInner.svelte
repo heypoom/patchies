@@ -214,14 +214,14 @@
 	</div>
 
 	<!-- Bottom toolbar for draggable nodes -->
-	<div class="border-t border-zinc-700 bg-zinc-900 p-4">
+	<div class="border-t border-zinc-700 bg-transparent px-3 py-2">
 		<div class="max-w-full">
 			<div class="flex gap-3">
 				{#each Object.keys(nodeTypes) as nodeType}
 					<div
 						role="button"
 						tabindex="0"
-						class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 p-3 transition-colors hover:bg-zinc-600"
+						class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-2 py-1 transition-colors hover:bg-zinc-600"
 						draggable={true}
 						ondragstart={(event) => {
 							event.dataTransfer?.setData('application/svelteflow', nodeType);
