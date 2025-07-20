@@ -16,39 +16,21 @@
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
-	let code = $state(`// GLSL Fragment Shader (ShaderToy compatible)
-// Available uniforms: iResolution, iTime, iMouse, iDate, iTimeDelta, iFrame
+	let code = $state(`// Available uniforms: iResolution, iTime, iMouse, iChannel0-3
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    // Normalize coordinates (0.0 to 1.0)
     vec2 uv = fragCoord / iResolution.xy;
-    
-    // Create animated gradient
     vec3 color = vec3(0.0);
-    
-    // Add time-based animation
     float time = iTime * 0.5;
     
-    // Create colorful waves
     color.r = sin(uv.x * 10.0 + time) * 0.5 + 0.5;
     color.g = sin(uv.y * 10.0 + time * 1.2) * 0.5 + 0.5;
     color.b = sin((uv.x + uv.y) * 5.0 + time * 0.8) * 0.5 + 0.5;
     
-    // Add some brightness variation
     float brightness = sin(time * 2.0) * 0.2 + 0.8;
     color *= brightness;
-    
     fragColor = vec4(color, 1.0);
-}
-
-// Try these examples:
-// Simple circle:
-// float d = distance(uv, vec2(0.5));
-// color = vec3(smoothstep(0.3, 0.29, d));
-
-// Rotating pattern:
-// float angle = atan(uv.y - 0.5, uv.x - 0.5) + iTime;
-// color = vec3(sin(angle * 6.0) * 0.5 + 0.5);`);
+}`);
 
 	onMount(() => {
 		// Initialize message context and video system
@@ -111,7 +93,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
