@@ -1,6 +1,9 @@
 import regl from 'regl';
 
 export class GLSLCanvasManager {
+	public width = 200;
+	public height = 200;
+
 	private canvas: HTMLCanvasElement | null = null;
 	private regl: regl.Regl | null = null;
 	private container: HTMLElement;
@@ -23,8 +26,8 @@ export class GLSLCanvasManager {
 	createCanvas(options: { code: string }) {
 		try {
 			this.canvas = document.createElement('canvas');
-			this.canvas.style.width = '200px';
-			this.canvas.style.height = '200px';
+			this.canvas.style.width = `${this.width}px`;
+			this.canvas.style.height = `${this.height}px`;
 			this.canvas.style.objectFit = 'contain';
 
 			this.container.innerHTML = '';
@@ -40,6 +43,7 @@ export class GLSLCanvasManager {
 					this.startRenderLoop();
 				} catch (error) {
 					console.error('Error in delayed canvas setup:', error);
+
 					if (error instanceof Error) {
 						this.showError(error.message);
 					}
@@ -62,11 +66,11 @@ export class GLSLCanvasManager {
 		// Ensure we have valid dimensions
 		if (rect.width === 0 || rect.height === 0) {
 			console.warn('Canvas has zero dimensions, using fallback');
-			this.canvas.width = 200 * dpr;
-			this.canvas.height = 200 * dpr;
+			this.canvas.width = this.width * dpr;
+			this.canvas.height = this.height * dpr;
 		} else {
-			this.canvas.width = rect.width * dpr;
-			this.canvas.height = rect.height * dpr;
+			this.canvas.width = this.width * dpr;
+			this.canvas.height = this.height * dpr;
 		}
 	}
 
@@ -84,6 +88,7 @@ export class GLSLCanvasManager {
 
 		this.canvas.addEventListener('mousemove', (e) => {
 			const rect = this.canvas!.getBoundingClientRect();
+
 			this.mouseX = e.clientX - rect.left;
 			this.mouseY = rect.height - (e.clientY - rect.top);
 		});
@@ -104,14 +109,11 @@ export class GLSLCanvasManager {
 					this.frameHandle = null;
 				}
 
-				// Create new shader program
 				this.createShaderProgram(code);
-
-				// Restart render loop
 				this.startRenderLoop();
 			} catch (error) {
 				console.error('Error updating GLSL code:', error);
-				// Show error in UI
+
 				this.showError(error instanceof Error ? error.message : 'Unknown shader error');
 			}
 		}
@@ -157,7 +159,6 @@ export class GLSLCanvasManager {
 			}
 		`;
 
-		// Create the draw command
 		this.drawCommand = this.regl({
 			frag: fragmentShader,
 			vert: vertexShader,
@@ -173,9 +174,9 @@ export class GLSLCanvasManager {
 
 			uniforms: {
 				iResolution: () => {
-					if (!this.canvas) return [200, 200, 1];
-					const rect = this.canvas.getBoundingClientRect();
-					return [rect.width, rect.height, 1.0];
+					if (!this.canvas) return [this.width, this.height, 1];
+
+					return [this.width, this.height, 1.0];
 				},
 
 				iTime: ({ time }) => time,
@@ -216,7 +217,6 @@ export class GLSLCanvasManager {
 		// Start the render loop
 
 		this.frameHandle = this.regl.frame((context) => {
-			// Update video textures
 			this.updateVideoTextures();
 
 			// Clear the screen
@@ -225,7 +225,6 @@ export class GLSLCanvasManager {
 				depth: 1
 			});
 
-			// Draw the shader
 			this.drawCommand!(context);
 		});
 	}
