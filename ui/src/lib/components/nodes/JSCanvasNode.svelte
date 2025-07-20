@@ -53,10 +53,7 @@ animate();
 
 		if (containerElement) {
 			canvasManager = new JSCanvasManager(containerElement);
-			canvasManager.createCanvas({
-				code,
-				messageContext: messageContext.getContext()
-			});
+			canvasManager.createCanvas({ code });
 		}
 	});
 
@@ -137,20 +134,3 @@ animate();
 		</div>
 	{/if}
 </div>
-
-<style>
-	:global(.svelte-flow__handle) {
-		background: rgb(156 163 175) !important;
-		border: 2px solid rgb(75 85 99) !important;
-		width: 8px !important;
-		height: 8px !important;
-	}
-
-	:global(.svelte-flow__handle.svelte-flow__handle-top) {
-		top: 0 !important;
-	}
-
-	:global(.svelte-flow__handle.svelte-flow__handle-bottom) {
-		bottom: 0 !important;
-	}
-</style>

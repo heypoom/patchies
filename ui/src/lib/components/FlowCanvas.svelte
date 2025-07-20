@@ -32,29 +32,29 @@
 	// Update message system when nodes or edges change
 	$effect(() => {
 		// Handle node changes (deletions)
-		const currentNodes = new Set(nodes.map(n => n.id));
-		
+		const currentNodes = new Set(nodes.map((n) => n.id));
+
 		// Find deleted nodes
 		for (const prevNodeId of previousNodes) {
 			if (!currentNodes.has(prevNodeId)) {
 				messageSystem.unregisterNode(prevNodeId);
 			}
 		}
-		
+
 		previousNodes = currentNodes;
 	});
 
 	$effect(() => {
 		// Update connections when edges change
-		const connections = edges.map(edge => ({
+		const connections = edges.map((edge) => ({
 			source: edge.source,
 			target: edge.target
 		}));
-		
+
 		messageSystem.updateConnections(connections);
-		
+
 		// Update previous edges tracking
-		previousEdges = new Set(edges.map(e => `${e.source}-${e.target}`));
+		previousEdges = new Set(edges.map((e) => `${e.source}-${e.target}`));
 	});
 
 	onDestroy(() => {

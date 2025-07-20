@@ -26,7 +26,7 @@ export class JSCanvasManager {
 		this.container = container;
 	}
 
-	createCanvas(options: JSCanvasConfig | { code: string }) {
+	createCanvas(options: JSCanvasConfig) {
 		try {
 			this.canvas = document.createElement('canvas');
 			this.canvas.style.width = '200px';
@@ -104,7 +104,7 @@ export class JSCanvasManager {
 						this.animationId = null;
 					}
 				},
-				
+
 				// Message system functions (if available)
 				...(messageContext && {
 					send: messageContext.send,

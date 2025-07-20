@@ -113,15 +113,3 @@ function draw() {
 		</div>
 	{/if}
 </div>
-
-<style>
-	:global(.svelte-flow__handle) {
-	}
-
-	:global(.svelte-flow__handle.svelte-flow__handle-top) {
-		top: 0;
-	}
-
-	:global(.svelte-flow__handle.svelte-flow__handle-bottom) {
-	}
-</style>
