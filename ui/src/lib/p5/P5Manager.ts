@@ -26,6 +26,7 @@ export interface P5SketchConfig {
 export class P5Manager {
 	private instance: p5Type | null = null;
 	private container: HTMLElement | null = null;
+	private videoStream: MediaStream | null = null;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
@@ -133,7 +134,9 @@ export class P5Manager {
 			'colorMode',
 			'angleMode',
 			'min',
-			'max'
+			'max',
+			'createVideo',
+			'image'
 		];
 
 		const commonP5Properties = [
@@ -167,6 +170,10 @@ export class P5Manager {
 				p5Context[prop] = p[prop];
 			}
 		});
+
+		// Add fromCanvas function for video chaining
+		// @ts-expect-error -- no-op
+		p5Context['fromCanvas'] = this.createFromCanvasFunction(p);
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
@@ -202,5 +209,41 @@ export class P5Manager {
 
 	getInstance() {
 		return this.instance;
+	}
+
+	getCanvas(): HTMLCanvasElement | null {
+		if (this.instance && (this.instance as any).canvas) {
+			return (this.instance as any).canvas;
+		}
+		return null;
+	}
+
+	setVideoStream(stream: MediaStream | null) {
+		this.videoStream = stream;
+	}
+
+	private createFromCanvasFunction(p: p5Type) {
+		return () => {
+			if (this.videoStream) {
+				// Create a video element from the MediaStream
+				const video = document.createElement('video');
+				video.srcObject = this.videoStream;
+				video.autoplay = true;
+				video.muted = true;
+				video.style.display = 'none';
+				document.body.appendChild(video);
+
+				// Wait for video to be ready then create p5 video element
+				video.addEventListener('loadedmetadata', () => {
+					if (p.createVideo) {
+						return p.createVideo(video.src);
+					}
+				});
+
+				// Return the video element directly for immediate use
+				return video;
+			}
+			return null;
+		};
 	}
 }

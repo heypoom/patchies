@@ -1,0 +1,21 @@
+<script lang="ts">
+	import { Handle, Position } from '@xyflow/svelte';
+
+	interface Props {
+		type: 'source' | 'target';
+		position: Position;
+		id?: string;
+		class?: string;
+		title?: string;
+	}
+
+	let { type, position, id, class: className = '', title }: Props = $props();
+</script>
+
+<Handle
+	{type}
+	{position}
+	{id}
+	class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400 {className}"
+	{title}
+/>

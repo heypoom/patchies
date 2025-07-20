@@ -5,6 +5,8 @@
 	import { JSCanvasManager } from '$lib/canvas/JSCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import { VideoSystem } from '$lib/video/VideoSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
@@ -12,6 +14,7 @@
 	let containerElement: HTMLDivElement;
 	let canvasManager: JSCanvasManager | null = null;
 	let messageContext: MessageContext;
+	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let code = $state(`canvas.fillStyle = '#18181b';
 canvas.fillRect(0, 0, width, height);
@@ -48,12 +51,22 @@ animate();
 // canvas.strokeRect(10, 10, width-20, height-20);`);
 
 	onMount(() => {
-		// Initialize message context
+		// Initialize message context and video system
 		messageContext = new MessageContext(nodeId);
+		videoSystem = VideoSystem.getInstance();
+
+		// Subscribe to video streams
+		videoSystem.onVideoStreams(nodeId, (streams) => {
+			if (canvasManager && streams.length > 0) {
+				// Use the first video stream
+				canvasManager.setVideoStream(streams[0]);
+			}
+		});
 
 		if (containerElement) {
 			canvasManager = new JSCanvasManager(containerElement);
 			canvasManager.createCanvas({ code });
+			registerVideoSource();
 		}
 	});
 
@@ -63,6 +76,9 @@ animate();
 		}
 		if (messageContext) {
 			messageContext.destroy();
+		}
+		if (videoSystem) {
+			videoSystem.unregisterNode(nodeId);
 		}
 	});
 
@@ -80,6 +96,15 @@ animate();
 	function toggleEditor() {
 		showEditor = !showEditor;
 	}
+
+	function registerVideoSource() {
+		if (canvasManager && videoSystem) {
+			const canvas = canvasManager.getCanvas();
+			if (canvas) {
+				videoSystem.registerVideoSource(nodeId, canvas);
+			}
+		}
+	}
 </script>
 
 <div class="relative flex gap-x-3">
@@ -91,7 +116,7 @@ animate();
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -101,11 +126,25 @@ animate();
 
 			<div class="relative">
 				<Handle type="target" position={Position.Top} />
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in"
+					class="!left-8"
+					title="Video input"
+				/>
 				<div
 					bind:this={containerElement}
 					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
 				<Handle type="source" position={Position.Bottom} />
+				<VideoHandle
+					type="source"
+					position={Position.Bottom}
+					id="video-out"
+					class="!left-8"
+					title="Video output"
+				/>
 			</div>
 		</div>
 	</div>

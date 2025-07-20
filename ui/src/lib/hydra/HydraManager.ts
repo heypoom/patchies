@@ -24,6 +24,7 @@ export class HydraManager {
 	private hydra: any;
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
+	private videoStream: MediaStream | null = null;
 
 	constructor(container: HTMLElement, config: HydraConfig | string) {
 		this.container = container;
@@ -122,7 +123,10 @@ export class HydraManager {
 				o3: this.synth.o3,
 				// Render function
 				render: this.synth.render.bind(this.synth),
-				
+
+				// Video chaining function
+				fromCanvas: this.createFromCanvasFunction(),
+
 				// Message system functions (if available)
 				...(messageContext && {
 					send: messageContext.send,
@@ -170,5 +174,36 @@ export class HydraManager {
 
 		// Clear container
 		this.container.innerHTML = '';
+	}
+
+	getCanvas(): HTMLCanvasElement | null {
+		return this.canvas;
+	}
+
+	setVideoStream(stream: MediaStream | null) {
+		this.videoStream = stream;
+	}
+
+	private createFromCanvasFunction() {
+		return (sourceParam?: any) => {
+			if (this.videoStream && this.synth) {
+				// Create a video element from the MediaStream
+				const video = document.createElement('video');
+				video.srcObject = this.videoStream;
+				video.autoplay = true;
+				video.muted = true;
+				video.style.display = 'none';
+				document.body.appendChild(video);
+
+				// For Hydra, we need to initialize the source with the video
+				// The spec shows fromCanvas(s0) usage
+				if (sourceParam) {
+					sourceParam.init({ src: video });
+				}
+
+				return video;
+			}
+			return null;
+		};
 	}
 }

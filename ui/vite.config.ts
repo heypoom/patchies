@@ -6,7 +6,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
 	define: {
-		global: 'globalThis',
+		global: 'globalThis'
 	},
 	test: {
 		projects: [

@@ -4,9 +4,17 @@
 	import Icon from '@iconify/svelte';
 	import { GLSLCanvasManager } from '$lib/canvas/GLSLCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { MessageContext } from '$lib/messages/MessageContext';
+
+	// Get node data from XY Flow - nodes receive their data as props
+	let { id: nodeId }: { id: string } = $props();
 
 	let containerElement: HTMLDivElement;
 	let canvasManager: GLSLCanvasManager | null = null;
+	let messageContext: MessageContext;
+	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let code = $state(`// GLSL Fragment Shader (ShaderToy compatible)
 // Available uniforms: iResolution, iTime, iMouse, iDate, iTimeDelta, iFrame
@@ -43,15 +51,34 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 // color = vec3(sin(angle * 6.0) * 0.5 + 0.5);`);
 
 	onMount(() => {
+		// Initialize message context and video system
+		messageContext = new MessageContext(nodeId);
+		videoSystem = VideoSystem.getInstance();
+
+		// Subscribe to video streams - GLSL needs to handle multiple channels
+		videoSystem.onVideoStreams(nodeId, (streams) => {
+			if (canvasManager) {
+				// Pass all streams to GLSL manager for iChannel0-3
+				canvasManager.setVideoStreams(streams);
+			}
+		});
+
 		if (containerElement) {
 			canvasManager = new GLSLCanvasManager(containerElement);
 			canvasManager.createCanvas({ code });
+			registerVideoSource();
 		}
 	});
 
 	onDestroy(() => {
 		if (canvasManager) {
 			canvasManager.destroy();
+		}
+		if (messageContext) {
+			messageContext.destroy();
+		}
+		if (videoSystem) {
+			videoSystem.unregisterNode(nodeId);
 		}
 	});
 
@@ -64,6 +91,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 	function toggleEditor() {
 		showEditor = !showEditor;
 	}
+
+	function registerVideoSource() {
+		if (canvasManager && videoSystem) {
+			const canvas = canvasManager.getCanvas();
+			if (canvas) {
+				videoSystem.registerVideoSource(nodeId, canvas);
+			}
+		}
+	}
 </script>
 
 <div class="relative flex gap-x-3">
@@ -75,7 +111,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -85,6 +121,35 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 			<div class="relative">
 				<Handle type="target" position={Position.Top} />
+				<!-- 4 video inlets for iChannel0-3 -->
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in-0"
+					class="!left-8"
+					title="Video input iChannel0"
+				/>
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in-1"
+					class="!left-12"
+					title="Video input iChannel1"
+				/>
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in-2"
+					class="!left-16"
+					title="Video input iChannel2"
+				/>
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in-3"
+					class="!left-20"
+					title="Video input iChannel3"
+				/>
 
 				<div
 					bind:this={containerElement}
@@ -92,6 +157,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				></div>
 
 				<Handle type="source" position={Position.Bottom} />
+				<VideoHandle
+					type="source"
+					position={Position.Bottom}
+					id="video-out"
+					class="!left-8"
+					title="Video output"
+				/>
 			</div>
 		</div>
 	</div>

@@ -8,6 +8,7 @@
 	import JSCanvasNode from './nodes/JSCanvasNode.svelte';
 	import GLSLCanvasNode from './nodes/GLSLCanvasNode.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
+	import { VideoSystem } from '$lib/video/VideoSystem';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -24,10 +25,10 @@
 
 	let nodeId = 0;
 	let messageSystem = MessageSystem.getInstance();
+	let videoSystem = VideoSystem.getInstance();
 
 	// Track nodes and edges for message routing
 	let previousNodes = new Set<string>();
-	let previousEdges = new Set<string>();
 
 	// Update message system when nodes or edges change
 	$effect(() => {
@@ -48,13 +49,15 @@
 		// Update connections when edges change
 		const connections = edges.map((edge) => ({
 			source: edge.source,
-			target: edge.target
+			target: edge.target,
+			sourceHandle: edge.sourceHandle || undefined,
+			targetHandle: edge.targetHandle || undefined
 		}));
 
 		messageSystem.updateConnections(connections);
 
-		// Update previous edges tracking
-		previousEdges = new Set(edges.map((e) => `${e.source}-${e.target}`));
+		// Also update video system with handle information
+		videoSystem.updateVideoConnections(connections);
 	});
 
 	onDestroy(() => {

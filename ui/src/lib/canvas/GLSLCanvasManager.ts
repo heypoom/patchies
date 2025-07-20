@@ -8,6 +8,11 @@ export class GLSLCanvasManager {
 	private mouseX: number = 0;
 	private mouseY: number = 0;
 
+	// Video streams and textures for iChannel0-3
+	private videoStreams: MediaStream[] = [];
+	private videoElements: HTMLVideoElement[] = [];
+	private videoTextures: WebGLTexture[] = [];
+
 	// Uniform locations
 	private uniforms: { [key: string]: WebGLUniformLocation | null } = {};
 
@@ -69,7 +74,9 @@ export class GLSLCanvasManager {
 			this.canvas.height = rect.height * dpr;
 		}
 
-		this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+		this.gl =
+			(this.canvas.getContext('webgl') as WebGLRenderingContext) ||
+			(this.canvas.getContext('experimental-webgl') as WebGLRenderingContext);
 
 		if (!this.gl) {
 			throw new Error('WebGL not supported');
@@ -117,7 +124,7 @@ export class GLSLCanvasManager {
 			}
 		`;
 
-		// Fragment shader with ShaderToy-compatible uniforms
+		// Fragment shader with ShaderToy-compatible uniforms and textures
 		const fragmentShaderSource = `
 			precision mediump float;
 			
@@ -127,6 +134,12 @@ export class GLSLCanvasManager {
 			uniform vec4 iDate;
 			uniform float iTimeDelta;
 			uniform int iFrame;
+			
+			// Video textures for iChannel0-3
+			uniform sampler2D iChannel0;
+			uniform sampler2D iChannel1;
+			uniform sampler2D iChannel2;
+			uniform sampler2D iChannel3;
 			
 			${fragmentShaderCode}
 			
@@ -221,7 +234,11 @@ export class GLSLCanvasManager {
 			iMouse: this.gl.getUniformLocation(this.program, 'iMouse'),
 			iDate: this.gl.getUniformLocation(this.program, 'iDate'),
 			iTimeDelta: this.gl.getUniformLocation(this.program, 'iTimeDelta'),
-			iFrame: this.gl.getUniformLocation(this.program, 'iFrame')
+			iFrame: this.gl.getUniformLocation(this.program, 'iFrame'),
+			iChannel0: this.gl.getUniformLocation(this.program, 'iChannel0'),
+			iChannel1: this.gl.getUniformLocation(this.program, 'iChannel1'),
+			iChannel2: this.gl.getUniformLocation(this.program, 'iChannel2'),
+			iChannel3: this.gl.getUniformLocation(this.program, 'iChannel3')
 		};
 	}
 
@@ -287,6 +304,9 @@ export class GLSLCanvasManager {
 			if (this.uniforms.iFrame) {
 				this.gl.uniform1i(this.uniforms.iFrame, frameCount);
 			}
+
+			// Update and bind video textures
+			this.updateVideoTextures();
 
 			// Draw the full screen quad
 			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
@@ -363,6 +383,9 @@ export class GLSLCanvasManager {
 			this.animationId = null;
 		}
 
+		// Clean up video textures
+		this.cleanupVideoTextures();
+
 		// Clean up WebGL resources
 		if (this.gl && this.program) {
 			this.gl.deleteProgram(this.program);
@@ -378,5 +401,93 @@ export class GLSLCanvasManager {
 
 		// Clear container
 		this.container.innerHTML = '';
+	}
+
+	getCanvas(): HTMLCanvasElement | null {
+		return this.canvas;
+	}
+
+	setVideoStreams(streams: MediaStream[]) {
+		// Clean up existing video elements and textures
+		this.cleanupVideoTextures();
+
+		this.videoStreams = streams.slice(0, 4); // Only take first 4 streams for iChannel0-3
+
+		// Create video elements for each stream
+		for (let i = 0; i < this.videoStreams.length; i++) {
+			const video = document.createElement('video');
+			video.srcObject = this.videoStreams[i];
+			video.autoplay = true;
+			video.muted = true;
+			video.loop = true;
+			video.style.display = 'none';
+			document.body.appendChild(video);
+
+			this.videoElements[i] = video;
+
+			// Create WebGL texture for the video
+			if (this.gl) {
+				const texture = this.gl.createTexture();
+				if (texture) {
+					this.videoTextures[i] = texture;
+				}
+			}
+		}
+	}
+
+	private updateVideoTextures() {
+		if (!this.gl) return;
+
+		for (let i = 0; i < this.videoElements.length && i < 4; i++) {
+			const video = this.videoElements[i];
+			const texture = this.videoTextures[i];
+
+			if (video && texture && video.readyState >= 2) {
+				// HAVE_CURRENT_DATA
+				// Bind texture to the appropriate texture unit
+				this.gl.activeTexture(this.gl.TEXTURE0 + i);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+				// Update texture with video frame
+				this.gl.texImage2D(
+					this.gl.TEXTURE_2D,
+					0,
+					this.gl.RGBA,
+					this.gl.RGBA,
+					this.gl.UNSIGNED_BYTE,
+					video
+				);
+
+				// Set texture parameters
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+
+				// Set the uniform for this channel
+				const channelUniform = this.uniforms[`iChannel${i}`];
+				if (channelUniform) {
+					this.gl.uniform1i(channelUniform, i);
+				}
+			}
+		}
+	}
+
+	private cleanupVideoTextures() {
+		// Remove video elements
+		for (const video of this.videoElements) {
+			if (video.parentNode) {
+				video.parentNode.removeChild(video);
+			}
+		}
+		this.videoElements = [];
+
+		// Delete WebGL textures
+		if (this.gl) {
+			for (const texture of this.videoTextures) {
+				this.gl.deleteTexture(texture);
+			}
+		}
+		this.videoTextures = [];
 	}
 }
