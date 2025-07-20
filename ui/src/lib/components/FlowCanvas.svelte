@@ -133,12 +133,22 @@
 
 	// Handle global keyboard events
 	function handleGlobalKeydown(event: KeyboardEvent) {
-		// Only handle 'n' key when not typing in inputs and palette is not already open
+		// Only handle 'n' key when not typing in any input or inside any node content
+		const target = event.target as HTMLElement;
+
 		if (
 			event.key.toLowerCase() === 'n' &&
 			!showPalette &&
-			!(event.target instanceof HTMLInputElement) &&
-			!(event.target instanceof HTMLTextAreaElement)
+			// Exclude all input types
+			!(target instanceof HTMLInputElement) &&
+			!(target instanceof HTMLTextAreaElement) &&
+			// Exclude CodeMirror editors (which use contenteditable divs)
+			!target.closest('.cm-editor') &&
+			!target.closest('.cm-content') &&
+			// Exclude any contenteditable elements
+			!(target.contentEditable === 'true') &&
+			// Exclude any elements inside nodes (they have react-flow__node class)
+			!target.closest('.svelte-flow__node')
 		) {
 			event.preventDefault();
 			palettePosition = { ...lastMousePosition };
