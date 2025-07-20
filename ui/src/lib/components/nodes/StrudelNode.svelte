@@ -21,7 +21,10 @@
 
 		if (strudelElement && strudelElement.editor) {
 			isInitialized = true;
-			strudelElement.editor.setCode(code);
+
+			const editor = strudelElement.editor;
+			editor.setCode(code);
+			editor.setFontFamily('Monaco, Menlo, monospace');
 
 			// @ts-expect-error -- for debugging
 			window.strudel = strudelElement.editor;
