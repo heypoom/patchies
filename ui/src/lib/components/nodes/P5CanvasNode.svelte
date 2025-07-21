@@ -7,6 +7,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { AudioSystem, type AudioAnalysis } from '$lib/audio/AudioSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
@@ -15,9 +16,11 @@
 	let p5Manager: P5Manager | null = null;
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
+	let audioSystem: AudioSystem;
 	let showEditor = $state(false);
 	let enableDrag = $state(true);
 	let errorMessage = $state<string | null>(null);
+	let _currentAudioAnalysis = $state<AudioAnalysis | null>(null);
 	let code = $state(`function setup() {
   createCanvas(200, 200)
   pixelDensity(3)
@@ -30,15 +33,24 @@ function draw() {
 }`);
 
 	onMount(() => {
-		// Initialize message context and video system
+		// Initialize message context, video system, and audio system
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
+		audioSystem = AudioSystem.getInstance();
 
 		// Subscribe to video canvas sources
 		videoSystem.onVideoCanvas(nodeId, (canvases) => {
 			if (p5Manager && canvases.length > 0) {
 				// Use the first canvas source
 				p5Manager.setVideoCanvas(canvases[0]);
+			}
+		});
+
+		// Subscribe to audio analysis data
+		audioSystem.onAudioAnalysis(nodeId, (analysis) => {
+			_currentAudioAnalysis = analysis;
+			if (p5Manager) {
+				p5Manager.setAudioAnalysis(analysis);
 			}
 		});
 
@@ -64,6 +76,9 @@ function draw() {
 		}
 		if (videoSystem) {
 			videoSystem.unregisterNode(nodeId);
+		}
+		if (audioSystem) {
+			audioSystem.unregisterNode(nodeId);
 		}
 	});
 

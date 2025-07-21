@@ -7,6 +7,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { AudioSystem, type AudioAnalysis } from '$lib/audio/AudioSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
@@ -15,22 +16,33 @@
 	let hydraManager: HydraManager | null = null;
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
+	let audioSystem: AudioSystem;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
+	let _currentAudioAnalysis = $state<AudioAnalysis | null>(null);
 	let code = $state(`osc(20, 0.1, 0.8)
   .diff(osc(20, 0.05)
   .rotate(Math.PI/2))
   .out()`);
 
 	onMount(() => {
-		// Initialize message context and video system
+		// Initialize message context, video system, and audio system
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
+		audioSystem = AudioSystem.getInstance();
 
 		// Subscribe to video canvas sources
 		videoSystem.onVideoCanvas(nodeId, (canvases) => {
 			if (hydraManager && canvases.length > 0) {
 				hydraManager.setVideoCanvas(canvases[0]);
+			}
+		});
+
+		// Subscribe to audio analysis data
+		audioSystem.onAudioAnalysis(nodeId, (analysis) => {
+			_currentAudioAnalysis = analysis;
+			if (hydraManager) {
+				hydraManager.setAudioAnalysis(analysis);
 			}
 		});
 
@@ -52,6 +64,9 @@
 		}
 		if (videoSystem) {
 			videoSystem.unregisterNode(nodeId);
+		}
+		if (audioSystem) {
+			audioSystem.unregisterNode(nodeId);
 		}
 	});
 

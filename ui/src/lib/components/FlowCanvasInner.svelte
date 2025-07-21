@@ -26,6 +26,8 @@
 	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
 	import { isBottomBarVisible } from '../../stores/ui.store';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import ModeToggle from './ModeToggle.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -48,6 +50,7 @@
 	let nodeId = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let videoSystem = VideoSystem.getInstance();
+	let audioSystem = AudioSystem.getInstance();
 
 	// Object palette state
 	let showPalette = $state(false);
@@ -94,6 +97,9 @@
 
 		// Also update video system with handle information
 		videoSystem.updateVideoConnections(connections);
+
+		// Also update audio system with connection information
+		audioSystem.updateAudioConnections(connections);
 	});
 
 	onMount(() => {

@@ -1,6 +1,8 @@
 import P5 from 'p5';
 import type Sketch from 'p5';
 
+import type { AudioAnalysis } from '$lib/audio/AudioSystem';
+
 interface SendMessageOptions {
 	type?: string;
 	to?: string;
@@ -28,6 +30,7 @@ export class P5Manager {
 	private instance: Sketch | null = null;
 	private container: HTMLElement | null = null;
 	private videoCanvas: HTMLCanvasElement | null = null;
+	private audioAnalysis: AudioAnalysis | null = null;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
@@ -154,6 +157,10 @@ export class P5Manager {
 		// @ts-expect-error -- no-op
 		sketch['p5'] = P5;
 
+		// Add audio analysis data (always available, even if null)
+		// @ts-expect-error -- no-op
+		p5Context['audio'] = this.createAudioContext();
+
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
 			'sketch',
@@ -204,9 +211,58 @@ export class P5Manager {
 		this.videoCanvas = canvas;
 	}
 
+	setAudioAnalysis(analysis: AudioAnalysis | null) {
+		this.audioAnalysis = analysis;
+	}
+
 	private createFromCanvasFunction() {
 		return () => {
 			return this.videoCanvas ?? null;
+		};
+	}
+
+	private createAudioContext() {
+		return {
+			// Overall loudness (0-1)
+			rms: this.audioAnalysis?.rms || 0,
+			// Brightness measure (higher = more treble/bright)
+			spectralCentroid: this.audioAnalysis?.spectralCentroid || 0,
+			// Zero crossing rate (higher = more noisy/percussive)
+			zcr: this.audioAnalysis?.zcr || 0,
+			// FFT frequency data
+			fft: this.audioAnalysis?.spectrum || new Float32Array(512),
+			// Audio context timestamp
+			timestamp: this.audioAnalysis?.timestamp || 0,
+
+			// Convenience methods for common use cases
+			getFrequency: (index: number) => {
+				return this.audioAnalysis?.spectrum[index] || 0;
+			},
+
+			getBassEnergy: () => {
+				if (!this.audioAnalysis?.spectrum) return 0;
+				// Average the first 4 frequency bins (roughly bass frequencies)
+				let sum = 0;
+				for (let i = 0; i < 4 && i < this.audioAnalysis.spectrum.length; i++) {
+					sum += Math.abs(this.audioAnalysis.spectrum[i]);
+				}
+				return sum / 4;
+			},
+
+			getTrebleEnergy: () => {
+				if (!this.audioAnalysis?.spectrum) return 0;
+				// Average the last quarter of frequency bins (roughly treble frequencies)
+				const start = Math.floor(this.audioAnalysis.spectrum.length * 0.75);
+				let sum = 0;
+				let count = 0;
+				for (let i = start; i < this.audioAnalysis.spectrum.length; i++) {
+					sum += Math.abs(this.audioAnalysis.spectrum[i]);
+					count++;
+				}
+				return count > 0 ? sum / count : 0;
+			},
+
+			getLoudness: () => this.audioAnalysis?.rms || 0
 		};
 	}
 }

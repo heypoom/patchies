@@ -1,27 +1,39 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Position } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { getAudioContext } from '@strudel/webaudio';
+	import VideoHandle from '$lib/components/VideoHandle.svelte';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
 
 	let strudelEditor: StrudelEditor | null = null;
-	let messageContext: MessageContext;
+	let audioSystem: AudioSystem;
 	let errorMessage = $state<string | null>(null);
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
 	let code = $state(`note("c a f e").jux(rev)`);
 
 	onMount(() => {
-		messageContext = new MessageContext(nodeId);
+		audioSystem = AudioSystem.getInstance();
+
+		// Set up Strudel audio context for the audio system
+		const audioContext = getAudioContext();
+		audioSystem.setStrudelAudioContext(audioContext);
 
 		// Wait for the StrudelEditor to be ready
 		setTimeout(() => {
 			if (strudelEditor?.editor) {
 				isInitialized = true;
+
+				// Register this node as an audio source for analysis
+				// The AudioSystem's global audio tap will capture Strudel's audio output
+				if (audioContext.destination) {
+					audioSystem.registerAudioSource(nodeId, audioContext.destination);
+				}
 
 				// @ts-expect-error -- for debugging
 				window.strudel = strudelEditor.editor;
@@ -33,8 +45,8 @@
 		if (strudelEditor?.editor) {
 			strudelEditor.editor.stop();
 		}
-		if (messageContext) {
-			messageContext.destroy();
+		if (audioSystem) {
+			audioSystem.unregisterNode(nodeId);
 		}
 	});
 
@@ -62,7 +74,7 @@
 		}
 	}
 
-	function handleUpdateState(state: any) {
+	function handleUpdateState(state: { started: boolean }) {
 		isPlaying = state.started;
 	}
 </script>
@@ -80,7 +92,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 								onclick={stop}
 								title="Stop"
 							>
@@ -88,7 +100,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 								onclick={play}
 								title="Play"
 							>
@@ -122,6 +134,14 @@
 						</div>
 					</div>
 				{/if}
+
+				<VideoHandle
+					type="source"
+					position={Position.Bottom}
+					id="audio-out"
+					class="!left-1/2 !-translate-x-1/2 !transform"
+					title="Audio Output"
+				/>
 			</div>
 		</div>
 	</div>

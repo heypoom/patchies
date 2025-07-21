@@ -1,5 +1,6 @@
 // @ts-expect-error -- no types for hydra-synth
 import Hydra from 'hydra-synth';
+import type { AudioAnalysis } from '$lib/audio/AudioSystem';
 
 interface SendMessageOptions {
 	type?: string;
@@ -28,6 +29,7 @@ export class HydraManager {
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
 	private videoCanvas: HTMLCanvasElement | null = null;
+	private audioAnalysis: AudioAnalysis | null = null;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private activeSources: any[] = [];
 
@@ -138,6 +140,9 @@ export class HydraManager {
 				// Video chaining function
 				fromCanvas: this.createFromCanvasFunction(),
 
+				// Audio analysis data (always available)
+				fft: this.createFFTFunction(),
+
 				// Message system functions (if available)
 				...(messageContext && {
 					send: messageContext.send,
@@ -205,6 +210,10 @@ export class HydraManager {
 		}
 	}
 
+	setAudioAnalysis(analysis: AudioAnalysis | null) {
+		this.audioAnalysis = analysis;
+	}
+
 	private createFromCanvasFunction() {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		return (source?: any) => {
@@ -223,6 +232,24 @@ export class HydraManager {
 			}
 
 			return this.videoCanvas;
+		};
+	}
+
+	private createFFTFunction() {
+		return () => {
+			if (!this.audioAnalysis?.spectrum) {
+				return new Array(512).fill(0); // Return empty array if no audio data
+			}
+
+			// Convert dB values to normalized 0-1 range for Hydra
+			// FFT data comes in dB (typically -100 to 0)
+			const normalized = Array.from(this.audioAnalysis.spectrum).map((value) => {
+				// Convert from dB to linear scale (0-1)
+				const linear = Math.pow(10, value / 20);
+				return Math.max(0, Math.min(1, linear));
+			});
+
+			return normalized;
 		};
 	}
 }
