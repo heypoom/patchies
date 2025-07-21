@@ -30,6 +30,13 @@ export class P5Manager {
 
 	constructor(container: HTMLElement) {
 		this.container = container;
+
+		this.load();
+	}
+
+	async load() {
+		window.p5 = p5;
+		import('p5/lib/addons/p5.sound');
 	}
 
 	updateCode(config: P5SketchConfig) {
@@ -174,6 +181,12 @@ export class P5Manager {
 		// Add fromCanvas function for video chaining
 		// @ts-expect-error -- no-op
 		p5Context['fromCanvas'] = this.createFromCanvasFunction(p);
+
+		// @ts-expect-error -- no-op
+		p5Context['sketch'] = p;
+
+		// @ts-expect-error -- no-op
+		p5Context['p5'] = p5;
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
