@@ -16,10 +16,10 @@
 	import StrudelNode from './nodes/StrudelNode.svelte';
 	import ObjectPalette from './ObjectPalette.svelte';
 	import CommandPalette from './CommandPalette.svelte';
+	import ButterchurnNode from './nodes/ButterchurnNode.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { VideoSystem } from '$lib/video/VideoSystem';
-	import ModeToggle from './ModeToggle.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -28,7 +28,8 @@
 		['hydra']: HydraNode,
 		['js.canvas']: JSCanvasNode,
 		['glsl.canvas']: GLSLCanvasNode,
-		['strudel']: StrudelNode
+		['strudel']: StrudelNode,
+		['butterchurn']: ButterchurnNode
 	};
 
 	// Initial nodes and edges
@@ -173,7 +174,7 @@
 		) {
 			event.preventDefault();
 			const centerX = window.innerWidth / 2 - 160;
-			const centerY = window.innerHeight / 2 - 300;
+			const centerY = window.innerHeight / 2 - 200;
 			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 			showCommandPalette = true;
 		}
