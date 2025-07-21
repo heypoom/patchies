@@ -89,3 +89,8 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 ### `js.canvas`: creates a JavaScript canvas
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
+
+### `butterchurn`: render the Winamp Milkdrop visualizer
+
+- [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
+- You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl.canvas`) to derive more visual effects.
