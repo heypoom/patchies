@@ -56,8 +56,9 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 ### `js`: A JavaScript code block
 
 - Use `console.log()` to log messages to the virtual console.
-- Use `interval(callback, ms)` to run a callback every `ms` milliseconds. This automatically cleans up the interval on unmount, so please do not use `setInterval` manually.
-- Use `send()` and `onMessage()` to send and receive messages between objects. See the [Message Passing](#message-passing) section below.
+- Use `setInterval(callback, ms)` to run a callback every `ms` milliseconds.
+  - The code block has a special version of `setInterval` that automatically cleans up the interval on unmount. Do not use `window.setInterval` from the window scope as that will not clean up.
+- Use `send()` and `onMessage()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section below.
 
 ### `strudel`: creates a Strudel music environment
 
