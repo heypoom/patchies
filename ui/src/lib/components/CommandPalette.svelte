@@ -16,9 +16,12 @@
 	let paletteContainer: HTMLDivElement | undefined = $state();
 
 	// Multi-stage state
-	let stage = $state<'commands' | 'save-name' | 'load-list' | 'delete-list'>('commands');
+	let stage = $state<
+		'commands' | 'save-name' | 'load-list' | 'delete-list' | 'rename-list' | 'rename-name'
+	>('commands');
 	let patchName = $state('');
 	let savedPatches = $state<string[]>([]);
+	let selectedPatchToRename = $state('');
 
 	// Base commands for stage 1
 	const commands = [
@@ -26,6 +29,7 @@
 		{ id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
 		{ id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
 		{ id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
+		{ id: 'rename-patch', name: 'Rename Patch', description: 'Rename saved patch' },
 		{ id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' }
 	];
 
@@ -50,7 +54,14 @@
 
 	// Focus input when stage changes
 	$effect(() => {
-		if (stage === 'save-name' || stage === 'load-list' || stage === 'delete-list' || stage === 'commands') {
+		if (
+			stage === 'save-name' ||
+			stage === 'load-list' ||
+			stage === 'delete-list' ||
+			stage === 'rename-list' ||
+			stage === 'rename-name' ||
+			stage === 'commands'
+		) {
 			// Use setTimeout to ensure DOM is updated
 			setTimeout(() => {
 				searchInput?.focus();
@@ -88,7 +99,7 @@
 				const maxIndex =
 					stage === 'commands'
 						? filteredCommands.length - 1
-						: stage === 'load-list' || stage === 'delete-list'
+						: stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
 							? filteredPatches.length - 1
 							: 0;
 				selectedIndex = Math.min(selectedIndex + 1, maxIndex);
@@ -116,6 +127,15 @@
 		} else if (stage === 'delete-list' && filteredPatches.length > 0) {
 			const selectedPatch = filteredPatches[selectedIndex];
 			deleteFromLocalStorage(selectedPatch);
+		} else if (stage === 'rename-list' && filteredPatches.length > 0) {
+			const selectedPatch = filteredPatches[selectedIndex];
+			selectedPatchToRename = selectedPatch;
+			stage = 'rename-name';
+			searchQuery = '';
+			patchName = selectedPatch; // Pre-fill with current name
+			selectedIndex = 0;
+		} else if (stage === 'rename-name' && patchName.trim()) {
+			renamePatch();
 		}
 	}
 
@@ -140,6 +160,11 @@
 				break;
 			case 'delete-patch':
 				stage = 'delete-list';
+				searchQuery = '';
+				selectedIndex = 0;
+				break;
+			case 'rename-patch':
+				stage = 'rename-list';
 				searchQuery = '';
 				selectedIndex = 0;
 				break;
@@ -230,17 +255,17 @@
 	function deleteFromLocalStorage(patchName: string) {
 		// Remove patch data
 		localStorage.removeItem(`patchies-patch-${patchName}`);
-		
+
 		// Update saved patches list
 		const saved = localStorage.getItem('patchies-saved-patches') || '[]';
 		try {
 			let savedPatchesList: string[] = JSON.parse(saved);
-			savedPatchesList = savedPatchesList.filter(name => name !== patchName);
+			savedPatchesList = savedPatchesList.filter((name) => name !== patchName);
 			localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
-			
+
 			// Update local state
 			savedPatches = savedPatchesList;
-			
+
 			// Reset selection if needed
 			if (selectedIndex >= savedPatchesList.length) {
 				selectedIndex = Math.max(0, savedPatchesList.length - 1);
@@ -248,8 +273,50 @@
 		} catch (error) {
 			console.error('Error deleting patch from storage:', error);
 		}
-		
+
 		// Don't close palette - stay in delete-list for multiple deletions
+	}
+
+	function renamePatch() {
+		if (!selectedPatchToRename || !patchName.trim() || patchName === selectedPatchToRename) {
+			onCancel();
+			return;
+		}
+
+		try {
+			// Get the patch data from the old name
+			const patchData = localStorage.getItem(`patchies-patch-${selectedPatchToRename}`);
+			if (!patchData) {
+				console.error('Patch data not found for rename');
+				onCancel();
+				return;
+			}
+
+			// Save with new name
+			localStorage.setItem(`patchies-patch-${patchName}`, patchData);
+
+			// Remove old patch data
+			localStorage.removeItem(`patchies-patch-${selectedPatchToRename}`);
+
+			// Update saved patches list
+			const saved = localStorage.getItem('patchies-saved-patches') || '[]';
+			let savedPatchesList: string[] = JSON.parse(saved);
+
+			// Replace old name with new name
+			const oldIndex = savedPatchesList.indexOf(selectedPatchToRename);
+			if (oldIndex !== -1) {
+				savedPatchesList[oldIndex] = patchName;
+				localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
+
+				// Update local state
+				savedPatches = savedPatchesList;
+			}
+
+			onCancel();
+		} catch (error) {
+			console.error('Error renaming patch:', error);
+			onCancel();
+		}
 	}
 
 	function handleClickOutside(event: MouseEvent) {
@@ -267,7 +334,7 @@
 		const maxIndex =
 			stage === 'commands'
 				? filteredCommands.length - 1
-				: stage === 'load-list' || stage === 'delete-list'
+				: stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
 					? filteredPatches.length - 1
 					: 0;
 		selectedIndex = Math.min(selectedIndex, Math.max(0, maxIndex));
@@ -329,6 +396,30 @@
 				onkeydown={handleKeydown}
 				type="text"
 				placeholder="Search patches..."
+				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+			/>
+		</div>
+	{:else if stage === 'rename-list'}
+		<div class="border-b border-zinc-700 p-3">
+			<div class="mb-2 text-xs text-zinc-400">Select a patch to rename:</div>
+			<input
+				bind:this={searchInput}
+				bind:value={searchQuery}
+				onkeydown={handleKeydown}
+				type="text"
+				placeholder="Search patches..."
+				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+			/>
+		</div>
+	{:else if stage === 'rename-name'}
+		<div class="border-b border-zinc-700 p-3">
+			<div class="mb-2 text-xs text-zinc-400">Enter new name for "{selectedPatchToRename}":</div>
+			<input
+				bind:this={searchInput}
+				bind:value={patchName}
+				onkeydown={handleKeydown}
+				type="text"
+				placeholder="Enter new patch name..."
 				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
 			/>
 		</div>
@@ -394,6 +485,33 @@
 					</div>
 				{/each}
 			{/if}
+		{:else if stage === 'rename-list'}
+			{#if filteredPatches.length === 0}
+				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
+			{:else}
+				{#each filteredPatches as patch, index}
+					<div
+						class="cursor-pointer px-3 py-2 {index === selectedIndex
+							? 'bg-blue-800'
+							: 'hover:bg-blue-900/50'}"
+						onclick={() => handleItemClick(index)}
+						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
+						role="button"
+						tabindex="-1"
+					>
+						<div class="font-mono text-sm text-blue-200">{patch}</div>
+					</div>
+				{/each}
+			{/if}
+		{:else if stage === 'rename-name'}
+			<!-- Show current input preview -->
+			{#if patchName.trim() && patchName !== selectedPatchToRename}
+				<div class="px-3 py-2 text-xs text-zinc-400">
+					Will rename "<span class="text-blue-200">{selectedPatchToRename}</span>" to "<span
+						class="text-zinc-200">{patchName}</span
+					>"
+				</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -407,6 +525,10 @@
 			↑↓ Navigate • Enter Load • Esc Back
 		{:else if stage === 'delete-list'}
 			↑↓ Navigate • Enter Delete • Esc Back
+		{:else if stage === 'rename-list'}
+			↑↓ Navigate • Enter Rename • Esc Back
+		{:else if stage === 'rename-name'}
+			Enter Rename • Esc Back
 		{/if}
 	</div>
 </div>
