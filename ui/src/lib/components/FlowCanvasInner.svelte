@@ -15,6 +15,7 @@
 	import GLSLCanvasNode from './nodes/GLSLCanvasNode.svelte';
 	import StrudelNode from './nodes/StrudelNode.svelte';
 	import ObjectPalette from './ObjectPalette.svelte';
+	import CommandPalette from './CommandPalette.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { VideoSystem } from '$lib/video/VideoSystem';
@@ -43,6 +44,10 @@
 	let palettePosition = $state({ x: 0, y: 0 }); // Screen position for palette UI
 	let nodeCreationPosition = $state({ x: 0, y: 0 }); // Flow position for node creation
 	let lastMousePosition = $state({ x: 0, y: 0 });
+
+	// Command palette state
+	let showCommandPalette = $state(false);
+	let commandPalettePosition = $state({ x: 0, y: 0 });
 	let flowContainer: HTMLDivElement;
 
 	// Get flow utilities for coordinate transformation
@@ -144,25 +149,36 @@
 		showPalette = false;
 	}
 
+	// Handle command palette
+	function handleCommandPaletteCancel() {
+		showCommandPalette = false;
+	}
+
 	// Handle global keyboard events
 	function handleGlobalKeydown(event: KeyboardEvent) {
-		// Only handle 'n' key when not typing in any input or inside any node content
 		const target = event.target as HTMLElement;
+		const isTyping =
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target.closest('.cm-editor') ||
+			target.closest('.cm-content') ||
+			target.contentEditable === 'true' ||
+			target.closest('.svelte-flow__node');
 
+		// Handle CMD+K for command palette
 		if (
-			event.key.toLowerCase() === 'n' &&
-			!showPalette &&
-			// Exclude all input types
-			!(target instanceof HTMLInputElement) &&
-			!(target instanceof HTMLTextAreaElement) &&
-			// Exclude CodeMirror editors (which use contenteditable divs)
-			!target.closest('.cm-editor') &&
-			!target.closest('.cm-content') &&
-			// Exclude any contenteditable elements
-			!(target.contentEditable === 'true') &&
-			// Exclude any elements inside nodes (they have react-flow__node class)
-			!target.closest('.svelte-flow__node')
+			event.key.toLowerCase() === 'k' &&
+			(event.metaKey || event.ctrlKey) &&
+			!showCommandPalette
 		) {
+			event.preventDefault();
+			const centerX = window.innerWidth / 2 - 160;
+			const centerY = window.innerHeight / 2 - 300;
+			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
+			showCommandPalette = true;
+		}
+		// Handle 'n' key for object palette
+		else if (event.key.toLowerCase() === 'n' && !showPalette && !showCommandPalette && !isTyping) {
 			event.preventDefault();
 			// Set screen position for palette UI (where the palette appears)
 			palettePosition = { ...lastMousePosition };
@@ -214,6 +230,11 @@
 				onSelect={handlePaletteSelect}
 				onCancel={handlePaletteCancel}
 			/>
+		{/if}
+
+		<!-- Command Palette -->
+		{#if showCommandPalette}
+			<CommandPalette position={commandPalettePosition} onCancel={handleCommandPaletteCancel} />
 		{/if}
 	</div>
 

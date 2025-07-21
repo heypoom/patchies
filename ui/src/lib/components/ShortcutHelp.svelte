@@ -7,7 +7,10 @@
 	const shortcuts = [
 		{
 			category: 'Navigation',
-			items: [{ key: 'N', description: 'Create new node at cursor position' }]
+			items: [
+				{ key: 'N', description: 'Create new node at cursor position' },
+				{ key: 'Cmd + K', description: 'Open command palette' }
+			]
 		},
 		{
 			category: 'Code Editing',
