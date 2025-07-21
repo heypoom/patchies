@@ -16,16 +16,17 @@
 	let paletteContainer: HTMLDivElement | undefined = $state();
 
 	// Multi-stage state
-	let stage = $state<'commands' | 'save-name' | 'load-list'>('commands');
+	let stage = $state<'commands' | 'save-name' | 'load-list' | 'delete-list'>('commands');
 	let patchName = $state('');
 	let savedPatches = $state<string[]>([]);
 
 	// Base commands for stage 1
 	const commands = [
-		{ id: 'save-file', name: 'Save to File', description: 'Save patch as JSON file' },
-		{ id: 'load-file', name: 'Load from File', description: 'Load patch from JSON file' },
-		{ id: 'save', name: 'Save', description: 'Save patch to local storage' },
-		{ id: 'load', name: 'Load', description: 'Load patch from local storage' }
+		{ id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
+		{ id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
+		{ id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
+		{ id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
+		{ id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' }
 	];
 
 	// Filtered items based on current stage
@@ -45,6 +46,16 @@
 	onMount(() => {
 		searchInput?.focus();
 		loadSavedPatches();
+	});
+
+	// Focus input when stage changes
+	$effect(() => {
+		if (stage === 'save-name' || stage === 'load-list' || stage === 'delete-list' || stage === 'commands') {
+			// Use setTimeout to ensure DOM is updated
+			setTimeout(() => {
+				searchInput?.focus();
+			}, 0);
+		}
 	});
 
 	function loadSavedPatches() {
@@ -77,7 +88,7 @@
 				const maxIndex =
 					stage === 'commands'
 						? filteredCommands.length - 1
-						: stage === 'load-list'
+						: stage === 'load-list' || stage === 'delete-list'
 							? filteredPatches.length - 1
 							: 0;
 				selectedIndex = Math.min(selectedIndex + 1, maxIndex);
@@ -102,25 +113,33 @@
 		} else if (stage === 'load-list' && filteredPatches.length > 0) {
 			const selectedPatch = filteredPatches[selectedIndex];
 			loadFromLocalStorage(selectedPatch);
+		} else if (stage === 'delete-list' && filteredPatches.length > 0) {
+			const selectedPatch = filteredPatches[selectedIndex];
+			deleteFromLocalStorage(selectedPatch);
 		}
 	}
 
 	function executeCommand(commandId: string) {
 		switch (commandId) {
-			case 'save-file':
+			case 'export-patch':
 				saveToFile();
 				break;
-			case 'load-file':
+			case 'import-patch':
 				loadFromFile();
 				break;
-			case 'save':
+			case 'save-patch':
 				stage = 'save-name';
 				searchQuery = '';
 				patchName = '';
 				selectedIndex = 0;
 				break;
-			case 'load':
+			case 'load-patch':
 				stage = 'load-list';
+				searchQuery = '';
+				selectedIndex = 0;
+				break;
+			case 'delete-patch':
+				stage = 'delete-list';
 				searchQuery = '';
 				selectedIndex = 0;
 				break;
@@ -208,6 +227,31 @@
 		}
 	}
 
+	function deleteFromLocalStorage(patchName: string) {
+		// Remove patch data
+		localStorage.removeItem(`patchies-patch-${patchName}`);
+		
+		// Update saved patches list
+		const saved = localStorage.getItem('patchies-saved-patches') || '[]';
+		try {
+			let savedPatchesList: string[] = JSON.parse(saved);
+			savedPatchesList = savedPatchesList.filter(name => name !== patchName);
+			localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
+			
+			// Update local state
+			savedPatches = savedPatchesList;
+			
+			// Reset selection if needed
+			if (selectedIndex >= savedPatchesList.length) {
+				selectedIndex = Math.max(0, savedPatchesList.length - 1);
+			}
+		} catch (error) {
+			console.error('Error deleting patch from storage:', error);
+		}
+		
+		// Don't close palette - stay in delete-list for multiple deletions
+	}
+
 	function handleClickOutside(event: MouseEvent) {
 		if (paletteContainer && !paletteContainer.contains(event.target as Node)) {
 			onCancel();
@@ -223,7 +267,7 @@
 		const maxIndex =
 			stage === 'commands'
 				? filteredCommands.length - 1
-				: stage === 'load-list'
+				: stage === 'load-list' || stage === 'delete-list'
 					? filteredPatches.length - 1
 					: 0;
 		selectedIndex = Math.min(selectedIndex, Math.max(0, maxIndex));
@@ -267,6 +311,18 @@
 	{:else if stage === 'load-list'}
 		<div class="border-b border-zinc-700 p-3">
 			<div class="mb-2 text-xs text-zinc-400">Select a patch to load:</div>
+			<input
+				bind:this={searchInput}
+				bind:value={searchQuery}
+				onkeydown={handleKeydown}
+				type="text"
+				placeholder="Search patches..."
+				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+			/>
+		</div>
+	{:else if stage === 'delete-list'}
+		<div class="border-b border-zinc-700 p-3">
+			<div class="mb-2 text-xs text-zinc-400">Select a patch to delete:</div>
 			<input
 				bind:this={searchInput}
 				bind:value={searchQuery}
@@ -320,6 +376,24 @@
 					</div>
 				{/each}
 			{/if}
+		{:else if stage === 'delete-list'}
+			{#if filteredPatches.length === 0}
+				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
+			{:else}
+				{#each filteredPatches as patch, index}
+					<div
+						class="cursor-pointer px-3 py-2 {index === selectedIndex
+							? 'bg-red-800'
+							: 'hover:bg-red-900/50'}"
+						onclick={() => handleItemClick(index)}
+						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
+						role="button"
+						tabindex="-1"
+					>
+						<div class="font-mono text-sm text-red-200">{patch}</div>
+					</div>
+				{/each}
+			{/if}
 		{/if}
 	</div>
 
@@ -331,6 +405,8 @@
 			Enter Save • Esc Back
 		{:else if stage === 'load-list'}
 			↑↓ Navigate • Enter Load • Esc Back
+		{:else if stage === 'delete-list'}
+			↑↓ Navigate • Enter Delete • Esc Back
 		{/if}
 	</div>
 </div>
