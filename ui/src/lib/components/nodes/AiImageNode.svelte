@@ -17,6 +17,7 @@
 	let errorMessage = $state<string | null>(null);
 	let isLoading = $state(false);
 	let hasImage = $state(false);
+	let abortController: AbortController | null = null;
 
 	let prompt = $state(
 		`a sleepy little town in the mountains, masterpiece, realistic, high quality, 4k`
@@ -32,7 +33,15 @@
 	});
 
 	async function updatePrompt() {
-		if (isLoading) return;
+		if (isLoading) {
+			if (abortController) {
+				abortController.abort();
+			}
+
+			isLoading = false;
+
+			return;
+		}
 
 		hasImage = false;
 		isLoading = true;
@@ -45,7 +54,12 @@
 				throw new Error('API key not found. Please set your Gemini API key with CMD+K.');
 			}
 
-			const image = await generateImageWithGemini(prompt, apiKey);
+			abortController = new AbortController();
+
+			const image = await generateImageWithGemini(prompt, {
+				apiKey,
+				abortSignal: abortController.signal
+			});
 
 			if (!image) {
 				throw new Error('Cannot generate image.');
@@ -112,7 +126,7 @@
 	{#if showEditor}
 		<div class="relative max-w-[350px]">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={updatePrompt} class="rounded p-1 hover:bg-zinc-700" disabled={isLoading}>
+				<button onclick={updatePrompt} class="rounded p-1 hover:bg-zinc-700">
 					<Icon icon={isLoading ? 'lucide:square' : 'lucide:play'} class="h-4 w-4 text-zinc-300" />
 				</button>
 

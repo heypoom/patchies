@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 
 export async function generateImageWithGemini(
 	prompt: string,
-	apiKey: string
+	{ apiKey, abortSignal }: { apiKey: string; abortSignal?: AbortSignal }
 ): Promise<ImageBitmap | null> {
 	const ai = new GoogleGenAI({ apiKey });
 
@@ -11,7 +11,8 @@ export async function generateImageWithGemini(
 		prompt,
 		config: {
 			numberOfImages: 1,
-			aspectRatio: '1:1'
+			aspectRatio: '1:1',
+			abortSignal
 		}
 	});
 
@@ -32,19 +33,24 @@ export async function generateImageWithGemini(
 
 export async function generateVideoWithGemini(
 	prompt: string,
-	apiKey: string
+	{ apiKey, abortSignal }: { apiKey: string; abortSignal?: AbortSignal }
 ): Promise<string | null> {
 	const ai = new GoogleGenAI({ apiKey });
 
 	let operation = await ai.models.generateVideos({
 		model: 'veo-3.0-generate-preview',
-		prompt
+		prompt,
+		config: {
+			numberOfVideos: 1,
+			aspectRatio: '1:1',
+			abortSignal
+		}
 	});
 
 	// Poll the operation status until the video is ready
 	while (!operation.done) {
 		await new Promise((resolve) => setTimeout(resolve, 10000));
-		operation = await ai.operations.getVideosOperation({ operation });
+		operation = await ai.operations.getVideosOperation({ operation, config: { abortSignal } });
 	}
 
 	return operation.response?.generatedVideos?.[0].video?.uri ?? null;
