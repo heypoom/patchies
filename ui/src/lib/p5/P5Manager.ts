@@ -30,13 +30,6 @@ export class P5Manager {
 
 	constructor(container: HTMLElement) {
 		this.container = container;
-
-		this.load();
-	}
-
-	async load() {
-		window.p5 = p5;
-		import('p5/lib/addons/p5.sound');
 	}
 
 	updateCode(config: P5SketchConfig) {
