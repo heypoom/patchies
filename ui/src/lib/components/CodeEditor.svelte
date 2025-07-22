@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { EditorView, basicSetup } from 'codemirror';
-	import { EditorState, Prec } from '@codemirror/state';
+	import { EditorState, Prec, type Extension } from '@codemirror/state';
 	import { javascript } from '@codemirror/lang-javascript';
 	import { oneDark } from '@codemirror/theme-one-dark';
 	import { keymap } from '@codemirror/view';
@@ -12,7 +12,15 @@
 		placeholder = '',
 		class: className = '',
 		onrun = () => {},
+		extraExtensions = [],
 		...restProps
+	}: {
+		value?: string;
+		language?: string;
+		placeholder?: string;
+		class?: string;
+		onrun?: () => void;
+		extraExtensions?: Extension[];
 	} = $props();
 
 	let editorElement: HTMLDivElement;
@@ -70,7 +78,8 @@
 					if (update.docChanged) {
 						value = update.state.doc.toString();
 					}
-				})
+				}),
+				...extraExtensions
 			];
 
 			// Add placeholder if provided

@@ -20,6 +20,7 @@
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import AiImageNode from './nodes/AiImageNode.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -29,7 +30,8 @@
 		['js.canvas']: JSCanvasNode,
 		['glsl.canvas']: GLSLCanvasNode,
 		['strudel']: StrudelNode,
-		['butterchurn']: ButterchurnNode
+		['butterchurn']: ButterchurnNode,
+		['ai.img']: AiImageNode
 	};
 
 	// Initial nodes and edges
