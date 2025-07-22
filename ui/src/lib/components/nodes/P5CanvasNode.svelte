@@ -121,30 +121,33 @@ function draw() {
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} />
+				<Handle type="target" position={Position.Top} class="z-1" />
+
 				<VideoHandle
 					type="target"
 					position={Position.Top}
 					id="video-in"
-					class="!left-8"
+					class="z-1 !left-20"
 					title="Video input"
 				/>
 
-				<div
-					bind:this={containerElement}
-					class="h-[200px] w-[200px] rounded-md bg-transparent [&>canvas]:rounded-md"
-				></div>
-
-				<!-- Error display -->
-				{#if errorMessage}
+				<div class="relative">
 					<div
-						class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2"
-					>
-						<div class="text-center">
-							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>
+						bind:this={containerElement}
+						class="min-h-[100px] min-w-[100px] rounded-md bg-transparent [&>canvas]:rounded-md"
+					></div>
+
+					<!-- Error display -->
+					{#if errorMessage}
+						<div
+							class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2"
+						>
+							<div class="text-center">
+								<div class="mt-1 text-xs text-red-200">{errorMessage}</div>
+							</div>
 						</div>
-					</div>
-				{/if}
+					{/if}
+				</div>
 
 				<Handle type="source" position={Position.Bottom} class="absolute" />
 
@@ -152,7 +155,7 @@ function draw() {
 					type="source"
 					position={Position.Bottom}
 					id="video-out"
-					class="!left-8"
+					class="z-1 !left-20"
 					title="Video output"
 				/>
 			</div>
