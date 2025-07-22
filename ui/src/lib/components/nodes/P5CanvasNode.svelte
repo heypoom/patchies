@@ -106,7 +106,7 @@ function draw() {
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
+				<div class="z-10 rounded-lg bg-transparent px-2 py-1">
 					<div class="font-mono text-xs font-medium text-zinc-100">p5.canvas</div>
 				</div>
 
@@ -131,7 +131,7 @@ function draw() {
 
 				<div
 					bind:this={containerElement}
-					class="h-[200px] w-[200px] rounded-md bg-zinc-900 [&>canvas]:rounded-md"
+					class="h-[200px] w-[200px] rounded-md bg-transparent [&>canvas]:rounded-md"
 				></div>
 
 				<!-- Error display -->
@@ -170,7 +170,7 @@ function draw() {
 				</button>
 			</div>
 
-			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+			<div class="rounded-lg border border-zinc-600 bg-transparent shadow-xl">
 				<CodeEditor
 					bind:value={code}
 					language="javascript"
