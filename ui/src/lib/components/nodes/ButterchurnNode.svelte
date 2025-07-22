@@ -4,8 +4,7 @@
 	import Icon from '@iconify/svelte';
 	import butterchurn from 'butterchurn';
 	import butterchurnPresets from 'butterchurn-presets';
-	import { getAudioContext, webaudioOutput } from '@strudel/webaudio';
-	import CodeEditor from '$lib/components/CodeEditor.svelte';
+
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
@@ -55,10 +54,10 @@
 			return;
 		}
 
-		const audioContext = getAudioContext();
-
 		const width = 200 * window.devicePixelRatio;
 		const height = 200 * window.devicePixelRatio;
+
+		const audioContext = new AudioContext();
 
 		const ctx = { width, height };
 		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, ctx);
