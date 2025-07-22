@@ -17,11 +17,18 @@
 
 	// Multi-stage state
 	let stage = $state<
-		'commands' | 'save-name' | 'load-list' | 'delete-list' | 'rename-list' | 'rename-name'
+		| 'commands'
+		| 'save-name'
+		| 'load-list'
+		| 'delete-list'
+		| 'rename-list'
+		| 'rename-name'
+		| 'gemini-api-key'
 	>('commands');
 	let patchName = $state('');
 	let savedPatches = $state<string[]>([]);
 	let selectedPatchToRename = $state('');
+	let geminiApiKey = $state('');
 
 	// Base commands for stage 1
 	const commands = [
@@ -30,7 +37,12 @@
 		{ id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
 		{ id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
 		{ id: 'rename-patch', name: 'Rename Patch', description: 'Rename saved patch' },
-		{ id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' }
+		{ id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' },
+		{
+			id: 'set-gemini-api-key',
+			name: 'Set Gemini API Key',
+			description: 'Configure Google Gemini API key'
+		}
 	];
 
 	// Filtered items based on current stage
@@ -60,6 +72,7 @@
 			stage === 'delete-list' ||
 			stage === 'rename-list' ||
 			stage === 'rename-name' ||
+			stage === 'gemini-api-key' ||
 			stage === 'commands'
 		) {
 			// Use setTimeout to ensure DOM is updated
@@ -136,6 +149,8 @@
 			selectedIndex = 0;
 		} else if (stage === 'rename-name' && patchName.trim()) {
 			renamePatch();
+		} else if (stage === 'gemini-api-key' && geminiApiKey.trim()) {
+			saveGeminiApiKey();
 		}
 	}
 
@@ -166,6 +181,12 @@
 			case 'rename-patch':
 				stage = 'rename-list';
 				searchQuery = '';
+				selectedIndex = 0;
+				break;
+			case 'set-gemini-api-key':
+				stage = 'gemini-api-key';
+				searchQuery = '';
+				geminiApiKey = '';
 				selectedIndex = 0;
 				break;
 		}
@@ -319,6 +340,13 @@
 		}
 	}
 
+	function saveGeminiApiKey() {
+		if (!geminiApiKey.trim()) return;
+
+		localStorage.setItem('gemini-api-key', geminiApiKey.trim());
+		onCancel();
+	}
+
 	function handleClickOutside(event: MouseEvent) {
 		if (paletteContainer && !paletteContainer.contains(event.target as Node)) {
 			onCancel();
@@ -423,6 +451,18 @@
 				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
 			/>
 		</div>
+	{:else if stage === 'gemini-api-key'}
+		<div class="border-b border-zinc-700 p-3">
+			<div class="mb-2 text-xs text-zinc-400">Enter your Google Gemini API key:</div>
+			<input
+				bind:this={searchInput}
+				bind:value={geminiApiKey}
+				onkeydown={handleKeydown}
+				type="password"
+				placeholder="Enter API key..."
+				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+			/>
+		</div>
 	{/if}
 
 	<!-- Results List -->
@@ -512,6 +552,11 @@
 					>"
 				</div>
 			{/if}
+		{:else if stage === 'gemini-api-key'}
+			<!-- Show current input preview -->
+			{#if geminiApiKey.trim()}
+				<div class="px-3 py-2 text-xs text-zinc-400">API key will be saved securely</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -529,6 +574,8 @@
 			↑↓ Navigate • Enter Rename • Esc Back
 		{:else if stage === 'rename-name'}
 			Enter Rename • Esc Back
+		{:else if stage === 'gemini-api-key'}
+			Enter Save • Esc Back
 		{/if}
 	</div>
 </div>

@@ -42,7 +42,7 @@
 			const apiKey = localStorage.getItem('gemini-api-key');
 
 			if (!apiKey) {
-				throw new Error('API key not found. Please set your Gemini API key.');
+				throw new Error('API key not found. Please set your Gemini API key with CMD+K.');
 			}
 
 			const finalPrompt = `${prompt.trim()}, high quality, 4k, square aspect ratio (1:1)`;
