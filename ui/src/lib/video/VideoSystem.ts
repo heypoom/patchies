@@ -14,6 +14,9 @@ export class VideoSystem {
 	// nodeId -> callbacks
 	private canvasCallbacks = new Map<string, ((canvases: HTMLCanvasElement[]) => void)[]>();
 
+	public outputNodeCanvas: HTMLCanvasElement | null = null;
+	public outputNodeId: string | null = null;
+
 	private constructor() {}
 
 	static getInstance(): VideoSystem {

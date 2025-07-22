@@ -22,6 +22,8 @@
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import AiImageNode from './nodes/AiImageNode.svelte';
 	import AiVideoNode from './nodes/AiVideoNode.svelte';
+	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
+	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -33,7 +35,8 @@
 		['strudel']: StrudelNode,
 		['butterchurn']: ButterchurnNode,
 		['ai.img']: AiImageNode,
-		['ai.vdo']: AiVideoNode
+		['ai.vdo']: AiVideoNode,
+		['bg.out']: BackgroundOutputNode
 	};
 
 	// Initial nodes and edges
@@ -223,7 +226,9 @@
 			class="bg-zinc-900"
 			proOptions={{ hideAttribution: true }}
 		>
-			<Background bgColor="#52525b" gap={16} />
+			<Background bgColor="#18181b" gap={16} />
+			<BackgroundOutputCanvas />
+
 			<Controls />
 		</SvelteFlow>
 
@@ -244,7 +249,9 @@
 	</div>
 
 	<!-- Bottom toolbar for draggable nodes -->
-	<div class="border-t border-zinc-700 bg-transparent px-3 py-2">
+	<div
+		class="fixed bottom-0 left-0 w-full border-t border-zinc-700 bg-transparent px-3 py-2 backdrop-blur-xl"
+	>
 		<div class="max-w-full">
 			<div class="flex items-center justify-between">
 				<div class="flex gap-3">
@@ -252,7 +259,7 @@
 						<div
 							role="button"
 							tabindex="0"
-							class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-2 py-1 transition-colors hover:bg-zinc-600"
+							class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-900 px-2 py-1 transition-colors hover:bg-zinc-600"
 							draggable={true}
 							ondragstart={(event) => {
 								event.dataTransfer?.setData('application/svelteflow', nodeType);
