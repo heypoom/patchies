@@ -21,6 +21,9 @@ export class VideoSystem {
 			VideoSystem.instance = new VideoSystem();
 		}
 
+		// @ts-expect-error -- expose globally for debugging
+		window.videoSystem = VideoSystem.instance;
+
 		return VideoSystem.instance;
 	}
 

@@ -45,6 +45,14 @@
 	onMount(() => {
 		videoSystem = VideoSystem.getInstance();
 		videoSystem.registerVideoSource(nodeId, canvasElement);
+
+		const width = 200 * window.devicePixelRatio;
+		const height = 200 * window.devicePixelRatio;
+
+		const audioContext = new AudioContext();
+
+		const ctx = { width, height };
+		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, ctx);
 	});
 
 	$effect(() => {
@@ -54,19 +62,15 @@
 			return;
 		}
 
-		const width = 200 * window.devicePixelRatio;
-		const height = 200 * window.devicePixelRatio;
-
-		const audioContext = new AudioContext();
-
-		const ctx = { width, height };
-		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, ctx);
 		visualizer.loadPreset(preset, 0.0);
 		start();
 	});
 
 	onDestroy(() => {
 		stop();
+		videoSystem.unregisterNode(nodeId);
+		visualizer.renderer = null;
+		visualizer = null;
 	});
 
 	function toggleEditor() {
@@ -84,7 +88,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={isPlaying ? stop : start}
 						title={isPlaying ? 'Pause' : 'Play'}
 					>
@@ -92,7 +96,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
