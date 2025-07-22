@@ -79,87 +79,18 @@ export class P5Manager {
 	}
 
 	private executeUserCode(p: p5Type, config: P5SketchConfig) {
-		// Create a context object with bound p5 functions
 		const p5Context = {};
 
-		// Only expose the most commonly used p5 functions and constants
-		const commonP5Methods = [
-			'createCanvas',
-			'background',
-			'fill',
-			'stroke',
-			'noStroke',
-			'strokeWeight',
-			'ellipse',
-			'rect',
-			'circle',
-			'line',
-			'point',
-			'text',
-			'triangle',
-			'random',
-			'noise',
-			'map',
-			'describe',
-			'constrain',
-			'lerp',
-			'sin',
-			'cos',
-			'tan',
-			'atan2',
-			'degrees',
-			'radians',
-			'push',
-			'pop',
-			'translate',
-			'rotate',
-			'scale',
-			'beginShape',
-			'endShape',
-			'vertex',
-			'curveVertex',
-			'bezierVertex',
-			'loadPixels',
-			'pixelDensity',
-			'colorMode',
-			'angleMode',
-			'min',
-			'max',
-			'createVideo',
-			'image'
-		];
-
-		const commonP5Properties = [
-			'PI',
-			'TWO_PI',
-			'HALF_PI',
-			'mouseX',
-			'mouseY',
-			'pmouseX',
-			'pmouseY',
-			'mouseIsPressed',
-			'frameCount',
-			'width',
-			'height'
-		];
-
-		// Bind common methods
-		commonP5Methods.forEach((method) => {
+		for (const key in p) {
 			// @ts-expect-error -- no-op
-			if (typeof p[method] === 'function') {
+			if (typeof p[key] === 'function') {
 				// @ts-expect-error -- no-op
-				p5Context[method] = p[method].bind(p);
-			}
-		});
-
-		// Copy common properties and constants
-		commonP5Properties.forEach((prop) => {
-			// @ts-expect-error -- no-op
-			if (p[prop] !== undefined) {
+				p5Context[key] = p[key].bind(p);
+			} else {
 				// @ts-expect-error -- no-op
-				p5Context[prop] = p[prop];
+				p5Context[key] = p[key];
 			}
-		});
+		}
 
 		// Add fromCanvas function for video chaining
 		// @ts-expect-error -- no-op
