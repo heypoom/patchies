@@ -27,7 +27,7 @@
 		['p5']: P5CanvasNode,
 		['js']: JSBlockNode,
 		['hydra']: HydraNode,
-		['js.canvas']: JSCanvasNode,
+		['canvas']: JSCanvasNode,
 		['glsl']: GLSLCanvasNode,
 		['strudel']: StrudelNode,
 		['butterchurn']: ButterchurnNode,

@@ -82,11 +82,11 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 ### `glsl`: creates a GLSL fragment shader
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting `p5`, `hydra`, or `js.canvas` to `glsl` to the four video inputs. These are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in the GLSL code.
+- You can use video chaining by connecting `p5`, `hydra`, or `canvas` to `glsl` to the four video inputs. These are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in the GLSL code.
 - See [ShaderToy](https://www.shadertoy.com) for examples of GLSL shaders. All shaders on ShaderToy are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend [The Book of Shaders](https://thebookofshaders.com) to learn GLSL basics.
 
-### `js.canvas`: creates a JavaScript canvas
+### `canvas`: creates a JavaScript canvas
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
 

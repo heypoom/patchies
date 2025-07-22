@@ -1,6 +1,6 @@
 # 12. Audio Analysis for Visualizations
 
-We now have the `strudel` object which generates sounds. We also have many visualization objects like `p5`, `hydra`, `js.canvas` and `glsl`. The next step is to connect these two worlds together.
+We now have the `strudel` object which generates sounds. We also have many visualization objects like `p5`, `hydra`, `canvas` and `glsl`. The next step is to connect these two worlds together.
 
 Luckily enough, Hydra and P5.js has built-in audio analysis capabilities:
 

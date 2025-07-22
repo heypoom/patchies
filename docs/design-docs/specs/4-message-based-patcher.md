@@ -132,7 +132,7 @@ interface Message {
    - `js` (JSBlockNode)
    - `p5` (P5CanvasNode)
    - `hydra` (HydraNode)
-   - `js.canvas` (JSCanvasNode)
+   - `canvas` (JSCanvasNode)
    - `glsl` (GLSLCanvasNode - receive only)
 
 2. **FlowCanvas integration**:
