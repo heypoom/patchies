@@ -12,7 +12,19 @@
 
 		if (source) {
 			const canvas = canvasElement.getContext('2d');
-			canvas?.drawImage(source, 0, 0);
+
+			canvas?.drawImage(
+				source,
+				0,
+				0,
+				source.width,
+				source.height,
+				0,
+				0,
+				canvasElement.width,
+				canvasElement.height
+			);
+
 			frameHandle = requestAnimationFrame(renderFrame);
 		} else {
 			kill();
@@ -46,9 +58,9 @@
 </script>
 
 <div
-	class={`pointer-events-none z-[-1] h-[100%] w-[100%] cursor-none ${
+	class={`pointer-events-none z-[-1] flex h-[100%] w-[100%] cursor-none ${
 		$isBackgroundOutputCanvasEnabled ? '' : 'hidden'
 	}`}
 >
-	<canvas bind:this={canvasElement} class="h-800 w-800"></canvas>
+	<canvas bind:this={canvasElement} height={800} width={800} class="w-full"></canvas>
 </div>
