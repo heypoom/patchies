@@ -259,7 +259,7 @@
 						<div
 							role="button"
 							tabindex="0"
-							class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-900 px-2 py-1 transition-colors hover:bg-zinc-600"
+							class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-700/50 px-2 py-1 backdrop-blur-xl transition-colors hover:bg-zinc-600"
 							draggable={true}
 							ondragstart={(event) => {
 								event.dataTransfer?.setData('application/svelteflow', nodeType);
