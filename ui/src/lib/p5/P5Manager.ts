@@ -6,6 +6,9 @@ interface SendMessageOptions {
 	to?: string;
 }
 
+const width = 800;
+const height = 800;
+
 interface MessageContext {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	send: (data: any, options?: SendMessageOptions) => void;
@@ -42,27 +45,16 @@ export class P5Manager {
 		if (!this.container) return;
 
 		const sketch = (p: p5Type) => {
-			let userSetup: (() => void) | undefined;
-			let userDraw: (() => void) | undefined;
-			let userMouseClicked: ((event: MouseEvent) => void) | undefined;
+			const { setup, draw, mouseClicked } = this.executeUserCode(p, config);
 
-			try {
-				const { setup, draw, mouseClicked } = this.executeUserCode(p, config);
-				userSetup = setup;
-				userDraw = draw;
-				userMouseClicked = mouseClicked;
-			} catch (error) {
-				console.log('P5 code error:', error);
-			}
+			const userSetup = setup;
+			const userDraw = draw;
+			const userMouseClicked = mouseClicked;
 
 			p.setup = function () {
-				p.createCanvas(config.width || 200, config.height || 120);
+				p.createCanvas(config.width || width, config.height || height);
 
-				try {
-					userSetup?.call(p);
-				} catch (error) {
-					console.log('P5 setup error:', error);
-				}
+				userSetup?.call(p);
 			};
 
 			p.draw = function () {
@@ -72,17 +64,14 @@ export class P5Manager {
 					if (error instanceof Error) {
 						p.background(220, 100, 100);
 						p.fill(255);
-						p.text(`error: ${error.message}`, 10, 60);
 					}
+
+					throw error;
 				}
 			};
 
 			p.mouseClicked = function (event: MouseEvent) {
-				try {
-					userMouseClicked?.call(p, event);
-				} catch (error) {
-					console.log('P5 mouseClicked error:', error);
-				}
+				userMouseClicked?.call(p, event);
 			};
 		};
 

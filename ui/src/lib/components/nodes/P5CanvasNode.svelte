@@ -107,7 +107,7 @@ function draw() {
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">p5</div>
+					<div class="font-mono text-xs font-medium text-zinc-100">p5.canvas</div>
 				</div>
 
 				<button
@@ -131,7 +131,7 @@ function draw() {
 
 				<div
 					bind:this={containerElement}
-					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
+					class="h-[200px] w-[200px] rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
 
 				<!-- Error display -->
@@ -140,13 +140,13 @@ function draw() {
 						class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2"
 					>
 						<div class="text-center">
-							<div class="text-xs font-medium text-red-100">P5.js Error:</div>
 							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>
 						</div>
 					</div>
 				{/if}
 
 				<Handle type="source" position={Position.Bottom} class="absolute" />
+
 				<VideoHandle
 					type="source"
 					position={Position.Bottom}

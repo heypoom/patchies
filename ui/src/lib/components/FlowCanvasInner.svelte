@@ -21,6 +21,7 @@
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import AiImageNode from './nodes/AiImageNode.svelte';
+	import AiVideoNode from './nodes/AiVideoNode.svelte';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -31,7 +32,8 @@
 		['glsl']: GLSLCanvasNode,
 		['strudel']: StrudelNode,
 		['butterchurn']: ButterchurnNode,
-		['ai.img']: AiImageNode
+		['ai.img']: AiImageNode,
+		['ai.vdo']: AiVideoNode
 	};
 
 	// Initial nodes and edges

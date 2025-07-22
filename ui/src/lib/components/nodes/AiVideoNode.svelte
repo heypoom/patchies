@@ -5,18 +5,19 @@
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
-	import { generateImageWithGemini } from '$lib/ai/google';
+	import { generateImageWithGemini, generateVideoWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
 
 	let canvasElement: HTMLCanvasElement;
+	let videoElement: HTMLVideoElement;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isLoading = $state(false);
-	let hasImage = $state(false);
+	let hasVideo = $state(false);
 
 	let prompt = $state(
 		`a sleepy little town in the mountains, masterpiece, realistic, high quality, 4k`
@@ -34,7 +35,7 @@
 	async function updatePrompt() {
 		if (isLoading) return;
 
-		hasImage = false;
+		hasVideo = false;
 		isLoading = true;
 		errorMessage = null;
 
@@ -45,17 +46,26 @@
 				throw new Error('API key not found. Please set your Gemini API key with CMD+K.');
 			}
 
-			const image = await generateImageWithGemini(prompt, apiKey);
+			const finalPrompt = `${prompt.trim()}, high quality, 4k, square aspect ratio (1:1)`;
+			const videoUrl = await generateVideoWithGemini(finalPrompt, apiKey);
 
-			if (!image) {
-				throw new Error('Cannot generate image.');
+			if (!videoUrl) {
+				throw new Error('Cannot generate video.');
 			}
 
-			canvasElement.getContext('2d')?.drawImage(image, 0, 0);
-			hasImage = true;
+			videoElement.src = videoUrl;
+			videoElement.play();
+			videoElement.defaultMuted = true;
+
+			const response = await fetch(videoUrl);
+			const blob = await response.blob();
+
+			console.log('Generated video blob:', blob);
+
+			hasVideo = true;
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
-			hasImage = false;
+			hasVideo = false;
 		} finally {
 			isLoading = false;
 		}
@@ -71,7 +81,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">ai.img</div>
+					<div class="font-mono text-xs font-medium text-zinc-100">ai.vdo</div>
 				</div>
 
 				<button
@@ -85,23 +95,27 @@
 
 			<div class="relative">
 				<div class="relative">
-					{#if !hasImage || isLoading}
+					{#if !hasVideo || isLoading}
 						<div class="pointer-events-none absolute h-full w-full">
 							<div class="flex h-full items-center justify-center">
 								<Icon
-									icon={isLoading ? 'lucide:loader' : 'lucide:image'}
+									icon={isLoading ? 'lucide:loader' : 'lucide:video'}
 									class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
 								/>
 							</div>
 						</div>
 					{/if}
 
-					<canvas
-						bind:this={canvasElement}
-						width={800}
-						height={800}
-						class="h-[200px] w-[200px] rounded-md bg-zinc-900"
-					></canvas>
+					<div>
+						<canvas
+							bind:this={canvasElement}
+							width={800}
+							height={800}
+							class="h-[200px] w-[200px] rounded-md bg-zinc-900"
+						></canvas>
+
+						<video bind:this={videoElement} playsinline autoplay muted loop></video>
+					</div>
 				</div>
 
 				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
