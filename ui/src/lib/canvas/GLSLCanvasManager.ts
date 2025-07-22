@@ -1,8 +1,8 @@
 import regl from 'regl';
 
 export class GLSLCanvasManager {
-	public width = 200;
-	public height = 200;
+	public width = 800;
+	public height = 800;
 
 	private canvas: HTMLCanvasElement | null = null;
 	private regl: regl.Regl | null = null;
@@ -27,8 +27,8 @@ export class GLSLCanvasManager {
 	createCanvas(options: { code: string }) {
 		try {
 			this.canvas = document.createElement('canvas');
-			this.canvas.style.width = `${this.width}px`;
-			this.canvas.style.height = `${this.height}px`;
+			this.canvas.style.width = '200px';
+			this.canvas.style.height = '200px';
 			this.canvas.style.objectFit = 'contain';
 
 			this.container.innerHTML = '';

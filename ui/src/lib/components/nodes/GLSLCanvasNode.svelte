@@ -102,35 +102,33 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} />
-
 				<!-- 4 video inlets for iChannel0-3 -->
 				<VideoHandle
 					type="target"
 					position={Position.Top}
 					id="video-in-0"
-					class="!left-8"
+					class="!left-17"
 					title="Video input iChannel0"
 				/>
 				<VideoHandle
 					type="target"
 					position={Position.Top}
 					id="video-in-1"
-					class="!left-12"
+					class="!left-22"
 					title="Video input iChannel1"
 				/>
 				<VideoHandle
 					type="target"
 					position={Position.Top}
 					id="video-in-2"
-					class="!left-16"
+					class="!left-27"
 					title="Video input iChannel2"
 				/>
 				<VideoHandle
 					type="target"
 					position={Position.Top}
 					id="video-in-3"
-					class="!left-20"
+					class="!left-32"
 					title="Video input iChannel3"
 				/>
 
@@ -139,14 +137,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></div>
 
-				<Handle type="source" position={Position.Bottom} />
-				<VideoHandle
-					type="source"
-					position={Position.Bottom}
-					id="video-out"
-					class="!left-8"
-					title="Video output"
-				/>
+				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
 			</div>
 		</div>
 	</div>
