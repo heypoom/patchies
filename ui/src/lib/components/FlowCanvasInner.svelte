@@ -25,6 +25,7 @@
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
 	import { isBottomBarVisible } from '../../stores/ui.store';
+	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -252,7 +253,10 @@
 	<!-- Bottom toolbar for draggable nodes -->
 	{#if $isBottomBarVisible}
 		<div
-			class="fixed bottom-0 left-0 w-full border-t border-zinc-700 bg-transparent px-3 py-2 backdrop-blur-xl"
+			class={[
+				'fixed bottom-0 left-0 w-full bg-transparent px-3 py-2 backdrop-blur-xl',
+				!$isBackgroundOutputCanvasEnabled && 'border-t border-zinc-700'
+			]}
 		>
 			<div class="max-w-full">
 				<div class="flex items-center justify-between">
@@ -261,7 +265,12 @@
 							<div
 								role="button"
 								tabindex="0"
-								class="flex cursor-grab flex-col items-center gap-2 rounded-sm border border-zinc-800 bg-zinc-800/50 px-2 py-1 backdrop-blur-xl transition-colors hover:bg-zinc-800"
+								class={[
+									'flex cursor-grab flex-col items-center gap-2 rounded-lg px-2 py-1 transition-colors',
+									$isBackgroundOutputCanvasEnabled
+										? 'bg-transparent backdrop-blur-xl hover:bg-zinc-900/10'
+										: 'border border-zinc-600 bg-zinc-800 hover:bg-zinc-700'
+								]}
 								draggable={true}
 								ondragstart={(event) => {
 									event.dataTransfer?.setData('application/svelteflow', nodeType);
