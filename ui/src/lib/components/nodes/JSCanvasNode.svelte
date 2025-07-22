@@ -21,20 +21,20 @@
 canvas.fillRect(0, 0, width, height);
 
 function animate() {
-	canvas.clearRect(0, 0, width, height);
-	canvas.fillStyle = '#18181b';
-	canvas.fillRect(0, 0, width, height);
-	
-	const time = Date.now() * 0.002;
-	const x = width/2 + Math.cos(time) * 50;
-	const y = height/2 + Math.sin(time) * 30;
-	
-	canvas.fillStyle = '#4ade80';
-	canvas.beginPath();
-	canvas.arc(x, y, 20, 0, Math.PI * 2);
-	canvas.fill();
-	
-	requestAnimationFrame(animate);
+  canvas.clearRect(0, 0, width, height);
+  canvas.fillStyle = '#18181b';
+  canvas.fillRect(0, 0, width, height);
+
+  const time = Date.now() * 0.002;
+  const x = width/2 + Math.cos(time) * 50;
+  const y = height/2 + Math.sin(time) * 30;
+
+  canvas.fillStyle = '#4ade80';
+  canvas.beginPath();
+  canvas.arc(x, y, 20, 0, Math.PI * 2);
+  canvas.fill();
+
+  requestAnimationFrame(animate);
 }
 
 animate()`);
@@ -108,7 +108,7 @@ animate()`);
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">canvas</div>
+					<div class="font-mono text-xs font-medium text-zinc-100">js.canvas</div>
 				</div>
 
 				<button

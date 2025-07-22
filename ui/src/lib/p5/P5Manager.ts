@@ -120,6 +120,7 @@ export class P5Manager {
 			'curveVertex',
 			'bezierVertex',
 			'loadPixels',
+			'pixelDensity',
 			'colorMode',
 			'angleMode',
 			'min',

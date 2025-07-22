@@ -18,13 +18,14 @@
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let code = $state(`function setup() {
-  createCanvas(200, 200);
+  createCanvas(200, 200)
+  pixelDensity(3)
 }
 
 function draw() {
-  background(100, 200, 300);
-  fill(255, 255, 100);
-  ellipse(100, 100, 80, 80);
+  background(100, 200, 300)
+  fill(255, 255, 100)
+  ellipse(100, 100, 80, 80)
 }`);
 
 	onMount(() => {
