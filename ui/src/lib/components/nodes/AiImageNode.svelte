@@ -85,16 +85,6 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class="z-1" />
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in"
-					class="!left-8 z-1"
-					title="Video input"
-				/>
-
 				<div class="relative">
 					{#if !hasImage || isLoading}
 						<div class="pointer-events-none absolute h-full w-full">
@@ -115,15 +105,7 @@
 					></canvas>
 				</div>
 
-				<Handle type="source" position={Position.Bottom} />
-
-				<VideoHandle
-					type="source"
-					position={Position.Bottom}
-					id="video-out"
-					class="!left-8"
-					title="Video output"
-				/>
+				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
 			</div>
 		</div>
 	</div>
