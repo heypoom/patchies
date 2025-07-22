@@ -98,7 +98,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -113,7 +113,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in"
-					class="!left-8"
+					class="z-1 !left-20"
 					title="Video input"
 				/>
 
@@ -135,11 +135,12 @@
 				{/if}
 
 				<Handle type="source" position={Position.Bottom} />
+
 				<VideoHandle
 					type="source"
 					position={Position.Bottom}
 					id="video-out"
-					class="!left-8"
+					class="z-1 !left-20"
 					title="Video output"
 				/>
 			</div>

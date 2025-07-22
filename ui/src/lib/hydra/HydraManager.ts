@@ -19,6 +19,9 @@ export interface HydraConfig {
 	messageContext?: MessageContext;
 }
 
+const [previewWidth, previewHeight] = [200, 200];
+const [canvasWidth, canvasHeight] = [800, 800];
+
 export class HydraManager {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private hydra: any;
@@ -33,8 +36,8 @@ export class HydraManager {
 
 		// Create canvas element
 		this.canvas = document.createElement('canvas');
-		this.canvas.width = 200;
-		this.canvas.height = 200;
+		this.canvas.width = previewWidth;
+		this.canvas.height = previewHeight;
 		this.canvas.style.width = '100%';
 		this.canvas.style.height = '100%';
 		this.canvas.style.objectFit = 'contain';
@@ -46,8 +49,8 @@ export class HydraManager {
 		// Initialize Hydra in non-global mode
 		this.hydra = new Hydra({
 			canvas: this.canvas,
-			width: 200,
-			height: 200,
+			width: canvasWidth,
+			height: canvasHeight,
 			autoLoop: true,
 			makeGlobal: false,
 			detectAudio: false,
