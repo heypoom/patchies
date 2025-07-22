@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { match, P } from 'ts-pattern';
+	import { isBottomBarVisible } from '../../stores/ui.store';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -15,16 +16,18 @@
 	let searchInput: HTMLInputElement | undefined = $state();
 	let paletteContainer: HTMLDivElement | undefined = $state();
 
-	// Multi-stage state
-	let stage = $state<
+	type StageName =
 		| 'commands'
 		| 'save-name'
 		| 'load-list'
 		| 'delete-list'
 		| 'rename-list'
 		| 'rename-name'
-		| 'gemini-api-key'
-	>('commands');
+		| 'gemini-api-key';
+
+	// Multi-stage state
+	let stage = $state<StageName>('commands');
+
 	let patchName = $state('');
 	let savedPatches = $state<string[]>([]);
 	let selectedPatchToRename = $state('');
@@ -42,6 +45,11 @@
 			id: 'set-gemini-api-key',
 			name: 'Set Gemini API Key',
 			description: 'Configure Google Gemini API key'
+		},
+		{
+			id: 'toggle-bottom-bar',
+			name: 'Toggle Bottom Bar',
+			description: 'Show or hide the bottom toolbar'
 		}
 	];
 
@@ -154,42 +162,31 @@
 		}
 	}
 
+	const nextStage = (stageName: StageName) => {
+		stage = stageName;
+		searchQuery = '';
+		selectedIndex = 0;
+	};
+
 	function executeCommand(commandId: string) {
-		switch (commandId) {
-			case 'export-patch':
-				saveToFile();
-				break;
-			case 'import-patch':
-				loadFromFile();
-				break;
-			case 'save-patch':
-				stage = 'save-name';
-				searchQuery = '';
-				patchName = '';
-				selectedIndex = 0;
-				break;
-			case 'load-patch':
-				stage = 'load-list';
-				searchQuery = '';
-				selectedIndex = 0;
-				break;
-			case 'delete-patch':
-				stage = 'delete-list';
-				searchQuery = '';
-				selectedIndex = 0;
-				break;
-			case 'rename-patch':
-				stage = 'rename-list';
-				searchQuery = '';
-				selectedIndex = 0;
-				break;
-			case 'set-gemini-api-key':
-				stage = 'gemini-api-key';
-				searchQuery = '';
+		match(commandId)
+			.with('export-patch', () => saveToFile())
+			.with('import-patch', () => loadFromFile())
+			.with('save-patch', () => nextStage('save-name'))
+			.with('load-patch', () => nextStage('load-list'))
+			.with('delete-patch', () => nextStage('delete-list'))
+			.with('rename-patch', () => nextStage('rename-list'))
+			.with('set-gemini-api-key', () => {
+				nextStage('gemini-api-key');
 				geminiApiKey = '';
-				selectedIndex = 0;
-				break;
-		}
+			})
+			.with('toggle-bottom-bar', () => {
+				$isBottomBarVisible = !$isBottomBarVisible;
+				onCancel();
+			})
+			.otherwise(() => {
+				console.warn(`Unknown command: ${commandId}`);
+			});
 	}
 
 	function saveToFile() {

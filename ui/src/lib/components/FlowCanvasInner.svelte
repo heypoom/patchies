@@ -24,6 +24,7 @@
 	import AiVideoNode from './nodes/AiVideoNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
+	import { isBottomBarVisible } from '../../stores/ui.store';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -229,7 +230,7 @@
 			<Background bgColor="#18181b" gap={16} />
 			<BackgroundOutputCanvas />
 
-			<Controls />
+			<Controls class={$isBottomBarVisible ? '!bottom-[50px]' : ''} />
 		</SvelteFlow>
 
 		<!-- Object Palette -->
@@ -249,33 +250,35 @@
 	</div>
 
 	<!-- Bottom toolbar for draggable nodes -->
-	<div
-		class="fixed bottom-0 left-0 w-full border-t border-zinc-700 bg-transparent px-3 py-2 backdrop-blur-xl"
-	>
-		<div class="max-w-full">
-			<div class="flex items-center justify-between">
-				<div class="flex gap-3">
-					{#each Object.keys(nodeTypes) as nodeType}
-						<div
-							role="button"
-							tabindex="0"
-							class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-700/50 px-2 py-1 backdrop-blur-xl transition-colors hover:bg-zinc-600"
-							draggable={true}
-							ondragstart={(event) => {
-								event.dataTransfer?.setData('application/svelteflow', nodeType);
-							}}
-						>
-							<span class="font-mono text-xs text-zinc-200">{nodeType}</span>
-						</div>
-					{/each}
-				</div>
+	{#if $isBottomBarVisible}
+		<div
+			class="fixed bottom-0 left-0 w-full border-t border-zinc-700 bg-transparent px-3 py-2 backdrop-blur-xl"
+		>
+			<div class="max-w-full">
+				<div class="flex items-center justify-between">
+					<div class="flex gap-3">
+						{#each Object.keys(nodeTypes) as nodeType}
+							<div
+								role="button"
+								tabindex="0"
+								class="flex cursor-grab flex-col items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-700/50 px-2 py-1 backdrop-blur-xl transition-colors hover:bg-zinc-600"
+								draggable={true}
+								ondragstart={(event) => {
+									event.dataTransfer?.setData('application/svelteflow', nodeType);
+								}}
+							>
+								<span class="font-mono text-xs text-zinc-200">{nodeType}</span>
+							</div>
+						{/each}
+					</div>
 
-				<div>
-					<ShortcutHelp />
+					<div>
+						<ShortcutHelp />
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	{/if}
 </div>
 
 <style>
