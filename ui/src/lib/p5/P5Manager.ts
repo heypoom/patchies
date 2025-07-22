@@ -6,9 +6,6 @@ interface SendMessageOptions {
 	to?: string;
 }
 
-const width = 800;
-const height = 800;
-
 interface MessageContext {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	send: (data: any, options?: SendMessageOptions) => void;
@@ -52,8 +49,6 @@ export class P5Manager {
 			const userMouseClicked = mouseClicked;
 
 			p.setup = function () {
-				p.createCanvas(config.width || width, config.height || height);
-
 				userSetup?.call(p);
 			};
 
@@ -110,6 +105,14 @@ export class P5Manager {
 			var setup, draw, mouseClicked;
 
 			with (p5Context) {
+				if (width === 0) {
+					width = ${p.width} || ${200};
+				}
+
+				if (height === 0) {
+					height = ${p.height} || ${200};
+				}
+
 				// Inject message system functions if available
 				if (messageContext) {
 					var send = messageContext.send;

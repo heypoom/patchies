@@ -43,16 +43,25 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
+				<div class="z-10 rounded-lg bg-zinc-900/50 px-2 py-1">
 					<div class="font-mono text-xs font-medium text-zinc-100">bg.out</div>
 				</div>
 			</div>
 
 			<div class="relative">
-				<VideoHandle type="target" position={Position.Top} id="video-out" title="Video output" />
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-out"
+					title="Video output"
+					class="z-1"
+				/>
 
 				<div
-					class="flex h-[100px] w-[100px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900"
+					class={[
+						'flex h-[100px] w-[100px] items-center justify-center rounded-lg bg-zinc-900/50 backdrop-blur-xl',
+						$isBackgroundOutputCanvasEnabled ? '' : 'border border-zinc-800'
+					]}
 				>
 					<Icon icon="lucide:screen-share" class="h-8 w-8 text-zinc-500" />
 				</div>
