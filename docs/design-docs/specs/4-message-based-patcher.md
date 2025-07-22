@@ -33,7 +33,7 @@ We want to implement a system for message-based patching, with concepts such as 
 
 This demo shows how to create a generator that sends either a red or green color randomly every half a second, and a p5.js canvas that draws a circle with the received color.
 
-Graph layout: two nodes connected: `js -> p5.canvas`.
+Graph layout: two nodes connected: `js -> p5`.
 
 JS block:
 
@@ -65,7 +65,7 @@ function draw() {
 
 ### Constructs for the JavaScript blocks
 
-These constructs are exposed to JavaScript-based objects, such as `js`, `p5.canvas` and `hydra`.
+These constructs are exposed to JavaScript-based objects, such as `js`, `p5` and `hydra`.
 
 - `send(data)` - Sends a message with the given data to all connected outlets.
   - `send(data, {type})` - specify the data type of the message.
@@ -130,10 +130,10 @@ interface Message {
 1. **Update existing JS nodes**:
 
    - `js` (JSBlockNode)
-   - `p5.canvas` (P5CanvasNode)
+   - `p5` (P5CanvasNode)
    - `hydra` (HydraNode)
    - `js.canvas` (JSCanvasNode)
-   - `glsl.canvas` (GLSLCanvasNode - receive only)
+   - `glsl` (GLSLCanvasNode - receive only)
 
 2. **FlowCanvas integration**:
    - Listen to XY Flow edge changes

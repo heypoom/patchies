@@ -24,11 +24,11 @@
 
 	// Define custom node types
 	const nodeTypes = {
-		['p5.canvas']: P5CanvasNode,
+		['p5']: P5CanvasNode,
 		['js']: JSBlockNode,
 		['hydra']: HydraNode,
 		['js.canvas']: JSCanvasNode,
-		['glsl.canvas']: GLSLCanvasNode,
+		['glsl']: GLSLCanvasNode,
 		['strudel']: StrudelNode,
 		['butterchurn']: ButterchurnNode,
 		['ai.img']: AiImageNode

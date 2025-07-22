@@ -107,11 +107,11 @@ function draw() {
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">p5.canvas</div>
+					<div class="font-mono text-xs font-medium text-zinc-100">p5</div>
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>

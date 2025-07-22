@@ -1,6 +1,6 @@
 # 12. Audio Analysis for Visualizations
 
-We now have the `strudel` object which generates sounds. We also have many visualization objects like `p5.canvas`, `hydra`, `js.canvas` and `glsl.canvas`. The next step is to connect these two worlds together.
+We now have the `strudel` object which generates sounds. We also have many visualization objects like `p5`, `hydra`, `js.canvas` and `glsl`. The next step is to connect these two worlds together.
 
 Luckily enough, Hydra and P5.js has built-in audio analysis capabilities:
 
@@ -8,15 +8,15 @@ Luckily enough, Hydra and P5.js has built-in audio analysis capabilities:
 - Hydra has [audio reactivity features](https://hydra.ojack.xyz/hydra-docs-v2/docs/learning/sequencing-and-interactivity/audio/#audio-reactivity) built-in, but it only works with a microphone.
   - FFT functionality is available via an audio object accessed via `a.show()` to show the FFT bins. We cannot use that.
   - However, hydra internally uses <https://github.com/meyda/meyda> for audio analysis. We can use Meyda directly in our JS environment to analyze audio and then expose the analysis as a `fft` argument in the JS environment of Hydra.
-- Let's focus with `p5.canvas` and `hydra` objects for now.
+- Let's focus with `p5` and `hydra` objects for now.
 - We should use the Meyda library for audio analysis directly, at least for use in `hydra`.
   - Docs: <https://meyda.js.org/getting-started.html>
 
-When a user connect a `strudel` object to a `p5.canvas` or `hydra` object, we want to connect the audio output of the `strudel` object to the video input of the `p5.canvas` or `hydra` object. More specifically, we want to extract the audio features from the `strudel` object and pass them to the video objects.
+When a user connect a `strudel` object to a `p5` or `hydra` object, we want to connect the audio output of the `strudel` object to the video input of the `p5` or `hydra` object. More specifically, we want to extract the audio features from the `strudel` object and pass them to the video objects.
 
 ## Audio and Video Routing
 
-We should support explicit routing audio from the `strudel` object to the `p5.canvas` or `hydra` object. This is done by using the `VideoHandle`.
+We should support explicit routing audio from the `strudel` object to the `p5` or `hydra` object. This is done by using the `VideoHandle`.
 
 I think the `VideoHandle` should also support audio routing. We can rename that sometime in the future.
 

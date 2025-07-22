@@ -37,7 +37,7 @@ onMessage((message) => {
 })
 ```
 
-You can use the `send` and `onMessage` function in all JavaScript-based objects, such as `js`, `p5.canvas`, and `hydra`.
+You can use the `send` and `onMessage` function in all JavaScript-based objects, such as `js`, `p5`, and `hydra`.
 
 Note that `strudel` object does not support message passing yet, as it runs in a separate `StrudelMirror` environment.
 
@@ -45,7 +45,7 @@ Note that `strudel` object does not support message passing yet, as it runs in a
 
 You can chain video objects together to create complex video effects, by using the output of a video object as an input to another. For example: P5 -> Hydra -> GLSL. This is similar to shader graphs in TouchDesigner.
 
-To leverage video chaining, use the leftmost orange inlets and outlets on the patch. You can connect the orange video outlet of a `p5.canvas` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl.canvas`.
+To leverage video chaining, use the leftmost orange inlets and outlets on the patch. You can connect the orange video outlet of a `p5` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl`.
 
 This allows you to create video patches that are more powerful than what you can do with a single object. Have fun!
 
@@ -66,7 +66,7 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 - See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
 - Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
 
-### `p5.canvas`: creates a P5.js sketch
+### `p5`: creates a P5.js sketch
 
 - P5.js is a JavaScript library for creative coding. It provides a simple way to create graphics and animations, but you can do very complex things with it.
 - If you are new to P5.js, I recommend watching [Patt Vira](https://www.youtube.com/@pattvira)'s YouTube tutorials on YouTube, or on her [website](https://www.pattvira.com). They're fantastic for both beginners and experienced developers.
@@ -79,11 +79,11 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 - See the [interactive Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
 - Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
 
-### `glsl.canvas`: creates a GLSL fragment shader
+### `glsl`: creates a GLSL fragment shader
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting `p5.canvas`, `hydra`, or `js.canvas` to `glsl.canvas` to the four video inputs. These are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in the GLSL code.
-- See [ShaderToy](https://www.shadertoy.com) for examples of GLSL shaders. All shaders on ShaderToy are automatically compatible with `glsl.canvas`, as they accept the same uniforms.
+- You can use video chaining by connecting `p5`, `hydra`, or `js.canvas` to `glsl` to the four video inputs. These are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in the GLSL code.
+- See [ShaderToy](https://www.shadertoy.com) for examples of GLSL shaders. All shaders on ShaderToy are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend [The Book of Shaders](https://thebookofshaders.com) to learn GLSL basics.
 
 ### `js.canvas`: creates a JavaScript canvas
@@ -93,4 +93,4 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 ### `butterchurn`: render the Winamp Milkdrop visualizer
 
 - [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
-- You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl.canvas`) to derive more visual effects.
+- You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl`) to derive more visual effects.

@@ -2,10 +2,10 @@
 
 We should allow objects that utilizes HTML5 canvases to become video sources for another video objects, as well as consume other video objects as input:
 
-- `p5.canvas`
+- `p5`
 - `hydra`
 - `js.canvas`
-- `glsl.canvas`
+- `glsl`
 
 The idea is that if a video object is wired to another video object using a video outlet, we should allow exposing the connected video object as a source.
 
