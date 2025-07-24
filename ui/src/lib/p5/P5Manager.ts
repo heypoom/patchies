@@ -159,7 +159,7 @@ export class P5Manager {
 
 		// Add audio analysis data (always available, even if null)
 		// @ts-expect-error -- no-op
-		p5Context['audio'] = this.createAudioContext();
+		sketch['audio'] = this.createAudioContext();
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(

@@ -41,18 +41,24 @@
 
 	let settings = codemirrorSettings.get();
 	let audioNodes: AudioNode[] = [];
-
-	const hap2value = (hap: any) => {
-		hap.ensureObjectValue();
-		return hap.value;
-	};
+	let audioNodeReady = $state(false);
 
 	onMount(() => {
 		const drawContext = getDrawContext();
 		const drawTime = [-2, 2];
 
 		editor = new StrudelMirror({
-			defaultOutput: webaudioOutput,
+			defaultOutput(...args) {
+				return webaudioOutput(...args).then((_audioNodes) => {
+					if (onAudioNodes) {
+						audioNodes = _audioNodes;
+						audioNodeReady = true;
+						onAudioNodes(audioNodes);
+					}
+
+					return audioNodes;
+				});
+			},
 			getTime: () => getAudioContext().currentTime,
 			transpiler,
 			root: containerElement,
