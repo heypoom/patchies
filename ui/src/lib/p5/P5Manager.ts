@@ -157,9 +157,9 @@ export class P5Manager {
 		// @ts-expect-error -- no-op
 		sketch['p5'] = P5;
 
-		// Add audio analysis data (always available, even if null)
+		// Add function to query audio analysis data
 		// @ts-expect-error -- no-op
-		sketch['audio'] = this.getAudioAnalysis();
+		sketch['getAudioAnalysis'] = this.createAudioAnalysisFunction();
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
@@ -221,14 +221,14 @@ export class P5Manager {
 		};
 	}
 
-	private getAudioAnalysis() {
-		return {
+	private createAudioAnalysisFunction() {
+		return () => ({
 			rms: this.audioAnalysis?.rms ?? 0,
 			spectralCentroid: this.audioAnalysis?.spectralCentroid ?? 0,
 			zcr: this.audioAnalysis?.zcr ?? 0,
 			spectrum: this.audioAnalysis?.spectrum ?? new Float32Array(512),
 			timestamp: this.audioAnalysis?.timestamp ?? 0,
 			frequency: (index: number) => this.audioAnalysis?.spectrum?.[index] ?? 0
-		};
+		});
 	}
 }
