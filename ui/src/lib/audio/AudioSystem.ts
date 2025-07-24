@@ -72,7 +72,6 @@ export class AudioSystem {
 		// Stop existing analyzer
 		if (this.strudelMeydaAnalyzer) {
 			this.strudelMeydaAnalyzer.stop();
-			this.strudelMeydaAnalyzer = null;
 		}
 
 		// Get the last audio node from all Strudel nodes
@@ -97,29 +96,35 @@ export class AudioSystem {
 			}
 
 			// Create Meyda analyzer using the mixer node as source
-			const analyzer = Meyda.createMeydaAnalyzer({
-				audioContext: this.strudelAudioContext,
-				source: mixerNode,
-				bufferSize: 512,
-				featureExtractors: ['rms', 'spectralCentroid', 'zcr', 'amplitudeSpectrum'],
-				callback: (features: Partial<MeydaFeaturesObject>) => {
-					const analysis: AudioAnalysis = {
-						rms: features.rms ?? 0,
-						spectralCentroid: features.spectralCentroid ?? 0,
-						zcr: features.zcr ?? 0,
-						spectrum: features.amplitudeSpectrum,
-						timestamp: this.strudelAudioContext!.currentTime
-					};
 
-					// Notify all registered audio sources
-					for (const [sourceId] of this.audioSources) {
-						this.notifyTargetsWithAnalysis(sourceId, analysis);
+			if (!this.strudelMeydaAnalyzer) {
+				this.strudelMeydaAnalyzer = Meyda.createMeydaAnalyzer({
+					audioContext: this.strudelAudioContext,
+					source: mixerNode,
+					bufferSize: 512,
+					featureExtractors: ['rms', 'spectralCentroid', 'zcr', 'amplitudeSpectrum'],
+					callback: (features: Partial<MeydaFeaturesObject>) => {
+						const analysis: AudioAnalysis = {
+							rms: features.rms ?? 0,
+							spectralCentroid: features.spectralCentroid ?? 0,
+							zcr: features.zcr ?? 0,
+							spectrum: features.amplitudeSpectrum,
+							timestamp: this.strudelAudioContext!.currentTime
+						};
+
+						console.log('meyda:', analysis);
+
+						// Notify all registered audio sources
+						for (const [sourceId] of this.audioSources) {
+							this.notifyTargetsWithAnalysis(sourceId, analysis);
+						}
 					}
-				}
-			});
+				});
+			} else {
+				this.strudelMeydaAnalyzer.setSource(mixerNode);
+			}
 
-			analyzer.start();
-			this.strudelMeydaAnalyzer = analyzer;
+			this.strudelMeydaAnalyzer.start();
 		} catch (error) {
 			console.warn('Failed to setup Strudel audio analysis:', error);
 		}
