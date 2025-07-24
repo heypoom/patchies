@@ -37,7 +37,7 @@
 		['strudel']: StrudelNode,
 		['butterchurn']: ButterchurnNode,
 		['ai.img']: AiImageNode,
-		['ai.vdo']: AiVideoNode,
+		// ['ai.vdo']: AiVideoNode,
 		['bg.out']: BackgroundOutputNode
 	};
 
