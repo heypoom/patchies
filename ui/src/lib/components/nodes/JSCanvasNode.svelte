@@ -17,6 +17,7 @@
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
+	let dragEnabled = $state(true);
 	let code = $state(`ctx.fillStyle = '#18181b';
 ctx.fillRect(0, 0, width, height);
 
@@ -72,13 +73,21 @@ draw()`);
 	});
 
 	function updateCanvas() {
+		// use noDrag() to prevent dragging
+		dragEnabled = true;
+
 		if (canvasManager && messageContext) {
 			try {
 				// Clear intervals to avoid duplicates
 				messageContext.clearIntervals();
 				canvasManager.updateCode({
 					code,
-					messageContext: messageContext.getContext()
+					messageContext: {
+						...messageContext.getContext(),
+						noDrag: () => {
+							dragEnabled = false;
+						}
+					}
 				});
 				// Clear any previous errors on successful update
 				errorMessage = null;
@@ -131,7 +140,10 @@ draw()`);
 				/>
 				<div
 					bind:this={containerElement}
-					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
+					class={[
+						'rounded-md bg-zinc-900 [&>canvas]:rounded-md',
+						dragEnabled ? 'cursor-grab' : 'nodrag cursor-default'
+					]}
 				></div>
 
 				<!-- Error display -->

@@ -80,7 +80,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={stop}
 								title="Stop"
 							>
@@ -88,7 +88,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={play}
 								title="Play"
 							>
@@ -100,8 +100,6 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} />
-
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
 					<div class="nodrag">
 						<StrudelEditor
@@ -124,8 +122,6 @@
 						</div>
 					</div>
 				{/if}
-
-				<Handle type="source" position={Position.Bottom} class="absolute" />
 			</div>
 		</div>
 	</div>

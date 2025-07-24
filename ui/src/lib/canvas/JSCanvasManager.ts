@@ -9,6 +9,8 @@ interface MessageContext {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	onMessage: (callback: (message: any) => void) => void;
 	interval: (callback: () => void, ms: number) => number;
+
+	noDrag: () => void;
 }
 
 export interface JSCanvasConfig {
@@ -117,7 +119,8 @@ export class JSCanvasManager {
 				...(messageContext && {
 					send: messageContext.send,
 					onMessage: messageContext.onMessage,
-					interval: messageContext.interval
+					interval: messageContext.interval,
+					noDrag: messageContext.noDrag
 				})
 			};
 
