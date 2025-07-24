@@ -17,27 +17,27 @@
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
-	let code = $state(`canvas.fillStyle = '#18181b';
-canvas.fillRect(0, 0, width, height);
+	let code = $state(`ctx.fillStyle = '#18181b';
+ctx.fillRect(0, 0, width, height);
 
-function animate() {
-  canvas.clearRect(0, 0, width, height);
-  canvas.fillStyle = '#18181b';
-  canvas.fillRect(0, 0, width, height);
+function draw() {
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#18181b';
+  ctx.fillRect(0, 0, width, height);
 
   const time = Date.now() * 0.002;
   const x = width/2 + Math.cos(time) * 50;
   const y = height/2 + Math.sin(time) * 30;
 
-  canvas.fillStyle = '#4ade80';
-  canvas.beginPath();
-  canvas.arc(x, y, 20, 0, Math.PI * 2);
-  canvas.fill();
+  ctx.fillStyle = '#4ade80';
+  ctx.beginPath();
+  ctx.arc(x, y, 20, 0, Math.PI * 2);
+  ctx.fill();
 
-  requestAnimationFrame(animate);
+  requestAnimationFrame(draw);
 }
 
-animate()`);
+draw()`);
 
 	onMount(() => {
 		// Initialize message context and video system

@@ -91,16 +91,20 @@ export class JSCanvasManager {
 			const rect = this.canvas.getBoundingClientRect();
 
 			const context = {
-				canvas: this.ctx,
+				canvas: this.canvas,
 				ctx: this.ctx,
 				width: rect.width,
 				height: rect.height,
+
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					this.animationId = requestAnimationFrame(callback);
+
 					return this.animationId;
 				},
+
 				cancelAnimationFrame: (id: number) => {
 					cancelAnimationFrame(id);
+
 					if (this.animationId === id) {
 						this.animationId = null;
 					}
