@@ -1,11 +1,10 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Position } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
-	import { generateImageWithGemini, generateVideoWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 
 	// Get node data from XY Flow - nodes receive their data as props
@@ -49,29 +48,7 @@
 		errorMessage = null;
 
 		try {
-			const apiKey = localStorage.getItem('gemini-api-key');
-
-			if (!apiKey) {
-				throw new Error('API key not found. Please set your Gemini API key with CMD+K.');
-			}
-
-			const videoUrl = await generateVideoWithGemini(prompt, {
-				apiKey,
-				abortSignal: abortController?.signal
-			});
-
-			if (!videoUrl) {
-				throw new Error('Cannot generate video.');
-			}
-
-			videoElement.src = videoUrl;
-			videoElement.play();
-			videoElement.defaultMuted = true;
-
-			const response = await fetch(videoUrl);
-			const blob = await response.blob();
-
-			console.log('Generated video blob:', blob);
+			// TODO: add video generation
 
 			hasVideo = true;
 		} catch (error) {

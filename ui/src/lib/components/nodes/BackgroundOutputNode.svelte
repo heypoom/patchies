@@ -4,7 +4,6 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import Icon from '@iconify/svelte';
-	import { on } from 'svelte/events';
 	import { onDestroy, onMount } from 'svelte';
 	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
 
