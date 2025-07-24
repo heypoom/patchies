@@ -14,12 +14,11 @@ interface MessageContext {
 	onMessage: (callback: (message: any) => void) => void;
 
 	interval: (callback: () => void, ms: number) => number;
+	nodrag: () => void;
 }
 
 export interface P5SketchConfig {
 	code: string;
-	width?: number;
-	height?: number;
 	messageContext?: MessageContext;
 }
 
@@ -42,19 +41,15 @@ export class P5Manager {
 		if (!this.container) return;
 
 		const sketch = (p: p5Type) => {
-			const { setup, draw, mouseClicked } = this.executeUserCode(p, config);
-
-			const userSetup = setup;
-			const userDraw = draw;
-			const userMouseClicked = mouseClicked;
+			const userCode = this.executeUserCode(p, config);
 
 			p.setup = function () {
-				userSetup?.call(p);
+				userCode?.setup?.call(p);
 			};
 
 			p.draw = function () {
 				try {
-					userDraw?.call(p);
+					userCode?.draw?.call(p);
 				} catch (error) {
 					if (error instanceof Error) {
 						p.background(220, 100, 100);
@@ -65,8 +60,76 @@ export class P5Manager {
 				}
 			};
 
+			p.preload = function () {
+				userCode?.preload?.call(p);
+			};
+
+			p.mousePressed = function (event: MouseEvent) {
+				userCode?.mousePressed?.call(p, event);
+			};
+
+			p.mouseReleased = function (event: MouseEvent) {
+				userCode?.mouseReleased?.call(p, event);
+			};
+
 			p.mouseClicked = function (event: MouseEvent) {
-				userMouseClicked?.call(p, event);
+				userCode?.mouseClicked?.call(p, event);
+			};
+
+			p.mouseMoved = function (event: MouseEvent) {
+				userCode?.mouseMoved?.call(p, event);
+			};
+
+			p.mouseDragged = function (event: MouseEvent) {
+				userCode?.mouseDragged?.call(p, event);
+			};
+
+			p.mouseWheel = function (event: WheelEvent) {
+				userCode?.mouseWheel?.call(p, event);
+			};
+
+			p.doubleClicked = function (event: MouseEvent) {
+				userCode?.doubleClicked?.call(p, event);
+			};
+
+			p.keyPressed = function (event: KeyboardEvent) {
+				userCode?.keyPressed?.call(p, event);
+			};
+
+			p.keyReleased = function (event: KeyboardEvent) {
+				userCode?.keyReleased?.call(p, event);
+			};
+
+			p.keyTyped = function (event: KeyboardEvent) {
+				userCode?.keyTyped?.call(p, event);
+			};
+
+			p.touchStarted = function (event: TouchEvent) {
+				userCode?.touchStarted?.call(p, event);
+			};
+
+			p.touchMoved = function (event: TouchEvent) {
+				userCode?.touchMoved?.call(p, event);
+			};
+
+			p.touchEnded = function (event: TouchEvent) {
+				userCode?.touchEnded?.call(p, event);
+			};
+
+			p.windowResized = function () {
+				userCode?.windowResized?.call(p);
+			};
+
+			p.deviceMoved = function () {
+				userCode?.deviceMoved?.call(p);
+			};
+
+			p.deviceTurned = function () {
+				userCode?.deviceTurned?.call(p);
+			};
+
+			p.deviceShaken = function () {
+				userCode?.deviceShaken?.call(p);
 			};
 		};
 
@@ -102,15 +165,22 @@ export class P5Manager {
 			'p5Context',
 			'messageContext',
 			`
-			var setup, draw, mouseClicked;
+			var setup, draw, preload, mousePressed, mouseReleased, mouseClicked, mouseMoved, mouseDragged, mouseWheel, doubleClicked, keyPressed, keyReleased, keyTyped, touchStarted, touchMoved, touchEnded, windowResized, deviceMoved, deviceTurned, deviceShaken;
+
+			var _createCanvas = p5Context.createCanvas;
 
 			with (p5Context) {
-				if (width === 0) {
-					width = ${p.width} || ${200};
-				}
+				// Hack: auto set width and height
+				var createCanvas = (...args) => {
+					if (typeof args[0] !== undefined) {
+						width = args[0]
+					}
 
-				if (height === 0) {
-					height = ${p.height} || ${200};
+					if (typeof args[1] !== undefined) {
+						height = args[1]
+					}
+
+					_createCanvas(...args);
 				}
 
 				// Inject message system functions if available
@@ -118,11 +188,13 @@ export class P5Manager {
 					var send = messageContext.send;
 					var onMessage = messageContext.onMessage;
 					var setInterval = messageContext.interval;
-					var recv = receive = onMessage // alias for onMessage
+					var recv = receive = onMessage; // alias for onMessage
+					var nodrag = messageContext.nodrag;
 				}
 				
 				${config.code}
-				return { setup, draw, mouseClicked };
+
+				return { setup, draw, preload, mousePressed, mouseReleased, mouseClicked, mouseMoved, mouseDragged, mouseWheel, doubleClicked, keyPressed, keyReleased, keyTyped, touchStarted, touchMoved, touchEnded, windowResized, deviceMoved, deviceTurned, deviceShaken };
 			}
 		`
 		);

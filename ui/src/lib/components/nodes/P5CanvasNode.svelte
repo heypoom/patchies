@@ -16,6 +16,7 @@
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
+	let enableDrag = $state(true);
 	let errorMessage = $state<string | null>(null);
 	let code = $state(`function setup() {
   createCanvas(200, 200)
@@ -67,11 +68,19 @@ function draw() {
 	});
 
 	function updateSketch() {
+		// re-enable drag on update. nodrag() must be called on setup().
+		enableDrag = true;
+
 		if (p5Manager && messageContext) {
 			try {
 				p5Manager.updateCode({
 					code,
-					messageContext: messageContext.getContext()
+					messageContext: {
+						...messageContext.getContext(),
+						nodrag: () => {
+							enableDrag = false;
+						}
+					}
 				});
 				// Clear any previous errors on successful update
 				errorMessage = null;
@@ -134,7 +143,10 @@ function draw() {
 				<div class="relative">
 					<div
 						bind:this={containerElement}
-						class="min-h-[100px] min-w-[100px] rounded-md bg-transparent [&>canvas]:rounded-md"
+						class={[
+							'min-h-[100px] min-w-[100px] rounded-md bg-transparent [&>canvas]:rounded-md',
+							enableDrag ? 'cursor-grab' : 'nodrag cursor-default'
+						]}
 					></div>
 
 					<!-- Error display -->
