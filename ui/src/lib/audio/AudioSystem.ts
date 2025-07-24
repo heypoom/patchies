@@ -25,6 +25,12 @@ export class AudioSystem {
 	// nodeId -> AudioNode (audio source)
 	private audioSources = new Map<string, AudioNode>();
 
+	// nodeId -> AudioNode[] (Strudel's audio nodes for each node)
+	private strudelAudioNodes = new Map<string, AudioNode[]>();
+
+	// External audio nodes that should receive audio from all Strudel sources
+	private externalAudioNodes = new Set<AudioNode>();
+
 	// nodeId -> callbacks for audio analysis data
 	private audioCallbacks = new Map<string, ((analysis: AudioAnalysis) => void)[]>();
 
@@ -54,12 +60,46 @@ export class AudioSystem {
 	 */
 	private setupStrudelAudioTap(): void {
 		if (!this.strudelAudioContext) return;
+		this.updateStrudelAudioTap();
+	}
+
+	/**
+	 * Update the Strudel audio tap with current audio nodes
+	 */
+	private updateStrudelAudioTap(): void {
+		if (!this.strudelAudioContext) return;
+
+		// Stop existing analyzer
+		if (this.strudelMeydaAnalyzer) {
+			this.strudelMeydaAnalyzer.stop();
+			this.strudelMeydaAnalyzer = null;
+		}
+
+		// Get the last audio node from all Strudel nodes
+		const allAudioNodes: AudioNode[] = [];
+		for (const [nodeId, audioNodes] of this.strudelAudioNodes) {
+			if (audioNodes.length > 0) {
+				// Get the last audio node (the output node)
+				const lastNode = audioNodes[audioNodes.length - 1];
+				allAudioNodes.push(lastNode);
+			}
+		}
+
+		if (allAudioNodes.length === 0) return;
 
 		try {
-			// Create Meyda analyzer to analyze all audio in the context
+			// Create a gain node to mix all Strudel outputs
+			const mixerNode = this.strudelAudioContext.createGain();
+
+			// Connect all audio nodes to the mixer
+			for (const audioNode of allAudioNodes) {
+				audioNode.connect(mixerNode);
+			}
+
+			// Create Meyda analyzer using the mixer node as source
 			const analyzer = Meyda.createMeydaAnalyzer({
 				audioContext: this.strudelAudioContext,
-				source: this.strudelAudioContext.destination,
+				source: mixerNode,
 				bufferSize: 512,
 				featureExtractors: ['rms', 'spectralCentroid', 'zcr', 'amplitudeSpectrum'],
 				callback: (features: Partial<MeydaFeaturesObject>) => {
@@ -79,7 +119,6 @@ export class AudioSystem {
 			});
 
 			analyzer.start();
-
 			this.strudelMeydaAnalyzer = analyzer;
 		} catch (error) {
 			console.warn('Failed to setup Strudel audio analysis:', error);
@@ -93,7 +132,52 @@ export class AudioSystem {
 		this.audioSources.set(nodeId, audioNode);
 		// With the global audio tap, we don't need per-node analyzers anymore
 		// The global analysis will handle all audio from superdough
-		this.notifyTargets(nodeId);
+		this.notifyTargets();
+	}
+
+	/**
+	 * Register Strudel audio nodes for a specific node
+	 */
+	registerStrudelAudioNodes(nodeId: string, audioNodes: AudioNode[]): void {
+		this.strudelAudioNodes.set(nodeId, audioNodes);
+		this.updateStrudelAudioTap();
+		this.connectExternalNodes();
+	}
+
+	/**
+	 * Connect an external audio node to receive audio from all Strudel sources
+	 */
+	connectToStrudelAudio(externalNode: AudioNode): void {
+		this.externalAudioNodes.add(externalNode);
+		this.connectExternalNodes();
+	}
+
+	/**
+	 * Disconnect an external audio node from Strudel sources
+	 */
+	disconnectFromStrudelAudio(externalNode: AudioNode): void {
+		this.externalAudioNodes.delete(externalNode);
+	}
+
+	/**
+	 * Connect all external nodes to current Strudel audio sources
+	 */
+	private connectExternalNodes(): void {
+		if (!this.strudelAudioContext || this.externalAudioNodes.size === 0) return;
+
+		// Connect all current Strudel audio nodes to all external nodes
+		for (const [nodeId, audioNodes] of this.strudelAudioNodes) {
+			if (audioNodes.length > 0) {
+				const lastNode = audioNodes[audioNodes.length - 1];
+				for (const externalNode of this.externalAudioNodes) {
+					try {
+						lastNode.connect(externalNode);
+					} catch (error) {
+						console.warn(`Failed to connect audio node for ${nodeId}:`, error);
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -121,9 +205,7 @@ export class AudioSystem {
 		}
 
 		// Notify all targets of changes
-		for (const [sourceId] of this.audioConnections) {
-			this.notifyTargets(sourceId);
-		}
+		this.notifyTargets();
 	}
 
 	/**
@@ -140,6 +222,7 @@ export class AudioSystem {
 	 */
 	unregisterNode(nodeId: string): void {
 		this.audioSources.delete(nodeId);
+		this.strudelAudioNodes.delete(nodeId);
 		this.audioCallbacks.delete(nodeId);
 
 		// Remove from connections
@@ -149,9 +232,12 @@ export class AudioSystem {
 			this.audioConnections.set(sourceId, newTargets);
 		}
 
+		// Update the audio tap since nodes changed
+		this.updateStrudelAudioTap();
+
 		// If no more audio sources, stop the Meyda analyzer
 		if (this.audioSources.size === 0 && this.strudelMeydaAnalyzer) {
-			(this.strudelMeydaAnalyzer as any).stop();
+			this.strudelMeydaAnalyzer.stop();
 			this.strudelMeydaAnalyzer = null;
 		}
 	}
@@ -168,7 +254,7 @@ export class AudioSystem {
 		// Check if this is an audio handle connection (audio-out from strudel to video-in on visual nodes)
 		return (
 			conn.sourceHandle === 'audio-out' ||
-			(this.audioSources.has(conn.source) && conn.targetHandle?.startsWith('video'))
+			(this.audioSources.has(conn.source) && (conn.targetHandle?.startsWith('video') ?? false))
 		);
 	}
 
@@ -190,9 +276,8 @@ export class AudioSystem {
 	/**
 	 * Notify target nodes of connection changes
 	 */
-	private notifyTargets(sourceId: string): void {
+	private notifyTargets(): void {
 		// For now, just trigger analysis setup - the actual data flow happens via callbacks
-		const targets = this.audioConnections.get(sourceId) || [];
 		// Could trigger initial analysis here if needed
 	}
 }

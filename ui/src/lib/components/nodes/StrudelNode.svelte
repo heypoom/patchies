@@ -77,6 +77,12 @@
 	function handleUpdateState(state: { started: boolean }) {
 		isPlaying = state.started;
 	}
+
+	function handleAudioNodes(audioNodes: AudioNode[]) {
+		if (audioSystem && audioNodes.length > 0) {
+			audioSystem.registerStrudelAudioNodes(nodeId, audioNodes);
+		}
+	}
 </script>
 
 <div class="relative flex gap-x-3">
@@ -118,6 +124,7 @@
 							{code}
 							bind:this={strudelEditor}
 							onUpdateState={handleUpdateState}
+							onAudioNodes={handleAudioNodes}
 							class="w-full"
 						/>
 					</div>

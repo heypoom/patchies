@@ -4,9 +4,11 @@
 	import Icon from '@iconify/svelte';
 	import butterchurn from 'butterchurn';
 	import butterchurnPresets from 'butterchurn-presets';
+	import { getAudioContext } from '@strudel/webaudio';
 
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
 
 	// Get node data from XY Flow - nodes receive their data as props
@@ -16,12 +18,14 @@
 	const firstPreset = '_Mig_049';
 
 	let videoSystem: VideoSystem;
+	let audioSystem: AudioSystem;
 	let canvasElement: HTMLCanvasElement;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isPlaying = $state(true);
 	let visualizer: any = null;
 	let currentPreset: string = $state(firstPreset);
+	let gainNode: GainNode | null = null;
 
 	let frame = 0;
 
@@ -42,23 +46,32 @@
 		cancelAnimationFrame(frame);
 	};
 
-	onMount(() => {
+	onMount(async () => {
 		videoSystem = VideoSystem.getInstance();
+		audioSystem = AudioSystem.getInstance();
 		videoSystem.registerVideoSource(nodeId, canvasElement);
 
 		const width = 200 * window.devicePixelRatio;
 		const height = 200 * window.devicePixelRatio;
 
-		const audioContext = new AudioContext();
+		// Use Strudel's audio context if available, otherwise create new one
+		const audioContext: AudioContext = getAudioContext();
 
 		const ctx = { width, height };
 		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, ctx);
+
+		// Create a gain node that will receive audio from connected sources
+		gainNode = audioContext.createGain();
+		gainNode.gain.value = 1.0;
+
+		visualizer.connectAudio(gainNode);
+		audioSystem.connectToStrudelAudio(gainNode);
 	});
 
 	$effect(() => {
 		const preset = presets[currentPreset];
 
-		if (!preset) {
+		if (!preset || !visualizer) {
 			return;
 		}
 
@@ -69,6 +82,13 @@
 	onDestroy(() => {
 		stop();
 		videoSystem.unregisterNode(nodeId);
+		audioSystem.unregisterNode(nodeId);
+
+		// Disconnect from Strudel audio
+		if (gainNode) {
+			audioSystem.disconnectFromStrudelAudio(gainNode);
+		}
+
 		visualizer.renderer = null;
 		visualizer = null;
 	});
@@ -88,7 +108,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={isPlaying ? stop : start}
 						title={isPlaying ? 'Pause' : 'Play'}
 					>
@@ -96,7 +116,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={toggleEditor}
 						title="Edit code"
 					>

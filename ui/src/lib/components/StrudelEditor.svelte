@@ -20,6 +20,7 @@
 		solo = true,
 		class: className = '',
 		onUpdateState = undefined,
+		onAudioNodes = undefined,
 		...props
 	}: {
 		code?: string;
@@ -27,6 +28,7 @@
 		solo?: boolean;
 		class?: string;
 		onUpdateState?: (state: unknown) => void;
+		onAudioNodes?: (audioNodes: AudioNode[]) => void;
 		[key: string]: unknown;
 	} = $props();
 
@@ -40,7 +42,7 @@
 	let settings = codemirrorSettings.get();
 	let audioNodes: AudioNode[] = [];
 
-	const hap2value = (hap) => {
+	const hap2value = (hap: any) => {
 		hap.ensureObjectValue();
 		return hap.value;
 	};
