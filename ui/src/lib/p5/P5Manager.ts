@@ -182,7 +182,7 @@ export class P5Manager {
 						height = args[1]
 					}
 
-					_createCanvas(...args);
+					return _createCanvas(...args);
 				}
 
 				// Inject message system functions if available
