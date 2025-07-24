@@ -1,5 +1,8 @@
+diff --git a/node_modules/superdough/.bun-tag-a20bbadee748411e b/.bun-tag-a20bbadee748411e
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/index.mjs b/dist/index.mjs
-index a711bb1440424b0c1a08f21791206048b19da44f..3d24d7c4df54e1fad63498fce4e84d7e79673859 100644
+index a711bb1440424b0c1a08f21791206048b19da44f..e28b961a99eb426647df8f695106abb7901d9104 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
 @@ -920,7 +920,7 @@ const xn = async (t, e, n, c) => {
@@ -7,7 +10,7 @@ index a711bb1440424b0c1a08f21791206048b19da44f..3d24d7c4df54e1fad63498fce4e84d7e
      ne = Ht(ct, W, 1), A.push(ne);
    }
 -  R.slice(1).reduce((W, D) => W.connect(D), R[0]), A = A.concat(R);
-+  R.slice(1).reduce((W, D) => W.connect(D), R[0]), A = A.concat(R); return A;
++  R.slice(1).reduce((W, D) => W.connect(D), R[0]), A = A.concat(R); window.strudelNodes = A; return A;
  }, Dn = (t, e, n, c) => {
    xn(e, t - n, e.duration / c, c);
  };
