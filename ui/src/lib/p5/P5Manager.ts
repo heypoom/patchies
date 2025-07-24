@@ -1,5 +1,5 @@
-import p5 from 'p5';
-import type p5Type from 'p5';
+import P5 from 'p5';
+import type Sketch from 'p5';
 
 interface SendMessageOptions {
 	type?: string;
@@ -25,7 +25,7 @@ export interface P5SketchConfig {
 }
 
 export class P5Manager {
-	private instance: p5Type | null = null;
+	private instance: Sketch | null = null;
 	private container: HTMLElement | null = null;
 	private videoCanvas: HTMLCanvasElement | null = null;
 
@@ -42,7 +42,7 @@ export class P5Manager {
 
 		if (!this.container) return;
 
-		const sketch = (p: p5Type) => {
+		const sketch = (p: Sketch) => {
 			const userCode = this.executeUserCode(p, config);
 
 			p.setup = function () {
@@ -135,63 +135,41 @@ export class P5Manager {
 			};
 		};
 
-		this.instance = new p5(sketch, this.container);
+		this.instance = new P5(sketch, this.container);
 	}
 
-	private executeUserCode(p: p5Type, config: P5SketchConfig) {
-		const p5Context = {};
-
-		for (const key in p) {
+	private executeUserCode(sketch: Sketch, config: P5SketchConfig) {
+		for (const key in sketch) {
 			// @ts-expect-error -- no-op
-			if (typeof p[key] === 'function') {
+			if (typeof sketch[key] === 'function') {
 				// @ts-expect-error -- no-op
-				p5Context[key] = p[key].bind(p);
-			} else {
-				// @ts-expect-error -- no-op
-				p5Context[key] = p[key];
+				sketch[key] = sketch[key].bind(sketch);
 			}
 		}
 
 		// Add fromCanvas function for video chaining
 		// @ts-expect-error -- no-op
-		p5Context['fromCanvas'] = this.createFromCanvasFunction(p);
+		sketch['fromCanvas'] = this.createFromCanvasFunction(sketch);
 
 		// @ts-expect-error -- no-op
-		p5Context['sketch'] = p;
-
-		// @ts-expect-error -- no-op
-		p5Context['p5'] = p5;
+		sketch['p5'] = P5;
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
-			'p5Context',
-			'messageContext',
+			'sketch',
+			'sketchContext',
 			`
 			var setup, draw, preload, mousePressed, mouseReleased, mouseClicked, mouseMoved, mouseDragged, mouseWheel, doubleClicked, keyPressed, keyReleased, keyTyped, touchStarted, touchMoved, touchEnded, windowResized, deviceMoved, deviceTurned, deviceShaken;
 
-			var _createCanvas = p5Context.createCanvas;
-
-			with (p5Context) {
-				// Hack: auto set width and height
-				var createCanvas = (...args) => {
-					if (typeof args[0] !== undefined) {
-						width = args[0]
-					}
-
-					if (typeof args[1] !== undefined) {
-						height = args[1]
-					}
-
-					return _createCanvas(...args);
-				}
-
+			with (sketch) {
 				// Inject message system functions if available
-				if (messageContext) {
-					var send = messageContext.send;
-					var onMessage = messageContext.onMessage;
-					var setInterval = messageContext.interval;
+				if (sketchContext) {
+					var send = sketchContext.send;
+					var onMessage = sketchContext.onMessage;
+					var setInterval = sketchContext.interval;
+					var noDrag = sketchContext.noDrag;
+
 					var recv = receive = onMessage; // alias for onMessage
-					var noDrag = messageContext.noDrag;
 				}
 				
 				${config.code}
@@ -201,7 +179,7 @@ export class P5Manager {
 		`
 		);
 
-		return userCode(p5Context, config.messageContext ?? {});
+		return userCode(sketch, config.messageContext ?? {});
 	}
 
 	destroy() {
@@ -226,14 +204,9 @@ export class P5Manager {
 		this.videoCanvas = canvas;
 	}
 
-	private createFromCanvasFunction(p: p5Type) {
+	private createFromCanvasFunction() {
 		return () => {
-			if (this.videoCanvas) {
-				// For p5.js, we can use the canvas directly with createGraphics
-				// or draw it using image() function
-				return this.videoCanvas;
-			}
-			return null;
+			return this.videoCanvas ?? null;
 		};
 	}
 }
