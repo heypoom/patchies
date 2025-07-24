@@ -9,9 +9,11 @@ export class GLSLCanvasManager {
 	private container: HTMLElement;
 	private drawCommand: regl.DrawCommand | null = null;
 	private frameHandle: regl.Cancellable | null = null;
+
 	private mouseX: number = 0;
 	private mouseY: number = 0;
-	private dpr = window.devicePixelRatio || 1;
+	private lastTime: number = 0;
+	private frameCounter: number = 0;
 
 	// Video canvas sources and textures for iChannel0-3
 	private videoCanvases: HTMLCanvasElement[] = [];
@@ -109,8 +111,8 @@ export class GLSLCanvasManager {
 		this.canvas.addEventListener('mousemove', (e) => {
 			const rect = this.canvas!.getBoundingClientRect();
 
-			this.mouseX = e.clientX - rect.left;
-			this.mouseY = rect.height - (e.clientY - rect.top);
+			this.mouseX = e.layerX - rect.left;
+			this.mouseY = rect.height - (e.layerY - rect.top);
 		});
 	}
 
@@ -191,26 +193,30 @@ export class GLSLCanvasManager {
 			},
 
 			uniforms: {
-				iResolution: () => {
-					return [this.width * this.dpr, this.height * this.dpr, 1.0];
+				iResolution: ({ pixelRatio }) => {
+					return [this.width * pixelRatio, this.height * pixelRatio, 1.0];
 				},
 
 				iTime: ({ time }) => time,
-
+				iTimeDelta: ({ time }) => time - this.lastTime,
+				iFrame: () => this.frameCounter,
 				iMouse: () => [this.mouseX, this.mouseY, 0, 0],
 
 				iDate: () => {
-					return [
-						this.date.getFullYear(),
-						this.date.getMonth(),
-						this.date.getDate(),
-						this.date.getHours() * 3600 + this.date.getMinutes() * 60 + this.date.getSeconds()
-					];
+					const now = new Date();
+
+					const year = now.getFullYear();
+					const month = now.getMonth() + 1;
+					const day = now.getDate();
+
+					const timeInSeconds =
+						now.getHours() * 3600 +
+						now.getMinutes() * 60 +
+						now.getSeconds() +
+						now.getMilliseconds() / 1000;
+
+					return [year, month, day, timeInSeconds];
 				},
-
-				iTimeDelta: ({ tick }) => tick * 0.001,
-
-				iFrame: ({ tick }) => tick,
 
 				// Video texture uniforms
 				iChannel0: () => this.videoTextures[0] || this.fallbackTexture,
@@ -242,6 +248,9 @@ export class GLSLCanvasManager {
 			});
 
 			this.drawCommand!(context);
+
+			this.lastTime = context.time;
+			this.frameCounter++;
 		});
 	}
 
