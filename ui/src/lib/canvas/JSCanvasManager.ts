@@ -113,7 +113,7 @@ export class JSCanvasManager {
 				},
 
 				// Video chaining function
-				fromCanvas: this.createFromCanvasFunction(),
+				getSource: this.createGetSourceFunction(),
 
 				// Message system functions (if available)
 				...(messageContext && {
@@ -161,13 +161,9 @@ export class JSCanvasManager {
 		this.videoCanvas = canvas;
 	}
 
-	private createFromCanvasFunction() {
+	private createGetSourceFunction() {
 		return () => {
-			if (this.videoCanvas) {
-				// Return the canvas element for direct drawing with ctx.drawImage(canvas, 0, 0)
-				return this.videoCanvas;
-			}
-			return null;
+			return this.videoCanvas ?? null;
 		};
 	}
 }

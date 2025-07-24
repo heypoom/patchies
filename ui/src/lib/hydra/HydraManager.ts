@@ -136,7 +136,7 @@ export class HydraManager {
 				render: this.synth.render.bind(this.synth),
 
 				// Video chaining function
-				fromCanvas: this.createFromCanvasFunction(),
+				initSource: this.createInitSourceFunction(),
 
 				// Message system functions (if available)
 				...(messageContext && {
@@ -205,7 +205,7 @@ export class HydraManager {
 		}
 	}
 
-	private createFromCanvasFunction() {
+	private createInitSourceFunction() {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		return (source?: any) => {
 			if (!this.videoCanvas) {

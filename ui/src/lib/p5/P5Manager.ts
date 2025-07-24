@@ -147,12 +147,26 @@ export class P5Manager {
 			}
 		}
 
-		// Add fromCanvas function for video chaining
 		// @ts-expect-error -- no-op
-		sketch['fromCanvas'] = this.createFromCanvasFunction(sketch);
+		sketch['getSource'] = this.createGetSourceFunction(sketch);
 
 		// @ts-expect-error -- no-op
 		sketch['p5'] = P5;
+
+		// Add function for copying from video canvas
+		// @ts-expect-error -- no-op
+		sketch['drawSource'] = () => {
+			const source = this.videoCanvas;
+			if (!source) return;
+
+			// @ts-expect-error -- no-op
+			const { canvas } = sketch;
+			if (!canvas) return;
+
+			canvas
+				.getContext('2d')
+				?.drawImage(source, 0, 0, source.width, source.height, 0, 0, canvas.width, canvas.height);
+		};
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
@@ -204,7 +218,7 @@ export class P5Manager {
 		this.videoCanvas = canvas;
 	}
 
-	private createFromCanvasFunction() {
+	private createGetSourceFunction() {
 		return () => {
 			return this.videoCanvas ?? null;
 		};
