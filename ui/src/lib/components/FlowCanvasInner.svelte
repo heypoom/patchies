@@ -35,10 +35,10 @@
 		['canvas']: JSCanvasNode,
 		['glsl']: GLSLCanvasNode,
 		['strudel']: StrudelNode,
-		['butterchurn']: ButterchurnNode,
+		['bchrn']: ButterchurnNode,
 		['ai.img']: AiImageNode,
-		// ['ai.vdo']: AiVideoNode,
 		['bg.out']: BackgroundOutputNode
+		// ['ai.vdo']: AiVideoNode,
 	};
 
 	// Initial nodes and edges
