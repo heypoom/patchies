@@ -3,12 +3,13 @@
 	import { silence } from '@strudel/core';
 	import { getDrawContext } from '@strudel/draw';
 	import { transpiler } from '@strudel/transpiler';
-	import { getAudioContext, webaudioOutput } from '@strudel/webaudio';
+	import { getAudioContext } from '@strudel/webaudio';
 	import {
 		StrudelMirror,
 		codemirrorSettings,
 		settings as themeSettings
 	} from '@strudel/codemirror';
+	import { superdough } from 'superdough';
 	import { prebake } from '$lib/strudel/prebake';
 	import { Prec, StateEffect } from '@codemirror/state';
 	import { keymap } from '@codemirror/view';
@@ -37,6 +38,23 @@
 	}
 
 	let settings = codemirrorSettings.get();
+	let audioNodes: AudioNode[] = [];
+
+	const hap2value = (hap) => {
+		hap.ensureObjectValue();
+		return hap.value;
+	};
+
+	// NOTE: this is using a **patched** version of superdough
+	// which returns the audio nodes.
+	const webaudioOutput = async (hap, _deadline, hapDuration, cps, t) => {
+		audioNodes = await superdough(hap2value(hap), t, hapDuration, cps, hap.whole?.begin.valueOf());
+
+		// @ts-expect-error -- for debugging purposes
+		window.strudelAudioNodes = audioNodes; // for debugging purposes
+
+		return audioNodes;
+	};
 
 	onMount(() => {
 		const drawContext = getDrawContext();

@@ -1,0 +1,26 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index a711bb1440424b0c1a08f21791206048b19da44f..3d24d7c4df54e1fad63498fce4e84d7e79673859 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -920,7 +920,7 @@ const xn = async (t, e, n, c) => {
+     const W = fn(qt, 2 ** (Ne + 5));
+     ne = Ht(ct, W, 1), A.push(ne);
+   }
+-  R.slice(1).reduce((W, D) => W.connect(D), R[0]), A = A.concat(R);
++  R.slice(1).reduce((W, D) => W.connect(D), R[0]), A = A.concat(R); return A;
+ }, Dn = (t, e, n, c) => {
+   xn(e, t - n, e.duration / c, c);
+ };
+diff --git a/superdough.mjs b/superdough.mjs
+index 1069d4e84c6b13df3dea812a8b56aef31b353435..c88c99fb9cfee0fffcfc448e71e7a5e9acb5ef44 100644
+--- a/superdough.mjs
++++ b/superdough.mjs
+@@ -752,6 +752,8 @@ export const superdough = async (value, t, hapDuration, cps) => {
+   // connect chain elements together
+   chain.slice(1).reduce((last, current) => last.connect(current), chain[0]);
+   audioNodes = audioNodes.concat(chain);
++
++  return audioNodes;
+ };
+ 
+ export const superdoughTrigger = (t, hap, ct, cps) => {
