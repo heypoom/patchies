@@ -4,7 +4,6 @@
 	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
-	import { getAudioContext } from '@strudel/webaudio';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 
 	// Get node data from XY Flow - nodes receive their data as props
@@ -16,24 +15,15 @@
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
 	let code = $state(`note("c a f e").jux(rev)`);
+	let isAudioNodeTapped = $state(false);
 
 	onMount(() => {
 		audioSystem = AudioSystem.getInstance();
-
-		// Set up Strudel audio context for the audio system
-		const audioContext = getAudioContext();
-		audioSystem.setStrudelAudioContext(audioContext);
 
 		// Wait for the StrudelEditor to be ready
 		setTimeout(() => {
 			if (strudelEditor?.editor) {
 				isInitialized = true;
-
-				// Register this node as an audio source for analysis
-				// The AudioSystem's global audio tap will capture Strudel's audio output
-				if (audioContext.destination) {
-					audioSystem.registerAudioSource(nodeId, audioContext.destination);
-				}
 
 				// @ts-expect-error -- for debugging
 				window.strudel = strudelEditor.editor;
@@ -44,7 +34,9 @@
 	onDestroy(() => {
 		if (strudelEditor?.editor) {
 			strudelEditor.editor.stop();
+			audioSystem?.setStrudelPlaying(false);
 		}
+
 		if (audioSystem) {
 			audioSystem.unregisterNode(nodeId);
 		}
@@ -54,7 +46,7 @@
 		if (strudelEditor?.editor) {
 			try {
 				strudelEditor.editor.stop();
-				isPlaying = false;
+				audioSystem?.setStrudelPlaying(false);
 				errorMessage = null;
 			} catch (error) {
 				errorMessage = error instanceof Error ? error.message : String(error);
@@ -66,6 +58,7 @@
 		if (strudelEditor?.editor) {
 			try {
 				strudelEditor.editor.evaluate();
+
 				errorMessage = null;
 			} catch (error) {
 				errorMessage = error instanceof Error ? error.message : String(error);
@@ -76,11 +69,13 @@
 
 	function handleUpdateState(state: { started: boolean }) {
 		isPlaying = state.started;
+		audioSystem?.setStrudelPlaying(state.started);
 	}
 
-	function registerStrudelAudioNodes(audioNodes: AudioNode[]) {
-		if (audioSystem && audioNodes.length > 0) {
-			audioSystem.registerStrudelAudioNodes(nodeId, audioNodes);
+	function onAudioNodes(audioNodes: AudioNode[]) {
+		if (audioSystem && audioNodes.length === 4) {
+			isAudioNodeTapped = true;
+			audioSystem.sendStrudelAudioNodes(nodeId, audioNodes);
 		}
 	}
 </script>
@@ -98,7 +93,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 								onclick={stop}
 								title="Stop"
 							>
@@ -106,7 +101,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 								onclick={play}
 								title="Play"
 							>
@@ -124,7 +119,7 @@
 							{code}
 							bind:this={strudelEditor}
 							onUpdateState={handleUpdateState}
-							onAudioNodes={registerStrudelAudioNodes}
+							{onAudioNodes}
 							class="w-full"
 						/>
 					</div>
