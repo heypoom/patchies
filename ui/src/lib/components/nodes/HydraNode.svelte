@@ -17,6 +17,7 @@
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
+
 	let code = $state(`osc(20, 0.1, 0.8)
   .diff(osc(20, 0.05)
   .rotate(Math.PI/2))
@@ -29,8 +30,8 @@
 
 		// Subscribe to video canvas sources
 		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			if (hydraManager && canvases.length > 0) {
-				hydraManager.setVideoCanvas(canvases[0]);
+			if (hydraManager) {
+				hydraManager.setVideoCanvases(canvases);
 			}
 		});
 
@@ -39,6 +40,7 @@
 				code,
 				messageContext: messageContext.getContext()
 			});
+
 			registerVideoSource();
 		}
 	});
@@ -47,9 +49,11 @@
 		if (hydraManager) {
 			hydraManager.destroy();
 		}
+
 		if (messageContext) {
 			messageContext.destroy();
 		}
+
 		if (videoSystem) {
 			videoSystem.unregisterNode(nodeId);
 		}
@@ -82,6 +86,7 @@
 	function registerVideoSource() {
 		if (hydraManager && videoSystem) {
 			const canvas = hydraManager.getCanvas();
+
 			if (canvas) {
 				videoSystem.registerVideoSource(nodeId, canvas);
 			}
@@ -98,7 +103,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -107,14 +112,44 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} />
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in-0"
+					class="!left-16 z-1"
+					title="Video input 0"
+				/>
 
 				<VideoHandle
 					type="target"
 					position={Position.Top}
-					id="video-in"
-					class="z-1 !left-20"
-					title="Video input"
+					id="video-in-1"
+					class="!left-20 z-1"
+					title="Video input 1"
+				/>
+
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in-2"
+					class="!left-24 z-1"
+					title="Video input 2"
+				/>
+
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in-3"
+					class="!left-28 z-1"
+					title="Video input 3"
+				/>
+
+				<Handle
+					type="target"
+					position={Position.Top}
+					class="!left-32 z-1"
+					id="message-in"
+					title="Message input"
 				/>
 
 				<div
@@ -134,14 +169,20 @@
 					</div>
 				{/if}
 
-				<Handle type="source" position={Position.Bottom} />
-
 				<VideoHandle
 					type="source"
 					position={Position.Bottom}
 					id="video-out"
-					class="z-1 !left-20"
+					class="!left-22 z-1"
 					title="Video output"
+				/>
+
+				<Handle
+					type="source"
+					position={Position.Bottom}
+					id="message-out"
+					title="Message output"
+					class="!left-28 z-1"
 				/>
 			</div>
 		</div>

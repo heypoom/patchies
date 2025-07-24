@@ -72,23 +72,44 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 - If you are new to P5.js, I recommend watching [Patt Vira](https://www.youtube.com/@pattvira)'s YouTube tutorials on YouTube, or on her [website](https://www.pattvira.com). They're fantastic for both beginners and experienced developers.
 - Read the [P5.js documentation](https://p5js.org/reference) to see how P5 works.
 - See the [P5.js tutorials](https://p5js.org/tutorials) and [OpenProcessing](https://www.openprocessing.org) for more inspirations.
+- You can call these special methods in your P5 sketch:
+
+  - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your P5 sketch, such as adding sliders. You can call it in your `setup()` function.
+  - `getSource()` to get the video source from the previous video object using [Video Chaining](#video-chaining). This returns the HTML5 canvas element which you can use for e.g. copying pixels. You can call this in your `setup()` function.
+  - `drawSource()` draws the video source from the previous video object. This is useful if you want to use the previous video object as a background or texture in your P5 sketch, and manipulate it further. Put this as the first call in your `draw()` function to ensure it gets drawn every frame.
+  - `send(message)` and `onMessage(callback)`, see [Message Passing](#message-passing).
 
 ### `hydra`: creates a Hydra video synthesizer
 
 - Hydra is a live coding video synthesizer. You can use it to create complex video effects and animations.
 - See the [interactive Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
 - Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
+- You can call these special methods in your Hydra code:
+  - `initSource(s0)` to initialize the Hydra source object with the video inlet.
+    - There are four video inputs: `s0`, `s1`, `s2`, and `s3`.
+    - There are also four video inlets.
+    - `initSource(s0)` binds the first video inlet to the `s0` source object.
+    - You can specify the video inlet index. For example, use `initSource(s0, 0)` to bind the first video inlet to source s0, `initSource(s1, 1)` to bind the second video inlet to source s1, and so on.
+  - full hydra synth is available as `h`
+  - outputs are available as `o0`, `o1`, `o2`, and `o3`.
+  - `send(message)` and `onMessage(callback)`
 
 ### `glsl`: creates a GLSL fragment shader
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting `p5`, `hydra`, or `canvas` to `glsl` to the four video inputs. These are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in the GLSL code.
+- You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `butterchurn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
+  - These inlets are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in your GLSL uniform.
 - See [ShaderToy](https://www.shadertoy.com) for examples of GLSL shaders. All shaders on ShaderToy are automatically compatible with `glsl`, as they accept the same uniforms.
-- I recommend [The Book of Shaders](https://thebookofshaders.com) to learn GLSL basics.
+- I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
 
 ### `canvas`: creates a JavaScript canvas
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
+- You can call these special methods in your P5 sketch:
+
+  - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your P5 sketch, such as adding sliders. You can call it in your `setup()` function.
+  - `getSource()` to get the video source from the previous video object using [Video Chaining](#video-chaining). This returns the HTML5 canvas element which you can use for e.g. copying pixels. You can call this in your `setup()` function.
+  - `send(message)` and `onMessage(callback)`, see [Message Passing](#message-passing).
 
 ### `butterchurn`: render the Winamp Milkdrop visualizer
 

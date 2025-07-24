@@ -27,7 +27,7 @@ export class HydraManager {
 	private hydra: any;
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
-	private videoCanvas: HTMLCanvasElement | null = null;
+	private videoCanvases: HTMLCanvasElement[] = [];
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private activeSources: any[] = [];
 
@@ -195,27 +195,30 @@ export class HydraManager {
 		return this.canvas;
 	}
 
-	setVideoCanvas(canvas: HTMLCanvasElement | null) {
-		this.videoCanvas = canvas;
+	setVideoCanvases(canvases: HTMLCanvasElement[]) {
+		this.videoCanvases = canvases.slice(0, 4); // Only take first 4 canvases
 
-		// Reinitialize active sources with the new canvas
+		// Reinitialize active sources with the new canvases
 		for (const source of this.activeSources) {
-			if (source && this.videoCanvas) {
-				source.init({ src: this.videoCanvas });
+			if (source && this.videoCanvases.length > 0) {
+				// Use the first canvas as the primary source for backward compatibility
+				source.init({ src: this.videoCanvases[0] });
 			}
 		}
 	}
 
 	private createInitSourceFunction() {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		return (source?: any) => {
-			if (!this.videoCanvas) {
+		return (source?: any, inletIndex: number = 0) => {
+			if (this.videoCanvases.length === 0 || inletIndex >= this.videoCanvases.length) {
 				return null;
 			}
 
+			const targetCanvas = this.videoCanvases?.[inletIndex];
+
 			// Initialize hydra's source with the canvas element
-			if (source) {
-				source.init({ src: this.videoCanvas });
+			if (source && targetCanvas) {
+				source.init({ src: targetCanvas });
 
 				// Track this source so we can reinitialize it when canvas changes
 				if (!this.activeSources.includes(source)) {
@@ -223,7 +226,7 @@ export class HydraManager {
 				}
 			}
 
-			return this.videoCanvas;
+			return targetCanvas;
 		};
 	}
 }
