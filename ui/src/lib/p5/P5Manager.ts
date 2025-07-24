@@ -14,7 +14,9 @@ interface MessageContext {
 	onMessage: (callback: (message: any) => void) => void;
 
 	interval: (callback: () => void, ms: number) => number;
-	nodrag: () => void;
+
+	/** Disables dragging in canvas. */
+	noDrag: () => void;
 }
 
 export interface P5SketchConfig {
@@ -189,7 +191,7 @@ export class P5Manager {
 					var onMessage = messageContext.onMessage;
 					var setInterval = messageContext.interval;
 					var recv = receive = onMessage; // alias for onMessage
-					var nodrag = messageContext.nodrag;
+					var noDrag = messageContext.noDrag;
 				}
 				
 				${config.code}

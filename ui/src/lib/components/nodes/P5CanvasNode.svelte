@@ -77,7 +77,7 @@ function draw() {
 					code,
 					messageContext: {
 						...messageContext.getContext(),
-						nodrag: () => {
+						noDrag: () => {
 							enableDrag = false;
 						}
 					}
