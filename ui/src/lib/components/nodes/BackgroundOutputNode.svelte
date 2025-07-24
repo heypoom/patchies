@@ -30,11 +30,17 @@
 	});
 
 	onDestroy(() => {
+		videoSystem.unregisterNode(nodeId);
+
 		$isBackgroundOutputCanvasEnabled = false;
 
 		if (videoSystem.outputNodeId === nodeId) {
 			videoSystem.outputNodeId = null;
 			videoSystem.outputNodeCanvas = null;
+
+			if (videoSystem.outputNodeId) {
+				videoSystem.unregisterNode(videoSystem.outputNodeId);
+			}
 		}
 	});
 </script>
