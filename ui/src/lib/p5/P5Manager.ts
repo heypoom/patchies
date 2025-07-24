@@ -165,7 +165,17 @@ export class P5Manager {
 
 			canvas
 				.getContext('2d')
-				?.drawImage(source, 0, 0, source.width, source.height, 0, 0, canvas.width, canvas.height);
+				?.drawImage(
+					source,
+					0,
+					0,
+					source.width,
+					source.height,
+					0,
+					0,
+					canvas.width / window.devicePixelRatio,
+					canvas.height / window.devicePixelRatio
+				);
 		};
 
 		// Execute user code with 'with' statement for clean access

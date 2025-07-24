@@ -123,6 +123,7 @@ export class HydraManager {
 				s1: this.synth.s1,
 				s2: this.synth.s2,
 				s3: this.synth.s3,
+
 				// Outputs
 				o0: this.synth.o0,
 				o1: this.synth.o1,
