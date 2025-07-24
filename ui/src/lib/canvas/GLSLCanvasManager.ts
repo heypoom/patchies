@@ -80,7 +80,19 @@ export class GLSLCanvasManager {
 
 		this.regl = regl({
 			canvas: this.canvas,
-			extensions: ['OES_texture_float']
+			extensions: [
+				'WEBGL_depth_texture',
+				'OES_vertex_array_object',
+				'OES_texture_float',
+				'WEBGL_color_buffer_float',
+				'OES_standard_derivatives',
+				'OES_texture_float_linear',
+				'OES_element_index_uint',
+				'EXT_frag_depth',
+				'EXT_shader_texture_lod',
+				'ANGLE_instanced_arrays',
+				'WEBGL_draw_buffers'
+			]
 		});
 
 		// Create a fallback texture with black pixels to avoid "missing image data" errors
