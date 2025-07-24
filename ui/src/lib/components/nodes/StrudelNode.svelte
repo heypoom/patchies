@@ -75,7 +75,7 @@
 	function onAudioNodes(audioNodes: AudioNode[]) {
 		if (audioSystem && audioNodes.length === 4) {
 			isAudioNodeTapped = true;
-			audioSystem.sendStrudelAudioNodes(nodeId, audioNodes);
+			audioSystem.sendStrudelAudioNode(nodeId, audioNodes[audioNodes.length - 1]);
 		}
 	}
 </script>

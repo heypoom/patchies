@@ -26,8 +26,8 @@ export class AudioSystem {
 	// nodeId -> AudioNode (audio source)
 	private audioSources = new Map<string, AudioNode>();
 
-	// nodeId -> AudioNode[] (Strudel's audio nodes for each node)
-	private strudelAudioNodes = new Map<string, AudioNode[]>();
+	// nodeId -> AudioNode (Strudel's audio node for each node)
+	private strudelLastNodes = new Map<string, AudioNode>();
 
 	// External audio nodes that should receive audio from all Strudel sources
 	private externalAudioNodes = new Set<AudioNode>();
@@ -91,12 +91,11 @@ export class AudioSystem {
 	/**
 	 * Register Strudel audio nodes for a specific node
 	 */
-	sendStrudelAudioNodes(objectId: string, audioNodes: AudioNode[]): void {
-		const last = audioNodes[audioNodes.length - 1];
-		this.strudelAudioNodes.set(objectId, audioNodes);
+	sendStrudelAudioNode(objectId: string, last: AudioNode): void {
+		this.strudelLastNodes.set(objectId, last);
 
 		if (this.previousStrudelLastNode) {
-			this.previousStrudelLastNode.disconnect(this.strudelMeydaGainNode);
+			// this.previousStrudelLastNode.disconnect(this.strudelMeydaGainNode);
 		}
 
 		last.connect(this.strudelMeydaGainNode);
@@ -189,7 +188,7 @@ export class AudioSystem {
 	 */
 	unregisterNode(nodeId: string): void {
 		this.audioSources.delete(nodeId);
-		this.strudelAudioNodes.delete(nodeId);
+		this.strudelLastNodes.delete(nodeId);
 		this.audioCallbacks.delete(nodeId);
 
 		// Remove from connections
