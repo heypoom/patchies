@@ -144,7 +144,7 @@
 	}
 </script>
 
-<div class="group relative">
+<div class="group relative font-mono">
 	<div class="flex flex-col gap-2">
 		<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 			<div class="z-10 rounded-lg bg-transparent px-2 py-1">
@@ -169,19 +169,15 @@
 		<div class="relative">
 			<Handle type="target" position={Position.Top} class="z-1" />
 
-			<div class="w-80 rounded-lg border border-zinc-600 bg-zinc-800 p-4">
+			<div class="w-80 rounded-lg border border-zinc-600 bg-zinc-900 p-4">
 				<!-- Add Prompt Section -->
-				<div class="mb-4">
-					<label for="prompt-input" class="mb-2 block text-sm font-medium text-zinc-200"
-						>Add Prompt</label
-					>
-
+				<div class="mb-2">
 					<div class="nodrag mb-2">
 						<input
 							id="prompt-input"
 							bind:value={currentPrompt}
 							placeholder="Enter music prompt..."
-							class="w-full rounded border border-zinc-600 bg-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
+							class="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
 							onkeydown={(e) => {
 								if (e.key === 'Enter') {
 									addPrompt();
@@ -189,38 +185,16 @@
 							}}
 						/>
 					</div>
-
-					<div class="nodrag mb-2 flex items-center gap-2">
-						<label for="weight-input" class="text-sm text-zinc-300">Weight:</label>
-						<input
-							id="weight-input"
-							type="range"
-							bind:value={currentWeight}
-							min="0"
-							max="1"
-							step="0.1"
-							class="flex-1"
-						/>
-						<span class="text-sm text-zinc-300">{currentWeight.toFixed(1)}</span>
-					</div>
-					<button
-						onclick={() => addPrompt()}
-						disabled={!currentPrompt.trim()}
-						class="w-full rounded bg-zinc-600 px-3 py-2 text-sm text-zinc-100 hover:bg-zinc-500 disabled:opacity-50"
-					>
-						Add Prompt
-					</button>
 				</div>
 
 				<!-- Active Prompts -->
 				<div>
-					<div class="mb-2 block text-sm font-medium text-zinc-200">Active Prompts</div>
 					{#if prompts.size === 0}
 						<div class="text-sm text-zinc-400">No prompts added yet</div>
 					{:else}
 						<div class="nodrag cursor-default space-y-2">
 							{#each Array.from(prompts.entries()) as [text, prompt] (text)}
-								<div class="rounded border border-zinc-600 bg-zinc-700 p-3">
+								<div class="rounded border border-zinc-600 bg-zinc-800 p-4">
 									<div class="mb-2 flex w-full justify-between">
 										<div class="text-sm text-zinc-100">{prompt.text}</div>
 
@@ -234,18 +208,19 @@
 									</div>
 
 									<div class="nodrag flex items-center gap-2">
-										<span class="text-xs text-zinc-300">Weight:</span>
+										<span class="text-[10px] text-zinc-300">weight</span>
+
 										<input
 											type="range"
 											value={prompt.weight}
 											min="0"
 											max="1"
 											step="0.1"
-											class="flex-1"
 											oninput={(e) => {
 												const target = e.target as HTMLInputElement;
 												updatePromptWeight(text, parseFloat(target.value));
 											}}
+											class="max-w-[180px]"
 										/>
 
 										<span class="text-xs text-zinc-300">{prompt.weight.toFixed(1)}</span>
@@ -265,7 +240,7 @@
 
 				<!-- Playback state indicator -->
 				<div class="mt-4 text-center">
-					<div class="text-xs text-zinc-400">
+					<div class="text-[10px] text-zinc-400">
 						Status: <span class="capitalize text-zinc-300">{playbackState}</span>
 					</div>
 				</div>
