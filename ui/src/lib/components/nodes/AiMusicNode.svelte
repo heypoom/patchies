@@ -80,6 +80,12 @@
 						removePrompt(message.data.prompt);
 					}
 					break;
+				case 'setPrompts':
+					if (message.data.prompts && typeof message.data.prompts === 'object') {
+						musicManager.setPrompts(message.data.prompts);
+						prompts = musicManager.getPrompts();
+					}
+					break;
 			}
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);

@@ -294,4 +294,12 @@ export class LiveMusicManager {
 	public getPrompts(): Map<string, Prompt> {
 		return new Map(this.prompts);
 	}
+
+	public setPrompts(weightedPrompts: Record<string, number>) {
+		const newPrompts = new Map<string, Prompt>();
+		for (const [text, weight] of Object.entries(weightedPrompts)) {
+			newPrompts.set(text, { text, weight });
+		}
+		this.setWeightedPrompts(newPrompts);
+	}
 }
