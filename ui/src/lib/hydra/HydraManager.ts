@@ -20,7 +20,7 @@ export interface HydraConfig {
 }
 
 const [previewWidth, previewHeight] = [200, 200];
-const [canvasWidth, canvasHeight] = [800 * window.devicePixelRatio, 800 * window.devicePixelRatio];
+const [canvasWidth, canvasHeight] = [800, 800];
 
 export class HydraManager {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
