@@ -68,6 +68,54 @@
 	// Track nodes and edges for message routing
 	let previousNodes = new Set<string>();
 
+	// Autosave functionality
+	let autosaveInterval: number | null = null;
+	let lastAutosave = $state<Date | null>(null);
+
+	function performAutosave() {
+		try {
+			// Serialize nodes and edges with all their data
+			const patchData = {
+				version: '1.0',
+				timestamp: new Date().toISOString(),
+				nodes: nodes.map((node) => ({
+					id: node.id,
+					type: node.type,
+					position: node.position,
+					data: node.data || {}
+				})),
+				edges: edges.map((edge) => ({
+					id: edge.id,
+					source: edge.source,
+					target: edge.target,
+					sourceHandle: edge.sourceHandle,
+					targetHandle: edge.targetHandle
+				}))
+			};
+
+			// Save to localStorage
+			localStorage.setItem('patchies-patch-autosave', JSON.stringify(patchData));
+
+			// Update autosave list if needed
+			const saved = localStorage.getItem('patchies-saved-patches') || '[]';
+			let savedPatches: string[];
+			try {
+				savedPatches = JSON.parse(saved);
+			} catch (e) {
+				savedPatches = [];
+			}
+
+			if (!savedPatches.includes('autosave')) {
+				savedPatches.push('autosave');
+				localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
+			}
+
+			lastAutosave = new Date();
+		} catch (error) {
+			console.error('Autosave failed:', error);
+		}
+	}
+
 	// Update message system when nodes or edges change
 	$effect(() => {
 		// Handle node changes (deletions)
@@ -99,14 +147,18 @@
 	});
 
 	onMount(() => {
-		// Auto-focus the flow container to enable keyboard events
 		flowContainer?.focus();
 
-		// Add global keyboard listener for 'N' key
 		document.addEventListener('keydown', handleGlobalKeydown);
+
+		autosaveInterval = setInterval(performAutosave, 30000);
 
 		return () => {
 			document.removeEventListener('keydown', handleGlobalKeydown);
+			if (autosaveInterval) {
+				clearInterval(autosaveInterval);
+				autosaveInterval = null;
+			}
 		};
 	});
 
@@ -114,6 +166,12 @@
 		// Clean up all nodes when component is destroyed
 		for (const node of nodes) {
 			messageSystem.unregisterNode(node.id);
+		}
+
+		// Clean up autosave interval
+		if (autosaveInterval) {
+			clearInterval(autosaveInterval);
+			autosaveInterval = null;
 		}
 	});
 
@@ -248,7 +306,18 @@
 
 		<!-- Command Palette -->
 		{#if showCommandPalette}
-			<CommandPalette position={commandPalettePosition} onCancel={handleCommandPaletteCancel} />
+			<CommandPalette
+				position={commandPalettePosition}
+				onCancel={handleCommandPaletteCancel}
+				{nodes}
+				{edges}
+				setNodes={(newNodes) => {
+					nodes = newNodes;
+				}}
+				setEdges={(newEdges) => {
+					edges = newEdges;
+				}}
+			/>
 		{/if}
 	</div>
 
@@ -283,7 +352,7 @@
 						{/each}
 					</div>
 
-					<div>
+					<div class="flex items-center gap-3">
 						<ShortcutHelp />
 					</div>
 				</div>

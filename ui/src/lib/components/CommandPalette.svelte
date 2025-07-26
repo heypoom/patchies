@@ -2,13 +2,18 @@
 	import { onMount } from 'svelte';
 	import { match, P } from 'ts-pattern';
 	import { isBottomBarVisible } from '../../stores/ui.store';
+	import type { Node, Edge } from '@xyflow/svelte';
 
 	interface Props {
 		position: { x: number; y: number };
 		onCancel: () => void;
+		nodes: Node[];
+		edges: Edge[];
+		setNodes: (nodes: Node[]) => void;
+		setEdges: (edges: Edge[]) => void;
 	}
 
-	let { position, onCancel }: Props = $props();
+	let { position, onCancel, nodes, edges, setNodes, setEdges }: Props = $props();
 
 	// Component state
 	let searchQuery = $state('');
@@ -190,12 +195,27 @@
 	}
 
 	function saveToFile() {
-		// TODO: Implement serialization logic
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 		const filename = `patch-${timestamp}.json`;
 
-		// Placeholder - will implement actual serialization in step 2
-		const patchData = { placeholder: 'patch data' };
+		// Serialize nodes and edges with all their data
+		const patchData = {
+			version: '1.0',
+			timestamp: new Date().toISOString(),
+			nodes: nodes.map((node) => ({
+				id: node.id,
+				type: node.type,
+				position: node.position,
+				data: node.data || {}
+			})),
+			edges: edges.map((edge) => ({
+				id: edge.id,
+				source: edge.source,
+				target: edge.target,
+				sourceHandle: edge.sourceHandle,
+				targetHandle: edge.targetHandle
+			}))
+		};
 
 		const blob = new Blob([JSON.stringify(patchData, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
@@ -219,8 +239,7 @@
 				reader.onload = (e) => {
 					try {
 						const patchData = JSON.parse(e.target?.result as string);
-						// TODO: Implement deserialization logic
-						console.log('Loading patch:', patchData);
+						loadPatchData(patchData);
 						onCancel();
 					} catch (error) {
 						console.error('Error loading patch:', error);
@@ -230,14 +249,29 @@
 			}
 		};
 		input.click();
-		onCancel();
 	}
 
 	function saveToLocalStorage() {
 		if (!patchName.trim()) return;
 
-		// TODO: Implement serialization logic
-		const patchData = { placeholder: 'patch data' };
+		// Serialize nodes and edges with all their data
+		const patchData = {
+			version: '1.0',
+			timestamp: new Date().toISOString(),
+			nodes: nodes.map((node) => ({
+				id: node.id,
+				type: node.type,
+				position: node.position,
+				data: node.data || {}
+			})),
+			edges: edges.map((edge) => ({
+				id: edge.id,
+				source: edge.source,
+				target: edge.target,
+				sourceHandle: edge.sourceHandle,
+				targetHandle: edge.targetHandle
+			}))
+		};
 
 		const saved = localStorage.getItem('patchies-saved-patches') || '[]';
 		let savedPatches: string[];
@@ -261,12 +295,46 @@
 		if (patchData) {
 			try {
 				const data = JSON.parse(patchData);
-				// TODO: Implement deserialization logic
-				console.log('Loading patch from storage:', data);
+				loadPatchData(data);
 				onCancel();
 			} catch (error) {
 				console.error('Error loading patch from storage:', error);
 			}
+		}
+	}
+
+	function loadPatchData(patchData: any) {
+		try {
+			// Validate the patch data structure
+			if (!patchData || !patchData.nodes || !patchData.edges) {
+				throw new Error('Invalid patch data format');
+			}
+
+			// Load nodes with their data
+			const newNodes: Node[] = patchData.nodes.map((nodeData: any) => ({
+				id: nodeData.id,
+				type: nodeData.type,
+				position: nodeData.position,
+				data: nodeData.data || {}
+			}));
+
+			// Load edges
+			const newEdges: Edge[] = patchData.edges.map((edgeData: any) => ({
+				id: edgeData.id,
+				source: edgeData.source,
+				target: edgeData.target,
+				sourceHandle: edgeData.sourceHandle,
+				targetHandle: edgeData.targetHandle
+			}));
+
+			// Update the flow
+			setNodes(newNodes);
+			setEdges(newEdges);
+
+			console.log(`Loaded patch with ${newNodes.length} nodes and ${newEdges.length} edges`);
+		} catch (error) {
+			console.error('Error deserializing patch data:', error);
+			throw error;
 		}
 	}
 
