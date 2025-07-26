@@ -88,7 +88,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={isPlaying ? stop : start}
 						title={isPlaying ? 'Pause' : 'Play'}
 					>
@@ -96,7 +96,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -106,16 +106,6 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} />
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in"
-					class="!left-8"
-					title="Video input"
-				/>
-
 				<canvas
 					bind:this={canvasElement}
 					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
@@ -134,13 +124,11 @@
 					</div>
 				{/if}
 
-				<Handle type="source" position={Position.Bottom} class="absolute" />
-
 				<VideoHandle
 					type="source"
 					position={Position.Bottom}
 					id="video-out"
-					class="!left-8"
+					class="z-1"
 					title="Video output"
 				/>
 			</div>
