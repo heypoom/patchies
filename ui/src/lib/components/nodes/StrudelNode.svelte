@@ -1,19 +1,31 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import { DEFAULT_STRUDEL_CODE } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+
+	// Get flow utilities to update node data
+	const { updateNodeData } = useSvelteFlow();
 
 	let strudelEditor: StrudelEditor | null = null;
 	let messageContext: MessageContext;
 	let errorMessage = $state<string | null>(null);
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
-	let code = $state(`note("c a f e").jux(rev)`);
+
+	// Get code from node data, fallback to default
+	$effect(() => {
+		if (!data.code) {
+			updateNodeData(nodeId, { ...data, code: DEFAULT_STRUDEL_CODE });
+		}
+	});
+
+	const code = $derived(data.code || DEFAULT_STRUDEL_CODE);
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
@@ -80,7 +92,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={stop}
 								title="Stop"
 							>
@@ -88,7 +100,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={play}
 								title="Play"
 							>
@@ -106,6 +118,9 @@
 							{code}
 							bind:this={strudelEditor}
 							onUpdateState={handleUpdateState}
+							onchange={(newCode) => {
+								updateNodeData(nodeId, { ...data, code: newCode });
+							}}
 							class="w-full"
 						/>
 					</div>

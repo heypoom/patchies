@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import butterchurn from 'butterchurn';
@@ -8,12 +8,15 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
+	import { DEFAULT_BUTTERCHURN_PRESET } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { currentPreset: string } } = $props();
+
+	// Get flow utilities to update node data
+	const { updateNodeData } = useSvelteFlow();
 
 	const presets = butterchurnPresets.getPresets();
-	const firstPreset = '_Mig_049';
 
 	let videoSystem: VideoSystem;
 	let canvasElement: HTMLCanvasElement;
@@ -21,7 +24,15 @@
 	let errorMessage = $state<string | null>(null);
 	let isPlaying = $state(true);
 	let visualizer: any = null;
-	let currentPreset: string = $state(firstPreset);
+
+	// Get currentPreset from node data, fallback to default
+	$effect(() => {
+		if (!data.currentPreset) {
+			updateNodeData(nodeId, { ...data, currentPreset: DEFAULT_BUTTERCHURN_PRESET });
+		}
+	});
+
+	const currentPreset = $derived(data.currentPreset || DEFAULT_BUTTERCHURN_PRESET);
 
 	let frame = 0;
 
@@ -144,7 +155,12 @@
 			</div>
 
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-				<ButterchurnPresetSelect bind:value={currentPreset} />
+				<ButterchurnPresetSelect
+					value={currentPreset}
+					onchange={(newPreset) => {
+						updateNodeData(nodeId, { ...data, currentPreset: newPreset });
+					}}
+				/>
 			</div>
 		</div>
 	{/if}

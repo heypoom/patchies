@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -7,18 +7,29 @@
 	import { createLLMFunction } from '$lib/ai/google';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { DEFAULT_JS_CODE } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	
+	// Get flow utilities to update node data
+	const { updateNodeData } = useSvelteFlow();
 
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let videoCanvases: HTMLCanvasElement[] = $state([]);
 
 	let showEditor = $state(false);
-	let code = $state(`console.log(1 + 1)`);
-
 	let consoleOutput = $state<string[]>([]);
+
+	// Get code from node data, fallback to default
+	$effect(() => {
+		if (!data.code) {
+			updateNodeData(nodeId, { ...data, code: DEFAULT_JS_CODE });
+		}
+	});
+
+	const code = $derived(data.code || DEFAULT_JS_CODE);
 
 	onMount(() => {
 		// Initialize message context
@@ -203,7 +214,10 @@
 
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
 				<CodeEditor
-					bind:value={code}
+					value={code}
+					onchange={(newCode) => {
+						updateNodeData(nodeId, { ...data, code: newCode });
+					}}
 					language="javascript"
 					placeholder="Write your JavaScript code here..."
 					class="nodrag h-64 w-full resize-none"

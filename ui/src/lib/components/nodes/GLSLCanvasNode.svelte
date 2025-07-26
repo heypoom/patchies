@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { GLSLCanvasManager } from '$lib/canvas/GLSLCanvasManager';
@@ -7,30 +7,28 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import { DEFAULT_GLSL_CODE } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	
+	// Get flow utilities to update node data
+	const { updateNodeData } = useSvelteFlow();
 
 	let containerElement: HTMLDivElement;
 	let canvasManager: GLSLCanvasManager | null = null;
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
-	let code = $state(`// Available uniforms: iResolution, iTime, iMouse, iChannel0-3
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    vec3 color = vec3(0.0);
-    float time = iTime * 0.5;
-    
-    color.r = sin(uv.x * 10.0 + time) * 0.5 + 0.5;
-    color.g = sin(uv.y * 10.0 + time * 1.2) * 0.5 + 0.5;
-    color.b = sin((uv.x + uv.y) * 5.0 + time * 0.8) * 0.5 + 0.5;
-    
-    float brightness = sin(time * 2.0) * 0.2 + 0.8;
-    color *= brightness;
-    fragColor = vec4(color, 1.0);
-}`);
+	// Get code from node data, fallback to default
+	$effect(() => {
+		if (!data.code) {
+			updateNodeData(nodeId, { ...data, code: DEFAULT_GLSL_CODE });
+		}
+	});
+
+	const code = $derived(data.code || DEFAULT_GLSL_CODE);
 
 	onMount(() => {
 		// Initialize message context and video system
@@ -156,7 +154,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
 				<CodeEditor
-					bind:value={code}
+					value={code}
+					onchange={(newCode) => {
+						updateNodeData(nodeId, { ...data, code: newCode });
+					}}
 					language="glsl"
 					placeholder="Write your GLSL fragment shader here..."
 					class="nodrag h-64 w-full resize-none"

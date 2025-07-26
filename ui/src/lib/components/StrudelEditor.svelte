@@ -12,7 +12,7 @@
 	import { superdough } from 'superdough';
 	import { prebake } from '$lib/strudel/prebake';
 	import { Prec, StateEffect } from '@codemirror/state';
-	import { keymap } from '@codemirror/view';
+	import { keymap, EditorView } from '@codemirror/view';
 
 	let {
 		code = '',
@@ -20,6 +20,7 @@
 		solo = true,
 		class: className = '',
 		onUpdateState = undefined,
+		onchange = undefined,
 		...props
 	}: {
 		code?: string;
@@ -27,6 +28,7 @@
 		solo?: boolean;
 		class?: string;
 		onUpdateState?: (state: unknown) => void;
+		onchange?: (code: string) => void;
 		[key: string]: unknown;
 	} = $props();
 
@@ -82,17 +84,24 @@
 			])
 		);
 
+		const onchangeExtension = onchange
+			? EditorView.updateListener.of((update) => {
+					if (update.docChanged) {
+						const newCode = editor.editor.state.doc.toString();
+						if (newCode !== code) {
+							onchange(newCode);
+						}
+					}
+				})
+			: [];
+
 		editor.editor.dispatch({
-			effects: StateEffect.appendConfig.of([keymaps])
+			effects: StateEffect.appendConfig.of([keymaps, onchangeExtension].filter(Boolean))
 		});
 	});
 
 	onDestroy(() => {
 		editor?.stop();
-	});
-
-	$effect(() => {
-		editor?.setCode(code);
 	});
 
 	export { editor };

@@ -9,9 +9,11 @@
 	import { cn } from '$lib/utils.js';
 
 	let {
-		value = $bindable()
+		value,
+		onchange = undefined
 	}: {
 		value: string;
+		onchange?: (value: string) => void;
 	} = $props();
 
 	const presets = butterchurnPresets.getPresets();
@@ -67,7 +69,9 @@
 						<Command.Item
 							value={framework.value}
 							onSelect={() => {
-								value = framework.value;
+								if (onchange) {
+									onchange(framework.value);
+								}
 								closeAndFocusTrigger();
 							}}
 						>

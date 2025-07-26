@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { P5Manager } from '$lib/p5/P5Manager';
@@ -7,9 +7,13 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	
+	// Get flow utilities to update node data
+	const { updateNodeData } = useSvelteFlow();
 
 	let containerElement: HTMLDivElement;
 	let p5Manager: P5Manager | null = null;
@@ -18,16 +22,15 @@
 	let showEditor = $state(false);
 	let enableDrag = $state(true);
 	let errorMessage = $state<string | null>(null);
-	let code = $state(`function setup() {
-  createCanvas(200, 200)
-  pixelDensity(3)
-}
 
-function draw() {
-  background(100, 200, 300)
-  fill(255, 255, 100)
-  ellipse(100, 100, 80, 80)
-}`);
+	// Get code from node data, fallback to default
+	$effect(() => {
+		if (!data.code) {
+			updateNodeData(nodeId, { ...data, code: DEFAULT_P5_CODE });
+		}
+	});
+
+	const code = $derived(data.code || DEFAULT_P5_CODE);
 
 	onMount(() => {
 		// Initialize message context and video system
@@ -188,7 +191,10 @@ function draw() {
 
 			<div class="rounded-lg border border-zinc-600 bg-transparent shadow-xl">
 				<CodeEditor
-					bind:value={code}
+					value={code}
+					onchange={(newCode) => {
+						updateNodeData(nodeId, { ...data, code: newCode });
+					}}
 					language="javascript"
 					placeholder="Write your p5.js code here..."
 					class="nodrag h-64 w-full resize-none"

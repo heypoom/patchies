@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -7,9 +7,13 @@
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { generateImageWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
+	import { DEFAULT_AI_IMAGE_PROMPT } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
+	
+	// Get flow utilities to update node data
+	const { updateNodeData } = useSvelteFlow();
 
 	let canvasElement: HTMLCanvasElement;
 	let videoSystem: VideoSystem;
@@ -19,9 +23,14 @@
 	let hasImage = $state(false);
 	let abortController: AbortController | null = null;
 
-	let prompt = $state(
-		`a sleepy little town in the mountains, masterpiece, realistic, high quality, 4k`
-	);
+	// Get prompt from node data, fallback to default
+	$effect(() => {
+		if (!data.prompt) {
+			updateNodeData(nodeId, { ...data, prompt: DEFAULT_AI_IMAGE_PROMPT });
+		}
+	});
+
+	const prompt = $derived(data.prompt || DEFAULT_AI_IMAGE_PROMPT);
 
 	onMount(() => {
 		videoSystem = VideoSystem.getInstance();
@@ -137,7 +146,10 @@
 
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
 				<CodeEditor
-					bind:value={prompt}
+					value={prompt}
+					onchange={(newPrompt) => {
+						updateNodeData(nodeId, { ...data, prompt: newPrompt });
+					}}
 					language="text"
 					placeholder="Write your prompt here..."
 					class="nodrag h-64 w-full max-w-[350px] resize-none"
