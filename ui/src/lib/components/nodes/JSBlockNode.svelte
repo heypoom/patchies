@@ -4,11 +4,16 @@
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import { createLLMFunction } from '$lib/ai/google';
+	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import { VideoSystem } from '$lib/video/VideoSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId }: { id: string } = $props();
 
 	let messageContext: MessageContext;
+	let videoSystem: VideoSystem;
+	let videoCanvases: HTMLCanvasElement[] = $state([]);
 
 	let showEditor = $state(false);
 	let code = $state(`console.log(1 + 1)`);
@@ -19,6 +24,14 @@
 		// Initialize message context
 		messageContext = new MessageContext(nodeId);
 
+		// Initialize video system
+		videoSystem = VideoSystem.getInstance();
+
+		// Subscribe to video canvas sources
+		videoSystem.onVideoCanvas(nodeId, (canvases) => {
+			videoCanvases = canvases;
+		});
+
 		// Execute code on mount
 		executeCode();
 	});
@@ -27,6 +40,11 @@
 		// Clean up message context
 		if (messageContext) {
 			messageContext.destroy();
+		}
+
+		// Clean up video system
+		if (videoSystem) {
+			videoSystem.unregisterNode(nodeId);
 		}
 	});
 
@@ -62,13 +80,24 @@
 			// Get message system context
 			const messageSystemContext = messageContext.getContext();
 
-			// Create a function with the user code, injecting message constructs
-			const functionParams = ['console', 'send', 'onMessage', 'interval'];
+			// Create a function with the user code, injecting message constructs and video features
+			const functionParams = [
+				'console',
+				'send',
+				'onMessage',
+				'interval',
+				'llm',
+				'getCanvas',
+				'videoCanvases'
+			];
 			const functionArgs = [
 				customConsole,
 				messageSystemContext.send,
 				messageSystemContext.onMessage,
-				messageSystemContext.interval
+				messageSystemContext.interval,
+				createLLMFunction(),
+				getCanvas,
+				videoCanvases
 			];
 
 			const userFunction = new Function(
@@ -96,6 +125,11 @@
 	function clearConsole() {
 		consoleOutput = [];
 	}
+
+	function getCanvas() {
+		// Return the first video canvas if available
+		return videoCanvases.length > 0 ? videoCanvases[0] : null;
+	}
 </script>
 
 <div class="relative flex gap-x-3">
@@ -107,7 +141,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -117,6 +151,13 @@
 
 			<div class="relative min-w-[280px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
 				<Handle type="target" position={Position.Top} />
+				<VideoHandle
+					type="target"
+					position={Position.Top}
+					id="video-in"
+					title="Video input"
+					class="!left-30"
+				/>
 
 				<div class="mb-2 flex items-center justify-between">
 					<span class="font-mono text-xs text-zinc-400">Console</span>
@@ -139,7 +180,7 @@
 					class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 				>
 					{#if consoleOutput.length === 0}
-						<div class="text-zinc-500 italic">No output yet. Run your code to see results.</div>
+						<div class="italic text-zinc-500">No output yet. Run your code to see results.</div>
 					{:else}
 						{#each consoleOutput as line}
 							<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>

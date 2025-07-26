@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type ContentListUnion } from '@google/genai';
 
 export async function generateImageWithGemini(
 	prompt: string,
@@ -39,4 +39,76 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 	}
 	const byteArray = new Uint8Array(byteNumbers);
 	return new Blob([byteArray], { type: mimeType });
+}
+
+export function createLLMFunction() {
+	return async (prompt: string, context?: { canvas: HTMLCanvasElement }) => {
+		const apiKey = localStorage.getItem('gemini-api-key');
+
+		if (!apiKey) {
+			throw new Error('API key is not set. Please set it in the settings.');
+		}
+
+		console.log('context', context);
+
+		const ai = new GoogleGenAI({ apiKey });
+
+		const contents: ContentListUnion = [];
+
+		if (context?.canvas) {
+			console.log('context.canvas is', context.canvas);
+
+			const base64ImageFile = await htmlCanvasToImage(context.canvas);
+
+			contents.push({
+				inlineData: {
+					mimeType: 'image/jpeg',
+					data: base64ImageFile
+				}
+			});
+		}
+
+		contents.push({ text: prompt });
+
+		const response = await ai.models.generateContent({
+			model: 'gemini-2.5-flash',
+			contents
+		});
+
+		return response.text;
+	};
+}
+
+/**
+ * Converts an HTML <canvas> element's content to a base64 encoded image string.
+ *
+ * @param {HTMLCanvasElement} canvas The canvas element to convert.
+ * @param {string} [imageType='image/png'] The desired image format (e.g., 'image/png', 'image/jpeg').
+ * @param {number} [quality=0.92] For 'image/jpeg' or 'image/webp', a number between 0 and 1 indicating the image quality.
+ * @returns {string} A DOMString containing the data URL of the image represented by the canvas.
+ * Returns an empty string if the canvas is not valid or an error occurs.
+ */
+export async function htmlCanvasToImage(
+	canvas: HTMLCanvasElement,
+	imageType = 'image/jpeg',
+	quality = 0.92
+) {
+	if (!(canvas instanceof HTMLCanvasElement)) {
+		console.error('Invalid input: Provided element is not an HTMLCanvasElement.');
+		return '';
+	}
+
+	try {
+		// Get the raw image data as a data URL (base64 encoded)
+		// The toDataURL() method is native to the Canvas API and directly outputs base64.
+		// For JPEG, the quality parameter is used.
+		if (imageType === 'image/jpeg' || imageType === 'image/webp') {
+			return canvas.toDataURL(imageType, quality);
+		} else {
+			return canvas.toDataURL(imageType);
+		}
+	} catch (error) {
+		console.error('Error converting canvas to image:', error);
+		return '';
+	}
 }
