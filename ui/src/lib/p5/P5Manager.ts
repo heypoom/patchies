@@ -1,5 +1,6 @@
 import P5 from 'p5';
 import type Sketch from 'p5';
+import ml5 from 'ml5';
 
 interface SendMessageOptions {
 	type?: string;
@@ -152,6 +153,12 @@ export class P5Manager {
 
 		// @ts-expect-error -- no-op
 		sketch['p5'] = P5;
+
+		// @ts-expect-error -- no-op
+		window.ml5 = ml5;
+
+		// @ts-expect-error -- no-op
+		sketch['ml5'] = ml5;
 
 		// Add function for copying from video canvas
 		// @ts-expect-error -- no-op
