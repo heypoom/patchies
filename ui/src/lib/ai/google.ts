@@ -49,15 +49,11 @@ export function createLLMFunction() {
 			throw new Error('API key is not set. Please set it in the settings.');
 		}
 
-		console.log('context', context);
-
 		const ai = new GoogleGenAI({ apiKey });
 
 		const contents: ContentListUnion = [];
 
 		if (context?.canvas) {
-			console.log('context.canvas is', context.canvas);
-
 			const base64ImageFile = await htmlCanvasToImage(context.canvas);
 
 			contents.push({
@@ -99,14 +95,18 @@ export async function htmlCanvasToImage(
 	}
 
 	try {
+		let dataUrl = '';
+
 		// Get the raw image data as a data URL (base64 encoded)
 		// The toDataURL() method is native to the Canvas API and directly outputs base64.
 		// For JPEG, the quality parameter is used.
 		if (imageType === 'image/jpeg' || imageType === 'image/webp') {
-			return canvas.toDataURL(imageType, quality);
+			dataUrl = canvas.toDataURL(imageType, quality);
 		} else {
-			return canvas.toDataURL(imageType);
+			dataUrl = canvas.toDataURL(imageType);
 		}
+
+		return dataUrl.replace('data:image/jpeg;base64,', '');
 	} catch (error) {
 		console.error('Error converting canvas to image:', error);
 		return '';
