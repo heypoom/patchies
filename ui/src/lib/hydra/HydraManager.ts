@@ -20,7 +20,7 @@ export interface HydraConfig {
 }
 
 const [previewWidth, previewHeight] = [200, 200];
-const [canvasWidth, canvasHeight] = [800, 800];
+const [canvasWidth, canvasHeight] = [800 * window.devicePixelRatio, 800 * window.devicePixelRatio];
 
 export class HydraManager {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,10 +36,10 @@ export class HydraManager {
 
 		// Create canvas element
 		this.canvas = document.createElement('canvas');
-		this.canvas.width = previewWidth;
-		this.canvas.height = previewHeight;
-		this.canvas.style.width = '100%';
-		this.canvas.style.height = '100%';
+		this.canvas.width = canvasWidth;
+		this.canvas.height = canvasHeight;
+		this.canvas.style.width = previewWidth + 'px';
+		this.canvas.style.height = previewHeight + 'px';
 		this.canvas.style.objectFit = 'contain';
 
 		// Clear container and add canvas
@@ -56,7 +56,7 @@ export class HydraManager {
 			detectAudio: false,
 			numSources: 4,
 			numOutputs: 4,
-			precision: 'mediump'
+			precision: 'highp'
 		});
 
 		// @ts-expect-error -- used for global access in devtools
