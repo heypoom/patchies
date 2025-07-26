@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { HydraManager } from '$lib/hydra/HydraManager';
@@ -7,9 +7,13 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+
+	// Get flow utilities to update node data
+	const { updateNodeData } = useSvelteFlow();
 
 	let containerElement: HTMLDivElement;
 	let hydraManager: HydraManager | null = null;
@@ -18,10 +22,17 @@
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 
-	let code = $state(`osc(20, 0.1, 0.8)
-  .diff(osc(20, 0.05)
-  .rotate(Math.PI/2))
-  .out()`);
+	// Get code from node data, fallback to default
+	$effect(() => {
+		if (!data.code) {
+			updateNodeData(nodeId, {
+				...data,
+				code: DEFAULT_HYDRA_CODE
+			});
+		}
+	});
+
+	const code = $derived(data.code || DEFAULT_HYDRA_CODE);
 
 	onMount(() => {
 		// Initialize message context and video system
@@ -103,7 +114,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -116,7 +127,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in-0"
-					class="!left-16 z-1"
+					class="z-1 !left-16"
 					title="Video input 0"
 				/>
 
@@ -124,7 +135,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in-1"
-					class="!left-20 z-1"
+					class="z-1 !left-20"
 					title="Video input 1"
 				/>
 
@@ -132,7 +143,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in-2"
-					class="!left-24 z-1"
+					class="z-1 !left-24"
 					title="Video input 2"
 				/>
 
@@ -140,14 +151,14 @@
 					type="target"
 					position={Position.Top}
 					id="video-in-3"
-					class="!left-28 z-1"
+					class="z-1 !left-28"
 					title="Video input 3"
 				/>
 
 				<Handle
 					type="target"
 					position={Position.Top}
-					class="!left-32 z-1"
+					class="z-1 !left-32"
 					id="message-in"
 					title="Message input"
 				/>
@@ -182,7 +193,7 @@
 					position={Position.Bottom}
 					id="message-out"
 					title="Message output"
-					class="!left-28 z-1"
+					class="z-1 !left-28"
 				/>
 			</div>
 		</div>
@@ -202,7 +213,10 @@
 
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
 				<CodeEditor
-					bind:value={code}
+					value={code}
+					onchange={(newCode) => {
+						updateNodeData(nodeId, { ...data, code: newCode });
+					}}
 					language="javascript"
 					placeholder="Write your Hydra code here..."
 					class="nodrag h-64 w-full resize-none"

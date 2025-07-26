@@ -12,6 +12,7 @@
 		placeholder = '',
 		class: className = '',
 		onrun = () => {},
+		onchange = (code: string) => {},
 		extraExtensions = [],
 		...restProps
 	}: {
@@ -20,6 +21,7 @@
 		placeholder?: string;
 		class?: string;
 		onrun?: () => void;
+		onchange?: (code: string) => void;
 		extraExtensions?: Extension[];
 	} = $props();
 
@@ -76,7 +78,14 @@
 				}),
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
-						value = update.state.doc.toString();
+						const updatedValue = update.state.doc.toString();
+
+						if (onchange) {
+							onchange(updatedValue);
+							return;
+						}
+
+						value = updatedValue;
 					}
 				}),
 				...extraExtensions
