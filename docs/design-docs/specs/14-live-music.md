@@ -112,12 +112,16 @@ export class LiveMusicHelper extends EventTarget {
 
   private async processAudioChunks(audioChunks: AudioChunk[]) {
     if (this.playbackState === 'paused' || this.playbackState === 'stopped') return;
+
+    const decodedData = decode(audioChunks[0].data!)
+
     const audioBuffer = await decodeAudioData(
-      decode(audioChunks[0].data!),
+      decodedData,
       this.audioContext,
       48000,
       2,
     );
+
     const source = this.audioContext.createBufferSource();
     source.buffer = audioBuffer;
     source.connect(this.outputNode);

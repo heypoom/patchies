@@ -22,6 +22,7 @@
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import AiImageNode from './nodes/AiImageNode.svelte';
 	import AiVideoNode from './nodes/AiVideoNode.svelte';
+	import AiMusicNode from './nodes/AiMusicNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
 	import { isBottomBarVisible } from '../../stores/ui.store';
@@ -37,6 +38,7 @@
 		['strudel']: StrudelNode,
 		['bchrn']: ButterchurnNode,
 		['ai.img']: AiImageNode,
+		['ai.music']: AiMusicNode,
 		['bg.out']: BackgroundOutputNode
 		// ['ai.vdo']: AiVideoNode,
 	};
