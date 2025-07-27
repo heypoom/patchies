@@ -33,19 +33,19 @@
 	let currentCacheKey = $state<string>('');
 	const { updateNodeData } = useSvelteFlow();
 
-	const cachedAudio = $derived(() => {
-		const cacheKey = generateCacheKey({
-			text: data.text,
-			emotionVoice: data.emotionVoice || 'Cheerful_Female',
-			language: data.language || 'th',
-			speed: data.speed ?? 1,
-			volume: data.volume ?? 1,
-			pitch: data.pitch ?? 12,
-			voiceId: data.voiceId || ''
-		});
-
-		return getCachedAudio(cacheKey);
-	});
+	const cachedAudio = $derived(
+		getCachedAudio(
+			generateCacheKey({
+				text: data.text,
+				emotionVoice: data.emotionVoice || 'Cheerful_Female',
+				language: data.language || 'th',
+				speed: data.speed ?? 1,
+				volume: data.volume ?? 1,
+				pitch: data.pitch ?? 12,
+				voiceId: data.voiceId || ''
+			})
+		)
+	);
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
