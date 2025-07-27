@@ -28,9 +28,13 @@ export function generateCacheKey(options: {
 	pitch: number;
 	voiceId?: string;
 }): string {
+	if (!options) {
+		return '';
+	}
+
 	// Create a normalized key from all TTS options
 	const normalizedOptions = {
-		text: options.text.trim(),
+		text: options.text?.trim(),
 		emotionVoice: options.emotionVoice,
 		language: options.language,
 		speed: Math.round(options.speed * 100) / 100, // Round to 2 decimal places
@@ -38,16 +42,18 @@ export function generateCacheKey(options: {
 		pitch: Math.round(options.pitch * 10) / 10, // Round to 1 decimal place
 		voiceId: options.voiceId || ''
 	};
-	
+
 	// Create a hash-like key from the options
 	const keyString = JSON.stringify(normalizedOptions);
-	return btoa(keyString).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+	return btoa(keyString)
+		.replace(/[^a-zA-Z0-9]/g, '')
+		.substring(0, 32);
 }
 
 export function getCachedAudio(cacheKey: string): string | null {
 	let result: string | null = null;
-	
-	audioCacheStore.update(store => {
+
+	audioCacheStore.update((store) => {
 		const entry = store.entries.get(cacheKey);
 		if (entry) {
 			// Update access statistics
@@ -57,31 +63,31 @@ export function getCachedAudio(cacheKey: string): string | null {
 		}
 		return store;
 	});
-	
+
 	return result;
 }
 
 export function setCachedAudio(cacheKey: string, audioUrl: string): void {
-	audioCacheStore.update(store => {
+	audioCacheStore.update((store) => {
 		const now = Date.now();
-		
+
 		// If cache is at max size, remove least recently used entry
 		if (store.entries.size >= store.maxSize && !store.entries.has(cacheKey)) {
 			let lruKey = '';
 			let lruTimestamp = now;
-			
+
 			for (const [key, entry] of store.entries) {
 				if (entry.lastAccessed < lruTimestamp) {
 					lruTimestamp = entry.lastAccessed;
 					lruKey = key;
 				}
 			}
-			
+
 			if (lruKey) {
 				store.entries.delete(lruKey);
 			}
 		}
-		
+
 		// Add or update the entry
 		store.entries.set(cacheKey, {
 			url: audioUrl,
@@ -89,13 +95,13 @@ export function setCachedAudio(cacheKey: string, audioUrl: string): void {
 			accessCount: 1,
 			lastAccessed: now
 		});
-		
+
 		return store;
 	});
 }
 
 export function clearAudioCache(): void {
-	audioCacheStore.update(store => ({
+	audioCacheStore.update((store) => ({
 		...store,
 		entries: new Map()
 	}));
@@ -103,13 +109,13 @@ export function clearAudioCache(): void {
 
 export function getCacheStats(): { size: number; maxSize: number; hitRate?: number } {
 	let stats = { size: 0, maxSize: 100 };
-	
-	audioCacheStore.subscribe(store => {
+
+	audioCacheStore.subscribe((store) => {
 		stats = {
 			size: store.entries.size,
 			maxSize: store.maxSize
 		};
 	})();
-	
+
 	return stats;
 }

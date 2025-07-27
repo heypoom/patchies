@@ -33,18 +33,16 @@
 	let currentCacheKey = $state<string>('');
 	const { updateNodeData } = useSvelteFlow();
 
-	const cachedAudio = $derived(
-		getCachedAudio(
-			generateCacheKey({
-				text: data.text,
-				emotionVoice: data.emotionVoice || 'Cheerful_Female',
-				language: data.language || 'th',
-				speed: data.speed ?? 1,
-				volume: data.volume ?? 1,
-				pitch: data.pitch ?? 12,
-				voiceId: data.voiceId || ''
-			})
-		)
+	const audioCacheKey = $derived(
+		generateCacheKey({
+			text: data.text,
+			emotionVoice: data.emotionVoice || 'Cheerful_Female',
+			language: data.language || 'th',
+			speed: data.speed ?? 1,
+			volume: data.volume ?? 1,
+			pitch: data.pitch ?? 1,
+			voiceId: data.voiceId || ''
+		})
 	);
 
 	onMount(() => {
@@ -108,7 +106,7 @@
 			language: data.language || 'th',
 			speed: data.speed ?? 1,
 			volume: data.volume ?? 1,
-			pitch: data.pitch ?? 12,
+			pitch: data.pitch ?? 1,
 			voiceId: data.voiceId || ''
 		});
 
@@ -177,7 +175,7 @@
 			language: data.language || 'th',
 			speed: data.speed ?? 1,
 			volume: data.volume ?? 1,
-			pitch: data.pitch ?? 12,
+			pitch: data.pitch ?? 1,
 			voiceId: data.voiceId || ''
 		};
 
@@ -255,7 +253,7 @@
 				</button>
 
 				<!-- Play Button (only show if audio is available) -->
-				{#if cachedAudio}
+				{#if getCachedAudio(audioCacheKey)}
 					<button
 						class="rounded p-1 transition-all hover:bg-zinc-700 disabled:opacity-50"
 						onclick={togglePlayback}
@@ -435,12 +433,12 @@
 					<!-- Pitch -->
 					<div class="nodrag">
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Pitch: {(data.pitch ?? 12).toFixed(1)}
+							Pitch: {(data.pitch ?? 1).toFixed(1)}
 						</label>
 						<Slider
-							value={[data.pitch ?? 12]}
+							value={[data.pitch ?? 1]}
 							min={0}
-							max={24}
+							max={12}
 							step={0.1}
 							class="w-full"
 							onValueChange={(values) => {
