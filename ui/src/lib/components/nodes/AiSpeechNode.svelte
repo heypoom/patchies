@@ -74,16 +74,7 @@
 		}
 	});
 
-	function getPlayIcon() {
-		switch (playbackState) {
-			case 'playing':
-				return 'lucide:pause';
-			case 'loading':
-				return 'lucide:loader';
-			default:
-				return 'lucide:play';
-		}
-	}
+	const getPlayIcon = () => (playbackState === 'playing' ? 'lucide:pause' : 'lucide:play');
 
 	function getPlayTitle() {
 		switch (playbackState) {
