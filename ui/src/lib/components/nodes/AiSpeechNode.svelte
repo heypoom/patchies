@@ -8,6 +8,7 @@
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import Slider from '$lib/components/ui/slider/slider.svelte';
 	import { voicesStore, fetchVoices } from '$lib/stores/voices';
+	import { generateCacheKey, getCachedAudio, setCachedAudio } from '$lib/stores/audioCache';
 
 	let {
 		id: nodeId,
@@ -29,9 +30,22 @@
 	let errorMessage = $state<string | null>(null);
 	let playbackState = $state<'loading' | 'playing' | 'paused'>('paused');
 	let audio = $state<HTMLAudioElement | null>(null);
-	let cachedAudioUrl = $state<string | null>(null);
-	let audioTextHash = $state<string>('');
+	let currentCacheKey = $state<string>('');
 	const { updateNodeData } = useSvelteFlow();
+
+	const cachedAudio = $derived(() => {
+		const cacheKey = generateCacheKey({
+			text: data.text,
+			emotionVoice: data.emotionVoice || 'Cheerful_Female',
+			language: data.language || 'th',
+			speed: data.speed ?? 1,
+			volume: data.volume ?? 1,
+			pitch: data.pitch ?? 12,
+			voiceId: data.voiceId || ''
+		});
+
+		return getCachedAudio(cacheKey);
+	});
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
@@ -87,12 +101,19 @@
 		}
 	}
 
-	function createTextHash(text: string, settings: object): string {
-		return btoa(JSON.stringify({ text, ...settings }));
-	}
-
 	function togglePlayback() {
-		if (!cachedAudioUrl) return;
+		const cacheKey = generateCacheKey({
+			text: data.text,
+			emotionVoice: data.emotionVoice || 'Cheerful_Female',
+			language: data.language || 'th',
+			speed: data.speed ?? 1,
+			volume: data.volume ?? 1,
+			pitch: data.pitch ?? 12,
+			voiceId: data.voiceId || ''
+		});
+
+		const cachedUrl = getCachedAudio(cacheKey);
+		if (!cachedUrl) return;
 
 		match(playbackState)
 			.with('playing', () => {
@@ -102,9 +123,7 @@
 				}
 			})
 			.with('paused', () => {
-				if (cachedAudioUrl) {
-					playAudio(cachedAudioUrl);
-				}
+				playAudio(cachedUrl);
 			})
 			.otherwise(() => {});
 	}
@@ -152,18 +171,38 @@
 			return;
 		}
 
+		const ttsOptions = {
+			text: data.text,
+			emotionVoice: data.emotionVoice || 'Cheerful_Female',
+			language: data.language || 'th',
+			speed: data.speed ?? 1,
+			volume: data.volume ?? 1,
+			pitch: data.pitch ?? 12,
+			voiceId: data.voiceId || ''
+		};
+
+		const cacheKey = generateCacheKey(ttsOptions);
+		currentCacheKey = cacheKey;
+
+		// Check cache first
+		const cachedUrl = getCachedAudio(cacheKey);
+		if (cachedUrl) {
+			playAudio(cachedUrl);
+			return;
+		}
+
 		playbackState = 'loading';
 		errorMessage = null;
 
 		try {
 			const body = {
-				text: data.text,
-				emotionVoice: data.emotionVoice || 'Cheerful_Female',
-				language: data.language || 'th',
-				speed: data.speed ?? 1,
-				volume: data.volume ?? 1,
-				pitch: data.pitch ?? 1
-				// voiceId: data.voiceId || $voicesStore.data?.rvcModels?.[0]?.id || ''
+				text: ttsOptions.text,
+				emotionVoice: ttsOptions.emotionVoice,
+				language: ttsOptions.language,
+				speed: ttsOptions.speed,
+				volume: ttsOptions.volume,
+				pitch: ttsOptions.pitch
+				// voiceId: ttsOptions.voiceId || $voicesStore.data?.rvcModels?.[0]?.id || ''
 			};
 
 			const response = await fetch('https://api.celestiai.co/api/v1/tts-turbo/tts-mita', {
@@ -178,9 +217,8 @@
 			const json = await response.json();
 
 			if (json.success) {
-				// Cache the audio URL and text hash
-				cachedAudioUrl = json.fileUrl;
-				audioTextHash = createTextHash(data.text, body);
+				// Cache the audio URL
+				setCachedAudio(cacheKey, json.fileUrl);
 
 				// Play the audio
 				playAudio(json.fileUrl);
@@ -217,7 +255,7 @@
 				</button>
 
 				<!-- Play Button (only show if audio is available) -->
-				{#if cachedAudioUrl}
+				{#if cachedAudio}
 					<button
 						class="rounded p-1 transition-all hover:bg-zinc-700 disabled:opacity-50"
 						onclick={togglePlayback}
@@ -397,13 +435,13 @@
 					<!-- Pitch -->
 					<div class="nodrag">
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Pitch: {(data.pitch ?? 1).toFixed(2)}
+							Pitch: {(data.pitch ?? 12).toFixed(1)}
 						</label>
 						<Slider
-							value={[data.pitch ?? 1]}
+							value={[data.pitch ?? 12]}
 							min={0}
-							max={1}
-							step={0.01}
+							max={24}
+							step={0.1}
 							class="w-full"
 							onValueChange={(values) => {
 								updateNodeData(nodeId, { ...data, pitch: values[0] });
