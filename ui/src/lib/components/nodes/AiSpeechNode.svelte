@@ -39,8 +39,21 @@
 		const context = messageContext.getContext();
 
 		context.onMessage((message: Message) => {
-			match(message.data.type).with('speech', () => {
-				updateNodeData(nodeId, { ...data, text: message.data.text });
+			const { data } = message;
+
+			match(data.type).with('speech', () => {
+				const newData = {
+					...data,
+					...(data.text && { text: data.text }),
+					...(data.emotionVoice && { emotionVoice: data.emotionVoice }),
+					...(data.language && { language: data.language }),
+					...(data.speed !== undefined && { speed: data.speed }),
+					...(data.volume !== undefined && { volume: data.volume }),
+					...(data.pitch !== undefined && { pitch: data.pitch }),
+					...(data.voiceId && { voiceId: data.voiceId })
+				};
+
+				updateNodeData(nodeId, newData);
 				generateSpeech();
 			});
 		});
@@ -158,11 +171,11 @@
 				language: data.language || 'th',
 				speed: data.speed ?? 1,
 				volume: data.volume ?? 1,
-				pitch: data.pitch ?? 1,
-				voiceId: data.voiceId || $voicesStore.data?.rvcModels?.[0]?.id || ''
+				pitch: data.pitch ?? 1
+				// voiceId: data.voiceId || $voicesStore.data?.rvcModels?.[0]?.id || ''
 			};
 
-			const response = await fetch('https://api.celestiai.co/api/v1/tts-turbo/tts', {
+			const response = await fetch('https://api.celestiai.co/api/v1/tts-turbo/tts-mita', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -254,9 +267,11 @@
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">emotion voice</label>
 
 						<Select
-							value={data.emotionVoice || 'Cheerful_Female'}
+							value={[data.emotionVoice || 'Cheerful_Female']}
 							onValueChange={(value) => {
-								updateNodeData(nodeId, { ...data, emotionVoice: value });
+								const emotionVoice = Array.isArray(value) ? value.at(-1) : value;
+
+								updateNodeData(nodeId, { ...data, emotionVoice });
 							}}
 						>
 							<SelectTrigger
@@ -309,9 +324,11 @@
 					<div class="nodrag">
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">rvc model</label>
 						<Select
-							value={data.voiceId || $voicesStore.data?.rvcModels?.[0]?.id || ''}
+							value={[data.voiceId || '']}
 							onValueChange={(value) => {
-								updateNodeData(nodeId, { ...data, voiceId: value });
+								let voiceId = Array.isArray(value) ? value.at(-1) : value;
+
+								updateNodeData(nodeId, { ...data, voiceId });
 							}}
 						>
 							<SelectTrigger
