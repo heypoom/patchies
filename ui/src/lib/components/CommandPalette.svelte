@@ -28,7 +28,8 @@
 		| 'delete-list'
 		| 'rename-list'
 		| 'rename-name'
-		| 'gemini-api-key';
+		| 'gemini-api-key'
+		| 'celestiai-api-key';
 
 	// Multi-stage state
 	let stage = $state<StageName>('commands');
@@ -37,6 +38,7 @@
 	let savedPatches = $state<string[]>([]);
 	let selectedPatchToRename = $state('');
 	let geminiApiKey = $state('');
+	let celestiaiApiKey = $state('');
 
 	// Base commands for stage 1
 	const commands = [
@@ -50,6 +52,11 @@
 			id: 'set-gemini-api-key',
 			name: 'Set Gemini API Key',
 			description: 'Configure Google Gemini API key'
+		},
+		{
+			id: 'set-celestiai-api-key',
+			name: 'Set CelestiAi AI API Key',
+			description: 'Configure CelestiAi AI API key'
 		},
 		{
 			id: 'toggle-bottom-bar',
@@ -86,6 +93,7 @@
 			stage === 'rename-list' ||
 			stage === 'rename-name' ||
 			stage === 'gemini-api-key' ||
+			stage === 'celestiai-api-key' ||
 			stage === 'commands'
 		) {
 			setTimeout(() => {
@@ -163,6 +171,8 @@
 			renamePatch();
 		} else if (stage === 'gemini-api-key' && geminiApiKey.trim()) {
 			saveGeminiApiKey();
+		} else if (stage === 'celestiai-api-key' && celestiaiApiKey.trim()) {
+			saveCelestiAiApiKey();
 		}
 	}
 
@@ -183,6 +193,10 @@
 			.with('set-gemini-api-key', () => {
 				nextStage('gemini-api-key');
 				geminiApiKey = '';
+			})
+			.with('set-celestiai-api-key', () => {
+				nextStage('celestiai-api-key');
+				celestiaiApiKey = '';
 			})
 			.with('toggle-bottom-bar', () => {
 				$isBottomBarVisible = !$isBottomBarVisible;
@@ -411,6 +425,13 @@
 		onCancel();
 	}
 
+	function saveCelestiAiApiKey() {
+		if (!celestiaiApiKey.trim()) return;
+
+		localStorage.setItem('celestiai-api-key', celestiaiApiKey.trim());
+		onCancel();
+	}
+
 	function handleClickOutside(event: MouseEvent) {
 		if (paletteContainer && !paletteContainer.contains(event.target as Node)) {
 			onCancel();
@@ -527,6 +548,18 @@
 				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
 			/>
 		</div>
+	{:else if stage === 'celestiai-api-key'}
+		<div class="border-b border-zinc-700 p-3">
+			<div class="mb-2 text-xs text-zinc-400">Enter your CelestiAi AI API key:</div>
+			<input
+				bind:this={searchInput}
+				bind:value={celestiaiApiKey}
+				onkeydown={handleKeydown}
+				type="password"
+				placeholder="Enter API key..."
+				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+			/>
+		</div>
 	{/if}
 
 	<!-- Results List -->
@@ -621,6 +654,11 @@
 			{#if geminiApiKey.trim()}
 				<div class="px-3 py-2 text-xs text-zinc-400">API key will be saved securely</div>
 			{/if}
+		{:else if stage === 'celestiai-api-key'}
+			<!-- Show current input preview -->
+			{#if celestiaiApiKey.trim()}
+				<div class="px-3 py-2 text-xs text-zinc-400">API key will be saved securely</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -639,6 +677,8 @@
 		{:else if stage === 'rename-name'}
 			Enter Rename • Esc Back
 		{:else if stage === 'gemini-api-key'}
+			Enter Save • Esc Back
+		{:else if stage === 'celestiai-api-key'}
 			Enter Save • Esc Back
 		{/if}
 	</div>
