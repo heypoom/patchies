@@ -10,7 +10,8 @@
 	import type { Message } from '$lib/messages/MessageSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string; showConsole?: boolean } } =
+		$props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -21,7 +22,6 @@
 	let isRunning = $state(false);
 
 	let showEditor = $state(false);
-	let showConsole = $state(false);
 	let consoleOutput = $state<string[]>([]);
 
 	const code = $derived(data.code || '');
@@ -167,7 +167,7 @@
 					<button
 						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={() => {
-							showConsole = !showConsole;
+							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
 						}}
 						title="Console"
 					>
@@ -195,7 +195,7 @@
 
 				<Handle type="target" id="message-in" position={Position.Top} class="!left-12" />
 
-				{#if showConsole}
+				{#if data.showConsole}
 					<div class="min-w-[150px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
