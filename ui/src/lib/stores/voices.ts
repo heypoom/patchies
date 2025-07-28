@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 
 export interface RvcModel {
 	id: string;
@@ -31,31 +31,24 @@ export interface VoicesStore {
 	data: VoicesData | null;
 	loading: boolean;
 	error: string | null;
-	lastFetched: number | null;
 }
 
 const initialState: VoicesStore = {
 	data: null,
 	loading: false,
-	error: null,
-	lastFetched: null
+	error: null
 };
 
 export const voicesStore = writable<VoicesStore>(initialState);
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
 export async function fetchVoices(): Promise<void> {
 	const currentTime = Date.now();
 
-	voicesStore.update((state) => {
-		// Check if we have recent cached data
-		if (state.data && state.lastFetched && currentTime - state.lastFetched < CACHE_DURATION) {
-			return state;
-		}
+	const storeResult = get(voicesStore);
 
-		return { ...state, loading: true, error: null };
-	});
+	if (storeResult.data !== null) {
+		return;
+	}
 
 	try {
 		const response = await fetch('https://api.celestiai.co/api/v1/tts-turbo/voices');

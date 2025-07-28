@@ -8,7 +8,8 @@
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import Slider from '$lib/components/ui/slider/slider.svelte';
 	import { voicesStore, fetchVoices } from '$lib/stores/voices';
-	import { generateCacheKey, getCachedAudio, setCachedAudio } from '$lib/stores/audioCache';
+	import { audioUrlCache } from '$lib/stores/audioCache';
+	import { omit } from 'lodash';
 
 	let {
 		id: nodeId,
@@ -30,20 +31,20 @@
 	let errorMessage = $state<string | null>(null);
 	let playbackState = $state<'loading' | 'playing' | 'paused'>('paused');
 	let audio = $state<HTMLAudioElement | null>(null);
-	let currentCacheKey = $state<string>('');
+
+	const audioCacheKey = $derived.by(() => JSON.stringify(data));
+
 	const { updateNodeData } = useSvelteFlow();
 
-	const audioCacheKey = $derived(
-		generateCacheKey({
-			text: data.text,
-			emotionVoice: data.emotionVoice || 'Cheerful_Female',
-			language: data.language || 'th',
-			speed: data.speed ?? 1,
-			volume: data.volume ?? 1,
-			pitch: data.pitch ?? 1,
-			voiceId: data.voiceId || ''
-		})
-	);
+	const ttsOptions = $derived.by(() => ({
+		text: data.text,
+		emotionVoice: data.emotionVoice || 'Cheerful_Female',
+		language: data.language || 'th',
+		speed: data.speed ?? 1,
+		volume: data.volume ?? 1,
+		pitch: data.pitch ?? 1,
+		voiceId: data.voiceId || ''
+	}));
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
@@ -56,13 +57,13 @@
 			match(data.type).with('speech', () => {
 				const newData = {
 					...data,
-					...(data.text && { text: data.text }),
-					...(data.emotionVoice && { emotionVoice: data.emotionVoice }),
-					...(data.language && { language: data.language }),
-					...(data.speed !== undefined && { speed: data.speed }),
-					...(data.volume !== undefined && { volume: data.volume }),
-					...(data.pitch !== undefined && { pitch: data.pitch }),
-					...(data.voiceId && { voiceId: data.voiceId })
+					...(ttsOptions.text && { text: ttsOptions.text }),
+					...(ttsOptions.emotionVoice && { emotionVoice: ttsOptions.emotionVoice }),
+					...(ttsOptions.language && { language: ttsOptions.language }),
+					...(ttsOptions.speed !== undefined && { speed: ttsOptions.speed }),
+					...(ttsOptions.volume !== undefined && { volume: ttsOptions.volume }),
+					...(ttsOptions.pitch !== undefined && { pitch: ttsOptions.pitch }),
+					...(ttsOptions.voiceId && { voiceId: ttsOptions.voiceId })
 				};
 
 				updateNodeData(nodeId, newData);
@@ -100,17 +101,7 @@
 	}
 
 	function togglePlayback() {
-		const cacheKey = generateCacheKey({
-			text: data.text,
-			emotionVoice: data.emotionVoice || 'Cheerful_Female',
-			language: data.language || 'th',
-			speed: data.speed ?? 1,
-			volume: data.volume ?? 1,
-			pitch: data.pitch ?? 1,
-			voiceId: data.voiceId || ''
-		});
-
-		const cachedUrl = getCachedAudio(cacheKey);
+		const cachedUrl = $audioUrlCache[audioCacheKey];
 		if (!cachedUrl) return;
 
 		match(playbackState)
@@ -136,6 +127,7 @@
 		}
 
 		audio = new Audio(url);
+
 		audio.onplay = () => {
 			playbackState = 'playing';
 		};
@@ -164,44 +156,23 @@
 			return;
 		}
 
-		if (!data.text.trim()) {
+		if (!ttsOptions.text) {
 			errorMessage = 'Please enter text to generate speech.';
 			return;
 		}
 
-		const ttsOptions = {
-			text: data.text,
-			emotionVoice: data.emotionVoice || 'Cheerful_Female',
-			language: data.language || 'th',
-			speed: data.speed ?? 1,
-			volume: data.volume ?? 1,
-			pitch: data.pitch ?? 1,
-			voiceId: data.voiceId || ''
-		};
+		const cachedUrl = $audioUrlCache[audioCacheKey];
 
-		const cacheKey = generateCacheKey(ttsOptions);
-		currentCacheKey = cacheKey;
-
-		// Check cache first
-		const cachedUrl = getCachedAudio(cacheKey);
 		if (cachedUrl) {
 			playAudio(cachedUrl);
-			return;
 		}
 
 		playbackState = 'loading';
 		errorMessage = null;
 
 		try {
-			const body = {
-				text: ttsOptions.text,
-				emotionVoice: ttsOptions.emotionVoice,
-				language: ttsOptions.language,
-				speed: ttsOptions.speed,
-				volume: ttsOptions.volume,
-				pitch: ttsOptions.pitch
-				// voiceId: ttsOptions.voiceId || $voicesStore.data?.rvcModels?.[0]?.id || ''
-			};
+			// tts-mita does not support voiceId.
+			const body = omit(ttsOptions, ['voiceId']);
 
 			const response = await fetch('https://api.celestiai.co/api/v1/tts-turbo/tts-mita', {
 				method: 'POST',
@@ -215,17 +186,17 @@
 			const json = await response.json();
 
 			if (json.success) {
-				// Cache the audio URL
-				setCachedAudio(cacheKey, json.fileUrl);
-
-				// Play the audio
+				$audioUrlCache[audioCacheKey] = json.fileUrl;
 				playAudio(json.fileUrl);
 			} else {
 				errorMessage = json.message || 'Speech generation failed';
 				playbackState = 'paused';
 			}
 		} catch (error) {
-			errorMessage = 'Network error: ' + error.message;
+			if (error instanceof Error) {
+				errorMessage = `Error generating speech: ${error.message}`;
+			}
+
 			playbackState = 'paused';
 		}
 	}
@@ -241,21 +212,25 @@
 			<div class="flex gap-1">
 				<!-- Generate Button -->
 				<button
-					class="rounded p-1 transition-all hover:bg-zinc-700 disabled:opacity-50"
+					class="rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30"
 					onclick={handleGenerate}
-					disabled={playbackState === 'loading'}
+					disabled={playbackState === 'loading' || !!$audioUrlCache[audioCacheKey]}
 					title="Generate Speech"
 				>
 					<Icon
 						icon={playbackState === 'loading' ? 'lucide:loader' : 'lucide:sparkles'}
-						class={['h-4 w-4 text-zinc-300', playbackState === 'loading' ? 'animate-spin' : '']}
+						class={[
+							'h-4 w-4 text-zinc-300',
+							playbackState === 'loading' ? 'animate-spin opacity-30' : ''
+						]}
+						aria-disabled={playbackState === 'loading'}
 					/>
 				</button>
 
 				<!-- Play Button (only show if audio is available) -->
-				{#if getCachedAudio(audioCacheKey)}
+				{#if $audioUrlCache[audioCacheKey]}
 					<button
-						class="rounded p-1 transition-all hover:bg-zinc-700 disabled:opacity-50"
+						class="rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30"
 						onclick={togglePlayback}
 						disabled={playbackState === 'loading'}
 						title={getPlayTitle()}
@@ -273,14 +248,14 @@
 				<!-- Main Text Input -->
 				<div class="nodrag mb-4">
 					<textarea
-						value={data.text}
+						value={ttsOptions.text}
 						placeholder="Enter text to read..."
 						class="h-20 w-full resize-none rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
-						onchange={(e) => {
+						oninput={(e) => {
 							updateNodeData(nodeId, { ...data, text: e.currentTarget.value });
 						}}
 						onkeydown={(e) => {
-							if (e.key === 'Enter') {
+							if (e.shiftKey && e.key === 'Enter') {
 								generateSpeech();
 							}
 						}}
@@ -294,7 +269,7 @@
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">emotion voice</label>
 
 						<Select
-							value={[data.emotionVoice || 'Cheerful_Female']}
+							value={[ttsOptions.emotionVoice]}
 							onValueChange={(value) => {
 								const emotionVoice = Array.isArray(value) ? value.at(-1) : value;
 
@@ -304,8 +279,9 @@
 							<SelectTrigger
 								class="!h-[30px] w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 focus:border-zinc-500 focus:outline-none"
 							>
-								{data.emotionVoice || 'Cheerful_Female'}
+								{ttsOptions.emotionVoice}
 							</SelectTrigger>
+
 							<SelectContent class="max-h-60 border-zinc-600 bg-zinc-800">
 								{#if $voicesStore.loading}
 									<SelectItem value="" class="text-[10px] text-zinc-400" disabled
@@ -321,13 +297,6 @@
 											{voice}
 										</SelectItem>
 									{/each}
-								{:else}
-									<SelectItem
-										value="Cheerful_Female"
-										class="text-[10px] text-zinc-100 hover:bg-zinc-700"
-									>
-										Cheerful_Female
-									</SelectItem>
 								{/if}
 							</SelectContent>
 						</Select>
@@ -338,7 +307,7 @@
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">language</label>
 						<input
 							type="text"
-							value={data.language || 'th'}
+							value={ttsOptions.language}
 							placeholder="Language code (e.g., th, en)"
 							class="h-7 w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
 							onchange={(e) => {
@@ -349,9 +318,10 @@
 
 					<!-- RVC Model Selection -->
 					<div class="nodrag">
-						<label class="mb-1 block text-[10px] font-medium text-zinc-400">rvc model</label>
+						<label class="mb-1 block text-[10px] font-medium text-zinc-400">models</label>
+
 						<Select
-							value={[data.voiceId || '']}
+							value={[ttsOptions.voiceId]}
 							onValueChange={(value) => {
 								let voiceId = Array.isArray(value) ? value.at(-1) : value;
 
@@ -361,9 +331,9 @@
 							<SelectTrigger
 								class="!h-[30px] w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 focus:border-zinc-500 focus:outline-none"
 							>
-								{#if data.voiceId}
-									{$voicesStore.data?.rvcModels?.find((model) => model.id === data.voiceId)?.name ||
-										data.voiceId}
+								{#if ttsOptions.voiceId}
+									{$voicesStore.data?.rvcModels?.find((model) => model.id === ttsOptions.voiceId)
+										?.name || ttsOptions.voiceId}
 								{:else if $voicesStore.data?.rvcModels?.[0]}
 									{$voicesStore.data.rvcModels[0].name}
 								{:else}
@@ -399,10 +369,10 @@
 					<!-- Speed -->
 					<div class="nodrag">
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Speed: {(data.speed ?? 1).toFixed(2)}
+							Speed: {ttsOptions.speed.toFixed(2)}
 						</label>
 						<Slider
-							value={[data.speed ?? 1]}
+							value={[ttsOptions.speed]}
 							min={0}
 							max={1}
 							step={0.01}
@@ -416,10 +386,10 @@
 					<!-- Volume -->
 					<div class="nodrag">
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Volume: {(data.volume ?? 1).toFixed(2)}
+							Volume: {ttsOptions.volume.toFixed(2)}
 						</label>
 						<Slider
-							value={[data.volume ?? 1]}
+							value={[ttsOptions.volume]}
 							min={0}
 							max={1}
 							step={0.01}
@@ -433,10 +403,10 @@
 					<!-- Pitch -->
 					<div class="nodrag">
 						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Pitch: {(data.pitch ?? 1).toFixed(1)}
+							Pitch: {ttsOptions.pitch.toFixed(1)}
 						</label>
 						<Slider
-							value={[data.pitch ?? 1]}
+							value={[ttsOptions.pitch]}
 							min={0}
 							max={12}
 							step={0.1}
