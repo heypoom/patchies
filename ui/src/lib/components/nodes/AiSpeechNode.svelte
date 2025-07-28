@@ -224,18 +224,19 @@
 
 				<!-- Generate Button -->
 				<button
-					class="rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30"
+					class={[
+						'rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed',
+
+						playbackState === 'loading' ? 'animate-spin opacity-30' : ''
+					]}
 					onclick={generateSpeech}
 					disabled={playbackState === 'loading' || !!$audioUrlCache[audioCacheKey]}
 					title="Generate Speech"
+					aria-disabled={playbackState === 'loading'}
 				>
 					<Icon
 						icon={playbackState === 'loading' ? 'lucide:loader' : 'lucide:sparkles'}
-						class={[
-							'h-4 w-4 text-zinc-300',
-							playbackState === 'loading' ? 'animate-spin opacity-30' : ''
-						]}
-						aria-disabled={playbackState === 'loading'}
+						class="h-4 w-4 text-zinc-300"
 					/>
 				</button>
 

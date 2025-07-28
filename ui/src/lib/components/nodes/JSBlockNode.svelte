@@ -10,13 +10,14 @@
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
-	
+
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let videoCanvases: HTMLCanvasElement[] = $state([]);
+	let isRunning = $state(false);
 
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
@@ -51,7 +52,9 @@
 		}
 	});
 
-	function executeCode() {
+	async function executeCode() {
+		isRunning = true;
+
 		// Clear previous output
 		consoleOutput = [];
 
@@ -106,18 +109,25 @@
 			const userFunction = new Function(
 				...functionParams,
 				`
-				var recv = receive = onMessage; // alias
-			
-				${code}
+				const inner = async () => {
+					var recv = receive = onMessage; // alias
+				
+					${code}
+				}
+
+				return inner()
 			`
 			);
+
 			// Execute with our custom console and message system
-			userFunction(...functionArgs);
+			await userFunction(...functionArgs);
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,
 				`ERROR: ${error instanceof Error ? error.message : String(error)}`
 			];
+		} finally {
+			isRunning = false;
 		}
 	}
 
@@ -166,8 +176,16 @@
 					<span class="font-mono text-xs text-zinc-400">Console</span>
 
 					<div class="flex gap-1">
-						<button onclick={executeCode} class="rounded p-1 hover:bg-zinc-700" title="Run code">
-							<Icon icon="lucide:play" class="h-3 w-3 text-zinc-300" />
+						<button
+							onclick={executeCode}
+							class={['rounded p-1 hover:bg-zinc-700', isRunning && 'animate-spin opacity-30']}
+							title="Run code"
+							aria-disabled={isRunning}
+						>
+							<Icon
+								icon={isRunning ? 'lucide:loader' : 'lucide:play'}
+								class="h-3 w-3 text-zinc-300"
+							/>
 						</button>
 						<button
 							onclick={clearConsole}

@@ -34,7 +34,7 @@
 		messageContext.getContext().onMessage((message) => {
 			if (message.data.type === 'generate') {
 				updateNodeData(nodeId, { ...data, prompt: message.data.prompt });
-				updatePrompt();
+				setTimeout(() => updatePrompt());
 			}
 		});
 	});
