@@ -466,7 +466,7 @@
 
 <div
 	bind:this={paletteContainer}
-	class="absolute z-50 w-80 rounded-lg border border-zinc-600 bg-zinc-800 shadow-2xl"
+	class="absolute z-50 w-80 rounded-lg border border-zinc-600 bg-zinc-900/50 shadow-2xl backdrop-blur-xl"
 	style="left: {position.x}px; top: {position.y}px;"
 >
 	<!-- Search Input -->
@@ -478,7 +478,7 @@
 				onkeydown={handleKeydown}
 				type="text"
 				placeholder="Search commands..."
-				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+				class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
 			/>
 		</div>
 	{:else if stage === 'save-name'}
@@ -573,7 +573,7 @@
 			{#each filteredCommands as command, index}
 				<div
 					class="cursor-pointer px-3 py-2 {index === selectedIndex
-						? 'bg-zinc-700'
+						? 'bg-zinc-600/50'
 						: 'hover:bg-zinc-750'}"
 					onclick={() => handleItemClick(index)}
 					onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
@@ -598,7 +598,7 @@
 				{#each filteredPatches as patch, index}
 					<div
 						class="cursor-pointer px-3 py-2 {index === selectedIndex
-							? 'bg-zinc-700'
+							? 'bg-zinc-600/50'
 							: 'hover:bg-zinc-750'}"
 						onclick={() => handleItemClick(index)}
 						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
