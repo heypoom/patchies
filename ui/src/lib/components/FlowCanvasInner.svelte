@@ -217,7 +217,6 @@
 		nodes = [...nodes, newNode];
 	}
 
-	// Handle object palette
 	function handlePaletteSelect(nodeType: string) {
 		createNode(nodeType, nodeCreationPosition);
 		showPalette = false;
@@ -258,6 +257,7 @@
 		// Handle 'n' key for object palette
 		else if (event.key.toLowerCase() === 'n' && !showPalette && !showCommandPalette && !isTyping) {
 			event.preventDefault();
+
 			// Convert screen coordinates to flow coordinates for accurate node placement
 			nodeCreationPosition = screenToFlowPosition(lastMousePosition);
 			showPalette = true;
@@ -301,14 +301,13 @@
 		</SvelteFlow>
 
 		<!-- Object Palette -->
-		{#if showPalette}
-			<ObjectPalette
-				{nodeTypes}
-				position={lastMousePosition}
-				onSelect={handlePaletteSelect}
-				onCancel={handlePaletteCancel}
-			/>
-		{/if}
+		<ObjectPalette
+			{nodeTypes}
+			position={lastMousePosition}
+			onselect={handlePaletteSelect}
+			oncancel={handlePaletteCancel}
+			visible={showPalette}
+		/>
 
 		<!-- Command Palette -->
 		{#if showCommandPalette}

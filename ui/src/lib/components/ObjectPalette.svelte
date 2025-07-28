@@ -5,11 +5,12 @@
 	interface Props {
 		nodeTypes: Record<string, any>;
 		position: { x: number; y: number };
-		onSelect: (nodeType: string) => void;
-		onCancel: () => void;
+		onselect: (nodeType: string) => void;
+		oncancel: () => void;
+		visible?: boolean;
 	}
 
-	let { nodeTypes, position, onSelect, onCancel }: Props = $props();
+	let { nodeTypes, position, onselect: onSelect, oncancel: onCancel, visible }: Props = $props();
 
 	let searchQuery = $state('');
 	let selectedIndex = $state(0);
@@ -33,18 +34,32 @@
 		}
 	});
 
+	$effect(() => {
+		if (visible) {
+			searchInput?.focus();
+		}
+	});
+
 	function handleKeydown(event: KeyboardEvent) {
 		match(event.key)
 			.with('Escape', () => {
 				event.preventDefault();
+				event.stopPropagation();
+
 				onCancel();
 			})
 			.with('Enter', () => {
 				event.preventDefault();
+				event.stopPropagation();
+
 				const filtered = filteredNodeTypes;
+
 				if (filtered.length > 0) {
 					onSelect(filtered[selectedIndex]);
+					return true;
 				}
+
+				return false;
 			})
 			.with('ArrowDown', () => {
 				event.preventDefault();
@@ -55,15 +70,6 @@
 				selectedIndex = Math.max(selectedIndex - 1, 0);
 			});
 	}
-
-	function handleItemClick(nodeType: string) {
-		onSelect(nodeType);
-	}
-
-	onMount(async () => {
-		await tick();
-		searchInput?.focus();
-	});
 
 	// Close palette when clicking outside
 	function handleOutsideClick(event: MouseEvent) {
@@ -83,9 +89,11 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	bind:this={paletteContainer}
-	class="absolute z-50 w-64 rounded-lg border border-zinc-600 bg-zinc-800 shadow-lg"
+	class={[
+		'absolute z-50 w-64 rounded-lg border border-zinc-600 bg-zinc-800 shadow-lg',
+		visible ? '' : 'hidden'
+	]}
 	style="left: {position.x}px; top: {position.y}px;"
-	onkeydown={handleKeydown}
 >
 	<!-- Search Input -->
 	<div class="border-b border-zinc-700 p-3">
@@ -95,6 +103,7 @@
 			type="text"
 			placeholder="Search objects..."
 			class="w-full rounded border border-zinc-600 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
+			onkeydown={handleKeydown}
 		/>
 	</div>
 
