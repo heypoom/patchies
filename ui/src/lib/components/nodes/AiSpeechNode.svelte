@@ -73,14 +73,13 @@
 
 		// Fetch voices if not already cached
 		fetchVoices();
-
-		return () => {};
 	});
 
 	onDestroy(() => {
 		if (messageContext) {
 			messageContext.destroy();
 		}
+
 		if (audio) {
 			audio.pause();
 			audio = null;
@@ -90,14 +89,10 @@
 	const getPlayIcon = () => (playbackState === 'playing' ? 'lucide:pause' : 'lucide:play');
 
 	function getPlayTitle() {
-		switch (playbackState) {
-			case 'playing':
-				return 'Pause';
-			case 'loading':
-				return 'Loading...';
-			default:
-				return 'Play';
-		}
+		return match(playbackState)
+			.with('playing', () => 'Pause')
+			.with('loading', () => 'Loading...')
+			.otherwise(() => 'Play');
 	}
 
 	function togglePlayback() {
@@ -257,6 +252,8 @@
 						onkeydown={(e) => {
 							if (e.shiftKey && e.key === 'Enter') {
 								generateSpeech();
+								e.preventDefault();
+								return true;
 							}
 						}}
 					></textarea>
