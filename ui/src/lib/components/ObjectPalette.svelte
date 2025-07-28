@@ -101,7 +101,7 @@
 	<!-- Results List -->
 	<div class="max-h-60 overflow-y-auto">
 		{#if filteredNodeTypes.length === 0}
-			<div class="p-3 text-sm text-zinc-400 italic">No objects found</div>
+			<div class="p-3 text-sm italic text-zinc-400">No objects found</div>
 		{:else}
 			{#each filteredNodeTypes as nodeType, index}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -111,7 +111,6 @@
 					selectedIndex
 						? 'border-zinc-400 bg-zinc-700 text-zinc-100'
 						: 'border-transparent text-zinc-300 hover:bg-zinc-700'}"
-					onclick={() => handleItemClick(nodeType)}
 				>
 					<span class="font-mono">{nodeType}</span>
 				</div>
