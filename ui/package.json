@@ -30,6 +30,7 @@
 		"@tailwindcss/vite": "^4.0.0",
 		"@types/meyda": "^5.3.0",
 		"@types/p5": "^1.7.6",
+		"@types/stats.js": "^0.17.4",
 		"@vitest/browser": "^3.2.3",
 		"bits-ui": "^2.8.6",
 		"clsx": "^2.1.1",
@@ -84,6 +85,7 @@
 		"mode-watcher": "0.5.1",
 		"p5": "^1.11.9",
 		"regl": "^2.1.1",
+		"stats.js": "^0.17.0",
 		"ts-pattern": "^5.7.1"
 	},
 	"trustedDependencies": [
