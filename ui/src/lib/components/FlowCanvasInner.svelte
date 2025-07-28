@@ -23,6 +23,7 @@
 	import AiImageNode from './nodes/AiImageNode.svelte';
 	import AiTextNode from './nodes/AiTextNode.svelte';
 	import MessageNode from './nodes/MessageNode.svelte';
+	import BangNode from './nodes/BangNode.svelte';
 	import AiVideoNode from './nodes/AiVideoNode.svelte';
 	import AiMusicNode from './nodes/AiMusicNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
@@ -44,6 +45,7 @@
 		['ai.img']: AiImageNode,
 		['ai.txt']: AiTextNode,
 		['msg']: MessageNode,
+		['bang']: BangNode,
 		['ai.music']: AiMusicNode,
 		['ai.tts']: AiSpeechNode,
 		['bg.out']: BackgroundOutputNode

@@ -1,0 +1,38 @@
+<script lang="ts">
+	import { Handle, Position } from '@xyflow/svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+
+	let { id: nodeId }: { id: string } = $props();
+
+	const messageContext = new MessageContext(nodeId);
+
+	onMount(() => {
+		// No need to listen for incoming messages since this is a simple trigger
+	});
+
+	onDestroy(() => {
+		messageContext.destroy();
+	});
+
+	function sendBang() {
+		messageContext.getContext().send({ type: 'bang' });
+	}
+</script>
+
+<div class="relative">
+	<div class="group relative">
+		<div class="flex flex-col gap-2">
+			<div class="relative">
+				<button
+					onclick={sendBang}
+					class="h-12 w-12 cursor-pointer rounded-full border border-zinc-600 bg-zinc-900 font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600"
+					aria-label="send bang"
+				>
+				</button>
+
+				<Handle type="source" position={Position.Bottom} class="z-1" />
+			</div>
+		</div>
+	</div>
+</div>

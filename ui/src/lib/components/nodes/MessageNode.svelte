@@ -62,9 +62,7 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">messagebox</div>
-				</div>
+				<div></div>
 
 				<button
 					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
@@ -95,7 +93,7 @@
 								onclick={sendMessage}
 								class="w-full gap-2 rounded bg-transparent px-1 py-2 font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
 							>
-								{msgText ? msgText.slice(0, 20) : '<empty>'}
+								{msgText ? msgText.slice(0, 20) : '<messagebox>'}
 							</button>
 						{/if}
 					</div>
