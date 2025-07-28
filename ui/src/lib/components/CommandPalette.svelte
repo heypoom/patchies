@@ -72,11 +72,7 @@
 
 	// Filtered items based on current stage
 	const filteredCommands = $derived.by(() => {
-		return commands.filter(
-			(cmd) =>
-				cmd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				cmd.description.toLowerCase().includes(searchQuery.toLowerCase())
-		);
+		return commands.filter((cmd) => cmd.name.toLowerCase().includes(searchQuery.toLowerCase()));
 	});
 
 	const filteredPatches = $derived.by(() => {
