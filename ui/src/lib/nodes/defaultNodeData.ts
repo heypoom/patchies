@@ -19,12 +19,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
 		.with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))
 		.with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))
+		.with('ai.txt', () => ({ prompt: 'Write a creative story about...' }))
 		.with('bchrn', () => ({ currentPreset: DEFAULT_BUTTERCHURN_PRESET }))
 		.with('p5', () => ({ code: DEFAULT_P5_CODE }))
 		.with('hydra', () => ({ code: DEFAULT_HYDRA_CODE }))
 		.with('canvas', () => ({}))
 		.with('ai.music', () => ({}))
-		.with('ai.speech', () => ({}))
+		.with('ai.tts', () => ({}))
 		.with('bg.out', () => ({}))
 		.otherwise(() => ({}));
 }

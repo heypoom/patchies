@@ -42,7 +42,10 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 }
 
 export function createLLMFunction() {
-	return async (prompt: string, context?: { canvas: HTMLCanvasElement }) => {
+	return async (
+		prompt: string,
+		context?: { canvas?: HTMLCanvasElement; abortSignal?: AbortSignal }
+	) => {
 		const apiKey = localStorage.getItem('gemini-api-key');
 
 		if (!apiKey) {
@@ -64,7 +67,8 @@ export function createLLMFunction() {
 
 		const response = await ai.models.generateContent({
 			model: 'gemini-2.5-flash',
-			contents
+			contents,
+			config: { abortSignal: context?.abortSignal }
 		});
 
 		return response.text;

@@ -21,6 +21,7 @@
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import AiImageNode from './nodes/AiImageNode.svelte';
+	import AiTextNode from './nodes/AiTextNode.svelte';
 	import AiVideoNode from './nodes/AiVideoNode.svelte';
 	import AiMusicNode from './nodes/AiMusicNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
@@ -40,8 +41,9 @@
 		['strudel']: StrudelNode,
 		['bchrn']: ButterchurnNode,
 		['ai.img']: AiImageNode,
+		['ai.txt']: AiTextNode,
 		['ai.music']: AiMusicNode,
-		['ai.speech']: AiSpeechNode,
+		['ai.tts']: AiSpeechNode,
 		['bg.out']: BackgroundOutputNode
 		// ['ai.vdo']: AiVideoNode,
 	};
