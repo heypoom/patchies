@@ -55,9 +55,8 @@
 
 	// Object palette state
 	let showPalette = $state(false);
-	let palettePosition = $state({ x: 0, y: 0 }); // Screen position for palette UI
 	let nodeCreationPosition = $state({ x: 0, y: 0 }); // Flow position for node creation
-	let lastMousePosition = $state({ x: 0, y: 0 });
+	let lastMousePosition = $state({ x: 100, y: 100 });
 
 	// Command palette state
 	let showCommandPalette = $state(false);
@@ -252,8 +251,6 @@
 		// Handle 'n' key for object palette
 		else if (event.key.toLowerCase() === 'n' && !showPalette && !showCommandPalette && !isTyping) {
 			event.preventDefault();
-			// Set screen position for palette UI (where the palette appears)
-			palettePosition = { ...lastMousePosition };
 			// Convert screen coordinates to flow coordinates for accurate node placement
 			nodeCreationPosition = screenToFlowPosition(lastMousePosition);
 			showPalette = true;
@@ -300,7 +297,7 @@
 		{#if showPalette}
 			<ObjectPalette
 				{nodeTypes}
-				position={palettePosition}
+				position={lastMousePosition}
 				onSelect={handlePaletteSelect}
 				onCancel={handlePaletteCancel}
 			/>
