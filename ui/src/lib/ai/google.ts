@@ -1,4 +1,4 @@
-import { GoogleGenAI, type ContentListUnion } from '@google/genai';
+import { GoogleGenAI, PersonGeneration, type ContentListUnion } from '@google/genai';
 
 export async function generateImageWithGemini(
 	prompt: string,
@@ -12,7 +12,8 @@ export async function generateImageWithGemini(
 		config: {
 			numberOfImages: 1,
 			aspectRatio: '1:1',
-			abortSignal
+			abortSignal,
+			personGeneration: PersonGeneration.ALLOW_ALL
 		}
 	});
 
