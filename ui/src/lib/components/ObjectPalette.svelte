@@ -90,19 +90,19 @@
 <div
 	bind:this={paletteContainer}
 	class={[
-		'absolute z-50 w-64 rounded-lg border border-zinc-600 bg-zinc-800 shadow-lg',
+		'absolute z-50 w-64 rounded-lg border border-zinc-600 bg-zinc-900/50 shadow-lg backdrop-blur-xl',
 		visible ? '' : 'hidden'
 	]}
 	style="left: {position.x}px; top: {position.y}px;"
 >
 	<!-- Search Input -->
-	<div class="border-b border-zinc-700 p-3">
+	<div class="border-b border-zinc-700">
 		<input
 			bind:this={searchInput}
 			bind:value={searchQuery}
 			type="text"
 			placeholder="Search objects..."
-			class="w-full rounded border border-zinc-600 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
+			class="w-full rounded px-3 py-3 font-mono text-sm text-zinc-200 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
 			onkeydown={handleKeydown}
 		/>
 	</div>
@@ -118,8 +118,8 @@
 				<div
 					class="cursor-pointer border-l-2 px-3 py-2 text-sm transition-colors {index ===
 					selectedIndex
-						? 'border-zinc-400 bg-zinc-700 text-zinc-100'
-						: 'border-transparent text-zinc-300 hover:bg-zinc-700'}"
+						? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
+						: 'border-transparent text-zinc-300'}"
 				>
 					<span class="font-mono">{nodeType}</span>
 				</div>
