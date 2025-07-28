@@ -1,8 +1,10 @@
-import { MessageSystem, type MessageCallback } from './MessageSystem';
+import { MessageQueue, MessageSystem, type MessageCallback } from './MessageSystem';
 
 export class MessageContext {
-	private messageSystem: MessageSystem;
-	private nodeId: string;
+	public queue: MessageQueue;
+	public messageSystem: MessageSystem;
+	public nodeId: string;
+
 	private intervals: number[] = [];
 	private messageCallback: MessageCallback | null = null;
 
@@ -11,10 +13,10 @@ export class MessageContext {
 		this.messageSystem = MessageSystem.getInstance();
 
 		// Register this node with the message system
-		const queue = this.messageSystem.registerNode(nodeId);
+		this.queue = this.messageSystem.registerNode(nodeId);
 
 		// Set up the onMessage callback forwarding
-		queue.addCallback((message) => {
+		this.queue.addCallback((message) => {
 			if (this.messageCallback) {
 				this.messageCallback(message);
 			}

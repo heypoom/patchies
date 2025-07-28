@@ -154,6 +154,8 @@ export class HydraManager {
 			const executeFunction = new Function(
 				...functionParams,
 				`
+				let time = performance.now()
+
 				${code}
 			`
 			);

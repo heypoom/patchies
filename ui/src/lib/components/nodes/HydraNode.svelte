@@ -7,6 +7,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import type { Message } from '$lib/messages/MessageSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -23,6 +24,19 @@
 
 	const code = $derived(data.code || '');
 
+	const setCodeAndUpdate = (newCode: string) => {
+		updateNodeData(nodeId, { ...data, code: newCode });
+		setTimeout(() => updateHydra());
+	};
+
+	function handleMessageNodeCallback(message: Message) {
+		if (message.data.type === 'setCode') {
+			setCodeAndUpdate(message.data.code);
+		} else if (message.data.type === 'run') {
+			updateHydra();
+		}
+	}
+
 	onMount(() => {
 		// Initialize message context and video system
 		messageContext = new MessageContext(nodeId);
@@ -34,6 +48,8 @@
 				hydraManager.setVideoCanvases(canvases);
 			}
 		});
+
+		messageContext.queue.addCallback(handleMessageNodeCallback);
 
 		if (containerElement) {
 			hydraManager = new HydraManager(containerElement, {
