@@ -73,7 +73,7 @@
 			const llmOutput = await llmFunction(prompt, context);
 			generatedText = llmOutput ?? '';
 
-			messageContext.getContext().send({ data: llmOutput });
+			messageContext.createSendFunction()(llmOutput);
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		} finally {
