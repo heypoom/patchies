@@ -22,7 +22,6 @@
 	$effect(() => {
 		if ($isFpsMonitorVisible) {
 			stats = new Stats();
-			stats.showPanel(1);
 			container.appendChild(stats.dom);
 			frameHandler = requestAnimationFrame(animate);
 		} else {
@@ -40,4 +39,4 @@
 	});
 </script>
 
-<div bind:this={container} class={['pointer-events-none absolute right-0 top-0 z-50']}></div>
+<div bind:this={container}></div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { match, P } from 'ts-pattern';
-	import { isBottomBarVisible } from '../../stores/ui.store';
+	import { isBottomBarVisible, isFpsMonitorVisible } from '../../stores/ui.store';
 	import type { Node, Edge } from '@xyflow/svelte';
 
 	interface Props {
@@ -62,6 +62,11 @@
 			id: 'toggle-bottom-bar',
 			name: 'Toggle Bottom Bar',
 			description: 'Show or hide the bottom toolbar'
+		},
+		{
+			id: 'toggle-fps-monitor',
+			name: 'Toggle FPS Monitor',
+			description: 'Show or hide the FPS monitor'
 		}
 	];
 
@@ -200,6 +205,10 @@
 			})
 			.with('toggle-bottom-bar', () => {
 				$isBottomBarVisible = !$isBottomBarVisible;
+				onCancel();
+			})
+			.with('toggle-fps-monitor', () => {
+				$isFpsMonitorVisible = !$isFpsMonitorVisible;
 				onCancel();
 			})
 			.otherwise(() => {
