@@ -13,6 +13,7 @@
 		class: className = '',
 		onrun = () => {},
 		onchange = (code: string) => {},
+		fontSize = '14px',
 		extraExtensions = [],
 		...restProps
 	}: {
@@ -23,6 +24,7 @@
 		onrun?: () => void;
 		onchange?: (code: string) => void;
 		extraExtensions?: Extension[];
+		fontSize?: string;
 	} = $props();
 
 	let editorElement: HTMLDivElement;
@@ -48,7 +50,7 @@
 
 				EditorView.theme({
 					'&': {
-						fontSize: '14px',
+						fontSize,
 						fontFamily: 'Monaco, Menlo, Ubuntu Mono, Consolas, source-code-pro, monospace'
 					},
 					'.cm-content': {
