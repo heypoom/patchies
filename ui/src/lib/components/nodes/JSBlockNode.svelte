@@ -7,6 +7,7 @@
 	import { createLLMFunction } from '$lib/ai/google';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
+	import type { Message } from '$lib/messages/MessageSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -24,6 +25,14 @@
 
 	const code = $derived(data.code || '');
 
+	function handleMessage(message: Message) {
+		if (message.data.type === 'set') {
+			updateNodeData(nodeId, { ...data, code: message.data.code });
+		} else if (message.data.type === 'run') {
+			executeCode();
+		}
+	}
+
 	onMount(() => {
 		// Initialize message context
 		messageContext = new MessageContext(nodeId);
@@ -36,13 +45,13 @@
 			videoCanvases = canvases;
 		});
 
-		// Execute code on mount
-		executeCode();
+		messageContext.queue.addCallback(handleMessage);
 	});
 
 	onDestroy(() => {
 		// Clean up message context
 		if (messageContext) {
+			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
 		}
 
@@ -173,7 +182,7 @@
 				/>
 
 				<div class="mb-2 flex items-center justify-between">
-					<span class="font-mono text-xs text-zinc-400">Console</span>
+					<span class="font-mono text-[11px] text-zinc-400">console</span>
 
 					<div class="flex gap-1">
 						<button

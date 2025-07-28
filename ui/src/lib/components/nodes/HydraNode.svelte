@@ -30,7 +30,7 @@
 	};
 
 	function handleMessageNodeCallback(message: Message) {
-		if (message.data.type === 'setCode') {
+		if (message.data.type === 'set') {
 			setCodeAndUpdate(message.data.code);
 		} else if (message.data.type === 'run') {
 			updateHydra();

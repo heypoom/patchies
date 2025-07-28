@@ -44,7 +44,7 @@
 		messageContext.destroy();
 	});
 
-	const send = (message: unknown) => messageContext.getContext().send(message);
+	const send = (data: unknown) => messageContext.createSendFunction()(data);
 
 	function sendMessage() {
 		// Try to send the message as a JSON object
@@ -62,8 +62,6 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div></div>
-
 				<button
 					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showTextInput = !showTextInput)}
@@ -79,19 +77,21 @@
 			<div class="relative">
 				<Handle type="target" position={Position.Top} class="z-1" />
 
-				<div class="relative w-[200px]">
-					<div class="rounded-lg border border-zinc-600 bg-zinc-900">
+				<div class="relative min-w-[100px] max-w-[200px]">
+					<div class="">
 						{#if showTextInput}
-							<CodeEditor
-								value={msgText}
-								onchange={(message) => updateNodeData(nodeId, { ...data, message })}
-								onrun={sendMessage}
-								fontSize="10px"
-							/>
+							<div class="nodrag min-w-[200px]">
+								<CodeEditor
+									value={msgText}
+									onchange={(message) => updateNodeData(nodeId, { ...data, message })}
+									onrun={sendMessage}
+									fontSize="12px"
+								/>
+							</div>
 						{:else}
 							<button
 								onclick={sendMessage}
-								class="w-full gap-2 rounded bg-transparent px-1 py-2 font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+								class="w-full gap-2 rounded-lg border border-zinc-600 bg-zinc-900 px-2 py-2 font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{msgText ? msgText.slice(0, 20) : '<messagebox>'}
 							</button>

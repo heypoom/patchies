@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, basicSetup } from 'codemirror';
+	import { EditorView, basicSetup, minimalSetup } from 'codemirror';
 	import { EditorState, Prec, type Extension } from '@codemirror/state';
 	import { javascript } from '@codemirror/lang-javascript';
 	import { oneDark } from '@codemirror/theme-one-dark';
@@ -44,7 +44,8 @@
 						}
 					])
 				),
-				basicSetup,
+
+				minimalSetup,
 				javascript(),
 				oneDark,
 
