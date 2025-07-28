@@ -77,26 +77,24 @@
 			<div class="relative">
 				<Handle type="target" position={Position.Top} class="z-1" />
 
-				<div class="relative min-w-[100px] max-w-[200px]">
-					<div class="">
-						{#if showTextInput}
-							<div class="nodrag min-w-[200px]">
-								<CodeEditor
-									value={msgText}
-									onchange={(message) => updateNodeData(nodeId, { ...data, message })}
-									onrun={sendMessage}
-									fontSize="12px"
-								/>
-							</div>
-						{:else}
-							<button
-								onclick={sendMessage}
-								class="w-full gap-2 rounded-lg border border-zinc-600 bg-zinc-900 px-2 py-2 font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								{msgText ? msgText.slice(0, 20) : '<messagebox>'}
-							</button>
-						{/if}
-					</div>
+				<div class="relative min-w-[100px]">
+					{#if showTextInput}
+						<div class="nodrag w-[200px] rounded-lg border border-zinc-600">
+							<CodeEditor
+								value={msgText}
+								onchange={(message) => updateNodeData(nodeId, { ...data, message })}
+								onrun={sendMessage}
+								fontSize="12px"
+							/>
+						</div>
+					{:else}
+						<button
+							onclick={sendMessage}
+							class="max-w-[200px] rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-start font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							{msgText ? msgText : '<messagebox>'}
+						</button>
+					{/if}
 				</div>
 
 				<Handle type="source" position={Position.Bottom} class="z-1" />
