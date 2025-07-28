@@ -7,12 +7,15 @@
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { generateImageWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
+	import { MessageContext } from '$lib/messages/MessageContext';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
-	
+
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
+
+	const messageContext = new MessageContext(nodeId);
 
 	let canvasElement: HTMLCanvasElement;
 	let videoSystem: VideoSystem;
@@ -27,10 +30,18 @@
 	onMount(() => {
 		videoSystem = VideoSystem.getInstance();
 		videoSystem.registerVideoSource(nodeId, canvasElement);
+
+		messageContext.getContext().onMessage((message) => {
+			if (message.data.type === 'generate') {
+				updateNodeData(nodeId, { ...data, prompt: message.data.prompt });
+				updatePrompt();
+			}
+		});
 	});
 
 	onDestroy(() => {
 		videoSystem?.unregisterNode(nodeId);
+		messageContext.destroy();
 	});
 
 	async function updatePrompt() {
@@ -90,7 +101,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -99,6 +110,8 @@
 			</div>
 
 			<div class="relative">
+				<Handle type="target" position={Position.Top} class="z-1" />
+
 				<div class="relative">
 					{#if !hasImage || isLoading}
 						<div class="pointer-events-none absolute h-full w-full">

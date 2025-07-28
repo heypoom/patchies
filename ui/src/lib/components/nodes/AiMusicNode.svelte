@@ -5,6 +5,7 @@
 	import { LiveMusicManager, type Prompt } from '$lib/music/LiveMusicManager';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { Message } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 
 	let { id: nodeId }: { id: string } = $props();
 
@@ -58,30 +59,24 @@
 
 	function handleMessage(message: Message) {
 		try {
-			switch (message.data?.type) {
-				case 'play':
+			match(message.data)
+				.with({ type: 'play' }, () => {
 					musicManager.play();
-					break;
-				case 'pause':
+				})
+				.with({ type: 'pause' }, () => {
 					musicManager.pause();
-					break;
-				case 'addPrompt':
-					if (message.data.prompt && typeof message.data.weight === 'number') {
-						addPrompt(message.data.prompt, message.data.weight);
-					}
-					break;
-				case 'deletePrompt':
-					if (message.data.prompt) {
-						removePrompt(message.data.prompt);
-					}
-					break;
-				case 'setPrompts':
-					if (message.data.prompts && typeof message.data.prompts === 'object') {
-						musicManager.setPrompts(message.data.prompts);
-						prompts = musicManager.getPrompts();
-					}
-					break;
-			}
+				})
+				.with({ type: 'addPrompt', prompt: P.string, weight: P.number }, ({ prompt, weight }) => {
+					addPrompt(prompt, weight);
+				})
+				.with({ type: 'deletePrompt', prompt: P.string }, ({ prompt }) => {
+					removePrompt(prompt);
+				})
+				.with({ type: 'setPrompts', prompts: P.nonNullable }, (data) => {
+					musicManager.setPrompts(data.prompts);
+					prompts = musicManager.getPrompts();
+				})
+				.otherwise(() => {});
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		}
@@ -240,8 +235,6 @@
 					</div>
 				</div>
 			</div>
-
-			<Handle type="source" position={Position.Bottom} class="absolute" />
 		</div>
 	</div>
 </div>
