@@ -125,30 +125,37 @@
 				/>
 
 				<div class="relative w-[300px]">
-					<div class="rounded-lg border border-zinc-600 bg-zinc-900 p-4">
+					<div class="rounded-lg border border-zinc-600 bg-zinc-900">
 						{#if isLoading}
-							<div class="flex h-full items-center justify-center gap-y-2">
+							<div class="flex h-full items-center justify-center gap-y-2 py-3">
 								<Icon icon="lucide:loader" class="h-6 w-6 animate-spin text-zinc-300" />
 							</div>
 						{:else if generatedText}
 							<div class="nodrag relative">
 								<textarea
 									bind:value={generatedText}
-									class="h-40 w-full rounded bg-transparent font-mono text-xs text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
+									class="max-h-40 min-h-10 w-full rounded bg-transparent p-3 font-mono text-xs text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
 									readonly
 								></textarea>
 
 								<button
 									onclick={copyToClipboard}
-									class="absolute right-0 top-0 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+									class="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 									title="Copy to clipboard"
 								>
 									<Icon icon="lucide:copy" class="h-4 w-4 text-zinc-300" />
 								</button>
 							</div>
 						{:else}
-							<div class="flex h-full items-center justify-center text-zinc-400">
-								<span class="font-mono text-xs">use the edit button to add prompts</span>
+							<div class="flex h-full items-center justify-center py-2 text-zinc-400">
+								<span class="font-mono text-xs"
+									><a
+										class="nodrag cursor-pointer text-blue-300"
+										onclick={toggleEditor}
+										role="button"
+										tabindex={0}>edit</a
+									> to set a prompt</span
+								>
 							</div>
 						{/if}
 					</div>
