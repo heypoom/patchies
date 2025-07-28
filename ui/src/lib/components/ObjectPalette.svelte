@@ -16,6 +16,7 @@
 	let selectedIndex = $state(0);
 	let searchInput: HTMLInputElement;
 	let paletteContainer: HTMLDivElement;
+	let resultsContainer: HTMLDivElement;
 
 	// Filter node types based on search query
 	const filteredNodeTypes = $derived.by(() => {
@@ -64,11 +65,32 @@
 			.with('ArrowDown', () => {
 				event.preventDefault();
 				selectedIndex = Math.min(selectedIndex + 1, filteredNodeTypes.length - 1);
+				scrollToSelectedItem();
 			})
 			.with('ArrowUp', () => {
 				event.preventDefault();
 				selectedIndex = Math.max(selectedIndex - 1, 0);
+				scrollToSelectedItem();
 			});
+	}
+
+	function scrollToSelectedItem() {
+		if (!resultsContainer) return;
+
+		const selectedElement = resultsContainer.children[selectedIndex] as HTMLElement;
+		if (!selectedElement) return;
+
+		const containerRect = resultsContainer.getBoundingClientRect();
+		const elementRect = selectedElement.getBoundingClientRect();
+
+		// Check if element is below the visible area
+		if (elementRect.bottom > containerRect.bottom) {
+			selectedElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+		}
+		// Check if element is above the visible area
+		else if (elementRect.top < containerRect.top) {
+			selectedElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		}
 	}
 
 	// Close palette when clicking outside
@@ -108,7 +130,7 @@
 	</div>
 
 	<!-- Results List -->
-	<div class="max-h-60 overflow-y-auto">
+	<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto">
 		{#if filteredNodeTypes.length === 0}
 			<div class="p-3 text-sm italic text-zinc-400">No objects found</div>
 		{:else}

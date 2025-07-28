@@ -20,6 +20,7 @@
 	let selectedIndex = $state(0);
 	let searchInput: HTMLInputElement | undefined = $state();
 	let paletteContainer: HTMLDivElement | undefined = $state();
+	let resultsContainer: HTMLDivElement | undefined = $state();
 
 	type StageName =
 		| 'commands'
@@ -137,10 +138,12 @@
 							? filteredPatches.length - 1
 							: 0;
 				selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+				scrollToSelectedItem();
 			})
 			.with('ArrowUp', () => {
 				event.preventDefault();
 				selectedIndex = Math.max(selectedIndex - 1, 0);
+				scrollToSelectedItem();
 			})
 			.with('Enter', () => {
 				event.preventDefault();
@@ -437,6 +440,25 @@
 		onCancel();
 	}
 
+	function scrollToSelectedItem() {
+		if (!resultsContainer) return;
+
+		const selectedElement = resultsContainer.children[selectedIndex] as HTMLElement;
+		if (!selectedElement) return;
+
+		const containerRect = resultsContainer.getBoundingClientRect();
+		const elementRect = selectedElement.getBoundingClientRect();
+
+		// Check if element is below the visible area
+		if (elementRect.bottom > containerRect.bottom) {
+			selectedElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+		}
+		// Check if element is above the visible area
+		else if (elementRect.top < containerRect.top) {
+			selectedElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		}
+	}
+
 	function handleClickOutside(event: MouseEvent) {
 		if (paletteContainer && !paletteContainer.contains(event.target as Node)) {
 			onCancel();
@@ -568,7 +590,7 @@
 	{/if}
 
 	<!-- Results List -->
-	<div class="max-h-64 overflow-y-auto">
+	<div bind:this={resultsContainer} class="max-h-64 overflow-y-auto">
 		{#if stage === 'commands'}
 			{#each filteredCommands as command, index}
 				<div
