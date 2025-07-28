@@ -15,23 +15,20 @@
 	let currentWeight = $state(0.5);
 	let prompts = $state(new Map<string, Prompt>());
 
-	// Subscribe to global playback state
 	let playbackState = $state<'stopped' | 'loading' | 'playing' | 'paused'>('stopped');
 
 	onMount(() => {
-		// Initialize manager and message context
 		musicManager = LiveMusicManager.getInstance();
 		messageContext = new MessageContext(nodeId);
 
-		// Subscribe to playback state
 		const unsubscribePlayback = musicManager.playbackState.subscribe((state) => {
 			playbackState = state;
 		});
 
-		// Subscribe to error messages
 		const unsubscribeError = musicManager.errorMessage.subscribe((message) => {
 			if (message) {
 				errorMessage = message;
+
 				setTimeout(() => {
 					errorMessage = null;
 					musicManager.errorMessage.set(null);
@@ -39,10 +36,8 @@
 			}
 		});
 
-		// Subscribe to current prompts
 		prompts = musicManager.getPrompts();
 
-		// Set up message handling
 		const context = messageContext.getContext();
 
 		context.onMessage((message: Message) => {

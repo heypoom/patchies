@@ -71,7 +71,7 @@
 				};
 
 				updateNodeData(nodeId, newData);
-				generateSpeech();
+				setTimeout(generateSpeech, 0);
 			});
 		});
 
@@ -113,10 +113,6 @@
 				playAudio(cachedUrl);
 			})
 			.otherwise(() => {});
-	}
-
-	function handleGenerate() {
-		generateSpeech();
 	}
 
 	function playAudio(url: string) {
@@ -163,6 +159,7 @@
 
 		if (cachedUrl) {
 			playAudio(cachedUrl);
+			return;
 		}
 
 		playbackState = 'loading';
@@ -228,7 +225,7 @@
 				<!-- Generate Button -->
 				<button
 					class="rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30"
-					onclick={handleGenerate}
+					onclick={generateSpeech}
 					disabled={playbackState === 'loading' || !!$audioUrlCache[audioCacheKey]}
 					title="Generate Speech"
 				>

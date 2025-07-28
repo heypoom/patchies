@@ -88,7 +88,6 @@
 			stage === 'gemini-api-key' ||
 			stage === 'commands'
 		) {
-			// Use setTimeout to ensure DOM is updated
 			setTimeout(() => {
 				searchInput?.focus();
 			}, 0);
