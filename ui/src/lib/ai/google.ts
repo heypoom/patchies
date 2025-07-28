@@ -54,14 +54,10 @@ export function createLLMFunction() {
 		const contents: ContentListUnion = [];
 
 		if (context?.canvas) {
-			const base64ImageFile = await htmlCanvasToImage(context.canvas);
+			const base64Image = await htmlCanvasToImage(context.canvas, 'image/jpeg', 0.4);
+			console.log('[llm] base64 image size:', base64Image.length);
 
-			contents.push({
-				inlineData: {
-					mimeType: 'image/jpeg',
-					data: base64ImageFile
-				}
-			});
+			contents.push({ inlineData: { mimeType: 'image/jpeg', data: base64Image } });
 		}
 
 		contents.push({ text: prompt });
