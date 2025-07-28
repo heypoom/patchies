@@ -7,7 +7,6 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import { DEFAULT_GLSL_CODE } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -21,14 +20,7 @@
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 
-	// Get code from node data, fallback to default
-	$effect(() => {
-		if (!data.code) {
-			updateNodeData(nodeId, { ...data, code: DEFAULT_GLSL_CODE });
-		}
-	});
-
-	const code = $derived(data.code || DEFAULT_GLSL_CODE);
+	const code = $derived(data.code || '');
 
 	onMount(() => {
 		// Initialize message context and video system

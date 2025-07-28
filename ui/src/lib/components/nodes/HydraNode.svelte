@@ -7,7 +7,6 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
-	import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -22,17 +21,7 @@
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 
-	// Get code from node data, fallback to default
-	$effect(() => {
-		if (!data.code) {
-			updateNodeData(nodeId, {
-				...data,
-				code: DEFAULT_HYDRA_CODE
-			});
-		}
-	});
-
-	const code = $derived(data.code || DEFAULT_HYDRA_CODE);
+	const code = $derived(data.code || '');
 
 	onMount(() => {
 		// Initialize message context and video system

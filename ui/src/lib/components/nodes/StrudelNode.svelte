@@ -4,7 +4,6 @@
 	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import { DEFAULT_STRUDEL_CODE } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -18,14 +17,7 @@
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
 
-	// Get code from node data, fallback to default
-	$effect(() => {
-		if (!data.code) {
-			updateNodeData(nodeId, { ...data, code: DEFAULT_STRUDEL_CODE });
-		}
-	});
-
-	const code = $derived(data.code || DEFAULT_STRUDEL_CODE);
+	const code = $derived(data.code || '');
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);

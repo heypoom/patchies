@@ -28,6 +28,7 @@
 	import { isBottomBarVisible } from '../../stores/ui.store';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
+	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -204,7 +205,7 @@
 			id: `${type}-${nodeId++}`,
 			type,
 			position,
-			data: {}
+			data: getDefaultNodeData(type)
 		};
 
 		nodes = [...nodes, newNode];

@@ -1,0 +1,30 @@
+import { match } from 'ts-pattern';
+import {
+	DEFAULT_JS_CODE,
+	DEFAULT_GLSL_CODE,
+	DEFAULT_STRUDEL_CODE,
+	DEFAULT_AI_IMAGE_PROMPT,
+	DEFAULT_BUTTERCHURN_PRESET
+} from '$lib/canvas/constants';
+import { DEFAULT_P5_CODE } from '$lib/p5/constants';
+import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
+
+export interface NodeData {
+	[key: string]: any;
+}
+
+export function getDefaultNodeData(nodeType: string): NodeData {
+	return match(nodeType)
+		.with('js', () => ({ code: DEFAULT_JS_CODE }))
+		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
+		.with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))
+		.with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))
+		.with('bchrn', () => ({ currentPreset: DEFAULT_BUTTERCHURN_PRESET }))
+		.with('p5', () => ({ code: DEFAULT_P5_CODE }))
+		.with('hydra', () => ({ code: DEFAULT_HYDRA_CODE }))
+		.with('canvas', () => ({}))
+		.with('ai.music', () => ({}))
+		.with('ai.speech', () => ({}))
+		.with('bg.out', () => ({}))
+		.otherwise(() => ({}));
+}

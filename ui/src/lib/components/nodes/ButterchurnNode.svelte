@@ -8,7 +8,6 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
-	import { DEFAULT_BUTTERCHURN_PRESET } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { currentPreset: string } } = $props();
@@ -25,14 +24,7 @@
 	let isPlaying = $state(true);
 	let visualizer: any = null;
 
-	// Get currentPreset from node data, fallback to default
-	$effect(() => {
-		if (!data.currentPreset) {
-			updateNodeData(nodeId, { ...data, currentPreset: DEFAULT_BUTTERCHURN_PRESET });
-		}
-	});
-
-	const currentPreset = $derived(data.currentPreset || DEFAULT_BUTTERCHURN_PRESET);
+	const currentPreset = $derived(data.currentPreset || '');
 
 	let frame = 0;
 

@@ -7,7 +7,6 @@
 	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { generateImageWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
-	import { DEFAULT_AI_IMAGE_PROMPT } from '$lib/canvas/constants';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
@@ -23,14 +22,7 @@
 	let hasImage = $state(false);
 	let abortController: AbortController | null = null;
 
-	// Get prompt from node data, fallback to default
-	$effect(() => {
-		if (!data.prompt) {
-			updateNodeData(nodeId, { ...data, prompt: DEFAULT_AI_IMAGE_PROMPT });
-		}
-	});
-
-	const prompt = $derived(data.prompt || DEFAULT_AI_IMAGE_PROMPT);
+	const prompt = $derived(data.prompt || '');
 
 	onMount(() => {
 		videoSystem = VideoSystem.getInstance();
