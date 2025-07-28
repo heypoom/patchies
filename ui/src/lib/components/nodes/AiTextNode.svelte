@@ -30,6 +30,8 @@
 		if (message.data.type === 'generate') {
 			updateNodeData(nodeId, { ...data, prompt: message.data.prompt });
 			setTimeout(() => generateText());
+		} else if (message.data.type === 'bang') {
+			generateText();
 		}
 	}
 
