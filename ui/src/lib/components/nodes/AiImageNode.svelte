@@ -27,15 +27,21 @@
 	let abortController: AbortController | null = null;
 
 	const prompt = $derived(data.prompt || '');
+	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
 
-	const handleMessage = (message: Message) => {
-		if (message.data.type === 'generate') {
-			updateNodeData(nodeId, { ...data, prompt: message.data.prompt });
-			setTimeout(() => updatePrompt());
+	function handleMessage(message: Message) {
+		if (typeof message.data === 'string') {
+			setPrompt(message.data);
+			setTimeout(() => generateImage());
+		} else if (message.data.type === 'generate') {
+			setPrompt(message.data.prompt);
+			setTimeout(() => generateImage());
+		} else if (message.data.type === 'set') {
+			setPrompt(message.data.prompt);
 		} else if (message.data.type === 'bang') {
-			updatePrompt();
+			generateImage();
 		}
-	};
+	}
 
 	onMount(() => {
 		videoSystem = VideoSystem.getInstance();
@@ -50,7 +56,7 @@
 		messageContext.destroy();
 	});
 
-	async function updatePrompt() {
+	async function generateImage() {
 		if (isLoading) {
 			if (abortController) {
 				abortController.abort();
@@ -146,7 +152,7 @@
 	{#if showEditor}
 		<div class="relative max-w-[350px]">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={updatePrompt} class="rounded p-1 hover:bg-zinc-700">
+				<button onclick={generateImage} class="rounded p-1 hover:bg-zinc-700">
 					<Icon icon={isLoading ? 'lucide:square' : 'lucide:play'} class="h-4 w-4 text-zinc-300" />
 				</button>
 
@@ -164,7 +170,7 @@
 					language="text"
 					placeholder="Write your prompt here..."
 					class="nodrag h-64 w-full max-w-[350px] resize-none"
-					onrun={updatePrompt}
+					onrun={generateImage}
 					extraExtensions={[EditorView.lineWrapping]}
 				/>
 			</div>

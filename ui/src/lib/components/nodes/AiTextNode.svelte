@@ -25,11 +25,17 @@
 	let inputCanvases = $state<HTMLCanvasElement[]>([]);
 
 	const prompt = $derived(data.prompt || '');
+	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
 
 	function handleMessage(message: Message) {
-		if (message.data.type === 'generate') {
-			updateNodeData(nodeId, { ...data, prompt: message.data.prompt });
+		if (typeof message.data === 'string') {
+			setPrompt(message.data);
 			setTimeout(() => generateText());
+		} else if (message.data.type === 'generate') {
+			setPrompt(message.data.prompt);
+			setTimeout(() => generateText());
+		} else if (message.data.type === 'set') {
+			setPrompt(message.data.prompt);
 		} else if (message.data.type === 'bang') {
 			generateText();
 		}
