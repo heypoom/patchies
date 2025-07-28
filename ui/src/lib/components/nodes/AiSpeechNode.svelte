@@ -50,36 +50,42 @@
 		voiceId: data.voiceId ?? defaultVoiceId
 	}));
 
+	function handleMessage(message: Message) {
+		if (typeof data === 'string') {
+			updateNodeData(nodeId, { ...message.data, text: data });
+			setTimeout(generateSpeech, 0);
+			return;
+		}
+
+		match(message.data.type).with('speech', () => {
+			const m = message.data;
+
+			const newData = {
+				...data,
+				...(m.text && { text: m.text }),
+				...(m.emotionVoice && { emotionVoice: m.emotionVoice }),
+				...(m.language && { language: m.language }),
+				...(m.speed !== undefined && { speed: m.speed }),
+				...(m.volume !== undefined && { volume: m.volume }),
+				...(m.pitch !== undefined && { pitch: m.pitch }),
+				...(m.voiceId && { voiceId: m.voiceId ?? defaultVoiceId })
+			};
+
+			updateNodeData(nodeId, newData);
+			setTimeout(generateSpeech, 0);
+		});
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
-
-		const context = messageContext.getContext();
-
-		context.onMessage((message: Message) => {
-			const { data } = message;
-
-			match(data.type).with('speech', () => {
-				const newData = {
-					...data,
-					...(data.text && { text: data.text }),
-					...(data.emotionVoice && { emotionVoice: data.emotionVoice }),
-					...(data.language && { language: data.language }),
-					...(data.speed !== undefined && { speed: data.speed }),
-					...(data.volume !== undefined && { volume: data.volume }),
-					...(data.pitch !== undefined && { pitch: data.pitch }),
-					...(data.voiceId && { voiceId: data.voiceId ?? defaultVoiceId })
-				};
-
-				updateNodeData(nodeId, newData);
-				setTimeout(generateSpeech, 0);
-			});
-		});
+		messageContext.queue.addCallback(handleMessage);
 
 		fetchVoices();
 	});
 
 	onDestroy(() => {
 		if (messageContext) {
+			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
 		}
 
