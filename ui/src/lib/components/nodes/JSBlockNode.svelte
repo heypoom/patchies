@@ -21,6 +21,7 @@
 	let isRunning = $state(false);
 
 	let showEditor = $state(false);
+	let showConsole = $state(false);
 	let consoleOutput = $state<string[]>([]);
 
 	const code = $derived(data.code || '');
@@ -28,7 +29,7 @@
 	function handleMessage(message: Message) {
 		if (message.data.type === 'set') {
 			updateNodeData(nodeId, { ...data, code: message.data.code });
-		} else if (message.data.type === 'run') {
+		} else if (message.data.type === 'run' || message.data.type === 'bang') {
 			executeCode();
 		}
 	}
@@ -162,61 +163,93 @@
 					<div class="font-mono text-xs font-medium text-zinc-100">js</div>
 				</div>
 
-				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
-					onclick={toggleEditor}
-					title="Edit code"
-				>
-					<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
-				</button>
+				<div>
+					<button
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						onclick={() => {
+							showConsole = !showConsole;
+						}}
+						title="Console"
+					>
+						<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+					</button>
+
+					<button
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						onclick={toggleEditor}
+						title="Edit code"
+					>
+						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+					</button>
+				</div>
 			</div>
 
-			<div class="relative min-w-[280px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
-				<Handle type="target" position={Position.Top} />
+			<div class="relative">
 				<VideoHandle
 					type="target"
 					position={Position.Top}
 					id="video-in"
 					title="Video input"
-					class="!left-30"
+					class="!left-8"
 				/>
 
-				<div class="mb-2 flex items-center justify-between">
-					<span class="font-mono text-[11px] text-zinc-400">console</span>
+				<Handle type="target" id="message-in" position={Position.Top} class="!left-12" />
 
-					<div class="flex gap-1">
-						<button
-							onclick={executeCode}
-							class={['rounded p-1 hover:bg-zinc-700', isRunning && 'animate-spin opacity-30']}
-							title="Run code"
-							aria-disabled={isRunning}
+				{#if showConsole}
+					<div class="min-w-[150px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
+						<div class="mb-2 flex min-w-[280px] items-center justify-between">
+							<span class="font-mono text-[11px] text-zinc-400">console</span>
+
+							<div class="flex gap-1">
+								<button
+									onclick={executeCode}
+									class={[
+										'rounded p-1 hover:bg-zinc-700',
+										isRunning ? 'animate-spin cursor-not-allowed opacity-30' : 'cursor-pointer'
+									]}
+									title="Run code"
+									aria-disabled={isRunning}
+								>
+									<Icon
+										icon={isRunning ? 'lucide:loader' : 'lucide:play'}
+										class="h-3 w-3 text-zinc-300"
+									/>
+								</button>
+								<button
+									onclick={clearConsole}
+									class="rounded p-1 hover:bg-zinc-700"
+									title="Clear console"
+								>
+									<Icon icon="lucide:trash-2" class="h-3 w-3 text-zinc-300" />
+								</button>
+							</div>
+						</div>
+
+						<div
+							class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 						>
-							<Icon
-								icon={isRunning ? 'lucide:loader' : 'lucide:play'}
-								class="h-3 w-3 text-zinc-300"
-							/>
-						</button>
-						<button
-							onclick={clearConsole}
-							class="rounded p-1 hover:bg-zinc-700"
-							title="Clear console"
-						>
-							<Icon icon="lucide:trash-2" class="h-3 w-3 text-zinc-300" />
-						</button>
+							{#if consoleOutput.length === 0}
+								<div class="italic text-zinc-500">Run your code to see results.</div>
+							{:else}
+								{#each consoleOutput as line}
+									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
+								{/each}
+							{/if}
+						</div>
 					</div>
-				</div>
-
-				<div
-					class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
-				>
-					{#if consoleOutput.length === 0}
-						<div class="italic text-zinc-500">Run your code to see results.</div>
-					{:else}
-						{#each consoleOutput as line}
-							<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
-						{/each}
-					{/if}
-				</div>
+				{:else}
+					<button
+						class={[
+							'flex w-full min-w-[100px] justify-center rounded-md border border-zinc-600 bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
+							isRunning ? 'animate-spin cursor-not-allowed opacity-30' : 'cursor-pointer'
+						]}
+						onclick={executeCode}
+						aria-disabled={isRunning}
+						aria-label="Run code"
+					>
+						<Icon icon={isRunning ? 'lucide:loader' : 'lucide:play'} />
+					</button>
+				{/if}
 
 				<Handle type="source" position={Position.Bottom} />
 			</div>
