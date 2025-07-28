@@ -94,5 +94,6 @@
 	],
 	"patchedDependencies": {
 		"superdough@1.2.3": "patches/superdough@1.2.3.patch"
-	}
+	},
+	"packageManager": "bun@1.2.0"
 }
