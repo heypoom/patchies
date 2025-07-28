@@ -57,6 +57,7 @@
 					'.cm-content': {
 						padding: '12px',
 						minHeight: '100%',
+						maxHeight: '1000px',
 						backgroundColor: 'rgb(24 24 27)',
 						color: 'rgb(244 244 245)'
 					},
