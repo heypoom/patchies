@@ -8,6 +8,7 @@
 	import { generateImageWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import type { Message } from '$lib/messages/MessageSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
@@ -27,20 +28,25 @@
 
 	const prompt = $derived(data.prompt || '');
 
+	const handleMessage = (message: Message) => {
+		if (message.data.type === 'generate') {
+			updateNodeData(nodeId, { ...data, prompt: message.data.prompt });
+			setTimeout(() => updatePrompt());
+		} else if (message.data.type === 'bang') {
+			updatePrompt();
+		}
+	};
+
 	onMount(() => {
 		videoSystem = VideoSystem.getInstance();
 		videoSystem.registerVideoSource(nodeId, canvasElement);
 
-		messageContext.getContext().onMessage((message) => {
-			if (message.data.type === 'generate') {
-				updateNodeData(nodeId, { ...data, prompt: message.data.prompt });
-				setTimeout(() => updatePrompt());
-			}
-		});
+		messageContext.queue.addCallback(handleMessage);
 	});
 
 	onDestroy(() => {
 		videoSystem?.unregisterNode(nodeId);
+		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
 	});
 
