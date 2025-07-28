@@ -26,7 +26,21 @@ function draw() {
   drawSource()
 }`;
 
+const CAM_P5 = `let video;
+
+function setup() {
+  createCanvas(640, 480);
+  video = createCapture(VIDEO);
+  video.size(640, 480);
+  video.hide();
+}
+
+function draw() {
+  image(video, 0, 0, width, height);
+}`;
+
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
-	'passthru.p5': { type: 'p5', data: { code: PASSTHRU_P5.trim() } }
+	'passthru.p5': { type: 'p5', data: { code: PASSTHRU_P5.trim() } },
+	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } }
 };
