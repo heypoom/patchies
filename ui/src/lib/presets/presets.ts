@@ -1,4 +1,5 @@
 import { GLSL_PRESETS } from './glsl.presets';
+import { HYDRA_PRESETS } from './hydra.presets';
 import { P5_PRESETS } from './p5.presets';
 
 /**
@@ -7,5 +8,6 @@ import { P5_PRESETS } from './p5.presets';
  */
 export const PRESETS: Record<string, { type: string; data: unknown }> = {
 	...GLSL_PRESETS,
-	...P5_PRESETS
+	...P5_PRESETS,
+	...HYDRA_PRESETS
 };
