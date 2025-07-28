@@ -10,7 +10,7 @@
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
-	
+
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
@@ -116,7 +116,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -131,7 +131,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in"
-					class="!left-20 z-1"
+					class="z-1 !left-20"
 					title="Video input"
 				/>
 
@@ -139,7 +139,7 @@
 					<div
 						bind:this={containerElement}
 						class={[
-							'min-h-[100px] min-w-[100px] rounded-md bg-transparent [&>canvas]:rounded-md',
+							'rounded-md bg-transparent [&>canvas]:rounded-md',
 							enableDrag ? 'cursor-grab' : 'nodrag cursor-default'
 						]}
 					></div>
@@ -162,7 +162,7 @@
 					type="source"
 					position={Position.Bottom}
 					id="video-out"
-					class="!left-20 z-1"
+					class="z-1 !left-20"
 					title="Video output"
 				/>
 			</div>
