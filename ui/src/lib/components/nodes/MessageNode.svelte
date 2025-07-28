@@ -3,7 +3,6 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import CodeEditor from '../CodeEditor.svelte';
 	import type { Message } from '$lib/messages/MessageSystem';
 
 	let { id: nodeId, data }: { id: string; data: { message: string } } = $props();
@@ -79,13 +78,13 @@
 
 				<div class="relative min-w-[100px]">
 					{#if showTextInput}
-						<div class="nodrag w-[200px] rounded-lg border border-zinc-600">
-							<CodeEditor
+						<div class="nodrag rounded-lg border border-zinc-600 bg-zinc-900">
+							<textarea
 								value={msgText}
-								onchange={(message) => updateNodeData(nodeId, { ...data, message })}
-								onrun={sendMessage}
-								fontSize="12px"
-							/>
+								oninput={(message) =>
+									updateNodeData(nodeId, { ...data, message: message.currentTarget.value })}
+								class="nodrag resize-none rounded-lg border-0 px-3 py-2 font-mono text-xs text-zinc-200 focus:outline-none"
+							></textarea>
 						</div>
 					{:else}
 						<button
