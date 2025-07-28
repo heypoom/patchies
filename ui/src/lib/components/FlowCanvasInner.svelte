@@ -24,7 +24,6 @@
 	import AiTextNode from './nodes/AiTextNode.svelte';
 	import MessageNode from './nodes/MessageNode.svelte';
 	import BangNode from './nodes/BangNode.svelte';
-	import AiVideoNode from './nodes/AiVideoNode.svelte';
 	import AiMusicNode from './nodes/AiMusicNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
@@ -32,6 +31,7 @@
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
+	import { PRESETS } from '$lib/presets/presets';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -206,19 +206,26 @@
 	}
 
 	// Create a new node at the specified position
-	function createNode(type: string, position: { x: number; y: number }) {
+	function createNode(type: string, position: { x: number; y: number }, customData?: any) {
 		const newNode: Node = {
 			id: `${type}-${nodeId++}`,
 			type,
 			position,
-			data: getDefaultNodeData(type)
+			data: customData ?? getDefaultNodeData(type)
 		};
 
 		nodes = [...nodes, newNode];
 	}
 
-	function handlePaletteSelect(nodeType: string) {
-		createNode(nodeType, nodeCreationPosition);
+	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
+		if (isPreset && PRESETS[nodeType]) {
+			const preset = PRESETS[nodeType];
+
+			createNode(preset.type, nodeCreationPosition, preset.data);
+		} else {
+			createNode(nodeType, nodeCreationPosition);
+		}
+
 		showPalette = false;
 	}
 

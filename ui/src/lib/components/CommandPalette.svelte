@@ -352,7 +352,7 @@
 			setNodes(newNodes);
 			setEdges(newEdges);
 
-			console.log(`Loaded patch with ${newNodes.length} nodes and ${newEdges.length} edges`);
+			console.log(`> loaded patch with ${newNodes.length} nodes and ${newEdges.length} edges`);
 		} catch (error) {
 			console.error('Error deserializing patch data:', error);
 			throw error;

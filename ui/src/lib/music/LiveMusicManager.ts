@@ -109,8 +109,6 @@ export class LiveMusicManager {
 			return;
 		}
 
-		console.log('Processing audio chunks:', audioChunks.length);
-
 		// Decode audio data
 		const audioData = this.decode(audioChunks[0].data!);
 		const audioBuffer = await this.decodeAudioData(audioData, 48000, 2);

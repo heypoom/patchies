@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { match } from 'ts-pattern';
+	import { PRESETS } from '$lib/presets/presets';
 
 	interface Props {
 		nodeTypes: Record<string, any>;
 		position: { x: number; y: number };
-		onselect: (nodeType: string) => void;
+		onselect: (nodeType: string, isPreset?: boolean) => void;
 		oncancel: () => void;
 		visible?: boolean;
 	}
@@ -18,20 +19,22 @@
 	let paletteContainer: HTMLDivElement;
 	let resultsContainer: HTMLDivElement;
 
-	// Filter node types based on search query
-	const filteredNodeTypes = $derived.by(() => {
-		const types = Object.keys(nodeTypes);
-		if (!searchQuery.trim()) {
-			return types;
-		}
-		return types.filter((type) => type.toLowerCase().includes(searchQuery.toLowerCase()));
+	const allItems = [
+		...Object.keys(nodeTypes).map((type) => ({ name: type, isPreset: false })),
+		...Object.keys(PRESETS).map((name) => ({ name, isPreset: true }))
+	];
+
+	// Combine node types and presets, then filter based on search query
+	const filteredItems = $derived.by(() => {
+		return !searchQuery.trim()
+			? allItems
+			: allItems.filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
 	});
 
 	// Reset selected index when filtered results change
 	$effect(() => {
-		const filtered = filteredNodeTypes;
-		if (filtered.length > 0) {
-			selectedIndex = Math.min(selectedIndex, filtered.length - 1);
+		if (filteredItems.length > 0) {
+			selectedIndex = Math.min(selectedIndex, filteredItems.length - 1);
 		}
 	});
 
@@ -48,23 +51,22 @@
 				event.stopPropagation();
 
 				onCancel();
+				searchQuery = '';
 			})
 			.with('Enter', () => {
 				event.preventDefault();
 				event.stopPropagation();
 
-				const filtered = filteredNodeTypes;
-
-				if (filtered.length > 0) {
-					onSelect(filtered[selectedIndex]);
-					return true;
+				if (filteredItems.length > 0) {
+					const item = filteredItems[selectedIndex];
+					onSelect(item.name, item.isPreset);
 				}
 
-				return false;
+				searchQuery = '';
 			})
 			.with('ArrowDown', () => {
 				event.preventDefault();
-				selectedIndex = Math.min(selectedIndex + 1, filteredNodeTypes.length - 1);
+				selectedIndex = Math.min(selectedIndex + 1, allItems.length - 1);
 				scrollToSelectedItem();
 			})
 			.with('ArrowUp', () => {
@@ -102,13 +104,13 @@
 
 	onMount(() => {
 		document.addEventListener('click', handleOutsideClick);
+
 		return () => {
 			document.removeEventListener('click', handleOutsideClick);
 		};
 	});
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	bind:this={paletteContainer}
 	class={[
@@ -131,10 +133,10 @@
 
 	<!-- Results List -->
 	<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto">
-		{#if filteredNodeTypes.length === 0}
+		{#if filteredItems.length === 0}
 			<div class="p-3 text-sm italic text-zinc-400">No objects found</div>
 		{:else}
-			{#each filteredNodeTypes as nodeType, index}
+			{#each filteredItems as item, index}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
@@ -142,8 +144,13 @@
 					selectedIndex
 						? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
 						: 'border-transparent text-zinc-300'}"
+					onclick={() => onSelect(item.name, item.isPreset)}
 				>
-					<span class="font-mono">{nodeType}</span>
+					<span class="font-mono">{item.name}</span>
+
+					{#if item.isPreset}
+						<span class="ml-2 text-[10px] text-zinc-500">{PRESETS[item.name].type}</span>
+					{/if}
 				</div>
 			{/each}
 		{/if}
