@@ -31,19 +31,23 @@
 	let errorMessage = $state<string | null>(null);
 	let playbackState = $state<'loading' | 'playing' | 'paused'>('paused');
 	let audio = $state<HTMLAudioElement | null>(null);
+	let showAdvancedSettings = $state(false);
 
 	const audioCacheKey = $derived.by(() => JSON.stringify(data));
 
 	const { updateNodeData } = useSvelteFlow();
 
+	const defaultVoiceId = 'Mita';
+	const defaultVoiceEmotion = 'Cheerful_Female';
+
 	const ttsOptions = $derived.by(() => ({
 		text: data.text,
-		emotionVoice: data.emotionVoice || 'Cheerful_Female',
+		emotionVoice: data.emotionVoice ?? defaultVoiceEmotion,
 		language: data.language || 'th',
 		speed: data.speed ?? 1,
 		volume: data.volume ?? 1,
 		pitch: data.pitch ?? 1,
-		voiceId: data.voiceId || ''
+		voiceId: data.voiceId ?? defaultVoiceId
 	}));
 
 	onMount(() => {
@@ -57,13 +61,13 @@
 			match(data.type).with('speech', () => {
 				const newData = {
 					...data,
-					...(ttsOptions.text && { text: ttsOptions.text }),
-					...(ttsOptions.emotionVoice && { emotionVoice: ttsOptions.emotionVoice }),
-					...(ttsOptions.language && { language: ttsOptions.language }),
-					...(ttsOptions.speed !== undefined && { speed: ttsOptions.speed }),
-					...(ttsOptions.volume !== undefined && { volume: ttsOptions.volume }),
-					...(ttsOptions.pitch !== undefined && { pitch: ttsOptions.pitch }),
-					...(ttsOptions.voiceId && { voiceId: ttsOptions.voiceId })
+					...(data.text && { text: data.text }),
+					...(data.emotionVoice && { emotionVoice: data.emotionVoice }),
+					...(data.language && { language: data.language }),
+					...(data.speed !== undefined && { speed: data.speed }),
+					...(data.volume !== undefined && { volume: data.volume }),
+					...(data.pitch !== undefined && { pitch: data.pitch }),
+					...(data.voiceId && { voiceId: data.voiceId ?? defaultVoiceId })
 				};
 
 				updateNodeData(nodeId, newData);
@@ -71,7 +75,6 @@
 			});
 		});
 
-		// Fetch voices if not already cached
 		fetchVoices();
 	});
 
@@ -166,10 +169,15 @@
 		errorMessage = null;
 
 		try {
-			// tts-mita does not support voiceId.
-			const body = omit(ttsOptions, ['voiceId']);
+			const isMita = ttsOptions.voiceId === 'Mita';
 
-			const response = await fetch('https://api.celestiai.co/api/v1/tts-turbo/tts-mita', {
+			const endpoint = isMita
+				? 'https://api.celestiai.co/api/v1/tts-turbo/tts-mita'
+				: 'https://api.celestiai.co/api/v1/tts-turbo/tts';
+
+			const body = isMita ? omit(ttsOptions, ['voiceId']) : ttsOptions;
+
+			const response = await fetch(endpoint, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -205,6 +213,18 @@
 			</div>
 
 			<div class="flex gap-1">
+				<!-- Settings Button -->
+				<button
+					class="rounded p-1 transition-all hover:bg-zinc-700"
+					onclick={() => (showAdvancedSettings = !showAdvancedSettings)}
+					title="Toggle Settings"
+				>
+					<Icon
+						icon={showAdvancedSettings ? 'lucide:chevron-up' : 'lucide:settings'}
+						class="h-4 w-4 text-zinc-300"
+					/>
+				</button>
+
 				<!-- Generate Button -->
 				<button
 					class="rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30"
@@ -222,7 +242,7 @@
 					/>
 				</button>
 
-				<!-- Play Button (only show if audio is available) -->
+				<!-- Play Button -->
 				{#if $audioUrlCache[audioCacheKey]}
 					<button
 						class="rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30"
@@ -259,161 +279,162 @@
 					></textarea>
 				</div>
 
-				<!-- Settings Section -->
-				<div class="space-y-3">
-					<!-- Voice Selection -->
-					<div class="nodrag">
-						<label class="mb-1 block text-[10px] font-medium text-zinc-400">emotion voice</label>
+				<!-- Advanced Settings Section -->
+				{#if showAdvancedSettings}
+					<div class="space-y-3 border-t border-zinc-700 py-3">
+						<!-- RVC Model Selection -->
+						<div class="nodrag">
+							<label class="mb-1 block text-[10px] font-medium text-zinc-400">models</label>
 
-						<Select
-							value={[ttsOptions.emotionVoice]}
-							onValueChange={(value) => {
-								const emotionVoice = Array.isArray(value) ? value.at(-1) : value;
+							<Select
+								value={[ttsOptions.voiceId]}
+								onValueChange={(value) => {
+									let voiceId = Array.isArray(value) ? value.at(-1) : value;
 
-								updateNodeData(nodeId, { ...data, emotionVoice });
-							}}
-						>
-							<SelectTrigger
-								class="!h-[30px] w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 focus:border-zinc-500 focus:outline-none"
+									updateNodeData(nodeId, { ...data, voiceId });
+								}}
 							>
-								{ttsOptions.emotionVoice}
-							</SelectTrigger>
-
-							<SelectContent class="max-h-60 border-zinc-600 bg-zinc-800">
-								{#if $voicesStore.loading}
-									<SelectItem value="" class="text-[10px] text-zinc-400" disabled
-										>Loading voices...</SelectItem
-									>
-								{:else if $voicesStore.error}
-									<SelectItem value="" class="text-[10px] text-red-400" disabled
-										>Error loading voices</SelectItem
-									>
-								{:else if $voicesStore.data?.emotionVoices?.available}
-									{#each $voicesStore.data.emotionVoices.available as voice}
-										<SelectItem value={voice} class="text-[10px] text-zinc-100 hover:bg-zinc-700">
-											{voice}
-										</SelectItem>
-									{/each}
-								{/if}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<!-- Language -->
-					<div class="nodrag">
-						<label class="mb-1 block text-[10px] font-medium text-zinc-400">language</label>
-						<input
-							type="text"
-							value={ttsOptions.language}
-							placeholder="Language code (e.g., th, en)"
-							class="h-7 w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
-							onchange={(e) => {
-								updateNodeData(nodeId, { ...data, language: e.currentTarget.value });
-							}}
-						/>
-					</div>
-
-					<!-- RVC Model Selection -->
-					<div class="nodrag">
-						<label class="mb-1 block text-[10px] font-medium text-zinc-400">models</label>
-
-						<Select
-							value={[ttsOptions.voiceId]}
-							onValueChange={(value) => {
-								let voiceId = Array.isArray(value) ? value.at(-1) : value;
-
-								updateNodeData(nodeId, { ...data, voiceId });
-							}}
-						>
-							<SelectTrigger
-								class="!h-[30px] w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 focus:border-zinc-500 focus:outline-none"
-							>
-								{#if ttsOptions.voiceId}
-									{$voicesStore.data?.rvcModels?.find((model) => model.id === ttsOptions.voiceId)
-										?.name || ttsOptions.voiceId}
-								{:else if $voicesStore.data?.rvcModels?.[0]}
-									{$voicesStore.data.rvcModels[0].name}
-								{:else}
-									Select RVC model
-								{/if}
-							</SelectTrigger>
-							<SelectContent class="max-h-60 border-zinc-600 bg-zinc-800">
-								<SelectItem value="" class="text-[10px] text-zinc-100 hover:bg-zinc-700">
-									None (use emotion voice only)
-								</SelectItem>
-								{#if $voicesStore.loading}
-									<SelectItem value="" class="text-[10px] text-zinc-400" disabled
-										>Loading models...</SelectItem
-									>
-								{:else if $voicesStore.error}
-									<SelectItem value="" class="text-[10px] text-red-400" disabled
-										>Error loading models</SelectItem
-									>
-								{:else if $voicesStore.data?.rvcModels}
-									{#each $voicesStore.data.rvcModels as model}
-										<SelectItem
-											value={model.id}
-											class="text-[10px] text-zinc-100 hover:bg-zinc-700"
+								<SelectTrigger
+									class="!h-[30px] w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 focus:border-zinc-500 focus:outline-none"
+								>
+									{#if ttsOptions.voiceId}
+										{$voicesStore.data?.rvcModels?.find((model) => model.id === ttsOptions.voiceId)
+											?.name || ttsOptions.voiceId}
+									{:else}
+										Select RVC model
+									{/if}
+								</SelectTrigger>
+								<SelectContent class="max-h-60 border-zinc-600 bg-zinc-800">
+									{#if $voicesStore.loading}
+										<SelectItem value="" class="text-[10px] text-zinc-400" disabled
+											>Loading models...</SelectItem
 										>
-											{model.name}
-										</SelectItem>
-									{/each}
-								{/if}
-							</SelectContent>
-						</Select>
-					</div>
+									{:else if $voicesStore.error}
+										<SelectItem value="" class="text-[10px] text-red-400" disabled
+											>Error loading models</SelectItem
+										>
+									{:else if $voicesStore.data?.rvcModels}
+										<SelectItem value="Mita" class="text-[10px] text-zinc-400"
+											>Mita (Low-Latency)</SelectItem
+										>
 
-					<!-- Speed -->
-					<div class="nodrag">
-						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Speed: {ttsOptions.speed.toFixed(2)}
-						</label>
-						<Slider
-							value={[ttsOptions.speed]}
-							min={0}
-							max={1}
-							step={0.01}
-							class="w-full"
-							onValueChange={(values) => {
-								updateNodeData(nodeId, { ...data, speed: values[0] });
-							}}
-						/>
-					</div>
+										{#each $voicesStore.data.rvcModels as model}
+											<SelectItem
+												value={model.id}
+												class="text-[10px] text-zinc-100 hover:bg-zinc-700"
+											>
+												{model.name}
+											</SelectItem>
+										{/each}
+									{/if}
+								</SelectContent>
+							</Select>
+						</div>
 
-					<!-- Volume -->
-					<div class="nodrag">
-						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Volume: {ttsOptions.volume.toFixed(2)}
-						</label>
-						<Slider
-							value={[ttsOptions.volume]}
-							min={0}
-							max={1}
-							step={0.01}
-							class="w-full"
-							onValueChange={(values) => {
-								updateNodeData(nodeId, { ...data, volume: values[0] });
-							}}
-						/>
-					</div>
+						<!-- Voice Selection -->
+						<div class="nodrag">
+							<label class="mb-1 block text-[10px] font-medium text-zinc-400">emotion voice</label>
 
-					<!-- Pitch -->
-					<div class="nodrag">
-						<label class="mb-1 block text-[10px] font-medium text-zinc-400">
-							Pitch: {ttsOptions.pitch.toFixed(1)}
-						</label>
-						<Slider
-							value={[ttsOptions.pitch]}
-							min={0}
-							max={12}
-							step={0.1}
-							class="w-full"
-							onValueChange={(values) => {
-								updateNodeData(nodeId, { ...data, pitch: values[0] });
-							}}
-						/>
+							<Select
+								value={[ttsOptions.emotionVoice]}
+								onValueChange={(value) => {
+									const emotionVoice = Array.isArray(value) ? value.at(-1) : value;
+
+									updateNodeData(nodeId, { ...data, emotionVoice });
+								}}
+							>
+								<SelectTrigger
+									class="!h-[30px] w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 focus:border-zinc-500 focus:outline-none"
+								>
+									{ttsOptions.emotionVoice}
+								</SelectTrigger>
+
+								<SelectContent class="max-h-60 border-zinc-600 bg-zinc-800">
+									{#if $voicesStore.loading}
+										<SelectItem value="" class="text-[10px] text-zinc-400" disabled
+											>Loading voices...</SelectItem
+										>
+									{:else if $voicesStore.error}
+										<SelectItem value="" class="text-[10px] text-red-400" disabled
+											>Error loading voices</SelectItem
+										>
+									{:else if $voicesStore.data?.emotionVoices?.available}
+										{#each $voicesStore.data.emotionVoices.available as voice}
+											<SelectItem value={voice} class="text-[10px] text-zinc-100 hover:bg-zinc-700">
+												{voice}
+											</SelectItem>
+										{/each}
+									{/if}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<!-- Language -->
+						<div class="nodrag">
+							<label class="mb-1 block text-[10px] font-medium text-zinc-400">language</label>
+							<input
+								type="text"
+								value={ttsOptions.language}
+								placeholder="Language code (e.g., th, en)"
+								class="h-7 w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
+								onchange={(e) => {
+									updateNodeData(nodeId, { ...data, language: e.currentTarget.value });
+								}}
+							/>
+						</div>
+
+						<!-- Speed -->
+						<div class="nodrag">
+							<label class="mb-1 block text-[10px] font-medium text-zinc-400">
+								Speed: {ttsOptions.speed.toFixed(2)}
+							</label>
+							<Slider
+								value={[ttsOptions.speed]}
+								min={0}
+								max={1}
+								step={0.01}
+								class="w-full"
+								onValueChange={(values) => {
+									updateNodeData(nodeId, { ...data, speed: values[0] });
+								}}
+							/>
+						</div>
+
+						<!-- Volume -->
+						<div class="nodrag">
+							<label class="mb-1 block text-[10px] font-medium text-zinc-400">
+								Volume: {ttsOptions.volume.toFixed(2)}
+							</label>
+							<Slider
+								value={[ttsOptions.volume]}
+								min={0}
+								max={1}
+								step={0.01}
+								class="w-full"
+								onValueChange={(values) => {
+									updateNodeData(nodeId, { ...data, volume: values[0] });
+								}}
+							/>
+						</div>
+
+						<!-- Pitch -->
+						<div class="nodrag">
+							<label class="mb-1 block text-[10px] font-medium text-zinc-400">
+								Pitch: {ttsOptions.pitch.toFixed(1)}
+							</label>
+							<Slider
+								value={[ttsOptions.pitch]}
+								min={0}
+								max={12}
+								step={0.1}
+								class="w-full"
+								onValueChange={(values) => {
+									updateNodeData(nodeId, { ...data, pitch: values[0] });
+								}}
+							/>
+						</div>
 					</div>
-				</div>
+				{/if}
 
 				<!-- Error display -->
 				{#if errorMessage}
