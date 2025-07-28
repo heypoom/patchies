@@ -4,6 +4,8 @@
 	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import type { Message } from '$lib/messages/MessageSystem';
+	import { match } from 'ts-pattern';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -18,9 +20,32 @@
 	let isInitialized = $state(false);
 
 	const code = $derived(data.code || '');
+	const setCode = (newCode: string) => updateNodeData(nodeId, { ...data, code: newCode });
+
+	function handleMessage(message: Message) {
+		if (typeof message.data === 'string') {
+			setCode(message.data);
+			return;
+		}
+
+		match(message.data.type)
+			.with('bang', () => {
+				evaluate();
+			})
+			.with('run', () => {
+				evaluate();
+			})
+			.with('set', () => {
+				setCode(message.data.code);
+			})
+			.with('stop', () => {
+				stop();
+			});
+	}
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
+		messageContext.queue.addCallback(handleMessage);
 
 		// Wait for the StrudelEditor to be ready
 		setTimeout(() => {
@@ -34,10 +59,10 @@
 	});
 
 	onDestroy(() => {
-		if (strudelEditor?.editor) {
-			strudelEditor.editor.stop();
-		}
+		stop();
+
 		if (messageContext) {
+			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
 		}
 	});
@@ -54,7 +79,7 @@
 		}
 	}
 
-	function play() {
+	function evaluate() {
 		if (strudelEditor?.editor) {
 			try {
 				strudelEditor.editor.evaluate();
@@ -93,7 +118,7 @@
 						{:else}
 							<button
 								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
-								onclick={play}
+								onclick={evaluate}
 								title="Play"
 							>
 								<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
@@ -104,6 +129,13 @@
 			</div>
 
 			<div class="relative">
+				<Handle
+					type="target"
+					position={Position.Top}
+					id={`strudel-${nodeId}-inlet`}
+					class="z-1 nodrag !-top-2"
+				/>
+
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
 					<div class="nodrag">
 						<StrudelEditor
