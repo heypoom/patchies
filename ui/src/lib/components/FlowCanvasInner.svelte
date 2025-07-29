@@ -77,7 +77,6 @@
 	let videoSystem = VideoSystem.getInstance();
 
 	// Object palette state
-	let nodeCreationPosition = $state.raw({ x: 0, y: 0 }); // Flow position for node creation
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
 	let connectEndSourceNodeId = $state<string | null>(null);
 
@@ -207,7 +206,6 @@
 		setTimeout(() => {
 			connectEndSourceNodeId = connectionState.fromNode?.id ?? '1';
 			lastMousePosition = { x: clientX, y: clientY };
-			nodeCreationPosition = screenToFlowPosition(lastMousePosition);
 			$isObjectPaletteVisible = true;
 		});
 	};
@@ -256,12 +254,14 @@
 	}
 
 	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
+		const position = screenToFlowPosition(lastMousePosition);
+
 		if (isPreset && PRESETS[nodeType]) {
 			const preset = PRESETS[nodeType];
 
-			createNode(preset.type, nodeCreationPosition, preset.data);
+			createNode(preset.type, position, preset.data);
 		} else {
-			createNode(nodeType, nodeCreationPosition);
+			createNode(nodeType, position);
 		}
 
 		$isObjectPaletteVisible = false;
@@ -307,7 +307,6 @@
 			event.preventDefault();
 
 			// Convert screen coordinates to flow coordinates for accurate node placement
-			nodeCreationPosition = screenToFlowPosition(lastMousePosition);
 			$isObjectPaletteVisible = true;
 		}
 	}
