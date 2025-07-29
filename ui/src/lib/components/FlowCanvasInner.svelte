@@ -237,17 +237,17 @@
 		}
 	});
 
-	const handleConnectEnd: OnConnectEnd = (event, connectionState) => {
-		if (connectionState.isValid) return;
+	// const handleConnectEnd: OnConnectEnd = (event, connectionState) => {
+	// 	if (connectionState.isValid) return;
 
-		const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+	// 	const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
 
-		setTimeout(() => {
-			connectEndConnectionState = connectionState;
-			lastMousePosition = { x: clientX, y: clientY };
-			$isObjectPaletteVisible = true;
-		});
-	};
+	// 	setTimeout(() => {
+	// 		connectEndConnectionState = connectionState;
+	// 		lastMousePosition = { x: clientX, y: clientY };
+	// 		$isObjectPaletteVisible = true;
+	// 	});
+	// };
 
 	// Handle drop events
 	function onDrop(event: DragEvent) {
@@ -281,21 +281,21 @@
 		nodes = [...nodes, newNode];
 
 		// Defined by handleConnectEnd.
-		if (connectEndConnectionState !== null) {
-			const nextNodeId = connectEndConnectionState.fromNode?.id ?? '';
-			const handleType = connectEndConnectionState.fromHandle?.type;
+		// if (connectEndConnectionState !== null) {
+		// 	const nextNodeId = connectEndConnectionState.fromNode?.id ?? '';
+		// 	const handleType = connectEndConnectionState.fromHandle?.type;
 
-			const nextEdge =
-				handleType === 'source'
-					? { source: nextNodeId, target: id, id: `${nextNodeId}-${nodeId}` }
-					: {
-							source: id,
-							target: nextNodeId,
-							id: `${id}-${nextNodeId}`
-						};
+		// 	const nextEdge =
+		// 		handleType === 'source'
+		// 			? { source: nextNodeId, target: id, id: `${nextNodeId}-${nodeId}` }
+		// 			: {
+		// 					source: id,
+		// 					target: nextNodeId,
+		// 					id: `${id}-${nextNodeId}`
+		// 				};
 
-			edges = [...edges, nextEdge];
-		}
+		// 	edges = [...edges, nextEdge];
+		// }
 
 		connectEndConnectionState = null;
 	}
@@ -365,7 +365,6 @@
 			fitView
 			class="bg-zinc-900"
 			proOptions={{ hideAttribution: true }}
-			onconnectend={handleConnectEnd}
 			{isValidConnection}
 		>
 			<Background bgColor="#18181b" gap={16} />
