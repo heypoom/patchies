@@ -22,11 +22,26 @@
 	let videoSystem: VideoSystem;
 	let videoCanvases: HTMLCanvasElement[] = $state([]);
 	let isRunning = $state(false);
+	let isUserMessageListenerActive = $state(false);
 
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
 
 	const code = $derived(data.code || '');
+
+	const borderColor = $derived.by(() => {
+		if (isRunning) return 'border-pink-500';
+		if (isUserMessageListenerActive) return 'border-emerald-500';
+
+		return 'border-zinc-600';
+	});
+
+	const playIcon = $derived.by(() => {
+		if (isRunning) return 'lucide:loader';
+		if (isUserMessageListenerActive) return 'lucide:refresh-ccw';
+
+		return 'lucide:play';
+	});
 
 	function handleMessage(message: Message) {
 		if (message.data.type === 'set') {
@@ -39,6 +54,10 @@
 	onMount(() => {
 		// Initialize message context
 		messageContext = new MessageContext(nodeId);
+
+		messageContext.onMessageCallbackRegistered = () => {
+			isUserMessageListenerActive = true;
+		};
 
 		// Initialize video system
 		videoSystem = VideoSystem.getInstance();
@@ -70,6 +89,7 @@
 
 	async function executeCode() {
 		isRunning = true;
+		isUserMessageListenerActive = false;
 
 		// Clear previous output
 		consoleOutput = [];
@@ -203,7 +223,7 @@
 				<Handle type="target" id="message-in" position={Position.Top} class="!left-12" />
 
 				{#if data.showConsole}
-					<div class="min-w-[150px] rounded-md border border-zinc-600 bg-zinc-900 p-3">
+					<div class={['min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor]}>
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
 
@@ -218,7 +238,7 @@
 									aria-disabled={isRunning}
 								>
 									<Icon
-										icon={isRunning ? 'lucide:loader' : 'lucide:play'}
+										icon={playIcon}
 										class={['h-3 w-3 text-zinc-300', isRunning ? 'animate-spin' : '']}
 									/>
 								</button>
@@ -247,15 +267,16 @@
 				{:else}
 					<button
 						class={[
-							'flex w-full min-w-[100px] justify-center rounded-md border border-zinc-600 bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
-							isRunning ? 'cursor-not-allowed' : 'cursor-pointer'
+							'flex w-full min-w-[100px] justify-center rounded-md border bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
+							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
+							borderColor
 						]}
 						onclick={executeCode}
 						aria-disabled={isRunning}
 						aria-label="Run code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={isRunning ? 'lucide:loader' : 'lucide:play'} />
+							<Icon icon={playIcon} />
 						</div>
 					</button>
 				{/if}

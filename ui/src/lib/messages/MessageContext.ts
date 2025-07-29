@@ -1,5 +1,7 @@
 import { MessageQueue, MessageSystem, type MessageCallback } from './MessageSystem';
 
+type SendOptions = { type?: string; to?: string };
+
 export class MessageContext {
 	public queue: MessageQueue;
 	public messageSystem: MessageSystem;
@@ -7,6 +9,9 @@ export class MessageContext {
 
 	private intervals: number[] = [];
 	private messageCallback: MessageCallback | null = null;
+
+	public onSend = (data: any, options: SendOptions = {}) => {};
+	public onMessageCallbackRegistered = () => {};
 
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
@@ -26,8 +31,9 @@ export class MessageContext {
 	// Create the send function for this node
 	createSendFunction() {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		return (data: any, options: { type?: string; to?: string } = {}) => {
+		return (data: any, options: SendOptions = {}) => {
 			this.messageSystem.sendMessage(this.nodeId, data, options);
+			this.onSend(data, options);
 		};
 	}
 
@@ -36,6 +42,7 @@ export class MessageContext {
 		return (callback: MessageCallback) => {
 			// Always update the callback - this allows re-registering
 			this.messageCallback = callback;
+			this.onMessageCallbackRegistered();
 		};
 	}
 
