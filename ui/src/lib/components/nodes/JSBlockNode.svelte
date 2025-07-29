@@ -10,8 +10,10 @@
 	import type { Message } from '$lib/messages/MessageSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { code: string; showConsole?: boolean } } =
-		$props();
+	let {
+		id: nodeId,
+		data
+	}: { id: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } } = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -47,6 +49,10 @@
 		});
 
 		messageContext.queue.addCallback(handleMessage);
+
+		if (data?.runOnMount) {
+			executeCode();
+		}
 	});
 
 	onDestroy(() => {

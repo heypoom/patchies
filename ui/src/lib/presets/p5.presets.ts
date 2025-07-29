@@ -48,8 +48,10 @@ let state = 'red'
 onMessage(m => {
   if (m.data === 'next' || m.data?.type === 'bang') {
     state = states[(states.indexOf(state) + 1) % states.length]
+    send(state)
   } else if (states.includes(m.data)) {
     state = m.data
+    send(state)
   }
 })
 
