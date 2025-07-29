@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, selected }: { id: string } = $props();
 
 	const messageContext = new MessageContext(nodeId);
 
@@ -26,7 +26,10 @@
 			<div class="relative">
 				<button
 					onclick={sendBang}
-					class="h-10 w-10 cursor-pointer rounded-full border border-zinc-600 bg-zinc-900 font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600"
+					class={[
+						'h-10 w-10 cursor-pointer rounded-full border bg-zinc-900 font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600',
+						selected ? 'border-yellow-500' : 'border-zinc-600'
+					]}
 					aria-label="send bang"
 				>
 				</button>
