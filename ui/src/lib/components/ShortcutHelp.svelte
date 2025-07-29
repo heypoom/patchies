@@ -17,6 +17,17 @@
 			items: [{ key: 'Shift + Enter', description: 'Run code in editor' }]
 		}
 	];
+
+	const resources = [
+		{
+			name: 'How to use',
+			url: 'https://github.com/heypoom/patchies/blob/main/README.md'
+		},
+		{
+			name: 'GitHub',
+			url: 'https://github.com/heypoom/patchies'
+		}
+	];
 </script>
 
 <Dialog.Root bind:open>
@@ -25,8 +36,8 @@
 	</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Keyboard Shortcuts</Dialog.Title>
-			<Dialog.Description>Quick reference for available keyboard shortcuts</Dialog.Description>
+			<Dialog.Title>Quickstart</Dialog.Title>
+			<Dialog.Description>Keyboard shortcuts and helpful links</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="space-y-4">
@@ -47,6 +58,25 @@
 					</div>
 				</div>
 			{/each}
+
+			<div>
+				<h3 class="mb-3 text-sm font-medium text-zinc-200">Resources</h3>
+
+				<ul class="list-inside list-disc">
+					{#each resources as resource}
+						<li>
+							<a
+								href={resource.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="text-sm text-blue-400 hover:underline"
+							>
+								{resource.name}
+							</a>
+						</li>
+					{/each}
+				</ul>
+			</div>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
