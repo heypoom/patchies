@@ -19,10 +19,12 @@
 	let paletteContainer: HTMLDivElement;
 	let resultsContainer: HTMLDivElement;
 
-	const allItems = [
-		...Object.keys(nodeTypes).map((type) => ({ name: type, isPreset: false })),
-		...Object.keys(PRESETS).map((name) => ({ name, isPreset: true }))
-	];
+	const allItems = $derived.by(() => {
+		return [
+			...Object.keys(nodeTypes).map((type) => ({ name: type, isPreset: false })),
+			...Object.keys(PRESETS).map((name) => ({ name, isPreset: true }))
+		];
+	});
 
 	// Combine node types and presets, then filter based on search query
 	const filteredItems = $derived.by(() => {

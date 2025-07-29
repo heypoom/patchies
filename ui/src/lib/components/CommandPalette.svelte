@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { match, P } from 'ts-pattern';
-	import { isBottomBarVisible, isFpsMonitorVisible } from '../../stores/ui.store';
+	import {
+		isAiFeaturesVisible,
+		isBottomBarVisible,
+		isFpsMonitorVisible
+	} from '../../stores/ui.store';
 	import type { Node, Edge } from '@xyflow/svelte';
 
 	interface Props {
@@ -68,6 +72,11 @@
 			id: 'toggle-fps-monitor',
 			name: 'Toggle FPS Monitor',
 			description: 'Show or hide the FPS monitor'
+		},
+		{
+			id: 'toggle-ai-features',
+			name: 'Toggle AI Features',
+			description: 'Show or hide AI-related objects and features'
 		}
 	];
 
@@ -208,6 +217,10 @@
 			})
 			.with('toggle-fps-monitor', () => {
 				$isFpsMonitorVisible = !$isFpsMonitorVisible;
+				onCancel();
+			})
+			.with('toggle-ai-features', () => {
+				$isAiFeaturesVisible = !$isAiFeaturesVisible;
 				onCancel();
 			})
 			.otherwise(() => {

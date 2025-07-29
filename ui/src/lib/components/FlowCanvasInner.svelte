@@ -27,7 +27,7 @@
 	import AiMusicNode from './nodes/AiMusicNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
-	import { isBottomBarVisible } from '../../stores/ui.store';
+	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
@@ -35,6 +35,8 @@
 
 	// Define custom node types
 	const nodeTypes = {
+		['bang']: BangNode,
+		['msg']: MessageNode,
 		['p5']: P5CanvasNode,
 		['js']: JSBlockNode,
 		['hydra']: HydraNode,
@@ -42,15 +44,24 @@
 		['glsl']: GLSLCanvasNode,
 		['strudel']: StrudelNode,
 		['bchrn']: ButterchurnNode,
-		['ai.img']: AiImageNode,
+		['bg.out']: BackgroundOutputNode,
+
 		['ai.txt']: AiTextNode,
-		['msg']: MessageNode,
-		['bang']: BangNode,
+		['ai.img']: AiImageNode,
 		['ai.music']: AiMusicNode,
-		['ai.tts']: AiSpeechNode,
-		['bg.out']: BackgroundOutputNode
-		// ['ai.vdo']: AiVideoNode,
+		['ai.tts']: AiSpeechNode
 	};
+
+	const visibleNodeTypes = $derived.by(() => {
+		return Object.fromEntries(
+			Object.entries(nodeTypes).filter(([key]) => {
+				// If the user dislikes AI features, filter them out.
+				if (key.startsWith('ai.') && !$isAiFeaturesVisible) return false;
+
+				return true;
+			})
+		);
+	});
 
 	// Initial nodes and edges
 	let nodes = $state.raw<Node[]>([]);
@@ -309,7 +320,7 @@
 
 		<!-- Object Palette -->
 		<ObjectPalette
-			{nodeTypes}
+			nodeTypes={visibleNodeTypes}
 			position={lastMousePosition}
 			onselect={handlePaletteSelect}
 			oncancel={handlePaletteCancel}
@@ -344,7 +355,7 @@
 			<div class="max-w-full">
 				<div class="flex items-center justify-between">
 					<div class="flex gap-2">
-						{#each Object.keys(nodeTypes) as nodeType}
+						{#each Object.keys(visibleNodeTypes) as nodeType}
 							<div
 								role="button"
 								tabindex="0"
