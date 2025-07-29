@@ -155,6 +155,11 @@
 		};
 
 		audio.play().catch((error) => {
+			// ignore DOMException errors (e.g. aborted playback)
+			if (error instanceof DOMException) {
+				return;
+			}
+
 			errorMessage = 'Failed to play audio: ' + error.message;
 			playbackState = 'paused';
 		});
