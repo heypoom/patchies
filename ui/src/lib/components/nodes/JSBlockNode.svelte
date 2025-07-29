@@ -12,8 +12,13 @@
 	// Get node data from XY Flow - nodes receive their data as props
 	let {
 		id: nodeId,
-		data
-	}: { id: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } } = $props();
+		data,
+		selected
+	}: {
+		id: string;
+		data: { code: string; showConsole?: boolean; runOnMount?: boolean };
+		selected: boolean;
+	} = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -30,6 +35,7 @@
 	const code = $derived(data.code || '');
 
 	const borderColor = $derived.by(() => {
+		if (selected) return 'border-yellow-500';
 		if (isRunning) return 'border-pink-500';
 		if (isUserMessageListenerActive) return 'border-emerald-500';
 
