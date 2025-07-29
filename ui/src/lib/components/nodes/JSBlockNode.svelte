@@ -231,23 +231,21 @@
 								<button
 									onclick={executeCode}
 									class={[
-										'rounded p-1 hover:bg-zinc-700',
+										'rounded p-1 text-zinc-300 hover:bg-zinc-700',
 										isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
 									]}
 									title="Run code"
 									aria-disabled={isRunning}
 								>
-									<Icon
-										icon={playIcon}
-										class={['h-3 w-3 text-zinc-300', isRunning ? 'animate-spin' : '']}
-									/>
+									<Icon icon={playIcon} class={isRunning ? 'animate-spin' : ''} font-size="12px" />
 								</button>
+
 								<button
 									onclick={clearConsole}
-									class="rounded p-1 hover:bg-zinc-700"
+									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Icon icon="lucide:trash-2" class="h-3 w-3 text-zinc-300" />
+									<Icon icon="lucide:trash-2" font-size="12px" />
 								</button>
 							</div>
 						</div>
