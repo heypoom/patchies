@@ -197,12 +197,6 @@
 					{errorMessage}
 				</div>
 			{/if}
-
-			{#if inputCanvases.length > 0}
-				<div class="mt-2 text-xs text-zinc-400">
-					Image input: {inputCanvases.length} canvas{inputCanvases.length !== 1 ? 'es' : ''} connected
-				</div>
-			{/if}
 		</div>
 	{/if}
 </div>
