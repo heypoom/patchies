@@ -1,8 +1,8 @@
 import regl from 'regl';
 
 export class GLSLCanvasManager {
-	public width = 800;
-	public height = 800;
+	public width = 400;
+	public height = 400;
 
 	private canvas: HTMLCanvasElement | null = null;
 	private regl: regl.Regl | null = null;
