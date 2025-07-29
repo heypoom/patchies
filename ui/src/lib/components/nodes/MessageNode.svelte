@@ -5,7 +5,11 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { Message } from '$lib/messages/MessageSystem';
 
-	let { id: nodeId, data }: { id: string; data: { message: string } } = $props();
+	let {
+		id: nodeId,
+		data,
+		selected
+	}: { id: string; data: { message: string }; selected: boolean } = $props();
 
 	const { updateNodeData } = useSvelteFlow();
 
@@ -55,6 +59,8 @@
 		// If all else fails, send the message as a string
 		send(msgText);
 	}
+
+	const borderColor = $derived(selected ? 'border-yellow-500' : 'border-zinc-600');
 </script>
 
 <div class="relative">
@@ -82,12 +88,18 @@
 							value={msgText}
 							oninput={(message) =>
 								updateNodeData(nodeId, { ...data, message: message.currentTarget.value })}
-							class="nodrag w-full max-w-[200px] resize-none rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-200 focus:outline-none"
+							class={[
+								'nodrag w-full max-w-[200px] resize-none rounded-lg border bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-200 focus:outline-none',
+								borderColor
+							]}
 						></textarea>
 					{:else}
 						<button
 							onclick={sendMessage}
-							class="max-w-[200px] rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-start font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+							class={[
+								'max-w-[200px] rounded-lg border bg-zinc-900 px-3 py-2 text-start font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+								borderColor
+							]}
 						>
 							{msgText ? msgText : '<messagebox>'}
 						</button>
