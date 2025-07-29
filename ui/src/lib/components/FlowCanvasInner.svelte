@@ -341,7 +341,6 @@
 			class="bg-zinc-900"
 			proOptions={{ hideAttribution: true }}
 			onconnectend={handleConnectEnd}
-			colorMode="dark"
 		>
 			<Background bgColor="#18181b" gap={16} />
 			<BackgroundOutputCanvas />
