@@ -11,20 +11,22 @@
 	import { audioUrlCache } from '$lib/stores/audioCache';
 	import { omit } from 'lodash';
 
+	type TTSOptions = {
+		text: string;
+		emotionVoice?: string;
+		language?: string;
+		speed?: number;
+		volume?: number;
+		pitch?: number;
+		voiceId?: string;
+	};
+
 	let {
 		id: nodeId,
 		data
 	}: {
 		id: string;
-		data: {
-			text: string;
-			emotionVoice?: string;
-			language?: string;
-			speed?: number;
-			volume?: number;
-			pitch?: number;
-			voiceId?: string;
-		};
+		data: TTSOptions;
 	} = $props();
 
 	let messageContext: MessageContext;
@@ -50,30 +52,40 @@
 		voiceId: data.voiceId ?? defaultVoiceId
 	}));
 
+	function setTTSOptionsFromMessage(m: Partial<TTSOptions>) {
+		updateNodeData(nodeId, {
+			...data,
+			...(m.text && { text: m.text }),
+			...(m.emotionVoice && { emotionVoice: m.emotionVoice }),
+			...(m.language && { language: m.language }),
+			...(m.speed !== undefined && { speed: m.speed }),
+			...(m.volume !== undefined && { volume: m.volume }),
+			...(m.pitch !== undefined && { pitch: m.pitch }),
+			...(m.voiceId && { voiceId: m.voiceId ?? defaultVoiceId })
+		});
+	}
+
 	function handleMessage(message: Message) {
 		const m = message.data;
 
 		if (typeof m === 'string') {
 			updateNodeData(nodeId, { ...data, text: m });
-			setTimeout(generateSpeech, 5);
+			setTimeout(() => generateSpeech({ playback: true }), 5);
 			return;
 		}
 
-		match(m.type).with('speech', () => {
-			const nextData = {
-				...data,
-				...(m.text && { text: m.text }),
-				...(m.emotionVoice && { emotionVoice: m.emotionVoice }),
-				...(m.language && { language: m.language }),
-				...(m.speed !== undefined && { speed: m.speed }),
-				...(m.volume !== undefined && { volume: m.volume }),
-				...(m.pitch !== undefined && { pitch: m.pitch }),
-				...(m.voiceId && { voiceId: m.voiceId ?? defaultVoiceId })
-			};
-
-			updateNodeData(nodeId, nextData);
-			setTimeout(generateSpeech, 5);
-		});
+		match(m.type)
+			.with('speak', () => {
+				setTTSOptionsFromMessage(m);
+				setTimeout(() => generateSpeech({ playback: true }), 5);
+			})
+			.with('load', () => {
+				setTTSOptionsFromMessage(m);
+				setTimeout(() => generateSpeech({ playback: false }), 5);
+			})
+			.with('set', () => {
+				setTTSOptionsFromMessage(m);
+			});
 	}
 
 	onMount(() => {
@@ -148,7 +160,7 @@
 		});
 	}
 
-	async function generateSpeech() {
+	async function generateSpeech({ playback = true }: { playback?: boolean } = {}) {
 		const apiKey = localStorage.getItem('celestiai-api-key');
 
 		if (!apiKey) {
@@ -164,7 +176,8 @@
 		const cachedUrl = $audioUrlCache[audioCacheKey];
 
 		if (cachedUrl) {
-			playAudio(cachedUrl);
+			if (playback) playAudio(cachedUrl);
+
 			return;
 		}
 
@@ -193,7 +206,8 @@
 
 			if (json.success) {
 				$audioUrlCache[audioCacheKey] = json.fileUrl;
-				playAudio(json.fileUrl);
+
+				if (playback) playAudio(json.fileUrl);
 			} else {
 				errorMessage = json.message || 'Speech generation failed';
 				playbackState = 'paused';
