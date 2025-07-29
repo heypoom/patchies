@@ -9,7 +9,11 @@
 	import { VideoSystem } from '$lib/video/VideoSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	let {
+		id: nodeId,
+		data,
+		selected
+	}: { id: string; data: { code: string }; selected: boolean } = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -139,8 +143,11 @@
 					<div
 						bind:this={containerElement}
 						class={[
-							'rounded-md bg-transparent [&>canvas]:rounded-md',
-							enableDrag ? 'cursor-grab' : 'nodrag cursor-default'
+							'rounded-md border bg-transparent',
+							enableDrag ? 'cursor-grab' : 'nodrag cursor-default',
+							selected
+								? 'border-zinc-200 [&>canvas]:rounded-[7px]'
+								: 'border-transparent [&>canvas]:rounded-md'
 						]}
 					></div>
 

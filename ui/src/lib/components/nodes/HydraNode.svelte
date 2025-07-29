@@ -10,7 +10,11 @@
 	import type { Message } from '$lib/messages/MessageSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	let {
+		id: nodeId,
+		data,
+		selected
+	}: { id: string; data: { code: string }; selected: boolean } = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -170,7 +174,12 @@
 
 				<div
 					bind:this={containerElement}
-					class="min-h-[200px] min-w-[200px] rounded-md bg-zinc-900 [&>canvas]:rounded-md"
+					class={[
+						'min-h-[200px] min-w-[200px] rounded-md border bg-zinc-900',
+						selected
+							? 'border-zinc-200 [&>canvas]:rounded-[7px]'
+							: 'border-transparent [&>canvas]:rounded-md'
+					]}
 				></div>
 
 				<!-- Error display -->
