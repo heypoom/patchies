@@ -78,14 +78,12 @@
 
 				<div class="relative min-w-[100px]">
 					{#if showTextInput}
-						<div class="nodrag rounded-lg border border-zinc-600 bg-zinc-900">
-							<textarea
-								value={msgText}
-								oninput={(message) =>
-									updateNodeData(nodeId, { ...data, message: message.currentTarget.value })}
-								class="nodrag resize-none rounded-lg border-0 px-3 py-2 font-mono text-xs text-zinc-200 focus:outline-none"
-							></textarea>
-						</div>
+						<textarea
+							value={msgText}
+							oninput={(message) =>
+								updateNodeData(nodeId, { ...data, message: message.currentTarget.value })}
+							class="nodrag w-full max-w-[200px] resize-none rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-200 focus:outline-none"
+						></textarea>
 					{:else}
 						<button
 							onclick={sendMessage}

@@ -205,14 +205,14 @@
 									onclick={executeCode}
 									class={[
 										'rounded p-1 hover:bg-zinc-700',
-										isRunning ? 'animate-spin cursor-not-allowed opacity-30' : 'cursor-pointer'
+										isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
 									]}
 									title="Run code"
 									aria-disabled={isRunning}
 								>
 									<Icon
 										icon={isRunning ? 'lucide:loader' : 'lucide:play'}
-										class="h-3 w-3 text-zinc-300"
+										class={['h-3 w-3 text-zinc-300', isRunning ? 'animate-spin' : '']}
 									/>
 								</button>
 								<button
@@ -241,13 +241,15 @@
 					<button
 						class={[
 							'flex w-full min-w-[100px] justify-center rounded-md border border-zinc-600 bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
-							isRunning ? 'animate-spin cursor-not-allowed opacity-30' : 'cursor-pointer'
+							isRunning ? 'cursor-not-allowed' : 'cursor-pointer'
 						]}
 						onclick={executeCode}
 						aria-disabled={isRunning}
 						aria-label="Run code"
 					>
-						<Icon icon={isRunning ? 'lucide:loader' : 'lucide:play'} />
+						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
+							<Icon icon={isRunning ? 'lucide:loader' : 'lucide:play'} />
+						</div>
 					</button>
 				{/if}
 

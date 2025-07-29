@@ -29,9 +29,9 @@ function draw() {
 const CAM_P5 = `let video;
 
 function setup() {
-  createCanvas(640, 480);
+  createCanvas(640/2, 480/2);
   video = createCapture(VIDEO);
-  video.size(640, 480);
+  video.size(640/2, 480/2);
   video.hide();
 }
 
