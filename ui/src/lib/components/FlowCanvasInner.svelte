@@ -6,8 +6,10 @@
 		type Node,
 		type Edge,
 		useSvelteFlow,
-		type OnConnectEnd
+		type OnConnectEnd,
+		type IsValidConnection
 	} from '@xyflow/svelte';
+	import type { FinalConnectionState } from '@xyflow/system';
 	import { onDestroy, onMount } from 'svelte';
 	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
 	import JSBlockNode from './nodes/JSBlockNode.svelte';
@@ -78,7 +80,7 @@
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
-	let connectEndSourceNodeId = $state<string | null>(null);
+	let connectEndConnectionState = $state.raw<FinalConnectionState | null>(null);
 
 	// Command palette state
 	let showCommandPalette = $state(false);
@@ -169,6 +171,43 @@
 		videoSystem.updateVideoConnections(connections);
 	});
 
+	// Handle global keyboard events
+	function handleGlobalKeydown(event: KeyboardEvent) {
+		const target = event.target as HTMLElement;
+
+		const isTyping =
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target.closest('.cm-editor') ||
+			target.closest('.cm-content') ||
+			target.contentEditable === 'true' ||
+			target.closest('.svelte-flow__node');
+
+		// Handle CMD+K for command palette
+		if (
+			event.key.toLowerCase() === 'k' &&
+			(event.metaKey || event.ctrlKey) &&
+			!showCommandPalette
+		) {
+			event.preventDefault();
+			const centerX = window.innerWidth / 2 - 160;
+			const centerY = window.innerHeight / 2 - 200;
+			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
+			showCommandPalette = true;
+		} else if (
+			event.key.toLowerCase() === 'n' &&
+			!$isObjectPaletteVisible &&
+			!showCommandPalette &&
+			!isTyping
+		) {
+			// Handle 'n' key for object palette
+			event.preventDefault();
+
+			// Convert screen coordinates to flow coordinates for accurate node placement
+			$isObjectPaletteVisible = true;
+		}
+	}
+
 	onMount(() => {
 		flowContainer?.focus();
 
@@ -204,7 +243,7 @@
 		const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
 
 		setTimeout(() => {
-			connectEndSourceNodeId = connectionState.fromNode?.id ?? '1';
+			connectEndConnectionState = connectionState;
 			lastMousePosition = { x: clientX, y: clientY };
 			$isObjectPaletteVisible = true;
 		});
@@ -242,15 +281,23 @@
 		nodes = [...nodes, newNode];
 
 		// Defined by handleConnectEnd.
-		if (connectEndSourceNodeId !== null) {
-			edges = [
-				...edges,
-				{ source: connectEndSourceNodeId, target: id, id: `${connectEndSourceNodeId}--${nodeId}` }
-			];
-			console.log('connected edge!');
+		if (connectEndConnectionState !== null) {
+			const nextNodeId = connectEndConnectionState.fromNode?.id ?? '';
+			const handleType = connectEndConnectionState.fromHandle?.type;
+
+			const nextEdge =
+				handleType === 'source'
+					? { source: nextNodeId, target: id, id: `${nextNodeId}-${nodeId}` }
+					: {
+							source: id,
+							target: nextNodeId,
+							id: `${id}-${nextNodeId}`
+						};
+
+			edges = [...edges, nextEdge];
 		}
 
-		connectEndSourceNodeId = null;
+		connectEndConnectionState = null;
 	}
 
 	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
@@ -275,42 +322,6 @@
 		showCommandPalette = false;
 	}
 
-	// Handle global keyboard events
-	function handleGlobalKeydown(event: KeyboardEvent) {
-		const target = event.target as HTMLElement;
-		const isTyping =
-			target instanceof HTMLInputElement ||
-			target instanceof HTMLTextAreaElement ||
-			target.closest('.cm-editor') ||
-			target.closest('.cm-content') ||
-			target.contentEditable === 'true' ||
-			target.closest('.svelte-flow__node');
-
-		// Handle CMD+K for command palette
-		if (
-			event.key.toLowerCase() === 'k' &&
-			(event.metaKey || event.ctrlKey) &&
-			!showCommandPalette
-		) {
-			event.preventDefault();
-			const centerX = window.innerWidth / 2 - 160;
-			const centerY = window.innerHeight / 2 - 200;
-			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
-			showCommandPalette = true;
-		} else if (
-			event.key.toLowerCase() === 'n' &&
-			!$isObjectPaletteVisible &&
-			!showCommandPalette &&
-			!isTyping
-		) {
-			// Handle 'n' key for object palette
-			event.preventDefault();
-
-			// Convert screen coordinates to flow coordinates for accurate node placement
-			$isObjectPaletteVisible = true;
-		}
-	}
-
 	// Track mouse position for palette positioning
 	function handleMouseMove(event: MouseEvent) {
 		// Store the raw client coordinates for palette UI positioning
@@ -319,6 +330,20 @@
 			y: event.clientY
 		};
 	}
+
+	const isValidConnection: IsValidConnection = (connection) => {
+		if (
+			connection.sourceHandle?.startsWith('video') ||
+			connection.targetHandle?.startsWith('video')
+		) {
+			return !!(
+				connection.sourceHandle?.startsWith('video') && connection.targetHandle?.startsWith('video')
+			);
+		}
+
+		// Allow connections between any nodes
+		return true;
+	};
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -341,6 +366,7 @@
 			class="bg-zinc-900"
 			proOptions={{ hideAttribution: true }}
 			onconnectend={handleConnectEnd}
+			{isValidConnection}
 		>
 			<Background bgColor="#18181b" gap={16} />
 			<BackgroundOutputCanvas />
