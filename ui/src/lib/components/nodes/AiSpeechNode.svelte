@@ -51,16 +51,16 @@
 	}));
 
 	function handleMessage(message: Message) {
-		if (typeof data === 'string') {
-			updateNodeData(nodeId, { ...message.data, text: data });
-			setTimeout(generateSpeech, 0);
+		const m = message.data;
+
+		if (typeof m === 'string') {
+			updateNodeData(nodeId, { ...data, text: m });
+			setTimeout(generateSpeech, 5);
 			return;
 		}
 
-		match(message.data.type).with('speech', () => {
-			const m = message.data;
-
-			const newData = {
+		match(m.type).with('speech', () => {
+			const nextData = {
 				...data,
 				...(m.text && { text: m.text }),
 				...(m.emotionVoice && { emotionVoice: m.emotionVoice }),
@@ -71,8 +71,8 @@
 				...(m.voiceId && { voiceId: m.voiceId ?? defaultVoiceId })
 			};
 
-			updateNodeData(nodeId, newData);
-			setTimeout(generateSpeech, 0);
+			updateNodeData(nodeId, nextData);
+			setTimeout(generateSpeech, 5);
 		});
 	}
 
