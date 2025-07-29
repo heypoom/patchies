@@ -7,6 +7,11 @@ const MIX_GL = `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   );
 }`;
 
+const PASSTHRU_GL = `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  fragColor = texture2D(iChannel0, fragCoord / iResolution.xy);
+}`;
+
 export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
-	'mix.gl': { type: 'glsl', data: { code: MIX_GL.trim() } }
+	'mix.gl': { type: 'glsl', data: { code: MIX_GL.trim() } },
+	'passthru.gl': { type: 'glsl', data: { code: PASSTHRU_GL.trim() } }
 };

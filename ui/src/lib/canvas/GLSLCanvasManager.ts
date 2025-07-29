@@ -260,28 +260,21 @@ export class GLSLCanvasManager {
 			const canvas = this.videoCanvases[i];
 
 			// Check if canvas has valid dimensions
-			if (canvas && canvas.width > 0 && canvas.height > 0) {
-				try {
-					if (!this.videoTextures[i]) {
-						// Create texture if it doesn't exist
-						this.videoTextures[i] = this.regl.texture({
-							data: canvas,
-							flipY: true
-						});
-					} else {
-						// Update existing texture
-						this.videoTextures[i].subimage({
-							data: canvas
-						});
-					}
-				} catch (error) {
-					console.warn(`Failed to update canvas texture ${i}:`, error);
+			try {
+				if (!this.videoTextures[i]) {
+					this.videoTextures[i] = this.regl.texture({
+						data: canvas,
+						flipY: true
+					});
+				} else {
+					this.videoTextures[i].subimage(canvas);
+				}
+			} catch (error) {
+				console.warn(`Failed to update canvas texture ${i}:`, error);
 
-					// Clear the problematic texture
-					if (this.videoTextures[i]) {
-						this.videoTextures[i].destroy();
-						this.videoTextures[i] = null as any;
-					}
+				// Clear the problematic texture
+				if (this.videoTextures[i]) {
+					this.videoTextures[i].destroy();
 				}
 			}
 		}
