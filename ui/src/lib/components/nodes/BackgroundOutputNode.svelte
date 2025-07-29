@@ -8,7 +8,7 @@
 	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
 
 	let videoSystem: VideoSystem;
 
@@ -42,6 +42,12 @@
 			}
 		}
 	});
+
+	const borderClass = $derived.by(() => {
+		if ($isBackgroundOutputCanvasEnabled) return '';
+		if (selected) return 'border border-yellow-500';
+		return 'border border-zinc-800';
+	});
 </script>
 
 <div class="relative flex gap-x-3">
@@ -65,7 +71,7 @@
 				<div
 					class={[
 						'flex h-[100px] w-[100px] items-center justify-center rounded-lg bg-zinc-900/50 backdrop-blur-xl',
-						$isBackgroundOutputCanvasEnabled ? '' : 'border border-zinc-800'
+						borderClass
 					]}
 				>
 					<Icon icon="lucide:screen-share" class="h-8 w-8 text-zinc-500" />
