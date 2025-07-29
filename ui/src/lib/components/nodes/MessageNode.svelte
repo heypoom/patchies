@@ -76,7 +76,7 @@
 			<div class="relative">
 				<Handle type="target" position={Position.Top} class="z-1" />
 
-				<div class="relative min-w-[100px]">
+				<div class="relative">
 					{#if showTextInput}
 						<textarea
 							value={msgText}
