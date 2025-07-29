@@ -21,6 +21,16 @@ It has support for [Message Passing](#message-passing) and [Video Chaining](#vid
 - Press `shift+enter` while in a code editor to re-run the code.
 - Click on the title and press `delete` to delete an object.
 
+## Keyboard Shortcuts
+
+You can use the Shortcuts button on the bottom right to see a list of shortcuts. Here are some of the most useful ones:
+
+- `cmd + k`: open the command palette to search for commands.
+- `n`: create a new object at cursor position.
+- `shift + enter`: run the code in the code editor within the selected object.
+- `delete`: delete the selected object.
+- `cmd + z`: undo the last action.
+
 ## Message Passing
 
 You can use `send()` and `onMessage()` functions to send and receive messages between objects. This allows you to create complex interactions between different parts of your patch. This is very similar to messages in Max/MSP.
