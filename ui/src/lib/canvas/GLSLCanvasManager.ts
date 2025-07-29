@@ -243,8 +243,7 @@ export class GLSLCanvasManager {
 
 			// Clear the screen
 			this.regl!.clear({
-				color: [0, 0, 0, 1],
-				depth: 1
+				color: [0, 0, 0, 1]
 			});
 
 			this.drawCommand!(context);
