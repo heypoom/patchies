@@ -20,7 +20,10 @@
 	let isInitialized = $state(false);
 
 	const code = $derived(data.code || '');
-	const setCode = (newCode: string) => updateNodeData(nodeId, { ...data, code: newCode });
+	const setCode = (newCode: string) => {
+		updateNodeData(nodeId, { ...data, code: newCode });
+		strudelEditor?.editor?.setCode(newCode);
+	};
 
 	function handleMessage(message: Message) {
 		if (typeof message.data === 'string') {

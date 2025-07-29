@@ -40,7 +40,6 @@
 	}
 
 	let settings = codemirrorSettings.get();
-	let audioNodes: AudioNode[] = [];
 
 	const hap2value = (hap) => {
 		hap.ensureObjectValue();
@@ -88,6 +87,7 @@
 			? EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
 						const newCode = editor.editor.state.doc.toString();
+
 						if (newCode !== code) {
 							onchange(newCode);
 						}
