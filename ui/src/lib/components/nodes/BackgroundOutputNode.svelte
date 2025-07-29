@@ -45,7 +45,7 @@
 
 	const borderClass = $derived.by(() => {
 		if ($isBackgroundOutputCanvasEnabled) return '';
-		if (selected) return 'border border-yellow-500';
+		if (selected) return 'border border-zinc-400';
 		return 'border border-zinc-800';
 	});
 </script>

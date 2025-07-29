@@ -5,7 +5,8 @@
 		Controls,
 		type Node,
 		type Edge,
-		useSvelteFlow
+		useSvelteFlow,
+		type OnConnectEnd
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
@@ -27,7 +28,11 @@
 	import AiMusicNode from './nodes/AiMusicNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
-	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
+	import {
+		isAiFeaturesVisible,
+		isBottomBarVisible,
+		isObjectPaletteVisible
+	} from '../../stores/ui.store';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
@@ -72,13 +77,13 @@
 	let videoSystem = VideoSystem.getInstance();
 
 	// Object palette state
-	let showPalette = $state(false);
-	let nodeCreationPosition = $state({ x: 0, y: 0 }); // Flow position for node creation
-	let lastMousePosition = $state({ x: 100, y: 100 });
+	let nodeCreationPosition = $state.raw({ x: 0, y: 0 }); // Flow position for node creation
+	let lastMousePosition = $state.raw({ x: 100, y: 100 });
+	let connectEndSourceNodeId = $state<string | null>(null);
 
 	// Command palette state
 	let showCommandPalette = $state(false);
-	let commandPalettePosition = $state({ x: 0, y: 0 });
+	let commandPalettePosition = $state.raw({ x: 0, y: 0 });
 	let flowContainer: HTMLDivElement;
 
 	// Get flow utilities for coordinate transformation
@@ -194,6 +199,19 @@
 		}
 	});
 
+	const handleConnectEnd: OnConnectEnd = (event, connectionState) => {
+		if (connectionState.isValid) return;
+
+		const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+
+		setTimeout(() => {
+			connectEndSourceNodeId = connectionState.fromNode?.id ?? '1';
+			lastMousePosition = { x: clientX, y: clientY };
+			nodeCreationPosition = screenToFlowPosition(lastMousePosition);
+			$isObjectPaletteVisible = true;
+		});
+	};
+
 	// Handle drop events
 	function onDrop(event: DragEvent) {
 		event.preventDefault();
@@ -203,11 +221,7 @@
 		if (!type) return;
 
 		// Get accurate positioning with zoom/pan
-		const position = screenToFlowPosition({
-			x: event.clientX,
-			y: event.clientY
-		});
-
+		const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
 		createNode(type, position);
 	}
 
@@ -218,14 +232,27 @@
 
 	// Create a new node at the specified position
 	function createNode(type: string, position: { x: number; y: number }, customData?: any) {
+		const id = `${type}-${nodeId++}`;
+
 		const newNode: Node = {
-			id: `${type}-${nodeId++}`,
+			id,
 			type,
 			position,
 			data: customData ?? getDefaultNodeData(type)
 		};
 
 		nodes = [...nodes, newNode];
+
+		// Defined by handleConnectEnd.
+		if (connectEndSourceNodeId !== null) {
+			edges = [
+				...edges,
+				{ source: connectEndSourceNodeId, target: id, id: `${connectEndSourceNodeId}--${nodeId}` }
+			];
+			console.log('connected edge!');
+		}
+
+		connectEndSourceNodeId = null;
 	}
 
 	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
@@ -237,14 +264,13 @@
 			createNode(nodeType, nodeCreationPosition);
 		}
 
-		showPalette = false;
+		$isObjectPaletteVisible = false;
 	}
 
-	function handlePaletteCancel() {
-		showPalette = false;
+	function handleObjectPaletteCancel() {
+		$isObjectPaletteVisible = false;
 	}
 
-	// Handle command palette
 	function handleCommandPaletteCancel() {
 		showCommandPalette = false;
 	}
@@ -271,14 +297,18 @@
 			const centerY = window.innerHeight / 2 - 200;
 			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 			showCommandPalette = true;
-		}
-		// Handle 'n' key for object palette
-		else if (event.key.toLowerCase() === 'n' && !showPalette && !showCommandPalette && !isTyping) {
+		} else if (
+			event.key.toLowerCase() === 'n' &&
+			!$isObjectPaletteVisible &&
+			!showCommandPalette &&
+			!isTyping
+		) {
+			// Handle 'n' key for object palette
 			event.preventDefault();
 
 			// Convert screen coordinates to flow coordinates for accurate node placement
 			nodeCreationPosition = screenToFlowPosition(lastMousePosition);
-			showPalette = true;
+			$isObjectPaletteVisible = true;
 		}
 	}
 
@@ -311,6 +341,8 @@
 			fitView
 			class="bg-zinc-900"
 			proOptions={{ hideAttribution: true }}
+			onconnectend={handleConnectEnd}
+			colorMode="dark"
 		>
 			<Background bgColor="#18181b" gap={16} />
 			<BackgroundOutputCanvas />
@@ -323,8 +355,7 @@
 			nodeTypes={visibleNodeTypes}
 			position={lastMousePosition}
 			onselect={handlePaletteSelect}
-			oncancel={handlePaletteCancel}
-			visible={showPalette}
+			oncancel={handleObjectPaletteCancel}
 		/>
 
 		<!-- Command Palette -->

@@ -35,7 +35,7 @@
 	const code = $derived(data.code || '');
 
 	const borderColor = $derived.by(() => {
-		if (selected) return 'border-yellow-500';
+		if (selected) return 'border-zinc-400';
 		if (isRunning) return 'border-pink-500';
 		if (isUserMessageListenerActive) return 'border-emerald-500';
 

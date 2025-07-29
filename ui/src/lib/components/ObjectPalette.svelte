@@ -2,16 +2,16 @@
 	import { onMount } from 'svelte';
 	import { match } from 'ts-pattern';
 	import { PRESETS } from '$lib/presets/presets';
+	import { isObjectPaletteVisible } from '../../stores/ui.store';
 
 	interface Props {
 		nodeTypes: Record<string, any>;
 		position: { x: number; y: number };
 		onselect: (nodeType: string, isPreset?: boolean) => void;
 		oncancel: () => void;
-		visible?: boolean;
 	}
 
-	let { nodeTypes, position, onselect: onSelect, oncancel: onCancel, visible }: Props = $props();
+	let { nodeTypes, position, onselect: onSelect, oncancel: onCancel }: Props = $props();
 
 	let searchQuery = $state('');
 	let selectedIndex = $state(0);
@@ -41,7 +41,7 @@
 	});
 
 	$effect(() => {
-		if (visible) {
+		if ($isObjectPaletteVisible) {
 			searchInput?.focus();
 		}
 	});
@@ -117,7 +117,7 @@
 	bind:this={paletteContainer}
 	class={[
 		'absolute z-50 w-64 rounded-lg border border-zinc-600 bg-zinc-900/50 shadow-lg backdrop-blur-xl',
-		visible ? '' : 'hidden'
+		$isObjectPaletteVisible ? '' : 'hidden'
 	]}
 	style="left: {position.x}px; top: {position.y}px;"
 >

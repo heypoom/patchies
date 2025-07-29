@@ -60,7 +60,7 @@
 		send(msgText);
 	}
 
-	const borderColor = $derived(selected ? 'border-yellow-500' : 'border-zinc-600');
+	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-600');
 </script>
 
 <div class="relative">

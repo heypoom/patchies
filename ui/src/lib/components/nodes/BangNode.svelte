@@ -28,7 +28,7 @@
 					onclick={sendBang}
 					class={[
 						'h-10 w-10 cursor-pointer rounded-full border bg-zinc-900 font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600',
-						selected ? 'border-yellow-500' : 'border-zinc-600'
+						selected ? 'border-zinc-400' : 'border-zinc-600'
 					]}
 					aria-label="send bang"
 				>
