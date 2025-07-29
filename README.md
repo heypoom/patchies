@@ -115,3 +115,7 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 
 - [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
 - You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl`) to derive more visual effects.
+
+## Hiding AI features
+
+If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features". This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`.
