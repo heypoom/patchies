@@ -46,7 +46,7 @@
 	function handleMessage(message: Message) {
 		if (message.data.type === 'set') {
 			updateNodeData(nodeId, { ...data, code: message.data.code });
-		} else if (message.data.type === 'run' || message.data.type === 'bang') {
+		} else if (message.data.type === 'run') {
 			executeCode();
 		}
 	}
