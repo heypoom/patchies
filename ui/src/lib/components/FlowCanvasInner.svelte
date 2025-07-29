@@ -367,6 +367,7 @@
 				{edges}
 				setNodes={(newNodes) => {
 					nodes = newNodes;
+					nodeId = newNodes.length;
 				}}
 				setEdges={(newEdges) => {
 					edges = newEdges;
