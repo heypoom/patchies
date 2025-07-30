@@ -13,10 +13,12 @@ export class GLSLCanvasManager {
 	private code = DEFAULT_GLSL_CODE;
 
 	constructor() {
+		// const [width, height] = this.glContext.size;
+
 		this.fallbackTexture = this.regl.texture({
 			width: 1,
 			height: 1,
-			data: new Uint8Array([200, 50, 50, 255])
+			data: new Uint8Array([1, 1, 1, 1])
 		});
 
 		this.startRenderLoop();
@@ -32,7 +34,6 @@ export class GLSLCanvasManager {
 
 	updateCode(code: string) {
 		this.code = code;
-		this.frameHandle?.cancel();
 
 		try {
 			this.startRenderLoop();
@@ -44,13 +45,22 @@ export class GLSLCanvasManager {
 	private startRenderLoop() {
 		const [width, height] = this.glContext.size;
 
-		this.drawCommand = getShadertoyDrawCommand({
+		this.frameHandle?.cancel();
+
+		const framebuffer = this.regl.framebuffer({
+			color: this.regl.texture({
+				width,
+				height,
+				wrapS: 'clamp',
+				wrapT: 'clamp'
+			}),
+			depthStencil: false
+		});
+
+		const drawCommand = getShadertoyDrawCommand({
 			code: this.code,
 			regl: this.regl,
-			lastTime: this.lastTime,
-			frameCounter: this.frameCounter,
-			mouseX: 0,
-			mouseY: 0,
+			framebuffer,
 			width,
 			height,
 			textures: [
@@ -61,12 +71,62 @@ export class GLSLCanvasManager {
 			]
 		});
 
+		const copyCommand = this.regl({
+			framebuffer: null,
+
+			vert: `
+				precision highp float;
+
+				attribute vec2 position;
+				varying vec2 uv;
+
+				void main() {
+					uv = 0.5 * (position + 1.0);
+					gl_Position = vec4(position, 0, 1);
+				}
+			`,
+			frag: `
+				precision highp float;
+
+				uniform sampler2D iChannel0;
+				uniform float iTime;
+				varying vec2 uv;
+
+				void main() {
+					gl_FragColor = texture2D(iChannel0, uv);
+				}
+			`,
+			attributes: {
+				position: [
+					[-1, -1],
+					[1, -1],
+					[-1, 1],
+					[1, 1]
+				]
+			},
+			uniforms: {
+				iChannel0: framebuffer,
+				iTime: ({ time }) => time,
+				iResolution: ({ pixelRatio }) => {
+					return [width * pixelRatio, height * pixelRatio, 1.0];
+				}
+			},
+			primitive: 'triangle strip',
+			count: 4
+		});
+
 		this.frameHandle = this.regl.frame((context) => {
-			this.regl?.clear({ color: [0, 0, 0, 1] });
-			this.drawCommand?.(context);
+			drawCommand({
+				lastTime: this.lastTime,
+				frameCounter: this.frameCounter,
+				mouseX: 0,
+				mouseY: 0
+			});
+
+			copyCommand();
 
 			this.lastTime = context.time;
-			this.frameCounter++;
+			this.frameCounter += 1;
 		});
 	}
 }

@@ -1,12 +1,5 @@
 import regl from 'regl';
 
-const BUFFER = [
-	[-1, -1],
-	[1, -1],
-	[-1, 1],
-	[1, 1]
-];
-
 // Render a simple quad for a vertex shader.
 const VERTEX_SHADER = `
   precision mediump float;
@@ -20,23 +13,17 @@ const VERTEX_SHADER = `
 export function getShadertoyDrawCommand({
 	code,
 	regl,
-	lastTime,
-	frameCounter,
-	mouseX,
-	mouseY,
 	width,
 	height,
-	textures
+	textures,
+	framebuffer
 }: {
 	code: string;
 	regl: regl.Regl;
-	lastTime: number;
-	frameCounter: number;
-	mouseX: number;
-	mouseY: number;
 	width: number;
 	height: number;
 	textures: [regl.Texture2D, regl.Texture2D, regl.Texture2D, regl.Texture2D];
+	framebuffer: regl.Framebuffer2D;
 }): regl.DrawCommand {
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `
@@ -63,11 +50,22 @@ export function getShadertoyDrawCommand({
     }
   `;
 
+	type P = { lastTime: number; iFrame: number; mouseX: number; mouseY: number };
+
 	return regl({
 		frag: fragmentShader,
 		vert: VERTEX_SHADER,
+		framebuffer,
 
-		attributes: { position: regl.buffer(BUFFER) },
+		attributes: {
+			position: regl.buffer([
+				[-1, -1],
+				[1, -1],
+				[-1, 1],
+				[1, 1]
+			])
+		},
+
 		primitive: 'triangle strip',
 		count: 4,
 
@@ -77,9 +75,9 @@ export function getShadertoyDrawCommand({
 			},
 
 			iTime: ({ time }) => time,
-			iTimeDelta: ({ time }) => time - lastTime,
-			iFrame: () => frameCounter,
-			iMouse: () => [mouseX, mouseY, 0, 0],
+			iTimeDelta: ({ time }, props: P) => time - props.lastTime,
+			iFrame: (_, props: P) => props.iFrame,
+			iMouse: (_, props: P) => [props.mouseX, props.mouseY, 0, 0],
 			iDate: () => getDate(),
 			iChannel0: () => textures[0],
 			iChannel1: () => textures[1],
