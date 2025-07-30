@@ -4,7 +4,6 @@ import { getShadertoyDrawCommand } from './shadertoy-draw';
 import { DEFAULT_GLSL_CODE } from './constants';
 
 export class GLSLCanvasManager {
-	private drawCommand: regl.DrawCommand | null = null;
 	private frameHandle: regl.Cancellable | null = null;
 
 	private lastTime: number = 0;
@@ -72,8 +71,6 @@ export class GLSLCanvasManager {
 		});
 
 		const copyCommand = this.regl({
-			framebuffer: null,
-
 			vert: `
 				precision highp float;
 
@@ -89,7 +86,6 @@ export class GLSLCanvasManager {
 				precision highp float;
 
 				uniform sampler2D iChannel0;
-				uniform float iTime;
 				varying vec2 uv;
 
 				void main() {
@@ -105,25 +101,23 @@ export class GLSLCanvasManager {
 				]
 			},
 			uniforms: {
-				iChannel0: framebuffer,
-				iTime: ({ time }) => time,
-				iResolution: ({ pixelRatio }) => {
-					return [width * pixelRatio, height * pixelRatio, 1.0];
-				}
+				iChannel0: (_, props: { iChannel0: regl.Framebuffer2D }) => props.iChannel0
 			},
 			primitive: 'triangle strip',
 			count: 4
 		});
 
 		this.frameHandle = this.regl.frame((context) => {
-			drawCommand({
-				lastTime: this.lastTime,
-				frameCounter: this.frameCounter,
-				mouseX: 0,
-				mouseY: 0
+			framebuffer.use(() => {
+				drawCommand({
+					lastTime: this.lastTime,
+					frameCounter: this.frameCounter,
+					mouseX: 0,
+					mouseY: 0
+				});
 			});
 
-			copyCommand();
+			copyCommand({ iChannel0: framebuffer });
 
 			this.lastTime = context.time;
 			this.frameCounter += 1;
