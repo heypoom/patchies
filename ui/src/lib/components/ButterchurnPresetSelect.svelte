@@ -34,6 +34,7 @@
 	// rest of the form with the keyboard.
 	function closeAndFocusTrigger() {
 		open = false;
+
 		tick().then(() => {
 			triggerRef.focus();
 		});
