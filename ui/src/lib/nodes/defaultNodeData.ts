@@ -15,7 +15,7 @@ export interface NodeData {
 
 export function getDefaultNodeData(nodeType: string): NodeData {
 	return match(nodeType)
-		.with('js', () => ({ code: DEFAULT_JS_CODE }))
+		.with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
 		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
 		.with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))
 		.with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))
