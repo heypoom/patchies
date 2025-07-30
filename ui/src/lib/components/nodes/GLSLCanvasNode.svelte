@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { GLSLCanvasManager } from '$lib/canvas/GLSLCanvasManager';
@@ -10,12 +10,12 @@
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
-	
+
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
-	let containerElement: HTMLDivElement;
-	let canvasManager: GLSLCanvasManager | null = null;
+	let previewCanvas: HTMLCanvasElement;
+	let canvasManager = new GLSLCanvasManager();
 	let messageContext: MessageContext;
 	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
@@ -23,54 +23,32 @@
 	const code = $derived(data.code || '');
 
 	onMount(() => {
-		// Initialize message context and video system
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
 
-		// Subscribe to video canvas sources - GLSL needs to handle multiple channels
 		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			if (canvasManager) {
-				// Pass all canvases to GLSL manager for iChannel0-3
-				canvasManager.setVideoCanvases(canvases);
-			}
+			// TODO: video system will use FBOs instead
 		});
-
-		if (containerElement) {
-			canvasManager = new GLSLCanvasManager(containerElement);
-			canvasManager.createCanvas({ code });
-			registerVideoSource();
-		}
 	});
 
 	onDestroy(() => {
-		if (canvasManager) {
-			canvasManager.destroy();
-		}
+		// TODO: destroy canvas manager
+
 		if (messageContext) {
 			messageContext.destroy();
 		}
+
 		if (videoSystem) {
 			videoSystem.unregisterNode(nodeId);
 		}
 	});
 
 	function updateShader() {
-		if (canvasManager) {
-			canvasManager.updateCode(code);
-		}
+		canvasManager?.updateCode(code);
 	}
 
 	function toggleEditor() {
 		showEditor = !showEditor;
-	}
-
-	function registerVideoSource() {
-		if (canvasManager && videoSystem) {
-			const canvas = canvasManager.getCanvas();
-			if (canvas) {
-				videoSystem.registerVideoSource(nodeId, canvas);
-			}
-		}
 	}
 </script>
 
@@ -83,7 +61,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -92,7 +70,6 @@
 			</div>
 
 			<div class="relative">
-				<!-- 4 video inlets for iChannel0-3 -->
 				<VideoHandle
 					type="target"
 					position={Position.Top}
@@ -100,6 +77,7 @@
 					class="!left-17"
 					title="Video input iChannel0"
 				/>
+
 				<VideoHandle
 					type="target"
 					position={Position.Top}
@@ -107,6 +85,7 @@
 					class="!left-22"
 					title="Video input iChannel1"
 				/>
+
 				<VideoHandle
 					type="target"
 					position={Position.Top}
@@ -114,6 +93,7 @@
 					class="!left-27"
 					title="Video input iChannel2"
 				/>
+
 				<VideoHandle
 					type="target"
 					position={Position.Top}
@@ -122,10 +102,14 @@
 					title="Video input iChannel3"
 				/>
 
-				<div
-					bind:this={containerElement}
-					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
-				></div>
+				<div class="rounded-md bg-zinc-900">
+					<canvas
+						bind:this={previewCanvas}
+						width={canvasManager?.width}
+						height={canvasManager?.height}
+						class="h-64 w-64 rounded-md border border-zinc-600 shadow-lg"
+					></canvas>
+				</div>
 
 				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
 			</div>
