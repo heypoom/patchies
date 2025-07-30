@@ -4,8 +4,6 @@ import { getShadertoyDrawCommand } from './shadertoy-draw';
 import { DEFAULT_GLSL_CODE } from './constants';
 
 export class GLSLCanvasManager {
-	public previewCanvas: HTMLCanvasElement | null = null;
-
 	private drawCommand: regl.DrawCommand | null = null;
 	private frameHandle: regl.Cancellable | null = null;
 
@@ -70,12 +68,5 @@ export class GLSLCanvasManager {
 			this.lastTime = context.time;
 			this.frameCounter++;
 		});
-	}
-
-	public startPreviewLoop() {
-		const bitmap = this.glContext.offscreenCanvas.transferToImageBitmap();
-		this.previewCanvas?.getContext('bitmaprenderer')?.transferFromImageBitmap(bitmap);
-
-		requestAnimationFrame(this.startPreviewLoop.bind(this));
 	}
 }

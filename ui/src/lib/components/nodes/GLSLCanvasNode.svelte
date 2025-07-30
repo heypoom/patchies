@@ -22,16 +22,22 @@
 
 	const code = $derived(data.code || '');
 
+	function startPreview() {
+		const bitmap = canvasManager.glContext.offscreenCanvas.transferToImageBitmap();
+		previewCanvas?.getContext('bitmaprenderer')?.transferFromImageBitmap(bitmap);
+
+		requestAnimationFrame(startPreview);
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
-		canvasManager.previewCanvas = previewCanvas;
 
 		videoSystem.onVideoCanvas(nodeId, (canvases) => {
 			// TODO: video system will use FBOs instead
 		});
 
-		canvasManager.startPreviewLoop();
+		startPreview();
 	});
 
 	onDestroy(() => {
