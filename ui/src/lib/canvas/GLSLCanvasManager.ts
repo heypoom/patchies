@@ -4,8 +4,7 @@ import { getShadertoyDrawCommand } from './shadertoy-draw';
 import { DEFAULT_GLSL_CODE } from './constants';
 
 export class GLSLCanvasManager {
-	public width = 500;
-	public height = 500;
+	public previewCanvas: HTMLCanvasElement | null = null;
 
 	private drawCommand: regl.DrawCommand | null = null;
 	private frameHandle: regl.Cancellable | null = null;
@@ -13,7 +12,7 @@ export class GLSLCanvasManager {
 	private lastTime: number = 0;
 	private frameCounter: number = 0;
 	private fallbackTexture: regl.Texture2D;
-	private code: string = DEFAULT_GLSL_CODE;
+	private code = DEFAULT_GLSL_CODE;
 
 	constructor() {
 		this.fallbackTexture = this.regl.texture({
@@ -21,10 +20,16 @@ export class GLSLCanvasManager {
 			height: 1,
 			data: new Uint8Array([200, 50, 50, 255])
 		});
+
+		this.startRenderLoop();
+	}
+
+	get glContext() {
+		return GLContextManager.getInstance();
 	}
 
 	get regl() {
-		return GLContextManager.getInstance().regl;
+		return this.glContext.regl;
 	}
 
 	updateCode(code: string) {
@@ -39,6 +44,8 @@ export class GLSLCanvasManager {
 	}
 
 	private startRenderLoop() {
+		const [width, height] = this.glContext.size;
+
 		this.drawCommand = getShadertoyDrawCommand({
 			code: this.code,
 			regl: this.regl,
@@ -46,8 +53,8 @@ export class GLSLCanvasManager {
 			frameCounter: this.frameCounter,
 			mouseX: 0,
 			mouseY: 0,
-			width: this.width,
-			height: this.height,
+			width,
+			height,
 			textures: [
 				this.fallbackTexture,
 				this.fallbackTexture,
@@ -63,5 +70,12 @@ export class GLSLCanvasManager {
 			this.lastTime = context.time;
 			this.frameCounter++;
 		});
+	}
+
+	public startPreviewLoop() {
+		const bitmap = this.glContext.offscreenCanvas.transferToImageBitmap();
+		this.previewCanvas?.getContext('bitmaprenderer')?.transferFromImageBitmap(bitmap);
+
+		requestAnimationFrame(this.startPreviewLoop.bind(this));
 	}
 }

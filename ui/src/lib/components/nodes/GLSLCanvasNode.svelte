@@ -25,10 +25,13 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		videoSystem = VideoSystem.getInstance();
+		canvasManager.previewCanvas = previewCanvas;
 
 		videoSystem.onVideoCanvas(nodeId, (canvases) => {
 			// TODO: video system will use FBOs instead
 		});
+
+		canvasManager.startPreviewLoop();
 	});
 
 	onDestroy(() => {
@@ -105,9 +108,10 @@
 				<div class="rounded-md bg-zinc-900">
 					<canvas
 						bind:this={previewCanvas}
-						width={canvasManager?.width}
-						height={canvasManager?.height}
-						class="h-64 w-64 rounded-md border border-zinc-600 shadow-lg"
+						width={canvasManager.width}
+						height={canvasManager.height}
+						class="h-[200px] w-[200px] rounded-md"
+						data-preview-canvas="true"
 					></canvas>
 				</div>
 

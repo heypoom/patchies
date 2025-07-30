@@ -7,9 +7,12 @@ export class GLContextManager {
 	public offscreenCanvas: OffscreenCanvas;
 	public gl: WebGLRenderingContext | null = null;
 	public regl: regl.Regl;
+	public size = [500, 500];
 
 	constructor() {
-		this.offscreenCanvas = new OffscreenCanvas(500, 500);
+		const [w, h] = this.size;
+
+		this.offscreenCanvas = new OffscreenCanvas(w, h);
 		this.gl = this.offscreenCanvas.getContext('webgl')!;
 
 		this.regl = regl({
