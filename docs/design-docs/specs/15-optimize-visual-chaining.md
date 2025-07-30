@@ -22,6 +22,20 @@ To improve this, we will implement a FBO-based system for the `glsl` nodes that 
   - We need to mark the `glsl` node as compatible with FBO. If an node is not framebuffer-compatible, we will fall back to `texture.subimage(canvas)` to copy from CPU to GPU. We try to use framebuffers when possible.
   - In the future, we will try to make more nodes compatible with framebuffers, but for now we will focus on the `glsl` node.
 
+## Supporting other video nodes
+
+- `p5`
+  - P5 has support for `createGraphics()` and `createFramebuffer()` which can be used for creating framebuffers.
+    - `createFramebuffer` calls `gl.createFramebuffer()` under the hood.
+    - We'll have to figure out how to pass this to the `glsl` node though.
+  - `createFramebuffer` can only be used in webgl mode.
+  - `createGraphics(width, height, WEBGL)` renders to WebGL 2.
+- `hydra`
+  - Hydra uses REGL under the hood.
+  - We might need to monkey-patch Hydra to use our shared `OffscreenCanvas` and `WebGLRenderingContext`. Right now `_initRegl` passes `canvas: this.canvas`, but we need to pass `gl` instead, so we can pass the offscreen canvas' rendering context.
+- `canvas`
+  - We can easily use `OffscreenCanvas` here instead.
+
 ## Affected Files
 
 - `ui/src/lib/canvas/GLSLCanvasManager.ts`
