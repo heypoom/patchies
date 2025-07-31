@@ -44,8 +44,17 @@ export type WorkerMessage =
 	| { type: 'hello'; message: string; timestamp: number }
 	| { type: 'buildRenderGraph'; nodes: any[]; edges: any[] }
 	| { type: 'renderFrame'; timestamp: number }
-	| { type: 'updatePreview'; nodeId: string; buffer: ArrayBuffer }
+	| { type: 'startAnimation' }
+	| { type: 'stopAnimation' }
+	| { type: 'togglePreview'; nodeId: string; enabled: boolean }
+	| { type: 'animationFrame'; outputBitmap: ImageBitmap; timestamp: number }
+	| { type: 'previewFrame'; nodeId: string; buffer: ArrayBuffer; width: number; height: number; timestamp: number }
 	| { type: 'updateOutput'; buffer: ArrayBuffer };
+
+// Preview system types
+export interface PreviewState {
+	[nodeId: string]: boolean; // true = preview enabled, false = disabled
+}
 
 // Node type compatibility
 export const FBO_COMPATIBLE_TYPES = ['glsl'] as const;

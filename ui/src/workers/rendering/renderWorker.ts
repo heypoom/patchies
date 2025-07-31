@@ -26,6 +26,10 @@ self.onmessage = (event) => {
 		case 'stopAnimation':
 			handleStopAnimation();
 			break;
+		
+		case 'togglePreview':
+			handleTogglePreview(data.nodeId, data.enabled);
+			break;
 
 		default:
 			// Send hello world message back to main thread
@@ -119,8 +123,8 @@ function handleStartAnimation() {
 	fboRenderer.startRenderLoop(currentRenderGraph, () => {
 		frameCounter++;
 
+		// Send main output
 		const outputBitmap = fboRenderer!.getOutputBitmap();
-
 		if (outputBitmap) {
 			self.postMessage(
 				{
@@ -131,6 +135,22 @@ function handleStartAnimation() {
 				[outputBitmap]
 			);
 		}
+
+		// Send previews for enabled nodes
+		const previewPixels = fboRenderer!.renderPreviews();
+		for (const [nodeId, pixels] of previewPixels) {
+			self.postMessage(
+				{
+					type: 'previewFrame',
+					nodeId,
+					buffer: pixels.buffer,
+					width: 200,
+					height: 150,
+					timestamp: Date.now()
+				},
+				[pixels.buffer]
+			);
+		}
 	});
 }
 
@@ -138,6 +158,19 @@ function handleStopAnimation() {
 	isAnimating = false;
 	// Note: We don't actually stop the loop here - in a real implementation
 	// we'd need to store the animation ID and cancel it
+}
+
+function handleTogglePreview(nodeId: string, enabled: boolean) {
+	if (fboRenderer) {
+		fboRenderer.togglePreview(nodeId, enabled);
+		
+		self.postMessage({
+			type: 'previewToggled',
+			nodeId,
+			enabled,
+			timestamp: Date.now()
+		});
+	}
 }
 
 // Send initial message when worker starts

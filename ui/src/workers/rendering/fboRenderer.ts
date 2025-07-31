@@ -2,7 +2,7 @@
 import regl from 'regl';
 import { WorkerGLContext } from './workerGLContext.js';
 import { DrawToFbo } from '../../lib/canvas/shadertoy-draw.js';
-import type { RenderGraph, RenderNode, FBONode } from '../../lib/rendering/types.js';
+import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types.js';
 
 export class FBORenderer {
 	private glContext: WorkerGLContext;
@@ -11,6 +11,8 @@ export class FBORenderer {
 	private lastTime: number = 0;
 	private frameCount: number = 0;
 	private startTime: number = Date.now();
+	private previewState: PreviewState = {};
+	private previewSize = { width: 200, height: 150 };
 
 	constructor() {
 		this.glContext = WorkerGLContext.getInstance();
@@ -63,13 +65,33 @@ export class FBORenderer {
 				framebuffer,
 				texture,
 				renderCommand,
-				needsPreview: true, // For now, all nodes need preview
-				previewSize: { width: 200, height: 150 }
+				needsPreview: false, // Default to false, can be enabled via togglePreview
+				previewSize: this.previewSize
 			};
 
 			this.fboNodes.set(node.id, fboNode);
+			// Initialize preview state to false
+			this.previewState[node.id] = false;
 		}
 
+	}
+
+	/**
+	 * Toggle preview rendering for a specific node
+	 */
+	togglePreview(nodeId: string, enabled: boolean) {
+		if (this.fboNodes.has(nodeId)) {
+			this.previewState[nodeId] = enabled;
+			const fboNode = this.fboNodes.get(nodeId)!;
+			fboNode.needsPreview = enabled;
+		}
+	}
+
+	/**
+	 * Get list of nodes with preview enabled
+	 */
+	getEnabledPreviews(): string[] {
+		return Object.keys(this.previewState).filter(nodeId => this.previewState[nodeId]);
 	}
 
 	/**
@@ -121,6 +143,95 @@ export class FBORenderer {
 		if (finalTexture) {
 			this.renderToCanvas(finalTexture);
 		}
+	}
+
+	/**
+	 * Render previews for enabled nodes and return their pixel data
+	 */
+	renderPreviews(): Map<string, Uint8Array> {
+		const previewPixels = new Map<string, Uint8Array>();
+		const enabledPreviews = this.getEnabledPreviews();
+		
+		for (const nodeId of enabledPreviews) {
+			const fboNode = this.fboNodes.get(nodeId);
+			if (fboNode) {
+				const pixels = this.renderNodePreview(fboNode);
+				if (pixels) {
+					previewPixels.set(nodeId, pixels);
+				}
+			}
+		}
+		
+		return previewPixels;
+	}
+
+	/**
+	 * Render a single node's preview using regl.read() as per spec
+	 */
+	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
+		const { width, height } = this.previewSize;
+		
+		// Create temporary framebuffer for resized preview
+		const previewTexture = this.glContext.regl.texture({
+			width,
+			height,
+			wrapS: 'clamp',
+			wrapT: 'clamp'
+		});
+
+		const previewFramebuffer = this.glContext.regl.framebuffer({
+			color: previewTexture,
+			depthStencil: false
+		});
+
+		// Create blit command to render FBO texture to preview framebuffer at reduced resolution
+		const blitCommand = this.glContext.regl({
+			frag: `
+				precision highp float;
+				uniform sampler2D texture;
+				varying vec2 uv;
+				void main() {
+					gl_FragColor = texture2D(texture, uv);
+				}
+			`,
+			vert: `
+				precision highp float;
+				attribute vec2 position;
+				varying vec2 uv;
+				void main() {
+					uv = 0.5 * (position + 1.0);
+					gl_Position = vec4(position, 0, 1);
+				}
+			`,
+			attributes: {
+				position: this.glContext.regl.buffer([
+					[-1, -1], [1, -1], [-1, 1], [1, 1]
+				])
+			},
+			uniforms: {
+				texture: fboNode.texture
+			},
+			primitive: 'triangle strip',
+			count: 4,
+			framebuffer: previewFramebuffer
+		});
+
+		// Render to preview framebuffer and read pixels
+		let pixels: Uint8Array;
+		
+		previewFramebuffer.use(() => {
+			this.glContext.regl.clear({ color: [0, 0, 0, 1] });
+			blitCommand();
+			
+			// Read pixels from the framebuffer using regl.read()
+			pixels = this.glContext.regl.read() as Uint8Array;
+		});
+
+		// Clean up temporary resources
+		previewTexture.destroy();
+		previewFramebuffer.destroy();
+		
+		return pixels!
 	}
 
 	/**
