@@ -163,7 +163,7 @@ export class FBORenderer {
 			depthStencil: false
 		});
 
-		const blitCommand = this.glContext.regl({
+		const previewBlitCommand = this.glContext.regl({
 			frag: `
 				precision highp float;
 				uniform sampler2D texture;
@@ -202,7 +202,7 @@ export class FBORenderer {
 
 		previewFramebuffer.use(() => {
 			this.glContext.regl.clear({ color: [0, 0, 0, 1] });
-			blitCommand();
+			previewBlitCommand();
 
 			// Read pixels from the framebuffer using regl.read()
 			pixels = this.glContext.regl.read() as Uint8Array;
@@ -216,7 +216,7 @@ export class FBORenderer {
 	}
 
 	private renderTextureToMainOutput(texture: regl.Texture2D) {
-		const blitCommand = this.glContext.regl({
+		const outputBlitCommand = this.glContext.regl({
 			frag: `
 				precision highp float;
 				uniform sampler2D texture;
@@ -253,7 +253,7 @@ export class FBORenderer {
 		});
 
 		this.glContext.regl.clear({ color: [0, 0, 0, 1] });
-		blitCommand();
+		outputBlitCommand();
 	}
 
 	getOutputBitmap(): ImageBitmap | null {
