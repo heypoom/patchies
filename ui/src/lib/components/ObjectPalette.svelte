@@ -136,7 +136,7 @@
 	<!-- Results List -->
 	<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto">
 		{#if filteredItems.length === 0}
-			<div class="p-3 text-sm italic text-zinc-400">No objects found</div>
+			<div class="p-3 text-sm text-zinc-400 italic">No objects found</div>
 		{:else}
 			{#each filteredItems as item, index}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->

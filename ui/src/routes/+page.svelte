@@ -8,15 +8,15 @@
 	onMount(() => {
 		// Create worker using Vite's constructor import
 		worker = new RenderWorker();
-		
+
 		// Listen for messages from worker
 		worker.onmessage = (event) => {
 			console.log('Main thread received:', event.data);
 		};
-		
+
 		// Send test message to worker
 		worker.postMessage({ type: 'test', message: 'Hello from main thread!' });
-		
+
 		return () => {
 			worker?.terminate();
 		};
