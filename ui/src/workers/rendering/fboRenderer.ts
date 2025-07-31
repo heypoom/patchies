@@ -6,6 +6,7 @@ import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 export class FBORenderer {
 	public renderSize = [800, 600] as [w: number, h: number];
 	public previewSize = [200, 150] as [w: number, h: number];
+	public renderGraph: RenderGraph | null = null;
 
 	private offscreenCanvas: OffscreenCanvas;
 	private gl: WebGLRenderingContext | null = null;
@@ -37,6 +38,7 @@ export class FBORenderer {
 
 	/** Build FBOs for all nodes in the render graph */
 	buildFBOs(renderGraph: RenderGraph) {
+		this.renderGraph = renderGraph;
 		this.fboNodes.clear();
 
 		const [width, height] = this.renderSize;
@@ -78,8 +80,9 @@ export class FBORenderer {
 	}
 
 	setPreviewEnabled(nodeId: string, enabled: boolean) {
+		this.previewState[nodeId] = enabled;
+
 		if (this.fboNodes.has(nodeId)) {
-			this.previewState[nodeId] = enabled;
 			const fboNode = this.fboNodes.get(nodeId)!;
 			fboNode.needsPreview = enabled;
 		}
@@ -94,8 +97,8 @@ export class FBORenderer {
 	}
 
 	/** Render a single frame using the render graph */
-	renderFrame(renderGraph: RenderGraph): void {
-		if (this.fboNodes.size === 0) {
+	renderFrame(): void {
+		if (!this.renderGraph || this.fboNodes.size === 0) {
 			return;
 		}
 
@@ -107,8 +110,8 @@ export class FBORenderer {
 		let finalTexture: regl.Texture2D | null = null;
 
 		// Render each node in topological order
-		for (const nodeId of renderGraph.sortedNodes) {
-			const node = renderGraph.nodes.find((n) => n.id === nodeId);
+		for (const nodeId of this.renderGraph.sortedNodes) {
+			const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
 			const fboNode = this.fboNodes.get(nodeId);
 
 			if (!node || !fboNode) {
@@ -273,17 +276,17 @@ export class FBORenderer {
 		return this.offscreenCanvas.transferToImageBitmap();
 	}
 
-	startRenderLoop(renderGraph: RenderGraph, onFrame?: () => void) {
+	startRenderLoop(onFrame?: () => void) {
 		this.stopRenderLoop();
 		this.isAnimating = true;
 
 		const f = this.regl.frame(() => {
-			if (!this.isAnimating) {
-				f?.cancel();
-				return;
-			}
+			// if (!this.isAnimating) {
+			// 	// f?.cancel();
+			// 	return;
+			// }
 
-			this.renderFrame(renderGraph);
+			this.renderFrame(this.renderGraph);
 			onFrame?.();
 		});
 	}

@@ -42,7 +42,7 @@
 
 		setTimeout(() => {
 			glSystem.setPreviewEnabled(nodeId, true);
-		}, 1000);
+		});
 	});
 
 	onDestroy(() => {

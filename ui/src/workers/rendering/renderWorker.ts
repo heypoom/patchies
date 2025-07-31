@@ -5,7 +5,6 @@ import { FBORenderer } from './fboRenderer.js';
 
 const fboRenderer: FBORenderer = new FBORenderer();
 
-let currentRenderGraph: RenderGraph | null = null;
 let isRunning: boolean = false;
 
 self.onmessage = (event) => {
@@ -20,10 +19,6 @@ self.onmessage = (event) => {
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
-	currentRenderGraph = graph;
-
-	console.log('[render worker] render graph =', graph);
-
 	try {
 		fboRenderer.buildFBOs(graph);
 	} catch (error) {
@@ -41,7 +36,7 @@ function handleSetOutputEnabled(enabled: boolean) {
 }
 
 function handleStartAnimation() {
-	if (!currentRenderGraph || !fboRenderer) {
+	if (!fboRenderer.renderGraph) {
 		return;
 	}
 
@@ -51,9 +46,12 @@ function handleStartAnimation() {
 
 	isRunning = true;
 
-	fboRenderer.startRenderLoop(currentRenderGraph, () => {
+	fboRenderer.startRenderLoop(() => {
 		// do not render if there are no nodes and edges
-		if (currentRenderGraph?.nodes?.length === 0 && currentRenderGraph?.edges?.length === 0) {
+		if (
+			fboRenderer.renderGraph?.nodes?.length === 0 &&
+			fboRenderer.renderGraph?.edges?.length === 0
+		) {
 			return;
 		}
 
