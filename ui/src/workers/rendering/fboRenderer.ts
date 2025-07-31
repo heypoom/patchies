@@ -18,6 +18,9 @@ export class FBORenderer {
 	private previewState: PreviewState = {};
 	private isAnimating: boolean = false;
 
+	public isOutputEnabled: boolean = true;
+	public shouldProcessPreviews: boolean = false;
+
 	constructor() {
 		const [width, height] = this.renderSize;
 
@@ -74,13 +77,15 @@ export class FBORenderer {
 		}
 	}
 
-	/** Toggle preview rendering for a specific node */
-	togglePreview(nodeId: string, enabled: boolean) {
+	setPreviewEnabled(nodeId: string, enabled: boolean) {
 		if (this.fboNodes.has(nodeId)) {
 			this.previewState[nodeId] = enabled;
 			const fboNode = this.fboNodes.get(nodeId)!;
 			fboNode.needsPreview = enabled;
 		}
+
+		const enabledPreviews = this.getEnabledPreviews() ?? [];
+		this.shouldProcessPreviews = enabledPreviews.length > 0;
 	}
 
 	/** Get list of nodes with preview enabled */

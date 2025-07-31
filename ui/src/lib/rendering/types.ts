@@ -33,14 +33,11 @@ export interface FBONode {
 
 // Message types for worker communication
 export type WorkerMessage =
-	| { type: 'ready'; message: string; timestamp: number }
-	| { type: 'hello'; message: string; timestamp: number }
-	| { type: 'buildRenderGraph'; nodes: any[]; edges: any[] }
+	| { type: 'buildRenderGraph'; nodes: RenderNode[]; edges: RenderEdge[] }
 	| { type: 'startAnimation' }
 	| { type: 'stopAnimation' }
-	| { type: 'togglePreview'; nodeId: string; enabled: boolean }
+	| { type: 'setPreviewEnabled'; nodeId: string; enabled: boolean }
 	| { type: 'animationFrame'; outputBitmap: ImageBitmap }
-	| { type: 'animationStopped' }
 	| {
 			type: 'previewFrame';
 			nodeId: string;
@@ -60,6 +57,6 @@ export interface PreviewState {
 export const FBO_COMPATIBLE_TYPES = ['glsl'] as const;
 export type FBOCompatibleType = (typeof FBO_COMPATIBLE_TYPES)[number];
 
-export function isFBOCompatible(nodeType: string): nodeType is FBOCompatibleType {
+export function isFBOCompatible(nodeType?: string): nodeType is FBOCompatibleType {
 	return FBO_COMPATIBLE_TYPES.includes(nodeType as FBOCompatibleType);
 }

@@ -2,11 +2,12 @@
 	import { Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import { GLSLCanvasManager } from '$lib/canvas/GLSLCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import { match } from 'ts-pattern';
+	import type { Message } from '$lib/messages/MessageSystem';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -14,51 +15,39 @@
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
+	const width = $state(200);
+	const height = $state(150);
+
 	let previewCanvas: HTMLCanvasElement;
-	let canvasManager = new GLSLCanvasManager();
+	let previewBitmapContext: ImageBitmapRenderingContext;
 	let messageContext: MessageContext;
-	let videoSystem: VideoSystem;
+	let glSystem: GLSystem;
 	let showEditor = $state(false);
 
 	const code = $derived(data.code || '');
 
-	function startPreview() {
-		const bitmap = canvasManager.glContext.offscreenCanvas.transferToImageBitmap();
-		previewCanvas?.getContext('bitmaprenderer')?.transferFromImageBitmap(bitmap);
-
-		requestAnimationFrame(startPreview);
+	function handleMessage(message: Message) {
+		match(message.data.type).with('set', () => {
+			updateNodeData(nodeId, { ...data, code: message.data.code });
+		});
 	}
 
 	onMount(() => {
+		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 		messageContext = new MessageContext(nodeId);
-		videoSystem = VideoSystem.getInstance();
 
-		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			// TODO: video system will use FBOs instead
-		});
-
-		startPreview();
+		glSystem = GLSystem.getInstance();
+		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 	});
 
 	onDestroy(() => {
-		// TODO: destroy canvas manager
+		messageContext?.destroy();
 
-		if (messageContext) {
-			messageContext.destroy();
-		}
-
-		if (videoSystem) {
-			videoSystem.unregisterNode(nodeId);
+		// Unregister the context if we are still using it.
+		if (glSystem.previewCanvasContexts[nodeId] === previewBitmapContext) {
+			glSystem.previewCanvasContexts[nodeId] = null;
 		}
 	});
-
-	function updateShader() {
-		canvasManager?.updateCode(code);
-	}
-
-	function toggleEditor() {
-		showEditor = !showEditor;
-	}
 </script>
 
 <div class="relative flex gap-x-3">
@@ -70,9 +59,11 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
-					onclick={toggleEditor}
 					title="Edit code"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					onclick={() => {
+						showEditor = !showEditor;
+					}}
 				>
 					<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
 				</button>
@@ -114,9 +105,9 @@
 				<div class="rounded-md bg-zinc-900">
 					<canvas
 						bind:this={previewCanvas}
-						width={canvasManager.width}
-						height={canvasManager.height}
-						class="h-[200px] w-[200px] rounded-md"
+						{width}
+						{height}
+						class="rounded-md"
 						data-preview-canvas="true"
 					></canvas>
 				</div>
@@ -129,7 +120,7 @@
 	{#if showEditor}
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={updateShader} class="rounded p-1 hover:bg-zinc-700">
+				<button onclick={() => {}} class="rounded p-1 hover:bg-zinc-700">
 					<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
 				</button>
 
@@ -147,7 +138,7 @@
 					language="glsl"
 					placeholder="Write your GLSL fragment shader here..."
 					class="nodrag h-64 w-full resize-none"
-					onrun={updateShader}
+					onrun={() => {}}
 				/>
 			</div>
 		</div>

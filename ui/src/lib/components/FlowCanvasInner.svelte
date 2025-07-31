@@ -39,6 +39,7 @@
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { PRESETS } from '$lib/presets/presets';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -77,6 +78,7 @@
 	let nodeId = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let videoSystem = VideoSystem.getInstance();
+	let glSystem = GLSystem.getInstance();
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -154,6 +156,11 @@
 		}
 
 		previousNodes = currentNodes;
+	});
+
+	$effect(() => {
+		glSystem.updateRenderGraph(nodes, edges);
+		glSystem.start();
 	});
 
 	$effect(() => {
@@ -236,18 +243,6 @@
 			autosaveInterval = null;
 		}
 	});
-
-	// const handleConnectEnd: OnConnectEnd = (event, connectionState) => {
-	// 	if (connectionState.isValid) return;
-
-	// 	const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
-
-	// 	setTimeout(() => {
-	// 		connectEndConnectionState = connectionState;
-	// 		lastMousePosition = { x: clientX, y: clientY };
-	// 		$isObjectPaletteVisible = true;
-	// 	});
-	// };
 
 	// Handle drop events
 	function onDrop(event: DragEvent) {

@@ -356,7 +356,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 
 	function togglePreview(nodeId: string, enabled: boolean) {
 		renderWorker?.postMessage({
-			type: 'togglePreview',
+			type: 'setPreviewEnabled',
 			nodeId,
 			enabled
 		});
@@ -416,11 +416,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 				} else {
 					console.warn(`No canvas available for ${nodeId} - preview might not be enabled`);
 				}
-			}
-
-			// Handle animation stopped
-			if (event.data.type === 'animationStopped') {
-				console.log('Animation stopped successfully');
 			}
 		};
 

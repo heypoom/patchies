@@ -2,46 +2,11 @@
 	import { Position } from '@xyflow/svelte';
 
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 	import Icon from '@iconify/svelte';
-	import { onDestroy, onMount } from 'svelte';
 	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
-
-	let videoSystem: VideoSystem;
-
-	onMount(() => {
-		videoSystem = VideoSystem.getInstance();
-
-		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			if (canvases?.[0]) {
-				videoSystem.outputNodeCanvas = canvases?.[0];
-				videoSystem.outputNodeId = nodeId;
-				$isBackgroundOutputCanvasEnabled = true;
-			} else {
-				videoSystem.outputNodeCanvas = null;
-				videoSystem.outputNodeId = null;
-				$isBackgroundOutputCanvasEnabled = false;
-			}
-		});
-	});
-
-	onDestroy(() => {
-		videoSystem.unregisterNode(nodeId);
-
-		$isBackgroundOutputCanvasEnabled = false;
-
-		if (videoSystem.outputNodeId === nodeId) {
-			videoSystem.outputNodeId = null;
-			videoSystem.outputNodeCanvas = null;
-
-			if (videoSystem.outputNodeId) {
-				videoSystem.unregisterNode(videoSystem.outputNodeId);
-			}
-		}
-	});
 
 	const borderClass = $derived.by(() => {
 		if ($isBackgroundOutputCanvasEnabled) return '';
