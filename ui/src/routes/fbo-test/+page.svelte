@@ -143,8 +143,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 		// Listen for messages from worker
 		worker.onmessage = (event) => {
-			console.log('Worker message received:', event.data.type);
-
 			// Handle output bitmap from worker
 			if (
 				(event.data.type === 'frameRendered' || event.data.type === 'animationFrame') &&
@@ -165,15 +163,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				else if (nodeId === 'n4') directCanvas = n4Canvas;
 
 				if (directCanvas) {
-					console.log(`Drawing preview for ${nodeId} to canvas`);
 					const ctx = directCanvas.getContext('2d')!;
 					const uint8Array = new Uint8Array(buffer);
 					const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 					ctx.putImageData(imageData, 0, 0);
-					console.log(`Preview drawn for ${nodeId}`);
 				} else {
 					console.warn(`No canvas available for ${nodeId} - preview might not be enabled`);
 				}
+			}
+
+			// Handle animation stopped
+			if (event.data.type === 'animationStopped') {
+				console.log('Animation stopped successfully');
 			}
 		};
 

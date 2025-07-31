@@ -156,8 +156,14 @@ function handleStartAnimation() {
 
 function handleStopAnimation() {
 	isAnimating = false;
-	// Note: We don't actually stop the loop here - in a real implementation
-	// we'd need to store the animation ID and cancel it
+	if (fboRenderer) {
+		fboRenderer.stopRenderLoop();
+		
+		self.postMessage({
+			type: 'animationStopped',
+			timestamp: Date.now()
+		});
+	}
 }
 
 function handleTogglePreview(nodeId: string, enabled: boolean) {

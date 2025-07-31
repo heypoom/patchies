@@ -13,6 +13,7 @@ export class FBORenderer {
 	private startTime: number = Date.now();
 	private previewState: PreviewState = {};
 	private previewSize = { width: 200, height: 150 };
+	private isAnimating: boolean = false;
 
 	constructor() {
 		this.glContext = WorkerGLContext.getInstance();
@@ -292,8 +293,15 @@ export class FBORenderer {
 	 * Start an animation loop for continuous rendering
 	 */
 	startRenderLoop(renderGraph: RenderGraph, onFrame?: () => void) {
-		// Use REGL's frame loop instead of requestAnimationFrame for proper time context
+		// Stop any existing animation first
+		this.stopRenderLoop();
+		
+		this.isAnimating = true;
+		
+		// Use REGL's frame loop with our own flag control
 		this.glContext.regl.frame(() => {
+			if (!this.isAnimating) return; // Exit if animation was stopped
+			
 			this.renderFrame(renderGraph);
 			
 			// Call optional callback (for sending updates to main thread)
@@ -301,6 +309,14 @@ export class FBORenderer {
 				onFrame();
 			}
 		});
+	}
+
+	/**
+	 * Stop the animation loop
+	 */
+	stopRenderLoop() {
+		this.isAnimating = false;
+		console.log('Animation stopped');
 	}
 
 	/**

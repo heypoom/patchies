@@ -48,6 +48,7 @@ export type WorkerMessage =
 	| { type: 'stopAnimation' }
 	| { type: 'togglePreview'; nodeId: string; enabled: boolean }
 	| { type: 'animationFrame'; outputBitmap: ImageBitmap; timestamp: number }
+	| { type: 'animationStopped'; timestamp: number }
 	| { type: 'previewFrame'; nodeId: string; buffer: ArrayBuffer; width: number; height: number; timestamp: number }
 	| { type: 'updateOutput'; buffer: ArrayBuffer };
 
