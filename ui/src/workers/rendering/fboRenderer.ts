@@ -33,7 +33,7 @@ export class FBORenderer {
 		// Clear existing FBOs
 		this.fboNodes.clear();
 
-		const [width, height] = this.glContext.size;
+		const [width, height] = this.glContext.renderSize;
 
 		// Create FBO for each node
 		for (const node of renderGraph.nodes) {
@@ -238,7 +238,7 @@ export class FBORenderer {
 	 * Render a texture to the main canvas
 	 */
 	private renderToCanvas(texture: regl.Texture2D) {
-		const [width, height] = this.glContext.size;
+		const [width, height] = this.glContext.renderSize;
 
 		// Create a simple blit command to render texture to screen
 		const blitCommand = this.glContext.regl({
