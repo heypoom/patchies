@@ -302,11 +302,7 @@ export class FBORenderer {
 			if (!this.isAnimating) return; // Exit if animation was stopped
 
 			this.renderFrame(renderGraph);
-
-			// Call optional callback (for sending updates to main thread)
-			if (onFrame) {
-				onFrame();
-			}
+			onFrame?.();
 		});
 	}
 

@@ -4,12 +4,11 @@
 	import { onMount } from 'svelte';
 	import { buildRenderGraph } from '$lib/rendering/graphUtils.js';
 
-	let worker: Worker | null = null;
+	let renderWorker: Worker | null = null;
 	let outputCanvas: HTMLCanvasElement;
 	let previewCanvases: Map<string, HTMLCanvasElement> = new Map();
 	let previewStates: Map<string, boolean> = new Map();
 
-	// Create canvas references for each GLSL node
 	let n1Canvas: HTMLCanvasElement;
 	let n2Canvas: HTMLCanvasElement;
 	let n3Canvas: HTMLCanvasElement;
@@ -23,10 +22,41 @@
 			type: 'glsl',
 			data: {
 				shader: `
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    fragColor = vec4(uv.x, 0.0, 0.0, 1.0); // Red gradient
-}`
+					float sdf(in vec3 pos){
+							pos = mod(pos, 10.);
+							return length(pos - vec3(5.)) - 1.;
+					}
+
+					void mainImage( out vec4 fragColor, in vec2 fragCoord )
+					{
+						vec2 uv = (fragCoord * 2. - iResolution.xy)/max(iResolution.x, iResolution.y);
+
+						// Move and rotate camera over time
+						vec3 origin = vec3(0., 5., 0.) * iTime;
+						float angle = radians(iTime*3.);
+						uv *= mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+						
+						// Use spherical projection for ray direction
+						vec3 ray_dir = vec3(sin(uv.x), cos(uv.x)*cos(uv.y), sin(uv.y));
+						vec3 ray_pos = vec3(origin);
+						
+						float ray_length = 0.;
+						
+						for(float i = 0.; i < 7.; i++){
+								float dist = sdf(ray_pos);
+								ray_length += dist;
+								ray_pos += ray_dir * dist;
+								// Push rays outward with increasing distance
+								ray_dir = normalize(ray_dir + vec3(uv.x, 0., uv.y) * dist * .3);
+						}
+						
+						vec3 o = vec3(sdf(ray_pos));
+						o = cos(o + vec3(6.,0,.5));
+						o *= smoothstep(38., 20., ray_length);
+
+						fragColor = vec4(o, 1.);
+					}
+				`
 			}
 		},
 		{
@@ -34,10 +64,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 			type: 'glsl',
 			data: {
 				shader: `
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    fragColor = vec4(0.0, uv.y, 0.0, 1.0); // Green gradient
-}`
+					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+							fragColor = vec4(0.0, uv.y, 0.0, 1.0); // Green gradient
+					}
+				`
 			}
 		},
 		{
@@ -45,13 +75,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 			type: 'glsl',
 			data: {
 				shader: `
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    vec4 textureA = texture2D(iChannel0, uv);
-    vec4 textureB = texture2D(iChannel1, uv);
-    // Mix two inputs 50/50 as per spec example
-    fragColor = mix(textureA, textureB, 0.5);
-}`
+					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+						vec4 textureA = texture2D(iChannel0, uv);
+						vec4 textureB = texture2D(iChannel1, uv);
+
+						// Mix two inputs 50/50 as per spec example
+						fragColor = mix(textureA, textureB, 0.5);
+					}
+				`
 			}
 		},
 		{
@@ -59,17 +90,17 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 			type: 'glsl',
 			data: {
 				shader: `
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    vec4 baseColor = texture2D(iChannel0, uv);
-    float time = iTime * 2.0;
-    
-    // Add animated blue channel based on time and position
-    vec3 color = baseColor.rgb;
-    color.b += sin(uv.x * 10.0 + time) * 0.3 + 0.3;
-    
-    fragColor = vec4(color, 1.0);
-}`
+					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+						vec4 baseColor = texture2D(iChannel0, uv);
+						float time = iTime * 2.0;
+						
+						// Add animated blue channel based on time and position
+						vec3 color = baseColor.rgb;
+						color.b += sin(uv.x * 10.0 + time) * 0.3 + 0.3;
+						
+						fragColor = vec4(color, 1.0);
+					}
+				`
 			}
 		},
 		{
@@ -77,20 +108,20 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 			type: 'glsl',
 			data: {
 				shader: `
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    vec4 textureA = texture2D(iChannel0, uv);
-    vec4 textureB = texture2D(iChannel1, uv);
-    vec4 textureC = texture2D(iChannel2, uv);
-    
-    // Complex mixing of three inputs with animated weights
-    float time = iTime * 0.5;
-    float mixA = sin(time) * 0.5 + 0.5;
-    float mixB = cos(time * 1.3) * 0.5 + 0.5;
-    
-    vec4 mixed = mix(textureA, textureB, mixA);
-    fragColor = mix(mixed, textureC, mixB * 0.3);
-}`
+					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+						vec4 textureA = texture2D(iChannel0, uv);
+						vec4 textureB = texture2D(iChannel1, uv);
+						vec4 textureC = texture2D(iChannel2, uv);
+						
+						// Complex mixing of three inputs with animated weights
+						float time = iTime * 0.5;
+						float mixA = sin(time) * 0.5 + 0.5;
+						float mixB = cos(time * 1.3) * 0.5 + 0.5;
+						
+						vec4 mixed = mix(textureA, textureB, mixA);
+						fragColor = mix(mixed, textureC, mixB * 0.3);
+					}
+				`
 			}
 		}
 	];
@@ -107,61 +138,33 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 	function testRenderGraph() {
 		const renderGraph = buildRenderGraph(testNodes, testEdges);
 
-		// Initialize preview states for all nodes
 		renderGraph.nodes.forEach((node) => {
 			previewStates.set(node.id, false);
 		});
-		previewStates = previewStates; // Trigger reactivity
 
-		// Set up canvas references
-		previewCanvases.set('n1', n1Canvas);
-		previewCanvases.set('n3', n3Canvas);
-		previewCanvases.set('n4', n4Canvas);
-
-		// Send to worker
-		if (worker) {
-			worker.postMessage({
-				type: 'buildRenderGraph',
-				graph: renderGraph
-			});
-		}
+		renderWorker?.postMessage({ type: 'buildRenderGraph', graph: renderGraph });
 	}
 
 	function testRenderFrame() {
-		if (worker) {
-			worker.postMessage({
-				type: 'renderFrame',
-				timestamp: Date.now()
-			});
-		}
+		renderWorker?.postMessage({ type: 'renderFrame' });
 	}
 
 	function startAnimation() {
-		if (worker) {
-			worker.postMessage({
-				type: 'startAnimation'
-			});
-		}
+		renderWorker?.postMessage({ type: 'startAnimation' });
 	}
 
 	function stopAnimation() {
-		if (worker) {
-			worker.postMessage({
-				type: 'stopAnimation'
-			});
-		}
+		renderWorker?.postMessage({ type: 'stopAnimation' });
 	}
 
 	function togglePreview(nodeId: string, enabled: boolean) {
-		if (worker) {
-			worker.postMessage({
-				type: 'togglePreview',
-				nodeId,
-				enabled
-			});
-		}
-		previewStates.set(nodeId, enabled);
-		previewStates = previewStates; // Trigger reactivity
+		renderWorker?.postMessage({
+			type: 'togglePreview',
+			nodeId,
+			enabled
+		});
+
+		previewStates = previewStates.set(nodeId, enabled);
 
 		if (enabled) {
 			setTimeout(() => {
@@ -182,12 +185,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 	onMount(() => {
 		// Create worker using Vite's constructor import
-		worker = new RenderWorker();
+		renderWorker = new RenderWorker();
 
 		const bmr = outputCanvas.getContext('bitmaprenderer')!;
 
 		// Listen for messages from worker
-		worker.onmessage = async (event) => {
+		renderWorker.onmessage = async (event) => {
 			// Handle output bitmap from worker
 			if (
 				(event.data.type === 'frameRendered' || event.data.type === 'animationFrame') &&
@@ -227,7 +230,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 		};
 
 		// Send test message to worker
-		worker.postMessage({ type: 'test', message: 'Hello from main thread!' });
+		renderWorker.postMessage({ type: 'test', message: 'Hello from main thread!' });
 
 		// Test render graph building after a short delay
 		setTimeout(() => {
@@ -238,7 +241,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 		setTimeout(testRenderFrame, 2000);
 
 		return () => {
-			worker?.terminate();
+			renderWorker?.terminate();
 		};
 	});
 </script>

@@ -7,7 +7,6 @@ let fboRenderer: FBORenderer | null = null;
 let isAnimating: boolean = false;
 
 self.onmessage = (event) => {
-
 	const { type, ...data } = event.data;
 
 	switch (type) {
@@ -26,7 +25,7 @@ self.onmessage = (event) => {
 		case 'stopAnimation':
 			handleStopAnimation();
 			break;
-		
+
 		case 'togglePreview':
 			handleTogglePreview(data.nodeId, data.enabled);
 			break;
@@ -35,8 +34,7 @@ self.onmessage = (event) => {
 			// Send hello world message back to main thread
 			self.postMessage({
 				type: 'hello',
-				message: 'Hello world from rendering worker!',
-				timestamp: Date.now()
+				message: 'Hello world from rendering worker!'
 			});
 			break;
 	}
@@ -57,15 +55,13 @@ function handleBuildRenderGraph(graph: RenderGraph) {
 		self.postMessage({
 			type: 'renderGraphBuilt',
 			nodeCount: graph.nodes.length,
-			renderOrder: graph.sortedNodes,
-			timestamp: Date.now()
+			renderOrder: graph.sortedNodes
 		});
 	} catch (error) {
 		console.error('Error building render graph:', error);
 		self.postMessage({
 			type: 'error',
-			message: 'Failed to build render graph: ' + error.message,
-			timestamp: Date.now()
+			message: 'Failed to build render graph: ' + error.message
 		});
 	}
 }
@@ -76,7 +72,6 @@ function handleRenderFrame() {
 	}
 
 	try {
-
 		// Render the frame using FBO renderer
 		fboRenderer.renderFrame(currentRenderGraph);
 
@@ -87,23 +82,20 @@ function handleRenderFrame() {
 			self.postMessage(
 				{
 					type: 'frameRendered',
-					outputBitmap,
-					timestamp: Date.now()
+					outputBitmap
 				},
 				[outputBitmap]
 			);
 		} else {
 			self.postMessage({
-				type: 'frameRendered',
-				timestamp: Date.now()
+				type: 'frameRendered'
 			});
 		}
 	} catch (error) {
 		console.error('Error rendering frame:', error);
 		self.postMessage({
 			type: 'error',
-			message: 'Failed to render frame: ' + error.message,
-			timestamp: Date.now()
+			message: 'Failed to render frame: ' + error.message
 		});
 	}
 }
@@ -119,25 +111,23 @@ function handleStartAnimation() {
 
 	isAnimating = true;
 
-	let frameCounter = 0;
 	fboRenderer.startRenderLoop(currentRenderGraph, () => {
-		frameCounter++;
-
 		// Send main output
-		const outputBitmap = fboRenderer!.getOutputBitmap();
+		const outputBitmap = fboRenderer?.getOutputBitmap();
+
 		if (outputBitmap) {
 			self.postMessage(
 				{
 					type: 'animationFrame',
-					outputBitmap,
-					timestamp: Date.now()
+					outputBitmap
 				},
-				[outputBitmap]
+				{ transfer: [outputBitmap] }
 			);
 		}
 
 		// Send previews for enabled nodes
 		const previewPixels = fboRenderer!.renderPreviews();
+
 		for (const [nodeId, pixels] of previewPixels) {
 			self.postMessage(
 				{
@@ -145,10 +135,9 @@ function handleStartAnimation() {
 					nodeId,
 					buffer: pixels.buffer,
 					width: 200,
-					height: 150,
-					timestamp: Date.now()
+					height: 150
 				},
-				[pixels.buffer]
+				{ transfer: [pixels.buffer] }
 			);
 		}
 	});
@@ -158,10 +147,9 @@ function handleStopAnimation() {
 	isAnimating = false;
 	if (fboRenderer) {
 		fboRenderer.stopRenderLoop();
-		
+
 		self.postMessage({
-			type: 'animationStopped',
-			timestamp: Date.now()
+			type: 'animationStopped'
 		});
 	}
 }
@@ -169,12 +157,11 @@ function handleStopAnimation() {
 function handleTogglePreview(nodeId: string, enabled: boolean) {
 	if (fboRenderer) {
 		fboRenderer.togglePreview(nodeId, enabled);
-		
+
 		self.postMessage({
 			type: 'previewToggled',
 			nodeId,
-			enabled,
-			timestamp: Date.now()
+			enabled
 		});
 	}
 }
@@ -182,6 +169,5 @@ function handleTogglePreview(nodeId: string, enabled: boolean) {
 // Send initial message when worker starts
 self.postMessage({
 	type: 'ready',
-	message: 'Rendering worker initialized',
-	timestamp: Date.now()
+	message: 'Rendering worker initialized'
 });
