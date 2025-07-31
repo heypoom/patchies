@@ -159,11 +159,6 @@
 	});
 
 	$effect(() => {
-		glSystem.updateRenderGraph(nodes, edges);
-		glSystem.start();
-	});
-
-	$effect(() => {
 		// Update connections when edges change
 		const connections = edges.map((edge) => ({
 			source: edge.source,
@@ -174,8 +169,11 @@
 
 		messageSystem.updateConnections(connections);
 
-		// Also update video system with handle information
+		// LEGACY: Update video system with handle information
 		videoSystem.updateVideoConnections(connections);
+
+		// Update render graph in GLSystem
+		glSystem.updateEdges(edges);
 	});
 
 	// Handle global keyboard events
@@ -217,6 +215,8 @@
 
 	onMount(() => {
 		flowContainer?.focus();
+
+		glSystem.start();
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 

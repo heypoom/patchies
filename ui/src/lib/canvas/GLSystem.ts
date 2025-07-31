@@ -1,7 +1,6 @@
-import { buildRenderGraph } from '$lib/rendering/graphUtils';
+import { buildRenderGraph, type REdge, type RNode } from '$lib/rendering/graphUtils';
 import type { RenderGraph } from '$lib/rendering/types';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
-import type { Edge, Node } from '@xyflow/svelte';
 
 import * as ohash from 'ohash';
 import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
@@ -16,6 +15,12 @@ export class GLSystem {
 
 	/** Mapping of nodeId to rendering context for preview */
 	public previewCanvasContexts: Record<string, ImageBitmapRenderingContext | null> = {};
+
+	/** Stores FBO-compatible nodes */
+	public nodes: RNode[] = [];
+
+	/** Stores FBO-compatible edges */
+	public edges: REdge[] = [];
 
 	private static instance: GLSystem;
 	private hashes = { nodes: '', edges: '', graph: '' };
@@ -94,34 +99,49 @@ export class GLSystem {
 		this.renderWorker.postMessage({ type, ...data });
 	}
 
-	updateRenderGraph(nodes: Node[], edges: Edge[]) {
-		if (this.hasFlowGraphChanged(nodes, edges)) return;
+	upsertNode(id: string, type: string, data: Record<string, unknown>) {
+		const nodeIndex = this.nodes.findIndex((node) => node.id === id);
 
-		const graph = buildRenderGraph(nodes, edges);
-		if (this.hasRenderGraphChanged(graph)) return;
+		if (nodeIndex === -1) {
+			this.nodes.push({ id: id, type, data });
+		} else {
+			const node = this.nodes[nodeIndex];
+			this.nodes[nodeIndex] = { ...node, type, data };
+		}
+
+		this.updateRenderGraph();
+	}
+
+	removeNode(nodeId: string) {
+		this.nodes = this.nodes.filter((node) => node.id !== nodeId);
+		this.updateRenderGraph();
+	}
+
+	updateEdges(edges: REdge[]) {
+		this.edges = edges;
+		this.updateRenderGraph();
+	}
+
+	private updateRenderGraph() {
+		if (!this.hasFlowGraphChanged(this.nodes, this.edges)) return;
+
+		const graph = buildRenderGraph(this.nodes, this.edges);
+		if (!this.hasHashChanged('graph', graph)) return;
 
 		this.send('buildRenderGraph', { graph });
 		this.renderGraph = graph;
 	}
 
 	// TODO: optimize this!
-	hasFlowGraphChanged(nodes: Node[], edges: Edge[]) {
-		const nHash = ohash.hash(nodes);
-		const eHash = ohash.hash(edges);
-
-		if (nHash === this.hashes.nodes && eHash === this.hashes.edges) return true;
-
-		this.hashes.nodes = nHash;
-		this.hashes.edges = eHash;
-
-		return false;
+	hasFlowGraphChanged(nodes: RNode[], edges: REdge[]) {
+		return this.hasHashChanged('nodes', nodes) || this.hasHashChanged('edges', edges);
 	}
 
-	hasRenderGraphChanged(graph: RenderGraph) {
-		const gHash = ohash.hash(graph);
-		if (this.hashes.graph === gHash) return true;
+	hasHashChanged<K extends keyof GLSystem['hashes'], T>(key: K, object: T) {
+		const hash = ohash.hash(object);
+		if (this.hashes[key] === hash) return false;
 
-		this.hashes.graph = gHash;
-		return false;
+		this.hashes[key] = hash;
+		return true;
 	}
 }

@@ -10,7 +10,7 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	let { id: nodeId, data, type }: { id: string; data: { code: string }; type: string } = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -33,20 +33,26 @@
 		});
 	}
 
+	function updateShader() {
+		glSystem.upsertNode(nodeId, type, data);
+	}
+
 	onMount(() => {
 		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 		messageContext = new MessageContext(nodeId);
 
 		glSystem = GLSystem.getInstance();
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+		glSystem.upsertNode(nodeId, type, data);
 
 		setTimeout(() => {
 			glSystem.setPreviewEnabled(nodeId, true);
-		});
+		}, 10);
 	});
 
 	onDestroy(() => {
 		messageContext?.destroy();
+		glSystem.removeNode(nodeId);
 
 		// Unregister the context if we are still using it.
 		if (glSystem.previewCanvasContexts[nodeId] === previewBitmapContext) {
@@ -125,7 +131,7 @@
 	{#if showEditor}
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={() => {}} class="rounded p-1 hover:bg-zinc-700">
+				<button onclick={updateShader} class="rounded p-1 hover:bg-zinc-700">
 					<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
 				</button>
 
@@ -143,7 +149,7 @@
 					language="glsl"
 					placeholder="Write your GLSL fragment shader here..."
 					class="nodrag h-64 w-full resize-none"
-					onrun={() => {}}
+					onrun={updateShader}
 				/>
 			</div>
 		</div>

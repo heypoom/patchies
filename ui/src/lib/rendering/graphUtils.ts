@@ -1,27 +1,37 @@
-import { type Node, type Edge } from '@xyflow/svelte';
+import { type Edge as XYEdge } from '@xyflow/svelte';
 
 // Utilities for building and analyzing render graphs
 
 import type { RenderNode, RenderEdge, RenderGraph } from './types.js';
 import { isFBOCompatible } from './types.js';
 
+export type RNode = {
+	id: string;
+	type: string;
+	data: Record<string, unknown>;
+};
+
+export type REdge = Pick<XYEdge, 'id' | 'source' | 'target'>;
+
 /**
  * Filter nodes and edges to only include FBO-compatible nodes
  */
 export function filterFBOCompatibleGraph(
-	nodes: Node[],
-	edges: Edge[]
+	nodes: RNode[],
+	edges: REdge[]
 ): { nodes: RenderNode[]; edges: RenderEdge[] } {
 	// Filter to only GLSL nodes for now
 	const compatibleNodes = nodes
 		.filter((node) => isFBOCompatible(node.type))
-		.map((node) => ({
-			id: node.id,
-			type: node.type,
-			inputs: [],
-			outputs: [],
-			data: node.data
-		}));
+		.map(
+			(node): RenderNode => ({
+				id: node.id,
+				type: node.type,
+				inputs: [],
+				outputs: [],
+				data: node.data as { code: string }
+			})
+		);
 
 	const nodeIds = new Set(compatibleNodes.map((n) => n.id));
 
@@ -31,9 +41,7 @@ export function filterFBOCompatibleGraph(
 		.map((edge) => ({
 			id: edge.id,
 			source: edge.source,
-			target: edge.target,
-			sourceHandle: edge.sourceHandle,
-			targetHandle: edge.targetHandle
+			target: edge.target
 		}));
 
 	// Build input/output relationships
@@ -98,7 +106,7 @@ export function topologicalSort(nodes: RenderNode[]): string[] {
 /**
  * Build a complete render graph from XYFlow nodes and edges
  */
-export function buildRenderGraph(nodes: any[], edges: any[]): RenderGraph {
+export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
 	const { nodes: renderNodes, edges: renderEdges } = filterFBOCompatibleGraph(nodes, edges);
 	const sortedNodes = topologicalSort(renderNodes);
 
@@ -120,7 +128,7 @@ export function findPreviewNodes(renderGraph: RenderGraph): string[] {
 /**
  * Find the output node (connected to bg.out)
  */
-export function findOutputNode(nodes: any[], edges: any[]): string | null {
+export function findOutputNode(nodes: RNode[], edges: REdge[]): string | null {
 	// Find bg.out node
 	const bgOutNode = nodes.find((node) => node.type === 'bg.out');
 	if (!bgOutNode) return null;
