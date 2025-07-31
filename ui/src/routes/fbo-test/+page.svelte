@@ -2,7 +2,7 @@
 	import FlowCanvas from '$lib/components/FlowCanvas.svelte';
 	import RenderWorker from '$workers/rendering/renderWorker.ts?worker';
 	import { onMount } from 'svelte';
-	import { buildRenderGraph } from '$lib/rendering/graphUtils.js';
+	import { buildRenderGraph } from '$lib/rendering/graphUtils';
 
 	let renderWorker: Worker | null = null;
 	let outputCanvas: HTMLCanvasElement;
@@ -135,7 +135,7 @@
 		{ id: 'e6', source: 'n4', target: 'n5' }
 	];
 
-	function testRenderGraph() {
+	function buildTestRenderGraph() {
 		const renderGraph = buildRenderGraph(testNodes, testEdges);
 
 		renderGraph.nodes.forEach((node) => {
@@ -143,10 +143,6 @@
 		});
 
 		renderWorker?.postMessage({ type: 'buildRenderGraph', graph: renderGraph });
-	}
-
-	function testRenderFrame() {
-		renderWorker?.postMessage({ type: 'renderFrame' });
 	}
 
 	function startAnimation() {
@@ -184,20 +180,17 @@
 	}
 
 	onMount(() => {
-		// Create worker using Vite's constructor import
 		renderWorker = new RenderWorker();
 
-		const bmr = outputCanvas.getContext('bitmaprenderer')!;
+		const outputRenderer = outputCanvas.getContext('bitmaprenderer')!;
 
-		// Listen for messages from worker
 		renderWorker.onmessage = async (event) => {
-			// Handle output bitmap from worker
 			if (
 				(event.data.type === 'frameRendered' || event.data.type === 'animationFrame') &&
 				event.data.outputBitmap &&
-				outputCanvas
+				outputRenderer
 			) {
-				bmr.transferFromImageBitmap(event.data.outputBitmap);
+				outputRenderer.transferFromImageBitmap(event.data.outputBitmap);
 			}
 
 			// Handle preview frames
@@ -217,7 +210,8 @@
 					const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 
 					const bitmap = await createImageBitmap(imageData);
-					directCanvas.getContext('bitmaprenderer').transferFromImageBitmap(bitmap);
+
+					directCanvas.getContext('bitmaprenderer')?.transferFromImageBitmap(bitmap);
 				} else {
 					console.warn(`No canvas available for ${nodeId} - preview might not be enabled`);
 				}
@@ -229,16 +223,10 @@
 			}
 		};
 
-		// Send test message to worker
 		renderWorker.postMessage({ type: 'test', message: 'Hello from main thread!' });
 
-		// Test render graph building after a short delay
-		setTimeout(() => {
-			testRenderGraph();
-		}, 1000);
-
-		// Test frame rendering after graph is built
-		setTimeout(testRenderFrame, 2000);
+		buildTestRenderGraph();
+		startAnimation();
 
 		return () => {
 			renderWorker?.terminate();
@@ -257,20 +245,6 @@
 	<div class="fixed left-[80px] top-4 z-50 flex flex-col gap-2">
 		<h2 class="text-lg font-bold text-white">FBO Rendering Test</h2>
 
-		<div class="flex gap-2">
-			<button
-				class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-				onclick={testRenderGraph}
-			>
-				Build Graph
-			</button>
-			<button
-				class="rounded bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
-				onclick={testRenderFrame}
-			>
-				Render Frame
-			</button>
-		</div>
 		<div class="flex gap-2">
 			<button
 				class="rounded bg-purple-600 px-3 py-1 text-sm text-white hover:bg-purple-700"

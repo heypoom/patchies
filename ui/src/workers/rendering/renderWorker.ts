@@ -1,4 +1,5 @@
-// Rendering worker for optimized visual chaining
+import { match } from 'ts-pattern';
+
 import type { RenderGraph } from '../../lib/rendering/types.js';
 import { FBORenderer } from './fboRenderer.js';
 
@@ -9,42 +10,19 @@ let isAnimating: boolean = false;
 self.onmessage = (event) => {
 	const { type, ...data } = event.data;
 
-	switch (type) {
-		case 'buildRenderGraph':
-			handleBuildRenderGraph(data.graph);
-			break;
-
-		case 'renderFrame':
-			handleRenderFrame();
-			break;
-
-		case 'startAnimation':
-			handleStartAnimation();
-			break;
-
-		case 'stopAnimation':
-			handleStopAnimation();
-			break;
-
-		case 'togglePreview':
-			handleTogglePreview(data.nodeId, data.enabled);
-			break;
-
-		default:
-			// Send hello world message back to main thread
-			self.postMessage({
-				type: 'hello',
-				message: 'Hello world from rendering worker!'
-			});
-			break;
-	}
+	match(type)
+		.with('buildRenderGraph', () => handleBuildRenderGraph(data.graph))
+		.with('renderFrame', () => handleRenderFrame())
+		.with('startAnimation', () => handleStartAnimation())
+		.with('stopAnimation', () => handleStopAnimation())
+		.with('togglePreview', () => handleTogglePreview(data.nodeId, data.enabled))
+		.otherwise(() => self.postMessage({ type: 'hello', message: 'hey!' }));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
 	currentRenderGraph = graph;
 
 	try {
-		// Initialize FBO renderer if not already created
 		if (!fboRenderer) {
 			fboRenderer = new FBORenderer();
 		}
@@ -58,11 +36,12 @@ function handleBuildRenderGraph(graph: RenderGraph) {
 			renderOrder: graph.sortedNodes
 		});
 	} catch (error) {
-		console.error('Error building render graph:', error);
-		self.postMessage({
-			type: 'error',
-			message: 'Failed to build render graph: ' + error.message
-		});
+		if (error instanceof Error) {
+			self.postMessage({
+				type: 'error',
+				message: 'Failed to build render graph: ' + error.message
+			});
+		}
 	}
 }
 
@@ -72,31 +51,22 @@ function handleRenderFrame() {
 	}
 
 	try {
-		// Render the frame using FBO renderer
 		fboRenderer.renderFrame(currentRenderGraph);
 
-		// Get output bitmap (for now, just the canvas bitmap)
 		const outputBitmap = fboRenderer.getOutputBitmap();
 
 		if (outputBitmap) {
-			self.postMessage(
-				{
-					type: 'frameRendered',
-					outputBitmap
-				},
-				[outputBitmap]
-			);
+			self.postMessage({ type: 'frameRendered', outputBitmap }, { transfer: [outputBitmap] });
 		} else {
-			self.postMessage({
-				type: 'frameRendered'
-			});
+			self.postMessage({ type: 'frameRendered' });
 		}
 	} catch (error) {
-		console.error('Error rendering frame:', error);
-		self.postMessage({
-			type: 'error',
-			message: 'Failed to render frame: ' + error.message
-		});
+		if (error instanceof Error) {
+			self.postMessage({
+				type: 'error',
+				message: 'failed to render frame: ' + error.message
+			});
+		}
 	}
 }
 
@@ -112,17 +82,10 @@ function handleStartAnimation() {
 	isAnimating = true;
 
 	fboRenderer.startRenderLoop(currentRenderGraph, () => {
-		// Send main output
 		const outputBitmap = fboRenderer?.getOutputBitmap();
 
 		if (outputBitmap) {
-			self.postMessage(
-				{
-					type: 'animationFrame',
-					outputBitmap
-				},
-				{ transfer: [outputBitmap] }
-			);
+			self.postMessage({ type: 'animationFrame', outputBitmap }, { transfer: [outputBitmap] });
 		}
 
 		// Send previews for enabled nodes

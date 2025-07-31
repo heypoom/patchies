@@ -4,7 +4,8 @@ import { DrawToFbo } from '../../lib/canvas/shadertoy-draw';
 import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
 
 export class FBORenderer {
-	public previewSize = { width: 200, height: 150 };
+	public renderSize = [800, 600] as [w: number, h: number];
+	public previewSize = [200, 150] as [w: number, h: number];
 
 	private glContext: WorkerGLContext;
 	private fboNodes = new Map<string, FBONode>();
@@ -18,26 +19,21 @@ export class FBORenderer {
 	constructor() {
 		this.glContext = WorkerGLContext.getInstance();
 
-		// Create fallback texture for nodes with no inputs
 		this.fallbackTexture = this.glContext.regl.texture({
 			width: 1,
 			height: 1,
-			data: new Uint8Array([0, 0, 0, 255]) // Black texture
+			data: new Uint8Array([0, 0, 0, 255])
 		});
 	}
 
-	/**
-	 * Build FBOs for all nodes in the render graph
-	 */
+	/** Build FBOs for all nodes in the render graph */
 	buildFBOs(renderGraph: RenderGraph) {
-		// Clear existing FBOs
 		this.fboNodes.clear();
 
-		const [width, height] = this.glContext.renderSize;
+		const [width, height] = this.renderSize;
 
 		// Create FBO for each node
 		for (const node of renderGraph.nodes) {
-			// Create framebuffer and texture
 			const texture = this.glContext.regl.texture({
 				width,
 				height,
@@ -50,7 +46,6 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			// Create render command using existing DrawToFbo
 			const renderCommand = DrawToFbo({
 				code: node.data.shader,
 				regl: this.glContext.regl,
@@ -69,14 +64,11 @@ export class FBORenderer {
 			};
 
 			this.fboNodes.set(node.id, fboNode);
-			// Initialize preview state to false
 			this.previewState[node.id] = false;
 		}
 	}
 
-	/**
-	 * Toggle preview rendering for a specific node
-	 */
+	/** Toggle preview rendering for a specific node */
 	togglePreview(nodeId: string, enabled: boolean) {
 		if (this.fboNodes.has(nodeId)) {
 			this.previewState[nodeId] = enabled;
@@ -85,19 +77,14 @@ export class FBORenderer {
 		}
 	}
 
-	/**
-	 * Get list of nodes with preview enabled
-	 */
+	/** Get list of nodes with preview enabled */
 	getEnabledPreviews(): string[] {
 		return Object.keys(this.previewState).filter((nodeId) => this.previewState[nodeId]);
 	}
 
-	/**
-	 * Render a single frame using the render graph
-	 */
+	/** Render a single frame using the render graph */
 	renderFrame(renderGraph: RenderGraph): void {
 		if (this.fboNodes.size === 0) {
-			console.warn('No FBOs available for rendering');
 			return;
 		}
 
@@ -114,12 +101,10 @@ export class FBORenderer {
 			const fboNode = this.fboNodes.get(nodeId);
 
 			if (!node || !fboNode) {
-				console.warn(`Missing node or FBO for ${nodeId}`);
 				continue;
 			}
 
-			// Prepare input textures
-			const inputTextures = this.getInputTextures(node, renderGraph);
+			const inputTextures = this.getInputTextures(node);
 
 			// Render to FBO
 			fboNode.framebuffer.use(() => {
@@ -137,9 +122,7 @@ export class FBORenderer {
 		}
 
 		// Render the final result to the main canvas
-		if (finalTexture) {
-			this.renderToCanvas(finalTexture);
-		}
+		this.renderTextureToMainOutput(finalTexture);
 	}
 
 	/**
@@ -151,12 +134,12 @@ export class FBORenderer {
 
 		for (const nodeId of enabledPreviews) {
 			const fboNode = this.fboNodes.get(nodeId);
-			if (fboNode) {
-				const pixels = this.renderNodePreview(fboNode);
-				if (pixels) {
-					previewPixels.set(nodeId, pixels);
-				}
-			}
+			if (!fboNode) continue;
+
+			const pixels = this.renderNodePreview(fboNode);
+			if (!pixels) continue;
+
+			previewPixels.set(nodeId, pixels);
 		}
 
 		return previewPixels;
@@ -166,9 +149,8 @@ export class FBORenderer {
 	 * Render a single node's preview using regl.read() as per spec
 	 */
 	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
-		const { width, height } = this.previewSize;
+		const [width, height] = this.previewSize;
 
-		// Create temporary framebuffer for resized preview
 		const previewTexture = this.glContext.regl.texture({
 			width,
 			height,
@@ -181,7 +163,6 @@ export class FBORenderer {
 			depthStencil: false
 		});
 
-		// Create blit command to render FBO texture to preview framebuffer at reduced resolution
 		const blitCommand = this.glContext.regl({
 			frag: `
 				precision highp float;
@@ -234,13 +215,7 @@ export class FBORenderer {
 		return pixels!;
 	}
 
-	/**
-	 * Render a texture to the main canvas
-	 */
-	private renderToCanvas(texture: regl.Texture2D) {
-		const [width, height] = this.glContext.renderSize;
-
-		// Create a simple blit command to render texture to screen
+	private renderTextureToMainOutput(texture: regl.Texture2D) {
 		const blitCommand = this.glContext.regl({
 			frag: `
 				precision highp float;
@@ -272,66 +247,52 @@ export class FBORenderer {
 			},
 			primitive: 'triangle strip',
 			count: 4,
-			framebuffer: null // Render to default framebuffer (canvas)
+
+			// render to canvas
+			framebuffer: null
 		});
 
-		// Clear and render
 		this.glContext.regl.clear({ color: [0, 0, 0, 1] });
 		blitCommand();
 	}
 
-	/**
-	 * Get output as ImageBitmap for transferring to main thread
-	 */
 	getOutputBitmap(): ImageBitmap | null {
-		// Transfer the canvas bitmap which now contains the final rendered result
 		return this.glContext.offscreenCanvas.transferToImageBitmap();
 	}
 
-	/**
-	 * Start an animation loop for continuous rendering
-	 */
 	startRenderLoop(renderGraph: RenderGraph, onFrame?: () => void) {
-		// Stop any existing animation first
 		this.stopRenderLoop();
-
 		this.isAnimating = true;
 
-		// Use REGL's frame loop with our own flag control
-		this.glContext.regl.frame(() => {
-			if (!this.isAnimating) return; // Exit if animation was stopped
+		const f = this.glContext.regl.frame(() => {
+			if (!this.isAnimating) {
+				f?.cancel();
+				return;
+			}
 
 			this.renderFrame(renderGraph);
 			onFrame?.();
 		});
 	}
 
-	/**
-	 * Stop the animation loop
-	 */
 	stopRenderLoop() {
 		this.isAnimating = false;
-		console.log('Animation stopped');
 	}
 
 	/**
 	 * Get input textures for a node based on the render graph
 	 */
 	private getInputTextures(
-		node: RenderNode,
-		renderGraph: RenderGraph
+		node: RenderNode
 	): [regl.Texture2D, regl.Texture2D, regl.Texture2D, regl.Texture2D] {
 		const textures: regl.Texture2D[] = [];
 
-		// Get textures from input nodes
 		for (const inputId of node.inputs) {
 			const inputFBO = this.fboNodes.get(inputId);
-			if (inputFBO) {
-				textures.push(inputFBO.texture);
-			}
+
+			if (inputFBO) textures.push(inputFBO.texture);
 		}
 
-		// Fill remaining slots with fallback texture
 		while (textures.length < 4) {
 			textures.push(this.fallbackTexture);
 		}

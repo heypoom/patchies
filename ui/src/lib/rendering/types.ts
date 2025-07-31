@@ -1,7 +1,5 @@
 import type regl from 'regl';
 
-// Types for the optimized visual chaining system
-
 export interface RenderNode {
 	id: string;
 	type: string;
@@ -30,12 +28,7 @@ export interface FBONode {
 	texture: regl.Texture2D; // REGL texture object
 	renderCommand: regl.DrawCommand; // REGL draw command
 	needsPreview: boolean;
-	previewSize: { width: number; height: number };
-}
-
-export interface RenderGraphOptions {
-	previewSize: { width: number; height: number };
-	outputSize: { width: number; height: number };
+	previewSize: [width: number, height: number];
 }
 
 // Message types for worker communication
@@ -43,13 +36,19 @@ export type WorkerMessage =
 	| { type: 'ready'; message: string; timestamp: number }
 	| { type: 'hello'; message: string; timestamp: number }
 	| { type: 'buildRenderGraph'; nodes: any[]; edges: any[] }
-	| { type: 'renderFrame'; timestamp: number }
 	| { type: 'startAnimation' }
 	| { type: 'stopAnimation' }
 	| { type: 'togglePreview'; nodeId: string; enabled: boolean }
-	| { type: 'animationFrame'; outputBitmap: ImageBitmap; timestamp: number }
-	| { type: 'animationStopped'; timestamp: number }
-	| { type: 'previewFrame'; nodeId: string; buffer: ArrayBuffer; width: number; height: number; timestamp: number }
+	| { type: 'animationFrame'; outputBitmap: ImageBitmap }
+	| { type: 'animationStopped' }
+	| {
+			type: 'previewFrame';
+			nodeId: string;
+			buffer: ArrayBuffer;
+			width: number;
+			height: number;
+			timestamp: number;
+	  }
 	| { type: 'updateOutput'; buffer: ArrayBuffer };
 
 // Preview system types
