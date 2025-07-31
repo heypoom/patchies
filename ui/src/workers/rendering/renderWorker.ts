@@ -50,8 +50,8 @@ function handleStartAnimation() {
 	isRunning = true;
 
 	fboRenderer.startRenderLoop(currentRenderGraph, () => {
-		// do not render if there are no nodes or edges
-		if (currentRenderGraph?.nodes?.length === 0 || currentRenderGraph?.edges?.length === 0) {
+		// do not render if there are no nodes and edges
+		if (currentRenderGraph?.nodes?.length === 0 && currentRenderGraph?.edges?.length === 0) {
 			return;
 		}
 
@@ -91,3 +91,5 @@ function handleTogglePreview(nodeId: string, enabled: boolean) {
 	fboRenderer.setPreviewEnabled(nodeId, enabled);
 	self.postMessage({ type: 'previewToggled', nodeId, enabled });
 }
+
+console.log('[render worker] hello');

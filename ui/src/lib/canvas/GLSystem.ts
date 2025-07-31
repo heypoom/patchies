@@ -40,7 +40,7 @@ export class GLSystem {
 	handleRenderWorkerMessage = async (event: MessageEvent) => {
 		const { data } = event;
 
-		console.log('Render worker message:', data);
+		console.log('[render worker]', data);
 
 		if (data.type === 'animationFrame' && data.outputBitmap) {
 			this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
@@ -66,8 +66,6 @@ export class GLSystem {
 
 		this.send('startAnimation');
 		isGlslPlaying.set(true);
-
-		console.log('[start]');
 	}
 
 	stop() {
@@ -75,8 +73,6 @@ export class GLSystem {
 
 		this.send('stopAnimation');
 		isGlslPlaying.set(false);
-
-		console.log('[stop]');
 	}
 
 	setOutputEnabled(enabled: boolean) {
@@ -108,6 +104,8 @@ export class GLSystem {
 
 		this.send('buildRenderGraph', { graph });
 		this.renderGraph = graph;
+
+		console.log(`[built render graph]`, graph);
 	}
 
 	// TODO: optimize this!

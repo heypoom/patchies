@@ -18,7 +18,7 @@ export class FBORenderer {
 	private previewState: PreviewState = {};
 	private isAnimating: boolean = false;
 
-	public isOutputEnabled: boolean = true;
+	public isOutputEnabled: boolean = false;
 	public shouldProcessPreviews: boolean = false;
 
 	constructor() {
