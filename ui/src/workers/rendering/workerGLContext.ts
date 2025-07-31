@@ -6,7 +6,7 @@ export class WorkerGLContext {
 	private static instance: WorkerGLContext | null = null;
 
 	public offscreenCanvas: OffscreenCanvas;
-	public outputCanvas: OffscreenCanvas; // Separate canvas for output transfers
+	public outputCanvas: OffscreenCanvas;
 	public gl: WebGLRenderingContext | null = null;
 	public outputGL: WebGLRenderingContext | null = null;
 	public regl: regl.Regl;

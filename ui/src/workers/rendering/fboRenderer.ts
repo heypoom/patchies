@@ -1,10 +1,11 @@
-// FBO-based rendering system for worker
 import regl from 'regl';
-import { WorkerGLContext } from './workerGLContext.js';
-import { DrawToFbo } from '../../lib/canvas/shadertoy-draw.js';
-import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types.js';
+import { WorkerGLContext } from './workerGLContext';
+import { DrawToFbo } from '../../lib/canvas/shadertoy-draw';
+import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
 
 export class FBORenderer {
+	public previewSize = { width: 200, height: 150 };
+
 	private glContext: WorkerGLContext;
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
@@ -12,7 +13,6 @@ export class FBORenderer {
 	private frameCount: number = 0;
 	private startTime: number = Date.now();
 	private previewState: PreviewState = {};
-	private previewSize = { width: 200, height: 150 };
 	private isAnimating: boolean = false;
 
 	constructor() {
@@ -24,7 +24,6 @@ export class FBORenderer {
 			height: 1,
 			data: new Uint8Array([0, 0, 0, 255]) // Black texture
 		});
-
 	}
 
 	/**
@@ -38,7 +37,6 @@ export class FBORenderer {
 
 		// Create FBO for each node
 		for (const node of renderGraph.nodes) {
-
 			// Create framebuffer and texture
 			const texture = this.glContext.regl.texture({
 				width,
@@ -74,7 +72,6 @@ export class FBORenderer {
 			// Initialize preview state to false
 			this.previewState[node.id] = false;
 		}
-
 	}
 
 	/**
@@ -92,7 +89,7 @@ export class FBORenderer {
 	 * Get list of nodes with preview enabled
 	 */
 	getEnabledPreviews(): string[] {
-		return Object.keys(this.previewState).filter(nodeId => this.previewState[nodeId]);
+		return Object.keys(this.previewState).filter((nodeId) => this.previewState[nodeId]);
 	}
 
 	/**
@@ -120,7 +117,6 @@ export class FBORenderer {
 				console.warn(`Missing node or FBO for ${nodeId}`);
 				continue;
 			}
-
 
 			// Prepare input textures
 			const inputTextures = this.getInputTextures(node, renderGraph);
@@ -152,7 +148,7 @@ export class FBORenderer {
 	renderPreviews(): Map<string, Uint8Array> {
 		const previewPixels = new Map<string, Uint8Array>();
 		const enabledPreviews = this.getEnabledPreviews();
-		
+
 		for (const nodeId of enabledPreviews) {
 			const fboNode = this.fboNodes.get(nodeId);
 			if (fboNode) {
@@ -162,7 +158,7 @@ export class FBORenderer {
 				}
 			}
 		}
-		
+
 		return previewPixels;
 	}
 
@@ -171,7 +167,7 @@ export class FBORenderer {
 	 */
 	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
 		const { width, height } = this.previewSize;
-		
+
 		// Create temporary framebuffer for resized preview
 		const previewTexture = this.glContext.regl.texture({
 			width,
@@ -206,7 +202,10 @@ export class FBORenderer {
 			`,
 			attributes: {
 				position: this.glContext.regl.buffer([
-					[-1, -1], [1, -1], [-1, 1], [1, 1]
+					[-1, -1],
+					[1, -1],
+					[-1, 1],
+					[1, 1]
 				])
 			},
 			uniforms: {
@@ -219,11 +218,11 @@ export class FBORenderer {
 
 		// Render to preview framebuffer and read pixels
 		let pixels: Uint8Array;
-		
+
 		previewFramebuffer.use(() => {
 			this.glContext.regl.clear({ color: [0, 0, 0, 1] });
 			blitCommand();
-			
+
 			// Read pixels from the framebuffer using regl.read()
 			pixels = this.glContext.regl.read() as Uint8Array;
 		});
@@ -231,8 +230,8 @@ export class FBORenderer {
 		// Clean up temporary resources
 		previewTexture.destroy();
 		previewFramebuffer.destroy();
-		
-		return pixels!
+
+		return pixels!;
 	}
 
 	/**
@@ -295,15 +294,15 @@ export class FBORenderer {
 	startRenderLoop(renderGraph: RenderGraph, onFrame?: () => void) {
 		// Stop any existing animation first
 		this.stopRenderLoop();
-		
+
 		this.isAnimating = true;
-		
+
 		// Use REGL's frame loop with our own flag control
 		this.glContext.regl.frame(() => {
 			if (!this.isAnimating) return; // Exit if animation was stopped
-			
+
 			this.renderFrame(renderGraph);
-			
+
 			// Call optional callback (for sending updates to main thread)
 			if (onFrame) {
 				onFrame();
