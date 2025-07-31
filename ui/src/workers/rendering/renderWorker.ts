@@ -1,10 +1,12 @@
 // Rendering worker for optimized visual chaining
 import type { RenderGraph } from '../../lib/rendering/types.js';
+import { FBORenderer } from './fboRenderer.js';
 
 let currentRenderGraph: RenderGraph | null = null;
+let fboRenderer: FBORenderer | null = null;
+let isAnimating: boolean = false;
 
 self.onmessage = (event) => {
-	console.log('Worker received message:', event.data);
 
 	const { type, ...data } = event.data;
 
@@ -12,11 +14,19 @@ self.onmessage = (event) => {
 		case 'buildRenderGraph':
 			handleBuildRenderGraph(data.graph);
 			break;
-		
+
 		case 'renderFrame':
 			handleRenderFrame();
 			break;
-		
+
+		case 'startAnimation':
+			handleStartAnimation();
+			break;
+
+		case 'stopAnimation':
+			handleStopAnimation();
+			break;
+
 		default:
 			// Send hello world message back to main thread
 			self.postMessage({
@@ -29,44 +39,105 @@ self.onmessage = (event) => {
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
-	console.log('Building render graph with nodes:', graph.nodes.length);
-	console.log('Render order:', graph.sortedNodes);
-	
 	currentRenderGraph = graph;
-	
-	// Simulate building FBOs for each node
-	graph.nodes.forEach(node => {
-		console.log(`Creating FBO for node ${node.id} (${node.type})`);
-	});
-	
-	self.postMessage({
-		type: 'renderGraphBuilt',
-		nodeCount: graph.nodes.length,
-		renderOrder: graph.sortedNodes,
-		timestamp: Date.now()
-	});
+
+	try {
+		// Initialize FBO renderer if not already created
+		if (!fboRenderer) {
+			fboRenderer = new FBORenderer();
+		}
+
+		// Build FBOs for all nodes
+		fboRenderer.buildFBOs(graph);
+
+		self.postMessage({
+			type: 'renderGraphBuilt',
+			nodeCount: graph.nodes.length,
+			renderOrder: graph.sortedNodes,
+			timestamp: Date.now()
+		});
+	} catch (error) {
+		console.error('Error building render graph:', error);
+		self.postMessage({
+			type: 'error',
+			message: 'Failed to build render graph: ' + error.message,
+			timestamp: Date.now()
+		});
+	}
 }
 
 function handleRenderFrame() {
-	if (!currentRenderGraph) {
-		console.log('No render graph available for rendering');
+	if (!currentRenderGraph || !fboRenderer) {
 		return;
 	}
-	
-	console.log('Rendering frame with', currentRenderGraph.nodes.length, 'nodes');
-	
-	// Simulate rendering each node in topological order
-	currentRenderGraph.sortedNodes.forEach(nodeId => {
-		const node = currentRenderGraph!.nodes.find(n => n.id === nodeId);
-		if (node) {
-			console.log(`Rendering node ${nodeId} (${node.type})`);
+
+	try {
+
+		// Render the frame using FBO renderer
+		fboRenderer.renderFrame(currentRenderGraph);
+
+		// Get output bitmap (for now, just the canvas bitmap)
+		const outputBitmap = fboRenderer.getOutputBitmap();
+
+		if (outputBitmap) {
+			self.postMessage(
+				{
+					type: 'frameRendered',
+					outputBitmap,
+					timestamp: Date.now()
+				},
+				[outputBitmap]
+			);
+		} else {
+			self.postMessage({
+				type: 'frameRendered',
+				timestamp: Date.now()
+			});
+		}
+	} catch (error) {
+		console.error('Error rendering frame:', error);
+		self.postMessage({
+			type: 'error',
+			message: 'Failed to render frame: ' + error.message,
+			timestamp: Date.now()
+		});
+	}
+}
+
+function handleStartAnimation() {
+	if (!currentRenderGraph || !fboRenderer) {
+		return;
+	}
+
+	if (isAnimating) {
+		return;
+	}
+
+	isAnimating = true;
+
+	let frameCounter = 0;
+	fboRenderer.startRenderLoop(currentRenderGraph, () => {
+		frameCounter++;
+
+		const outputBitmap = fboRenderer!.getOutputBitmap();
+
+		if (outputBitmap) {
+			self.postMessage(
+				{
+					type: 'animationFrame',
+					outputBitmap,
+					timestamp: Date.now()
+				},
+				[outputBitmap]
+			);
 		}
 	});
-	
-	self.postMessage({
-		type: 'frameRendered',
-		timestamp: Date.now()
-	});
+}
+
+function handleStopAnimation() {
+	isAnimating = false;
+	// Note: We don't actually stop the loop here - in a real implementation
+	// we'd need to store the animation ID and cancel it
 }
 
 // Send initial message when worker starts
