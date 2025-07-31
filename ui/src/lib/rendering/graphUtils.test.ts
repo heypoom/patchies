@@ -4,20 +4,20 @@ import { filterFBOCompatibleGraph, topologicalSort, buildRenderGraph } from './g
 describe('Graph Utils', () => {
 	it('should filter FBO-compatible nodes', () => {
 		const nodes = [
-			{ id: 'n1', type: 'glsl', data: { shader: 'test' } },
+			{ id: 'n1', type: 'glsl', data: { code: 'test' } },
 			{ id: 'n2', type: 'p5', data: { code: 'test' } },
-			{ id: 'n3', type: 'glsl', data: { shader: 'test2' } }
+			{ id: 'n3', type: 'glsl', data: { code: 'test2' } }
 		];
-		
+
 		const edges = [
 			{ id: 'e1', source: 'n1', target: 'n3' },
 			{ id: 'e2', source: 'n2', target: 'n3' }
 		];
 
 		const result = filterFBOCompatibleGraph(nodes, edges);
-		
+
 		expect(result.nodes).toHaveLength(2);
-		expect(result.nodes.map(n => n.id)).toEqual(['n1', 'n3']);
+		expect(result.nodes.map((n) => n.id)).toEqual(['n1', 'n3']);
 		expect(result.edges).toHaveLength(1);
 		expect(result.edges[0].source).toBe('n1');
 		expect(result.edges[0].target).toBe('n3');
@@ -45,17 +45,15 @@ describe('Graph Utils', () => {
 
 	it('should build complete render graph', () => {
 		const nodes = [
-			{ id: 'n1', type: 'glsl', data: { shader: 'test' } },
+			{ id: 'n1', type: 'glsl', data: { code: 'test' } },
 			{ id: 'n2', type: 'p5', data: { code: 'test' } },
-			{ id: 'n3', type: 'glsl', data: { shader: 'test2' } }
-		];
-		
-		const edges = [
-			{ id: 'e1', source: 'n1', target: 'n3' }
+			{ id: 'n3', type: 'glsl', data: { code: 'test2' } }
 		];
 
+		const edges = [{ id: 'e1', source: 'n1', target: 'n3' }];
+
 		const graph = buildRenderGraph(nodes, edges);
-		
+
 		expect(graph.nodes).toHaveLength(2);
 		expect(graph.sortedNodes).toEqual(['n1', 'n3']);
 	});

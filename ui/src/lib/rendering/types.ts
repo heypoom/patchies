@@ -5,7 +5,7 @@ export interface RenderNode {
 	type: string;
 	inputs: string[]; // IDs of input nodes
 	outputs: string[]; // IDs of output nodes
-	data: { shader: string }; // Node-specific data (shader code, etc.)
+	data: { code: string }; // Node-specific data (shader code, etc.)
 }
 
 export interface RenderEdge {

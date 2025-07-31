@@ -40,8 +40,6 @@ export class GLSystem {
 	handleRenderWorkerMessage = async (event: MessageEvent) => {
 		const { data } = event;
 
-		console.log('[render worker]', data);
-
 		if (data.type === 'animationFrame' && data.outputBitmap) {
 			this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
 		}
@@ -54,10 +52,11 @@ export class GLSystem {
 			if (!context) return;
 
 			const uint8Array = new Uint8Array(buffer);
+
 			const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 			const bitmap = await createImageBitmap(imageData);
 
-			context?.transferFromImageBitmap(bitmap);
+			context.transferFromImageBitmap(bitmap);
 		}
 	};
 

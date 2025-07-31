@@ -56,7 +56,7 @@ export class FBORenderer {
 			});
 
 			const renderCommand = DrawToFbo({
-				code: node.data.shader,
+				code: node.data.code,
 				regl: this.regl,
 				width,
 				height,

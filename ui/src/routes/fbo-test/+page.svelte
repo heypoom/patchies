@@ -21,7 +21,7 @@
 			id: 'n1',
 			type: 'glsl',
 			data: {
-				shader: `
+				code: `
 					float sdf(in vec3 pos){
 							pos = mod(pos, 10.);
 							return length(pos - vec3(5.)) - 1.;
@@ -63,7 +63,7 @@
 			id: 'n2',
 			type: 'glsl',
 			data: {
-				shader: `
+				code: `
 /*
  * "Seascape" by Alexander Alekseev aka TDM - 2014
  * License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
@@ -275,7 +275,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 			id: 'n3',
 			type: 'glsl',
 			data: {
-				shader: `
+				code: `
 					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 						vec4 textureA = texture2D(iChannel0, uv);
 						vec4 textureB = texture2D(iChannel1, uv);
@@ -290,7 +290,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 			id: 'n4',
 			type: 'glsl',
 			data: {
-				shader: `
+				code: `
 					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 						vec4 baseColor = texture2D(iChannel0, uv);
 						float time = iTime * 2.0;
@@ -308,7 +308,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 			id: 'n5',
 			type: 'glsl',
 			data: {
-				shader: `
+				code: `
 					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 						vec4 textureA = texture2D(iChannel0, uv);
 						vec4 textureB = texture2D(iChannel1, uv);
@@ -342,6 +342,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 		renderGraph.nodes.forEach((node) => {
 			previewStates.set(node.id, false);
 		});
+
+		window.testRenderGraph = renderGraph;
 
 		renderWorker?.postMessage({ type: 'buildRenderGraph', graph: renderGraph });
 	}
