@@ -1,13 +1,15 @@
 import regl from 'regl';
-import { WorkerGLContext } from './workerGLContext';
 import { DrawToFbo } from '../../lib/canvas/shadertoy-draw';
 import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
+import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 
 export class FBORenderer {
 	public renderSize = [800, 600] as [w: number, h: number];
 	public previewSize = [200, 150] as [w: number, h: number];
 
-	private glContext: WorkerGLContext;
+	private offscreenCanvas: OffscreenCanvas;
+	private gl: WebGLRenderingContext | null = null;
+	private regl: regl.Regl;
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
@@ -17,9 +19,13 @@ export class FBORenderer {
 	private isAnimating: boolean = false;
 
 	constructor() {
-		this.glContext = WorkerGLContext.getInstance();
+		const [width, height] = this.renderSize;
 
-		this.fallbackTexture = this.glContext.regl.texture({
+		this.offscreenCanvas = new OffscreenCanvas(width, height);
+		this.gl = this.offscreenCanvas.getContext('webgl')!;
+		this.regl = regl({ gl: this.gl, extensions: WEBGL_EXTENSIONS });
+
+		this.fallbackTexture = this.regl.texture({
 			width: 1,
 			height: 1,
 			data: new Uint8Array([0, 0, 0, 255])
@@ -34,21 +40,21 @@ export class FBORenderer {
 
 		// Create FBO for each node
 		for (const node of renderGraph.nodes) {
-			const texture = this.glContext.regl.texture({
+			const texture = this.regl.texture({
 				width,
 				height,
 				wrapS: 'clamp',
 				wrapT: 'clamp'
 			});
 
-			const framebuffer = this.glContext.regl.framebuffer({
+			const framebuffer = this.regl.framebuffer({
 				color: texture,
 				depthStencil: false
 			});
 
 			const renderCommand = DrawToFbo({
 				code: node.data.shader,
-				regl: this.glContext.regl,
+				regl: this.regl,
 				width,
 				height,
 				framebuffer
@@ -122,7 +128,9 @@ export class FBORenderer {
 		}
 
 		// Render the final result to the main canvas
-		this.renderTextureToMainOutput(finalTexture);
+		if (finalTexture) {
+			this.renderTextureToMainOutput(finalTexture);
+		}
 	}
 
 	/**
@@ -151,19 +159,19 @@ export class FBORenderer {
 	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
 		const [width, height] = this.previewSize;
 
-		const previewTexture = this.glContext.regl.texture({
+		const previewTexture = this.regl.texture({
 			width,
 			height,
 			wrapS: 'clamp',
 			wrapT: 'clamp'
 		});
 
-		const previewFramebuffer = this.glContext.regl.framebuffer({
+		const previewFramebuffer = this.regl.framebuffer({
 			color: previewTexture,
 			depthStencil: false
 		});
 
-		const previewBlitCommand = this.glContext.regl({
+		const previewBlitCommand = this.regl({
 			frag: `
 				precision highp float;
 				uniform sampler2D texture;
@@ -182,7 +190,7 @@ export class FBORenderer {
 				}
 			`,
 			attributes: {
-				position: this.glContext.regl.buffer([
+				position: this.regl.buffer([
 					[-1, -1],
 					[1, -1],
 					[-1, 1],
@@ -201,11 +209,11 @@ export class FBORenderer {
 		let pixels: Uint8Array;
 
 		previewFramebuffer.use(() => {
-			this.glContext.regl.clear({ color: [0, 0, 0, 1] });
+			this.regl.clear({ color: [0, 0, 0, 1] });
 			previewBlitCommand();
 
 			// Read pixels from the framebuffer using regl.read()
-			pixels = this.glContext.regl.read() as Uint8Array;
+			pixels = this.regl.read() as Uint8Array;
 		});
 
 		// Clean up temporary resources
@@ -216,7 +224,7 @@ export class FBORenderer {
 	}
 
 	private renderTextureToMainOutput(texture: regl.Texture2D) {
-		const outputBlitCommand = this.glContext.regl({
+		const outputBlitCommand = this.regl({
 			frag: `
 				precision highp float;
 				uniform sampler2D texture;
@@ -235,7 +243,7 @@ export class FBORenderer {
 				}
 			`,
 			attributes: {
-				position: this.glContext.regl.buffer([
+				position: this.regl.buffer([
 					[-1, -1],
 					[1, -1],
 					[-1, 1],
@@ -252,19 +260,19 @@ export class FBORenderer {
 			framebuffer: null
 		});
 
-		this.glContext.regl.clear({ color: [0, 0, 0, 1] });
+		this.regl.clear({ color: [0, 0, 0, 1] });
 		outputBlitCommand();
 	}
 
 	getOutputBitmap(): ImageBitmap | null {
-		return this.glContext.offscreenCanvas.transferToImageBitmap();
+		return this.offscreenCanvas.transferToImageBitmap();
 	}
 
 	startRenderLoop(renderGraph: RenderGraph, onFrame?: () => void) {
 		this.stopRenderLoop();
 		this.isAnimating = true;
 
-		const f = this.glContext.regl.frame(() => {
+		const f = this.regl.frame(() => {
 			if (!this.isAnimating) {
 				f?.cancel();
 				return;
