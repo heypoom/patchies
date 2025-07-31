@@ -39,8 +39,9 @@ export class FBORenderer {
 
 	/** Build FBOs for all nodes in the render graph */
 	buildFBOs(renderGraph: RenderGraph) {
+		this.cleanupFBOs();
+
 		this.renderGraph = renderGraph;
-		this.fboNodes.clear();
 
 		const [width, height] = this.renderSize;
 
@@ -78,6 +79,15 @@ export class FBORenderer {
 			this.fboNodes.set(node.id, fboNode);
 			this.previewState[node.id] = false;
 		}
+	}
+
+	cleanupFBOs() {
+		for (const fboNode of this.fboNodes.values()) {
+			fboNode.framebuffer.destroy();
+			fboNode.texture.destroy();
+		}
+
+		this.fboNodes.clear();
 	}
 
 	setPreviewEnabled(nodeId: string, enabled: boolean) {
