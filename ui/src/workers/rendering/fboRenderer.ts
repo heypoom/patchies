@@ -72,12 +72,12 @@ export class FBORenderer {
 				framebuffer,
 				texture,
 				renderCommand,
-				needsPreview: false, // Default to false, can be enabled via togglePreview
+				needsPreview: true,
 				previewSize: this.previewSize
 			};
 
 			this.fboNodes.set(node.id, fboNode);
-			this.previewState[node.id] = false;
+			this.previewState[node.id] = true;
 		}
 	}
 

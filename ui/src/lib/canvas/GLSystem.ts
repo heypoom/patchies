@@ -92,8 +92,6 @@ export class GLSystem {
 
 	send<T>(type: string, data?: T) {
 		this.renderWorker.postMessage({ type, ...data });
-
-		console.log(`[worker.send]`, { type, ...data });
 	}
 
 	updateRenderGraph(nodes: Node[], edges: Edge[]) {
