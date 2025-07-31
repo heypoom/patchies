@@ -22,6 +22,8 @@ self.onmessage = (event) => {
 function handleBuildRenderGraph(graph: RenderGraph) {
 	currentRenderGraph = graph;
 
+	console.log('[render worker] render graph =', graph);
+
 	try {
 		fboRenderer.buildFBOs(graph);
 	} catch (error) {

@@ -242,6 +242,8 @@
 			clearInterval(autosaveInterval);
 			autosaveInterval = null;
 		}
+
+		glSystem.renderWorker.terminate();
 	});
 
 	// Handle drop events

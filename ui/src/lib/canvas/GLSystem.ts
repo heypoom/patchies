@@ -103,8 +103,6 @@ export class GLSystem {
 
 		this.send('buildRenderGraph', { graph });
 		this.renderGraph = graph;
-
-		console.log(`[built render graph]`, graph);
 	}
 
 	// TODO: optimize this!
