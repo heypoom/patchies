@@ -15,7 +15,7 @@ self.onmessage = (event) => {
 		.with('buildRenderGraph', () => handleBuildRenderGraph(data.graph))
 		.with('startAnimation', () => handleStartAnimation())
 		.with('stopAnimation', () => handleStopAnimation())
-		.with('setPreviewEnabled', () => handleTogglePreview(data.nodeId, data.enabled))
+		.with('setPreviewEnabled', () => handleSetPreviewEnabled(data.nodeId, data.enabled))
 		.with('setOutputEnabled', () => handleSetOutputEnabled(data.enabled));
 };
 
@@ -89,7 +89,7 @@ function handleStopAnimation() {
 	fboRenderer.stopRenderLoop();
 }
 
-function handleTogglePreview(nodeId: string, enabled: boolean) {
+function handleSetPreviewEnabled(nodeId: string, enabled: boolean) {
 	fboRenderer.setPreviewEnabled(nodeId, enabled);
 	self.postMessage({ type: 'previewToggled', nodeId, enabled });
 }

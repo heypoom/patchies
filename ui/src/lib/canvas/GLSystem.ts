@@ -52,7 +52,6 @@ export class GLSystem {
 			if (!context) return;
 
 			const uint8Array = new Uint8Array(buffer);
-
 			const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 			const bitmap = await createImageBitmap(imageData);
 
@@ -93,6 +92,8 @@ export class GLSystem {
 
 	send<T>(type: string, data?: T) {
 		this.renderWorker.postMessage({ type, ...data });
+
+		console.log(`[worker.send]`, { type, ...data });
 	}
 
 	updateRenderGraph(nodes: Node[], edges: Edge[]) {

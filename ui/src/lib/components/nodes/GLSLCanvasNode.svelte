@@ -18,8 +18,7 @@
 	const width = $state(200);
 	const height = $state(150);
 
-	const glSystem = GLSystem.getInstance();
-
+	let glSystem: GLSystem;
 	let previewCanvas: HTMLCanvasElement;
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let messageContext: MessageContext;
@@ -38,8 +37,12 @@
 		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 		messageContext = new MessageContext(nodeId);
 
+		glSystem = GLSystem.getInstance();
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
-		glSystem.setPreviewEnabled(nodeId, true);
+
+		setTimeout(() => {
+			glSystem.setPreviewEnabled(nodeId, true);
+		}, 1000);
 	});
 
 	onDestroy(() => {
