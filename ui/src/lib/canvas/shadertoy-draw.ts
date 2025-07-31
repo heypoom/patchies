@@ -2,32 +2,47 @@ import regl from 'regl';
 
 // Render a simple quad for a vertex shader.
 const VERTEX_SHADER = `
-  precision mediump float;
+  precision highp float;
   attribute vec2 position;
+	varying vec2 uv;
 
   void main() {
+		uv = 0.5 * (position + 1.0);
     gl_Position = vec4(position, 0, 1);
   }
 `;
 
-export function getShadertoyDrawCommand({
+type TextureOrFramebuffer = regl.Texture2D | regl.Framebuffer2D;
+
+type P = {
+	lastTime: number;
+	iFrame: number;
+	mouseX: number;
+	mouseY: number;
+	textures: [
+		TextureOrFramebuffer,
+		TextureOrFramebuffer,
+		TextureOrFramebuffer,
+		TextureOrFramebuffer
+	];
+};
+
+export function DrawToFbo({
 	code,
 	regl,
 	width,
 	height,
-	textures,
 	framebuffer
 }: {
 	code: string;
 	regl: regl.Regl;
 	width: number;
 	height: number;
-	textures: [regl.Texture2D, regl.Texture2D, regl.Texture2D, regl.Texture2D];
-	framebuffer: regl.Framebuffer2D;
+	framebuffer: regl.Framebuffer2D | null;
 }): regl.DrawCommand {
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `
-    precision mediump float;
+    precision highp float;
     
     uniform vec3 iResolution;
     uniform float iTime;
@@ -40,6 +55,8 @@ export function getShadertoyDrawCommand({
     uniform sampler2D iChannel1;
     uniform sampler2D iChannel2;
     uniform sampler2D iChannel3;
+
+		varying vec2 uv;
     
     ${code}
     
@@ -49,8 +66,6 @@ export function getShadertoyDrawCommand({
       gl_FragColor = fragColor;
     }
   `;
-
-	type P = { lastTime: number; iFrame: number; mouseX: number; mouseY: number };
 
 	return regl({
 		frag: fragmentShader,
@@ -79,10 +94,10 @@ export function getShadertoyDrawCommand({
 			iFrame: (_, props: P) => props.iFrame,
 			iMouse: (_, props: P) => [props.mouseX, props.mouseY, 0, 0],
 			iDate: () => getDate(),
-			iChannel0: () => textures[0],
-			iChannel1: () => textures[1],
-			iChannel2: () => textures[2],
-			iChannel3: () => textures[3]
+			iChannel0: (_, props: P) => props.textures[0],
+			iChannel1: (_, props: P) => props.textures[1],
+			iChannel2: (_, props: P) => props.textures[2],
+			iChannel3: (_, props: P) => props.textures[3]
 		}
 	});
 }

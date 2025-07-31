@@ -1,6 +1,6 @@
 import regl from 'regl';
 import { GLContextManager } from './GLContextManager';
-import { getShadertoyDrawCommand } from './shadertoy-draw';
+import { DrawToFbo } from './shadertoy-draw';
 import { DEFAULT_GLSL_CODE } from './constants';
 
 export class GLSLCanvasManager {
@@ -46,7 +46,7 @@ export class GLSLCanvasManager {
 
 		this.frameHandle?.cancel();
 
-		const framebuffer = this.regl.framebuffer({
+		const nodeAframebuffer = this.regl.framebuffer({
 			color: this.regl.texture({
 				width,
 				height,
@@ -56,68 +56,54 @@ export class GLSLCanvasManager {
 			depthStencil: false
 		});
 
-		const drawCommand = getShadertoyDrawCommand({
+		const nodeA = DrawToFbo({
 			code: this.code,
 			regl: this.regl,
-			framebuffer,
+			framebuffer: nodeAframebuffer,
 			width,
-			height,
-			textures: [
-				this.fallbackTexture,
-				this.fallbackTexture,
-				this.fallbackTexture,
-				this.fallbackTexture
-			]
+			height
 		});
 
-		const copyCommand = this.regl({
-			vert: `
-				precision highp float;
-
-				attribute vec2 position;
-				varying vec2 uv;
-
-				void main() {
-					uv = 0.5 * (position + 1.0);
-					gl_Position = vec4(position, 0, 1);
+		const nodeB = DrawToFbo({
+			code: `
+				void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+					fragColor = texture2D(iChannel0, uv);
 				}
 			`,
-			frag: `
-				precision highp float;
-
-				uniform sampler2D iChannel0;
-				varying vec2 uv;
-
-				void main() {
-					gl_FragColor = texture2D(iChannel0, uv);
-				}
-			`,
-			attributes: {
-				position: [
-					[-1, -1],
-					[1, -1],
-					[-1, 1],
-					[1, 1]
-				]
-			},
-			uniforms: {
-				iChannel0: (_, props: { iChannel0: regl.Framebuffer2D }) => props.iChannel0
-			},
-			primitive: 'triangle strip',
-			count: 4
+			regl: this.regl,
+			framebuffer: null,
+			width,
+			height
 		});
 
 		this.frameHandle = this.regl.frame((context) => {
-			framebuffer.use(() => {
-				drawCommand({
+			nodeAframebuffer.use(() => {
+				nodeA({
 					lastTime: this.lastTime,
 					frameCounter: this.frameCounter,
 					mouseX: 0,
-					mouseY: 0
+					mouseY: 0,
+					textures: [
+						this.fallbackTexture,
+						this.fallbackTexture,
+						this.fallbackTexture,
+						this.fallbackTexture
+					]
 				});
 			});
 
-			copyCommand({ iChannel0: framebuffer });
+			nodeB({
+				lastTime: this.lastTime,
+				frameCounter: this.frameCounter,
+				mouseX: 0,
+				mouseY: 0,
+				textures: [
+					nodeAframebuffer,
+					this.fallbackTexture,
+					this.fallbackTexture,
+					this.fallbackTexture
+				]
+			});
 
 			this.lastTime = context.time;
 			this.frameCounter += 1;
