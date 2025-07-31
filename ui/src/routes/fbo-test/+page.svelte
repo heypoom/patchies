@@ -48,7 +48,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord / iResolution.xy;
     vec4 inputColor = texture2D(iChannel0, uv);
-    float time = iTime * 0.5;
+    float time = iTime * 10.;
     vec3 color = inputColor.rgb;
     color.b += sin(uv.x * 10.0 + time) * 0.5 + 0.5; // Add animated blue
     fragColor = vec4(color, 1.0);
@@ -204,7 +204,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 	<!-- Test buttons and output canvas -->
 	<div class="fixed right-4 top-4 z-50 flex flex-col gap-2">
 		<h2 class="text-lg font-bold text-white">FBO Rendering Test</h2>
-		
+
 		<div class="flex gap-2">
 			<button
 				class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
@@ -274,10 +274,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 							bind:this={n1Canvas}
 							width="200"
 							height="150"
-							class="border border-gray-600 bg-black"
+							class="h-[75px] w-[100px] border border-gray-600 bg-black"
 						></canvas>
 					</div>
 				{/if}
+
 				{#if previewStates.get('n3')}
 					<div class="flex flex-col gap-1">
 						<span class="text-xs text-gray-300">n3</span>
@@ -285,10 +286,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 							bind:this={n3Canvas}
 							width="200"
 							height="150"
-							class="border border-gray-600 bg-black"
+							class="h-[75px] w-[100px] border border-gray-600 bg-black"
 						></canvas>
 					</div>
 				{/if}
+
 				{#if previewStates.get('n4')}
 					<div class="flex flex-col gap-1">
 						<span class="text-xs text-gray-300">n4</span>
@@ -296,7 +298,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 							bind:this={n4Canvas}
 							width="200"
 							height="150"
-							class="border border-gray-600 bg-black"
+							class="h-[75px] w-[100px] border border-gray-600 bg-black"
 						></canvas>
 					</div>
 				{/if}
