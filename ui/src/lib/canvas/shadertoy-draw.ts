@@ -12,6 +12,12 @@ const VERTEX_SHADER = `
   }
 `;
 
+const PLACEHOLDER_MAIN_IMAGE = `
+	void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+		fragColor = vec4(0.0);
+	}
+`;
+
 type TextureOrFramebuffer = regl.Texture2D | regl.Framebuffer2D;
 
 type P = {
@@ -26,22 +32,6 @@ type P = {
 		TextureOrFramebuffer
 	];
 };
-
-const PLACEHOLDER_VERTEX_SHADER = `
-	void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-		vec2 uv = fragCoord / iResolution.xy;
-		vec3 color = vec3(0.0);
-		float time = iTime * 0.5;
-		
-		color.r = sin(uv.x * 10.0 + time) * 0.5 + 0.5;
-		color.g = sin(uv.y * 10.0 + time * 1.2) * 0.5 + 0.5;
-		color.b = sin((uv.x + uv.y) * 5.0 + time * 0.8) * 0.5 + 0.5;
-		
-		float brightness = sin(time * 2.0) * 0.2 + 0.8;
-		color *= brightness;
-		fragColor = vec4(color, 1.0);
-	}
-`;
 
 export function DrawToFbo({
 	code,
@@ -74,7 +64,7 @@ export function DrawToFbo({
 
 		varying vec2 uv;
     
-    ${code ?? PLACEHOLDER_VERTEX_SHADER}
+    ${code ?? PLACEHOLDER_MAIN_IMAGE}
     
     void main() {
       vec4 fragColor = vec4(0.0);

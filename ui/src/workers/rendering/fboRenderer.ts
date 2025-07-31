@@ -18,6 +18,7 @@ export class FBORenderer {
 	private startTime: number = Date.now();
 	private previewState: PreviewState = {};
 	private isAnimating: boolean = false;
+	private frameCancellable: regl.Cancellable | null = null;
 
 	public isOutputEnabled: boolean = false;
 	public shouldProcessPreviews: boolean = false;
@@ -280,13 +281,13 @@ export class FBORenderer {
 		this.stopRenderLoop();
 		this.isAnimating = true;
 
-		const f = this.regl.frame(() => {
-			// if (!this.isAnimating) {
-			// 	// f?.cancel();
-			// 	return;
-			// }
+		this.frameCancellable = this.regl.frame(() => {
+			if (!this.isAnimating) {
+				this.frameCancellable?.cancel();
+				return;
+			}
 
-			this.renderFrame(this.renderGraph);
+			this.renderFrame();
 			onFrame?.();
 		});
 	}
