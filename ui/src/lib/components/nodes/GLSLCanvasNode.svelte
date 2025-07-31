@@ -10,7 +10,7 @@
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
-	
+
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
