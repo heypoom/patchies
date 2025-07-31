@@ -5,6 +5,7 @@ import RenderWorker from '$workers/rendering/renderWorker?worker';
 import * as ohash from 'ohash';
 import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
+import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
@@ -120,6 +121,10 @@ export class GLSystem {
 	updateEdges(edges: REdge[]) {
 		this.edges = edges;
 		this.updateRenderGraph();
+
+		const hasOutputNode = edges.some((edge) => edge.target.startsWith('bg.out'));
+		isBackgroundOutputCanvasEnabled.set(hasOutputNode);
+		this.setOutputEnabled(hasOutputNode);
 	}
 
 	private updateRenderGraph() {
