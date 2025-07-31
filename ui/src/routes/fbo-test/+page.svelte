@@ -142,7 +142,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 		const bmr = outputCanvas.getContext('bitmaprenderer')!;
 
 		// Listen for messages from worker
-		worker.onmessage = (event) => {
+		worker.onmessage = async (event) => {
 			// Handle output bitmap from worker
 			if (
 				(event.data.type === 'frameRendered' || event.data.type === 'animationFrame') &&
@@ -163,10 +163,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				else if (nodeId === 'n4') directCanvas = n4Canvas;
 
 				if (directCanvas) {
-					const ctx = directCanvas.getContext('2d')!;
 					const uint8Array = new Uint8Array(buffer);
 					const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
-					ctx.putImageData(imageData, 0, 0);
+
+					const bitmap = await createImageBitmap(imageData);
+					directCanvas.getContext('bitmaprenderer')!.transferFromImageBitmap(bitmap);
 				} else {
 					console.warn(`No canvas available for ${nodeId} - preview might not be enabled`);
 				}
