@@ -11,8 +11,10 @@
 
 	// Create canvas references for each GLSL node
 	let n1Canvas: HTMLCanvasElement;
+	let n2Canvas: HTMLCanvasElement;
 	let n3Canvas: HTMLCanvasElement;
 	let n4Canvas: HTMLCanvasElement;
+	let n5Canvas: HTMLCanvasElement;
 
 	// Test data - some mock GLSL nodes with proper ShaderToy format
 	const testNodes = [
@@ -27,7 +29,17 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }`
 			}
 		},
-		{ id: 'n2', type: 'p5', data: { code: 'background(255);' } },
+		{
+			id: 'n2',
+			type: 'glsl',
+			data: {
+				shader: `
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 uv = fragCoord / iResolution.xy;
+    fragColor = vec4(0.0, uv.y, 0.0, 1.0); // Green gradient
+}`
+			}
+		},
 		{
 			id: 'n3',
 			type: 'glsl',
@@ -35,8 +47,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				shader: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord / iResolution.xy;
-    vec4 inputColor = texture2D(iChannel0, uv);
-    fragColor = vec4(inputColor.r, uv.y, 0.0, 1.0); // Mix input with green gradient
+    vec4 textureA = texture2D(iChannel0, uv);
+    vec4 textureB = texture2D(iChannel1, uv);
+    // Mix two inputs 50/50 as per spec example
+    fragColor = mix(textureA, textureB, 0.5);
 }`
 			}
 		},
@@ -47,11 +61,35 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				shader: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord / iResolution.xy;
-    vec4 inputColor = texture2D(iChannel0, uv);
-    float time = iTime * 10.;
-    vec3 color = inputColor.rgb;
-    color.b += sin(uv.x * 10.0 + time) * 0.5 + 0.5; // Add animated blue
+    vec4 baseColor = texture2D(iChannel0, uv);
+    float time = iTime * 2.0;
+    
+    // Add animated blue channel based on time and position
+    vec3 color = baseColor.rgb;
+    color.b += sin(uv.x * 10.0 + time) * 0.3 + 0.3;
+    
     fragColor = vec4(color, 1.0);
+}`
+			}
+		},
+		{
+			id: 'n5',
+			type: 'glsl',
+			data: {
+				shader: `
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 uv = fragCoord / iResolution.xy;
+    vec4 textureA = texture2D(iChannel0, uv);
+    vec4 textureB = texture2D(iChannel1, uv);
+    vec4 textureC = texture2D(iChannel2, uv);
+    
+    // Complex mixing of three inputs with animated weights
+    float time = iTime * 0.5;
+    float mixA = sin(time) * 0.5 + 0.5;
+    float mixB = cos(time * 1.3) * 0.5 + 0.5;
+    
+    vec4 mixed = mix(textureA, textureB, mixA);
+    fragColor = mix(mixed, textureC, mixB * 0.3);
 }`
 			}
 		}
@@ -59,8 +97,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 	const testEdges = [
 		{ id: 'e1', source: 'n1', target: 'n3' },
-		{ id: 'e2', source: 'n3', target: 'n4' },
-		{ id: 'e3', source: 'n2', target: 'n4' } // This edge will be filtered out (p5 -> glsl)
+		{ id: 'e2', source: 'n2', target: 'n3' },
+		{ id: 'e3', source: 'n3', target: 'n4' },
+		{ id: 'e4', source: 'n1', target: 'n5' },
+		{ id: 'e5', source: 'n3', target: 'n5' },
+		{ id: 'e6', source: 'n4', target: 'n5' }
 	];
 
 	function testRenderGraph() {
@@ -126,10 +167,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 			setTimeout(() => {
 				if (nodeId === 'n1' && n1Canvas) {
 					previewCanvases.set('n1', n1Canvas);
+				} else if (nodeId === 'n2' && n2Canvas) {
+					previewCanvases.set('n2', n2Canvas);
 				} else if (nodeId === 'n3' && n3Canvas) {
 					previewCanvases.set('n3', n3Canvas);
 				} else if (nodeId === 'n4' && n4Canvas) {
 					previewCanvases.set('n4', n4Canvas);
+				} else if (nodeId === 'n5' && n5Canvas) {
+					previewCanvases.set('n5', n5Canvas);
 				}
 			}, 10); // Small delay to ensure DOM is updated
 		}
@@ -159,15 +204,17 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 				// Use direct canvas access since conditionally rendered canvases need this approach
 				let directCanvas = null;
 				if (nodeId === 'n1') directCanvas = n1Canvas;
+				else if (nodeId === 'n2') directCanvas = n2Canvas;
 				else if (nodeId === 'n3') directCanvas = n3Canvas;
 				else if (nodeId === 'n4') directCanvas = n4Canvas;
+				else if (nodeId === 'n5') directCanvas = n5Canvas;
 
 				if (directCanvas) {
 					const uint8Array = new Uint8Array(buffer);
 					const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 
 					const bitmap = await createImageBitmap(imageData);
-					directCanvas.getContext('bitmaprenderer')!.transferFromImageBitmap(bitmap);
+					directCanvas.getContext('bitmaprenderer').transferFromImageBitmap(bitmap);
 				} else {
 					console.warn(`No canvas available for ${nodeId} - preview might not be enabled`);
 				}
@@ -204,7 +251,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 	<FlowCanvas />
 
 	<!-- Test buttons and output canvas -->
-	<div class="fixed right-4 top-4 z-50 flex flex-col gap-2">
+	<div class="fixed left-[80px] top-4 z-50 flex flex-col gap-2">
 		<h2 class="text-lg font-bold text-white">FBO Rendering Test</h2>
 
 		<div class="flex gap-2">
@@ -268,10 +315,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 		<!-- Preview Canvases -->
 		<div class="mt-4">
 			<h3 class="mb-2 text-sm font-semibold text-white">Previews</h3>
-			<div class="flex flex-col gap-2">
+			<div class="flex flex-wrap gap-2">
 				{#if previewStates.get('n1')}
 					<div class="flex flex-col gap-1">
-						<span class="text-xs text-gray-300">n1</span>
+						<span class="text-xs text-gray-300">n1 (Red gradient)</span>
 						<canvas
 							bind:this={n1Canvas}
 							width="200"
@@ -281,9 +328,21 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 					</div>
 				{/if}
 
+				{#if previewStates.get('n2')}
+					<div class="flex flex-col gap-1">
+						<span class="text-xs text-gray-300">n2 (Green gradient)</span>
+						<canvas
+							bind:this={n2Canvas}
+							width="200"
+							height="150"
+							class="h-[75px] w-[100px] border border-gray-600 bg-black"
+						></canvas>
+					</div>
+				{/if}
+
 				{#if previewStates.get('n3')}
 					<div class="flex flex-col gap-1">
-						<span class="text-xs text-gray-300">n3</span>
+						<span class="text-xs text-gray-300">n3 (Mix n1+n2)</span>
 						<canvas
 							bind:this={n3Canvas}
 							width="200"
@@ -295,9 +354,21 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 				{#if previewStates.get('n4')}
 					<div class="flex flex-col gap-1">
-						<span class="text-xs text-gray-300">n4</span>
+						<span class="text-xs text-gray-300">n4 (n3 + animated blue)</span>
 						<canvas
 							bind:this={n4Canvas}
+							width="200"
+							height="150"
+							class="h-[75px] w-[100px] border border-gray-600 bg-black"
+						></canvas>
+					</div>
+				{/if}
+
+				{#if previewStates.get('n5')}
+					<div class="flex flex-col gap-1">
+						<span class="text-xs text-gray-300">n5 (Complex mix n1+n3+n4)</span>
+						<canvas
+							bind:this={n5Canvas}
 							width="200"
 							height="150"
 							class="h-[75px] w-[100px] border border-gray-600 bg-black"
