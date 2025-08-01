@@ -1,16 +1,4 @@
-export const WEBGL_EXTENSIONS = [
-	'WEBGL_depth_texture',
-	'OES_vertex_array_object',
-	'OES_texture_float',
-	'WEBGL_color_buffer_float',
-	'OES_standard_derivatives',
-	'OES_texture_float_linear',
-	'OES_element_index_uint',
-	'EXT_frag_depth',
-	'EXT_shader_texture_lod',
-	'ANGLE_instanced_arrays',
-	'WEBGL_draw_buffers'
-];
+export const WEBGL_EXTENSIONS = ['OES_texture_float_linear'];
 
 export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse
 // you can define your own uniforms!

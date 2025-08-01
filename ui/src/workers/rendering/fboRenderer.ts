@@ -32,7 +32,7 @@ export class FBORenderer {
 		const [width, height] = this.renderSize;
 
 		this.offscreenCanvas = new OffscreenCanvas(width, height);
-		this.gl = this.offscreenCanvas.getContext('webgl')!;
+		this.gl = this.offscreenCanvas.getContext('webgl2')!;
 		this.regl = regl({ gl: this.gl, extensions: WEBGL_EXTENSIONS });
 
 		this.fallbackTexture = this.regl.texture({
