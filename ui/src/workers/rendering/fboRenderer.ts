@@ -260,12 +260,8 @@ export class FBORenderer {
 
 		previewFramebuffer.use(() => {
 			const gl = this.regl._gl as WebGL2RenderingContext;
-
-			// @ts-expect-error -- hack: access WebGLFramebuffer directly
-			const sourceFBO = fboNode.framebuffer._framebuffer.framebuffer;
-
-			// @ts-expect-error -- hack: access WebGLFramebuffer directly
-			const destPreviewFBO = previewFramebuffer._framebuffer.framebuffer;
+			const sourceFBO = getFramebuffer(fboNode.framebuffer);
+			const destPreviewFBO = getFramebuffer(previewFramebuffer);
 
 			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
 			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
@@ -307,10 +303,8 @@ export class FBORenderer {
 			return;
 		}
 
-		// @ts-expect-error -- hack: access WebGLFramebuffer directly
-		const framebuffer = node.framebuffer._framebuffer.framebuffer;
-
 		const gl = this.regl._gl as WebGL2RenderingContext;
+		const framebuffer = getFramebuffer(node.framebuffer);
 
 		gl.viewport(0, 0, renderWidth, renderHeight);
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, framebuffer);
@@ -375,3 +369,8 @@ export class FBORenderer {
 		return textures.slice(0, 4) as [regl.Texture2D, regl.Texture2D, regl.Texture2D, regl.Texture2D];
 	}
 }
+
+const getFramebuffer = (reglFramebuffer: regl.Framebuffer2D): WebGLFramebuffer | null => {
+	// @ts-expect-error -- hack: access WebGLFramebuffer directly
+	return reglFramebuffer._framebuffer.framebuffer || null;
+};
