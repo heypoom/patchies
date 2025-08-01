@@ -249,11 +249,12 @@ export class FBORenderer {
 	 * Render a single node's preview using regl.read() as per spec
 	 */
 	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
-		const [width, height] = this.previewSize;
+		const [previewWidth, previewHeight] = this.previewSize;
+		const [renderWidth, renderHeight] = this.renderSize;
 
 		const previewTexture = this.regl.texture({
-			width,
-			height,
+			width: previewWidth,
+			height: previewHeight,
 			wrapS: 'clamp',
 			wrapT: 'clamp'
 		});
@@ -263,82 +264,39 @@ export class FBORenderer {
 			depthStencil: false
 		});
 
-		// const previewBlitCommand = this.regl({
-		// 	frag: `#version 300 es
-		// 		precision highp float;
-		// 		uniform sampler2D inputTexture;
-		// 		in vec2 uv;
-		// 		out vec4 fragColor;
-		// 		void main() {
-		// 			fragColor = texture(inputTexture, uv);
-		// 		}
-		// 	`,
-		// 	vert: `#version 300 es
-		// 		precision highp float;
-		// 		in vec2 position;
-		// 		out vec2 uv;
-		// 		void main() {
-		// 			uv = 0.5 * (position + 1.0);
-		// 			gl_Position = vec4(position, 0, 1);
-		// 		}
-		// 	`,
-		// 	attributes: {
-		// 		position: this.regl.buffer([
-		// 			[-1, -1],
-		// 			[1, -1],
-		// 			[-1, 1],
-		// 			[1, 1]
-		// 		])
-		// 	},
-		// 	uniforms: {
-		// 		inputTexture: fboNode.texture
-		// 	},
-		// 	primitive: 'triangle strip',
-		// 	count: 4,
-		// 	framebuffer: previewFramebuffer
-		// });
-
-		// Render to preview framebuffer and read pixels
 		let pixels: Uint8Array;
 
-		previewFramebuffer.use((context) => {
-			this.regl.clear({ color: [0, 0, 0, 1] });
-
+		previewFramebuffer.use(() => {
 			const gl = this.regl._gl as WebGL2RenderingContext;
 
+			// @ts-expect-error -- hack: access WebGLFramebuffer directly
 			const sourceFBO = fboNode.framebuffer._framebuffer.framebuffer;
+
+			// @ts-expect-error -- hack: access WebGLFramebuffer directly
 			const destPreviewFBO = previewFramebuffer._framebuffer.framebuffer;
 
-			// Set up the read and draw framebuffers
 			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
 			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
 
-			// console.log(
-			// 	`blit (src: ${this.renderSize[0]}, ${this.renderSize[1]}) to (prv: ${width}, ${height})`
-			// );
-
-			gl.disable(gl.SCISSOR_TEST);
-			gl.viewport(0, 0, width, height);
-
-			// Blit the framebuffer
 			gl.blitFramebuffer(
 				0,
 				0,
-				this.renderSize[0],
-				this.renderSize[1], // Source rectangle
+				renderWidth,
+				renderHeight,
 				0,
 				0,
-				width,
-				height, // Destination rectangle
-				gl.COLOR_BUFFER_BIT, // What to blit
-				gl.LINEAR // Filtering method
+				previewWidth,
+				previewHeight,
+				gl.COLOR_BUFFER_BIT,
+				gl.LINEAR
 			);
 
-			// Read pixels from the framebuffer using regl.read()
 			pixels = this.regl.read() as Uint8Array;
+
+			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 		});
 
-		// Clean up temporary resources
 		previewTexture.destroy();
 		previewFramebuffer.destroy();
 
