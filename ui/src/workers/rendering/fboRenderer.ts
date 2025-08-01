@@ -32,7 +32,7 @@ export class FBORenderer {
 		const [width, height] = this.renderSize;
 
 		this.offscreenCanvas = new OffscreenCanvas(width, height);
-		this.gl = this.offscreenCanvas.getContext('webgl2')!;
+		this.gl = this.offscreenCanvas.getContext('webgl2', { antialias: false })!;
 		this.regl = regl({ gl: this.gl, extensions: WEBGL_EXTENSIONS });
 
 		this.fallbackTexture = this.regl.texture({
@@ -173,7 +173,7 @@ export class FBORenderer {
 		this.lastTime = currentTime;
 		this.frameCount++;
 
-		let finalTexture: regl.Texture2D | null = null;
+		let finalFBONode: FBONode | null = null;
 
 		// Render each node in topological order
 		for (const nodeId of this.renderGraph.sortedNodes) {
@@ -215,13 +215,12 @@ export class FBORenderer {
 				});
 			});
 
-			// Keep track of the last rendered texture (final output)
-			finalTexture = fboNode.texture;
+			finalFBONode = fboNode;
 		}
 
 		// Render the final result to the main canvas
-		if (finalTexture) {
-			this.renderTextureToMainOutput(finalTexture);
+		if (finalFBONode) {
+			this.renderNodeToMainOutput(finalFBONode);
 		}
 	}
 
@@ -249,11 +248,12 @@ export class FBORenderer {
 	 * Render a single node's preview using regl.read() as per spec
 	 */
 	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
-		const [width, height] = this.previewSize;
+		const [previewWidth, previewHeight] = this.previewSize;
+		const [renderWidth, renderHeight] = this.renderSize;
 
 		const previewTexture = this.regl.texture({
-			width,
-			height,
+			width: previewWidth,
+			height: previewHeight,
 			wrapS: 'clamp',
 			wrapT: 'clamp'
 		});
@@ -263,99 +263,81 @@ export class FBORenderer {
 			depthStencil: false
 		});
 
-		const previewBlitCommand = this.regl({
-			frag: `#version 300 es
-				precision highp float;
-				uniform sampler2D inputTexture;
-				in vec2 uv;
-				out vec4 fragColor;
-				void main() {
-					fragColor = texture(inputTexture, uv);
-				}
-			`,
-			vert: `#version 300 es
-				precision highp float;
-				in vec2 position;
-				out vec2 uv;
-				void main() {
-					uv = 0.5 * (position + 1.0);
-					gl_Position = vec4(position, 0, 1);
-				}
-			`,
-			attributes: {
-				position: this.regl.buffer([
-					[-1, -1],
-					[1, -1],
-					[-1, 1],
-					[1, 1]
-				])
-			},
-			uniforms: {
-				inputTexture: fboNode.texture
-			},
-			primitive: 'triangle strip',
-			count: 4,
-			framebuffer: previewFramebuffer
-		});
-
-		// Render to preview framebuffer and read pixels
 		let pixels: Uint8Array;
 
 		previewFramebuffer.use(() => {
-			this.regl.clear({ color: [0, 0, 0, 1] });
-			previewBlitCommand();
+			const gl = this.regl._gl as WebGL2RenderingContext;
 
-			// Read pixels from the framebuffer using regl.read()
+			// @ts-expect-error -- hack: access WebGLFramebuffer directly
+			const sourceFBO = fboNode.framebuffer._framebuffer.framebuffer;
+
+			// @ts-expect-error -- hack: access WebGLFramebuffer directly
+			const destPreviewFBO = previewFramebuffer._framebuffer.framebuffer;
+
+			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
+			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
+
+			gl.blitFramebuffer(
+				0,
+				0,
+				renderWidth,
+				renderHeight,
+				0,
+				0,
+				previewWidth,
+				previewHeight,
+				gl.COLOR_BUFFER_BIT,
+				gl.LINEAR
+			);
+
 			pixels = this.regl.read() as Uint8Array;
+
+			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 		});
 
-		// Clean up temporary resources
 		previewTexture.destroy();
 		previewFramebuffer.destroy();
 
 		return pixels!;
 	}
 
-	private renderTextureToMainOutput(texture: regl.Texture2D) {
-		const outputBlitCommand = this.regl({
-			frag: `#version 300 es
-				precision highp float;
-				uniform sampler2D inputTexture;
-				in vec2 uv;
-				out vec4 fragColor;
-				void main() {
-					fragColor = texture(inputTexture, uv);
-				}
-			`,
-			vert: `#version 300 es
-				precision highp float;
-				in vec2 position;
-				out vec2 uv;
-				void main() {
-					uv = 0.5 * (position + 1.0);
-					gl_Position = vec4(position, 0, 1);
-				}
-			`,
-			attributes: {
-				position: this.regl.buffer([
-					[-1, -1],
-					[1, -1],
-					[-1, 1],
-					[1, 1]
-				])
-			},
-			uniforms: {
-				inputTexture: texture
-			},
-			primitive: 'triangle strip',
-			count: 4,
+	private renderNodeToMainOutput(node: FBONode): void {
+		const [renderWidth, renderHeight] = this.renderSize;
 
-			// render to canvas
-			framebuffer: null
-		});
+		// TODO: turn this on to save compute when output is not enabled
+		// if (!this.isOutputEnabled) {
+		// 	return;
+		// }
 
-		this.regl.clear({ color: [0, 0, 0, 1] });
-		outputBlitCommand();
+		if (!node) {
+			console.warn('Could not find source framebuffer for final texture');
+			return;
+		}
+
+		// @ts-expect-error -- hack: access WebGLFramebuffer directly
+		const framebuffer = node.framebuffer._framebuffer.framebuffer;
+
+		const gl = this.regl._gl as WebGL2RenderingContext;
+
+		gl.viewport(0, 0, renderWidth, renderHeight);
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, framebuffer);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+
+		gl.blitFramebuffer(
+			0,
+			0,
+			renderWidth,
+			renderHeight,
+			0,
+			0,
+			renderWidth,
+			renderHeight,
+			gl.COLOR_BUFFER_BIT,
+			gl.NEAREST
+		);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	}
 
 	getOutputBitmap(): ImageBitmap | null {
