@@ -8,6 +8,7 @@
 	import { match } from 'ts-pattern';
 	import type { Message } from '$lib/messages/MessageSystem';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data, type }: { id: string; data: { code: string }; type: string } = $props();
@@ -28,13 +29,22 @@
 	const code = $derived(data.code || '');
 
 	function handleMessage(message: Message) {
-		match(message.data.type).with('set', () => {
-			updateNodeData(nodeId, { ...data, code: message.data.code });
-		});
+		match(message.data.type)
+			.with('set', () => {
+				updateNodeData(nodeId, { ...data, code: message.data.code });
+			})
+			.with('run', updateShader);
 	}
 
 	function updateShader() {
-		glSystem.upsertNode(nodeId, type, data);
+		// Construct uniform definitions from the shader code.
+		const nextData = {
+			...data,
+			glUniformDefs: shaderCodeToUniformDefs(data.code)
+		};
+
+		updateNodeData(nodeId, nextData);
+		glSystem.upsertNode(nodeId, type, nextData);
 	}
 
 	onMount(() => {
@@ -43,7 +53,7 @@
 
 		glSystem = GLSystem.getInstance();
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
-		glSystem.upsertNode(nodeId, type, data);
+		updateShader();
 
 		setTimeout(() => {
 			glSystem.setPreviewEnabled(nodeId, true);

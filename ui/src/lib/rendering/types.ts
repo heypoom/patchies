@@ -6,7 +6,7 @@ export interface RenderNode {
 	type: string;
 	inputs: string[]; // IDs of input nodes
 	outputs: string[]; // IDs of output nodes
-	data: { code: string; uniformDefs: GLUniformDef[] }; // Node-specific data (shader code, etc.)
+	data: { code: string; glUniformDefs: GLUniformDef[] }; // Node-specific data (shader code, etc.)
 }
 
 export interface RenderEdge {

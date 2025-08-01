@@ -44,8 +44,6 @@ export function createShaderToyDrawCommand({
 	height: number;
 	framebuffer: regl.Framebuffer2D | null;
 }): regl.DrawCommand {
-	const uniformDefsCode = uniformDefs.map((u) => `uniform ${u.type} ${u.name};`).join('\n');
-
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `
     precision highp float;
@@ -56,7 +54,6 @@ export function createShaderToyDrawCommand({
     uniform vec4 iDate;
     uniform float iTimeDelta;
     uniform int iFrame;
-    ${uniformDefsCode}
 
 		varying vec2 uv;
     

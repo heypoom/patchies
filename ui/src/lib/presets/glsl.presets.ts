@@ -1,4 +1,7 @@
-const MIX_GL = `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+const MIX_GL = `uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   fragColor = mix(
     texture2D(iChannel0, uv),
@@ -7,7 +10,9 @@ const MIX_GL = `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   );
 }`;
 
-const PASSTHRU_GL = `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+const PASSTHRU_GL = `uniform sampler2D iChannel0;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = texture2D(iChannel0, fragCoord / iResolution.xy);
 }`;
 

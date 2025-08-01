@@ -113,8 +113,17 @@ export class GLSystem {
 		this.updateRenderGraph();
 	}
 
+	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
+		this.send('setUniformData', {
+			nodeId,
+			uniformName,
+			uniformValue
+		});
+	}
+
 	removeNode(nodeId: string) {
 		this.nodes = this.nodes.filter((node) => node.id !== nodeId);
+
 		this.updateRenderGraph();
 	}
 

@@ -15,7 +15,12 @@ self.onmessage = (event) => {
 		.with('startAnimation', () => handleStartAnimation())
 		.with('stopAnimation', () => handleStopAnimation())
 		.with('setPreviewEnabled', () => handleSetPreviewEnabled(data.nodeId, data.enabled))
-		.with('setOutputEnabled', () => handleSetOutputEnabled(data.enabled));
+		.with('setOutputEnabled', () => {
+			fboRenderer.isOutputEnabled = data.enabled;
+		})
+		.with('setUniformData', () =>
+			fboRenderer.setUniformData(data.nodeId, data.uniformName, data.uniformValue)
+		);
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
@@ -29,10 +34,6 @@ function handleBuildRenderGraph(graph: RenderGraph) {
 			});
 		}
 	}
-}
-
-function handleSetOutputEnabled(enabled: boolean) {
-	fboRenderer.isOutputEnabled = enabled;
 }
 
 function handleStartAnimation() {

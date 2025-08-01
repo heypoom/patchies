@@ -2,12 +2,15 @@ import regl from 'regl';
 import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
 import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
-import { DEFAULT_GL_UNIFORM_DEFS } from '$lib/nodes/defaultNodeData';
 
 export class FBORenderer {
 	public renderSize = [800, 600] as [w: number, h: number];
 	public previewSize = [200, 150] as [w: number, h: number];
 	public renderGraph: RenderGraph | null = null;
+
+	// Mapping of nodeId -> uniform key -> uniform value
+	// example: {'glsl-0': {'sliderValue': 0.5}}
+	public uniformDataByNode: Map<string, Map<string, any>> = new Map();
 
 	private offscreenCanvas: OffscreenCanvas;
 	private gl: WebGLRenderingContext | null = null;
@@ -66,7 +69,7 @@ export class FBORenderer {
 				framebuffer,
 				regl: this.regl,
 				code: node.data.code,
-				uniformDefs: node.data.uniformDefs ?? DEFAULT_GL_UNIFORM_DEFS
+				uniformDefs: node.data.glUniformDefs ?? []
 			});
 
 			const fboNode: FBONode = {
@@ -90,6 +93,34 @@ export class FBORenderer {
 		}
 
 		this.fboNodes.clear();
+		this.uniformDataByNode.clear();
+	}
+
+	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
+		const uniformDef = this.renderGraph?.nodes
+			.find((n) => n.id === nodeId)
+			?.data.glUniformDefs.find((u) => u.name === uniformName);
+
+		// Uniform does not exist in the node's uniform definitions.
+		if (!uniformDef) {
+			return;
+		}
+
+		// Sampler2D uniforms are handled separately as textures.
+		if (uniformDef.type === 'sampler2D') {
+			return;
+		}
+
+		// Float and int uniforms must be numbers.
+		if (['float', 'int'].includes(uniformDef.type) && typeof uniformValue !== 'number') {
+			return;
+		}
+
+		if (!this.uniformDataByNode.has(nodeId)) {
+			this.uniformDataByNode.set(nodeId, new Map());
+		}
+
+		this.uniformDataByNode.get(nodeId)!.set(uniformName, uniformValue);
 	}
 
 	setPreviewEnabled(nodeId: string, enabled: boolean) {
@@ -134,13 +165,20 @@ export class FBORenderer {
 			// TODO: optimize this!
 			const inputTextures = this.getInputTextures(node);
 
-			const userParams: any[] = [];
-			const uniformDefs = node.data.uniformDefs ?? DEFAULT_GL_UNIFORM_DEFS;
+			const uniformDefs = node.data.glUniformDefs ?? [];
+			const uniformData = this.uniformDataByNode.get(nodeId) ?? new Map();
+			const userUniformParams: any[] = [];
 
 			// Define input parameters
 			for (const n of uniformDefs) {
 				if (n.type === 'sampler2D') {
-					userParams.push(inputTextures.shift() ?? this.fallbackTexture);
+					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
+				} else {
+					const value = uniformData.get(n.name);
+
+					if (value !== undefined && value !== null) {
+						userUniformParams.push(value);
+					}
 				}
 			}
 
@@ -151,7 +189,7 @@ export class FBORenderer {
 					iFrame: this.frameCount,
 					mouseX: 0,
 					mouseY: 0,
-					userParams
+					userParams: userUniformParams
 				});
 			});
 
