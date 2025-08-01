@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match } from 'ts-pattern';
 	import type { Message } from '$lib/messages/MessageSystem';
@@ -101,12 +100,13 @@
 
 			<div class="relative">
 				{#each data.glUniformDefs as def, defIndex}
-					<VideoHandle
+					<Handle
 						type="target"
 						position={Position.Top}
-						id={`video-in-${defIndex}-${def.name}-${def.type}`}
+						id={`gl-in-${defIndex}-${def.name}-${def.type}`}
 						style={`left: ${80 + defIndex * 20}px;`}
 						title={`${def.name} (${def.type})`}
+						class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
 					/>
 				{/each}
 
@@ -120,7 +120,13 @@
 					></canvas>
 				</div>
 
-				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
+				<Handle
+					type="source"
+					position={Position.Bottom}
+					id={`gl-out`}
+					title="Video output"
+					class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
+				/>
 			</div>
 		</div>
 	</div>
