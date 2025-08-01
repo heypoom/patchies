@@ -316,63 +316,14 @@ export class FBORenderer {
 		}
 
 		// @ts-expect-error -- hack: access WebGLFramebuffer directly
-		const multisampledFBO = node.framebuffer._framebuffer.framebuffer;
+		const framebuffer = node.framebuffer._framebuffer.framebuffer;
 
 		const gl = this.regl._gl as WebGL2RenderingContext;
 
-		const singleSampledTexture = gl.createTexture();
-		gl.bindTexture(gl.TEXTURE_2D, singleSampledTexture);
-
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGBA8,
-			renderWidth,
-			renderHeight,
-			0,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			null
-		);
-
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.bindTexture(gl.TEXTURE_2D, null);
-
-		const singleSampledFBO = gl.createFramebuffer();
-		gl.bindFramebuffer(gl.FRAMEBUFFER, singleSampledFBO);
-		gl.framebufferTexture2D(
-			gl.FRAMEBUFFER,
-			gl.COLOR_ATTACHMENT0,
-			gl.TEXTURE_2D,
-			singleSampledTexture,
-			0
-		);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
 		gl.viewport(0, 0, renderWidth, renderHeight);
-
-		// Step 2: Resolve the multisampled FBO into a single-sample FBO
-		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, multisampledFBO);
-		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, singleSampledFBO);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		gl.blitFramebuffer(
-			0,
-			0,
-			renderWidth,
-			renderHeight,
-			0,
-			0,
-			renderWidth,
-			renderHeight,
-			gl.COLOR_BUFFER_BIT,
-			gl.NEAREST
-		);
-
-		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, singleSampledFBO);
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, framebuffer);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+
 		gl.blitFramebuffer(
 			0,
 			0,
