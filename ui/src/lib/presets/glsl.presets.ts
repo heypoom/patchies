@@ -4,8 +4,8 @@ uniform sampler2D iChannel1;
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   fragColor = mix(
-    texture2D(iChannel0, uv),
-    texture2D(iChannel1, uv),
+    texture(iChannel0, uv),
+    texture(iChannel1, uv),
     0.5
   );
 }`;
@@ -13,7 +13,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 const PASSTHRU_GL = `uniform sampler2D iChannel0;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  fragColor = texture2D(iChannel0, fragCoord / iResolution.xy);
+  fragColor = texture(iChannel0, fragCoord / iResolution.xy);
 }`;
 
 export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {

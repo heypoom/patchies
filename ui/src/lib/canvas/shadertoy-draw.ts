@@ -2,10 +2,10 @@ import regl from 'regl';
 import type { GLUniformDef } from '../../types/uniform-config';
 
 // Render a simple quad for a vertex shader.
-const VERTEX_SHADER = `
+const VERTEX_SHADER = `#version 300 es
   precision highp float;
-  attribute vec2 position;
-	varying vec2 uv;
+  in vec2 position;
+	out vec2 uv;
 
   void main() {
 		uv = 0.5 * (position + 1.0);
@@ -45,7 +45,7 @@ export function createShaderToyDrawCommand({
 	framebuffer: regl.Framebuffer2D | null;
 }): regl.DrawCommand {
 	// Fragment shader with ShaderToy-compatible uniforms and textures
-	const fragmentShader = `
+	const fragmentShader = `#version 300 es
     precision highp float;
     
     uniform vec3 iResolution;
@@ -55,14 +55,14 @@ export function createShaderToyDrawCommand({
     uniform float iTimeDelta;
     uniform int iFrame;
 
-		varying vec2 uv;
+		in vec2 uv;
+		out vec4 fragColor;
     
     ${code ?? PLACEHOLDER_MAIN_IMAGE}
     
     void main() {
-      vec4 fragColor = vec4(0.0);
+      fragColor = vec4(0.0);
       mainImage(fragColor, gl_FragCoord.xy);
-      gl_FragColor = fragColor;
     }
   `;
 

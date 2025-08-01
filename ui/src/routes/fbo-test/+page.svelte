@@ -277,8 +277,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 			data: {
 				code: `
 					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-						vec4 textureA = texture2D(iChannel0, uv);
-						vec4 textureB = texture2D(iChannel1, uv);
+						vec2 uv = fragCoord / iResolution.xy;
+						vec4 textureA = texture(iChannel0, uv);
+						vec4 textureB = texture(iChannel1, uv);
 
 						// Mix two inputs 50/50 as per spec example
 						fragColor = mix(textureA, textureB, 0.5);
@@ -292,7 +293,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 			data: {
 				code: `
 					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-						vec4 baseColor = texture2D(iChannel0, uv);
+						vec2 uv = fragCoord / iResolution.xy;
+						vec4 baseColor = texture(iChannel0, uv);
 						float time = iTime * 2.0;
 						
 						// Add animated blue channel based on time and position
@@ -310,9 +312,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
 			data: {
 				code: `
 					void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-						vec4 textureA = texture2D(iChannel0, uv);
-						vec4 textureB = texture2D(iChannel1, uv);
-						vec4 textureC = texture2D(iChannel2, uv);
+						vec2 uv = fragCoord / iResolution.xy;
+						vec4 textureA = texture(iChannel0, uv);
+						vec4 textureB = texture(iChannel1, uv);
+						vec4 textureC = texture(iChannel2, uv);
 						
 						// Complex mixing of three inputs with animated weights
 						float time = iTime * 0.5;

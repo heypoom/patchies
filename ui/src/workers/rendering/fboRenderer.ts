@@ -264,18 +264,19 @@ export class FBORenderer {
 		});
 
 		const previewBlitCommand = this.regl({
-			frag: `
+			frag: `#version 300 es
 				precision highp float;
-				uniform sampler2D texture;
-				varying vec2 uv;
+				uniform sampler2D inputTexture;
+				in vec2 uv;
+				out vec4 fragColor;
 				void main() {
-					gl_FragColor = texture2D(texture, uv);
+					fragColor = texture(inputTexture, uv);
 				}
 			`,
-			vert: `
+			vert: `#version 300 es
 				precision highp float;
-				attribute vec2 position;
-				varying vec2 uv;
+				in vec2 position;
+				out vec2 uv;
 				void main() {
 					uv = 0.5 * (position + 1.0);
 					gl_Position = vec4(position, 0, 1);
@@ -290,7 +291,7 @@ export class FBORenderer {
 				])
 			},
 			uniforms: {
-				texture: fboNode.texture
+				inputTexture: fboNode.texture
 			},
 			primitive: 'triangle strip',
 			count: 4,
@@ -317,18 +318,19 @@ export class FBORenderer {
 
 	private renderTextureToMainOutput(texture: regl.Texture2D) {
 		const outputBlitCommand = this.regl({
-			frag: `
+			frag: `#version 300 es
 				precision highp float;
-				uniform sampler2D texture;
-				varying vec2 uv;
+				uniform sampler2D inputTexture;
+				in vec2 uv;
+				out vec4 fragColor;
 				void main() {
-					gl_FragColor = texture2D(texture, uv);
+					fragColor = texture(inputTexture, uv);
 				}
 			`,
-			vert: `
+			vert: `#version 300 es
 				precision highp float;
-				attribute vec2 position;
-				varying vec2 uv;
+				in vec2 position;
+				out vec2 uv;
 				void main() {
 					uv = 0.5 * (position + 1.0);
 					gl_Position = vec4(position, 0, 1);
@@ -343,7 +345,7 @@ export class FBORenderer {
 				])
 			},
 			uniforms: {
-				texture: texture
+				inputTexture: texture
 			},
 			primitive: 'triangle strip',
 			count: 4,
