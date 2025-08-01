@@ -1,22 +1,7 @@
-import { match } from 'ts-pattern';
-
-type IpcScreen = 'patch' | 'output';
-
-type IpcEvent =
-	| { type: 'renderOutput'; bitmap: ImageBitmap }
-	| { type: 'outputScreenRegistered' }
-	| { type: 'ackScreenRegistration' };
-
 export class IpcSystem {
-	channel = new BroadcastChannel('patchies-ipc');
-
-	public screen: IpcScreen = 'patch';
 	private static instance: IpcSystem;
 
-	public hasOutputScreen = false;
-
-	public onOutput = (image: ImageBitmap) => console.log('default onOutput');
-	public onAckScreenRegistration = () => console.log('default onAckScreenRegistration');
+	public outputWindow: Window | null = null;
 
 	static getInstance() {
 		if (!IpcSystem.instance) {
@@ -29,32 +14,18 @@ export class IpcSystem {
 		return IpcSystem.instance;
 	}
 
-	constructor() {
-		this.channel.addEventListener('message', this.handleMessage.bind(this));
+	sendRenderOutput(bitmap: ImageBitmap) {
+		this.outputWindow?.postMessage(
+			{ type: 'renderOutput', bitmap },
+			{ transfer: [bitmap], targetOrigin: '*' }
+		);
 	}
 
-	handleMessage(event: MessageEvent<IpcEvent>) {
-		console.log('[ipc]', event.data.type);
+	openOutputWindow() {
+		this.outputWindow = window.open('/output', '_blank');
 
-		match(event.data)
-			.with({ type: 'renderOutput' }, (data) => {
-				console.log('[ipc] renderOutput');
-				this.onOutput(data.bitmap);
-			})
-			.with({ type: 'ackScreenRegistration' }, () => {
-				this.onAckScreenRegistration();
-			})
-			.with({ type: 'outputScreenRegistered' }, () => {
-				this.hasOutputScreen = true;
-				console.log('output screen registered!');
-
-				if (this.screen === 'patch') {
-					this.send({ type: 'ackScreenRegistration' });
-				}
-			});
-	}
-
-	send(event: IpcEvent) {
-		this.channel.postMessage(event);
+		this.outputWindow?.addEventListener('close', () => {
+			this.outputWindow = null;
+		});
 	}
 }

@@ -50,9 +50,8 @@ export class GLSystem {
 		const { data } = event;
 
 		if (data.type === 'animationFrame' && data.outputBitmap) {
-			if (this.ipcSystem.hasOutputScreen) {
-				console.log('[gl.sys] sending to secondary output');
-				this.ipcSystem.channel.postMessage({ type: 'renderOutput', bitmap: data.outputBitmap });
+			if (this.ipcSystem.outputWindow !== null) {
+				this.ipcSystem.sendRenderOutput(data.outputBitmap);
 			} else {
 				this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
 			}

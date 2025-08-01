@@ -4,7 +4,6 @@
 
 	let canvas: HTMLCanvasElement;
 	let bitmapRendererContext: ImageBitmapRenderingContext;
-	let ipcSystem: IpcSystem;
 
 	onMount(() => {
 		canvas.width = window.visualViewport?.width ?? window.innerWidth;
@@ -14,19 +13,11 @@
 
 		bitmapRendererContext = canvas.getContext('bitmaprenderer')!;
 
-		ipcSystem = IpcSystem.getInstance();
-		ipcSystem.screen = 'output';
-
-		ipcSystem.onAckScreenRegistration = () => {
-			console.log('ack screen registration');
-		};
-
-		ipcSystem.onOutput = (bitmap) => {
-			console.log('output!');
-			bitmapRendererContext.transferFromImageBitmap(bitmap);
-		};
-
-		ipcSystem.send({ type: 'outputScreenRegistered' });
+		window.addEventListener('message', (event) => {
+			if (event.data.type === 'renderOutput') {
+				bitmapRendererContext.transferFromImageBitmap(event.data.bitmap);
+			}
+		});
 	});
 </script>
 
