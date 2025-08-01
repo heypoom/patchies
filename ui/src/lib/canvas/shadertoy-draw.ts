@@ -69,13 +69,11 @@ export function createShaderToyDrawCommand({
     }
   `;
 
-	// const userUniformInputs: UserUniformInputs = {};
+	const userUniformInputs: UserUniformInputs = {};
 
-	// uniformDefs.forEach((def, paramIndex) => {
-	// 	userUniformInputs[def.name] = (_, props) => {
-	// 		return props.params[paramIndex];
-	// 	};
-	// });
+	uniformDefs.forEach((def, paramIndex) => {
+		userUniformInputs[def.name] = (_, props) => props.userParams[paramIndex];
+	});
 
 	return regl({
 		frag: fragmentShader,
@@ -95,19 +93,13 @@ export function createShaderToyDrawCommand({
 		count: 4,
 
 		uniforms: {
-			iResolution: ({ pixelRatio }) => {
-				return [width * pixelRatio, height * pixelRatio, 1.0];
-			},
-
+			iResolution: ({ pixelRatio }) => [width * pixelRatio, height * pixelRatio, 1.0],
 			iTime: ({ time }) => time,
 			iTimeDelta: ({ time }, props: P) => time - props.lastTime,
 			iFrame: (_, props: P) => props.iFrame,
 			iMouse: (_, props: P) => [props.mouseX, props.mouseY, 0, 0],
 			iDate: () => getDate(),
-			iChannel0: (_, props: P) => props.userParams[0],
-			iChannel1: (_, props: P) => props.userParams[1],
-			iChannel2: (_, props: P) => props.userParams[2],
-			iChannel3: (_, props: P) => props.userParams[3]
+			...userUniformInputs
 		}
 	});
 }

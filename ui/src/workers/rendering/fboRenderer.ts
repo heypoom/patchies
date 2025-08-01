@@ -132,8 +132,8 @@ export class FBORenderer {
 			}
 
 			const inputTextures = this.getInputTextures(node);
-			const userParams: any[] = [];
 
+			const userParams: any[] = [];
 			const uniformDefs = node.data.uniformDefs ?? DEFAULT_GL_UNIFORM_DEFS;
 
 			// Define input parameters
