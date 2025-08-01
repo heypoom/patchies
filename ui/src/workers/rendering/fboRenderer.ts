@@ -131,6 +131,7 @@ export class FBORenderer {
 				continue;
 			}
 
+			// TODO: optimize this!
 			const inputTextures = this.getInputTextures(node);
 
 			const userParams: any[] = [];
