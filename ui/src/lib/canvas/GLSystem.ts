@@ -139,7 +139,11 @@ export class GLSystem {
 		this.updateRenderGraph();
 
 		const hasOutputNode = edges.some((edge) => edge.target.startsWith('bg.out'));
-		isBackgroundOutputCanvasEnabled.set(hasOutputNode);
+
+		if (this.ipcSystem.outputWindow === null) {
+			isBackgroundOutputCanvasEnabled.set(hasOutputNode);
+		}
+
 		this.setOutputEnabled(hasOutputNode);
 	}
 
