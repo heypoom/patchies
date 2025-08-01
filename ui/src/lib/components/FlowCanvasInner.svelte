@@ -39,6 +39,7 @@
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { PRESETS } from '$lib/presets/presets';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	// Define custom node types
 	const nodeTypes = {
@@ -77,6 +78,7 @@
 	let nodeId = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let videoSystem = VideoSystem.getInstance();
+	let glSystem = GLSystem.getInstance();
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -167,8 +169,11 @@
 
 		messageSystem.updateConnections(connections);
 
-		// Also update video system with handle information
+		// LEGACY: Update video system with handle information
 		videoSystem.updateVideoConnections(connections);
+
+		// Update render graph in GLSystem
+		glSystem.updateEdges(edges);
 	});
 
 	// Handle global keyboard events
@@ -211,6 +216,8 @@
 	onMount(() => {
 		flowContainer?.focus();
 
+		glSystem.start();
+
 		document.addEventListener('keydown', handleGlobalKeydown);
 
 		autosaveInterval = setInterval(performAutosave, 30000);
@@ -235,19 +242,9 @@
 			clearInterval(autosaveInterval);
 			autosaveInterval = null;
 		}
+
+		glSystem.renderWorker.terminate();
 	});
-
-	// const handleConnectEnd: OnConnectEnd = (event, connectionState) => {
-	// 	if (connectionState.isValid) return;
-
-	// 	const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
-
-	// 	setTimeout(() => {
-	// 		connectEndConnectionState = connectionState;
-	// 		lastMousePosition = { x: clientX, y: clientY };
-	// 		$isObjectPaletteVisible = true;
-	// 	});
-	// };
 
 	// Handle drop events
 	function onDrop(event: DragEvent) {

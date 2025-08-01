@@ -8,6 +8,11 @@ export default defineConfig({
 	define: {
 		global: 'globalThis'
 	},
+	resolve: {
+		alias: {
+			'$workers': '/src/workers'
+		}
+	},
 	test: {
 		projects: [
 			{
