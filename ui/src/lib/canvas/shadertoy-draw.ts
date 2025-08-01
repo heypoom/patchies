@@ -1,4 +1,5 @@
 import regl from 'regl';
+import type { GLUniformDef } from '../../types/uniform-config';
 
 // Render a simple quad for a vertex shader.
 const VERTEX_SHADER = `
@@ -18,29 +19,26 @@ const PLACEHOLDER_MAIN_IMAGE = `
 	}
 `;
 
-type TextureOrFramebuffer = regl.Texture2D | regl.Framebuffer2D;
+type UserUniformInputs = Record<string, (_: regl.DefaultContext, props: P) => void>;
 
 type P = {
 	lastTime: number;
 	iFrame: number;
 	mouseX: number;
 	mouseY: number;
-	textures: [
-		TextureOrFramebuffer,
-		TextureOrFramebuffer,
-		TextureOrFramebuffer,
-		TextureOrFramebuffer
-	];
+	userParams: any[];
 };
 
-export function DrawToFbo({
+export function createShaderToyDrawCommand({
 	code,
 	regl,
 	width,
 	height,
-	framebuffer
+	framebuffer,
+	uniformDefs
 }: {
 	code: string;
+	uniformDefs: GLUniformDef[];
 	regl: regl.Regl;
 	width: number;
 	height: number;
@@ -56,11 +54,6 @@ export function DrawToFbo({
     uniform vec4 iDate;
     uniform float iTimeDelta;
     uniform int iFrame;
-    
-    uniform sampler2D iChannel0;
-    uniform sampler2D iChannel1;
-    uniform sampler2D iChannel2;
-    uniform sampler2D iChannel3;
 
 		varying vec2 uv;
     
@@ -72,6 +65,12 @@ export function DrawToFbo({
       gl_FragColor = fragColor;
     }
   `;
+
+	const userUniformInputs: UserUniformInputs = {};
+
+	uniformDefs.forEach((def, paramIndex) => {
+		userUniformInputs[def.name] = (_, props) => props.userParams[paramIndex];
+	});
 
 	return regl({
 		frag: fragmentShader,
@@ -91,19 +90,13 @@ export function DrawToFbo({
 		count: 4,
 
 		uniforms: {
-			iResolution: ({ pixelRatio }) => {
-				return [width * pixelRatio, height * pixelRatio, 1.0];
-			},
-
+			iResolution: ({ pixelRatio }) => [width * pixelRatio, height * pixelRatio, 1.0],
 			iTime: ({ time }) => time,
 			iTimeDelta: ({ time }, props: P) => time - props.lastTime,
 			iFrame: (_, props: P) => props.iFrame,
 			iMouse: (_, props: P) => [props.mouseX, props.mouseY, 0, 0],
 			iDate: () => getDate(),
-			iChannel0: (_, props: P) => props.textures[0],
-			iChannel1: (_, props: P) => props.textures[1],
-			iChannel2: (_, props: P) => props.textures[2],
-			iChannel3: (_, props: P) => props.textures[3]
+			...userUniformInputs
 		}
 	});
 }

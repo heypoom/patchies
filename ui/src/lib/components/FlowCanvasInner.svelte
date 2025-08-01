@@ -167,10 +167,10 @@
 			targetHandle: edge.targetHandle || undefined
 		}));
 
-		messageSystem.updateConnections(connections);
-
 		// LEGACY: Update video system with handle information
 		videoSystem.updateVideoConnections(connections);
+
+		messageSystem.updateEdges(edges);
 
 		// Update render graph in GLSystem
 		glSystem.updateEdges(edges);
@@ -334,7 +334,9 @@
 			connection.targetHandle?.startsWith('video')
 		) {
 			return !!(
-				connection.sourceHandle?.startsWith('video') && connection.targetHandle?.startsWith('video')
+				(connection.sourceHandle?.startsWith('video') ||
+					connection.sourceHandle?.startsWith('gl')) &&
+				connection.targetHandle?.startsWith('video')
 			);
 		}
 

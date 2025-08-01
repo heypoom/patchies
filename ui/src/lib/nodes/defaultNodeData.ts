@@ -9,9 +9,10 @@ import {
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
 
-export interface NodeData {
+// TODO: make this type-safe!
+export type NodeData = {
 	[key: string]: any;
-}
+};
 
 export function getDefaultNodeData(nodeType: string): NodeData {
 	return match(nodeType)

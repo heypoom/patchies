@@ -12,7 +12,8 @@ export const WEBGL_EXTENSIONS = [
 	'WEBGL_draw_buffers'
 ];
 
-export const DEFAULT_GLSL_CODE = `// Available uniforms: iResolution, iTime, iMouse, iChannel0-3
+export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse
+// you can define your own uniforms!
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord / iResolution.xy;

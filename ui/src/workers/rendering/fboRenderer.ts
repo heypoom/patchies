@@ -1,12 +1,17 @@
 import regl from 'regl';
-import { DrawToFbo } from '../../lib/canvas/shadertoy-draw';
+import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
 import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
+import { match } from 'ts-pattern';
 
 export class FBORenderer {
 	public renderSize = [800, 600] as [w: number, h: number];
 	public previewSize = [200, 150] as [w: number, h: number];
 	public renderGraph: RenderGraph | null = null;
+
+	// Mapping of nodeId -> uniform key -> uniform value
+	// example: {'glsl-0': {'sliderValue': 0.5}}
+	public uniformDataByNode: Map<string, Map<string, any>> = new Map();
 
 	private offscreenCanvas: OffscreenCanvas;
 	private gl: WebGLRenderingContext | null = null;
@@ -40,13 +45,35 @@ export class FBORenderer {
 	/** Build FBOs for all nodes in the render graph */
 	buildFBOs(renderGraph: RenderGraph) {
 		this.cleanupFBOs();
+		this.uniformDataByNode.clear();
 
 		this.renderGraph = renderGraph;
 
 		const [width, height] = this.renderSize;
 
-		// Create FBO for each node
 		for (const node of renderGraph.nodes) {
+			// Prepare uniform defaults to prevent crashes
+			if (node.data.glUniformDefs) {
+				const defaultUniformData = new Map();
+
+				for (const def of node.data.glUniformDefs) {
+					const defaultUniformValue = match(def.type)
+						.with('bool', () => true)
+						.with('float', () => 0.0)
+						.with('int', () => 0)
+						.with('vec2', () => [0, 0])
+						.with('vec3', () => [0, 0, 0])
+						.with('vec4', () => [0, 0, 0, 1])
+						.with('sampler2D', () => null)
+						.otherwise(() => null);
+
+					defaultUniformData.set(def.name, defaultUniformValue);
+				}
+
+				this.uniformDataByNode.set(node.id, defaultUniformData);
+			}
+
+			// Create FBO for each node
 			const texture = this.regl.texture({
 				width,
 				height,
@@ -59,12 +86,13 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			const renderCommand = DrawToFbo({
-				code: node.data.code,
-				regl: this.regl,
+			const renderCommand = createShaderToyDrawCommand({
 				width,
 				height,
-				framebuffer
+				framebuffer,
+				regl: this.regl,
+				code: node.data.code,
+				uniformDefs: node.data.glUniformDefs ?? []
 			});
 
 			const fboNode: FBONode = {
@@ -88,6 +116,33 @@ export class FBORenderer {
 		}
 
 		this.fboNodes.clear();
+	}
+
+	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
+		const uniformDef = this.renderGraph?.nodes
+			.find((n) => n.id === nodeId)
+			?.data.glUniformDefs.find((u) => u.name === uniformName);
+
+		// Uniform does not exist in the node's uniform definitions.
+		if (!uniformDef) {
+			return;
+		}
+
+		// Sampler2D uniforms are handled separately as textures.
+		if (uniformDef.type === 'sampler2D') {
+			return;
+		}
+
+		// Float and int uniforms must be numbers.
+		if (['float', 'int'].includes(uniformDef.type) && typeof uniformValue !== 'number') {
+			return;
+		}
+
+		if (!this.uniformDataByNode.has(nodeId)) {
+			this.uniformDataByNode.set(nodeId, new Map());
+		}
+
+		this.uniformDataByNode.get(nodeId)!.set(uniformName, uniformValue);
 	}
 
 	setPreviewEnabled(nodeId: string, enabled: boolean) {
@@ -129,7 +184,25 @@ export class FBORenderer {
 				continue;
 			}
 
+			// TODO: optimize this!
 			const inputTextures = this.getInputTextures(node);
+
+			const uniformDefs = node.data.glUniformDefs ?? [];
+			const uniformData = this.uniformDataByNode.get(nodeId) ?? new Map();
+			const userUniformParams: any[] = [];
+
+			// Define input parameters
+			for (const n of uniformDefs) {
+				if (n.type === 'sampler2D') {
+					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
+				} else {
+					const value = uniformData.get(n.name);
+
+					if (value !== undefined && value !== null) {
+						userUniformParams.push(value);
+					}
+				}
+			}
 
 			// Render to FBO
 			fboNode.framebuffer.use(() => {
@@ -138,7 +211,7 @@ export class FBORenderer {
 					iFrame: this.frameCount,
 					mouseX: 0,
 					mouseY: 0,
-					textures: inputTextures
+					userParams: userUniformParams
 				});
 			});
 
@@ -316,7 +389,6 @@ export class FBORenderer {
 
 		for (const inputId of node.inputs) {
 			const inputFBO = this.fboNodes.get(inputId);
-
 			if (inputFBO) textures.push(inputFBO.texture);
 		}
 

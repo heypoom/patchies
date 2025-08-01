@@ -66,6 +66,7 @@ export class HydraManager {
 			// Execute the user code
 			const codeString = typeof config === 'string' ? config : config.code;
 			const messageContext = typeof config === 'string' ? undefined : config.messageContext;
+
 			this.executeCode(codeString, messageContext);
 		} catch (error) {
 			console.error('Error creating Hydra sketch:', error);

@@ -1,19 +1,25 @@
 <script lang="ts">
-	import { Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match } from 'ts-pattern';
 	import type { Message } from '$lib/messages/MessageSystem';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
+	import type { GLUniformDef } from '../../../types/uniform-config';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data, type }: { id: string; data: { code: string }; type: string } = $props();
+	let {
+		id: nodeId,
+		data,
+		type
+	}: { id: string; data: { code: string; glUniformDefs: GLUniformDef[] }; type: string } = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	const width = $state(200);
 	const height = $state(150);
@@ -28,22 +34,42 @@
 	const code = $derived(data.code || '');
 
 	function handleMessage(message: Message) {
-		match(message.data.type).with('set', () => {
-			updateNodeData(nodeId, { ...data, code: message.data.code });
-		});
+		if (message.inlet?.startsWith('gl-in-')) {
+			const [indexStr, uniformName, uniformType] = message.inlet.split('-').slice(2);
+
+			glSystem.setUniformData(nodeId, uniformName, message.data);
+			return;
+		}
+
+		match(message.data)
+			.with('set', () => {
+				updateNodeData(nodeId, { ...data, code: message.data.code });
+			})
+			.with('run', updateShader);
 	}
 
 	function updateShader() {
-		glSystem.upsertNode(nodeId, type, data);
+		// Construct uniform definitions from the shader code.
+		const nextData = {
+			...data,
+			glUniformDefs: shaderCodeToUniformDefs(data.code)
+		};
+
+		updateNodeData(nodeId, nextData);
+		glSystem.upsertNode(nodeId, type, nextData);
+
+		// inform XYFlow that the handle has changed
+		updateNodeInternals();
 	}
 
 	onMount(() => {
 		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 		messageContext = new MessageContext(nodeId);
+		messageContext.queue.addCallback(handleMessage);
 
 		glSystem = GLSystem.getInstance();
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
-		glSystem.upsertNode(nodeId, type, data);
+		updateShader();
 
 		setTimeout(() => {
 			glSystem.setPreviewEnabled(nodeId, true);
@@ -51,6 +77,7 @@
 	});
 
 	onDestroy(() => {
+		messageContext.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 		glSystem.removeNode(nodeId);
 
@@ -81,37 +108,16 @@
 			</div>
 
 			<div class="relative">
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-0"
-					class="!left-17"
-					title="Video input iChannel0"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-1"
-					class="!left-22"
-					title="Video input iChannel1"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-2"
-					class="!left-27"
-					title="Video input iChannel2"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-3"
-					class="!left-32"
-					title="Video input iChannel3"
-				/>
+				{#each data.glUniformDefs as def, defIndex}
+					<Handle
+						type="target"
+						position={Position.Top}
+						id={`gl-in-${defIndex}-${def.name}-${def.type}`}
+						style={`left: ${80 + defIndex * 20}px;`}
+						title={`${def.name} (${def.type})`}
+						class="!border-violet-400 !bg-violet-500 hover:!bg-violet-400"
+					/>
+				{/each}
 
 				<div class="rounded-md bg-zinc-900">
 					<canvas
@@ -123,7 +129,13 @@
 					></canvas>
 				</div>
 
-				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
+				<Handle
+					type="source"
+					position={Position.Bottom}
+					id={`gl-out`}
+					title="Video output"
+					class="!border-violet-400 !bg-violet-500 hover:!bg-violet-400"
+				/>
 			</div>
 		</div>
 	</div>
