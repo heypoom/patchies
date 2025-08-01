@@ -34,7 +34,14 @@
 	const code = $derived(data.code || '');
 
 	function handleMessage(message: Message) {
-		match(message.data.type)
+		if (message.inlet?.startsWith('gl-in-')) {
+			const [indexStr, uniformName, uniformType] = message.inlet.split('-').slice(2);
+
+			glSystem.setUniformData(nodeId, uniformName, message.data);
+			return;
+		}
+
+		match(message.data)
 			.with('set', () => {
 				updateNodeData(nodeId, { ...data, code: message.data.code });
 			})
@@ -58,6 +65,7 @@
 	onMount(() => {
 		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 		messageContext = new MessageContext(nodeId);
+		messageContext.queue.addCallback(handleMessage);
 
 		glSystem = GLSystem.getInstance();
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
@@ -69,6 +77,7 @@
 	});
 
 	onDestroy(() => {
+		messageContext.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 		glSystem.removeNode(nodeId);
 
@@ -106,7 +115,7 @@
 						id={`gl-in-${defIndex}-${def.name}-${def.type}`}
 						style={`left: ${80 + defIndex * 20}px;`}
 						title={`${def.name} (${def.type})`}
-						class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
+						class="!border-violet-400 !bg-violet-500 hover:!bg-violet-400"
 					/>
 				{/each}
 
@@ -125,7 +134,7 @@
 					position={Position.Bottom}
 					id={`gl-out`}
 					title="Video output"
-					class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
+					class="!border-violet-400 !bg-violet-500 hover:!bg-violet-400"
 				/>
 			</div>
 		</div>

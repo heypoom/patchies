@@ -1,3 +1,5 @@
+import type { Edge } from '@xyflow/svelte';
+
 export interface Message {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	data: any;
@@ -31,7 +33,7 @@ export class MessageQueue {
 		}
 	}
 
-	receiveMessage(message: Message) {
+	sendMessage(message: Message) {
 		// Process message immediately
 		this.callbacks.forEach((callback) => {
 			try {
@@ -51,10 +53,14 @@ export class MessageQueue {
 export class MessageSystem {
 	private static instance: MessageSystem | null = null;
 	private messageQueues = new Map<string, MessageQueue>();
-	private connections = new Map<string, string[]>(); // nodeId -> array of connected nodeIds
 	private intervals = new Map<number, number>();
 	private intervalCounter = 0;
 	private deletedNodes = new Set<string>();
+
+	private edges: Edge[] = [];
+
+	// Legacy
+	private connections = new Map<string, string[]>(); // nodeId -> array of connected nodeIds
 
 	static getInstance(): MessageSystem {
 		if (!MessageSystem.instance) {
@@ -98,16 +104,19 @@ export class MessageSystem {
 	}
 
 	// Update connections based on XY Flow graph
-	updateConnections(connections: Array<{ source: string; target: string }>) {
+	updateEdges(edges: Edge[]) {
+		this.edges = edges;
+
 		// Clear existing connections
 		this.connections.clear();
 
 		// Build new connection map
-		for (const { source, target } of connections) {
-			if (!this.connections.has(source)) {
-				this.connections.set(source, []);
+		for (const edge of edges) {
+			if (!this.connections.has(edge.source)) {
+				this.connections.set(edge.source, []);
 			}
-			this.connections.get(source)!.push(target);
+
+			this.connections.get(edge.source)!.push(edge.target);
 		}
 	}
 
@@ -133,10 +142,17 @@ export class MessageSystem {
 		// Send to all connected nodes
 		for (const targetNodeId of connectedNodes) {
 			const targetQueue = this.messageQueues.get(targetNodeId);
+
 			if (targetQueue) {
-				// Set inlet name (for now, assume single inlet)
-				const messageWithInlet = { ...message, inlet: 'default' };
-				targetQueue.receiveMessage(messageWithInlet);
+				// TODO: send all inlets
+				// TODO: optimize performance by using connections instead
+				const stEdge = this.edges.find(
+					(edge) => edge.source === fromNodeId && edge.target === targetNodeId
+				);
+
+				const inlet = stEdge?.targetHandle ?? 'default';
+
+				targetQueue.sendMessage({ ...message, inlet });
 			}
 		}
 	}

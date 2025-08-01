@@ -2,6 +2,7 @@ import regl from 'regl';
 import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
 import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
+import { match } from 'ts-pattern';
 
 export class FBORenderer {
 	public renderSize = [800, 600] as [w: number, h: number];
@@ -44,13 +45,35 @@ export class FBORenderer {
 	/** Build FBOs for all nodes in the render graph */
 	buildFBOs(renderGraph: RenderGraph) {
 		this.cleanupFBOs();
+		this.uniformDataByNode.clear();
 
 		this.renderGraph = renderGraph;
 
 		const [width, height] = this.renderSize;
 
-		// Create FBO for each node
 		for (const node of renderGraph.nodes) {
+			// Prepare uniform defaults to prevent crashes
+			if (node.data.glUniformDefs) {
+				const defaultUniformData = new Map();
+
+				for (const def of node.data.glUniformDefs) {
+					const defaultUniformValue = match(def.type)
+						.with('bool', () => true)
+						.with('float', () => 0.0)
+						.with('int', () => 0)
+						.with('vec2', () => [0, 0])
+						.with('vec3', () => [0, 0, 0])
+						.with('vec4', () => [0, 0, 0, 1])
+						.with('sampler2D', () => null)
+						.otherwise(() => null);
+
+					defaultUniformData.set(def.name, defaultUniformValue);
+				}
+
+				this.uniformDataByNode.set(node.id, defaultUniformData);
+			}
+
+			// Create FBO for each node
 			const texture = this.regl.texture({
 				width,
 				height,
@@ -93,7 +116,6 @@ export class FBORenderer {
 		}
 
 		this.fboNodes.clear();
-		this.uniformDataByNode.clear();
 	}
 
 	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {

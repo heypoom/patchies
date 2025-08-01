@@ -167,10 +167,10 @@
 			targetHandle: edge.targetHandle || undefined
 		}));
 
-		messageSystem.updateConnections(connections);
-
 		// LEGACY: Update video system with handle information
 		videoSystem.updateVideoConnections(connections);
+
+		messageSystem.updateEdges(edges);
 
 		// Update render graph in GLSystem
 		glSystem.updateEdges(edges);
