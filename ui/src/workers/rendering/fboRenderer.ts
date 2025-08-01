@@ -32,7 +32,7 @@ export class FBORenderer {
 		const [width, height] = this.renderSize;
 
 		this.offscreenCanvas = new OffscreenCanvas(width, height);
-		this.gl = this.offscreenCanvas.getContext('webgl2')!;
+		this.gl = this.offscreenCanvas.getContext('webgl2', { antialias: false })!;
 		this.regl = regl({ gl: this.gl, extensions: WEBGL_EXTENSIONS });
 
 		this.fallbackTexture = this.regl.texture({
@@ -173,7 +173,7 @@ export class FBORenderer {
 		this.lastTime = currentTime;
 		this.frameCount++;
 
-		let finalTexture: regl.Texture2D | null = null;
+		let finalFBONode: FBONode | null = null;
 
 		// Render each node in topological order
 		for (const nodeId of this.renderGraph.sortedNodes) {
@@ -215,13 +215,12 @@ export class FBORenderer {
 				});
 			});
 
-			// Keep track of the last rendered texture (final output)
-			finalTexture = fboNode.texture;
+			finalFBONode = fboNode;
 		}
 
 		// Render the final result to the main canvas
-		if (finalTexture) {
-			this.renderTextureToMainOutput(finalTexture);
+		if (finalFBONode) {
+			this.renderNodeToMainOutput(finalFBONode);
 		}
 	}
 
@@ -303,46 +302,91 @@ export class FBORenderer {
 		return pixels!;
 	}
 
-	private renderTextureToMainOutput(texture: regl.Texture2D) {
-		const outputBlitCommand = this.regl({
-			frag: `#version 300 es
-				precision highp float;
-				uniform sampler2D inputTexture;
-				in vec2 uv;
-				out vec4 fragColor;
-				void main() {
-					fragColor = texture(inputTexture, uv);
-				}
-			`,
-			vert: `#version 300 es
-				precision highp float;
-				in vec2 position;
-				out vec2 uv;
-				void main() {
-					uv = 0.5 * (position + 1.0);
-					gl_Position = vec4(position, 0, 1);
-				}
-			`,
-			attributes: {
-				position: this.regl.buffer([
-					[-1, -1],
-					[1, -1],
-					[-1, 1],
-					[1, 1]
-				])
-			},
-			uniforms: {
-				inputTexture: texture
-			},
-			primitive: 'triangle strip',
-			count: 4,
+	private renderNodeToMainOutput(node: FBONode): void {
+		const [renderWidth, renderHeight] = this.renderSize;
 
-			// render to canvas
-			framebuffer: null
-		});
+		// TODO: turn this on to save compute when output is not enabled
+		// if (!this.isOutputEnabled) {
+		// 	return;
+		// }
 
-		this.regl.clear({ color: [0, 0, 0, 1] });
-		outputBlitCommand();
+		if (!node) {
+			console.warn('Could not find source framebuffer for final texture');
+			return;
+		}
+
+		// @ts-expect-error -- hack: access WebGLFramebuffer directly
+		const multisampledFBO = node.framebuffer._framebuffer.framebuffer;
+
+		const gl = this.regl._gl as WebGL2RenderingContext;
+
+		const singleSampledTexture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, singleSampledTexture);
+
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.RGBA8,
+			renderWidth,
+			renderHeight,
+			0,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			null
+		);
+
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+
+		const singleSampledFBO = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, singleSampledFBO);
+		gl.framebufferTexture2D(
+			gl.FRAMEBUFFER,
+			gl.COLOR_ATTACHMENT0,
+			gl.TEXTURE_2D,
+			singleSampledTexture,
+			0
+		);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		gl.viewport(0, 0, renderWidth, renderHeight);
+
+		// Step 2: Resolve the multisampled FBO into a single-sample FBO
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, multisampledFBO);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, singleSampledFBO);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.blitFramebuffer(
+			0,
+			0,
+			renderWidth,
+			renderHeight,
+			0,
+			0,
+			renderWidth,
+			renderHeight,
+			gl.COLOR_BUFFER_BIT,
+			gl.NEAREST
+		);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, singleSampledFBO);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+		gl.blitFramebuffer(
+			0,
+			0,
+			renderWidth,
+			renderHeight,
+			0,
+			0,
+			renderWidth,
+			renderHeight,
+			gl.COLOR_BUFFER_BIT,
+			gl.NEAREST
+		);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	}
 
 	getOutputBitmap(): ImageBitmap | null {
