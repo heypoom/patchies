@@ -7,6 +7,7 @@
 		isFpsMonitorVisible
 	} from '../../stores/ui.store';
 	import type { Node, Edge } from '@xyflow/svelte';
+	import { IpcSystem } from '$lib/canvas/IpcSystem';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -25,6 +26,7 @@
 	let searchInput: HTMLInputElement | undefined = $state();
 	let paletteContainer: HTMLDivElement | undefined = $state();
 	let resultsContainer: HTMLDivElement | undefined = $state();
+	let ipcSystem = IpcSystem.getInstance();
 
 	type StageName =
 		| 'commands'
@@ -77,6 +79,11 @@
 			id: 'toggle-ai-features',
 			name: 'Toggle AI Features',
 			description: 'Show or hide AI-related objects and features'
+		},
+		{
+			id: 'open-output-screen',
+			name: 'Open Output Screen',
+			description: 'Open a secondary output screen for live performances.'
 		}
 	];
 
@@ -222,6 +229,9 @@
 			.with('toggle-ai-features', () => {
 				$isAiFeaturesVisible = !$isAiFeaturesVisible;
 				onCancel();
+			})
+			.with('open-output-screen', () => {
+				ipcSystem.openOutputWindow();
 			})
 			.otherwise(() => {
 				console.warn(`Unknown command: ${commandId}`);
