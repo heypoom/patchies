@@ -1,5 +1,5 @@
 import regl from 'regl';
-import { DrawToFbo } from '../../lib/canvas/shadertoy-draw';
+import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
 import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 
@@ -59,12 +59,13 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			const renderCommand = DrawToFbo({
-				code: node.data.code,
-				regl: this.regl,
+			const renderCommand = createShaderToyDrawCommand({
 				width,
 				height,
-				framebuffer
+				framebuffer,
+				regl: this.regl,
+				code: node.data.code,
+				uniformDefs: node.data.uniformDefs
 			});
 
 			const fboNode: FBONode = {
@@ -130,6 +131,14 @@ export class FBORenderer {
 			}
 
 			const inputTextures = this.getInputTextures(node);
+			const userParams: any[] = [];
+
+			// Define input parameters
+			for (const n of node.data.uniformDefs) {
+				if (n.type === 'sampler2D') {
+					userParams.push(inputTextures.shift() ?? this.fallbackTexture);
+				}
+			}
 
 			// Render to FBO
 			fboNode.framebuffer.use(() => {
@@ -138,7 +147,7 @@ export class FBORenderer {
 					iFrame: this.frameCount,
 					mouseX: 0,
 					mouseY: 0,
-					textures: inputTextures
+					userParams: inputTextures
 				});
 			});
 
@@ -316,7 +325,6 @@ export class FBORenderer {
 
 		for (const inputId of node.inputs) {
 			const inputFBO = this.fboNodes.get(inputId);
-
 			if (inputFBO) textures.push(inputFBO.texture);
 		}
 

@@ -8,15 +8,17 @@ import {
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
+import type { GLUniformDef } from '../../types/uniform-config';
 
-export interface NodeData {
+// TODO: make this type-safe!
+export type NodeData = {
 	[key: string]: any;
-}
+};
 
 export function getDefaultNodeData(nodeType: string): NodeData {
 	return match(nodeType)
 		.with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
-		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
+		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE, uniformDefs: GL_UNIFORM_CONFIG }))
 		.with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))
 		.with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))
 		.with('ai.txt', () => ({ prompt: 'Write a creative story about...' }))
@@ -31,3 +33,10 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('bg.out', () => ({}))
 		.otherwise(() => ({}));
 }
+
+const GL_UNIFORM_CONFIG: GLUniformDef[] = [
+	{ name: 'iChannel0', type: 'sampler2D' },
+	{ name: 'iChannel1', type: 'sampler2D' },
+	{ name: 'iChannel2', type: 'sampler2D' },
+	{ name: 'iChannel3', type: 'sampler2D' }
+];

@@ -1,4 +1,5 @@
 import regl from 'regl';
+import type { GLUniformDef } from '../../types/uniform-config';
 
 // Render a simple quad for a vertex shader.
 const VERTEX_SHADER = `
@@ -18,34 +19,33 @@ const PLACEHOLDER_MAIN_IMAGE = `
 	}
 `;
 
-type TextureOrFramebuffer = regl.Texture2D | regl.Framebuffer2D;
+type UserUniformInputs = Record<string, (_: regl.DefaultContext, props: P) => void>;
 
 type P = {
 	lastTime: number;
 	iFrame: number;
 	mouseX: number;
 	mouseY: number;
-	textures: [
-		TextureOrFramebuffer,
-		TextureOrFramebuffer,
-		TextureOrFramebuffer,
-		TextureOrFramebuffer
-	];
+	userParams: any[];
 };
 
-export function DrawToFbo({
+export function createShaderToyDrawCommand({
 	code,
 	regl,
 	width,
 	height,
-	framebuffer
+	framebuffer,
+	uniformDefs
 }: {
 	code: string;
+	uniformDefs: GLUniformDef[];
 	regl: regl.Regl;
 	width: number;
 	height: number;
 	framebuffer: regl.Framebuffer2D | null;
 }): regl.DrawCommand {
+	const uniformDefsCode = uniformDefs.map((u) => `uniform ${u.type} ${u.name};`).join('\n');
+
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `
     precision highp float;
@@ -56,11 +56,7 @@ export function DrawToFbo({
     uniform vec4 iDate;
     uniform float iTimeDelta;
     uniform int iFrame;
-    
-    uniform sampler2D iChannel0;
-    uniform sampler2D iChannel1;
-    uniform sampler2D iChannel2;
-    uniform sampler2D iChannel3;
+    ${uniformDefsCode}
 
 		varying vec2 uv;
     
@@ -72,6 +68,14 @@ export function DrawToFbo({
       gl_FragColor = fragColor;
     }
   `;
+
+	// const userUniformInputs: UserUniformInputs = {};
+
+	// uniformDefs.forEach((def, paramIndex) => {
+	// 	userUniformInputs[def.name] = (_, props) => {
+	// 		return props.params[paramIndex];
+	// 	};
+	// });
 
 	return regl({
 		frag: fragmentShader,
@@ -100,10 +104,10 @@ export function DrawToFbo({
 			iFrame: (_, props: P) => props.iFrame,
 			iMouse: (_, props: P) => [props.mouseX, props.mouseY, 0, 0],
 			iDate: () => getDate(),
-			iChannel0: (_, props: P) => props.textures[0],
-			iChannel1: (_, props: P) => props.textures[1],
-			iChannel2: (_, props: P) => props.textures[2],
-			iChannel3: (_, props: P) => props.textures[3]
+			iChannel0: (_, props: P) => props.userParams[0],
+			iChannel1: (_, props: P) => props.userParams[1],
+			iChannel2: (_, props: P) => props.userParams[2],
+			iChannel3: (_, props: P) => props.userParams[3]
 		}
 	});
 }
