@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -9,12 +9,18 @@
 	import type { Message } from '$lib/messages/MessageSystem';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
+	import type { GLUniformDef } from '../../../types/uniform-config';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data, type }: { id: string; data: { code: string }; type: string } = $props();
+	let {
+		id: nodeId,
+		data,
+		type
+	}: { id: string; data: { code: string; glUniformDefs: GLUniformDef[] }; type: string } = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	const width = $state(200);
 	const height = $state(150);
@@ -45,6 +51,9 @@
 
 		updateNodeData(nodeId, nextData);
 		glSystem.upsertNode(nodeId, type, nextData);
+
+		// inform XYFlow that the handle has changed
+		updateNodeInternals();
 	}
 
 	onMount(() => {
@@ -91,37 +100,15 @@
 			</div>
 
 			<div class="relative">
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-0"
-					class="!left-17"
-					title="Video input iChannel0"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-1"
-					class="!left-22"
-					title="Video input iChannel1"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-2"
-					class="!left-27"
-					title="Video input iChannel2"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-3"
-					class="!left-32"
-					title="Video input iChannel3"
-				/>
+				{#each data.glUniformDefs as def, defIndex}
+					<VideoHandle
+						type="target"
+						position={Position.Top}
+						id={`video-in-${defIndex}-${def.name}-${def.type}`}
+						style={`left: ${80 + defIndex * 20}px;`}
+						title={`${def.name} (${def.type})`}
+					/>
+				{/each}
 
 				<div class="rounded-md bg-zinc-900">
 					<canvas
