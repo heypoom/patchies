@@ -2,6 +2,7 @@ import regl from 'regl';
 import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
 import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
+import { DEFAULT_GL_UNIFORM_DEFS } from '$lib/nodes/defaultNodeData';
 
 export class FBORenderer {
 	public renderSize = [800, 600] as [w: number, h: number];
@@ -65,7 +66,7 @@ export class FBORenderer {
 				framebuffer,
 				regl: this.regl,
 				code: node.data.code,
-				uniformDefs: node.data.uniformDefs
+				uniformDefs: node.data.uniformDefs ?? DEFAULT_GL_UNIFORM_DEFS
 			});
 
 			const fboNode: FBONode = {
@@ -133,8 +134,10 @@ export class FBORenderer {
 			const inputTextures = this.getInputTextures(node);
 			const userParams: any[] = [];
 
+			const uniformDefs = node.data.uniformDefs ?? DEFAULT_GL_UNIFORM_DEFS;
+
 			// Define input parameters
-			for (const n of node.data.uniformDefs) {
+			for (const n of uniformDefs) {
 				if (n.type === 'sampler2D') {
 					userParams.push(inputTextures.shift() ?? this.fallbackTexture);
 				}
@@ -147,7 +150,7 @@ export class FBORenderer {
 					iFrame: this.frameCount,
 					mouseX: 0,
 					mouseY: 0,
-					userParams: inputTextures
+					userParams
 				});
 			});
 

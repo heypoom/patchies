@@ -18,7 +18,7 @@ export type NodeData = {
 export function getDefaultNodeData(nodeType: string): NodeData {
 	return match(nodeType)
 		.with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
-		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE, uniformDefs: GL_UNIFORM_CONFIG }))
+		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE, uniformDefs: DEFAULT_GL_UNIFORM_DEFS }))
 		.with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))
 		.with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))
 		.with('ai.txt', () => ({ prompt: 'Write a creative story about...' }))
@@ -34,7 +34,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.otherwise(() => ({}));
 }
 
-const GL_UNIFORM_CONFIG: GLUniformDef[] = [
+export const DEFAULT_GL_UNIFORM_DEFS: GLUniformDef[] = [
 	{ name: 'iChannel0', type: 'sampler2D' },
 	{ name: 'iChannel1', type: 'sampler2D' },
 	{ name: 'iChannel2', type: 'sampler2D' },
