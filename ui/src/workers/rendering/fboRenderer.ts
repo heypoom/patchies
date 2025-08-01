@@ -99,9 +99,7 @@ export class FBORenderer {
 				id: node.id,
 				framebuffer,
 				texture,
-				renderCommand,
-				needsPreview: true,
-				previewSize: this.previewSize
+				renderCommand
 			};
 
 			this.fboNodes.set(node.id, fboNode);
@@ -147,11 +145,6 @@ export class FBORenderer {
 
 	setPreviewEnabled(nodeId: string, enabled: boolean) {
 		this.previewState[nodeId] = enabled;
-
-		if (this.fboNodes.has(nodeId)) {
-			const fboNode = this.fboNodes.get(nodeId)!;
-			fboNode.needsPreview = enabled;
-		}
 
 		const enabledPreviews = this.getEnabledPreviews() ?? [];
 		this.shouldProcessPreviews = enabledPreviews.length > 0;
@@ -305,10 +298,9 @@ export class FBORenderer {
 	private renderNodeToMainOutput(node: FBONode): void {
 		const [renderWidth, renderHeight] = this.renderSize;
 
-		// TODO: turn this on to save compute when output is not enabled
-		// if (!this.isOutputEnabled) {
-		// 	return;
-		// }
+		if (!this.isOutputEnabled) {
+			return;
+		}
 
 		if (!node) {
 			console.warn('Could not find source framebuffer for final texture');

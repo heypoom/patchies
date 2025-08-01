@@ -20,16 +20,16 @@ export interface RenderEdge {
 export interface RenderGraph {
 	nodes: RenderNode[];
 	edges: RenderEdge[];
-	sortedNodes: string[]; // Topologically sorted node IDs
+
+	/** Topologically sorted node IDs */
+	sortedNodes: string[];
 }
 
 export interface FBONode {
 	id: string;
-	framebuffer: regl.Framebuffer2D; // REGL framebuffer object
-	texture: regl.Texture2D; // REGL texture object
-	renderCommand: regl.DrawCommand; // REGL draw command
-	needsPreview: boolean;
-	previewSize: [width: number, height: number];
+	framebuffer: regl.Framebuffer2D;
+	texture: regl.Texture2D;
+	renderCommand: regl.DrawCommand;
 }
 
 // Message types for worker communication
