@@ -4,6 +4,7 @@
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { Message } from '$lib/messages/MessageSystem';
+	import Json5 from 'json5';
 
 	let {
 		id: nodeId,
@@ -28,7 +29,7 @@
 				msgText = value;
 			} else {
 				try {
-					msgText = JSON.stringify(value, null, 2);
+					msgText = Json5.stringify(value, null, 2);
 				} catch (e) {
 					msgText = String(value);
 				}
@@ -52,7 +53,7 @@
 	function sendMessage() {
 		// Try to send the message as a JSON object
 		try {
-			send(JSON.parse(msgText));
+			send(Json5.parse(msgText));
 			return;
 		} catch (e) {}
 
@@ -68,7 +69,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
