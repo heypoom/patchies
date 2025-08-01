@@ -6,10 +6,13 @@ import * as ohash from 'ohash';
 import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+import { IpcSystem } from './IpcSystem';
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
 	public renderWorker: Worker;
+
+	public ipcSystem = IpcSystem.getInstance();
 
 	/** Rendering context for the background output that covers the entire screen. */
 	public backgroundOutputCanvasContext: ImageBitmapRenderingContext | null = null;
@@ -47,7 +50,12 @@ export class GLSystem {
 		const { data } = event;
 
 		if (data.type === 'animationFrame' && data.outputBitmap) {
-			this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
+			if (this.ipcSystem.hasOutputScreen) {
+				console.log('[gl.sys] sending to secondary output');
+				this.ipcSystem.channel.postMessage({ type: 'renderOutput', bitmap: data.outputBitmap });
+			} else {
+				this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
+			}
 		}
 
 		// Handle preview frames
