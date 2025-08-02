@@ -6,7 +6,6 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { createLLMFunction } from '$lib/ai/google';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 	import type { Message } from '$lib/messages/MessageSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
@@ -24,7 +23,6 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	let messageContext: MessageContext;
-	let videoSystem: VideoSystem;
 	let videoCanvases: HTMLCanvasElement[] = $state([]);
 	let isRunning = $state(false);
 	let isMessageCallbackActive = $state(false);
