@@ -1,4 +1,5 @@
 import { Hydra, generators } from 'hydra-ts';
+import regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { HydraFboUniforms } from 'hydra-ts/src/Hydra';
 
@@ -11,9 +12,12 @@ export class HydraRenderer {
 	public hydra: Hydra;
 	public renderer: FBORenderer;
 	public precision: 'highp' | 'mediump' = 'highp';
+	public drawCommand: regl.DrawCommand<regl.DefaultContext, HydraFboUniforms>;
+	public framebuffer: regl.Framebuffer2D | null = null;
 
-	constructor(config: HydraConfig, renderer: FBORenderer) {
+	constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
+		this.framebuffer = framebuffer;
 		this.renderer = renderer;
 
 		const [width, height] = this.renderer.outputSize;
@@ -29,9 +33,10 @@ export class HydraRenderer {
 			precision: this.precision
 		});
 
-		// TODO: replace this with direct framebuffer blit instead of regl draw command
-		// @ts-expect-error -- regl version mismatch, but should still work!
-		this.hydra.renderFbo = this.renderer.regl<HydraFboUniforms>({
+		this.updateCode();
+
+		this.drawCommand = this.renderer.regl({
+			framebuffer: this.framebuffer,
 			frag: `
       precision ${this.precision} float;
       varying vec2 uv;
@@ -65,8 +70,6 @@ export class HydraRenderer {
 			count: 3,
 			depth: { enable: false }
 		});
-
-		this.executeCode();
 	}
 
 	renderFrame() {
@@ -79,13 +82,14 @@ export class HydraRenderer {
 			output.draw(this.hydra.synth);
 		});
 
-		this.hydra.renderFbo({
+		// TODO: replace this with direct framebuffer blit instead of regl draw command!
+		this.drawCommand({
 			tex0: this.hydra.output.getCurrent(),
 			resolution: this.hydra.synth.resolution
 		});
 	}
 
-	private executeCode() {
+	private updateCode() {
 		try {
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
 			const { sources, outputs, hush, render } = this.hydra;
@@ -94,7 +98,7 @@ export class HydraRenderer {
 			const [o0, o1, o2, o3] = outputs;
 
 			// Clear any existing patterns
-			this.destroy();
+			this.stop();
 
 			// Create a context with Hydra synth instance available as 'h'
 			// Also destructure common functions for easier access
@@ -143,8 +147,22 @@ export class HydraRenderer {
 		}
 	}
 
-	destroy() {
+	stop() {
 		this.hydra.hush();
 		for (const source of this.hydra.sources) source.clear();
+	}
+
+	destroy() {
+		this.stop();
+
+		// Destroy all sources and outputs
+		for (const source of this.hydra.sources) {
+			source.getTexture()?.destroy();
+		}
+
+		for (const output of this.hydra.outputs) {
+			output.getTexture()?.destroy();
+			output.fbos.forEach((fbo) => fbo.destroy());
+		}
 	}
 }

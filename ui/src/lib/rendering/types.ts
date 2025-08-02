@@ -43,6 +43,7 @@ export interface FBONode {
 	framebuffer: regl.Framebuffer2D;
 	texture: regl.Texture2D;
 	render: RenderFunction;
+	cleanup?: () => void;
 }
 
 // Message types for worker communication

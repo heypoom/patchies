@@ -9,6 +9,7 @@ import type {
 } from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
+import { HydraRenderer } from './hydraRenderer';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -27,6 +28,7 @@ export class FBORenderer {
 	// example: {'glsl-0': {'sliderValue': 0.5}}
 	public uniformDataByNode: Map<string, Map<string, any>> = new Map();
 
+	private hydraByNode = new Map<string, HydraRenderer | null>();
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
@@ -53,7 +55,7 @@ export class FBORenderer {
 	buildFBOs(renderGraph: RenderGraph) {
 		const [width, height] = this.outputSize;
 
-		this.cleanupFBOs();
+		this.destroyNodes();
 		this.uniformDataByNode.clear();
 
 		this.renderGraph = renderGraph;
@@ -71,13 +73,13 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			const render = match(node)
+			const renderer = match(node)
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
-				.with({ type: 'hydra' }, () => null)
+				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
 				.exhaustive();
 
-			// If the render function is null, we skip defining this node.
-			if (render === null) {
+			// If the renderer function is null, we skip defining this node.
+			if (renderer === null) {
 				framebuffer.destroy();
 				texture.destroy();
 				continue;
@@ -87,7 +89,8 @@ export class FBORenderer {
 				id: node.id,
 				framebuffer,
 				texture,
-				render
+				render: renderer.render,
+				cleanup: renderer.cleanup
 			};
 
 			this.fboNodes.set(node.id, fboNode);
@@ -95,7 +98,31 @@ export class FBORenderer {
 		}
 	}
 
-	createGlslRenderer(node: RenderNode, framebuffer: regl.Framebuffer2D): RenderFunction | null {
+	createHydraRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): { render: RenderFunction; cleanup: () => void } | null {
+		// Delete existing hydra renderer if it exists.
+		if (this.hydraByNode.has(node.id)) {
+			this.hydraByNode.get(node.id)?.stop();
+		}
+
+		const hydraRenderer = new HydraRenderer({ code: node.data.code }, framebuffer, this);
+		this.hydraByNode.set(node.id, hydraRenderer);
+
+		return {
+			render: () => hydraRenderer.renderFrame.bind(hydraRenderer),
+			cleanup: () => {
+				hydraRenderer.destroy();
+				this.hydraByNode.delete(node.id);
+			}
+		};
+	}
+
+	createGlslRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): { render: RenderFunction; cleanup: () => void } | null {
 		if (node.type !== 'glsl') return null;
 
 		const [width, height] = this.outputSize;
@@ -130,13 +157,17 @@ export class FBORenderer {
 			uniformDefs: node.data.glUniformDefs ?? []
 		});
 
-		return (params) => renderCommand(params);
+		return {
+			render: (params) => renderCommand(params),
+			cleanup: () => {}
+		};
 	}
 
-	cleanupFBOs() {
+	destroyNodes() {
 		for (const fboNode of this.fboNodes.values()) {
 			fboNode.framebuffer.destroy();
 			fboNode.texture.destroy();
+			fboNode.cleanup?.();
 		}
 
 		this.fboNodes.clear();
