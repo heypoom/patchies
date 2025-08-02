@@ -108,13 +108,18 @@ export function topologicalSort(nodes: RenderNode[]): string[] {
  */
 export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
 	const { nodes: renderNodes, edges: renderEdges } = filterFBOCompatibleGraph(nodes, edges);
-	const sortedNodes = topologicalSort(renderNodes);
 
-	return {
-		nodes: renderNodes,
-		edges: renderEdges,
-		sortedNodes
-	};
+	try {
+		const sortedNodes = topologicalSort(renderNodes);
+
+		return {
+			nodes: renderNodes,
+			edges: renderEdges,
+			sortedNodes
+		};
+	} catch (error) {
+		return { nodes: [], edges: [], sortedNodes: [] };
+	}
 }
 
 /**
