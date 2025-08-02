@@ -62,6 +62,8 @@ export class FBORenderer {
 		this.renderGraph = renderGraph;
 
 		for (const node of renderGraph.nodes) {
+			console.log(`building FBO for node ${node.type} ${node.id}`);
+
 			const texture = this.regl.texture({
 				width,
 				height,
@@ -77,6 +79,7 @@ export class FBORenderer {
 			const renderer = match(node)
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
+				.with({ type: 'p5' }, () => this.createEmptyRenderer())
 				.exhaustive();
 
 			// If the renderer function is null, we skip defining this node.
@@ -99,6 +102,11 @@ export class FBORenderer {
 			this.fboNodes.set(node.id, fboNode);
 			this.previewState[node.id] = true;
 		}
+	}
+
+	// Some nodes are externally managed, e.g. the texture will be uploaded on it.
+	createEmptyRenderer() {
+		return { render: () => {}, cleanup: () => {} };
 	}
 
 	createHydraRenderer(
@@ -181,8 +189,8 @@ export class FBORenderer {
 	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
 		const renderNode = this.renderGraph?.nodes.find((n) => n.id === nodeId);
 
-		// You cannot set uniform data for hydra nodes yet.
-		if (renderNode?.type === 'hydra') {
+		// You cannot set uniform data for non-GLSL nodes yet.
+		if (renderNode?.type !== 'glsl') {
 			return;
 		}
 
@@ -466,5 +474,12 @@ export class FBORenderer {
 
 		this.offscreenCanvas.width = width;
 		this.offscreenCanvas.height = height;
+	}
+
+	setBitmap(nodeId: string, bitmap: ImageBitmap) {
+		const fboNode = this.fboNodes.get(nodeId);
+		if (!fboNode) return;
+
+		fboNode.texture(bitmap);
 	}
 }

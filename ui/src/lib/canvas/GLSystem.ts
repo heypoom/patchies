@@ -195,4 +195,19 @@ export class GLSystem {
 	setOutputSize(width: number, height: number) {
 		this.send('setOutputSize', { width, height });
 	}
+
+	async setBitmapSource(nodeId: string, source: ImageBitmapSource) {
+		this.setBitmap(nodeId, await createImageBitmap(source));
+	}
+
+	setBitmap(nodeId: string, bitmap: ImageBitmap) {
+		this.renderWorker.postMessage(
+			{
+				type: 'setBitmap',
+				nodeId,
+				bitmap
+			},
+			{ transfer: [bitmap] }
+		);
+	}
 }

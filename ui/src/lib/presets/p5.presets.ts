@@ -19,11 +19,11 @@ function draw() {
 }`;
 
 const PASSTHRU_P5 = `function setup() {
-  createCanvas(200, 200)
+  createCanvas(200, 150)
+  pixelDensity(4)
 }
 
 function draw() {
-  drawSource()
 }`;
 
 const CAM_P5 = `let video;

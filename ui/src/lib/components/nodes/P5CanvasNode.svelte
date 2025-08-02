@@ -6,6 +6,7 @@
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	let {
 		id: nodeId,
@@ -17,6 +18,7 @@
 
 	let containerElement: HTMLDivElement;
 	let p5Manager: P5Manager | null = null;
+	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
 	let showEditor = $state(false);
 	let enableDrag = $state(true);
@@ -26,12 +28,18 @@
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
-		p5Manager = new P5Manager(containerElement);
+		p5Manager = new P5Manager(nodeId, containerElement);
+		glSystem.upsertNode(nodeId, 'p5', {});
 		updateSketch();
+
+		setTimeout(() => {
+			glSystem.setPreviewEnabled(nodeId, false);
+		}, 10);
 	});
 
 	onDestroy(() => {
 		p5Manager?.destroy();
+		glSystem.removeNode(nodeId);
 		messageContext?.destroy();
 	});
 
