@@ -3,6 +3,7 @@ import regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { HydraFboUniforms } from 'hydra-ts/src/Hydra';
 import type { RenderParams } from '$lib/rendering/types';
+import { getFramebuffer } from './utils';
 
 export interface HydraConfig {
 	code: string;
@@ -90,11 +91,35 @@ export class HydraRenderer {
 			output.tick(this.hydra.synth);
 		});
 
-		// TODO: replace this with direct framebuffer blit instead of regl draw command!
-		this.renderFboCommand({
-			tex0: this.hydra.output.getCurrent(),
-			resolution: this.hydra.synth.resolution
-		});
+		const hydraFramebuffer = this.hydra.output.getCurrent();
+		const gl = this.renderer.gl;
+
+		const [hydraWidth, hydraHeight] = this.hydra.synth.resolution;
+		const [outputWidth, outputHeight] = this.renderer.outputSize;
+
+		if (!gl) return;
+
+		const sourceFBO = getFramebuffer(hydraFramebuffer);
+		const destPreviewFBO = getFramebuffer(this.framebuffer);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
+
+		gl.blitFramebuffer(
+			0,
+			0,
+			hydraWidth,
+			hydraHeight,
+			0,
+			0,
+			outputWidth,
+			outputHeight,
+			gl.COLOR_BUFFER_BIT,
+			gl.LINEAR
+		);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
 		this.hydra.timeSinceLastUpdate = 0;
 		this.timestamp = time;

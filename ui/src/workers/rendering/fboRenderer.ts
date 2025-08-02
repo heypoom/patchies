@@ -10,6 +10,7 @@ import type {
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
+import { getFramebuffer } from './utils';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -21,7 +22,7 @@ export class FBORenderer {
 	public isAnimating: boolean = false;
 
 	public offscreenCanvas: OffscreenCanvas;
-	public gl: WebGLRenderingContext | null = null;
+	public gl: WebGL2RenderingContext | null = null;
 	public regl: regl.Regl;
 
 	// Mapping of nodeId -> uniform key -> uniform value
@@ -452,8 +453,3 @@ export class FBORenderer {
 		this.offscreenCanvas.height = height;
 	}
 }
-
-const getFramebuffer = (reglFramebuffer: regl.Framebuffer2D): WebGLFramebuffer | null => {
-	// @ts-expect-error -- hack: access WebGLFramebuffer directly
-	return reglFramebuffer._framebuffer.framebuffer || null;
-};
