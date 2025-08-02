@@ -31,8 +31,12 @@ export class GLSystem {
 	private hashes = { nodes: '', edges: '', graph: '' };
 	private renderGraph: RenderGraph | null = null;
 
-	public previewSize: [width: number, height: number] = [200, 150];
-	public outputSize: [width: number, height: number] = [200, 150];
+	public outputSize: [width: number, height: number] = [800, 600];
+
+	public previewSize: [width: number, height: number] = [
+		this.outputSize[0] / 4,
+		this.outputSize[1] / 4
+	];
 
 	static getInstance() {
 		if (!GLSystem.instance) {

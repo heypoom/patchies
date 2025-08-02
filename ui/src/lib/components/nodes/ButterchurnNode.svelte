@@ -47,16 +47,17 @@
 	};
 
 	onMount(() => {
-		const [outputWidth, outputHeight] = glSystem.outputSize;
 		const audioContext = new AudioContext();
 
 		const [previewWidth, previewHeight] = glSystem.previewSize;
 		canvasElement.width = previewWidth;
 		canvasElement.height = previewHeight;
 
+		const [outputWidth, outputHeight] = glSystem.outputSize;
+
 		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, {
-			width: outputWidth,
-			height: outputHeight
+			width: outputWidth / 2,
+			height: outputHeight / 2
 		});
 
 		glSystem.upsertNode(nodeId, 'img', {});

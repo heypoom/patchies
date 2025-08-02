@@ -78,13 +78,10 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			const emptyRenderer = this.createEmptyRenderer();
-
 			const renderer = match(node)
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
-				.with({ type: 'p5' }, () => emptyRenderer)
-				.with({ type: 'img' }, () => emptyRenderer)
+				.with({ type: 'img' }, () => this.createEmptyRenderer())
 				.exhaustive();
 
 			// If the renderer function is null, we skip defining this node.

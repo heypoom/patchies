@@ -1,2 +1,1 @@
-export const isExternalTextureNode = (nodeType: RenderNode['type']) =>
-	nodeType === 'img' || nodeType === 'p5';
+export const isExternalTextureNode = (nodeType: RenderNode['type']) => nodeType === 'img';

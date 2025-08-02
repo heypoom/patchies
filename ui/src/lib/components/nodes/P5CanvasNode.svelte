@@ -29,7 +29,7 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		p5Manager = new P5Manager(nodeId, containerElement);
-		glSystem.upsertNode(nodeId, 'p5', {});
+		glSystem.upsertNode(nodeId, 'img', {});
 		updateSketch();
 	});
 
