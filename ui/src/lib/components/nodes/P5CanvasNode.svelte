@@ -6,22 +6,18 @@
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 
-	// Get node data from XY Flow - nodes receive their data as props
 	let {
 		id: nodeId,
 		data,
 		selected
 	}: { id: string; data: { code: string }; selected: boolean } = $props();
 
-	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
 	let containerElement: HTMLDivElement;
 	let p5Manager: P5Manager | null = null;
 	let messageContext: MessageContext;
-	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let enableDrag = $state(true);
 	let errorMessage = $state<string | null>(null);
@@ -29,41 +25,14 @@
 	const code = $derived(data.code || '');
 
 	onMount(() => {
-		// Initialize message context and video system
 		messageContext = new MessageContext(nodeId);
-		videoSystem = VideoSystem.getInstance();
-
-		// Subscribe to video canvas sources
-		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			if (p5Manager && canvases.length > 0) {
-				// Use the first canvas source
-				p5Manager.setVideoCanvas(canvases[0]);
-			}
-		});
-
-		// Wait a tick to ensure everything is initialized
-		setTimeout(() => {
-			if (containerElement) {
-				p5Manager = new P5Manager(containerElement);
-				updateSketch();
-				// Register after a brief delay to ensure p5.js setup is complete
-				setTimeout(() => {
-					registerVideoSource();
-				}, 100);
-			}
-		}, 0);
+		p5Manager = new P5Manager(containerElement);
+		updateSketch();
 	});
 
 	onDestroy(() => {
-		if (p5Manager) {
-			p5Manager.destroy();
-		}
-		if (messageContext) {
-			messageContext.destroy();
-		}
-		if (videoSystem) {
-			videoSystem.unregisterNode(nodeId);
-		}
+		p5Manager?.destroy();
+		messageContext?.destroy();
 	});
 
 	function updateSketch() {
@@ -81,12 +50,8 @@
 						}
 					}
 				});
-				// Clear any previous errors on successful update
+
 				errorMessage = null;
-				// Re-register video source after p5.js recreates canvas
-				setTimeout(() => {
-					registerVideoSource();
-				}, 100);
 			} catch (error) {
 				// Capture compilation/setup errors
 				errorMessage = error instanceof Error ? error.message : String(error);
@@ -96,18 +61,6 @@
 
 	function toggleEditor() {
 		showEditor = !showEditor;
-	}
-
-	function registerVideoSource() {
-		if (p5Manager && videoSystem) {
-			const canvas = p5Manager.getCanvas();
-
-			if (canvas) {
-				videoSystem.registerVideoSource(nodeId, canvas);
-			} else {
-				console.warn(`No canvas available for P5 node ${nodeId} during registration`);
-			}
-		}
 	}
 </script>
 
@@ -120,7 +73,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -135,7 +88,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in"
-					class="!left-20 z-1"
+					class="z-1 !left-20"
 					title="Video input"
 				/>
 
@@ -169,7 +122,7 @@
 					type="source"
 					position={Position.Bottom}
 					id="video-out"
-					class="!left-20 z-1"
+					class="z-1 !left-20"
 					title="Video output"
 				/>
 			</div>

@@ -28,7 +28,6 @@ export interface P5SketchConfig {
 export class P5Manager {
 	private instance: Sketch | null = null;
 	private container: HTMLElement | null = null;
-	private videoCanvas: HTMLCanvasElement | null = null;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
@@ -149,9 +148,6 @@ export class P5Manager {
 		}
 
 		// @ts-expect-error -- no-op
-		sketch['getSource'] = this.createGetSourceFunction(sketch);
-
-		// @ts-expect-error -- no-op
 		sketch['p5'] = P5;
 
 		// @ts-expect-error -- no-op
@@ -159,31 +155,6 @@ export class P5Manager {
 
 		// @ts-expect-error -- no-op
 		sketch['ml5'] = ml5;
-
-		// Add function for copying from video canvas
-		// @ts-expect-error -- no-op
-		sketch['drawSource'] = () => {
-			const source = this.videoCanvas;
-			if (!source) return;
-
-			// @ts-expect-error -- no-op
-			const { canvas } = sketch;
-			if (!canvas) return;
-
-			canvas
-				.getContext('2d')
-				?.drawImage(
-					source,
-					0,
-					0,
-					source.width,
-					source.height,
-					0,
-					0,
-					canvas.width / window.devicePixelRatio,
-					canvas.height / window.devicePixelRatio
-				);
-		};
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
@@ -229,15 +200,5 @@ export class P5Manager {
 		const instance = this.instance as unknown as { canvas?: HTMLCanvasElement };
 
 		return instance?.canvas ?? null;
-	}
-
-	setVideoCanvas(canvas: HTMLCanvasElement | null) {
-		this.videoCanvas = canvas;
-	}
-
-	private createGetSourceFunction() {
-		return () => {
-			return this.videoCanvas ?? null;
-		};
 	}
 }
