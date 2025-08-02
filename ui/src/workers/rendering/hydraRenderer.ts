@@ -3,6 +3,10 @@ import regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
+import arrayUtils from 'hydra-ts/src/lib/array-utils';
+
+// Initialize hydra array utilities.
+arrayUtils.init();
 
 export interface HydraConfig {
 	code: string;
