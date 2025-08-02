@@ -92,14 +92,6 @@
 			<div class="relative">
 				<Handle type="target" position={Position.Top} class="z-1" />
 
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in"
-					class="z-1 !left-20"
-					title="Video input"
-				/>
-
 				<div class="relative">
 					<div
 						bind:this={containerElement}
