@@ -1,8 +1,8 @@
-const PASSTHRU = `initSource(s0)
+const PASSTHRU = `initSource()
 src(s0).out(o0)`;
 
-const DIFF = `initSource(s0, 0)
-initSource(s1, 1)
+const DIFF = `initSource(0)
+initSource(1)
 src(s0).diff(s1).out(o0)`;
 
 const BEANS = `osc(30,0.01,1)
