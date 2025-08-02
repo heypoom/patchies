@@ -18,17 +18,18 @@ import { Launchpad } from '$lib/midi/launchpad';
 export interface MIDIInputConfig {
 	deviceId?: string;
 	channel?: number;
-	messageTypes?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[];
+	events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[];
 }
 
 export type MIDIOutputConfig = {
 	deviceId?: string;
 	channel?: number;
 } & (
-	| { messageType: 'noteOn'; data: { note: number; velocity: number } }
-	| { messageType: 'noteOff'; data: { note: number; velocity: number } }
-	| { messageType: 'controlChange'; data: { control: number; value: number } }
-	| { messageType: 'programChange'; data: { program: number } }
+	| { event: 'noteOn'; note: number; velocity: number }
+	| { event: 'noteOff'; note: number; velocity: number }
+	| { event: 'controlChange'; control: number; value: number }
+	| { event: 'programChange'; program: number }
+	| { event: 'raw'; data: number[] }
 );
 
 interface NodeListeners {
@@ -126,7 +127,7 @@ export class MIDISystem {
 		const {
 			deviceId,
 			channel,
-			messageTypes = ['noteOn', 'noteOff', 'controlChange', 'programChange']
+			events = ['noteOn', 'noteOff', 'controlChange', 'programChange']
 		} = config;
 
 		if (!deviceId) {
@@ -146,7 +147,7 @@ export class MIDISystem {
 			channel: channelToUse
 		};
 
-		if (messageTypes.includes('noteOn')) {
+		if (events.includes('noteOn')) {
 			listeners.noteOn = (e: NoteMessageEvent) => {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'noteOn',
@@ -160,7 +161,7 @@ export class MIDISystem {
 			});
 		}
 
-		if (messageTypes.includes('noteOff')) {
+		if (events.includes('noteOff')) {
 			listeners.noteOff = (e: NoteMessageEvent) => {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'noteOff',
@@ -174,7 +175,7 @@ export class MIDISystem {
 			});
 		}
 
-		if (messageTypes.includes('controlChange')) {
+		if (events.includes('controlChange')) {
 			listeners.controlChange = (e: ControlChangeMessageEvent) => {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'controlChange',
@@ -188,7 +189,7 @@ export class MIDISystem {
 			});
 		}
 
-		if (messageTypes.includes('programChange')) {
+		if (events.includes('programChange')) {
 			listeners.programChange = (e: MessageEvent) => {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'programChange',
@@ -243,25 +244,28 @@ export class MIDISystem {
 
 		try {
 			match(config)
-				.with({ messageType: 'noteOn' }, ({ data }) => {
-					if (data.note !== undefined) {
-						output.playNote(data.note, { rawAttack: data.velocity, channels: channel });
+				.with({ event: 'noteOn' }, ({ note, velocity }) => {
+					if (note !== undefined) {
+						output.playNote(note, { rawAttack: velocity, channels: channel });
 					}
 				})
-				.with({ messageType: 'noteOff' }, ({ data }) => {
-					if (data.note !== undefined) {
-						output.stopNote(data.note, { rawRelease: data.velocity, channels: channel });
+				.with({ event: 'noteOff' }, ({ note, velocity }) => {
+					if (note !== undefined) {
+						output.stopNote(note, { rawRelease: velocity, channels: channel });
 					}
 				})
-				.with({ messageType: 'controlChange' }, ({ data }) => {
-					if (data.control !== undefined && data.value !== undefined) {
-						output.sendControlChange(data.control, data.value, { channels: channel });
+				.with({ event: 'controlChange' }, ({ control, value }) => {
+					if (control !== undefined && value !== undefined) {
+						output.sendControlChange(control, value, { channels: channel });
 					}
 				})
-				.with({ messageType: 'programChange' }, ({ data }) => {
-					if (data.program !== undefined) {
-						output.sendProgramChange(data.program, { channels: channel });
+				.with({ event: 'programChange' }, ({ program }) => {
+					if (program !== undefined) {
+						output.sendProgramChange(program, { channels: channel });
 					}
+				})
+				.with({ event: 'raw' }, ({ data }) => {
+					output.send(data);
 				})
 				.otherwise((unknownType) => {
 					console.warn('Unknown MIDI message type:', unknownType);

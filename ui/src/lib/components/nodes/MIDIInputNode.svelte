@@ -17,7 +17,7 @@
 		data: {
 			deviceId?: string;
 			channel?: number;
-			messageTypes?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[];
+			events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[];
 		};
 		selected: boolean;
 	} = $props();
@@ -32,9 +32,7 @@
 
 	const deviceId = $derived(data.deviceId || '');
 	const channel = $derived(data.channel || 0);
-	const messageTypes = $derived(
-		data.messageTypes || ['noteOn', 'noteOff', 'controlChange', 'programChange']
-	);
+	const events = $derived(data.events || ['noteOn', 'noteOff', 'controlChange', 'programChange']);
 
 	const borderColor = $derived.by(() => {
 		if (errorMessage) return 'border-red-500';
@@ -54,12 +52,12 @@
 			.with({ type: 'bang' }, () => {
 				startListening();
 			})
-			.with({ type: 'set' }, ({ deviceId, channel, messageTypes }) => {
+			.with({ type: 'set' }, ({ deviceId, channel, events }) => {
 				updateNodeData(nodeId, {
 					...data,
 					...(deviceId !== undefined && { deviceId }),
 					...(channel !== undefined && { channel }),
-					...(messageTypes !== undefined && { messageTypes })
+					...(events !== undefined && { events })
 				});
 			})
 			.with({ type: 'stop' }, () => {
@@ -86,7 +84,7 @@
 		const config: MIDIInputConfig = {
 			deviceId,
 			channel: channel === 0 ? undefined : channel,
-			messageTypes
+			events
 		};
 
 		try {
@@ -251,16 +249,16 @@
 									<input
 										type="checkbox"
 										class="mr-2 h-3 w-3"
-										checked={messageTypes.includes(msgType)}
+										checked={events.includes(msgType)}
 										onchange={(e) => {
 											const checked = (e.target as HTMLInputElement).checked;
 											const newTypes = checked
 												? [
-														...messageTypes,
+														...events,
 														msgType as 'noteOn' | 'noteOff' | 'controlChange' | 'programChange'
 													]
-												: messageTypes.filter((t) => t !== msgType);
-											updateNodeData(nodeId, { ...data, messageTypes: newTypes });
+												: events.filter((t) => t !== msgType);
+											updateNodeData(nodeId, { ...data, events: newTypes });
 										}}
 									/>
 									<span class="text-xs text-zinc-300">{msgType}</span>

@@ -14,12 +14,7 @@
 		selected
 	}: {
 		id: string;
-		data: {
-			deviceId?: string;
-			channel?: number;
-			messageType?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange';
-			data?: any;
-		};
+		data: MIDIOutputConfig;
 		selected: boolean;
 	} = $props();
 
@@ -33,8 +28,7 @@
 
 	const deviceId = $derived(data.deviceId || '');
 	const channel = $derived(data.channel || 1);
-	const messageType = $derived(data.messageType || 'noteOn');
-	const messageData = $derived(data.data || {});
+	const event = $derived(data.event || 'noteOn');
 
 	const borderColor = $derived.by(() => {
 		const now = Date.now();
@@ -52,7 +46,7 @@
 	});
 
 	const dataFieldType = $derived.by(() => {
-		return match(messageType)
+		return match(event)
 			.with('noteOn', 'noteOff', () => 'note')
 			.with('controlChange', () => 'control')
 			.with('programChange', () => 'program')
@@ -71,37 +65,27 @@
 			})
 			.with({ type: 'send' }, (m) => {
 				const config = {
+					...data,
+					...m,
 					deviceId: m.deviceId ?? data.deviceId,
 					channel: m.channel ?? data.channel,
-					messageType: m.messageType ?? data.messageType,
-					data: m.data ?? messageData
-				} as MIDIOutputConfig;
+					event: m.event ?? data.event
+				};
 
-				sendMidiMessage(config);
+				sendMidiMessage(config as MIDIOutputConfig);
 			})
 			.with({ type: 'set' }, (m) => {
-				updateNodeData(nodeId, {
-					...data,
-					...(m.deviceId !== undefined && { deviceId: m.deviceId }),
-					...(m.channel !== undefined && { channel: m.channel }),
-					...(m.messageType !== undefined && { messageType: m.messageType }),
-					...(m.data !== undefined && { data: m.data })
-				});
+				updateNodeData(nodeId, { ...data, ...m });
 			})
 			.otherwise(() => {
 				// Handle unknown message types
 			});
 	}
 
-	async function sendMidiMessage(config?: MIDIOutputConfig) {
-		const outputConfig = config || {
-			deviceId,
-			channel,
-			messageType,
-			data: messageData
-		};
+	async function sendMidiMessage(userConfig?: MIDIOutputConfig) {
+		const config = { ...data, ...userConfig };
 
-		if (!outputConfig.deviceId) {
+		if (!config.deviceId) {
 			errorMessage = 'No MIDI device selected';
 			showSettings = true;
 			return;
@@ -117,7 +101,7 @@
 		}
 
 		try {
-			midiSystem.sendMidiMessage(outputConfig);
+			midiSystem.sendMidiMessage(config);
 			lastSentTime = Date.now();
 			errorMessage = null;
 		} catch (error) {
@@ -137,8 +121,8 @@
 		const defaultData = getDefaultDataForMessageType(newMessageType);
 		updateNodeData(nodeId, {
 			...data,
-			messageType: newMessageType,
-			data: { ...messageData, ...defaultData }
+			event: newMessageType,
+			...defaultData
 		});
 	}
 
@@ -209,7 +193,7 @@
 							{#if errorMessage}
 								<span class="text-red-400">Error</span>
 							{:else}
-								<span class="text-zinc-400">{messageType}</span>
+								<span class="text-zinc-400">{event}</span>
 							{/if}
 						</div>
 						<div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
@@ -270,7 +254,7 @@
 						<label class="mb-2 block text-xs font-medium text-zinc-300">Message Type</label>
 						<select
 							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-							value={messageType}
+							value={event}
 							onchange={(e) => updateMessageType((e.target as HTMLSelectElement).value)}
 						>
 							<option value="noteOn">Note On</option>
@@ -291,14 +275,11 @@
 										min="0"
 										max="127"
 										class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-										value={messageData.note || 60}
+										value={data.note || 60}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
 												...data,
-												data: {
-													...messageData,
-													note: parseInt((e.target as HTMLInputElement).value)
-												}
+												note: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
 								</div>
@@ -309,14 +290,11 @@
 										min="0"
 										max="127"
 										class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-										value={messageData.velocity || 127}
+										value={data.velocity || 127}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
 												...data,
-												data: {
-													...messageData,
-													velocity: parseInt((e.target as HTMLInputElement).value)
-												}
+												velocity: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
 								</div>
@@ -330,14 +308,11 @@
 										min="0"
 										max="127"
 										class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-										value={messageData.control || 1}
+										value={data.control || 1}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
 												...data,
-												data: {
-													...messageData,
-													control: parseInt((e.target as HTMLInputElement).value)
-												}
+												control: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
 								</div>
@@ -348,14 +323,11 @@
 										min="0"
 										max="127"
 										class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-										value={messageData.value || 64}
+										value={data.value || 64}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
 												...data,
-												data: {
-													...messageData,
-													value: parseInt((e.target as HTMLInputElement).value)
-												}
+												value: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
 								</div>
@@ -368,14 +340,11 @@
 									min="0"
 									max="127"
 									class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-									value={messageData.program || 1}
+									value={data.program || 1}
 									onchange={(e) =>
 										updateNodeData(nodeId, {
 											...data,
-											data: {
-												...messageData,
-												program: parseInt((e.target as HTMLInputElement).value)
-											}
+											program: parseInt((e.target as HTMLInputElement).value)
 										})}
 								/>
 							</div>

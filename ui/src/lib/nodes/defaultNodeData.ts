@@ -34,12 +34,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('midi.in', () => ({
 			deviceId: '',
 			channel: 0,
-			messageTypes: ['noteOn', 'noteOff', 'controlChange', 'programChange']
+			events: ['noteOn', 'noteOff', 'controlChange', 'programChange']
 		}))
 		.with('midi.out', () => ({
 			deviceId: '',
 			channel: 1,
-			messageType: 'noteOn',
+			event: 'noteOn',
 			data: { note: 60, velocity: 127 }
 		}))
 		.otherwise(() => ({}));

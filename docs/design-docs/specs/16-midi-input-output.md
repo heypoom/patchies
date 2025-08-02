@@ -27,7 +27,7 @@ Node data for `midi.in` includes:
 
 - `deviceId: number`: The ID of the MIDI device to receive from
 - `channel: number`: The MIDI channel to listen to (1-16, or all channels)
-- `messageTypes: ('noteOn', 'noteOff', 'controlChange', 'programChange')[]`: The types of MIDI messages to listen to (note on, note off, control change, etc.)
+- `events: ('noteOn', 'noteOff', 'controlChange', 'programChange')[]`: The types of MIDI messages to listen to (note on, note off, control change, etc.)
 
 ### Messages for `midi.in`
 
@@ -35,7 +35,7 @@ The object listens to these messages:
 
 - `{ type: 'bang' }` - start listening to MIDI messages using the current configuration.
   - This should call the `MidiSystem` to start setting up the MIDI input.
-- `{ type: 'set', deviceId?: number, channel?: number, messageTypes?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[] }` - set the configuration for MID input. if any parameter is not provided, it should use the current configuration of the node.
+- `{ type: 'set', deviceId?: number, channel?: number, events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[] }` - set the configuration for MID input. if any parameter is not provided, it should use the current configuration of the node.
 
 The object emits these messages:
 
@@ -54,17 +54,17 @@ Node data for `midi.out` includes:
 
 - `deviceId: number`: The ID of the MIDI device to send to
 - `channel: number`: The MIDI channel to send on (1-16)
-- `messageType: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange'`: The type of MIDI message to send
+- `event: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange'`: The type of MIDI message to send
 - `data: any`: The data to send with the MIDI message (e.g. note number, velocity, control number, value, etc.)
 
 ### Messages for `midi.out`
 
 - `{ type: 'bang' }` - send the MIDI message using the current configuration.
   - This should call the `MidiSystem` to send the MIDI message.
-- `{ type: 'send', deviceId?: number, channel?: number, messageType?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange', data?: any }` - send a MIDI message with the specified parameters.
+- `{ type: 'send', deviceId?: number, channel?: number, event?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange', data?: any }` - send a MIDI message with the specified parameters.
   - if any parameter is not provided, it should use the current configuration of the node.
   - for example, if only `data` is provided, it should send a note on message with the specified data on the current device and channel.
-- `{ type: 'set', deviceId?: number, channel?: number, messageType?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange', data?: any }` - set the configuration for MIDI output for the parameters that are provided.
+- `{ type: 'set', deviceId?: number, channel?: number, event?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange', data?: any }` - set the configuration for MIDI output for the parameters that are provided.
   - for example, `{type: 'set', deviceId: 1, channel: 1}` should set the device and channel for the MIDI output, but keep the current message type and data.
 
 ## Implementation
