@@ -9,24 +9,25 @@ export class FBORenderer {
 	public previewSize = [200, 150] as [w: number, h: number];
 	public renderGraph: RenderGraph | null = null;
 
+	public isOutputEnabled: boolean = false;
+	public shouldProcessPreviews: boolean = false;
+	public isAnimating: boolean = false;
+
+	public offscreenCanvas: OffscreenCanvas;
+	public gl: WebGLRenderingContext | null = null;
+	public regl: regl.Regl;
+
 	// Mapping of nodeId -> uniform key -> uniform value
 	// example: {'glsl-0': {'sliderValue': 0.5}}
 	public uniformDataByNode: Map<string, Map<string, any>> = new Map();
 
-	private offscreenCanvas: OffscreenCanvas;
-	private gl: WebGLRenderingContext | null = null;
-	private regl: regl.Regl;
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
 	private frameCount: number = 0;
 	private startTime: number = Date.now();
 	private previewState: PreviewState = {};
-	private isAnimating: boolean = false;
 	private frameCancellable: regl.Cancellable | null = null;
-
-	public isOutputEnabled: boolean = false;
-	public shouldProcessPreviews: boolean = false;
 
 	constructor() {
 		const [width, height] = this.outputSize;
