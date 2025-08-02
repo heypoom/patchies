@@ -17,6 +17,8 @@ export class HydraRenderer {
 
 	private timestamp = performance.now();
 
+	private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
+
 	constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
 		this.framebuffer = framebuffer;
@@ -45,7 +47,20 @@ export class HydraRenderer {
 		this.hydra.synth.time += deltaTime * 0.001 * this.hydra.synth.speed;
 		this.hydra.timeSinceLastUpdate += deltaTime;
 
-		this.hydra.sources.forEach((source) => {
+		this.hydra.sources.forEach((source, sourceIndex) => {
+			// We do the tick ourselves
+			if (this.sourceToParamIndexMap[sourceIndex] !== null) {
+				const paramIndex = this.sourceToParamIndexMap[sourceIndex];
+				const param = params.userParams[paramIndex] as regl.Texture2D;
+
+				// Check if the param is a regl texture
+				if (param.name === 'reglTexture2D') {
+					source.tex = param;
+				}
+
+				return;
+			}
+
 			source.tick(this.hydra.synth);
 		});
 
@@ -88,6 +103,8 @@ export class HydraRenderer {
 	}
 
 	private updateCode() {
+		this.sourceToParamIndexMap = [null, null, null, null];
+
 		try {
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
 			const { sources, outputs, hush, render } = this.hydra;
@@ -124,7 +141,9 @@ export class HydraRenderer {
 				o0,
 				o1,
 				o2,
-				o3
+				o3,
+
+				initSource: this.initSource.bind(this)
 			};
 
 			const userFunction = new Function(
@@ -161,5 +180,9 @@ export class HydraRenderer {
 		for (const output of this.hydra.outputs) {
 			output.fbos.forEach((fbo) => fbo.destroy());
 		}
+	}
+
+	initSource(sourceIndex: number = 0, inputIndex: number = sourceIndex) {
+		this.sourceToParamIndexMap[sourceIndex] = inputIndex;
 	}
 }

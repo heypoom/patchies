@@ -261,21 +261,30 @@ export class FBORenderer {
 		// TODO: optimize this!
 		const inputTextures = this.getInputTextures(node);
 
-		const uniformDefs = node.data.glUniformDefs ?? [];
-		const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
-		const userUniformParams: any[] = [];
+		let userUniformParams: any[] = [];
 
-		// Define input parameters
-		for (const n of uniformDefs) {
-			if (n.type === 'sampler2D') {
-				userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
-			} else {
-				const value = uniformData.get(n.name);
+		// GLSL supports custom uniforms
+		if (node.type === 'glsl') {
+			const uniformDefs = node.data.glUniformDefs ?? [];
+			const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
 
-				if (value !== undefined && value !== null) {
-					userUniformParams.push(value);
+			// Define input parameters
+			for (const n of uniformDefs) {
+				if (n.type === 'sampler2D') {
+					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
+				} else {
+					const value = uniformData.get(n.name);
+
+					if (value !== undefined && value !== null) {
+						userUniformParams.push(value);
+					}
 				}
 			}
+		}
+
+		// use the input textures as-is for now
+		if (node.type === 'hydra') {
+			userUniformParams = inputTextures;
 		}
 
 		// Render to FBO
