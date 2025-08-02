@@ -49,6 +49,10 @@
 
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 		glSystem.upsertNode(nodeId, 'hydra', { code });
+
+		setTimeout(() => {
+			glSystem.setPreviewEnabled(nodeId, true);
+		}, 10);
 	});
 
 	onDestroy(() => {
