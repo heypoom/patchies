@@ -336,7 +336,7 @@
 			return !!(
 				(connection.sourceHandle?.startsWith('video') ||
 					connection.sourceHandle?.startsWith('gl')) &&
-				connection.targetHandle?.startsWith('video')
+				(connection.targetHandle?.startsWith('video') || connection.targetHandle?.startsWith('gl'))
 			);
 		}
 
