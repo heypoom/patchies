@@ -26,11 +26,23 @@ export interface RenderGraph {
 	sortedNodes: string[];
 }
 
+type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
+
+export interface RenderParams {
+	lastTime: number;
+	iFrame: number;
+	mouseX: number;
+	mouseY: number;
+	userParams: UserParam[];
+}
+
+export type RenderFunction = (renderParams: RenderParams) => void;
+
 export interface FBONode {
 	id: string;
 	framebuffer: regl.Framebuffer2D;
 	texture: regl.Texture2D;
-	renderCommand: regl.DrawCommand;
+	render: RenderFunction;
 }
 
 // Message types for worker communication

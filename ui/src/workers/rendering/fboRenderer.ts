@@ -1,6 +1,12 @@
 import regl from 'regl';
 import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
-import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
+import type {
+	RenderGraph,
+	RenderNode,
+	FBONode,
+	PreviewState,
+	RenderFunction
+} from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 
@@ -45,41 +51,14 @@ export class FBORenderer {
 
 	/** Build FBOs for all nodes in the render graph */
 	buildFBOs(renderGraph: RenderGraph) {
+		const [width, height] = this.outputSize;
+
 		this.cleanupFBOs();
 		this.uniformDataByNode.clear();
 
 		this.renderGraph = renderGraph;
 
-		const [width, height] = this.outputSize;
-
 		for (const node of renderGraph.nodes) {
-			if (node.type === 'hydra') {
-				console.log(`[build.fbo] found hydra node`);
-				continue;
-			}
-
-			// Prepare uniform defaults to prevent crashes
-			if (node.data.glUniformDefs) {
-				const defaultUniformData = new Map();
-
-				for (const def of node.data.glUniformDefs) {
-					const defaultUniformValue = match(def.type)
-						.with('bool', () => true)
-						.with('float', () => 0.0)
-						.with('int', () => 0)
-						.with('vec2', () => [0, 0])
-						.with('vec3', () => [0, 0, 0])
-						.with('vec4', () => [0, 0, 0, 1])
-						.with('sampler2D', () => null)
-						.otherwise(() => null);
-
-					defaultUniformData.set(def.name, defaultUniformValue);
-				}
-
-				this.uniformDataByNode.set(node.id, defaultUniformData);
-			}
-
-			// Create FBO for each node
 			const texture = this.regl.texture({
 				width,
 				height,
@@ -92,25 +71,66 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			const renderCommand = createShaderToyDrawCommand({
-				width,
-				height,
-				framebuffer,
-				regl: this.regl,
-				code: node.data.code,
-				uniformDefs: node.data.glUniformDefs ?? []
-			});
+			const render = match(node)
+				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
+				.with({ type: 'hydra' }, () => null)
+				.exhaustive();
+
+			// If the render function is null, we skip defining this node.
+			if (render === null) {
+				framebuffer.destroy();
+				texture.destroy();
+				continue;
+			}
 
 			const fboNode: FBONode = {
 				id: node.id,
 				framebuffer,
 				texture,
-				renderCommand
+				render
 			};
 
 			this.fboNodes.set(node.id, fboNode);
 			this.previewState[node.id] = true;
 		}
+	}
+
+	createGlslRenderer(node: RenderNode, framebuffer: regl.Framebuffer2D): RenderFunction | null {
+		if (node.type !== 'glsl') return null;
+
+		const [width, height] = this.outputSize;
+
+		// Prepare uniform defaults to prevent crashes
+		if (node.data.glUniformDefs) {
+			const defaultUniformData = new Map();
+
+			for (const def of node.data.glUniformDefs) {
+				const defaultUniformValue = match(def.type)
+					.with('bool', () => true)
+					.with('float', () => 0.0)
+					.with('int', () => 0)
+					.with('vec2', () => [0, 0])
+					.with('vec3', () => [0, 0, 0])
+					.with('vec4', () => [0, 0, 0, 1])
+					.with('sampler2D', () => null)
+					.otherwise(() => null);
+
+				defaultUniformData.set(def.name, defaultUniformValue);
+			}
+
+			this.uniformDataByNode.set(node.id, defaultUniformData);
+		}
+
+		const renderCommand = createShaderToyDrawCommand({
+			width,
+			height,
+			framebuffer,
+			regl: this.regl,
+			code: node.data.code,
+			uniformDefs: node.data.glUniformDefs ?? []
+		});
+
+		return (params) => renderCommand(params);
 	}
 
 	cleanupFBOs() {
@@ -226,7 +246,7 @@ export class FBORenderer {
 
 		// Render to FBO
 		fboNode.framebuffer.use(() => {
-			fboNode.renderCommand({
+			fboNode.render({
 				lastTime: this.lastTime,
 				iFrame: this.frameCount,
 				mouseX: 0,

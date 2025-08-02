@@ -29,6 +29,7 @@ export class HydraRenderer {
 			precision: this.precision
 		});
 
+		// TODO: replace this with direct framebuffer blit instead of regl draw command
 		// @ts-expect-error -- regl version mismatch, but should still work!
 		this.hydra.renderFbo = this.renderer.regl<HydraFboUniforms>({
 			frag: `
@@ -68,10 +69,26 @@ export class HydraRenderer {
 		this.executeCode();
 	}
 
+	renderFrame() {
+		this.hydra.sources.forEach((source) => {
+			// @ts-expect-error -- source.draw is not typed in hydra-ts, but still works!
+			source.draw(this.hydra.synth);
+		});
+
+		this.hydra.outputs.forEach((output) => {
+			output.draw(this.hydra.synth);
+		});
+
+		this.hydra.renderFbo({
+			tex0: this.hydra.output.getCurrent(),
+			resolution: this.hydra.synth.resolution
+		});
+	}
+
 	private executeCode() {
 		try {
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
-			const { sources, outputs, hush, loop, render } = this.hydra;
+			const { sources, outputs, hush, render } = this.hydra;
 
 			const [s0, s1, s2, s3] = sources;
 			const [o0, o1, o2, o3] = outputs;
@@ -83,7 +100,6 @@ export class HydraRenderer {
 			// Also destructure common functions for easier access
 			const context = {
 				h: this.hydra.synth,
-				loop,
 				render,
 				hush,
 
@@ -116,8 +132,6 @@ export class HydraRenderer {
 
 				with (context) {
 					${this.config.code}
-
-					loop.start()
 				}
 			`
 			);
@@ -130,7 +144,6 @@ export class HydraRenderer {
 	}
 
 	destroy() {
-		this.hydra.loop.stop();
 		this.hydra.hush();
 		for (const source of this.hydra.sources) source.clear();
 	}
