@@ -419,9 +419,9 @@ export class FBORenderer {
 			renderWidth,
 			renderHeight,
 			0,
-			0,
-			renderWidth,
 			renderHeight,
+			renderWidth,
+			0,
 			gl.COLOR_BUFFER_BIT,
 			gl.NEAREST
 		);
