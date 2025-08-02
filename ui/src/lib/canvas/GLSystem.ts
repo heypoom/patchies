@@ -8,6 +8,7 @@ import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
+import type { Message } from '$lib/messages/MessageSystem';
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
@@ -232,5 +233,9 @@ export class GLSystem {
 
 	removeBitmap(nodeId: string) {
 		this.send('removeBitmap', { nodeId });
+	}
+
+	sendMessageToNode(nodeId: string, message: Message) {
+		this.send('sendMessageToNode', { nodeId, message });
 	}
 }

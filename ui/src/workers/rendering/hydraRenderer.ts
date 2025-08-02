@@ -4,6 +4,7 @@ import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import arrayUtils from 'hydra-ts/src/lib/array-utils';
+import type { MessageCallback } from '$lib/messages/MessageSystem';
 
 // Initialize hydra array utilities.
 arrayUtils.init();
@@ -18,6 +19,8 @@ export class HydraRenderer {
 	public renderer: FBORenderer;
 	public precision: 'highp' | 'mediump' = 'highp';
 	public framebuffer: regl.Framebuffer2D | null = null;
+
+	public onMessage: MessageCallback = () => {};
 
 	private timestamp = performance.now();
 
@@ -147,7 +150,11 @@ export class HydraRenderer {
 				o2,
 				o3,
 
-				initSource: this.initSource.bind(this)
+				initSource: this.initSource.bind(this),
+
+				onMessage: (callback: MessageCallback) => {
+					this.onMessage = callback;
+				}
 			};
 
 			const userFunction = new Function(

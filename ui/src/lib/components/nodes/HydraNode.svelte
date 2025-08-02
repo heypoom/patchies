@@ -33,9 +33,13 @@
 	function handleMessageNodeCallback(message: Message) {
 		if (message.data.type === 'set') {
 			setCodeAndUpdate(message.data.code);
+			return;
 		} else if (message.data.type === 'run') {
 			updateHydra();
+			return;
 		}
+
+		glSystem.sendMessageToNode(nodeId, message);
 	}
 
 	onMount(() => {

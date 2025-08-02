@@ -12,6 +12,7 @@ import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
+import type { Message } from '$lib/messages/MessageSystem';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -508,5 +509,18 @@ export class FBORenderer {
 
 		texture.destroy();
 		this.externalTexturesByNode.delete(nodeId);
+	}
+
+	/** Send message to nodes */
+	sendMessageToNode(nodeId: string, message: Message) {
+		const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
+		if (!node) return;
+
+		if (node.type === 'hydra') {
+			const hydraRenderer = this.hydraByNode.get(nodeId);
+			if (!hydraRenderer) return;
+
+			hydraRenderer.onMessage(message);
+		}
 	}
 }
