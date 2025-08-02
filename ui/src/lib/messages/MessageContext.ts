@@ -1,4 +1,4 @@
-import { MessageQueue, MessageSystem, type MessageCallback } from './MessageSystem';
+import { MessageQueue, MessageSystem, type Message, type MessageCallback } from './MessageSystem';
 
 type SendOptions = { type?: string; to?: string };
 
@@ -7,8 +7,8 @@ export class MessageContext {
 	public messageSystem: MessageSystem;
 	public nodeId: string;
 
+	public messageCallback: MessageCallback | null = null;
 	private intervals: number[] = [];
-	private messageCallback: MessageCallback | null = null;
 
 	public onSend = (data: any, options: SendOptions = {}) => {};
 	public onMessageCallbackRegistered = () => {};
@@ -22,11 +22,11 @@ export class MessageContext {
 		this.queue = this.messageSystem.registerNode(nodeId);
 
 		// Set up the onMessage callback forwarding
-		this.queue.addCallback((message) => {
-			if (this.messageCallback) {
-				this.messageCallback(message);
-			}
-		});
+		this.queue.addCallback(this.messageCallbackHandler.bind(this));
+	}
+
+	messageCallbackHandler(message: Message) {
+		this.messageCallback?.(message);
 	}
 
 	// Create the send function for this node
@@ -78,6 +78,7 @@ export class MessageContext {
 	// Clean up when the node is destroyed
 	destroy() {
 		this.clearIntervals();
+		this.queue.removeCallback(this.messageCallbackHandler.bind(this));
 
 		// Unregister the node
 		this.messageSystem.unregisterNode(this.nodeId);

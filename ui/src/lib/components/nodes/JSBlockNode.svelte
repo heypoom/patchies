@@ -27,7 +27,9 @@
 	let videoSystem: VideoSystem;
 	let videoCanvases: HTMLCanvasElement[] = $state([]);
 	let isRunning = $state(false);
-	let isLongRunningTaskActive = $state(false);
+	let isMessageCallbackActive = $state(false);
+	let isIntervalCallbackActive = $state(false);
+	let isLongRunningTaskActive = $derived(isMessageCallbackActive || isIntervalCallbackActive);
 
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
@@ -35,16 +37,16 @@
 	const code = $derived(data.code || '');
 
 	const borderColor = $derived.by(() => {
-		if (selected) return 'border-zinc-400';
 		if (isRunning) return 'border-pink-500';
 		if (isLongRunningTaskActive) return 'border-emerald-500';
+		if (selected) return 'border-zinc-400';
 
 		return 'border-zinc-600';
 	});
 
-	const playIcon = $derived.by(() => {
+	const playOrStopIcon = $derived.by(() => {
 		if (isRunning) return 'lucide:loader';
-		if (isLongRunningTaskActive) return 'lucide:refresh-ccw';
+		if (isLongRunningTaskActive) return 'lucide:pause';
 
 		return 'lucide:play';
 	});
@@ -62,11 +64,11 @@
 		messageContext = new MessageContext(nodeId);
 
 		messageContext.onMessageCallbackRegistered = () => {
-			isLongRunningTaskActive = true;
+			isMessageCallbackActive = true;
 		};
 
 		messageContext.onIntervalCallbackRegistered = () => {
-			isLongRunningTaskActive = true;
+			isIntervalCallbackActive = true;
 		};
 
 		// Initialize video system
@@ -97,9 +99,25 @@
 		}
 	});
 
+	function clearIntervals() {
+		messageContext.clearIntervals();
+		isIntervalCallbackActive = false;
+	}
+
+	function clearMessageHandler() {
+		messageContext.messageCallback = null;
+		isMessageCallbackActive = false;
+	}
+
+	function stopLongRunningTasks() {
+		clearIntervals();
+		clearMessageHandler();
+	}
+
 	async function executeCode() {
 		isRunning = true;
-		isLongRunningTaskActive = false;
+		isMessageCallbackActive = false;
+		isIntervalCallbackActive = false;
 
 		// Clear previous output
 		consoleOutput = [];
@@ -191,6 +209,14 @@
 		// Return the first video canvas if available
 		return videoCanvases.length > 0 ? videoCanvases[0] : null;
 	}
+
+	function runOrStop() {
+		if (isRunning || isLongRunningTaskActive) {
+			stopLongRunningTasks();
+		} else {
+			executeCode();
+		}
+	}
 </script>
 
 <div class="relative flex gap-x-3">
@@ -239,8 +265,19 @@
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
 
 							<div class="flex gap-1">
+								{#if isRunning || isLongRunningTaskActive}
+									<button
+										onclick={executeCode}
+										class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
+										title="Run code"
+										aria-label="Run code"
+									>
+										<Icon icon="lucide:refresh-ccw" font-size="12px" />
+									</button>
+								{/if}
+
 								<button
-									onclick={executeCode}
+									onclick={runOrStop}
 									class={[
 										'rounded p-1 text-zinc-300 hover:bg-zinc-700',
 										isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
@@ -248,7 +285,11 @@
 									title="Run code"
 									aria-disabled={isRunning}
 								>
-									<Icon icon={playIcon} class={isRunning ? 'animate-spin' : ''} font-size="12px" />
+									<Icon
+										icon={playOrStopIcon}
+										class={isRunning ? 'animate-spin' : ''}
+										font-size="12px"
+									/>
 								</button>
 
 								<button
@@ -280,12 +321,12 @@
 							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
 							borderColor
 						]}
-						onclick={executeCode}
+						onclick={runOrStop}
 						aria-disabled={isRunning}
 						aria-label="Run code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={playIcon} />
+							<Icon icon={playOrStopIcon} />
 						</div>
 					</button>
 				{/if}

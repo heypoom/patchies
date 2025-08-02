@@ -1,4 +1,4 @@
-const LOG_MESSAGE_JS = `onMessage(message => console.log(message.data))`;
+const MESSAGE_CONSOLE_JS = `onMessage(message => console.log(message.data))`;
 
 const DELAY_JS = `onMessage(async (m) => {
   await delay(1000) // how long to wait for
@@ -9,9 +9,9 @@ export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
 > = {
-	'log_message.js': {
+	'message_console.js': {
 		type: 'js',
-		data: { code: LOG_MESSAGE_JS.trim(), showConsole: true, runOnMount: true }
+		data: { code: MESSAGE_CONSOLE_JS.trim(), showConsole: true, runOnMount: true }
 	},
 	'delay.js': {
 		type: 'js',
