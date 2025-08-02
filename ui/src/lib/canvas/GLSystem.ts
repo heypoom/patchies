@@ -3,7 +3,7 @@ import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
-import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
+import { previewVisibleMap, isGlslPlaying, hydraSourcesMap } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { IpcSystem } from './IpcSystem';
@@ -73,6 +73,15 @@ export class GLSystem {
 			} catch (error) {
 				console.error('Failed to create ImageBitmap for preview:', error);
 			}
+		}
+
+		// Sync the frontend with the hydra sources mapping
+		if (data.type === 'hydraSourceChanged') {
+			const { nodeId, mapping } = data;
+
+			const sourcesMap = get(hydraSourcesMap);
+			sourcesMap[nodeId] = mapping;
+			hydraSourcesMap.set(sourcesMap);
 		}
 	};
 

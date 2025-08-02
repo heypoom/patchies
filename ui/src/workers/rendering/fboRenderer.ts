@@ -112,7 +112,12 @@ export class FBORenderer {
 			this.hydraByNode.get(node.id)?.stop();
 		}
 
-		const hydraRenderer = new HydraRenderer({ code: node.data.code }, framebuffer, this);
+		const hydraRenderer = new HydraRenderer(
+			{ code: node.data.code, nodeId: node.id },
+			framebuffer,
+			this
+		);
+
 		this.hydraByNode.set(node.id, hydraRenderer);
 
 		return {

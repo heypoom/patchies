@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -7,6 +7,7 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import type { Message } from '$lib/messages/MessageSystem';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { hydraSourcesMap } from '../../../stores/renderer.store';
 
 	let {
 		id: nodeId,
@@ -15,6 +16,7 @@
 	}: { id: string; type: string; data: { code: string }; selected: boolean } = $props();
 
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let glSystem: GLSystem;
 	let messageContext: MessageContext;
@@ -38,6 +40,12 @@
 		}
 	}
 
+	$effect(() => {
+		if ($hydraSourcesMap[nodeId]?.length > 0) {
+			updateNodeInternals();
+		}
+	});
+
 	onMount(() => {
 		glSystem = GLSystem.getInstance();
 		messageContext = new MessageContext(nodeId);
@@ -52,6 +60,7 @@
 
 		setTimeout(() => {
 			glSystem.setPreviewEnabled(nodeId, true);
+			updateNodeInternals();
 		}, 10);
 	});
 
@@ -100,37 +109,18 @@
 			</div>
 
 			<div class="relative">
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-0"
-					class="z-1 !left-16"
-					title="Video input 0"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-1"
-					class="z-1 !left-20"
-					title="Video input 1"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-2"
-					class="z-1 !left-24"
-					title="Video input 2"
-				/>
-
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-in-3"
-					class="z-1 !left-28"
-					title="Video input 3"
-				/>
+				{#each $hydraSourcesMap[nodeId] as source, index}
+					{#if source !== null}
+						<Handle
+							type="target"
+							position={Position.Top}
+							id={`video-in-${index}-s${source}`}
+							style={`left: ${80 + index * 20}px;`}
+							title={`Video source ${index + 1}, Hydra s${source}`}
+							class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
+						/>
+					{/if}
+				{/each}
 
 				<Handle
 					type="target"

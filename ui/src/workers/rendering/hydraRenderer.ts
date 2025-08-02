@@ -6,6 +6,7 @@ import { getFramebuffer } from './utils';
 
 export interface HydraConfig {
 	code: string;
+	nodeId: string;
 }
 
 export class HydraRenderer {
@@ -17,7 +18,7 @@ export class HydraRenderer {
 
 	private timestamp = performance.now();
 
-	private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
+	private sourceToTextureIndexMap: (number | null)[] = [null, null, null, null];
 
 	constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
@@ -49,8 +50,8 @@ export class HydraRenderer {
 
 		this.hydra.sources.forEach((source, sourceIndex) => {
 			// We do the tick ourselves
-			if (this.sourceToParamIndexMap[sourceIndex] !== null) {
-				const paramIndex = this.sourceToParamIndexMap[sourceIndex];
+			if (this.sourceToTextureIndexMap[sourceIndex] !== null) {
+				const paramIndex = this.sourceToTextureIndexMap[sourceIndex];
 				const param = params.userParams[paramIndex] as regl.Texture2D;
 
 				// Check if the param is a regl texture
@@ -103,7 +104,8 @@ export class HydraRenderer {
 	}
 
 	private updateCode() {
-		this.sourceToParamIndexMap = [null, null, null, null];
+		this.sourceToTextureIndexMap = [null, null, null, null];
+		this.notifySourceChanged();
 
 		try {
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
@@ -183,6 +185,15 @@ export class HydraRenderer {
 	}
 
 	initSource(sourceIndex: number = 0, inputIndex: number = sourceIndex) {
-		this.sourceToParamIndexMap[sourceIndex] = inputIndex;
+		this.sourceToTextureIndexMap[sourceIndex] = inputIndex;
+		this.notifySourceChanged();
+	}
+
+	notifySourceChanged() {
+		self.postMessage({
+			type: 'hydraSourceChanged',
+			nodeId: this.config.nodeId,
+			mapping: this.sourceToTextureIndexMap
+		});
 	}
 }
