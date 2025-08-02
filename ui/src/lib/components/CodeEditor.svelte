@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, basicSetup, minimalSetup } from 'codemirror';
+	import { EditorView, minimalSetup } from 'codemirror';
 	import { EditorState, Prec, type Extension } from '@codemirror/state';
 	import { javascript } from '@codemirror/lang-javascript';
 	import { oneDark } from '@codemirror/theme-one-dark';
-	import { keymap } from '@codemirror/view';
+	import { keymap, drawSelection } from '@codemirror/view';
 
 	let {
 		value = $bindable(),
@@ -44,7 +44,7 @@
 						}
 					])
 				),
-
+				drawSelection(),
 				minimalSetup,
 				javascript(),
 				oneDark,
@@ -78,6 +78,9 @@
 					},
 					'.cm-placeholder': {
 						color: 'rgb(115 115 115)'
+					},
+					'.cm-selectionBackground': {
+						backgroundColor: 'rgba(59, 130, 246, 0.3)' // Your selection style
 					}
 				}),
 				EditorView.updateListener.of((update) => {
@@ -169,10 +172,6 @@
 
 	:global(.code-editor-container .cm-activeLineGutter) {
 		background: rgba(255, 255, 255, 0.05) !important;
-	}
-
-	:global(.code-editor-container .cm-selectionBackground) {
-		background: rgba(59, 130, 246, 0.3) !important;
 	}
 
 	:global(.code-editor-container .cm-cursor) {
