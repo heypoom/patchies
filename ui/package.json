@@ -81,6 +81,7 @@
 		"butterchurn-presets": "^2.4.7",
 		"codemirror": "^6.0.2",
 		"hydra-synth": "^1.3.29",
+		"hydra-ts": "^1.0.0",
 		"json5": "^2.2.3",
 		"lodash": "^4.17.21",
 		"meyda": "^5.6.3",
@@ -97,7 +98,8 @@
 		"core-js"
 	],
 	"patchedDependencies": {
-		"superdough@1.2.3": "patches/superdough@1.2.3.patch"
+		"superdough@1.2.3": "patches/superdough@1.2.3.patch",
+		"hydra-synth@1.3.29": "patches/hydra-synth@1.3.29.patch"
 	},
 	"packageManager": "bun@1.2.0"
 }
