@@ -87,8 +87,6 @@ export class FBORenderer {
 				continue;
 			}
 
-			console.log(`created renderer for ${node.type} of ${node.id}`);
-
 			const fboNode: FBONode = {
 				id: node.id,
 				framebuffer,
