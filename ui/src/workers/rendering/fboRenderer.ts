@@ -53,6 +53,10 @@ export class FBORenderer {
 		const [width, height] = this.outputSize;
 
 		for (const node of renderGraph.nodes) {
+			if (node.type === 'hydra') {
+				continue;
+			}
+
 			// Prepare uniform defaults to prevent crashes
 			if (node.data.glUniformDefs) {
 				const defaultUniformData = new Map();
@@ -118,9 +122,14 @@ export class FBORenderer {
 	}
 
 	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
-		const uniformDef = this.renderGraph?.nodes
-			.find((n) => n.id === nodeId)
-			?.data.glUniformDefs.find((u) => u.name === uniformName);
+		const renderNode = this.renderGraph?.nodes.find((n) => n.id === nodeId);
+
+		// You cannot set uniform data for hydra nodes yet.
+		if (renderNode?.type === 'hydra') {
+			return;
+		}
+
+		const uniformDef = renderNode?.data.glUniformDefs.find((u) => u.name === uniformName);
 
 		// Uniform does not exist in the node's uniform definitions.
 		if (!uniformDef) {
@@ -171,51 +180,59 @@ export class FBORenderer {
 
 		// Render each node in topological order
 		for (const nodeId of this.renderGraph.sortedNodes) {
+			if (!this.renderGraph) continue;
+
 			const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
 			const fboNode = this.fboNodes.get(nodeId);
 
-			if (!node || !fboNode) {
-				continue;
-			}
+			if (!node || !fboNode) continue;
 
-			// TODO: optimize this!
-			const inputTextures = this.getInputTextures(node);
+			if (node.type === 'glsl') this.renderGlslNode(node, fboNode);
 
-			const uniformDefs = node.data.glUniformDefs ?? [];
-			const uniformData = this.uniformDataByNode.get(nodeId) ?? new Map();
-			const userUniformParams: any[] = [];
-
-			// Define input parameters
-			for (const n of uniformDefs) {
-				if (n.type === 'sampler2D') {
-					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
-				} else {
-					const value = uniformData.get(n.name);
-
-					if (value !== undefined && value !== null) {
-						userUniformParams.push(value);
-					}
-				}
-			}
-
-			// Render to FBO
-			fboNode.framebuffer.use(() => {
-				fboNode.renderCommand({
-					lastTime: this.lastTime,
-					iFrame: this.frameCount,
-					mouseX: 0,
-					mouseY: 0,
-					userParams: userUniformParams
-				});
-			});
-
+			// Keep track of the last rendered node for final output
 			finalFBONode = fboNode;
 		}
 
 		// Render the final result to the main canvas
+		// TODO: change this to be the node that is connected to bg.out in the graph!
 		if (finalFBONode) {
 			this.renderNodeToMainOutput(finalFBONode);
 		}
+	}
+
+	renderGlslNode(node: RenderNode, fboNode: FBONode): void {
+		if (node.type !== 'glsl') return;
+
+		// TODO: optimize this!
+		const inputTextures = this.getInputTextures(node);
+
+		const uniformDefs = node.data.glUniformDefs ?? [];
+		const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
+		const userUniformParams: any[] = [];
+
+		// Define input parameters
+		for (const n of uniformDefs) {
+			if (n.type === 'sampler2D') {
+				userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
+			} else {
+				const value = uniformData.get(n.name);
+
+				if (value !== undefined && value !== null) {
+					userUniformParams.push(value);
+				}
+			}
+		}
+
+		// Render to FBO
+		fboNode.framebuffer.use(() => {
+			fboNode.renderCommand({
+				lastTime: this.lastTime,
+				iFrame: this.frameCount,
+				mouseX: 0,
+				mouseY: 0,
+				userParams: userUniformParams
+			});
+		});
 	}
 
 	/**

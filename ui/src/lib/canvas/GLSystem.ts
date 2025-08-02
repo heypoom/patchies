@@ -185,7 +185,7 @@ export class GLSystem {
 
 				// re-create the context to accommodate the new size
 				delete this.previewCanvasContexts[nodeId];
-				this.previewCanvasContexts[nodeId] = canvas.getContext('bitmaprenderer');
+				this.previewCanvasContexts[nodeId] = canvas.getContext('bitmaprenderer')!;
 			}
 		}
 

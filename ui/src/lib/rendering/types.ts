@@ -1,13 +1,14 @@
 import type regl from 'regl';
 import type { GLUniformDef } from '../../types/uniform-config';
 
-export interface RenderNode {
+export type RenderNode = {
 	id: string;
-	type: string;
 	inputs: string[]; // IDs of input nodes
 	outputs: string[]; // IDs of output nodes
-	data: { code: string; glUniformDefs: GLUniformDef[] }; // Node-specific data (shader code, etc.)
-}
+} & (
+	| { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[] } }
+	| { type: 'hydra'; data: { code: string } }
+);
 
 export interface RenderEdge {
 	id: string;

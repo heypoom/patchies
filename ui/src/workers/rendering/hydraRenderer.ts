@@ -1,5 +1,6 @@
 import { Hydra, generators } from 'hydra-ts';
 import type { FBORenderer } from './fboRenderer';
+import type { HydraFboUniforms } from 'hydra-ts/src/Hydra';
 
 export interface HydraConfig {
 	code: string;
@@ -8,8 +9,8 @@ export interface HydraConfig {
 export class HydraRenderer {
 	public config: HydraConfig;
 	public hydra: Hydra;
-
 	public renderer: FBORenderer;
+	public precision: 'highp' | 'mediump' = 'highp';
 
 	constructor(config: HydraConfig, renderer: FBORenderer) {
 		this.config = config;
@@ -25,7 +26,43 @@ export class HydraRenderer {
 			height,
 			numSources: 4,
 			numOutputs: 4,
-			precision: 'highp'
+			precision: this.precision
+		});
+
+		// @ts-expect-error -- regl version mismatch, but should still work!
+		this.hydra.renderFbo = this.renderer.regl<HydraFboUniforms>({
+			frag: `
+      precision ${this.precision} float;
+      varying vec2 uv;
+      uniform vec2 resolution;
+      uniform sampler2D tex0;
+
+      void main () {
+        gl_FragColor = texture2D(tex0, vec2(1.0 - uv.x, uv.y));
+      }
+      `,
+			vert: `
+      precision ${this.precision} float;
+      attribute vec2 position;
+      varying vec2 uv;
+
+      void main () {
+        uv = position;
+        gl_Position = vec4(1.0 - 2.0 * position, 0, 1);
+      }`,
+			attributes: {
+				position: [
+					[-2, 0],
+					[0, -2],
+					[2, 2]
+				]
+			},
+			uniforms: {
+				tex0: this.renderer.regl.prop<HydraFboUniforms, keyof HydraFboUniforms>('tex0'),
+				resolution: this.renderer.regl.prop<HydraFboUniforms, keyof HydraFboUniforms>('resolution')
+			},
+			count: 3,
+			depth: { enable: false }
 		});
 
 		this.executeCode();
