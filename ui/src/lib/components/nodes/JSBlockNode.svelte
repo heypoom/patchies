@@ -58,17 +58,13 @@
 	}
 
 	onMount(() => {
-		// Initialize message context
 		messageContext = new MessageContext(nodeId);
-
 		messageContext.onMessageCallbackRegistered = () => {
 			isMessageCallbackActive = true;
 		};
-
 		messageContext.onIntervalCallbackRegistered = () => {
 			isIntervalCallbackActive = true;
 		};
-
 		messageContext.queue.addCallback(handleMessage);
 
 		if (data?.runOnMount) {
@@ -77,11 +73,8 @@
 	});
 
 	onDestroy(() => {
-		// Clean up message context
-		if (messageContext) {
-			messageContext.queue.removeCallback(handleMessage);
-			messageContext.destroy();
-		}
+		messageContext.queue.removeCallback(handleMessage);
+		messageContext.destroy();
 	});
 
 	function clearIntervals() {
@@ -132,27 +125,16 @@
 		};
 
 		try {
-			// Get message system context
 			const messageSystemContext = messageContext.getContext();
 
-			// Create a function with the user code, injecting message constructs and video features
-			const functionParams = [
-				'console',
-				'send',
-				'onMessage',
-				'interval',
-				'llm',
-				'getCanvas',
-				'videoCanvases'
-			];
+			const functionParams = ['console', 'send', 'onMessage', 'interval', 'llm'];
+
 			const functionArgs = [
 				customConsole,
 				messageSystemContext.send,
 				messageSystemContext.onMessage,
 				messageSystemContext.interval,
-				createLLMFunction(),
-				getCanvas,
-				videoCanvases
+				createLLMFunction()
 			];
 
 			const userFunction = new Function(
@@ -170,7 +152,6 @@
 			`
 			);
 
-			// Execute with our custom console and message system
 			await userFunction(...functionArgs);
 		} catch (error) {
 			consoleOutput = [
@@ -188,11 +169,6 @@
 
 	function clearConsole() {
 		consoleOutput = [];
-	}
-
-	function getCanvas() {
-		// Return the first video canvas if available
-		return videoCanvases.length > 0 ? videoCanvases[0] : null;
 	}
 
 	function runOrStop() {
