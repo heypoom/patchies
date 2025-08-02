@@ -6,8 +6,8 @@
 	import butterchurnPresets from 'butterchurn-presets';
 
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { currentPreset: string } } = $props();
@@ -17,12 +17,12 @@
 
 	const presets = butterchurnPresets.getPresets();
 
-	let videoSystem: VideoSystem;
 	let canvasElement: HTMLCanvasElement;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isPlaying = $state(true);
 	let visualizer: any = null;
+	let glSystem = GLSystem.getInstance();
 
 	const currentPreset = $derived(data.currentPreset || '');
 
@@ -33,6 +33,7 @@
 
 		function render() {
 			visualizer.render();
+			glSystem.setBitmapSource(nodeId, canvasElement);
 			frame = requestAnimationFrame(render);
 		}
 
@@ -46,16 +47,19 @@
 	};
 
 	onMount(() => {
-		videoSystem = VideoSystem.getInstance();
-		videoSystem.registerVideoSource(nodeId, canvasElement);
-
-		const width = 200 * window.devicePixelRatio;
-		const height = 200 * window.devicePixelRatio;
-
+		const [outputWidth, outputHeight] = glSystem.outputSize;
 		const audioContext = new AudioContext();
 
-		const ctx = { width, height };
-		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, ctx);
+		const [previewWidth, previewHeight] = glSystem.previewSize;
+		canvasElement.width = previewWidth;
+		canvasElement.height = previewHeight;
+
+		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, {
+			width: outputWidth,
+			height: outputHeight
+		});
+
+		glSystem.upsertNode(nodeId, 'img', {});
 	});
 
 	$effect(() => {
@@ -71,7 +75,7 @@
 
 	onDestroy(() => {
 		stop();
-		videoSystem.unregisterNode(nodeId);
+		glSystem.removeNode(nodeId);
 		visualizer.renderer = null;
 		visualizer = null;
 	});
@@ -87,7 +91,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={isPlaying ? stop : start}
 						title={isPlaying ? 'Pause' : 'Play'}
 					>
@@ -95,7 +99,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={() => (showEditor = !showEditor)}
 						title="Edit code"
 					>
@@ -105,11 +109,7 @@
 			</div>
 
 			<div class="relative">
-				<canvas
-					bind:this={canvasElement}
-					class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
-					width="200"
-					height="200"
+				<canvas bind:this={canvasElement} class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"
 				></canvas>
 
 				<!-- Error display -->

@@ -45,7 +45,6 @@
 
 	onMount(() => {
 		glSystem.upsertNode(nodeId, 'img', {});
-
 		messageContext.queue.addCallback(handleMessage);
 	});
 
