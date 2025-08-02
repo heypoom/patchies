@@ -234,6 +234,7 @@
 			.with('open-output-screen', () => {
 				isBackgroundOutputCanvasEnabled.set(false);
 				ipcSystem.openOutputWindow();
+				onCancel();
 			})
 			.otherwise(() => {
 				console.warn(`Unknown command: ${commandId}`);
