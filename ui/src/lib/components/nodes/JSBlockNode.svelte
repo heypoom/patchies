@@ -27,7 +27,7 @@
 	let videoSystem: VideoSystem;
 	let videoCanvases: HTMLCanvasElement[] = $state([]);
 	let isRunning = $state(false);
-	let isUserMessageListenerActive = $state(false);
+	let isLongRunningTaskActive = $state(false);
 
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
@@ -37,14 +37,14 @@
 	const borderColor = $derived.by(() => {
 		if (selected) return 'border-zinc-400';
 		if (isRunning) return 'border-pink-500';
-		if (isUserMessageListenerActive) return 'border-emerald-500';
+		if (isLongRunningTaskActive) return 'border-emerald-500';
 
 		return 'border-zinc-600';
 	});
 
 	const playIcon = $derived.by(() => {
 		if (isRunning) return 'lucide:loader';
-		if (isUserMessageListenerActive) return 'lucide:refresh-ccw';
+		if (isLongRunningTaskActive) return 'lucide:refresh-ccw';
 
 		return 'lucide:play';
 	});
@@ -62,7 +62,11 @@
 		messageContext = new MessageContext(nodeId);
 
 		messageContext.onMessageCallbackRegistered = () => {
-			isUserMessageListenerActive = true;
+			isLongRunningTaskActive = true;
+		};
+
+		messageContext.onIntervalCallbackRegistered = () => {
+			isLongRunningTaskActive = true;
 		};
 
 		// Initialize video system
@@ -95,7 +99,7 @@
 
 	async function executeCode() {
 		isRunning = true;
-		isUserMessageListenerActive = false;
+		isLongRunningTaskActive = false;
 
 		// Clear previous output
 		consoleOutput = [];

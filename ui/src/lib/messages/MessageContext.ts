@@ -12,6 +12,7 @@ export class MessageContext {
 
 	public onSend = (data: any, options: SendOptions = {}) => {};
 	public onMessageCallbackRegistered = () => {};
+	public onIntervalCallbackRegistered = () => {};
 
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
@@ -51,6 +52,7 @@ export class MessageContext {
 		return (callback: () => void, ms: number) => {
 			const intervalId = this.messageSystem.createInterval(callback, ms);
 			this.intervals.push(intervalId);
+			this.onIntervalCallbackRegistered();
 			return intervalId;
 		};
 	}
