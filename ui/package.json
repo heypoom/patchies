@@ -58,6 +58,7 @@
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.2.4",
+		"@codemirror/language": "^6.11.2",
 		"@codemirror/state": "^6.5.2",
 		"@codemirror/theme-one-dark": "^6.1.3",
 		"@codemirror/view": "^6.38.1",
@@ -82,6 +83,7 @@
 		"codemirror": "^6.0.2",
 		"hydra-ts": "^1.0.0",
 		"json5": "^2.2.3",
+		"lezer-glsl": "^0.6.0",
 		"lodash": "^4.17.21",
 		"meyda": "^5.6.3",
 		"ml5": "^1.2.1",

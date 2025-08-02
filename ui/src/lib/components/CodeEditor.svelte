@@ -5,6 +5,9 @@
 	import { javascript } from '@codemirror/lang-javascript';
 	import { oneDark } from '@codemirror/theme-one-dark';
 	import { keymap, drawSelection } from '@codemirror/view';
+	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
+	import { LanguageSupport } from '@codemirror/language';
+	import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 
 	let {
 		value = $bindable(),
@@ -46,7 +49,7 @@
 				),
 				drawSelection(),
 				minimalSetup,
-				javascript(),
+
 				oneDark,
 
 				EditorView.theme({
@@ -97,6 +100,12 @@
 				}),
 				...extraExtensions
 			];
+
+			if (language === 'javascript') {
+				extensions.push(javascript());
+			} else if (language === 'glsl') {
+				extensions.push(new LanguageSupport(glslLanguage));
+			}
 
 			// Add placeholder if provided
 			if (placeholder) {

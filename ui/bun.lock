@@ -5,6 +5,7 @@
       "name": "patchies-web",
       "dependencies": {
         "@codemirror/lang-javascript": "^6.2.4",
+        "@codemirror/language": "^6.11.2",
         "@codemirror/state": "^6.5.2",
         "@codemirror/theme-one-dark": "^6.1.3",
         "@codemirror/view": "^6.38.1",
@@ -29,6 +30,7 @@
         "codemirror": "^6.0.2",
         "hydra-ts": "^1.0.0",
         "json5": "^2.2.3",
+        "lezer-glsl": "^0.6.0",
         "lodash": "^4.17.21",
         "meyda": "^5.6.3",
         "ml5": "^1.2.1",
@@ -1066,6 +1068,8 @@
     "known-css-properties": ["known-css-properties@0.37.0", "", {}, "sha512-JCDrsP4Z1Sb9JwG0aJ8Eo2r7k4Ou5MwmThS/6lcIe1ICyb7UBJKGRIUUdqc2ASdE/42lgz6zFUnzAIhtXnBVrQ=="],
 
     "levn": ["levn@0.4.1", "", { "dependencies": { "prelude-ls": "^1.2.1", "type-check": "~0.4.0" } }, "sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ=="],
+
+    "lezer-glsl": ["lezer-glsl@0.6.0", "", { "dependencies": { "@lezer/highlight": "^1.0.0", "@lezer/lr": "^1.0.0" } }, "sha512-H6KI5n4WXIw6BuCivmXP+5JtaCIfTKcxw+MiXbu8X3DzbIYz+7nIbVONi+JVw4RWj+oVrFCfxNi+S6oB8/S8Hg=="],
 
     "lightningcss": ["lightningcss@1.30.1", "", { "dependencies": { "detect-libc": "^2.0.3" }, "optionalDependencies": { "lightningcss-darwin-arm64": "1.30.1", "lightningcss-darwin-x64": "1.30.1", "lightningcss-freebsd-x64": "1.30.1", "lightningcss-linux-arm-gnueabihf": "1.30.1", "lightningcss-linux-arm64-gnu": "1.30.1", "lightningcss-linux-arm64-musl": "1.30.1", "lightningcss-linux-x64-gnu": "1.30.1", "lightningcss-linux-x64-musl": "1.30.1", "lightningcss-win32-arm64-msvc": "1.30.1", "lightningcss-win32-x64-msvc": "1.30.1" } }, "sha512-xi6IyHML+c9+Q3W0S4fCQJOym42pyurFiJUHEcEyHS0CeKzia4yZDEsLlqOFykxOdHpNy0NmvVO31vcSqAxJCg=="],
 
