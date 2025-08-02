@@ -18,6 +18,7 @@ export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
 	public previewSize = [200, 150] as [w: number, h: number];
 	public renderGraph: RenderGraph | null = null;
+	public outputNodeId: string | null = null;
 
 	public isOutputEnabled: boolean = false;
 	public shouldProcessPreviews: boolean = false;
@@ -65,6 +66,7 @@ export class FBORenderer {
 		this.uniformDataByNode.clear();
 
 		this.renderGraph = renderGraph;
+		this.outputNodeId = renderGraph.outputNodeId;
 
 		for (const node of renderGraph.nodes) {
 			const texture = this.regl.texture({
@@ -253,8 +255,6 @@ export class FBORenderer {
 		this.lastTime = currentTime;
 		this.frameCount++;
 
-		let finalFBONode: FBONode | null = null;
-
 		// Render each node in topological order
 		for (const nodeId of this.renderGraph.sortedNodes) {
 			if (!this.renderGraph) continue;
@@ -265,15 +265,16 @@ export class FBORenderer {
 			if (!node || !fboNode) continue;
 
 			this.renderFboNode(node, fboNode);
-
-			// Keep track of the last rendered node for final output
-			finalFBONode = fboNode;
 		}
 
 		// Render the final result to the main canvas
-		// TODO: change this to be the node that is connected to bg.out in the graph!
-		if (finalFBONode) {
-			this.renderNodeToMainOutput(finalFBONode);
+		// Use the node that is connected to bg.out in the graph
+		if (this.outputNodeId !== null) {
+			const outputFBONode = this.fboNodes.get(this.outputNodeId);
+
+			if (outputFBONode) {
+				this.renderNodeToMainOutput(outputFBONode);
+			}
 		}
 	}
 

@@ -107,6 +107,8 @@ export function topologicalSort(nodes: RenderNode[]): string[] {
  * Build a complete render graph from XYFlow nodes and edges
  */
 export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
+	const outputNodeId = findOutputNode(nodes, edges);
+
 	const { nodes: renderNodes, edges: renderEdges } = filterFBOCompatibleGraph(nodes, edges);
 
 	try {
@@ -115,10 +117,11 @@ export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
 		return {
 			nodes: renderNodes,
 			edges: renderEdges,
-			sortedNodes
+			sortedNodes,
+			outputNodeId
 		};
 	} catch (error) {
-		return { nodes: [], edges: [], sortedNodes: [] };
+		return { nodes: [], edges: [], sortedNodes: [], outputNodeId: null };
 	}
 }
 

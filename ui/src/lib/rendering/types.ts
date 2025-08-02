@@ -9,6 +9,7 @@ export type RenderNode = {
 	| { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[] } }
 	| { type: 'hydra'; data: { code: string } }
 	| { type: 'img'; data: unknown }
+	| { type: 'bg.out'; data: unknown }
 );
 
 export interface RenderEdge {
@@ -25,6 +26,9 @@ export interface RenderGraph {
 
 	/** Topologically sorted node IDs */
 	sortedNodes: string[];
+
+	/** ID of the node connected to bg.out (final output node) */
+	outputNodeId: string | null;
 }
 
 type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;

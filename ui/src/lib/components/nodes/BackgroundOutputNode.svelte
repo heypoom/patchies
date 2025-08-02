@@ -4,14 +4,25 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
+	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { onDestroy, onMount } from 'svelte';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
+	let glSystem = GLSystem.getInstance();
 
 	const borderClass = $derived.by(() => {
 		if ($isBackgroundOutputCanvasEnabled) return '';
 		if (selected) return 'border border-zinc-400';
 		return 'border border-zinc-800';
+	});
+
+	onMount(() => {
+		glSystem.upsertNode(nodeId, 'bg.out', {});
+	});
+
+	onDestroy(() => {
+		glSystem.removeNode(nodeId);
 	});
 </script>
 
