@@ -55,14 +55,14 @@ export class HydraRenderer {
 				const param = params.userParams[paramIndex] as regl.Texture2D;
 
 				// Check if the param is a regl texture
-				if (param.name === 'reglTexture2D') {
+				if (param?.name === 'reglTexture2D') {
 					source.tex = param;
+				} else {
+					source.tex = this.renderer.fallbackTexture;
 				}
-
-				return;
+			} else {
+				source.tick(this.hydra.synth);
 			}
-
-			source.tick(this.hydra.synth);
 		});
 
 		this.hydra.outputs.forEach((output) => {

@@ -24,6 +24,7 @@ export class FBORenderer {
 	public offscreenCanvas: OffscreenCanvas;
 	public gl: WebGL2RenderingContext | null = null;
 	public regl: regl.Regl;
+	public fallbackTexture: regl.Texture2D;
 
 	// Mapping of nodeId -> uniform key -> uniform value
 	// example: {'glsl-0': {'sliderValue': 0.5}}
@@ -31,7 +32,7 @@ export class FBORenderer {
 
 	private hydraByNode = new Map<string, HydraRenderer | null>();
 	private fboNodes = new Map<string, FBONode>();
-	private fallbackTexture: regl.Texture2D;
+
 	private lastTime: number = 0;
 	private frameCount: number = 0;
 	private startTime: number = Date.now();

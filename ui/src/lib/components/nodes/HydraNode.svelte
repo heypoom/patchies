@@ -41,7 +41,7 @@
 	}
 
 	$effect(() => {
-		if ($hydraSourcesMap[nodeId]?.length > 0) {
+		if ($hydraSourcesMap) {
 			updateNodeInternals();
 		}
 	});
@@ -78,6 +78,10 @@
 		try {
 			messageContext.clearIntervals();
 			glSystem.upsertNode(nodeId, 'hydra', { code });
+
+			setTimeout(() => {
+				updateNodeInternals();
+			});
 
 			errorMessage = null;
 		} catch (error) {
