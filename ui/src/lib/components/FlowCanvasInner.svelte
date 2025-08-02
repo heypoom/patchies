@@ -34,6 +34,8 @@
 	} from '../../stores/ui.store';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
+	import MIDIInputNode from './nodes/MIDIInputNode.svelte';
+	import MIDIOutputNode from './nodes/MIDIOutputNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
@@ -54,7 +56,10 @@
 		['ai.txt']: AiTextNode,
 		['ai.img']: AiImageNode,
 		['ai.music']: AiMusicNode,
-		['ai.tts']: AiSpeechNode
+		['ai.tts']: AiSpeechNode,
+
+		['midi.in']: MIDIInputNode,
+		['midi.out']: MIDIOutputNode
 	};
 
 	const visibleNodeTypes = $derived.by(() => {

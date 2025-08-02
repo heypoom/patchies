@@ -31,5 +31,16 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('ai.music', () => ({}))
 		.with('ai.tts', () => ({}))
 		.with('bg.out', () => ({}))
+		.with('midi.in', () => ({ 
+			deviceId: '', 
+			channel: 0, 
+			messageTypes: ['noteOn', 'noteOff', 'controlChange', 'programChange'] 
+		}))
+		.with('midi.out', () => ({ 
+			deviceId: '', 
+			channel: 1, 
+			messageType: 'noteOn', 
+			data: { note: 60, velocity: 127 } 
+		}))
 		.otherwise(() => ({}));
 }

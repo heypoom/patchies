@@ -128,6 +128,11 @@ export class MessageSystem {
 			return;
 		}
 
+		console.log(
+			`[MessageSystem] Sending message from ${fromNodeId} to ${options.to ?? 'all connected nodes'}`,
+			data
+		);
+
 		const message: Message = {
 			data,
 			type: options.type,
