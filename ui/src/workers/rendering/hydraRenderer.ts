@@ -4,13 +4,14 @@ import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import arrayUtils from 'hydra-ts/src/lib/array-utils';
-import type { MessageCallback } from '$lib/messages/MessageSystem';
+import type { Message, MessageCallback } from '$lib/messages/MessageSystem';
 
 // Initialize hydra array utilities.
 arrayUtils.init();
 
 export interface HydraConfig {
 	code: string;
+	nodeId: string;
 }
 
 export class HydraRenderer {
@@ -154,7 +155,9 @@ export class HydraRenderer {
 
 				onMessage: (callback: MessageCallback) => {
 					this.onMessage = callback;
-				}
+				},
+
+				send: this.sendMessage.bind(this)
 			};
 
 			const userFunction = new Function(
@@ -195,5 +198,13 @@ export class HydraRenderer {
 
 	initSource(sourceIndex: number = 0, inputIndex: number = sourceIndex) {
 		this.sourceToParamIndexMap[sourceIndex] = inputIndex;
+	}
+
+	sendMessage(data: unknown) {
+		self.postMessage({
+			type: 'sendMessageFromNode',
+			fromNodeId: this.config.nodeId,
+			data
+		});
 	}
 }
