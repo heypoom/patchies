@@ -7,6 +7,7 @@ import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { IpcSystem } from './IpcSystem';
+import { isExternalTextureNode } from './node-types';
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
@@ -136,6 +137,14 @@ export class GLSystem {
 	}
 
 	removeNode(nodeId: string) {
+		const node = this.nodes.find((n) => n.id === nodeId);
+		if (!node) return;
+
+		// Cleanup persistent external texture.
+		if (isExternalTextureNode(node.type)) {
+			this.removeBitmap(nodeId);
+		}
+
 		this.nodes = this.nodes.filter((node) => node.id !== nodeId);
 
 		this.updateRenderGraph();
@@ -215,5 +224,9 @@ export class GLSystem {
 			},
 			{ transfer: [bitmap] }
 		);
+	}
+
+	removeBitmap(nodeId: string) {
+		this.send('removeBitmap', { nodeId });
 	}
 }

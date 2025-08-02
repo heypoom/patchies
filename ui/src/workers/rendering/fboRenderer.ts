@@ -11,6 +11,7 @@ import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { getFramebuffer } from './utils';
+import { isExternalTextureNode } from '$lib/canvas/node-types';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -28,6 +29,9 @@ export class FBORenderer {
 	// Mapping of nodeId -> uniform key -> uniform value
 	// example: {'glsl-0': {'sliderValue': 0.5}}
 	public uniformDataByNode: Map<string, Map<string, any>> = new Map();
+
+	/** Mapping of nodeID to persistent textures */
+	public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
 
 	private hydraByNode = new Map<string, HydraRenderer | null>();
 	private fboNodes = new Map<string, FBONode>();
@@ -102,7 +106,9 @@ export class FBORenderer {
 
 			this.fboNodes.set(node.id, fboNode);
 
-			const defaultPreviewEnabled = node.type !== 'p5' && node.type !== 'img';
+			// Do not send previews back to external texture nodes,
+			// as the texture is managed by the node on the frontend.
+			const defaultPreviewEnabled = !isExternalTextureNode(node.type);
 			this.previewState[node.id] = defaultPreviewEnabled;
 		}
 	}
@@ -442,24 +448,28 @@ export class FBORenderer {
 		this.isAnimating = false;
 	}
 
-	/**
-	 * Get input textures for a node based on the render graph
-	 */
-	private getInputTextures(
-		node: RenderNode
-	): [regl.Texture2D, regl.Texture2D, regl.Texture2D, regl.Texture2D] {
+	/** Get input textures for a node based on the render graph */
+	private getInputTextures(node: RenderNode): regl.Texture2D[] {
 		const textures: regl.Texture2D[] = [];
 
 		for (const inputId of node.inputs) {
 			const inputFBO = this.fboNodes.get(inputId);
-			if (inputFBO) textures.push(inputFBO.texture);
+
+			// If there exists an external texture for an input node, use it.
+			if (this.externalTexturesByNode.has(inputId)) {
+				textures.push(this.externalTexturesByNode.get(inputId)!);
+				continue;
+			}
+
+			if (inputFBO) {
+				textures.push(inputFBO.texture);
+			}
 		}
 
-		while (textures.length < 4) {
-			textures.push(this.fallbackTexture);
-		}
+		// If we have less than 4 textures, fill the rest with the fallback texture.
+		while (textures.length < 4) textures.push(this.fallbackTexture);
 
-		return textures.slice(0, 4) as [regl.Texture2D, regl.Texture2D, regl.Texture2D, regl.Texture2D];
+		return textures.slice(0, 4);
 	}
 
 	setPreviewSize(width: number, height: number) {
@@ -479,10 +489,27 @@ export class FBORenderer {
 		this.offscreenCanvas.height = height;
 	}
 
+	/** Sets a persistent bitmap image. */
 	setBitmap(nodeId: string, bitmap: ImageBitmap) {
-		const fboNode = this.fboNodes.get(nodeId);
-		if (!fboNode) return;
+		const texture = this.externalTexturesByNode.get(nodeId);
 
-		fboNode.texture(bitmap);
+		// Either update the existing texture or create a new one.
+		const nextTexture = texture ? texture(bitmap) : this.regl.texture(bitmap);
+		this.externalTexturesByNode.set(nodeId, nextTexture);
+	}
+
+	/**
+	 * Removes a persistent bitmap image.
+	 *
+	 * We should only call this from the frontend when the node is removed.
+	 * This is because we often reconstruct the render graph,
+	 * and we don't want to remove persistent textures when reconstructing.
+	 **/
+	removeBitmap(nodeId: string) {
+		const texture = this.externalTexturesByNode.get(nodeId);
+		if (!texture) return;
+
+		texture.destroy();
+		this.externalTexturesByNode.delete(nodeId);
 	}
 }

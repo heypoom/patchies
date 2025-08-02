@@ -23,7 +23,8 @@ self.onmessage = (event) => {
 		)
 		.with('setPreviewSize', () => fboRenderer.setPreviewSize(data.width, data.height))
 		.with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
-		.with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap));
+		.with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
+		.with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
