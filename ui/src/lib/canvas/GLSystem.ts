@@ -64,11 +64,15 @@ export class GLSystem {
 			const context = this.previewCanvasContexts[nodeId];
 			if (!context) return;
 
-			const uint8Array = new Uint8Array(buffer);
-			const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
-			const bitmap = await createImageBitmap(imageData);
+			try {
+				const uint8Array = new Uint8Array(buffer);
+				const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 
-			context.transferFromImageBitmap(bitmap);
+				const bitmap = await createImageBitmap(imageData);
+				context.transferFromImageBitmap(bitmap);
+			} catch (error) {
+				console.error('Failed to create ImageBitmap for preview:', error);
+			}
 		}
 	};
 
@@ -168,5 +172,27 @@ export class GLSystem {
 
 		this.hashes[key] = hash;
 		return true;
+	}
+
+	setPreviewSize(width: number, height: number) {
+		for (const nodeId in this.previewCanvasContexts) {
+			const context = this.previewCanvasContexts[nodeId];
+
+			if (context) {
+				const canvas = context.canvas;
+				canvas.width = width;
+				canvas.height = height;
+
+				// re-create the context to accommodate the new size
+				delete this.previewCanvasContexts[nodeId];
+				this.previewCanvasContexts[nodeId] = canvas.getContext('bitmaprenderer');
+			}
+		}
+
+		this.send('setPreviewSize', { width, height });
+	}
+
+	setOutputSize(width: number, height: number) {
+		this.send('setOutputSize', { width, height });
 	}
 }

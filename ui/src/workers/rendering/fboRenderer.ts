@@ -5,7 +5,7 @@ import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 
 export class FBORenderer {
-	public renderSize = [800, 600] as [w: number, h: number];
+	public outputSize = [800, 600] as [w: number, h: number];
 	public previewSize = [200, 150] as [w: number, h: number];
 	public renderGraph: RenderGraph | null = null;
 
@@ -29,7 +29,7 @@ export class FBORenderer {
 	public shouldProcessPreviews: boolean = false;
 
 	constructor() {
-		const [width, height] = this.renderSize;
+		const [width, height] = this.outputSize;
 
 		this.offscreenCanvas = new OffscreenCanvas(width, height);
 		this.gl = this.offscreenCanvas.getContext('webgl2', { antialias: false })!;
@@ -49,7 +49,7 @@ export class FBORenderer {
 
 		this.renderGraph = renderGraph;
 
-		const [width, height] = this.renderSize;
+		const [width, height] = this.outputSize;
 
 		for (const node of renderGraph.nodes) {
 			// Prepare uniform defaults to prevent crashes
@@ -242,7 +242,7 @@ export class FBORenderer {
 	 */
 	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
 		const [previewWidth, previewHeight] = this.previewSize;
-		const [renderWidth, renderHeight] = this.renderSize;
+		const [renderWidth, renderHeight] = this.outputSize;
 
 		const previewTexture = this.regl.texture({
 			width: previewWidth,
@@ -292,7 +292,7 @@ export class FBORenderer {
 	}
 
 	private renderNodeToMainOutput(node: FBONode): void {
-		const [renderWidth, renderHeight] = this.renderSize;
+		const [renderWidth, renderHeight] = this.outputSize;
 
 		if (!this.isOutputEnabled) {
 			return;
@@ -367,6 +367,17 @@ export class FBORenderer {
 		}
 
 		return textures.slice(0, 4) as [regl.Texture2D, regl.Texture2D, regl.Texture2D, regl.Texture2D];
+	}
+
+	setPreviewSize(width: number, height: number) {
+		this.previewSize = [width, height] as [w: number, h: number];
+		this.buildFBOs(this.renderGraph!);
+	}
+
+	setOutputSize(width: number, height: number) {
+		this.outputSize = [width, height] as [w: number, h: number];
+		this.offscreenCanvas.width = width;
+		this.offscreenCanvas.height = height;
 	}
 }
 

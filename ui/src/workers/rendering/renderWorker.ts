@@ -20,7 +20,9 @@ self.onmessage = (event) => {
 		})
 		.with('setUniformData', () =>
 			fboRenderer.setUniformData(data.nodeId, data.uniformName, data.uniformValue)
-		);
+		)
+		.with('setPreviewSize', () => fboRenderer.setPreviewSize(data.width, data.height))
+		.with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
@@ -66,6 +68,7 @@ function handleStartAnimation() {
 
 		if (fboRenderer.shouldProcessPreviews) {
 			const previewPixels = fboRenderer.renderPreviews();
+			const [previewWidth, previewHeight] = fboRenderer.previewSize;
 
 			for (const [nodeId, pixels] of previewPixels) {
 				self.postMessage(
@@ -73,8 +76,8 @@ function handleStartAnimation() {
 						type: 'previewFrame',
 						nodeId,
 						buffer: pixels.buffer,
-						width: 200,
-						height: 150
+						width: previewWidth,
+						height: previewHeight
 					},
 					{ transfer: [pixels.buffer] }
 				);
