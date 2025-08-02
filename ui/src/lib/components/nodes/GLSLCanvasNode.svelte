@@ -11,11 +11,8 @@
 	import type { GLUniformDef } from '../../../types/uniform-config';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let {
-		id: nodeId,
-		data,
-		type
-	}: { id: string; data: { code: string; glUniformDefs: GLUniformDef[] }; type: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string; glUniformDefs: GLUniformDef[] } } =
+		$props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -56,7 +53,7 @@
 		};
 
 		updateNodeData(nodeId, nextData);
-		glSystem.upsertNode(nodeId, type, nextData);
+		glSystem.upsertNode(nodeId, 'glsl', nextData);
 
 		// inform XYFlow that the handle has changed
 		updateNodeInternals();

@@ -1,13 +1,14 @@
 import type regl from 'regl';
 import type { GLUniformDef } from '../../types/uniform-config';
 
-export interface RenderNode {
+export type RenderNode = {
 	id: string;
-	type: string;
 	inputs: string[]; // IDs of input nodes
 	outputs: string[]; // IDs of output nodes
-	data: { code: string; glUniformDefs: GLUniformDef[] }; // Node-specific data (shader code, etc.)
-}
+} & (
+	| { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[] } }
+	| { type: 'hydra'; data: { code: string } }
+);
 
 export interface RenderEdge {
 	id: string;
@@ -25,11 +26,24 @@ export interface RenderGraph {
 	sortedNodes: string[];
 }
 
+type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
+
+export interface RenderParams {
+	lastTime: number;
+	iFrame: number;
+	mouseX: number;
+	mouseY: number;
+	userParams: UserParam[];
+}
+
+export type RenderFunction = (renderParams: RenderParams) => void;
+
 export interface FBONode {
 	id: string;
 	framebuffer: regl.Framebuffer2D;
 	texture: regl.Texture2D;
-	renderCommand: regl.DrawCommand;
+	render: RenderFunction;
+	cleanup?: () => void;
 }
 
 // Message types for worker communication
@@ -49,15 +63,9 @@ export type WorkerMessage =
 	  }
 	| { type: 'updateOutput'; buffer: ArrayBuffer };
 
-// Preview system types
-export interface PreviewState {
-	[nodeId: string]: boolean; // true = preview enabled, false = disabled
-}
+export type PreviewState = Record<string, boolean>;
 
-// Node type compatibility
-export const FBO_COMPATIBLE_TYPES = ['glsl'] as const;
-export type FBOCompatibleType = (typeof FBO_COMPATIBLE_TYPES)[number];
+export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = ['glsl', 'hydra'];
 
-export function isFBOCompatible(nodeType?: string): nodeType is FBOCompatibleType {
-	return FBO_COMPATIBLE_TYPES.includes(nodeType as FBOCompatibleType);
-}
+export const isFBOCompatible = (nodeType?: string): nodeType is RenderNode['type'] =>
+	FBO_COMPATIBLE_TYPES.includes(nodeType as RenderNode['type']);

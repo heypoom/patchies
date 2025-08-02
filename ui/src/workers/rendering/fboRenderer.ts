@@ -1,32 +1,42 @@
 import regl from 'regl';
 import { createShaderToyDrawCommand } from '../../lib/canvas/shadertoy-draw';
-import type { RenderGraph, RenderNode, FBONode, PreviewState } from '../../lib/rendering/types';
+import type {
+	RenderGraph,
+	RenderNode,
+	FBONode,
+	PreviewState,
+	RenderFunction
+} from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
+import { HydraRenderer } from './hydraRenderer';
+import { getFramebuffer } from './utils';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
 	public previewSize = [200, 150] as [w: number, h: number];
 	public renderGraph: RenderGraph | null = null;
 
+	public isOutputEnabled: boolean = false;
+	public shouldProcessPreviews: boolean = false;
+	public isAnimating: boolean = false;
+
+	public offscreenCanvas: OffscreenCanvas;
+	public gl: WebGL2RenderingContext | null = null;
+	public regl: regl.Regl;
+
 	// Mapping of nodeId -> uniform key -> uniform value
 	// example: {'glsl-0': {'sliderValue': 0.5}}
 	public uniformDataByNode: Map<string, Map<string, any>> = new Map();
 
-	private offscreenCanvas: OffscreenCanvas;
-	private gl: WebGLRenderingContext | null = null;
-	private regl: regl.Regl;
+	private hydraByNode = new Map<string, HydraRenderer | null>();
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
 	private frameCount: number = 0;
 	private startTime: number = Date.now();
 	private previewState: PreviewState = {};
-	private isAnimating: boolean = false;
 	private frameCancellable: regl.Cancellable | null = null;
-
-	public isOutputEnabled: boolean = false;
-	public shouldProcessPreviews: boolean = false;
 
 	constructor() {
 		const [width, height] = this.outputSize;
@@ -44,36 +54,14 @@ export class FBORenderer {
 
 	/** Build FBOs for all nodes in the render graph */
 	buildFBOs(renderGraph: RenderGraph) {
-		this.cleanupFBOs();
+		const [width, height] = this.outputSize;
+
+		this.destroyNodes();
 		this.uniformDataByNode.clear();
 
 		this.renderGraph = renderGraph;
 
-		const [width, height] = this.outputSize;
-
 		for (const node of renderGraph.nodes) {
-			// Prepare uniform defaults to prevent crashes
-			if (node.data.glUniformDefs) {
-				const defaultUniformData = new Map();
-
-				for (const def of node.data.glUniformDefs) {
-					const defaultUniformValue = match(def.type)
-						.with('bool', () => true)
-						.with('float', () => 0.0)
-						.with('int', () => 0)
-						.with('vec2', () => [0, 0])
-						.with('vec3', () => [0, 0, 0])
-						.with('vec4', () => [0, 0, 0, 1])
-						.with('sampler2D', () => null)
-						.otherwise(() => null);
-
-					defaultUniformData.set(def.name, defaultUniformValue);
-				}
-
-				this.uniformDataByNode.set(node.id, defaultUniformData);
-			}
-
-			// Create FBO for each node
 			const texture = this.regl.texture({
 				width,
 				height,
@@ -86,20 +74,26 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			const renderCommand = createShaderToyDrawCommand({
-				width,
-				height,
-				framebuffer,
-				regl: this.regl,
-				code: node.data.code,
-				uniformDefs: node.data.glUniformDefs ?? []
-			});
+			const renderer = match(node)
+				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
+				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
+				.exhaustive();
+
+			// If the renderer function is null, we skip defining this node.
+			if (renderer === null) {
+				console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
+
+				framebuffer.destroy();
+				texture.destroy();
+				continue;
+			}
 
 			const fboNode: FBONode = {
 				id: node.id,
 				framebuffer,
 				texture,
-				renderCommand
+				render: renderer.render,
+				cleanup: renderer.cleanup
 			};
 
 			this.fboNodes.set(node.id, fboNode);
@@ -107,19 +101,92 @@ export class FBORenderer {
 		}
 	}
 
-	cleanupFBOs() {
+	createHydraRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): { render: RenderFunction; cleanup: () => void } | null {
+		if (node.type !== 'hydra') return null;
+
+		// Delete existing hydra renderer if it exists.
+		if (this.hydraByNode.has(node.id)) {
+			this.hydraByNode.get(node.id)?.stop();
+		}
+
+		const hydraRenderer = new HydraRenderer({ code: node.data.code }, framebuffer, this);
+		this.hydraByNode.set(node.id, hydraRenderer);
+
+		return {
+			render: hydraRenderer.renderFrame.bind(hydraRenderer),
+			cleanup: () => {
+				hydraRenderer.destroy();
+				this.hydraByNode.delete(node.id);
+			}
+		};
+	}
+
+	createGlslRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): { render: RenderFunction; cleanup: () => void } | null {
+		if (node.type !== 'glsl') return null;
+
+		const [width, height] = this.outputSize;
+
+		// Prepare uniform defaults to prevent crashes
+		if (node.data.glUniformDefs) {
+			const defaultUniformData = new Map();
+
+			for (const def of node.data.glUniformDefs) {
+				const defaultUniformValue = match(def.type)
+					.with('bool', () => true)
+					.with('float', () => 0.0)
+					.with('int', () => 0)
+					.with('vec2', () => [0, 0])
+					.with('vec3', () => [0, 0, 0])
+					.with('vec4', () => [0, 0, 0, 1])
+					.with('sampler2D', () => null)
+					.otherwise(() => null);
+
+				defaultUniformData.set(def.name, defaultUniformValue);
+			}
+
+			this.uniformDataByNode.set(node.id, defaultUniformData);
+		}
+
+		const renderCommand = createShaderToyDrawCommand({
+			width,
+			height,
+			framebuffer,
+			regl: this.regl,
+			code: node.data.code,
+			uniformDefs: node.data.glUniformDefs ?? []
+		});
+
+		return {
+			render: (params) => renderCommand(params),
+			cleanup: () => {}
+		};
+	}
+
+	destroyNodes() {
 		for (const fboNode of this.fboNodes.values()) {
 			fboNode.framebuffer.destroy();
 			fboNode.texture.destroy();
+			fboNode.cleanup?.();
 		}
 
 		this.fboNodes.clear();
 	}
 
 	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
-		const uniformDef = this.renderGraph?.nodes
-			.find((n) => n.id === nodeId)
-			?.data.glUniformDefs.find((u) => u.name === uniformName);
+		const renderNode = this.renderGraph?.nodes.find((n) => n.id === nodeId);
+
+		// You cannot set uniform data for hydra nodes yet.
+		if (renderNode?.type === 'hydra') {
+			return;
+		}
+
+		const uniformDef = renderNode?.data.glUniformDefs.find((u) => u.name === uniformName);
 
 		// Uniform does not exist in the node's uniform definitions.
 		if (!uniformDef) {
@@ -170,51 +237,57 @@ export class FBORenderer {
 
 		// Render each node in topological order
 		for (const nodeId of this.renderGraph.sortedNodes) {
+			if (!this.renderGraph) continue;
+
 			const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
 			const fboNode = this.fboNodes.get(nodeId);
 
-			if (!node || !fboNode) {
-				continue;
-			}
+			if (!node || !fboNode) continue;
 
-			// TODO: optimize this!
-			const inputTextures = this.getInputTextures(node);
+			this.renderFboNode(node, fboNode);
 
-			const uniformDefs = node.data.glUniformDefs ?? [];
-			const uniformData = this.uniformDataByNode.get(nodeId) ?? new Map();
-			const userUniformParams: any[] = [];
-
-			// Define input parameters
-			for (const n of uniformDefs) {
-				if (n.type === 'sampler2D') {
-					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
-				} else {
-					const value = uniformData.get(n.name);
-
-					if (value !== undefined && value !== null) {
-						userUniformParams.push(value);
-					}
-				}
-			}
-
-			// Render to FBO
-			fboNode.framebuffer.use(() => {
-				fboNode.renderCommand({
-					lastTime: this.lastTime,
-					iFrame: this.frameCount,
-					mouseX: 0,
-					mouseY: 0,
-					userParams: userUniformParams
-				});
-			});
-
+			// Keep track of the last rendered node for final output
 			finalFBONode = fboNode;
 		}
 
 		// Render the final result to the main canvas
+		// TODO: change this to be the node that is connected to bg.out in the graph!
 		if (finalFBONode) {
 			this.renderNodeToMainOutput(finalFBONode);
 		}
+	}
+
+	renderFboNode(node: RenderNode, fboNode: FBONode): void {
+		// TODO: optimize this!
+		const inputTextures = this.getInputTextures(node);
+
+		const uniformDefs = node.data.glUniformDefs ?? [];
+		const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
+		const userUniformParams: any[] = [];
+
+		// Define input parameters
+		for (const n of uniformDefs) {
+			if (n.type === 'sampler2D') {
+				userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
+			} else {
+				const value = uniformData.get(n.name);
+
+				if (value !== undefined && value !== null) {
+					userUniformParams.push(value);
+				}
+			}
+		}
+
+		// Render to FBO
+		fboNode.framebuffer.use(() => {
+			fboNode.render({
+				lastTime: this.lastTime,
+				iFrame: this.frameCount,
+				mouseX: 0,
+				mouseY: 0,
+				userParams: userUniformParams
+			});
+		});
 	}
 
 	/**
@@ -380,8 +453,3 @@ export class FBORenderer {
 		this.offscreenCanvas.height = height;
 	}
 }
-
-const getFramebuffer = (reglFramebuffer: regl.Framebuffer2D): WebGLFramebuffer | null => {
-	// @ts-expect-error -- hack: access WebGLFramebuffer directly
-	return reglFramebuffer._framebuffer.framebuffer || null;
-};

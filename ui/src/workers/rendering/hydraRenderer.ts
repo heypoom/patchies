@@ -1,0 +1,165 @@
+import { Hydra, generators } from 'hydra-ts';
+import regl from 'regl';
+import type { FBORenderer } from './fboRenderer';
+import type { RenderParams } from '$lib/rendering/types';
+import { getFramebuffer } from './utils';
+
+export interface HydraConfig {
+	code: string;
+}
+
+export class HydraRenderer {
+	public config: HydraConfig;
+	public hydra: Hydra;
+	public renderer: FBORenderer;
+	public precision: 'highp' | 'mediump' = 'highp';
+	public framebuffer: regl.Framebuffer2D | null = null;
+
+	private timestamp = performance.now();
+
+	constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
+		this.config = config;
+		this.framebuffer = framebuffer;
+		this.renderer = renderer;
+
+		const [width, height] = this.renderer.outputSize;
+
+		// Initialize Hydra in non-global mode
+		this.hydra = new Hydra({
+			// @ts-expect-error -- regl version mismatch, but should still work!
+			regl: this.renderer.regl,
+			width,
+			height,
+			numSources: 4,
+			numOutputs: 4,
+			precision: this.precision
+		});
+
+		this.updateCode();
+	}
+
+	renderFrame(params: RenderParams) {
+		const time = performance.now();
+		const deltaTime = time - this.timestamp;
+
+		this.hydra.synth.time += deltaTime * 0.001 * this.hydra.synth.speed;
+		this.hydra.timeSinceLastUpdate += deltaTime;
+
+		this.hydra.sources.forEach((source) => {
+			source.tick(this.hydra.synth);
+		});
+
+		this.hydra.outputs.forEach((output) => {
+			output.tick(this.hydra.synth);
+		});
+
+		const hydraFramebuffer = this.hydra.output.getCurrent();
+		const gl = this.renderer.gl;
+
+		const [hydraWidth, hydraHeight] = this.hydra.synth.resolution;
+		const [outputWidth, outputHeight] = this.renderer.outputSize;
+
+		if (!gl) return;
+
+		const sourceFBO = getFramebuffer(hydraFramebuffer);
+		const destPreviewFBO = getFramebuffer(this.framebuffer);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
+
+		gl.blitFramebuffer(
+			0,
+			0,
+			hydraWidth,
+			hydraHeight,
+			0,
+			0,
+			outputWidth,
+			outputHeight,
+			gl.COLOR_BUFFER_BIT,
+			gl.LINEAR
+		);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+
+		this.hydra.timeSinceLastUpdate = 0;
+		this.timestamp = time;
+	}
+
+	private updateCode() {
+		try {
+			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
+			const { sources, outputs, hush, render } = this.hydra;
+
+			const [s0, s1, s2, s3] = sources;
+			const [o0, o1, o2, o3] = outputs;
+
+			// Clear any existing patterns
+			this.stop();
+
+			// Create a context with Hydra synth instance available as 'h'
+			// Also destructure common functions for easier access
+			const context = {
+				h: this.hydra.synth,
+				render,
+				hush,
+
+				// Generators
+				osc,
+				gradient,
+				shape,
+				voronoi,
+				noise,
+				src,
+				solid,
+
+				// Sources
+				s0,
+				s1,
+				s2,
+				s3,
+
+				// Outputs
+				o0,
+				o1,
+				o2,
+				o3
+			};
+
+			const userFunction = new Function(
+				'context',
+				`
+				let time = performance.now()
+
+				with (context) {
+					${this.config.code}
+				}
+			`
+			);
+
+			userFunction(context);
+		} catch (error) {
+			console.error('Error executing Hydra code:', error);
+			throw error;
+		}
+	}
+
+	stop() {
+		this.hydra.hush();
+		for (const source of this.hydra.sources) source.clear();
+	}
+
+	destroy() {
+		this.stop();
+
+		// Destroy all sources and outputs
+		for (const source of this.hydra.sources) {
+			source.getTexture()?.destroy();
+		}
+
+		for (const output of this.hydra.outputs) {
+			output.fbos.forEach((fbo) => fbo.destroy());
+		}
+	}
+}
