@@ -21,10 +21,11 @@ function draw() {
 const CAM_P5 = `let video;
 
 function setup() {
-  createCanvas(640/2, 480/2);
+  createCanvas(200, 150);
   video = createCapture(VIDEO);
-  video.size(640/2, 480/2);
+  video.size(640, 480);
   video.hide();
+  pixelDensity(3)
 }
 
 function draw() {
