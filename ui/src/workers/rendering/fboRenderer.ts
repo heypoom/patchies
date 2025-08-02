@@ -98,7 +98,9 @@ export class FBORenderer {
 			};
 
 			this.fboNodes.set(node.id, fboNode);
-			this.previewState[node.id] = true;
+
+			const defaultPreviewEnabled = node.type !== 'p5';
+			this.previewState[node.id] = defaultPreviewEnabled;
 		}
 	}
 

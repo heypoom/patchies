@@ -31,10 +31,6 @@
 		p5Manager = new P5Manager(nodeId, containerElement);
 		glSystem.upsertNode(nodeId, 'p5', {});
 		updateSketch();
-
-		setTimeout(() => {
-			glSystem.setPreviewEnabled(nodeId, false);
-		}, 10);
 	});
 
 	onDestroy(() => {
