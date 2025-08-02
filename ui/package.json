@@ -92,7 +92,8 @@
 		"p5": "^1.11.9",
 		"regl": "^2.1.1",
 		"stats.js": "^0.17.0",
-		"ts-pattern": "^5.7.1"
+		"ts-pattern": "^5.7.1",
+		"webmidi": "^3.1.12"
 	},
 	"trustedDependencies": [
 		"@tailwindcss/oxide",
