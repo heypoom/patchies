@@ -50,15 +50,9 @@ export type WorkerMessage =
 	  }
 	| { type: 'updateOutput'; buffer: ArrayBuffer };
 
-// Preview system types
-export interface PreviewState {
-	[nodeId: string]: boolean; // true = preview enabled, false = disabled
-}
+export type PreviewState = Record<string, boolean>;
 
-// Node type compatibility
-export const FBO_COMPATIBLE_TYPES = ['glsl'] as const;
-export type FBOCompatibleType = (typeof FBO_COMPATIBLE_TYPES)[number];
+export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = ['glsl', 'hydra'];
 
-export function isFBOCompatible(nodeType?: string): nodeType is FBOCompatibleType {
-	return FBO_COMPATIBLE_TYPES.includes(nodeType as FBOCompatibleType);
-}
+export const isFBOCompatible = (nodeType?: string): nodeType is RenderNode['type'] =>
+	FBO_COMPATIBLE_TYPES.includes(nodeType as RenderNode['type']);

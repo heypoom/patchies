@@ -6,15 +6,17 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import type { Message } from '$lib/messages/MessageSystem';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	let {
 		id: nodeId,
 		data,
 		selected
-	}: { id: string; data: { code: string }; selected: boolean } = $props();
+	}: { id: string; type: string; data: { code: string }; selected: boolean } = $props();
 
 	const { updateNodeData } = useSvelteFlow();
 
+	let glSystem: GLSystem;
 	let messageContext: MessageContext;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
@@ -35,14 +37,16 @@
 	}
 
 	onMount(() => {
+		glSystem = GLSystem.getInstance();
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessageNodeCallback);
+
+		glSystem.upsertNode(nodeId, 'hydra', { code });
 	});
 
 	onDestroy(() => {
-		if (messageContext) {
-			messageContext.destroy();
-		}
+		glSystem.removeNode(nodeId);
+		messageContext.destroy();
 	});
 
 	function updateHydra() {

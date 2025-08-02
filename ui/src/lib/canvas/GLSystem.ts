@@ -1,5 +1,5 @@
 import { buildRenderGraph, type REdge, type RNode } from '$lib/rendering/graphUtils';
-import type { RenderGraph } from '$lib/rendering/types';
+import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
@@ -111,7 +111,7 @@ export class GLSystem {
 		this.renderWorker.postMessage({ type, ...data });
 	}
 
-	upsertNode(id: string, type: string, data: Record<string, unknown>) {
+	upsertNode(id: string, type: RenderNode['type'], data: Record<string, unknown>) {
 		const nodeIndex = this.nodes.findIndex((node) => node.id === id);
 
 		if (nodeIndex === -1) {

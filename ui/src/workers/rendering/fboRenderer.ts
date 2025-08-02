@@ -54,6 +54,7 @@ export class FBORenderer {
 
 		for (const node of renderGraph.nodes) {
 			if (node.type === 'hydra') {
+				console.log(`[build.fbo] found hydra node`);
 				continue;
 			}
 
