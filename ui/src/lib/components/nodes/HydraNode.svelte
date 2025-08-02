@@ -44,6 +44,9 @@
 		messageContext.queue.addCallback(handleMessageNodeCallback);
 		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 
+		previewCanvas.width = 200;
+		previewCanvas.height = 150;
+
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 		glSystem.upsertNode(nodeId, 'hydra', { code });
 	});
@@ -136,7 +139,7 @@
 				<canvas
 					bind:this={previewCanvas}
 					class={[
-						'min-h-[200px] min-w-[200px] rounded-md border bg-zinc-900',
+						'rounded-md border bg-zinc-900',
 						selected
 							? 'border-zinc-200 [&>canvas]:rounded-[7px]'
 							: 'border-transparent [&>canvas]:rounded-md'
