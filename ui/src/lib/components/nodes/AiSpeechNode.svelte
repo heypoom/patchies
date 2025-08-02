@@ -4,7 +4,7 @@
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { Message } from '$lib/messages/MessageSystem';
-	import { match } from 'ts-pattern';
+	import { match, P } from 'ts-pattern';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import Slider from '$lib/components/ui/slider/slider.svelte';
 	import { voicesStore, fetchVoices } from '$lib/stores/voices';
@@ -75,6 +75,9 @@
 		}
 
 		match(m.type)
+			.with(P.union('play', 'bang'), () => {
+				playback();
+			})
 			.with('speak', () => {
 				setTTSOptionsFromMessage(m);
 				setTimeout(() => generateSpeech({ playback: true }), 5);
@@ -86,6 +89,17 @@
 			.with('set', () => {
 				setTTSOptionsFromMessage(m);
 			});
+	}
+
+	function playback() {
+		const cachedUrl = $audioUrlCache[audioCacheKey];
+
+		if (!cachedUrl) {
+			generateSpeech({ playback: true });
+			return;
+		}
+
+		playAudio(cachedUrl);
 	}
 
 	onMount(() => {
@@ -469,7 +483,7 @@
 				<!-- Playback state indicator -->
 				<div class="mt-3 text-center">
 					<div class="text-[8px] text-zinc-400">
-						Status: <span class="text-zinc-300 capitalize">{playbackState}.</span> Powered by
+						Status: <span class="capitalize text-zinc-300">{playbackState}.</span> Powered by
 						<a href="https://celestiai.co" class="text-blue-300">CelestiAI</a>.
 					</div>
 				</div>
