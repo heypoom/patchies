@@ -1,5 +1,5 @@
-// @ts-expect-error -- no types for hydra-synth
-import Hydra from 'hydra-synth';
+import { Hydra, generators } from 'hydra-ts';
+import REGL from 'regl';
 
 interface SendMessageOptions {
 	type?: string;
@@ -23,13 +23,13 @@ const [previewWidth, previewHeight] = [200, 200];
 const [canvasWidth, canvasHeight] = [400 * window.devicePixelRatio, 400 * window.devicePixelRatio];
 
 export class HydraManager {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	private hydra: any;
+	private hydra: Hydra;
 	private canvas: HTMLCanvasElement | null = null;
 	private container: HTMLElement;
 	private videoCanvases: HTMLCanvasElement[] = [];
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private activeSources: any[] = [];
+	private regl: REGL.Regl;
 
 	constructor(container: HTMLElement, config: HydraConfig | string) {
 		this.container = container;
@@ -46,14 +46,15 @@ export class HydraManager {
 		this.container.innerHTML = '';
 		this.container.appendChild(this.canvas);
 
+		// TODO: move this inside the web worker!
+		this.regl = REGL({ canvas: this.canvas });
+
 		// Initialize Hydra in non-global mode
 		this.hydra = new Hydra({
-			canvas: this.canvas,
+			// @ts-expect-error -- not sure why type is not matching here.
+			regl: this.regl,
 			width: canvasWidth,
 			height: canvasHeight,
-			autoLoop: true,
-			makeGlobal: false,
-			detectAudio: false,
 			numSources: 4,
 			numOutputs: 4,
 			precision: 'highp'
@@ -95,47 +96,49 @@ export class HydraManager {
 
 	private executeCode(code: string, messageContext?: MessageContext) {
 		try {
+			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
+			const { sources, outputs, hush, loop, render } = this.hydra;
+
+			const [s0, s1, s2, s3] = sources;
+			const [o0, o1, o2, o3] = outputs;
+
 			// Clear any existing patterns
 			if (this.synth) {
 				// Stop all sources
-				for (let i = 0; i < 4; i++) {
-					this.hydra.s?.[i]?.clear();
-				}
+				for (const source of sources) source.clear();
 
-				this.synth.hush();
+				hush();
 			}
 
 			// Create a context with Hydra synth instance available as 'h'
 			// Also destructure common functions for easier access
 			const context = {
 				h: this.synth,
+				loop,
 
 				// Destructure common functions for convenience
-				osc: this.synth.osc.bind(this.synth),
-				gradient: this.synth.gradient.bind(this.synth),
-				shape: this.synth.shape.bind(this.synth),
-				voronoi: this.synth.voronoi.bind(this.synth),
-				noise: this.synth.noise.bind(this.synth),
-				src: this.synth.src.bind(this.synth),
-				solid: this.synth.solid.bind(this.synth),
+				osc,
+				gradient,
+				shape,
+				voronoi,
+				noise,
+				src,
+				solid,
 
 				// Sources
-				s0: this.synth.s0,
-				s1: this.synth.s1,
-				s2: this.synth.s2,
-				s3: this.synth.s3,
+				s0,
+				s1,
+				s2,
+				s3,
 
 				// Outputs
-				o0: this.synth.o0,
-				o1: this.synth.o1,
-				o2: this.synth.o2,
-				o3: this.synth.o3,
-
-				// Audio
-				a: this.synth.a,
+				o0,
+				o1,
+				o2,
+				o3,
 
 				// Render function
-				render: this.synth.render.bind(this.synth),
+				render: render.bind(this.hydra),
 
 				// Video chaining function
 				initSource: this.createInitSourceFunction(),
@@ -149,19 +152,20 @@ export class HydraManager {
 			};
 
 			// Execute the user's Hydra code with the synth context
-			const functionParams = Object.keys(context);
-			const functionArgs = Object.values(context);
-
 			const executeFunction = new Function(
-				...functionParams,
+				'context',
 				`
 				let time = performance.now()
 
-				${code}
+				with (context) {
+					${code}
+
+					loop.start()
+				}
 			`
 			);
 
-			executeFunction(...functionArgs);
+			executeFunction(context);
 		} catch (error) {
 			console.error('Error executing Hydra code:', error);
 			throw error;
@@ -180,10 +184,6 @@ export class HydraManager {
 
 		// Clear active sources
 		this.activeSources = [];
-
-		if (this.hydra) {
-			this.hydra = null;
-		}
 
 		if (this.canvas) {
 			this.canvas.remove();

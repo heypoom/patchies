@@ -1,9 +1,9 @@
 const PASSTHRU = `initSource(s0)
-src(s0).out()`;
+src(s0).out(o0)`;
 
 const DIFF = `initSource(s0, 0)
 initSource(s1, 1)
-src(s0).diff(s1).out()`;
+src(s0).diff(s1).out(o0)`;
 
 const BEANS = `// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 //Flor de Fuego
@@ -11,10 +11,10 @@ const BEANS = `// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/lice
 osc(30,0.01,1)
 .mult(osc(20,-0.1,1).modulate(noise(3,1)).rotate(0.7))
 .posterize([3,10,2].fast(0.5).smooth(1))
-.out()`;
+.out(o0)`;
 
 const CAM = `s0.initCam()
-src(s0).out()`;
+src(s0).out(o0)`;
 
 export const HYDRA_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'passthru.hydra': { type: 'hydra', data: { code: PASSTHRU.trim() } },
