@@ -161,6 +161,12 @@ export class GLSystem {
 		this.updateRenderGraph();
 	}
 
+	removePreviewContext(nodeId: string, context: ImageBitmapRenderingContext) {
+		if (this.previewCanvasContexts[nodeId] === context) {
+			this.previewCanvasContexts[nodeId] = null;
+		}
+	}
+
 	updateEdges(edges: REdge[]) {
 		this.edges = edges;
 		this.updateRenderGraph();

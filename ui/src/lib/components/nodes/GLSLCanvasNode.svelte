@@ -75,13 +75,9 @@
 
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
-		messageContext?.destroy();
+		messageContext.destroy();
 		glSystem.removeNode(nodeId);
-
-		// Unregister the context if we are still using it.
-		if (glSystem.previewCanvasContexts[nodeId] === previewBitmapContext) {
-			glSystem.previewCanvasContexts[nodeId] = null;
-		}
+		glSystem.removePreviewContext(nodeId, previewBitmapContext);
 	});
 </script>
 
