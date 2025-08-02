@@ -4,7 +4,8 @@ import {
 	DEFAULT_GLSL_CODE,
 	DEFAULT_STRUDEL_CODE,
 	DEFAULT_AI_IMAGE_PROMPT,
-	DEFAULT_BUTTERCHURN_PRESET
+	DEFAULT_BUTTERCHURN_PRESET,
+	DEFAULT_JS_CANVAS_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -26,7 +27,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('bchrn', () => ({ currentPreset: DEFAULT_BUTTERCHURN_PRESET }))
 		.with('p5', () => ({ code: DEFAULT_P5_CODE }))
 		.with('hydra', () => ({ code: DEFAULT_HYDRA_CODE }))
-		.with('canvas', () => ({}))
+		.with('canvas', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('ai.music', () => ({}))
 		.with('ai.tts', () => ({}))
 		.with('bg.out', () => ({}))

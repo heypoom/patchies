@@ -24,3 +24,25 @@ export const DEFAULT_STRUDEL_CODE = `note("c a f e").jux(rev)`;
 export const DEFAULT_AI_IMAGE_PROMPT = `a sleepy little town in the mountains, masterpiece, realistic, high quality, 4k`;
 
 export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
+
+export const DEFAULT_JS_CANVAS_CODE = `ctx.fillStyle = '#18181b'
+ctx.fillRect(0, 0, width, height)
+
+function draw() {
+  ctx.clearRect(0, 0, width, height)
+  ctx.fillStyle = '#18181b'
+  ctx.fillRect(0, 0, width, height)
+
+  const time = Date.now() * 0.004
+  const x = width/2 + Math.cos(time) * 60
+  const y = height/2 + Math.sin(time) * 50
+
+  ctx.fillStyle = '#4ade80'
+  ctx.beginPath()
+  ctx.arc(x, y, 20, 0, Math.PI * 2)
+  ctx.fill()
+
+  requestAnimationFrame(draw)
+}
+
+draw()`;

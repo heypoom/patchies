@@ -8,6 +8,10 @@
 	let glSystem = GLSystem.getInstance();
 
 	onMount(() => {
+		const [outputWidth, outputHeight] = glSystem.outputSize;
+		outputCanvasElement.width = outputWidth;
+		outputCanvasElement.height = outputHeight;
+
 		bitmapContext = outputCanvasElement.getContext('bitmaprenderer')!;
 		glSystem.backgroundOutputCanvasContext = bitmapContext;
 	});
@@ -25,5 +29,5 @@
 		$isBackgroundOutputCanvasEnabled ? '' : 'hidden'
 	}`}
 >
-	<canvas bind:this={outputCanvasElement} height={800} width={800} class="w-full"></canvas>
+	<canvas bind:this={outputCanvasElement} class="w-full"></canvas>
 </div>

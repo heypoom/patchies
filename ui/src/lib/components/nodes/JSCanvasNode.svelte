@@ -1,75 +1,37 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { JSCanvasManager } from '$lib/canvas/JSCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
-	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId }: { id: string } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
 
-	let containerElement: HTMLDivElement;
+	let canvasElement: HTMLCanvasElement;
+	let glSystem = GLSystem.getInstance();
 	let canvasManager: JSCanvasManager | null = null;
 	let messageContext: MessageContext;
-	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let dragEnabled = $state(true);
-	let code = $state(`ctx.fillStyle = '#18181b';
-ctx.fillRect(0, 0, width, height);
 
-function draw() {
-  ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#18181b';
-  ctx.fillRect(0, 0, width, height);
-
-  const time = Date.now() * 0.002;
-  const x = width/2 + Math.cos(time) * 50;
-  const y = height/2 + Math.sin(time) * 30;
-
-  ctx.fillStyle = '#4ade80';
-  ctx.beginPath();
-  ctx.arc(x, y, 20, 0, Math.PI * 2);
-  ctx.fill();
-
-  requestAnimationFrame(draw);
-}
-
-draw()`);
+	const { updateNodeData } = useSvelteFlow();
 
 	onMount(() => {
-		// Initialize message context and video system
 		messageContext = new MessageContext(nodeId);
-		videoSystem = VideoSystem.getInstance();
+		glSystem.upsertNode(nodeId, 'img', {});
 
-		// Subscribe to video canvas sources
-		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			if (canvasManager && canvases.length > 0) {
-				// Use the first canvas source
-				canvasManager.setVideoCanvas(canvases[0]);
-			}
-		});
-
-		if (containerElement) {
-			canvasManager = new JSCanvasManager(containerElement);
-			canvasManager.createCanvas({ code });
-			registerVideoSource();
-		}
+		canvasManager = new JSCanvasManager(canvasElement);
+		canvasManager.createCanvas({ code: data.code });
 	});
 
 	onDestroy(() => {
-		if (canvasManager) {
-			canvasManager.destroy();
-		}
-		if (messageContext) {
-			messageContext.destroy();
-		}
-		if (videoSystem) {
-			videoSystem.unregisterNode(nodeId);
-		}
+		glSystem.removeNode(nodeId);
+		canvasManager?.destroy();
+		messageContext?.destroy();
 	});
 
 	function updateCanvas() {
@@ -80,8 +42,9 @@ draw()`);
 			try {
 				// Clear intervals to avoid duplicates
 				messageContext.clearIntervals();
-				canvasManager.updateCode({
-					code,
+
+				canvasManager.runCode({
+					code: data.code,
 					messageContext: {
 						...messageContext.getContext(),
 						noDrag: () => {
@@ -89,10 +52,9 @@ draw()`);
 						}
 					}
 				});
-				// Clear any previous errors on successful update
+
 				errorMessage = null;
 			} catch (error) {
-				// Capture compilation/setup errors
 				errorMessage = error instanceof Error ? error.message : String(error);
 			}
 		}
@@ -100,15 +62,6 @@ draw()`);
 
 	function toggleEditor() {
 		showEditor = !showEditor;
-	}
-
-	function registerVideoSource() {
-		if (canvasManager && videoSystem) {
-			const canvas = canvasManager.getCanvas();
-			if (canvas) {
-				videoSystem.registerVideoSource(nodeId, canvas);
-			}
-		}
 	}
 </script>
 
@@ -121,7 +74,7 @@ draw()`);
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -138,13 +91,11 @@ draw()`);
 					class="!left-8"
 					title="Video input"
 				/>
-				<div
-					bind:this={containerElement}
-					class={[
-						'rounded-md bg-zinc-900 [&>canvas]:rounded-md',
-						dragEnabled ? 'cursor-grab' : 'nodrag cursor-default'
-					]}
-				></div>
+
+				<canvas
+					bind:this={canvasElement}
+					class={['rounded-md bg-zinc-900 ', dragEnabled ? 'cursor-grab' : 'nodrag cursor-default']}
+				></canvas>
 
 				<!-- Error display -->
 				{#if errorMessage}
@@ -184,11 +135,14 @@ draw()`);
 
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
 				<CodeEditor
-					bind:value={code}
+					value={data.code}
 					language="javascript"
 					placeholder="Write your Canvas API code here..."
 					class="nodrag h-64 w-full resize-none"
 					onrun={updateCanvas}
+					onchange={(newCode) => {
+						updateNodeData(nodeId, { ...data, code: newCode });
+					}}
 				/>
 			</div>
 		</div>

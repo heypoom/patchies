@@ -1,3 +1,5 @@
+import { GLSystem } from './GLSystem';
+
 interface SendMessageOptions {
 	type?: string;
 	to?: string;
@@ -19,84 +21,51 @@ export interface JSCanvasConfig {
 }
 
 export class JSCanvasManager {
-	private canvas: HTMLCanvasElement | null = null;
-	private ctx: CanvasRenderingContext2D | null = null;
-	private container: HTMLElement;
-	private animationId: number | null = null;
-	private videoCanvas: HTMLCanvasElement | null = null;
+	private glSystem = GLSystem.getInstance();
+	private canvas: HTMLCanvasElement;
+	private ctx: CanvasRenderingContext2D;
 
-	constructor(container: HTMLElement) {
-		this.container = container;
+	private animationId: number | null = null;
+
+	constructor(canvas: HTMLCanvasElement) {
+		this.canvas = canvas;
+		this.ctx = canvas.getContext('2d')!;
 	}
 
 	createCanvas(options: JSCanvasConfig) {
 		try {
-			this.canvas = document.createElement('canvas');
-			this.canvas.style.width = '200px';
-			this.canvas.style.height = '200px';
-			this.canvas.style.objectFit = 'contain';
+			const [previewWidth, previewHeight] = this.glSystem.previewSize;
+			const dpr = window.devicePixelRatio || 1;
 
-			// Clear container and add canvas
-			this.container.innerHTML = '';
-			this.container.appendChild(this.canvas);
+			this.canvas.width = previewWidth * dpr;
+			this.canvas.height = previewHeight * dpr;
+			this.canvas.style.width = `${previewWidth}px`;
+			this.canvas.style.height = `${previewHeight}px`;
 
-			this.setupCanvasSize();
-			const codeString = options.code;
-			const messageContext = 'messageContext' in options ? options.messageContext : undefined;
-			this.executeCode(codeString, messageContext);
+			this.runCode(options);
 		} catch (error) {
 			console.error('Error creating canvas:', error);
-			if (error instanceof Error) {
-				this.container.innerHTML = `<div class="text-red-400 text-xs p-2">Error: ${error.message}</div>`;
-			}
 		}
 	}
 
-	private setupCanvasSize() {
-		if (!this.canvas) return;
-
-		const dpr = window.devicePixelRatio || 1;
-		const rect = this.canvas.getBoundingClientRect();
-		this.canvas.width = rect.width * dpr;
-		this.canvas.height = rect.height * dpr;
-
-		this.ctx = this.canvas.getContext('2d');
-		if (!this.ctx) {
-			throw new Error('Could not get 2D context');
-		}
-
-		this.ctx.scale(dpr, dpr);
-	}
-
-	updateCode(options: JSCanvasConfig | string) {
-		if (this.canvas && this.ctx) {
-			try {
-				if (this.animationId) {
-					cancelAnimationFrame(this.animationId);
-					this.animationId = null;
-				}
-
-				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-				const codeString = typeof options === 'string' ? options : options.code;
-				const messageContext = typeof options === 'string' ? undefined : options.messageContext;
-				this.executeCode(codeString, messageContext);
-			} catch (error) {
-				console.error('Error updating canvas code:', error);
-			}
-		}
-	}
-
-	private executeCode(code: string, messageContext?: MessageContext) {
+	runCode(options: JSCanvasConfig) {
 		if (!this.canvas || !this.ctx) return;
 
-		try {
-			const rect = this.canvas.getBoundingClientRect();
+		const { code, messageContext } = options;
 
+		if (this.animationId) {
+			cancelAnimationFrame(this.animationId);
+			this.animationId = null;
+		}
+
+		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+		try {
 			const context = {
 				canvas: this.canvas,
 				ctx: this.ctx,
-				width: rect.width,
-				height: rect.height,
+				width: this.canvas.width,
+				height: this.canvas.height,
 
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					this.animationId = requestAnimationFrame(callback);
@@ -111,9 +80,6 @@ export class JSCanvasManager {
 						this.animationId = null;
 					}
 				},
-
-				// Video chaining function
-				getSource: this.createGetSourceFunction(),
 
 				// Message system functions (if available)
 				...(messageContext && {
@@ -136,34 +102,11 @@ export class JSCanvasManager {
 	}
 
 	destroy() {
-		// Stop any running animation
 		if (this.animationId) {
 			cancelAnimationFrame(this.animationId);
 			this.animationId = null;
 		}
 
-		if (this.canvas) {
-			this.canvas.remove();
-			this.canvas = null;
-		}
-
-		this.ctx = null;
-
-		// Clear container
-		this.container.innerHTML = '';
-	}
-
-	getCanvas(): HTMLCanvasElement | null {
-		return this.canvas;
-	}
-
-	setVideoCanvas(canvas: HTMLCanvasElement | null) {
-		this.videoCanvas = canvas;
-	}
-
-	private createGetSourceFunction() {
-		return () => {
-			return this.videoCanvas ?? null;
-		};
+		this.canvas?.remove();
 	}
 }
