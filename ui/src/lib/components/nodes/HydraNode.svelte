@@ -143,7 +143,7 @@
 				<canvas
 					bind:this={previewCanvas}
 					class={[
-						'rounded-md border bg-zinc-900',
+						'rounded-md border',
 						selected
 							? 'border-zinc-200 [&>canvas]:rounded-[7px]'
 							: 'border-transparent [&>canvas]:rounded-md'
