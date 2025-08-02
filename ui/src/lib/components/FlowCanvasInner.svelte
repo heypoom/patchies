@@ -22,7 +22,6 @@
 	import ButterchurnNode from './nodes/ButterchurnNode.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 	import AiImageNode from './nodes/AiImageNode.svelte';
 	import AiTextNode from './nodes/AiTextNode.svelte';
 	import MessageNode from './nodes/MessageNode.svelte';
@@ -77,7 +76,6 @@
 
 	let nodeId = 0;
 	let messageSystem = MessageSystem.getInstance();
-	let videoSystem = VideoSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
 
 	// Object palette state
@@ -166,9 +164,6 @@
 			sourceHandle: edge.sourceHandle || undefined,
 			targetHandle: edge.targetHandle || undefined
 		}));
-
-		// LEGACY: Update video system with handle information
-		videoSystem.updateVideoConnections(connections);
 
 		messageSystem.updateEdges(edges);
 

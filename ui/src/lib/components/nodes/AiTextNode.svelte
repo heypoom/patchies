@@ -4,7 +4,6 @@
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { createLLMFunction } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -16,7 +15,6 @@
 
 	const messageContext = new MessageContext(nodeId);
 
-	let videoSystem: VideoSystem;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isLoading = $state(false);
@@ -42,17 +40,10 @@
 	}
 
 	onMount(() => {
-		videoSystem = VideoSystem.getInstance();
-
-		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			inputCanvases = canvases;
-		});
-
 		messageContext.queue.addCallback(handleMessage);
 	});
 
 	onDestroy(() => {
-		videoSystem?.unregisterNode(nodeId);
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
 	});
@@ -105,7 +96,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -120,7 +111,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in"
-					class="!left-32 z-1"
+					class="z-1 !left-32"
 					title="Video input (optional)"
 				/>
 
@@ -140,7 +131,7 @@
 
 								<button
 									onclick={copyToClipboard}
-									class="absolute top-1 right-1 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+									class="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 									title="Copy to clipboard"
 								>
 									<Icon icon="lucide:copy" class="h-4 w-4 text-zinc-300" />

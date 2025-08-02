@@ -71,14 +71,6 @@
 			isIntervalCallbackActive = true;
 		};
 
-		// Initialize video system
-		videoSystem = VideoSystem.getInstance();
-
-		// Subscribe to video canvas sources
-		videoSystem.onVideoCanvas(nodeId, (canvases) => {
-			videoCanvases = canvases;
-		});
-
 		messageContext.queue.addCallback(handleMessage);
 
 		if (data?.runOnMount) {
@@ -91,11 +83,6 @@
 		if (messageContext) {
 			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
-		}
-
-		// Clean up video system
-		if (videoSystem) {
-			videoSystem.unregisterNode(nodeId);
 		}
 	});
 
@@ -211,7 +198,7 @@
 	}
 
 	function runOrStop() {
-		if (isRunning || isLongRunningTaskActive) {
+		if (isLongRunningTaskActive) {
 			stopLongRunningTasks();
 		} else {
 			executeCode();
