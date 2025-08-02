@@ -18,6 +18,8 @@
 
 	let glSystem: GLSystem;
 	let messageContext: MessageContext;
+	let previewCanvas: HTMLCanvasElement;
+	let previewBitmapContext: ImageBitmapRenderingContext;
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 
@@ -40,20 +42,26 @@
 		glSystem = GLSystem.getInstance();
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessageNodeCallback);
+		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 
+		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 		glSystem.upsertNode(nodeId, 'hydra', { code });
 	});
 
 	onDestroy(() => {
-		glSystem.removeNode(nodeId);
 		messageContext.destroy();
+		glSystem.removeNode(nodeId);
+
+		// Unregister the context if we are still using it.
+		if (glSystem.previewCanvasContexts[nodeId] === previewBitmapContext) {
+			glSystem.previewCanvasContexts[nodeId] = null;
+		}
 	});
 
 	function updateHydra() {
 		try {
 			messageContext.clearIntervals();
-
-			// TODO: call updateCode for hydra
+			glSystem.upsertNode(nodeId, 'hydra', { code });
 
 			errorMessage = null;
 		} catch (error) {
@@ -125,14 +133,15 @@
 					title="Message input"
 				/>
 
-				<div
+				<canvas
+					bind:this={previewCanvas}
 					class={[
 						'min-h-[200px] min-w-[200px] rounded-md border bg-zinc-900',
 						selected
 							? 'border-zinc-200 [&>canvas]:rounded-[7px]'
 							: 'border-transparent [&>canvas]:rounded-md'
 					]}
-				></div>
+				></canvas>
 
 				<VideoHandle
 					type="source"

@@ -2,6 +2,7 @@ import { Hydra, generators } from 'hydra-ts';
 import regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { HydraFboUniforms } from 'hydra-ts/src/Hydra';
+import type { RenderParams } from '$lib/rendering/types';
 
 export interface HydraConfig {
 	code: string;
@@ -72,7 +73,7 @@ export class HydraRenderer {
 		});
 	}
 
-	renderFrame() {
+	renderFrame(params: RenderParams) {
 		this.hydra.sources.forEach((source) => {
 			// @ts-expect-error -- source.draw is not typed in hydra-ts, but still works!
 			source.draw(this.hydra.synth);
@@ -87,6 +88,8 @@ export class HydraRenderer {
 			tex0: this.hydra.output.getCurrent(),
 			resolution: this.hydra.synth.resolution
 		});
+
+		console.log(`[hydra] render frame`, params);
 	}
 
 	private updateCode() {
@@ -161,7 +164,6 @@ export class HydraRenderer {
 		}
 
 		for (const output of this.hydra.outputs) {
-			output.getTexture()?.destroy();
 			output.fbos.forEach((fbo) => fbo.destroy());
 		}
 	}

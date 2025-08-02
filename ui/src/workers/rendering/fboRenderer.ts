@@ -80,10 +80,14 @@ export class FBORenderer {
 
 			// If the renderer function is null, we skip defining this node.
 			if (renderer === null) {
+				console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
+
 				framebuffer.destroy();
 				texture.destroy();
 				continue;
 			}
+
+			console.log(`created renderer for ${node.type} of ${node.id}`);
 
 			const fboNode: FBONode = {
 				id: node.id,
@@ -102,6 +106,8 @@ export class FBORenderer {
 		node: RenderNode,
 		framebuffer: regl.Framebuffer2D
 	): { render: RenderFunction; cleanup: () => void } | null {
+		if (node.type !== 'hydra') return null;
+
 		// Delete existing hydra renderer if it exists.
 		if (this.hydraByNode.has(node.id)) {
 			this.hydraByNode.get(node.id)?.stop();
@@ -239,7 +245,7 @@ export class FBORenderer {
 
 			if (!node || !fboNode) continue;
 
-			if (node.type === 'glsl') this.renderGlslNode(node, fboNode);
+			this.renderFboNode(node, fboNode);
 
 			// Keep track of the last rendered node for final output
 			finalFBONode = fboNode;
@@ -252,9 +258,7 @@ export class FBORenderer {
 		}
 	}
 
-	renderGlslNode(node: RenderNode, fboNode: FBONode): void {
-		if (node.type !== 'glsl') return;
-
+	renderFboNode(node: RenderNode, fboNode: FBONode): void {
 		// TODO: optimize this!
 		const inputTextures = this.getInputTextures(node);
 
