@@ -8,6 +8,7 @@
 	} from '../../stores/ui.store';
 	import type { Node, Edge } from '@xyflow/svelte';
 	import { IpcSystem } from '$lib/canvas/IpcSystem';
+	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -231,6 +232,7 @@
 				onCancel();
 			})
 			.with('open-output-screen', () => {
+				isBackgroundOutputCanvasEnabled.set(false);
 				ipcSystem.openOutputWindow();
 			})
 			.otherwise(() => {
