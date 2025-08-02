@@ -2,7 +2,11 @@ import { GoogleGenAI, PersonGeneration, type ContentListUnion } from '@google/ge
 
 export async function generateImageWithGemini(
 	prompt: string,
-	{ apiKey, abortSignal }: { apiKey: string; abortSignal?: AbortSignal }
+	{
+		aspectRatio,
+		apiKey,
+		abortSignal
+	}: { aspectRatio: string; apiKey: string; abortSignal?: AbortSignal }
 ): Promise<ImageBitmap | null> {
 	const ai = new GoogleGenAI({ apiKey });
 
@@ -11,7 +15,7 @@ export async function generateImageWithGemini(
 		prompt,
 		config: {
 			numberOfImages: 1,
-			aspectRatio: '1:1',
+			aspectRatio,
 			abortSignal,
 			personGeneration: PersonGeneration.ALLOW_ALL
 		}

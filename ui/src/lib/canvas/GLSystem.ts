@@ -30,6 +30,9 @@ export class GLSystem {
 	private hashes = { nodes: '', edges: '', graph: '' };
 	private renderGraph: RenderGraph | null = null;
 
+	public previewSize: [width: number, height: number] = [200, 150];
+	public outputSize: [width: number, height: number] = [200, 150];
+
 	static getInstance() {
 		if (!GLSystem.instance) {
 			GLSystem.instance = new GLSystem();
@@ -175,6 +178,8 @@ export class GLSystem {
 	}
 
 	setPreviewSize(width: number, height: number) {
+		this.previewSize = [width, height];
+
 		for (const nodeId in this.previewCanvasContexts) {
 			const context = this.previewCanvasContexts[nodeId];
 
@@ -193,6 +198,7 @@ export class GLSystem {
 	}
 
 	setOutputSize(width: number, height: number) {
+		this.outputSize = [width, height];
 		this.send('setOutputSize', { width, height });
 	}
 

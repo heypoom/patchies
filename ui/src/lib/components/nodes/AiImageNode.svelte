@@ -4,11 +4,11 @@
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import { VideoSystem } from '$lib/video/VideoSystem';
 	import { generateImageWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { Message } from '$lib/messages/MessageSystem';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
@@ -19,7 +19,7 @@
 	const messageContext = new MessageContext(nodeId);
 
 	let canvasElement: HTMLCanvasElement;
-	let videoSystem: VideoSystem;
+	let glSystem = GLSystem.getInstance();
 	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isLoading = $state(false);
@@ -44,14 +44,13 @@
 	}
 
 	onMount(() => {
-		videoSystem = VideoSystem.getInstance();
-		videoSystem.registerVideoSource(nodeId, canvasElement);
+		glSystem.upsertNode(nodeId, 'img', {});
 
 		messageContext.queue.addCallback(handleMessage);
 	});
 
 	onDestroy(() => {
-		videoSystem?.unregisterNode(nodeId);
+		glSystem.removeNode(nodeId);
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
 	});
@@ -82,6 +81,7 @@
 
 			const image = await generateImageWithGemini(prompt, {
 				apiKey,
+				aspectRatio: '4:3',
 				abortSignal: abortController.signal
 			});
 
@@ -89,7 +89,24 @@
 				throw new Error('Cannot generate image.');
 			}
 
-			canvasElement.getContext('2d')?.drawImage(image, 0, 0);
+			const previewBitmap = await createImageBitmap(image);
+			glSystem.setBitmap(nodeId, image);
+
+			// draw the preview image to the canvas
+			canvasElement
+				.getContext('2d')
+				?.drawImage(
+					previewBitmap,
+					0,
+					0,
+					previewBitmap.width,
+					previewBitmap.height,
+					0,
+					0,
+					canvasElement.width,
+					canvasElement.height
+				);
+
 			hasImage = true;
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
@@ -113,7 +130,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -139,8 +156,8 @@
 					<canvas
 						bind:this={canvasElement}
 						width={800}
-						height={800}
-						class="h-[200px] w-[200px] rounded-md bg-zinc-900"
+						height={600}
+						class="h-[150px] w-[200px] rounded-md bg-zinc-900"
 					></canvas>
 				</div>
 

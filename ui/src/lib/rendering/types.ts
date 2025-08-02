@@ -9,6 +9,7 @@ export type RenderNode = {
 	| { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[] } }
 	| { type: 'hydra'; data: { code: string } }
 	| { type: 'p5'; data: { code: string } }
+	| { type: 'img'; data: unknown }
 );
 
 export interface RenderEdge {
@@ -66,7 +67,7 @@ export type WorkerMessage =
 
 export type PreviewState = Record<string, boolean>;
 
-export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = ['glsl', 'hydra', 'p5'];
+export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = ['glsl', 'hydra', 'p5', 'img'];
 
 export const isFBOCompatible = (nodeType?: string): nodeType is RenderNode['type'] =>
 	FBO_COMPATIBLE_TYPES.includes(nodeType as RenderNode['type']);

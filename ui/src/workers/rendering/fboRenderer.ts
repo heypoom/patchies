@@ -74,10 +74,13 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
+			const emptyRenderer = this.createEmptyRenderer();
+
 			const renderer = match(node)
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
-				.with({ type: 'p5' }, () => this.createEmptyRenderer())
+				.with({ type: 'p5' }, () => emptyRenderer)
+				.with({ type: 'img' }, () => emptyRenderer)
 				.exhaustive();
 
 			// If the renderer function is null, we skip defining this node.
@@ -99,7 +102,7 @@ export class FBORenderer {
 
 			this.fboNodes.set(node.id, fboNode);
 
-			const defaultPreviewEnabled = node.type !== 'p5';
+			const defaultPreviewEnabled = node.type !== 'p5' && node.type !== 'img';
 			this.previewState[node.id] = defaultPreviewEnabled;
 		}
 	}
