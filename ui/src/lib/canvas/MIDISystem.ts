@@ -13,6 +13,7 @@ import {
 	updateMIDIOutputDevices,
 	midiInitialized
 } from '../../stores/midi.store';
+import { Launchpad } from '$lib/midi/launchpad';
 
 export interface MIDIInputConfig {
 	deviceId?: string;
@@ -46,6 +47,7 @@ export class MIDISystem {
 
 	public isInitialized = false;
 	public webmidi = WebMidi;
+	public lpx = Launchpad.getInstance();
 
 	get inputs(): Input[] {
 		return WebMidi.inputs;
@@ -91,14 +93,11 @@ export class MIDISystem {
 	}
 
 	private setupDeviceListeners() {
-		// Listen for MIDI device connection/disconnection events
 		WebMidi.addListener('connected', () => {
-			console.log('MIDI device connected');
 			this.updateDeviceLists();
 		});
 
 		WebMidi.addListener('disconnected', () => {
-			console.log('MIDI device disconnected!');
 			this.updateDeviceLists();
 		});
 	}
@@ -140,8 +139,6 @@ export class MIDISystem {
 			console.warn('MIDI input device not found:', deviceId);
 			return;
 		}
-
-		console.log(`[midi-${nodeId}] listening:`, input, config);
 
 		const channelToUse = channel || 'all';
 		const listeners: NodeListeners = {
@@ -230,7 +227,7 @@ export class MIDISystem {
 		}
 	}
 
-	sendMessage(config: MIDIOutputConfig) {
+	sendMidiMessage(config: MIDIOutputConfig) {
 		const { deviceId, channel = 1 } = config;
 
 		if (!deviceId) {
@@ -247,13 +244,13 @@ export class MIDISystem {
 		try {
 			match(config)
 				.with({ messageType: 'noteOn' }, ({ data }) => {
-					if (data.note !== undefined && data.velocity !== undefined) {
-						output.playNote(data.note, { attack: data.velocity, channels: channel });
+					if (data.note !== undefined) {
+						output.playNote(data.note, { rawAttack: data.velocity, channels: channel });
 					}
 				})
 				.with({ messageType: 'noteOff' }, ({ data }) => {
 					if (data.note !== undefined) {
-						output.stopNote(data.note, { channels: channel });
+						output.stopNote(data.note, { rawRelease: data.velocity, channels: channel });
 					}
 				})
 				.with({ messageType: 'controlChange' }, ({ data }) => {
@@ -279,6 +276,10 @@ export class MIDISystem {
 			this.stopListening(nodeId);
 		}
 		this.inputListeners.clear();
+	}
+
+	setupLaunchpad() {
+		this.lpx.setup(this.outputs);
 	}
 }
 

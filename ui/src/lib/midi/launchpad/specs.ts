@@ -1,4 +1,4 @@
-import { InputGrid, Spec } from './types/specs';
+import type { InputGrid, Spec } from './types/specs';
 import { range } from './utils';
 
 // Fixed-color lights.

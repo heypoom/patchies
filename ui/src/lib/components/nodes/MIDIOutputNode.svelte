@@ -67,17 +67,17 @@
 	function handleMessage(message: Message<MidiOutMessage>) {
 		match(message.data)
 			.with({ type: 'bang' }, () => {
-				sendMIDIMessage();
+				sendMidiMessage();
 			})
 			.with({ type: 'send' }, (m) => {
-				const config: MIDIOutputConfig = {
+				const config = {
 					deviceId: m.deviceId ?? data.deviceId,
 					channel: m.channel ?? data.channel,
 					messageType: m.messageType ?? data.messageType,
-					data: msg.data ?? messageData
-				};
+					data: m.data ?? messageData
+				} as MIDIOutputConfig;
 
-				sendMIDIMessage(config);
+				sendMidiMessage(config);
 			})
 			.with({ type: 'set' }, (m) => {
 				updateNodeData(nodeId, {
@@ -93,7 +93,7 @@
 			});
 	}
 
-	async function sendMIDIMessage(config?: MIDIOutputConfig) {
+	async function sendMidiMessage(config?: MIDIOutputConfig) {
 		const outputConfig = config || {
 			deviceId,
 			channel,
@@ -117,7 +117,7 @@
 		}
 
 		try {
-			midiSystem.sendMessage(outputConfig);
+			midiSystem.sendMidiMessage(outputConfig);
 			lastSentTime = Date.now();
 			errorMessage = null;
 		} catch (error) {
@@ -178,7 +178,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" id="message-in" position={Position.Top} class="!left-12" />
+				<Handle type="target" id="message-in" position={Position.Top} />
 
 				{#if !deviceId}
 					<button
@@ -201,7 +201,7 @@
 							'flex w-full min-w-[120px] flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 text-zinc-300 hover:bg-zinc-800',
 							borderColor
 						]}
-						onclick={() => sendMIDIMessage()}
+						onclick={() => sendMidiMessage()}
 						title="Send MIDI message"
 					>
 						<Icon icon={statusIcon} class="mb-2 h-5 w-5" />
@@ -217,8 +217,6 @@
 						</div>
 					</button>
 				{/if}
-
-				<Handle type="source" position={Position.Bottom} />
 			</div>
 		</div>
 	</div>

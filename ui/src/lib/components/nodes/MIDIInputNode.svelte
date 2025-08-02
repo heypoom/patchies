@@ -141,7 +141,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -150,7 +150,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" id="message-in" position={Position.Top} class="!left-12" />
+				<Handle type="target" id="message-in" position={Position.Top} />
 
 				{#if !deviceId}
 					<button
