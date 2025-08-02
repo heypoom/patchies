@@ -1,7 +1,6 @@
 import { Hydra, generators } from 'hydra-ts';
 import regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
-import type { HydraFboUniforms } from 'hydra-ts/src/Hydra';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 
@@ -14,7 +13,6 @@ export class HydraRenderer {
 	public hydra: Hydra;
 	public renderer: FBORenderer;
 	public precision: 'highp' | 'mediump' = 'highp';
-	public renderFboCommand: regl.DrawCommand<regl.DefaultContext, HydraFboUniforms>;
 	public framebuffer: regl.Framebuffer2D | null = null;
 
 	private timestamp = performance.now();
@@ -38,42 +36,6 @@ export class HydraRenderer {
 		});
 
 		this.updateCode();
-
-		this.renderFboCommand = this.renderer.regl({
-			framebuffer: this.framebuffer,
-			frag: `
-      precision ${this.precision} float;
-      varying vec2 uv;
-      uniform vec2 resolution;
-      uniform sampler2D tex0;
-
-      void main () {
-        gl_FragColor = texture2D(tex0, vec2(1.0 - uv.x, uv.y));
-      }
-      `,
-			vert: `
-      precision ${this.precision} float;
-      attribute vec2 position;
-      varying vec2 uv;
-
-      void main () {
-        uv = position;
-        gl_Position = vec4(1.0 - 2.0 * position, 0, 1);
-      }`,
-			attributes: {
-				position: [
-					[-2, 0],
-					[0, -2],
-					[2, 2]
-				]
-			},
-			uniforms: {
-				tex0: this.renderer.regl.prop<HydraFboUniforms, keyof HydraFboUniforms>('tex0'),
-				resolution: this.renderer.regl.prop<HydraFboUniforms, keyof HydraFboUniforms>('resolution')
-			},
-			count: 3,
-			depth: { enable: false }
-		});
 	}
 
 	renderFrame(params: RenderParams) {
