@@ -148,7 +148,7 @@ rendererWorker.onmessage = async (event) => {
 
 In the future, we aim to support other video nodes that can render to framebuffers.
 
-- Hydra.js (hydra-synth)
+- Hydra.js (hydra-ts)
   - Hydra uses REGL under the hood.
   - We will need to package-patch Hydra to use our shared `OffscreenCanvas` and `WebGLRenderingContext`. Right now `_initRegl` passes `canvas: this.canvas`, but we need to pass `gl` instead, so we can pass the offscreen canvas' rendering context.
   - It also needs to render to a FBO from the node graph.
