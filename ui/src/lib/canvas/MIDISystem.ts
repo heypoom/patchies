@@ -13,7 +13,6 @@ import {
 	updateMIDIOutputDevices,
 	midiInitialized
 } from '../../stores/midi.store';
-import { get } from 'svelte/store';
 
 export interface MIDIInputConfig {
 	deviceId?: string;
@@ -46,8 +45,15 @@ export class MIDISystem {
 	private inputListeners = new Map<string, NodeListeners>();
 
 	public isInitialized = false;
-	public inputs: Input[] = [];
-	public outputs: Output[] = [];
+	public webmidi = WebMidi;
+
+	get inputs(): Input[] {
+		return WebMidi.inputs;
+	}
+
+	get outputs(): Output[] {
+		return WebMidi.outputs;
+	}
 
 	static getInstance() {
 		if (!MIDISystem.instance) {
@@ -63,7 +69,7 @@ export class MIDISystem {
 	}
 
 	async initialize() {
-		if (get(midiInitialized)) return;
+		if (WebMidi.enabled) return;
 
 		try {
 			await WebMidi.enable({ sysex: true });
@@ -80,9 +86,6 @@ export class MIDISystem {
 	}
 
 	private updateDeviceLists() {
-		this.inputs = WebMidi.inputs;
-		this.outputs = WebMidi.outputs;
-
 		updateMIDIInputDevices(this.inputs);
 		updateMIDIOutputDevices(this.outputs);
 	}
@@ -278,3 +281,6 @@ export class MIDISystem {
 		this.inputListeners.clear();
 	}
 }
+
+// @ts-expect-error -- expose MIDISystem globally for debugging
+window.MIDISystem = MIDISystem.getInstance();
