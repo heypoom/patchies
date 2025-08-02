@@ -1,6 +1,7 @@
 import P5 from 'p5';
 import type Sketch from 'p5';
 import ml5 from 'ml5';
+import { GLSystem } from '$lib/canvas/GLSystem';
 
 interface SendMessageOptions {
 	type?: string;
@@ -26,25 +27,32 @@ export interface P5SketchConfig {
 }
 
 export class P5Manager {
-	private instance: Sketch | null = null;
-	private container: HTMLElement | null = null;
-	private videoCanvas: HTMLCanvasElement | null = null;
+	public p5: Sketch | null = null;
+	public glSystem = GLSystem.getInstance();
+	public nodeId: string;
 
-	constructor(container: HTMLElement) {
+	private container: HTMLElement | null = null;
+
+	constructor(nodeId: string, container: HTMLElement) {
+		this.nodeId = nodeId;
 		this.container = container;
+
+		// @ts-expect-error -- expose for debugging
+		window.p5Manager = this;
 	}
 
 	updateCode(config: P5SketchConfig) {
 		// Clean up existing instance
-		if (this.instance) {
-			this.instance.remove();
-			this.instance = null;
+		if (this.p5) {
+			this.p5.remove();
+			this.p5 = null;
 		}
 
 		if (!this.container) return;
 
 		const sketch = (p: Sketch) => {
 			const userCode = this.executeUserCode(p, config);
+			const sendBitmap = this.sendBitmap.bind(this);
 
 			p.setup = function () {
 				userCode?.setup?.call(p);
@@ -53,6 +61,7 @@ export class P5Manager {
 			p.draw = function () {
 				try {
 					userCode?.draw?.call(p);
+					sendBitmap();
 				} catch (error) {
 					if (error instanceof Error) {
 						p.background(220, 100, 100);
@@ -136,7 +145,7 @@ export class P5Manager {
 			};
 		};
 
-		this.instance = new P5(sketch, this.container);
+		this.p5 = new P5(sketch, this.container);
 	}
 
 	private executeUserCode(sketch: Sketch, config: P5SketchConfig) {
@@ -149,9 +158,6 @@ export class P5Manager {
 		}
 
 		// @ts-expect-error -- no-op
-		sketch['getSource'] = this.createGetSourceFunction(sketch);
-
-		// @ts-expect-error -- no-op
 		sketch['p5'] = P5;
 
 		// @ts-expect-error -- no-op
@@ -159,31 +165,6 @@ export class P5Manager {
 
 		// @ts-expect-error -- no-op
 		sketch['ml5'] = ml5;
-
-		// Add function for copying from video canvas
-		// @ts-expect-error -- no-op
-		sketch['drawSource'] = () => {
-			const source = this.videoCanvas;
-			if (!source) return;
-
-			// @ts-expect-error -- no-op
-			const { canvas } = sketch;
-			if (!canvas) return;
-
-			canvas
-				.getContext('2d')
-				?.drawImage(
-					source,
-					0,
-					0,
-					source.width,
-					source.height,
-					0,
-					0,
-					canvas.width / window.devicePixelRatio,
-					canvas.height / window.devicePixelRatio
-				);
-		};
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
@@ -214,30 +195,18 @@ export class P5Manager {
 	}
 
 	destroy() {
-		if (this.instance) {
-			this.instance.remove();
-			this.instance = null;
+		if (this.p5) {
+			this.p5.remove();
+			this.p5 = null;
 		}
 		this.container = null;
 	}
 
-	getInstance() {
-		return this.instance;
-	}
+	async sendBitmap() {
+		// @ts-expect-error -- do not capture if bitmap is missing
+		const canvas: HTMLCanvasElement = this.p5?.canvas;
+		if (!canvas) return;
 
-	getCanvas(): HTMLCanvasElement | null {
-		const instance = this.instance as unknown as { canvas?: HTMLCanvasElement };
-
-		return instance?.canvas ?? null;
-	}
-
-	setVideoCanvas(canvas: HTMLCanvasElement | null) {
-		this.videoCanvas = canvas;
-	}
-
-	private createGetSourceFunction() {
-		return () => {
-			return this.videoCanvas ?? null;
-		};
+		await this.glSystem.setBitmapSource(this.nodeId, canvas);
 	}
 }

@@ -18,14 +18,6 @@ function draw() {
   prev = v
 }`;
 
-const PASSTHRU_P5 = `function setup() {
-  createCanvas(200, 200)
-}
-
-function draw() {
-  drawSource()
-}`;
-
 const CAM_P5 = `let video;
 
 function setup() {
@@ -74,7 +66,6 @@ function draw() {
 
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
-	'passthru.p5': { type: 'p5', data: { code: PASSTHRU_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
 	'traffic_light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } }
 };

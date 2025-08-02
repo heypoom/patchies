@@ -85,8 +85,6 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 - You can call these special methods in your P5 sketch:
 
   - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your P5 sketch, such as adding sliders. You can call it in your `setup()` function.
-  - `getSource()` to get the video source from the previous video object using [Video Chaining](#video-chaining). This returns the HTML5 canvas element which you can use for e.g. copying pixels. You can call this in your `setup()` function.
-  - `drawSource()` draws the video source from the previous video object. This is useful if you want to use the previous video object as a background or texture in your P5 sketch, and manipulate it further. Put this as the first call in your `draw()` function to ensure it gets drawn every frame.
   - `send(message)` and `onMessage(callback)`, see [Message Passing](#message-passing).
 
 ### `hydra`: creates a Hydra video synthesizer

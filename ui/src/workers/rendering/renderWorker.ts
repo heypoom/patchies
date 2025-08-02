@@ -22,7 +22,8 @@ self.onmessage = (event) => {
 			fboRenderer.setUniformData(data.nodeId, data.uniformName, data.uniformValue)
 		)
 		.with('setPreviewSize', () => fboRenderer.setPreviewSize(data.width, data.height))
-		.with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height));
+		.with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
+		.with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
