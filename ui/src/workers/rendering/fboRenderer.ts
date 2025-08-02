@@ -62,8 +62,6 @@ export class FBORenderer {
 		this.renderGraph = renderGraph;
 
 		for (const node of renderGraph.nodes) {
-			console.log(`building FBO for node ${node.type} ${node.id}`);
-
 			const texture = this.regl.texture({
 				width,
 				height,
