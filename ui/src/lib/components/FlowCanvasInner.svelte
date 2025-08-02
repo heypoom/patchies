@@ -6,10 +6,8 @@
 		type Node,
 		type Edge,
 		useSvelteFlow,
-		type OnConnectEnd,
 		type IsValidConnection
 	} from '@xyflow/svelte';
-	import type { FinalConnectionState } from '@xyflow/system';
 	import { onDestroy, onMount } from 'svelte';
 	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
 	import JSBlockNode from './nodes/JSBlockNode.svelte';
@@ -80,7 +78,6 @@
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
-	let connectEndConnectionState = $state.raw<FinalConnectionState | null>(null);
 
 	// Command palette state
 	let showCommandPalette = $state(false);
@@ -157,17 +154,7 @@
 	});
 
 	$effect(() => {
-		// Update connections when edges change
-		const connections = edges.map((edge) => ({
-			source: edge.source,
-			target: edge.target,
-			sourceHandle: edge.sourceHandle || undefined,
-			targetHandle: edge.targetHandle || undefined
-		}));
-
 		messageSystem.updateEdges(edges);
-
-		// Update render graph in GLSystem
 		glSystem.updateEdges(edges);
 	});
 
@@ -271,25 +258,6 @@
 		};
 
 		nodes = [...nodes, newNode];
-
-		// Defined by handleConnectEnd.
-		// if (connectEndConnectionState !== null) {
-		// 	const nextNodeId = connectEndConnectionState.fromNode?.id ?? '';
-		// 	const handleType = connectEndConnectionState.fromHandle?.type;
-
-		// 	const nextEdge =
-		// 		handleType === 'source'
-		// 			? { source: nextNodeId, target: id, id: `${nextNodeId}-${nodeId}` }
-		// 			: {
-		// 					source: id,
-		// 					target: nextNodeId,
-		// 					id: `${id}-${nextNodeId}`
-		// 				};
-
-		// 	edges = [...edges, nextEdge];
-		// }
-
-		connectEndConnectionState = null;
 	}
 
 	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
