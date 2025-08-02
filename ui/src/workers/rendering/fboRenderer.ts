@@ -117,7 +117,7 @@ export class FBORenderer {
 		this.hydraByNode.set(node.id, hydraRenderer);
 
 		return {
-			render: () => hydraRenderer.renderFrame.bind(hydraRenderer),
+			render: hydraRenderer.renderFrame.bind(hydraRenderer),
 			cleanup: () => {
 				hydraRenderer.destroy();
 				this.hydraByNode.delete(node.id);

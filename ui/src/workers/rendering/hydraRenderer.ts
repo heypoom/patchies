@@ -13,8 +13,10 @@ export class HydraRenderer {
 	public hydra: Hydra;
 	public renderer: FBORenderer;
 	public precision: 'highp' | 'mediump' = 'highp';
-	public drawCommand: regl.DrawCommand<regl.DefaultContext, HydraFboUniforms>;
+	public renderFboCommand: regl.DrawCommand<regl.DefaultContext, HydraFboUniforms>;
 	public framebuffer: regl.Framebuffer2D | null = null;
+
+	private timestamp = performance.now();
 
 	constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
@@ -36,7 +38,7 @@ export class HydraRenderer {
 
 		this.updateCode();
 
-		this.drawCommand = this.renderer.regl({
+		this.renderFboCommand = this.renderer.regl({
 			framebuffer: this.framebuffer,
 			frag: `
       precision ${this.precision} float;
@@ -74,22 +76,28 @@ export class HydraRenderer {
 	}
 
 	renderFrame(params: RenderParams) {
+		const time = performance.now();
+		const deltaTime = time - this.timestamp;
+
+		this.hydra.synth.time += deltaTime * 0.001 * this.hydra.synth.speed;
+		this.hydra.timeSinceLastUpdate += deltaTime;
+
 		this.hydra.sources.forEach((source) => {
-			// @ts-expect-error -- source.draw is not typed in hydra-ts, but still works!
-			source.draw(this.hydra.synth);
+			source.tick(this.hydra.synth);
 		});
 
 		this.hydra.outputs.forEach((output) => {
-			output.draw(this.hydra.synth);
+			output.tick(this.hydra.synth);
 		});
 
 		// TODO: replace this with direct framebuffer blit instead of regl draw command!
-		this.drawCommand({
+		this.renderFboCommand({
 			tex0: this.hydra.output.getCurrent(),
 			resolution: this.hydra.synth.resolution
 		});
 
-		console.log(`[hydra] render frame`, params);
+		this.hydra.timeSinceLastUpdate = 0;
+		this.timestamp = time;
 	}
 
 	private updateCode() {
