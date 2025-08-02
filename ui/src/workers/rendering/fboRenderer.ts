@@ -449,6 +449,12 @@ export class FBORenderer {
 
 	setOutputSize(width: number, height: number) {
 		this.outputSize = [width, height] as [w: number, h: number];
+
+		// Update all hydra renderers to match the new output size
+		for (const hydra of this.hydraByNode.values()) {
+			hydra?.hydra.setResolution(width, height);
+		}
+
 		this.offscreenCanvas.width = width;
 		this.offscreenCanvas.height = height;
 	}
