@@ -23,9 +23,8 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		glSystem.upsertNode(nodeId, 'img', {});
-
-		canvasManager = new JSCanvasManager(canvasElement);
-		canvasManager.createCanvas({ code: data.code });
+		canvasManager = new JSCanvasManager(nodeId, canvasElement);
+		canvasManager.setupSketch({ code: data.code });
 	});
 
 	onDestroy(() => {
@@ -35,15 +34,13 @@
 	});
 
 	function updateCanvas() {
-		// use noDrag() to prevent dragging
-		dragEnabled = true;
+		// use noDrag() to prevent draggingsetupCanvasnabled = true;
 
 		if (canvasManager && messageContext) {
 			try {
-				// Clear intervals to avoid duplicates
 				messageContext.clearIntervals();
 
-				canvasManager.runCode({
+				canvasManager.updateSketch({
 					code: data.code,
 					messageContext: {
 						...messageContext.getContext(),

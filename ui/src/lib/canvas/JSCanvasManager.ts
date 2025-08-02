@@ -21,18 +21,20 @@ export interface JSCanvasConfig {
 }
 
 export class JSCanvasManager {
-	private glSystem = GLSystem.getInstance();
-	private canvas: HTMLCanvasElement;
-	private ctx: CanvasRenderingContext2D;
+	public nodeId: string;
+	public glSystem = GLSystem.getInstance();
+	public canvas: HTMLCanvasElement;
+	public ctx: CanvasRenderingContext2D;
 
 	private animationId: number | null = null;
 
-	constructor(canvas: HTMLCanvasElement) {
+	constructor(nodeId: string, canvas: HTMLCanvasElement) {
+		this.nodeId = nodeId;
 		this.canvas = canvas;
 		this.ctx = canvas.getContext('2d')!;
 	}
 
-	createCanvas(options: JSCanvasConfig) {
+	setupSketch(options: JSCanvasConfig) {
 		try {
 			const [previewWidth, previewHeight] = this.glSystem.previewSize;
 			const dpr = window.devicePixelRatio || 1;
@@ -42,13 +44,13 @@ export class JSCanvasManager {
 			this.canvas.style.width = `${previewWidth}px`;
 			this.canvas.style.height = `${previewHeight}px`;
 
-			this.runCode(options);
+			this.updateSketch(options);
 		} catch (error) {
 			console.error('Error creating canvas:', error);
 		}
 	}
 
-	runCode(options: JSCanvasConfig) {
+	updateSketch(options: JSCanvasConfig) {
 		if (!this.canvas || !this.ctx) return;
 
 		const { code, messageContext } = options;
@@ -68,6 +70,7 @@ export class JSCanvasManager {
 				height: this.canvas.height,
 
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
+					this.glSystem.setBitmapSource(this.nodeId, this.canvas);
 					this.animationId = requestAnimationFrame(callback);
 
 					return this.animationId;
