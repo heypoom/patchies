@@ -96,7 +96,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -111,7 +111,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in"
-					class="z-1 !left-32"
+					class="!left-32 z-1"
 					title="Video input (optional)"
 				/>
 
@@ -131,7 +131,7 @@
 
 								<button
 									onclick={copyToClipboard}
-									class="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+									class="absolute top-1 right-1 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 									title="Copy to clipboard"
 								>
 									<Icon icon="lucide:copy" class="h-4 w-4 text-zinc-300" />

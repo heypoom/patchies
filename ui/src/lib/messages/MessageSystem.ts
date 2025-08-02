@@ -1,8 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
 
-export interface Message {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	data: any;
+export interface Message<T = any> {
+	data: T;
 	type?: string;
 	timestamp: number;
 	source: string;
@@ -127,6 +126,11 @@ export class MessageSystem {
 		if (this.deletedNodes.has(fromNodeId)) {
 			return;
 		}
+
+		console.log(
+			`[MessageSystem] Sending message from ${fromNodeId} to ${options.to ?? 'all connected nodes'}`,
+			data
+		);
 
 		const message: Message = {
 			data,

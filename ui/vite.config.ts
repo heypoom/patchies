@@ -10,7 +10,7 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			'$workers': '/src/workers'
+			$workers: '/src/workers'
 		}
 	},
 	test: {
