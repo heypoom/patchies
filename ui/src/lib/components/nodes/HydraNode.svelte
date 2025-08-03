@@ -21,6 +21,7 @@
 	let previewCanvas: HTMLCanvasElement;
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let showEditor = $state(false);
+	let isPaused = $state(false);
 	let errorMessage = $state<string | null>(null);
 
 	const code = $derived(data.code || '');
@@ -80,6 +81,11 @@
 	function toggleEditor() {
 		showEditor = !showEditor;
 	}
+
+	function togglePause() {
+		isPaused = !isPaused;
+		glSystem.toggleNodePause(nodeId);
+	}
 </script>
 
 <div class="relative flex gap-x-3">
@@ -90,13 +96,23 @@
 					<div class="font-mono text-xs font-medium text-zinc-100">hydra</div>
 				</div>
 
-				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
-					onclick={toggleEditor}
-					title="Edit code"
-				>
-					<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
-				</button>
+				<div class="flex gap-1">
+					<button
+						title={isPaused ? "Resume" : "Pause"}
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						onclick={togglePause}
+					>
+						<Icon icon={isPaused ? "lucide:play" : "lucide:pause"} class="h-4 w-4 text-zinc-300" />
+					</button>
+
+					<button
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						onclick={toggleEditor}
+						title="Edit code"
+					>
+						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+					</button>
+				</div>
 			</div>
 
 			<div class="relative">

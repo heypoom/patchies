@@ -36,6 +36,9 @@ export class FBORenderer {
 	/** Mapping of nodeID to persistent textures */
 	public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
 
+	/** Mapping of nodeID to pause state */
+	public nodePausedMap: Map<string, boolean> = new Map();
+
 	private hydraByNode = new Map<string, HydraRenderer | null>();
 	private swglByNode = new Map<string, SwissGLContext>();
 	private fboNodes = new Map<string, FBONode>();
@@ -340,6 +343,17 @@ export class FBORenderer {
 		this.shouldProcessPreviews = enabledPreviews.length > 0;
 	}
 
+	/** Toggle pause state for a node */
+	toggleNodePause(nodeId: string) {
+		const currentState = this.nodePausedMap.get(nodeId) ?? false;
+		this.nodePausedMap.set(nodeId, !currentState);
+	}
+
+	/** Check if a node is paused */
+	isNodePaused(nodeId: string): boolean {
+		return this.nodePausedMap.get(nodeId) ?? false;
+	}
+
 	/** Get list of nodes with preview enabled */
 	getEnabledPreviews(): string[] {
 		return Object.keys(this.previewState).filter((nodeId) => this.previewState[nodeId]);
@@ -380,6 +394,11 @@ export class FBORenderer {
 	}
 
 	renderFboNode(node: RenderNode, fboNode: FBONode): void {
+		// Check if the node is paused, skip rendering if it is
+		if (this.isNodePaused(node.id)) {
+			return;
+		}
+
 		// TODO: optimize this!
 		const inputTextures = this.getInputTextures(node);
 

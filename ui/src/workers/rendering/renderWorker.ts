@@ -25,7 +25,8 @@ self.onmessage = (event) => {
 		.with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
 		.with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
 		.with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
-		.with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message));
+		.with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
+		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
@@ -97,6 +98,10 @@ function handleStopAnimation() {
 function handleSetPreviewEnabled(nodeId: string, enabled: boolean) {
 	fboRenderer.setPreviewEnabled(nodeId, enabled);
 	self.postMessage({ type: 'previewToggled', nodeId, enabled });
+}
+
+function handleToggleNodePause(nodeId: string) {
+	fboRenderer.toggleNodePause(nodeId);
 }
 
 console.log('[render worker] hello');

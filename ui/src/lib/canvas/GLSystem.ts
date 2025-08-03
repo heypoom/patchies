@@ -122,6 +122,11 @@ export class GLSystem {
 		this.setPreviewEnabled(nodeId, visibleMap[nodeId]);
 	}
 
+	/** Toggle pause state for a node */
+	toggleNodePause(nodeId: string) {
+		this.send('toggleNodePause', { nodeId });
+	}
+
 	send<T>(type: string, data?: T) {
 		this.renderWorker.postMessage({ type, ...data });
 	}

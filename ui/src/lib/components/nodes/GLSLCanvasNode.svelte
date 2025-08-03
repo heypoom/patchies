@@ -27,6 +27,7 @@
 	let messageContext: MessageContext;
 
 	let showEditor = $state(false);
+	let isPaused = $state(false);
 
 	const code = $derived(data.code || '');
 
@@ -59,6 +60,11 @@
 		updateNodeInternals();
 	}
 
+	function togglePause() {
+		isPaused = !isPaused;
+		glSystem.toggleNodePause(nodeId);
+	}
+
 	onMount(() => {
 		previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 		messageContext = new MessageContext(nodeId);
@@ -89,15 +95,25 @@
 					<div class="font-mono text-xs font-medium text-zinc-100">glsl.canvas</div>
 				</div>
 
-				<button
-					title="Edit code"
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
-					onclick={() => {
-						showEditor = !showEditor;
-					}}
-				>
-					<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
-				</button>
+				<div class="flex gap-1">
+					<button
+						title={isPaused ? "Resume" : "Pause"}
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						onclick={togglePause}
+					>
+						<Icon icon={isPaused ? "lucide:play" : "lucide:pause"} class="h-4 w-4 text-zinc-300" />
+					</button>
+
+					<button
+						title="Edit code"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						onclick={() => {
+							showEditor = !showEditor;
+						}}
+					>
+						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+					</button>
+				</div>
 			</div>
 
 			<div class="relative">
