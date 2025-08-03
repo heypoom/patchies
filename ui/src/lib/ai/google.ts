@@ -1,3 +1,5 @@
+import { GLEventBus, type GLPreviewFrameCapturedEvent } from '$lib/canvas/GLEventBus';
+import { GLSystem } from '$lib/canvas/GLSystem';
 import { GoogleGenAI, PersonGeneration, type ContentListUnion } from '@google/genai';
 
 export async function generateImageWithGemini(
@@ -47,10 +49,7 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 }
 
 export function createLLMFunction() {
-	return async (
-		prompt: string,
-		context?: { canvas?: HTMLCanvasElement; abortSignal?: AbortSignal }
-	) => {
+	return async (prompt: string, context?: { imageNodeId?: string; abortSignal?: AbortSignal }) => {
 		const apiKey = localStorage.getItem('gemini-api-key');
 
 		if (!apiKey) {
@@ -58,14 +57,19 @@ export function createLLMFunction() {
 		}
 
 		const ai = new GoogleGenAI({ apiKey });
-
 		const contents: ContentListUnion = [];
 
-		if (context?.canvas) {
-			const base64Image = await htmlCanvasToImage(context.canvas, 'image/jpeg', 0.4);
-			console.log('[llm] base64 image size:', base64Image.length);
+		// If there is a connected node that provides an image, we will include it in the request.
+		if (context?.imageNodeId !== undefined) {
+			const format = 'image/jpeg';
+			const bitmap = await capturePreviewFrame(context.imageNodeId);
 
-			contents.push({ inlineData: { mimeType: 'image/jpeg', data: base64Image } });
+			if (bitmap) {
+				const base64Image = await bitmapToBase64Image({ bitmap, format, quality: 0.7 });
+				console.log('[llm] base64 input image size:', base64Image.length);
+
+				contents.push({ inlineData: { mimeType: format, data: base64Image } });
+			}
 		}
 
 		contents.push({ text: prompt });
@@ -80,40 +84,53 @@ export function createLLMFunction() {
 	};
 }
 
-/**
- * Converts an HTML <canvas> element's content to a base64 encoded image string.
- *
- * @param {HTMLCanvasElement} canvas The canvas element to convert.
- * @param {string} [imageType='image/png'] The desired image format (e.g., 'image/png', 'image/jpeg').
- * @param {number} [quality=0.92] For 'image/jpeg' or 'image/webp', a number between 0 and 1 indicating the image quality.
- * @returns {string} A DOMString containing the data URL of the image represented by the canvas.
- * Returns an empty string if the canvas is not valid or an error occurs.
- */
-export async function htmlCanvasToImage(
-	canvas: HTMLCanvasElement,
-	imageType = 'image/jpeg',
-	quality = 0.92
+export function bitmapToBase64Image({
+	bitmap,
+	format = 'image/jpeg',
+	quality
+}: {
+	bitmap: ImageBitmap;
+	format?: string;
+	quality?: number;
+}): string {
+	const canvas = document.createElement('canvas');
+	canvas.width = bitmap.width;
+	canvas.height = bitmap.height;
+
+	const ctx = canvas.getContext('2d')!;
+	ctx.drawImage(bitmap, 0, 0);
+
+	return canvas.toDataURL(format, quality).replace(`data:${format};base64,`, '');
+}
+
+export async function capturePreviewFrame(
+	nodeId: string,
+	{ timeout = 10000 }: { timeout?: number } = {}
 ) {
-	if (!(canvas instanceof HTMLCanvasElement)) {
-		console.error('Invalid input: Provided element is not an HTMLCanvasElement.');
-		return '';
-	}
+	const glSystem = GLSystem.getInstance();
+	const requestId = Math.random().toString(36).substring(2, 15);
+	let timeoutHandle: number;
 
-	try {
-		let dataUrl = '';
+	return new Promise<ImageBitmap | null>((resolve) => {
+		const handleImageCaptured = (event: GLPreviewFrameCapturedEvent) => {
+			if (event.requestId !== requestId) return;
 
-		// Get the raw image data as a data URL (base64 encoded)
-		// The toDataURL() method is native to the Canvas API and directly outputs base64.
-		// For JPEG, the quality parameter is used.
-		if (imageType === 'image/jpeg' || imageType === 'image/webp') {
-			dataUrl = canvas.toDataURL(imageType, quality);
-		} else {
-			dataUrl = canvas.toDataURL(imageType);
-		}
+			clearInterval(timeoutHandle);
+			glSystem.eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
 
-		return dataUrl.replace('data:image/jpeg;base64,', '');
-	} catch (error) {
-		console.error('Error converting canvas to image:', error);
-		return '';
-	}
+			if (!event.success) return resolve(null);
+
+			resolve(event.bitmap ?? null);
+		};
+
+		glSystem.eventBus.addEventListener('previewFrameCaptured', handleImageCaptured);
+
+		// @ts-expect-error -- timeout type is wrong
+		timeoutHandle = setTimeout(() => {
+			glSystem.eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
+			resolve(null);
+		}, timeout);
+
+		glSystem.send('capturePreview', { nodeId, requestId });
+	});
 }

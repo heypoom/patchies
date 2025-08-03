@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -24,6 +24,8 @@
 
 	const prompt = $derived(data.prompt || '');
 	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
+
+	const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });
 
 	function handleMessage(message: Message) {
 		if (typeof message.data === 'string') {
@@ -65,12 +67,19 @@
 			const llmFunction = createLLMFunction();
 			abortController = new AbortController();
 
-			const context = { canvas: inputCanvases?.[0], abortSignal: abortController.signal };
+			const imageNodeId = targetConnections.current.find((conn) =>
+				conn.targetHandle?.startsWith('video-in')
+			)?.source;
 
-			const llmOutput = await llmFunction(prompt, context);
+			const llmOutput = await llmFunction(prompt, {
+				imageNodeId,
+				abortSignal: abortController.signal
+			});
+
 			generatedText = llmOutput ?? '';
 
-			messageContext.createSendFunction()(llmOutput);
+			const send = messageContext.createSendFunction();
+			send(llmOutput);
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		} finally {
@@ -96,7 +105,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -111,7 +120,7 @@
 					type="target"
 					position={Position.Top}
 					id="video-in"
-					class="!left-32 z-1"
+					class="z-1 !left-32"
 					title="Video input (optional)"
 				/>
 
@@ -131,7 +140,7 @@
 
 								<button
 									onclick={copyToClipboard}
-									class="absolute top-1 right-1 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+									class="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 									title="Copy to clipboard"
 								>
 									<Icon icon="lucide:copy" class="h-4 w-4 text-zinc-300" />

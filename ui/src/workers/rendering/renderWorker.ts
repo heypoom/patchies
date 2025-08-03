@@ -26,7 +26,8 @@ self.onmessage = (event) => {
 		.with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
 		.with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
 		.with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
-		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId));
+		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
+		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
@@ -102,6 +103,36 @@ function handleSetPreviewEnabled(nodeId: string, enabled: boolean) {
 
 function handleToggleNodePause(nodeId: string) {
 	fboRenderer.toggleNodePause(nodeId);
+}
+
+async function handleCapturePreview(nodeId: string, requestId?: string) {
+	const pixels = fboRenderer.getPreviewFrameCapture(nodeId);
+
+	if (pixels) {
+		const [width, height] = fboRenderer.previewSize;
+		const imageData = new ImageData(new Uint8ClampedArray(pixels.buffer), width, height);
+		const bitmap = await createImageBitmap(imageData);
+
+		self.postMessage(
+			{
+				type: 'previewFrameCaptured',
+				success: true,
+				nodeId,
+				requestId,
+				bitmap
+			},
+			{ transfer: [bitmap] }
+		);
+
+		return;
+	}
+
+	self.postMessage({
+		type: 'previewFrameCaptured',
+		success: false,
+		nodeId,
+		requestId
+	});
 }
 
 console.log('[render worker] hello');
