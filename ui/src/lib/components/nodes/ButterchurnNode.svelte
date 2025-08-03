@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import butterchurn from 'butterchurn';
 	import butterchurnPresets from 'butterchurn-presets';
@@ -17,7 +17,7 @@
 
 	const presets = butterchurnPresets.getPresets();
 
-	let canvasElement: HTMLCanvasElement;
+	let canvasElement = $state<HTMLCanvasElement | undefined>();
 	let errorMessage = $state<string | null>(null);
 	let isPlaying = $state(true);
 	let visualizer: any = null;
@@ -32,7 +32,11 @@
 
 		function render() {
 			visualizer.render();
-			glSystem.setBitmapSource(nodeId, canvasElement);
+
+			if (canvasElement) {
+				glSystem.setBitmapSource(nodeId, canvasElement);
+			}
+
 			frame = requestAnimationFrame(render);
 		}
 
@@ -46,18 +50,22 @@
 	};
 
 	onMount(() => {
+		// TODO: feed in audio context from the application.
+		// We cannot lift butterchurn to the video pipeline as audio context must be in the main thread.
 		const audioContext = new AudioContext();
 
-		const [previewWidth, previewHeight] = glSystem.previewSize;
-		canvasElement.width = previewWidth;
-		canvasElement.height = previewHeight;
+		if (canvasElement) {
+			const [previewWidth, previewHeight] = glSystem.previewSize;
+			canvasElement.width = previewWidth;
+			canvasElement.height = previewHeight;
 
-		const [outputWidth, outputHeight] = glSystem.outputSize;
+			const [outputWidth, outputHeight] = glSystem.outputSize;
 
-		visualizer = butterchurn.createVisualizer(audioContext, canvasElement, {
-			width: outputWidth / 2,
-			height: outputHeight / 2
-		});
+			visualizer = butterchurn.createVisualizer(audioContext, canvasElement, {
+				width: outputWidth / 2,
+				height: outputHeight / 2
+			});
+		}
 
 		glSystem.upsertNode(nodeId, 'img', {});
 	});
@@ -87,11 +95,8 @@
 	paused={!isPlaying}
 	showPauseButton={true}
 	{errorMessage}
+	bind:previewCanvas={canvasElement}
 >
-	{#snippet preview()}
-		<canvas bind:this={canvasElement} class="rounded-md bg-zinc-900 [&>canvas]:rounded-md"></canvas>
-	{/snippet}
-
 	{#snippet bottomHandle()}
 		<VideoHandle
 			type="source"
@@ -105,8 +110,8 @@
 	{#snippet codeEditor()}
 		<ButterchurnPresetSelect
 			value={currentPreset}
-			onchange={(newPreset) => {
-				updateNodeData(nodeId, { ...data, currentPreset: newPreset });
+			onchange={(nextPreset) => {
+				updateNodeData(nodeId, { ...data, currentPreset: nextPreset });
 			}}
 		/>
 	{/snippet}

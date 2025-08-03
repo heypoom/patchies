@@ -32,8 +32,8 @@
 		width?: string | number;
 		height?: string | number;
 
-		topHandle: Snippet;
-		bottomHandle: Snippet;
+		topHandle?: Snippet;
+		bottomHandle?: Snippet;
 		codeEditor: Snippet;
 	} = $props();
 </script>
