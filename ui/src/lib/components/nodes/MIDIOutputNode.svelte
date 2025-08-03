@@ -56,7 +56,8 @@
 	type MidiOutMessage =
 		| { type: 'bang' }
 		| ({ type: 'send' } & MIDIOutputConfig)
-		| ({ type: 'set' } & MIDIOutputConfig);
+		| ({ type: 'set' } & MIDIOutputConfig)
+		| ({ type: MIDIOutputConfig['event'] } & Exclude<MIDIOutputConfig, 'event'>);
 
 	function handleMessage(message: Message<MidiOutMessage>) {
 		match(message.data)
@@ -77,9 +78,18 @@
 			.with({ type: 'set' }, (m) => {
 				updateNodeData(nodeId, { ...data, ...m });
 			})
-			.otherwise(() => {
-				// Handle unknown message types
-			});
+			.with({ type: P.union('noteOn', 'noteOff', 'controlChange', 'programChange') }, (m) => {
+				const config = {
+					...data,
+					...m,
+					deviceId: m.deviceId ?? data.deviceId,
+					channel: m.channel ?? data.channel,
+					event: m.event ?? data.event
+				};
+
+				sendMidiMessage(config as MIDIOutputConfig);
+			})
+			.otherwise((message) => {});
 	}
 
 	async function sendMidiMessage(userConfig?: MIDIOutputConfig) {
@@ -153,7 +163,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
