@@ -691,11 +691,11 @@ export class FBORenderer {
 				texture.width,
 				texture.height,
 				0,
+				0,
 				previewWidth,
 				previewHeight,
-				0,
 				gl.COLOR_BUFFER_BIT,
-				gl.NEAREST
+				gl.LINEAR
 			);
 
 			pixels = this.regl.read();

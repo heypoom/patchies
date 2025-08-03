@@ -20,7 +20,6 @@
 	let isLoading = $state(false);
 	let generatedText = $state<string>('');
 	let abortController: AbortController | null = null;
-	let inputCanvases = $state<HTMLCanvasElement[]>([]);
 
 	const prompt = $derived(data.prompt || '');
 	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
