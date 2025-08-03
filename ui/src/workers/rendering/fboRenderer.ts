@@ -12,7 +12,7 @@ import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
-import type { Message } from '$lib/messages/MessageSystem';
+import type { Message, MessageCallback } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
 
 export class FBORenderer {
@@ -219,6 +219,16 @@ export class FBORenderer {
 			}
 		};
 
+		// Create SwissGL context with message passing support
+		const swglContext: SwissGLContext = {
+			glsl,
+			userRenderFunc: null,
+			swglTarget,
+			gl,
+			onMessage: () => {},
+			nodeId: node.id
+		};
+
 		// Parse user's render function from code
 		let userRenderFunc: ((params: { t: number }) => void) | null = null;
 
@@ -226,20 +236,39 @@ export class FBORenderer {
 			const wrappedGlsl = (shaderConfig: any, targetConfig: any = {}) =>
 				glsl(shaderConfig, { ...targetConfig, ...swglTarget });
 
+			// Create context with message passing functions
+			const context = {
+				glsl: wrappedGlsl,
+				
+				onMessage: (callback: MessageCallback) => {
+					swglContext.onMessage = callback;
+				},
+
+				send: (data: unknown) => {
+					self.postMessage({
+						type: 'sendMessageFromNode',
+						fromNodeId: node.id,
+						data
+					});
+				}
+			};
+
 			const funcBody = `
-				const glsl = arguments[0];
-				${node.data.code}
+				with (arguments[0]) {
+					${node.data.code}
+				}
 
 				return render;
 			`;
 
-			userRenderFunc = new Function(funcBody)(wrappedGlsl);
+			userRenderFunc = new Function(funcBody)(context);
 		} catch (error) {
 			console.error('Failed to parse SwissGL user code:', error);
 			return null;
 		}
 
-		this.swglByNode.set(node.id, { glsl, userRenderFunc, swglTarget, gl });
+		swglContext.userRenderFunc = userRenderFunc;
+		this.swglByNode.set(node.id, swglContext);
 
 		return {
 			render: (params) => {
@@ -599,6 +628,11 @@ export class FBORenderer {
 			if (!hydraRenderer) return;
 
 			hydraRenderer.onMessage(message);
+		} else if (node.type === 'swgl') {
+			const swglContext = this.swglByNode.get(nodeId);
+			if (!swglContext) return;
+
+			swglContext.onMessage(message);
 		}
 	}
 }

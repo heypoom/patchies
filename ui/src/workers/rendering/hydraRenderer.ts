@@ -4,7 +4,7 @@ import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import arrayUtils from 'hydra-ts/src/lib/array-utils';
-import type { Message, MessageCallback } from '$lib/messages/MessageSystem';
+import type { MessageCallback } from '$lib/messages/MessageSystem';
 
 // Initialize hydra array utilities.
 arrayUtils.init();

@@ -91,7 +91,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={toggleEditor}
 					title="Edit code"
 				>
@@ -103,7 +103,7 @@
 				<Handle
 					type="target"
 					position={Position.Top}
-					class="!left-16 z-1"
+					class="z-1"
 					id="message-in"
 					title="Message input"
 				/>
@@ -131,7 +131,7 @@
 					position={Position.Bottom}
 					id="message-out"
 					title="Message output"
-					class="!left-28 z-1"
+					class="z-1 !left-28"
 				/>
 			</div>
 		</div>
