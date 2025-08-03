@@ -177,7 +177,6 @@ function compileProgram(gl, vs, fs) {
 		}
 	}
 	gl.useProgram(null);
-	console.log('created', program);
 	return program;
 }
 
@@ -714,7 +713,6 @@ class TextureTarget extends TextureSampler {
 			const byteN = n * this.formatInfo.CpuArray.BYTES_PER_ELEMENT;
 			gl.bufferData(gl.PIXEL_PACK_BUFFER, byteN, gl.STREAM_READ);
 			gpuBuf.length = n;
-			console.log(`created/resized async gpu buffer "${this._tag}":`, gpuBuf);
 		}
 		return gpuBuf;
 	}
@@ -834,8 +832,6 @@ function ensureVertexArray(gl, neededSize) {
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 	gl.bindVertexArray(null);
-
-	console.log('created:', va);
 }
 
 function getTargetSize(gl, { size, scale = 1, data }) {
@@ -861,7 +857,6 @@ function prepareOwnTarget(self, spec) {
 	spec.size = getTargetSize(self.gl, spec);
 	if (!buffers[spec.tag]) {
 		const target = (buffers[spec.tag] = createTarget(self.gl, spec));
-		console.log('created', target);
 	}
 	const target = buffers[spec.tag];
 	const tex = Array.isArray(target) ? target[target.length - 1] : target;

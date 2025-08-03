@@ -223,7 +223,8 @@ export class FBORenderer {
 		let userRenderFunc: ((params: { t: number }) => void) | null = null;
 
 		try {
-			const wrappedGlsl = (params: any) => glsl(params, swglTarget);
+			const wrappedGlsl = (shaderConfig: any, targetConfig: any = {}) =>
+				glsl(shaderConfig, { ...targetConfig, ...swglTarget });
 
 			const funcBody = `
 				const glsl = arguments[0];
