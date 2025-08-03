@@ -41,49 +41,10 @@
 	}
 </script>
 
-<Popover.Root bind:open>
-	<Popover.Trigger bind:ref={triggerRef}>
-		{#snippet child({ props })}
-			<div>
-				<Button
-					variant="outline"
-					class="w-[200px] justify-between"
-					{...props}
-					role="combobox"
-					aria-expanded={open}
-				>
-					{selectedValue || 'Select preset...'}
-
-					<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
-				</Button>
-			</div>
-		{/snippet}
-	</Popover.Trigger>
-
-	<Popover.Content class="w-[200px] p-0">
-		<Command.Root>
-			<Command.Input placeholder="Search framework..." />
-			<Command.List>
-				<Command.Empty>No framework found.</Command.Empty>
-				<Command.Group>
-					{#each frameworks as framework}
-						<Command.Item
-							value={framework.value}
-							onSelect={() => {
-								if (onchange) {
-									onchange(framework.value);
-								}
-								closeAndFocusTrigger();
-							}}
-						>
-							<CheckIcon
-								class={cn('mr-2 size-4', value !== framework.value && 'text-transparent')}
-							/>
-							{framework.label}
-						</Command.Item>
-					{/each}
-				</Command.Group>
-			</Command.List>
-		</Command.Root>
-	</Popover.Content>
-</Popover.Root>
+<select {value} onchange={(e) => onchange?.(e.currentTarget.value)}>
+	{#each frameworks as framework (framework.value)}
+		<option value={framework.value} selected={framework.value === value}>
+			{framework.label}
+		</option>
+	{/each}
+</select>
