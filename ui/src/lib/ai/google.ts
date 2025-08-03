@@ -61,15 +61,12 @@ export function createLLMFunction() {
 
 		// If there is a connected node that provides an image, we will include it in the request.
 		if (context?.imageNodeId !== undefined) {
-			console.log(`[llm] capturing image of node ${context.imageNodeId}`);
-
 			const format = 'image/jpeg';
 			const bitmap = await capturePreviewFrame(context.imageNodeId);
-			console.log(`[llm] captured image of node ${context.imageNodeId}`, bitmap);
 
 			if (bitmap) {
 				const base64Image = await bitmapToBase64Image({ bitmap, format, quality: 0.7 });
-				console.log('[llm] base64 image size:', base64Image.length);
+				console.log('[llm] base64 input image size:', base64Image.length);
 
 				contents.push({ inlineData: { mimeType: format, data: base64Image } });
 			}
