@@ -11,7 +11,7 @@ import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { getFramebuffer } from './utils';
-import { isExternalTextureNode, type SwglState } from '$lib/canvas/node-types';
+import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
 
@@ -37,7 +37,7 @@ export class FBORenderer {
 	public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
 
 	private hydraByNode = new Map<string, HydraRenderer | null>();
-	private swglByNode = new Map<string, SwglState>();
+	private swglByNode = new Map<string, SwissGLContext>();
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
@@ -204,48 +204,31 @@ export class FBORenderer {
 		// Delete existing SwissGL renderer if it exists
 		if (this.swglByNode.has(node.id)) {
 			const existingSwgl = this.swglByNode.get(node.id);
-
-			// TODO: delete renderer
 			existingSwgl?.glsl.reset();
 		}
 
-		// Use the same WebGL2 context as our main renderer
 		const gl = this.regl._gl as WebGL2RenderingContext;
 		const glsl = SwissGL(gl);
 
-		// Create a framebuffer for SwissGL to render into
-		const swglFramebuffer = gl.createFramebuffer();
-		const swglTexture = gl.createTexture();
+		const destinationFramebuffer = getFramebuffer(framebuffer);
 
-		gl.bindTexture(gl.TEXTURE_2D, swglTexture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-		gl.bindFramebuffer(gl.FRAMEBUFFER, swglFramebuffer);
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, swglTexture, 0);
-
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-		gl.bindTexture(gl.TEXTURE_2D, null);
-
-		// Create a SwissGL-compatible target object that wraps our framebuffer
 		const swglTarget = {
 			bindTarget: (gl: WebGL2RenderingContext) => {
-				gl.bindFramebuffer(gl.FRAMEBUFFER, swglFramebuffer);
+				gl.bindFramebuffer(gl.FRAMEBUFFER, destinationFramebuffer);
 				return [width, height];
 			}
 		};
 
 		// Parse user's render function from code
 		let userRenderFunc: ((params: { t: number }) => void) | null = null;
+
 		try {
-			// Create a safe execution context for user code
-			// Wrap the original glsl function to automatically pass our target
 			const wrappedGlsl = (params: any) => glsl(params, swglTarget);
 
 			const funcBody = `
 				const glsl = arguments[0];
 				${node.data.code}
+
 				return render;
 			`;
 
@@ -255,61 +238,24 @@ export class FBORenderer {
 			return null;
 		}
 
-		this.swglByNode.set(node.id, {
-			glsl,
-			userRenderFunc,
-			swglFramebuffer,
-			swglTexture,
-			swglTarget,
-			gl
-		});
+		this.swglByNode.set(node.id, { glsl, userRenderFunc, swglTarget, gl });
 
 		return {
 			render: (params) => {
 				if (!userRenderFunc) return;
 
-				// SwissGL will handle framebuffer binding through our swglTarget
-				try {
-					userRenderFunc({ t: params.lastTime });
-				} catch (error) {
-					console.error('SwissGL render error:', error);
-					return;
-				}
-
-				// Use WebGL2 blitFramebuffer to copy to our target framebuffer
 				framebuffer.use(() => {
-					const targetFramebuffer = getFramebuffer(framebuffer);
-
-					gl.bindFramebuffer(gl.READ_FRAMEBUFFER, swglFramebuffer);
-					gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, targetFramebuffer);
-
-					gl.blitFramebuffer(
-						0,
-						0,
-						width,
-						height, // source rectangle
-						0,
-						0,
-						width,
-						height, // destination rectangle
-						gl.COLOR_BUFFER_BIT, // buffer mask
-						gl.NEAREST // filter
-					);
-
-					gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-					gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+					try {
+						userRenderFunc({ t: params.lastTime });
+					} catch (error) {
+						console.error('SwissGL render error:', error);
+					}
 				});
 			},
 			cleanup: () => {
-				const swglData = this.swglByNode.get(node.id);
-				if (swglData) {
-					if (swglData.glsl && swglData.glsl.reset) {
-						swglData.glsl.reset();
-					}
-					// Clean up WebGL resources
-					gl.deleteFramebuffer(swglData.swglFramebuffer);
-					gl.deleteTexture(swglData.swglTexture);
-				}
+				const swglContext = this.swglByNode.get(node.id);
+				swglContext?.glsl?.reset();
+
 				this.swglByNode.delete(node.id);
 			}
 		};
