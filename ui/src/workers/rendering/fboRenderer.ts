@@ -91,6 +91,7 @@ export class FBORenderer {
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
 				.with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
 				.with({ type: 'img' }, () => this.createEmptyRenderer())
+				.with({ type: 'bg.out' }, () => this.createEmptyRenderer())
 				.exhaustive();
 
 			// If the renderer function is null, we skip defining this node.
@@ -619,6 +620,7 @@ export class FBORenderer {
 
 		// Either update the existing texture or create a new one.
 		const nextTexture = texture ? texture(bitmap) : this.regl.texture(bitmap);
+
 		this.externalTexturesByNode.set(nodeId, nextTexture);
 	}
 

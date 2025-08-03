@@ -209,7 +209,7 @@
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 
-		autosaveInterval = setInterval(performAutosave, 30000);
+		autosaveInterval = setInterval(performAutosave, 10000);
 
 		return () => {
 			document.removeEventListener('keydown', handleGlobalKeydown);
