@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
+
 	import butterchurn from 'butterchurn';
 	import butterchurnPresets from 'butterchurn-presets';
 
@@ -9,8 +10,11 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 
-	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { currentPreset: string } } = $props();
+	let {
+		id: nodeId,
+		data,
+		selected
+	}: { id: string; data: { currentPreset: string }; selected: boolean } = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -96,6 +100,7 @@
 	showPauseButton={true}
 	{errorMessage}
 	bind:previewCanvas={canvasElement}
+	{selected}
 >
 	{#snippet bottomHandle()}
 		<VideoHandle
