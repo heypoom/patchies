@@ -1023,10 +1023,7 @@ function drawQuads(self, params, target) {
 	return target;
 }
 
-function SwissGL(canvas_gl) {
-	const gl = canvas_gl.getContext
-		? canvas_gl.getContext('webgl2', { alpha: false, antialias: true })
-		: canvas_gl;
+export function SwissGL(gl: WebGL2RenderingContext) {
 	gl.getExtension('EXT_color_buffer_float');
 	gl.getExtension('OES_texture_float_linear');
 	const ext = gl.getExtension('EXT_texture_filter_anisotropic');
@@ -1061,14 +1058,5 @@ function SwissGL(canvas_gl) {
 			canvas.height = h;
 		}
 	};
-	glsl.loop = (callback) => {
-		const frameFunc = (time) => {
-			const res = callback({ glsl, time: time / 1000.0 });
-			if (res != 'stop') requestAnimationFrame(frameFunc);
-		};
-		requestAnimationFrame(frameFunc);
-	};
 	return glsl;
 }
-
-self._SwissGL = SwissGL;
