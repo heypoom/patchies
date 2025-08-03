@@ -9,18 +9,16 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { Message } from '$lib/messages/MessageSystem';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
 
-	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
 
-	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
 	const messageContext = new MessageContext(nodeId);
 
 	let canvasElement: HTMLCanvasElement;
 	let glSystem = GLSystem.getInstance();
-	let showEditor = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isLoading = $state(false);
 	let hasImage = $state(false);
@@ -114,82 +112,52 @@
 			isLoading = false;
 		}
 	}
-
-	function toggleEditor() {
-		showEditor = !showEditor;
-	}
 </script>
 
-<div class="relative flex gap-x-3">
-	<div class="group relative">
-		<div class="flex flex-col gap-2">
-			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">ai.img</div>
+<ObjectPreviewLayout title="ai.img" onrun={generateImage}>
+	{#snippet topHandle()}
+		<Handle type="target" position={Position.Top} class="z-1" />
+	{/snippet}
+
+	{#snippet preview()}
+		<div class="relative">
+			{#if !hasImage || isLoading}
+				<div class="pointer-events-none absolute h-full w-full">
+					<div class="flex h-full items-center justify-center">
+						<Icon
+							icon={isLoading ? 'lucide:loader' : 'lucide:image'}
+							class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
+						/>
+					</div>
 				</div>
+			{/if}
 
-				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
-					onclick={toggleEditor}
-					title="Edit code"
-				>
-					<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
-				</button>
-			</div>
-
-			<div class="relative">
-				<Handle type="target" position={Position.Top} class="z-1" />
-
-				<div class="relative">
-					{#if !hasImage || isLoading}
-						<div class="pointer-events-none absolute h-full w-full">
-							<div class="flex h-full items-center justify-center">
-								<Icon
-									icon={isLoading ? 'lucide:loader' : 'lucide:image'}
-									class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
-								/>
-							</div>
-						</div>
-					{/if}
-
-					<canvas
-						bind:this={canvasElement}
-						width={800}
-						height={600}
-						class="h-[150px] w-[200px] rounded-md bg-zinc-900"
-					></canvas>
-				</div>
-
-				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
-			</div>
+			<canvas
+				bind:this={canvasElement}
+				width={800}
+				height={600}
+				class="h-[150px] w-[200px] rounded-md bg-zinc-900"
+			></canvas>
 		</div>
-	</div>
+	{/snippet}
 
-	{#if showEditor}
-		<div class="relative max-w-[350px]">
-			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={generateImage} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon={isLoading ? 'lucide:square' : 'lucide:play'} class="h-4 w-4 text-zinc-300" />
-				</button>
+	{#snippet bottomHandle()}
+		<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
+	{/snippet}
 
-				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
-				</button>
-			</div>
-
-			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-				<CodeEditor
-					value={prompt}
-					onchange={(newPrompt) => {
-						updateNodeData(nodeId, { ...data, prompt: newPrompt });
-					}}
-					language="text"
-					placeholder="Write your prompt here..."
-					class="nodrag h-64 w-full max-w-[350px] resize-none"
-					onrun={generateImage}
-					extraExtensions={[EditorView.lineWrapping]}
-				/>
-			</div>
+	{#snippet codeEditor()}
+		<div class="max-w-[350px]">
+			<CodeEditor
+				value={prompt}
+				onchange={(newPrompt) => {
+					updateNodeData(nodeId, { ...data, prompt: newPrompt });
+				}}
+				language="text"
+				placeholder="Write your prompt here..."
+				class="nodrag h-64 w-full max-w-[350px] resize-none"
+				onrun={generateImage}
+				extraExtensions={[EditorView.lineWrapping]}
+			/>
 
 			{#if errorMessage}
 				<div class="mt-2 px-2 py-1 font-mono text-xs text-red-300">
@@ -197,5 +165,5 @@
 				</div>
 			{/if}
 		</div>
-	{/if}
-</div>
+	{/snippet}
+</ObjectPreviewLayout>

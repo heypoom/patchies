@@ -242,7 +242,7 @@ export class FBORenderer {
 			// Create context with message passing functions
 			const context = {
 				glsl: wrappedGlsl,
-				
+
 				onMessage: (callback: MessageCallback) => {
 					swglContext.onMessage = callback;
 				},

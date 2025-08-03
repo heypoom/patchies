@@ -157,7 +157,7 @@ export class GLSystem {
 		if (!node) return;
 
 		// Cleanup persistent external texture.
-		if (isExternalTextureNode(node.type)) {
+		if (isExternalTextureNode(node.type as RenderNode['type'])) {
 			this.removeBitmap(nodeId);
 		}
 
@@ -221,7 +221,10 @@ export class GLSystem {
 
 				// re-create the context to accommodate the new size
 				delete this.previewCanvasContexts[nodeId];
-				this.previewCanvasContexts[nodeId] = canvas.getContext('bitmaprenderer')!;
+
+				this.previewCanvasContexts[nodeId] = canvas.getContext(
+					'bitmaprenderer'
+				) as ImageBitmapRenderingContext;
 			}
 		}
 
