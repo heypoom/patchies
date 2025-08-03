@@ -27,8 +27,6 @@
 	let visualizer: any = null;
 	let glSystem = GLSystem.getInstance();
 
-	const currentPreset = $derived(data.currentPreset || '');
-
 	let frame = 0;
 
 	const start = () => {
@@ -75,7 +73,7 @@
 	});
 
 	$effect(() => {
-		const preset = presets[currentPreset];
+		const preset = presets[data.currentPreset];
 
 		if (!preset) {
 			return;
@@ -114,7 +112,7 @@
 
 	{#snippet codeEditor()}
 		<ButterchurnPresetSelect
-			value={currentPreset}
+			value={data.currentPreset}
 			onchange={(nextPreset) => {
 				updateNodeData(nodeId, { ...data, currentPreset: nextPreset });
 			}}
