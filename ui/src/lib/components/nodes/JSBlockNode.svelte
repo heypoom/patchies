@@ -52,6 +52,8 @@
 			updateNodeData(nodeId, { ...data, code: message.data.code });
 		} else if (message.data.type === 'run') {
 			executeCode();
+		} else if (message.data.type === 'stop') {
+			stopLongRunningTasks();
 		}
 	}
 
@@ -188,7 +190,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={() => {
 							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
 						}}
@@ -198,7 +200,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -257,7 +259,7 @@
 							class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 						>
 							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your code to see results.</div>
+								<div class="italic text-zinc-500">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
 									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
