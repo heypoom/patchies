@@ -174,8 +174,7 @@
 			target instanceof HTMLTextAreaElement ||
 			target.closest('.cm-editor') ||
 			target.closest('.cm-content') ||
-			target.contentEditable === 'true' ||
-			target.closest('.svelte-flow__node');
+			target.contentEditable === 'true';
 
 		// Handle CMD+K for command palette
 		if (
