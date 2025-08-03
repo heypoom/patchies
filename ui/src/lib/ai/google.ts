@@ -1,3 +1,4 @@
+import { GLEventBus, type GLPreviewFrameCapturedEvent } from '$lib/canvas/GLEventBus';
 import { GoogleGenAI, PersonGeneration, type ContentListUnion } from '@google/genai';
 
 export async function generateImageWithGemini(
@@ -47,10 +48,7 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 }
 
 export function createLLMFunction() {
-	return async (
-		prompt: string,
-		context?: { imageConnected?: boolean; abortSignal?: AbortSignal }
-	) => {
+	return async (prompt: string, context?: { imageNodeId?: string; abortSignal?: AbortSignal }) => {
 		const apiKey = localStorage.getItem('gemini-api-key');
 
 		if (!apiKey) {
@@ -61,13 +59,16 @@ export function createLLMFunction() {
 		const contents: ContentListUnion = [];
 
 		// If there is a connected node that provides an image, we will include it in the request.
-		if (context?.imageConnected) {
+		if (context?.imageNodeId !== undefined) {
 			const format = 'image/jpeg';
-			const bitmap = null;
-			const base64Image = await bitmapToBase64Image({ bitmap, format, quality: 0.7 });
-			console.log('[llm] base64 image size:', base64Image.length);
+			const bitmap = await capturePreviewFrame(context.imageNodeId);
 
-			contents.push({ inlineData: { mimeType: format, data: base64Image } });
+			if (bitmap) {
+				const base64Image = await bitmapToBase64Image({ bitmap, format, quality: 0.7 });
+				console.log('[llm] base64 image size:', base64Image.length);
+
+				contents.push({ inlineData: { mimeType: format, data: base64Image } });
+			}
 		}
 
 		contents.push({ text: prompt });
@@ -96,7 +97,37 @@ export function bitmapToBase64Image({
 	canvas.height = bitmap.height;
 
 	const ctx = canvas.getContext('2d')!;
-	ctx.drawImage(bitmap, 0, 0); // Draw the ImageBitmap
+	ctx.drawImage(bitmap, 0, 0);
 
 	return canvas.toDataURL(format, quality).replace(`data:${format};base64,`, '');
+}
+
+export async function capturePreviewFrame(
+	nodeId: string,
+	{ timeout = 10000 }: { timeout?: number } = {}
+) {
+	const eventBus = GLEventBus.getInstance();
+	const requestId = Math.random().toString(36).substring(2, 15);
+	let timeoutHandle: number;
+
+	return new Promise<ImageBitmap | null>((resolve) => {
+		const handleImageCaptured = (event: GLPreviewFrameCapturedEvent) => {
+			if (event.requestId !== requestId) return;
+
+			clearInterval(timeoutHandle);
+			eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
+
+			if (!event.success) return resolve(null);
+
+			resolve(event.bitmap ?? null);
+		};
+
+		eventBus.addEventListener('previewFrameCaptured', handleImageCaptured);
+
+		// @ts-expect-error -- timeout type is wrong
+		timeoutHandle = setTimeout(() => {
+			eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
+			resolve(null);
+		}, timeout);
+	});
 }

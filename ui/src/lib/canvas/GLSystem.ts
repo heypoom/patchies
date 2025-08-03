@@ -9,6 +9,7 @@ import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
+import { GLEventBus } from './GLEventBus';
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
@@ -16,6 +17,7 @@ export class GLSystem {
 
 	public ipcSystem = IpcSystem.getInstance();
 	public messageSystem = MessageSystem.getInstance();
+	public eventBus = GLEventBus.getInstance();
 
 	/** Rendering context for the background output that covers the entire screen. */
 	public backgroundOutputCanvasContext: ImageBitmapRenderingContext | null = null;
@@ -92,9 +94,7 @@ export class GLSystem {
 
 		// A block has requested a preview frame capture from a node.
 		if (data.type === 'previewFrameCaptured') {
-			const { success, nodeId, requestId, buffer } = data;
-
-			// TODO: send the captured frame to the requester
+			this.eventBus.dispatch(data);
 		}
 	};
 
