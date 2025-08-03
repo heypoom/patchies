@@ -49,7 +49,7 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 export function createLLMFunction() {
 	return async (
 		prompt: string,
-		context?: { canvas?: HTMLCanvasElement; abortSignal?: AbortSignal }
+		context?: { imageConnected?: boolean; abortSignal?: AbortSignal }
 	) => {
 		const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -58,14 +58,16 @@ export function createLLMFunction() {
 		}
 
 		const ai = new GoogleGenAI({ apiKey });
-
 		const contents: ContentListUnion = [];
 
-		if (context?.canvas) {
-			const base64Image = await htmlCanvasToImage(context.canvas, 'image/jpeg', 0.4);
+		// If there is a connected node that provides an image, we will include it in the request.
+		if (context?.imageConnected) {
+			const format = 'image/jpeg';
+			const bitmap = null;
+			const base64Image = await bitmapToBase64Image({ bitmap, format, quality: 0.7 });
 			console.log('[llm] base64 image size:', base64Image.length);
 
-			contents.push({ inlineData: { mimeType: 'image/jpeg', data: base64Image } });
+			contents.push({ inlineData: { mimeType: format, data: base64Image } });
 		}
 
 		contents.push({ text: prompt });
@@ -80,40 +82,21 @@ export function createLLMFunction() {
 	};
 }
 
-/**
- * Converts an HTML <canvas> element's content to a base64 encoded image string.
- *
- * @param {HTMLCanvasElement} canvas The canvas element to convert.
- * @param {string} [imageType='image/png'] The desired image format (e.g., 'image/png', 'image/jpeg').
- * @param {number} [quality=0.92] For 'image/jpeg' or 'image/webp', a number between 0 and 1 indicating the image quality.
- * @returns {string} A DOMString containing the data URL of the image represented by the canvas.
- * Returns an empty string if the canvas is not valid or an error occurs.
- */
-export async function htmlCanvasToImage(
-	canvas: HTMLCanvasElement,
-	imageType = 'image/jpeg',
-	quality = 0.92
-) {
-	if (!(canvas instanceof HTMLCanvasElement)) {
-		console.error('Invalid input: Provided element is not an HTMLCanvasElement.');
-		return '';
-	}
+export function bitmapToBase64Image({
+	bitmap,
+	format = 'image/jpeg',
+	quality
+}: {
+	bitmap: ImageBitmap;
+	format?: string;
+	quality?: number;
+}): string {
+	const canvas = document.createElement('canvas');
+	canvas.width = bitmap.width;
+	canvas.height = bitmap.height;
 
-	try {
-		let dataUrl = '';
+	const ctx = canvas.getContext('2d')!;
+	ctx.drawImage(bitmap, 0, 0); // Draw the ImageBitmap
 
-		// Get the raw image data as a data URL (base64 encoded)
-		// The toDataURL() method is native to the Canvas API and directly outputs base64.
-		// For JPEG, the quality parameter is used.
-		if (imageType === 'image/jpeg' || imageType === 'image/webp') {
-			dataUrl = canvas.toDataURL(imageType, quality);
-		} else {
-			dataUrl = canvas.toDataURL(imageType);
-		}
-
-		return dataUrl.replace('data:image/jpeg;base64,', '');
-	} catch (error) {
-		console.error('Error converting canvas to image:', error);
-		return '';
-	}
+	return canvas.toDataURL(format, quality).replace(`data:${format};base64,`, '');
 }

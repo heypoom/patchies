@@ -463,7 +463,7 @@ export class FBORenderer {
 	/**
 	 * Render a single node's preview using regl.read() as per spec
 	 */
-	private renderNodePreview(fboNode: FBONode): Uint8Array | null {
+	public renderNodePreview(fboNode: FBONode): Uint8Array | null {
 		const [previewWidth, previewHeight] = this.previewSize;
 		const [renderWidth, renderHeight] = this.outputSize;
 
@@ -653,5 +653,54 @@ export class FBORenderer {
 
 			swglContext.onMessage(message);
 		}
+	}
+
+	getFboNodeById(nodeId: string): FBONode | undefined {
+		return this.fboNodes.get(nodeId);
+	}
+
+	/** Captures the preview frame of a node. Also handles persistent data. */
+	getPreviewFrameCapture(nodeId: string): Uint8Array | null {
+		const externalTexture = this.externalTexturesByNode.get(nodeId);
+		if (externalTexture) return this.getTexturePreview(externalTexture);
+
+		const fboNode = this.fboNodes.get(nodeId);
+		if (!fboNode) return null;
+
+		return this.renderNodePreview(fboNode);
+	}
+
+	getTexturePreview(texture: regl.Texture2D): Uint8Array {
+		const [previewWidth, previewHeight] = this.previewSize;
+
+		const sourceFbo = this.regl.framebuffer({ color: texture });
+		const previewFbo = this.regl.framebuffer({ width: previewWidth, height: previewHeight });
+		const gl = this.regl._gl as WebGL2RenderingContext;
+
+		let pixels: Uint8Array;
+
+		previewFbo.use(() => {
+			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo));
+			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(previewFbo));
+
+			gl.blitFramebuffer(
+				0,
+				0,
+				texture.width,
+				texture.height,
+				0,
+				previewWidth,
+				previewHeight,
+				0,
+				gl.COLOR_BUFFER_BIT,
+				gl.NEAREST
+			);
+
+			pixels = this.regl.read();
+		});
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		return pixels!;
 	}
 }

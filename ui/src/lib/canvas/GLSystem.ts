@@ -89,6 +89,13 @@ export class GLSystem {
 		if (data.type === 'sendMessageFromNode') {
 			this.messageSystem.sendMessage(data.fromNodeId, data.data);
 		}
+
+		// A block has requested a preview frame capture from a node.
+		if (data.type === 'previewFrameCaptured') {
+			const { success, nodeId, requestId, buffer } = data;
+
+			// TODO: send the captured frame to the requester
+		}
 	};
 
 	start() {
