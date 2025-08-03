@@ -11,8 +11,9 @@ import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { getFramebuffer } from './utils';
-import { isExternalTextureNode } from '$lib/canvas/node-types';
+import { isExternalTextureNode, type SwglState } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
+import { SwissGL } from '$lib/rendering/swissgl';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -36,6 +37,7 @@ export class FBORenderer {
 	public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
 
 	private hydraByNode = new Map<string, HydraRenderer | null>();
+	private swglByNode = new Map<string, SwglState>();
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
@@ -84,6 +86,7 @@ export class FBORenderer {
 			const renderer = match(node)
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
+				.with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
 				.with({ type: 'img' }, () => this.createEmptyRenderer())
 				.exhaustive();
 
@@ -187,6 +190,123 @@ export class FBORenderer {
 		return {
 			render: (params) => renderCommand(params),
 			cleanup: () => {}
+		};
+	}
+
+	createSwglRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): { render: RenderFunction; cleanup: () => void } | null {
+		if (node.type !== 'swgl') return null;
+
+		const [width, height] = this.outputSize;
+
+		// Delete existing SwissGL renderer if it exists
+		if (this.swglByNode.has(node.id)) {
+			const existingSwgl = this.swglByNode.get(node.id);
+
+			// TODO: delete renderer
+		}
+
+		// Create a temporary canvas for SwissGL
+		const canvas = new OffscreenCanvas(width, height);
+		const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
+
+		if (!gl) {
+			console.error('Could not create WebGL2 context for SwissGL');
+			return null;
+		}
+
+		const glsl = SwissGL(gl);
+
+		// Parse user's render function from code
+		let userRenderFunc: ((params: { t: number }) => void) | null = null;
+		try {
+			// Create a safe execution context for user code
+			const funcBody = `
+				const glsl = arguments[0];
+				${node.data.code}
+				return render;
+			`;
+			userRenderFunc = new Function(funcBody)(glsl);
+		} catch (error) {
+			console.error('Failed to parse SwissGL user code:', error);
+			return null;
+		}
+
+		this.swglByNode.set(node.id, { glsl, userRenderFunc, canvas, gl });
+
+		return {
+			render: (params) => {
+				if (!userRenderFunc) return;
+
+				// Render to SwissGL's canvas
+				try {
+					userRenderFunc({ t: params.lastTime });
+				} catch (error) {
+					console.error('SwissGL render error:', error);
+					return;
+				}
+
+				// Copy SwissGL result to our framebuffer
+				framebuffer.use(() => {
+					const reglGL = this.regl._gl as WebGL2RenderingContext;
+
+					// Get ImageBitmap from SwissGL canvas
+					const imageBitmap = canvas.transferToImageBitmap();
+
+					// Create texture from ImageBitmap
+					const sourceTexture = this.regl.texture({
+						data: imageBitmap as any,
+						min: 'linear',
+						mag: 'linear'
+					});
+
+					// Simple pass-through shader to copy the texture
+					const copyShader = this.regl({
+						vert: `
+							precision mediump float;
+							attribute vec2 position;
+							varying vec2 uv;
+							void main() {
+								uv = position * 0.5 + 0.5;
+								gl_Position = vec4(position, 0, 1);
+							}
+						`,
+						frag: `
+							precision mediump float;
+							varying vec2 uv;
+							uniform sampler2D tex;
+							void main() {
+								gl_FragColor = texture2D(tex, uv);
+							}
+						`,
+						attributes: {
+							position: [
+								[-1, -1],
+								[1, -1],
+								[-1, 1],
+								[1, 1]
+							]
+						},
+						uniforms: {
+							tex: sourceTexture
+						},
+						primitive: 'triangle strip',
+						count: 4
+					});
+
+					copyShader();
+					sourceTexture.destroy();
+				});
+			},
+			cleanup: () => {
+				const swglData = this.swglByNode.get(node.id);
+				if (swglData && swglData.glsl && swglData.glsl.reset) {
+					swglData.glsl.reset();
+				}
+				this.swglByNode.delete(node.id);
+			}
 		};
 	}
 
