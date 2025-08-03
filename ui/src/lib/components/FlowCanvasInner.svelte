@@ -14,6 +14,7 @@
 	import HydraNode from './nodes/HydraNode.svelte';
 	import JSCanvasNode from './nodes/JSCanvasNode.svelte';
 	import GLSLCanvasNode from './nodes/GLSLCanvasNode.svelte';
+	import SwissGLNode from './nodes/SwissGLNode.svelte';
 	import StrudelNode from './nodes/StrudelNode.svelte';
 	import ObjectPalette from './ObjectPalette.svelte';
 	import CommandPalette from './CommandPalette.svelte';
@@ -47,6 +48,7 @@
 		['p5']: P5CanvasNode,
 		['js']: JSBlockNode,
 		['hydra']: HydraNode,
+		['swgl']: SwissGLNode,
 		['canvas']: JSCanvasNode,
 		['glsl']: GLSLCanvasNode,
 		['strudel']: StrudelNode,

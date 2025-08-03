@@ -46,3 +46,12 @@ function draw() {
 }
 
 draw()`;
+
+export const DEFAULT_SWISSGL_CODE = `function render({t}) {
+  glsl({
+    t,
+    Mesh: [10, 10],
+    VP: \`XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1\`,
+    FP: \`UV,0.5,1\`,
+  })
+}`;
