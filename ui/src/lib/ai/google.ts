@@ -1,4 +1,5 @@
 import { GLEventBus, type GLPreviewFrameCapturedEvent } from '$lib/canvas/GLEventBus';
+import { GLSystem } from '$lib/canvas/GLSystem';
 import { GoogleGenAI, PersonGeneration, type ContentListUnion } from '@google/genai';
 
 export async function generateImageWithGemini(
@@ -60,8 +61,11 @@ export function createLLMFunction() {
 
 		// If there is a connected node that provides an image, we will include it in the request.
 		if (context?.imageNodeId !== undefined) {
+			console.log(`[llm] capturing image of node ${context.imageNodeId}`);
+
 			const format = 'image/jpeg';
 			const bitmap = await capturePreviewFrame(context.imageNodeId);
+			console.log(`[llm] captured image of node ${context.imageNodeId}`, bitmap);
 
 			if (bitmap) {
 				const base64Image = await bitmapToBase64Image({ bitmap, format, quality: 0.7 });
@@ -106,7 +110,7 @@ export async function capturePreviewFrame(
 	nodeId: string,
 	{ timeout = 10000 }: { timeout?: number } = {}
 ) {
-	const eventBus = GLEventBus.getInstance();
+	const glSystem = GLSystem.getInstance();
 	const requestId = Math.random().toString(36).substring(2, 15);
 	let timeoutHandle: number;
 
@@ -115,19 +119,21 @@ export async function capturePreviewFrame(
 			if (event.requestId !== requestId) return;
 
 			clearInterval(timeoutHandle);
-			eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
+			glSystem.eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
 
 			if (!event.success) return resolve(null);
 
 			resolve(event.bitmap ?? null);
 		};
 
-		eventBus.addEventListener('previewFrameCaptured', handleImageCaptured);
+		glSystem.eventBus.addEventListener('previewFrameCaptured', handleImageCaptured);
 
 		// @ts-expect-error -- timeout type is wrong
 		timeoutHandle = setTimeout(() => {
-			eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
+			glSystem.eventBus.removeEventListener('previewFrameCaptured', handleImageCaptured);
 			resolve(null);
 		}, timeout);
+
+		glSystem.send('capturePreview', { nodeId, requestId });
 	});
 }
