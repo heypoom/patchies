@@ -36,7 +36,6 @@ In SwissGL's example code snippet, a SwissGL code looks like this:
 However, we will simplify this in our `swgl` block. This is the code block:
 
 ```javascript
-// Inputs: { t: number }
 function render({t}) {
   glsl({
     t,

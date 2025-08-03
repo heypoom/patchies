@@ -206,41 +206,69 @@ export class FBORenderer {
 			const existingSwgl = this.swglByNode.get(node.id);
 
 			// TODO: delete renderer
+			existingSwgl?.glsl.reset();
 		}
 
-		// Create a temporary canvas for SwissGL
-		const canvas = new OffscreenCanvas(width, height);
-		const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
-
-		if (!gl) {
-			console.error('Could not create WebGL2 context for SwissGL');
-			return null;
-		}
-
+		// Use the same WebGL2 context as our main renderer
+		const gl = this.regl._gl as WebGL2RenderingContext;
 		const glsl = SwissGL(gl);
+
+		// Create a framebuffer for SwissGL to render into
+		const swglFramebuffer = gl.createFramebuffer();
+		const swglTexture = gl.createTexture();
+
+		gl.bindTexture(gl.TEXTURE_2D, swglTexture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, swglFramebuffer);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, swglTexture, 0);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+
+		// Create a SwissGL-compatible target object that wraps our framebuffer
+		const swglTarget = {
+			bindTarget: (gl: WebGL2RenderingContext) => {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, swglFramebuffer);
+				return [width, height];
+			}
+		};
 
 		// Parse user's render function from code
 		let userRenderFunc: ((params: { t: number }) => void) | null = null;
 		try {
 			// Create a safe execution context for user code
+			// Wrap the original glsl function to automatically pass our target
+			const wrappedGlsl = (params: any) => glsl(params, swglTarget);
+
 			const funcBody = `
 				const glsl = arguments[0];
 				${node.data.code}
 				return render;
 			`;
-			userRenderFunc = new Function(funcBody)(glsl);
+
+			userRenderFunc = new Function(funcBody)(wrappedGlsl);
 		} catch (error) {
 			console.error('Failed to parse SwissGL user code:', error);
 			return null;
 		}
 
-		this.swglByNode.set(node.id, { glsl, userRenderFunc, canvas, gl });
+		this.swglByNode.set(node.id, {
+			glsl,
+			userRenderFunc,
+			swglFramebuffer,
+			swglTexture,
+			swglTarget,
+			gl
+		});
 
 		return {
 			render: (params) => {
 				if (!userRenderFunc) return;
 
-				// Render to SwissGL's canvas
+				// SwissGL will handle framebuffer binding through our swglTarget
 				try {
 					userRenderFunc({ t: params.lastTime });
 				} catch (error) {
@@ -248,62 +276,39 @@ export class FBORenderer {
 					return;
 				}
 
-				// Copy SwissGL result to our framebuffer
+				// Use WebGL2 blitFramebuffer to copy to our target framebuffer
 				framebuffer.use(() => {
-					const reglGL = this.regl._gl as WebGL2RenderingContext;
+					const targetFramebuffer = getFramebuffer(framebuffer);
 
-					// Get ImageBitmap from SwissGL canvas
-					const imageBitmap = canvas.transferToImageBitmap();
+					gl.bindFramebuffer(gl.READ_FRAMEBUFFER, swglFramebuffer);
+					gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, targetFramebuffer);
 
-					// Create texture from ImageBitmap
-					const sourceTexture = this.regl.texture({
-						data: imageBitmap as any,
-						min: 'linear',
-						mag: 'linear'
-					});
+					gl.blitFramebuffer(
+						0,
+						0,
+						width,
+						height, // source rectangle
+						0,
+						0,
+						width,
+						height, // destination rectangle
+						gl.COLOR_BUFFER_BIT, // buffer mask
+						gl.NEAREST // filter
+					);
 
-					// Simple pass-through shader to copy the texture
-					const copyShader = this.regl({
-						vert: `
-							precision mediump float;
-							attribute vec2 position;
-							varying vec2 uv;
-							void main() {
-								uv = position * 0.5 + 0.5;
-								gl_Position = vec4(position, 0, 1);
-							}
-						`,
-						frag: `
-							precision mediump float;
-							varying vec2 uv;
-							uniform sampler2D tex;
-							void main() {
-								gl_FragColor = texture2D(tex, uv);
-							}
-						`,
-						attributes: {
-							position: [
-								[-1, -1],
-								[1, -1],
-								[-1, 1],
-								[1, 1]
-							]
-						},
-						uniforms: {
-							tex: sourceTexture
-						},
-						primitive: 'triangle strip',
-						count: 4
-					});
-
-					copyShader();
-					sourceTexture.destroy();
+					gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+					gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 				});
 			},
 			cleanup: () => {
 				const swglData = this.swglByNode.get(node.id);
-				if (swglData && swglData.glsl && swglData.glsl.reset) {
-					swglData.glsl.reset();
+				if (swglData) {
+					if (swglData.glsl && swglData.glsl.reset) {
+						swglData.glsl.reset();
+					}
+					// Clean up WebGL resources
+					gl.deleteFramebuffer(swglData.swglFramebuffer);
+					gl.deleteTexture(swglData.swglTexture);
 				}
 				this.swglByNode.delete(node.id);
 			}

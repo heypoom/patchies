@@ -47,8 +47,7 @@ function draw() {
 
 draw()`;
 
-export const DEFAULT_SWISSGL_CODE = `// Inputs: { t: number }
-function render({t}) {
+export const DEFAULT_SWISSGL_CODE = `function render({t}) {
   glsl({
     t,
     Mesh: [10, 10],
