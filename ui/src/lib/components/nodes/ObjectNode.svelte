@@ -2,6 +2,7 @@
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount } from 'svelte';
 	import { nodeNames } from '$lib/nodes/node-types';
+	import { getObjectNames } from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 
 	let {
@@ -19,7 +20,15 @@
 	let selectedSuggestion = $state(0);
 	let originalName = data.name || ''; // Store original name for escape functionality
 
-	const objectNames = nodeNames;
+	// Combine visual node names and text-only object names for autocomplete
+	const allObjectNames = $derived.by(() => {
+		const objectDefNames = getObjectNames();
+		const visualNodeList = [...nodeNames];
+		
+		// Combine both lists, removing duplicates and ensuring visual nodes take precedence
+		const combined = new Set([...visualNodeList, ...objectDefNames]);
+		return Array.from(combined).sort();
+	});
 
 	// Visual nodes that should be transformed when typed
 	const visualNodeMappings = {
@@ -46,7 +55,7 @@
 		if (!isEditing || !name || name.length === 0) {
 			return [];
 		}
-		return objectNames
+		return allObjectNames
 			.filter((objName) => objName.toLowerCase().startsWith(name.toLowerCase()))
 			.slice(0, 6); // Show max 6 suggestions
 	});
@@ -162,6 +171,7 @@
 		name = suggestion;
 		showAutocomplete = false;
 		exitEditingMode(true);
+
 		// Try transformation after setting the name
 		setTimeout(() => tryTransformToVisualNode(), 0);
 	}
@@ -220,7 +230,7 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute top-full left-0 z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-600 bg-zinc-800 shadow-xl"
+								class="absolute left-0 top-full z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-600 bg-zinc-800 shadow-xl"
 							>
 								{#each filteredSuggestions as suggestion, index}
 									<button

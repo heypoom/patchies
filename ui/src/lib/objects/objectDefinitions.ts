@@ -81,6 +81,17 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		category: 'debug'
 	},
 
+	// Oscillator objects
+	osc: {
+		inlets: [
+			{ name: 'frequency', type: 'float', description: 'Oscillator frequency in Hz' },
+			{ name: 'amplitude', type: 'float', description: 'Oscillator amplitude (0-1)' }
+		],
+		outlets: [{ name: 'out', type: 'float', description: 'Oscillator output' }],
+		description: 'Sine wave oscillator',
+		category: 'audio'
+	},
+
 	// Visual node aliases that will transform to actual visual nodes
 	bang: {
 		inlets: [],
