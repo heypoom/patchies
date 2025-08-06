@@ -8,7 +8,8 @@
 		{
 			category: 'Navigation',
 			items: [
-				{ key: 'N', description: 'Create new node at cursor position' },
+				{ key: 'N', description: 'Insert an object at cursor position' },
+				{ key: 'O', description: 'Search for nodes to insert at cursor position' },
 				{ key: 'Cmd + K', description: 'Open command palette' }
 			]
 		},

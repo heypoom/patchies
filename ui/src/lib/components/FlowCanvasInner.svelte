@@ -190,16 +190,28 @@
 			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 			showCommandPalette = true;
 		} else if (
+			event.key.toLowerCase() === 'o' &&
+			!$isObjectPaletteVisible &&
+			!showCommandPalette &&
+			!isTyping
+		) {
+			// Handle 'o' key for object palette
+			event.preventDefault();
+
+			// Convert screen coordinates to flow coordinates for accurate node placement
+			$isObjectPaletteVisible = true;
+		} else if (
 			event.key.toLowerCase() === 'n' &&
 			!$isObjectPaletteVisible &&
 			!showCommandPalette &&
 			!isTyping
 		) {
-			// Handle 'n' key for object palette
+			// Handle 'n' key for direct object node insertion
 			event.preventDefault();
 
-			// Convert screen coordinates to flow coordinates for accurate node placement
-			$isObjectPaletteVisible = true;
+			// Create object node at last mouse position (same pattern as ObjectPalette)
+			const position = screenToFlowPosition(lastMousePosition);
+			createNode('object', position);
 		}
 	}
 

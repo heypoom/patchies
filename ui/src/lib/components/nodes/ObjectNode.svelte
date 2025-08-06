@@ -2,6 +2,7 @@
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount } from 'svelte';
 	import { getObjectNames } from '$lib/objects/objectDefinitions';
+	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 
 	let {
 		id: nodeId,
@@ -9,7 +10,7 @@
 		selected
 	}: { id: string; data: { name: string }; selected: boolean } = $props();
 
-	const { updateNodeData, deleteElements } = useSvelteFlow();
+	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
 
 	let inputElement = $state<HTMLInputElement>();
 	let name = $state(data.name || '');
@@ -19,6 +20,20 @@
 	let originalName = name; // Store original name for escape functionality
 
 	const objectNames = getObjectNames();
+
+	// Visual nodes that should be transformed when typed
+	const visualNodeMappings = {
+		bang: 'bang',
+		msg: 'msg',
+		bchrn: 'bchrn',
+		p5: 'p5',
+		js: 'js',
+		hydra: 'hydra',
+		swgl: 'swgl',
+		canvas: 'canvas',
+		glsl: 'glsl',
+		strudel: 'strudel'
+	};
 
 	const filteredSuggestions = $derived.by(() => {
 		if (!isEditing || !name || name.length === 0) {
@@ -44,15 +59,47 @@
 		if (!save) {
 			// Restore original name on escape
 			name = originalName;
+
+			// If the original name was empty, delete the node
+			if (!originalName.trim()) {
+				deleteElements({ nodes: [{ id: nodeId }] });
+				return;
+			}
 		}
 
-		if (save && name) {
-			handleNameChange();
+		if (save) {
+			if (name.trim()) {
+				handleNameChange();
+				// Try transformation after a short delay to ensure the name is saved
+				setTimeout(() => tryTransformToVisualNode(), 50);
+			} else {
+				// If trying to save with empty name, delete the node
+				deleteElements({ nodes: [{ id: nodeId }] });
+			}
 		}
 	}
 
 	function handleNameChange() {
 		updateNodeData(nodeId, { ...data, name });
+
+		// Check if this should transform to a visual node
+		tryTransformToVisualNode();
+	}
+
+	function tryTransformToVisualNode() {
+		const trimmedName = name.trim().toLowerCase();
+		const targetNodeType = visualNodeMappings[trimmedName as keyof typeof visualNodeMappings];
+
+		if (targetNodeType) {
+			// Transform this object node to the target visual node type
+			const defaultData = getDefaultNodeData(targetNodeType);
+
+			// Update the node type and data
+			updateNode(nodeId, {
+				type: targetNodeType,
+				data: defaultData
+			});
+		}
 	}
 
 	function handleInput() {
@@ -108,6 +155,8 @@
 		name = suggestion;
 		showAutocomplete = false;
 		exitEditingMode(true);
+		// Try transformation after setting the name
+		setTimeout(() => tryTransformToVisualNode(), 0);
 	}
 
 	function handleBlur() {
@@ -149,22 +198,22 @@
 				<div class="relative">
 					{#if isEditing}
 						<!-- Editing state: show input field -->
-						<div class={['min-w-24 rounded-lg border bg-zinc-900', borderColor]}>
+						<div class={['rounded-lg border bg-zinc-900', borderColor]}>
 							<input
 								bind:this={inputElement}
 								bind:value={name}
 								oninput={handleInput}
 								onblur={handleBlur}
 								onkeydown={handleKeydown}
-								placeholder="object"
-								class="nodrag w-full bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
+								placeholder="<name>"
+								class="nodrag bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
 							/>
 						</div>
 
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute left-0 top-full z-50 mt-1 w-full min-w-32 rounded-md border border-zinc-600 bg-zinc-800 shadow-xl"
+								class="absolute top-full left-0 z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-600 bg-zinc-800 shadow-xl"
 							>
 								{#each filteredSuggestions as suggestion, index}
 									<button
@@ -195,7 +244,7 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="font-mono text-xs text-zinc-200">
-								{name || 'object'}
+								{name}
 							</div>
 						</div>
 					{/if}
