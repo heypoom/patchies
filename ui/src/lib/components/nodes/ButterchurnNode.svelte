@@ -9,6 +9,7 @@
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 
 	let {
 		id: nodeId,
@@ -26,6 +27,7 @@
 	let isPlaying = $state(true);
 	let visualizer: any = null;
 	let glSystem = GLSystem.getInstance();
+	let audioSystem = AudioSystem.getInstance();
 
 	let frame = 0;
 
@@ -52,10 +54,6 @@
 	};
 
 	onMount(() => {
-		// TODO: feed in audio context from the application.
-		// We cannot lift butterchurn to the video pipeline as audio context must be in the main thread.
-		const audioContext = new AudioContext();
-
 		if (canvasElement) {
 			const [previewWidth, previewHeight] = glSystem.previewSize;
 			canvasElement.width = previewWidth;
@@ -63,7 +61,7 @@
 
 			const [outputWidth, outputHeight] = glSystem.outputSize;
 
-			visualizer = butterchurn.createVisualizer(audioContext, canvasElement, {
+			visualizer = butterchurn.createVisualizer(audioSystem.audioContext, canvasElement, {
 				width: outputWidth / 2,
 				height: outputHeight / 2
 			});

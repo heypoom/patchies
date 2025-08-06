@@ -3,7 +3,7 @@
 	import { silence } from '@strudel/core';
 	import { getDrawContext } from '@strudel/draw';
 	import { transpiler } from '@strudel/transpiler';
-	import { getAudioContext, webaudioOutput } from '@strudel/webaudio';
+	import { webaudioOutput } from '@strudel/webaudio';
 	import {
 		StrudelMirror,
 		codemirrorSettings,
@@ -13,6 +13,7 @@
 	import { prebake } from '$lib/strudel/prebake';
 	import { Prec, StateEffect } from '@codemirror/state';
 	import { keymap, EditorView } from '@codemirror/view';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 
 	let {
 		code = '',
@@ -34,6 +35,7 @@
 
 	let containerElement: HTMLElement;
 	let editor: StrudelMirror | null = null;
+	let audioSystem = AudioSystem.getInstance();
 
 	for (const key in themeSettings) {
 		themeSettings[key].background = 'transparent';
@@ -52,7 +54,7 @@
 
 		editor = new StrudelMirror({
 			defaultOutput: webaudioOutput,
-			getTime: () => getAudioContext().currentTime,
+			getTime: () => audioSystem.audioContext.currentTime,
 			transpiler,
 			root: containerElement,
 			initialCode: '// loading...',

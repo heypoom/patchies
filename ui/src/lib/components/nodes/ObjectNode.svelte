@@ -4,6 +4,7 @@
 	import { nodeNames } from '$lib/nodes/node-types';
 	import { getObjectNames, getObjectDefinition } from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 
 	let {
 		id: nodeId,
@@ -19,6 +20,8 @@
 	let showAutocomplete = $state(false);
 	let selectedSuggestion = $state(0);
 	let originalName = data.name || ''; // Store original name for escape functionality
+
+	let audioSystem = AudioSystem.getInstance();
 
 	// Combine visual node names and text-only object names for autocomplete
 	const allObjectNames = $derived.by(() => {
