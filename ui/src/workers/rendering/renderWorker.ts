@@ -25,6 +25,7 @@ self.onmessage = (event) => {
 		.with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
 		.with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
 		.with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
+		.with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
 		.with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
 		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
 		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId));

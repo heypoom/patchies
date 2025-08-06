@@ -68,7 +68,6 @@ export class FBORenderer {
 		const [width, height] = this.outputSize;
 
 		this.destroyNodes();
-		this.uniformDataByNode.clear();
 
 		this.renderGraph = renderGraph;
 		this.outputNodeId = renderGraph.outputNodeId;
@@ -163,23 +162,37 @@ export class FBORenderer {
 
 		// Prepare uniform defaults to prevent crashes
 		if (node.data.glUniformDefs) {
-			const defaultUniformData = new Map();
+			const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
 
 			for (const def of node.data.glUniformDefs) {
-				const defaultUniformValue = match(def.type)
-					.with('bool', () => true)
-					.with('float', () => 0.0)
-					.with('int', () => 0)
-					.with('vec2', () => [0, 0])
-					.with('vec3', () => [0, 0, 0])
-					.with('vec4', () => [0, 0, 0, 1])
-					.with('sampler2D', () => null)
-					.otherwise(() => null);
+				const currentUniformData = uniformData.get(def.name);
 
-				defaultUniformData.set(def.name, defaultUniformValue);
+				const isValidData = match(def.type)
+					.with('bool', () => typeof currentUniformData === 'boolean')
+					.with('float', () => typeof currentUniformData === 'number')
+					.with('int', () => typeof currentUniformData === 'number')
+					.with('vec2', () => Array.isArray(currentUniformData) && currentUniformData.length === 2)
+					.with('vec3', () => Array.isArray(currentUniformData) && currentUniformData.length === 3)
+					.with('vec4', () => Array.isArray(currentUniformData) && currentUniformData.length === 4)
+					.with('sampler2D', () => currentUniformData === null)
+					.otherwise(() => false);
+
+				if (!isValidData) {
+					const defaultUniformValue = match(def.type)
+						.with('bool', () => true)
+						.with('float', () => 0.0)
+						.with('int', () => 0)
+						.with('vec2', () => [0, 0])
+						.with('vec3', () => [0, 0, 0])
+						.with('vec4', () => [0, 0, 0, 1])
+						.with('sampler2D', () => null)
+						.otherwise(() => null);
+
+					uniformData.set(def.name, defaultUniformValue);
+				}
 			}
 
-			this.uniformDataByNode.set(node.id, defaultUniformData);
+			this.uniformDataByNode.set(node.id, uniformData);
 		}
 
 		const renderCommand = createShaderToyDrawCommand({
@@ -637,6 +650,17 @@ export class FBORenderer {
 
 		texture.destroy();
 		this.externalTexturesByNode.delete(nodeId);
+	}
+
+	/**
+	 * Removes persistent uniform data for a node.
+	 *
+	 * We should only call this from the frontend when the node is removed.
+	 * This is because we often reconstruct the render graph,
+	 * and we don't want to remove persistent uniform data when reconstructing.
+	 **/
+	removeUniformData(nodeId: string) {
+		this.uniformDataByNode.delete(nodeId);
 	}
 
 	/** Send message to nodes */

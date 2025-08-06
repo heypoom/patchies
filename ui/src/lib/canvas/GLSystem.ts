@@ -168,6 +168,11 @@ export class GLSystem {
 			this.removeBitmap(nodeId);
 		}
 
+		// Cleanup persistent uniform data for GLSL nodes.
+		if (node.type === 'glsl') {
+			this.removeUniformData(nodeId);
+		}
+
 		this.nodes = this.nodes.filter((node) => node.id !== nodeId);
 
 		this.updateRenderGraph();
@@ -260,6 +265,10 @@ export class GLSystem {
 
 	removeBitmap(nodeId: string) {
 		this.send('removeBitmap', { nodeId });
+	}
+
+	removeUniformData(nodeId: string) {
+		this.send('removeUniformData', { nodeId });
 	}
 
 	sendMessageToNode(nodeId: string, message: Message) {

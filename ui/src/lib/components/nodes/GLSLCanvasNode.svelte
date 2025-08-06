@@ -37,7 +37,7 @@
 	const code = $derived(data.code || '');
 
 	function handleMessage(message: Message) {
-		if (message.inlet?.startsWith('gl-in-')) {
+		if (message.inlet?.startsWith('msg-in-')) {
 			const [indexStr, uniformName, uniformType] = message.inlet.split('-').slice(2);
 
 			glSystem.setUniformData(nodeId, uniformName, message.data);
@@ -112,10 +112,12 @@
 			<Handle
 				type="target"
 				position={Position.Top}
-				id={`gl-in-${defIndex}-${def.name}-${def.type}`}
+				id={`${def.type === 'sampler2D' ? 'video' : 'msg'}-in-${defIndex}-${def.name}-${def.type}`}
 				style={`left: ${80 + defIndex * 20}px;`}
 				title={`${def.name} (${def.type})`}
-				class={def.type === 'sampler2D' ? "!border-orange-400 !bg-orange-500 hover:!bg-orange-400" : ""}
+				class={def.type === 'sampler2D'
+					? '!border-orange-400 !bg-orange-500 hover:!bg-orange-400'
+					: ''}
 			/>
 		{/each}
 	{/snippet}
@@ -124,7 +126,7 @@
 		<Handle
 			type="source"
 			position={Position.Bottom}
-			id={`gl-out`}
+			id={`video-out`}
 			title="Video output"
 			class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
 		/>
