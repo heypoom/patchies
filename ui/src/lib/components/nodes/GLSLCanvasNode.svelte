@@ -115,7 +115,7 @@
 				id={`gl-in-${defIndex}-${def.name}-${def.type}`}
 				style={`left: ${80 + defIndex * 20}px;`}
 				title={`${def.name} (${def.type})`}
-				class="!border-violet-400 !bg-violet-500 hover:!bg-violet-400"
+				class={def.type === 'sampler2D' ? "!border-orange-400 !bg-orange-500 hover:!bg-orange-400" : ""}
 			/>
 		{/each}
 	{/snippet}
@@ -126,7 +126,7 @@
 			position={Position.Bottom}
 			id={`gl-out`}
 			title="Video output"
-			class="!border-violet-400 !bg-violet-500 hover:!bg-violet-400"
+			class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
 		/>
 	{/snippet}
 
