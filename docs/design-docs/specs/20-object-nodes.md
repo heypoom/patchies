@@ -11,6 +11,30 @@ Imagine most objects in PureData and Max/MSP: they do not have a specific visual
 
 This allows us to quickly create nodes without having to design a specific visual interface.
 
+## Object Node States
+
+Object nodes have two distinct states to optimize both editing and usage:
+
+### Locked State
+- **Default state** for existing nodes with content
+- Allows **node dragging** for repositioning
+- Displays the object name as **read-only text**
+- **Double-click** to enter editing state
+
+### Editing State
+- **Text input field** is active and focused
+- **Disables node dragging** (input has `nodrag` class)
+- Shows **autocompletion dropdown** when typing
+- **Auto-focuses** when entering editing state
+
+### State Transitions
+- **New nodes**: Start in editing state with auto-focused input
+- **Double-click locked node**: Enter editing state
+- **Enter key**: Exit editing state, save changes, enter locked state
+- **Escape key**: Exit editing state without saving, enter locked state
+- **Blur (unfocus) with empty input**: Delete the entire node
+- **Blur (unfocus) with content**: Save changes and enter locked state
+
 ## Using object nodes to quickly create other visual nodes
 
 If the name of a known visual node is specified, e.g. `bang`, `msg`, `bchrn`, it will change its data type to that node, and initiate the data with the default value of that node type.

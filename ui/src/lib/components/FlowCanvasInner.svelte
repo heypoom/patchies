@@ -37,12 +37,14 @@
 	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
 	import MIDIInputNode from './nodes/MIDIInputNode.svelte';
 	import MIDIOutputNode from './nodes/MIDIOutputNode.svelte';
+	import ObjectNode from './nodes/ObjectNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	// Define custom node types
 	const nodeTypes = {
+		['object']: ObjectNode,
 		['bang']: BangNode,
 		['msg']: MessageNode,
 		['p5']: P5CanvasNode,
@@ -208,7 +210,7 @@
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 
-		autosaveInterval = setInterval(performAutosave, 10000);
+		autosaveInterval = setInterval(performAutosave, 3000);
 
 		return () => {
 			document.removeEventListener('keydown', handleGlobalKeydown);
