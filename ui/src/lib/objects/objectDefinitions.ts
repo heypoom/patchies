@@ -92,6 +92,26 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		category: 'audio'
 	},
 
+	// Control flow objects
+	gate: {
+		inlets: [
+			{ name: 'value', type: 'any', description: 'Input value to gate' },
+			{ name: 'open', type: 'bang', description: 'Bang to open gate' },
+			{ name: 'close', type: 'bang', description: 'Bang to close gate' }
+		],
+		outlets: [{ name: 'out', type: 'any', description: 'Gated output' }],
+		description: 'Gates input when open',
+		category: 'control'
+	},
+
+	// Utility with single inlet
+	random: {
+		inlets: [{ name: 'bang', type: 'bang', description: 'Generate random number' }],
+		outlets: [{ name: 'out', type: 'float', description: 'Random float 0-1' }],
+		description: 'Random number generator',
+		category: 'math'
+	},
+
 	// Visual node aliases that will transform to actual visual nodes
 	bang: {
 		inlets: [],

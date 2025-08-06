@@ -2,7 +2,7 @@
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount } from 'svelte';
 	import { nodeNames } from '$lib/nodes/node-types';
-	import { getObjectNames } from '$lib/objects/objectDefinitions';
+	import { getObjectNames, getObjectDefinition } from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 
 	let {
@@ -24,10 +24,28 @@
 	const allObjectNames = $derived.by(() => {
 		const objectDefNames = getObjectNames();
 		const visualNodeList = [...nodeNames];
-		
+
 		// Combine both lists, removing duplicates and ensuring visual nodes take precedence
 		const combined = new Set([...visualNodeList, ...objectDefNames]);
 		return Array.from(combined).sort();
+	});
+
+	// Get object definition for current name (if it exists)
+	const objectDef = $derived.by(() => {
+		if (!name || name.trim() === '') return null;
+		return getObjectDefinition(name.trim());
+	});
+
+	// Dynamic inlets based on object definition
+	const inlets = $derived.by(() => {
+		if (!objectDef) return []; // No definition = no specific inlets
+		return objectDef.inlets || [];
+	});
+
+	// Dynamic outlets based on object definition
+	const outlets = $derived.by(() => {
+		if (!objectDef) return []; // No definition = no specific outlets
+		return objectDef.outlets || [];
 	});
 
 	// Visual nodes that should be transformed when typed
@@ -210,7 +228,21 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class="z-1" />
+				<!-- Dynamic inlets -->
+				{#if inlets.length > 0}
+					{#each inlets as inlet, index}
+						<Handle
+							type="target"
+							position={Position.Top}
+							id={`inlet-${index}`}
+							class="z-1 top-0"
+							style={`left: ${inlets.length === 1 ? '50%' : `${35 + (index / (inlets.length - 1)) * 30}%`}`}
+						/>
+					{/each}
+				{:else}
+					<!-- Fallback generic inlet for objects without definitions -->
+					<Handle type="target" position={Position.Top} class="z-1" />
+				{/if}
 
 				<div class="relative">
 					{#if isEditing}
@@ -267,7 +299,21 @@
 					{/if}
 				</div>
 
-				<Handle type="source" position={Position.Bottom} class="z-1" />
+				<!-- Dynamic outlets -->
+				{#if outlets.length > 0}
+					{#each outlets as outlet, index}
+						<Handle
+							type="source"
+							position={Position.Bottom}
+							id={`outlet-${index}`}
+							class="z-1"
+							style={`left: ${outlets.length === 1 ? '50%' : `${35 + (index / (outlets.length - 1)) * 30}%`}`}
+						/>
+					{/each}
+				{:else}
+					<!-- Fallback generic outlet for objects without definitions -->
+					<Handle type="source" position={Position.Bottom} class="z-1" />
+				{/if}
 			</div>
 		</div>
 	</div>
