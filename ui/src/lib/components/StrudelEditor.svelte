@@ -54,6 +54,9 @@
 
 		editor = new StrudelMirror({
 			defaultOutput: webaudioOutput,
+			// defaultOutput(...args) {
+			// 	return webaudioOutput(...args);
+			// },
 			getTime: () => audioSystem.audioContext.currentTime,
 			transpiler,
 			root: containerElement,

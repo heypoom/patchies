@@ -19,7 +19,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 export const DEFAULT_JS_CODE = `console.log(1 + 1)`;
 
-export const DEFAULT_STRUDEL_CODE = `note("c a f e").jux(rev)`;
+export const DEFAULT_STRUDEL_CODE = `setcpm(60)
+n("<0 -3>, 2 4 <[6,8] [7,9]>")
+.scale("<C:major D:mixolydian>/4")
+.sound("piano")`;
 
 export const DEFAULT_AI_IMAGE_PROMPT = `a sleepy little town in the mountains, masterpiece, realistic, high quality, 4k`;
 
