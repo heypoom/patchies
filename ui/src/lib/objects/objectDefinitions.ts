@@ -132,7 +132,9 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 };
 
 // Helper function to get object definition
-export function getObjectDefinition(name: string): ObjectDefinition | undefined {
+export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
+	const name = expr.trim().toLowerCase().split(' ')?.[0];
+
 	return objectDefinitions[name];
 }
 

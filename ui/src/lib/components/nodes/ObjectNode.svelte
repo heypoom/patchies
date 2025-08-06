@@ -15,7 +15,7 @@
 	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
 
 	let inputElement = $state<HTMLInputElement>();
-	let name = $state(data.expr || '');
+	let expr = $state(data.expr || '');
 	let isEditing = $state(!data.expr); // Start in editing mode if no name;
 	let showAutocomplete = $state(false);
 	let selectedSuggestion = $state(0);
@@ -30,13 +30,15 @@
 
 		// Combine both lists, removing duplicates and ensuring visual nodes take precedence
 		const combined = new Set([...visualNodeList, ...objectDefNames]);
+
 		return Array.from(combined).sort();
 	});
 
 	// Get object definition for current name (if it exists)
 	const objectDef = $derived.by(() => {
-		if (!name || name.trim() === '') return null;
-		return getObjectDefinition(name.trim());
+		if (!expr || expr.trim() === '') return null;
+
+		return getObjectDefinition(expr);
 	});
 
 	// Dynamic inlets based on object definition
@@ -73,22 +75,19 @@
 	};
 
 	const filteredSuggestions = $derived.by(() => {
-		if (!isEditing) {
-			return [];
-		}
+		if (!isEditing) return [];
 
-		if (!name.trim()) {
-			return allObjectNames.slice(0, 6); // Show first 6 suggestions if input is empty
-		}
+		// Show first 6 suggestions if input is empty
+		if (!expr.trim()) return allObjectNames.slice(0, 6);
 
 		return allObjectNames
-			.filter((objName) => objName.toLowerCase().startsWith(name.toLowerCase()))
+			.filter((objName) => objName.toLowerCase().startsWith(expr.toLowerCase()))
 			.slice(0, 6); // Show max 6 suggestions
 	});
 
 	function enterEditingMode() {
 		isEditing = true;
-		originalName = name;
+		originalName = expr;
 		showAutocomplete = true;
 
 		// Focus input on next tick
@@ -101,7 +100,7 @@
 
 		if (!save) {
 			// Restore original name on escape
-			name = originalName;
+			expr = originalName;
 
 			// If the original name was empty, delete the node
 			if (!originalName.trim()) {
@@ -111,7 +110,7 @@
 		}
 
 		if (save) {
-			if (name.trim()) {
+			if (expr.trim()) {
 				handleNameChange();
 			} else {
 				// If trying to save with empty name, delete the node
@@ -121,16 +120,16 @@
 	}
 
 	function handleNameChange() {
-		updateNodeData(nodeId, { ...data, name });
+		updateNodeData(nodeId, { ...data, name: expr });
 
 		// Check if this should transform to a visual node
 		tryTransformToVisualNode();
 	}
 
 	function tryTransformToVisualNode() {
-		if (!name.trim()) return;
+		if (!expr.trim()) return;
 
-		const trimmedName = name.trim().split(' ')?.[0]?.toLowerCase();
+		const trimmedName = expr.trim().split(' ')?.[0]?.toLowerCase();
 		const targetNodeType = visualNodeMappings[trimmedName as keyof typeof visualNodeMappings];
 		if (!targetNodeType) return;
 
@@ -179,7 +178,7 @@
 			case 'Tab':
 				event.preventDefault();
 				if (filteredSuggestions[selectedSuggestion]) {
-					name = filteredSuggestions[selectedSuggestion];
+					expr = filteredSuggestions[selectedSuggestion];
 					showAutocomplete = false;
 					exitEditingMode(true);
 				}
@@ -192,7 +191,7 @@
 	}
 
 	function selectSuggestion(suggestion: string) {
-		name = suggestion;
+		expr = suggestion;
 		showAutocomplete = false;
 		exitEditingMode(true);
 
@@ -206,7 +205,7 @@
 		// Delay to allow clicks on suggestions
 		setTimeout(() => {
 			// If input is empty, delete the node
-			if (!name.trim()) {
+			if (!expr.trim()) {
 				deleteElements({ nodes: [{ id: nodeId }] });
 			} else {
 				exitEditingMode(true);
@@ -255,7 +254,7 @@
 						<div class={['w-fit rounded-lg border bg-zinc-900/80 backdrop-blur-lg', borderColor]}>
 							<input
 								bind:this={inputElement}
-								bind:value={name}
+								bind:value={expr}
 								oninput={handleInput}
 								onblur={handleBlur}
 								onkeydown={handleKeydown}
@@ -298,7 +297,7 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="font-mono text-xs text-zinc-200">
-								{name}
+								{expr}
 							</div>
 						</div>
 					{/if}
