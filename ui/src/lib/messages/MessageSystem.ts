@@ -52,7 +52,7 @@ export class MessageQueue {
 export class MessageSystem {
 	private static instance: MessageSystem | null = null;
 	private messageQueues = new Map<string, MessageQueue>();
-	private intervals = new Map<number, number>();
+	private intervals = new Map<number, ReturnType<typeof setInterval>>();
 	private intervalCounter = 0;
 	private deletedNodes = new Set<string>();
 

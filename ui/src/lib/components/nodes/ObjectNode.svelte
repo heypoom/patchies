@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount } from 'svelte';
-	import { getObjectNames } from '$lib/objects/objectDefinitions';
+	import { nodeNames } from '$lib/nodes/node-types';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 
 	let {
@@ -14,12 +14,12 @@
 
 	let inputElement = $state<HTMLInputElement>();
 	let name = $state(data.name || '');
-	let isEditing = $state(!name); // Start in editing mode if no name
+	let isEditing = $state(!(data.name || '')); // Start in editing mode if no name
 	let showAutocomplete = $state(false);
 	let selectedSuggestion = $state(0);
-	let originalName = name; // Store original name for escape functionality
+	let originalName = data.name || ''; // Store original name for escape functionality
 
-	const objectNames = getObjectNames();
+	const objectNames = nodeNames;
 
 	// Visual nodes that should be transformed when typed
 	const visualNodeMappings = {
@@ -32,7 +32,14 @@
 		swgl: 'swgl',
 		canvas: 'canvas',
 		glsl: 'glsl',
-		strudel: 'strudel'
+		strudel: 'strudel',
+		'bg.out': 'bg.out',
+		'ai.txt': 'ai.txt',
+		'ai.img': 'ai.img',
+		'ai.music': 'ai.music',
+		'ai.tts': 'ai.tts',
+		'midi.in': 'midi.in',
+		'midi.out': 'midi.out'
 	};
 
 	const filteredSuggestions = $derived.by(() => {

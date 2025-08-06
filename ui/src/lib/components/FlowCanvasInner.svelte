@@ -9,62 +9,21 @@
 		type IsValidConnection
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import P5CanvasNode from './nodes/P5CanvasNode.svelte';
-	import JSBlockNode from './nodes/JSBlockNode.svelte';
-	import HydraNode from './nodes/HydraNode.svelte';
-	import JSCanvasNode from './nodes/JSCanvasNode.svelte';
-	import GLSLCanvasNode from './nodes/GLSLCanvasNode.svelte';
-	import SwissGLNode from './nodes/SwissGLNode.svelte';
-	import StrudelNode from './nodes/StrudelNode.svelte';
 	import ObjectPalette from './ObjectPalette.svelte';
 	import CommandPalette from './CommandPalette.svelte';
-	import ButterchurnNode from './nodes/ButterchurnNode.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
-	import AiImageNode from './nodes/AiImageNode.svelte';
-	import AiTextNode from './nodes/AiTextNode.svelte';
-	import MessageNode from './nodes/MessageNode.svelte';
-	import BangNode from './nodes/BangNode.svelte';
-	import AiMusicNode from './nodes/AiMusicNode.svelte';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
-	import BackgroundOutputNode from './nodes/BackgroundOutputNode.svelte';
 	import {
 		isAiFeaturesVisible,
 		isBottomBarVisible,
 		isObjectPaletteVisible
 	} from '../../stores/ui.store';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
-	import AiSpeechNode from './nodes/AiSpeechNode.svelte';
-	import MIDIInputNode from './nodes/MIDIInputNode.svelte';
-	import MIDIOutputNode from './nodes/MIDIOutputNode.svelte';
-	import ObjectNode from './nodes/ObjectNode.svelte';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
+	import { nodeTypes } from '$lib/nodes/node-types';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
-
-	// Define custom node types
-	const nodeTypes = {
-		['object']: ObjectNode,
-		['bang']: BangNode,
-		['msg']: MessageNode,
-		['p5']: P5CanvasNode,
-		['js']: JSBlockNode,
-		['hydra']: HydraNode,
-		['swgl']: SwissGLNode,
-		['canvas']: JSCanvasNode,
-		['glsl']: GLSLCanvasNode,
-		['strudel']: StrudelNode,
-		['bchrn']: ButterchurnNode,
-		['bg.out']: BackgroundOutputNode,
-
-		['ai.txt']: AiTextNode,
-		['ai.img']: AiImageNode,
-		['ai.music']: AiMusicNode,
-		['ai.tts']: AiSpeechNode,
-
-		['midi.in']: MIDIInputNode,
-		['midi.out']: MIDIOutputNode
-	};
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -100,7 +59,7 @@
 	let previousNodes = new Set<string>();
 
 	// Autosave functionality
-	let autosaveInterval: number | null = null;
+	let autosaveInterval: ReturnType<typeof setInterval> | null = null;
 	let lastAutosave = $state<Date | null>(null);
 
 	function performAutosave() {
