@@ -6,7 +6,8 @@
 		type Node,
 		type Edge,
 		useSvelteFlow,
-		type IsValidConnection
+		type IsValidConnection,
+		useOnSelectionChange
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import ObjectPalette from './ObjectPalette.svelte';
@@ -61,6 +62,12 @@
 	// Autosave functionality
 	let autosaveInterval: ReturnType<typeof setInterval> | null = null;
 	let lastAutosave = $state<Date | null>(null);
+
+	let selectedNodeIds = $state.raw<string[]>([]);
+
+	useOnSelectionChange(({ nodes }) => {
+		selectedNodeIds = nodes.map((node) => node.id);
+	});
 
 	function performAutosave() {
 		try {
@@ -137,6 +144,8 @@
 			target.closest('.cm-content') ||
 			target.contentEditable === 'true';
 
+		const hasNodeSelected = selectedNodeIds.length > 0;
+
 		// Handle CMD+K for command palette
 		if (
 			event.key.toLowerCase() === 'k' &&
@@ -149,23 +158,24 @@
 			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 			showCommandPalette = true;
 		} else if (
-			event.key.toLowerCase() === 'o' &&
-			!$isObjectPaletteVisible &&
-			!showCommandPalette &&
-			!isTyping
-		) {
-			// Handle 'o' key for object palette
-			event.preventDefault();
-
-			// Convert screen coordinates to flow coordinates for accurate node placement
-			$isObjectPaletteVisible = true;
-		} else if (
 			event.key.toLowerCase() === 'n' &&
 			!$isObjectPaletteVisible &&
 			!showCommandPalette &&
 			!isTyping
 		) {
-			// Handle 'n' key for direct object node insertion
+			// Handle 'n' key for new object palette
+			event.preventDefault();
+
+			// Convert screen coordinates to flow coordinates for accurate node placement
+			$isObjectPaletteVisible = true;
+		} else if (
+			event.key.toLowerCase() === 'enter' &&
+			!$isObjectPaletteVisible &&
+			!showCommandPalette &&
+			!isTyping &&
+			!hasNodeSelected
+		) {
+			// Handle 'Enter' key for direct object node insertion
 			event.preventDefault();
 
 			// Create object node at last mouse position (same pattern as ObjectPalette)

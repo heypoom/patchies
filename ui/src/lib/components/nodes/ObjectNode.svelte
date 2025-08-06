@@ -10,16 +10,16 @@
 		id: nodeId,
 		data,
 		selected
-	}: { id: string; data: { name: string }; selected: boolean } = $props();
+	}: { id: string; data: { expr: string }; selected: boolean } = $props();
 
 	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
 
 	let inputElement = $state<HTMLInputElement>();
-	let name = $state(data.name || '');
-	let isEditing = $state(!(data.name || '')); // Start in editing mode if no name
+	let name = $state(data.expr || '');
+	let isEditing = $state(!data.expr); // Start in editing mode if no name;
 	let showAutocomplete = $state(false);
 	let selectedSuggestion = $state(0);
-	let originalName = data.name || ''; // Store original name for escape functionality
+	let originalName = data.expr || ''; // Store original name for escape functionality
 
 	let audioSystem = AudioSystem.getInstance();
 
@@ -73,9 +73,14 @@
 	};
 
 	const filteredSuggestions = $derived.by(() => {
-		if (!isEditing || !name || name.length === 0) {
+		if (!isEditing) {
 			return [];
 		}
+
+		if (!name.trim()) {
+			return allObjectNames.slice(0, 6); // Show first 6 suggestions if input is empty
+		}
+
 		return allObjectNames
 			.filter((objName) => objName.toLowerCase().startsWith(name.toLowerCase()))
 			.slice(0, 6); // Show max 6 suggestions
@@ -84,9 +89,10 @@
 	function enterEditingMode() {
 		isEditing = true;
 		originalName = name;
-		showAutocomplete = false;
+		showAutocomplete = true;
+
 		// Focus input on next tick
-		setTimeout(() => inputElement?.focus(), 0);
+		setTimeout(() => inputElement?.focus(), 10);
 	}
 
 	function exitEditingMode(save: boolean = true) {
@@ -107,8 +113,6 @@
 		if (save) {
 			if (name.trim()) {
 				handleNameChange();
-				// Try transformation after a short delay to ensure the name is saved
-				setTimeout(() => tryTransformToVisualNode(), 50);
 			} else {
 				// If trying to save with empty name, delete the node
 				deleteElements({ nodes: [{ id: nodeId }] });
@@ -124,19 +128,18 @@
 	}
 
 	function tryTransformToVisualNode() {
-		const trimmedName = name.trim().toLowerCase();
+		if (!name.trim()) return;
+
+		const trimmedName = name.trim().split(' ')?.[0]?.toLowerCase();
 		const targetNodeType = visualNodeMappings[trimmedName as keyof typeof visualNodeMappings];
+		if (!targetNodeType) return;
 
-		if (targetNodeType) {
-			// Transform this object node to the target visual node type
-			const defaultData = getDefaultNodeData(targetNodeType);
+		const defaultData = getDefaultNodeData(targetNodeType);
 
-			// Update the node type and data
-			updateNode(nodeId, {
-				type: targetNodeType,
-				data: defaultData
-			});
-		}
+		updateNode(nodeId, {
+			type: targetNodeType,
+			data: defaultData
+		});
 	}
 
 	function handleInput() {
@@ -217,12 +220,11 @@
 		}
 	}
 
-	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-600');
+	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-700');
 
 	onMount(() => {
-		// Auto-focus if starting in editing mode
 		if (isEditing) {
-			setTimeout(() => inputElement?.focus(), 0);
+			setTimeout(() => inputElement?.focus(), 10);
 		}
 	});
 </script>
@@ -250,7 +252,7 @@
 				<div class="relative">
 					{#if isEditing}
 						<!-- Editing state: show input field -->
-						<div class={['rounded-lg border bg-zinc-900', borderColor]}>
+						<div class={['w-fit rounded-lg border bg-zinc-900/80 backdrop-blur-lg', borderColor]}>
 							<input
 								bind:this={inputElement}
 								bind:value={name}
@@ -265,15 +267,15 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute left-0 top-full z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-600 bg-zinc-800 shadow-xl"
+								class="absolute left-0 top-full z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 							>
 								{#each filteredSuggestions as suggestion, index}
 									<button
 										type="button"
 										onclick={() => selectSuggestion(suggestion)}
 										class={[
-											'w-full px-3 py-2 text-left font-mono text-xs text-zinc-200 hover:bg-zinc-700',
-											index === selectedSuggestion ? 'bg-zinc-700' : '',
+											'w-full cursor-pointer px-3 py-2 text-left font-mono text-xs text-zinc-200 hover:bg-zinc-800/80',
+											index === selectedSuggestion ? 'bg-zinc-800/80' : '',
 											index === 0 ? 'rounded-t-md' : '',
 											index === filteredSuggestions.length - 1 ? 'rounded-b-md' : ''
 										]}
@@ -287,7 +289,7 @@
 						<!-- Locked state: show read-only text -->
 						<div
 							class={[
-								'w-full min-w-24 cursor-pointer rounded-lg border bg-zinc-900 px-3 py-2',
+								'w-full cursor-pointer rounded-lg border bg-zinc-900/80 px-3 py-2 backdrop-blur-lg',
 								borderColor
 							]}
 							ondblclick={handleDoubleClick}
