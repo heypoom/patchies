@@ -180,8 +180,7 @@ export class P5Manager {
 					var onMessage = sketchContext.onMessage;
 					var setInterval = sketchContext.interval;
 					var noDrag = sketchContext.noDrag;
-
-					var recv = receive = onMessage; // alias for onMessage
+					var recv = receive = listen = onMessage; // alias for onMessage
 				}
 				
 				${config.code}

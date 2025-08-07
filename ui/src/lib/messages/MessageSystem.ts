@@ -1,6 +1,6 @@
 import type { Edge } from '@xyflow/svelte';
 
-export interface Message<T = any> {
+export interface Message<T = unknown> {
 	data: T;
 	type?: string;
 	timestamp: number;
@@ -9,34 +9,32 @@ export interface Message<T = any> {
 	inlet?: string;
 }
 
-export interface MessageCallback {
-	(message: Message): void;
-}
+export type MessageCallbackFn = (data: Message['data'], meta: Omit<Message, 'data'>) => void;
 
 export class MessageQueue {
-	private callbacks: MessageCallback[] = [];
+	private callbacks: MessageCallbackFn[] = [];
 	private nodeId: string;
 
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
 	}
 
-	addCallback(callback: MessageCallback) {
+	addCallback(callback: MessageCallbackFn) {
 		this.callbacks.push(callback);
 	}
 
-	removeCallback(callback: MessageCallback) {
+	removeCallback(callback: MessageCallbackFn) {
 		const index = this.callbacks.indexOf(callback);
+
 		if (index > -1) {
 			this.callbacks.splice(index, 1);
 		}
 	}
 
 	sendMessage(message: Message) {
-		// Process message immediately
 		this.callbacks.forEach((callback) => {
 			try {
-				callback(message);
+				callback(message['data'], message);
 			} catch (error) {
 				console.error(`Error in message callback for node ${this.nodeId}:`, error);
 				// TODO: Show visual error indicator on the node
@@ -65,6 +63,7 @@ export class MessageSystem {
 		if (!MessageSystem.instance) {
 			MessageSystem.instance = new MessageSystem();
 		}
+
 		return MessageSystem.instance;
 	}
 
@@ -73,14 +72,13 @@ export class MessageSystem {
 		if (!this.messageQueues.has(nodeId)) {
 			this.messageQueues.set(nodeId, new MessageQueue(nodeId));
 		}
-		// Remove from deleted nodes if it was re-created
+
 		this.deletedNodes.delete(nodeId);
 		return this.messageQueues.get(nodeId)!;
 	}
 
 	// Unregister a node and clean up
 	unregisterNode(nodeId: string) {
-		// Mark as deleted
 		this.deletedNodes.add(nodeId);
 
 		// Clear message queue
@@ -96,6 +94,7 @@ export class MessageSystem {
 		// Remove incoming connections to this node
 		for (const [, targets] of this.connections.entries()) {
 			const index = targets.indexOf(nodeId);
+
 			if (index > -1) {
 				targets.splice(index, 1);
 			}
@@ -161,13 +160,15 @@ export class MessageSystem {
 		const intervalId = this.intervalCounter++;
 		const timeout = setInterval(callback, ms);
 		this.intervals.set(intervalId, timeout);
+
 		return intervalId;
 	}
 
 	// Clear an interval
 	clearInterval(intervalId: number) {
 		const timeout = this.intervals.get(intervalId);
-		if (timeout) {
+
+		if (timeout !== undefined) {
 			clearInterval(timeout);
 			this.intervals.delete(intervalId);
 		}

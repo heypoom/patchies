@@ -1,6 +1,6 @@
 import type { SwissGL } from '$lib/rendering/swissgl';
 import type { RenderNode } from '$lib/rendering/types';
-import type { MessageCallback } from '$lib/messages/MessageSystem';
+import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 
 export const isExternalTextureNode = (nodeType: RenderNode['type']) => nodeType === 'img';
 
@@ -9,6 +9,6 @@ export type SwissGLContext = {
 	userRenderFunc: ((params: { t: number }) => void) | null;
 	swglTarget: { bindTarget: (gl: WebGL2RenderingContext) => number[] };
 	gl: WebGL2RenderingContext;
-	onMessage: MessageCallback;
+	onMessage: MessageCallbackFn;
 	nodeId: string;
 };

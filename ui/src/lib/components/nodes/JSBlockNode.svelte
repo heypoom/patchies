@@ -5,7 +5,8 @@
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { createLLMFunction } from '$lib/ai/google';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let {
@@ -47,15 +48,26 @@
 		return 'lucide:play';
 	});
 
-	function handleMessage(message: Message) {
-		if (message.data.type === 'set') {
-			updateNodeData(nodeId, { ...data, code: message.data.code });
-		} else if (message.data.type === 'run') {
-			executeCode();
-		} else if (message.data.type === 'stop') {
-			stopLongRunningTasks();
+	const handleMessage: MessageCallbackFn = (message) => {
+		try {
+			match(message)
+				.with({ type: 'set', code: P.string }, ({ code }) => {
+					updateNodeData(nodeId, { ...data, code });
+				})
+				.with({ type: 'run' }, () => {
+					executeCode();
+				})
+				.with({ type: 'stop' }, () => {
+					stopLongRunningTasks();
+				})
+				.otherwise(() => {});
+		} catch (error) {
+			consoleOutput = [
+				...consoleOutput,
+				`ERROR: ${error instanceof Error ? error.message : String(error)}`
+			];
 		}
-	}
+	};
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
@@ -74,6 +86,7 @@
 
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
+		messageContext.destroy();
 		messageContext.destroy();
 	});
 

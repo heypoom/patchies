@@ -3,8 +3,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import { match } from 'ts-pattern';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 	import type { GLUniformDef } from '../../../types/uniform-config';
@@ -36,20 +36,26 @@
 
 	const code = $derived(data.code || '');
 
-	function handleMessage(message: Message) {
-		if (message.inlet?.startsWith('msg-in-')) {
-			const [indexStr, uniformName, uniformType] = message.inlet.split('-').slice(2);
+	const handleMessage: MessageCallbackFn = (message, meta) => {
+		try {
+			if (meta.inlet?.startsWith('msg-in-')) {
+				const [indexStr, uniformName, uniformType] = meta.inlet.split('-').slice(2);
+				glSystem.setUniformData(nodeId, uniformName, message);
+				return;
+			}
 
-			glSystem.setUniformData(nodeId, uniformName, message.data);
-			return;
+			match(message)
+				.with({ type: 'set', code: P.string }, ({ code }) => {
+					updateNodeData(nodeId, { ...data, code });
+				})
+				.with({ type: 'run' }, () => {
+					updateShader();
+				})
+				.otherwise(() => {});
+		} catch (error) {
+			console.error('GLSLCanvasNode handleMessage error:', error);
 		}
-
-		match(message.data)
-			.with('set', () => {
-				updateNodeData(nodeId, { ...data, code: message.data.code });
-			})
-			.with('run', updateShader);
-	}
+	};
 
 	function updateShader() {
 		// Construct uniform definitions from the shader code.

@@ -1,8 +1,8 @@
-const MESSAGE_CONSOLE_JS = `onMessage(message => console.log(message.data))`;
+const MESSAGE_CONSOLE_JS = `onMessage(m => console.log(m))`;
 
 const DELAY_JS = `onMessage(async (m) => {
   await delay(1000) // how long to wait for
-  send(m.data)
+  send(m)
 })`;
 
 const FRAME_TIMER_JS = `setInterval(() => {

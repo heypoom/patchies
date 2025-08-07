@@ -4,7 +4,7 @@
 	import Icon from '@iconify/svelte';
 	import { LiveMusicManager, type Prompt } from '$lib/music/LiveMusicManager';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 
 	let { id: nodeId }: { id: string } = $props();
@@ -40,10 +40,7 @@
 		prompts = musicManager.getPrompts();
 
 		const context = messageContext.getContext();
-
-		context.onMessage((message: Message) => {
-			handleMessage(message);
-		});
+		context.onMessage(handleMessage);
 
 		return () => {
 			unsubscribePlayback();
@@ -57,9 +54,9 @@
 		}
 	});
 
-	function handleMessage(message: Message) {
+	const handleMessage: MessageCallbackFn = (message) => {
 		try {
-			match(message.data)
+			match(message)
 				.with({ type: 'play' }, () => {
 					musicManager.play();
 				})
@@ -80,7 +77,7 @@
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		}
-	}
+	};
 
 	function addPrompt(text?: string, weight?: number) {
 		const promptText = text || currentPrompt.trim();
@@ -231,7 +228,7 @@
 				<!-- Playback state indicator -->
 				<div class="mt-4 text-center">
 					<div class="text-[10px] text-zinc-400">
-						Status: <span class="text-zinc-300 capitalize">{playbackState}</span>
+						Status: <span class="capitalize text-zinc-300">{playbackState}</span>
 					</div>
 				</div>
 			</div>

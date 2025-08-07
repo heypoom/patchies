@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import Slider from '$lib/components/ui/slider/slider.svelte';
@@ -65,31 +65,32 @@
 		});
 	}
 
-	function handleMessage(message: Message) {
-		const m = message.data;
-
-		if (typeof m === 'string') {
-			updateNodeData(nodeId, { ...data, text: m });
-			setTimeout(() => generateSpeech({ playback: true }), 5);
-			return;
+	const handleMessage: MessageCallbackFn = (message) => {
+		try {
+			match(message)
+				.with(P.string, (text) => {
+					updateNodeData(nodeId, { ...data, text });
+					setTimeout(() => generateSpeech({ playback: true }), 5);
+				})
+				.with({ type: P.union('play', 'bang') }, () => {
+					playback();
+				})
+				.with({ type: 'speak' }, (m) => {
+					setTTSOptionsFromMessage(m);
+					setTimeout(() => generateSpeech({ playback: true }), 5);
+				})
+				.with({ type: 'load' }, (m) => {
+					setTTSOptionsFromMessage(m);
+					setTimeout(() => generateSpeech({ playback: false }), 5);
+				})
+				.with({ type: 'set' }, (m) => {
+					setTTSOptionsFromMessage(m);
+				})
+				.otherwise(() => {});
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
 		}
-
-		match(m.type)
-			.with(P.union('play', 'bang'), () => {
-				playback();
-			})
-			.with('speak', () => {
-				setTTSOptionsFromMessage(m);
-				setTimeout(() => generateSpeech({ playback: true }), 5);
-			})
-			.with('load', () => {
-				setTTSOptionsFromMessage(m);
-				setTimeout(() => generateSpeech({ playback: false }), 5);
-			})
-			.with('set', () => {
-				setTTSOptionsFromMessage(m);
-			});
-	}
+	};
 
 	function playback() {
 		const cachedUrl = $audioUrlCache[audioCacheKey];
@@ -483,7 +484,7 @@
 				<!-- Playback state indicator -->
 				<div class="mt-3 text-center">
 					<div class="text-[8px] text-zinc-400">
-						Status: <span class="text-zinc-300 capitalize">{playbackState}.</span> Powered by
+						Status: <span class="capitalize text-zinc-300">{playbackState}.</span> Powered by
 						<a href="https://celestiai.co" class="text-blue-300">CelestiAI</a>.
 					</div>
 				</div>

@@ -4,9 +4,11 @@
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { MIDISystem, type MIDIInputConfig } from '$lib/canvas/MIDISystem';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { midiInputDevices } from '../../../stores/midi.store';
-	import { match } from 'ts-pattern';
+	import { match, P } from 'ts-pattern';
+
+	type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange';
 
 	let {
 		id: nodeId,
@@ -17,7 +19,7 @@
 		data: {
 			deviceId?: string;
 			channel?: number;
-			events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[];
+			events?: EventType[];
 		};
 		selected: boolean;
 	} = $props();
@@ -32,7 +34,10 @@
 
 	const deviceId = $derived(data.deviceId || '');
 	const channel = $derived(data.channel || 0);
-	const events = $derived(data.events || ['noteOn', 'noteOff', 'controlChange', 'programChange']);
+
+	const events: EventType[] = $derived(
+		data.events || ['noteOn', 'noteOff', 'controlChange', 'programChange']
+	);
 
 	const borderColor = $derived.by(() => {
 		if (errorMessage) return 'border-red-500';
@@ -47,23 +52,32 @@
 		return 'lucide:volume-x';
 	});
 
-	function handleMessage(message: Message) {
-		match(message.data)
-			.with({ type: 'bang' }, () => {
-				startListening();
-			})
-			.with({ type: 'set' }, ({ deviceId, channel, events }) => {
-				updateNodeData(nodeId, {
-					...data,
-					...(deviceId !== undefined && { deviceId }),
-					...(channel !== undefined && { channel }),
-					...(events !== undefined && { events })
-				});
-			})
-			.with({ type: 'stop' }, () => {
-				stopListening();
-			});
-	}
+	const handleMessage: MessageCallbackFn = (message) => {
+		try {
+			match(message)
+				.with({ type: 'bang' }, () => {
+					startListening();
+				})
+				.with(
+					{ type: 'set', deviceId: P.string, channel: P.number, events: P.array(P.string) },
+					({ deviceId, channel, events }) => {
+						updateNodeData(nodeId, {
+							...data,
+							...(deviceId !== undefined && { deviceId }),
+							...(channel !== undefined && { channel }),
+							...(events !== undefined && { events })
+						});
+					}
+				)
+				.with({ type: 'stop' }, () => {
+					stopListening();
+				})
+				.otherwise(() => {});
+		} catch (error) {
+			errorMessage =
+				'Failed to handle message: ' + (error instanceof Error ? error.message : String(error));
+		}
+	};
 
 	async function startListening() {
 		if (!deviceId) {
@@ -139,7 +153,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>

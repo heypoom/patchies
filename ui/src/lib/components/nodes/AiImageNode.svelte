@@ -7,9 +7,10 @@
 	import { generateImageWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
+	import { match, P } from 'ts-pattern';
 
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
 
@@ -27,19 +28,22 @@
 	const prompt = $derived(data.prompt || '');
 	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
 
-	function handleMessage(message: Message) {
-		if (typeof message.data === 'string') {
-			setPrompt(message.data);
-			setTimeout(() => generateImage());
-		} else if (message.data.type === 'generate') {
-			setPrompt(message.data.prompt);
-			setTimeout(() => generateImage());
-		} else if (message.data.type === 'set') {
-			setPrompt(message.data.prompt);
-		} else if (message.data.type === 'bang') {
-			generateImage();
-		}
-	}
+	const handleMessage: MessageCallbackFn = (message) => {
+		match(message)
+			.with(P.string, (text) => {
+				setPrompt(text);
+				setTimeout(() => generateImage());
+			})
+			.with({ type: 'generate', prompt: P.string }, ({ prompt }) => {
+				setPrompt(prompt);
+				setTimeout(() => generateImage());
+			})
+			.with({ type: 'set', prompt: P.string }, ({ prompt }) => {
+				setPrompt(prompt);
+			})
+			.with({ type: 'bang' }, generateImage)
+			.otherwise(() => {});
+	};
 
 	onMount(() => {
 		glSystem.upsertNode(nodeId, 'img', {});

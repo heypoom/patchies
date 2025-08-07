@@ -12,7 +12,7 @@ import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
-import type { Message, MessageCallback } from '$lib/messages/MessageSystem';
+import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
 
 export class FBORenderer {
@@ -250,14 +250,14 @@ export class FBORenderer {
 		let userRenderFunc: ((params: { t: number }) => void) | null = null;
 
 		try {
-			const wrappedGlsl = (shaderConfig: any, targetConfig: any = {}) =>
+			const wrappedGlsl = (shaderConfig: unknown, targetConfig: any = {}) =>
 				glsl(shaderConfig, { ...targetConfig, ...swglTarget });
 
 			// Create context with message passing functions
 			const context = {
 				glsl: wrappedGlsl,
 
-				onMessage: (callback: MessageCallback) => {
+				onMessage: (callback: MessageCallbackFn) => {
 					swglContext.onMessage = callback;
 				},
 
@@ -272,6 +272,8 @@ export class FBORenderer {
 
 			const funcBody = `
 				with (arguments[0]) {
+					var recv = receive = listen = onMessage; // alias for onMessage
+
 					${node.data.code}
 				}
 
@@ -672,12 +674,12 @@ export class FBORenderer {
 			const hydraRenderer = this.hydraByNode.get(nodeId);
 			if (!hydraRenderer) return;
 
-			hydraRenderer.onMessage(message);
+			hydraRenderer.onMessage(message['data'], message);
 		} else if (node.type === 'swgl') {
 			const swglContext = this.swglByNode.get(nodeId);
 			if (!swglContext) return;
 
-			swglContext.onMessage(message);
+			swglContext.onMessage(message['data'], message);
 		}
 	}
 

@@ -7,7 +7,8 @@
 	import { createLLMFunction } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
 
@@ -26,19 +27,28 @@
 
 	const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });
 
-	function handleMessage(message: Message) {
-		if (typeof message.data === 'string') {
-			setPrompt(message.data);
-			setTimeout(() => generateText());
-		} else if (message.data.type === 'generate') {
-			setPrompt(message.data.prompt);
-			setTimeout(() => generateText());
-		} else if (message.data.type === 'set') {
-			setPrompt(message.data.prompt);
-		} else if (message.data.type === 'bang') {
-			generateText();
+	const handleMessage: MessageCallbackFn = (message) => {
+		try {
+			match(message)
+				.with(P.string, (prompt) => {
+					setPrompt(prompt);
+					setTimeout(() => generateText());
+				})
+				.with({ type: 'generate', prompt: P.string }, ({ prompt }) => {
+					setPrompt(prompt);
+					setTimeout(() => generateText());
+				})
+				.with({ type: 'set', prompt: P.string }, ({ prompt }) => {
+					setPrompt(prompt);
+				})
+				.with({ type: 'bang' }, () => {
+					generateText();
+				})
+				.otherwise(() => {});
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
 		}
-	}
+	};
 
 	onMount(() => {
 		messageContext.queue.addCallback(handleMessage);

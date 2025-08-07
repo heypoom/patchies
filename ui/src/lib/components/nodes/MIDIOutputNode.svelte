@@ -5,7 +5,7 @@
 	import { match, P } from 'ts-pattern';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { MIDISystem, type MIDIOutputConfig } from '$lib/canvas/MIDISystem';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { midiOutputDevices } from '../../../stores/midi.store';
 
 	let {
@@ -35,6 +35,7 @@
 		if (errorMessage) return 'border-red-500';
 		if (now - lastSentTime < 200) return 'border-blue-500';
 		if (selected) return 'border-zinc-400';
+
 		return 'border-zinc-600';
 	});
 
@@ -42,6 +43,7 @@
 		const now = Date.now();
 		if (errorMessage) return 'lucide:alert-circle';
 		if (now - lastSentTime < 200) return 'lucide:zap';
+
 		return 'lucide:volume-2';
 	});
 
@@ -59,38 +61,50 @@
 		| ({ type: 'set' } & MIDIOutputConfig)
 		| ({ type: MIDIOutputConfig['event'] } & Exclude<MIDIOutputConfig, 'event'>);
 
-	function handleMessage(message: Message<MidiOutMessage>) {
-		match(message.data)
-			.with({ type: 'bang' }, () => {
-				sendMidiMessage();
-			})
-			.with({ type: 'send' }, (m) => {
-				const config = {
-					...data,
-					...m,
-					deviceId: m.deviceId ?? data.deviceId,
-					channel: m.channel ?? data.channel,
-					event: m.event ?? data.event
-				};
+	const handleMessage: MessageCallbackFn = (message) => {
+		try {
+			match(message)
+				.with({ type: 'bang' }, () => {
+					sendMidiMessage();
+				})
+				.with({ type: 'set' }, (md) => {
+					updateNodeData(nodeId, { ...data, ...md });
+				})
+				.with({ type: 'send', deviceId: P.string, channel: P.number, event: P.string }, (md) => {
+					const config = {
+						...data,
+						...md,
+						deviceId: md.deviceId ?? data.deviceId,
+						channel: md.channel ?? data.channel,
+						event: md.event ?? data.event
+					};
 
-				sendMidiMessage(config as MIDIOutputConfig);
-			})
-			.with({ type: 'set' }, (m) => {
-				updateNodeData(nodeId, { ...data, ...m });
-			})
-			.with({ type: P.union('noteOn', 'noteOff', 'controlChange', 'programChange') }, (m) => {
-				const config = {
-					...data,
-					...m,
-					deviceId: m.deviceId ?? data.deviceId,
-					channel: m.channel ?? data.channel,
-					event: m.event ?? data.event
-				};
+					sendMidiMessage(config as MIDIOutputConfig);
+				})
+				.with(
+					{
+						type: P.union('noteOn', 'noteOff', 'controlChange', 'programChange'),
+						deviceId: P.string,
+						channel: P.number,
+						event: P.string
+					},
+					(md) => {
+						const config = {
+							...data,
+							...md,
+							deviceId: md.deviceId ?? data.deviceId,
+							channel: md.channel ?? data.channel,
+							event: md.event ?? data.event
+						};
 
-				sendMidiMessage(config as MIDIOutputConfig);
-			})
-			.otherwise((message) => {});
-	}
+						sendMidiMessage(config as MIDIOutputConfig);
+					}
+				)
+				.otherwise(() => {});
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
+		}
+	};
 
 	async function sendMidiMessage(userConfig?: MIDIOutputConfig) {
 		const config = { ...data, ...userConfig };

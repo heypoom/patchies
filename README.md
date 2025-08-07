@@ -42,8 +42,9 @@ Here is how to use `send` and `onMessage` in JavaScript objects:
 send('Hello from Object A')
 
 // Object B
-onMessage((message) => {
-  console.log('Received message:', message.data)
+onMessage((data, meta) => {
+  // data = "Hello from Object A"
+  console.log('Received message:', data)
 })
 ```
 

@@ -3,7 +3,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 	import Json5 from 'json5';
 
 	let {
@@ -19,25 +20,30 @@
 	let showTextInput = $state(false);
 	let msgText = $derived(data.message || '');
 
-	function handleMessage(message: Message) {
-		if (message.data === null || message.data === undefined || message.data?.type === 'bang') {
-			sendMessage();
-		} else if (message.data.type === 'set') {
-			const value = message.data.value;
-
-			if (value === 'string') {
-				msgText = value;
-			} else {
-				try {
-					msgText = Json5.stringify(value, null, 2);
-				} catch (e) {
-					msgText = String(value);
-				}
-			}
-
-			updateNodeData(nodeId, { ...data, message: msgText });
+	const handleMessage: MessageCallbackFn = (message) => {
+		try {
+			match(message)
+				.with(P.union(null, undefined, { type: 'bang' }), () => {
+					sendMessage();
+				})
+				.with({ type: 'set', value: P.any }, ({ value }) => {
+					let newMsgText: string;
+					if (typeof value === 'string') {
+						newMsgText = value;
+					} else {
+						try {
+							newMsgText = Json5.stringify(value, null, 2);
+						} catch (e) {
+							newMsgText = String(value);
+						}
+					}
+					updateNodeData(nodeId, { ...data, message: newMsgText });
+				})
+				.otherwise(() => {});
+		} catch (error) {
+			console.error('MessageNode handleMessage error:', error);
 		}
-	}
+	};
 
 	onMount(() => {
 		messageContext.queue.addCallback(handleMessage);

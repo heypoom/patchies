@@ -57,11 +57,11 @@ const states = ['red', 'yellow', 'green']
 let state = 'red'
 
 onMessage(m => {
-  if (m.data === 'next' || m.data?.type === 'bang') {
+  if (m === 'next' || m?.type === 'bang') {
     state = states[(states.indexOf(state) + 1) % states.length]
     send(state)
-  } else if (states.includes(m.data)) {
-    state = m.data
+  } else if (states.includes(m)) {
+    state = m
     send(state)
   }
 })
@@ -85,7 +85,7 @@ function draw() {
 
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
-	'float_slider.p5': { type: 'p5', data: { code: FLOAT_SLIDER_P5.trim() } },
+	'float-slider.p5': { type: 'p5', data: { code: FLOAT_SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
-	'traffic_light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } }
+	'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } }
 };

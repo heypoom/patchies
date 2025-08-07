@@ -4,8 +4,8 @@
 	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import type { Message } from '$lib/messages/MessageSystem';
-	import { match } from 'ts-pattern';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -25,26 +25,22 @@
 		strudelEditor?.editor?.setCode(newCode);
 	};
 
-	function handleMessage(message: Message) {
-		if (typeof message.data === 'string') {
-			setCode(message.data);
-			return;
+	const handleMessage: MessageCallbackFn = (message) => {
+		try {
+			match(message)
+				.with(P.string, (code) => {
+					setCode(code);
+				})
+				.with({ type: 'set', code: P.string }, ({ code }) => {
+					setCode(code);
+				})
+				.with(P.union({ type: 'bang' }, { type: 'run' }), evaluate)
+				.with({ type: 'stop' }, stop)
+				.otherwise(() => {});
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
 		}
-
-		match(message.data.type)
-			.with('bang', () => {
-				evaluate();
-			})
-			.with('run', () => {
-				evaluate();
-			})
-			.with('set', () => {
-				setCode(message.data.code);
-			})
-			.with('stop', () => {
-				stop();
-			});
-	}
+	};
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
@@ -112,7 +108,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={stop}
 								title="Stop"
 							>
@@ -120,7 +116,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={evaluate}
 								title="Play"
 							>
@@ -136,7 +132,7 @@
 					type="target"
 					position={Position.Top}
 					id={`strudel-${nodeId}-inlet`}
-					class="nodrag !-top-2 z-1"
+					class="nodrag z-1 !-top-2"
 				/>
 
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">

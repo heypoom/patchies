@@ -47,7 +47,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'mix.gl': { type: 'glsl', data: { code: MIX_GL.trim() } },
-	'mix_value.gl': { type: 'glsl', data: { code: MIX_V_GL.trim() } },
+	'mix-value.gl': { type: 'glsl', data: { code: MIX_V_GL.trim() } },
 	'passthru.gl': { type: 'glsl', data: { code: PASSTHRU_GL.trim() } },
 	'overlay.gl': { type: 'glsl', data: { code: OVERLAY_GL.trim() } }
 };

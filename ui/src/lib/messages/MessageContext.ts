@@ -1,4 +1,4 @@
-import { MessageQueue, MessageSystem, type Message, type MessageCallback } from './MessageSystem';
+import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
 type SendOptions = { type?: string; to?: string };
 
@@ -7,7 +7,7 @@ export class MessageContext {
 	public messageSystem: MessageSystem;
 	public nodeId: string;
 
-	public messageCallback: MessageCallback | null = null;
+	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
 
 	public onSend = (data: any, options: SendOptions = {}) => {};
@@ -25,9 +25,9 @@ export class MessageContext {
 		this.queue.addCallback(this.messageCallbackHandler.bind(this));
 	}
 
-	messageCallbackHandler(message: Message) {
-		this.messageCallback?.(message);
-	}
+	messageCallbackHandler: MessageCallbackFn = (data, meta) => {
+		this.messageCallback?.(data, meta);
+	};
 
 	// Create the send function for this node
 	createSendFunction() {
@@ -40,7 +40,7 @@ export class MessageContext {
 
 	// Create the onMessage function for this node
 	createOnMessageFunction() {
-		return (callback: MessageCallback) => {
+		return (callback: MessageCallbackFn) => {
 			// Always update the callback - this allows re-registering
 			this.messageCallback = callback;
 			this.onMessageCallbackRegistered();
@@ -72,6 +72,7 @@ export class MessageContext {
 		for (const intervalId of this.intervals) {
 			this.messageSystem.clearInterval(intervalId);
 		}
+
 		this.intervals = [];
 	}
 

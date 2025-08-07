@@ -4,7 +4,8 @@
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
-	import type { Message } from '$lib/messages/MessageSystem';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 
@@ -30,22 +31,27 @@
 		setTimeout(() => updateHydra());
 	};
 
-	function handleMessageNodeCallback(message: Message) {
-		if (message.data.type === 'set') {
-			setCodeAndUpdate(message.data.code);
-			return;
-		} else if (message.data.type === 'run') {
-			updateHydra();
-			return;
+	const handleMessage: MessageCallbackFn = (message, meta) => {
+		try {
+			match(message)
+				.with({ type: 'set', code: P.string }, ({ code }) => {
+					setCodeAndUpdate(code);
+				})
+				.with({ type: 'run' }, () => {
+					updateHydra();
+				})
+				.otherwise(() => {
+					glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
+				});
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
 		}
-
-		glSystem.sendMessageToNode(nodeId, message);
-	}
+	};
 
 	onMount(() => {
 		glSystem = GLSystem.getInstance();
 		messageContext = new MessageContext(nodeId);
-		messageContext.queue.addCallback(handleMessageNodeCallback);
+		messageContext.queue.addCallback(handleMessage);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
