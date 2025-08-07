@@ -107,7 +107,7 @@
 				<div></div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -131,17 +131,20 @@
 						step={floatMode ? 0.01 : 1}
 						value={currentValue}
 						oninput={handleSliderChange}
-						style="background: linear-gradient(to right, #3b82f6 0%, #3b82f6 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%)"
+						style="background: linear-gradient(to right, #3b82f6 0%, #3b82f6 {((currentValue -
+							min) /
+							(max - min)) *
+							100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%)"
 						class="nodrag h-1 w-full cursor-pointer appearance-none rounded-lg
-							[&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border-none
 							[&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500
 							[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:cursor-pointer
-							[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none
-							[&::-moz-range-thumb]:bg-zinc-300
-							[&::-webkit-slider-track]:h-1 [&::-webkit-slider-track]:rounded-lg
-							[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:cursor-pointer
-							[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full
-							[&::-webkit-slider-thumb]:bg-zinc-300"
+							[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300
+							[&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg
+							[&::-moz-range-track]:border-none
+							[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3
+							[&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full
+							[&::-webkit-slider-thumb]:bg-zinc-300 [&::-webkit-slider-track]:h-1
+							[&::-webkit-slider-track]:rounded-lg"
 					/>
 
 					<div class="flex w-full justify-between font-mono text-[10px] text-zinc-500">

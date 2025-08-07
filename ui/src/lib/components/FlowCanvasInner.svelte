@@ -13,6 +13,7 @@
 	import ObjectPalette from './ObjectPalette.svelte';
 	import CommandPalette from './CommandPalette.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
+	import NodeList from './NodeList.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import {
@@ -64,6 +65,9 @@
 	let lastAutosave = $state<Date | null>(null);
 
 	let selectedNodeIds = $state.raw<string[]>([]);
+
+	// Node list visibility state
+	let isNodeListVisible = $state(false);
 
 	useOnSelectionChange(({ nodes }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
@@ -280,6 +284,10 @@
 		};
 	}
 
+	function handleNodeListToggle() {
+		isNodeListVisible = !isNodeListVisible;
+	}
+
 	const isValidConnection: IsValidConnection = (connection) => {
 		if (
 			connection.sourceHandle?.startsWith('video') ||
@@ -321,7 +329,7 @@
 			<Background bgColor="#18181b" gap={16} />
 			<BackgroundOutputCanvas />
 
-			<Controls class={$isBottomBarVisible ? '!bottom-[50px]' : ''} />
+			<Controls class={$isBottomBarVisible ? '!bottom-[30px]' : ''} />
 		</SvelteFlow>
 
 		<!-- Object Palette -->
@@ -352,40 +360,14 @@
 
 	<!-- Bottom toolbar for draggable nodes -->
 	{#if $isBottomBarVisible}
-		<div
-			class={[
-				'fixed bottom-0 left-0 w-full bg-transparent px-2 py-1 backdrop-blur-xl',
-				!$isBackgroundOutputCanvasEnabled && 'border-t border-zinc-700'
-			]}
-		>
-			<div class="max-w-full">
-				<div class="flex items-center justify-between">
-					<div class="flex gap-2">
-						{#each Object.keys(visibleNodeTypes) as nodeType}
-							<div
-								role="button"
-								tabindex="0"
-								class={[
-									'flex cursor-grab flex-col items-center gap-2 rounded-lg px-[6px] py-[2px] transition-colors',
-									$isBackgroundOutputCanvasEnabled
-										? 'bg-transparent backdrop-blur-xl hover:bg-zinc-900/10'
-										: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-800'
-								]}
-								draggable={true}
-								ondragstart={(event) => {
-									event.dataTransfer?.setData('application/svelteflow', nodeType);
-								}}
-							>
-								<span class="font-mono text-[10px] text-zinc-300">{nodeType}</span>
-							</div>
-						{/each}
-					</div>
+		<NodeList
+			nodeTypes={visibleNodeTypes}
+			isVisible={isNodeListVisible}
+			onToggle={handleNodeListToggle}
+		/>
 
-					<div class="flex items-center gap-3">
-						<ShortcutHelp />
-					</div>
-				</div>
-			</div>
+		<div class="fixed bottom-0 right-0 p-2">
+			<ShortcutHelp />
 		</div>
 	{/if}
 </div>

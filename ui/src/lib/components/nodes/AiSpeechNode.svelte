@@ -482,7 +482,7 @@
 				<!-- Playback state indicator -->
 				<div class="mt-3 text-center">
 					<div class="text-[8px] text-zinc-400">
-						Status: <span class="capitalize text-zinc-300">{playbackState}.</span> Powered by
+						Status: <span class="text-zinc-300 capitalize">{playbackState}.</span> Powered by
 						<a href="https://celestiai.co" class="text-blue-300">CelestiAI</a>.
 					</div>
 				</div>

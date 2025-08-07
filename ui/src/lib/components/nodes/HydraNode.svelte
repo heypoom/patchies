@@ -108,7 +108,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-0"
-			class="z-1 !left-16"
+			class="!left-16 z-1"
 			title="Video input 0"
 		/>
 
@@ -116,7 +116,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-1"
-			class="z-1 !left-20"
+			class="!left-20 z-1"
 			title="Video input 1"
 		/>
 
@@ -124,7 +124,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-2"
-			class="z-1 !left-24"
+			class="!left-24 z-1"
 			title="Video input 2"
 		/>
 
@@ -132,14 +132,14 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-3"
-			class="z-1 !left-28"
+			class="!left-28 z-1"
 			title="Video input 3"
 		/>
 
 		<Handle
 			type="target"
 			position={Position.Top}
-			class="z-1 !left-32"
+			class="!left-32 z-1"
 			id="message-in"
 			title="Message input"
 		/>
@@ -159,7 +159,7 @@
 			position={Position.Bottom}
 			id="message-out"
 			title="Message output"
-			class="z-1 !left-28"
+			class="!left-28 z-1"
 		/>
 	{/snippet}
 
