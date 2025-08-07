@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount } from 'svelte';
-	import { nodeNames } from '$lib/nodes/node-types';
+	import { nodeNames, type NodeTypeName } from '$lib/nodes/node-types';
 	import { getObjectNames, getObjectDefinition } from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -52,27 +52,6 @@
 		if (!objectDef) return []; // No definition = no specific outlets
 		return objectDef.outlets || [];
 	});
-
-	// Visual nodes that should be transformed when typed
-	const visualNodeMappings = {
-		bang: 'bang',
-		msg: 'msg',
-		bchrn: 'bchrn',
-		p5: 'p5',
-		js: 'js',
-		hydra: 'hydra',
-		swgl: 'swgl',
-		canvas: 'canvas',
-		glsl: 'glsl',
-		strudel: 'strudel',
-		'bg.out': 'bg.out',
-		'ai.txt': 'ai.txt',
-		'ai.img': 'ai.img',
-		'ai.music': 'ai.music',
-		'ai.tts': 'ai.tts',
-		'midi.in': 'midi.in',
-		'midi.out': 'midi.out'
-	};
 
 	const filteredSuggestions = $derived.by(() => {
 		if (!isEditing) return [];
@@ -129,15 +108,12 @@
 	function tryTransformToVisualNode() {
 		if (!expr.trim()) return;
 
-		const trimmedName = expr.trim().split(' ')?.[0]?.toLowerCase();
-		const targetNodeType = visualNodeMappings[trimmedName as keyof typeof visualNodeMappings];
-		if (!targetNodeType) return;
-
-		const defaultData = getDefaultNodeData(targetNodeType);
+		const name = expr.trim().split(' ')?.[0]?.toLowerCase() as NodeTypeName;
+		if (!nodeNames.includes(name)) return;
 
 		updateNode(nodeId, {
-			type: targetNodeType,
-			data: defaultData
+			type: name,
+			data: getDefaultNodeData(name)
 		});
 	}
 
