@@ -64,9 +64,7 @@
 
 		if (newValue !== currentValue) {
 			updateNodeData(nodeId, { ...data, value: newValue });
-
-			// Send the value to connected nodes
-			sendMessage?.(newValue);
+			messageContext.send(newValue);
 		}
 	}
 
@@ -244,7 +242,7 @@
 									sliderElement.value = defaultValue.toString();
 								}
 
-								sendMessage?.(defaultValue);
+								messageContext.send(defaultValue);
 							}}
 							class="w-full rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
 						>
