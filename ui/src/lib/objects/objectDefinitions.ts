@@ -1,12 +1,23 @@
+type ObjectDataType =
+	| 'any'
+	| 'signal'
+	| 'bang'
+	| 'float'
+	| 'int'
+	| 'string'
+	| 'bool'
+	| 'int[]'
+	| 'float[]';
+
 export interface ObjectInlet {
 	name?: string;
-	type?: 'any' | 'bang' | 'float' | 'int' | 'string' | 'bool' | 'int[]' | 'float[]';
+	type?: ObjectDataType;
 	description?: string;
 }
 
 export interface ObjectOutlet {
 	name?: string;
-	type?: 'any' | 'bang' | 'float' | 'int' | 'string' | 'bool' | 'int[]' | 'float[]';
+	type?: ObjectDataType;
 	description?: string;
 }
 
@@ -21,23 +32,23 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	// Audio processing objects
 	gain: {
 		inlets: [
-			{ name: 'value', type: 'float', description: 'Input value to amplify' },
-			{ name: 'gain', type: 'float', description: 'Gain multiplier (default: 1.0)' }
+			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
+			{ name: 'gain', type: 'float', description: 'Gain multiplier' }
 		],
-		outlets: [{ name: 'out', type: 'float', description: 'Amplified output value' }],
+		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',
-		category: 'audio'
+		category: 'dsp'
 	},
 
 	clip: {
 		inlets: [
-			{ name: 'value', type: 'float', description: 'Value to clip' },
+			{ name: 'in', type: 'signal', description: 'Signal to clip' },
 			{ name: 'min', type: 'float', description: 'Minimum value' },
 			{ name: 'max', type: 'float', description: 'Maximum value' }
 		],
-		outlets: [{ name: 'clipped', type: 'float', description: 'Clipped value' }],
-		description: 'Clips input value between min and max',
-		category: 'math'
+		outlets: [{ name: 'out', type: 'signal', description: 'Clipped signal' }],
+		description: 'Clips input signal between min and max',
+		category: 'dsp'
 	},
 
 	// Math objects
