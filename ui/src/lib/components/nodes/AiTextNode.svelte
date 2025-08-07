@@ -86,8 +86,7 @@
 
 			generatedText = llmOutput ?? '';
 
-			const send = messageContext.createSendFunction();
-			send(llmOutput);
+			messageContext.send(llmOutput);
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		} finally {

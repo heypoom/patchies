@@ -27,7 +27,6 @@
 	let messageContext: MessageContext;
 	let showSettings = $state(false);
 	let sliderElement: HTMLInputElement;
-	let sendMessage: (data: any) => void;
 
 	// Configuration values with defaults
 	const min = $derived(data.min ?? 0);
@@ -90,7 +89,6 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
-		sendMessage = messageContext.createSendFunction();
 
 		// Initialize slider value
 		if (sliderElement) {
@@ -241,9 +239,11 @@
 						<button
 							onclick={() => {
 								updateNodeData(nodeId, { ...data, value: defaultValue });
+
 								if (sliderElement) {
 									sliderElement.value = defaultValue.toString();
 								}
+
 								sendMessage?.(defaultValue);
 							}}
 							class="w-full rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"

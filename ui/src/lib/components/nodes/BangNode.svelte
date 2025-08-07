@@ -16,7 +16,7 @@
 	});
 
 	function sendBang() {
-		messageContext.createSendFunction()({ type: 'bang' });
+		messageContext.send({ type: 'bang' });
 	}
 </script>
 

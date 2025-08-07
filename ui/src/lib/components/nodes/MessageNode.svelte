@@ -53,7 +53,7 @@
 		messageContext.destroy();
 	});
 
-	const send = (data: unknown) => messageContext.createSendFunction()(data);
+	const send = (data: unknown) => messageContext.send(data);
 
 	function sendMessage() {
 		// Try to send the message as a JSON object

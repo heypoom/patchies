@@ -29,13 +29,13 @@ export class MessageContext {
 		this.messageCallback?.(data, meta);
 	};
 
-	// Create the send function for this node
 	createSendFunction() {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		return (data: any, options: SendOptions = {}) => {
-			this.messageSystem.sendMessage(this.nodeId, data, options);
-			this.onSend(data, options);
-		};
+		return this.send.bind(this);
+	}
+
+	send(data: unknown, options: SendOptions = {}) {
+		this.messageSystem.sendMessage(this.nodeId, data, options);
+		this.onSend(data, options);
 	}
 
 	// Create the onMessage function for this node
