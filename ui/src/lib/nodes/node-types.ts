@@ -16,6 +16,7 @@ import AiSpeechNode from '$lib/components/nodes/AiSpeechNode.svelte';
 import MIDIInputNode from '$lib/components/nodes/MIDIInputNode.svelte';
 import MIDIOutputNode from '$lib/components/nodes/MIDIOutputNode.svelte';
 import ObjectNode from '$lib/components/nodes/ObjectNode.svelte';
+import SliderNode from '$lib/components/nodes/SliderNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -35,7 +36,8 @@ export const nodeTypes = {
 	'ai.music': AiMusicNode,
 	'ai.tts': AiSpeechNode,
 	'midi.in': MIDIInputNode,
-	'midi.out': MIDIOutputNode
+	'midi.out': MIDIOutputNode,
+	slider: SliderNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;

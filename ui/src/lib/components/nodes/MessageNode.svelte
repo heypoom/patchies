@@ -38,8 +38,7 @@
 						}
 					}
 					updateNodeData(nodeId, { ...data, message: newMsgText });
-				})
-				.otherwise(() => {});
+				});
 		} catch (error) {
 			console.error('MessageNode handleMessage error:', error);
 		}

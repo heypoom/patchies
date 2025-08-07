@@ -165,8 +165,7 @@
 			.with('Enter', () => {
 				event.preventDefault();
 				handleSelect();
-			})
-			.otherwise(() => {});
+			});
 	}
 
 	function handleSelect() {

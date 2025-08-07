@@ -71,8 +71,7 @@
 				)
 				.with({ type: 'stop' }, () => {
 					stopListening();
-				})
-				.otherwise(() => {});
+				});
 		} catch (error) {
 			errorMessage =
 				'Failed to handle message: ' + (error instanceof Error ? error.message : String(error));

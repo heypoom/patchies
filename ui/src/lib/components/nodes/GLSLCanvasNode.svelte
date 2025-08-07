@@ -50,8 +50,7 @@
 				})
 				.with({ type: 'run' }, () => {
 					updateShader();
-				})
-				.otherwise(() => {});
+				});
 		} catch (error) {
 			console.error('GLSLCanvasNode handleMessage error:', error);
 		}

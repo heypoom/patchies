@@ -99,8 +99,7 @@
 
 						sendMidiMessage(config as MIDIOutputConfig);
 					}
-				)
-				.otherwise(() => {});
+				);
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		}

@@ -59,8 +59,7 @@
 				})
 				.with({ type: 'stop' }, () => {
 					stopLongRunningTasks();
-				})
-				.otherwise(() => {});
+				});
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,

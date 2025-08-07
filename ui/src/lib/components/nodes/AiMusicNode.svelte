@@ -72,8 +72,7 @@
 				.with({ type: 'setPrompts', prompts: P.nonNullable }, (data) => {
 					musicManager.setPrompts(data.prompts);
 					prompts = musicManager.getPrompts();
-				})
-				.otherwise(() => {});
+				});
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		}

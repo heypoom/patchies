@@ -35,8 +35,7 @@
 					setCode(code);
 				})
 				.with(P.union({ type: 'bang' }, { type: 'run' }), evaluate)
-				.with({ type: 'stop' }, stop)
-				.otherwise(() => {});
+				.with({ type: 'stop' }, stop);
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		}

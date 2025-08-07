@@ -85,8 +85,7 @@
 				})
 				.with({ type: 'set' }, (m) => {
 					setTTSOptionsFromMessage(m);
-				})
-				.otherwise(() => {});
+				});
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		}
@@ -144,8 +143,7 @@
 			})
 			.with('paused', () => {
 				playAudio(cachedUrl);
-			})
-			.otherwise(() => {});
+			});
 	}
 
 	function playAudio(url: string) {

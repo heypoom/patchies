@@ -41,8 +41,7 @@
 			.with({ type: 'set', prompt: P.string }, ({ prompt }) => {
 				setPrompt(prompt);
 			})
-			.with({ type: 'bang' }, generateImage)
-			.otherwise(() => {});
+			.with({ type: 'bang' }, generateImage);
 	};
 
 	onMount(() => {
