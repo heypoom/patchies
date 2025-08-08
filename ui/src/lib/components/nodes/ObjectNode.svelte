@@ -289,7 +289,7 @@
 							type="target"
 							position={Position.Top}
 							id={`inlet-${index}`}
-							class="z-1 top-0"
+							class={['z-1 top-0', inlet.type === 'signal' && '!bg-blue-500']}
 							style={`left: ${inlets.length === 1 ? '50%' : `${35 + (index / (inlets.length - 1)) * 30}%`}`}
 							title={inlet.name || `Inlet ${index}`}
 						/>
@@ -362,9 +362,9 @@
 							type="source"
 							position={Position.Bottom}
 							id={`outlet-${index}`}
-							class="z-1"
 							style={`left: ${outlets.length === 1 ? '50%' : `${35 + (index / (outlets.length - 1)) * 30}%`}`}
 							title={outlet.name || `Outlet ${index}`}
+							class={['z-1', outlet.type === 'signal' && '!bg-blue-500']}
 						/>
 					{/each}
 				{:else}
