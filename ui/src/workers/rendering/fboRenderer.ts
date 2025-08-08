@@ -543,17 +543,33 @@ export class FBORenderer {
 		}
 
 		const gl = this.regl._gl as WebGL2RenderingContext;
-		const framebuffer = getFramebuffer(node.framebuffer);
+		let framebuffer: regl.Framebuffer2D | null = null;
+
+		let sourceWidth = renderWidth;
+		let sourceHeight = renderHeight;
+
+		if (this.externalTexturesByNode.has(node.id)) {
+			const tex = this.externalTexturesByNode.get(node.id)!;
+			framebuffer = this.regl.framebuffer({ color: tex });
+			sourceWidth = tex.width;
+			sourceHeight = tex.height;
+		} else {
+			framebuffer = node.framebuffer;
+		}
+
+		if (!framebuffer) {
+			return;
+		}
 
 		gl.viewport(0, 0, renderWidth, renderHeight);
-		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, framebuffer);
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(framebuffer));
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
 		gl.blitFramebuffer(
 			0,
 			0,
-			renderWidth,
-			renderHeight,
+			sourceWidth,
+			sourceHeight,
 			0,
 			renderHeight,
 			renderWidth,
