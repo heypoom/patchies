@@ -26,6 +26,7 @@
 	import { nodeTypes } from '$lib/nodes/node-types';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -45,6 +46,7 @@
 	let nodeId = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
+	let audioSystem = AudioSystem.getInstance();
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -126,6 +128,7 @@
 		for (const prevNodeId of previousNodes) {
 			if (!currentNodes.has(prevNodeId)) {
 				messageSystem.unregisterNode(prevNodeId);
+				audioSystem.removeAudioObject(prevNodeId);
 			}
 		}
 
@@ -135,6 +138,7 @@
 	$effect(() => {
 		messageSystem.updateEdges(edges);
 		glSystem.updateEdges(edges);
+		audioSystem.updateEdges(edges);
 	});
 
 	// Handle global keyboard events
@@ -192,6 +196,7 @@
 		flowContainer?.focus();
 
 		glSystem.start();
+		audioSystem.start();
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 
@@ -366,7 +371,7 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed bottom-0 right-0 p-2">
+		<div class="fixed right-0 bottom-0 p-2">
 			<ShortcutHelp />
 		</div>
 	{/if}

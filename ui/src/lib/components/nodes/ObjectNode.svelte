@@ -1,10 +1,16 @@
 <script lang="ts">
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
-	import { onMount } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import { nodeNames, type NodeTypeName } from '$lib/nodes/node-types';
-	import { getObjectNames, getObjectDefinition } from '$lib/objects/objectDefinitions';
+	import {
+		getObjectNames,
+		getObjectDefinition,
+		validateMessageType
+	} from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { MessageContext } from '$lib/messages/MessageContext';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 
 	let {
 		id: nodeId,
@@ -12,9 +18,10 @@
 		selected
 	}: { id: string; data: { expr: string }; selected: boolean } = $props();
 
-	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
+	const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
 
 	let inputElement = $state<HTMLInputElement>();
+	let nodeElement = $state<HTMLDivElement>();
 	let expr = $state(data.expr || '');
 	let isEditing = $state(!data.expr); // Start in editing mode if no name;
 	let showAutocomplete = $state(false);
@@ -22,6 +29,7 @@
 	let originalName = data.expr || ''; // Store original name for escape functionality
 
 	let audioSystem = AudioSystem.getInstance();
+	const messageContext = new MessageContext(nodeId);
 
 	// Combine visual node names and text-only object names for autocomplete
 	const allObjectNames = $derived.by(() => {
@@ -96,13 +104,66 @@
 				deleteElements({ nodes: [{ id: nodeId }] });
 			}
 		}
+
+		// Restore focus to the node element after editing
+		setTimeout(() => nodeElement?.focus(), 0);
 	}
 
+	const handleMessage: MessageCallbackFn = (message, meta) => {
+		if (!objectDef || !objectDef.inlets || !meta?.inlet) return;
+
+		// Parse inlet information (e.g., "inlet-0" -> index 0)
+		const inletMatch = meta.inlet.match(/inlet-(\d+)/);
+		if (!inletMatch) return;
+
+		const inletIndex = parseInt(inletMatch[1]);
+		const inlet = objectDef.inlets[inletIndex];
+		if (!inlet) return;
+
+		// Validate message type against inlet specification
+		if (inlet.type && !validateMessageType(message, inlet.type)) {
+			console.warn(
+				`invalid message type for ${expr} inlet ${inlet.name}: expected ${inlet.type}, got`,
+				message
+			);
+
+			return;
+		}
+
+		if (inlet.name) {
+			audioSystem.setParameter(nodeId, inlet.name, message);
+		}
+	};
+
 	function handleNameChange() {
-		updateNodeData(nodeId, { ...data, name: expr });
+		updateNodeData(nodeId, { ...data, expr });
 
 		// Check if this should transform to a visual node
 		tryTransformToVisualNode();
+
+		// Create audio object if it's an audio node
+		tryCreateAudioObject();
+	}
+
+	function tryCreateAudioObject() {
+		if (!expr.trim()) return;
+
+		const parts = expr.trim().split(' ');
+		const objectName = parts[0]?.toLowerCase();
+		const params = parts.slice(1);
+
+		// Check if this is an audio object type
+		const audioObjectTypes = ['osc', 'gain', 'dac'];
+
+		if (audioObjectTypes.includes(objectName)) {
+			// Remove existing audio object first to avoid duplicates
+			audioSystem.removeAudioObject(nodeId);
+			audioSystem.createAudioObject(nodeId, objectName, params);
+
+			// Restore audio connections after creating new object
+			const edges = getEdges();
+			audioSystem.updateEdges(edges);
+		}
 	}
 
 	function tryTransformToVisualNode() {
@@ -201,6 +262,14 @@
 		if (isEditing) {
 			setTimeout(() => inputElement?.focus(), 10);
 		}
+
+		// Register message handler
+		messageContext.queue.addCallback(handleMessage);
+
+		// Cleanup function for when node is destroyed
+		return () => {
+			audioSystem.removeAudioObject(nodeId);
+		};
 	});
 </script>
 
@@ -215,8 +284,9 @@
 							type="target"
 							position={Position.Top}
 							id={`inlet-${index}`}
-							class="top-0 z-1"
+							class={['z-1 top-0', inlet.type === 'signal' && '!bg-blue-500']}
 							style={`left: ${inlets.length === 1 ? '50%' : `${35 + (index / (inlets.length - 1)) * 30}%`}`}
+							title={inlet.name || `Inlet ${index}`}
 						/>
 					{/each}
 				{:else}
@@ -242,7 +312,7 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute top-full left-0 z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+								class="absolute left-0 top-full z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 							>
 								{#each filteredSuggestions as suggestion, index}
 									<button
@@ -263,6 +333,7 @@
 					{:else}
 						<!-- Locked state: show read-only text -->
 						<div
+							bind:this={nodeElement}
 							class={[
 								'w-full cursor-pointer rounded-lg border bg-zinc-900/80 px-3 py-2 backdrop-blur-lg',
 								borderColor
@@ -286,8 +357,9 @@
 							type="source"
 							position={Position.Bottom}
 							id={`outlet-${index}`}
-							class="z-1"
 							style={`left: ${outlets.length === 1 ? '50%' : `${35 + (index / (outlets.length - 1)) * 30}%`}`}
+							title={outlet.name || `Outlet ${index}`}
+							class={['z-1', outlet.type === 'signal' && '!bg-blue-500']}
 						/>
 					{/each}
 				{:else}
