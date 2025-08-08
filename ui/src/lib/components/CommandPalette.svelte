@@ -9,6 +9,7 @@
 	import type { Node, Edge } from '@xyflow/svelte';
 	import { IpcSystem } from '$lib/canvas/IpcSystem';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -378,6 +379,7 @@
 			setEdges(newEdges);
 
 			console.log(`> loaded patch with ${newNodes.length} nodes and ${newEdges.length} edges`);
+			AudioSystem.getInstance().audioContext.resume();
 		} catch (error) {
 			console.error('Error deserializing patch data:', error);
 			throw error;
