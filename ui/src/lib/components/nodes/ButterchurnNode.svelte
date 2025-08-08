@@ -37,7 +37,7 @@
 		function render() {
 			visualizer.render();
 
-			if (canvasElement) {
+			if (canvasElement && glSystem.hasOutgoingVideoConnections(nodeId)) {
 				glSystem.setBitmapSource(nodeId, canvasElement);
 			}
 

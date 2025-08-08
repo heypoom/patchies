@@ -209,8 +209,8 @@ export class P5Manager {
 		if (!canvas) return;
 
 		if (!this.shouldSendBitmap) return;
+		if (!this.glSystem.hasOutgoingVideoConnections(this.nodeId)) return;
 
-		// TODO: do not send bitmap if no connections!
 		await this.glSystem.setBitmapSource(this.nodeId, canvas);
 	}
 }

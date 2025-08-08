@@ -258,14 +258,10 @@ export class GLSystem {
 	}
 
 	async setBitmapSource(nodeId: string, source: ImageBitmapSource) {
-		if (!this.hasOutgoingVideoConnections(nodeId)) return;
-
 		this.setBitmap(nodeId, await createImageBitmap(source));
 	}
 
 	setBitmap(nodeId: string, bitmap: ImageBitmap) {
-		if (!this.hasOutgoingVideoConnections(nodeId)) return;
-
 		this.renderWorker.postMessage(
 			{
 				type: 'setBitmap',
@@ -293,7 +289,7 @@ export class GLSystem {
 	 * Used to optimize bitmap transfers - no need to send bitmaps if nothing consumes them
 	 * Results are cached to avoid recalculation on every frame
 	 */
-	private hasOutgoingVideoConnections(nodeId: string): boolean {
+	public hasOutgoingVideoConnections(nodeId: string): boolean {
 		if (this.outgoingConnectionsCache.has(nodeId)) {
 			return this.outgoingConnectionsCache.get(nodeId)!;
 		}

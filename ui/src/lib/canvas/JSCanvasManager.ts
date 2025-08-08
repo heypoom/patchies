@@ -70,7 +70,10 @@ export class JSCanvasManager {
 				height: this.canvas.height,
 
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
-					this.glSystem.setBitmapSource(this.nodeId, this.canvas);
+					if (this.glSystem.hasOutgoingVideoConnections(this.nodeId)) {
+						this.glSystem.setBitmapSource(this.nodeId, this.canvas);
+					}
+
 					this.animationId = requestAnimationFrame(callback);
 
 					return this.animationId;
