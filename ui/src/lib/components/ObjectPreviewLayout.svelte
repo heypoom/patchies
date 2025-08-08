@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import type { Snippet } from 'svelte';
+	import * as Tooltip from './ui/tooltip';
 
 	let {
 		title,
@@ -53,7 +54,7 @@
 					{#if showPauseButton}
 						<button
 							title={paused ? 'Resume' : 'Pause'}
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 							onclick={handlePlaybackToggle}
 						>
 							<Icon icon={paused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
@@ -61,7 +62,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -82,9 +83,16 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				{#if onrun}
-					<button onclick={handleRun} class="rounded p-1 hover:bg-zinc-700">
-						<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
-					</button>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button onclick={handleRun} class="rounded p-1 hover:bg-zinc-700">
+								<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Run Code (shift+enter)</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
 				{/if}
 
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">

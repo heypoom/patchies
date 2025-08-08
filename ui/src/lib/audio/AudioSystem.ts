@@ -29,9 +29,10 @@ export class AudioSystem {
 		});
 	}
 
-	connect(sourceId: string, targetId: string) {
+	connect(sourceId: string, targetId: string, targetInlet?: string) {
 		const sourceNode = this.nodeById.get(sourceId);
 		const targetNode = this.nodeById.get(targetId);
+		const targetType = this.nodeTypes.get(targetId);
 
 		if (!sourceNode || !targetNode) return;
 
@@ -41,6 +42,16 @@ export class AudioSystem {
 			if (!isValidConnection) {
 				console.warn(`Cannot connect ${sourceId} to ${targetId}: invalid connection type`);
 				return;
+			}
+
+			// Connect to the inverted gain node for subtraction
+			if (targetType === '-~' && targetInlet === 'inlet-1') {
+				const invertNode = this.nodeById.get(`${targetId}_invert`);
+
+				if (invertNode) {
+					sourceNode.connect(invertNode);
+					return;
+				}
 			}
 
 			sourceNode.connect(targetNode);
@@ -61,8 +72,8 @@ export class AudioSystem {
 		// Categorize node types
 		const getNodeCategory = (nodeType: string) => {
 			const categories = {
-				sources: ['osc', 'noise'], // Generate audio
-				processors: ['gain', 'filter', 'delay'], // Process audio
+				sources: ['osc'], // Generate audio
+				processors: ['gain', '+~', '-~'], // Process audio
 				destinations: ['dac'] // Output audio
 			};
 
@@ -103,6 +114,8 @@ export class AudioSystem {
 			.with('osc', () => this.createOsc(nodeId, params))
 			.with('gain', () => this.createGain(nodeId, params))
 			.with('dac', () => this.createDac(nodeId))
+			.with('+~', () => this.createAdd(nodeId))
+			.with('-~', () => this.createSubtract(nodeId))
 			.otherwise(() => {});
 	}
 
@@ -133,6 +146,30 @@ export class AudioSystem {
 			this.nodeById.set(nodeId, this.outGain);
 			this.nodeTypes.set(nodeId, 'dac');
 		}
+	}
+
+	createAdd(nodeId: string) {
+		// For addition, we can use a GainNode with gain = 1
+		// Web Audio API naturally sums multiple inputs to a node
+		const addNode = this.audioContext.createGain();
+		addNode.gain.value = 1.0;
+
+		this.nodeById.set(nodeId, addNode);
+		this.nodeTypes.set(nodeId, '+~');
+	}
+
+	createSubtract(nodeId: string) {
+		const positiveGain = this.audioContext.createGain();
+		const negativeGain = this.audioContext.createGain();
+
+		positiveGain.gain.value = 1.0;
+		negativeGain.gain.value = -1.0;
+
+		negativeGain.connect(positiveGain);
+
+		this.nodeById.set(nodeId, positiveGain);
+		this.nodeById.set(`${nodeId}_invert`, negativeGain);
+		this.nodeTypes.set(nodeId, '-~');
 	}
 
 	// Set parameter on existing audio object
@@ -169,6 +206,15 @@ export class AudioSystem {
 					(node as OscillatorNode).stop();
 				} catch (error) {
 					console.log(`Oscillator ${nodeId} was already stopped:`, error);
+				}
+			}
+
+			// Clean up subtraction nodes
+			if (nodeType === '-~') {
+				const invertNode = this.nodeById.get(`${nodeId}_invert`);
+				if (invertNode) {
+					invertNode.disconnect();
+					this.nodeById.delete(`${nodeId}_invert`);
 				}
 			}
 
@@ -210,7 +256,7 @@ export class AudioSystem {
 
 			// Recreate connections based on edges
 			for (const edge of edges) {
-				this.connect(edge.source, edge.target);
+				this.connect(edge.source, edge.target, edge.targetHandle ?? undefined);
 			}
 		} catch (error) {
 			console.error('Error updating audio edges:', error);

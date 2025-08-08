@@ -65,6 +65,26 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'frequency', type: 'float', description: 'Frequency in Hz' }],
 		description: 'Converts MIDI note values to frequency float values',
 		tags: ['helper']
+	},
+
+	'+~': {
+		inlets: [
+			{ name: 'left', type: 'signal', description: 'Left signal input' },
+			{ name: 'right', type: 'signal', description: 'Right signal input' }
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Sum of input signals' }],
+		description: 'Adds two audio signals together',
+		tags: ['audio']
+	},
+
+	'-~': {
+		inlets: [
+			{ name: 'left', type: 'signal', description: 'Left signal input (minuend)' },
+			{ name: 'right', type: 'signal', description: 'Right signal input (subtrahend)' }
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Difference of input signals' }],
+		description: 'Subtracts right signal from left signal',
+		tags: ['audio']
 	}
 };
 
