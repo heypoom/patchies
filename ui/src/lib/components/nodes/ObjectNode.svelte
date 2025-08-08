@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
-	import { onMount } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import { nodeNames, type NodeTypeName } from '$lib/nodes/node-types';
 	import { getObjectNames, getObjectDefinition } from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
@@ -12,9 +12,10 @@
 		selected
 	}: { id: string; data: { expr: string }; selected: boolean } = $props();
 
-	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
+	const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
 
 	let inputElement = $state<HTMLInputElement>();
+	let nodeElement = $state<HTMLDivElement>();
 	let expr = $state(data.expr || '');
 	let isEditing = $state(!data.expr); // Start in editing mode if no name;
 	let showAutocomplete = $state(false);
@@ -96,13 +97,40 @@
 				deleteElements({ nodes: [{ id: nodeId }] });
 			}
 		}
+
+		// Restore focus to the node element after editing
+		setTimeout(() => nodeElement?.focus(), 0);
 	}
 
 	function handleNameChange() {
-		updateNodeData(nodeId, { ...data, name: expr });
+		updateNodeData(nodeId, { ...data, expr });
 
 		// Check if this should transform to a visual node
 		tryTransformToVisualNode();
+
+		// Create audio object if it's an audio node
+		tryCreateAudioObject();
+	}
+
+	function tryCreateAudioObject() {
+		if (!expr.trim()) return;
+
+		const parts = expr.trim().split(' ');
+		const objectName = parts[0]?.toLowerCase();
+		const params = parts.slice(1);
+
+		// Check if this is an audio object type
+		const audioObjectTypes = ['osc', 'gain', 'dac'];
+
+		if (audioObjectTypes.includes(objectName)) {
+			// Remove existing audio object first to avoid duplicates
+			audioSystem.removeAudioObject(nodeId);
+			audioSystem.createAudioObject(nodeId, objectName, params);
+			
+			// Restore audio connections after creating new object
+			const edges = getEdges();
+			audioSystem.updateEdges(edges);
+		}
 	}
 
 	function tryTransformToVisualNode() {
@@ -201,6 +229,11 @@
 		if (isEditing) {
 			setTimeout(() => inputElement?.focus(), 10);
 		}
+
+		// Cleanup function for when node is destroyed
+		return () => {
+			audioSystem.removeAudioObject(nodeId);
+		};
 	});
 </script>
 
@@ -263,6 +296,7 @@
 					{:else}
 						<!-- Locked state: show read-only text -->
 						<div
+							bind:this={nodeElement}
 							class={[
 								'w-full cursor-pointer rounded-lg border bg-zinc-900/80 px-3 py-2 backdrop-blur-lg',
 								borderColor

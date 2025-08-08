@@ -103,6 +103,14 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		category: 'audio'
 	},
 
+	// DAC (Digital to Analog Converter) - audio output
+	dac: {
+		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
+		outlets: [],
+		description: 'Digital to analog converter - audio output destination',
+		category: 'audio'
+	},
+
 	// Control flow objects
 	gate: {
 		inlets: [

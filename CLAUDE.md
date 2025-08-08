@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Patchies** is a tool for creating and playing with simulations - a visual programming environment where users can create interactive "patches" (node-based programs) for exploration, learning, and artistic expression. The project emphasizes creating embeddable, shareable sandboxes for creative coding and algorithmic art.
 
+## Coding Style Guide
+
+- Use `ts-pattern` always instead of `switch` statements.
+
 ## Architecture
 
 ### Core Stack
