@@ -23,7 +23,7 @@
 		selected
 	}: { id: string; data: { expr: string }; selected: boolean } = $props();
 
-	const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
+	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
 
 	let inputElement = $state<HTMLInputElement>();
 	let nodeElement = $state<HTMLDivElement>();
@@ -235,10 +235,6 @@
 			// Remove existing audio object first to avoid duplicates
 			audioSystem.removeAudioObject(nodeId);
 			audioSystem.createAudioObject(nodeId, objectName, params);
-
-			// Restore audio connections after creating new object
-			const edges = getEdges();
-			audioSystem.updateEdges(edges);
 		}
 	}
 
