@@ -1,4 +1,5 @@
 import type { Edge } from '@xyflow/svelte';
+import type { SendMessageOptions } from './MessageContext';
 
 export interface Message<T = unknown> {
 	data: T;
@@ -120,7 +121,7 @@ export class MessageSystem {
 
 	// Send a message from a node
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	sendMessage(fromNodeId: string, data: any, options: { type?: string; to?: string } = {}) {
+	sendMessage(fromNodeId: string, data: any, options: SendMessageOptions = {}) {
 		// Ignore messages from deleted nodes
 		if (this.deletedNodes.has(fromNodeId)) {
 			return;

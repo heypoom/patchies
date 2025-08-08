@@ -7,7 +7,6 @@
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 	import { LanguageSupport } from '@codemirror/language';
-	import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 
 	let {
 		value = $bindable(),

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { silence } from '@strudel/core';
+	import { silence, evalScope } from '@strudel/core';
 	import { getDrawContext } from '@strudel/draw';
 	import { transpiler } from '@strudel/transpiler';
 	import { webaudioOutput } from '@strudel/webaudio';
@@ -14,6 +14,8 @@
 	import { Prec, StateEffect } from '@codemirror/state';
 	import { keymap, EditorView } from '@codemirror/view';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 
 	let {
 		code = '',
@@ -22,6 +24,7 @@
 		class: className = '',
 		onUpdateState = undefined,
 		onchange = undefined,
+		messageContext,
 		...props
 	}: {
 		code?: string;
@@ -30,6 +33,7 @@
 		class?: string;
 		onUpdateState?: (state: unknown) => void;
 		onchange?: (code: string) => void;
+		messageContext?: MessageContext;
 		[key: string]: unknown;
 	} = $props();
 
@@ -54,9 +58,6 @@
 
 		editor = new StrudelMirror({
 			defaultOutput: webaudioOutput,
-			// defaultOutput(...args) {
-			// 	return webaudioOutput(...args);
-			// },
 			getTime: () => audioSystem.audioContext.currentTime,
 			transpiler,
 			root: containerElement,
@@ -64,10 +65,19 @@
 			pattern: silence,
 			drawTime,
 			drawContext,
-			prebake,
+			async prebake() {
+				const send = (data: unknown, options: SendMessageOptions) => {
+					messageContext?.send(data, options);
+				};
+
+				evalScope({ send, onMessage: messageContext?.createOnMessageFunction() });
+
+				await prebake();
+			},
 			onUpdateState,
 			solo,
-			sync
+			sync,
+			beforeEval: () => {}
 		});
 
 		editor.updateSettings(settings);

@@ -1,6 +1,6 @@
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
-type SendOptions = { type?: string; to?: string };
+export type SendMessageOptions = { type?: string; to?: string };
 
 export class MessageContext {
 	public queue: MessageQueue;
@@ -10,7 +10,7 @@ export class MessageContext {
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
 
-	public onSend = (data: any, options: SendOptions = {}) => {};
+	public onSend = (data: any, options: SendMessageOptions = {}) => {};
 	public onMessageCallbackRegistered = () => {};
 	public onIntervalCallbackRegistered = () => {};
 
@@ -33,7 +33,7 @@ export class MessageContext {
 		return this.send.bind(this);
 	}
 
-	send(data: unknown, options: SendOptions = {}) {
+	send(data: unknown, options: SendMessageOptions = {}) {
 		this.messageSystem.sendMessage(this.nodeId, data, options);
 		this.onSend(data, options);
 	}

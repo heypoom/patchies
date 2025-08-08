@@ -20,6 +20,7 @@
 	let isInitialized = $state(false);
 
 	const code = $derived(data.code || '');
+
 	const setCode = (newCode: string) => {
 		updateNodeData(nodeId, { ...data, code: newCode });
 		strudelEditor?.editor?.setCode(newCode);
@@ -107,7 +108,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={stop}
 								title="Stop"
 							>
@@ -115,7 +116,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={evaluate}
 								title="Play"
 							>
@@ -130,8 +131,8 @@
 				<Handle
 					type="target"
 					position={Position.Top}
-					id={`strudel-${nodeId}-inlet`}
-					class="nodrag !-top-2 z-1"
+					id={`strudel-in-${nodeId}`}
+					class="nodrag z-1 !-top-2"
 				/>
 
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
@@ -144,9 +145,17 @@
 								updateNodeData(nodeId, { ...data, code: newCode });
 							}}
 							class="w-full"
+							{messageContext}
 						/>
 					</div>
 				</div>
+
+				<Handle
+					type="source"
+					position={Position.Bottom}
+					id={`strudel-out-${nodeId}`}
+					class="nodrag z-1 !-bottom-2"
+				/>
 
 				<!-- Error display -->
 				{#if errorMessage}
