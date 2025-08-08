@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import {
+		Handle,
+		Position,
+		useEdges,
+		useSvelteFlow,
+		useUpdateNodeInternals
+	} from '@xyflow/svelte';
 	import { onMount, getContext } from 'svelte';
 	import { nodeNames, type NodeTypeName } from '$lib/nodes/node-types';
 	import {
@@ -24,6 +30,9 @@
 	}: { id: string; data: { expr: string }; selected: boolean } = $props();
 
 	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
+
+	const edgesHelper = useEdges();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let inputElement = $state<HTMLInputElement>();
 	let nodeElement = $state<HTMLDivElement>();
@@ -238,8 +247,23 @@
 		}
 	}
 
-	const changeNode = (type: string, data: Record<string, unknown>) =>
-		updateNode(nodeId, { type, data });
+	const changeNode = (type: string, data: Record<string, unknown>) => {
+		const nodeNumber = parseInt(nodeId.replace('object-', ''));
+		const nextId = `${type}-${nodeNumber}`;
+
+		updateNode(nodeId, { id: nextId, type, data });
+
+		edgesHelper.update((edges) =>
+			edges.map((edge) => {
+				if (edge.source === nodeId) return { ...edge, source: nextId };
+				if (edge.target === nodeId) return { ...edge, target: nextId };
+
+				return edge;
+			})
+		);
+
+		updateNodeInternals(nextId);
+	};
 
 	function tryTransformToVisualNode() {
 		const name = getObjectName(expr);
