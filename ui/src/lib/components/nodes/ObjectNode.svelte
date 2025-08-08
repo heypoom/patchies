@@ -5,12 +5,14 @@
 	import {
 		getObjectNames,
 		getObjectDefinition,
-		validateMessageType
+		validateMessageType,
+		audioObjectNames
 	} from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match } from 'ts-pattern';
 
 	let {
 		id: nodeId,
@@ -152,10 +154,7 @@
 		const objectName = parts[0]?.toLowerCase();
 		const params = parts.slice(1);
 
-		// Check if this is an audio object type
-		const audioObjectTypes = ['osc', 'gain', 'dac'];
-
-		if (audioObjectTypes.includes(objectName)) {
+		if (audioObjectNames.includes(objectName)) {
 			// Remove existing audio object first to avoid duplicates
 			audioSystem.removeAudioObject(nodeId);
 			audioSystem.createAudioObject(nodeId, objectName, params);
@@ -202,29 +201,28 @@
 			return;
 		}
 
-		switch (event.key) {
-			case 'ArrowDown':
+		match(event.key)
+			.with('ArrowDown', () => {
 				event.preventDefault();
 				selectedSuggestion = Math.min(selectedSuggestion + 1, filteredSuggestions.length - 1);
-				break;
-			case 'ArrowUp':
+			})
+			.with('ArrowUp', () => {
 				event.preventDefault();
 				selectedSuggestion = Math.max(selectedSuggestion - 1, 0);
-				break;
-			case 'Enter':
-			case 'Tab':
+			})
+			.with('Enter', 'Tab', () => {
 				event.preventDefault();
 				if (filteredSuggestions[selectedSuggestion]) {
 					expr = filteredSuggestions[selectedSuggestion];
 					showAutocomplete = false;
 					exitEditingMode(true);
 				}
-				break;
-			case 'Escape':
+			})
+			.with('Escape', () => {
 				event.preventDefault();
 				exitEditingMode(false);
-				break;
-		}
+			})
+			.run();
 	}
 
 	function selectSuggestion(suggestion: string) {

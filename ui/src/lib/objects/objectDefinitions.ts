@@ -25,7 +25,7 @@ export interface ObjectDefinition {
 	inlets: ObjectInlet[];
 	outlets: ObjectOutlet[];
 	description?: string;
-	category?: string;
+	tags?: string[];
 }
 
 export const objectDefinitions: Record<string, ObjectDefinition> = {
@@ -37,7 +37,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',
-		category: 'dsp'
+		tags: ['audio']
 	},
 
 	// Oscillator objects
@@ -52,7 +52,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Oscillator output' }],
 		description: 'Sine wave oscillator',
-		category: 'audio'
+		tags: ['audio']
 	},
 
 	// DAC (Digital to Analog Converter) - audio output
@@ -60,9 +60,13 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
 		outlets: [],
 		description: 'Digital to analog converter - audio output destination',
-		category: 'audio'
+		tags: ['audio']
 	}
 };
+
+export const audioObjectNames = Object.keys(objectDefinitions).filter((key) =>
+	objectDefinitions[key].tags?.includes('audio')
+);
 
 // Helper function to get object definition
 export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
@@ -79,7 +83,7 @@ export function getObjectNames(): string[] {
 // Helper function to get object names by category
 export function getObjectNamesByCategory(category: string): string[] {
 	return Object.entries(objectDefinitions)
-		.filter(([_, def]) => def.category === category)
+		.filter(([_, def]) => def.tags === category)
 		.map(([name]) => name);
 }
 
