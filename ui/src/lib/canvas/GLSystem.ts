@@ -35,6 +35,9 @@ export class GLSystem {
 	private hashes = { nodes: '', edges: '', graph: '' };
 	private renderGraph: RenderGraph | null = null;
 
+	/** Cache for outgoing video connections to avoid recalculating on every frame */
+	private outgoingConnectionsCache = new Map<string, boolean>();
+
 	public outputSize: [width: number, height: number] = [800, 600];
 
 	public previewSize: [width: number, height: number] = [
@@ -175,6 +178,9 @@ export class GLSystem {
 
 		this.nodes = this.nodes.filter((node) => node.id !== nodeId);
 
+		// Clear connection cache for this node
+		this.outgoingConnectionsCache.delete(nodeId);
+
 		this.updateRenderGraph();
 	}
 
@@ -205,6 +211,9 @@ export class GLSystem {
 
 		this.send('buildRenderGraph', { graph });
 		this.renderGraph = graph;
+
+		// Clear connection cache when render graph changes
+		this.outgoingConnectionsCache.clear();
 	}
 
 	// TODO: optimize this!
@@ -249,10 +258,14 @@ export class GLSystem {
 	}
 
 	async setBitmapSource(nodeId: string, source: ImageBitmapSource) {
+		if (!this.hasOutgoingVideoConnections(nodeId)) return;
+
 		this.setBitmap(nodeId, await createImageBitmap(source));
 	}
 
 	setBitmap(nodeId: string, bitmap: ImageBitmap) {
+		if (!this.hasOutgoingVideoConnections(nodeId)) return;
+
 		this.renderWorker.postMessage(
 			{
 				type: 'setBitmap',
@@ -273,5 +286,32 @@ export class GLSystem {
 
 	sendMessageToNode(nodeId: string, message: Message) {
 		this.send('sendMessageToNode', { nodeId, message });
+	}
+
+	/**
+	 * Check if a node has outgoing connections to GPU video nodes (glsl, hydra, swgl)
+	 * Used to optimize bitmap transfers - no need to send bitmaps if nothing consumes them
+	 * Results are cached to avoid recalculation on every frame
+	 */
+	private hasOutgoingVideoConnections(nodeId: string): boolean {
+		if (this.outgoingConnectionsCache.has(nodeId)) {
+			return this.outgoingConnectionsCache.get(nodeId)!;
+		}
+
+		let hasConnections = false;
+
+		if (this.renderGraph) {
+			const hasOutgoingVideoEdges = this.renderGraph.edges.some(
+				(edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
+			);
+
+			const isOutputNode = this.renderGraph.outputNodeId === nodeId;
+
+			hasConnections = hasOutgoingVideoEdges || isOutputNode;
+		}
+
+		this.outgoingConnectionsCache.set(nodeId, hasConnections);
+
+		return hasConnections;
 	}
 }
