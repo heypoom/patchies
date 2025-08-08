@@ -17,25 +17,6 @@ function draw() {
   prev = v
 }`;
 
-const FLOAT_SLIDER_P5 = `const [MIN, MAX] = [0, 100]
-const [W, H, XO] = [200, 50, 10]
-let slider
-let prev = 0
-
-function setup() {
-  createCanvas(W, H);
-  noDrag()
-  slider = createSlider(MIN, MAX);
-  slider.position(XO, (H/2)-XO);
-  slider.size(W - (XO*2));
-}
-
-function draw() {
-  const v = slider.value()
-  if (v !== prev) send(v/100)
-  prev = v
-}`;
-
 const CAM_P5 = `let video;
 
 function setup() {
@@ -85,7 +66,6 @@ function draw() {
 
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
-	'float-slider.p5': { type: 'p5', data: { code: FLOAT_SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
 	'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } }
 };

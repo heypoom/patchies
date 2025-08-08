@@ -26,6 +26,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('ai.txt', () => ({ prompt: 'Write a creative story about...' }))
 		.with('msg', () => ({ message: '' }))
 		.with('bang', () => ({}))
+		.with('slider', () => ({
+			min: 0,
+			max: 100,
+			defaultValue: 50,
+			isFloat: false
+		}))
 		.with('bchrn', () => ({ currentPreset: DEFAULT_BUTTERCHURN_PRESET }))
 		.with('p5', () => ({ code: DEFAULT_P5_CODE }))
 		.with('hydra', () => ({ code: DEFAULT_HYDRA_CODE }))
