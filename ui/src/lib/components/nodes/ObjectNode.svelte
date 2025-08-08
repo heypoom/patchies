@@ -139,12 +139,11 @@
 		}
 
 		const name = getObjectName(expr);
-		const { send } = messageContext;
 
 		console.log(`object name =`, name, `message =`, message);
 
 		match([name, message]).with(['m2f', P.number], ([_, note]) => {
-			send(440 * Math.pow(2, (note - 69) / 12));
+			messageContext.send(440 * Math.pow(2, (note - 69) / 12));
 		});
 	};
 
@@ -238,8 +237,7 @@
 			.with('Escape', () => {
 				event.preventDefault();
 				exitEditingMode(false);
-			})
-			.run();
+			});
 	}
 
 	function selectSuggestion(suggestion: string) {
