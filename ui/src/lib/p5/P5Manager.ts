@@ -31,6 +31,8 @@ export class P5Manager {
 	public glSystem = GLSystem.getInstance();
 	public nodeId: string;
 
+	public shouldSendBitmap = true;
+
 	private container: HTMLElement | null = null;
 
 	constructor(nodeId: string, container: HTMLElement) {
@@ -38,7 +40,7 @@ export class P5Manager {
 		this.container = container;
 
 		// @ts-expect-error -- expose for debugging
-		window.p5Manager = this;
+		window[nodeId] = this;
 	}
 
 	updateCode(config: P5SketchConfig) {
@@ -206,6 +208,9 @@ export class P5Manager {
 		const canvas: HTMLCanvasElement = this.p5?.canvas;
 		if (!canvas) return;
 
+		if (!this.shouldSendBitmap) return;
+
+		// TODO: do not send bitmap if no connections!
 		await this.glSystem.setBitmapSource(this.nodeId, canvas);
 	}
 }
