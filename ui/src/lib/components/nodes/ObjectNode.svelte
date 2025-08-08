@@ -158,8 +158,6 @@
 
 		const name = getObjectName(expr);
 
-		console.log(`object name =`, name, `message =`, message);
-
 		match([name, message]).with(['m2f', P.number], ([_, note]) => {
 			messageContext.send(440 * Math.pow(2, (note - 69) / 12));
 		});
