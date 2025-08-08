@@ -10,6 +10,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   );
 }`;
 
+const RED_GL = `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+}
+`;
+
 const MIX_V_GL = `uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
 uniform float iMix;
@@ -46,6 +52,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 `;
 
 export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
+	'red.gl': { type: 'glsl', data: { code: RED_GL.trim() } },
 	'mix.gl': { type: 'glsl', data: { code: MIX_GL.trim() } },
 	'mix-value.gl': { type: 'glsl', data: { code: MIX_V_GL.trim() } },
 	'passthru.gl': { type: 'glsl', data: { code: PASSTHRU_GL.trim() } },
