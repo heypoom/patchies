@@ -4,7 +4,7 @@ import Meyda from 'meyda';
 import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 import { match, P } from 'ts-pattern';
 import type { PsAudioNode } from './audio-node-types';
-import { getNodeGroup } from './audio-node-group';
+import { canAudioNodeConnect } from './audio-node-group';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -55,17 +55,7 @@ export class AudioSystem {
 		const targetEntry = this.nodesById.get(targetId);
 		if (!sourceEntry || !targetEntry) return true;
 
-		const source = getNodeGroup(sourceEntry.type);
-		const target = getNodeGroup(targetEntry.type);
-
-		return match({ source, target })
-			.with({ source: 'sources', target: 'sources' }, () => false)
-			.with({ source: 'sources', target: 'processors' }, () => true)
-			.with({ source: 'sources', target: 'destinations' }, () => true)
-			.with({ source: 'processors', target: 'sources' }, () => false)
-			.with({ source: 'processors', target: 'processors' }, () => true)
-			.with({ source: 'processors', target: 'destinations' }, () => true)
-			.otherwise(() => true);
+		return canAudioNodeConnect(sourceEntry.type, targetEntry.type);
 	}
 
 	createOscillator(nodeId: string, type: OscillatorType, frequency: number): OscillatorNode {
