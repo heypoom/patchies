@@ -29,7 +29,6 @@ export interface ObjectDefinition {
 }
 
 export const objectDefinitions: Record<string, ObjectDefinition> = {
-	// Audio processing objects
 	gain: {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
@@ -40,7 +39,6 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	// Oscillator objects
 	osc: {
 		inlets: [
 			{ name: 'frequency', type: 'float', description: 'Oscillator frequency in Hz' },
@@ -55,12 +53,18 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	// DAC (Digital to Analog Converter) - audio output
 	dac: {
 		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
 		outlets: [],
 		description: 'Digital to analog converter - audio output destination',
 		tags: ['audio']
+	},
+
+	m2f: {
+		inlets: [{ name: 'note', type: 'float', description: 'MIDI note value (0-127)' }],
+		outlets: [{ name: 'frequency', type: 'float', description: 'Frequency in Hz' }],
+		description: 'Converts MIDI note values to frequency float values',
+		tags: ['helper']
 	}
 };
 
@@ -68,9 +72,11 @@ export const audioObjectNames = Object.keys(objectDefinitions).filter((key) =>
 	objectDefinitions[key].tags?.includes('audio')
 );
 
+export const getObjectName = (expr: string): string => expr.trim().toLowerCase().split(' ')?.[0];
+
 // Helper function to get object definition
 export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
-	const name = expr.trim().toLowerCase().split(' ')?.[0];
+	const name = getObjectName(expr);
 
 	return objectDefinitions[name];
 }

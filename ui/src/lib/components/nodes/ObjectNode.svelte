@@ -6,13 +6,14 @@
 		getObjectNames,
 		getObjectDefinition,
 		validateMessageType,
-		audioObjectNames
+		audioObjectNames,
+		getObjectName
 	} from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { match } from 'ts-pattern';
+	import { match, P } from 'ts-pattern';
 
 	let {
 		id: nodeId,
@@ -132,9 +133,19 @@
 			return;
 		}
 
-		if (inlet.name) {
+		if (inlet.name && objectDef.tags?.includes('audio')) {
 			audioSystem.setParameter(nodeId, inlet.name, message);
+			return;
 		}
+
+		const name = getObjectName(expr);
+		const { send } = messageContext;
+
+		console.log(`object name =`, name, `message =`, message);
+
+		match([name, message]).with(['m2f', P.number], ([_, note]) => {
+			send(440 * Math.pow(2, (note - 69) / 12));
+		});
 	};
 
 	function handleNameChange() {
@@ -165,16 +176,22 @@
 		}
 	}
 
+	const changeNode = (type: string, data: Record<string, unknown>) =>
+		updateNode(nodeId, { type, data });
+
 	function tryTransformToVisualNode() {
-		if (!expr.trim()) return;
+		const name = getObjectName(expr);
+		if (!name) return;
 
-		const name = expr.trim().split(' ')?.[0]?.toLowerCase() as NodeTypeName;
-		if (!nodeNames.includes(name)) return;
-
-		updateNode(nodeId, {
-			type: name,
-			data: getDefaultNodeData(name)
-		});
+		match(name)
+			.with(P.union('msg', 'm'), () => {
+				changeNode('msg', { message: expr.replace(name, '').trim() });
+			})
+			.otherwise(() => {
+				if (nodeNames.includes(name as any)) {
+					changeNode(name, getDefaultNodeData(name));
+				}
+			});
 	}
 
 	function handleInput() {
