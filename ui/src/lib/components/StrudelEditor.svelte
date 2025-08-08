@@ -66,18 +66,18 @@
 			drawTime,
 			drawContext,
 			async prebake() {
-				const send = (data: unknown, options: SendMessageOptions) => {
-					messageContext?.send(data, options);
-				};
-
-				evalScope({ send, onMessage: messageContext?.createOnMessageFunction() });
-
 				await prebake();
 			},
 			onUpdateState,
 			solo,
 			sync,
-			beforeEval: () => {}
+			beforeEval: () => {
+				const send = (data: unknown, options: SendMessageOptions) => {
+					messageContext?.send(data, options);
+				};
+
+				evalScope({ send, onMessage: messageContext?.createOnMessageFunction() });
+			}
 		});
 
 		editor.updateSettings(settings);
