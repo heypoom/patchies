@@ -3,12 +3,13 @@ import type { Edge } from '@xyflow/svelte';
 import Meyda from 'meyda';
 import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 import { match, P } from 'ts-pattern';
+import type { PsAudioNode } from './audio-node-types';
+import { getNodeGroup } from './audio-node-group';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
-	nodeById: Map<string, AudioNode> = new Map();
-	nodeTypes: Map<string, string> = new Map(); // Track node types by ID
+	nodesById: Map<string, PsAudioNode> = new Map();
 
 	outGain: GainNode | null = null;
 	outAnalyzer: MeydaAnalyzer | null = null;
@@ -30,10 +31,10 @@ export class AudioSystem {
 	}
 
 	connect(sourceId: string, targetId: string) {
-		const sourceNode = this.nodeById.get(sourceId);
-		const targetNode = this.nodeById.get(targetId);
+		const sourceEntry = this.nodesById.get(sourceId);
+		const targetEntry = this.nodesById.get(targetId);
 
-		if (!sourceNode || !targetNode) return;
+		if (!sourceEntry || !targetEntry) return;
 
 		try {
 			const isValidConnection = this.validateConnection(sourceId, targetId);
@@ -43,48 +44,28 @@ export class AudioSystem {
 				return;
 			}
 
-			sourceNode.connect(targetNode);
+			sourceEntry.node.connect(targetEntry.node);
 		} catch (error) {
 			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
 		}
 	}
 
 	validateConnection(sourceId: string, targetId: string): boolean {
-		const sourceType = this.nodeTypes.get(sourceId);
-		const targetType = this.nodeTypes.get(targetId);
+		const sourceEntry = this.nodesById.get(sourceId);
+		const targetEntry = this.nodesById.get(targetId);
+		if (!sourceEntry || !targetEntry) return true;
 
-		if (!sourceType || !targetType) {
-			// Allow connections for unknown types (might be built-in nodes like mainGain)
-			return true;
-		}
+		const source = getNodeGroup(sourceEntry.type);
+		const target = getNodeGroup(targetEntry.type);
 
-		// Categorize node types
-		const getNodeCategory = (nodeType: string) => {
-			const categories = {
-				sources: ['osc'], // Generate audio
-				processors: ['gain', '+~'], // Process audio
-				destinations: ['dac'] // Output audio
-			};
-
-			for (const [category, types] of Object.entries(categories)) {
-				if (types.includes(nodeType)) return category;
-			}
-			return 'unknown';
-		};
-
-		const sourceCategory = getNodeCategory(sourceType);
-		const targetCategory = getNodeCategory(targetType);
-
-		const canConnect = match({ source: sourceCategory, target: targetCategory })
-			.with({ source: 'sources', target: 'sources' }, () => false) // Sources can't connect to sources
-			.with({ source: 'sources', target: 'processors' }, () => true) // Sources to processors
-			.with({ source: 'sources', target: 'destinations' }, () => true) // Sources to destinations
-			.with({ source: 'processors', target: 'sources' }, () => false) // Can't connect to sources
-			.with({ source: 'processors', target: 'processors' }, () => true) // Processors can chain
-			.with({ source: 'processors', target: 'destinations' }, () => true) // Processors to destinations
-			.otherwise(() => true); // Allow unknown combinations by default
-
-		return canConnect;
+		return match({ source, target })
+			.with({ source: 'sources', target: 'sources' }, () => false)
+			.with({ source: 'sources', target: 'processors' }, () => true)
+			.with({ source: 'sources', target: 'destinations' }, () => true)
+			.with({ source: 'processors', target: 'sources' }, () => false)
+			.with({ source: 'processors', target: 'processors' }, () => true)
+			.with({ source: 'processors', target: 'destinations' }, () => true)
+			.otherwise(() => true);
 	}
 
 	createOscillator(nodeId: string, type: OscillatorType, frequency: number): OscillatorNode {
@@ -92,7 +73,7 @@ export class AudioSystem {
 		oscillator.type = type;
 		oscillator.frequency.value = frequency;
 
-		this.nodeById.set(nodeId, oscillator);
+		this.nodesById.set(nodeId, { type: 'osc', node: oscillator });
 
 		return oscillator;
 	}
@@ -103,8 +84,7 @@ export class AudioSystem {
 			.with('osc', () => this.createOsc(nodeId, params))
 			.with('gain', () => this.createGain(nodeId, params))
 			.with('dac', () => this.createDac(nodeId))
-			.with('+~', () => this.createAdd(nodeId))
-			.otherwise(() => {});
+			.with('+~', () => this.createAdd(nodeId));
 	}
 
 	createOsc(nodeId: string, params: string[]) {
@@ -115,8 +95,7 @@ export class AudioSystem {
 		osc.type = 'sine';
 		osc.start(0);
 
-		this.nodeById.set(nodeId, osc);
-		this.nodeTypes.set(nodeId, 'osc');
+		this.nodesById.set(nodeId, { type: 'osc', node: osc });
 	}
 
 	createGain(nodeId: string, params: string[]) {
@@ -125,14 +104,12 @@ export class AudioSystem {
 		const gainNode = this.audioContext.createGain();
 		gainNode.gain.value = gainValue;
 
-		this.nodeById.set(nodeId, gainNode);
-		this.nodeTypes.set(nodeId, 'gain');
+		this.nodesById.set(nodeId, { type: 'gain', node: gainNode });
 	}
 
 	createDac(nodeId: string) {
 		if (this.outGain) {
-			this.nodeById.set(nodeId, this.outGain);
-			this.nodeTypes.set(nodeId, 'dac');
+			this.nodesById.set(nodeId, { type: 'dac', node: this.outGain });
 		}
 	}
 
@@ -142,51 +119,50 @@ export class AudioSystem {
 		const addNode = this.audioContext.createGain();
 		addNode.gain.value = 1.0;
 
-		this.nodeById.set(nodeId, addNode);
-		this.nodeTypes.set(nodeId, '+~');
+		this.nodesById.set(nodeId, { type: '+~', node: addNode });
 	}
 
 	// Set parameter on existing audio object
 	setParameter(nodeId: string, key: string, value: unknown) {
-		const node = this.nodeById.get(nodeId);
-		if (!node) return;
+		const entry = this.nodesById.get(nodeId);
+		if (!entry) return;
 
-		if (node instanceof OscillatorNode) {
-			match([key, value])
-				.with(['frequency', P.number], ([, freq]) => {
-					node.frequency.value = freq;
-				})
-				.with(['type', P.string], ([, type]) => {
-					node.type = type as OscillatorType;
+		match(entry.type)
+			.with('osc', () => {
+				const node = entry.node as OscillatorNode;
+				match([key, value])
+					.with(['frequency', P.number], ([, freq]) => {
+						node.frequency.value = freq;
+					})
+					.with(['type', P.string], ([, type]) => {
+						node.type = type as OscillatorType;
+					});
+			})
+			.with('gain', () => {
+				const node = entry.node as GainNode;
+				match([key, value]).with(['gain', P.number], ([, gain]) => {
+					node.gain.value = gain;
 				});
-		}
-
-		if (node instanceof GainNode && key === 'gain') {
-			match([key, value]).with(['gain', P.number], ([, gain]) => {
-				node.gain.value = gain;
 			});
-		}
 	}
 
 	// Remove audio object
 	removeAudioObject(nodeId: string) {
-		const node = this.nodeById.get(nodeId);
-		const nodeType = this.nodeTypes.get(nodeId);
+		const entry = this.nodesById.get(nodeId);
 
-		if (node) {
-			if (nodeType === 'osc') {
+		if (entry) {
+			if (entry.type === 'osc') {
 				try {
-					(node as OscillatorNode).stop();
+					(entry.node as OscillatorNode).stop();
 				} catch (error) {
 					console.log(`osc ${nodeId} was already stopped:`, error);
 				}
 			}
 
-			node.disconnect();
+			entry.node.disconnect();
 		}
 
-		this.nodeById.delete(nodeId);
-		this.nodeTypes.delete(nodeId);
+		this.nodesById.delete(nodeId);
 	}
 
 	static getInstance(): AudioSystem {
@@ -205,9 +181,9 @@ export class AudioSystem {
 	updateEdges(edges: Edge[]) {
 		try {
 			// Disconnect all existing connections
-			for (const node of this.nodeById.values()) {
+			for (const entry of this.nodesById.values()) {
 				try {
-					node.disconnect();
+					entry.node.disconnect();
 				} catch (error) {
 					console.warn('Error disconnecting node:', error);
 				}
