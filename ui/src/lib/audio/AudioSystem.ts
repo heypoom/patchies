@@ -8,6 +8,7 @@ export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
 	nodeById: Map<string, AudioNode> = new Map();
+	nodeTypes: Map<string, string> = new Map(); // Track node types by ID
 
 	outGain: GainNode | null = null;
 	outAnalyzer: MeydaAnalyzer | null = null;
@@ -40,7 +41,56 @@ export class AudioSystem {
 
 		if (!sourceNode || !targetNode) return;
 
-		sourceNode.connect(targetNode);
+		try {
+			const isValidConnection = this.validateConnection(sourceId, targetId);
+
+			if (!isValidConnection) {
+				console.warn(`Cannot connect ${sourceId} to ${targetId}: invalid connection type`);
+				return;
+			}
+
+			sourceNode.connect(targetNode);
+		} catch (error) {
+			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
+		}
+	}
+
+	validateConnection(sourceId: string, targetId: string): boolean {
+		const sourceType = this.nodeTypes.get(sourceId);
+		const targetType = this.nodeTypes.get(targetId);
+
+		if (!sourceType || !targetType) {
+			// Allow connections for unknown types (might be built-in nodes like mainGain)
+			return true;
+		}
+
+		// Categorize node types
+		const getNodeCategory = (nodeType: string) => {
+			const categories = {
+				sources: ['osc', 'noise'], // Generate audio
+				processors: ['gain', 'filter', 'delay'], // Process audio
+				destinations: ['dac'] // Output audio
+			};
+
+			for (const [category, types] of Object.entries(categories)) {
+				if (types.includes(nodeType)) return category;
+			}
+			return 'unknown';
+		};
+
+		const sourceCategory = getNodeCategory(sourceType);
+		const targetCategory = getNodeCategory(targetType);
+
+		const canConnect = match({ source: sourceCategory, target: targetCategory })
+			.with({ source: 'sources', target: 'sources' }, () => false) // Sources can't connect to sources
+			.with({ source: 'sources', target: 'processors' }, () => true) // Sources to processors
+			.with({ source: 'sources', target: 'destinations' }, () => true) // Sources to destinations
+			.with({ source: 'processors', target: 'sources' }, () => false) // Can't connect to sources
+			.with({ source: 'processors', target: 'processors' }, () => true) // Processors can chain
+			.with({ source: 'processors', target: 'destinations' }, () => true) // Processors to destinations
+			.otherwise(() => true); // Allow unknown combinations by default
+
+		return canConnect;
 	}
 
 	createOscillator(nodeId: string, type: OscillatorType, frequency: number): OscillatorNode {
@@ -71,6 +121,7 @@ export class AudioSystem {
 		osc.start(0);
 
 		this.nodeById.set(nodeId, osc);
+		this.nodeTypes.set(nodeId, 'osc');
 	}
 
 	createGainObject(nodeId: string, params: string[]) {
@@ -80,12 +131,14 @@ export class AudioSystem {
 		gainNode.gain.value = gainValue;
 
 		this.nodeById.set(nodeId, gainNode);
+		this.nodeTypes.set(nodeId, 'gain');
 	}
 
 	createDacObject(nodeId: string, _params: string[]) {
 		// DAC connects to the main output gain, which connects to destination
 		if (this.outGain) {
 			this.nodeById.set(nodeId, this.outGain);
+			this.nodeTypes.set(nodeId, 'dac');
 		}
 	}
 
@@ -104,11 +157,13 @@ export class AudioSystem {
 	// Remove audio object
 	removeAudioObject(nodeId: string) {
 		const node = this.nodeById.get(nodeId);
+		const nodeType = this.nodeTypes.get(nodeId);
 
 		if (node) {
-			if (node instanceof OscillatorNode) {
+			// Use node type for cleanup instead of instanceof
+			if (nodeType === 'osc') {
 				try {
-					node.stop();
+					(node as OscillatorNode).stop();
 				} catch (error) {
 					console.log(`Oscillator ${nodeId} was already stopped:`, error);
 				}
@@ -118,6 +173,7 @@ export class AudioSystem {
 		}
 
 		this.nodeById.delete(nodeId);
+		this.nodeTypes.delete(nodeId);
 	}
 
 	static getInstance(): AudioSystem {
@@ -134,19 +190,27 @@ export class AudioSystem {
 
 	// Update audio connections based on edges
 	updateEdges(edges: Edge[]) {
-		// Disconnect all existing connections
-		for (const node of this.nodeById.values()) {
-			node.disconnect();
-		}
+		try {
+			// Disconnect all existing connections
+			for (const node of this.nodeById.values()) {
+				try {
+					node.disconnect();
+				} catch (error) {
+					console.warn('Error disconnecting node:', error);
+				}
+			}
 
-		// Reconnect the output gain to destination
-		if (this.outGain) {
-			this.outGain.connect(this.audioContext.destination);
-		}
+			// Reconnect the output gain to destination
+			if (this.outGain) {
+				this.outGain.connect(this.audioContext.destination);
+			}
 
-		// Recreate connections based on edges
-		for (const edge of edges) {
-			this.connect(edge.source, edge.target);
+			// Recreate connections based on edges
+			for (const edge of edges) {
+				this.connect(edge.source, edge.target);
+			}
+		} catch (error) {
+			console.error('Error updating audio edges:', error);
 		}
 	}
 }

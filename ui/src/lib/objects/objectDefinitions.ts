@@ -177,7 +177,7 @@ export function validateMessageType(value: any, expectedType: string): boolean {
 		case 'bang':
 			return value?.type === 'bang';
 		case 'float':
-			return typeof value === 'number' && !Number.isInteger(value);
+			return typeof value === 'number';
 		case 'int':
 			return typeof value === 'number' && Number.isInteger(value);
 		case 'string':
