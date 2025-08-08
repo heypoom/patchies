@@ -60,7 +60,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	m2f: {
+	mtof: {
 		inlets: [{ name: 'note', type: 'float', description: 'MIDI note value (0-127)' }],
 		outlets: [{ name: 'frequency', type: 'float', description: 'Frequency in Hz' }],
 		description: 'Converts MIDI note values to frequency float values',
@@ -74,16 +74,6 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Sum of input signals' }],
 		description: 'Adds two audio signals together',
-		tags: ['audio']
-	},
-
-	'-~': {
-		inlets: [
-			{ name: 'left', type: 'signal', description: 'Left signal input' },
-			{ name: 'right', type: 'signal', description: 'Right signal input' }
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Difference of input signals' }],
-		description: 'Subtracts right signal from left signal',
 		tags: ['audio']
 	}
 };
