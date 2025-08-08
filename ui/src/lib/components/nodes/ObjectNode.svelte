@@ -90,6 +90,9 @@
 	const filteredSuggestions = $derived.by(() => {
 		if (!isEditing) return [];
 
+		// Don't show autocomplete if there's a space (user is typing parameters)
+		if (expr.includes(' ')) return [];
+
 		// Show all items if input is empty, with objects first
 		if (!expr.trim()) {
 			const objects = allSearchableItems
@@ -104,7 +107,7 @@
 			];
 		}
 
-		// Fuzzy search all items
+		// Fuzzy search all items (only the first word/object name)
 		const results = allItemsFuse.search(expr);
 
 		// Sort results with custom scoring: objects get priority over presets
