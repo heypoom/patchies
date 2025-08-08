@@ -14,6 +14,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { PRESETS } from '$lib/presets/presets';
 
 	let {
 		id: nodeId,
@@ -25,6 +26,7 @@
 
 	let inputElement = $state<HTMLInputElement>();
 	let nodeElement = $state<HTMLDivElement>();
+	let resultsContainer = $state<HTMLDivElement>();
 	let expr = $state(data.expr || '');
 	let isEditing = $state(!data.expr); // Start in editing mode if no name;
 	let showAutocomplete = $state(false);
@@ -67,12 +69,28 @@
 	const filteredSuggestions = $derived.by(() => {
 		if (!isEditing) return [];
 
-		// Show first 6 suggestions if input is empty
-		if (!expr.trim()) return allObjectNames.slice(0, 6);
+		// Show all suggestions if input is empty
+		if (!expr.trim()) return allObjectNames;
 
-		return allObjectNames
-			.filter((objName) => objName.toLowerCase().startsWith(expr.toLowerCase()))
-			.slice(0, 6); // Show max 6 suggestions
+		// Check if user is typing a preset command
+		const presetMatch = expr.trim().match(/^ps\s*(.*)$/i);
+		if (presetMatch) {
+			const presetQuery = presetMatch[1].toLowerCase();
+			const presetNames = Object.keys(PRESETS);
+
+			// If just "ps" or "ps ", show all presets
+			if (!presetQuery) {
+				return presetNames.map((name) => `ps ${name}`);
+			}
+
+			// Filter presets based on the query after "ps "
+			return presetNames
+				.filter((name) => name.toLowerCase().startsWith(presetQuery))
+				.map((name) => `ps ${name}`);
+		}
+
+		// Default behavior for non-preset commands
+		return allObjectNames.filter((objName) => objName.toLowerCase().startsWith(expr.toLowerCase()));
 	});
 
 	function enterEditingMode() {
@@ -148,6 +166,11 @@
 	};
 
 	function handleNameChange() {
+		// Check if it's a preset command first
+		if (tryCreatePreset()) {
+			return; // Early return if preset was created
+		}
+
 		updateNodeData(nodeId, { ...data, expr });
 
 		// Check if this should transform to a visual node
@@ -155,6 +178,25 @@
 
 		// Create audio object if it's an audio node
 		tryCreateAudioObject();
+	}
+
+	function tryCreatePreset(): boolean {
+		if (!expr.trim()) return false;
+
+		const presetMatch = expr.trim().match(/^ps\s+(.+)$/i);
+		if (!presetMatch) return false;
+
+		const presetName = presetMatch[1];
+		const preset = PRESETS[presetName];
+
+		if (!preset) {
+			console.warn(`Preset "${presetName}" not found`);
+			return false;
+		}
+
+		// Transform to the preset's node type with its data
+		changeNode(preset.type, preset.data as Record<string, unknown>);
+		return true;
 	}
 
 	function tryCreateAudioObject() {
@@ -221,10 +263,12 @@
 			.with('ArrowDown', () => {
 				event.preventDefault();
 				selectedSuggestion = Math.min(selectedSuggestion + 1, filteredSuggestions.length - 1);
+				scrollToSelectedItem();
 			})
 			.with('ArrowUp', () => {
 				event.preventDefault();
 				selectedSuggestion = Math.max(selectedSuggestion - 1, 0);
+				scrollToSelectedItem();
 			})
 			.with('Enter', 'Tab', () => {
 				event.preventDefault();
@@ -247,6 +291,25 @@
 
 		// Try transformation after setting the name
 		setTimeout(() => tryTransformToVisualNode(), 0);
+	}
+
+	function scrollToSelectedItem() {
+		if (!resultsContainer) return;
+
+		const selectedElement = resultsContainer.children[selectedSuggestion] as HTMLElement;
+		if (!selectedElement) return;
+
+		const containerRect = resultsContainer.getBoundingClientRect();
+		const elementRect = selectedElement.getBoundingClientRect();
+
+		// Check if element is below the visible area
+		if (elementRect.bottom > containerRect.bottom) {
+			selectedElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+		}
+		// Check if element is above the visible area
+		else if (elementRect.top < containerRect.top) {
+			selectedElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		}
 	}
 
 	function handleBlur() {
@@ -325,22 +388,30 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute left-0 top-full z-50 mt-1 w-full min-w-24 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+								class="absolute left-0 top-full z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 							>
-								{#each filteredSuggestions as suggestion, index}
-									<button
-										type="button"
-										onclick={() => selectSuggestion(suggestion)}
-										class={[
-											'w-full cursor-pointer px-3 py-2 text-left font-mono text-xs text-zinc-200 hover:bg-zinc-800/80',
-											index === selectedSuggestion ? 'bg-zinc-800/80' : '',
-											index === 0 ? 'rounded-t-md' : '',
-											index === filteredSuggestions.length - 1 ? 'rounded-b-md' : ''
-										]}
-									>
-										{suggestion}
-									</button>
-								{/each}
+								<!-- Results List -->
+								<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
+									{#each filteredSuggestions as suggestion, index}
+										<button
+											type="button"
+											onclick={() => selectSuggestion(suggestion)}
+											class={[
+												'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
+												index === selectedSuggestion
+													? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
+													: 'border-transparent text-zinc-300 hover:bg-zinc-800/80'
+											]}
+										>
+											{suggestion}
+										</button>
+									{/each}
+								</div>
+
+								<!-- Footer with keyboard hints -->
+								<div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-700">
+									<span>↑↓ navigate • Enter select • Esc cancel</span>
+								</div>
 							</div>
 						{/if}
 					{:else}
