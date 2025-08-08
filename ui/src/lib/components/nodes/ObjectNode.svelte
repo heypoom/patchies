@@ -123,19 +123,14 @@
 		// Validate message type against inlet specification
 		if (inlet.type && !validateMessageType(message, inlet.type)) {
 			console.warn(
-				`Invalid message type for ${expr} inlet ${inlet.name}: expected ${inlet.type}, got`,
+				`invalid message type for ${expr} inlet ${inlet.name}: expected ${inlet.type}, got`,
 				message
 			);
 
 			return;
 		}
 
-		// Update audio system parameter if it's an audio object
-		const parts = expr.trim().split(' ');
-		const objectName = parts[0]?.toLowerCase();
-		const audioObjectTypes = ['osc', 'gain', 'dac'];
-
-		if (audioObjectTypes.includes(objectName) && inlet.name && typeof message === 'number') {
+		if (inlet.name) {
 			audioSystem.setParameter(nodeId, inlet.name, message);
 		}
 	};
