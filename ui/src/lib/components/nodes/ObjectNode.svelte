@@ -15,6 +15,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { PRESETS } from '$lib/presets/presets';
+	import Fuse from 'fuse.js';
 
 	let {
 		id: nodeId,
@@ -36,15 +37,35 @@
 	let audioSystem = AudioSystem.getInstance();
 	const messageContext = new MessageContext(nodeId);
 
-	// Combine visual node names and text-only object names for autocomplete
-	const allObjectNames = $derived.by(() => {
+	// Combine all searchable items (objects + presets) with metadata
+	const allSearchableItems = $derived.by(() => {
 		const objectDefNames = getObjectNames();
 		const visualNodeList = [...nodeNames];
+		const combinedObjectNames = new Set([...visualNodeList, ...objectDefNames]);
 
-		// Combine both lists, removing duplicates and ensuring visual nodes take precedence
-		const combined = new Set([...visualNodeList, ...objectDefNames]);
+		const items: Array<{ name: string; type: 'object' | 'preset' }> = [];
 
-		return Array.from(combined).sort();
+		// Add regular objects
+		Array.from(combinedObjectNames).forEach((name) => {
+			items.push({ name, type: 'object' });
+		});
+
+		// Add presets
+		Object.keys(PRESETS).forEach((name) => {
+			items.push({ name, type: 'preset' });
+		});
+
+		return items;
+	});
+
+	// Create single Fuse instance for all items
+	const allItemsFuse = $derived.by(() => {
+		return new Fuse(allSearchableItems, {
+			keys: ['name'],
+			threshold: 0.6,
+			includeScore: true,
+			minMatchCharLength: 1
+		});
 	});
 
 	// Get object definition for current name (if it exists)
@@ -69,28 +90,35 @@
 	const filteredSuggestions = $derived.by(() => {
 		if (!isEditing) return [];
 
-		// Show all suggestions if input is empty
-		if (!expr.trim()) return allObjectNames;
-
-		// Check if user is typing a preset command
-		const presetMatch = expr.trim().match(/^ps\s*(.*)$/i);
-		if (presetMatch) {
-			const presetQuery = presetMatch[1].toLowerCase();
-			const presetNames = Object.keys(PRESETS);
-
-			// If just "ps" or "ps ", show all presets
-			if (!presetQuery) {
-				return presetNames.map((name) => `ps ${name}`);
-			}
-
-			// Filter presets based on the query after "ps "
-			return presetNames
-				.filter((name) => name.toLowerCase().startsWith(presetQuery))
-				.map((name) => `ps ${name}`);
+		// Show all items if input is empty, with objects first
+		if (!expr.trim()) {
+			const objects = allSearchableItems
+				.filter((item) => item.type === 'object')
+				.map((item) => ({ name: item.name, type: item.type }));
+			const presets = allSearchableItems
+				.filter((item) => item.type === 'preset')
+				.map((item) => ({ name: item.name, type: item.type }));
+			return [
+				...objects.sort((a, b) => a.name.localeCompare(b.name)),
+				...presets.sort((a, b) => a.name.localeCompare(b.name))
+			];
 		}
 
-		// Default behavior for non-preset commands
-		return allObjectNames.filter((objName) => objName.toLowerCase().startsWith(expr.toLowerCase()));
+		// Fuzzy search all items
+		const results = allItemsFuse.search(expr);
+
+		// Sort results with custom scoring: objects get priority over presets
+		const sortedResults = results.sort((a, b) => {
+			// First sort by type (objects first)
+			if (a.item.type !== b.item.type) {
+				return a.item.type === 'object' ? -1 : 1;
+			}
+
+			// Then by Fuse score (lower score = better match)
+			return (a.score || 0) - (b.score || 0);
+		});
+
+		return sortedResults.map((result) => ({ name: result.item.name, type: result.item.type }));
 	});
 
 	function enterEditingMode() {
@@ -181,15 +209,11 @@
 	function tryCreatePreset(): boolean {
 		if (!expr.trim()) return false;
 
-		const presetMatch = expr.trim().match(/^ps\s+(.+)$/i);
-		if (!presetMatch) return false;
-
-		const presetName = presetMatch[1];
-		const preset = PRESETS[presetName];
+		// Check if the expression exactly matches a preset name
+		const preset = PRESETS[expr.trim()];
 
 		if (!preset) {
-			console.warn(`Preset "${presetName}" not found`);
-			return false;
+			return false; // Not a preset
 		}
 
 		// Transform to the preset's node type with its data
@@ -271,7 +295,7 @@
 			.with('Enter', 'Tab', () => {
 				event.preventDefault();
 				if (filteredSuggestions[selectedSuggestion]) {
-					expr = filteredSuggestions[selectedSuggestion];
+					expr = filteredSuggestions[selectedSuggestion].name;
 					showAutocomplete = false;
 					exitEditingMode(true);
 				}
@@ -282,8 +306,8 @@
 			});
 	}
 
-	function selectSuggestion(suggestion: string) {
-		expr = suggestion;
+	function selectSuggestion(suggestion: { name: string; type: 'object' | 'preset' }) {
+		expr = suggestion.name;
 		showAutocomplete = false;
 		exitEditingMode(true);
 
@@ -401,13 +425,19 @@
 													: 'border-transparent text-zinc-300 hover:bg-zinc-800/80'
 											]}
 										>
-											{suggestion}
+											<span class="font-mono">{suggestion.name}</span>
+
+											{#if suggestion.type === 'preset'}
+												<span class="text-[10px] text-zinc-500"
+													>{PRESETS[suggestion.name].type}</span
+												>
+											{/if}
 										</button>
 									{/each}
 								</div>
 
 								<!-- Footer with keyboard hints -->
-								<div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-700">
+								<div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
 									<span>↑↓ navigate • Enter select • Esc cancel</span>
 								</div>
 							</div>

@@ -81,6 +81,7 @@
 		"butterchurn": "^2.6.7",
 		"butterchurn-presets": "^2.4.7",
 		"codemirror": "^6.0.2",
+		"fuse.js": "^7.1.0",
 		"hydra-ts": "^1.0.0",
 		"json5": "^2.2.3",
 		"lezer-glsl": "^0.6.0",
