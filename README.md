@@ -48,9 +48,16 @@ onMessage((data, meta) => {
 })
 ```
 
-You can use the `send` and `onMessage` function in all JavaScript-based objects, such as `js`, `p5`, and `hydra`.
+You can use the `send` and `onMessage` function in all JavaScript-based objects, such as `js`, `p5`, `hydra`, `strudel` and `canvas`.
 
-Note that `strudel` object does not support message passing yet, as it runs in a separate `StrudelMirror` environment.
+You can also `send` messages into GLSL uniforms. If you define a uniform in your GLSL code like so:
+
+```glsl
+uniform float iMix;
+uniform vec2 iFoo;
+```
+
+This will create two inlets in the GLSL object: the first one allows `send(0.5)` for `iMix`, and the other allows `send([0.0, 0.0])` for `iFoo`. When you `send` messages to these inlets, it will set the internal GLSL uniform values for the node.
 
 ## Video Chaining
 
