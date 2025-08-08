@@ -96,7 +96,11 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	osc: {
 		inlets: [
 			{ name: 'frequency', type: 'float', description: 'Oscillator frequency in Hz' },
-			{ name: 'amplitude', type: 'float', description: 'Oscillator amplitude (0-1)' }
+			{
+				name: 'type',
+				type: 'string',
+				description: 'Oscillator type (sine, square, sawtooth, triangle)'
+			}
 		],
 		outlets: [{ name: 'out', type: 'float', description: 'Oscillator output' }],
 		description: 'Sine wave oscillator',

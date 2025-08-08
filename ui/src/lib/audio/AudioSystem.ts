@@ -2,7 +2,7 @@ import { getAudioContext } from '@strudel/webaudio';
 import type { Edge } from '@xyflow/svelte';
 import Meyda from 'meyda';
 import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -13,13 +13,9 @@ export class AudioSystem {
 	outGain: GainNode | null = null;
 	outAnalyzer: MeydaAnalyzer | null = null;
 
-	get volume() {
-		return this.outGain?.gain?.value ?? 0;
-	}
-
 	start() {
 		this.outGain = this.audioContext.createGain();
-		this.outGain.gain.value = 0.05;
+		this.outGain.gain.value = 0.5;
 		this.outGain.connect(this.audioContext.destination);
 
 		this.outAnalyzer = Meyda.createMeydaAnalyzer({
@@ -31,8 +27,6 @@ export class AudioSystem {
 				// Handle analysis features here if needed
 			}
 		});
-
-		// this.outAnalyzer.start();
 	}
 
 	connect(sourceId: string, targetId: string) {
@@ -106,13 +100,13 @@ export class AudioSystem {
 	// Create audio objects for object nodes
 	createAudioObject(nodeId: string, objectType: string, params: string[] = []) {
 		match(objectType)
-			.with('osc', () => this.createOscillatorObject(nodeId, params))
-			.with('gain', () => this.createGainObject(nodeId, params))
-			.with('dac', () => this.createDacObject(nodeId, params))
+			.with('osc', () => this.createOsc(nodeId, params))
+			.with('gain', () => this.createGain(nodeId, params))
+			.with('dac', () => this.createDac(nodeId))
 			.otherwise(() => {});
 	}
 
-	createOscillatorObject(nodeId: string, params: string[]) {
+	createOsc(nodeId: string, params: string[]) {
 		const freq = params[0] ? parseFloat(params[0]) : 440;
 
 		const osc = this.audioContext.createOscillator();
@@ -124,7 +118,7 @@ export class AudioSystem {
 		this.nodeTypes.set(nodeId, 'osc');
 	}
 
-	createGainObject(nodeId: string, params: string[]) {
+	createGain(nodeId: string, params: string[]) {
 		const gainValue = params[0] ? parseFloat(params[0]) : 1.0;
 
 		const gainNode = this.audioContext.createGain();
@@ -134,8 +128,7 @@ export class AudioSystem {
 		this.nodeTypes.set(nodeId, 'gain');
 	}
 
-	createDacObject(nodeId: string, _params: string[]) {
-		// DAC connects to the main output gain, which connects to destination
+	createDac(nodeId: string) {
 		if (this.outGain) {
 			this.nodeById.set(nodeId, this.outGain);
 			this.nodeTypes.set(nodeId, 'dac');
@@ -143,14 +136,24 @@ export class AudioSystem {
 	}
 
 	// Set parameter on existing audio object
-	setParameter(nodeId: string, paramName: string, value: number) {
+	setParameter(nodeId: string, key: string, value: unknown) {
 		const node = this.nodeById.get(nodeId);
 		if (!node) return;
 
-		if (node instanceof OscillatorNode && paramName === 'frequency') {
-			node.frequency.value = value;
-		} else if (node instanceof GainNode && paramName === 'gain') {
-			node.gain.value = value;
+		if (node instanceof OscillatorNode) {
+			match([key, value])
+				.with(['frequency', P.number], ([, freq]) => {
+					node.frequency.value = freq;
+				})
+				.with(['type', P.string], ([, type]) => {
+					node.type = type as OscillatorType;
+				});
+		}
+
+		if (node instanceof GainNode && key === 'gain') {
+			match([key, value]).with(['gain', P.number], ([, gain]) => {
+				node.gain.value = gain;
+			});
 		}
 	}
 
@@ -211,6 +214,16 @@ export class AudioSystem {
 			}
 		} catch (error) {
 			console.error('Error updating audio edges:', error);
+		}
+	}
+
+	get outVolume() {
+		return this.outGain?.gain?.value ?? 0;
+	}
+
+	setOutVolume(value: number) {
+		if (this.outGain) {
+			this.outGain.gain.value = value ?? 0;
 		}
 	}
 }
