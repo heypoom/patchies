@@ -65,6 +65,8 @@
 				width: outputWidth / 2,
 				height: outputHeight / 2
 			});
+
+			visualizer.connectAudio(audioSystem.outGain);
 		}
 
 		glSystem.upsertNode(nodeId, 'img', {});

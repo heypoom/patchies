@@ -6,8 +6,8 @@
 		useSvelteFlow,
 		useUpdateNodeInternals
 	} from '@xyflow/svelte';
-	import { onMount, getContext } from 'svelte';
-	import { nodeNames, type NodeTypeName } from '$lib/nodes/node-types';
+	import { onMount } from 'svelte';
+	import { nodeNames } from '$lib/nodes/node-types';
 	import {
 		getObjectNames,
 		getObjectDefinition,
@@ -29,7 +29,7 @@
 		selected
 	}: { id: string; data: { expr: string }; selected: boolean } = $props();
 
-	const { updateNodeData, deleteElements, updateNode } = useSvelteFlow();
+	const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
 
 	const edgesHelper = useEdges();
 	const updateNodeInternals = useUpdateNodeInternals();
@@ -244,6 +244,10 @@
 			// Remove existing audio object first to avoid duplicates
 			audioSystem.removeAudioObject(nodeId);
 			audioSystem.createAudioObject(nodeId, objectName, params);
+
+			// Restore audio connections after creating new object
+			const edges = getEdges();
+			audioSystem.updateEdges(edges);
 		}
 	}
 
