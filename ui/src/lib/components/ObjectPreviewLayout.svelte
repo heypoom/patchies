@@ -2,7 +2,6 @@
 	import Icon from '@iconify/svelte';
 	import type { Snippet } from 'svelte';
 	import * as Tooltip from './ui/tooltip';
-	import { previewSize } from '../../stores/renderer.store';
 	import { NodeToolbar, Position } from '@xyflow/svelte';
 
 	let {
@@ -45,7 +44,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">{title}</div>
+					<div class="font-mono text-[10px] font-medium text-zinc-400">{title}</div>
 				</div>
 
 				<div class="flex gap-1">

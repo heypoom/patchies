@@ -53,9 +53,7 @@
 			bind:this={previewCanvas}
 			class={[
 				'rounded-md border',
-				selected
-					? 'border-zinc-200 [&>canvas]:rounded-[7px]'
-					: 'border-transparent [&>canvas]:rounded-md',
+				selected ? 'border-zinc-200' : 'border-transparent',
 				nodrag ? 'nodrag cursor-default' : 'cursor-grab'
 			]}
 			{width}
