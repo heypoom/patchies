@@ -3,7 +3,12 @@ import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
-import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
+import {
+	previewVisibleMap,
+	isGlslPlaying,
+	previewSize,
+	outputSize
+} from '../../stores/renderer.store';
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { IpcSystem } from './IpcSystem';
@@ -38,12 +43,13 @@ export class GLSystem {
 	/** Cache for outgoing video connections to avoid recalculating on every frame */
 	private outgoingConnectionsCache = new Map<string, boolean>();
 
-	public outputSize: [width: number, height: number] = [800, 600];
+	get outputSize(): [number, number] {
+		return get(outputSize);
+	}
 
-	public previewSize: [width: number, height: number] = [
-		this.outputSize[0] / 4,
-		this.outputSize[1] / 4
-	];
+	get previewSize(): [number, number] {
+		return get(previewSize);
+	}
 
 	static getInstance() {
 		if (!GLSystem.instance) {
@@ -230,7 +236,7 @@ export class GLSystem {
 	}
 
 	setPreviewSize(width: number, height: number) {
-		this.previewSize = [width, height];
+		previewSize.set([width, height]);
 
 		for (const nodeId in this.previewCanvasContexts) {
 			const context = this.previewCanvasContexts[nodeId];
@@ -253,7 +259,7 @@ export class GLSystem {
 	}
 
 	setOutputSize(width: number, height: number) {
-		this.outputSize = [width, height];
+		outputSize.set([width, height]);
 		this.send('setOutputSize', { width, height });
 	}
 

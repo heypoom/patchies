@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import type { Snippet } from 'svelte';
 	import * as Tooltip from './ui/tooltip';
+	import { previewSize } from '../../stores/renderer.store';
 
 	let {
 		title,
@@ -27,7 +28,10 @@
 		codeEditor: Snippet;
 	} = $props();
 
+	const previewEditorGap = 20;
+
 	let showEditor = $state(false);
+	let previewWidth = $derived($previewSize[0]);
 
 	function handlePlaybackToggle() {
 		onPlaybackToggle?.();
@@ -50,7 +54,7 @@
 					{#if showPauseButton}
 						<button
 							title={paused ? 'Resume' : 'Pause'}
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 							onclick={handlePlaybackToggle}
 						>
 							<Icon icon={paused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
@@ -58,7 +62,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={() => {
 							showEditor = !showEditor;
 						}}
@@ -78,7 +82,7 @@
 	</div>
 
 	{#if showEditor}
-		<div class="relative">
+		<div class="absolute" style="left: {previewWidth + previewEditorGap}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				{#if onrun}
 					<Tooltip.Root>
