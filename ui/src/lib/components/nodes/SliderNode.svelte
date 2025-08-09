@@ -133,8 +133,8 @@
 							100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%)"
 						class="nodrag h-1 w-full cursor-pointer appearance-none rounded-lg
 							[&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500
-							[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:cursor-pointer
-							[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300
+							[&::-moz-range-thumb:hover]:bg-zinc-100 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3
+							[&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300
 							[&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg
 							[&::-moz-range-track]:border-none
 							[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3
