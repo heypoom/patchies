@@ -16,7 +16,7 @@ export class AudioSystem {
 
 	start() {
 		this.outGain = this.audioContext.createGain();
-		this.outGain.gain.value = 0.5;
+		this.outGain.gain.value = 0.8;
 		this.outGain.connect(this.audioContext.destination);
 
 		this.outAnalyzer = Meyda.createMeydaAnalyzer({
