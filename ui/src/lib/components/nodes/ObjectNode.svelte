@@ -277,6 +277,28 @@
 			.with(P.union('msg', 'm'), () => {
 				changeNode('msg', { message: expr.replace(name, '').trim() });
 			})
+			.with('slider', () => {
+				let [min = 0, max = 100, defaultValue] = expr
+					.replace(name, '')
+					.trim()
+					.split(' ')
+					.map(Number);
+
+				if (defaultValue === undefined) {
+					defaultValue = (min + max) / 2;
+				}
+
+				changeNode('slider', { min, max, defaultValue, isFloat: false });
+			})
+			.with('fslider', () => {
+				let [min = 0, max = 1, defaultValue] = expr.replace(name, '').trim().split(' ').map(Number);
+
+				if (defaultValue === undefined) {
+					defaultValue = (min + max) / 2;
+				}
+
+				changeNode('slider', { min, max, defaultValue, isFloat: true });
+			})
 			.otherwise(() => {
 				if (nodeNames.includes(name as any)) {
 					changeNode(name, getDefaultNodeData(name));
