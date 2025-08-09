@@ -100,12 +100,15 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 - Hydra is a live coding video synthesizer. You can use it to create complex video effects and animations.
 - See the [interactive Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
 - Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
+- The output method `.out(o0)` must always have an explicit output, otherwise it will error.
+  - Example: `src(s0).out(o0)` will output the video from the source `s0` to the output `o0`.
+  - If you copy examples from the Hydra documentation, you must add `.out(o0)` to the end of the code to make it work in Patchies.
+  - This is a limitation of `hydra-ts`, the library that powers Hydra in Patchies.
 - You can call these special methods in your Hydra code:
-  - `initSource(s0)` to initialize the Hydra source object with the video inlet.
-    - There are four video inputs: `s0`, `s1`, `s2`, and `s3`.
-    - There are also four video inlets.
-    - `initSource(s0)` binds the first video inlet to the `s0` source object.
-    - You can specify the video inlet index. For example, use `initSource(s0, 0)` to bind the first video inlet to source s0, `initSource(s1, 1)` to bind the second video inlet to source s1, and so on.
+  - `initSources(...)` connects the Hydra source objects with the video inlets.
+    - `initSources(0)` will initialize the first Hydra source object with the first video inlet.
+    - `initSources(0, 1, 2)` will initialize the three Hydra source objects with the first three video inlets.
+    - `initSources(null, 2, 3)` will map `s1` to inlet 2 and `s2` to inlet 3, while leaving inlet 0 and 1 unconnected.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `send(message)` and `onMessage(callback)`

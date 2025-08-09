@@ -151,7 +151,7 @@ export class HydraRenderer {
 				o2,
 				o3,
 
-				initSource: this.initSource.bind(this),
+				initSources: this.initSources.bind(this),
 
 				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;
@@ -198,8 +198,17 @@ export class HydraRenderer {
 		}
 	}
 
-	initSource(sourceIndex: number = 0, inputIndex: number = sourceIndex) {
-		this.sourceToParamIndexMap[sourceIndex] = inputIndex;
+	initSources(...sources: number[]) {
+		if (sources.length === 0) sources = [0];
+
+		sources.forEach((inputIndex, sourceIndex) => {
+			// skip mapping if inputIndex is null or undefined
+			if (inputIndex === null || inputIndex === undefined) {
+				return;
+			}
+
+			this.sourceToParamIndexMap[sourceIndex] = inputIndex;
+		});
 	}
 
 	sendMessage(data: unknown) {
