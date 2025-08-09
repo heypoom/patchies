@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, NodeToolbar, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -302,25 +302,27 @@
 	</div>
 
 	{#if showEditor}
-		<div class="relative">
-			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
-				</button>
-			</div>
+		<NodeToolbar align="start" position={Position.Right} isVisible={true}>
+			<div class="relative">
+				<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+					<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+						<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					</button>
+				</div>
 
-			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-				<CodeEditor
-					value={code}
-					onchange={(newCode) => {
-						updateNodeData(nodeId, { ...data, code: newCode });
-					}}
-					language="javascript"
-					placeholder="Write your JavaScript code here..."
-					class="nodrag h-64 w-full resize-none"
-					onrun={executeCode}
-				/>
+				<div class="border border-zinc-600 bg-zinc-900 shadow-xl">
+					<CodeEditor
+						value={code}
+						onchange={(newCode) => {
+							updateNodeData(nodeId, { ...data, code: newCode });
+						}}
+						language="javascript"
+						placeholder="Write your JavaScript code here..."
+						class="nodrag h-64 w-full resize-none"
+						onrun={executeCode}
+					/>
+				</div>
 			</div>
-		</div>
+		</NodeToolbar>
 	{/if}
 </div>

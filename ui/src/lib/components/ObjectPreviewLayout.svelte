@@ -3,6 +3,7 @@
 	import type { Snippet } from 'svelte';
 	import * as Tooltip from './ui/tooltip';
 	import { previewSize } from '../../stores/renderer.store';
+	import { NodeToolbar, Position } from '@xyflow/svelte';
 
 	let {
 		title,
@@ -28,10 +29,7 @@
 		codeEditor: Snippet;
 	} = $props();
 
-	const previewEditorGap = 20;
-
 	let showEditor = $state(false);
-	let previewWidth = $derived($previewSize[0]);
 
 	function handlePlaybackToggle() {
 		onPlaybackToggle?.();
@@ -82,29 +80,31 @@
 	</div>
 
 	{#if showEditor}
-		<div class="absolute" style="left: {previewWidth + previewEditorGap}px">
-			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				{#if onrun}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button onclick={handleRun} class="rounded p-1 hover:bg-zinc-700">
-								<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Run Code (shift+enter)</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				{/if}
+		<NodeToolbar align="start" position={Position.Right} isVisible={true}>
+			<div class="relative">
+				<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+					{#if onrun}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<button onclick={handleRun} class="rounded p-1 hover:bg-zinc-700">
+									<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+								</button>
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>Run Code (shift+enter)</p>
+							</Tooltip.Content>
+						</Tooltip.Root>
+					{/if}
 
-				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
-				</button>
-			</div>
+					<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+						<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					</button>
+				</div>
 
-			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-				{@render codeEditor()}
+				<div class="border border-zinc-600 bg-zinc-900 shadow-xl">
+					{@render codeEditor()}
+				</div>
 			</div>
-		</div>
+		</NodeToolbar>
 	{/if}
 </div>
