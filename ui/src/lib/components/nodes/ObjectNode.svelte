@@ -492,6 +492,10 @@
 	const getInletTypeHoverClass = (inletIndex: number) => {
 		const type = inlets[inletIndex]?.type;
 
+		if (isAutomated[inletIndex]) {
+			return 'hover:text-pink-500 cursor-pointer hover:underline';
+		}
+
 		return match(type)
 			.with('float', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
 			.with('int', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
@@ -614,7 +618,7 @@
 													]}
 												>
 													{#if isAutomated[index]}
-														<span class="text-pink-300">{getShortInletName(index)}</span>
+														{getShortInletName(index)}
 													{:else}
 														{stringifyParamByType(inlets[index], param, index)}
 													{/if}
