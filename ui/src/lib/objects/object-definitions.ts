@@ -1,5 +1,3 @@
-import { match, P } from 'ts-pattern';
-
 export type ObjectDataType =
 	| 'any'
 	| 'signal'
@@ -125,16 +123,3 @@ export function getObjectDefinition(expr: string): ObjectDefinition | undefined 
 
 // Helper function to get all object names
 export const getObjectNames = () => Object.keys(objectDefinitions);
-
-// Helper function to validate inlet/outlet types
-export const validateMessageType = (value: unknown, expectedType: ObjectDataType): boolean =>
-	match<[unknown, ObjectDataType]>([value, expectedType])
-		.with([P.any, 'any'], () => true)
-		.with([{ type: 'bang' }, 'bang'], () => true)
-		.with([P.number, 'float'], () => true)
-		.with([P.number, 'int'], ([n]) => Number.isInteger(n))
-		.with([P.string, 'string'], () => true)
-		.with([P.boolean, 'bool'], () => true)
-		.with([P.array(P.number), 'int[]'], ([arr]) => arr.every(Number.isInteger))
-		.with([P.array(P.number), 'float[]'], () => true)
-		.otherwise(() => false);

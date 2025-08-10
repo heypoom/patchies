@@ -11,10 +11,9 @@
 	import {
 		getObjectNames,
 		getObjectDefinition,
-		validateMessageType,
 		audioObjectNames,
 		getObjectNameFromExpr
-	} from '$lib/objects/objectDefinitions';
+	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -23,7 +22,11 @@
 	import { PRESETS } from '$lib/presets/presets';
 	import Fuse from 'fuse.js';
 	import * as Tooltip from '../ui/tooltip';
-	import { parseObjectParamFromString, stringifyParamByType } from '$lib/audio/parse-object-param';
+	import {
+		parseObjectParamFromString,
+		stringifyParamByType
+	} from '$lib/objects/parse-object-param';
+	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 
 	let {
 		id: nodeId,
@@ -198,9 +201,9 @@
 		if (!inlet) return;
 
 		// Validate message type against inlet specification
-		if (inlet.type && !validateMessageType(message, inlet.type)) {
+		if (!validateMessageToObject(message, inlet)) {
 			console.warn(
-				`invalid message type for ${expr} inlet ${inlet.name}: expected ${inlet.type}, got`,
+				`invalid message type for ${data.name} inlet ${inlet.name}: expected ${inlet.type}, got`,
 				message
 			);
 
@@ -474,6 +477,17 @@
 			.with('string', () => 'hover:text-blue-500 cursor-pointer hover:underline')
 			.otherwise(() => 'hover:text-green-400');
 	};
+
+	const getInletHint = (inletIndex: number) => {
+		const inlet = inlets[inletIndex];
+		if (!inlet) return '';
+
+		if (inlet.type === 'string' && inlet.options) {
+			return `${inlet.name} (${inlet.options.join(', ')})`;
+		}
+
+		return `${inlet.name} (${inlet.type})`;
+	};
 </script>
 
 <div class="relative">
@@ -567,12 +581,14 @@
 									<Tooltip.Root>
 										<Tooltip.Trigger>
 											<span
-												class={['text-zinc-400 underline-offset-2', getInletTypeHoverClass(index)]}
-												>{stringifyParamByType(inlets[index], param, index)}</span
+												class={[
+													'nodrag text-zinc-400 underline-offset-2',
+													getInletTypeHoverClass(index)
+												]}>{stringifyParamByType(inlets[index], param, index)}</span
 											>
 										</Tooltip.Trigger>
 										<Tooltip.Content>
-											<p>{inlets[index].name} ({inlets[index].type})</p>
+											<p>{getInletHint(index)}</p>
 										</Tooltip.Content>
 									</Tooltip.Root>
 								{/each}

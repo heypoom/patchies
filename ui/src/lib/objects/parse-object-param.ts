@@ -1,4 +1,4 @@
-import { objectDefinitions, type ObjectInlet } from '$lib/objects/objectDefinitions';
+import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
 
