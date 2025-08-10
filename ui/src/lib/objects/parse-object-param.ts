@@ -26,7 +26,16 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 			return parsed.map((v) => limitToValidNumber(inlet, parseInt(v)));
 		})
 		.with('string', () => {
-			if (inlet.options && !inlet.options.includes(strValue)) return inlet.defaultValue || '';
+			if (inlet.options) {
+				if (inlet.options.includes(strValue)) return strValue;
+
+				// For ease of typing, allow you to enter a couple of letters from the option
+				// e.g. tr -> triangle, sq -> square
+				const prefixed = inlet.options.find((o) => typeof o === 'string' && o.startsWith(strValue));
+				if (prefixed) return prefixed;
+
+				return inlet.defaultValue || '';
+			}
 
 			return strValue || inlet.defaultValue || '';
 		})
