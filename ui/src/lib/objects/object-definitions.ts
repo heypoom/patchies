@@ -68,7 +68,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				type: 'float',
 				description: 'Oscillator frequency in hertz',
 				defaultValue: 440,
-				isAudioParam: true
+				isAudioParam: true,
+				precision: 0
 			},
 			{
 				name: 'type',
