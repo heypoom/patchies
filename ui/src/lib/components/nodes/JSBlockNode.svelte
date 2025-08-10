@@ -256,7 +256,7 @@
 					{#each Array.from({ length: inletCount }) as _, index}
 						<Handle
 							type="target"
-							id={`message-in-${index}`}
+							id={`in-${index}`}
 							position={Position.Top}
 							style={`left: ${(inletCount ?? 1) === 1 ? '50%' : `${35 + (index / (inletCount - 1)) * 30}%`}`}
 							title={`Inlet ${index}`}
@@ -341,7 +341,7 @@
 					{#each Array.from({ length: outletCount }) as _, index}
 						<Handle
 							type="source"
-							id={`message-out-${index}`}
+							id={`out-${index}`}
 							position={Position.Bottom}
 							style={`left: ${(outletCount ?? 1) === 1 ? '50%' : `${35 + (index / (outletCount - 1)) * 30}%`}`}
 							title={`Outlet ${index}`}
