@@ -7,6 +7,13 @@
 	import { match, P } from 'ts-pattern';
 	import Json5 from 'json5';
 
+	import hljs from 'highlight.js/lib/core';
+	import javascript from 'highlight.js/lib/languages/javascript';
+
+	import 'highlight.js/styles/night-owl.min.css';
+
+	hljs.registerLanguage('javascript', javascript);
+
 	let {
 		id: nodeId,
 		data,
@@ -19,6 +26,29 @@
 
 	let showTextInput = $state(false);
 	let msgText = $derived(data.message || '');
+
+	let isJsonObject = $derived.by(() => {
+		try {
+			const result = Json5.parse(data.message);
+
+			return result && typeof result !== 'number';
+		} catch {
+			return false;
+		}
+	});
+
+	let highlightedHtml = $derived.by(() => {
+		if (!isJsonObject || !msgText) return '';
+
+		try {
+			return hljs.highlight(msgText, {
+				language: 'javascript',
+				ignoreIllegals: true
+			}).value;
+		} catch (e) {
+			return '';
+		}
+	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
 		try {
@@ -74,7 +104,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
@@ -107,7 +137,13 @@
 								borderColor
 							]}
 						>
-							{msgText ? msgText : '<messagebox>'}
+							{#if msgText && isJsonObject}
+								<code>
+									{@html highlightedHtml}
+								</code>
+							{:else}
+								{msgText ? msgText : '<messagebox>'}
+							{/if}
 						</button>
 					{/if}
 				</div>
