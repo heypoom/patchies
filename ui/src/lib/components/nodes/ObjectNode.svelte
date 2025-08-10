@@ -6,7 +6,7 @@
 		useSvelteFlow,
 		useUpdateNodeInternals
 	} from '@xyflow/svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { nodeNames } from '$lib/nodes/node-types';
 	import {
 		getObjectNames,
@@ -271,6 +271,14 @@
 		return true;
 	}
 
+	function syncAudioSystem(name: string, params: unknown[]) {
+		audioSystem.removeAudioObject(nodeId);
+		audioSystem.createAudioObject(nodeId, name, params);
+
+		const edges = getEdges();
+		audioSystem.updateEdges(edges);
+	}
+
 	function tryCreateAudioObject() {
 		if (!expr.trim()) return false;
 
@@ -279,11 +287,7 @@
 
 		if (!audioObjectNames.includes(name)) return false;
 
-		audioSystem.removeAudioObject(nodeId);
-		audioSystem.createAudioObject(nodeId, name, params);
-
-		const edges = getEdges();
-		audioSystem.updateEdges(edges);
+		syncAudioSystem(name, params);
 
 		return true;
 	}
@@ -457,13 +461,15 @@
 			setTimeout(() => inputElement?.focus(), 10);
 		}
 
-		// Register message handler
-		messageContext.queue.addCallback(handleMessage);
+		if (audioObjectNames.includes(data.name)) {
+			syncAudioSystem(data.name, data.params);
+		}
 
-		// Cleanup function for when node is destroyed
-		return () => {
-			audioSystem.removeAudioObject(nodeId);
-		};
+		messageContext.queue.addCallback(handleMessage);
+	});
+
+	onDestroy(() => {
+		audioSystem.removeAudioObject(nodeId);
 	});
 
 	const getInletTypeHoverClass = (inletIndex: number) => {
