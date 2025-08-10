@@ -154,7 +154,20 @@
 				updateNodeInternals(nodeId);
 			};
 
-			const functionParams = ['console', 'send', 'onMessage', 'interval', 'llm', 'setPortCount'];
+			const setRunOnMount = (runOnMount = false) => {
+				updateNodeData(nodeId, { runOnMount });
+				updateNodeInternals(nodeId);
+			};
+
+			const functionParams = [
+				'console',
+				'send',
+				'onMessage',
+				'interval',
+				'llm',
+				'setPortCount',
+				'setRunOnMount'
+			];
 
 			const functionArgs = [
 				customConsole,
@@ -162,7 +175,8 @@
 				messageSystemContext.onMessage,
 				messageSystemContext.interval,
 				createLLMFunction(),
-				setPortCount
+				setPortCount,
+				setRunOnMount
 			];
 
 			const userFunction = new Function(
