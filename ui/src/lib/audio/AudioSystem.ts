@@ -172,33 +172,37 @@ export class AudioSystem {
 
 	// Set parameter on existing audio object
 	setParameter(nodeId: string, key: string, value: unknown) {
-		const entry = this.nodesById.get(nodeId);
-		if (!entry) return;
-
 		// Check if a scheduled message were sent
 		if (isScheduledMessage(value)) {
 			const audioParam = this.getAudioParam(nodeId, key);
 			if (!audioParam) return;
 
+			console.log(`automating ${key}:`, value);
 			this.timeScheduler.processMessage(audioParam, value);
 
 			return;
 		}
 
-		match(entry.type)
+		const state = this.nodesById.get(nodeId);
+		if (!state) return;
+
+		match(state.type)
 			.with('osc', () => {
-				const node = entry.node as OscillatorNode;
+				const node = state.node as OscillatorNode;
 
 				match([key, value])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
+					})
+					.with(['detune', P.number], ([, detune]) => {
+						node.detune.value = detune;
 					})
 					.with(['type', P.string], ([, type]) => {
 						node.type = type as OscillatorType;
 					});
 			})
 			.with('gain', () => {
-				const node = entry.node as GainNode;
+				const node = state.node as GainNode;
 
 				match([key, value]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
@@ -235,32 +239,6 @@ export class AudioSystem {
 
 	get audioContext(): AudioContext {
 		return getAudioContext();
-	}
-
-	disconnect(sourceId: string, targetId?: string, paramName?: string) {
-		const sourceEntry = this.nodesById.get(sourceId);
-		if (!sourceEntry) return;
-
-		try {
-			if (!targetId) {
-				// Disconnect from all connections
-				sourceEntry.node.disconnect();
-			} else if (paramName) {
-				// Disconnect from specific AudioParam
-				const audioParam = this.getAudioParam(targetId, paramName);
-				if (audioParam) {
-					sourceEntry.node.disconnect(audioParam);
-				}
-			} else {
-				// Disconnect from specific node
-				const targetEntry = this.nodesById.get(targetId);
-				if (targetEntry) {
-					sourceEntry.node.disconnect(targetEntry.node);
-				}
-			}
-		} catch (error) {
-			console.error(`Failed to disconnect ${sourceId}:`, error);
-		}
 	}
 
 	// Update audio connections based on edges

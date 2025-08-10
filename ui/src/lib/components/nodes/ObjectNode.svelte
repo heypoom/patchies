@@ -230,7 +230,7 @@
 				messageContext.send(440 * Math.pow(2, (note - 69) / 12));
 			})
 			.with(['delay', 'message', P.any], ([, , message]) => {
-				const [delayMs] = data.params as [number];
+				const [_, delayMs] = data.params as [unknown, number];
 
 				setTimeout(() => {
 					messageContext.send(message);
@@ -601,6 +601,10 @@
 											</Tooltip.Trigger>
 											<Tooltip.Content>
 												<p>{getInletHint(index)}</p>
+
+												{#if inlets[index]?.description}
+													<p class="text-xs text-zinc-500">{inlets[index].description}</p>
+												{/if}
 											</Tooltip.Content>
 										</Tooltip.Root>
 									{/if}
