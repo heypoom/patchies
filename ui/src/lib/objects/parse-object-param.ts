@@ -31,11 +31,14 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 		})
 		.otherwise(() => strValue || inlet.defaultValue);
 
-export const isUnmodifiableType = (type?: ObjectDataType) => type === 'signal' || type === 'bang';
+export const UNMODIFIABLES = ['signal', 'bang'] as const satisfies ObjectDataType[];
+
+export const isUnmodifiableType = (type?: ObjectDataType) =>
+	type && UNMODIFIABLES.includes(type as any);
 
 export const stringifyParamByType = (inlet: ObjectInlet, value: unknown, index: number) =>
 	match(inlet.type)
-		.with(P.union('signal', 'bang'), () => `$${index}`)
+		.with(P.union(...UNMODIFIABLES), () => `$${index}`)
 		.with(P.union('int[]', 'float[]'), () => `[${(value as number[]).join(', ')}]`)
 		.with('float', () => {
 			if (inlet.precision === undefined) return String(value);
