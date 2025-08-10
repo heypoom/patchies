@@ -471,7 +471,6 @@
 		const type = inlets[inletIndex]?.type;
 
 		return match(type)
-			.with('signal', () => '')
 			.with('float', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
 			.with('int', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
 			.with('string', () => 'hover:text-blue-500 cursor-pointer hover:underline')
@@ -578,19 +577,21 @@
 								<span class="text-zinc-200">{data.name}</span>
 
 								{#each data.params as param, index}
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											<span
-												class={[
-													'nodrag text-zinc-400 underline-offset-2',
-													getInletTypeHoverClass(index)
-												]}>{stringifyParamByType(inlets[index], param, index)}</span
-											>
-										</Tooltip.Trigger>
-										<Tooltip.Content>
-											<p>{getInletHint(index)}</p>
-										</Tooltip.Content>
-									</Tooltip.Root>
+									{#if !isUnmodifiableType(inlets[index]?.type)}
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												<span
+													class={[
+														'nodrag text-zinc-400 underline-offset-2',
+														getInletTypeHoverClass(index)
+													]}>{stringifyParamByType(inlets[index], param, index)}</span
+												>
+											</Tooltip.Trigger>
+											<Tooltip.Content>
+												<p>{getInletHint(index)}</p>
+											</Tooltip.Content>
+										</Tooltip.Root>
+									{/if}
 								{/each}
 							</div>
 						</div>
