@@ -68,7 +68,7 @@ function draw() {
 These constructs are exposed to JavaScript-based objects, such as `js`, `p5` and `hydra`.
 
 - `send(data)` - Sends a message with the given data to all connected outlets.
-  - `send(data, {to: 'name'})` - send to a specific named outlet.
+  - `send(data, {outlet: 'name'})` - send to a specific named outlet.
 - `onMessage(callback: (message) => void)` - Registers a callback that is called when a new message arrives.
   - The message object contains: `{data, type?, timestamp, source, inlet?}`
 - `interval(callback: () => void, ms: number)` - Calls the callback every `ms` milliseconds. Does automatic cleanup when the object is unloaded. Use this instead of `setInterval` to avoid memory leaks.

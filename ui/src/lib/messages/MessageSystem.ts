@@ -130,7 +130,7 @@ export class MessageSystem {
 			data,
 			timestamp: Date.now(),
 			source: fromNodeId,
-			outlet: options.to
+			outlet: options.outlet
 		};
 
 		// Get connected nodes

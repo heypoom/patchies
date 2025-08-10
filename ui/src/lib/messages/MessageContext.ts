@@ -1,7 +1,13 @@
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
 export type SendMessageOptions = {
-	to?: string;
+	/**
+	 * Which outlet to send the message to?
+	 *
+	 * Number refers to the outlet index.
+	 * String refers to the outlet name.
+	 */
+	outlet?: number | string;
 };
 
 export interface UserFnRunContext {
