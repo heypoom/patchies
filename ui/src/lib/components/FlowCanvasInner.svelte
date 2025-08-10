@@ -306,7 +306,7 @@
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
 		>
-			<Background bgColor="#18181b" gap={16} />
+			<Background bgColor="#18181b" gap={16} patternColor="oklch(44.2% 0.017 285.786)" />
 			<BackgroundOutputCanvas />
 
 			<Controls class={$isBottomBarVisible ? '!bottom-[30px]' : ''} />
