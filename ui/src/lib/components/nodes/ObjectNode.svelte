@@ -55,6 +55,8 @@
 	let selectedSuggestion = $state(0);
 	let originalName = data.expr || ''; // Store original name for escape functionality
 
+	let isAutomated = $state<Record<number, boolean>>({});
+
 	let audioSystem = AudioSystem.getInstance();
 	const messageContext = new MessageContext(nodeId);
 
@@ -194,6 +196,8 @@
 		const nextParams = [...data.params];
 		nextParams[index] = value;
 		updateNodeData(nodeId, { ...data, params: nextParams });
+
+		isAutomated = { ...isAutomated, [index]: false };
 	}
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
@@ -214,9 +218,18 @@
 			return;
 		}
 
-		// Do not update parameter if it is a unmodifiable type or a scheduled message.
-		if (!isUnmodifiableType(inlet.type) && !isScheduledMessage(message)) {
+		const isScheduled = isScheduledMessage(message);
+		const isSetImmediate = isScheduled && message.type === 'set' && message.time === undefined;
+
+		if (!isUnmodifiableType(inlet.type) && !isScheduled) {
+			// Do not update parameter if it is a unmodifiable type or a scheduled message.
 			updateParamByIndex(inletIndex, message);
+		} else if (isSetImmediate) {
+			// Update parameters for a simple `set` message.
+			updateParamByIndex(inletIndex, message.value);
+		} else if (isScheduled) {
+			// Mark parameter as being automated.
+			isAutomated = { ...isAutomated, [inletIndex]: true };
 		}
 
 		if (inlet.name && objectDef.tags?.includes('audio')) {
@@ -497,6 +510,8 @@
 
 		return `${inlet.name} (${inlet.type})`;
 	};
+
+	const getShortInletName = (inletIndex: number) => inlets[inletIndex]?.name?.slice(0, 4) || 'auto';
 </script>
 
 <div class="relative">
@@ -596,14 +611,24 @@
 													class={[
 														'nodrag text-zinc-400 underline-offset-2',
 														getInletTypeHoverClass(index)
-													]}>{stringifyParamByType(inlets[index], param, index)}</span
+													]}
 												>
+													{#if isAutomated[index]}
+														<span class="text-pink-300">{getShortInletName(index)}</span>
+													{:else}
+														{stringifyParamByType(inlets[index], param, index)}
+													{/if}
+												</span>
 											</Tooltip.Trigger>
 											<Tooltip.Content>
 												<p>{getInletHint(index)}</p>
 
 												{#if inlets[index]?.description}
 													<p class="text-xs text-zinc-500">{inlets[index].description}</p>
+												{/if}
+
+												{#if isAutomated[index]}
+													<p class="text-xs text-pink-500">inlet is automated</p>
 												{/if}
 											</Tooltip.Content>
 										</Tooltip.Root>
