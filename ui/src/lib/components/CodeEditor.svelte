@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { EditorView, minimalSetup } from 'codemirror';
-	import { EditorState, Prec, type Extension } from '@codemirror/state';
+	import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
 	import { javascript } from '@codemirror/lang-javascript';
-	import { oneDark } from '@codemirror/theme-one-dark';
+	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 	import { LanguageSupport } from '@codemirror/language';
+
+	let languageComp = new Compartment();
 
 	let {
 		value = $bindable(),
@@ -32,6 +34,16 @@
 	let editorElement: HTMLDivElement;
 	let editorView: EditorView | null = null;
 
+	function getLanguageExtension(language: string) {
+		if (language === 'javascript') {
+			return javascript();
+		} else if (language === 'glsl') {
+			return new LanguageSupport(glslLanguage);
+		}
+
+		return [];
+	}
+
 	onMount(() => {
 		if (editorElement) {
 			const extensions = [
@@ -49,7 +61,9 @@
 				drawSelection(),
 				minimalSetup,
 
-				oneDark,
+				tokyoNight,
+
+				languageComp.of(getLanguageExtension(language)),
 
 				EditorView.theme({
 					'&': {
@@ -60,7 +74,6 @@
 						padding: '12px',
 						minHeight: '100%',
 						maxHeight: '1000px',
-						backgroundColor: 'rgb(24 24 27)',
 						color: 'rgb(244 244 245)'
 					},
 					'.cm-focused': {
@@ -68,8 +81,7 @@
 					},
 					'.cm-editor': {
 						borderRadius: '6px',
-						border: '1px solid rgb(63 63 70)',
-						backgroundColor: 'rgb(24 24 27)'
+						border: '1px solid rgb(63 63 70)'
 					},
 					'.cm-editor.cm-focused': {
 						borderColor: 'rgb(59 130 246)',
@@ -82,7 +94,7 @@
 						color: 'rgb(115 115 115)'
 					},
 					'.cm-selectionBackground': {
-						backgroundColor: 'rgba(59, 130, 246, 0.3)' // Your selection style
+						backgroundColor: 'rgba(59, 130, 246, 0.3)'
 					}
 				}),
 				EditorView.updateListener.of((update) => {
@@ -99,12 +111,6 @@
 				}),
 				...extraExtensions
 			];
-
-			if (language === 'javascript') {
-				extensions.push(javascript());
-			} else if (language === 'glsl') {
-				extensions.push(new LanguageSupport(glslLanguage));
-			}
 
 			// Add placeholder if provided
 			if (placeholder) {
@@ -147,9 +153,20 @@
 			});
 		}
 	});
+
+	// Sync language extension with the `language` prop
+	$effect(() => {
+		editorView?.dispatch({
+			effects: languageComp.reconfigure(getLanguageExtension(language))
+		});
+	});
 </script>
 
-<div bind:this={editorElement} class="code-editor-container {className}" {...restProps}></div>
+<div
+	bind:this={editorElement}
+	class={['code-editor-container outline-none', className]}
+	{...restProps}
+></div>
 
 <style>
 	.code-editor-container {
@@ -160,17 +177,17 @@
 	/* Additional dark theme customizations */
 	:global(.code-editor-container .cm-editor) {
 		height: 100%;
-		background: rgb(24 24 27) !important;
+		background: transparent !important;
 	}
 
 	:global(.code-editor-container .cm-content) {
-		background: rgb(24 24 27) !important;
+		background: transparent !important;
 		color: rgb(244 244 245) !important;
 	}
 
 	:global(.code-editor-container .cm-gutters) {
-		background: rgb(24 24 27) !important;
-		border-right: 1px solid rgb(63 63 70) !important;
+		background: transparent !important;
+		border-right: 1px solid transparent !important;
 		color: rgb(115 115 115) !important;
 	}
 
