@@ -12,7 +12,8 @@
 		getObjectNames,
 		getObjectDefinition,
 		audioObjectNames,
-		getObjectNameFromExpr
+		getObjectNameFromExpr,
+		objectDefinitions
 	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -147,7 +148,7 @@
 		// Transform current name and parameter into editable expr
 		const paramString = data.params
 			.map((value, index) => stringifyParamByType(inlets[index], value, index))
-			.filter((value, index) => !isUnmodifiableType(inlets[index].type))
+			.filter((value, index) => !isUnmodifiableType(inlets[index]?.type))
 			.join(' ');
 
 		expr = `${data.name} ${paramString}`;
@@ -472,7 +473,8 @@
 			.with('float', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
 			.with('int', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
 			.with('string', () => 'hover:text-blue-500 cursor-pointer hover:underline')
-			.otherwise(() => 'hover:text-green-400');
+			.with('bool', () => 'hover:text-violet-500 cursor-pointer hover:underline')
+			.otherwise(() => 'hover:text-zinc-400');
 	};
 
 	const getInletHint = (inletIndex: number) => {
@@ -572,7 +574,9 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="font-mono text-xs">
-								<span class="text-zinc-200">{data.name}</span>
+								<span class={[!objectDefinitions[data.name] ? 'text-red-300' : 'text-zinc-200']}
+									>{data.name}</span
+								>
 
 								{#each data.params as param, index}
 									{#if !isUnmodifiableType(inlets[index]?.type)}
