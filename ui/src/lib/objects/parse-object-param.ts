@@ -55,9 +55,17 @@ export const stringifyParamByType = (
 		.with(P.union(...UNMODIFIABLES), () => `$${index}`)
 		.with(P.union('int[]', 'float[]'), () => `[${(value as number[]).join(', ')}]`)
 		.with('float', () => {
-			if (inlet.precision === undefined) return String(value);
+			// always use n floating point
+			if (inlet.precision !== undefined) {
+				return (value as number)?.toFixed(inlet.precision);
+			}
 
-			return (value as number)?.toFixed(inlet.precision);
+			// allow up to n floating point
+			if (inlet.maxPrecision !== undefined) {
+				return formatFloatingPoint(value as number, inlet.maxPrecision);
+			}
+
+			return String(value);
 		})
 		.otherwise(() => String(value));
 };
@@ -97,3 +105,11 @@ const limitToValidNumber = (inlet: ObjectInlet, parsedValue: number) => {
 
 	return parsedValue || defaultValue;
 };
+
+function formatFloatingPoint(num: number, precision = 0): number {
+	if (num % 1 === 0) return num;
+
+	const k = Math.pow(10, precision);
+
+	return Math.round(num * k) / k;
+}

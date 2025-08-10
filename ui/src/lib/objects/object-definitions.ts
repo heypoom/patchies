@@ -18,8 +18,11 @@ export interface ObjectInlet {
 	/** Does this inlet represent an audio parameter in the audio node? **/
 	isAudioParam?: boolean;
 
-	/** Floating point precision. */
+	/** Floating point precision for displays. */
 	precision?: number;
+
+	/** Maximum floating point precision. */
+	maxPrecision?: number;
 
 	/** Default value. */
 	defaultValue?: unknown;
@@ -69,7 +72,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				description: 'Oscillator frequency in hertz',
 				defaultValue: 440,
 				isAudioParam: true,
-				precision: 0
+				maxPrecision: 2
 			},
 			{
 				name: 'type',

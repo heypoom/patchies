@@ -162,24 +162,19 @@ export class AudioSystem {
 	}
 
 	createAdd(nodeId: string) {
-		// For addition, we can use a GainNode with gain = 1
-		// Web Audio API naturally sums multiple inputs to a node
 		const addNode = this.audioContext.createGain();
 		addNode.gain.value = 1.0;
 
 		this.nodesById.set(nodeId, { type: '+~', node: addNode });
 	}
 
-	// Set parameter on existing audio object
 	setParameter(nodeId: string, key: string, value: unknown) {
-		// Check if a scheduled message were sent
+		// TimeScheduler handles scheduled messages.
 		if (isScheduledMessage(value)) {
 			const audioParam = this.getAudioParam(nodeId, key);
 			if (!audioParam) return;
 
-			console.log(`automating ${key}:`, value);
 			this.timeScheduler.processMessage(audioParam, value);
-
 			return;
 		}
 
