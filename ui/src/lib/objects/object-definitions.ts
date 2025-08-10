@@ -44,7 +44,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	gain: {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
-			{ name: 'gain', type: 'float', description: 'Gain multiplier', precision: 2 }
+			{ name: 'gain', type: 'float', description: 'Gain multiplier', precision: 2, maxNumber: 10 }
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',
@@ -63,14 +63,14 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Oscillator output' }],
-		description: 'Sine wave oscillator',
+		description: 'Oscillator generates audio signals',
 		tags: ['audio']
 	},
 
 	dac: {
 		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
 		outlets: [],
-		description: 'Digital to analog converter - audio output destination',
+		description: 'Send sounds to speakers',
 		tags: ['audio']
 	},
 
