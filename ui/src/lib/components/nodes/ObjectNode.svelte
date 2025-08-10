@@ -636,7 +636,7 @@
 											<Tooltip.Trigger>
 												<span
 													class={[
-														'nodrag text-zinc-400 underline-offset-2',
+														'text-zinc-400 underline-offset-2',
 														getInletTypeHoverClass(index)
 													]}
 												>

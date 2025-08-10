@@ -288,7 +288,7 @@
 		const lastNodeId = parseInt(nodes.at(-1)?.id.match(/.*\-(\d+)$/)?.[1] ?? '');
 		if (isNaN(lastNodeId)) throw new Error('corrupted save - cannot get last node id');
 
-		return lastNodeId;
+		return lastNodeId + 1;
 	}
 </script>
 
