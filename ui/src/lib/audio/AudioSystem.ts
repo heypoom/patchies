@@ -6,14 +6,21 @@ import { match, P } from 'ts-pattern';
 import type { PsAudioNode } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
+import { TimeScheduler } from './TimeScheduler';
+import { isScheduledMessage } from './time-scheduling-types';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
 	nodesById: Map<string, PsAudioNode> = new Map();
+	private timeScheduler: TimeScheduler;
 
 	outGain: GainNode | null = null;
 	outAnalyzer: MeydaAnalyzer | null = null;
+
+	constructor() {
+		this.timeScheduler = new TimeScheduler(this.audioContext);
+	}
 
 	start() {
 		this.outGain = this.audioContext.createGain();
@@ -168,9 +175,20 @@ export class AudioSystem {
 		const entry = this.nodesById.get(nodeId);
 		if (!entry) return;
 
+		// Check if a scheduled message were sent
+		if (isScheduledMessage(value)) {
+			const audioParam = this.getAudioParam(nodeId, key);
+			if (!audioParam) return;
+
+			this.timeScheduler.processMessage(audioParam, value);
+
+			return;
+		}
+
 		match(entry.type)
 			.with('osc', () => {
 				const node = entry.node as OscillatorNode;
+
 				match([key, value])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
@@ -181,6 +199,7 @@ export class AudioSystem {
 			})
 			.with('gain', () => {
 				const node = entry.node as GainNode;
+
 				match([key, value]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
 				});

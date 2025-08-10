@@ -29,6 +29,7 @@
 		stringifyParamByType
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
+	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 
 	let {
 		id: nodeId,
@@ -213,7 +214,10 @@
 			return;
 		}
 
-		updateParamByIndex(inletIndex, message);
+		// Do not update parameter if it is a unmodifiable type or a scheduled message.
+		if (!isUnmodifiableType(inlet.type) && !isScheduledMessage(message)) {
+			updateParamByIndex(inletIndex, message);
+		}
 
 		if (inlet.name && objectDef.tags?.includes('audio')) {
 			audioSystem.setParameter(nodeId, inlet.name, message);

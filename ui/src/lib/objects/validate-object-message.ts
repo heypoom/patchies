@@ -1,13 +1,16 @@
 import { match, P } from 'ts-pattern';
 import type { ObjectDataType, ObjectInlet } from './object-definitions';
-import { UNMODIFIABLES } from './parse-object-param';
+import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 
 // Helper function to validate inlet/outlet types
 export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boolean => {
 	if (!inlet.type) return true;
 
+	// Signals and schedulable inlets can be scheduled.
+	if ((inlet.type === 'signal' || inlet.isAudioParam) && isScheduledMessage(value)) return true;
+
 	const isTypeValid = match<[unknown, ObjectDataType]>([value, inlet.type])
-		.with([P.any, P.union(...UNMODIFIABLES)], () => true)
+		.with([P.any, P.union('any', 'signal', 'message')], () => true)
 		.with([{ type: 'bang' }, 'bang'], () => true)
 		.with([P.number, 'float'], () => true)
 		.with([P.number, 'int'], ([n]) => Number.isInteger(n))

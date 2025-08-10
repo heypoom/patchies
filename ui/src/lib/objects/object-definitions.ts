@@ -15,6 +15,9 @@ export interface ObjectInlet {
 	type?: ObjectDataType;
 	description?: string;
 
+	/** Does this inlet represent an audio parameter in the audio node? **/
+	isAudioParam?: boolean;
+
 	/** Floating point precision. */
 	precision?: number;
 
@@ -45,7 +48,13 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	gain: {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
-			{ name: 'gain', type: 'float', description: 'Gain multiplier', precision: 2 }
+			{
+				name: 'gain',
+				type: 'float',
+				description: 'Gain multiplier',
+				precision: 2,
+				isAudioParam: true
+			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',
@@ -58,7 +67,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				name: 'frequency',
 				type: 'float',
 				description: 'Oscillator frequency in Hz',
-				defaultValue: 440
+				defaultValue: 440,
+				isAudioParam: true
 			},
 			{
 				name: 'type',

@@ -6,7 +6,7 @@ My use case is I want to build an ADSR envelope to automate the gain of a sound 
 
 ## Message types for automating values with ADSR
 
-Today, you can already send a plain integer like `0.5` and it sets the gain value to 0.5, if wired to the `gain` inlet of the `gain` node, see `ui/src/lib/objects/objectDefinitions.ts`.
+Today, you can already send a plain integer like `0.5` and it sets the gain value to 0.5, if wired to the `gain` inlet of the `gain` node, see `ui/src/lib/objects/object-definitions.ts`.
 
 We want to add support for 3 message types, `set`, `trigger` and `release`. `set` sets the value (at a future time), `trigger` schedules the attack-delay-sustain phase, and `release` schedules the release.
 
