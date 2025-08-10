@@ -44,8 +44,10 @@ export class TimeScheduler {
 	private handleReleaseMessage(param: AudioParam, message: ReleaseMessage) {
 		const c = this.audioContext;
 
+		// Capture the current value before canceling scheduled values.
+		const currentValue = param.value;
 		param.cancelScheduledValues(c.currentTime);
-		param.setValueAtTime(param.value, c.currentTime);
+		param.setValueAtTime(currentValue, c.currentTime);
 		this.applyPhase(param, message.endValue ?? 0, c.currentTime, message.release);
 	}
 
