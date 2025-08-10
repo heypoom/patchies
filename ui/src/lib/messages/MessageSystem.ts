@@ -4,8 +4,12 @@ import type { SendMessageOptions } from './MessageContext';
 export interface Message<T = unknown> {
 	data: T;
 	source: string;
-	outlet?: number | string;
-	inlet?: string;
+
+	outlet?: number;
+	outletId?: string;
+
+	inlet?: number;
+	inletId?: string;
 }
 
 export type MessageCallbackFn = (data: Message['data'], meta: Omit<Message, 'data'>) => void;
@@ -125,29 +129,45 @@ export class MessageSystem {
 			return;
 		}
 
-		const message: Message = {
-			data,
-			source: fromNodeId,
-			outlet: options.to
-		};
+		const message: Message = { data, source: fromNodeId };
 
 		// Get connected nodes
 		const connectedNodes = this.connections.get(fromNodeId) || [];
+		console.log(`sending message`, { connectedNodes, message });
 
 		// Send to all connected nodes
 		for (const targetNodeId of connectedNodes) {
 			const targetQueue = this.messageQueues.get(targetNodeId);
+			if (!targetQueue) continue;
 
-			if (targetQueue) {
-				// TODO: send all inlets
-				// TODO: optimize performance by using connections instead
-				const stEdge = this.edges.find(
-					(edge) => edge.source === fromNodeId && edge.target === targetNodeId
-				);
+			const edges = this.edges.filter(
+				(edge) => edge.source === fromNodeId && edge.target === targetNodeId
+			);
 
-				const inlet = stEdge?.targetHandle ?? 'default';
+			for (const edge of edges) {
+				const outletId = edge.sourceHandle ?? undefined;
+				const inletId = edge.targetHandle ?? undefined;
 
-				targetQueue.sendMessage({ ...message, inlet });
+				const outlet = getHandleId(outletId);
+				const inlet = getHandleId(inletId);
+
+				// do not send message if the outlet mismatches
+				if (typeof options.to === 'number' && outlet !== options.to) {
+					continue;
+				}
+
+				// do not send message if the outlet id mismatches
+				if (typeof options.to === 'string' && outletId !== options.to) {
+					continue;
+				}
+
+				targetQueue.sendMessage({
+					...message,
+					outlet,
+					inlet,
+					outletId,
+					inletId
+				});
 			}
 		}
 	}
@@ -171,3 +191,12 @@ export class MessageSystem {
 		}
 	}
 }
+
+export const getHandleId = (handle?: string) => {
+	const m = handle?.match(/.*-(\d)/)?.[1];
+	if (m === undefined) return;
+
+	const id = parseInt(m);
+
+	return isNaN(id) ? undefined : id;
+};

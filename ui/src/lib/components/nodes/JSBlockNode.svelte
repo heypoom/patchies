@@ -154,10 +154,7 @@
 				updateNodeInternals(nodeId);
 			};
 
-			const setRunOnMount = (runOnMount = false) => {
-				updateNodeData(nodeId, { runOnMount });
-				updateNodeInternals(nodeId);
-			};
+			const setRunOnMount = (runOnMount = false) => updateNodeData(nodeId, { runOnMount });
 
 			const functionParams = [
 				'console',
