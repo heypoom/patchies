@@ -9,7 +9,6 @@ import type {
 
 export class TimeScheduler {
 	private audioContext: AudioContext;
-	private activeEnvelopes = new Map<AudioParam, { sustainValue: number; sustainTime: number }>();
 
 	constructor(audioContext: AudioContext) {
 		this.audioContext = audioContext;
@@ -33,39 +32,19 @@ export class TimeScheduler {
 	private handleTriggerMessage(param: AudioParam, message: TriggerMessage) {
 		const now = this.audioContext.currentTime;
 
-		// Clear any existing scheduled values
 		param.cancelScheduledValues(now);
 
-		// Attack Phase - start from startValue, ramp to peakValue
 		param.setValueAtTime(message.values.start, now);
 		this.applyPhase(param, message.values.peak, now, message.attack);
 
-		// Decay Phase - ramp from peakValue to sustainValue
 		const decayStartTime = now + message.attack.time;
 		this.applyPhase(param, message.values.sustain, decayStartTime, message.decay);
-
-		// Store sustain info for potential release - sustain holds indefinitely
-		const sustainTime = decayStartTime + message.decay.time;
-		this.activeEnvelopes.set(param, {
-			sustainValue: message.values.sustain,
-			sustainTime
-		});
 	}
 
 	private handleReleaseMessage(param: AudioParam, message: ReleaseMessage) {
 		const now = this.audioContext.currentTime;
-		const envelope = this.activeEnvelopes.get(param);
 
-		// Clear scheduled values from now onwards
 		param.cancelScheduledValues(now);
-
-		// If we have an active envelope, start release from current sustain value
-		if (envelope) {
-			param.setValueAtTime(envelope.sustainValue, now);
-			this.activeEnvelopes.delete(param);
-		}
-
-		// Apply release phase using the release config and endValue
 		this.applyPhase(param, message.endValue, now, message.release);
 	}
 
