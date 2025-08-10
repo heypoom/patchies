@@ -21,6 +21,9 @@ export interface ObjectInlet {
 
 	/** Default value. */
 	defaultValue?: unknown;
+
+	/** Valid values */
+	options?: unknown[];
 }
 
 export interface ObjectOutlet {
@@ -54,7 +57,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				name: 'type',
 				type: 'string',
 				description: 'Oscillator type (sine, square, sawtooth, triangle)',
-				defaultValue: 'sine'
+				defaultValue: 'sine',
+				options: ['sine', 'square', 'sawtooth', 'triangle']
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Oscillator output' }],

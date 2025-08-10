@@ -20,6 +20,11 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 
 			return parsed.map((v) => parseInt(v) || 0);
 		})
+		.with('string', () => {
+			if (inlet.options && !inlet.options.includes(strValue)) return inlet.defaultValue || '';
+
+			return strValue || inlet.defaultValue || '';
+		})
 		.otherwise(() => strValue || inlet.defaultValue);
 
 export const stringifyParamByType = (inlet: ObjectInlet, value: unknown, index: number) =>
