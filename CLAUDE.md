@@ -110,20 +110,16 @@ The `CodeEditor.svelte` component uses CodeMirror 6 with:
 - Components should support the `class` prop for Tailwind class extension
 - Icons use either `@iconify/svelte` or `@lucide/svelte`
 
-## Component Development
+## Guidelines
 
 - Prefer editing existing files over creating new ones
-- Use Svelte 5 syntax (`$state`, `$props`, `$effect`, etc.)
 - Separate business logic into utility classes when complex
 - Use TypeScript for all new code
 - Follow the pattern of UI components importing and using utility classes
-
-## Technology Guidelines
-
 - We use Svelte 5.
   - Only use the Svelte 5's rune syntax (`$state`, `$props`, `$effect`, etc.) and do not use Svelte 4 syntax.
   - Read the `docs/llms/svelte-llms-small.txt` text file for how to use Svelte 5. LLMs often get confused with Svelte 4 syntax, so read this when unsure of the Svelte syntax.
-
-## Development Guidelines
-
 - Before you start to implement, always update the spec file first with the details and the plan
+- you must use ts-pattern instead of switch cases always
+- write concise yet clear commit messages
+- do not start the dev server to test issues

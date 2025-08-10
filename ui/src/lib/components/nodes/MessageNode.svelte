@@ -7,6 +7,14 @@
 	import { match, P } from 'ts-pattern';
 	import Json5 from 'json5';
 
+	import hljs from 'highlight.js/lib/core';
+	import javascript from 'highlight.js/lib/languages/javascript';
+
+	import 'highlight.js/styles/tokyo-night-dark.css';
+	import CodeEditor from '../CodeEditor.svelte';
+
+	hljs.registerLanguage('javascript', javascript);
+
 	let {
 		id: nodeId,
 		data,
@@ -19,6 +27,37 @@
 
 	let showTextInput = $state(false);
 	let msgText = $derived(data.message || '');
+
+	let isJsonObject = $derived.by(() => {
+		try {
+			const result = Json5.parse(data.message);
+
+			return result && typeof result !== 'number';
+		} catch {
+			return false;
+		}
+	});
+
+	// Fast heuristics to switch syntax highlighting modes.
+	let shouldUseJsSyntax = $derived.by(() => {
+		const msg = data.message ?? '';
+		if (msg.length < 3) return false;
+
+		return msg.startsWith('{') || msg.startsWith('[') || msg.startsWith(`'`) || msg.startsWith(`"`);
+	});
+
+	let highlightedHtml = $derived.by(() => {
+		if (!isJsonObject || !msgText) return '';
+
+		try {
+			return hljs.highlight(msgText, {
+				language: 'javascript',
+				ignoreIllegals: true
+			}).value;
+		} catch (e) {
+			return '';
+		}
+	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
 		try {
@@ -74,7 +113,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
@@ -90,24 +129,36 @@
 
 				<div class="relative">
 					{#if showTextInput}
-						<textarea
-							value={msgText}
-							oninput={(message) =>
-								updateNodeData(nodeId, { ...data, message: message.currentTarget.value })}
+						<div
 							class={[
-								'nodrag w-full max-w-[200px] resize-none rounded-lg border bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-200 focus:outline-none',
+								'nodrag w-full min-w-[40px] max-w-[200px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
 								borderColor
 							]}
-						></textarea>
+						>
+							<CodeEditor
+								value={msgText}
+								onchange={(value) => updateNodeData(nodeId, { ...data, message: value })}
+								onrun={sendMessage}
+								language={shouldUseJsSyntax ? 'javascript' : 'plain'}
+								fontSize="12px"
+								class="message-node-code-editor rounded-lg border !border-transparent focus:outline-none"
+							/>
+						</div>
 					{:else}
 						<button
 							onclick={sendMessage}
 							class={[
-								'max-w-[200px] rounded-lg border bg-zinc-900 px-3 py-2 text-start font-mono text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+								'send-message-button max-w-[200px] rounded-lg border bg-zinc-900 px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
 								borderColor
 							]}
 						>
-							{msgText ? msgText : '<messagebox>'}
+							{#if msgText && isJsonObject}
+								<code>
+									{@html highlightedHtml}
+								</code>
+							{:else}
+								{msgText ? msgText : '<messagebox>'}
+							{/if}
 						</button>
 					{/if}
 				</div>
@@ -117,3 +168,19 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	:global(.message-node-code-editor .cm-content) {
+		padding: 6px 8px 7px 4px !important;
+	}
+
+	.send-message-button {
+		font-family:
+			Monaco,
+			Menlo,
+			Ubuntu Mono,
+			Consolas,
+			source-code-pro,
+			monospace;
+	}
+</style>

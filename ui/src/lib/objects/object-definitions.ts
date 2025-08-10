@@ -1,5 +1,6 @@
-type ObjectDataType =
+export type ObjectDataType =
 	| 'any'
+	| 'message'
 	| 'signal'
 	| 'bang'
 	| 'float'
@@ -13,6 +14,24 @@ export interface ObjectInlet {
 	name?: string;
 	type?: ObjectDataType;
 	description?: string;
+
+	/** Does this inlet represent an audio parameter in the audio node? **/
+	isAudioParam?: boolean;
+
+	/** Floating point precision for displays. */
+	precision?: number;
+
+	/** Maximum floating point precision. */
+	maxPrecision?: number;
+
+	/** Default value. */
+	defaultValue?: unknown;
+
+	/** Valid values */
+	options?: unknown[];
+
+	minNumber?: number;
+	maxNumber?: number;
 }
 
 export interface ObjectOutlet {
@@ -32,7 +51,13 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	gain: {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
-			{ name: 'gain', type: 'float', description: 'Gain multiplier' }
+			{
+				name: 'gain',
+				type: 'float',
+				description: 'Gain multiplier',
+				precision: 2,
+				isAudioParam: true
+			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',
@@ -41,22 +66,38 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 
 	osc: {
 		inlets: [
-			{ name: 'frequency', type: 'float', description: 'Oscillator frequency in Hz' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Oscillator frequency in hertz',
+				defaultValue: 440,
+				isAudioParam: true,
+				maxPrecision: 2
+			},
 			{
 				name: 'type',
 				type: 'string',
-				description: 'Oscillator type (sine, square, sawtooth, triangle)'
+				description: 'Type of oscillator',
+				defaultValue: 'sine',
+				options: ['sine', 'square', 'sawtooth', 'triangle']
+			},
+			{
+				name: 'detune',
+				type: 'float',
+				description: 'Detune amount in cents',
+				defaultValue: 0,
+				isAudioParam: true
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Oscillator output' }],
-		description: 'Sine wave oscillator',
+		description: 'Oscillator generates audio signals',
 		tags: ['audio']
 	},
 
 	dac: {
 		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
 		outlets: [],
-		description: 'Digital to analog converter - audio output destination',
+		description: 'Send sounds to speakers',
 		tags: ['audio']
 	},
 
@@ -64,6 +105,21 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		inlets: [{ name: 'note', type: 'float', description: 'MIDI note value (0-127)' }],
 		outlets: [{ name: 'frequency', type: 'float', description: 'Frequency in Hz' }],
 		description: 'Converts MIDI note values to frequency float values',
+		tags: ['helper']
+	},
+
+	// TODO: make this dynamic!
+	fslider: {
+		inlets: [{ name: 'min' }, { name: 'max' }, { name: 'value' }],
+		outlets: []
+	},
+
+	delay: {
+		inlets: [
+			{ name: 'message', type: 'message', description: 'Message to pass through' },
+			{ name: 'delayMs', type: 'float', description: 'How long to delay for, in ms.' }
+		],
+		outlets: [{ name: 'out', type: 'any', description: 'Message outlet' }],
 		tags: ['helper']
 	},
 
@@ -82,49 +138,15 @@ export const audioObjectNames = Object.keys(objectDefinitions).filter((key) =>
 	objectDefinitions[key].tags?.includes('audio')
 );
 
-export const getObjectName = (expr: string): string => expr.trim().toLowerCase().split(' ')?.[0];
+export const getObjectNameFromExpr = (expr: string): string =>
+	expr.trim().toLowerCase().split(' ')?.[0];
 
 // Helper function to get object definition
 export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
-	const name = getObjectName(expr);
+	const name = getObjectNameFromExpr(expr);
 
 	return objectDefinitions[name];
 }
 
 // Helper function to get all object names
-export function getObjectNames(): string[] {
-	return Object.keys(objectDefinitions);
-}
-
-// Helper function to get object names by category
-export function getObjectNamesByCategory(category: string): string[] {
-	return Object.entries(objectDefinitions)
-		.filter(([_, def]) => def.tags === category)
-		.map(([name]) => name);
-}
-
-// Helper function to validate inlet/outlet types
-export function validateMessageType(value: any, expectedType: string): boolean {
-	switch (expectedType) {
-		case 'any':
-			return true;
-		case 'bang':
-			return value?.type === 'bang';
-		case 'float':
-			return typeof value === 'number';
-		case 'int':
-			return typeof value === 'number' && Number.isInteger(value);
-		case 'string':
-			return typeof value === 'string';
-		case 'bool':
-			return typeof value === 'boolean';
-		case 'int[]':
-			return (
-				Array.isArray(value) && value.every((v) => typeof v === 'number' && Number.isInteger(v))
-			);
-		case 'float[]':
-			return Array.isArray(value) && value.every((v) => typeof v === 'number');
-		default:
-			return false;
-	}
-}
+export const getObjectNames = () => Object.keys(objectDefinitions);

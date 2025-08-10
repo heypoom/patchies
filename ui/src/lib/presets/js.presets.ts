@@ -9,6 +9,19 @@ const FRAME_TIMER_JS = `setInterval(() => {
   send({type: 'bang'})
 }, 1000 / 60)`;
 
+const MIDI_ADSR_GAIN_JS = `onMessage(m => {
+  if (m.type === 'noteOn') {
+    send({
+      type: 'trigger',
+      values: { start: 0, peak: 1, sustain: 0.7 },
+      attack: { time: 0.02 },
+      decay: { time: 0.1 }
+    })
+  } else if (m.type === 'noteOff') {
+    send({ type: 'release', release: {time: 0.3}, endValue: 0 })
+  }
+})`;
+
 export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -24,5 +37,9 @@ export const JS_PRESETS: Record<
 	'frame-timer.js': {
 		type: 'js',
 		data: { code: FRAME_TIMER_JS, showConsole: false, runOnMount: false }
+	},
+	'midi-adsr-gain.js': {
+		type: 'js',
+		data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: false }
 	}
 };

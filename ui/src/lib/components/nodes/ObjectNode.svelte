@@ -6,15 +6,15 @@
 		useSvelteFlow,
 		useUpdateNodeInternals
 	} from '@xyflow/svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { nodeNames } from '$lib/nodes/node-types';
 	import {
 		getObjectNames,
 		getObjectDefinition,
-		validateMessageType,
 		audioObjectNames,
-		getObjectName
-	} from '$lib/objects/objectDefinitions';
+		getObjectNameFromExpr,
+		objectDefinitions
+	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -22,12 +22,24 @@
 	import { match, P } from 'ts-pattern';
 	import { PRESETS } from '$lib/presets/presets';
 	import Fuse from 'fuse.js';
+	import * as Tooltip from '../ui/tooltip';
+	import {
+		isUnmodifiableType,
+		parseObjectParamFromString,
+		stringifyParamByType
+	} from '$lib/objects/parse-object-param';
+	import { validateMessageToObject } from '$lib/objects/validate-object-message';
+	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 
 	let {
 		id: nodeId,
 		data,
 		selected
-	}: { id: string; data: { expr: string }; selected: boolean } = $props();
+	}: {
+		id: string;
+		data: { expr: string; name: string; params: unknown[] };
+		selected: boolean;
+	} = $props();
 
 	const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
 
@@ -42,6 +54,8 @@
 	let showAutocomplete = $state(false);
 	let selectedSuggestion = $state(0);
 	let originalName = data.expr || ''; // Store original name for escape functionality
+
+	let isAutomated = $state<Record<number, boolean>>({});
 
 	let audioSystem = AudioSystem.getInstance();
 	const messageContext = new MessageContext(nodeId);
@@ -134,6 +148,14 @@
 	});
 
 	function enterEditingMode() {
+		// Transform current name and parameter into editable expr
+		const paramString = data.params
+			.map((value, index) => stringifyParamByType(inlets[index], value, index))
+			.filter((value, index) => !isUnmodifiableType(inlets[index]?.type))
+			.join(' ');
+
+		expr = `${data.name} ${paramString}`;
+
 		isEditing = true;
 		originalName = expr;
 		showAutocomplete = true;
@@ -170,52 +192,85 @@
 		setTimeout(() => nodeElement?.focus(), 0);
 	}
 
+	function updateParamByIndex(index: number, value: unknown) {
+		const nextParams = [...data.params];
+		nextParams[index] = value;
+		updateNodeData(nodeId, { ...data, params: nextParams });
+
+		isAutomated = { ...isAutomated, [index]: false };
+	}
+
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		if (!objectDef || !objectDef.inlets || !meta?.inlet) return;
 
-		// Parse inlet information (e.g., "inlet-0" -> index 0)
-		const inletMatch = meta.inlet.match(/inlet-(\d+)/);
-		if (!inletMatch) return;
-
-		const inletIndex = parseInt(inletMatch[1]);
+		const inletIndex = parseInt(meta.inlet.replace('inlet-', ''));
 		const inlet = objectDef.inlets[inletIndex];
+
 		if (!inlet) return;
 
 		// Validate message type against inlet specification
-		if (inlet.type && !validateMessageType(message, inlet.type)) {
+		if (!validateMessageToObject(message, inlet)) {
 			console.warn(
-				`invalid message type for ${expr} inlet ${inlet.name}: expected ${inlet.type}, got`,
+				`invalid message type for ${data.name} inlet ${inlet.name}: expected ${inlet.type}, got`,
 				message
 			);
 
 			return;
 		}
 
+		const isScheduled = isScheduledMessage(message);
+		const isSetImmediate = isScheduled && message.type === 'set' && message.time === undefined;
+
+		if (!isUnmodifiableType(inlet.type) && !isScheduled) {
+			// Do not update parameter if it is a unmodifiable type or a scheduled message.
+			updateParamByIndex(inletIndex, message);
+		} else if (isSetImmediate) {
+			// Update parameters for a simple `set` message.
+			updateParamByIndex(inletIndex, message.value);
+		} else if (isScheduled) {
+			// Mark parameter as being automated.
+			isAutomated = { ...isAutomated, [inletIndex]: true };
+		}
+
 		if (inlet.name && objectDef.tags?.includes('audio')) {
 			audioSystem.setParameter(nodeId, inlet.name, message);
+
 			return;
 		}
 
-		const name = getObjectName(expr);
+		match([data.name, inlet.name, message])
+			.with(['mtof', 'note', P.number], ([, , note]) => {
+				messageContext.send(440 * Math.pow(2, (note - 69) / 12));
+			})
+			.with(['delay', 'message', P.any], ([, , message]) => {
+				const [_, delayMs] = data.params as [unknown, number];
 
-		match([name, message]).with(['mtof', P.number], ([_, note]) => {
-			messageContext.send(440 * Math.pow(2, (note - 69) / 12));
-		});
+				setTimeout(() => {
+					messageContext.send(message);
+				}, delayMs ?? 0);
+			});
 	};
 
 	function handleNameChange() {
-		// Check if it's a preset command first
-		if (tryCreatePreset()) {
-			return; // Early return if preset was created
-		}
+		if (tryCreatePreset()) return;
+		if (tryTransformToVisualNode()) return;
+		if (tryCreateAudioObject()) return;
 
-		updateNodeData(nodeId, { ...data, expr });
+		tryCreatePlainObject();
+	}
 
-		// Check if this should transform to a visual node
-		tryTransformToVisualNode();
+	function getNameAndParams() {
+		const parts = expr.trim().split(' ');
+		const name = parts[0]?.toLowerCase();
+		const params = parts.slice(1);
 
-		// Create audio object if it's an audio node
-		tryCreateAudioObject();
+		return { name, params: parseObjectParamFromString(name, params) };
+	}
+
+	function tryCreatePlainObject() {
+		const { name, params } = getNameAndParams();
+
+		updateNodeData(nodeId, { ...data, expr, name, params });
 	}
 
 	function tryCreatePreset(): boolean {
@@ -233,22 +288,25 @@
 		return true;
 	}
 
+	function syncAudioSystem(name: string, params: unknown[]) {
+		audioSystem.removeAudioObject(nodeId);
+		audioSystem.createAudioObject(nodeId, name, params);
+
+		const edges = getEdges();
+		audioSystem.updateEdges(edges);
+	}
+
 	function tryCreateAudioObject() {
-		if (!expr.trim()) return;
+		if (!expr.trim()) return false;
 
-		const parts = expr.trim().split(' ');
-		const objectName = parts[0]?.toLowerCase();
-		const params = parts.slice(1);
+		const { name, params } = getNameAndParams();
+		updateNodeData(nodeId, { ...data, expr, name, params });
 
-		if (audioObjectNames.includes(objectName)) {
-			// Remove existing audio object first to avoid duplicates
-			audioSystem.removeAudioObject(nodeId);
-			audioSystem.createAudioObject(nodeId, objectName, params);
+		if (!audioObjectNames.includes(name)) return false;
 
-			// Restore audio connections after creating new object
-			const edges = getEdges();
-			audioSystem.updateEdges(edges);
-		}
+		syncAudioSystem(name, params);
+
+		return true;
 	}
 
 	const changeNode = (type: string, data: Record<string, unknown>) => {
@@ -270,12 +328,14 @@
 	};
 
 	function tryTransformToVisualNode() {
-		const name = getObjectName(expr);
-		if (!name) return;
+		const name = getObjectNameFromExpr(expr);
+		if (!name) return false;
 
-		match(name)
+		return match(name)
 			.with(P.union('msg', 'm'), () => {
 				changeNode('msg', { message: expr.replace(name, '').trim() });
+
+				return true;
 			})
 			.with('slider', () => {
 				let [min = 0, max = 100, defaultValue] = expr
@@ -289,6 +349,8 @@
 				}
 
 				changeNode('slider', { min, max, defaultValue, isFloat: false });
+
+				return true;
 			})
 			.with('fslider', () => {
 				let [min = 0, max = 1, defaultValue] = expr.replace(name, '').trim().split(' ').map(Number);
@@ -298,11 +360,17 @@
 				}
 
 				changeNode('slider', { min, max, defaultValue, isFloat: true });
+
+				return true;
 			})
 			.otherwise(() => {
 				if (nodeNames.includes(name as any)) {
 					changeNode(name, getDefaultNodeData(name));
+
+					return true;
 				}
+
+				return false;
 			});
 	}
 
@@ -410,14 +478,44 @@
 			setTimeout(() => inputElement?.focus(), 10);
 		}
 
-		// Register message handler
-		messageContext.queue.addCallback(handleMessage);
+		if (audioObjectNames.includes(data.name)) {
+			syncAudioSystem(data.name, data.params);
+		}
 
-		// Cleanup function for when node is destroyed
-		return () => {
-			audioSystem.removeAudioObject(nodeId);
-		};
+		messageContext.queue.addCallback(handleMessage);
 	});
+
+	onDestroy(() => {
+		audioSystem.removeAudioObject(nodeId);
+	});
+
+	const getInletTypeHoverClass = (inletIndex: number) => {
+		const type = inlets[inletIndex]?.type;
+
+		if (isAutomated[inletIndex]) {
+			return 'hover:text-pink-500 cursor-pointer hover:underline';
+		}
+
+		return match(type)
+			.with('float', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
+			.with('int', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
+			.with('string', () => 'hover:text-blue-500 cursor-pointer hover:underline')
+			.with('bool', () => 'hover:text-violet-500 cursor-pointer hover:underline')
+			.otherwise(() => 'hover:text-zinc-400');
+	};
+
+	const getInletHint = (inletIndex: number) => {
+		const inlet = inlets[inletIndex];
+		if (!inlet) return 'unknown inlet';
+
+		if (inlet.type === 'string' && inlet.options) {
+			return `${inlet.name} (${inlet.options.join(', ')})`;
+		}
+
+		return `${inlet.name} (${inlet.type})`;
+	};
+
+	const getShortInletName = (inletIndex: number) => inlets[inletIndex]?.name?.slice(0, 4) || 'auto';
 </script>
 
 <div class="relative">
@@ -431,7 +529,7 @@
 							type="target"
 							position={Position.Top}
 							id={`inlet-${index}`}
-							class={['top-0 z-1', inlet.type === 'signal' && '!bg-blue-500']}
+							class={['z-1 top-0', inlet.type === 'signal' && '!bg-blue-500']}
 							style={`left: ${inlets.length === 1 ? '50%' : `${35 + (index / (inlets.length - 1)) * 30}%`}`}
 							title={inlet.name || `Inlet ${index}`}
 						/>
@@ -459,7 +557,7 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute top-full left-0 z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+								class="absolute left-0 top-full z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 							>
 								<!-- Results List -->
 								<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
@@ -504,8 +602,42 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
-							<div class="font-mono text-xs text-zinc-200">
-								{expr}
+							<div class="font-mono text-xs">
+								<span class={[!objectDefinitions[data.name] ? 'text-red-300' : 'text-zinc-200']}
+									>{data.name}</span
+								>
+
+								{#each data.params as param, index}
+									{#if !isUnmodifiableType(inlets[index]?.type)}
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												<span
+													class={[
+														'nodrag text-zinc-400 underline-offset-2',
+														getInletTypeHoverClass(index)
+													]}
+												>
+													{#if isAutomated[index]}
+														{getShortInletName(index)}
+													{:else}
+														{stringifyParamByType(inlets[index], param, index)}
+													{/if}
+												</span>
+											</Tooltip.Trigger>
+											<Tooltip.Content>
+												<p>{getInletHint(index)}</p>
+
+												{#if inlets[index]?.description}
+													<p class="text-xs text-zinc-500">{inlets[index].description}</p>
+												{/if}
+
+												{#if isAutomated[index]}
+													<p class="text-xs text-pink-500">inlet is automated</p>
+												{/if}
+											</Tooltip.Content>
+										</Tooltip.Root>
+									{/if}
+								{/each}
 							</div>
 						</div>
 					{/if}

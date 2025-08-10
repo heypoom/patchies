@@ -5,14 +5,22 @@ import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 import { match, P } from 'ts-pattern';
 import type { PsAudioNode } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
+import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
+import { TimeScheduler } from './TimeScheduler';
+import { isScheduledMessage } from './time-scheduling-types';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
 	nodesById: Map<string, PsAudioNode> = new Map();
+	private timeScheduler: TimeScheduler;
 
 	outGain: GainNode | null = null;
 	outAnalyzer: MeydaAnalyzer | null = null;
+
+	constructor() {
+		this.timeScheduler = new TimeScheduler(this.audioContext);
+	}
 
 	start() {
 		this.outGain = this.audioContext.createGain();
@@ -30,32 +38,82 @@ export class AudioSystem {
 		});
 	}
 
-	connect(sourceId: string, targetId: string) {
+	connect(sourceId: string, targetId: string, paramName?: string) {
 		const sourceEntry = this.nodesById.get(sourceId);
 		const targetEntry = this.nodesById.get(targetId);
 
 		if (!sourceEntry || !targetEntry) return;
 
 		try {
-			const isValidConnection = this.validateConnection(sourceId, targetId);
+			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
 
 			if (!isValidConnection) {
 				console.warn(`Cannot connect ${sourceId} to ${targetId}: invalid connection type`);
 				return;
 			}
 
-			sourceEntry.node.connect(targetEntry.node);
+			if (paramName) {
+				const audioParam = this.getAudioParam(targetId, paramName);
+
+				if (audioParam) {
+					sourceEntry.node.connect(audioParam);
+				} else {
+					console.warn(`AudioParam ${paramName} not found on node ${targetId}`);
+				}
+			} else {
+				sourceEntry.node.connect(targetEntry.node);
+			}
 		} catch (error) {
 			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
 		}
 	}
 
-	validateConnection(sourceId: string, targetId: string): boolean {
+	validateConnection(sourceId: string, targetId: string, paramName?: string): boolean {
+		// If connecting to an AudioParam, allow any source to connect to any target.
+		// AudioParams can accept modulation from any audio node.
+		if (paramName) return true;
+
 		const sourceEntry = this.nodesById.get(sourceId);
 		const targetEntry = this.nodesById.get(targetId);
 		if (!sourceEntry || !targetEntry) return true;
 
+		// For regular node-to-node connections, use the existing validation
 		return canAudioNodeConnect(sourceEntry.type, targetEntry.type);
+	}
+
+	getAudioParam(nodeId: string, paramName: string): AudioParam | null {
+		const entry = this.nodesById.get(nodeId);
+		if (!entry) return null;
+
+		return match(entry.type)
+			.with('osc', () => {
+				const node = entry.node as OscillatorNode;
+
+				return match(paramName)
+					.with('frequency', () => node.frequency)
+					.with('detune', () => node.detune)
+					.otherwise(() => null);
+			})
+			.with('gain', () => {
+				const node = entry.node as GainNode;
+
+				return match(paramName)
+					.with('gain', () => node.gain)
+					.otherwise(() => null);
+			})
+			.otherwise(() => null);
+	}
+
+	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
+		const audioNode = this.nodesById.get(nodeId);
+		if (!audioNode || !targetHandle) return null;
+
+		const objectDef = objectDefinitions[audioNode.type];
+		if (!objectDef) return null;
+
+		const inletIndex = parseInt(targetHandle.replace('inlet-', ''), 10);
+
+		return objectDef.inlets[inletIndex] ?? null;
 	}
 
 	createOscillator(nodeId: string, type: OscillatorType, frequency: number): OscillatorNode {
@@ -69,7 +127,7 @@ export class AudioSystem {
 	}
 
 	// Create audio objects for object nodes
-	createAudioObject(nodeId: string, objectType: string, params: string[] = []) {
+	createAudioObject(nodeId: string, objectType: string, params: unknown[] = []) {
 		match(objectType)
 			.with('osc', () => this.createOsc(nodeId, params))
 			.with('gain', () => this.createGain(nodeId, params))
@@ -77,19 +135,19 @@ export class AudioSystem {
 			.with('+~', () => this.createAdd(nodeId));
 	}
 
-	createOsc(nodeId: string, params: string[]) {
-		const freq = params[0] ? parseFloat(params[0]) : 440;
+	createOsc(nodeId: string, params: unknown[]) {
+		const [freq, type] = params as [number, OscillatorType];
 
 		const osc = this.audioContext.createOscillator();
 		osc.frequency.value = freq;
-		osc.type = 'sine';
+		osc.type = type;
 		osc.start(0);
 
 		this.nodesById.set(nodeId, { type: 'osc', node: osc });
 	}
 
-	createGain(nodeId: string, params: string[]) {
-		const gainValue = params[0] ? parseFloat(params[0]) : 1.0;
+	createGain(nodeId: string, params: unknown[]) {
+		const [, gainValue] = params as [unknown, number];
 
 		const gainNode = this.audioContext.createGain();
 		gainNode.gain.value = gainValue;
@@ -104,32 +162,43 @@ export class AudioSystem {
 	}
 
 	createAdd(nodeId: string) {
-		// For addition, we can use a GainNode with gain = 1
-		// Web Audio API naturally sums multiple inputs to a node
 		const addNode = this.audioContext.createGain();
 		addNode.gain.value = 1.0;
 
 		this.nodesById.set(nodeId, { type: '+~', node: addNode });
 	}
 
-	// Set parameter on existing audio object
 	setParameter(nodeId: string, key: string, value: unknown) {
-		const entry = this.nodesById.get(nodeId);
-		if (!entry) return;
+		// TimeScheduler handles scheduled messages.
+		if (isScheduledMessage(value)) {
+			const audioParam = this.getAudioParam(nodeId, key);
+			if (!audioParam) return;
 
-		match(entry.type)
+			this.timeScheduler.processMessage(audioParam, value);
+			return;
+		}
+
+		const state = this.nodesById.get(nodeId);
+		if (!state) return;
+
+		match(state.type)
 			.with('osc', () => {
-				const node = entry.node as OscillatorNode;
+				const node = state.node as OscillatorNode;
+
 				match([key, value])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
+					})
+					.with(['detune', P.number], ([, detune]) => {
+						node.detune.value = detune;
 					})
 					.with(['type', P.string], ([, type]) => {
 						node.type = type as OscillatorType;
 					});
 			})
 			.with('gain', () => {
-				const node = entry.node as GainNode;
+				const node = state.node as GainNode;
+
 				match([key, value]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
 				});
@@ -184,9 +253,12 @@ export class AudioSystem {
 				this.outGain.connect(this.audioContext.destination);
 			}
 
-			// Recreate connections based on edges
 			for (const edge of edges) {
-				this.connect(edge.source, edge.target);
+				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
+
+				const isAudioParam = !!this.getAudioParam(edge.target, inlet?.name ?? '');
+
+				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
 			}
 		} catch (error) {
 			console.error('Error updating audio edges:', error);

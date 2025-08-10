@@ -114,7 +114,9 @@
 			<div class="relative">
 				<Handle type="target" position={Position.Top} class="!-top-2" />
 
-				<div class="flex w-full min-w-[100px] flex-col items-center justify-center gap-1 py-1">
+				<div
+					class="flex w-full min-w-[100px] max-w-[130px] flex-col items-center justify-center gap-1 py-1"
+				>
 					<div class="pb-2 font-mono text-sm text-zinc-100">
 						{displayValue}
 					</div>
