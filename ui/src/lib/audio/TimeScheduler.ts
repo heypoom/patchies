@@ -30,20 +30,23 @@ export class TimeScheduler {
 	}
 
 	private handleTriggerMessage(param: AudioParam, message: TriggerMessage) {
-		const now = this.audioContext.currentTime;
+		const c = this.audioContext;
 
-		param.cancelScheduledValues(now);
+		param.cancelScheduledValues(c.currentTime);
+		param.setValueAtTime(message.values.start, c.currentTime);
 
-		param.setValueAtTime(message.values.start, now);
-		this.applyPhase(param, message.values.peak, now, message.attack);
+		this.applyPhase(param, message.values.peak, c.currentTime, message.attack);
 
-		const decayStartTime = now + message.attack.time;
+		const decayStartTime = c.currentTime + message.attack.time;
 		this.applyPhase(param, message.values.sustain, decayStartTime, message.decay);
 	}
 
 	private handleReleaseMessage(param: AudioParam, message: ReleaseMessage) {
-		const now = this.audioContext.currentTime;
-		this.applyPhase(param, message.endValue, now, message.release);
+		const c = this.audioContext;
+
+		param.cancelScheduledValues(c.currentTime);
+		param.setValueAtTime(param.value, c.currentTime);
+		this.applyPhase(param, message.endValue, c.currentTime, message.release);
 	}
 
 	private applyPhase(
@@ -53,9 +56,8 @@ export class TimeScheduler {
 		config: TriggerPhaseConfig
 	) {
 		const endTime = startTime + config.time;
-		const curve = config.curve ?? 'linear';
 
-		match(curve)
+		match(config.curve ?? 'linear')
 			.with('linear', () => {
 				param.linearRampToValueAtTime(targetValue, endTime);
 			})
