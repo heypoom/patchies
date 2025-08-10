@@ -409,12 +409,20 @@
 				selectedSuggestion = Math.max(selectedSuggestion - 1, 0);
 				scrollToSelectedItem();
 			})
-			.with('Enter', 'Tab', () => {
+			.with('Enter', () => {
 				event.preventDefault();
 				if (filteredSuggestions[selectedSuggestion]) {
 					expr = filteredSuggestions[selectedSuggestion].name;
 					showAutocomplete = false;
 					exitEditingMode(true);
+				}
+			})
+			.with('Tab', () => {
+				event.preventDefault();
+
+				if (filteredSuggestions[selectedSuggestion]) {
+					expr = filteredSuggestions[selectedSuggestion].name;
+					showAutocomplete = false;
 				}
 			})
 			.with('Escape', () => {
