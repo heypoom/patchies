@@ -6,10 +6,7 @@ export interface Message<T = unknown> {
 	source: string;
 
 	outlet?: number;
-	outletId?: string;
-
 	inlet?: number;
-	inletId?: string;
 }
 
 export type MessageCallbackFn = (data: Message['data'], meta: Omit<Message, 'data'>) => void;
@@ -161,13 +158,7 @@ export class MessageSystem {
 					continue;
 				}
 
-				targetQueue.sendMessage({
-					...message,
-					outlet,
-					inlet,
-					outletId,
-					inletId
-				});
+				targetQueue.sendMessage({ ...message, outlet, inlet });
 			}
 		}
 	}
