@@ -18,7 +18,7 @@ export type NodeData = {
 
 export function getDefaultNodeData(nodeType: string): NodeData {
 	return match(nodeType)
-		.with('object', () => ({ expr: '' }))
+		.with('object', () => ({ expr: '', name: '', params: [] }))
 		.with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
 		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
 		.with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))

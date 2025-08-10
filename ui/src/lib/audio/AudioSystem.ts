@@ -69,7 +69,7 @@ export class AudioSystem {
 	}
 
 	// Create audio objects for object nodes
-	createAudioObject(nodeId: string, objectType: string, params: string[] = []) {
+	createAudioObject(nodeId: string, objectType: string, params: unknown[] = []) {
 		match(objectType)
 			.with('osc', () => this.createOsc(nodeId, params))
 			.with('gain', () => this.createGain(nodeId, params))
@@ -77,19 +77,19 @@ export class AudioSystem {
 			.with('+~', () => this.createAdd(nodeId));
 	}
 
-	createOsc(nodeId: string, params: string[]) {
-		const freq = params[0] ? parseFloat(params[0]) : 440;
+	createOsc(nodeId: string, params: unknown[]) {
+		const [freq, type] = params as [number, OscillatorType];
 
 		const osc = this.audioContext.createOscillator();
 		osc.frequency.value = freq;
-		osc.type = 'sine';
+		osc.type = type;
 		osc.start(0);
 
 		this.nodesById.set(nodeId, { type: 'osc', node: osc });
 	}
 
-	createGain(nodeId: string, params: string[]) {
-		const gainValue = params[0] ? parseFloat(params[0]) : 1.0;
+	createGain(nodeId: string, params: unknown[]) {
+		const [, gainValue] = params as [unknown, number];
 
 		const gainNode = this.audioContext.createGain();
 		gainNode.gain.value = gainValue;

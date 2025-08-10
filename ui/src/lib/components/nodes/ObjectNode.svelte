@@ -22,12 +22,18 @@
 	import { match, P } from 'ts-pattern';
 	import { PRESETS } from '$lib/presets/presets';
 	import Fuse from 'fuse.js';
+	import * as Tooltip from '../ui/tooltip';
+	import { parseObjectParamFromString, stringifyParamByType } from '$lib/audio/parse-object-param';
 
 	let {
 		id: nodeId,
 		data,
 		selected
-	}: { id: string; data: { expr: string; name: string }; selected: boolean } = $props();
+	}: {
+		id: string;
+		data: { expr: string; name: string; params: unknown[] };
+		selected: boolean;
+	} = $props();
 
 	const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
 
@@ -134,6 +140,13 @@
 	});
 
 	function enterEditingMode() {
+		// Transform current name and parameter into editable expr
+		const paramString = data.params
+			.map((value, index) => stringifyParamByType(inlets[index], value, index))
+			.join(' ');
+
+		expr = `${data.name} ${paramString}`;
+
 		isEditing = true;
 		originalName = expr;
 		showAutocomplete = true;
@@ -170,11 +183,18 @@
 		setTimeout(() => nodeElement?.focus(), 0);
 	}
 
+	function updateParamByIndex(index: number, value: unknown) {
+		const nextParams = [...data.params];
+		nextParams[index] = value;
+		updateNodeData(nodeId, { ...data, params: nextParams });
+	}
+
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		if (!objectDef || !objectDef.inlets || !meta?.inlet) return;
 
 		const inletIndex = parseInt(meta.inlet.replace('inlet-', ''));
 		const inlet = objectDef.inlets[inletIndex];
+
 		if (!inlet) return;
 
 		// Validate message type against inlet specification
@@ -189,6 +209,8 @@
 
 		if (inlet.name && objectDef.tags?.includes('audio')) {
 			audioSystem.setParameter(nodeId, inlet.name, message);
+			updateParamByIndex(inletIndex, message);
+
 			return;
 		}
 
@@ -197,14 +219,14 @@
 				messageContext.send(440 * Math.pow(2, (note - 69) / 12));
 			})
 			.with(['delay', 'delayMs', P.number], ([, , delayMs]) => {
-				updateNodeData(nodeId, { ...data, delayMs });
+				updateNodeData(nodeId, { ...data, params: [delayMs] });
 			})
 			.with(['delay', 'message', P.any], ([, , message]) => {
-				const delayMs = (data as any).delayMs || 0;
+				const [delayMs] = data.params as [number];
 
 				setTimeout(() => {
 					messageContext.send(message);
-				}, delayMs || 0);
+				}, delayMs ?? 0);
 			});
 	};
 
@@ -221,17 +243,13 @@
 		const name = parts[0]?.toLowerCase();
 		const params = parts.slice(1);
 
-		return { name, params };
+		return { name, params: parseObjectParamFromString(name, params) };
 	}
 
 	function tryCreatePlainObject() {
 		const { name, params } = getNameAndParams();
 
-		const nextData = match(name)
-			.with('delay', () => ({ delayMs: parseFloat(params[0]) }))
-			.otherwise(() => ({}));
-
-		updateNodeData(nodeId, { ...data, expr, name, ...nextData });
+		updateNodeData(nodeId, { ...data, expr, name, params });
 	}
 
 	function tryCreatePreset(): boolean {
@@ -253,7 +271,9 @@
 		if (!expr.trim()) return false;
 
 		const { name, params } = getNameAndParams();
+
 		updateNodeData(nodeId, { ...data, expr, name, params });
+		console.log(`-> audio object ${name} ->`, params);
 
 		if (!audioObjectNames.includes(name)) return false;
 
@@ -443,6 +463,17 @@
 			audioSystem.removeAudioObject(nodeId);
 		};
 	});
+
+	const getInletTypeHoverClass = (inletIndex: number) => {
+		const type = inlets[inletIndex]?.type;
+
+		return match(type)
+			.with('signal', () => '')
+			.with('float', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
+			.with('int', () => 'hover:text-yellow-500 cursor-pointer hover:underline')
+			.with('string', () => 'hover:text-blue-500 cursor-pointer hover:underline')
+			.otherwise(() => 'hover:text-green-400');
+	};
 </script>
 
 <div class="relative">
@@ -529,8 +560,22 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
-							<div class="font-mono text-xs text-zinc-200">
-								{expr}
+							<div class="font-mono text-xs">
+								<span class="text-zinc-200">{data.name}</span>
+
+								{#each data.params as param, index}
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<span
+												class={['text-zinc-400 underline-offset-2', getInletTypeHoverClass(index)]}
+												>{stringifyParamByType(inlets[index], param, index)}</span
+											>
+										</Tooltip.Trigger>
+										<Tooltip.Content>
+											<p>{inlets[index].name} ({inlets[index].type})</p>
+										</Tooltip.Content>
+									</Tooltip.Root>
+								{/each}
 							</div>
 						</div>
 					{/if}

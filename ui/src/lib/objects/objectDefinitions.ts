@@ -1,6 +1,6 @@
 import { match, P } from 'ts-pattern';
 
-type ObjectDataType =
+export type ObjectDataType =
 	| 'any'
 	| 'signal'
 	| 'bang'
@@ -15,6 +15,12 @@ export interface ObjectInlet {
 	name?: string;
 	type?: ObjectDataType;
 	description?: string;
+
+	/** Floating point precision. */
+	precision?: number;
+
+	/** Default value. */
+	defaultValue?: unknown;
 }
 
 export interface ObjectOutlet {
@@ -34,7 +40,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	gain: {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
-			{ name: 'gain', type: 'float', description: 'Gain multiplier' }
+			{ name: 'gain', type: 'float', description: 'Gain multiplier', precision: 2 }
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',
@@ -47,7 +53,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			{
 				name: 'type',
 				type: 'string',
-				description: 'Oscillator type (sine, square, sawtooth, triangle)'
+				description: 'Oscillator type (sine, square, sawtooth, triangle)',
+				defaultValue: 'sine'
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Oscillator output' }],
