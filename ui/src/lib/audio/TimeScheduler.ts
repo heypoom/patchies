@@ -46,7 +46,7 @@ export class TimeScheduler {
 
 		param.cancelScheduledValues(c.currentTime);
 		param.setValueAtTime(param.value, c.currentTime);
-		this.applyPhase(param, message.endValue, c.currentTime, message.release);
+		this.applyPhase(param, message.endValue ?? 0, c.currentTime, message.release);
 	}
 
 	private applyPhase(

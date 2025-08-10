@@ -601,6 +601,10 @@
 											</Tooltip.Trigger>
 											<Tooltip.Content>
 												<p>{getInletHint(index)}</p>
+
+												{#if inlets[index]?.description}
+													<p class="text-xs text-zinc-500">{inlets[index].description}</p>
+												{/if}
 											</Tooltip.Content>
 										</Tooltip.Root>
 									{/if}

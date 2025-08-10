@@ -172,9 +172,6 @@ export class AudioSystem {
 
 	// Set parameter on existing audio object
 	setParameter(nodeId: string, key: string, value: unknown) {
-		const entry = this.nodesById.get(nodeId);
-		if (!entry) return;
-
 		// Check if a scheduled message were sent
 		if (isScheduledMessage(value)) {
 			const audioParam = this.getAudioParam(nodeId, key);
@@ -185,20 +182,26 @@ export class AudioSystem {
 			return;
 		}
 
-		match(entry.type)
+		const state = this.nodesById.get(nodeId);
+		if (!state) return;
+
+		match(state.type)
 			.with('osc', () => {
-				const node = entry.node as OscillatorNode;
+				const node = state.node as OscillatorNode;
 
 				match([key, value])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
+					})
+					.with(['detune', P.number], ([, detune]) => {
+						node.detune.value = detune;
 					})
 					.with(['type', P.string], ([, type]) => {
 						node.type = type as OscillatorType;
 					});
 			})
 			.with('gain', () => {
-				const node = entry.node as GainNode;
+				const node = state.node as GainNode;
 
 				match([key, value]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;

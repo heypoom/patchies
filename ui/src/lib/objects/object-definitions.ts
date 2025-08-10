@@ -66,16 +66,23 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			{
 				name: 'frequency',
 				type: 'float',
-				description: 'Oscillator frequency in Hz',
+				description: 'Oscillator frequency in hertz',
 				defaultValue: 440,
 				isAudioParam: true
 			},
 			{
 				name: 'type',
 				type: 'string',
-				description: 'Oscillator type (sine, square, sawtooth, triangle)',
+				description: 'Type of oscillator',
 				defaultValue: 'sine',
 				options: ['sine', 'square', 'sawtooth', 'triangle']
+			},
+			{
+				name: 'detune',
+				type: 'float',
+				description: 'Detune amount in cents',
+				defaultValue: 0,
+				isAudioParam: true
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Oscillator output' }],
