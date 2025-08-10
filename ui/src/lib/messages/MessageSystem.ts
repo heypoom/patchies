@@ -5,7 +5,7 @@ export interface Message<T = unknown> {
 	data: T;
 	timestamp: number;
 	source: string;
-	outlet?: string;
+	outlet?: number | string;
 	inlet?: string;
 }
 
@@ -130,7 +130,7 @@ export class MessageSystem {
 			data,
 			timestamp: Date.now(),
 			source: fromNodeId,
-			outlet: options.outlet
+			outlet: options.to
 		};
 
 		// Get connected nodes

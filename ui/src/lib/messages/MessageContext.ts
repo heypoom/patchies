@@ -7,7 +7,7 @@ export type SendMessageOptions = {
 	 * Number refers to the outlet index.
 	 * String refers to the outlet name.
 	 */
-	outlet?: number | string;
+	to?: number | string;
 };
 
 export interface UserFnRunContext {
