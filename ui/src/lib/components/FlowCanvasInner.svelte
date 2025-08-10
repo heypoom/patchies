@@ -38,7 +38,7 @@
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
 
-	let nodeId = 0;
+	let nodeIdCounter = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
 	let audioSystem = AudioSystem.getInstance();
@@ -227,7 +227,7 @@
 
 	// Create a new node at the specified position
 	function createNode(type: string, position: { x: number; y: number }, customData?: any) {
-		const id = `${type}-${nodeId++}`;
+		const id = `${type}-${nodeIdCounter++}`;
 
 		const newNode: Node = {
 			id,
@@ -283,6 +283,13 @@
 		// Allow connections between any nodes
 		return true;
 	};
+
+	function getNodeIdCounterFromSave(nodes: Node[]): number {
+		const lastNodeId = parseInt(nodes.at(-1)?.id.match(/.*\-(\d+)$/)?.[1] ?? '');
+		if (isNaN(lastNodeId)) throw new Error('corrupted save - cannot get last node id');
+
+		return lastNodeId;
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -321,7 +328,7 @@
 				{edges}
 				setNodes={(newNodes) => {
 					nodes = newNodes;
-					nodeId = newNodes.length;
+					nodeIdCounter = getNodeIdCounterFromSave(newNodes);
 				}}
 				setEdges={(newEdges) => {
 					edges = newEdges;
