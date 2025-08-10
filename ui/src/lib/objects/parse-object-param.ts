@@ -35,8 +35,14 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 export const isUnmodifiableType = (type?: ObjectDataType) =>
 	type && UNMODIFIABLES.includes(type as any);
 
-export const stringifyParamByType = (inlet: ObjectInlet, value: unknown, index: number) =>
-	match(inlet.type)
+export const stringifyParamByType = (
+	inlet: ObjectInlet | undefined,
+	value: unknown,
+	index: number
+) => {
+	if (!inlet?.type) return String(value);
+
+	return match(inlet.type)
 		.with(P.union(...UNMODIFIABLES), () => `$${index}`)
 		.with(P.union('int[]', 'float[]'), () => `[${(value as number[]).join(', ')}]`)
 		.with('float', () => {
@@ -45,6 +51,7 @@ export const stringifyParamByType = (inlet: ObjectInlet, value: unknown, index: 
 			return (value as number)?.toFixed(inlet.precision);
 		})
 		.otherwise(() => String(value));
+};
 
 export const parseObjectParamFromString = (name: string, strValues: string[]) => {
 	const definition = objectDefinitions[name];

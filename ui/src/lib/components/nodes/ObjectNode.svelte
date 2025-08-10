@@ -477,7 +477,7 @@
 
 	const getInletHint = (inletIndex: number) => {
 		const inlet = inlets[inletIndex];
-		if (!inlet) return '';
+		if (!inlet) return 'unknown inlet';
 
 		if (inlet.type === 'string' && inlet.options) {
 			return `${inlet.name} (${inlet.options.join(', ')})`;
