@@ -149,11 +149,6 @@ export class MessageSystem {
 					continue;
 				}
 
-				// do not send message if the outlet id mismatches
-				if (typeof options.to === 'string' && outletId !== options.to) {
-					continue;
-				}
-
 				targetQueue.sendMessage({ ...message, outlet, inlet });
 			}
 		}

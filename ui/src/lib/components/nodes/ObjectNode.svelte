@@ -202,11 +202,9 @@
 	}
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
-		if (!objectDef || !objectDef.inlets || !meta?.inlet) return;
+		if (!objectDef || !objectDef.inlets || meta?.inlet === undefined) return;
 
-		const inletIndex = parseInt(meta.inlet.replace('inlet-', ''));
-		const inlet = objectDef.inlets[inletIndex];
-
+		const inlet = objectDef.inlets[meta.inlet];
 		if (!inlet) return;
 
 		// Validate message type against inlet specification
@@ -224,13 +222,13 @@
 
 		if (!isUnmodifiableType(inlet.type) && !isScheduled) {
 			// Do not update parameter if it is a unmodifiable type or a scheduled message.
-			updateParamByIndex(inletIndex, message);
+			updateParamByIndex(meta.inlet, message);
 		} else if (isSetImmediate) {
 			// Update parameters for a simple `set` message.
-			updateParamByIndex(inletIndex, message.value);
+			updateParamByIndex(meta.inlet, message.value);
 		} else if (isScheduled) {
 			// Mark parameter as being automated.
-			isAutomated = { ...isAutomated, [inletIndex]: true };
+			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
 		if (inlet.name && objectDef.tags?.includes('audio')) {
