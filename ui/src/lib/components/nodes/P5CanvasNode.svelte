@@ -23,6 +23,7 @@
 	let enableDrag = $state(true);
 	let errorMessage = $state<string | null>(null);
 
+	let previewContainerWidth = $state(0);
 	const code = $derived(data.code || '');
 
 	onMount(() => {
@@ -54,6 +55,8 @@
 					}
 				});
 
+				previewContainerWidth = containerElement.clientWidth;
+
 				errorMessage = null;
 			} catch (error) {
 				// Capture compilation/setup errors
@@ -63,7 +66,7 @@
 	}
 </script>
 
-<ObjectPreviewLayout title="p5.canvas" onrun={updateSketch}>
+<ObjectPreviewLayout title="p5.canvas" onrun={updateSketch} previewWidth={previewContainerWidth}>
 	{#snippet topHandle()}
 		<Handle type="target" position={Position.Top} class="z-1" />
 	{/snippet}
@@ -90,7 +93,7 @@
 			type="source"
 			position={Position.Bottom}
 			id="video-out"
-			class="!left-20 z-1"
+			class="z-1 !left-20"
 			title="Video output"
 		/>
 	{/snippet}
