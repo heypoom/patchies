@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -15,18 +15,28 @@
 		selected
 	}: {
 		id: string;
-		data: { code: string; showConsole?: boolean; runOnMount?: boolean };
+		data: {
+			code: string;
+			showConsole?: boolean;
+			runOnMount?: boolean;
+			inletCount?: number;
+			outletCount?: number;
+		};
 		selected: boolean;
 	} = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
+	const updateNodeInternals = useUpdateNodeInternals();
+
 	let messageContext: MessageContext;
 	let isRunning = $state(false);
 	let isMessageCallbackActive = $state(false);
 	let isIntervalCallbackActive = $state(false);
 	let isLongRunningTaskActive = $derived(isMessageCallbackActive || isIntervalCallbackActive);
+	let inletCount = $derived(data.inletCount ?? 1);
+	let outletCount = $derived(data.outletCount ?? 1);
 
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
@@ -139,14 +149,20 @@
 		try {
 			const messageSystemContext = messageContext.getContext();
 
-			const functionParams = ['console', 'send', 'onMessage', 'interval', 'llm'];
+			const setPortCount = (inletCount = 1, outletCount = 1) => {
+				updateNodeData(nodeId, { inletCount, outletCount });
+				updateNodeInternals(nodeId);
+			};
+
+			const functionParams = ['console', 'send', 'onMessage', 'interval', 'llm', 'setPortCount'];
 
 			const functionArgs = [
 				customConsole,
 				messageSystemContext.send,
 				messageSystemContext.onMessage,
 				messageSystemContext.interval,
-				createLLMFunction()
+				createLLMFunction(),
+				setPortCount
 			];
 
 			const userFunction = new Function(
@@ -202,7 +218,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={() => {
 							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
 						}}
@@ -212,7 +228,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -222,7 +238,18 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" id="message-in" position={Position.Top} />
+				<div>
+					{#each Array.from({ length: inletCount }) as _, index}
+						<Handle
+							type="target"
+							id={`message-in-${index}`}
+							position={Position.Top}
+							style={`left: ${(inletCount ?? 1) === 1 ? '50%' : `${35 + (index / (inletCount - 1)) * 30}%`}`}
+							title={`Inlet ${index}`}
+							class="z-1 top-0"
+						/>
+					{/each}
+				</div>
 
 				{#if data.showConsole}
 					<div class={['min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor]}>
@@ -271,7 +298,7 @@
 							class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 						>
 							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your code to see results.</div>
+								<div class="italic text-zinc-500">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
 									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
@@ -296,7 +323,18 @@
 					</button>
 				{/if}
 
-				<Handle type="source" position={Position.Bottom} />
+				<div>
+					{#each Array.from({ length: outletCount }) as _, index}
+						<Handle
+							type="source"
+							id={`message-out-${index}`}
+							position={Position.Bottom}
+							style={`left: ${(outletCount ?? 1) === 1 ? '50%' : `${35 + (index / (outletCount - 1)) * 30}%`}`}
+							title={`Outlet ${index}`}
+							class="z-1 bottom-0"
+						/>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</div>
