@@ -2,6 +2,19 @@ import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSy
 
 export type SendMessageOptions = { type?: string; to?: string };
 
+export interface UserFnRunContext {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	send: (data: any, options?: SendMessageOptions) => void;
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	onMessage: (callback: (message: any) => void) => void;
+
+	interval: (callback: () => void, ms: number) => number;
+
+	/** Disables dragging in canvas. */
+	noDrag: () => void;
+}
+
 export class MessageContext {
 	public queue: MessageQueue;
 	public messageSystem: MessageSystem;

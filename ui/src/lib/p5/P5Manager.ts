@@ -2,28 +2,11 @@ import P5 from 'p5';
 import type Sketch from 'p5';
 import ml5 from 'ml5';
 import { GLSystem } from '$lib/canvas/GLSystem';
-
-interface SendMessageOptions {
-	type?: string;
-	to?: string;
-}
-
-interface MessageContext {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	send: (data: any, options?: SendMessageOptions) => void;
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	onMessage: (callback: (message: any) => void) => void;
-
-	interval: (callback: () => void, ms: number) => number;
-
-	/** Disables dragging in canvas. */
-	noDrag: () => void;
-}
+import type { UserFnRunContext } from '$lib/messages/MessageContext';
 
 export interface P5SketchConfig {
 	code: string;
-	messageContext?: MessageContext;
+	messageContext?: UserFnRunContext;
 }
 
 export class P5Manager {

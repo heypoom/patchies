@@ -1,23 +1,9 @@
+import type { UserFnRunContext } from '$lib/messages/MessageContext';
 import { GLSystem } from './GLSystem';
-
-interface SendMessageOptions {
-	type?: string;
-	to?: string;
-}
-
-interface MessageContext {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	send: (data: any, options?: SendMessageOptions) => void;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	onMessage: (callback: (message: any) => void) => void;
-	interval: (callback: () => void, ms: number) => number;
-
-	noDrag: () => void;
-}
 
 export interface JSCanvasConfig {
 	code: string;
-	messageContext?: MessageContext;
+	messageContext?: UserFnRunContext;
 }
 
 export class JSCanvasManager {
