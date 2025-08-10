@@ -5,6 +5,7 @@ import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 import { match, P } from 'ts-pattern';
 import type { PsAudioNode } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
+import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -30,32 +31,82 @@ export class AudioSystem {
 		});
 	}
 
-	connect(sourceId: string, targetId: string) {
+	connect(sourceId: string, targetId: string, paramName?: string) {
 		const sourceEntry = this.nodesById.get(sourceId);
 		const targetEntry = this.nodesById.get(targetId);
 
 		if (!sourceEntry || !targetEntry) return;
 
 		try {
-			const isValidConnection = this.validateConnection(sourceId, targetId);
+			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
 
 			if (!isValidConnection) {
 				console.warn(`Cannot connect ${sourceId} to ${targetId}: invalid connection type`);
 				return;
 			}
 
-			sourceEntry.node.connect(targetEntry.node);
+			if (paramName) {
+				const audioParam = this.getAudioParam(targetId, paramName);
+
+				if (audioParam) {
+					sourceEntry.node.connect(audioParam);
+				} else {
+					console.warn(`AudioParam ${paramName} not found on node ${targetId}`);
+				}
+			} else {
+				sourceEntry.node.connect(targetEntry.node);
+			}
 		} catch (error) {
 			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
 		}
 	}
 
-	validateConnection(sourceId: string, targetId: string): boolean {
+	validateConnection(sourceId: string, targetId: string, paramName?: string): boolean {
+		// If connecting to an AudioParam, allow any source to connect to any target.
+		// AudioParams can accept modulation from any audio node.
+		if (paramName) return true;
+
 		const sourceEntry = this.nodesById.get(sourceId);
 		const targetEntry = this.nodesById.get(targetId);
 		if (!sourceEntry || !targetEntry) return true;
 
+		// For regular node-to-node connections, use the existing validation
 		return canAudioNodeConnect(sourceEntry.type, targetEntry.type);
+	}
+
+	getAudioParam(nodeId: string, paramName: string): AudioParam | null {
+		const entry = this.nodesById.get(nodeId);
+		if (!entry) return null;
+
+		return match(entry.type)
+			.with('osc', () => {
+				const node = entry.node as OscillatorNode;
+
+				return match(paramName)
+					.with('frequency', () => node.frequency)
+					.with('detune', () => node.detune)
+					.otherwise(() => null);
+			})
+			.with('gain', () => {
+				const node = entry.node as GainNode;
+
+				return match(paramName)
+					.with('gain', () => node.gain)
+					.otherwise(() => null);
+			})
+			.otherwise(() => null);
+	}
+
+	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
+		const audioNode = this.nodesById.get(nodeId);
+		if (!audioNode || !targetHandle) return null;
+
+		const objectDef = objectDefinitions[audioNode.type];
+		if (!objectDef) return null;
+
+		const inletIndex = parseInt(targetHandle.replace('inlet-', ''), 10);
+
+		return objectDef.inlets[inletIndex] ?? null;
 	}
 
 	createOscillator(nodeId: string, type: OscillatorType, frequency: number): OscillatorNode {
@@ -167,6 +218,32 @@ export class AudioSystem {
 		return getAudioContext();
 	}
 
+	disconnect(sourceId: string, targetId?: string, paramName?: string) {
+		const sourceEntry = this.nodesById.get(sourceId);
+		if (!sourceEntry) return;
+
+		try {
+			if (!targetId) {
+				// Disconnect from all connections
+				sourceEntry.node.disconnect();
+			} else if (paramName) {
+				// Disconnect from specific AudioParam
+				const audioParam = this.getAudioParam(targetId, paramName);
+				if (audioParam) {
+					sourceEntry.node.disconnect(audioParam);
+				}
+			} else {
+				// Disconnect from specific node
+				const targetEntry = this.nodesById.get(targetId);
+				if (targetEntry) {
+					sourceEntry.node.disconnect(targetEntry.node);
+				}
+			}
+		} catch (error) {
+			console.error(`Failed to disconnect ${sourceId}:`, error);
+		}
+	}
+
 	// Update audio connections based on edges
 	updateEdges(edges: Edge[]) {
 		try {
@@ -184,9 +261,12 @@ export class AudioSystem {
 				this.outGain.connect(this.audioContext.destination);
 			}
 
-			// Recreate connections based on edges
 			for (const edge of edges) {
-				this.connect(edge.source, edge.target);
+				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
+
+				const isAudioParam = !!this.getAudioParam(edge.target, inlet?.name ?? '');
+
+				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
 			}
 		} catch (error) {
 			console.error('Error updating audio edges:', error);
