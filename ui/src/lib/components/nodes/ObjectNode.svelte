@@ -64,7 +64,7 @@
 	// Combine all searchable items (objects + presets) with metadata
 	const allSearchableItems = $derived.by(() => {
 		const objectDefNames = getObjectNames();
-		const visualNodeList = [...nodeNames];
+		const visualNodeList = nodeNames.filter((name) => name !== 'object');
 		const combinedObjectNames = new Set([...visualNodeList, ...objectDefNames]);
 
 		const items: Array<{ name: string; type: 'object' | 'preset' }> = [];
