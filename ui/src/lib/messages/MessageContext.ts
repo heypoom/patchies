@@ -29,10 +29,6 @@ export class MessageContext {
 		this.messageCallback?.(data, meta);
 	};
 
-	createSendFunction() {
-		return this.send.bind(this);
-	}
-
 	send(data: unknown, options: SendMessageOptions = {}) {
 		this.messageSystem.sendMessage(this.nodeId, data, options);
 		this.onSend(data, options);
@@ -60,7 +56,7 @@ export class MessageContext {
 	// Get all the context functions to inject
 	getContext() {
 		return {
-			send: this.createSendFunction(),
+			send: this.send.bind(this),
 			onMessage: this.createOnMessageFunction(),
 			interval: this.createIntervalFunction()
 		};
