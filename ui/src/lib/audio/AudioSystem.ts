@@ -177,6 +177,7 @@ export class AudioSystem {
 			const audioParam = this.getAudioParam(nodeId, key);
 			if (!audioParam) return;
 
+			console.log(`automating ${key}:`, value);
 			this.timeScheduler.processMessage(audioParam, value);
 
 			return;
@@ -238,32 +239,6 @@ export class AudioSystem {
 
 	get audioContext(): AudioContext {
 		return getAudioContext();
-	}
-
-	disconnect(sourceId: string, targetId?: string, paramName?: string) {
-		const sourceEntry = this.nodesById.get(sourceId);
-		if (!sourceEntry) return;
-
-		try {
-			if (!targetId) {
-				// Disconnect from all connections
-				sourceEntry.node.disconnect();
-			} else if (paramName) {
-				// Disconnect from specific AudioParam
-				const audioParam = this.getAudioParam(targetId, paramName);
-				if (audioParam) {
-					sourceEntry.node.disconnect(audioParam);
-				}
-			} else {
-				// Disconnect from specific node
-				const targetEntry = this.nodesById.get(targetId);
-				if (targetEntry) {
-					sourceEntry.node.disconnect(targetEntry.node);
-				}
-			}
-		} catch (error) {
-			console.error(`Failed to disconnect ${sourceId}:`, error);
-		}
 	}
 
 	// Update audio connections based on edges
