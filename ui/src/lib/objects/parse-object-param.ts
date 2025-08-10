@@ -1,4 +1,8 @@
-import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
+import {
+	objectDefinitions,
+	type ObjectInlet,
+	type ObjectDataType
+} from '$lib/objects/object-definitions';
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
 
@@ -27,6 +31,8 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 		})
 		.otherwise(() => strValue || inlet.defaultValue);
 
+export const isUnmodifiableType = (type?: ObjectDataType) => type === 'signal' || type === 'bang';
+
 export const stringifyParamByType = (inlet: ObjectInlet, value: unknown, index: number) =>
 	match(inlet.type)
 		.with(P.union('signal', 'bang'), () => `$${index}`)
@@ -42,9 +48,22 @@ export const parseObjectParamFromString = (name: string, strValues: string[]) =>
 	const definition = objectDefinitions[name];
 	if (!definition) return strValues;
 
-	return definition.inlets.map((inlet, inletIndex) =>
-		parseStringParamByType(inlet, strValues[inletIndex])
-	);
+	const params: unknown[] = [];
+	let inputInletIndex = 0;
+
+	for (const inlet of definition.inlets) {
+		if (isUnmodifiableType(inlet.type)) {
+			params.push(null);
+			continue;
+		}
+
+		const value = parseStringParamByType(inlet, strValues[inputInletIndex]);
+		params.push(value);
+
+		inputInletIndex += 1;
+	}
+
+	return params;
 };
 
 const limitToValidNumber = (inlet: ObjectInlet, parsedValue: number) => {

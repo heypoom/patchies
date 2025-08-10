@@ -23,6 +23,7 @@
 	import Fuse from 'fuse.js';
 	import * as Tooltip from '../ui/tooltip';
 	import {
+		isUnmodifiableType,
 		parseObjectParamFromString,
 		stringifyParamByType
 	} from '$lib/objects/parse-object-param';
@@ -146,6 +147,7 @@
 		// Transform current name and parameter into editable expr
 		const paramString = data.params
 			.map((value, index) => stringifyParamByType(inlets[index], value, index))
+			.filter((value, index) => !isUnmodifiableType(inlets[index].type))
 			.join(' ');
 
 		expr = `${data.name} ${paramString}`;
@@ -274,9 +276,7 @@
 		if (!expr.trim()) return false;
 
 		const { name, params } = getNameAndParams();
-
 		updateNodeData(nodeId, { ...data, expr, name, params });
-		console.log(`-> audio object ${name} ->`, params);
 
 		if (!audioObjectNames.includes(name)) return false;
 
