@@ -1,14 +1,17 @@
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
-export type SendMessageOptions = { type?: string; to?: string };
+export type SendMessageOptions = {
+	to?: string;
+};
 
 export interface UserFnRunContext {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	send: (data: any, options?: SendMessageOptions) => void;
+	/** Sends messages. */
+	send: (data: unknown, options?: SendMessageOptions) => void;
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	onMessage: (callback: (message: any) => void) => void;
+	/** Receives messages. */
+	onMessage: (callback: (message: unknown) => void) => void;
 
+	/** Schedules setInterval with cleanup. */
 	interval: (callback: () => void, ms: number) => number;
 
 	/** Disables dragging in canvas. */
@@ -23,7 +26,7 @@ export class MessageContext {
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
 
-	public onSend = (data: any, options: SendMessageOptions = {}) => {};
+	public onSend: UserFnRunContext['send'] = () => {};
 	public onMessageCallbackRegistered = () => {};
 	public onIntervalCallbackRegistered = () => {};
 
@@ -67,11 +70,12 @@ export class MessageContext {
 	}
 
 	// Get all the context functions to inject
-	getContext() {
+	getContext(): UserFnRunContext {
 		return {
 			send: this.send.bind(this),
 			onMessage: this.createOnMessageFunction(),
-			interval: this.createIntervalFunction()
+			interval: this.createIntervalFunction(),
+			noDrag: () => {}
 		};
 	}
 
