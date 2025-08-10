@@ -45,7 +45,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	gain: {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
-			{ name: 'gain', type: 'float', description: 'Gain multiplier', precision: 2, maxNumber: 10 }
+			{ name: 'gain', type: 'float', description: 'Gain multiplier', precision: 2 }
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',

@@ -212,9 +212,10 @@
 			return;
 		}
 
+		updateParamByIndex(inletIndex, message);
+
 		if (inlet.name && objectDef.tags?.includes('audio')) {
 			audioSystem.setParameter(nodeId, inlet.name, message);
-			updateParamByIndex(inletIndex, message);
 
 			return;
 		}
@@ -222,9 +223,6 @@
 		match([data.name, inlet.name, message])
 			.with(['mtof', 'note', P.number], ([, , note]) => {
 				messageContext.send(440 * Math.pow(2, (note - 69) / 12));
-			})
-			.with(['delay', 'delayMs', P.number], ([, , delayMs]) => {
-				updateNodeData(nodeId, { ...data, params: [delayMs] });
 			})
 			.with(['delay', 'message', P.any], ([, , message]) => {
 				const [delayMs] = data.params as [number];
