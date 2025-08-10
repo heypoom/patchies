@@ -1,3 +1,5 @@
+import { match, P } from 'ts-pattern';
+
 type ObjectDataType =
 	| 'any'
 	| 'signal'
@@ -67,6 +69,21 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['helper']
 	},
 
+	// TODO: make this dynamic!
+	fslider: {
+		inlets: [{ name: 'min' }, { name: 'max' }, { name: 'value' }],
+		outlets: []
+	},
+
+	delay: {
+		inlets: [
+			{ name: 'message', type: 'any', description: 'Message to pass through' },
+			{ name: 'delayMs', type: 'float', description: 'How long to delay for, in ms.' }
+		],
+		outlets: [{ name: 'out', type: 'any', description: 'Message outlet' }],
+		tags: ['helper']
+	},
+
 	'+~': {
 		inlets: [
 			{ name: 'left', type: 'signal', description: 'Left signal input' },
@@ -82,49 +99,28 @@ export const audioObjectNames = Object.keys(objectDefinitions).filter((key) =>
 	objectDefinitions[key].tags?.includes('audio')
 );
 
-export const getObjectName = (expr: string): string => expr.trim().toLowerCase().split(' ')?.[0];
+export const getObjectNameFromExpr = (expr: string): string =>
+	expr.trim().toLowerCase().split(' ')?.[0];
 
 // Helper function to get object definition
 export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
-	const name = getObjectName(expr);
+	const name = getObjectNameFromExpr(expr);
 
 	return objectDefinitions[name];
 }
 
 // Helper function to get all object names
-export function getObjectNames(): string[] {
-	return Object.keys(objectDefinitions);
-}
-
-// Helper function to get object names by category
-export function getObjectNamesByCategory(category: string): string[] {
-	return Object.entries(objectDefinitions)
-		.filter(([_, def]) => def.tags === category)
-		.map(([name]) => name);
-}
+export const getObjectNames = () => Object.keys(objectDefinitions);
 
 // Helper function to validate inlet/outlet types
-export function validateMessageType(value: any, expectedType: string): boolean {
-	switch (expectedType) {
-		case 'any':
-			return true;
-		case 'bang':
-			return value?.type === 'bang';
-		case 'float':
-			return typeof value === 'number';
-		case 'int':
-			return typeof value === 'number' && Number.isInteger(value);
-		case 'string':
-			return typeof value === 'string';
-		case 'bool':
-			return typeof value === 'boolean';
-		case 'int[]':
-			return (
-				Array.isArray(value) && value.every((v) => typeof v === 'number' && Number.isInteger(v))
-			);
-		case 'float[]':
-			return Array.isArray(value) && value.every((v) => typeof v === 'number');
-		default:
-			return false;
-	}
-}
+export const validateMessageType = (value: unknown, expectedType: ObjectDataType): boolean =>
+	match<[unknown, ObjectDataType]>([value, expectedType])
+		.with([P.any, 'any'], () => true)
+		.with([{ type: 'bang' }, 'bang'], () => true)
+		.with([P.number, 'float'], () => true)
+		.with([P.number, 'int'], ([n]) => Number.isInteger(n))
+		.with([P.string, 'string'], () => true)
+		.with([P.boolean, 'bool'], () => true)
+		.with([P.array(P.number), 'int[]'], ([arr]) => arr.every(Number.isInteger))
+		.with([P.array(P.number), 'float[]'], () => true)
+		.otherwise(() => false);

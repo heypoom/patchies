@@ -13,7 +13,7 @@
 		getObjectDefinition,
 		validateMessageType,
 		audioObjectNames,
-		getObjectName
+		getObjectNameFromExpr
 	} from '$lib/objects/objectDefinitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -27,7 +27,7 @@
 		id: nodeId,
 		data,
 		selected
-	}: { id: string; data: { expr: string }; selected: boolean } = $props();
+	}: { id: string; data: { expr: string; name: string }; selected: boolean } = $props();
 
 	const { updateNodeData, deleteElements, updateNode, getEdges } = useSvelteFlow();
 
@@ -173,11 +173,7 @@
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		if (!objectDef || !objectDef.inlets || !meta?.inlet) return;
 
-		// Parse inlet information (e.g., "inlet-0" -> index 0)
-		const inletMatch = meta.inlet.match(/inlet-(\d+)/);
-		if (!inletMatch) return;
-
-		const inletIndex = parseInt(inletMatch[1]);
+		const inletIndex = parseInt(meta.inlet.replace('inlet-', ''));
 		const inlet = objectDef.inlets[inletIndex];
 		if (!inlet) return;
 
@@ -196,26 +192,46 @@
 			return;
 		}
 
-		const name = getObjectName(expr);
+		match([data.name, inlet.name, message])
+			.with(['mtof', 'note', P.number], ([, , note]) => {
+				messageContext.send(440 * Math.pow(2, (note - 69) / 12));
+			})
+			.with(['delay', 'delayMs', P.number], ([, , delayMs]) => {
+				updateNodeData(nodeId, { ...data, delayMs });
+			})
+			.with(['delay', 'message', P.any], ([, , message]) => {
+				const delayMs = (data as any).delayMs || 0;
 
-		match([name, message]).with(['mtof', P.number], ([_, note]) => {
-			messageContext.send(440 * Math.pow(2, (note - 69) / 12));
-		});
+				setTimeout(() => {
+					messageContext.send(message);
+				}, delayMs || 0);
+			});
 	};
 
 	function handleNameChange() {
-		// Check if it's a preset command first
-		if (tryCreatePreset()) {
-			return; // Early return if preset was created
-		}
+		if (tryCreatePreset()) return;
+		if (tryTransformToVisualNode()) return;
+		if (tryCreateAudioObject()) return;
 
-		updateNodeData(nodeId, { ...data, expr });
+		tryCreatePlainObject();
+	}
 
-		// Check if this should transform to a visual node
-		tryTransformToVisualNode();
+	function getNameAndParams() {
+		const parts = expr.trim().split(' ');
+		const name = parts[0]?.toLowerCase();
+		const params = parts.slice(1);
 
-		// Create audio object if it's an audio node
-		tryCreateAudioObject();
+		return { name, params };
+	}
+
+	function tryCreatePlainObject() {
+		const { name, params } = getNameAndParams();
+
+		const nextData = match(name)
+			.with('delay', () => ({ delayMs: parseFloat(params[0]) }))
+			.otherwise(() => ({}));
+
+		updateNodeData(nodeId, { ...data, expr, name, ...nextData });
 	}
 
 	function tryCreatePreset(): boolean {
@@ -234,21 +250,20 @@
 	}
 
 	function tryCreateAudioObject() {
-		if (!expr.trim()) return;
+		if (!expr.trim()) return false;
 
-		const parts = expr.trim().split(' ');
-		const objectName = parts[0]?.toLowerCase();
-		const params = parts.slice(1);
+		const { name, params } = getNameAndParams();
+		updateNodeData(nodeId, { ...data, expr, name, params });
 
-		if (audioObjectNames.includes(objectName)) {
-			// Remove existing audio object first to avoid duplicates
-			audioSystem.removeAudioObject(nodeId);
-			audioSystem.createAudioObject(nodeId, objectName, params);
+		if (!audioObjectNames.includes(name)) return false;
 
-			// Restore audio connections after creating new object
-			const edges = getEdges();
-			audioSystem.updateEdges(edges);
-		}
+		audioSystem.removeAudioObject(nodeId);
+		audioSystem.createAudioObject(nodeId, name, params);
+
+		const edges = getEdges();
+		audioSystem.updateEdges(edges);
+
+		return true;
 	}
 
 	const changeNode = (type: string, data: Record<string, unknown>) => {
@@ -270,12 +285,14 @@
 	};
 
 	function tryTransformToVisualNode() {
-		const name = getObjectName(expr);
-		if (!name) return;
+		const name = getObjectNameFromExpr(expr);
+		if (!name) return false;
 
-		match(name)
+		return match(name)
 			.with(P.union('msg', 'm'), () => {
 				changeNode('msg', { message: expr.replace(name, '').trim() });
+
+				return true;
 			})
 			.with('slider', () => {
 				let [min = 0, max = 100, defaultValue] = expr
@@ -289,6 +306,8 @@
 				}
 
 				changeNode('slider', { min, max, defaultValue, isFloat: false });
+
+				return true;
 			})
 			.with('fslider', () => {
 				let [min = 0, max = 1, defaultValue] = expr.replace(name, '').trim().split(' ').map(Number);
@@ -298,11 +317,17 @@
 				}
 
 				changeNode('slider', { min, max, defaultValue, isFloat: true });
+
+				return true;
 			})
 			.otherwise(() => {
 				if (nodeNames.includes(name as any)) {
 					changeNode(name, getDefaultNodeData(name));
+
+					return true;
 				}
+
+				return false;
 			});
 	}
 
@@ -431,7 +456,7 @@
 							type="target"
 							position={Position.Top}
 							id={`inlet-${index}`}
-							class={['top-0 z-1', inlet.type === 'signal' && '!bg-blue-500']}
+							class={['z-1 top-0', inlet.type === 'signal' && '!bg-blue-500']}
 							style={`left: ${inlets.length === 1 ? '50%' : `${35 + (index / (inlets.length - 1)) * 30}%`}`}
 							title={inlet.name || `Inlet ${index}`}
 						/>
@@ -459,7 +484,7 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute top-full left-0 z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+								class="absolute left-0 top-full z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 							>
 								<!-- Results List -->
 								<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
