@@ -127,12 +127,8 @@ export class MessageSystem {
 		}
 
 		const message: Message = { data, source: fromNodeId };
-
-		// Get connected nodes
 		const connectedNodes = this.connections.get(fromNodeId) || [];
-		console.log(`sending message`, { connectedNodes, message });
 
-		// Send to all connected nodes
 		for (const targetNodeId of connectedNodes) {
 			const targetQueue = this.messageQueues.get(targetNodeId);
 			if (!targetQueue) continue;
