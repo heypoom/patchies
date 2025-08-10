@@ -135,14 +135,18 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 
 	adsr: {
 		inlets: [
-			{ name: 'trigger', type: 'bang', description: 'Trigger the ADSR envelope' },
+			{
+				name: 'trigger',
+				type: 'message',
+				description: 'Trigger the ADSR envelope. 0 = release, 1 = attack.'
+			},
 			{
 				name: 'peak',
 				type: 'float',
-				description: 'Peak level',
+				description: 'Peak value',
 				defaultValue: 1,
 				minNumber: 0,
-				precision: 2
+				maxPrecision: 2
 			},
 			{
 				name: 'attack',
@@ -163,18 +167,16 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			{
 				name: 'sustain',
 				type: 'float',
-				description: 'Sustain level (% of peak)',
-				defaultValue: 50,
+				description: 'Sustain value',
+				defaultValue: 0.5,
 				minNumber: 0,
-				maxNumber: 100,
-				precision: 1
+				maxPrecision: 2
 			},
 			{
 				name: 'release',
 				type: 'float',
 				description: 'Release time in ms',
 				defaultValue: 300,
-				minNumber: 0,
 				precision: 0
 			}
 		],
@@ -200,3 +202,5 @@ export function getObjectDefinition(expr: string): ObjectDefinition | undefined 
 
 // Helper function to get all object names
 export const getObjectNames = () => Object.keys(objectDefinitions);
+
+export type AdsrParamList = [unknown, number, number, number, number, number];

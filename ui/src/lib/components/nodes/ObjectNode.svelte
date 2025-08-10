@@ -13,7 +13,8 @@
 		getObjectDefinition,
 		audioObjectNames,
 		getObjectNameFromExpr,
-		objectDefinitions
+		objectDefinitions,
+		type AdsrParamList
 	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -248,6 +249,20 @@
 				setTimeout(() => {
 					messageContext.send(message);
 				}, delayMs ?? 0);
+			})
+			.with(['adsr', 'trigger', P.any], ([, , trigger]) => {
+				const [_, peak, attack, decay, sustain, release] = data.params as AdsrParamList;
+
+				if (trigger === 0 || trigger === false) {
+					messageContext.send({ type: 'release', release: { time: release / 1000 }, endValue: 0 });
+				} else {
+					messageContext.send({
+						type: 'trigger',
+						values: { start: 0, peak, sustain },
+						attack: { time: attack / 1000 },
+						decay: { time: decay / 1000 }
+					});
+				}
 			});
 	};
 
