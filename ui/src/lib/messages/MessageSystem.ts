@@ -3,7 +3,6 @@ import type { SendMessageOptions } from './MessageContext';
 
 export interface Message<T = unknown> {
 	data: T;
-	timestamp: number;
 	source: string;
 	outlet?: number | string;
 	inlet?: string;
@@ -128,7 +127,6 @@ export class MessageSystem {
 
 		const message: Message = {
 			data,
-			timestamp: Date.now(),
 			source: fromNodeId,
 			outlet: options.to
 		};
