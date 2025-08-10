@@ -117,7 +117,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	delay: {
 		inlets: [
 			{ name: 'message', type: 'message', description: 'Message to pass through' },
-			{ name: 'delayMs', type: 'float', description: 'How long to delay for, in ms.' }
+			{ name: 'delay', type: 'float', description: 'How long to delay for, in ms.', precision: 0 }
 		],
 		outlets: [{ name: 'out', type: 'any', description: 'Message outlet' }],
 		tags: ['helper']
