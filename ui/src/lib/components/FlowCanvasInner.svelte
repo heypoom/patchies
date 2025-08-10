@@ -10,17 +10,12 @@
 		useOnSelectionChange
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import ObjectPalette from './ObjectPalette.svelte';
 	import CommandPalette from './CommandPalette.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import NodeList from './NodeList.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
-	import {
-		isAiFeaturesVisible,
-		isBottomBarVisible,
-		isObjectPaletteVisible
-	} from '../../stores/ui.store';
+	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
@@ -166,27 +161,13 @@
 			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 			showCommandPalette = true;
 		} else if (
-			event.key.toLowerCase() === 'n' &&
-			!$isObjectPaletteVisible &&
-			!showCommandPalette &&
-			!isTyping
-		) {
-			// Handle 'n' key for new object palette
-			event.preventDefault();
-
-			// Convert screen coordinates to flow coordinates for accurate node placement
-			$isObjectPaletteVisible = true;
-		} else if (
 			event.key.toLowerCase() === 'enter' &&
-			!$isObjectPaletteVisible &&
 			!showCommandPalette &&
 			!isTyping &&
 			!hasNodeSelected
 		) {
-			// Handle 'Enter' key for direct object node insertion
 			event.preventDefault();
 
-			// Create object node at last mouse position (same pattern as ObjectPalette)
 			const position = screenToFlowPosition(lastMousePosition);
 			createNode('object', position);
 		}
@@ -268,12 +249,6 @@
 		} else {
 			createNode(nodeType, position);
 		}
-
-		$isObjectPaletteVisible = false;
-	}
-
-	function handleObjectPaletteCancel() {
-		$isObjectPaletteVisible = false;
 	}
 
 	function handleCommandPaletteCancel() {
@@ -337,14 +312,6 @@
 			<Controls class={$isBottomBarVisible ? '!bottom-[30px]' : ''} />
 		</SvelteFlow>
 
-		<!-- Object Palette -->
-		<ObjectPalette
-			nodeTypes={visibleNodeTypes}
-			position={lastMousePosition}
-			onselect={handlePaletteSelect}
-			oncancel={handleObjectPaletteCancel}
-		/>
-
 		<!-- Command Palette -->
 		{#if showCommandPalette}
 			<CommandPalette
@@ -371,7 +338,7 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed right-0 bottom-0 p-2">
+		<div class="fixed bottom-0 right-0 p-2">
 			<ShortcutHelp />
 		</div>
 	{/if}

@@ -8,7 +8,6 @@
 		{
 			category: 'Navigation',
 			items: [
-				{ key: 'N', description: 'Search for an object to insert at cursor' },
 				{ key: 'Enter', description: 'Insert an empty object at cursor' },
 				{ key: 'Cmd + K', description: 'Open command palette' }
 			]
