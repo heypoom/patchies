@@ -131,6 +131,56 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'signal', description: 'Sum of input signals' }],
 		description: 'Adds two audio signals together',
 		tags: ['audio']
+	},
+
+	adsr: {
+		inlets: [
+			{ name: 'trigger', type: 'bang', description: 'Trigger the ADSR envelope' },
+			{
+				name: 'peak',
+				type: 'float',
+				description: 'Peak level',
+				defaultValue: 1,
+				minNumber: 0,
+				precision: 2
+			},
+			{
+				name: 'attack',
+				type: 'float',
+				description: 'Attack time in ms',
+				defaultValue: 100,
+				minNumber: 0,
+				precision: 0
+			},
+			{
+				name: 'decay',
+				type: 'float',
+				description: 'Decay time in ms',
+				defaultValue: 200,
+				minNumber: 0,
+				precision: 0
+			},
+			{
+				name: 'sustain',
+				type: 'float',
+				description: 'Sustain level (% of peak)',
+				defaultValue: 50,
+				minNumber: 0,
+				maxNumber: 100,
+				precision: 1
+			},
+			{
+				name: 'release',
+				type: 'float',
+				description: 'Release time in ms',
+				defaultValue: 300,
+				minNumber: 0,
+				precision: 0
+			}
+		],
+		outlets: [{ name: 'out', type: 'message', description: 'ADSR envelope message' }],
+		description: 'ADSR envelope generator with trigger and parameter control inlets',
+		tags: ['envelope']
 	}
 };
 
