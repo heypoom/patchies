@@ -54,7 +54,12 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 
 	osc: {
 		inlets: [
-			{ name: 'frequency', type: 'float', description: 'Oscillator frequency in Hz' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Oscillator frequency in Hz',
+				defaultValue: 440
+			},
 			{
 				name: 'type',
 				type: 'string',
