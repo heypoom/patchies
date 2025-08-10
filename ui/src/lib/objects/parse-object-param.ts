@@ -6,10 +6,11 @@ import {
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
 
+export const UNMODIFIABLES = ['signal', 'bang', 'message'] as const satisfies ObjectDataType[];
+
 export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 	match(inlet.type)
-		.with('signal', () => null)
-		.with('bang', () => null)
+		.with(P.union(...UNMODIFIABLES), () => null)
 		.with('int', () => limitToValidNumber(inlet, parseInt(strValue)))
 		.with('float', () => limitToValidNumber(inlet, parseFloat(strValue)))
 		.with('float[]', () => {
@@ -30,8 +31,6 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 			return strValue || inlet.defaultValue || '';
 		})
 		.otherwise(() => strValue || inlet.defaultValue);
-
-export const UNMODIFIABLES = ['signal', 'bang'] as const satisfies ObjectDataType[];
 
 export const isUnmodifiableType = (type?: ObjectDataType) =>
 	type && UNMODIFIABLES.includes(type as any);

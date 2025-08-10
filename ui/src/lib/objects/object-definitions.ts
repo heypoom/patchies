@@ -1,5 +1,6 @@
 export type ObjectDataType =
 	| 'any'
+	| 'message'
 	| 'signal'
 	| 'bang'
 	| 'float'
@@ -89,7 +90,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 
 	delay: {
 		inlets: [
-			{ name: 'message', type: 'any', description: 'Message to pass through' },
+			{ name: 'message', type: 'message', description: 'Message to pass through' },
 			{ name: 'delayMs', type: 'float', description: 'How long to delay for, in ms.' }
 		],
 		outlets: [{ name: 'out', type: 'any', description: 'Message outlet' }],
