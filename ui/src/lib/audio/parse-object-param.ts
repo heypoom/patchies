@@ -6,19 +6,19 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 	match(inlet.type)
 		.with('signal', () => null)
 		.with('bang', () => null)
-		.with('int', () => parseInt(strValue) || (inlet.defaultValue ?? 0))
-		.with('float', () => parseFloat(strValue) || (inlet.defaultValue ?? 0))
+		.with('int', () => limitToValidNumber(inlet, parseInt(strValue)))
+		.with('float', () => limitToValidNumber(inlet, parseFloat(strValue)))
 		.with('float[]', () => {
 			const parsed = JSON5.parse(strValue);
 			if (!Array.isArray(parsed)) return inlet.defaultValue ?? [];
 
-			return parsed.map((v) => parseFloat(v) || 0);
+			return parsed.map((v) => limitToValidNumber(inlet, parseFloat(v)));
 		})
 		.with('int[]', () => {
 			const parsed = JSON5.parse(strValue);
 			if (!Array.isArray(parsed)) return inlet.defaultValue ?? [];
 
-			return parsed.map((v) => parseInt(v) || 0);
+			return parsed.map((v) => limitToValidNumber(inlet, parseInt(v)));
 		})
 		.with('string', () => {
 			if (inlet.options && !inlet.options.includes(strValue)) return inlet.defaultValue || '';
@@ -45,4 +45,18 @@ export const parseObjectParamFromString = (name: string, strValues: string[]) =>
 	return definition.inlets.map((inlet, inletIndex) =>
 		parseStringParamByType(inlet, strValues[inletIndex])
 	);
+};
+
+const limitToValidNumber = (inlet: ObjectInlet, parsedValue: number) => {
+	const defaultValue = inlet.defaultValue ?? 0;
+
+	if (inlet.minNumber !== undefined && parsedValue < inlet.minNumber) {
+		return defaultValue;
+	}
+
+	if (inlet.maxNumber !== undefined && parsedValue > inlet.maxNumber) {
+		return defaultValue;
+	}
+
+	return parsedValue || defaultValue;
 };

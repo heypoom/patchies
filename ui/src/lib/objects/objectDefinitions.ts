@@ -24,6 +24,9 @@ export interface ObjectInlet {
 
 	/** Valid values */
 	options?: unknown[];
+
+	minNumber?: number;
+	maxNumber?: number;
 }
 
 export interface ObjectOutlet {
