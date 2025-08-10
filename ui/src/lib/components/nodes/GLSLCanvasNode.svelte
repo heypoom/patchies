@@ -120,9 +120,7 @@
 				id={`${def.type === 'sampler2D' ? 'video' : 'msg'}-in-${defIndex}-${def.name}-${def.type}`}
 				style={`left: ${80 + defIndex * 20}px;`}
 				title={`${def.name} (${def.type})`}
-				class={def.type === 'sampler2D'
-					? '!border-orange-400 !bg-orange-500 hover:!bg-orange-400'
-					: ''}
+				class={def.type === 'sampler2D' ? '!bg-orange-500 hover:!bg-orange-400' : ''}
 			/>
 		{/each}
 	{/snippet}
@@ -133,7 +131,7 @@
 			position={Position.Bottom}
 			id={`video-out`}
 			title="Video output"
-			class="!border-orange-400 !bg-orange-500 hover:!bg-orange-400"
+			class="!bg-orange-500 hover:!bg-orange-400"
 		/>
 	{/snippet}
 
