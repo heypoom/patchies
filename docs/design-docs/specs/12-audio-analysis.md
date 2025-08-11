@@ -1,4 +1,4 @@
-# 12. Audio Analysis for Visualizations
+# 12. Audio Analysis for Visualizations - OUTDATED
 
 We now have the `strudel` object which generates sounds. We also have many visualization objects like `p5`, `hydra`, `canvas` and `glsl`. The next step is to connect these two worlds together.
 

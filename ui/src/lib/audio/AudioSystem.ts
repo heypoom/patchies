@@ -1,7 +1,5 @@
 import { getAudioContext } from '@strudel/webaudio';
 import type { Edge } from '@xyflow/svelte';
-import Meyda from 'meyda';
-import type { MeydaAnalyzer } from 'meyda/dist/esm/meyda-wa';
 import { match, P } from 'ts-pattern';
 import type { PsAudioNode } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
@@ -16,7 +14,6 @@ export class AudioSystem {
 	private timeScheduler: TimeScheduler;
 
 	outGain: GainNode | null = null;
-	outAnalyzer: MeydaAnalyzer | null = null;
 
 	constructor() {
 		this.timeScheduler = new TimeScheduler(this.audioContext);
@@ -26,16 +23,6 @@ export class AudioSystem {
 		this.outGain = this.audioContext.createGain();
 		this.outGain.gain.value = 0.8;
 		this.outGain.connect(this.audioContext.destination);
-
-		this.outAnalyzer = Meyda.createMeydaAnalyzer({
-			audioContext: this.audioContext,
-			source: this.outGain,
-			bufferSize: 512,
-			featureExtractors: ['rms'],
-			callback: () => {
-				// Handle analysis features here if needed
-			}
-		});
 	}
 
 	connect(sourceId: string, targetId: string, paramName?: string) {
