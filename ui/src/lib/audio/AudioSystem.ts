@@ -1,7 +1,7 @@
 import { getAudioContext } from '@strudel/webaudio';
 import type { Edge } from '@xyflow/svelte';
 import { match, P } from 'ts-pattern';
-import type { PsAudioNode } from './audio-node-types';
+import type { PsAudioNode, PsAudioType } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
@@ -103,22 +103,24 @@ export class AudioSystem {
 		return objectDef.inlets[inletIndex] ?? null;
 	}
 
-	createOscillator(nodeId: string, type: OscillatorType, frequency: number): OscillatorNode {
-		const oscillator = this.audioContext.createOscillator();
-		oscillator.type = type;
-		oscillator.frequency.value = frequency;
+	createAnalyzer(nodeId: string, params: unknown[]) {
+		const [, fftSize] = params as [unknown, number];
 
-		this.nodesById.set(nodeId, { type: 'osc', node: oscillator });
+		const analyzer = this.audioContext.createAnalyser();
+		analyzer.fftSize = fftSize;
 
-		return oscillator;
+		this.nodesById.set(nodeId, { type: 'analyzer~', node: analyzer });
+
+		return analyzer;
 	}
 
 	// Create audio objects for object nodes
-	createAudioObject(nodeId: string, objectType: string, params: unknown[] = []) {
+	createAudioObject(nodeId: string, objectType: PsAudioType, params: unknown[] = []) {
 		match(objectType)
 			.with('osc', () => this.createOsc(nodeId, params))
 			.with('gain', () => this.createGain(nodeId, params))
 			.with('dac', () => this.createDac(nodeId))
+			.with('analyzer~', () => this.createAnalyzer(nodeId, params))
 			.with('+~', () => this.createAdd(nodeId));
 	}
 

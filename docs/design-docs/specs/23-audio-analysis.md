@@ -12,7 +12,7 @@ We want to create a system for audio analysis, for two reasons:
 - Users should be able to use the visual nodes (e.g. `glsl`, `p5` and `hydra`) to
 - Stretch Goal: as we have the web audio nodes from Strudel (`strudel`) and LiveMusicManager (`ai.music`), we should ideally be able to visualize them too.
 
-## Foo
+## Analyzer Objects
 
 - Users should be able to place **analyzer objects** anywhere in the graph.
 

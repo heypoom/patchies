@@ -31,6 +31,11 @@ interface PsLyria extends PsBase {
 	node: GainNode;
 }
 
-export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria;
+interface PsAnalyzer extends PsBase {
+	type: 'analyzer~';
+	node: AnalyserNode;
+}
+
+export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

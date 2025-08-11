@@ -103,6 +103,10 @@ const limitToValidNumber = (inlet: ObjectInlet, parsedValue: number) => {
 		return defaultValue;
 	}
 
+	if (inlet.options && !inlet.options.includes(parsedValue)) {
+		return defaultValue;
+	}
+
 	return parsedValue || defaultValue;
 };
 

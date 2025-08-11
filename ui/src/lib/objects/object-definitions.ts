@@ -108,10 +108,28 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['helper']
 	},
 
-	// TODO: make this dynamic!
 	fslider: {
 		inlets: [{ name: 'min' }, { name: 'max' }, { name: 'value' }],
 		outlets: []
+	},
+
+	'analyzer~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Audio signal to analyze' },
+			{
+				name: 'fftSize',
+				type: 'float',
+				description: 'FFT size',
+				defaultValue: 2048,
+				options: [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
+			}
+		],
+		outlets: [
+			{ name: 'out', type: 'signal', description: 'Audio data from the input' },
+			{ name: 'analysis', type: 'message', description: 'Messages from analyzed audio data' }
+		],
+		description: 'Analyzes audio signals and provides frequency and amplitude data',
+		tags: ['audio']
 	},
 
 	delay: {

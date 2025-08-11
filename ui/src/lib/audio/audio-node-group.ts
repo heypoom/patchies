@@ -4,7 +4,7 @@ import type { PsAudioNodeGroup, PsAudioType } from './audio-node-types';
 export const getAudioNodeGroup = (nodeType: PsAudioType): PsAudioNodeGroup | null =>
 	match<PsAudioType, PsAudioNodeGroup | null>(nodeType)
 		.with(P.union('osc', 'lyria'), () => 'sources')
-		.with(P.union('gain', '+~'), () => 'processors')
+		.with(P.union('gain', 'analyzer~', '+~'), () => 'processors')
 		.with('dac', () => 'destinations')
 		.otherwise(() => null);
 

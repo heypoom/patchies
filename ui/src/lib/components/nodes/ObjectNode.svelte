@@ -31,6 +31,7 @@
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
+	import type { PsAudioType } from '$lib/audio/audio-node-types';
 
 	let {
 		id: nodeId,
@@ -303,7 +304,7 @@
 
 	function syncAudioSystem(name: string, params: unknown[]) {
 		audioSystem.removeAudioObject(nodeId);
-		audioSystem.createAudioObject(nodeId, name, params);
+		audioSystem.createAudioObject(nodeId, name as PsAudioType, params);
 
 		const edges = getEdges();
 		audioSystem.updateEdges(edges);
