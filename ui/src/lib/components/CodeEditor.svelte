@@ -17,7 +17,7 @@
 		class: className = '',
 		onrun = () => {},
 		onchange = (code: string) => {},
-		fontSize = '14px',
+		fontSize = '12px',
 		extraExtensions = [],
 		...restProps
 	}: {
