@@ -1,6 +1,8 @@
+import { AudioSystem } from '$lib/audio/AudioSystem';
 import { GoogleGenAI } from '@google/genai';
 import type { AudioChunk, LiveMusicSession, LiveMusicServerMessage } from '@google/genai';
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
+import { match, P } from 'ts-pattern';
 
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'paused';
 
@@ -11,6 +13,7 @@ export interface Prompt {
 
 export class LiveMusicManager {
 	private static instance: LiveMusicManager | null = null;
+	private audioSystem = AudioSystem.getInstance();
 
 	private ai: GoogleGenAI | null = null;
 	private session: LiveMusicSession | null = null;
@@ -20,34 +23,30 @@ export class LiveMusicManager {
 	private nextStartTime = 0;
 	private bufferTime = 2;
 
-	public readonly audioContext: AudioContext;
-	private outputNode: GainNode;
-
+	// TODO: move this into AudioSystem!
+	private outputNode: GainNode | null = null;
 	private prompts = new Map<string, Prompt>();
 
 	// Global stores
 	public readonly playbackState = writable<PlaybackState>('stopped');
 	public readonly errorMessage = writable<string | null>(null);
-	private currentState: PlaybackState = 'stopped';
 
 	private constructor() {
 		const apiKey = localStorage.getItem('gemini-api-key');
 
 		if (!apiKey) {
-			throw new Error('Gemini API key not found in localStorage');
+			return;
 		}
 
 		if (!this.ai) {
 			this.ai = new GoogleGenAI({ apiKey, apiVersion: 'v1alpha' });
 		}
 
-		this.audioContext = new AudioContext({ sampleRate: 48000 });
 		this.outputNode = this.audioContext.createGain();
+	}
 
-		// Subscribe to our own store to keep internal state in sync
-		this.playbackState.subscribe((state) => {
-			this.currentState = state;
-		});
+	get audioContext() {
+		return this.audioSystem.audioContext;
 	}
 
 	static getInstance(): LiveMusicManager {
@@ -105,9 +104,10 @@ export class LiveMusicManager {
 	}
 
 	private async processAudioChunks(audioChunks: AudioChunk[]) {
-		if (this.currentState === 'paused' || this.currentState === 'stopped') {
-			return;
-		}
+		const playbackState = get(this.playbackState);
+
+		if (playbackState === 'paused' || playbackState === 'stopped') return;
+		if (!this.outputNode) return;
 
 		// Decode audio data
 		const audioData = this.decode(audioChunks[0].data!);
@@ -119,6 +119,7 @@ export class LiveMusicManager {
 
 		if (this.nextStartTime === 0) {
 			this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
+
 			setTimeout(() => {
 				this.playbackState.set('playing');
 			}, this.bufferTime * 1000);
@@ -138,9 +139,11 @@ export class LiveMusicManager {
 		const binaryString = atob(base64Data);
 		const len = binaryString.length;
 		const bytes = new Uint8Array(len);
+
 		for (let i = 0; i < len; i++) {
 			bytes[i] = binaryString.charCodeAt(i);
 		}
+
 		return bytes;
 	}
 
@@ -200,9 +203,7 @@ export class LiveMusicManager {
 			if (!this.session) return;
 
 			try {
-				await this.session.setWeightedPrompts({
-					weightedPrompts: this.activePrompts
-				});
+				await this.session.setWeightedPrompts({ weightedPrompts: this.activePrompts });
 			} catch (e: unknown) {
 				const message = e instanceof Error ? e.message : String(e);
 				this.errorMessage.set(message);
@@ -218,12 +219,13 @@ export class LiveMusicManager {
 			this.session = await this.getSession();
 			await this.setWeightedPrompts(this.prompts);
 
-			await this.audioContext.resume();
 			this.session.play();
 
-			this.outputNode.connect(this.audioContext.destination);
-			this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-			this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+			if (this.outputNode) {
+				this.outputNode.connect(this.audioSystem.outGain!);
+				this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+				this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+			}
 		} catch (error) {
 			this.playbackState.set('stopped');
 			this.errorMessage.set(error instanceof Error ? error.message : 'Failed to start playback');
@@ -236,8 +238,12 @@ export class LiveMusicManager {
 		}
 
 		this.playbackState.set('paused');
-		this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
-		this.outputNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
+
+		if (this.outputNode) {
+			this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
+			this.outputNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
+		}
+
 		this.nextStartTime = 0;
 		this.outputNode = this.audioContext.createGain();
 	}
@@ -248,23 +254,23 @@ export class LiveMusicManager {
 		}
 
 		this.playbackState.set('stopped');
-		this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-		this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+
+		if (this.outputNode) {
+			this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+			this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+		}
+
 		this.nextStartTime = 0;
 		this.session = null;
 		this.sessionPromise = null;
 	}
 
 	public async playPause() {
-		switch (this.currentState) {
-			case 'playing':
-				return this.pause();
-			case 'paused':
-			case 'stopped':
-				return this.play();
-			case 'loading':
-				return this.stop();
-		}
+		await match(get(this.playbackState))
+			.with('playing', () => this.pause())
+			.with(P.union('paused', 'stopped'), () => this.play())
+			.with('loading', () => this.stop())
+			.exhaustive();
 	}
 
 	// Methods for managing prompts

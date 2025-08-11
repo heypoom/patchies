@@ -13,7 +13,7 @@ export interface UserFnRunContext {
 	send: (data: unknown, options?: SendMessageOptions) => void;
 
 	/** Receives messages. */
-	onMessage: (callback: (message: unknown) => void) => void;
+	onMessage: (callback: MessageCallbackFn) => void;
 
 	/** Schedules setInterval with cleanup. */
 	interval: (callback: () => void, ms: number) => number;
