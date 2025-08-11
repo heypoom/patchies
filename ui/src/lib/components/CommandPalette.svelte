@@ -246,9 +246,9 @@
 
 	function saveToFile() {
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-		const patch = serializePatch({ name: patchName, nodes, edges });
+		const patchJson = serializePatch({ name: patchName, nodes, edges });
 
-		const blob = new Blob([patch], { type: 'application/json' });
+		const blob = new Blob([patchJson], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;

@@ -6,7 +6,8 @@ type SaveInfo = { nodes: Node[]; edges: Edge[] };
 export function savePatchToLocalStorage({ name, nodes, edges }: SaveInfo & { name: string }) {
 	if (!name.trim()) return;
 
-	const patchData = serializePatch({ name, nodes, edges });
+	const patchJson = serializePatch({ name, nodes, edges });
+	localStorage.setItem(`patchies-patch-${name}`, patchJson);
 
 	const saved = localStorage.getItem('patchies-saved-patches') || '[]';
 	let savedPatches: string[];
@@ -21,6 +22,4 @@ export function savePatchToLocalStorage({ name, nodes, edges }: SaveInfo & { nam
 		savedPatches.push(name);
 		localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
 	}
-
-	localStorage.setItem(`patchies-patch-${name}`, JSON.stringify(patchData));
 }
