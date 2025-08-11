@@ -8,6 +8,8 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 
+	let contentContainer: HTMLDivElement | null = null;
+
 	// Get node data from XY Flow - nodes receive their data as props
 	let {
 		id: nodeId,
@@ -40,6 +42,7 @@
 
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
+	let contentWidth = $state(100);
 
 	const code = $derived(data.code || '');
 
@@ -91,6 +94,8 @@
 		if (data?.runOnMount) {
 			executeCode();
 		}
+
+		updateContentWidth();
 	});
 
 	onDestroy(() => {
@@ -202,6 +207,12 @@
 		}
 	}
 
+	function updateContentWidth() {
+		if (!contentContainer) return;
+
+		contentWidth = contentContainer.offsetWidth;
+	}
+
 	function toggleEditor() {
 		showEditor = !showEditor;
 	}
@@ -221,7 +232,7 @@
 
 <div class="relative flex gap-x-3">
 	<div class="group relative">
-		<div class="flex flex-col gap-2">
+		<div class="flex flex-col gap-2" bind:this={contentContainer}>
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
 					<div class="font-mono text-xs font-medium text-zinc-400">js</div>
@@ -232,6 +243,7 @@
 						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={() => {
 							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
+							setTimeout(() => updateContentWidth(), 10);
 						}}
 						title="Console"
 					>
@@ -351,7 +363,7 @@
 	</div>
 
 	{#if showEditor}
-		<div class="relative">
+		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
 					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
