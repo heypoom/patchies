@@ -1,7 +1,6 @@
 import { match } from 'ts-pattern';
 import { AudioSystem } from './AudioSystem';
 import { MessageSystem } from '$lib/messages/MessageSystem';
-import { objectDefinitions } from '$lib/objects/object-definitions';
 
 export type AudioAnalysisType = 'waveform' | 'frequency';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -18,37 +17,19 @@ export class AudioAnalysisManager {
 	private audioSystem = AudioSystem.getInstance();
 	private messageSystem = MessageSystem.getInstance();
 
-	// Find FFT nodes connected to the given node via analysis marker outlets
-	private findConnectedFFTNodes(nodeId: string): string[] {
-		const connectedSources = this.messageSystem.getConnectedSourceNodes(nodeId);
-		const fftNodes: string[] = [];
-
-		for (const sourceId of connectedSources) {
-			// Check if this is an object node (starts with 'object-')
-			if (sourceId.startsWith('object-')) {
-				// Get the audio node data to check if it's an FFT node
-				const audioNode = this.audioSystem.nodesById.get(sourceId);
-				if (audioNode && audioNode.type === 'fft') {
-					fftNodes.push(sourceId);
-				}
-			}
-		}
-
-		return fftNodes;
-	}
-
-	// Get analysis data with automatic FFT node detection
 	getAnalysisForNode(
 		callingNodeId: string,
 		{ id, type = 'waveform', format = 'int' }: AudioAnalysisProps
 	): AudioAnalysisValue | null {
+		// If the user passes an explicit analyzer node id, use that.
 		let fftNodeId = id;
 
-		// If no ID provided, try to find a connected FFT node
+		// Infer the connected FFT node.
 		if (!fftNodeId) {
-			const connectedFFTNodes = this.findConnectedFFTNodes(callingNodeId);
-			if (connectedFFTNodes.length > 0) {
-				fftNodeId = connectedFFTNodes[0]; // Use the first one found
+			const connectedNodeId = this.getFFTNode(callingNodeId);
+
+			if (connectedNodeId !== null) {
+				fftNodeId = connectedNodeId;
 			}
 		}
 
@@ -83,9 +64,20 @@ export class AudioAnalysisManager {
 			.exhaustive();
 	}
 
-	// Backward compatibility method - requires explicit ID
-	getAnalysisById(props: AudioAnalysisProps & { id: string }): AudioAnalysisValue | null {
-		return this.getAnalysisForNode('', props);
+	private getFFTNode(nodeId: string): string | null {
+		const connectedSources = this.messageSystem.getConnectedSourceNodes(nodeId);
+
+		for (const sourceId of connectedSources) {
+			if (sourceId.startsWith('object-')) {
+				const node = this.audioSystem.nodesById.get(sourceId);
+
+				if (node?.type === 'fft') {
+					return sourceId;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	static getInstance(): AudioAnalysisManager {
