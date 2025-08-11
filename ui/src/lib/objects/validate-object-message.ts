@@ -10,7 +10,7 @@ export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boo
 	if ((inlet.type === 'signal' || inlet.isAudioParam) && isScheduledMessage(value)) return true;
 
 	const isTypeValid = match<[unknown, ObjectDataType]>([value, inlet.type])
-		.with([P.any, P.union('any', 'signal', 'message')], () => true)
+		.with([P.any, P.union('any', 'signal', 'message', 'marker')], () => true)
 		.with([{ type: 'bang' }, 'bang'], () => true)
 		.with([P.number, 'float'], () => true)
 		.with([P.number, 'int'], ([n]) => Number.isInteger(n))

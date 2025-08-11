@@ -6,7 +6,12 @@ import {
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
 
-export const UNMODIFIABLES = ['signal', 'bang', 'message'] as const satisfies ObjectDataType[];
+export const UNMODIFIABLES = [
+	'signal',
+	'bang',
+	'message',
+	'marker'
+] as const satisfies ObjectDataType[];
 
 export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 	match(inlet.type)

@@ -8,7 +8,8 @@ export type ObjectDataType =
 	| 'string'
 	| 'bool'
 	| 'int[]'
-	| 'float[]';
+	| 'float[]'
+	| 'marker';
 
 export interface ObjectInlet {
 	name?: string;
@@ -128,8 +129,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			{ name: 'out', type: 'signal', description: 'Audio data from the input' },
 			{
 				name: 'analysis',
-				type: 'any',
-				description: 'Marker to indicate where to get the FFT bin from.'
+				type: 'marker',
+				description: 'Marker to indicate where to get the FFT data from.'
 			}
 		],
 		description: 'Analyzes audio signals and provides frequency and amplitude data',
