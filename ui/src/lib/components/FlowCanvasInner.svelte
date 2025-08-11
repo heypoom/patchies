@@ -16,12 +16,12 @@
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
-	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -72,42 +72,7 @@
 
 	function performAutosave() {
 		try {
-			// Serialize nodes and edges with all their data
-			const patchData = {
-				version: '1.0',
-				timestamp: new Date().toISOString(),
-				nodes: nodes.map((node) => ({
-					id: node.id,
-					type: node.type,
-					position: node.position,
-					data: node.data || {}
-				})),
-				edges: edges.map((edge) => ({
-					id: edge.id,
-					source: edge.source,
-					target: edge.target,
-					sourceHandle: edge.sourceHandle,
-					targetHandle: edge.targetHandle
-				}))
-			};
-
-			// Save to localStorage
-			localStorage.setItem('patchies-patch-autosave', JSON.stringify(patchData));
-
-			// Update autosave list if needed
-			const saved = localStorage.getItem('patchies-saved-patches') || '[]';
-			let savedPatches: string[];
-			try {
-				savedPatches = JSON.parse(saved);
-			} catch (e) {
-				savedPatches = [];
-			}
-
-			if (!savedPatches.includes('autosave')) {
-				savedPatches.push('autosave');
-				localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
-			}
-
+			savePatchToLocalStorage({ name: 'autosave', nodes, edges });
 			lastAutosave = new Date();
 		} catch (error) {
 			console.error('Autosave failed:', error);

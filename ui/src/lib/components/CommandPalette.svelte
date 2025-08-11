@@ -10,6 +10,8 @@
 	import { IpcSystem } from '$lib/canvas/IpcSystem';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
+	import { serializePatch } from '$lib/save-load/serialize-patch';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -174,7 +176,8 @@
 			const selectedCommand = filteredCommands[selectedIndex];
 			executeCommand(selectedCommand.id);
 		} else if (stage === 'save-name' && patchName.trim()) {
-			saveToLocalStorage();
+			savePatchToLocalStorage({ name: patchName, nodes, edges });
+			onCancel();
 		} else if (stage === 'load-list' && filteredPatches.length > 0) {
 			const selectedPatch = filteredPatches[selectedIndex];
 			loadFromLocalStorage(selectedPatch);
@@ -243,35 +246,15 @@
 
 	function saveToFile() {
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-		const filename = `patch-${timestamp}.json`;
+		const patch = serializePatch({ name: patchName, nodes, edges });
 
-		// Serialize nodes and edges with all their data
-		const patchData = {
-			version: '1.0',
-			timestamp: new Date().toISOString(),
-			nodes: nodes.map((node) => ({
-				id: node.id,
-				type: node.type,
-				position: node.position,
-				data: node.data || {}
-			})),
-			edges: edges.map((edge) => ({
-				id: edge.id,
-				source: edge.source,
-				target: edge.target,
-				sourceHandle: edge.sourceHandle,
-				targetHandle: edge.targetHandle
-			}))
-		};
-
-		const blob = new Blob([JSON.stringify(patchData, null, 2)], { type: 'application/json' });
+		const blob = new Blob([patch], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = filename;
+		a.download = `patch-${timestamp}.json`;
 		a.click();
 		URL.revokeObjectURL(url);
-
 		onCancel();
 	}
 
@@ -279,6 +262,7 @@
 		const input = document.createElement('input');
 		input.type = 'file';
 		input.accept = '.json';
+
 		input.onchange = (event) => {
 			const file = (event.target as HTMLInputElement).files?.[0];
 			if (file) {
@@ -295,46 +279,8 @@
 				reader.readAsText(file);
 			}
 		};
+
 		input.click();
-	}
-
-	function saveToLocalStorage() {
-		if (!patchName.trim()) return;
-
-		// Serialize nodes and edges with all their data
-		const patchData = {
-			version: '1.0',
-			timestamp: new Date().toISOString(),
-			nodes: nodes.map((node) => ({
-				id: node.id,
-				type: node.type,
-				position: node.position,
-				data: node.data || {}
-			})),
-			edges: edges.map((edge) => ({
-				id: edge.id,
-				source: edge.source,
-				target: edge.target,
-				sourceHandle: edge.sourceHandle,
-				targetHandle: edge.targetHandle
-			}))
-		};
-
-		const saved = localStorage.getItem('patchies-saved-patches') || '[]';
-		let savedPatches: string[];
-		try {
-			savedPatches = JSON.parse(saved);
-		} catch (e) {
-			savedPatches = [];
-		}
-
-		if (!savedPatches.includes(patchName)) {
-			savedPatches.push(patchName);
-			localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
-		}
-
-		localStorage.setItem(`patchies-patch-${patchName}`, JSON.stringify(patchData));
-		onCancel();
 	}
 
 	function loadFromLocalStorage(patchName: string) {
