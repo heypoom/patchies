@@ -57,7 +57,10 @@
 	const handleMessage: MessageCallbackFn = (message) => {
 		try {
 			match(message)
-				.with({ type: P.union('play', 'bang') }, () => {
+				.with({ type: 'bang' }, () => {
+					musicManager.playOrPause();
+				})
+				.with({ type: 'play' }, () => {
 					musicManager.play();
 				})
 				.with({ type: 'pause' }, () => {
@@ -129,12 +132,12 @@
 	}
 
 	function togglePlayback() {
-		musicManager.playPause();
+		musicManager.playOrPause();
 	}
 
 	function getPlayIcon() {
 		return match(playbackState)
-			.with('playing', () => 'lucide:pause')
+			.with(P.union('playing'), () => 'lucide:pause')
 			.with('loading', () => 'lucide:loader-2')
 			.otherwise(() => 'lucide:play');
 	}
@@ -142,7 +145,7 @@
 	function getPlayTitle() {
 		return match(playbackState)
 			.with('playing', () => 'Pause')
-			.with('loading', () => 'Loading...')
+			.with('loading', () => 'Loading.. Click to stop.')
 			.otherwise(() => 'Play');
 	}
 </script>
@@ -156,15 +159,11 @@
 
 			<div class="flex gap-1">
 				<button
-					class="rounded p-1 transition-all hover:bg-zinc-700 disabled:opacity-50"
+					class="cursor-pointer rounded p-1 transition-all hover:bg-zinc-700"
 					onclick={togglePlayback}
-					disabled={playbackState === 'loading'}
 					title={getPlayTitle()}
 				>
-					<Icon
-						icon={getPlayIcon()}
-						class={['h-4 w-4 text-zinc-300', playbackState === 'loading' ? 'animate-spin' : '']}
-					/>
+					<Icon icon={getPlayIcon()} class={['h-4 w-4 text-zinc-300']} />
 				</button>
 			</div>
 		</div>

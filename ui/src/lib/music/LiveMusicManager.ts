@@ -236,6 +236,8 @@ export class LiveMusicManager {
 	}
 
 	async play() {
+		if (get(this.playbackState) === 'playing') return;
+
 		this.playbackState.set('loading');
 
 		try {
@@ -255,6 +257,8 @@ export class LiveMusicManager {
 	}
 
 	public pause() {
+		if (get(this.playbackState) === 'paused') return;
+
 		if (this.session) {
 			this.session.pause();
 		}
@@ -286,7 +290,7 @@ export class LiveMusicManager {
 		this.sessionPromise = null;
 	}
 
-	public async playPause() {
+	public async playOrPause() {
 		await match(get(this.playbackState))
 			.with('playing', () => this.pause())
 			.with(P.union('paused', 'stopped'), () => this.play())
