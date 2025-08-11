@@ -272,8 +272,8 @@
 									<button
 										onclick={executeCode}
 										class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
-										title="Run code"
-										aria-label="Run code"
+										title="Run again"
+										aria-label="Run again"
 									>
 										<Icon icon="lucide:refresh-ccw" font-size="12px" />
 									</button>
@@ -285,7 +285,7 @@
 										'rounded p-1 text-zinc-300 hover:bg-zinc-700',
 										isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
 									]}
-									title="Run code"
+									title={isLongRunningTaskActive ? 'Stop' : 'Run'}
 									aria-disabled={isRunning}
 								>
 									<Icon
