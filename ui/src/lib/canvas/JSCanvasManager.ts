@@ -73,13 +73,7 @@ export class JSCanvasManager {
 					}
 				},
 
-				// Message system functions (if available)
-				...(messageContext && {
-					send: messageContext.send,
-					onMessage: messageContext.onMessage,
-					interval: messageContext.interval,
-					noDrag: messageContext.noDrag
-				})
+				...messageContext
 			};
 
 			const functionParams = Object.keys(context);
