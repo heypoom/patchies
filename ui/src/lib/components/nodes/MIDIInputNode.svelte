@@ -41,14 +41,14 @@
 
 	const borderColor = $derived.by(() => {
 		if (errorMessage) return 'border-red-500';
-		if (isListening) return 'border-green-500';
+		if (isListening) return 'border-emerald-500';
 		if (selected) return 'border-zinc-400';
 		return 'border-zinc-600';
 	});
 
 	const statusIcon = $derived.by(() => {
 		if (errorMessage) return 'lucide:alert-circle';
-		if (isListening) return 'lucide:volume-2';
+		if (isListening) return 'lucide:music';
 		return 'lucide:volume-x';
 	});
 
@@ -148,11 +148,11 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">midi.in</div>
+					<div class="font-mono text-xs font-medium text-zinc-400">midi.in</div>
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -166,37 +166,29 @@
 				{#if !deviceId}
 					<button
 						class={[
-							'flex w-full min-w-[120px] flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 text-zinc-300 hover:bg-zinc-800',
+							'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 px-3 py-2 text-zinc-300 hover:bg-zinc-800',
 							'border-amber-500'
 						]}
 						onclick={() => (showSettings = true)}
 						title="Select MIDI device"
 					>
-						<Icon icon="lucide:settings" class="mb-2 h-5 w-5" />
-						<div class="text-xs">
+						<Icon icon="lucide:settings" class="mb-1 h-4 w-4" />
+
+						<div class="text-[10px]">
 							<span class="text-amber-400">Select device</span>
 						</div>
-						<div class="mt-1 text-[10px] text-zinc-500">Configure first</div>
 					</button>
 				{:else}
 					<button
 						class={[
-							'flex w-full min-w-[120px] flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 text-zinc-300 hover:bg-zinc-800',
+							'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 pb-2 text-zinc-300 hover:bg-zinc-800',
 							borderColor
 						]}
 						onclick={toggleListening}
 						title={isListening ? 'Stop listening' : 'Start listening'}
 					>
-						<Icon icon={statusIcon} class="mb-2 h-5 w-5" />
-						<div class="text-xs">
-							{#if errorMessage}
-								<span class="text-red-400">Error</span>
-							{:else if isListening}
-								<span class="text-green-400">Listening</span>
-							{:else}
-								<span class="text-zinc-400">Stopped</span>
-							{/if}
-						</div>
+						<Icon icon={statusIcon} class="h-4 w-4" />
+
 						<div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
 							{midiSystem.getInputById(deviceId)?.name || 'Unknown'}
 						</div>
