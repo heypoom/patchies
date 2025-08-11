@@ -64,7 +64,7 @@ function draw() {
   ellipse(W/2+5, 160, 50, 50)
 }`;
 
-const AUDIO_FFT_P5 = `function setup() {
+const AUDIO_FFT_CAPPED_P5 = `function setup() {
   createCanvas(200, 150)
   pixelDensity(4)
   strokeWeight(3)
@@ -97,9 +97,44 @@ function draw() {
   endShape();
 }`;
 
+const AUDIO_FFT_FULL_P5 = `function setup() {
+  createCanvas(200, 150)
+  pixelDensity(4)
+}
+
+function draw() {
+  clear()
+  
+  const waveform = fft()
+  const spectrum = fft({type: 'frequency'})
+  if (!waveform || !spectrum) return
+  
+  const sl = spectrum.length / 5
+  
+  noStroke();
+  for (let i = 0; i< sl; i++){
+    let x = map(i, 0, sl, 0, width);
+    let h = map(spectrum[i], 0, 250, height, 0) - height;
+      fill(255, spectrum[i], 100);
+    rect(x, height, width / sl, h)
+  }
+
+  noFill();
+  beginShape();
+  stroke('white');
+  strokeWeight(3)
+  for (let i = 0; i < waveform.length; i++){
+    let x = map(i, 0, waveform.length, 0, width);
+    let y = map( waveform[i], 0, 120, 0, height) - 80;
+    vertex(x,y);
+  }
+  endShape();
+}`;
+
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
 	'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } },
-	'audio-fft.p5': { type: 'p5', data: { code: AUDIO_FFT_P5.trim() } }
+	'audio-fft-capped.p5': { type: 'p5', data: { code: AUDIO_FFT_CAPPED_P5.trim() } },
+	'audio-fft-full.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } }
 };
