@@ -12,14 +12,17 @@ export type AudioAnalysisProps = {
 	format?: AudioAnalysisFormat;
 };
 
-export class AudioAnalysisManager {
-	private static instance: AudioAnalysisManager;
+export class AudioAnalysisSystem {
+	private static instance: AudioAnalysisSystem;
 	private audioSystem = AudioSystem.getInstance();
 	private messageSystem = MessageSystem.getInstance();
 
+	// Cache for FFT node connections: nodeId -> fftNodeId
+	private fftConnectionCache = new Map<string, string | null>();
+
 	getAnalysisForNode(
 		callingNodeId: string,
-		{ id, type = 'waveform', format = 'int' }: AudioAnalysisProps
+		{ id, type = 'waveform', format = 'int' }: AudioAnalysisProps = {}
 	): AudioAnalysisValue | null {
 		// If the user passes an explicit analyzer node id, use that.
 		let fftNodeId = id;
@@ -64,27 +67,42 @@ export class AudioAnalysisManager {
 			.exhaustive();
 	}
 
+	// Clear the cache when edges change
+	updateEdges() {
+		this.fftConnectionCache.clear();
+	}
+
 	private getFFTNode(nodeId: string): string | null {
+		// Check cache first
+		if (this.fftConnectionCache.has(nodeId)) {
+			return this.fftConnectionCache.get(nodeId) ?? null;
+		}
+
+		// Compute connection and cache it
 		const connectedSources = this.messageSystem.getConnectedSourceNodes(nodeId);
+		let fftNodeId: string | null = null;
 
 		for (const sourceId of connectedSources) {
 			if (sourceId.startsWith('object-')) {
 				const node = this.audioSystem.nodesById.get(sourceId);
 
 				if (node?.type === 'fft') {
-					return sourceId;
+					fftNodeId = sourceId;
+					break;
 				}
 			}
 		}
 
-		return null;
+		// Cache the result (including null)
+		this.fftConnectionCache.set(nodeId, fftNodeId);
+		return fftNodeId;
 	}
 
-	static getInstance(): AudioAnalysisManager {
-		if (!AudioAnalysisManager.instance) {
-			AudioAnalysisManager.instance = new AudioAnalysisManager();
+	static getInstance(): AudioAnalysisSystem {
+		if (!AudioAnalysisSystem.instance) {
+			AudioAnalysisSystem.instance = new AudioAnalysisSystem();
 		}
 
-		return AudioAnalysisManager.instance;
+		return AudioAnalysisSystem.instance;
 	}
 }

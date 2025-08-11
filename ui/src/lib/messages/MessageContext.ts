@@ -1,8 +1,8 @@
 import {
-	AudioAnalysisManager,
+	AudioAnalysisSystem,
 	type AudioAnalysisProps,
 	type AudioAnalysisValue
-} from '$lib/audio/AudioAnalysisManager';
+} from '$lib/audio/AudioAnalysisSystem';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
 export type SendMessageOptions = {
@@ -34,7 +34,7 @@ export class MessageContext {
 	public queue: MessageQueue;
 	public messageSystem: MessageSystem;
 	public nodeId: string;
-	public audioAnalysis: AudioAnalysisManager;
+	public audioAnalysis: AudioAnalysisSystem;
 
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
@@ -46,7 +46,7 @@ export class MessageContext {
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
 		this.messageSystem = MessageSystem.getInstance();
-		this.audioAnalysis = AudioAnalysisManager.getInstance();
+		this.audioAnalysis = AudioAnalysisSystem.getInstance();
 
 		// Register this node with the message system
 		this.queue = this.messageSystem.registerNode(nodeId);

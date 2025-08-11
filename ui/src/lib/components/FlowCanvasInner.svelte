@@ -21,6 +21,7 @@
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 
 	const visibleNodeTypes = $derived.by(() => {
@@ -42,6 +43,7 @@
 	let messageSystem = MessageSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
 	let audioSystem = AudioSystem.getInstance();
+	let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -99,6 +101,7 @@
 		messageSystem.updateEdges(edges);
 		glSystem.updateEdges(edges);
 		audioSystem.updateEdges(edges);
+		audioAnalysisSystem.updateEdges();
 	});
 
 	// Handle global keyboard events
