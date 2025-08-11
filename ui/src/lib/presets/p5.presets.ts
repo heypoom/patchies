@@ -82,7 +82,7 @@ function draw() {
   for (let i = 0; i< sl; i++){
     let x = map(i, 0, sl, 0, width);
     let h = map(spectrum[i], 0, 250, height, 0) - height;
-      fill(255, spectrum[i], 100);
+    fill(255, spectrum[i], 100);
     rect(x, height, width / sl, h)
   }
 
@@ -91,7 +91,7 @@ function draw() {
   stroke('white');
   for (let i = 0; i < waveform.length; i++){
     let x = map(i, 0, waveform.length, 0, width);
-    let y = map( waveform[i], 0, 120, 0, height) - 80;
+    let y = map( waveform[i], 0, 256, 0, height);
     vertex(x,y);
   }
   endShape();
