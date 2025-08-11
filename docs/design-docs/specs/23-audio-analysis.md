@@ -17,7 +17,7 @@ We want to create a system for audio analysis, for two reasons:
 - Users should be able to place **analyzer objects** anywhere in the graph.
 
   - This lets them create custom audio visualizations by using the data from audio analyzed in real-time.
-  - This should be a visual node with the type of `analyzer~`, created as `AnalyzerNode.svelte`
+  - This should be a visual node with the type of `fft`, created as `AnalyzerNode.svelte`
   - In the `AudioSystem`, this creates a new Analyzer node.
   - This should emit the analyzed audio data as a stream.
 

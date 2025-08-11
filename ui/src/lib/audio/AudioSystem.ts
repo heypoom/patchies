@@ -109,7 +109,7 @@ export class AudioSystem {
 		const analyzer = this.audioContext.createAnalyser();
 		analyzer.fftSize = fftSize;
 
-		this.nodesById.set(nodeId, { type: 'analyzer~', node: analyzer });
+		this.nodesById.set(nodeId, { type: 'fft', node: analyzer });
 
 		return analyzer;
 	}
@@ -120,7 +120,7 @@ export class AudioSystem {
 			.with('osc', () => this.createOsc(nodeId, params))
 			.with('gain', () => this.createGain(nodeId, params))
 			.with('dac', () => this.createDac(nodeId))
-			.with('analyzer~', () => this.createAnalyzer(nodeId, params))
+			.with('fft', () => this.createAnalyzer(nodeId, params))
 			.with('+~', () => this.createAdd(nodeId));
 	}
 

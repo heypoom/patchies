@@ -1,3 +1,8 @@
+import {
+	AudioAnalysisManager,
+	type AudioAnalysisProps,
+	type AudioAnalysisValue
+} from '$lib/audio/AudioAnalysisManager';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
 export type SendMessageOptions = {
@@ -20,12 +25,16 @@ export interface UserFnRunContext {
 
 	/** Disables dragging in canvas. */
 	noDrag: () => void;
+
+	/** Get audio analysis data */
+	fft: (options: AudioAnalysisProps) => AudioAnalysisValue | null;
 }
 
 export class MessageContext {
 	public queue: MessageQueue;
 	public messageSystem: MessageSystem;
 	public nodeId: string;
+	public audioAnalysis: AudioAnalysisManager;
 
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
@@ -37,6 +46,7 @@ export class MessageContext {
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
 		this.messageSystem = MessageSystem.getInstance();
+		this.audioAnalysis = AudioAnalysisManager.getInstance();
 
 		// Register this node with the message system
 		this.queue = this.messageSystem.registerNode(nodeId);
@@ -79,7 +89,8 @@ export class MessageContext {
 			send: this.send.bind(this),
 			onMessage: this.createOnMessageFunction(),
 			interval: this.createIntervalFunction(),
-			noDrag: () => {}
+			noDrag: () => {},
+			fft: this.audioAnalysis.getAnalysisById.bind(this.audioAnalysis)
 		};
 	}
 

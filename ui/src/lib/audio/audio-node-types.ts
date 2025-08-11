@@ -32,7 +32,7 @@ interface PsLyria extends PsBase {
 }
 
 interface PsAnalyzer extends PsBase {
-	type: 'analyzer~';
+	type: 'fft';
 	node: AnalyserNode;
 }
 

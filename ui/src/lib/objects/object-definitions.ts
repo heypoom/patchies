@@ -113,13 +113,13 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: []
 	},
 
-	'analyzer~': {
+	fft: {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Audio signal to analyze' },
 			{
 				name: 'fftSize',
 				type: 'float',
-				description: 'FFT size',
+				description: 'Size of the FFT bin. Must be a power of 2, from 32 to 32768.',
 				defaultValue: 2048,
 				options: [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
 			}
