@@ -113,7 +113,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
@@ -131,7 +131,7 @@
 					{#if showTextInput}
 						<div
 							class={[
-								'nodrag w-full min-w-[40px] max-w-[200px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
+								'nodrag w-full max-w-[200px] min-w-[40px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
 								borderColor
 							]}
 						>

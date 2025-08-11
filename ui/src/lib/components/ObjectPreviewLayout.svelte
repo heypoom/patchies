@@ -74,7 +74,7 @@
 					{#if showPauseButton}
 						<button
 							title={paused ? 'Resume' : 'Pause'}
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 							onclick={handlePlaybackToggle}
 						>
 							<Icon icon={paused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
@@ -82,7 +82,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={() => {
 							showEditor = !showEditor;
 							measureContainerWidth();

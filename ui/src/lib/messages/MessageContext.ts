@@ -83,6 +83,13 @@ export class MessageContext {
 		};
 	}
 
+	// Create an fft function that automatically infers connected FFT nodes
+	createFFTFunction() {
+		return (options: AudioAnalysisProps) => {
+			return this.audioAnalysis.getAnalysisForNode(this.nodeId, options);
+		};
+	}
+
 	// Get all the context functions to inject
 	getContext(): UserFnRunContext {
 		return {
@@ -90,7 +97,7 @@ export class MessageContext {
 			onMessage: this.createOnMessageFunction(),
 			interval: this.createIntervalFunction(),
 			noDrag: () => {},
-			fft: this.audioAnalysis.getAnalysisById.bind(this.audioAnalysis)
+			fft: this.createFFTFunction()
 		};
 	}
 

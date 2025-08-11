@@ -125,7 +125,7 @@
 			position={Position.Bottom}
 			id="message-out"
 			title="Message output"
-			class="z-1 !left-28"
+			class="!left-28 z-1"
 		/>
 	{/snippet}
 

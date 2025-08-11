@@ -172,6 +172,18 @@ export class MessageSystem {
 			this.intervals.delete(intervalId);
 		}
 	}
+
+	// Find nodes connected to this node with a specific outlet type
+	getConnectedSourceNodes(targetNodeId: string, sourceOutletHandle?: string): string[] {
+		return this.edges
+			.filter((edge) => {
+				return (
+					edge.target === targetNodeId &&
+					(sourceOutletHandle === undefined || edge.sourceHandle === sourceOutletHandle)
+				);
+			})
+			.map((edge) => edge.source);
+	}
 }
 
 export const getHandleId = (handle?: string) => {

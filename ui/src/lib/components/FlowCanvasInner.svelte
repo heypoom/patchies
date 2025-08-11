@@ -310,7 +310,7 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed bottom-0 right-0 p-2">
+		<div class="fixed right-0 bottom-0 p-2">
 			<ShortcutHelp />
 		</div>
 	{/if}

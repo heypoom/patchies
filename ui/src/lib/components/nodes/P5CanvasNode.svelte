@@ -93,7 +93,7 @@
 			type="source"
 			position={Position.Bottom}
 			id="video-out"
-			class="z-1 !left-20"
+			class="!left-20 z-1"
 			title="Video output"
 		/>
 	{/snippet}
