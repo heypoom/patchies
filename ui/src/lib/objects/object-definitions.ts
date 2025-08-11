@@ -126,7 +126,11 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		],
 		outlets: [
 			{ name: 'out', type: 'signal', description: 'Audio data from the input' },
-			{ name: 'analysis', type: 'message', description: 'Messages from analyzed audio data' }
+			{
+				name: 'analysis',
+				type: 'any',
+				description: 'Marker to indicate where to get the FFT bin from.'
+			}
 		],
 		description: 'Analyzes audio signals and provides frequency and amplitude data',
 		tags: ['audio']
