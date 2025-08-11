@@ -120,7 +120,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				name: 'fftSize',
 				type: 'float',
 				description: 'Size of the FFT bin. Must be a power of 2, from 32 to 32768.',
-				defaultValue: 2048,
+				defaultValue: 256,
 				options: [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
 			}
 		],
