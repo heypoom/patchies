@@ -57,7 +57,7 @@
 	const handleMessage: MessageCallbackFn = (message) => {
 		try {
 			match(message)
-				.with({ type: 'play' }, () => {
+				.with({ type: P.union('play', 'bang') }, () => {
 					musicManager.play();
 				})
 				.with({ type: 'pause' }, () => {
@@ -133,25 +133,17 @@
 	}
 
 	function getPlayIcon() {
-		switch (playbackState) {
-			case 'playing':
-				return 'lucide:pause';
-			case 'loading':
-				return 'lucide:loader-2';
-			default:
-				return 'lucide:play';
-		}
+		return match(playbackState)
+			.with('playing', () => 'lucide:pause')
+			.with('loading', () => 'lucide:loader-2')
+			.otherwise(() => 'lucide:play');
 	}
 
 	function getPlayTitle() {
-		switch (playbackState) {
-			case 'playing':
-				return 'Pause';
-			case 'loading':
-				return 'Loading...';
-			default:
-				return 'Play';
-		}
+		return match(playbackState)
+			.with('playing', () => 'Pause')
+			.with('loading', () => 'Loading...')
+			.otherwise(() => 'Play');
 	}
 </script>
 
