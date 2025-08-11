@@ -11,7 +11,7 @@
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
-	import { serializePatch } from '$lib/save-load/serialize-patch';
+	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -296,35 +296,32 @@
 		}
 	}
 
-	function loadPatchData(patchData: any) {
+	function loadPatchData(patchSave: PatchSaveFormat) {
 		try {
-			// Validate the patch data structure
-			if (!patchData || !patchData.nodes || !patchData.edges) {
+			if (!patchSave || !patchSave.nodes || !patchSave.edges) {
 				throw new Error('Invalid patch data format');
 			}
 
-			// Load nodes with their data
-			const newNodes: Node[] = patchData.nodes.map((nodeData: any) => ({
-				id: nodeData.id,
-				type: nodeData.type,
-				position: nodeData.position,
-				data: nodeData.data || {}
+			const newNodes = patchSave.nodes.map((node) => ({
+				id: node.id,
+				type: node.type,
+				position: node.position,
+				data: node.data || {}
 			}));
 
-			// Load edges
-			const newEdges: Edge[] = patchData.edges.map((edgeData: any) => ({
-				id: edgeData.id,
-				source: edgeData.source,
-				target: edgeData.target,
-				sourceHandle: edgeData.sourceHandle,
-				targetHandle: edgeData.targetHandle
+			const newEdges = patchSave.edges.map((edge) => ({
+				id: edge.id,
+				source: edge.source,
+				target: edge.target,
+				sourceHandle: edge.sourceHandle,
+				targetHandle: edge.targetHandle
 			}));
 
-			// Update the flow
 			setNodes(newNodes);
 			setEdges(newEdges);
 
 			console.log(`> loaded patch with ${newNodes.length} nodes and ${newEdges.length} edges`);
+
 			AudioSystem.getInstance().audioContext.resume();
 		} catch (error) {
 			console.error('Error deserializing patch data:', error);
@@ -333,28 +330,22 @@
 	}
 
 	function deleteFromLocalStorage(patchName: string) {
-		// Remove patch data
 		localStorage.removeItem(`patchies-patch-${patchName}`);
 
-		// Update saved patches list
 		const saved = localStorage.getItem('patchies-saved-patches') || '[]';
 		try {
 			let savedPatchesList: string[] = JSON.parse(saved);
 			savedPatchesList = savedPatchesList.filter((name) => name !== patchName);
 			localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
 
-			// Update local state
 			savedPatches = savedPatchesList;
 
-			// Reset selection if needed
 			if (selectedIndex >= savedPatchesList.length) {
 				selectedIndex = Math.max(0, savedPatchesList.length - 1);
 			}
 		} catch (error) {
 			console.error('Error deleting patch from storage:', error);
 		}
-
-		// Don't close palette - stay in delete-list for multiple deletions
 	}
 
 	function renamePatch() {
