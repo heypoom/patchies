@@ -6,6 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import type { LiveMusicGenerationConfig, Scale } from '@google/genai';
 
 	let { id: nodeId }: { id: string } = $props();
 
@@ -19,7 +20,7 @@
 	let playbackState = $state<'stopped' | 'loading' | 'playing' | 'paused'>('stopped');
 
 	onMount(() => {
-		musicManager = LiveMusicManager.getInstance();
+		musicManager = new LiveMusicManager(nodeId);
 		messageContext = new MessageContext(nodeId);
 
 		const unsubscribePlayback = musicManager.playbackState.subscribe((state) => {
@@ -49,9 +50,8 @@
 	});
 
 	onDestroy(() => {
-		if (messageContext) {
-			messageContext.destroy();
-		}
+		musicManager?.destroy();
+		messageContext?.destroy();
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
@@ -72,6 +72,31 @@
 				.with({ type: 'setPrompts', prompts: P.nonNullable }, (data) => {
 					musicManager.setPrompts(data.prompts);
 					prompts = musicManager.getPrompts();
+				})
+				.with(
+					{
+						type: P.union(
+							'temperature',
+							'topK',
+							'seed',
+							'guidance',
+							'bpm',
+							'density',
+							'brightness'
+						),
+						value: P.number
+					},
+					({ type, value }) => {
+						musicManager.updateConfig({ [type]: value });
+					}
+				)
+				.with({ type: 'scale', value: P.string }, ({ value }) => {
+					musicManager.updateConfig({ scale: value as Scale });
+				})
+				.with({ type: 'config', config: P.any }, ({ config }) => {
+					if (config) {
+						musicManager.updateConfig(config as LiveMusicGenerationConfig);
+					}
 				});
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
@@ -231,6 +256,14 @@
 					</div>
 				</div>
 			</div>
+
+			<Handle
+				type="source"
+				position={Position.Bottom}
+				id="outlet-0"
+				title="Audio Outlet"
+				class={['z-1 !bg-blue-500']}
+			/>
 		</div>
 	</div>
 </div>

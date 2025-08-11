@@ -1,6 +1,11 @@
 import { AudioSystem } from '$lib/audio/AudioSystem';
 import { GoogleGenAI } from '@google/genai';
-import type { AudioChunk, LiveMusicSession, LiveMusicServerMessage } from '@google/genai';
+import type {
+	AudioChunk,
+	LiveMusicSession,
+	LiveMusicServerMessage,
+	LiveMusicGenerationConfig
+} from '@google/genai';
 import { get, writable } from 'svelte/store';
 import { match, P } from 'ts-pattern';
 
@@ -12,7 +17,7 @@ export interface Prompt {
 }
 
 export class LiveMusicManager {
-	private static instance: LiveMusicManager | null = null;
+	public nodeId: string;
 	private audioSystem = AudioSystem.getInstance();
 
 	private ai: GoogleGenAI | null = null;
@@ -23,37 +28,54 @@ export class LiveMusicManager {
 	private nextStartTime = 0;
 	private bufferTime = 2;
 
-	// TODO: move this into AudioSystem!
-	private outputNode: GainNode | null = null;
 	private prompts = new Map<string, Prompt>();
+	private config: LiveMusicGenerationConfig = {};
 
 	// Global stores
 	public readonly playbackState = writable<PlaybackState>('stopped');
 	public readonly errorMessage = writable<string | null>(null);
 
-	private constructor() {
-		const apiKey = localStorage.getItem('gemini-api-key');
+	constructor(nodeId: string) {
+		this.nodeId = nodeId;
 
-		if (!apiKey) {
-			return;
-		}
+		const apiKey = this.apiKey;
+		if (!apiKey) return;
+
+		this.setupGainNode();
 
 		if (!this.ai) {
 			this.ai = new GoogleGenAI({ apiKey, apiVersion: 'v1alpha' });
 		}
+	}
 
-		this.outputNode = this.audioContext.createGain();
+	get apiKey() {
+		return localStorage.getItem('gemini-api-key');
+	}
+
+	get gainNode(): GainNode | null {
+		const ps = this.audioSystem.nodesById.get(this.nodeId);
+		if (ps?.type !== 'lyria') return null;
+
+		return ps.node;
+	}
+
+	/** Create a gain node inside the audio system. */
+	setupGainNode() {
+		if (this.audioSystem.nodesById.has(this.nodeId)) return;
+
+		const node = this.audioSystem.audioContext.createGain();
+		node.gain.value = 1;
+
+		this.audioSystem.nodesById.set(this.nodeId, { type: 'lyria', node });
+	}
+
+	destroy() {
+		this.stop();
+		this.audioSystem.removeAudioObject(this.nodeId);
 	}
 
 	get audioContext() {
 		return this.audioSystem.audioContext;
-	}
-
-	static getInstance(): LiveMusicManager {
-		if (!LiveMusicManager.instance) {
-			LiveMusicManager.instance = new LiveMusicManager();
-		}
-		return LiveMusicManager.instance;
 	}
 
 	private async getSession(): Promise<LiveMusicSession> {
@@ -107,7 +129,7 @@ export class LiveMusicManager {
 		const playbackState = get(this.playbackState);
 
 		if (playbackState === 'paused' || playbackState === 'stopped') return;
-		if (!this.outputNode) return;
+		if (!this.gainNode) return;
 
 		// Decode audio data
 		const audioData = this.decode(audioChunks[0].data!);
@@ -115,7 +137,7 @@ export class LiveMusicManager {
 
 		const source = this.audioContext.createBufferSource();
 		source.buffer = audioBuffer;
-		source.connect(this.outputNode);
+		source.connect(this.gainNode);
 
 		if (this.nextStartTime === 0) {
 			this.nextStartTime = this.audioContext.currentTime + this.bufferTime;
@@ -212,7 +234,13 @@ export class LiveMusicManager {
 		}, 200);
 	}
 
-	public async play() {
+	updateConfig(nextConfig: LiveMusicGenerationConfig) {
+		this.config = { ...this.config, ...nextConfig };
+
+		this.session?.setMusicGenerationConfig({ musicGenerationConfig: this.config });
+	}
+
+	async play() {
 		this.playbackState.set('loading');
 
 		try {
@@ -221,10 +249,9 @@ export class LiveMusicManager {
 
 			this.session.play();
 
-			if (this.outputNode) {
-				this.outputNode.connect(this.audioSystem.outGain!);
-				this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-				this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+			if (this.gainNode) {
+				this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+				this.gainNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
 			}
 		} catch (error) {
 			this.playbackState.set('stopped');
@@ -239,13 +266,12 @@ export class LiveMusicManager {
 
 		this.playbackState.set('paused');
 
-		if (this.outputNode) {
-			this.outputNode.gain.setValueAtTime(1, this.audioContext.currentTime);
-			this.outputNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
+		if (this.gainNode) {
+			this.gainNode.gain.setValueAtTime(1, this.audioContext.currentTime);
+			this.gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.1);
 		}
 
 		this.nextStartTime = 0;
-		this.outputNode = this.audioContext.createGain();
 	}
 
 	public stop() {
@@ -255,9 +281,9 @@ export class LiveMusicManager {
 
 		this.playbackState.set('stopped');
 
-		if (this.outputNode) {
-			this.outputNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-			this.outputNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
+		if (this.gainNode) {
+			this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+			this.gainNode.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.1);
 		}
 
 		this.nextStartTime = 0;

@@ -22,6 +22,15 @@ interface PsAdd extends PsBase {
 	node: GainNode;
 }
 
-export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd;
+/**
+ * Lyria music generator by Google DeepMind.
+ * Used by the `AiMusicNode`.
+ **/
+interface PsLyria extends PsBase {
+	type: 'lyria';
+	node: GainNode;
+}
+
+export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
