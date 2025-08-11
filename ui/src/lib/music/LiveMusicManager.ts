@@ -216,13 +216,8 @@ export class LiveMusicManager {
 		}
 
 		this.throttleTimer = setTimeout(async () => {
-			if (this.activePrompts.length === 0) {
-				this.errorMessage.set('There needs to be one active prompt to play.');
-				this.pause();
-				return;
-			}
-
 			if (!this.session) return;
+			if (this.activePrompts.length === 0) return;
 
 			try {
 				await this.session.setWeightedPrompts({ weightedPrompts: this.activePrompts });
