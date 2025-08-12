@@ -23,6 +23,7 @@
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
+	import { PyodideSystem } from '$lib/python/PyodideSystem';
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -44,6 +45,7 @@
 	let glSystem = GLSystem.getInstance();
 	let audioSystem = AudioSystem.getInstance();
 	let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
+	let pyodideSystem = PyodideSystem.getInstance();
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
