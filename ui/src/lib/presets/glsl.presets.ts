@@ -51,10 +51,22 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 `;
 
+const FFT_READ_GL = `uniform sampler2D fftTexture;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float r = texture(fftTexture, vec2(0.1, 0.)).r;
+  float g = texture(fftTexture, vec2(0.3, 0.)).r;
+  float b = texture(fftTexture, vec2(0.5, 0.)).r;
+
+  fragColor = vec4(r, g, b, 1.0);
+}`;
+
 export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'red.gl': { type: 'glsl', data: { code: RED_GL.trim() } },
 	'mix.gl': { type: 'glsl', data: { code: MIX_GL.trim() } },
 	'mix-value.gl': { type: 'glsl', data: { code: MIX_V_GL.trim() } },
 	'passthru.gl': { type: 'glsl', data: { code: PASSTHRU_GL.trim() } },
-	'overlay.gl': { type: 'glsl', data: { code: OVERLAY_GL.trim() } }
+	'overlay.gl': { type: 'glsl', data: { code: OVERLAY_GL.trim() } },
+	'fft-read.gl': { type: 'glsl', data: { code: FFT_READ_GL.trim() } }
 };
