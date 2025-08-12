@@ -697,21 +697,19 @@ export class FBORenderer {
 		const width = array.length;
 		const height = 1;
 
-		console.log(`width=${width},height=${height}`);
-
 		const nextTexture = texture
 			? texture({
 					width,
 					height,
 					data: array,
-					format: 'rgba',
+					format: 'luminance',
 					type: format === 'int' ? 'uint8' : 'float'
 				})
 			: this.regl.texture({
 					width,
 					height,
 					data: array,
-					format: 'rgba',
+					format: 'luminance',
 					type: format === 'int' ? 'uint8' : 'float',
 					wrapS: 'clamp',
 					wrapT: 'clamp',
