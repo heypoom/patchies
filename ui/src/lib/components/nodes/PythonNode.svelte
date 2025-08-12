@@ -51,6 +51,8 @@
 		const prefix = event.output === 'stderr' ? 'ERROR: ' : '';
 
 		consoleOutput = [...consoleOutput, `${prefix}${event.message}`];
+
+		setTimeout(() => updateContentWidth(), 10);
 	}
 
 	onMount(async () => {
@@ -88,8 +90,14 @@
 		consoleOutput = [];
 
 		try {
-			// Execute the Python code
-			await pyodide.runPython(code);
+			// Load packages
+			// await pyodide.loadPackagesFromImports(code, { checkIntegrity: false });
+
+			const result = await pyodide.runPython(code);
+
+			if (result !== undefined) {
+				consoleOutput = [...consoleOutput, String(result)];
+			}
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,
@@ -189,7 +197,7 @@
 						</div>
 
 						<div
-							class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
+							class="nodrag h-32 max-w-[280px] cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 						>
 							{#if consoleOutput.length === 0}
 								<div class="italic text-zinc-500">Run your Python code to see results.</div>
