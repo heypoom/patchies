@@ -35,6 +35,8 @@
 		isPlaying = true;
 
 		function render() {
+			if (!visualizer) return;
+
 			visualizer.render();
 
 			if (canvasElement && glSystem.hasOutgoingVideoConnections(nodeId)) {
