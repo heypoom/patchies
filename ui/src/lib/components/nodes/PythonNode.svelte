@@ -90,8 +90,13 @@
 		consoleOutput = [];
 
 		try {
-			// Load packages
-			// await pyodide.loadPackagesFromImports(code, { checkIntegrity: false });
+			await pyodide.loadPackagesFromImports(code, {
+				checkIntegrity: false,
+				messageCallback: () => {},
+				errorCallback: (errorMessage) => {
+					consoleOutput = [...consoleOutput, `ERROR: ${errorMessage}`];
+				}
+			});
 
 			const result = await pyodide.runPython(code);
 

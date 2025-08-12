@@ -6,6 +6,9 @@ import type { PyodideAPI } from 'pyodide';
 /** Name of the Python package to interact with patchies */
 const PATCHIES_PACKAGE = 'patch';
 
+/** Where to load Pyodide packages from? */
+const PYODIDE_PACKAGE_BASE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/';
+
 export class PyodideSystem {
 	private static instance: PyodideSystem | null = null;
 
@@ -48,6 +51,7 @@ export class PyodideSystem {
 		};
 
 		const pyodide = await pyodideModule.loadPyodide({
+			packageBaseUrl: PYODIDE_PACKAGE_BASE_URL,
 			env: {
 				PATCHIES_NODE_ID: nodeId
 			},
