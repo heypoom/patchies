@@ -149,7 +149,7 @@ export class GLSystem {
 		this.renderWorker.postMessage({ type, ...data });
 	}
 
-	upsertNode(id: string, type: RenderNode['type'], data: Record<string, unknown>) {
+	upsertNode(id: string, type: RenderNode['type'], data: Record<string, unknown>): boolean {
 		const nodeIndex = this.nodes.findIndex((node) => node.id === id);
 
 		if (nodeIndex === -1) {
@@ -159,7 +159,7 @@ export class GLSystem {
 			this.nodes[nodeIndex] = { ...node, type, data };
 		}
 
-		this.updateRenderGraph();
+		return this.updateRenderGraph();
 	}
 
 	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
@@ -212,16 +212,18 @@ export class GLSystem {
 	}
 
 	private updateRenderGraph() {
-		if (!this.hasFlowGraphChanged(this.nodes, this.edges)) return;
+		if (!this.hasFlowGraphChanged(this.nodes, this.edges)) return false;
 
 		const graph = buildRenderGraph(this.nodes, this.edges);
-		if (!this.hasHashChanged('graph', graph)) return;
+		if (!this.hasHashChanged('graph', graph)) return false;
 
 		this.send('buildRenderGraph', { graph });
 		this.renderGraph = graph;
 
 		// Clear connection cache when render graph changes
 		this.outgoingConnectionsCache.clear();
+
+		return true;
 	}
 
 	// TODO: optimize this!

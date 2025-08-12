@@ -30,6 +30,7 @@ self.onmessage = (event) => {
 		.with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
 		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
 		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId))
+		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
 		.with('setHydraFFTData', () =>
 			handleSetHydraFFTData(data.nodeId, data.id, data.analysisType, data.format, data.array)
 		)
@@ -129,6 +130,13 @@ function handleSetHydraFFTData(
 	if (!hydraRenderer) return;
 
 	hydraRenderer.setFFTData(id, analysisType, format, array);
+}
+
+function handleUpdateHydra(nodeId: string) {
+	const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
+	if (!hydraRenderer) return;
+
+	hydraRenderer.updateCode();
 }
 
 async function handleCapturePreview(nodeId: string, requestId?: string) {

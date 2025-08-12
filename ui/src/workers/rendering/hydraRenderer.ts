@@ -123,7 +123,7 @@ export class HydraRenderer {
 		this.timestamp = time;
 	}
 
-	private updateCode() {
+	public updateCode() {
 		this.sourceToParamIndexMap = [null, null, null, null];
 
 		this.isFFTEnabled = false;
