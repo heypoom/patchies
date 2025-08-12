@@ -30,7 +30,7 @@ export interface AudioAnalysisPayload {
 	array: Uint8Array | Float32Array;
 
 	/** GLSL inlets. Currently applies to GLSL only. */
-	inlets?: GlslInletMeta[];
+	inlets?: GlslFFTInletMeta[];
 }
 
 export type AudioAnalysisPayloadWithType = AudioAnalysisPayload & {
@@ -40,7 +40,7 @@ export type AudioAnalysisPayloadWithType = AudioAnalysisPayload & {
 
 export type OnFFTReadyCallback = (data: AudioAnalysisPayload) => void;
 
-type GlslInletMeta = {
+export type GlslFFTInletMeta = {
 	/** ID of the AnalyserNode that provides the FFT. */
 	analyzerNodeId: string;
 
@@ -82,7 +82,7 @@ export class AudioAnalysisSystem {
 	public onFFTDataReady: OnFFTReadyCallback | null = null;
 
 	/** Mapping of GLSL nodeId to inlet metadata. */
-	private glslInlets: Map<string, GlslInletMeta[]> = new Map();
+	private glslInlets: Map<string, GlslFFTInletMeta[]> = new Map();
 
 	/** Cache FFT object's analysis outlet index */
 	private fftAnalysisOutletIndex: number;
@@ -92,7 +92,7 @@ export class AudioAnalysisSystem {
 	}
 
 	getAnalysisForNode(
-		callingNodeId: string,
+		consumerNodeId: string,
 		{ id, type = 'waveform', format = 'int' }: AudioAnalysisProps = {}
 	): AudioAnalysisValue | null {
 		// If the user passes an explicit analyzer node id, use that.
@@ -100,10 +100,10 @@ export class AudioAnalysisSystem {
 
 		// Infer the connected FFT node.
 		if (!analyzerNodeId) {
-			const connectedNodeId = this.getAnalyzerAudioNode(callingNodeId);
+			const _connectedNodeId = this.getAnalyzerAudioNode(consumerNodeId);
 
-			if (connectedNodeId !== null) {
-				analyzerNodeId = connectedNodeId;
+			if (_connectedNodeId !== null) {
+				analyzerNodeId = _connectedNodeId;
 			}
 		}
 
@@ -238,6 +238,8 @@ export class AudioAnalysisSystem {
 		if (!this.requestedFFTFormats.has(nodeId)) {
 			this.requestedFFTFormats.set(nodeId, new Set());
 		}
+
+		console.log(`[aa] registerFFTRequest`, nodeId, type, format);
 
 		this.requestedFFTFormats.get(nodeId)!.add(`${type}-${format}`);
 	}

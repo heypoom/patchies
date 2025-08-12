@@ -331,19 +331,16 @@ export class GLSystem {
 	}
 
 	/** Callback for when AudioAnalysisSystem has FFT data ready */
-	sendFFTDataToWorker: OnFFTReadyCallback = ({ nodeId, analysisType, format, array }) => {
-		const node = this.nodes.find((n) => n.id === nodeId);
+	sendFFTDataToWorker: OnFFTReadyCallback = (payload) => {
+		const node = this.nodes.find((n) => n.id === payload.nodeId);
 		if (!node) return;
 
-		const payload: AudioAnalysisPayloadWithType = {
+		const payloadWithType: AudioAnalysisPayloadWithType = {
+			...payload,
 			type: 'setFFTData',
-			nodeType: node.type as 'hydra' | 'glsl',
-			nodeId,
-			analysisType,
-			format,
-			array
+			nodeType: node.type as 'hydra' | 'glsl'
 		};
 
-		this.renderWorker.postMessage(payload, { transfer: [array.buffer] });
+		this.renderWorker.postMessage(payloadWithType, { transfer: [payloadWithType.array.buffer] });
 	};
 }

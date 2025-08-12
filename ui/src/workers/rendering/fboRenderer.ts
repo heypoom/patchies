@@ -16,8 +16,8 @@ import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
 import type {
 	AudioAnalysisType,
-	AudioAnalysisFormat,
-	AudioAnalysisPayloadWithType
+	AudioAnalysisPayloadWithType,
+	GlslFFTInletMeta
 } from '$lib/audio/AudioAnalysisSystem.js';
 
 export class FBORenderer {
@@ -43,6 +43,9 @@ export class FBORenderer {
 
 	/** Mapping of analyzer object's node id -> analysis type -> texture */
 	public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
+
+	/** Mapping of glsl node id -> fft inlet metadata */
+	public fftInletsByGlslNode: Map<string, GlslFFTInletMeta> = new Map();
 
 	/** Mapping of nodeID to pause state */
 	public nodePausedMap: Map<string, boolean> = new Map();
@@ -433,9 +436,24 @@ export class FBORenderer {
 			const uniformDefs = node.data.glUniformDefs ?? [];
 			const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
 
+			// If this is a GLSL node with FFT inlet, use the FFT texture
+			const fftInlet = this.fftInletsByGlslNode.get(node.id);
+
 			// Define input parameters
 			for (const n of uniformDefs) {
 				if (n.type === 'sampler2D') {
+					// If FFT analysis is enabled.
+					if (fftInlet?.uniformName === n.name) {
+						const fftTex = this.fftTexturesByAnalyzer
+							.get(fftInlet.analyzerNodeId)
+							?.get(fftInlet.analysisType);
+
+						if (fftTex) {
+							userUniformParams.push(fftTex);
+							continue;
+						}
+					}
+
 					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
 				} else {
 					const value = uniformData.get(n.name);
@@ -630,9 +648,6 @@ export class FBORenderer {
 			}
 		}
 
-		// If we have less than 4 textures, fill the rest with the fallback texture.
-		while (textures.length < 4) textures.push(this.fallbackTexture);
-
 		return textures.slice(0, 4);
 	}
 
@@ -691,10 +706,16 @@ export class FBORenderer {
 
 	setFFTAsGlslUniforms(payload: AudioAnalysisPayloadWithType) {
 		// TODO: support multiple inlets.
+		// TODO: only send a single inlet in the payload, not all of them!
 		const inlet = payload.inlets?.[0];
 		if (!inlet) return;
 
 		const { analyzerNodeId } = inlet;
+
+		// Store the FFT inlet associated with a GLSL node.
+		// TODO: support multiple inlets.
+		// TODO: only do this once instead of on every single frame!!!
+		this.fftInletsByGlslNode.set(payload.nodeId, inlet);
 
 		if (!this.fftTexturesByAnalyzer.has(analyzerNodeId)) {
 			this.fftTexturesByAnalyzer.set(analyzerNodeId, new Map());

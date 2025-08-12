@@ -277,9 +277,9 @@ export class HydraRenderer {
 
 	// Method to receive FFT data from main thread
 	setFFTData(payload: AudioAnalysisPayloadWithType) {
-		const { type, format, array } = payload;
+		const { analysisType, format, array } = payload;
 
-		const cacheKey = `${type}-${format}`;
+		const cacheKey = `${analysisType}-${format}`;
 
 		this.fftDataCache.set(cacheKey, {
 			data: array,
