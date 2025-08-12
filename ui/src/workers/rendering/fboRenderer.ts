@@ -39,7 +39,7 @@ export class FBORenderer {
 	/** Mapping of nodeID to pause state */
 	public nodePausedMap: Map<string, boolean> = new Map();
 
-	private hydraByNode = new Map<string, HydraRenderer | null>();
+	public hydraByNode = new Map<string, HydraRenderer | null>();
 	private swglByNode = new Map<string, SwissGLContext>();
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;

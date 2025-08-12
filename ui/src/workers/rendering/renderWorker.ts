@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 
 import type { RenderGraph } from '../../lib/rendering/types.js';
 import { FBORenderer } from './fboRenderer.js';
+import type { AudioAnalysisFormat, AudioAnalysisType } from '$lib/audio/AudioAnalysisSystem.js';
 
 const fboRenderer: FBORenderer = new FBORenderer();
 
@@ -28,7 +29,18 @@ self.onmessage = (event) => {
 		.with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
 		.with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
 		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
-		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId));
+		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId))
+		.with('setHydraFFTData', () =>
+			handleSetHydraFFTData(data.nodeId, data.id, data.analysisType, data.format, data.array)
+		)
+		.with('registerFFTRequest', () => {
+			self.postMessage({
+				type: 'registerFFTRequest',
+				nodeId: data.nodeId,
+				analysisType: data.analysisType,
+				format: data.format
+			});
+		});
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
@@ -106,12 +118,26 @@ function handleToggleNodePause(nodeId: string) {
 	fboRenderer.toggleNodePause(nodeId);
 }
 
+function handleSetHydraFFTData(
+	nodeId: string,
+	id: string | undefined,
+	analysisType: AudioAnalysisType,
+	format: AudioAnalysisFormat,
+	array: Uint8Array | Float32Array
+) {
+	const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
+	if (!hydraRenderer) return;
+
+	hydraRenderer.setFFTData(id, analysisType, format, array);
+}
+
 async function handleCapturePreview(nodeId: string, requestId?: string) {
 	const pixels = fboRenderer.getPreviewFrameCapture(nodeId);
 
 	if (pixels) {
 		const [width, height] = fboRenderer.previewSize;
-		const imageData = new ImageData(new Uint8ClampedArray(pixels.buffer), width, height);
+		const array = new Uint8ClampedArray(pixels.buffer);
+		const imageData = new ImageData(array, width, height);
 		const bitmap = await createImageBitmap(imageData);
 
 		self.postMessage(

@@ -551,7 +551,7 @@
 							type="target"
 							position={Position.Top}
 							id={`inlet-${index}`}
-							class={['z-1 top-0', inlet.type === 'signal' && '!bg-blue-500']}
+							class={['top-0 z-1', inlet.type === 'signal' && '!bg-blue-500']}
 							style={`left: ${inlets.length === 1 ? '50%' : `${35 + (index / (inlets.length - 1)) * 30}%`}`}
 							title={inlet.name || `Inlet ${index}`}
 						/>
@@ -579,7 +579,7 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute left-0 top-full z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+								class="absolute top-full left-0 z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 							>
 								<!-- Results List -->
 								<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">

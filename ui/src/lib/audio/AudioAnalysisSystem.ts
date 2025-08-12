@@ -6,11 +6,28 @@ export type AudioAnalysisType = 'waveform' | 'frequency';
 export type AudioAnalysisFormat = 'int' | 'float';
 export type AudioAnalysisValue = Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer>;
 
-export type AudioAnalysisProps = {
+type HydraRenderWorkerMessage =
+	| { type: 'fftEnabled'; enabled: boolean; nodeId: string }
+	| {
+			type: 'registerFFTRequest';
+			nodeId: string;
+			analysisType: AudioAnalysisType;
+			format: AudioAnalysisFormat;
+	  };
+
+export interface AudioAnalysisProps {
 	id?: string;
 	type?: AudioAnalysisType;
 	format?: AudioAnalysisFormat;
-};
+}
+
+type OnFFTReadyCallback = (
+	nodeId: string,
+	id: string | undefined,
+	analysisType: AudioAnalysisType,
+	format: AudioAnalysisFormat,
+	array: Uint8Array | Float32Array
+) => void;
 
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
@@ -19,6 +36,18 @@ export class AudioAnalysisSystem {
 
 	// Cache for FFT node connections: nodeId -> fftNodeId
 	private fftConnectionCache = new Map<string, string | null>();
+
+	/** Track which Hydra nodes have FFT enabled */
+	private fftEnabledNodes = new Set<string>();
+
+	/** Track requested FFT formats per node: nodeId -> Set<"type-format"> */
+	private requestedFFTFormats = new Map<string, Set<string>>();
+
+	/** FFT polling interval reference */
+	private fftPollingInterval: number | null = null;
+
+	/** Callback for sending FFT data to workers */
+	public onFFTDataReady: OnFFTReadyCallback | null = null;
 
 	getAnalysisForNode(
 		callingNodeId: string,
@@ -67,22 +96,19 @@ export class AudioAnalysisSystem {
 			.exhaustive();
 	}
 
-	// Clear the cache when edges change
 	updateEdges() {
 		this.fftConnectionCache.clear();
 	}
 
 	private getFFTNode(nodeId: string): string | null {
-		// Check cache first
 		if (this.fftConnectionCache.has(nodeId)) {
 			return this.fftConnectionCache.get(nodeId) ?? null;
 		}
 
-		// Compute connection and cache it
-		const connectedSources = this.messageSystem.getConnectedSourceNodes(nodeId);
+		const connectedSourceIds = this.messageSystem.getConnectedSourceNodes(nodeId);
 		let fftNodeId: string | null = null;
 
-		for (const sourceId of connectedSources) {
+		for (const sourceId of connectedSourceIds) {
 			if (sourceId.startsWith('object-')) {
 				const node = this.audioSystem.nodesById.get(sourceId);
 
@@ -95,7 +121,83 @@ export class AudioAnalysisSystem {
 
 		// Cache the result (including null)
 		this.fftConnectionCache.set(nodeId, fftNodeId);
+
 		return fftNodeId;
+	}
+
+	/** Enable FFT for a Hydra node */
+	enableFFT(nodeId: string) {
+		this.fftEnabledNodes.add(nodeId);
+		this.startFFTPolling();
+	}
+
+	/** Disable FFT for a Hydra node */
+	disableFFT(nodeId: string) {
+		this.fftEnabledNodes.delete(nodeId);
+		this.requestedFFTFormats.delete(nodeId);
+
+		if (this.fftEnabledNodes.size === 0) {
+			this.stopFFTPolling();
+		}
+	}
+
+	/** Register that a Hydra node has requested a specific FFT format */
+	registerFFTRequest(nodeId: string, type: AudioAnalysisType, format: AudioAnalysisFormat) {
+		if (!this.requestedFFTFormats.has(nodeId)) {
+			this.requestedFFTFormats.set(nodeId, new Set());
+		}
+
+		this.requestedFFTFormats.get(nodeId)!.add(`${type}-${format}`);
+	}
+
+	/** Start polling FFT data for Hydra nodes at 24fps as per spec */
+	private startFFTPolling() {
+		if (this.fftPollingInterval !== null) return;
+
+		this.fftPollingInterval = window.setInterval(() => {
+			this.pollAndTransferFFTData();
+		}, 1000 / 24); // 24fps
+	}
+
+	/** Stop FFT polling when no Hydra nodes need it */
+	private stopFFTPolling() {
+		if (this.fftPollingInterval !== null) {
+			clearInterval(this.fftPollingInterval);
+			this.fftPollingInterval = null;
+		}
+	}
+
+	/** Poll FFT data and transfer it to Hydra workers */
+	private pollAndTransferFFTData() {
+		if (!this.onFFTDataReady) return;
+
+		for (const hydraNodeId of this.fftEnabledNodes) {
+			const requestedFormats = this.requestedFFTFormats.get(hydraNodeId);
+			if (!requestedFormats || requestedFormats.size === 0) continue;
+
+			for (const formatKey of requestedFormats) {
+				const [type, format] = formatKey.split('-') as [AudioAnalysisType, AudioAnalysisFormat];
+				const data = this.getAnalysisForNode(hydraNodeId, { type, format });
+
+				if (data) {
+					this.onFFTDataReady(hydraNodeId, undefined, type, format, data);
+				}
+			}
+		}
+	}
+
+	handleRenderWorkerMessage(data: HydraRenderWorkerMessage) {
+		match(data)
+			.with({ type: 'fftEnabled' }, ({ enabled, nodeId }) => {
+				if (enabled) {
+					this.enableFFT(nodeId);
+				} else {
+					this.disableFFT(nodeId);
+				}
+			})
+			.with({ type: 'registerFFTRequest' }, ({ nodeId, analysisType, format }) => {
+				this.registerFFTRequest(nodeId, analysisType, format);
+			});
 	}
 
 	static getInstance(): AudioAnalysisSystem {

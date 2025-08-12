@@ -6,6 +6,14 @@ import { getFramebuffer } from './utils';
 import arrayUtils from 'hydra-ts/src/lib/array-utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 
+type AudioAnalysisType = 'waveform' | 'frequency';
+type AudioAnalysisFormat = 'int' | 'float';
+type AudioAnalysisProps = {
+	id?: string;
+	type?: AudioAnalysisType;
+	format?: AudioAnalysisFormat;
+};
+
 // Initialize hydra array utilities.
 arrayUtils.init();
 
@@ -26,6 +34,11 @@ export class HydraRenderer {
 	private timestamp = performance.now();
 
 	private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
+
+	// FFT state tracking
+	public isFFTEnabled = false;
+	private fftRequestCache = new Map<string, boolean>();
+	private fftDataCache = new Map<string, { data: Uint8Array | Float32Array; timestamp: number }>();
 
 	constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
@@ -113,6 +126,10 @@ export class HydraRenderer {
 	private updateCode() {
 		this.sourceToParamIndexMap = [null, null, null, null];
 
+		this.isFFTEnabled = false;
+		this.fftDataCache.clear();
+		this.fftRequestCache.clear();
+
 		try {
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
 			const { sources, outputs, hush, render } = this.hydra;
@@ -157,7 +174,10 @@ export class HydraRenderer {
 					this.onMessage = callback;
 				},
 
-				send: this.sendMessage.bind(this)
+				send: this.sendMessage.bind(this),
+
+				// FFT function for audio analysis
+				fft: this.createFFTFunction()
 			};
 
 			const userFunction = new Function(
@@ -216,6 +236,50 @@ export class HydraRenderer {
 			type: 'sendMessageFromNode',
 			fromNodeId: this.config.nodeId,
 			data
+		});
+	}
+
+	createFFTFunction() {
+		return (options: AudioAnalysisProps = {}) => {
+			const { id, type = 'waveform', format = 'int' } = options;
+			const { nodeId } = this.config;
+
+			const cacheKey = `${id ?? 'auto'}-${type}-${format}`;
+
+			if (!this.isFFTEnabled) {
+				self.postMessage({ type: 'fftEnabled', nodeId, enabled: true });
+				this.isFFTEnabled = true;
+			}
+
+			if (!this.fftRequestCache.has(cacheKey)) {
+				self.postMessage({
+					type: 'registerFFTRequest',
+					nodeId,
+					analysisType: type,
+					format
+				});
+
+				this.fftRequestCache.set(cacheKey, true);
+			}
+
+			const cached = this.fftDataCache.get(cacheKey);
+
+			return cached?.data ?? null;
+		};
+	}
+
+	// Method to receive FFT data from main thread
+	setFFTData(
+		id: string | undefined,
+		type: AudioAnalysisType,
+		format: AudioAnalysisFormat,
+		buffer: Uint8Array | Float32Array
+	) {
+		const cacheKey = `${id ?? 'auto'}-${type}-${format}`;
+
+		this.fftDataCache.set(cacheKey, {
+			data: buffer,
+			timestamp: performance.now()
 		});
 	}
 }

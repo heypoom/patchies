@@ -10,6 +10,7 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { GLEventBus } from './GLEventBus';
+import { AudioAnalysisSystem, type AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
@@ -18,6 +19,7 @@ export class GLSystem {
 	public ipcSystem = IpcSystem.getInstance();
 	public messageSystem = MessageSystem.getInstance();
 	public eventBus = GLEventBus.getInstance();
+	public audioAnalysis = AudioAnalysisSystem.getInstance();
 
 	/** Rendering context for the background output that covers the entire screen. */
 	public backgroundOutputCanvasContext: ImageBitmapRenderingContext | null = null;
@@ -59,10 +61,13 @@ export class GLSystem {
 	constructor() {
 		this.renderWorker = new RenderWorker();
 		this.renderWorker.addEventListener('message', this.handleRenderWorkerMessage.bind(this));
+		this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
 	}
 
 	handleRenderWorkerMessage = async (event: MessageEvent) => {
 		const { data } = event;
+
+		if (!data) return;
 
 		if (data.type === 'animationFrame' && data.outputBitmap) {
 			if (this.ipcSystem.outputWindow !== null) {
@@ -99,6 +104,9 @@ export class GLSystem {
 		if (data.type === 'previewFrameCaptured') {
 			this.eventBus.dispatch(data);
 		}
+
+		// Handle FFT mechanism
+		this.audioAnalysis.handleRenderWorkerMessage(data);
 	};
 
 	start() {
@@ -309,5 +317,28 @@ export class GLSystem {
 		this.outgoingConnectionsCache.set(nodeId, hasConnections);
 
 		return hasConnections;
+	}
+
+	/** Callback for when AudioAnalysisSystem has FFT data ready */
+	private sendFFTDataToWorker(
+		nodeId: string,
+		id: string | undefined,
+		analysisType: AudioAnalysisProps['type'],
+		format: AudioAnalysisProps['format'],
+		data: Uint8Array | Float32Array
+	) {
+		const array = format === 'int' ? new Uint8Array(data.buffer) : new Float32Array(data.buffer);
+
+		this.renderWorker.postMessage(
+			{
+				type: 'setHydraFFTData',
+				nodeId,
+				id,
+				analysisType,
+				format,
+				array
+			},
+			{ transfer: [array.buffer] }
+		);
 	}
 }

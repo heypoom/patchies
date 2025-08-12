@@ -8,6 +8,7 @@
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 
 	let {
 		id: nodeId,
@@ -18,6 +19,7 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	let glSystem: GLSystem;
+	let audioAnalysisSystem: AudioAnalysisSystem;
 	let messageContext: MessageContext;
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
@@ -52,6 +54,7 @@
 		glSystem = GLSystem.getInstance();
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
@@ -78,6 +81,7 @@
 	function updateHydra() {
 		try {
 			messageContext.clearIntervals();
+			audioAnalysisSystem.disableFFT(nodeId);
 			glSystem.upsertNode(nodeId, 'hydra', { code });
 
 			errorMessage = null;
@@ -108,7 +112,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-0"
-			class="!left-16 z-1"
+			class="z-1 !left-16"
 			title="Video input 0"
 		/>
 
@@ -116,7 +120,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-1"
-			class="!left-20 z-1"
+			class="z-1 !left-20"
 			title="Video input 1"
 		/>
 
@@ -124,7 +128,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-2"
-			class="!left-24 z-1"
+			class="z-1 !left-24"
 			title="Video input 2"
 		/>
 
@@ -132,14 +136,14 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-3"
-			class="!left-28 z-1"
+			class="z-1 !left-28"
 			title="Video input 3"
 		/>
 
 		<Handle
 			type="target"
 			position={Position.Top}
-			class="!left-32 z-1"
+			class="z-1 !left-32"
 			id="message-in"
 			title="Message input"
 		/>
@@ -159,7 +163,7 @@
 			position={Position.Bottom}
 			id="message-out"
 			title="Message output"
-			class="!left-28 z-1"
+			class="z-1 !left-28"
 		/>
 	{/snippet}
 
