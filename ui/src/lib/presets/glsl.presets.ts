@@ -56,7 +56,7 @@ const AUDIO_FFT_GL = `uniform sampler2D fftTexture;
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   float freq = texture(fftTexture, vec2(uv.x, uv.y)).r;
-  fragColor = vec4(freq, 0.2, 1.0 - freq, 1.0);
+  fragColor = vec4(0.1, freq, 1. - freq, 0.9);
 }`;
 
 export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
