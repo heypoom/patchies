@@ -10,7 +10,11 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { GLEventBus } from './GLEventBus';
-import { AudioAnalysisSystem, type OnFFTReadyCallback } from '$lib/audio/AudioAnalysisSystem';
+import {
+	AudioAnalysisSystem,
+	type AudioAnalysisPayloadWithType,
+	type OnFFTReadyCallback
+} from '$lib/audio/AudioAnalysisSystem';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -331,16 +335,15 @@ export class GLSystem {
 		const node = this.nodes.find((n) => n.id === nodeId);
 		if (!node) return;
 
-		this.renderWorker.postMessage(
-			{
-				type: 'setFFTData',
-				nodeType: node.type,
-				nodeId,
-				analysisType,
-				format,
-				array
-			},
-			{ transfer: [array.buffer] }
-		);
+		const payload: AudioAnalysisPayloadWithType = {
+			type: 'setFFTData',
+			nodeType: node.type as 'hydra' | 'glsl',
+			nodeId,
+			analysisType,
+			format,
+			array
+		};
+
+		this.renderWorker.postMessage(payload, { transfer: [array.buffer] });
 	};
 }

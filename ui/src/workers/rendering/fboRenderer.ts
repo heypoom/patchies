@@ -14,7 +14,11 @@ import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
-import type { AudioAnalysisType, AudioAnalysisFormat } from '$lib/audio/AudioAnalysisSystem.js';
+import type {
+	AudioAnalysisType,
+	AudioAnalysisFormat,
+	AudioAnalysisPayloadWithType
+} from '$lib/audio/AudioAnalysisSystem.js';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -685,24 +689,21 @@ export class FBORenderer {
 		this.uniformDataByNode.delete(nodeId);
 	}
 
-	/**
-	 * Sets FFT data as a sampler2D texture for GLSL nodes.
-	 * Reuses existing texture when possible to avoid performance issues.
-	 */
-	setFFTDataAsTexture(
-		nodeId: string,
-		analysisType: AudioAnalysisType,
-		format: AudioAnalysisFormat,
-		array: Uint8Array | Float32Array
-	) {
-		if (!this.fftTexturesByAnalyzer.has(nodeId)) {
-			this.fftTexturesByAnalyzer.set(nodeId, new Map());
+	setFFTAsGlslUniforms(payload: AudioAnalysisPayloadWithType) {
+		// TODO: support multiple inlets.
+		const inlet = payload.inlets?.[0];
+		if (!inlet) return;
+
+		const { analyzerNodeId } = inlet;
+
+		if (!this.fftTexturesByAnalyzer.has(analyzerNodeId)) {
+			this.fftTexturesByAnalyzer.set(analyzerNodeId, new Map());
 		}
 
-		const textureByAnalyzer = this.fftTexturesByAnalyzer.get(nodeId)!;
-		const texture = textureByAnalyzer.get(analysisType);
+		const textureByAnalyzer = this.fftTexturesByAnalyzer.get(analyzerNodeId)!;
+		const texture = textureByAnalyzer.get(payload.analysisType);
 
-		const width = array.length;
+		const width = payload.array.length;
 		const height = 1;
 
 		const shouldCreateNewTexture = !texture || texture.height !== 1;
@@ -712,16 +713,14 @@ export class FBORenderer {
 			texture.destroy();
 		}
 
-		const [texType, texFormat] = [format === 'int' ? 'uint8' : 'float', 'luminance'] as [
-			regl.TextureDataType,
-			regl.TextureFormatType
-		];
+		const texType = payload.format === 'int' ? 'uint8' : 'float';
+		const texFormat = 'luminance';
 
 		if (shouldCreateNewTexture) {
 			const nextTexture = this.regl.texture({
 				width,
 				height,
-				data: array,
+				data: payload.array,
 				format: texFormat,
 				type: texType,
 				wrapS: 'clamp',
@@ -730,20 +729,18 @@ export class FBORenderer {
 				mag: 'nearest'
 			});
 
-			textureByAnalyzer.set(analysisType, nextTexture);
+			textureByAnalyzer.set(payload.analysisType, nextTexture);
 
 			return;
 		}
 
-		const updatedTexture = texture({
+		texture({
 			width,
 			height,
-			data: array,
+			data: payload.array,
 			format: texFormat,
 			type: texType
 		});
-
-		textureByAnalyzer.set(analysisType, updatedTexture);
 	}
 
 	/** Send message to nodes */

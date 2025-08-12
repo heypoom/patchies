@@ -5,6 +5,7 @@ import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import arrayUtils from 'hydra-ts/src/lib/array-utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 
 type AudioAnalysisType = 'waveform' | 'frequency';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -275,15 +276,13 @@ export class HydraRenderer {
 	}
 
 	// Method to receive FFT data from main thread
-	setFFTData(
-		type: AudioAnalysisType,
-		format: AudioAnalysisFormat,
-		buffer: Uint8Array | Float32Array
-	) {
+	setFFTData(payload: AudioAnalysisPayloadWithType) {
+		const { type, format, array } = payload;
+
 		const cacheKey = `${type}-${format}`;
 
 		this.fftDataCache.set(cacheKey, {
-			data: buffer,
+			data: array,
 			timestamp: performance.now()
 		});
 	}

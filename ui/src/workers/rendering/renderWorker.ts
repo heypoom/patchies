@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 
 import type { RenderGraph } from '../../lib/rendering/types.js';
 import { FBORenderer } from './fboRenderer.js';
-import type { AudioAnalysisFormat, AudioAnalysisType } from '$lib/audio/AudioAnalysisSystem.js';
+import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem.js';
 
 const fboRenderer: FBORenderer = new FBORenderer();
 
@@ -31,9 +31,7 @@ self.onmessage = (event) => {
 		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
 		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId))
 		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
-		.with('setFFTData', () =>
-			handleSetFFTData(data.nodeType, data.nodeId, data.analysisType, data.format, data.array)
-		);
+		.with('setFFTData', () => handleSetFFTData(data));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
@@ -111,22 +109,18 @@ function handleToggleNodePause(nodeId: string) {
 	fboRenderer.toggleNodePause(nodeId);
 }
 
-function handleSetFFTData(
-	nodeType: 'hydra' | 'glsl',
-	nodeId: string,
-	analysisType: AudioAnalysisType,
-	format: AudioAnalysisFormat,
-	array: Uint8Array | Float32Array
-) {
+function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
+	const { nodeType, nodeId } = payload;
+
 	match(nodeType)
 		.with('hydra', () => {
 			const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
 			if (!hydraRenderer) return;
 
-			hydraRenderer.setFFTData(analysisType, format, array);
+			hydraRenderer.setFFTData(payload);
 		})
 		.with('glsl', () => {
-			fboRenderer.setFFTDataAsTexture(nodeId, analysisType, format, array);
+			fboRenderer.setFFTAsGlslUniforms(payload);
 		})
 		.exhaustive();
 }
