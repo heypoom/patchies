@@ -154,7 +154,7 @@
 	<div class="flex flex-col gap-2">
 		<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 			<div class="z-10 rounded-lg bg-transparent px-2 py-1">
-				<div class="font-mono text-xs font-medium text-zinc-100">ai.music</div>
+				<div class="font-mono text-xs font-medium text-zinc-400">ai.music</div>
 			</div>
 
 			<div class="flex gap-1">
@@ -243,7 +243,7 @@
 				<!-- Playback state indicator -->
 				<div class="mt-4 text-center">
 					<div class="text-[10px] text-zinc-400">
-						Status: <span class="text-zinc-300 capitalize">{playbackState}</span>
+						Status: <span class="capitalize text-zinc-300">{playbackState}</span>
 					</div>
 				</div>
 			</div>
