@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 
 import type { RenderGraph } from '../../lib/rendering/types.js';
 import { FBORenderer } from './fboRenderer.js';
-import type { AudioAnalysisFormat, AudioAnalysisType } from '$lib/audio/AudioAnalysisSystem.js';
+import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem.js';
 
 const fboRenderer: FBORenderer = new FBORenderer();
 
@@ -31,17 +31,7 @@ self.onmessage = (event) => {
 		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
 		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId))
 		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
-		.with('setHydraFFTData', () =>
-			handleSetHydraFFTData(data.nodeId, data.id, data.analysisType, data.format, data.array)
-		)
-		.with('registerFFTRequest', () => {
-			self.postMessage({
-				type: 'registerFFTRequest',
-				nodeId: data.nodeId,
-				analysisType: data.analysisType,
-				format: data.format
-			});
-		});
+		.with('setFFTData', () => handleSetFFTData(data));
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {
@@ -119,17 +109,20 @@ function handleToggleNodePause(nodeId: string) {
 	fboRenderer.toggleNodePause(nodeId);
 }
 
-function handleSetHydraFFTData(
-	nodeId: string,
-	id: string | undefined,
-	analysisType: AudioAnalysisType,
-	format: AudioAnalysisFormat,
-	array: Uint8Array | Float32Array
-) {
-	const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
-	if (!hydraRenderer) return;
+function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
+	const { nodeType, nodeId } = payload;
 
-	hydraRenderer.setFFTData(id, analysisType, format, array);
+	match(nodeType)
+		.with('hydra', () => {
+			const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
+			if (!hydraRenderer) return;
+
+			hydraRenderer.setFFTData(payload);
+		})
+		.with('glsl', () => {
+			fboRenderer.setFFTAsGlslUniforms(payload);
+		})
+		.exhaustive();
 }
 
 function handleUpdateHydra(nodeId: string) {
@@ -145,6 +138,8 @@ async function handleCapturePreview(nodeId: string, requestId?: string) {
 	if (pixels) {
 		const [width, height] = fboRenderer.previewSize;
 		const array = new Uint8ClampedArray(pixels.buffer);
+
+		// @ts-expect-error -- something is wrong with the typedef
 		const imageData = new ImageData(array, width, height);
 		const bitmap = await createImageBitmap(imageData);
 

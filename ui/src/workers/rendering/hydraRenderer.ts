@@ -5,6 +5,7 @@ import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import arrayUtils from 'hydra-ts/src/lib/array-utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 
 type AudioAnalysisType = 'waveform' | 'frequency';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -241,10 +242,10 @@ export class HydraRenderer {
 
 	createFFTFunction() {
 		return (options: AudioAnalysisProps = {}) => {
-			const { id, type = 'waveform', format = 'int' } = options;
+			const { type = 'waveform', format = 'int' } = options;
 			const { nodeId } = this.config;
 
-			const cacheKey = `${id ?? 'auto'}-${type}-${format}`;
+			const cacheKey = `${type}-${format}`;
 
 			if (!this.isFFTEnabled) {
 				self.postMessage({ type: 'fftEnabled', nodeId, enabled: true });
@@ -275,16 +276,13 @@ export class HydraRenderer {
 	}
 
 	// Method to receive FFT data from main thread
-	setFFTData(
-		id: string | undefined,
-		type: AudioAnalysisType,
-		format: AudioAnalysisFormat,
-		buffer: Uint8Array | Float32Array
-	) {
-		const cacheKey = `${id ?? 'auto'}-${type}-${format}`;
+	setFFTData(payload: AudioAnalysisPayloadWithType) {
+		const { analysisType, format, array } = payload;
+
+		const cacheKey = `${analysisType}-${format}`;
 
 		this.fftDataCache.set(cacheKey, {
-			data: buffer,
+			data: array,
 			timestamp: performance.now()
 		});
 	}

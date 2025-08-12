@@ -1,6 +1,8 @@
 import { match } from 'ts-pattern';
 import { AudioSystem } from './AudioSystem';
 import { MessageSystem } from '$lib/messages/MessageSystem';
+import type { Edge } from '@xyflow/svelte';
+import { objectDefinitions } from '$lib/objects/object-definitions';
 
 export type AudioAnalysisType = 'waveform' | 'frequency';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -21,13 +23,43 @@ export interface AudioAnalysisProps {
 	format?: AudioAnalysisFormat;
 }
 
-type OnFFTReadyCallback = (
-	nodeId: string,
-	id: string | undefined,
-	analysisType: AudioAnalysisType,
-	format: AudioAnalysisFormat,
-	array: Uint8Array | Float32Array
-) => void;
+export interface AudioAnalysisPayload {
+	nodeId: string;
+	analysisType: AudioAnalysisType;
+	format: AudioAnalysisFormat;
+	array: Uint8Array | Float32Array;
+
+	/** GLSL inlets. Currently applies to GLSL only. */
+	inlets?: GlslFFTInletMeta[];
+}
+
+export type AudioAnalysisPayloadWithType = AudioAnalysisPayload & {
+	type: 'setFFTData';
+	nodeType: 'hydra' | 'glsl';
+};
+
+export type OnFFTReadyCallback = (data: AudioAnalysisPayload) => void;
+
+export type GlslFFTInletMeta = {
+	/** ID of the AnalyserNode that provides the FFT. */
+	analyzerNodeId: string;
+
+	/** Which type of audio analysis to perform? */
+	analysisType: AudioAnalysisType;
+
+	/** Which inlet is this? */
+	inletIndex: number;
+
+	/** What is the name of the sampler2D uniform? */
+	uniformName: string;
+};
+
+/** Get FFT object's analysis outlet index */
+function getFFTAnalysisOutletIndex(): number {
+	const fftDef = objectDefinitions.fft;
+	const index = fftDef.outlets.findIndex((outlet) => outlet.name === 'analysis');
+	return index !== -1 ? index : 1; // fallback to index 1 if not found
+}
 
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
@@ -37,7 +69,7 @@ export class AudioAnalysisSystem {
 	// Cache for FFT node connections: nodeId -> fftNodeId
 	private fftConnectionCache = new Map<string, string | null>();
 
-	/** Track which Hydra nodes have FFT enabled */
+	/** Track which nodes have FFT enabled */
 	private fftEnabledNodes = new Set<string>();
 
 	/** Track requested FFT formats per node: nodeId -> Set<"type-format"> */
@@ -49,25 +81,35 @@ export class AudioAnalysisSystem {
 	/** Callback for sending FFT data to workers */
 	public onFFTDataReady: OnFFTReadyCallback | null = null;
 
+	/** Mapping of GLSL nodeId to inlet metadata. */
+	private glslInlets: Map<string, GlslFFTInletMeta[]> = new Map();
+
+	/** Cache FFT object's analysis outlet index */
+	private fftAnalysisOutletIndex: number;
+
+	constructor() {
+		this.fftAnalysisOutletIndex = getFFTAnalysisOutletIndex();
+	}
+
 	getAnalysisForNode(
-		callingNodeId: string,
+		consumerNodeId: string,
 		{ id, type = 'waveform', format = 'int' }: AudioAnalysisProps = {}
 	): AudioAnalysisValue | null {
 		// If the user passes an explicit analyzer node id, use that.
-		let fftNodeId = id;
+		let analyzerNodeId = id;
 
 		// Infer the connected FFT node.
-		if (!fftNodeId) {
-			const connectedNodeId = this.getFFTNode(callingNodeId);
+		if (!analyzerNodeId) {
+			const _connectedNodeId = this.getAnalyzerAudioNode(consumerNodeId);
 
-			if (connectedNodeId !== null) {
-				fftNodeId = connectedNodeId;
+			if (_connectedNodeId !== null) {
+				analyzerNodeId = _connectedNodeId;
 			}
 		}
 
-		if (!fftNodeId) return null;
+		if (!analyzerNodeId) return null;
 
-		const state = this.audioSystem.nodesById.get(fftNodeId);
+		const state = this.audioSystem.nodesById.get(analyzerNodeId);
 		if (state?.type !== 'fft') return null;
 
 		const { node } = state;
@@ -96,11 +138,61 @@ export class AudioAnalysisSystem {
 			.exhaustive();
 	}
 
-	updateEdges() {
+	updateEdges(edges: Edge[]) {
 		this.fftConnectionCache.clear();
+		this.glslInlets.clear();
+
+		for (const edge of edges) {
+			this.setupGlslPolling(edge);
+		}
 	}
 
-	private getFFTNode(nodeId: string): string | null {
+	setupGlslPolling(edge: Edge) {
+		const analyzerOutletId = `outlet-${this.fftAnalysisOutletIndex}`;
+
+		const glslNodeId = edge.target;
+		const analyzerNodeId = edge.source;
+
+		const isSampler2DOutlet =
+			edge.sourceHandle === analyzerOutletId &&
+			analyzerNodeId.startsWith('object-') &&
+			glslNodeId.startsWith('glsl-') &&
+			edge.targetHandle?.includes('video');
+
+		if (!isSampler2DOutlet) return;
+
+		const node = this.audioSystem.nodesById.get(edge.source);
+		if (node?.type !== 'fft') return;
+
+		const inletMatch = edge.targetHandle?.match(/video-in-(\d+)-(\w+)-/);
+		if (!inletMatch) return;
+
+		const [, inletIndex, uniformName] = inletMatch;
+
+		this.fftEnabledNodes.add(glslNodeId);
+
+		if (!this.glslInlets.has(glslNodeId)) {
+			this.glslInlets.set(glslNodeId, []);
+		}
+
+		this.glslInlets.get(glslNodeId)?.push({
+			analyzerNodeId,
+			analysisType: 'waveform',
+			inletIndex: parseInt(inletIndex),
+			uniformName
+		});
+
+		if (!this.requestedFFTFormats.has(glslNodeId)) {
+			this.requestedFFTFormats.set(glslNodeId, new Set());
+		}
+
+		// Support only waveform-int for now.
+		this.requestedFFTFormats.get(glslNodeId)!.add('waveform-int');
+
+		this.startFFTPolling();
+	}
+
+	private getAnalyzerAudioNode(nodeId: string): string | null {
 		if (this.fftConnectionCache.has(nodeId)) {
 			return this.fftConnectionCache.get(nodeId) ?? null;
 		}
@@ -119,13 +211,12 @@ export class AudioAnalysisSystem {
 			}
 		}
 
-		// Cache the result (including null)
 		this.fftConnectionCache.set(nodeId, fftNodeId);
 
 		return fftNodeId;
 	}
 
-	/** Enable FFT for a Hydra node */
+	/** Enable FFT for a node */
 	enableFFT(nodeId: string) {
 		this.fftEnabledNodes.add(nodeId);
 		this.startFFTPolling();
@@ -135,6 +226,7 @@ export class AudioAnalysisSystem {
 	disableFFT(nodeId: string) {
 		this.fftEnabledNodes.delete(nodeId);
 		this.requestedFFTFormats.delete(nodeId);
+		this.glslInlets.delete(nodeId);
 
 		if (this.fftEnabledNodes.size === 0) {
 			this.stopFFTPolling();
@@ -167,21 +259,26 @@ export class AudioAnalysisSystem {
 		}
 	}
 
-	/** Poll FFT data and transfer it to Hydra workers */
+	/** Poll FFT data and transfer it to Hydra and GLSL renderers. */
 	private pollAndTransferFFTData() {
 		if (!this.onFFTDataReady) return;
 
-		for (const hydraNodeId of this.fftEnabledNodes) {
-			const requestedFormats = this.requestedFFTFormats.get(hydraNodeId);
-			if (!requestedFormats || requestedFormats.size === 0) continue;
+		for (const targetId of this.fftEnabledNodes) {
+			const formats = this.requestedFFTFormats.get(targetId);
+			if (!formats || formats.size === 0) continue;
 
-			for (const formatKey of requestedFormats) {
+			// The GLSL node's inlet has been disconnected. Do not send FFT data.
+			if (targetId.startsWith('glsl-') && !this.glslInlets.has(targetId)) continue;
+
+			const inlets = this.glslInlets.get(targetId);
+
+			for (const formatKey of formats) {
 				const [type, format] = formatKey.split('-') as [AudioAnalysisType, AudioAnalysisFormat];
-				const data = this.getAnalysisForNode(hydraNodeId, { type, format });
 
-				if (data) {
-					this.onFFTDataReady(hydraNodeId, undefined, type, format, data);
-				}
+				const array = this.getAnalysisForNode(targetId, { type, format });
+				if (array === null) continue;
+
+				this.onFFTDataReady({ nodeId: targetId, analysisType: type, format, array, inlets });
 			}
 		}
 	}

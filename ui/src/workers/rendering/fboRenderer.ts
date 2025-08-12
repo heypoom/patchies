@@ -14,6 +14,11 @@ import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
+import type {
+	AudioAnalysisType,
+	AudioAnalysisPayloadWithType,
+	GlslFFTInletMeta
+} from '$lib/audio/AudioAnalysisSystem.js';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -35,6 +40,12 @@ export class FBORenderer {
 
 	/** Mapping of nodeID to persistent textures */
 	public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
+
+	/** Mapping of analyzer object's node id -> analysis type -> texture */
+	public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
+
+	/** Mapping of glsl node id -> fft inlet metadata */
+	public fftInletsByGlslNode: Map<string, GlslFFTInletMeta> = new Map();
 
 	/** Mapping of nodeID to pause state */
 	public nodePausedMap: Map<string, boolean> = new Map();
@@ -425,9 +436,24 @@ export class FBORenderer {
 			const uniformDefs = node.data.glUniformDefs ?? [];
 			const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
 
+			// If this is a GLSL node with FFT inlet, use the FFT texture
+			const fftInlet = this.fftInletsByGlslNode.get(node.id);
+
 			// Define input parameters
 			for (const n of uniformDefs) {
 				if (n.type === 'sampler2D') {
+					// If FFT analysis is enabled.
+					if (fftInlet?.uniformName === n.name) {
+						const fftTex = this.fftTexturesByAnalyzer
+							.get(fftInlet.analyzerNodeId)
+							?.get(fftInlet.analysisType);
+
+						if (fftTex) {
+							userUniformParams.push(fftTex);
+							continue;
+						}
+					}
+
 					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
 				} else {
 					const value = uniformData.get(n.name);
@@ -622,9 +648,6 @@ export class FBORenderer {
 			}
 		}
 
-		// If we have less than 4 textures, fill the rest with the fallback texture.
-		while (textures.length < 4) textures.push(this.fallbackTexture);
-
 		return textures.slice(0, 4);
 	}
 
@@ -679,6 +702,66 @@ export class FBORenderer {
 	 **/
 	removeUniformData(nodeId: string) {
 		this.uniformDataByNode.delete(nodeId);
+	}
+
+	setFFTAsGlslUniforms(payload: AudioAnalysisPayloadWithType) {
+		// TODO: support multiple inlets.
+		// TODO: only send a single inlet in the payload, not all of them!
+		const inlet = payload.inlets?.[0];
+		if (!inlet) return;
+
+		const { analyzerNodeId } = inlet;
+
+		// Store the FFT inlet associated with a GLSL node.
+		// TODO: support multiple inlets.
+		// TODO: only do this once instead of on every single frame!!!
+		this.fftInletsByGlslNode.set(payload.nodeId, inlet);
+
+		if (!this.fftTexturesByAnalyzer.has(analyzerNodeId)) {
+			this.fftTexturesByAnalyzer.set(analyzerNodeId, new Map());
+		}
+
+		const textureByAnalyzer = this.fftTexturesByAnalyzer.get(analyzerNodeId)!;
+		const texture = textureByAnalyzer.get(payload.analysisType);
+
+		const width = payload.array.length;
+		const height = 1;
+
+		const shouldCreateNewTexture = !texture || texture.height !== 1;
+
+		// The existing texture is unsuitable for FFT. We must delete it.
+		if (texture && shouldCreateNewTexture) {
+			texture.destroy();
+		}
+
+		const texType = payload.format === 'int' ? 'uint8' : 'float';
+		const texFormat = 'luminance';
+
+		if (shouldCreateNewTexture) {
+			const nextTexture = this.regl.texture({
+				width,
+				height,
+				data: payload.array,
+				format: texFormat,
+				type: texType,
+				wrapS: 'clamp',
+				wrapT: 'clamp',
+				min: 'nearest',
+				mag: 'nearest'
+			});
+
+			textureByAnalyzer.set(payload.analysisType, nextTexture);
+
+			return;
+		}
+
+		texture({
+			width,
+			height,
+			data: payload.array,
+			format: texFormat,
+			type: texType
+		});
 	}
 
 	/** Send message to nodes */

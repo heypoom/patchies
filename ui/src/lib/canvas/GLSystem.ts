@@ -10,7 +10,13 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { GLEventBus } from './GLEventBus';
-import { AudioAnalysisSystem, type AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
+import {
+	AudioAnalysisSystem,
+	type AudioAnalysisPayloadWithType,
+	type OnFFTReadyCallback
+} from '$lib/audio/AudioAnalysisSystem';
+
+export type UserUniformValue = number | boolean | number[];
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
@@ -162,7 +168,7 @@ export class GLSystem {
 		return this.updateRenderGraph();
 	}
 
-	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
+	setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
 		this.send('setUniformData', {
 			nodeId,
 			uniformName,
@@ -185,6 +191,9 @@ export class GLSystem {
 		}
 
 		this.nodes = this.nodes.filter((node) => node.id !== nodeId);
+
+		// Disable sending FFT analysis to the said node.
+		this.audioAnalysis.disableFFT(nodeId);
 
 		// Clear connection cache for this node
 		this.outgoingConnectionsCache.delete(nodeId);
@@ -322,25 +331,16 @@ export class GLSystem {
 	}
 
 	/** Callback for when AudioAnalysisSystem has FFT data ready */
-	private sendFFTDataToWorker(
-		nodeId: string,
-		id: string | undefined,
-		analysisType: AudioAnalysisProps['type'],
-		format: AudioAnalysisProps['format'],
-		data: Uint8Array | Float32Array
-	) {
-		const array = format === 'int' ? new Uint8Array(data.buffer) : new Float32Array(data.buffer);
+	sendFFTDataToWorker: OnFFTReadyCallback = (payload) => {
+		const node = this.nodes.find((n) => n.id === payload.nodeId);
+		if (!node) return;
 
-		this.renderWorker.postMessage(
-			{
-				type: 'setHydraFFTData',
-				nodeId,
-				id,
-				analysisType,
-				format,
-				array
-			},
-			{ transfer: [array.buffer] }
-		);
-	}
+		const payloadWithType: AudioAnalysisPayloadWithType = {
+			...payload,
+			type: 'setFFTData',
+			nodeType: node.type as 'hydra' | 'glsl'
+		};
+
+		this.renderWorker.postMessage(payloadWithType, { transfer: [payloadWithType.array.buffer] });
+	};
 }

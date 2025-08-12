@@ -5,7 +5,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match, P } from 'ts-pattern';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
@@ -38,9 +38,10 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
-			if (meta.inlet?.startsWith('msg-in-')) {
-				const [indexStr, uniformName, uniformType] = meta.inlet.split('-').slice(2);
-				glSystem.setUniformData(nodeId, uniformName, message);
+			if (meta.inletKey?.startsWith('msg-in-')) {
+				const [, uniformName] = meta.inletKey.split('-').slice(2);
+				glSystem.setUniformData(nodeId, uniformName, message as UserUniformValue);
+
 				return;
 			}
 
