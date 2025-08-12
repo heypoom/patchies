@@ -264,8 +264,14 @@ export class HydraRenderer {
 
 			const cached = this.fftDataCache.get(cacheKey);
 
-			return cached?.data ?? null;
+			return cached?.data ?? this.getEmpty(format);
 		};
+	}
+
+	getEmpty(format: AudioAnalysisFormat) {
+		if (format === 'float') return new Float32Array();
+
+		return new Uint8Array();
 	}
 
 	// Method to receive FFT data from main thread
