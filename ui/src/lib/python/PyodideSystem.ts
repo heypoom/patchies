@@ -1,7 +1,12 @@
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { MessageContext } from '$lib/messages/MessageContext';
+
 import type { PyodideAPI } from 'pyodide';
 
 export class PyodideSystem {
 	private static instance: PyodideSystem | null = null;
+
+	eventBus = PatchiesEventBus.getInstance();
 
 	pyodideModule: typeof import('pyodide') | null = null;
 	pyodideByNode: Map<string, PyodideAPI> = new Map();
@@ -21,7 +26,24 @@ export class PyodideSystem {
 
 		const pyodide = await this.ensureModule();
 
-		const instance = await pyodide.loadPyodide({});
+		const messageContext = new MessageContext(nodeId);
+
+		const instance = await pyodide.loadPyodide({
+			env: {
+				PATCHIES_NODE_ID: nodeId
+			},
+			jsglobals: {
+				// Connect Python to the global message context
+				...messageContext.getContext()
+			},
+			stdout: (message: string) => {
+				this.eventBus.dispatch({ type: 'pyodideConsoleOutput', output: 'stdout', message, nodeId });
+			},
+			stderr: (message: string) => {
+				this.eventBus.dispatch({ type: 'pyodideConsoleOutput', output: 'stderr', message, nodeId });
+			}
+		});
+
 		this.pyodideByNode.set(nodeId, instance);
 
 		return instance;

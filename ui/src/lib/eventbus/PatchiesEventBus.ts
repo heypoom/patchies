@@ -1,12 +1,4 @@
-export type PatchiesEvent = GLPreviewFrameCapturedEvent | { type: 'placeholder'; foo: unknown };
-
-export type GLPreviewFrameCapturedEvent = {
-	type: 'previewFrameCaptured';
-	nodeId: string;
-	requestId: string;
-	success: boolean;
-	bitmap?: ImageBitmap;
-};
+import type { PatchiesEvent } from './events';
 
 type PatchiesEventListener = (event: PatchiesEvent) => void;
 type PatchiesEventListenerMap = Map<PatchiesEvent['type'], PatchiesEventListener[]>;
