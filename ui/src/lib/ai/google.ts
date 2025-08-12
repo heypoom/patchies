@@ -1,4 +1,4 @@
-import { GLEventBus, type GLPreviewFrameCapturedEvent } from '$lib/canvas/GLEventBus';
+import { type GLPreviewFrameCapturedEvent } from '$lib/eventbus/PatchiesEventBus';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import { GoogleGenAI, PersonGeneration, type ContentListUnion } from '@google/genai';
 

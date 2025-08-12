@@ -9,7 +9,7 @@ import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
-import { GLEventBus } from './GLEventBus';
+import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import {
 	AudioAnalysisSystem,
 	type AudioAnalysisPayloadWithType,
@@ -24,7 +24,7 @@ export class GLSystem {
 
 	public ipcSystem = IpcSystem.getInstance();
 	public messageSystem = MessageSystem.getInstance();
-	public eventBus = GLEventBus.getInstance();
+	public eventBus = PatchiesEventBus.getInstance();
 	public audioAnalysis = AudioAnalysisSystem.getInstance();
 
 	/** Rendering context for the background output that covers the entire screen. */

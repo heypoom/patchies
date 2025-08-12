@@ -1,22 +1,30 @@
+import type { PyodideAPI } from 'pyodide';
+
 export class PyodideSystem {
 	private static instance: PyodideSystem | null = null;
 
-	pyodide: typeof import('pyodide') | null = null;
+	pyodideModule: typeof import('pyodide') | null = null;
+	pyodideByNode: Map<string, PyodideAPI> = new Map();
 
 	async ensureModule() {
-		if (this.pyodide !== null) return this.pyodide;
+		if (this.pyodideModule !== null) return this.pyodideModule;
 
-		this.pyodide = await import('pyodide');
+		this.pyodideModule = await import('pyodide');
 
-		return this.pyodide;
+		return this.pyodideModule;
 	}
 
-	async load() {
+	async get(nodeId: string): Promise<PyodideAPI> {
+		if (this.pyodideByNode.has(nodeId)) {
+			return this.pyodideByNode.get(nodeId)!;
+		}
+
 		const pyodide = await this.ensureModule();
 
-		await pyodide.loadPyodide({});
+		const instance = await pyodide.loadPyodide({});
+		this.pyodideByNode.set(nodeId, instance);
 
-		return;
+		return instance;
 	}
 
 	static getInstance() {
