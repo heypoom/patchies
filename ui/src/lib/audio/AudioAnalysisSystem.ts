@@ -239,8 +239,6 @@ export class AudioAnalysisSystem {
 			this.requestedFFTFormats.set(nodeId, new Set());
 		}
 
-		console.log(`[aa] registerFFTRequest`, nodeId, type, format);
-
 		this.requestedFFTFormats.get(nodeId)!.add(`${type}-${format}`);
 	}
 
