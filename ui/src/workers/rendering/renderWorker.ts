@@ -31,8 +31,8 @@ self.onmessage = (event) => {
 		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
 		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId))
 		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
-		.with('setHydraFFTData', () =>
-			handleSetHydraFFTData(data.nodeId, data.id, data.analysisType, data.format, data.array)
+		.with('setFFTData', () =>
+			handleSetFFTData(data.nodeType, data.nodeId, data.analysisType, data.format, data.array)
 		)
 		.with('registerFFTRequest', () => {
 			self.postMessage({
@@ -119,17 +119,24 @@ function handleToggleNodePause(nodeId: string) {
 	fboRenderer.toggleNodePause(nodeId);
 }
 
-function handleSetHydraFFTData(
+function handleSetFFTData(
+	nodeType: 'hydra' | 'glsl',
 	nodeId: string,
-	id: string | undefined,
 	analysisType: AudioAnalysisType,
 	format: AudioAnalysisFormat,
 	array: Uint8Array | Float32Array
 ) {
-	const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
-	if (!hydraRenderer) return;
+	match(nodeType)
+		.with('hydra', () => {
+			const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
+			if (!hydraRenderer) return;
 
-	hydraRenderer.setFFTData(id, analysisType, format, array);
+			hydraRenderer.setFFTData(analysisType, format, array);
+		})
+		.with('glsl', () => {
+			fboRenderer.setFFTDataAsTexture(nodeId, analysisType, format, array);
+		})
+		.exhaustive();
 }
 
 function handleUpdateHydra(nodeId: string) {
@@ -145,6 +152,8 @@ async function handleCapturePreview(nodeId: string, requestId?: string) {
 	if (pixels) {
 		const [width, height] = fboRenderer.previewSize;
 		const array = new Uint8ClampedArray(pixels.buffer);
+
+		// @ts-expect-error -- something is wrong with the typedef
 		const imageData = new ImageData(array, width, height);
 		const bitmap = await createImageBitmap(imageData);
 

@@ -14,6 +14,7 @@ import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
+import type { AudioAnalysisType, AudioAnalysisFormat } from '$lib/audio/AudioAnalysisSystem.js';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -679,6 +680,49 @@ export class FBORenderer {
 	 **/
 	removeUniformData(nodeId: string) {
 		this.uniformDataByNode.delete(nodeId);
+	}
+
+	/**
+	 * Sets FFT data as a sampler2D texture for GLSL nodes.
+	 * Reuses existing texture when possible to avoid performance issues.
+	 */
+	setFFTDataAsTexture(
+		nodeId: string,
+		analysisType: AudioAnalysisType,
+		format: AudioAnalysisFormat,
+		array: Uint8Array | Float32Array
+	) {
+		const texture = this.externalTexturesByNode.get(nodeId);
+
+		// FFT data is typically 1D, so we create a 1D texture (width = data length, height = 1)
+		const width = array.length;
+		const height = 1;
+
+		// Convert to the appropriate format for WebGL texture
+		const data = format === 'int' ? new Uint8Array(array.buffer) : new Float32Array(array.buffer);
+
+		// Either update the existing texture or create a new one (same pattern as setBitmap)
+		const nextTexture = texture
+			? texture({
+					width,
+					height,
+					data,
+					format: 'rgba',
+					type: format === 'int' ? 'uint8' : 'float'
+				})
+			: this.regl.texture({
+					width,
+					height,
+					data,
+					format: 'rgba',
+					type: format === 'int' ? 'uint8' : 'float',
+					wrapS: 'clamp',
+					wrapT: 'clamp',
+					min: 'nearest',
+					mag: 'nearest'
+				});
+
+		this.externalTexturesByNode.set(nodeId, nextTexture);
 	}
 
 	/** Send message to nodes */

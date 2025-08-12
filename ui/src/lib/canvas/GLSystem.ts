@@ -10,7 +10,7 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { GLEventBus } from './GLEventBus';
-import { AudioAnalysisSystem, type AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
+import { AudioAnalysisSystem, type OnFFTReadyCallback } from '$lib/audio/AudioAnalysisSystem';
 
 export class GLSystem {
 	/** Web worker for offscreen rendering. */
@@ -322,25 +322,25 @@ export class GLSystem {
 	}
 
 	/** Callback for when AudioAnalysisSystem has FFT data ready */
-	private sendFFTDataToWorker(
-		nodeId: string,
-		id: string | undefined,
-		analysisType: AudioAnalysisProps['type'],
-		format: AudioAnalysisProps['format'],
-		data: Uint8Array | Float32Array
-	) {
+	sendFFTDataToWorker: OnFFTReadyCallback = (nodeId, analysisType, format, data) => {
 		const array = format === 'int' ? new Uint8Array(data.buffer) : new Float32Array(data.buffer);
+
+		// Determine node type to send appropriate FFT data
+		const node = this.nodes.find((n) => n.id === nodeId);
+		if (!node) return;
+
+		const nodeType = node.type as 'hydra' | 'glsl';
 
 		this.renderWorker.postMessage(
 			{
-				type: 'setHydraFFTData',
+				type: 'setFFTData',
+				nodeType,
 				nodeId,
-				id,
 				analysisType,
 				format,
 				array
 			},
 			{ transfer: [array.buffer] }
 		);
-	}
+	};
 }

@@ -21,9 +21,8 @@ export interface AudioAnalysisProps {
 	format?: AudioAnalysisFormat;
 }
 
-type OnFFTReadyCallback = (
+export type OnFFTReadyCallback = (
 	nodeId: string,
-	id: string | undefined,
 	analysisType: AudioAnalysisType,
 	format: AudioAnalysisFormat,
 	array: Uint8Array | Float32Array
@@ -171,16 +170,16 @@ export class AudioAnalysisSystem {
 	private pollAndTransferFFTData() {
 		if (!this.onFFTDataReady) return;
 
-		for (const hydraNodeId of this.fftEnabledNodes) {
-			const requestedFormats = this.requestedFFTFormats.get(hydraNodeId);
+		for (const nodeId of this.fftEnabledNodes) {
+			const requestedFormats = this.requestedFFTFormats.get(nodeId);
 			if (!requestedFormats || requestedFormats.size === 0) continue;
 
 			for (const formatKey of requestedFormats) {
 				const [type, format] = formatKey.split('-') as [AudioAnalysisType, AudioAnalysisFormat];
-				const data = this.getAnalysisForNode(hydraNodeId, { type, format });
+				const data = this.getAnalysisForNode(nodeId, { type, format });
 
 				if (data) {
-					this.onFFTDataReady(hydraNodeId, undefined, type, format, data);
+					this.onFFTDataReady(nodeId, undefined, type, format, data);
 				}
 			}
 		}
