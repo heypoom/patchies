@@ -6,7 +6,8 @@ import {
 	DEFAULT_AI_IMAGE_PROMPT,
 	DEFAULT_BUTTERCHURN_PRESET,
 	DEFAULT_JS_CANVAS_CODE,
-	DEFAULT_SWISSGL_CODE
+	DEFAULT_SWISSGL_CODE,
+	DEFAULT_PYTHON_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -20,6 +21,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 	return match(nodeType)
 		.with('object', () => ({ expr: '', name: '', params: [] }))
 		.with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
+		.with('python', () => ({ code: DEFAULT_PYTHON_CODE, showConsole: true }))
 		.with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
 		.with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))
 		.with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))

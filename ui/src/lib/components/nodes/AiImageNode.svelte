@@ -155,7 +155,7 @@
 				onchange={(newPrompt) => {
 					updateNodeData(nodeId, { ...data, prompt: newPrompt });
 				}}
-				language="text"
+				language="plain"
 				placeholder="Write your prompt here..."
 				class="nodrag h-64 w-full max-w-[350px] resize-none"
 				onrun={generateImage}

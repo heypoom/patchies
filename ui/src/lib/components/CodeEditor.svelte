@@ -3,12 +3,15 @@
 	import { EditorView, minimalSetup } from 'codemirror';
 	import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
 	import { javascript } from '@codemirror/lang-javascript';
+	import { python } from '@codemirror/lang-python';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 	import { LanguageSupport } from '@codemirror/language';
 
 	let languageComp = new Compartment();
+
+	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'plain';
 
 	let {
 		value = $bindable(),
@@ -22,7 +25,7 @@
 		...restProps
 	}: {
 		value?: string;
-		language?: string;
+		language?: SupportedLanguage;
 		placeholder?: string;
 		class?: string;
 		onrun?: () => void;
@@ -39,6 +42,8 @@
 			return javascript();
 		} else if (language === 'glsl') {
 			return new LanguageSupport(glslLanguage);
+		} else if (language === 'python') {
+			return python();
 		}
 
 		return [];

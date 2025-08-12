@@ -1,0 +1,249 @@
+<script lang="ts">
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import Icon from '@iconify/svelte';
+	import CodeEditor from '$lib/components/CodeEditor.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+	import { PyodideSystem } from '$lib/python/PyodideSystem';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { PyodideAPI } from 'pyodide';
+	import type { PatchiesEvent, PyodideConsoleOutputEvent } from '$lib/eventbus/events';
+
+	let {
+		id: nodeId,
+		data,
+		selected
+	}: {
+		id: string;
+		data: {
+			code: string;
+			showConsole?: boolean;
+		};
+		selected: boolean;
+	} = $props();
+
+	const { updateNodeData } = useSvelteFlow();
+
+	let messageContext: MessageContext;
+	let pyodideSystem = PyodideSystem.getInstance();
+	let eventBus = PatchiesEventBus.getInstance();
+	let pyodide: PyodideAPI | null = null;
+	let isRunning = $state(false);
+	let showEditor = $state(false);
+	let consoleOutput = $state<string[]>([]);
+	let contentContainer: HTMLDivElement | null = null;
+	let contentWidth = $state(100);
+
+	const code = $derived(data.code || '');
+
+	const borderColor = $derived.by(() => {
+		if (isRunning) return 'border-orange-500';
+		if (selected) return 'border-zinc-400';
+		return 'border-zinc-600';
+	});
+
+	const playIcon = $derived(isRunning ? 'lucide:loader' : 'lucide:play');
+
+	function handlePyodideConsoleOutput(event: PyodideConsoleOutputEvent) {
+		// Ignore events from other Python nodes.
+		if (event.nodeId !== nodeId) return;
+
+		const prefix = event.output === 'stderr' ? 'ERROR: ' : '';
+
+		consoleOutput = [...consoleOutput, `${prefix}${event.message}`];
+	}
+
+	onMount(async () => {
+		messageContext = new MessageContext(nodeId);
+
+		// Listen for pyodide console output events
+		eventBus.addEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
+
+		// Initialize pyodide instance
+		try {
+			pyodide = await pyodideSystem.create(nodeId, { messageContext });
+		} catch (error) {
+			consoleOutput = [
+				...consoleOutput,
+				`ERROR: Failed to initialize Python: ${error instanceof Error ? error.message : String(error)}`
+			];
+		}
+
+		updateContentWidth();
+	});
+
+	onDestroy(() => {
+		eventBus.removeEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
+
+		pyodideSystem.delete(nodeId);
+		messageContext?.destroy();
+	});
+
+	async function executeCode() {
+		if (!pyodide || isRunning) return;
+
+		isRunning = true;
+
+		// Clear previous output
+		consoleOutput = [];
+
+		try {
+			// Execute the Python code
+			await pyodide.runPython(code);
+		} catch (error) {
+			consoleOutput = [
+				...consoleOutput,
+				`ERROR: ${error instanceof Error ? error.message : String(error)}`
+			];
+		} finally {
+			isRunning = false;
+		}
+	}
+
+	function updateContentWidth() {
+		if (!contentContainer) return;
+		contentWidth = contentContainer.offsetWidth;
+	}
+
+	function toggleEditor() {
+		showEditor = !showEditor;
+	}
+
+	function clearConsole() {
+		consoleOutput = [];
+	}
+</script>
+
+<div class="relative flex gap-x-3">
+	<div class="group relative">
+		<div class="flex flex-col gap-2" bind:this={contentContainer}>
+			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
+					<div class="font-mono text-xs font-medium text-zinc-400">python</div>
+				</div>
+
+				<div>
+					<button
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						onclick={() => {
+							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
+							setTimeout(() => updateContentWidth(), 10);
+						}}
+						title="Console"
+					>
+						<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+					</button>
+
+					<button
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						onclick={toggleEditor}
+						title="Edit code"
+					>
+						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+					</button>
+				</div>
+			</div>
+
+			<div class="relative">
+				<div>
+					<Handle type="target" position={Position.Top} title="Input" class="z-1 top-0" />
+				</div>
+
+				{#if data.showConsole}
+					<div class={['min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor]}>
+						<div class="mb-2 flex min-w-[280px] items-center justify-between">
+							<span class="font-mono text-[11px] text-zinc-400">console</span>
+
+							<div class="flex gap-1">
+								{#if isRunning}
+									<button
+										onclick={executeCode}
+										class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
+										title="Run again"
+										aria-label="Run again"
+									>
+										<Icon icon="lucide:refresh-ccw" font-size="12px" />
+									</button>
+								{/if}
+
+								<button
+									onclick={executeCode}
+									class={[
+										'rounded p-1 text-zinc-300 hover:bg-zinc-700',
+										isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
+									]}
+									title="Run"
+									aria-disabled={isRunning}
+								>
+									<Icon icon={playIcon} class={isRunning ? 'animate-spin' : ''} font-size="12px" />
+								</button>
+
+								<button
+									onclick={clearConsole}
+									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
+									title="Clear console"
+								>
+									<Icon icon="lucide:trash-2" font-size="12px" />
+								</button>
+							</div>
+						</div>
+
+						<div
+							class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
+						>
+							{#if consoleOutput.length === 0}
+								<div class="italic text-zinc-500">Run your Python code to see results.</div>
+							{:else}
+								{#each consoleOutput as line}
+									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
+								{/each}
+							{/if}
+						</div>
+					</div>
+				{:else}
+					<button
+						class={[
+							'flex w-full min-w-[100px] justify-center rounded-md border bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
+							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
+							borderColor
+						]}
+						onclick={executeCode}
+						aria-disabled={isRunning}
+						aria-label="Run Python code"
+					>
+						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
+							<Icon icon={playIcon} />
+						</div>
+					</button>
+				{/if}
+
+				<div>
+					<Handle type="source" position={Position.Bottom} title="Output" class="z-1 bottom-0" />
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{#if showEditor}
+		<div class="absolute" style="left: {contentWidth + 10}px">
+			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
+
+			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+				<CodeEditor
+					value={code}
+					onchange={(newCode) => {
+						updateNodeData(nodeId, { ...data, code: newCode });
+					}}
+					language="python"
+					placeholder="Write your Python code here..."
+					class="nodrag h-64 w-full resize-none"
+					onrun={executeCode}
+				/>
+			</div>
+		</div>
+	{/if}
+</div>

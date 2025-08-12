@@ -59,3 +59,5 @@ export const DEFAULT_SWISSGL_CODE = `function render({t}) {
     FP: \`UV,0.5,1\`,
   })
 }`;
+
+export const DEFAULT_PYTHON_CODE = 'print(5 + 5)';

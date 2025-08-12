@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
+	optimizeDeps: { exclude: ['pyodide'] },
 	define: {
 		global: 'globalThis'
 	},
