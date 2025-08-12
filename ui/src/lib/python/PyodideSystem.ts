@@ -3,6 +3,9 @@ import { MessageContext } from '$lib/messages/MessageContext';
 
 import type { PyodideAPI } from 'pyodide';
 
+/** Name of the Python package to interact with patchies */
+const PATCHIES_PACKAGE = 'patch';
+
 export class PyodideSystem {
 	private static instance: PyodideSystem | null = null;
 
@@ -19,22 +22,34 @@ export class PyodideSystem {
 		return this.pyodideModule;
 	}
 
-	async get(nodeId: string): Promise<PyodideAPI> {
+	get(nodeId: string): PyodideAPI | undefined {
+		return this.pyodideByNode.get(nodeId);
+	}
+
+	// TODO: cleanup pyodide properly...
+	delete(nodeId: string): void {
+		const pyodide = this.pyodideByNode.get(nodeId);
+		pyodide?.unregisterJsModule(PATCHIES_PACKAGE);
+
+		this.pyodideByNode.delete(nodeId);
+	}
+
+	async create(nodeId: string, options: { messageContext: MessageContext }): Promise<PyodideAPI> {
+		// If we already have this node created
 		if (this.pyodideByNode.has(nodeId)) {
 			return this.pyodideByNode.get(nodeId)!;
 		}
 
-		const pyodide = await this.ensureModule();
+		const pyodideModule = await this.ensureModule();
 
-		const messageContext = new MessageContext(nodeId);
+		const patchiesModule = {
+			// Connect Python to the global message context
+			...options.messageContext.getContext()
+		};
 
-		const instance = await pyodide.loadPyodide({
+		const pyodide = await pyodideModule.loadPyodide({
 			env: {
 				PATCHIES_NODE_ID: nodeId
-			},
-			jsglobals: {
-				// Connect Python to the global message context
-				...messageContext.getContext()
 			},
 			stdout: (message: string) => {
 				this.eventBus.dispatch({ type: 'pyodideConsoleOutput', output: 'stdout', message, nodeId });
@@ -44,9 +59,11 @@ export class PyodideSystem {
 			}
 		});
 
-		this.pyodideByNode.set(nodeId, instance);
+		pyodide.registerJsModule(PATCHIES_PACKAGE, patchiesModule);
 
-		return instance;
+		this.pyodideByNode.set(nodeId, pyodide);
+
+		return pyodide;
 	}
 
 	static getInstance() {
