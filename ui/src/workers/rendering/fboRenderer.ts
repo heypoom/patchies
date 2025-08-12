@@ -37,6 +37,9 @@ export class FBORenderer {
 	/** Mapping of nodeID to persistent textures */
 	public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
 
+	/** Mapping of analyzer object's node id -> analysis type -> texture */
+	public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
+
 	/** Mapping of nodeID to pause state */
 	public nodePausedMap: Map<string, boolean> = new Map();
 
@@ -692,32 +695,55 @@ export class FBORenderer {
 		format: AudioAnalysisFormat,
 		array: Uint8Array | Float32Array
 	) {
-		const texture = this.externalTexturesByNode.get(nodeId);
+		if (!this.fftTexturesByAnalyzer.has(nodeId)) {
+			this.fftTexturesByAnalyzer.set(nodeId, new Map());
+		}
+
+		const textureByAnalyzer = this.fftTexturesByAnalyzer.get(nodeId)!;
+		const texture = textureByAnalyzer.get(analysisType);
 
 		const width = array.length;
 		const height = 1;
 
-		const nextTexture = texture
-			? texture({
-					width,
-					height,
-					data: array,
-					format: 'luminance',
-					type: format === 'int' ? 'uint8' : 'float'
-				})
-			: this.regl.texture({
-					width,
-					height,
-					data: array,
-					format: 'luminance',
-					type: format === 'int' ? 'uint8' : 'float',
-					wrapS: 'clamp',
-					wrapT: 'clamp',
-					min: 'nearest',
-					mag: 'nearest'
-				});
+		const shouldCreateNewTexture = !texture || texture.height !== 1;
 
-		this.externalTexturesByNode.set(nodeId, nextTexture);
+		// The existing texture is unsuitable for FFT. We must delete it.
+		if (texture && shouldCreateNewTexture) {
+			texture.destroy();
+		}
+
+		const [texType, texFormat] = [format === 'int' ? 'uint8' : 'float', 'luminance'] as [
+			regl.TextureDataType,
+			regl.TextureFormatType
+		];
+
+		if (shouldCreateNewTexture) {
+			const nextTexture = this.regl.texture({
+				width,
+				height,
+				data: array,
+				format: texFormat,
+				type: texType,
+				wrapS: 'clamp',
+				wrapT: 'clamp',
+				min: 'nearest',
+				mag: 'nearest'
+			});
+
+			textureByAnalyzer.set(analysisType, nextTexture);
+
+			return;
+		}
+
+		const updatedTexture = texture({
+			width,
+			height,
+			data: array,
+			format: texFormat,
+			type: texType
+		});
+
+		textureByAnalyzer.set(analysisType, updatedTexture);
 	}
 
 	/** Send message to nodes */

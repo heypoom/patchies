@@ -23,12 +23,13 @@ export interface AudioAnalysisProps {
 	format?: AudioAnalysisFormat;
 }
 
-export type OnFFTReadyCallback = (
-	nodeId: string,
-	analysisType: AudioAnalysisType,
-	format: AudioAnalysisFormat,
-	array: Uint8Array | Float32Array
-) => void;
+export type OnFFTReadyCallback = (data: {
+	nodeId: string;
+	analysisType: AudioAnalysisType;
+	format: AudioAnalysisFormat;
+	array: Uint8Array | Float32Array;
+	samplers?: string[];
+}) => void;
 
 /** Get FFT object's analysis outlet index */
 function getFFTAnalysisOutletIndex(): number {
@@ -56,6 +57,9 @@ export class AudioAnalysisSystem {
 
 	/** Callback for sending FFT data to workers */
 	public onFFTDataReady: OnFFTReadyCallback | null = null;
+
+	/** Mapping of GLSL nodeId to connected sampler2D uniform inlet names. */
+	private glslSamplers: Map<string, Set<string>> = new Map();
 
 	/** Cache FFT object's analysis outlet index */
 	private fftAnalysisOutletIndex: number;
@@ -113,6 +117,7 @@ export class AudioAnalysisSystem {
 
 	updateEdges(edges: Edge[]) {
 		this.fftConnectionCache.clear();
+		this.glslSamplers.clear();
 
 		for (const edge of edges) {
 			this.setupGlslPolling(edge);
@@ -122,9 +127,12 @@ export class AudioAnalysisSystem {
 	setupGlslPolling(edge: Edge) {
 		const outletId = `outlet-${this.fftAnalysisOutletIndex}`;
 
+		const glslNodeId = edge.target;
+
 		const isSampler2DOutlet =
 			edge.sourceHandle === outletId &&
 			edge.source.startsWith('object-') &&
+			glslNodeId.startsWith('glsl-') &&
 			edge.targetHandle?.includes('video');
 
 		if (!isSampler2DOutlet) return;
@@ -132,14 +140,23 @@ export class AudioAnalysisSystem {
 		const node = this.audioSystem.nodesById.get(edge.source);
 		if (node?.type !== 'fft') return;
 
-		this.fftEnabledNodes.add(edge.target);
+		const inletMatch = edge.targetHandle?.match(/video-in-(\d+)-(\w+)/);
+		if (!inletMatch) return;
 
-		if (!this.requestedFFTFormats.has(edge.target)) {
-			this.requestedFFTFormats.set(edge.target, new Set());
+		const [, glInletName] = inletMatch;
+
+		this.fftEnabledNodes.add(glslNodeId);
+
+		// For now, we only allow 1 sampler2D uniform inlet to be tied to FFT at a time.
+		// We should allow more so it also supports amplitude, for example.
+		this.glslSamplers.set(glslNodeId, new Set([glInletName]));
+
+		if (!this.requestedFFTFormats.has(glslNodeId)) {
+			this.requestedFFTFormats.set(glslNodeId, new Set());
 		}
 
-		// TODO: support amplitude as well!
-		this.requestedFFTFormats.get(edge.target)!.add('waveform-int');
+		// Support only waveform-int for now.
+		this.requestedFFTFormats.get(glslNodeId)!.add('waveform-int');
 
 		this.startFFTPolling();
 	}
@@ -178,6 +195,7 @@ export class AudioAnalysisSystem {
 	disableFFT(nodeId: string) {
 		this.fftEnabledNodes.delete(nodeId);
 		this.requestedFFTFormats.delete(nodeId);
+		this.glslSamplers.delete(nodeId);
 
 		if (this.fftEnabledNodes.size === 0) {
 			this.stopFFTPolling();
@@ -210,21 +228,26 @@ export class AudioAnalysisSystem {
 		}
 	}
 
-	/** Poll FFT data and transfer it to Hydra workers */
+	/** Poll FFT data and transfer it to Hydra and GLSL renderers. */
 	private pollAndTransferFFTData() {
 		if (!this.onFFTDataReady) return;
 
 		for (const nodeId of this.fftEnabledNodes) {
-			const requestedFormats = this.requestedFFTFormats.get(nodeId);
-			if (!requestedFormats || requestedFormats.size === 0) continue;
+			const formats = this.requestedFFTFormats.get(nodeId);
+			if (!formats || formats.size === 0) continue;
 
-			for (const formatKey of requestedFormats) {
+			// The GLSL node's inlet has been disconnected. Do not send FFT data.
+			if (nodeId.startsWith('glsl-') && !this.glslSamplers.has(nodeId)) continue;
+
+			for (const formatKey of formats) {
 				const [type, format] = formatKey.split('-') as [AudioAnalysisType, AudioAnalysisFormat];
-				const data = this.getAnalysisForNode(nodeId, { type, format });
 
-				if (data) {
-					this.onFFTDataReady(nodeId, type, format, data);
-				}
+				const samplers = Array.from(this.glslSamplers.get(nodeId) ?? []);
+
+				const array = this.getAnalysisForNode(nodeId, { type, format });
+				if (array === null) continue;
+
+				this.onFFTDataReady({ nodeId, analysisType: type, format, array, samplers });
 			}
 		}
 	}

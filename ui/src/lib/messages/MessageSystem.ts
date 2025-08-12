@@ -7,6 +7,9 @@ export interface Message<T = unknown> {
 
 	outlet?: number;
 	inlet?: number;
+
+	inletKey?: string;
+	outletKey?: string;
 }
 
 export type MessageCallbackFn = (data: Message['data'], meta: Omit<Message, 'data'>) => void;
@@ -138,18 +141,24 @@ export class MessageSystem {
 			);
 
 			for (const edge of edges) {
-				const outletId = edge.sourceHandle ?? undefined;
-				const inletId = edge.targetHandle ?? undefined;
+				const outletKey = edge.sourceHandle ?? undefined;
+				const inletKey = edge.targetHandle ?? undefined;
 
-				const outlet = getHandleId(outletId);
-				const inlet = getHandleId(inletId);
+				const outlet = getHandleId(outletKey);
+				const inlet = getHandleId(inletKey);
 
 				// do not send message if the outlet mismatches
 				if (typeof options.to === 'number' && outlet !== options.to) {
 					continue;
 				}
 
-				targetQueue.sendMessage({ ...message, outlet, inlet });
+				targetQueue.sendMessage({
+					...message,
+					inlet,
+					inletKey,
+					outlet,
+					outletKey
+				});
 			}
 		}
 	}
