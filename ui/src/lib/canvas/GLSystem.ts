@@ -325,16 +325,13 @@ export class GLSystem {
 	sendFFTDataToWorker: OnFFTReadyCallback = (nodeId, analysisType, format, data) => {
 		const array = format === 'int' ? new Uint8Array(data.buffer) : new Float32Array(data.buffer);
 
-		// Determine node type to send appropriate FFT data
 		const node = this.nodes.find((n) => n.id === nodeId);
 		if (!node) return;
-
-		const nodeType = node.type as 'hydra' | 'glsl';
 
 		this.renderWorker.postMessage(
 			{
 				type: 'setFFTData',
-				nodeType,
+				nodeType: node.type,
 				nodeId,
 				analysisType,
 				format,

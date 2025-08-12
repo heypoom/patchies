@@ -694,26 +694,23 @@ export class FBORenderer {
 	) {
 		const texture = this.externalTexturesByNode.get(nodeId);
 
-		// FFT data is typically 1D, so we create a 1D texture (width = data length, height = 1)
 		const width = array.length;
 		const height = 1;
 
-		// Convert to the appropriate format for WebGL texture
-		const data = format === 'int' ? new Uint8Array(array.buffer) : new Float32Array(array.buffer);
+		console.log(`width=${width},height=${height}`);
 
-		// Either update the existing texture or create a new one (same pattern as setBitmap)
 		const nextTexture = texture
 			? texture({
 					width,
 					height,
-					data,
+					data: array,
 					format: 'rgba',
 					type: format === 'int' ? 'uint8' : 'float'
 				})
 			: this.regl.texture({
 					width,
 					height,
-					data,
+					data: array,
 					format: 'rgba',
 					type: format === 'int' ? 'uint8' : 'float',
 					wrapS: 'clamp',

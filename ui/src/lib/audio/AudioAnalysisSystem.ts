@@ -1,6 +1,8 @@
 import { match } from 'ts-pattern';
 import { AudioSystem } from './AudioSystem';
 import { MessageSystem } from '$lib/messages/MessageSystem';
+import type { Edge } from '@xyflow/svelte';
+import { objectDefinitions } from '$lib/objects/object-definitions';
 
 export type AudioAnalysisType = 'waveform' | 'frequency';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -28,6 +30,13 @@ export type OnFFTReadyCallback = (
 	array: Uint8Array | Float32Array
 ) => void;
 
+/** Get FFT object's analysis outlet index */
+function getFFTAnalysisOutletIndex(): number {
+	const fftDef = objectDefinitions.fft;
+	const index = fftDef.outlets.findIndex((outlet) => outlet.name === 'analysis');
+	return index !== -1 ? index : 1; // fallback to index 1 if not found
+}
+
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
 	private audioSystem = AudioSystem.getInstance();
@@ -47,6 +56,13 @@ export class AudioAnalysisSystem {
 
 	/** Callback for sending FFT data to workers */
 	public onFFTDataReady: OnFFTReadyCallback | null = null;
+
+	/** Cache FFT object's analysis outlet index */
+	private fftAnalysisOutletIndex: number;
+
+	constructor() {
+		this.fftAnalysisOutletIndex = getFFTAnalysisOutletIndex();
+	}
 
 	getAnalysisForNode(
 		callingNodeId: string,
@@ -95,8 +111,37 @@ export class AudioAnalysisSystem {
 			.exhaustive();
 	}
 
-	updateEdges() {
+	updateEdges(edges: Edge[]) {
 		this.fftConnectionCache.clear();
+
+		for (const edge of edges) {
+			this.setupGlslPolling(edge);
+		}
+	}
+
+	setupGlslPolling(edge: Edge) {
+		const outletId = `outlet-${this.fftAnalysisOutletIndex}`;
+
+		const isSampler2DOutlet =
+			edge.sourceHandle === outletId &&
+			edge.source.startsWith('object-') &&
+			edge.targetHandle?.includes('video');
+
+		if (!isSampler2DOutlet) return;
+
+		const node = this.audioSystem.nodesById.get(edge.source);
+		if (node?.type !== 'fft') return;
+
+		this.fftEnabledNodes.add(edge.target);
+
+		if (!this.requestedFFTFormats.has(edge.target)) {
+			this.requestedFFTFormats.set(edge.target, new Set());
+		}
+
+		// TODO: support amplitude as well!
+		this.requestedFFTFormats.get(edge.target)!.add('waveform-int');
+
+		this.startFFTPolling();
 	}
 
 	private getFFTNode(nodeId: string): string | null {
@@ -118,13 +163,12 @@ export class AudioAnalysisSystem {
 			}
 		}
 
-		// Cache the result (including null)
 		this.fftConnectionCache.set(nodeId, fftNodeId);
 
 		return fftNodeId;
 	}
 
-	/** Enable FFT for a Hydra node */
+	/** Enable FFT for a node */
 	enableFFT(nodeId: string) {
 		this.fftEnabledNodes.add(nodeId);
 		this.startFFTPolling();

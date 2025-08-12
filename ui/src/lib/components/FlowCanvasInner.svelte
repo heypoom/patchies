@@ -101,7 +101,7 @@
 		messageSystem.updateEdges(edges);
 		glSystem.updateEdges(edges);
 		audioSystem.updateEdges(edges);
-		audioAnalysisSystem.updateEdges();
+		audioAnalysisSystem.updateEdges(edges);
 	});
 
 	// Handle global keyboard events
@@ -241,6 +241,9 @@
 			connection.sourceHandle?.startsWith('video') ||
 			connection.targetHandle?.startsWith('video')
 		) {
+			// TODO: use proper analysis outlet detection.
+			if (connection.sourceHandle?.includes('outlet-1')) return true;
+
 			return !!(
 				(connection.sourceHandle?.startsWith('video') ||
 					connection.sourceHandle?.startsWith('gl')) &&
@@ -313,7 +316,7 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed right-0 bottom-0 p-2">
+		<div class="fixed bottom-0 right-0 p-2">
 			<ShortcutHelp />
 		</div>
 	{/if}
