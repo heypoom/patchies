@@ -33,15 +33,7 @@ self.onmessage = (event) => {
 		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
 		.with('setFFTData', () =>
 			handleSetFFTData(data.nodeType, data.nodeId, data.analysisType, data.format, data.array)
-		)
-		.with('registerFFTRequest', () => {
-			self.postMessage({
-				type: 'registerFFTRequest',
-				nodeId: data.nodeId,
-				analysisType: data.analysisType,
-				format: data.format
-			});
-		});
+		);
 };
 
 function handleBuildRenderGraph(graph: RenderGraph) {

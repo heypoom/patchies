@@ -179,7 +179,7 @@ export class AudioAnalysisSystem {
 				const data = this.getAnalysisForNode(nodeId, { type, format });
 
 				if (data) {
-					this.onFFTDataReady(nodeId, undefined, type, format, data);
+					this.onFFTDataReady(nodeId, type, format, data);
 				}
 			}
 		}
