@@ -6,8 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-	import type { PyodideAPI } from 'pyodide';
-	import type { PatchiesEvent, PyodideConsoleOutputEvent } from '$lib/eventbus/events';
+	import type { PyodideConsoleOutputEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -27,7 +26,7 @@
 	let messageContext: MessageContext;
 	let pyodideSystem = PyodideSystem.getInstance();
 	let eventBus = PatchiesEventBus.getInstance();
-	let pyodide: PyodideAPI | null = null;
+	let isInitialized = $state(false);
 	let isRunning = $state(false);
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
@@ -63,26 +62,30 @@
 
 		// Initialize pyodide instance
 		try {
-			pyodide = await pyodideSystem.create(nodeId, { messageContext });
+			await pyodideSystem.create(nodeId);
+
+			isInitialized = true;
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,
-				`ERROR: Failed to initialize Python: ${error instanceof Error ? error.message : String(error)}`
+				`ERROR: failed to setup Python: ${error instanceof Error ? error.message : String(error)}`
 			];
 		}
 
 		updateContentWidth();
 	});
 
-	onDestroy(() => {
+	onDestroy(async () => {
 		eventBus.removeEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
 
-		pyodideSystem.delete(nodeId);
+		if (isInitialized) {
+			await pyodideSystem.delete(nodeId);
+		}
 		messageContext?.destroy();
 	});
 
 	async function executeCode() {
-		if (!pyodide || isRunning) return;
+		if (!isInitialized || isRunning) return;
 
 		isRunning = true;
 
@@ -90,19 +93,7 @@
 		consoleOutput = [];
 
 		try {
-			await pyodide.loadPackagesFromImports(code, {
-				checkIntegrity: false,
-				messageCallback: () => {},
-				errorCallback: (errorMessage) => {
-					consoleOutput = [...consoleOutput, `ERROR: ${errorMessage}`];
-				}
-			});
-
-			const result = await pyodide.runPython(code);
-
-			if (result !== undefined) {
-				consoleOutput = [...consoleOutput, String(result)];
-			}
+			await pyodideSystem.executeCode(nodeId, code);
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,
