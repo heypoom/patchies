@@ -60,4 +60,6 @@ export const DEFAULT_SWISSGL_CODE = `function render({t}) {
   })
 }`;
 
-export const DEFAULT_PYTHON_CODE = 'print(5 + 5)';
+export const DEFAULT_PYTHON_CODE = `import numpy as np
+
+np.arange(15).reshape(3, 5)`;

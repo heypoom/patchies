@@ -119,7 +119,7 @@ async function handleExecuteCode(data: { nodeId: string; code: string }) {
 			type: 'consoleOutput',
 			nodeId,
 			output: 'stdout',
-			message: String(result),
+			message: result === undefined ? null : String(result),
 			finished: true
 		});
 	} catch (error) {

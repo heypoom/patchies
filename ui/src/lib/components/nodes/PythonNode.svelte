@@ -47,7 +47,12 @@
 		if (event.nodeId !== nodeId) return;
 
 		const prefix = event.output === 'stderr' ? 'ERROR: ' : '';
-		consoleOutput = [...consoleOutput, `${prefix}${event.message}`];
+
+		const hasNoReturnValue = event.finished && event.message === null;
+
+		if (!hasNoReturnValue) {
+			consoleOutput = [...consoleOutput, `${prefix}${event.message}`];
+		}
 
 		updateContentWidth();
 
