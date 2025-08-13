@@ -7,18 +7,11 @@ export type PyodideWorkerMessage = { id: string; nodeId: string } & (
 	| { type: 'executeCode'; code: string }
 );
 
-export interface PyodideWorkerResponse {
-	type: 'success' | 'error' | 'consoleOutput';
-	id?: string;
-	nodeId?: string;
-	output?: 'stdout' | 'stderr';
-	message?: string;
-	result?: {
-		success?: boolean;
-		result?: string;
-	};
-	error?: string;
-}
+export type PyodideWorkerResponse = { id: string; nodeId: string } & (
+	| { type: 'success' }
+	| { type: 'error'; error: string }
+	| { type: 'consoleOutput'; output: 'stdout' | 'stderr'; message: string }
+);
 
 export class PyodideSystem {
 	private static instance: PyodideSystem | null = null;
@@ -33,19 +26,14 @@ export class PyodideSystem {
 		this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
 	}
 
-	private handleWorkerMessage = (event: MessageEvent<PyodideWorkerResponse>) => {
-		const data = event.data;
-
-		if (data.type === 'consoleOutput' && data.nodeId) {
-			if (data.output && data.message) {
-				this.eventBus.dispatch({
-					type: 'pyodideConsoleOutput',
-					output: data.output,
-					message: data.message,
-					nodeId: data.nodeId
-				});
-			}
-			return;
+	private handleWorkerMessage = ({ data }: MessageEvent<PyodideWorkerResponse>) => {
+		if (data.type === 'consoleOutput' && data.nodeId && data.output && data.message) {
+			this.eventBus.dispatch({
+				type: 'pyodideConsoleOutput',
+				output: data.output,
+				message: data.message,
+				nodeId: data.nodeId
+			});
 		}
 	};
 
