@@ -6,8 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-	import type { PyodideAPI } from 'pyodide';
-	import type { PatchiesEvent, PyodideConsoleOutputEvent } from '$lib/eventbus/events';
+	import type { PyodideConsoleOutputEvent, PyodideSendMessageEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -27,7 +26,7 @@
 	let messageContext: MessageContext;
 	let pyodideSystem = PyodideSystem.getInstance();
 	let eventBus = PatchiesEventBus.getInstance();
-	let pyodide: PyodideAPI | null = null;
+	let isInitialized = $state(false);
 	let isRunning = $state(false);
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
@@ -45,14 +44,23 @@
 	const playIcon = $derived(isRunning ? 'lucide:loader' : 'lucide:play');
 
 	function handlePyodideConsoleOutput(event: PyodideConsoleOutputEvent) {
-		// Ignore events from other Python nodes.
 		if (event.nodeId !== nodeId) return;
 
 		const prefix = event.output === 'stderr' ? 'ERROR: ' : '';
-
 		consoleOutput = [...consoleOutput, `${prefix}${event.message}`];
 
-		setTimeout(() => updateContentWidth(), 10);
+		updateContentWidth();
+
+		// Mark that the run has completed.
+		if (event.finished) {
+			isRunning = false;
+		}
+	}
+
+	function handlePyodideSendMessage(event: PyodideSendMessageEvent) {
+		if (event.nodeId !== nodeId) return;
+
+		messageContext.send(event.data, event.options);
 	}
 
 	onMount(async () => {
@@ -60,29 +68,35 @@
 
 		// Listen for pyodide console output events
 		eventBus.addEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
+		eventBus.addEventListener('pyodideSendMessage', handlePyodideSendMessage);
 
 		// Initialize pyodide instance
 		try {
-			pyodide = await pyodideSystem.create(nodeId, { messageContext });
+			await pyodideSystem.create(nodeId);
+
+			isInitialized = true;
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,
-				`ERROR: Failed to initialize Python: ${error instanceof Error ? error.message : String(error)}`
+				`ERROR: failed to setup Python: ${error instanceof Error ? error.message : String(error)}`
 			];
 		}
 
 		updateContentWidth();
 	});
 
-	onDestroy(() => {
+	onDestroy(async () => {
 		eventBus.removeEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
+		eventBus.removeEventListener('pyodideSendMessage', handlePyodideSendMessage);
 
-		pyodideSystem.delete(nodeId);
+		if (isInitialized) {
+			await pyodideSystem.delete(nodeId);
+		}
 		messageContext?.destroy();
 	});
 
 	async function executeCode() {
-		if (!pyodide || isRunning) return;
+		if (!isInitialized || isRunning) return;
 
 		isRunning = true;
 
@@ -90,25 +104,13 @@
 		consoleOutput = [];
 
 		try {
-			await pyodide.loadPackagesFromImports(code, {
-				checkIntegrity: false,
-				messageCallback: () => {},
-				errorCallback: (errorMessage) => {
-					consoleOutput = [...consoleOutput, `ERROR: ${errorMessage}`];
-				}
-			});
-
-			const result = await pyodide.runPython(code);
-
-			if (result !== undefined) {
-				consoleOutput = [...consoleOutput, String(result)];
-			}
+			await pyodideSystem.executeCode(nodeId, code);
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,
 				`ERROR: ${error instanceof Error ? error.message : String(error)}`
 			];
-		} finally {
+
 			isRunning = false;
 		}
 	}

@@ -1,73 +1,89 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import { MessageContext } from '$lib/messages/MessageContext';
+import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import { match } from 'ts-pattern';
+import PyodideWorker from '../../workers/python/pyodideWorker?worker';
 
-import type { PyodideAPI } from 'pyodide';
+export type PyodideWorkerMessage = { id: string; nodeId: string } & (
+	| { type: 'createInstance' }
+	| { type: 'deleteInstance' }
+	| { type: 'executeCode'; code: string }
+);
 
-/** Name of the Python package to interact with patchies */
-const PATCHIES_PACKAGE = 'patch';
-
-/** Where to load Pyodide packages from? */
-const PYODIDE_PACKAGE_BASE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/';
+export type PyodideWorkerResponse = { id?: string; nodeId: string } & (
+	| { type: 'success' }
+	| { type: 'error'; error: string }
+	| { type: 'consoleOutput'; output: 'stdout' | 'stderr'; message: string }
+	| { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
+);
 
 export class PyodideSystem {
 	private static instance: PyodideSystem | null = null;
 
 	eventBus = PatchiesEventBus.getInstance();
+	private worker: Worker;
+	private lastId = 1;
+	private nodeInstances = new Set<string>();
 
-	pyodideModule: typeof import('pyodide') | null = null;
-	pyodideByNode: Map<string, PyodideAPI> = new Map();
-
-	async ensureModule() {
-		if (this.pyodideModule !== null) return this.pyodideModule;
-
-		this.pyodideModule = await import('pyodide');
-
-		return this.pyodideModule;
+	constructor() {
+		this.worker = new PyodideWorker();
+		this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
 	}
 
-	get(nodeId: string): PyodideAPI | undefined {
-		return this.pyodideByNode.get(nodeId);
+	/** Routes the events to the Svelte component via an event bus. */
+	private handleWorkerMessage = ({ data }: MessageEvent<PyodideWorkerResponse>) => {
+		match(data)
+			.with({ type: 'consoleOutput' }, (event) => {
+				this.eventBus.dispatch({ ...event, type: 'pyodideConsoleOutput' });
+			})
+			.with({ type: 'sendMessage' }, (event) => {
+				this.eventBus.dispatch({ ...event, type: 'pyodideSendMessage' });
+			});
+	};
+
+	private send<T extends PyodideWorkerMessage['type']>(
+		type: T,
+		payload: Omit<Extract<PyodideWorkerMessage, { type: T }>, 'type' | 'id'>
+	) {
+		const id = this.getId();
+
+		this.worker.postMessage({
+			type,
+			id,
+			...payload
+		});
 	}
 
-	// TODO: cleanup pyodide properly...
-	delete(nodeId: string): void {
-		const pyodide = this.pyodideByNode.get(nodeId);
-		pyodide?.unregisterJsModule(PATCHIES_PACKAGE);
-
-		this.pyodideByNode.delete(nodeId);
+	private getId(): string {
+		return String(this.lastId++);
 	}
 
-	async create(nodeId: string, options: { messageContext: MessageContext }): Promise<PyodideAPI> {
-		// If we already have this node created
-		if (this.pyodideByNode.has(nodeId)) {
-			return this.pyodideByNode.get(nodeId)!;
+	has(nodeId: string): boolean {
+		return this.nodeInstances.has(nodeId);
+	}
+
+	async delete(nodeId: string): Promise<void> {
+		if (!this.nodeInstances.has(nodeId)) return;
+
+		await this.send('deleteInstance', { nodeId });
+		this.nodeInstances.delete(nodeId);
+	}
+
+	async create(nodeId: string): Promise<void> {
+		if (this.nodeInstances.has(nodeId)) {
+			return;
 		}
 
-		const pyodideModule = await this.ensureModule();
+		await this.send('createInstance', { nodeId });
 
-		const patchiesModule = {
-			// Connect Python to the global message context
-			...options.messageContext.getContext()
-		};
+		this.nodeInstances.add(nodeId);
+	}
 
-		const pyodide = await pyodideModule.loadPyodide({
-			packageBaseUrl: PYODIDE_PACKAGE_BASE_URL,
-			env: {
-				PATCHIES_NODE_ID: nodeId
-			},
-			stdout: (message: string) => {
-				this.eventBus.dispatch({ type: 'pyodideConsoleOutput', output: 'stdout', message, nodeId });
-			},
-			stderr: (message: string) => {
-				this.eventBus.dispatch({ type: 'pyodideConsoleOutput', output: 'stderr', message, nodeId });
-			}
-		});
+	async executeCode(nodeId: string, code: string) {
+		if (!this.nodeInstances.has(nodeId)) {
+			throw new Error(`No Pyodide instance found for node ${nodeId}`);
+		}
 
-		pyodide.registerJsModule(PATCHIES_PACKAGE, patchiesModule);
-
-		this.pyodideByNode.set(nodeId, pyodide);
-
-		return pyodide;
+		await this.send('executeCode', { nodeId, code });
 	}
 
 	static getInstance() {
