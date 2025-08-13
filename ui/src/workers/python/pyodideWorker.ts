@@ -1,10 +1,10 @@
 import { match } from 'ts-pattern';
-import { loadPyodide, type PyodideAPI } from 'pyodide';
+import { loadPyodide, type PyodideAPI, version as pyodideVersion } from 'pyodide';
 import type { PyodideWorkerMessage } from '$lib/python/PyodideSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 
 /** Where to load Pyodide packages from? */
-const PYODIDE_PACKAGE_BASE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/';
+const PYODIDE_PACKAGE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`;
 
 /** Name of the Python package to interact with patchies */
 const PATCHIES_PACKAGE = 'patch';
@@ -60,6 +60,9 @@ async function handleCreateInstance(data: { nodeId: string }) {
 			});
 		}
 	});
+
+	const canvas = new OffscreenCanvas(200, 200);
+	pyodide.canvas.setCanvas2D(canvas as unknown as HTMLCanvasElement);
 
 	const patchiesModule = {
 		send(data: unknown, options?: SendMessageOptions) {
