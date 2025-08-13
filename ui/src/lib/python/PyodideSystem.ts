@@ -1,4 +1,6 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import { match } from 'ts-pattern';
 import PyodideWorker from '../../workers/python/pyodideWorker?worker';
 
 export type PyodideWorkerMessage = { id: string; nodeId: string } & (
@@ -7,10 +9,11 @@ export type PyodideWorkerMessage = { id: string; nodeId: string } & (
 	| { type: 'executeCode'; code: string }
 );
 
-export type PyodideWorkerResponse = { id: string; nodeId: string } & (
+export type PyodideWorkerResponse = { id?: string; nodeId: string } & (
 	| { type: 'success' }
 	| { type: 'error'; error: string }
 	| { type: 'consoleOutput'; output: 'stdout' | 'stderr'; message: string }
+	| { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
 );
 
 export class PyodideSystem {
@@ -26,15 +29,15 @@ export class PyodideSystem {
 		this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
 	}
 
+	/** Routes the events to the Svelte component via an event bus. */
 	private handleWorkerMessage = ({ data }: MessageEvent<PyodideWorkerResponse>) => {
-		if (data.type === 'consoleOutput' && data.nodeId && data.output && data.message) {
-			this.eventBus.dispatch({
-				type: 'pyodideConsoleOutput',
-				output: data.output,
-				message: data.message,
-				nodeId: data.nodeId
+		match(data)
+			.with({ type: 'consoleOutput' }, (event) => {
+				this.eventBus.dispatch({ ...event, type: 'pyodideConsoleOutput' });
+			})
+			.with({ type: 'sendMessage' }, (event) => {
+				this.eventBus.dispatch({ ...event, type: 'pyodideSendMessage' });
 			});
-		}
 	};
 
 	private send<T extends PyodideWorkerMessage['type']>(

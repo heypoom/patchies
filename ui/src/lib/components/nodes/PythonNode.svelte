@@ -6,7 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-	import type { PyodideConsoleOutputEvent } from '$lib/eventbus/events';
+	import type { PyodideConsoleOutputEvent, PyodideSendMessageEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -44,14 +44,23 @@
 	const playIcon = $derived(isRunning ? 'lucide:loader' : 'lucide:play');
 
 	function handlePyodideConsoleOutput(event: PyodideConsoleOutputEvent) {
-		// Ignore events from other Python nodes.
 		if (event.nodeId !== nodeId) return;
 
 		const prefix = event.output === 'stderr' ? 'ERROR: ' : '';
-
 		consoleOutput = [...consoleOutput, `${prefix}${event.message}`];
 
-		setTimeout(() => updateContentWidth(), 10);
+		updateContentWidth();
+
+		// Mark that the run has completed.
+		if (event.finished) {
+			isRunning = false;
+		}
+	}
+
+	function handlePyodideSendMessage(event: PyodideSendMessageEvent) {
+		if (event.nodeId !== nodeId) return;
+
+		messageContext.send(event.data, event.options);
 	}
 
 	onMount(async () => {
@@ -59,6 +68,7 @@
 
 		// Listen for pyodide console output events
 		eventBus.addEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
+		eventBus.addEventListener('pyodideSendMessage', handlePyodideSendMessage);
 
 		// Initialize pyodide instance
 		try {
@@ -77,6 +87,7 @@
 
 	onDestroy(async () => {
 		eventBus.removeEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
+		eventBus.removeEventListener('pyodideSendMessage', handlePyodideSendMessage);
 
 		if (isInitialized) {
 			await pyodideSystem.delete(nodeId);
@@ -99,7 +110,7 @@
 				...consoleOutput,
 				`ERROR: ${error instanceof Error ? error.message : String(error)}`
 			];
-		} finally {
+
 			isRunning = false;
 		}
 	}

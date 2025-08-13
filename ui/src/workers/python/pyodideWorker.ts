@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import { loadPyodide, type PyodideAPI } from 'pyodide';
 import type { PyodideWorkerMessage } from '$lib/python/PyodideSystem';
+import type { SendMessageOptions } from '$lib/messages/MessageContext';
 
 /** Where to load Pyodide packages from? */
 const PYODIDE_PACKAGE_BASE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/';
@@ -60,7 +61,18 @@ async function handleCreateInstance(data: { nodeId: string }) {
 		}
 	});
 
-	// pyodide.registerJsModule(PATCHIES_PACKAGE, patchiesModule);
+	const patchiesModule = {
+		send(data: unknown, options?: SendMessageOptions) {
+			self.postMessage({
+				type: 'sendMessage',
+				data,
+				options,
+				nodeId
+			});
+		}
+	};
+
+	pyodide.registerJsModule(PATCHIES_PACKAGE, patchiesModule);
 
 	pyodideByNode.set(nodeId, pyodide);
 
@@ -107,14 +119,16 @@ async function handleExecuteCode(data: { nodeId: string; code: string }) {
 			type: 'consoleOutput',
 			nodeId,
 			output: 'stdout',
-			message: String(result)
+			message: String(result),
+			finished: true
 		});
 	} catch (error) {
 		self.postMessage({
 			type: 'consoleOutput',
 			nodeId,
 			output: 'stderr',
-			message: String(error)
+			message: String(error),
+			finished: true
 		});
 	}
 }
