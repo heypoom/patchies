@@ -39,6 +39,7 @@ async function handleCreateInstance(data: { nodeId: string }) {
 	}
 
 	const pyodide = await loadPyodide({
+		indexURL: '/assets',
 		packageBaseUrl: PYODIDE_PACKAGE_BASE_URL,
 		env: {
 			PATCHIES_NODE_ID: nodeId
