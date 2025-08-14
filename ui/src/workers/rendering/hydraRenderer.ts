@@ -73,7 +73,10 @@ export class HydraRenderer {
 			// We do the tick ourselves
 			if (this.sourceToParamIndexMap[sourceIndex] !== null) {
 				const paramIndex = this.sourceToParamIndexMap[sourceIndex];
+
 				const param = params.userParams[paramIndex] as regl.Texture2D;
+
+				if (!param) return;
 
 				// Check if the param is a regl texture
 				if (param.name === 'reglTexture2D') {
