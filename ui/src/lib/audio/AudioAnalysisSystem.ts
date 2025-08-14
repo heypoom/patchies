@@ -54,7 +54,7 @@ export type GlslFFTInletMeta = {
 	uniformName: string;
 };
 
-const FREQUENCY_UNIFORM_NAME = 'freqTexture';
+const WAVEFORM_UNIFORM_NAME = 'waveTexture';
 
 /** Get FFT object's analysis outlet index */
 function getFFTAnalysisOutletIndex(): number {
@@ -177,10 +177,9 @@ export class AudioAnalysisSystem {
 			this.glslInlets.set(glslNodeId, []);
 		}
 
-		// If the uniform name is equal to 'freqTexture' we give it the frequency analysis.
-		// Otherwise, we give it the waveform analysis.
-		const analysisType: AudioAnalysisType =
-			uniformName === FREQUENCY_UNIFORM_NAME ? 'freq' : 'wave';
+		// Do frequency analysis by default.
+		// If the uniform name is set as "waveTexture" then we do time-domain analysis.
+		const analysisType: AudioAnalysisType = uniformName === WAVEFORM_UNIFORM_NAME ? 'wave' : 'freq';
 
 		this.glslInlets.get(glslNodeId)?.push({
 			analyzerNodeId,
