@@ -7,7 +7,7 @@ import arrayUtils from 'hydra-ts/src/lib/array-utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 
-type AudioAnalysisType = 'waveform' | 'frequency';
+type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
 type AudioAnalysisProps = {
 	id?: string;
@@ -242,7 +242,7 @@ export class HydraRenderer {
 
 	createFFTFunction() {
 		return (options: AudioAnalysisProps = {}) => {
-			const { type = 'waveform', format = 'int' } = options;
+			const { type = 'wave', format = 'int' } = options;
 			const { nodeId } = this.config;
 
 			const cacheKey = `${type}-${format}`;

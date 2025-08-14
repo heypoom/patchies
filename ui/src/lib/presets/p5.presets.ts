@@ -75,7 +75,7 @@ function draw() {
   noStroke();
   
   const waveform = fft()
-  const spectrum = fft({type: 'frequency'})
+  const spectrum = fft({type: 'freq'})
   if (!waveform || !spectrum) return
   
   const sl = spectrum.length / 5
@@ -106,7 +106,7 @@ function draw() {
   clear()
   
   const waveform = fft()
-  const spectrum = fft({type: 'frequency'})
+  const spectrum = fft({type: 'freq'})
   if (!waveform || !spectrum) return
   
   const sl = spectrum.length / 5

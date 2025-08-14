@@ -4,7 +4,7 @@ import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
 import { objectDefinitions } from '$lib/objects/object-definitions';
 
-export type AudioAnalysisType = 'waveform' | 'frequency';
+export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
 export type AudioAnalysisValue = Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer>;
 
@@ -54,6 +54,8 @@ export type GlslFFTInletMeta = {
 	uniformName: string;
 };
 
+const FREQUENCY_UNIFORM_NAME = 'freqTexture';
+
 /** Get FFT object's analysis outlet index */
 function getFFTAnalysisOutletIndex(): number {
 	const fftDef = objectDefinitions.fft;
@@ -93,7 +95,7 @@ export class AudioAnalysisSystem {
 
 	getAnalysisForNode(
 		consumerNodeId: string,
-		{ id, type = 'waveform', format = 'int' }: AudioAnalysisProps = {}
+		{ id, type = 'wave', format = 'int' }: AudioAnalysisProps = {}
 	): AudioAnalysisValue | null {
 		// If the user passes an explicit analyzer node id, use that.
 		let analyzerNodeId = id;
@@ -115,22 +117,22 @@ export class AudioAnalysisSystem {
 		const { node } = state;
 
 		return match([type, format])
-			.with(['waveform', 'int'], () => {
+			.with(['wave', 'int'], () => {
 				const list = new Uint8Array(node.fftSize);
 				node.getByteTimeDomainData(list);
 				return list;
 			})
-			.with(['waveform', 'float'], () => {
+			.with(['wave', 'float'], () => {
 				const list = new Float32Array(node.fftSize);
 				node.getFloatTimeDomainData(list);
 				return list;
 			})
-			.with(['frequency', 'int'], () => {
+			.with(['freq', 'int'], () => {
 				const list = new Uint8Array(node.fftSize);
 				node.getByteFrequencyData(list);
 				return list;
 			})
-			.with(['frequency', 'float'], () => {
+			.with(['freq', 'float'], () => {
 				const list = new Float32Array(node.fftSize);
 				node.getFloatFrequencyData(list);
 				return list;
@@ -175,9 +177,14 @@ export class AudioAnalysisSystem {
 			this.glslInlets.set(glslNodeId, []);
 		}
 
+		// If the uniform name is equal to 'freqTexture' we give it the frequency analysis.
+		// Otherwise, we give it the waveform analysis.
+		const analysisType: AudioAnalysisType =
+			uniformName === FREQUENCY_UNIFORM_NAME ? 'freq' : 'wave';
+
 		this.glslInlets.get(glslNodeId)?.push({
 			analyzerNodeId,
-			analysisType: 'waveform',
+			analysisType,
 			inletIndex: parseInt(inletIndex),
 			uniformName
 		});
@@ -186,8 +193,7 @@ export class AudioAnalysisSystem {
 			this.requestedFFTFormats.set(glslNodeId, new Set());
 		}
 
-		// Support only waveform-int for now.
-		this.requestedFFTFormats.get(glslNodeId)!.add('waveform-int');
+		this.requestedFFTFormats.get(glslNodeId)!.add(analysisType + '-int');
 
 		this.startFFTPolling();
 	}
