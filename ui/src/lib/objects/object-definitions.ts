@@ -209,7 +209,13 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	},
 
 	mic: {
-		inlets: [],
+		inlets: [
+			{
+				name: 'message',
+				type: 'message',
+				description: 'Control messages. Bang to restart.'
+			}
+		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Microphone audio output' }],
 		description: 'Captures audio from microphone',
 		tags: ['audio']

@@ -159,31 +159,13 @@ export class AudioSystem {
 	}
 
 	async createMic(nodeId: string) {
-		try {
-			const gainNode = this.audioContext.createGain();
+		const node = this.audioContext.createGain();
+		this.nodesById.set(nodeId, { type: 'mic', node });
 
-			const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-			const mediaStreamSource = this.audioContext.createMediaStreamSource(mediaStream);
-
-			mediaStreamSource.connect(gainNode);
-
-			this.nodesById.set(nodeId, {
-				type: 'mic',
-				node: gainNode,
-				mediaStream,
-				mediaStreamSource
-			});
-		} catch (error) {
-			console.error('Failed to create microphone node:', error);
-
-			// Create a silent gain node as fallback
-			const gainNode = this.audioContext.createGain();
-			gainNode.gain.value = 0;
-			this.nodesById.set(nodeId, { type: 'mic', node: gainNode });
-		}
+		this.restartMic(nodeId);
 	}
 
-	setParameter(nodeId: string, key: string, value: unknown) {
+	handleAudioMessage(nodeId: string, key: string, value: unknown) {
 		// TimeScheduler handles scheduled messages.
 		if (isScheduledMessage(value)) {
 			const audioParam = this.getAudioParam(nodeId, key);
@@ -196,10 +178,8 @@ export class AudioSystem {
 		const state = this.nodesById.get(nodeId);
 		if (!state) return;
 
-		match(state.type)
-			.with('osc', () => {
-				const node = state.node as OscillatorNode;
-
+		match(state)
+			.with({ type: 'osc' }, ({ node }) => {
 				match([key, value])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
@@ -211,11 +191,14 @@ export class AudioSystem {
 						node.type = type as OscillatorType;
 					});
 			})
-			.with('gain', () => {
-				const node = state.node as GainNode;
-
+			.with({ type: 'gain' }, ({ node }) => {
 				match([key, value]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
+				});
+			})
+			.with({ type: 'mic' }, () => {
+				match(value).with({ type: 'bang' }, () => {
+					this.restartMic(nodeId);
 				});
 			});
 	}
@@ -248,6 +231,38 @@ export class AudioSystem {
 		}
 
 		this.nodesById.delete(nodeId);
+	}
+
+	async restartMic(nodeId: string) {
+		const mic = this.nodesById.get(nodeId);
+		if (!mic || mic.type !== 'mic') return;
+
+		// Clean up existing mic resources
+		if (mic.mediaStreamSource) {
+			mic.mediaStreamSource.disconnect();
+		}
+
+		if (mic.mediaStream) {
+			mic.mediaStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+		}
+
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+			const streamSource = this.audioContext.createMediaStreamSource(stream);
+
+			streamSource.connect(mic.node);
+
+			// Update the entry with new stream resources
+			Object.assign(mic, {
+				mediaStream: stream,
+				mediaStreamSource: streamSource
+			});
+
+			this.nodesById.set(nodeId, mic);
+		} catch (error) {
+			console.error('Failed to restart microphone:', error);
+		}
 	}
 
 	static getInstance(): AudioSystem {
