@@ -144,7 +144,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={() => {
 							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
@@ -155,7 +155,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -166,7 +166,7 @@
 
 			<div class="relative">
 				<div>
-					<Handle type="target" position={Position.Top} title="Input" class="z-1 top-0" />
+					<Handle type="target" position={Position.Top} title="Input" class="top-0 z-1" />
 				</div>
 
 				{#if data.showConsole}
@@ -212,7 +212,7 @@
 							class="nodrag h-32 max-w-[280px] cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 						>
 							{#if consoleOutput.length === 0}
-								<div class="italic text-zinc-500">Run your Python code to see results.</div>
+								<div class="text-zinc-500 italic">Run your Python code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
 									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
@@ -238,7 +238,7 @@
 				{/if}
 
 				<div>
-					<Handle type="source" position={Position.Bottom} title="Output" class="z-1 bottom-0" />
+					<Handle type="source" position={Position.Bottom} title="Output" class="bottom-0 z-1" />
 				</div>
 			</div>
 		</div>

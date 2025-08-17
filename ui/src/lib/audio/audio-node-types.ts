@@ -36,6 +36,13 @@ interface PsAnalyzer extends PsBase {
 	node: AnalyserNode;
 }
 
-export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer;
+interface PsMic extends PsBase {
+	type: 'mic';
+	node: GainNode;
+	mediaStream?: MediaStream;
+	mediaStreamSource?: MediaStreamAudioSourceNode;
+}
+
+export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer | PsMic;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

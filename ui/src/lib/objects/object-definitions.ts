@@ -206,6 +206,13 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'message', description: 'ADSR envelope message' }],
 		description: 'ADSR envelope generator with trigger and parameter control inlets',
 		tags: ['envelope']
+	},
+
+	mic: {
+		inlets: [],
+		outlets: [{ name: 'out', type: 'signal', description: 'Microphone audio output' }],
+		description: 'Captures audio from microphone',
+		tags: ['audio']
 	}
 };
 

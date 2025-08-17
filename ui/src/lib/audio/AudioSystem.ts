@@ -121,7 +121,8 @@ export class AudioSystem {
 			.with('gain', () => this.createGain(nodeId, params))
 			.with('dac', () => this.createDac(nodeId))
 			.with('fft', () => this.createAnalyzer(nodeId, params))
-			.with('+~', () => this.createAdd(nodeId));
+			.with('+~', () => this.createAdd(nodeId))
+			.with('mic', () => this.createMic(nodeId));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -155,6 +156,31 @@ export class AudioSystem {
 		addNode.gain.value = 1.0;
 
 		this.nodesById.set(nodeId, { type: '+~', node: addNode });
+	}
+
+	async createMic(nodeId: string) {
+		try {
+			const gainNode = this.audioContext.createGain();
+
+			const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			const mediaStreamSource = this.audioContext.createMediaStreamSource(mediaStream);
+
+			mediaStreamSource.connect(gainNode);
+
+			this.nodesById.set(nodeId, {
+				type: 'mic',
+				node: gainNode,
+				mediaStream,
+				mediaStreamSource
+			});
+		} catch (error) {
+			console.error('Failed to create microphone node:', error);
+
+			// Create a silent gain node as fallback
+			const gainNode = this.audioContext.createGain();
+			gainNode.gain.value = 0;
+			this.nodesById.set(nodeId, { type: 'mic', node: gainNode });
+		}
 	}
 
 	setParameter(nodeId: string, key: string, value: unknown) {
@@ -199,13 +225,24 @@ export class AudioSystem {
 		const entry = this.nodesById.get(nodeId);
 
 		if (entry) {
-			if (entry.type === 'osc') {
-				try {
-					(entry.node as OscillatorNode).stop();
-				} catch (error) {
-					console.log(`osc ${nodeId} was already stopped:`, error);
-				}
-			}
+			match(entry)
+				.with({ type: 'osc' }, (osc) => {
+					try {
+						osc.node.stop();
+					} catch (error) {
+						console.log(`osc ${nodeId} was already stopped:`, error);
+					}
+				})
+				.with({ type: 'mic' }, (mic) => {
+					if (mic.mediaStreamSource) {
+						mic.mediaStreamSource.disconnect();
+					}
+
+					if (mic.mediaStream) {
+						mic.mediaStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+					}
+				})
+				.otherwise(() => {});
 
 			entry.node.disconnect();
 		}
