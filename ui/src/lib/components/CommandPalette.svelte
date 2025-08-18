@@ -310,6 +310,8 @@
 			);
 
 			AudioSystem.getInstance().audioContext.resume();
+
+			patchName = patchSave.name || 'Untitled';
 		} catch (error) {
 			console.error('Error deserializing patch data:', error);
 			throw error;
