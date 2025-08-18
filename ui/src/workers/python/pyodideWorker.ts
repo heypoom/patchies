@@ -1,10 +1,7 @@
 import { match } from 'ts-pattern';
-import { loadPyodide, type PyodideAPI, version as pyodideVersion } from 'pyodide';
+import type { PyodideAPI } from 'pyodide';
 import type { PyodideWorkerMessage } from '$lib/python/PyodideSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
-
-/** Where to load Pyodide packages from? */
-const PYODIDE_PACKAGE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`;
 
 /** Name of the Python package to interact with patchies */
 const PATCHIES_PACKAGE = 'patch';
@@ -37,6 +34,11 @@ async function handleCreateInstance(data: { nodeId: string }) {
 	if (pyodideByNode.has(nodeId)) {
 		return { success: true };
 	}
+
+	const { loadPyodide, version } = await import('pyodide');
+
+	/** Where to load Pyodide packages from? */
+	const PYODIDE_PACKAGE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${version}/full/`;
 
 	const pyodide = await loadPyodide({
 		indexURL: '/assets',
