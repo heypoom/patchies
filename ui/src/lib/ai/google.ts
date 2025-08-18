@@ -1,6 +1,6 @@
-import { type GLPreviewFrameCapturedEvent } from '$lib/eventbus/PatchiesEventBus';
 import { GLSystem } from '$lib/canvas/GLSystem';
-import { GoogleGenAI, PersonGeneration, type ContentListUnion } from '@google/genai';
+import type { GLPreviewFrameCapturedEvent } from '$lib/eventbus/events';
+import type { ContentListUnion } from '@google/genai';
 
 export async function generateImageWithGemini(
 	prompt: string,
@@ -10,6 +10,7 @@ export async function generateImageWithGemini(
 		abortSignal
 	}: { aspectRatio: string; apiKey: string; abortSignal?: AbortSignal }
 ): Promise<ImageBitmap | null> {
+	const { GoogleGenAI, PersonGeneration } = await import('@google/genai');
 	const ai = new GoogleGenAI({ apiKey });
 
 	const response = await ai.models.generateImages({
@@ -56,6 +57,7 @@ export function createLLMFunction() {
 			throw new Error('API key is not set. Please set it in the settings.');
 		}
 
+		const { GoogleGenAI } = await import('@google/genai');
 		const ai = new GoogleGenAI({ apiKey });
 		const contents: ContentListUnion = [];
 

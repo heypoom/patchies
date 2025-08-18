@@ -157,7 +157,7 @@
 				}}
 				language="plain"
 				placeholder="Write your prompt here..."
-				class="nodrag h-64 w-full max-w-[350px] resize-none"
+				class="nodrag w-full min-w-[230px] resize-none"
 				onrun={generateImage}
 				extraExtensions={[EditorView.lineWrapping]}
 			/>

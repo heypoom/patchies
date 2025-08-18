@@ -1,6 +1,6 @@
 import { AudioSystem } from '$lib/audio/AudioSystem';
-import { GoogleGenAI } from '@google/genai';
 import type {
+	GoogleGenAI,
 	AudioChunk,
 	LiveMusicSession,
 	LiveMusicServerMessage,
@@ -38,14 +38,7 @@ export class LiveMusicManager {
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
 
-		const apiKey = this.apiKey;
-		if (!apiKey) return;
-
 		this.setupGainNode();
-
-		if (!this.ai) {
-			this.ai = new GoogleGenAI({ apiKey, apiVersion: 'v1alpha' });
-		}
 	}
 
 	get apiKey() {
@@ -87,9 +80,14 @@ export class LiveMusicManager {
 	}
 
 	private async connect(): Promise<LiveMusicSession> {
-		if (!this.ai) {
-			throw new Error('Lyria AI not initialized');
+		const apiKey = this.apiKey;
+		if (!apiKey) {
+			throw new Error('API key is not set. Please set it in the settings.');
 		}
+
+		const { GoogleGenAI } = await import('@google/genai');
+
+		this.ai = new GoogleGenAI({ apiKey, apiVersion: 'v1alpha' });
 
 		this.sessionPromise = this.ai.live.music.connect({
 			model: 'lyria-realtime-exp',
