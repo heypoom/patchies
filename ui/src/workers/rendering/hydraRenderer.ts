@@ -1,11 +1,11 @@
-import { Hydra, generators } from 'hydra-ts';
-import regl from 'regl';
+import type { Hydra } from 'hydra-ts';
+import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
-import arrayUtils from 'hydra-ts/src/lib/array-utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
+import { LibraryLoader } from '$lib/lazyload/LibraryLoader';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -15,9 +15,6 @@ type AudioAnalysisProps = {
 	format?: AudioAnalysisFormat;
 };
 
-// Initialize hydra array utilities.
-arrayUtils.init();
-
 export interface HydraConfig {
 	code: string;
 	nodeId: string;
@@ -25,10 +22,13 @@ export interface HydraConfig {
 
 export class HydraRenderer {
 	public config: HydraConfig;
-	public hydra: Hydra;
 	public renderer: FBORenderer;
 	public precision: 'highp' | 'mediump' = 'highp';
+
+	public hydra: Hydra | null = null;
 	public framebuffer: regl.Framebuffer2D | null = null;
+
+	static libraryLoader = LibraryLoader.getInstance();
 
 	public onMessage: MessageCallbackFn = () => {};
 
@@ -41,28 +41,43 @@ export class HydraRenderer {
 	private fftRequestCache = new Map<string, boolean>();
 	private fftDataCache = new Map<string, { data: Uint8Array | Float32Array; timestamp: number }>();
 
-	constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
+	private constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
 		this.framebuffer = framebuffer;
 		this.renderer = renderer;
+	}
 
-		const [width, height] = this.renderer.outputSize;
+	static async create(
+		config: HydraConfig,
+		framebuffer: regl.Framebuffer2D,
+		renderer: FBORenderer
+	): Promise<HydraRenderer> {
+		const hydraModule = await this.libraryLoader.ensureModule('hydra-ts');
+		const arrayUtils = await import('hydra-ts/src/lib/array-utils');
 
-		// Initialize Hydra in non-global mode
-		this.hydra = new Hydra({
+		arrayUtils.default.init();
+
+		const instance = new HydraRenderer(config, framebuffer, renderer);
+
+		const [width, height] = instance.renderer.outputSize;
+
+		instance.hydra = new hydraModule.Hydra({
 			// @ts-expect-error -- regl version mismatch, but should still work!
-			regl: this.renderer.regl,
+			regl: instance.renderer.regl,
 			width,
 			height,
 			numSources: 4,
 			numOutputs: 4,
-			precision: this.precision
+			precision: instance.precision
 		});
 
-		this.updateCode();
+		await instance.updateCode();
+		return instance;
 	}
 
 	renderFrame(params: RenderParams) {
+		if (!this.hydra) return;
+
 		const time = performance.now();
 		const deltaTime = time - this.timestamp;
 
@@ -70,6 +85,8 @@ export class HydraRenderer {
 		this.hydra.timeSinceLastUpdate += deltaTime;
 
 		this.hydra.sources.forEach((source, sourceIndex) => {
+			if (!this.hydra) return;
+
 			// We do the tick ourselves
 			if (this.sourceToParamIndexMap[sourceIndex] !== null) {
 				const paramIndex = this.sourceToParamIndexMap[sourceIndex];
@@ -90,6 +107,8 @@ export class HydraRenderer {
 		});
 
 		this.hydra.outputs.forEach((output) => {
+			if (!this.hydra) return;
+
 			output.tick(this.hydra.synth);
 		});
 
@@ -127,7 +146,9 @@ export class HydraRenderer {
 		this.timestamp = time;
 	}
 
-	public updateCode() {
+	public async updateCode() {
+		if (!this.hydra) return;
+
 		this.sourceToParamIndexMap = [null, null, null, null];
 
 		this.isFFTEnabled = false;
@@ -135,6 +156,8 @@ export class HydraRenderer {
 		this.fftRequestCache.clear();
 
 		try {
+			const { generators } = await HydraRenderer.libraryLoader.ensureModule('hydra-ts');
+
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
 			const { sources, outputs, hush, render } = this.hydra;
 
@@ -205,11 +228,15 @@ export class HydraRenderer {
 	}
 
 	stop() {
+		if (!this.hydra) return;
+
 		this.hydra.hush();
 		for (const source of this.hydra.sources) source.clear();
 	}
 
 	destroy() {
+		if (!this.hydra) return;
+
 		this.stop();
 
 		// Destroy all sources and outputs
