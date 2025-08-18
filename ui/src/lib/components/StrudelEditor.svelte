@@ -5,7 +5,6 @@
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { LibraryLoader } from '$lib/lazyload/LibraryLoader';
 
 	let {
 		code = '',
@@ -30,7 +29,6 @@
 	let containerElement: HTMLElement;
 	let editor: any | null = null;
 	let audioSystem = AudioSystem.getInstance();
-	let libraryLoader = LibraryLoader.getInstance();
 
 	const hap2value = (hap: any) => {
 		hap.ensureObjectValue();
@@ -40,13 +38,13 @@
 	onMount(async () => {
 		// Load all required Strudel modules
 		const [strudelCore, strudelDraw, strudelTranspiler, strudelWebaudio, strudelCodemirror] =
-			await libraryLoader.ensureModules(
-				'@strudel/core',
-				'@strudel/draw',
-				'@strudel/transpiler',
-				'@strudel/webaudio',
-				'@strudel/codemirror'
-			);
+			await Promise.all([
+				import('@strudel/core'),
+				import('@strudel/draw'),
+				import('@strudel/transpiler'),
+				import('@strudel/webaudio'),
+				import('@strudel/codemirror')
+			]);
 
 		const { silence, evalScope } = strudelCore;
 		const { getDrawContext } = strudelDraw;

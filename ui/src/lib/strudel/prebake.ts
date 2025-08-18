@@ -1,8 +1,4 @@
-import { LibraryLoader } from '$lib/lazyload/LibraryLoader';
-
 export async function prebake() {
-	const libraryLoader = LibraryLoader.getInstance();
-
 	// Load all required modules
 	const [
 		strudelCore,
@@ -14,17 +10,17 @@ export async function prebake() {
 		strudelHydra,
 		strudelSoundfonts,
 		strudelMidi
-	] = await libraryLoader.ensureModules(
-		'@strudel/core',
-		'@strudel/draw',
-		'@strudel/mini',
-		'@strudel/tonal',
-		'@strudel/webaudio',
-		'@strudel/codemirror',
-		'@strudel/hydra',
-		'@strudel/soundfonts',
-		'@strudel/midi'
-	);
+	] = await Promise.all([
+		import('@strudel/core'),
+		import('@strudel/draw'),
+		import('@strudel/mini'),
+		import('@strudel/tonal'),
+		import('@strudel/webaudio'),
+		import('@strudel/codemirror'),
+		import('@strudel/hydra'),
+		import('@strudel/soundfonts'),
+		import('@strudel/midi')
+	]);
 
 	const { evalScope } = strudelCore;
 	const { aliasBank, registerSynthSounds, registerZZFXSounds, samples } = strudelWebaudio;

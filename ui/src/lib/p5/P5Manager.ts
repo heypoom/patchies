@@ -1,7 +1,6 @@
 import type Sketch from 'p5';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { UserFnRunContext } from '$lib/messages/MessageContext';
-import { LibraryLoader } from '$lib/lazyload/LibraryLoader';
 
 interface P5SketchConfig {
 	code: string;
@@ -19,7 +18,6 @@ export class P5Manager {
 	public shouldSendBitmap = true;
 
 	private container: HTMLElement | null = null;
-	private libraryLoader = LibraryLoader.getInstance();
 
 	constructor(nodeId: string, container: HTMLElement) {
 		this.nodeId = nodeId;
@@ -37,12 +35,15 @@ export class P5Manager {
 
 		if (!this.container) return;
 
-		const [P5, ml5] = await this.libraryLoader.ensureModules('p5', 'ml5');
+		const [{ default: P5 }, { default: ml5 }] = await Promise.all([
+			import('p5'),
+			import('ml5')
+		]);
 
 		config.ml5 = ml5;
 
 		const sketch = (p: Sketch) => {
-			const userCode = this.executeUserCode(p, config);
+			const userCode = this.executeUserCode(p, config, P5);
 			const sendBitmap = this.sendBitmap.bind(this);
 
 			p.setup = function () {
@@ -139,7 +140,7 @@ export class P5Manager {
 		this.p5 = new P5(sketch, this.container);
 	}
 
-	private executeUserCode(sketch: Sketch, config: P5SketchConfig) {
+	private executeUserCode(sketch: Sketch, config: P5SketchConfig, P5Constructor: any) {
 		for (const key in sketch) {
 			// @ts-expect-error -- no-op
 			if (typeof sketch[key] === 'function') {
@@ -147,8 +148,6 @@ export class P5Manager {
 				sketch[key] = sketch[key].bind(sketch);
 			}
 		}
-
-		const P5Constructor = this.libraryLoader.ensureModule('p5');
 
 		// @ts-expect-error -- no-op
 		sketch['p5'] = P5Constructor;

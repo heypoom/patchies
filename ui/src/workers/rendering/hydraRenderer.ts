@@ -5,7 +5,6 @@ import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
-import { LibraryLoader } from '$lib/lazyload/LibraryLoader';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -28,7 +27,6 @@ export class HydraRenderer {
 	public hydra: Hydra | null = null;
 	public framebuffer: regl.Framebuffer2D | null = null;
 
-	static libraryLoader = LibraryLoader.getInstance();
 
 	public onMessage: MessageCallbackFn = () => {};
 
@@ -52,7 +50,7 @@ export class HydraRenderer {
 		framebuffer: regl.Framebuffer2D,
 		renderer: FBORenderer
 	): Promise<HydraRenderer> {
-		const hydraModule = await this.libraryLoader.ensureModule('hydra-ts');
+		const hydraModule = await import('hydra-ts');
 		const arrayUtils = await import('hydra-ts/src/lib/array-utils');
 
 		arrayUtils.default.init();
@@ -156,7 +154,7 @@ export class HydraRenderer {
 		this.fftRequestCache.clear();
 
 		try {
-			const { generators } = await HydraRenderer.libraryLoader.ensureModule('hydra-ts');
+			const { generators } = await import('hydra-ts');
 
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
 			const { sources, outputs, hush, render } = this.hydra;
