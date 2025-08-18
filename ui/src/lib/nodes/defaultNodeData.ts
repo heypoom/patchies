@@ -53,6 +53,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			event: 'noteOn',
 			data: { note: 60, velocity: 127 }
 		}))
-		.with('markdown', () => ({ markdown: '# Hello\n\nThis is **markdown**!' }))
+		.with('markdown', () => ({ markdown: 'hello' }))
 		.otherwise(() => ({}));
 }

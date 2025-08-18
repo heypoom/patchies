@@ -1,78 +1,75 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
-	import { marked } from 'marked';
-	import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
-	import CodeEditor from '../CodeEditor.svelte';
+	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount } from 'svelte';
+	import OverType from 'overtype';
 
-	let {
-		id: nodeId,
-		data,
-		selected
-	}: {
+	let props: {
 		id: string;
 		data: { markdown: string };
 		selected: boolean;
+		width: number;
+		height: number;
 	} = $props();
 
-	let previewContainer: HTMLDivElement | undefined = $state();
-	let previewWidth = $state(10);
+	const { id: nodeId, data, selected } = props;
+	const [defaultWidth, defaultHeight] = [300, 150];
 
-	let renderedHtml = $derived.by(() => {
-		try {
-			return marked(data.markdown);
-		} catch (error) {
-			return '<p style="color: red;">Error parsing markdown</p>';
-		}
-	});
+	let overtypeElement: HTMLDivElement;
+	let overtypeEditor: any;
 
 	const { updateNodeData } = useSvelteFlow();
 
 	function handleMarkdownChange(markdown: string) {
 		updateNodeData(nodeId, { ...data, markdown });
-		measureWidth();
-	}
-
-	onMount(() => {
-		measureWidth();
-	});
-
-	function measureWidth() {
-		setTimeout(() => {
-			if (previewContainer) {
-				previewWidth = previewContainer.clientWidth;
-			}
-		}, 100);
 	}
 
 	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-700');
+
+	onMount(() => {
+		const [_editor] = new OverType(overtypeElement, {
+			placeholder: 'Start typing markdown...',
+			toolbar: false,
+			value: data.markdown,
+			theme: {
+				name: 'my-theme',
+				colors: {
+					bgPrimary: '#18181B',
+					bgSecondary: '#18181B',
+					text: '#fff',
+					h1: '#fff',
+					h2: '#fff',
+					h3: '#fff',
+					strong: '#fff',
+					em: '#fff',
+					link: '#fff',
+					code: '#fff',
+					codeBg: 'rgba(255, 255, 255, 0.2)',
+					blockquote: '#fff',
+					hr: '#fff',
+					syntaxMarker: 'rgba(255, 255, 255, 0.52)',
+					cursor: '#f95738',
+					selection: 'rgba(244, 211, 94, 0.4)'
+				}
+			},
+			onChange: (value, instance) => {
+				handleMarkdownChange(value);
+			}
+		});
+
+		overtypeEditor = _editor;
+	});
 </script>
 
-<ObjectPreviewLayout title="markdown" previewWidth={previewWidth + 5}>
-	{#snippet topHandle()}
-		<Handle type="target" position={Position.Top} class="z-1" />
-	{/snippet}
+<div class="relative">
+	<NodeResizer class="z-1" isVisible={props.selected} />
 
-	{#snippet preview()}
-		<div
-			class={['overflow-auto rounded-lg border px-4 py-3 text-white shadow-lg', borderColor]}
-			bind:this={previewContainer}
-		>
-			{@html renderedHtml}
-		</div>
-	{/snippet}
+	<div class="absolute -top-8 z-10 w-fit rounded-lg bg-zinc-900/60 px-2 py-1 backdrop-blur-lg">
+		<div class="font-mono text-xs font-medium text-zinc-400">markdown</div>
+	</div>
 
-	{#snippet codeEditor()}
-		<CodeEditor
-			value={data.markdown}
-			onchange={handleMarkdownChange}
-			language="markdown"
-			placeholder="# Write markdown here..."
-			class="h-80 w-96"
-		/>
-	{/snippet}
-
-	{#snippet bottomHandle()}
-		<Handle type="source" position={Position.Bottom} class="z-1" />
-	{/snippet}
-</ObjectPreviewLayout>
+	<div
+		bind:this={overtypeElement}
+		style="width: {props.width ?? defaultWidth}px; height: {props.height ?? defaultHeight}px"
+		class="nodrag"
+	></div>
+</div>
