@@ -302,25 +302,12 @@
 				throw new Error('Invalid patch data format');
 			}
 
-			const newNodes = patchSave.nodes.map((node) => ({
-				id: node.id,
-				type: node.type,
-				position: node.position,
-				data: node.data || {}
-			}));
+			setNodes(patchSave.nodes);
+			setEdges(patchSave.edges);
 
-			const newEdges = patchSave.edges.map((edge) => ({
-				id: edge.id,
-				source: edge.source,
-				target: edge.target,
-				sourceHandle: edge.sourceHandle,
-				targetHandle: edge.targetHandle
-			}));
-
-			setNodes(newNodes);
-			setEdges(newEdges);
-
-			console.log(`> loaded patch with ${newNodes.length} nodes and ${newEdges.length} edges`);
+			console.log(
+				`[load] found ${patchSave.nodes.length} nodes and ${patchSave.edges.length} edges`
+			);
 
 			AudioSystem.getInstance().audioContext.resume();
 		} catch (error) {
