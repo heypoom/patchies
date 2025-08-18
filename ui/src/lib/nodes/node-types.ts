@@ -18,6 +18,7 @@ import MIDIOutputNode from '$lib/components/nodes/MIDIOutputNode.svelte';
 import ObjectNode from '$lib/components/nodes/ObjectNode.svelte';
 import SliderNode from '$lib/components/nodes/SliderNode.svelte';
 import PythonNode from '$lib/components/nodes/PythonNode.svelte';
+import MarkdownNode from '$lib/components/nodes/MarkdownNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -39,7 +40,8 @@ export const nodeTypes = {
 	'midi.in': MIDIInputNode,
 	'midi.out': MIDIOutputNode,
 	slider: SliderNode,
-	python: PythonNode
+	python: PythonNode,
+	markdown: MarkdownNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;

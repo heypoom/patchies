@@ -58,6 +58,7 @@
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.2.4",
+		"@codemirror/lang-markdown": "^6.3.4",
 		"@codemirror/lang-python": "^6.2.1",
 		"@codemirror/language": "^6.11.2",
 		"@codemirror/state": "^6.5.2",
@@ -89,6 +90,7 @@
 		"json5": "^2.2.3",
 		"lezer-glsl": "^0.6.0",
 		"lodash": "^4.17.21",
+		"marked": "^16.1.2",
 		"meyda": "^5.6.3",
 		"ml5": "^1.2.1",
 		"mode-watcher": "0.5.1",

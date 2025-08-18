@@ -4,6 +4,7 @@
 	import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
 	import { javascript } from '@codemirror/lang-javascript';
 	import { python } from '@codemirror/lang-python';
+	import { markdown } from '@codemirror/lang-markdown';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
@@ -11,7 +12,7 @@
 
 	let languageComp = new Compartment();
 
-	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'plain';
+	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'markdown' | 'plain';
 
 	let {
 		value = $bindable(),
@@ -44,6 +45,8 @@
 			return new LanguageSupport(glslLanguage);
 		} else if (language === 'python') {
 			return python();
+		} else if (language === 'markdown') {
+			return markdown();
 		}
 
 		return [];
