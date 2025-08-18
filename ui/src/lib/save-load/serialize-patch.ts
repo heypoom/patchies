@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/svelte';
 
-export const PATCH_VERSION = '1.2';
+export const PATCH_SAVE_VERSION = '1.3';
 
 export type PatchSaveFormat = {
 	name: string;
@@ -21,21 +21,10 @@ export function serializePatch({
 }) {
 	const patch: PatchSaveFormat = {
 		name,
-		version: PATCH_VERSION,
+		version: PATCH_SAVE_VERSION,
 		timestamp: Date.now(),
-		nodes: nodes.map((node) => ({
-			id: node.id,
-			type: node.type,
-			position: node.position,
-			data: node.data || {}
-		})),
-		edges: edges.map((edge) => ({
-			id: edge.id,
-			source: edge.source,
-			target: edge.target,
-			sourceHandle: edge.sourceHandle,
-			targetHandle: edge.targetHandle
-		}))
+		nodes,
+		edges
 	};
 
 	return JSON.stringify(patch);
