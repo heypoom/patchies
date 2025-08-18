@@ -34,9 +34,9 @@ self.onmessage = (event) => {
 		.with('setFFTData', () => handleSetFFTData(data));
 };
 
-function handleBuildRenderGraph(graph: RenderGraph) {
+async function handleBuildRenderGraph(graph: RenderGraph) {
 	try {
-		fboRenderer.buildFBOs(graph);
+		await fboRenderer.buildFBOs(graph);
 	} catch (error) {
 		if (error instanceof Error) {
 			self.postMessage({
