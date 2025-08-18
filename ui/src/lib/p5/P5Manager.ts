@@ -1,7 +1,7 @@
 import type Sketch from 'p5';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { UserFnRunContext } from '$lib/messages/MessageContext';
-import { LibraryLoader } from '$lib/LibraryLoader';
+import { LibraryLoader } from '$lib/lazyload/LibraryLoader';
 
 interface P5SketchConfig {
 	code: string;
@@ -37,10 +37,7 @@ export class P5Manager {
 
 		if (!this.container) return;
 
-		const [P5, ml5] = await Promise.all([
-			this.libraryLoader.ensureModule('p5'),
-			this.libraryLoader.ensureModule('ml5')
-		]);
+		const [P5, ml5] = await this.libraryLoader.ensureModules('p5', 'ml5');
 
 		config.ml5 = ml5;
 
