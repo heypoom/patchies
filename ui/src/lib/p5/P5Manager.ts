@@ -1,12 +1,14 @@
-import P5 from 'p5';
 import type Sketch from 'p5';
-import ml5 from 'ml5';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { UserFnRunContext } from '$lib/messages/MessageContext';
+import { LibraryLoader } from '$lib/LibraryLoader';
 
-export interface P5SketchConfig {
+interface P5SketchConfig {
 	code: string;
 	messageContext?: UserFnRunContext;
+
+	/** ML5.js module */
+	ml5: unknown;
 }
 
 export class P5Manager {
@@ -17,6 +19,7 @@ export class P5Manager {
 	public shouldSendBitmap = true;
 
 	private container: HTMLElement | null = null;
+	private libraryLoader = LibraryLoader.getInstance();
 
 	constructor(nodeId: string, container: HTMLElement) {
 		this.nodeId = nodeId;
@@ -26,14 +29,20 @@ export class P5Manager {
 		window[nodeId] = this;
 	}
 
-	updateCode(config: P5SketchConfig) {
-		// Clean up existing instance
+	async updateCode(config: P5SketchConfig) {
 		if (this.p5) {
 			this.p5.remove();
 			this.p5 = null;
 		}
 
 		if (!this.container) return;
+
+		const [P5, ml5] = await Promise.all([
+			this.libraryLoader.ensureModule('p5'),
+			this.libraryLoader.ensureModule('ml5')
+		]);
+
+		config.ml5 = ml5;
 
 		const sketch = (p: Sketch) => {
 			const userCode = this.executeUserCode(p, config);
@@ -142,14 +151,13 @@ export class P5Manager {
 			}
 		}
 
-		// @ts-expect-error -- no-op
-		sketch['p5'] = P5;
+		const P5Constructor = this.libraryLoader.ensureModule('p5');
 
 		// @ts-expect-error -- no-op
-		window.ml5 = ml5;
+		sketch['p5'] = P5Constructor;
 
 		// @ts-expect-error -- no-op
-		sketch['ml5'] = ml5;
+		sketch['ml5'] = config.ml5;
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
