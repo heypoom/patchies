@@ -3,13 +3,9 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 
-	let { id: nodeId, selected }: { id: string } = $props();
+	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
 
 	const messageContext = new MessageContext(nodeId);
-
-	onMount(() => {
-		// No need to listen for incoming messages since this is a simple trigger
-	});
 
 	onDestroy(() => {
 		messageContext.destroy();
