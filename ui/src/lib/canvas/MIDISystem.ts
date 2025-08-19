@@ -4,8 +4,7 @@ import {
 	type Output,
 	type NoteMessageEvent,
 	type ControlChangeMessageEvent,
-	type MessageEvent,
-	type PitchBendMessageEvent
+	type MessageEvent
 } from 'webmidi';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import { match } from 'ts-pattern';
@@ -30,7 +29,7 @@ export type MIDIOutputConfig = {
 	| { event: 'noteOff'; note: number; velocity: number }
 	| { event: 'controlChange'; control: number; value: number }
 	| { event: 'programChange'; program: number }
-	| { event: 'pitchBend'; value: number }
+	| { event: 'pitchBend'; control: number; value: number }
 	| { event: 'raw'; data: number[] }
 );
 
@@ -39,7 +38,7 @@ interface NodeListeners {
 	noteOff?: (e: NoteMessageEvent) => void;
 	controlChange?: (e: ControlChangeMessageEvent) => void;
 	programChange?: (e: MessageEvent) => void;
-	pitchBend?: (e: PitchBendMessageEvent) => void;
+	pitchBend?: (e: MessageEvent) => void;
 	input?: Input;
 	channel?: number | 'all';
 }
@@ -206,10 +205,11 @@ export class MIDISystem {
 		}
 
 		if (events.includes('pitchBend')) {
-			listeners.pitchBend = (e: PitchBendMessageEvent) => {
+			listeners.pitchBend = (e: MessageEvent) => {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'pitchBend',
-					value: e.value
+					value: e.value,
+					control: e.statusByte
 				});
 			};
 
