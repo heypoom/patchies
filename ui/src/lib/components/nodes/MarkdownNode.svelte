@@ -23,6 +23,8 @@
 
 	const { updateNodeData } = useSvelteFlow();
 
+	const handleClass = $derived(props.selected ? 'z-1 opacity-70' : 'z-1 opacity-10');
+
 	function handleMarkdownChange(markdown: string) {
 		updateNodeData(props.id, { markdown });
 	}
@@ -35,10 +37,7 @@
 	const handleMessage: MessageCallbackFn = (message) =>
 		match(message)
 			.with(P.string, (value) => updateMarkdown(value))
-			.with({ type: 'bang' }, () => {
-				console.log('md:', props.data);
-				messageContext.send(props.data.markdown);
-			})
+			.with({ type: 'bang' }, () => messageContext.send(props.data.markdown))
 			.with({ type: 'set', value: P.string }, (msg) => updateMarkdown(msg.value))
 			.otherwise(() => {});
 
@@ -91,7 +90,7 @@
 	</div>
 
 	<div>
-		<Handle type="target" position={Position.Top} class="z-1" />
+		<Handle type="target" position={Position.Top} class={handleClass} />
 
 		<div
 			bind:this={overtypeElement}
@@ -99,7 +98,7 @@
 			class="nodrag overtype-editor rounded-lg bg-zinc-900/70 backdrop-blur-xl"
 		></div>
 
-		<Handle type="source" position={Position.Bottom} class="z-1" />
+		<Handle type="source" position={Position.Bottom} class={handleClass} />
 	</div>
 </div>
 
