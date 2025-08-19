@@ -53,6 +53,27 @@ As a first step, we must decouple the UI logic from the headless graph logic. Cr
 
 The patcher class should be hooked up to every other systems: `MessageSystem`, `AudioSystem`, `AudioAnalysisSystem`, `GLSystem`, `MIDISystem`, `PyodideSystem`.
 
-It should try to replicate the structure of nodes and edges of XYFlow. See the `Node[]` and `Edge[]` types of XYFlow. The only difference is that we do not need UI-related node properties like `x`, `y`, `width`, `height`, `selected`, etc.
+**✅ COMPLETED**: The `Patcher` class now extends XYFlow's `Node[]` and `Edge[]` types directly to maintain all properties including position, width, height. This eliminates the need for type conversion and keeps the API clean.
 
-At this stage, there will be total duplication of state for XYFlow and Patcher. That is fine. Once we have the sub-patching system and abstraction system, the XYFlow will only be a subset of the patch, as we can only show one level of patch on screen at once.
+**✅ COMPLETED**: Implemented the following core features:
+
+1. **Headless Patcher Class** (`ui/src/lib/core/Patcher.ts`):
+   - Uses XYFlow `Node` and `Edge` types directly as `PatcherNode` and `PatcherEdge`
+   - Manages graph state with `Map<string, Node>` for nodes and `Map<string, Edge>` for edges
+   - Integrates with all existing systems (MessageSystem, AudioSystem, GLSystem, etc.)
+   - Provides the public API: `setAudioOutput()`, `setVideoOutput()`, `sendMessage()`, etc.
+
+2. **Global Store** (`ui/src/stores/patcher.store.ts`):
+   - Singleton Patcher instance accessible across components
+   - `getPatcher()`, `setPatcher()`, `destroyPatcher()` functions
+
+3. **XYFlow Integration** (`ui/src/lib/components/FlowCanvasInner.svelte`):
+   - XYFlow state syncs with Patcher via `$effect()` reactive updates
+   - Patcher becomes source of truth for all systems
+   - Autosave uses Patcher data instead of XYFlow state directly
+
+4. **Public API Export** (`ui/src/lib/index.ts`):
+   - Exports `Patcher` class and types for external headless usage
+   - Enables `import {Patcher} from '@patchies/headless'` pattern
+
+At this stage, there is seamless synchronization between XYFlow and Patcher state. The XYFlow UI remains fully functional while the Patcher handles all system integration. Once we implement sub-patching, XYFlow will only show one level of the patch hierarchy while Patcher manages the complete graph.

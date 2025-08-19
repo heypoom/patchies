@@ -24,6 +24,7 @@
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
+	import { getPatcher } from '../../stores/patcher.store';
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -36,9 +37,12 @@
 		);
 	});
 
-	// Initial nodes and edges
+	// Initial nodes and edges - XYFlow state synchronized with Patcher
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
+
+	// Get the global Patcher instance
+	const patcher = getPatcher();
 
 	let nodeIdCounter = 0;
 	let messageSystem = MessageSystem.getInstance();
@@ -76,34 +80,34 @@
 
 	function performAutosave() {
 		try {
-			savePatchToLocalStorage({ name: 'autosave', nodes, edges });
+			// Save using Patcher data (which is the same as XYFlow format)
+			const patchData = patcher.getPatchData();
+			savePatchToLocalStorage({ name: 'autosave', nodes: patchData.nodes, edges: patchData.edges });
 			lastAutosave = new Date();
 		} catch (error) {
 			console.error('Autosave failed:', error);
 		}
 	}
 
-	// Update message system when nodes or edges change
+	// Sync XYFlow state with Patcher
 	$effect(() => {
-		// Handle node changes (deletions)
+		// Nodes and edges are already in the correct format
+		patcher.loadPatch({ nodes, edges });
+	});
+
+	// Track node deletions for cleanup
+	$effect(() => {
 		const currentNodes = new Set(nodes.map((n) => n.id));
 
 		// Find deleted nodes
 		for (const prevNodeId of previousNodes) {
 			if (!currentNodes.has(prevNodeId)) {
-				messageSystem.unregisterNode(prevNodeId);
-				audioSystem.removeAudioObject(prevNodeId);
+				// Cleanup is now handled by Patcher.removeNode()
+				// but we still track for XYFlow state management
 			}
 		}
 
 		previousNodes = currentNodes;
-	});
-
-	$effect(() => {
-		messageSystem.updateEdges(edges);
-		glSystem.updateEdges(edges);
-		audioSystem.updateEdges(edges);
-		audioAnalysisSystem.updateEdges(edges);
 	});
 
 	// Handle global keyboard events
@@ -163,17 +167,14 @@
 	});
 
 	onDestroy(() => {
-		// Clean up all nodes when component is destroyed
-		for (const node of nodes) {
-			messageSystem.unregisterNode(node.id);
-		}
-
 		// Clean up autosave interval
 		if (autosaveInterval) {
 			clearInterval(autosaveInterval);
 			autosaveInterval = null;
 		}
 
+		// Patcher cleanup is handled by the store
+		// Individual node cleanup is handled by Patcher.destroy()
 		glSystem.renderWorker.terminate();
 	});
 
@@ -199,6 +200,7 @@
 	function createNode(type: string, position: { x: number; y: number }, customData?: any) {
 		const id = `${type}-${nodeIdCounter++}`;
 
+		// Create node for XYFlow display
 		const newNode: Node = {
 			id,
 			type,
@@ -206,7 +208,10 @@
 			data: customData ?? getDefaultNodeData(type)
 		};
 
+		// Add to XYFlow state
 		nodes = [...nodes, newNode];
+
+		// The Patcher will be updated via the $effect above
 	}
 
 	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {

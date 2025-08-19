@@ -2,13 +2,12 @@
 	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match, P } from 'ts-pattern';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
-	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
+	import type { UserUniformValue } from '$lib/canvas/GLSystem';
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import { getPatcher } from '../../../stores/patcher.store';
 
 	let {
 		id: nodeId,
@@ -24,13 +23,14 @@
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
+	// Get Patcher instance for headless canvas management
+	const patcher = getPatcher();
+
 	const width = $state(200);
 	const height = $state(150);
 
-	let glSystem: GLSystem;
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
-	let messageContext: MessageContext;
 
 	let isPaused = $state(false);
 
@@ -40,14 +40,17 @@
 		try {
 			if (meta.inletKey?.startsWith('msg-in-')) {
 				const [, uniformName] = meta.inletKey.split('-').slice(2);
-				glSystem.setUniformData(nodeId, uniformName, message as UserUniformValue);
+				patcher.setNodeUniform(nodeId, uniformName, message);
 
 				return;
 			}
 
 			match(message)
 				.with({ type: 'set', code: P.string }, ({ code }) => {
-					updateNodeData(nodeId, { ...data, code });
+					const newData = { ...data, code };
+					updateNodeData(nodeId, newData);
+					// Use Patcher's shader update method
+					patcher.updateNodeShader(nodeId, code);
 				})
 				.with({ type: 'run' }, () => {
 					updateShader();
@@ -58,14 +61,8 @@
 	};
 
 	function updateShader() {
-		// Construct uniform definitions from the shader code.
-		const nextData = {
-			...data,
-			glUniformDefs: shaderCodeToUniformDefs(data.code)
-		};
-
-		updateNodeData(nodeId, nextData);
-		glSystem.upsertNode(nodeId, 'glsl', nextData);
+		// Use Patcher's centralized shader update method
+		patcher.updateNodeShader(nodeId, data.code);
 
 		// inform XYFlow that the handle has changed
 		updateNodeInternals();
@@ -73,32 +70,25 @@
 
 	function togglePause() {
 		isPaused = !isPaused;
-		glSystem.toggleNodePause(nodeId);
+		patcher.toggleNodePause(nodeId);
 	}
 
 	onMount(() => {
-		glSystem = GLSystem.getInstance();
-
-		messageContext = new MessageContext(nodeId);
-		messageContext.queue.addCallback(handleMessage);
+		patcher.addMessageListener(nodeId, handleMessage);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
-			glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+			patcher.setVideoPreviewOutput(nodeId, previewCanvas);
 		}
 
 		updateShader();
 
-		setTimeout(() => {
-			glSystem.setPreviewEnabled(nodeId, true);
-		}, 10);
+		patcher.mountNode(nodeId);
 	});
 
 	onDestroy(() => {
-		messageContext.queue.removeCallback(handleMessage);
-		messageContext.destroy();
-		glSystem.removeNode(nodeId);
-		glSystem.removePreviewContext(nodeId, previewBitmapContext);
+		patcher.unmountNode(nodeId);
+		patcher.removeMessageListener(nodeId, handleMessage);
 	});
 </script>
 
@@ -140,7 +130,10 @@
 		<CodeEditor
 			value={code}
 			onchange={(newCode) => {
-				updateNodeData(nodeId, { ...data, code: newCode });
+				const newData = { ...data, code: newCode };
+				updateNodeData(nodeId, newData);
+				// Use Patcher's shader update method
+				patcher.updateNodeShader(nodeId, newCode);
 			}}
 			language="glsl"
 			placeholder="Write your GLSL fragment shader here..."
