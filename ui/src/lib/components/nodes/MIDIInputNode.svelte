@@ -8,7 +8,7 @@
 	import { midiInputDevices } from '../../../stores/midi.store';
 	import { match, P } from 'ts-pattern';
 
-	type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange';
+	type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend';
 
 	let {
 		id: nodeId,
@@ -36,7 +36,7 @@
 	const channel = $derived(data.channel || 0);
 
 	const events: EventType[] = $derived(
-		data.events || ['noteOn', 'noteOff', 'controlChange', 'programChange']
+		data.events || ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend']
 	);
 
 	const borderColor = $derived.by(() => {
@@ -249,7 +249,7 @@
 					<div>
 						<label class="mb-2 block text-xs font-medium text-zinc-300">Message Types</label>
 						<div class="space-y-1">
-							{#each ['noteOn', 'noteOff', 'controlChange', 'programChange'] as msgType}
+							{#each ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend'] as msgType}
 								<label class="flex items-center">
 									<input
 										type="checkbox"
@@ -260,7 +260,7 @@
 											const newTypes = checked
 												? [
 														...events,
-														msgType as 'noteOn' | 'noteOff' | 'controlChange' | 'programChange'
+														msgType as EventType
 													]
 												: events.filter((t) => t !== msgType);
 											updateNodeData(nodeId, { ...data, events: newTypes });

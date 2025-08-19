@@ -45,7 +45,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('midi.in', () => ({
 			deviceId: '',
 			channel: 0,
-			events: ['noteOn', 'noteOff', 'controlChange', 'programChange']
+			events: ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend']
 		}))
 		.with('midi.out', () => ({
 			deviceId: '',
