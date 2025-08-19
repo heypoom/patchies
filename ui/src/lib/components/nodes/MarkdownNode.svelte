@@ -1,7 +1,10 @@
 <script lang="ts">
-	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
-	import { onMount } from 'svelte';
+	import { Handle, NodeResizer, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import OverType from 'overtype';
+	import { MessageContext } from '$lib/messages/MessageContext';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 
 	let props: {
 		id: string;
@@ -11,7 +14,8 @@
 		height: number;
 	} = $props();
 
-	const { id: nodeId, data, selected } = props;
+	let messageContext: MessageContext;
+
 	const [defaultWidth, defaultHeight] = [300, 150];
 
 	let overtypeElement: HTMLDivElement;
@@ -20,16 +24,37 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	function handleMarkdownChange(markdown: string) {
-		updateNodeData(nodeId, { ...data, markdown });
+		updateNodeData(props.id, { markdown });
 	}
 
-	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-700');
+	function updateMarkdown(markdown: string) {
+		handleMarkdownChange(markdown);
+		overtypeEditor?.setValue(markdown);
+	}
+
+	const handleMessage: MessageCallbackFn = (message) =>
+		match(message)
+			.with(P.string, (value) => updateMarkdown(value))
+			.with({ type: 'bang' }, () => {
+				console.log('md:', props.data);
+				messageContext.send(props.data.markdown);
+			})
+			.with({ type: 'set', value: P.string }, (msg) => updateMarkdown(msg.value))
+			.otherwise(() => {});
+
+	onDestroy(() => {
+		messageContext.queue.removeCallback(handleMessage);
+		messageContext.destroy();
+	});
 
 	onMount(() => {
+		messageContext = new MessageContext(props.id);
+		messageContext.queue.addCallback(handleMessage);
+
 		const [_editor] = new OverType(overtypeElement, {
 			placeholder: 'Start typing markdown...',
 			toolbar: false,
-			value: data.markdown,
+			value: props.data.markdown,
 			theme: {
 				name: 'my-theme',
 				colors: {
@@ -51,9 +76,7 @@
 					selection: 'rgba(244, 211, 94, 0.4)'
 				}
 			},
-			onChange: (value, instance) => {
-				handleMarkdownChange(value);
-			}
+			onChange: (value: string) => handleMarkdownChange(value)
 		});
 
 		overtypeEditor = _editor;
@@ -67,11 +90,17 @@
 		<div class="font-mono text-xs font-medium text-zinc-400">markdown</div>
 	</div>
 
-	<div
-		bind:this={overtypeElement}
-		style="width: {props.width ?? defaultWidth}px; height: {props.height ?? defaultHeight}px"
-		class="nodrag overtype-editor rounded-lg bg-zinc-900/70 backdrop-blur-xl"
-	></div>
+	<div>
+		<Handle type="target" position={Position.Top} class="z-1" />
+
+		<div
+			bind:this={overtypeElement}
+			style="width: {props.width ?? defaultWidth}px; height: {props.height ?? defaultHeight}px"
+			class="nodrag overtype-editor rounded-lg bg-zinc-900/70 backdrop-blur-xl"
+		></div>
+
+		<Handle type="source" position={Position.Bottom} class="z-1" />
+	</div>
 </div>
 
 <style scoped>
