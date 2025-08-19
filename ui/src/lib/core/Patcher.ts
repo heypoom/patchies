@@ -19,6 +19,22 @@ function getBitmapContext(canvasOutput: CanvasOutput): ImageBitmapRenderingConte
 	return canvasOutput;
 }
 
+// Map from node types to GL render node types
+function getGLRenderType(nodeType: string): { type: string; needsData: boolean } | null {
+	const mapping: Record<string, { type: string; needsData: boolean }> = {
+		'glsl': { type: 'glsl', needsData: true },
+		'hydra': { type: 'hydra', needsData: true },
+		'swgl': { type: 'swgl', needsData: true },
+		'bg.out': { type: 'bg.out', needsData: false },
+		'p5': { type: 'img', needsData: false },
+		'canvas': { type: 'img', needsData: false }, // JSCanvasNode
+		'bchrn': { type: 'img', needsData: false }, // ButterchurnNode
+		'ai.img': { type: 'img', needsData: false }
+	};
+	
+	return mapping[nodeType] || null;
+}
+
 // Use XYFlow types directly to maintain all properties including position, width, height
 export type PatcherNode = Node;
 export type PatcherEdge = Edge;
@@ -73,11 +89,25 @@ export class Patcher {
 	// Core graph management
 	addNode(node: PatcherNode): void {
 		this.nodes.set(node.id, node);
-		this.updateSystems();
+		
+		// Auto-upsert to GLSystem if it's a renderable node type
+		if (node.type) {
+			const glRenderInfo = getGLRenderType(node.type);
+			if (glRenderInfo) {
+				const data = glRenderInfo.needsData ? node.data as Record<string, unknown> : {};
+				this.glSystem.upsertNode(node.id, glRenderInfo.type as any, data);
+			}
+		}
 	}
 
 	removeNode(nodeId: string): void {
+		const node = this.nodes.get(nodeId);
 		this.nodes.delete(nodeId);
+
+		// Remove from GLSystem if it was a renderable node
+		if (node?.type && getGLRenderType(node.type)) {
+			this.glSystem.removeNode(nodeId);
+		}
 
 		// Remove edges connected to this node
 		const edgesToRemove = Array.from(this.edges.values()).filter(
@@ -90,7 +120,8 @@ export class Patcher {
 		this.messageSystem.unregisterNode(nodeId);
 		this.audioSystem.removeAudioObject(nodeId);
 
-		this.updateSystems();
+		// Update edges since we removed some
+		this.updateAllSystemEdges();
 	}
 
 	updateNode(nodeId: string, updates: Partial<PatcherNode>): void {
@@ -99,17 +130,17 @@ export class Patcher {
 
 		const updatedNode = { ...node, ...updates };
 		this.nodes.set(nodeId, updatedNode);
-		this.updateSystems();
+		// Individual node updates don't require system-wide updates
 	}
 
 	addEdge(edge: PatcherEdge): void {
 		this.edges.set(edge.id, edge);
-		this.updateSystems();
+		this.updateAllSystemEdges();
 	}
 
 	removeEdge(edgeId: string): void {
 		this.edges.delete(edgeId);
-		this.updateSystems();
+		this.updateAllSystemEdges();
 	}
 
 	getNodes(): PatcherNode[] {
@@ -133,7 +164,8 @@ export class Patcher {
 		patchData.nodes.forEach((node) => this.nodes.set(node.id, node));
 		patchData.edges.forEach((edge) => this.edges.set(edge.id, edge));
 
-		this.updateSystems();
+		// Only update edges - individual nodes will be upserted as needed
+		this.updateAllSystemEdges();
 	}
 
 	getPatchData(): PatchData {
@@ -192,53 +224,12 @@ export class Patcher {
 		queue.removeCallback(callback);
 	}
 
-	// System integration
-	private updateSystems(): void {
-		const nodes = this.getNodes();
+	// System integration - only update what's necessary
+	private updateAllSystemEdges(): void {
 		const edges = this.getEdges();
-
-		// Nodes and edges are already in XYFlow format
-		// Update all systems with new graph structure
 		this.messageSystem.updateEdges(edges);
 		this.audioSystem.updateEdges(edges);
-
-		// Update GL system with render-compatible nodes/edges
-		this.updateGLSystem(nodes, edges);
-	}
-
-	private updateGLSystem(nodes: PatcherNode[], edges: PatcherEdge[]): void {
-		// Convert to render graph format for GLSystem
-		const renderNodes = nodes
-			.filter((node) => node.type && isRenderableNode(node.type))
-			.map((node) => ({
-				id: node.id,
-				type: node.type!,
-				data: node.data as Record<string, unknown>
-			}));
-
-		const renderEdges = edges
-			.filter((edge) => {
-				const sourceNode = nodes.find((n) => n.id === edge.source);
-				const targetNode = nodes.find((n) => n.id === edge.target);
-				return (
-					sourceNode &&
-					targetNode &&
-					sourceNode.type &&
-					targetNode.type &&
-					isRenderableNode(sourceNode.type) &&
-					isRenderableNode(targetNode.type)
-				);
-			})
-			.map((edge) => ({
-				id: edge.id,
-				source: edge.source,
-				target: edge.target,
-				sourceHandle: edge.sourceHandle ?? undefined,
-				targetHandle: edge.targetHandle ?? undefined
-			}));
-
-		this.glSystem.nodes = renderNodes;
-		this.glSystem.edges = renderEdges;
+		this.glSystem.edges = edges;
 	}
 
 	mountNode(nodeId: string): void {
@@ -259,10 +250,10 @@ export class Patcher {
 		// TODO: these logic will be wrong when sub-patches are introduced.
 		// We will need to keep it unmounted until the entire subpatch is unmounted.
 		if (node.type === 'glsl') {
-			this.glSystem.removeNode(nodeId);
 			this.removeVideoPreview(nodeId);
 		}
 
+		// Clean up message listeners and system resources (but don't remove from GLSystem - that's handled by removeNode)
 		this.messageSystem.unregisterNode(nodeId);
 		this.audioSystem.removeAudioObject(nodeId);
 		this.videoPreviewOutputs.delete(nodeId);
@@ -294,7 +285,7 @@ export class Patcher {
 		// Update node data in Patcher
 		this.updateNode(nodeId, { data: nextData });
 
-		// Update GL system
+		// Efficiently update only this specific GLSL node
 		this.glSystem.upsertNode(nodeId, 'glsl', nextData);
 	}
 
@@ -325,10 +316,4 @@ export class Patcher {
 		this.edges.clear();
 		this.videoPreviewOutputs.clear();
 	}
-}
-
-function isRenderableNode(nodeType: string): boolean {
-	const renderableTypes: string[] = ['glsl', 'hydra', 'swgl', 'bg.out'] satisfies NodeTypeName[];
-
-	return renderableTypes.includes(nodeType);
 }
