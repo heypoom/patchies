@@ -1,16 +1,5 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { silence, evalScope } from '@strudel/core';
-	import { getDrawContext } from '@strudel/draw';
-	import { transpiler } from '@strudel/transpiler';
-	import { webaudioOutput } from '@strudel/webaudio';
-	import {
-		StrudelMirror,
-		codemirrorSettings,
-		settings as themeSettings
-	} from '@strudel/codemirror';
-	import { superdough } from 'superdough';
-	import { prebake } from '$lib/strudel/prebake';
 	import { Prec, StateEffect } from '@codemirror/state';
 	import { keymap, EditorView } from '@codemirror/view';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -38,21 +27,39 @@
 	} = $props();
 
 	let containerElement: HTMLElement;
-	let editor: StrudelMirror | null = null;
+	let editor: any | null = null;
 	let audioSystem = AudioSystem.getInstance();
 
-	for (const key in themeSettings) {
-		themeSettings[key].background = 'transparent';
-	}
-
-	let settings = codemirrorSettings.get();
-
-	const hap2value = (hap) => {
+	const hap2value = (hap: any) => {
 		hap.ensureObjectValue();
 		return hap.value;
 	};
 
-	onMount(() => {
+	onMount(async () => {
+		// Load all required Strudel modules
+		const [strudelCore, strudelDraw, strudelTranspiler, strudelWebaudio, strudelCodemirror] =
+			await Promise.all([
+				import('@strudel/core'),
+				import('@strudel/draw'),
+				import('@strudel/transpiler'),
+				import('@strudel/webaudio'),
+				import('@strudel/codemirror')
+			]);
+
+		const { silence, evalScope } = strudelCore;
+		const { getDrawContext } = strudelDraw;
+		const { transpiler } = strudelTranspiler;
+		const { webaudioOutput } = strudelWebaudio;
+		const { StrudelMirror, codemirrorSettings, settings: themeSettings } = strudelCodemirror;
+
+		// Dynamically import and create prebake function
+		const { prebake } = await import('$lib/strudel/prebake');
+
+		for (const key in themeSettings) {
+			themeSettings[key].background = 'transparent';
+		}
+
+		const settings = codemirrorSettings.get();
 		const drawContext = getDrawContext();
 		const drawTime = [-2, 2];
 

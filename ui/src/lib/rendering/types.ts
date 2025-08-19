@@ -32,7 +32,7 @@ export interface RenderGraph {
 	outputNodeId: string | null;
 }
 
-type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
+export type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
 
 export interface RenderParams {
 	lastTime: number;

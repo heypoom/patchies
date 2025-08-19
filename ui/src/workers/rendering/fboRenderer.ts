@@ -5,7 +5,8 @@ import type {
 	RenderNode,
 	FBONode,
 	PreviewState,
-	RenderFunction
+	RenderFunction,
+	UserParam
 } from '../../lib/rendering/types';
 import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
@@ -36,7 +37,7 @@ export class FBORenderer {
 
 	// Mapping of nodeId -> uniform key -> uniform value
 	// example: {'glsl-0': {'sliderValue': 0.5}}
-	public uniformDataByNode: Map<string, Map<string, any>> = new Map();
+	public uniformDataByNode: Map<string, Map<string, unknown>> = new Map();
 
 	/** Mapping of nodeID to persistent textures */
 	public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
@@ -75,7 +76,7 @@ export class FBORenderer {
 	}
 
 	/** Build FBOs for all nodes in the render graph */
-	buildFBOs(renderGraph: RenderGraph) {
+	async buildFBOs(renderGraph: RenderGraph) {
 		const [width, height] = this.outputSize;
 
 		this.destroyNodes();
@@ -96,7 +97,7 @@ export class FBORenderer {
 				depthStencil: false
 			});
 
-			const renderer = match(node)
+			const renderer = await match(node)
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
 				.with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
@@ -135,10 +136,10 @@ export class FBORenderer {
 		return { render: () => {}, cleanup: () => {} };
 	}
 
-	createHydraRenderer(
+	async createHydraRenderer(
 		node: RenderNode,
 		framebuffer: regl.Framebuffer2D
-	): { render: RenderFunction; cleanup: () => void } | null {
+	): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
 		if (node.type !== 'hydra') return null;
 
 		// Delete existing hydra renderer if it exists.
@@ -146,7 +147,7 @@ export class FBORenderer {
 			this.hydraByNode.get(node.id)?.stop();
 		}
 
-		const hydraRenderer = new HydraRenderer(
+		const hydraRenderer = await HydraRenderer.create(
 			{ code: node.data.code, nodeId: node.id },
 			framebuffer,
 			this
@@ -261,7 +262,7 @@ export class FBORenderer {
 		let userRenderFunc: ((params: { t: number }) => void) | null = null;
 
 		try {
-			const wrappedGlsl = (shaderConfig: unknown, targetConfig: any = {}) =>
+			const wrappedGlsl = (shaderConfig: unknown, targetConfig: Record<string, unknown> = {}) =>
 				glsl(shaderConfig, { ...targetConfig, ...swglTarget });
 
 			// Create context with message passing functions
@@ -429,7 +430,7 @@ export class FBORenderer {
 		// TODO: optimize this!
 		const inputTextures = this.getInputTextures(node);
 
-		let userUniformParams: any[] = [];
+		let userUniformParams: unknown[] = [];
 
 		// GLSL supports custom uniforms
 		if (node.type === 'glsl') {
@@ -477,7 +478,7 @@ export class FBORenderer {
 				iFrame: this.frameCount,
 				mouseX: 0,
 				mouseY: 0,
-				userParams: userUniformParams
+				userParams: userUniformParams as UserParam[]
 			});
 		});
 	}
@@ -651,9 +652,10 @@ export class FBORenderer {
 		return textures.slice(0, 4);
 	}
 
-	setPreviewSize(width: number, height: number) {
+	async setPreviewSize(width: number, height: number) {
 		this.previewSize = [width, height] as [w: number, h: number];
-		this.buildFBOs(this.renderGraph!);
+
+		await this.buildFBOs(this.renderGraph!);
 	}
 
 	setOutputSize(width: number, height: number) {
@@ -661,7 +663,7 @@ export class FBORenderer {
 
 		// Update all hydra renderers to match the new output size
 		for (const hydra of this.hydraByNode.values()) {
-			hydra?.hydra.setResolution(width, height);
+			hydra?.hydra?.setResolution(width, height);
 		}
 
 		this.offscreenCanvas.width = width;
