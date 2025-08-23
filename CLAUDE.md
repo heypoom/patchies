@@ -4,39 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Patchies** is a tool for creating and playing with simulations - a visual programming environment where users can create interactive "patches" (node-based programs) for exploration, learning, and artistic expression. The project emphasizes creating embeddable, shareable sandboxes for creative coding and algorithmic art.
+**Patchies** is a visual programming environment for creating interactive audio-visual patches on the web. Users can connect nodes to build complex creative coding projects using familiar tools like P5.js, Hydra, Strudel, GLSL shaders, and JavaScript. The project emphasizes real-time collaboration, message passing between nodes, video chaining, and embeddable shareable experiences.
 
-## Coding Style Guide
-
-- Use `ts-pattern` always instead of `switch` statements.
-
-## Architecture
+## Architecture Overview
 
 ### Core Stack
 
-- **SvelteKit 5** with TypeScript for the web application
-- **@xyflow/svelte** for the visual node editor interface
-- **p5.js** for creative coding and generative art
-- **CodeMirror 6** for in-browser code editing
-- **Tailwind CSS 4** with Zinc color scheme and dark theme
+- **SvelteKit 5** with TypeScript (web application)
+- **@xyflow/svelte** for the visual node editor
 - **Bun** as package manager (use `bun install`, not `npm install`)
+- **Tailwind CSS 4** with Zinc color scheme and dark theme
+- **CodeMirror 6** for in-browser code editing
+- Creative coding integrations: **p5.js**, **Hydra**, **Strudel**, **GLSL**, **Butterchurn**
 
-### Key Architectural Patterns
+### Key System Architectures
 
-**Visual Programming**: The app centers around a flow-based editor where "patches" (nodes) can be connected to create interactive experiences. Each node type represents different capabilities (p5.js canvas, future node types).
+**Event-Driven Architecture**: The `PatchiesEventBus` (singleton) handles system-wide events with type-safe event listeners. This decouples components and enables features like undo/redo, node lifecycle events, and real-time collaboration.
 
-**P5.js Integration**: The `P5Manager` class (`src/lib/p5/P5Manager.ts`) handles p5.js instance lifecycle and provides a curated API to user code using JavaScript's `with` statement for clean syntax.
+**Message Passing System**: The `MessageSystem` (singleton) enables Max/MSP-style message routing between nodes using `send()` and `onMessage()`. Messages flow through XY Flow edges, supporting typed inlets/outlets and automatic cleanup on node deletion.
 
-**Component Separation**: UI components are separated from business logic. For example, `P5CanvasNode.svelte` handles UI while `P5Manager.ts` handles p5.js execution.
+**Rendering Pipeline**: The `graphUtils` module builds render graphs from XY Flow nodes, performs topological sorting, and handles FBO (Frame Buffer Object) rendering chains for video effects. Supports video chaining (P5 → Hydra → GLSL) through texture passing.
 
-**Live Code Execution**: User-written JavaScript code is executed in real-time with proper error handling and context isolation.
+**Live Code Execution**: Each node type has specialized managers (e.g., `P5Manager`, `JSCanvasManager`) that provide sandboxed execution environments with curated APIs exposed via JavaScript's `with` statement.
+
+**Save/Load System**: Patches are serialized as JSON with version tracking (`serialize-patch.ts`). Local storage automatically saves work with conflict resolution.
 
 ## Development Commands
 
+All commands run from the `/ui` directory:
+
 ```bash
-# Development (use these in the /ui directory)
+# Development
 bun run dev                 # Start development server
-bun run build              # Production build
+bun run build              # Production build  
 bun run preview            # Preview production build
 
 # Code Quality
@@ -51,75 +51,104 @@ bun run test:e2e           # Run Playwright E2E tests
 bun run test               # Run all tests
 ```
 
-## Project Structure
+## Key Architectural Systems
 
+### Node Types & Capabilities
+
+- **Visual nodes**: `p5`, `glsl`, `hydra`, `butterchurn`, `canvas`, `swissgl` (support video chaining)
+- **Audio nodes**: `strudel` (live coding music), AI music generation
+- **Control nodes**: `js` (JavaScript blocks), `slider`, `bang`, `message`  
+- **AI nodes**: `ai.txt`, `ai.img`, `ai.tts`, `ai.music` (can be hidden via settings)
+- **I/O nodes**: `midi.in`, `midi.out`, `bg.out` (background output)
+
+### Message Passing Architecture
+
+```typescript
+// In any JavaScript-based node:
+send(data, { to: 0 })  // Send to specific outlet number
+onMessage((data, meta) => {
+  // meta contains { source, inlet, outlet, inletKey, outletKey }
+})
 ```
-/ui/src/
-├── lib/
-│   ├── components/
-│   │   ├── CodeEditor.svelte      # CodeMirror 6 integration
-│   │   ├── FlowCanvas.svelte      # Main xyflow editor
-│   │   ├── nodes/
-│   │   │   └── P5CanvasNode.svelte # p5.js canvas node
-│   │   └── ui/                    # shadcn-svelte components
-│   ├── p5/
-│   │   └── P5Manager.ts           # p5.js instance management
-│   └── utils.ts
-└── routes/                        # SvelteKit file-based routing
-```
 
-## Design Principles (from docs/design-docs/)
+The `MessageSystem` handles routing through XY Flow edges with handle-based targeting. Messages support outlet filtering and automatic node lifecycle cleanup.
 
-1. **Friendly UX** - Obvious what to do for first-time users
-2. **Creation & Sharing** - Easy to create, remix, and share play spaces
-3. **Live Collaboration** - Built for multiplayer experiences
-4. **Embeddable** - Fast loading, incrementally loaded widgets
-5. **Self-hostable** - Single binary deployment
-6. **Flexible** - Support many behavior types
-7. **LLM-ready** - Built with AI tool integration in mind
+### Video Chaining System
 
-## Key Terminology
+Visual nodes can be chained together using orange video inlets/outlets:
+- Connect P5.js output → Hydra input → GLSL input → Background output
+- Implemented via FBO (Frame Buffer Object) texture passing
+- Render graphs are topologically sorted to determine execution order
+- Background output (`bg.out`) determines final render target
 
-- **Players**: Users who interact with sandboxes
-- **Playmakers**: Users who create sandboxes
-- **Sandboxes**: Interactive play spaces with rules and behaviors
-- **Objects**: Visual elements that can be created, updated, and interact
-- **Patches**: Node-based programs (the core building blocks)
-- **Connectors**: Visual connections between objects for message routing
+### State Management
 
-## Code Editor Integration
+- **Global singletons**: `MessageSystem`, `PatchiesEventBus`, `AudioSystem`
+- **Svelte stores**: Canvas state, MIDI state, renderer state, UI state (in `/src/stores/`)
+- **Local storage**: Auto-saving patches with conflict resolution
+- **Context API**: Component-level state sharing (avoid prop drilling)
 
-The `CodeEditor.svelte` component uses CodeMirror 6 with:
+## Core System Classes
 
-- JavaScript syntax highlighting via `@codemirror/lang-javascript`
-- One Dark theme with custom Zinc color overrides
-- Real-time code execution for p5.js sketches
-- Proper copy-paste handling and multi-line support
+### Message System (`src/lib/messages/MessageSystem.ts`)
+- Singleton pattern for inter-node communication
+- Handles XY Flow edge updates and connection mapping
+- Manages message queues per node with error isolation
+- Provides `setInterval` with automatic cleanup
 
-## P5.js Integration Notes
+### Event Bus (`src/lib/eventbus/PatchiesEventBus.ts`)  
+- Type-safe event system for system-wide notifications
+- Handles node lifecycle, undo/redo, and collaboration events
+- Singleton pattern with strongly typed event listeners
 
-- p5.js code execution uses a curated API exposed via `with` statement
-- The `P5Manager` class handles instance lifecycle and provides error isolation
-- User code has access to common p5.js functions and constants without the full 600+ function API
-- Canvas nodes support live code editing with immediate visual feedback
+### Render Graph (`src/lib/rendering/graphUtils.ts`)
+- Builds render graphs from XY Flow nodes/edges
+- Performs topological sorting for correct render order
+- Filters FBO-compatible nodes for video chaining
+- Detects circular dependencies and output nodes
 
-## Styling Standards
+### Audio System (`src/lib/audio/AudioSystem.ts`)
+- Manages Web Audio API context and analysis
+- Handles FFT data for audio visualization
+- Coordinates with Strudel for live coding music
 
-- Use Tailwind classes instead of custom CSS where possible
-- Follow the Zinc color palette for dark theme consistency
-- Components should support the `class` prop for Tailwind class extension
-- Icons use either `@iconify/svelte` or `@lucide/svelte`
+## Development Guidelines
 
-## Guidelines
-
+### Code Patterns
+- Use `ts-pattern` instead of `switch` statements always
 - Prefer editing existing files over creating new ones
-- Separate business logic into utility classes when complex
-- Use TypeScript for all new code
-- Follow the pattern of UI components importing and using utility classes
-- We use Svelte 5.
-  - Only use the Svelte 5's rune syntax (`$state`, `$props`, `$effect`, etc.) and do not use Svelte 4 syntax.
-  - Read the `docs/llms/svelte-llms-small.txt` text file for how to use Svelte 5. LLMs often get confused with Svelte 4 syntax, so read this when unsure of the Svelte syntax.
-- Before you start to implement, always update the spec file first with the details and the plan
-- you must use ts-pattern instead of switch cases always
-- write concise yet clear commit messages
-- do not start the dev server to test issues
+- Separate UI components from business logic (manager pattern)
+- Use TypeScript for all new code with proper typing
+
+### Svelte 5 Requirements
+- Only use Svelte 5 rune syntax: `$state`, `$props`, `$effect`, `$derived`
+- Read `docs/llms/svelte-llms-small.txt` for syntax reference
+- Use `onclick` instead of `on:click` for events
+- Components use `{@render children()}` for slot content
+
+### Workflow
+- Before implementing, update relevant spec files in `docs/design-docs/specs/`
+- Write concise, clear commit messages
+- Never start dev server to test - use type checking and build
+- Always run `bun run check` before committing
+
+### Styling
+- Use Tailwind classes over custom CSS
+- Follow Zinc color palette for dark theme
+- Support `class` prop for component extension
+- Icons from `@iconify/svelte` or `@lucide/svelte`
+
+## Testing Strategy
+
+- **Unit tests**: Core business logic, utilities, and pure functions
+- **Component tests**: Svelte component rendering and interactions  
+- **E2E tests**: Critical user workflows like patch creation and node connections
+- **Type checking**: Comprehensive TypeScript coverage with strict mode
+
+## Key File Locations
+
+- Node components: `src/lib/components/nodes/`
+- System managers: `src/lib/[audio|canvas|messages|eventbus]/`
+- Stores: `src/stores/`
+- Utilities: `src/lib/[rendering|save-load|objects]/`
+- Specs: `docs/design-docs/specs/`
