@@ -18,7 +18,7 @@ import { Launchpad } from '$lib/midi/launchpad';
 export interface MIDIInputConfig {
 	deviceId?: string;
 	channel?: number;
-	events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[];
+	events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend')[];
 }
 
 export type MIDIOutputConfig = {
@@ -29,6 +29,7 @@ export type MIDIOutputConfig = {
 	| { event: 'noteOff'; note: number; velocity: number }
 	| { event: 'controlChange'; control: number; value: number }
 	| { event: 'programChange'; program: number }
+	| { event: 'pitchBend'; control: number; value: number }
 	| { event: 'raw'; data: number[] }
 );
 
@@ -37,6 +38,7 @@ interface NodeListeners {
 	noteOff?: (e: NoteMessageEvent) => void;
 	controlChange?: (e: ControlChangeMessageEvent) => void;
 	programChange?: (e: MessageEvent) => void;
+	pitchBend?: (e: MessageEvent) => void;
 	input?: Input;
 	channel?: number | 'all';
 }
@@ -127,7 +129,7 @@ export class MIDISystem {
 		const {
 			deviceId,
 			channel,
-			events = ['noteOn', 'noteOff', 'controlChange', 'programChange']
+			events = ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend']
 		} = config;
 
 		if (!deviceId) {
@@ -202,6 +204,20 @@ export class MIDISystem {
 			});
 		}
 
+		if (events.includes('pitchBend')) {
+			listeners.pitchBend = (e: MessageEvent) => {
+				this.messageSystem.sendMessage(nodeId, {
+					type: 'pitchBend',
+					value: e.value,
+					control: e.statusByte
+				});
+			};
+
+			input.addListener('pitchbend', listeners.pitchBend, {
+				channels: channelToUse === 'all' ? undefined : channelToUse
+			});
+		}
+
 		this.inputListeners.set(nodeId, listeners);
 	}
 
@@ -222,6 +238,10 @@ export class MIDISystem {
 
 			if (listeners.programChange) {
 				listeners.input.removeListener('programchange', listeners.programChange);
+			}
+
+			if (listeners.pitchBend) {
+				listeners.input.removeListener('pitchbend', listeners.pitchBend);
 			}
 
 			this.inputListeners.delete(nodeId);
@@ -262,6 +282,11 @@ export class MIDISystem {
 				.with({ event: 'programChange' }, ({ program }) => {
 					if (program !== undefined) {
 						output.sendProgramChange(program, { channels: channel });
+					}
+				})
+				.with({ event: 'pitchBend' }, ({ value }) => {
+					if (value !== undefined) {
+						output.sendPitchBend(value, { channels: channel });
 					}
 				})
 				.with({ event: 'raw' }, ({ data }) => {
