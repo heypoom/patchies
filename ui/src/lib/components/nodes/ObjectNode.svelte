@@ -351,6 +351,11 @@
 
 				return true;
 			})
+			.with('expr', () => {
+				changeNode('expr', { expr: expr.replace(name, '').trim() });
+
+				return true;
+			})
 			.with('slider', () => {
 				let [min = 0, max = 100, defaultValue] = expr
 					.replace(name, '')

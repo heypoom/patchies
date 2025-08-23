@@ -9,6 +9,7 @@
 	import { match, P } from 'ts-pattern';
 
 	let contentContainer: HTMLDivElement | null = null;
+	let consoleContainer: HTMLDivElement | null = $state(null);
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let {
@@ -140,6 +141,14 @@
 					.map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
 					.join(' ');
 				consoleOutput = [...consoleOutput, message];
+
+				setTimeout(() => {
+					consoleContainer?.scrollTo({
+						left: 0,
+						top: consoleContainer.scrollHeight,
+						behavior: 'instant'
+					});
+				}, 50);
 			},
 			error: (...args: any[]) => {
 				const message = args.map((arg) => String(arg)).join(' ');
@@ -240,7 +249,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={() => {
 							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
@@ -251,7 +260,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -269,7 +278,7 @@
 							position={Position.Top}
 							style={`left: ${(inletCount ?? 1) === 1 ? '50%' : `${35 + (index / (inletCount - 1)) * 30}%`}`}
 							title={`Inlet ${index}`}
-							class="top-0 z-1"
+							class="z-1 top-0"
 						/>
 					{/each}
 				</div>
@@ -319,9 +328,10 @@
 
 						<div
 							class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
+							bind:this={consoleContainer}
 						>
 							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your code to see results.</div>
+								<div class="italic text-zinc-500">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
 									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
@@ -354,7 +364,7 @@
 							position={Position.Bottom}
 							style={`left: ${(outletCount ?? 1) === 1 ? '50%' : `${35 + (index / (outletCount - 1)) * 30}%`}`}
 							title={`Outlet ${index}`}
-							class="bottom-0 z-1"
+							class="z-1 bottom-0"
 						/>
 					{/each}
 				</div>
