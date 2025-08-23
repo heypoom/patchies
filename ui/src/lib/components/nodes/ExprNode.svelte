@@ -3,8 +3,13 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
 	import { match, P } from 'ts-pattern';
+	import hljs from 'highlight.js/lib/core';
+	import javascript from 'highlight.js/lib/languages/javascript';
+
+	import 'highlight.js/styles/tokyo-night-dark.css';
+
+	hljs.registerLanguage('javascript', javascript);
 
 	let {
 		id: nodeId,
@@ -40,6 +45,17 @@
 	const { inletCount } = $derived.by(() => {
 		if (!expr.trim()) return { inletCount: 1 };
 		return parseExpression(expr.trim());
+	});
+
+	let highlightedHtml = $derived.by(() => {
+		try {
+			return hljs.highlight(expr, {
+				language: 'javascript',
+				ignoreIllegals: true
+			}).value;
+		} catch (e) {
+			return '';
+		}
 	});
 
 	// Create evaluation function
@@ -223,7 +239,7 @@
 						<div
 							bind:this={nodeElement}
 							class={[
-								'w-full min-w-16 cursor-pointer rounded-lg border bg-zinc-900/80 px-3 py-2 backdrop-blur-lg',
+								'leading-2 flex h-[34px] w-full min-w-16 cursor-pointer items-center rounded-lg border bg-zinc-900/80 px-3 backdrop-blur-lg',
 								borderColor
 							]}
 							ondblclick={handleDoubleClick}
@@ -231,13 +247,9 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
-							<div class="font-mono text-xs text-zinc-200">
-								{#if expr.trim()}
-									{expr}
-								{:else}
-									<span class="text-zinc-500">expr</span>
-								{/if}
-							</div>
+							<code class="font-mono text-[12px]">
+								{@html highlightedHtml}
+							</code>
 						</div>
 					{/if}
 				</div>
