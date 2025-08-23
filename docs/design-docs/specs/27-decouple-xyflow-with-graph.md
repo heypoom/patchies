@@ -14,7 +14,7 @@ For example, systems that has to be sub-patchable are:
 
 ## Headless Patcher
 
-We will allow people to be able to run and interact with the entire patcher headlessly by exporting the `Patcher` class, which means that we could only output the final preview image and the final audio output.
+We will allow people to be able to run and interact with the entire patcher headlessly by exporting the public-facing `Patcher` class, which means that we could only output the final preview image and the final audio output.
 
 For example:
 
@@ -53,6 +53,62 @@ As a first step, we must decouple the UI logic from the headless graph logic. Cr
 
 The patcher class should be hooked up to every other systems: `MessageSystem`, `AudioSystem`, `AudioAnalysisSystem`, `GLSystem`, `MIDISystem`, `PyodideSystem`.
 
-It should try to replicate the structure of nodes and edges of XYFlow. See the `Node[]` and `Edge[]` types of XYFlow. The only difference is that we do not need UI-related node properties like `x`, `y`, `width`, `height`, `selected`, etc.
+## Data Structure
 
-At this stage, there will be total duplication of state for XYFlow and Patcher. That is fine. Once we have the sub-patching system and abstraction system, the XYFlow will only be a subset of the patch, as we can only show one level of patch on screen at once.
+Use the `Node[]` and `Edge[]` types directly.
+
+At this stage, the state stored in the Patcher class and in the XYFlow node will be 100% duplicated. That is fine.
+
+Once we have the sub-patching system and abstraction system, the XYFlow shown on screen may only be a subset of the patch, as we can only show one level of patch on screen at once.
+
+## Future: patches in patches
+
+Creating a new sub-patch can be done by adding a `patcher` object, or `p` for short.
+
+- `p` creates an empty patcher.
+- `p name` creates an empty named patcher.
+- `p https://...` loads a remote patch from a given url.
+- future: `p @foo/bar` loads a remote patch from a repository.
+
+Internally, the patcher object has this normalized representation. This normalization is to make multiple source types of including patches possible, such as sub-patches (directly embedded into the patch file), and externals (can be loaded by url).
+
+```tsx
+type PatcherNodeData = {
+  // where should we load this patch?
+  source: PatcherSource
+}
+
+type PatcherSource =
+  | {type: 'local'; id: string, name?: string}
+  | {type: 'url'; url: string}
+  | {...}
+```
+
+Here are the available patcher sources:
+
+- `local` patches are directly included in the main patcher's save file.
+  - this is stored in the `patches: Record<string, Patch>` JSON field of the save file.
+  - this is also an optimization to avoid the XYFlow nodes and edges object being too bloated with data from sub-patches. it's lighter if it only stores the references to
+  - Dragging in a JSON patch file into a patch adds it as a local patch.
+- `url` loads the patch by url.
+  - this can be helpful for scenarios like loading from libraries.
+  - e.g. you can load from GitHub or your S3 bucket
+- future: `repo` loads the patch from a Patchies server, for use cases like having patch libraries.
+  - the current Patchies server is always used as the default repository.
+  - `p @foo/bar` loads the patch named `bar` from the namespace `foo`
+  - `p @foo/bar/baz` loads the patch `baz` from the namespace `@foo/bar`
+  - if the user does not have a patchies server, it defaults
+
+The patcher class contains `patches: Record<number, Patch>`, which contains both externally loaded as well as locally loaded patches. The `Patch` contains the full `nodes` and `edges` and other metadata.
+
+## Future: defining inlets and outlets
+
+The patcher will have `in` and `out` nodes that allows patches to expose inlets and outlets, which can be both named and typed, so they can be used in other patches.
+
+This will require a fair bit of work, as there is multiple types of inlets and outlets that a user can expose:
+
+- Video (orange)
+- Audio Signal (blue)
+- Message (white)
+
+We can cache the inlets and outlets on patch load, and use that data to render the main patch.
