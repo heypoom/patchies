@@ -10,10 +10,8 @@ import { Parser } from 'expr-eval';
 export function parseInletCount(expression: string): number {
 	const dollarVarPattern = /\$(\d+)/g;
 	const matches = [...expression.matchAll(dollarVarPattern)];
-	const maxVar = Math.max(0, ...matches.map((match) => parseInt(match[1])));
 
-	// At least 1 inlet
-	return maxVar > 0 ? maxVar : 1;
+	return Math.max(0, ...matches.map((match) => parseInt(match[1])));
 }
 
 const parser = new Parser({

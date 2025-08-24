@@ -334,7 +334,7 @@
 								<div class="italic text-zinc-500">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
-									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
+									<div class="mb-1 select-text whitespace-pre-wrap text-zinc-100">{line}</div>
 								{/each}
 							{/if}
 						</div>

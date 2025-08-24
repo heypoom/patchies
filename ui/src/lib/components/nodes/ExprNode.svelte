@@ -13,7 +13,7 @@
 		selected
 	}: {
 		id: string;
-		data: { expr: string; inletCount: number };
+		data: { expr: string };
 		selected: boolean;
 	} = $props();
 
@@ -26,6 +26,7 @@
 
 	const inletCount = $derived.by(() => {
 		if (!expr.trim()) return 1;
+
 		return parseInletCount(expr.trim());
 	});
 
@@ -111,6 +112,7 @@
 	bind:expr
 	bind:isEditing
 	placeholder="$1 + 2"
+	displayPrefix="expr"
 	editorClass="expr-node-code-editor"
 	onExpressionChange={handleExpressionChange}
 	handles={exprHandles}

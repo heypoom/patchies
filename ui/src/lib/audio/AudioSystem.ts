@@ -290,12 +290,19 @@ export class AudioSystem {
 				});
 			})
 			.with({ type: 'expr~' }, ({ node }) => {
-				if (key === 'expression' && typeof value === 'string') {
-					node.port.postMessage({
-						type: 'set-expression',
-						expression: value
+				match([key, value])
+					.with(['expression', P.string], ([, expression]) => {
+						node.port.postMessage({
+							type: 'set-expression',
+							expression: expression
+						});
+					})
+					.with(['inletValues', P.array(P.number)], ([, values]) => {
+						node.port.postMessage({
+							type: 'set-inlet-values',
+							values: Array.from(values)
+						});
 					});
-				}
 			});
 	}
 

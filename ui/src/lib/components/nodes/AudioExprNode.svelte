@@ -5,6 +5,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { parseInletCount } from '$lib/utils/expr-parser';
 	import CommonExprLayout from './CommonExprLayout.svelte';
 
 	let {
@@ -19,18 +20,31 @@
 
 	let isEditing = $state(!data.expr); // Start in editing mode if no expression
 	let expr = $state(data.expr || '');
+	let inletValues = $state<number[]>([]);
 
 	const messageContext = new MessageContext(nodeId);
 	let audioSystem = AudioSystem.getInstance();
 	let layoutRef = $state<any>();
 
+	const inletCount = $derived.by(() => {
+		if (!expr.trim()) return 0;
+
+		return parseInletCount(expr.trim());
+	});
+
 	// Handle incoming messages
 	const handleMessage: MessageCallbackFn = (message, meta) => {
-		// For audio expression nodes, we could handle control messages
-		// that modify the expression or its parameters
+		const nextInletValues = [...inletValues];
+
 		match(message)
-			.with({ type: 'bang' }, () => {
-				// Bang could trigger re-evaluation or reset
+			.with(P.union(P.number), (value) => {
+				if (meta?.inlet === undefined) return;
+
+				nextInletValues[meta.inlet] = value;
+				inletValues = nextInletValues;
+
+				// Send updated inlet values to the audio processor
+				updateAudioInletValues(nextInletValues);
 			})
 			.with(P.string, (newExpr) => {
 				// String messages could update the expression
@@ -44,16 +58,35 @@
 		audioSystem.handleAudioMessage(nodeId, 'expression', expression);
 	}
 
+	function updateAudioInletValues(values: number[]) {
+		// Send inlet values to the audio system
+		audioSystem.handleAudioMessage(nodeId, 'inletValues', values);
+	}
+
 	function handleExpressionChange(newExpr: string) {
 		expr = newExpr;
 		updateAudioExpression(newExpr);
+
+		// Update inlet count when expression changes
+		const newInletCount = parseInletCount(newExpr || '');
+
+		if (newInletCount !== inletValues.length) {
+			inletValues = new Array(newInletCount).fill(0);
+			updateAudioInletValues(inletValues);
+		}
 	}
 
 	onMount(() => {
 		messageContext.queue.addCallback(handleMessage);
 
+		// Initialize inlet values array
+		inletValues = new Array(inletCount).fill(0);
+
 		// Create the audio expression node
 		audioSystem.createAudioObject(nodeId, 'expr~', [null, expr]);
+
+		// Send initial inlet values
+		updateAudioInletValues(inletValues);
 
 		// Focus editor if starting in editing mode
 		if (isEditing) {
@@ -69,13 +102,32 @@
 </script>
 
 {#snippet audioHandles()}
-	<!-- Audio input -->
+	<!-- Total inlets = 1 audio inlet + control inlets -->
+	{@const totalInlets = 1 + inletCount}
+
+	<!-- Audio input (always present) -->
 	<Handle
 		type="target"
 		position={Position.Top}
 		class="z-1 top-0 !bg-blue-500"
+		style={`left: ${inletCount === 0 ? '50%' : `${35 + (0 / (totalInlets - 1)) * 30}%`}`}
 		title="Audio Input"
+		id="inlet-audio"
 	/>
+
+	<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
+	{#if inletCount > 0}
+		{#each Array.from({ length: inletCount }) as _, index}
+			<Handle
+				type="target"
+				position={Position.Top}
+				id={`inlet-${index}`}
+				class="z-1 top-0"
+				style={`left: ${35 + ((index + 1) / (totalInlets - 1)) * 30}%`}
+				title={`$${index + 1}`}
+			/>
+		{/each}
+	{/if}
 {/snippet}
 
 {#snippet audioOutlets()}
