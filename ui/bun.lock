@@ -50,6 +50,7 @@
         "stats.js": "^0.17.0",
         "ts-pattern": "^5.8.0",
         "vite-plugin-static-copy": "^3.1.1",
+        "webchuck": "^1.2.10",
         "webmidi": "^3.1.12",
       },
       "devDependencies": {
@@ -1568,6 +1569,8 @@
     "w3c-keyname": ["w3c-keyname@2.2.8", "", {}, "sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ=="],
 
     "wav": ["wav@1.0.2", "", { "dependencies": { "buffer-alloc": "^1.1.0", "buffer-from": "^1.0.0", "debug": "^2.2.0", "readable-stream": "^1.1.14", "stream-parser": "^0.3.1" } }, "sha512-viHtz3cDd/Tcr/HbNqzQCofKdF6kWUymH9LGDdskfWFoIy/HJ+RTihgjEcHfnsy1PO4e9B+y4HwgTwMrByquhg=="],
+
+    "webchuck": ["webchuck@1.2.10", "", {}, "sha512-zM0Ol//WkIv/wHsmyyKPpQY0Fs2gvcarMeezPP7xzV6Abx3UlCTWD4l0T8e70iga//jkPnHg9HLrsds3jc5SLw=="],
 
     "webidl-conversions": ["webidl-conversions@3.0.1", "", {}, "sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ=="],
 

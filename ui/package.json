@@ -104,6 +104,7 @@
 		"stats.js": "^0.17.0",
 		"ts-pattern": "^5.8.0",
 		"vite-plugin-static-copy": "^3.1.1",
+		"webchuck": "^1.2.10",
 		"webmidi": "^3.1.12"
 	},
 	"trustedDependencies": [
