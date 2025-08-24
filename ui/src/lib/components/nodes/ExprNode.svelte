@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
+	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import hljs from 'highlight.js/lib/core';
 	import javascript from 'highlight.js/lib/languages/javascript';
+	import CodeEditor from '../CodeEditor.svelte';
+	import { keymap } from '@codemirror/view';
+	import { EditorView } from 'codemirror';
 
 	import 'highlight.js/styles/tokyo-night-dark.css';
 
@@ -23,10 +27,8 @@
 
 	const { updateNodeData, deleteElements } = useSvelteFlow();
 
-	let inputElement = $state<HTMLInputElement>();
-	let nodeElement = $state<HTMLDivElement>();
-	let expr = $state(data.expr || '');
 	let isEditing = $state(!data.expr); // Start in editing mode if no expression
+	let expr = $derived(data.expr || '');
 	let originalExpr = data.expr || ''; // Store original for escape functionality
 	let inletValues = $state<(string | number)[]>([]);
 
@@ -37,17 +39,22 @@
 		const dollarVarPattern = /\$(\d+)/g;
 		const matches = [...expression.matchAll(dollarVarPattern)];
 		const maxVar = Math.max(0, ...matches.map((match) => parseInt(match[1])));
-		const inletCount = maxVar > 0 ? maxVar : 1; // At least 1 inlet
+
+		// At least 1 inlet
+		const inletCount = maxVar > 0 ? maxVar : 1;
 
 		return { inletCount };
 	};
 
 	const { inletCount } = $derived.by(() => {
 		if (!expr.trim()) return { inletCount: 1 };
+
 		return parseExpression(expr.trim());
 	});
 
 	let highlightedHtml = $derived.by(() => {
+		if (!expr) return '';
+
 		try {
 			return hljs.highlight(expr, {
 				language: 'javascript',
@@ -117,8 +124,15 @@
 		isEditing = true;
 		originalExpr = expr;
 
-		// Focus input on next tick
-		setTimeout(() => inputElement?.focus(), 10);
+		focusEditor();
+	}
+
+	function focusEditor() {
+		setTimeout(() => {
+			const editor = document.querySelector('.expr-node-code-editor .cm-content') as HTMLElement;
+
+			editor?.focus();
+		}, 10);
 	}
 
 	function exitEditingMode(save: boolean = true) {
@@ -126,7 +140,8 @@
 
 		if (!save) {
 			// Restore original expression on escape
-			expr = originalExpr;
+			const restored = originalExpr;
+			updateNodeData(nodeId, { ...data, expr: restored });
 
 			// If the original expression was empty, delete the node
 			if (!originalExpr.trim()) {
@@ -140,44 +155,13 @@
 				updateNodeData(nodeId, {
 					...data,
 					expr: expr.trim(),
-					inletCount
+					inletCount: parseExpression(expr.trim()).inletCount
 				});
 			} else {
 				// If trying to save with empty expression, delete the node
 				deleteElements({ nodes: [{ id: nodeId }] });
 			}
 		}
-
-		// Restore focus to the node element after editing
-		setTimeout(() => nodeElement?.focus(), 0);
-	}
-
-	function handleKeydown(event: KeyboardEvent) {
-		if (!isEditing) return;
-
-		if (event.key === 'Escape') {
-			event.preventDefault();
-			exitEditingMode(false);
-			return;
-		}
-
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			exitEditingMode(true);
-		}
-	}
-
-	function handleBlur() {
-		if (!isEditing) return;
-
-		// Delay to allow other events to process
-		setTimeout(() => {
-			if (!expr.trim()) {
-				deleteElements({ nodes: [{ id: nodeId }] });
-			} else {
-				exitEditingMode(true);
-			}
-		}, 100);
 	}
 
 	function handleDoubleClick() {
@@ -189,14 +173,15 @@
 	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-700');
 
 	onMount(() => {
-		if (isEditing) {
-			setTimeout(() => inputElement?.focus(), 10);
-		}
-
 		messageContext.queue.addCallback(handleMessage);
 
 		// Initialize inlet values array
 		inletValues = new Array(inletCount).fill(0);
+
+		// Focus editor if starting in editing mode
+		if (isEditing) {
+			focusEditor();
+		}
 	});
 
 	onDestroy(() => {
@@ -223,33 +208,62 @@
 
 				<div class="relative">
 					{#if isEditing}
-						<!-- Editing state: show input field -->
-						<div class={['w-fit rounded-lg border bg-zinc-900/80 backdrop-blur-lg', borderColor]}>
-							<input
-								bind:this={inputElement}
-								bind:value={expr}
-								onblur={handleBlur}
-								onkeydown={handleKeydown}
+						<div
+							class={[
+								'nodrag w-full min-w-[40px] max-w-[200px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
+								borderColor
+							]}
+						>
+							<CodeEditor
+								value={expr}
+								onchange={(value) =>
+									updateNodeData(nodeId, {
+										...data,
+										expr: value,
+										inletCount: parseExpression(value || '').inletCount
+									})}
+								onrun={() => exitEditingMode(true)}
+								language="javascript"
+								class="expr-node-code-editor rounded-lg border !border-transparent focus:outline-none"
 								placeholder="$1 + 2"
-								class="nodrag min-w-24 bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
+								extraExtensions={[
+									keymap.of([
+										{
+											key: 'Escape',
+											run: () => {
+												exitEditingMode(false);
+												return true;
+											}
+										}
+									]),
+									EditorView.focusChangeEffect.of((state, focusing) => {
+										if (!focusing) {
+											// Delay to allow other events to process first
+											setTimeout(() => exitEditingMode(true), 100);
+										}
+										return null;
+									})
+								]}
 							/>
 						</div>
 					{:else}
-						<!-- Display state: show expression -->
 						<div
-							bind:this={nodeElement}
+							ondblclick={handleDoubleClick}
 							class={[
-								'leading-2 flex h-[34px] w-full min-w-16 cursor-pointer items-center rounded-lg border bg-zinc-900/80 px-3 backdrop-blur-lg',
+								'expr-display max-w-[200px] cursor-pointer rounded-lg border bg-zinc-900 px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
 								borderColor
 							]}
-							ondblclick={handleDoubleClick}
 							role="button"
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
-							<code class="font-mono text-[12px]">
-								{@html highlightedHtml}
-							</code>
+							{#if expr}
+								<code class="whitespace-pre-wrap">
+									{@html highlightedHtml}
+								</code>
+							{:else}
+								<span class="text-zinc-500">expr</span>
+							{/if}
 						</div>
 					{/if}
 				</div>
@@ -260,3 +274,19 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	:global(.expr-node-code-editor .cm-content) {
+		padding: 6px 8px 7px 4px !important;
+	}
+
+	.expr-display {
+		font-family:
+			Monaco,
+			Menlo,
+			Ubuntu Mono,
+			Consolas,
+			source-code-pro,
+			monospace;
+	}
+</style>
