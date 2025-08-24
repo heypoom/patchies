@@ -55,5 +55,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('markdown', () => ({ markdown: 'hello' }))
 		.with('expr', () => ({ expr: '', inletCount: 1 }))
+		.with('expr~', () => ({ expr: 'sample' }))
 		.otherwise(() => ({}));
 }

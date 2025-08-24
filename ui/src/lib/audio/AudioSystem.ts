@@ -12,6 +12,7 @@ export class AudioSystem {
 
 	nodesById: Map<string, PsAudioNode> = new Map();
 	private timeScheduler: TimeScheduler;
+	private workletInitialized = false;
 
 	outGain: GainNode | null = null;
 
@@ -127,7 +128,8 @@ export class AudioSystem {
 			.with('mic', () => this.createMic(nodeId))
 			.with('lpf', () => this.createLpf(nodeId, params))
 			.with('hpf', () => this.createHpf(nodeId, params))
-			.with('bpf', () => this.createBpf(nodeId, params));
+			.with('bpf', () => this.createBpf(nodeId, params))
+			.with('expr~', () => this.createExpr(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -203,6 +205,45 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'bpf', node: filter });
 	}
 
+	async initWorklet() {
+		if (this.workletInitialized) return;
+
+		try {
+			const processorUrl = new URL('/src/lib/audio/expression-processor.ts', import.meta.url);
+			await this.audioContext.audioWorklet.addModule(processorUrl.href);
+			this.workletInitialized = true;
+		} catch (error) {
+			console.error('Failed to initialize expression processor worklet:', error);
+		}
+	}
+
+	async createExpr(nodeId: string, params: unknown[]) {
+		await this.initWorklet();
+
+		if (!this.workletInitialized) {
+			console.error('Expression worklet not initialized');
+			return;
+		}
+
+		const [, expression] = params as [unknown, string];
+
+		try {
+			const workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor');
+
+			// Set initial expression if provided
+			if (expression) {
+				workletNode.port.postMessage({
+					type: 'set-expression',
+					expression: expression
+				});
+			}
+
+			this.nodesById.set(nodeId, { type: 'expr~', node: workletNode });
+		} catch (error) {
+			console.error('Failed to create expression node:', error);
+		}
+	}
+
 	handleAudioMessage(nodeId: string, key: string, value: unknown) {
 		// TimeScheduler handles scheduled messages.
 		if (isScheduledMessage(value)) {
@@ -235,19 +276,26 @@ export class AudioSystem {
 				});
 			})
 			.with({ type: P.union('lpf', 'hpf', 'bpf') }, ({ node }) => {
-				const filterNode = node as BiquadFilterNode;
 				match([key, value])
 					.with(['frequency', P.number], ([, freq]) => {
-						filterNode.frequency.value = freq;
+						node.frequency.value = freq;
 					})
 					.with(['Q', P.number], ([, q]) => {
-						filterNode.Q.value = q;
+						node.Q.value = q;
 					});
 			})
 			.with({ type: 'mic' }, () => {
 				match(value).with({ type: 'bang' }, () => {
 					this.restartMic(nodeId);
 				});
+			})
+			.with({ type: 'expr~' }, ({ node }) => {
+				if (key === 'expression' && typeof value === 'string') {
+					node.port.postMessage({
+						type: 'set-expression',
+						expression: value
+					});
+				}
 			});
 	}
 

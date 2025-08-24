@@ -1,0 +1,208 @@
+<script lang="ts">
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import hljs from 'highlight.js/lib/core';
+	import javascript from 'highlight.js/lib/languages/javascript';
+	import CodeEditor from '../CodeEditor.svelte';
+	import { keymap } from '@codemirror/view';
+	import { EditorView } from 'codemirror';
+
+	import 'highlight.js/styles/tokyo-night-dark.css';
+
+	hljs.registerLanguage('javascript', javascript);
+
+	let {
+		nodeId,
+		data,
+		selected,
+		expr = $bindable(),
+		isEditing = $bindable(),
+		placeholder = 'expr',
+		displayPrefix = '',
+		editorClass = 'common-expr-node-code-editor',
+		onExpressionChange = () => {},
+		children,
+		handles,
+		outlets
+	}: {
+		nodeId: string;
+		data: any;
+		selected: boolean;
+		expr: string;
+		isEditing: boolean;
+		placeholder?: string;
+		displayPrefix?: string;
+		editorClass?: string;
+		onExpressionChange?: (expr: string) => void;
+		children?: any;
+		handles?: any;
+		outlets?: any;
+	} = $props();
+
+	const { updateNodeData, deleteElements } = useSvelteFlow();
+
+	let originalExpr = expr; // Store original for escape functionality
+
+	let highlightedHtml = $derived.by(() => {
+		if (!expr) return '';
+
+		try {
+			return hljs.highlight(expr, {
+				language: 'javascript',
+				ignoreIllegals: true
+			}).value;
+		} catch (e) {
+			return '';
+		}
+	});
+
+	function enterEditingMode() {
+		isEditing = true;
+		originalExpr = expr;
+
+		focusEditor();
+	}
+
+	function focusEditor() {
+		setTimeout(() => {
+			const editor = document.querySelector(`.${editorClass} .cm-content`) as HTMLElement;
+			editor?.focus();
+		}, 10);
+	}
+
+	function exitEditingMode(save: boolean = true) {
+		isEditing = false;
+
+		if (!save) {
+			// Restore original expression on escape
+			expr = originalExpr;
+			updateNodeData(nodeId, { ...data, expr: originalExpr });
+			onExpressionChange(originalExpr);
+
+			// If the original expression was empty, delete the node
+			if (!originalExpr.trim()) {
+				deleteElements({ nodes: [{ id: nodeId }] });
+				return;
+			}
+		}
+
+		if (save) {
+			if (expr.trim()) {
+				const trimmedExpr = expr.trim();
+				updateNodeData(nodeId, { ...data, expr: trimmedExpr });
+				onExpressionChange(trimmedExpr);
+			} else {
+				// If trying to save with empty expression, delete the node
+				deleteElements({ nodes: [{ id: nodeId }] });
+			}
+		}
+	}
+
+	function handleDoubleClick() {
+		if (!isEditing) {
+			enterEditingMode();
+		}
+	}
+
+	function handleExpressionUpdate(value: string) {
+		expr = value;
+		updateNodeData(nodeId, { ...data, expr: value });
+		onExpressionChange(value);
+	}
+
+	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-700');
+
+	export function focus() {
+		if (isEditing) {
+			focusEditor();
+		}
+	}
+</script>
+
+<div class="relative">
+	<div class="group relative">
+		<div class="flex flex-col gap-2">
+			<div class="relative">
+				{@render handles?.()}
+
+				<div class="relative">
+					{#if isEditing}
+						<div
+							class={[
+								'nodrag w-full min-w-[40px] max-w-[400px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
+								borderColor
+							]}
+						>
+							<CodeEditor
+								value={expr}
+								onchange={handleExpressionUpdate}
+								onrun={() => exitEditingMode(true)}
+								language="javascript"
+								class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}
+								{placeholder}
+								extraExtensions={[
+									keymap.of([
+										{
+											key: 'Escape',
+											run: () => {
+												exitEditingMode(false);
+												return true;
+											}
+										}
+									]),
+									EditorView.focusChangeEffect.of((_, focusing) => {
+										if (!focusing) {
+											// Delay to allow other events to process first
+											setTimeout(() => exitEditingMode(true), 100);
+										}
+										return null;
+									})
+								]}
+							/>
+						</div>
+					{:else}
+						<div
+							ondblclick={handleDoubleClick}
+							class={[
+								'expr-display max-w-[400px] cursor-pointer rounded-lg border bg-zinc-900 px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
+								borderColor
+							]}
+							role="button"
+							tabindex="0"
+							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
+						>
+							<div class="flex items-center gap-2 font-mono">
+								{#if expr}
+									<code class="whitespace-pre-wrap text-xs">
+										{#if displayPrefix}
+											<span class="text-xs text-zinc-400">{displayPrefix}</span>
+										{/if}
+
+										{@html highlightedHtml}
+									</code>
+								{/if}
+							</div>
+						</div>
+					{/if}
+				</div>
+
+				{@render outlets?.()}
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	:global(.common-expr-node-code-editor .cm-content) {
+		padding: 6px 8px 7px 4px !important;
+	}
+
+	.expr-display {
+		font-family:
+			Monaco,
+			Menlo,
+			Ubuntu Mono,
+			Consolas,
+			source-code-pro,
+			monospace;
+	}
+</style>

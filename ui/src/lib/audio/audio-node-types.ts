@@ -58,6 +58,11 @@ interface PsBpf extends PsBase {
 	node: BiquadFilterNode;
 }
 
-export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer | PsMic | PsLpf | PsHpf | PsBpf;
+interface PsExpr extends PsBase {
+	type: 'expr~';
+	node: AudioWorkletNode;
+}
+
+export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer | PsMic | PsLpf | PsHpf | PsBpf | PsExpr;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

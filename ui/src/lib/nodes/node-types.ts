@@ -20,6 +20,7 @@ import SliderNode from '$lib/components/nodes/SliderNode.svelte';
 import PythonNode from '$lib/components/nodes/PythonNode.svelte';
 import MarkdownNode from '$lib/components/nodes/MarkdownNode.svelte';
 import ExprNode from '$lib/components/nodes/ExprNode.svelte';
+import AudioExprNode from '$lib/components/nodes/AudioExprNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -43,7 +44,8 @@ export const nodeTypes = {
 	slider: SliderNode,
 	python: PythonNode,
 	markdown: MarkdownNode,
-	expr: ExprNode
+	expr: ExprNode,
+	'expr~': AudioExprNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
