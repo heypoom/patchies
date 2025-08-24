@@ -170,7 +170,7 @@
 					{#if isEditing}
 						<div
 							class={[
-								'nodrag w-full min-w-[40px] max-w-[200px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
+								'nodrag w-full min-w-[40px] max-w-[400px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
 								borderColor
 							]}
 						>
@@ -210,7 +210,7 @@
 						<div
 							ondblclick={handleDoubleClick}
 							class={[
-								'expr-display max-w-[200px] cursor-pointer rounded-lg border bg-zinc-900 px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
+								'expr-display max-w-[400px] cursor-pointer rounded-lg border bg-zinc-900 px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
 								borderColor
 							]}
 							role="button"

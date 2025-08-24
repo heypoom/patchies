@@ -16,6 +16,24 @@ export function parseInletCount(expression: string): number {
 	return maxVar > 0 ? maxVar : 1;
 }
 
+const parser = new Parser({
+	operators: {
+		add: true,
+		concatenate: true,
+		conditional: true,
+		divide: true,
+		factorial: true,
+		multiply: true,
+		power: true,
+		remainder: true,
+		subtract: true,
+		logical: true,
+		comparison: true,
+		in: true,
+		assignment: true
+	}
+});
+
 /**
  * Create evaluation function from expression using expr-eval
  */
@@ -25,24 +43,6 @@ export function createExpressionEvaluator(
 	if (!expression.trim()) return null;
 
 	try {
-		const parser = new Parser({
-			operators: {
-				add: true,
-				concatenate: true,
-				conditional: true,
-				divide: true,
-				factorial: true,
-				multiply: true,
-				power: true,
-				remainder: true,
-				subtract: true,
-				logical: true,
-				comparison: true,
-				in: true,
-				assignment: true
-			}
-		});
-
 		const renamedParam = expression.replace(/\$(\d+)/g, 'x$1');
 
 		const expr = parser.parse(renamedParam);
