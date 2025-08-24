@@ -55,7 +55,9 @@
 					}
 				});
 
-				previewContainerWidth = containerElement.clientWidth;
+				setTimeout(() => {
+					previewContainerWidth = containerElement.clientWidth;
+				}, 50);
 
 				errorMessage = null;
 			} catch (error) {
@@ -93,7 +95,7 @@
 			type="source"
 			position={Position.Bottom}
 			id="video-out"
-			class="!left-20 z-1"
+			class="z-1 !left-20"
 			title="Video output"
 		/>
 	{/snippet}
