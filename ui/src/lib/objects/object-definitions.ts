@@ -219,6 +219,93 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'signal', description: 'Microphone audio output' }],
 		description: 'Captures audio from microphone',
 		tags: ['audio']
+	},
+
+	lpf: {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Cutoff frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 10,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'Q',
+				type: 'float',
+				description: 'Quality factor (resonance)',
+				defaultValue: 1,
+				isAudioParam: true,
+				minNumber: 0.0001,
+				maxNumber: 1000,
+				maxPrecision: 2
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'Low-pass filter allows frequencies below cutoff to pass through',
+		tags: ['audio']
+	},
+
+	hpf: {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Cutoff frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 10,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'Q',
+				type: 'float',
+				description: 'Quality factor (resonance)',
+				defaultValue: 1,
+				isAudioParam: true,
+				minNumber: 0.0001,
+				maxNumber: 1000,
+				maxPrecision: 2
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'High-pass filter allows frequencies above cutoff to pass through',
+		tags: ['audio']
+	},
+
+	bpf: {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Center frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 10,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'Q',
+				type: 'float',
+				description: 'Quality factor (bandwidth)',
+				defaultValue: 1,
+				isAudioParam: true,
+				minNumber: 0.0001,
+				maxNumber: 1000,
+				maxPrecision: 2
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'Band-pass filter allows frequencies within a range around center frequency to pass through',
+		tags: ['audio']
 	}
 };
 

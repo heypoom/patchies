@@ -68,26 +68,28 @@ export class AudioSystem {
 		return canAudioNodeConnect(sourceEntry.type, targetEntry.type);
 	}
 
-	getAudioParam(nodeId: string, paramName: string): AudioParam | null {
+	getAudioParam(nodeId: string, name: string): AudioParam | null {
 		const entry = this.nodesById.get(nodeId);
 		if (!entry) return null;
 
-		return match(entry.type)
-			.with('osc', () => {
-				const node = entry.node as OscillatorNode;
-
-				return match(paramName)
+		return match(entry)
+			.with({ type: 'osc' }, ({ node }) =>
+				match(name)
 					.with('frequency', () => node.frequency)
 					.with('detune', () => node.detune)
-					.otherwise(() => null);
-			})
-			.with('gain', () => {
-				const node = entry.node as GainNode;
-
-				return match(paramName)
+					.otherwise(() => null)
+			)
+			.with({ type: 'gain' }, ({ node }) =>
+				match(name)
 					.with('gain', () => node.gain)
-					.otherwise(() => null);
-			})
+					.otherwise(() => null)
+			)
+			.with({ type: P.union('lpf', 'hpf', 'bpf') }, ({ node }) =>
+				match(name)
+					.with('frequency', () => node.frequency)
+					.with('Q', () => node.Q)
+					.otherwise(() => null)
+			)
 			.otherwise(() => null);
 	}
 
@@ -122,7 +124,10 @@ export class AudioSystem {
 			.with('dac', () => this.createDac(nodeId))
 			.with('fft', () => this.createAnalyzer(nodeId, params))
 			.with('+~', () => this.createAdd(nodeId))
-			.with('mic', () => this.createMic(nodeId));
+			.with('mic', () => this.createMic(nodeId))
+			.with('lpf', () => this.createLpf(nodeId, params))
+			.with('hpf', () => this.createHpf(nodeId, params))
+			.with('bpf', () => this.createBpf(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -165,6 +170,39 @@ export class AudioSystem {
 		this.restartMic(nodeId);
 	}
 
+	createLpf(nodeId: string, params: unknown[]) {
+		const [, frequency, Q] = params as [unknown, number, number];
+
+		const filter = this.audioContext.createBiquadFilter();
+		filter.type = 'lowpass';
+		filter.frequency.value = frequency;
+		filter.Q.value = Q;
+
+		this.nodesById.set(nodeId, { type: 'lpf', node: filter });
+	}
+
+	createHpf(nodeId: string, params: unknown[]) {
+		const [, frequency, Q] = params as [unknown, number, number];
+
+		const filter = this.audioContext.createBiquadFilter();
+		filter.type = 'highpass';
+		filter.frequency.value = frequency;
+		filter.Q.value = Q;
+
+		this.nodesById.set(nodeId, { type: 'hpf', node: filter });
+	}
+
+	createBpf(nodeId: string, params: unknown[]) {
+		const [, frequency, Q] = params as [unknown, number, number];
+
+		const filter = this.audioContext.createBiquadFilter();
+		filter.type = 'bandpass';
+		filter.frequency.value = frequency;
+		filter.Q.value = Q;
+
+		this.nodesById.set(nodeId, { type: 'bpf', node: filter });
+	}
+
 	handleAudioMessage(nodeId: string, key: string, value: unknown) {
 		// TimeScheduler handles scheduled messages.
 		if (isScheduledMessage(value)) {
@@ -195,6 +233,16 @@ export class AudioSystem {
 				match([key, value]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
 				});
+			})
+			.with({ type: P.union('lpf', 'hpf', 'bpf') }, ({ node }) => {
+				const filterNode = node as BiquadFilterNode;
+				match([key, value])
+					.with(['frequency', P.number], ([, freq]) => {
+						filterNode.frequency.value = freq;
+					})
+					.with(['Q', P.number], ([, q]) => {
+						filterNode.Q.value = q;
+					});
 			})
 			.with({ type: 'mic' }, () => {
 				match(value).with({ type: 'bang' }, () => {

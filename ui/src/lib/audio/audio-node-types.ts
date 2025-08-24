@@ -43,6 +43,21 @@ interface PsMic extends PsBase {
 	mediaStreamSource?: MediaStreamAudioSourceNode;
 }
 
-export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer | PsMic;
+interface PsLpf extends PsBase {
+	type: 'lpf';
+	node: BiquadFilterNode;
+}
+
+interface PsHpf extends PsBase {
+	type: 'hpf';
+	node: BiquadFilterNode;
+}
+
+interface PsBpf extends PsBase {
+	type: 'bpf';
+	node: BiquadFilterNode;
+}
+
+export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer | PsMic | PsLpf | PsHpf | PsBpf;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
