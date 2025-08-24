@@ -84,6 +84,7 @@
 		"butterchurn": "^2.6.7",
 		"butterchurn-presets": "^2.4.7",
 		"codemirror": "^6.0.2",
+		"expr-eval": "^2.0.2",
 		"fuse.js": "^7.1.0",
 		"highlight.js": "^11.11.1",
 		"hydra-ts": "^1.0.0",

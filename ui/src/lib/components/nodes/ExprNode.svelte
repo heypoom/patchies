@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -10,6 +9,7 @@
 	import CodeEditor from '../CodeEditor.svelte';
 	import { keymap } from '@codemirror/view';
 	import { EditorView } from 'codemirror';
+	import { parseInletCount, createExpressionEvaluator } from '$lib/utils/expr-parser';
 
 	import 'highlight.js/styles/tokyo-night-dark.css';
 
@@ -30,26 +30,13 @@
 	let isEditing = $state(!data.expr); // Start in editing mode if no expression
 	let expr = $derived(data.expr || '');
 	let originalExpr = data.expr || ''; // Store original for escape functionality
-	let inletValues = $state<(string | number)[]>([]);
+	let inletValues = $state<number[]>([]);
 
 	const messageContext = new MessageContext(nodeId);
 
-	// Parse expression to find $1, $2, etc. and determine inlet count
-	const parseExpression = (expression: string): { inletCount: number } => {
-		const dollarVarPattern = /\$(\d+)/g;
-		const matches = [...expression.matchAll(dollarVarPattern)];
-		const maxVar = Math.max(0, ...matches.map((match) => parseInt(match[1])));
-
-		// At least 1 inlet
-		const inletCount = maxVar > 0 ? maxVar : 1;
-
-		return { inletCount };
-	};
-
-	const { inletCount } = $derived.by(() => {
-		if (!expr.trim()) return { inletCount: 1 };
-
-		return parseExpression(expr.trim());
+	const inletCount = $derived.by(() => {
+		if (!expr.trim()) return 1;
+		return parseInletCount(expr.trim());
 	});
 
 	let highlightedHtml = $derived.by(() => {
@@ -65,34 +52,7 @@
 		}
 	});
 
-	// Create evaluation function
-	const createEvalFunction = (expression: string) => {
-		if (!expression.trim()) return null;
-
-		try {
-			// Create parameter names $1, $2, ..., $9
-			const args = [...Array(9)].map((_, i) => `$${i + 1}`);
-
-			// Create the function with safety checks.
-			// Expose math functions as globals.
-			const fnBody = `
-				try {
-					with (Math) {
-						return ${expression || '0'};
-					}
-				} catch (e) {
-					throw new Error('Expression evaluation failed: ' + e.message);
-				}
-			`;
-
-			return new Function(...args, fnBody);
-		} catch (error) {
-			console.error('Failed to create eval function:', error);
-			return null;
-		}
-	};
-
-	const evalFunction = $derived.by(() => createEvalFunction(expr));
+	const evalFunction = $derived.by(() => createExpressionEvaluator(expr));
 
 	// Handle incoming messages
 	const handleMessage: MessageCallbackFn = (message, meta) => {
@@ -100,7 +60,7 @@
 
 		match(message)
 			.with({ type: 'bang' }, () => {})
-			.with(P.union(P.number, P.string), (value) => {
+			.with(P.union(P.number), (value) => {
 				if (meta?.inlet === undefined) return;
 
 				nextInletValues[meta.inlet] = value;
@@ -155,7 +115,7 @@
 				updateNodeData(nodeId, {
 					...data,
 					expr: expr.trim(),
-					inletCount: parseExpression(expr.trim()).inletCount
+					inletCount: parseInletCount(expr.trim())
 				});
 			} else {
 				// If trying to save with empty expression, delete the node
@@ -220,7 +180,7 @@
 									updateNodeData(nodeId, {
 										...data,
 										expr: value,
-										inletCount: parseExpression(value || '').inletCount
+										inletCount: parseInletCount(value || '')
 									})}
 								onrun={() => exitEditingMode(true)}
 								language="javascript"
@@ -236,7 +196,7 @@
 											}
 										}
 									]),
-									EditorView.focusChangeEffect.of((state, focusing) => {
+									EditorView.focusChangeEffect.of((_, focusing) => {
 										if (!focusing) {
 											// Delay to allow other events to process first
 											setTimeout(() => exitEditingMode(true), 100);
