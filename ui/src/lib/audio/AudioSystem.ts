@@ -129,7 +129,8 @@ export class AudioSystem {
 			.with('lpf', () => this.createLpf(nodeId, params))
 			.with('hpf', () => this.createHpf(nodeId, params))
 			.with('bpf', () => this.createBpf(nodeId, params))
-			.with('expr~', () => this.createExpr(nodeId, params));
+			.with('expr~', () => this.createExpr(nodeId, params))
+			.with('chuck', () => this.createChuck(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -244,7 +245,40 @@ export class AudioSystem {
 		}
 	}
 
-	handleAudioMessage(nodeId: string, key: string, value: unknown) {
+	async createChuck(nodeId: string, params: unknown[]) {
+		// Create a gain node that will be connected to the chuck instance
+		const gainNode = this.audioContext.createGain();
+		gainNode.gain.value = 1;
+
+		// Connect to output
+		if (this.outGain) {
+			gainNode.connect(this.outGain);
+		}
+
+		this.nodesById.set(nodeId, { type: 'chuck', node: gainNode });
+	}
+
+	async getChuckInstance(nodeId: string) {
+		const entry = this.nodesById.get(nodeId);
+		if (!entry || entry.type !== 'chuck') return null;
+
+		// Initialize chuck if not already done
+		if (!entry.chuck) {
+			try {
+				const { Chuck } = await import('webchuck');
+				const chuckUrlPrefix = 'https://chuck.stanford.edu/webchuck/src/';
+				entry.chuck = await Chuck.init([], this.audioContext, 2, chuckUrlPrefix);
+				entry.chuck.connect(entry.node);
+			} catch (error) {
+				console.error('Failed to initialize ChucK:', error);
+				return null;
+			}
+		}
+
+		return entry.chuck;
+	}
+
+	sendControlMessage(nodeId: string, key: string, value: unknown) {
 		// TimeScheduler handles scheduled messages.
 		if (isScheduledMessage(value)) {
 			const audioParam = this.getAudioParam(nodeId, key);
@@ -303,6 +337,30 @@ export class AudioSystem {
 							values: Array.from(values)
 						});
 					});
+			})
+			.with({ type: 'chuck' }, async () => {
+				console.log('chuck msg');
+
+				const chuck = await this.getChuckInstance(nodeId);
+
+				if (chuck) {
+					match([key, value])
+						.with(['code', P.string], async ([, code]) => {
+							try {
+								await chuck.replaceCode(code);
+								console.log('-- replace code:', code);
+							} catch (error) {
+								console.error('ChucK code error:', error);
+							}
+						})
+						.with(['stop', P._], () => {
+							try {
+								chuck.removeLastCode();
+							} catch (error) {
+								console.error('Failed to stop ChucK:', error);
+							}
+						});
+				}
 			});
 	}
 
@@ -326,6 +384,15 @@ export class AudioSystem {
 
 					if (mic.mediaStream) {
 						mic.mediaStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+					}
+				})
+				.with({ type: 'chuck' }, (chuck) => {
+					if (chuck.chuck) {
+						try {
+							chuck.chuck.removeLastCode();
+						} catch (error) {
+							console.error('Failed to stop ChucK during cleanup:', error);
+						}
 					}
 				})
 				.otherwise(() => {});

@@ -53,15 +53,11 @@
 			});
 	};
 
-	function updateAudioExpression(expression: string) {
-		// Send the expression to the audio system
-		audioSystem.handleAudioMessage(nodeId, 'expression', expression);
-	}
+	const updateAudioExpression = (expression: string) =>
+		audioSystem.sendControlMessage(nodeId, 'expression', expression);
 
-	function updateAudioInletValues(values: number[]) {
-		// Send inlet values to the audio system
-		audioSystem.handleAudioMessage(nodeId, 'inletValues', values);
-	}
+	const updateAudioInletValues = (values: number[]) =>
+		audioSystem.sendControlMessage(nodeId, 'inletValues', values);
 
 	function handleExpressionChange(newExpr: string) {
 		expr = newExpr;
@@ -79,16 +75,10 @@
 	onMount(() => {
 		messageContext.queue.addCallback(handleMessage);
 
-		// Initialize inlet values array
 		inletValues = new Array(inletCount).fill(0);
-
-		// Create the audio expression node
-		audioSystem.createAudioObject(nodeId, 'expr~', [null, expr]);
-
-		// Send initial inlet values
+		audioSystem.sendControlMessage(nodeId, 'expr~', [null, expr]);
 		updateAudioInletValues(inletValues);
 
-		// Focus editor if starting in editing mode
 		if (isEditing) {
 			setTimeout(() => layoutRef?.focus(), 10);
 		}

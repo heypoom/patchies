@@ -17,7 +17,7 @@
 		expr = $bindable(),
 		isEditing = $bindable(),
 		placeholder = 'expr',
-		displayPrefix = '',
+		displayPrefix,
 		editorClass = 'common-expr-node-code-editor',
 		onExpressionChange = () => {},
 		children,
@@ -172,13 +172,15 @@
 						>
 							<div class="flex items-center gap-2 font-mono">
 								{#if expr}
-									<code class="whitespace-pre-wrap text-xs">
+									<span>
 										{#if displayPrefix}
-											<span class="text-xs text-zinc-400">{displayPrefix}</span>
+											<span class={['text-xs text-zinc-400']}>{displayPrefix}</span>
 										{/if}
 
-										{@html highlightedHtml}
-									</code>
+										<code class="whitespace-pre-wrap text-xs">
+											{@html highlightedHtml}
+										</code>
+									</span>
 								{/if}
 							</div>
 						</div>

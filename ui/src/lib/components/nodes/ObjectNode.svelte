@@ -233,7 +233,7 @@
 		}
 
 		if (inlet.name && objectDef.tags?.includes('audio')) {
-			audioSystem.handleAudioMessage(nodeId, inlet.name, message);
+			audioSystem.sendControlMessage(nodeId, inlet.name, message);
 
 			return;
 		}
