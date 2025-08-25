@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -8,6 +8,7 @@
 	import CommonExprLayout from './CommonExprLayout.svelte';
 	import Icon from '@iconify/svelte';
 	import { keymap } from '@codemirror/view';
+	import { derived } from 'svelte/store';
 
 	let {
 		id: nodeId,
@@ -20,24 +21,25 @@
 	} = $props();
 
 	let isEditing = $state(!data.expr);
-	let expr = $state(data.expr || '');
 	let layoutRef = $state<any>();
 	let showSettings = $state(false);
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
 
+	const { updateNodeData } = useSvelteFlow();
+
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
 			.with(P.string, async (nextExpr) => {
-				expr = nextExpr;
+				updateNodeData(nodeId, { expr: nextExpr });
 				await runChuckCode(nextExpr);
 			})
 			.with({ type: P.union('bang', 'run') }, async () => {
-				await runChuckCode(expr);
+				await runChuckCode(data.expr);
 			})
 			.with({ type: 'replace' }, async () => {
-				await replaceChuckCode(expr);
+				await replaceChuckCode(data.expr);
 			})
 			.with({ type: 'remove' }, () => {
 				removeChuckCode();
@@ -49,12 +51,7 @@
 
 	const send = (key: string, msg: unknown) => audioSystem.send(nodeId, key, msg);
 
-	async function runChuckCode(code: string) {
-		if (!code.trim()) return;
-
-		send('run', code);
-	}
-
+	const runChuckCode = (code: string) => send('run', code);
 	const replaceChuckCode = (code: string) => send('replace', code);
 	const removeChuckCode = () => send('remove', null);
 	const removeShred = (shredId: number) => send('removeShred', shredId);
@@ -75,13 +72,6 @@
 	const chuckKeymaps = [
 		keymap.of([
 			{
-				key: 'Cmd-Enter',
-				run: () => {
-					handleRun();
-					return true;
-				}
-			},
-			{
 				key: 'Cmd-\\',
 				run: () => {
 					handleReplace();
@@ -91,30 +81,17 @@
 			{
 				key: 'Cmd-Backspace',
 				run: () => {
-					handleRemove();
+					removeChuckCode();
 					return true;
 				}
 			}
 		])
 	];
 
-	function handleExpressionChange(newExpr: string) {
-		expr = newExpr;
-	}
+	const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
 
-	async function handleRun() {
-		if (!expr.trim()) return;
-		await runChuckCode(expr);
-	}
-
-	async function handleReplace() {
-		if (!expr.trim()) return;
-		await replaceChuckCode(expr);
-	}
-
-	function handleRemove() {
-		removeChuckCode();
-	}
+	const handleRun = () => send('run', data.expr);
+	const handleReplace = () => send('replace', data.expr);
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
@@ -132,6 +109,8 @@
 		messageContext.destroy();
 		audioSystem.removeAudioObject(nodeId);
 	});
+
+	const isReplaceDisabled = $derived(!data.expr.trim() || shreds.length === 0);
 </script>
 
 {#snippet chuckHandles()}
@@ -162,7 +141,7 @@
 						onclick={handleRun}
 						class="rounded p-1 hover:bg-zinc-700"
 						title="Run (Cmd+Enter)"
-						disabled={!expr.trim()}
+						disabled={!data.expr.trim()}
 					>
 						<Icon icon="lucide:play" class="h-4 w-4" />
 					</button>
@@ -170,16 +149,16 @@
 					<!-- Replace button -->
 					<button
 						onclick={handleReplace}
-						class="rounded p-1 hover:bg-zinc-700"
+						class={['rounded p-1 hover:bg-zinc-700', isReplaceDisabled && 'opacity-50']}
 						title="Replace (Cmd+\)"
-						disabled={!expr.trim() || shreds.length === 0}
+						disabled={isReplaceDisabled}
 					>
 						<Icon icon="lucide:replace" class="h-4 w-4" />
 					</button>
 
 					<!-- Remove button -->
 					<button
-						onclick={handleRemove}
+						onclick={removeChuckCode}
 						class="rounded p-1 hover:bg-zinc-700"
 						title="Remove (Cmd+Backspace)"
 						disabled={shreds.length === 0}
@@ -205,12 +184,14 @@
 					{nodeId}
 					{data}
 					{selected}
-					bind:expr
+					expr={data.expr}
 					bind:isEditing
 					placeholder="SinOsc osc => dac; 1::second => now;"
 					editorClass="chuck-node-code-editor"
 					onExpressionChange={handleExpressionChange}
 					extraExtensions={chuckKeymaps}
+					exitOnRun={false}
+					onRun={handleRun}
 				/>
 
 				{@render chuckOutlets()}

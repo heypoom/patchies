@@ -83,10 +83,9 @@
 			setTimeout(() => layoutRef?.focus(), 10);
 		}
 	});
-	send;
 
 	onDestroy(() => {
-		messageContesendlback(handleMessage);
+		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
 		audioSystem.removeAudioObject(nodeId);
 	});
@@ -105,7 +104,7 @@
 		title="Audio Input"
 		id="inlet-audio"
 	/>
-	send
+
 	<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
 	{#if inletCount > 0}
 		{#each Array.from({ length: inletCount }) as _, index}

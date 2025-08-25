@@ -20,6 +20,8 @@
 		displayPrefix,
 		editorClass = 'common-expr-node-code-editor',
 		onExpressionChange = () => {},
+		onRun = () => {},
+		exitOnRun = true,
 		extraExtensions = [],
 		children,
 		handles,
@@ -33,7 +35,9 @@
 		placeholder?: string;
 		displayPrefix?: string;
 		editorClass?: string;
+		onRun?: () => void;
 		onExpressionChange?: (expr: string) => void;
+		exitOnRun?: boolean;
 		extraExtensions?: any[];
 		children?: any;
 		handles?: any;
@@ -137,7 +141,11 @@
 							<CodeEditor
 								value={expr}
 								onchange={handleExpressionUpdate}
-								onrun={() => exitEditingMode(true)}
+								onrun={() => {
+									if (exitOnRun) exitEditingMode(true);
+
+									onRun?.();
+								}}
 								language="javascript"
 								class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}
 								{placeholder}
