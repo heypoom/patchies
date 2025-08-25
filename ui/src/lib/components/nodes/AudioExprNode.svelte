@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -19,20 +19,20 @@
 	} = $props();
 
 	let isEditing = $state(!data.expr); // Start in editing mode if no expression
-	let expr = $state(data.expr || '');
 	let inletValues = $state<number[]>([]);
 
 	const messageContext = new MessageContext(nodeId);
 	let audioSystem = AudioSystem.getInstance();
 	let layoutRef = $state<any>();
 
-	const inletCount = $derived.by(() => {
-		if (!expr.trim()) return 0;
+	const { updateNodeData } = useSvelteFlow();
 
-		return parseInletCount(expr.trim());
+	const inletCount = $derived.by(() => {
+		if (!data.expr.trim()) return 0;
+
+		return parseInletCount(data.expr.trim());
 	});
 
-	// Handle incoming messages
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		const nextInletValues = [...inletValues];
 
@@ -43,12 +43,10 @@
 				nextInletValues[meta.inlet] = value;
 				inletValues = nextInletValues;
 
-				// Send updated inlet values to the audio processor
 				updateAudioInletValues(nextInletValues);
 			})
 			.with(P.string, (newExpr) => {
-				// String messages could update the expression
-				expr = newExpr;
+				updateNodeData(nodeId, { expr: newExpr });
 				updateAudioExpression(newExpr);
 			});
 	};
@@ -60,7 +58,7 @@
 		audioSystem.send(nodeId, 'inletValues', values);
 
 	function handleExpressionChange(newExpr: string) {
-		expr = newExpr;
+		updateNodeData(nodeId, { expr: newExpr });
 		updateAudioExpression(newExpr);
 
 		// Update inlet count when expression changes
@@ -76,7 +74,7 @@
 		messageContext.queue.addCallback(handleMessage);
 
 		inletValues = new Array(inletCount).fill(0);
-		audioSystem.send(nodeId, 'expr~', [null, expr]);
+		audioSystem.createAudioObject(nodeId, 'expr~', [null, data.expr]);
 		updateAudioInletValues(inletValues);
 
 		if (isEditing) {
@@ -130,7 +128,7 @@
 	{nodeId}
 	{data}
 	{selected}
-	bind:expr
+	expr={data.expr}
 	bind:isEditing
 	placeholder="sample * 0.5"
 	editorClass="audio-expr-node-code-editor"
