@@ -6,6 +6,7 @@ import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
+import { ChuckManager } from './ChuckManager';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -130,7 +131,7 @@ export class AudioSystem {
 			.with('hpf', () => this.createHpf(nodeId, params))
 			.with('bpf', () => this.createBpf(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
-			.with('chuck', () => this.createChuck(nodeId, params));
+			.with('chuck', () => this.createChuck(nodeId));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -206,7 +207,7 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'bpf', node: filter });
 	}
 
-	async initWorklet() {
+	async initExprWorklet() {
 		if (this.workletInitialized) return;
 
 		try {
@@ -219,7 +220,7 @@ export class AudioSystem {
 	}
 
 	async createExpr(nodeId: string, params: unknown[]) {
-		await this.initWorklet();
+		await this.initExprWorklet();
 
 		if (!this.workletInitialized) {
 			console.error('Expression worklet not initialized');
@@ -231,7 +232,6 @@ export class AudioSystem {
 		try {
 			const workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor');
 
-			// Set initial expression if provided
 			if (expression) {
 				workletNode.port.postMessage({
 					type: 'set-expression',
@@ -245,45 +245,24 @@ export class AudioSystem {
 		}
 	}
 
-	async createChuck(nodeId: string, params: unknown[]) {
-		const gainNode = this.audioContext.createGain();
-		gainNode.gain.value = 1;
+	async createChuck(nodeId: string) {
+		const gainNode = new GainNode(this.audioContext);
+		const chuckManager = new ChuckManager(this.audioContext, gainNode);
 
-		if (this.outGain) {
-			gainNode.connect(this.outGain);
-		}
-
-		this.nodesById.set(nodeId, { type: 'chuck', node: gainNode });
+		this.nodesById.set(nodeId, {
+			type: 'chuck',
+			node: gainNode,
+			chuckManager
+		});
 	}
 
-	async getChuckInstance(nodeId: string) {
-		const entry = this.nodesById.get(nodeId);
-		if (!entry || entry.type !== 'chuck') return null;
-
-		// Initialize chuck if not already done
-		if (!entry.chuck) {
-			try {
-				const { Chuck } = await import('webchuck');
-
-				const chuckUrlPrefix = 'https://chuck.stanford.edu/webchuck/src/';
-				entry.chuck = await Chuck.init([], this.audioContext, 2, chuckUrlPrefix);
-				entry.chuck.connect(entry.node);
-			} catch (error) {
-				console.error('Failed to initialize ChucK:', error);
-				return null;
-			}
-		}
-
-		return entry.chuck;
-	}
-
-	sendControlMessage(nodeId: string, key: string, value: unknown) {
+	send(nodeId: string, key: string, msg: unknown) {
 		// TimeScheduler handles scheduled messages.
-		if (isScheduledMessage(value)) {
+		if (isScheduledMessage(msg)) {
 			const audioParam = this.getAudioParam(nodeId, key);
 			if (!audioParam) return;
 
-			this.timeScheduler.processMessage(audioParam, value);
+			this.timeScheduler.processMessage(audioParam, msg);
 			return;
 		}
 
@@ -292,7 +271,7 @@ export class AudioSystem {
 
 		match(state)
 			.with({ type: 'osc' }, ({ node }) => {
-				match([key, value])
+				match([key, msg])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
 					})
@@ -304,12 +283,12 @@ export class AudioSystem {
 					});
 			})
 			.with({ type: 'gain' }, ({ node }) => {
-				match([key, value]).with(['gain', P.number], ([, gain]) => {
+				match([key, msg]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
 				});
 			})
 			.with({ type: P.union('lpf', 'hpf', 'bpf') }, ({ node }) => {
-				match([key, value])
+				match([key, msg])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
 					})
@@ -318,12 +297,12 @@ export class AudioSystem {
 					});
 			})
 			.with({ type: 'mic' }, () => {
-				match(value).with({ type: 'bang' }, () => {
+				match(msg).with({ type: 'bang' }, () => {
 					this.restartMic(nodeId);
 				});
 			})
 			.with({ type: 'expr~' }, ({ node }) => {
-				match([key, value])
+				match([key, msg])
 					.with(['expression', P.string], ([, expression]) => {
 						node.port.postMessage({
 							type: 'set-expression',
@@ -338,34 +317,7 @@ export class AudioSystem {
 					});
 			})
 			.with({ type: 'chuck' }, async (state) => {
-				const chuck = await this.getChuckInstance(nodeId);
-
-				if (chuck) {
-					match([key, value])
-						.with(['code', P.string], async ([, code]) => {
-							try {
-								const isShredActive =
-									state.shredId !== undefined && (await chuck.isShredActive(state.shredId)) === 1;
-
-								if (isShredActive) {
-									chuck.replaceCode(code);
-								} else {
-									state.shredId = await chuck.runCode(code);
-								}
-
-								console.log('-- replace code:', code);
-							} catch (error) {
-								console.error('ChucK code error:', error);
-							}
-						})
-						.with(['stop', P._], () => {
-							try {
-								chuck.clearChuckInstance();
-							} catch (error) {
-								console.error('Failed to stop ChucK:', error);
-							}
-						});
-				}
+				await state.chuckManager?.handleMessage(key, msg);
 			});
 	}
 
@@ -392,13 +344,7 @@ export class AudioSystem {
 					}
 				})
 				.with({ type: 'chuck' }, (entry) => {
-					if (!entry.chuck) return;
-
-					try {
-						entry.chuck.removeLastCode();
-					} catch (error) {
-						console.error('Failed to stop ChucK during cleanup:', error);
-					}
+					entry.chuckManager?.destroy();
 				})
 				.otherwise(() => {});
 

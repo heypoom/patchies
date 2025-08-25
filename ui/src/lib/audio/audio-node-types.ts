@@ -1,4 +1,4 @@
-import type { Chuck } from 'webchuck';
+import type { ChuckManager } from './ChuckManager';
 
 interface PsBase {
 	node: AudioNode;
@@ -68,10 +68,7 @@ interface PsExpr extends PsBase {
 interface PsChuck extends PsBase {
 	type: 'chuck';
 	node: GainNode;
-	chuck?: Chuck;
-
-	// TODO: support multiple shreds at once.
-	shredId?: number;
+	chuckManager?: ChuckManager;
 }
 
 export type PsAudioNode =
