@@ -5,7 +5,7 @@ const DELAY_JS = `onMessage(async (m) => {
   send(m)
 })`;
 
-const FRAME_TIMER_JS = `setInterval(() => {
+const SEND_EVERY_FRAME_JS = `setInterval(() => {
   send({type: 'bang'})
 }, 1000 / 60)`;
 
@@ -22,6 +22,13 @@ const MIDI_ADSR_GAIN_JS = `onMessage(m => {
   }
 })`;
 
+const FRAME_COUNTER_JS = `let i = 0
+
+setInterval(() => {
+  send(i++)
+  if (i > 100) i=0
+}, 1000 / 60)`;
+
 export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -34,9 +41,13 @@ export const JS_PRESETS: Record<
 		type: 'js',
 		data: { code: DELAY_JS.trim(), showConsole: false, runOnMount: true }
 	},
-	'frame-timer.js': {
+	'send-every-frame.js': {
 		type: 'js',
-		data: { code: FRAME_TIMER_JS, showConsole: false, runOnMount: false }
+		data: { code: SEND_EVERY_FRAME_JS, showConsole: false, runOnMount: true }
+	},
+	'frame-counter.js': {
+		type: 'js',
+		data: { code: FRAME_COUNTER_JS, showConsole: false, runOnMount: true }
 	},
 	'midi-adsr-gain.js': {
 		type: 'js',
