@@ -7,6 +7,7 @@
 	import { createLLMFunction } from '$lib/ai/google';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let contentContainer: HTMLDivElement | null = null;
 	let consoleContainer: HTMLDivElement | null = $state(null);
@@ -40,15 +41,6 @@
 	let isLongRunningTaskActive = $derived(isMessageCallbackActive || isIntervalCallbackActive);
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 1);
-
-	const getPortPosition = (count: number, index: number) => {
-		if (count === 1) return '50%';
-		if (count <= 3) return `${35 + (index / (count - 1)) * 30}%`;
-		if (count <= 6) return `${20 + (index / (count - 1)) * 60}%`;
-		if (count <= 9) return `${15 + (index / (count - 1)) * 70}%`;
-
-		return `${5 + (index / (count - 1)) * 90}%`;
-	};
 
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);

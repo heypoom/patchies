@@ -8,6 +8,9 @@ interface P5SketchConfig {
 
 	/** ML5.js module */
 	ml5?: unknown;
+
+	/** Sets the number of inlets and outlets for the node. */
+	setPortCount?: (inletCount?: number, outletCount?: number) => void;
 }
 
 export class P5Manager {
@@ -169,6 +172,7 @@ export class P5Manager {
 					var setInterval = sketchContext.interval;
 					var noDrag = sketchContext.noDrag;
 					var fft = sketchContext.fft;
+					var setPortCount = sketchContext.setPortCount;
 					var recv = receive = listen = onMessage; // alias for onMessage
 				}
 				

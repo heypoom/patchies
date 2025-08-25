@@ -28,6 +28,9 @@ export interface UserFnRunContext {
 
 	/** Get audio analysis data */
 	fft: (options: AudioAnalysisProps) => AudioAnalysisValue | null;
+
+	/** Sets the number of inlets and outlets for the node. */
+	setPortCount?: (inletCount?: number, outletCount?: number) => void;
 }
 
 export class MessageContext {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { P5Manager } from '$lib/p5/P5Manager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -7,14 +7,24 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
+	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let {
 		id: nodeId,
 		data,
 		selected
-	}: { id: string; data: { code: string }; selected: boolean } = $props();
+	}: {
+		id: string;
+		data: {
+			code: string;
+			inletCount?: number;
+			outletCount?: number;
+		};
+		selected: boolean;
+	} = $props();
 
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let containerElement: HTMLDivElement;
 	let measureElement: HTMLDivElement;
@@ -26,13 +36,14 @@
 
 	let previewContainerWidth = $state(0);
 	const code = $derived(data.code || '');
+	let inletCount = $derived(data.inletCount ?? 1);
+	let outletCount = $derived(data.outletCount ?? 1);
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		p5Manager = new P5Manager(nodeId, containerElement);
 		glSystem.upsertNode(nodeId, 'img', {});
 		updateSketch();
-		measureWidth();
 	});
 
 	onDestroy(() => {
@@ -41,9 +52,16 @@
 		messageContext?.destroy();
 	});
 
+	const setPortCount = (inletCount = 1, outletCount = 1) => {
+		updateNodeData(nodeId, { ...data, inletCount, outletCount });
+		updateNodeInternals(nodeId);
+	};
+
 	function updateSketch() {
 		// re-enable drag on update. nodrag() must be called on setup().
 		enableDrag = true;
+
+		setPortCount(1, 1);
 
 		if (p5Manager && messageContext) {
 			try {
@@ -53,7 +71,8 @@
 						...messageContext.getContext(),
 						noDrag: () => {
 							enableDrag = false;
-						}
+						},
+						setPortCount
 					}
 				});
 
@@ -70,13 +89,22 @@
 	function measureWidth() {
 		setTimeout(() => {
 			previewContainerWidth = Math.max(measureElement.clientWidth, containerElement.clientWidth);
-		}, 50);
+		}, 100);
 	}
 </script>
 
 <ObjectPreviewLayout title="p5.canvas" onrun={updateSketch} previewWidth={previewContainerWidth}>
 	{#snippet topHandle()}
-		<Handle type="target" position={Position.Top} class="z-1" />
+		{#each Array.from({ length: inletCount }) as _, index}
+			<Handle
+				type="target"
+				id={`in-${index}`}
+				position={Position.Top}
+				style={`left: ${getPortPosition(inletCount, index)}`}
+				title={`Inlet ${index}`}
+				class="z-1"
+			/>
+		{/each}
 	{/snippet}
 
 	{#snippet preview()}
@@ -95,15 +123,25 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<Handle type="source" position={Position.Bottom} class="absolute" />
-
 		<VideoHandle
 			type="source"
 			position={Position.Bottom}
 			id="video-out"
-			class="z-1 !left-20"
+			style={`left: ${getPortPosition(outletCount + 1, 0)}`}
 			title="Video output"
+			class="z-1"
 		/>
+
+		{#each Array.from({ length: outletCount }) as _, index}
+			<Handle
+				type="source"
+				id={`out-${index}`}
+				position={Position.Bottom}
+				style={`left: ${getPortPosition(outletCount + 1, index + 1)}`}
+				title={`Outlet ${index}`}
+				class="z-1"
+			/>
+		{/each}
 	{/snippet}
 
 	{#snippet codeEditor()}
