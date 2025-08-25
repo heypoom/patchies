@@ -22,36 +22,37 @@
 	let isRunning = $state(false);
 	let layoutRef = $state<any>();
 
-	const messageContext = new MessageContext(nodeId);
+	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
 
-	const handleMessage: MessageCallbackFn = (message, meta) => {
+	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
-			.with(P.string, async (newExpr) => {
-				expr = newExpr;
-				if (isRunning && newExpr.trim()) {
-					await runChuckCode(newExpr);
+			.with(P.string, async (nextExpr) => {
+				expr = nextExpr;
+
+				if (isRunning && nextExpr.trim()) {
+					await runChuckCode(nextExpr);
 				}
 			})
-			.with('bang', async () => {
-				if (expr.trim()) {
-					await runChuckCode(expr);
-				}
+			.with({ type: 'bang' }, async () => {
+				if (!expr.trim()) return;
+
+				await runChuckCode(expr);
 			})
-			.with('stop', () => {
+			.with({ type: 'stop' }, () => {
 				stopChuck();
 			});
 	};
 
 	async function runChuckCode(code: string) {
-		if (code.trim()) {
-			try {
-				isRunning = true;
-				audioSystem.sendControlMessage(nodeId, 'code', code);
-			} catch (error) {
-				console.error('ChucK code error:', error);
-				isRunning = false;
-			}
+		if (!code.trim()) return;
+
+		try {
+			isRunning = true;
+			audioSystem.sendControlMessage(nodeId, 'code', code);
+		} catch (error) {
+			console.error('ChucK code error:', error);
+			isRunning = false;
 		}
 	}
 
@@ -69,18 +70,17 @@
 	}
 
 	async function handleRun() {
-		if (expr.trim()) {
-			await runChuckCode(expr);
-		}
+		if (!expr.trim()) return;
+
+		await runChuckCode(expr);
 	}
 
 	onMount(() => {
+		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
-
-		// Create the chuck audio object
 		audioSystem.createAudioObject(nodeId, 'chuck');
+		runChuckCode(data.expr);
 
-		// Focus editor if starting in editing mode
 		if (isEditing) {
 			setTimeout(() => layoutRef?.focus(), 10);
 		}

@@ -246,11 +246,9 @@ export class AudioSystem {
 	}
 
 	async createChuck(nodeId: string, params: unknown[]) {
-		// Create a gain node that will be connected to the chuck instance
 		const gainNode = this.audioContext.createGain();
 		gainNode.gain.value = 1;
 
-		// Connect to output
 		if (this.outGain) {
 			gainNode.connect(this.outGain);
 		}
@@ -266,6 +264,7 @@ export class AudioSystem {
 		if (!entry.chuck) {
 			try {
 				const { Chuck } = await import('webchuck');
+
 				const chuckUrlPrefix = 'https://chuck.stanford.edu/webchuck/src/';
 				entry.chuck = await Chuck.init([], this.audioContext, 2, chuckUrlPrefix);
 				entry.chuck.connect(entry.node);
@@ -338,16 +337,22 @@ export class AudioSystem {
 						});
 					});
 			})
-			.with({ type: 'chuck' }, async () => {
-				console.log('chuck msg');
-
+			.with({ type: 'chuck' }, async (state) => {
 				const chuck = await this.getChuckInstance(nodeId);
 
 				if (chuck) {
 					match([key, value])
 						.with(['code', P.string], async ([, code]) => {
 							try {
-								await chuck.replaceCode(code);
+								const isShredActive =
+									state.shredId !== undefined && (await chuck.isShredActive(state.shredId)) === 1;
+
+								if (isShredActive) {
+									chuck.replaceCode(code);
+								} else {
+									state.shredId = await chuck.runCode(code);
+								}
+
 								console.log('-- replace code:', code);
 							} catch (error) {
 								console.error('ChucK code error:', error);
@@ -355,7 +360,7 @@ export class AudioSystem {
 						})
 						.with(['stop', P._], () => {
 							try {
-								chuck.removeLastCode();
+								chuck.clearChuckInstance();
 							} catch (error) {
 								console.error('Failed to stop ChucK:', error);
 							}
@@ -386,13 +391,13 @@ export class AudioSystem {
 						mic.mediaStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
 					}
 				})
-				.with({ type: 'chuck' }, (chuck) => {
-					if (chuck.chuck) {
-						try {
-							chuck.chuck.removeLastCode();
-						} catch (error) {
-							console.error('Failed to stop ChucK during cleanup:', error);
-						}
+				.with({ type: 'chuck' }, (entry) => {
+					if (!entry.chuck) return;
+
+					try {
+						entry.chuck.removeLastCode();
+					} catch (error) {
+						console.error('Failed to stop ChucK during cleanup:', error);
 					}
 				})
 				.otherwise(() => {});
@@ -418,12 +423,10 @@ export class AudioSystem {
 
 		try {
 			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
 			const streamSource = this.audioContext.createMediaStreamSource(stream);
 
 			streamSource.connect(mic.node);
 
-			// Update the entry with new stream resources
 			Object.assign(mic, {
 				mediaStream: stream,
 				mediaStreamSource: streamSource

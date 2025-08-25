@@ -69,8 +69,23 @@ interface PsChuck extends PsBase {
 	type: 'chuck';
 	node: GainNode;
 	chuck?: Chuck;
+
+	// TODO: support multiple shreds at once.
+	shredId?: number;
 }
 
-export type PsAudioNode = PsOsc | PsGain | PsDac | PsAdd | PsLyria | PsAnalyzer | PsMic | PsLpf | PsHpf | PsBpf | PsExpr | PsChuck;
+export type PsAudioNode =
+	| PsOsc
+	| PsGain
+	| PsDac
+	| PsAdd
+	| PsLyria
+	| PsAnalyzer
+	| PsMic
+	| PsLpf
+	| PsHpf
+	| PsBpf
+	| PsExpr
+	| PsChuck;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
