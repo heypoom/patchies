@@ -29,6 +29,9 @@ setInterval(() => {
   if (i > 100) i=0
 }, 1000 / 60)`;
 
+const MIDI_CONTROL_ROUTER_JS = `setPortCount(1, 3)
+recv(m => send(m.value, {to: m.control}))`;
+
 export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -52,5 +55,9 @@ export const JS_PRESETS: Record<
 	'midi-adsr-gain.js': {
 		type: 'js',
 		data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: false }
+	},
+	'midi-control-router.js': {
+		type: 'js',
+		data: { code: MIDI_CONTROL_ROUTER_JS, showConsole: false, runOnMount: true }
 	}
 };
