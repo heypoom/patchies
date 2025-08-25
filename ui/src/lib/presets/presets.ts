@@ -4,6 +4,7 @@ import { P5_PRESETS } from './p5.presets';
 import { JS_PRESETS } from './js.presets';
 import { SLIDER_PRESETS } from './slider.presets';
 import { EXPR_DSP_PRESETS } from './expr-dsp.presets';
+import { CHUCK_DEMO_PRESETS } from './chuck.preset';
 
 /**
  * Presets are pre-configured nodes with custom default data.
@@ -15,5 +16,6 @@ export const PRESETS: Record<string, { type: string; data: unknown }> = {
 	...HYDRA_PRESETS,
 	...JS_PRESETS,
 	...SLIDER_PRESETS,
-	...EXPR_DSP_PRESETS
+	...EXPR_DSP_PRESETS,
+	...CHUCK_DEMO_PRESETS
 };
