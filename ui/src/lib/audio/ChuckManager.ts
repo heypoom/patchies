@@ -1,5 +1,6 @@
 import type { Chuck } from 'webchuck';
 import { match, P } from 'ts-pattern';
+import { writable } from 'svelte/store';
 
 export interface ChuckShred {
 	id: number;
@@ -14,27 +15,12 @@ export class ChuckManager {
 	private gainNode: GainNode;
 	private audioContext: AudioContext;
 
+	/** Allows Svelte to subscribe to the shreds */
+	public shredsStore = writable<ChuckShred[]>([]);
+
 	constructor(audioContext: AudioContext, gainNode: GainNode) {
 		this.audioContext = audioContext;
 		this.gainNode = gainNode;
-	}
-
-	async ensureChuck(): Promise<Chuck | null> {
-		if (this.ready) return this.chuck;
-
-		try {
-			const { Chuck } = await import('webchuck');
-			const chuckUrlPrefix = 'https://chuck.stanford.edu/webchuck/src/';
-
-			this.chuck = await Chuck.init([], this.audioContext, 2, chuckUrlPrefix);
-			this.chuck.connect(this.gainNode);
-			this.ready = true;
-
-			return this.chuck;
-		} catch (error) {
-			console.error('Failed to initialize ChucK:', error);
-			return null;
-		}
 	}
 
 	async runCode(code: string): Promise<void> {
@@ -50,6 +36,8 @@ export class ChuckManager {
 				time: now,
 				code: code.trim()
 			});
+
+			this.updateStore();
 		} catch (error) {
 			console.error('ChucK run error:', error);
 			throw error;
@@ -66,6 +54,8 @@ export class ChuckManager {
 			// Update the most recent shred's code
 			if (this.shreds.length > 0) {
 				this.shreds[this.shreds.length - 1].code = code.trim();
+
+				this.updateStore();
 			}
 		} catch (error) {
 			console.error('ChucK replace error:', error);
@@ -81,6 +71,7 @@ export class ChuckManager {
 			chuck.removeLastCode();
 
 			this.shreds.pop();
+			this.updateStore();
 		} catch (error) {
 			console.error('ChucK remove error:', error);
 			throw error;
@@ -93,12 +84,10 @@ export class ChuckManager {
 
 		try {
 			await chuck.removeShred(shredId);
+		} catch {}
 
-			this.shreds = this.shreds.filter((shred) => shred.id !== shredId);
-		} catch (error) {
-			console.error('ChucK remove shred error:', error);
-			throw error;
-		}
+		this.shreds = this.shreds.filter((shred) => shred.id !== shredId);
+		this.updateStore();
 	}
 
 	async clearAll(): Promise<void> {
@@ -108,6 +97,7 @@ export class ChuckManager {
 		try {
 			chuck.clearChuckInstance();
 			this.shreds = [];
+			this.updateStore();
 		} catch (error) {
 			console.error('ChucK clear error:', error);
 			throw error;
@@ -123,8 +113,6 @@ export class ChuckManager {
 	}
 
 	async handleMessage(key: string, value: unknown): Promise<void> {
-		console.log(`>> message: ${key} = ${value}`);
-
 		match([key, value])
 			.with(['run', P.string], async ([, code]) => {
 				await this.runCode(code);
@@ -156,5 +144,27 @@ export class ChuckManager {
 		this.shreds = [];
 		this.chuck = null;
 		this.ready = false;
+	}
+
+	private updateStore() {
+		this.shredsStore.set([...this.shreds]);
+	}
+
+	async ensureChuck(): Promise<Chuck | null> {
+		if (this.ready) return this.chuck;
+
+		try {
+			const { Chuck } = await import('webchuck');
+			const chuckUrlPrefix = 'https://chuck.stanford.edu/webchuck/src/';
+
+			this.chuck = await Chuck.init([], this.audioContext, 2, chuckUrlPrefix);
+			this.chuck.connect(this.gainNode);
+			this.ready = true;
+
+			return this.chuck;
+		} catch (error) {
+			console.error('Failed to initialize ChucK:', error);
+			return null;
+		}
 	}
 }

@@ -8,7 +8,7 @@
 	import CommonExprLayout from './CommonExprLayout.svelte';
 	import Icon from '@iconify/svelte';
 	import { keymap } from '@codemirror/view';
-	import { derived } from 'svelte/store';
+	import type { ChuckShred } from '$lib/audio/ChuckManager';
 
 	let {
 		id: nodeId,
@@ -57,16 +57,8 @@
 	const removeShred = (shredId: number) => send('removeShred', shredId);
 	const stopChuck = () => send('clearAll', null);
 
-	// Get running shreds for the settings panel
-	const shreds = $derived.by(() => {
-		const entry = audioSystem.nodesById.get(nodeId);
-
-		if (entry?.type === 'chuck' && entry.chuckManager) {
-			return entry.chuckManager.getShreds();
-		}
-
-		return [];
-	});
+	// Get running shreds for the settings panel - access the store value
+	let shreds = $state<ChuckShred[]>([]);
 
 	// Custom keybinds for ChucK operations
 	const chuckKeymaps = [
@@ -93,10 +85,23 @@
 	const handleRun = () => send('run', data.expr);
 	const handleReplace = () => send('replace', data.expr);
 
+	function subscribeShredsStore() {
+		const entry = audioSystem.nodesById.get(nodeId);
+
+		if (entry?.type === 'chuck' && entry.chuckManager) {
+			const unsubscribe = entry.chuckManager.shredsStore.subscribe((newShreds) => {
+				shreds = newShreds;
+			});
+
+			return unsubscribe;
+		}
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 		audioSystem.createAudioObject(nodeId, 'chuck');
+		subscribeShredsStore();
 		runChuckCode(data.expr);
 
 		if (isEditing) {
@@ -215,7 +220,7 @@
 						{:else}
 							<div class="space-y-2">
 								{#each shreds as shred}
-									<div class="flex items-center justify-between rounded bg-zinc-800 p-2">
+									<div class="relative flex items-center justify-between">
 										<div class="flex-1">
 											<div class="font-mono text-xs text-zinc-300">ID: {shred.id}</div>
 
@@ -224,30 +229,24 @@
 											</div>
 
 											<div class="mt-1 max-w-48 truncate font-mono text-xs text-zinc-400">
-												{shred.code}
+												{shred.code.slice(0, 30)}
 											</div>
 										</div>
-										<button
-											onclick={() => removeShred(shred.id)}
-											class="ml-2 rounded p-1 hover:bg-zinc-700"
-											title="Remove shred"
-										>
-											<Icon icon="lucide:x" class="h-3 w-3 text-red-400" />
-										</button>
+
+										<div class="absolute right-0 top-0">
+											<button
+												onclick={() => removeShred(shred.id)}
+												class="ml-2 rounded p-1 hover:bg-zinc-700"
+												title="Remove shred"
+											>
+												<Icon icon="lucide:x" class="h-3 w-3 text-red-400" />
+											</button>
+										</div>
 									</div>
 								{/each}
 							</div>
 						{/if}
 					</div>
-
-					{#if shreds.length > 0}
-						<button
-							onclick={stopChuck}
-							class="w-full rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700"
-						>
-							Clear All Shreds
-						</button>
-					{/if}
 				</div>
 			</div>
 		</div>
