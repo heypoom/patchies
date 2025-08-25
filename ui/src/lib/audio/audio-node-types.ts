@@ -71,6 +71,11 @@ interface PsChuck extends PsBase {
 	chuckManager?: ChuckManager;
 }
 
+interface PsCompressor extends PsBase {
+	type: 'compressor';
+	node: DynamicsCompressorNode;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -83,6 +88,7 @@ export type PsAudioNode =
 	| PsHpf
 	| PsBpf
 	| PsExpr
-	| PsChuck;
+	| PsChuck
+	| PsCompressor;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

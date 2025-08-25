@@ -92,6 +92,15 @@ export class AudioSystem {
 					.with('Q', () => node.Q)
 					.otherwise(() => null)
 			)
+			.with({ type: 'compressor' }, ({ node }) =>
+				match(name)
+					.with('threshold', () => node.threshold)
+					.with('knee', () => node.knee)
+					.with('ratio', () => node.ratio)
+					.with('attack', () => node.attack)
+					.with('release', () => node.release)
+					.otherwise(() => null)
+			)
 			.otherwise(() => null);
 	}
 
@@ -131,7 +140,8 @@ export class AudioSystem {
 			.with('hpf', () => this.createHpf(nodeId, params))
 			.with('bpf', () => this.createBpf(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
-			.with('chuck', () => this.createChuck(nodeId));
+			.with('chuck', () => this.createChuck(nodeId))
+			.with('compressor', () => this.createCompressor(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -205,6 +215,19 @@ export class AudioSystem {
 		filter.Q.value = Q;
 
 		this.nodesById.set(nodeId, { type: 'bpf', node: filter });
+	}
+
+	createCompressor(nodeId: string, params: unknown[]) {
+		const [, threshold, knee, ratio, attack, release] = params as [unknown, number, number, number, number, number];
+
+		const compressor = this.audioContext.createDynamicsCompressor();
+		compressor.threshold.value = threshold;
+		compressor.knee.value = knee;
+		compressor.ratio.value = ratio;
+		compressor.attack.value = attack;
+		compressor.release.value = release;
+
+		this.nodesById.set(nodeId, { type: 'compressor', node: compressor });
 	}
 
 	async initExprWorklet() {
@@ -294,6 +317,24 @@ export class AudioSystem {
 					})
 					.with(['Q', P.number], ([, q]) => {
 						node.Q.value = q;
+					});
+			})
+			.with({ type: 'compressor' }, ({ node }) => {
+				match([key, msg])
+					.with(['threshold', P.number], ([, threshold]) => {
+						node.threshold.value = threshold;
+					})
+					.with(['knee', P.number], ([, knee]) => {
+						node.knee.value = knee;
+					})
+					.with(['ratio', P.number], ([, ratio]) => {
+						node.ratio.value = ratio;
+					})
+					.with(['attack', P.number], ([, attack]) => {
+						node.attack.value = attack;
+					})
+					.with(['release', P.number], ([, release]) => {
+						node.release.value = release;
 					});
 			})
 			.with({ type: 'mic' }, () => {
