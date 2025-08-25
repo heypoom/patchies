@@ -7,7 +7,7 @@ interface P5SketchConfig {
 	messageContext?: UserFnRunContext;
 
 	/** ML5.js module */
-	ml5: unknown;
+	ml5?: unknown;
 }
 
 export class P5Manager {
@@ -35,10 +35,7 @@ export class P5Manager {
 
 		if (!this.container) return;
 
-		const [{ default: P5 }, { default: ml5 }] = await Promise.all([
-			import('p5'),
-			import('ml5')
-		]);
+		const [{ default: P5 }, { default: ml5 }] = await Promise.all([import('p5'), import('ml5')]);
 
 		config.ml5 = ml5;
 
@@ -152,8 +149,10 @@ export class P5Manager {
 		// @ts-expect-error -- no-op
 		sketch['p5'] = P5Constructor;
 
-		// @ts-expect-error -- no-op
-		sketch['ml5'] = config.ml5;
+		if (config.ml5) {
+			// @ts-expect-error -- no-op
+			sketch['ml5'] = config.ml5;
+		}
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(

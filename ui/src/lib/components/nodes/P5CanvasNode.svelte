@@ -17,6 +17,7 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	let containerElement: HTMLDivElement;
+	let measureElement: HTMLDivElement;
 	let p5Manager: P5Manager | null = null;
 	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
@@ -68,7 +69,7 @@
 
 	function measureWidth() {
 		setTimeout(() => {
-			previewContainerWidth = containerElement.clientWidth;
+			previewContainerWidth = Math.max(measureElement.clientWidth, containerElement.clientWidth);
 		}, 50);
 	}
 </script>
@@ -79,7 +80,7 @@
 	{/snippet}
 
 	{#snippet preview()}
-		<div class="relative">
+		<div class="relative" bind:this={measureElement}>
 			<div
 				bind:this={containerElement}
 				class={[
