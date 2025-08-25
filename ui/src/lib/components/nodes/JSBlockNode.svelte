@@ -41,6 +41,15 @@
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 1);
 
+	const getPortPosition = (count: number, index: number) => {
+		if (count === 1) return '50%';
+		if (count <= 3) return `${35 + (index / (count - 1)) * 30}%`;
+		if (count <= 6) return `${20 + (index / (count - 1)) * 60}%`;
+		if (count <= 9) return `${15 + (index / (count - 1)) * 70}%`;
+
+		return `${5 + (index / (count - 1)) * 90}%`;
+	};
+
 	let showEditor = $state(false);
 	let consoleOutput = $state<string[]>([]);
 	let contentWidth = $state(100);
@@ -276,7 +285,7 @@
 							type="target"
 							id={`in-${index}`}
 							position={Position.Top}
-							style={`left: ${(inletCount ?? 1) === 1 ? '50%' : `${35 + (index / (inletCount - 1)) * 30}%`}`}
+							style={`left: ${getPortPosition(inletCount, index)}`}
 							title={`Inlet ${index}`}
 							class="z-1 top-0"
 						/>
@@ -362,7 +371,7 @@
 							type="source"
 							id={`out-${index}`}
 							position={Position.Bottom}
-							style={`left: ${(outletCount ?? 1) === 1 ? '50%' : `${35 + (index / (outletCount - 1)) * 30}%`}`}
+							style={`left: ${getPortPosition(outletCount, index)}`}
 							title={`Outlet ${index}`}
 							class="z-1 bottom-0"
 						/>
