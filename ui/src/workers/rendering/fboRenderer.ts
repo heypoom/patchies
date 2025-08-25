@@ -20,6 +20,7 @@ import type {
 	AudioAnalysisPayloadWithType,
 	GlslFFTInletMeta
 } from '$lib/audio/AudioAnalysisSystem.js';
+import type { SendMessageOptions } from '$lib/messages/MessageContext';
 
 export class FBORenderer {
 	public outputSize = [800, 600] as [w: number, h: number];
@@ -273,11 +274,12 @@ export class FBORenderer {
 					swglContext.onMessage = callback;
 				},
 
-				send: (data: unknown) => {
+				send: (data: unknown, options: SendMessageOptions) => {
 					self.postMessage({
 						type: 'sendMessageFromNode',
 						fromNodeId: node.id,
-						data
+						data,
+						options
 					});
 				}
 			};

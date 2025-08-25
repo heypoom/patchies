@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -9,14 +9,26 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
+	import { getPortPosition } from '$lib/utils/node-utils';
+	import type { NodePortCountUpdateEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
 		data,
 		selected
-	}: { id: string; type: string; data: { code: string }; selected: boolean } = $props();
+	}: {
+		id: string;
+		type: string;
+		data: {
+			code: string;
+			inletCount?: number;
+			outletCount?: number;
+		};
+		selected: boolean;
+	} = $props();
 
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let glSystem: GLSystem;
 	let audioAnalysisSystem: AudioAnalysisSystem;
@@ -26,7 +38,22 @@
 	let isPaused = $state(false);
 	let errorMessage = $state<string | null>(null);
 
+	// Store event handler for cleanup
+	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+
+		updateNodeData(nodeId, {
+			...data,
+			inletCount: e.inletCount,
+			outletCount: e.outletCount
+		});
+
+		updateNodeInternals(nodeId);
+	}
+
 	const code = $derived(data.code || '');
+	let inletCount = $derived(data.inletCount ?? 1);
+	let outletCount = $derived(data.outletCount ?? 1);
 
 	const setCodeAndUpdate = (newCode: string) => {
 		updateNodeData(nodeId, { ...data, code: newCode });
@@ -56,6 +83,11 @@
 		messageContext.queue.addCallback(handleMessage);
 		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
+		// Listen for port count updates from the worker
+		const eventBus = glSystem.eventBus;
+
+		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
+
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 
@@ -76,6 +108,12 @@
 		messageContext.destroy();
 		glSystem.removeNode(nodeId);
 		glSystem.removePreviewContext(nodeId, previewBitmapContext);
+
+		// Clean up event listener
+		if (handlePortCountUpdate) {
+			const eventBus = glSystem.eventBus;
+			eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
+		}
 	});
 
 	function updateHydra() {
@@ -117,41 +155,48 @@
 			type="target"
 			position={Position.Top}
 			id="video-in-0"
-			class="!left-16 z-1"
+			style={`left: ${getPortPosition(inletCount + 4, 0)}`}
 			title="Video input 0"
+			class="z-1"
 		/>
 
 		<VideoHandle
 			type="target"
 			position={Position.Top}
 			id="video-in-1"
-			class="!left-20 z-1"
+			style={`left: ${getPortPosition(inletCount + 4, 1)}`}
 			title="Video input 1"
+			class="z-1"
 		/>
 
 		<VideoHandle
 			type="target"
 			position={Position.Top}
 			id="video-in-2"
-			class="!left-24 z-1"
+			style={`left: ${getPortPosition(inletCount + 4, 2)}`}
 			title="Video input 2"
+			class="z-1"
 		/>
 
 		<VideoHandle
 			type="target"
 			position={Position.Top}
 			id="video-in-3"
-			class="!left-28 z-1"
+			style={`left: ${getPortPosition(inletCount + 4, 3)}`}
 			title="Video input 3"
+			class="z-1"
 		/>
 
-		<Handle
-			type="target"
-			position={Position.Top}
-			class="!left-32 z-1"
-			id="message-in"
-			title="Message input"
-		/>
+		{#each Array.from({ length: inletCount }) as _, index}
+			<Handle
+				type="target"
+				id={`in-${index}`}
+				position={Position.Top}
+				style={`left: ${getPortPosition(inletCount + 4, index + 4)}`}
+				title={`Inlet ${index}`}
+				class="z-1"
+			/>
+		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
@@ -159,17 +204,21 @@
 			type="source"
 			position={Position.Bottom}
 			id="video-out"
-			class="!left-22 z-1"
+			style={`left: ${getPortPosition(outletCount + 1, 0)}`}
 			title="Video output"
+			class="z-1"
 		/>
 
-		<Handle
-			type="source"
-			position={Position.Bottom}
-			id="message-out"
-			title="Message output"
-			class="!left-28 z-1"
-		/>
+		{#each Array.from({ length: outletCount }) as _, index}
+			<Handle
+				type="source"
+				id={`out-${index}`}
+				position={Position.Bottom}
+				style={`left: ${getPortPosition(outletCount + 1, index + 1)}`}
+				title={`Outlet ${index}`}
+				class="z-1"
+			/>
+		{/each}
 	{/snippet}
 
 	{#snippet codeEditor()}

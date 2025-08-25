@@ -165,4 +165,5 @@ async function handleCapturePreview(nodeId: string, requestId?: string) {
 	});
 }
 
+
 console.log('[render worker] hello');

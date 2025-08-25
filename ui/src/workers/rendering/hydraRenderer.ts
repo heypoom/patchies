@@ -5,6 +5,7 @@ import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
+import type { SendMessageOptions } from '$lib/messages/MessageContext';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -26,7 +27,6 @@ export class HydraRenderer {
 
 	public hydra: Hydra | null = null;
 	public framebuffer: regl.Framebuffer2D | null = null;
-
 
 	public onMessage: MessageCallbackFn = () => {};
 
@@ -149,6 +149,7 @@ export class HydraRenderer {
 
 		this.sourceToParamIndexMap = [null, null, null, null];
 
+		this.setPortCount(1, 1);
 		this.isFFTEnabled = false;
 		this.fftDataCache.clear();
 		this.fftRequestCache.clear();
@@ -202,7 +203,12 @@ export class HydraRenderer {
 				send: this.sendMessage.bind(this),
 
 				// FFT function for audio analysis
-				fft: this.createFFTFunction()
+				fft: this.createFFTFunction(),
+
+				// setPortCount function for dynamic port management
+				setPortCount: (inletCount = 1, outletCount = 1) => {
+					this.setPortCount(inletCount, outletCount);
+				}
 			};
 
 			const userFunction = new Function(
@@ -260,11 +266,12 @@ export class HydraRenderer {
 		});
 	}
 
-	sendMessage(data: unknown) {
+	sendMessage(data: unknown, options: SendMessageOptions) {
 		self.postMessage({
 			type: 'sendMessageFromNode',
 			fromNodeId: this.config.nodeId,
-			data
+			data,
+			options
 		});
 	}
 
@@ -312,6 +319,15 @@ export class HydraRenderer {
 		this.fftDataCache.set(cacheKey, {
 			data: array,
 			timestamp: performance.now()
+		});
+	}
+
+	setPortCount(inletCount: number, outletCount: number) {
+		self.postMessage({
+			type: 'setPortCount',
+			nodeId: this.config.nodeId,
+			inletCount,
+			outletCount
 		});
 	}
 }

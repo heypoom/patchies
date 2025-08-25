@@ -103,7 +103,17 @@ export class GLSystem {
 
 		// Render worker (e.g. Hydra) is sending message back to the main thread.
 		if (data.type === 'sendMessageFromNode') {
-			this.messageSystem.sendMessage(data.fromNodeId, data.data);
+			this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
+		}
+
+		// Handle direct setPortCount messages from workers
+		if (data.type === 'setPortCount') {
+			this.eventBus.dispatch({
+				type: 'nodePortCountUpdate',
+				nodeId: data.nodeId,
+				inletCount: data.inletCount,
+				outletCount: data.outletCount
+			});
 		}
 
 		// A block has requested a preview frame capture from a node.

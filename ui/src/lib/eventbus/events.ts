@@ -3,7 +3,8 @@ import type { SendMessageOptions } from '$lib/messages/MessageContext';
 export type PatchiesEvent =
 	| GLPreviewFrameCapturedEvent
 	| PyodideConsoleOutputEvent
-	| PyodideSendMessageEvent;
+	| PyodideSendMessageEvent
+	| NodePortCountUpdateEvent;
 
 export interface PyodideConsoleOutputEvent {
 	type: 'pyodideConsoleOutput';
@@ -28,4 +29,11 @@ export interface GLPreviewFrameCapturedEvent {
 	requestId: string;
 	success: boolean;
 	bitmap?: ImageBitmap;
+}
+
+export interface NodePortCountUpdateEvent {
+	type: 'nodePortCountUpdate';
+	nodeId: string;
+	inletCount: number;
+	outletCount: number;
 }
