@@ -55,7 +55,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('markdown', () => ({ markdown: 'hello' }))
 		.with('expr', () => ({ expr: '' }))
-		.with('expr~', () => ({ expr: 'sample' }))
+		.with('expr~', () => ({ expr: 's' }))
 		.with('chuck', () => ({ expr: 'SinOsc osc => dac;\n1::second => now;' }))
 		.otherwise(() => ({}));
 }

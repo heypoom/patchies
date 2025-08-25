@@ -130,7 +130,7 @@
 	{selected}
 	expr={data.expr}
 	bind:isEditing
-	placeholder="sample * 0.5"
+	placeholder="s * 0.5"
 	editorClass="audio-expr-node-code-editor"
 	displayPrefix="expr~"
 	onExpressionChange={handleExpressionChange}

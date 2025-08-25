@@ -30,20 +30,23 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 		}
 
 		const userCode = `
-			const numChannels = input.length;
-			const numSamples = input[0] ? input[0].length : 128;
+			const ns = input[0] ? input[0].length : 128;
 			const [$1=0, $2=0, $3=0, $4=0, $5=0, $6=0, $7=0, $8=0, $9=0] = inletValues;
 
-			for (let channel = 0; channel < numChannels; channel++) {
-				const inChannel = input[channel] || new Float32Array(numSamples);
-				const outChannel = output[channel] || new Float32Array(numSamples);
+			with (Math) {
+				for (let chan = 0; chan < input.length; chan++) {
+					const samples = input[chan] || new Float32Array(ns);
+					const outs = output[chan] || new Float32Array(ns);
 
-				for (let i = 0; i < numSamples; i++) {
-					const sample = inChannel[i] || 0;
-					try {
-						outChannel[i] = ${expressionString};
-					} catch (e) {
-						outChannel[i] = 0;
+					for (let i = 0; i < ns; i++) {
+						const s = samples[i] || 0;
+
+						try {
+							const v = ${expressionString};
+							outs[i] = v;
+						} catch (e) {
+							outs[i] = 0;
+						}
 					}
 				}
 			}
