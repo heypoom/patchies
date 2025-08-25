@@ -54,10 +54,10 @@
 	};
 
 	const updateAudioExpression = (expression: string) =>
-		audioSystem.sendControlMessage(nodeId, 'expression', expression);
+		audioSystem.send(nodeId, 'expression', expression);
 
 	const updateAudioInletValues = (values: number[]) =>
-		audioSystem.sendControlMessage(nodeId, 'inletValues', values);
+		audioSystem.send(nodeId, 'inletValues', values);
 
 	function handleExpressionChange(newExpr: string) {
 		expr = newExpr;
@@ -76,16 +76,17 @@
 		messageContext.queue.addCallback(handleMessage);
 
 		inletValues = new Array(inletCount).fill(0);
-		audioSystem.sendControlMessage(nodeId, 'expr~', [null, expr]);
+		audioSystem.send(nodeId, 'expr~', [null, expr]);
 		updateAudioInletValues(inletValues);
 
 		if (isEditing) {
 			setTimeout(() => layoutRef?.focus(), 10);
 		}
 	});
+	send;
 
 	onDestroy(() => {
-		messageContext.queue.removeCallback(handleMessage);
+		messageContesendlback(handleMessage);
 		messageContext.destroy();
 		audioSystem.removeAudioObject(nodeId);
 	});
@@ -104,7 +105,7 @@
 		title="Audio Input"
 		id="inlet-audio"
 	/>
-
+	send
 	<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
 	{#if inletCount > 0}
 		{#each Array.from({ length: inletCount }) as _, index}

@@ -6,6 +6,8 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import CommonExprLayout from './CommonExprLayout.svelte';
+	import Icon from '@iconify/svelte';
+	import { keymap } from '@codemirror/view';
 
 	let {
 		id: nodeId,
@@ -19,8 +21,8 @@
 
 	let isEditing = $state(!data.expr);
 	let expr = $state(data.expr || '');
-	let isRunning = $state(false);
 	let layoutRef = $state<any>();
+	let showSettings = $state(false);
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
@@ -29,41 +31,72 @@
 		match(message)
 			.with(P.string, async (nextExpr) => {
 				expr = nextExpr;
-
-				if (isRunning && nextExpr.trim()) {
-					await runChuckCode(nextExpr);
-				}
+				await runChuckCode(nextExpr);
 			})
-			.with({ type: 'bang' }, async () => {
-				if (!expr.trim()) return;
-
+			.with({ type: P.union('bang', 'run') }, async () => {
 				await runChuckCode(expr);
+			})
+			.with({ type: 'replace' }, async () => {
+				await replaceChuckCode(expr);
+			})
+			.with({ type: 'remove' }, () => {
+				removeChuckCode();
 			})
 			.with({ type: 'stop' }, () => {
 				stopChuck();
 			});
 	};
 
+	const send = (key: string, msg: unknown) => audioSystem.send(nodeId, key, msg);
+
 	async function runChuckCode(code: string) {
 		if (!code.trim()) return;
 
-		try {
-			isRunning = true;
-			audioSystem.sendControlMessage(nodeId, 'code', code);
-		} catch (error) {
-			console.error('ChucK code error:', error);
-			isRunning = false;
-		}
+		send('run', code);
 	}
 
-	function stopChuck() {
-		try {
-			audioSystem.sendControlMessage(nodeId, 'stop', null);
-			isRunning = false;
-		} catch (error) {
-			console.error('Failed to stop ChucK:', error);
+	const replaceChuckCode = (code: string) => send('replace', code);
+	const removeChuckCode = () => send('remove', null);
+	const removeShred = (shredId: number) => send('removeShred', shredId);
+	const stopChuck = () => send('clearAll', null);
+
+	// Get running shreds for the settings panel
+	const shreds = $derived.by(() => {
+		const entry = audioSystem.nodesById.get(nodeId);
+
+		if (entry?.type === 'chuck' && entry.chuckManager) {
+			return entry.chuckManager.getShreds();
 		}
-	}
+
+		return [];
+	});
+
+	// Custom keybinds for ChucK operations
+	const chuckKeymaps = [
+		keymap.of([
+			{
+				key: 'Cmd-Enter',
+				run: () => {
+					handleRun();
+					return true;
+				}
+			},
+			{
+				key: 'Cmd-\\',
+				run: () => {
+					handleReplace();
+					return true;
+				}
+			},
+			{
+				key: 'Cmd-Backspace',
+				run: () => {
+					handleRemove();
+					return true;
+				}
+			}
+		])
+	];
 
 	function handleExpressionChange(newExpr: string) {
 		expr = newExpr;
@@ -71,8 +104,16 @@
 
 	async function handleRun() {
 		if (!expr.trim()) return;
-
 		await runChuckCode(expr);
+	}
+
+	async function handleReplace() {
+		if (!expr.trim()) return;
+		await replaceChuckCode(expr);
+	}
+
+	function handleRemove() {
+		removeChuckCode();
 	}
 
 	onMount(() => {
@@ -110,39 +151,127 @@
 	<Handle type="source" position={Position.Bottom} class="z-1 !bg-blue-500" title="Audio Output" />
 {/snippet}
 
-<CommonExprLayout
-	bind:this={layoutRef}
-	{nodeId}
-	{data}
-	{selected}
-	bind:expr
-	bind:isEditing
-	placeholder="SinOsc osc => dac; 1::second => now;"
-	editorClass="chuck-node-code-editor"
-	onExpressionChange={handleExpressionChange}
-	handles={chuckHandles}
-	outlets={chuckOutlets}
->
-	{#if !isEditing && expr}
-		<div class="mt-2 flex gap-1">
-			<button
-				onclick={handleRun}
-				class="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
-				disabled={isRunning}
-			>
-				{isRunning ? 'Running...' : 'Run'}
-			</button>
+<div class="relative flex gap-x-3">
+	<div class="group relative">
+		<div class="flex flex-col gap-2">
+			<!-- Floating toolbar -->
+			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+				<div class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+					<!-- Run button -->
+					<button
+						onclick={handleRun}
+						class="rounded p-1 hover:bg-zinc-700"
+						title="Run (Cmd+Enter)"
+						disabled={!expr.trim()}
+					>
+						<Icon icon="lucide:play" class="h-4 w-4" />
+					</button>
 
-			<button
-				onclick={stopChuck}
-				class="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
-				disabled={!isRunning}
-			>
-				Stop
-			</button>
+					<!-- Replace button -->
+					<button
+						onclick={handleReplace}
+						class="rounded p-1 hover:bg-zinc-700"
+						title="Replace (Cmd+\)"
+						disabled={!expr.trim() || shreds.length === 0}
+					>
+						<Icon icon="lucide:replace" class="h-4 w-4" />
+					</button>
+
+					<!-- Remove button -->
+					<button
+						onclick={handleRemove}
+						class="rounded p-1 hover:bg-zinc-700"
+						title="Remove (Cmd+Backspace)"
+						disabled={shreds.length === 0}
+					>
+						<Icon icon="lucide:delete" class="h-4 w-4" />
+					</button>
+				</div>
+
+				<button
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					onclick={() => (showSettings = !showSettings)}
+					title="Settings"
+				>
+					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
+
+			<div class="relative">
+				{@render chuckHandles()}
+
+				<CommonExprLayout
+					bind:this={layoutRef}
+					{nodeId}
+					{data}
+					{selected}
+					bind:expr
+					bind:isEditing
+					placeholder="SinOsc osc => dac; 1::second => now;"
+					editorClass="chuck-node-code-editor"
+					onExpressionChange={handleExpressionChange}
+					extraExtensions={chuckKeymaps}
+				/>
+
+				{@render chuckOutlets()}
+			</div>
+		</div>
+	</div>
+
+	{#if showSettings}
+		<div class="relative">
+			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
+
+			<div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+				<div class="space-y-4">
+					<div>
+						{#if shreds.length === 0}
+							<div class="text-xs text-zinc-500">No running shreds</div>
+						{:else}
+							<div class="space-y-2">
+								{#each shreds as shred}
+									<div class="flex items-center justify-between rounded bg-zinc-800 p-2">
+										<div class="flex-1">
+											<div class="font-mono text-xs text-zinc-300">ID: {shred.id}</div>
+
+											<div class="text-xs text-zinc-500">
+												{shred.time}
+											</div>
+
+											<div class="mt-1 max-w-48 truncate font-mono text-xs text-zinc-400">
+												{shred.code}
+											</div>
+										</div>
+										<button
+											onclick={() => removeShred(shred.id)}
+											class="ml-2 rounded p-1 hover:bg-zinc-700"
+											title="Remove shred"
+										>
+											<Icon icon="lucide:x" class="h-3 w-3 text-red-400" />
+										</button>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+
+					{#if shreds.length > 0}
+						<button
+							onclick={stopChuck}
+							class="w-full rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700"
+						>
+							Clear All Shreds
+						</button>
+					{/if}
+				</div>
+			</div>
 		</div>
 	{/if}
-</CommonExprLayout>
+</div>
 
 <style>
 	:global(.chuck-node-code-editor .cm-content) {

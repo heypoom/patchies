@@ -20,6 +20,7 @@
 		displayPrefix,
 		editorClass = 'common-expr-node-code-editor',
 		onExpressionChange = () => {},
+		extraExtensions = [],
 		children,
 		handles,
 		outlets
@@ -33,6 +34,7 @@
 		displayPrefix?: string;
 		editorClass?: string;
 		onExpressionChange?: (expr: string) => void;
+		extraExtensions?: any[];
 		children?: any;
 		handles?: any;
 		outlets?: any;
@@ -155,7 +157,8 @@
 											setTimeout(() => exitEditingMode(true), 100);
 										}
 										return null;
-									})
+									}),
+									...extraExtensions
 								]}
 							/>
 						</div>

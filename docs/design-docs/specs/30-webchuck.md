@@ -43,7 +43,7 @@ We need these capabilities to replicate the WebChuck IDE's features:
   - Should add a custom keybind to CodeMirror for 'CMD+\'
   - also triggerable by `{type: 'replace'}`
 
-- Remove button: uses `chuck.remove`
+- Remove button: uses `chuck.removeLastCode`
 
   - Should have a floating icon
   - Should add a custom keybind to CodeMirror for 'CMD+Backspace'
