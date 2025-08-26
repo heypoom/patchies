@@ -129,7 +129,13 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 							inputs, // all inputs
 							...this.inletValues.slice(0, 9) // inlet values x1-x9
 						);
-						outs[i] = typeof result === 'number' ? result : 0;
+
+						if (typeof result !== 'number' || isNaN(result)) {
+							outs[i] = 0;
+							continue;
+						}
+
+						outs[i] = result;
 					} catch {
 						outs[i] = 0;
 					}
