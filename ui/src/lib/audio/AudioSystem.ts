@@ -8,6 +8,8 @@ import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
 import { ChuckManager } from './ChuckManager';
 
+import workletUrl from './expression-processor.ts?worker&url';
+
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
@@ -218,7 +220,14 @@ export class AudioSystem {
 	}
 
 	createCompressor(nodeId: string, params: unknown[]) {
-		const [, threshold, knee, ratio, attack, release] = params as [unknown, number, number, number, number, number];
+		const [, threshold, knee, ratio, attack, release] = params as [
+			unknown,
+			number,
+			number,
+			number,
+			number,
+			number
+		];
 
 		const compressor = this.audioContext.createDynamicsCompressor();
 		compressor.threshold.value = threshold;
@@ -234,7 +243,7 @@ export class AudioSystem {
 		if (this.workletInitialized) return;
 
 		try {
-			const processorUrl = new URL('/src/lib/audio/expression-processor.ts', import.meta.url);
+			const processorUrl = new URL(workletUrl, import.meta.url);
 			await this.audioContext.audioWorklet.addModule(processorUrl.href);
 			this.workletInitialized = true;
 		} catch (error) {
