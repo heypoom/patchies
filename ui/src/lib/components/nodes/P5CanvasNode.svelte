@@ -44,6 +44,7 @@
 		p5Manager = new P5Manager(nodeId, containerElement);
 		glSystem.upsertNode(nodeId, 'img', {});
 		updateSketch();
+		measureWidth(1000);
 	});
 
 	onDestroy(() => {
@@ -76,7 +77,7 @@
 					}
 				});
 
-				measureWidth();
+				measureWidth(100);
 
 				errorMessage = null;
 			} catch (error) {
@@ -86,10 +87,10 @@
 		}
 	}
 
-	function measureWidth() {
+	function measureWidth(timeout: number) {
 		setTimeout(() => {
 			previewContainerWidth = Math.max(measureElement.clientWidth, containerElement.clientWidth);
-		}, 100);
+		}, timeout);
 	}
 </script>
 
