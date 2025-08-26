@@ -10,24 +10,6 @@ interface InletValuesMessage {
 	values: number[];
 }
 
-const parser = new Parser({
-	operators: {
-		add: true,
-		concatenate: true,
-		conditional: true,
-		divide: true,
-		factorial: true,
-		multiply: true,
-		power: true,
-		remainder: true,
-		subtract: true,
-		logical: true,
-		comparison: true,
-		in: true,
-		assignment: true
-	}
-});
-
 type ExprDspFn = (
 	s: number,
 	i: number,
@@ -59,6 +41,24 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 			this.evaluator = null;
 			return;
 		}
+
+		const parser = new Parser({
+			operators: {
+				add: true,
+				concatenate: true,
+				conditional: true,
+				divide: true,
+				factorial: true,
+				multiply: true,
+				power: true,
+				remainder: true,
+				subtract: true,
+				logical: true,
+				comparison: true,
+				in: true,
+				assignment: true
+			}
+		});
 
 		try {
 			// Replace $1, $2, etc. with x1, x2, etc. for expr-eval compatibility
