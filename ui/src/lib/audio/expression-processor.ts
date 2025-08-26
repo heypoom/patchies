@@ -81,7 +81,6 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
 			this.evaluator = expr.toJSFunction(parameterNames.join(',')) as ExprDspFn;
 		} catch (error) {
-			this.evaluator = null;
 			console.error('Failed to compile expression:', error);
 		}
 	}
@@ -138,13 +137,6 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 			}
 		} catch (error) {
 			console.error('Expression processing error:', error);
-			this.evaluator = null;
-			// Fill with silence on error
-			for (let channel = 0; channel < output.length; channel++) {
-				if (output[channel]) {
-					output[channel].fill(0);
-				}
-			}
 		}
 
 		return true;
