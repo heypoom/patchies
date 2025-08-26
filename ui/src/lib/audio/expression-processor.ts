@@ -1,3 +1,5 @@
+import { Parser } from 'expr-eval';
+
 interface ExpressionMessage {
 	type: 'set-expression';
 	expression: string;
@@ -8,8 +10,26 @@ interface InletValuesMessage {
 	values: number[];
 }
 
+const parser = new Parser({
+	operators: {
+		add: true,
+		concatenate: true,
+		conditional: true,
+		divide: true,
+		factorial: true,
+		multiply: true,
+		power: true,
+		remainder: true,
+		subtract: true,
+		logical: true,
+		comparison: true,
+		in: true,
+		assignment: true
+	}
+});
+
 class ExpressionProcessor extends AudioWorkletProcessor {
-	private processor: Function | null = null;
+	private evaluator: ((...args: number[]) => number) | null = null;
 	private inletValues: number[] = new Array(10).fill(0);
 
 	constructor() {
@@ -25,37 +45,25 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
 	private setExpression(expressionString: string): void {
 		if (!expressionString || expressionString.trim() === '') {
-			this.processor = null;
+			this.evaluator = null;
 			return;
 		}
 
-		const userCode = `
-			const ns = input[0] ? input[0].length : 128;
-			const [$1=0, $2=0, $3=0, $4=0, $5=0, $6=0, $7=0, $8=0, $9=0] = inletValues;
-
-			with (Math) {
-				for (let chan = 0; chan < input.length; chan++) {
-					const samples = input[chan] || new Float32Array(ns);
-					const outs = output[chan] || new Float32Array(ns);
-
-					for (let i = 0; i < ns; i++) {
-						const s = samples[i] || 0;
-
-						try {
-							const v = ${expressionString};
-							outs[i] = v;
-						} catch (e) {
-							outs[i] = 0;
-						}
-					}
-				}
-			}
-		`;
-
 		try {
-			this.processor = new Function('input', 'output', 'parameters', 'inletValues', userCode);
+			// Replace $1, $2, etc. with x1, x2, etc. for expr-eval compatibility
+			const renamedExpression = expressionString.replace(/\$(\d+)/g, 'x$1');
+			
+			// Add support for 's' variable for current sample
+			const finalExpression = renamedExpression.replace(/\bs\b/g, 's');
+			
+			const expr = parser.parse(finalExpression);
+			
+			// Create parameter names: s, x1, x2, ..., x9 for sample and inlet values
+			const parameterNames = ['s', ...Array.from({length: 9}, (_, i) => `x${i + 1}`)];
+			
+			this.evaluator = expr.toJSFunction(parameterNames.join(',')) as (...args: number[]) => number;
 		} catch (error) {
-			this.processor = null;
+			this.evaluator = null;
 			console.error('Failed to compile expression:', error);
 		}
 	}
@@ -75,9 +83,9 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 		const input = inputs[0] || [];
 		const output = outputs[0] || [];
 
-		// Keep the expression node alive even without processor
-		if (!this.processor) {
-			// Pass through silence if no processor
+		// Keep the expression node alive even without evaluator
+		if (!this.evaluator) {
+			// Pass through silence if no evaluator
 			for (let channel = 0; channel < output.length; channel++) {
 				if (output[channel]) {
 					output[channel].fill(0);
@@ -87,10 +95,27 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 		}
 
 		try {
-			this.processor(input, output, parameters, this.inletValues);
+			const ns = input[0] ? input[0].length : 128;
+			
+			for (let chan = 0; chan < input.length; chan++) {
+				const samples = input[chan] || new Float32Array(ns);
+				const outs = output[chan] || new Float32Array(ns);
+
+				for (let i = 0; i < ns; i++) {
+					const s = samples[i] || 0;
+					
+					try {
+						// Call evaluator with current sample + inlet values
+						const result = this.evaluator(s, ...this.inletValues.slice(0, 9));
+						outs[i] = typeof result === 'number' ? result : 0;
+					} catch (e) {
+						outs[i] = 0;
+					}
+				}
+			}
 		} catch (error) {
 			console.error('Expression processing error:', error);
-			this.processor = null;
+			this.evaluator = null;
 			// Fill with silence on error
 			for (let channel = 0; channel < output.length; channel++) {
 				if (output[channel]) {
