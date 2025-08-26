@@ -28,8 +28,19 @@ const parser = new Parser({
 	}
 });
 
+type ExprDspFn = (
+	s: number,
+	i: number,
+	channel: number,
+	bufferSize: number,
+	samples: Float32Array,
+	input: Float32Array[],
+	inputs: Float32Array[][],
+	...inletValues: number[]
+) => number;
+
 class ExpressionProcessor extends AudioWorkletProcessor {
-	private evaluator: ((...args: number[]) => number) | null = null;
+	private evaluator: ExprDspFn | null = null;
 	private inletValues: number[] = new Array(10).fill(0);
 
 	constructor() {
@@ -52,16 +63,23 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 		try {
 			// Replace $1, $2, etc. with x1, x2, etc. for expr-eval compatibility
 			const renamedExpression = expressionString.replace(/\$(\d+)/g, 'x$1');
-			
-			// Add support for 's' variable for current sample
-			const finalExpression = renamedExpression.replace(/\bs\b/g, 's');
-			
-			const expr = parser.parse(finalExpression);
-			
-			// Create parameter names: s, x1, x2, ..., x9 for sample and inlet values
-			const parameterNames = ['s', ...Array.from({length: 9}, (_, i) => `x${i + 1}`)];
-			
-			this.evaluator = expr.toJSFunction(parameterNames.join(',')) as (...args: number[]) => number;
+
+			const expr = parser.parse(renamedExpression);
+
+			// Create parameter names: s (sample), i (sample index), channel, bufferSize,
+			// samples (current channel samples), input (first input), inputs (all inputs), x1-x9 (inlet values)
+			const parameterNames = [
+				's',
+				'i',
+				'channel',
+				'bufferSize',
+				'samples',
+				'input',
+				'inputs',
+				...Array.from({ length: 9 }, (_, i) => `x${i + 1}`)
+			];
+
+			this.evaluator = expr.toJSFunction(parameterNames.join(',')) as ExprDspFn;
 		} catch (error) {
 			this.evaluator = null;
 			console.error('Failed to compile expression:', error);
@@ -75,11 +93,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 		}
 	}
 
-	process(
-		inputs: Float32Array[][],
-		outputs: Float32Array[][],
-		parameters: Record<string, Float32Array>
-	): boolean {
+	process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
 		const input = inputs[0] || [];
 		const output = outputs[0] || [];
 
@@ -95,20 +109,29 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 		}
 
 		try {
-			const ns = input[0] ? input[0].length : 128;
-			
-			for (let chan = 0; chan < input.length; chan++) {
-				const samples = input[chan] || new Float32Array(ns);
-				const outs = output[chan] || new Float32Array(ns);
+			const bufferSize = input[0] ? input[0].length : 128;
 
-				for (let i = 0; i < ns; i++) {
+			for (let channel = 0; channel < input.length; channel++) {
+				const samples = input[channel] || new Float32Array(bufferSize);
+				const outs = output[channel] || new Float32Array(bufferSize);
+
+				for (let i = 0; i < bufferSize; i++) {
 					const s = samples[i] || 0;
-					
+
 					try {
-						// Call evaluator with current sample + inlet values
-						const result = this.evaluator(s, ...this.inletValues.slice(0, 9));
+						// Call evaluator with: s, i, channel, bufferSize, samples, input, inputs, x1-x9
+						const result = this.evaluator(
+							s, // current sample value
+							i, // sample index in buffer
+							channel, // current channel number
+							bufferSize, // buffer size
+							samples, // current channel samples array
+							input, // first input (all channels)
+							inputs, // all inputs
+							...this.inletValues.slice(0, 9) // inlet values x1-x9
+						);
 						outs[i] = typeof result === 'number' ? result : 0;
-					} catch (e) {
+					} catch {
 						outs[i] = 0;
 					}
 				}
