@@ -33,6 +33,12 @@ export interface ObjectInlet {
 
 	minNumber?: number;
 	maxNumber?: number;
+
+	/** Custom validator. */
+	validator?: (value: unknown) => boolean;
+
+	/** Custom formatter. */
+	formatter?: (value: unknown) => string | null;
 }
 
 export interface ObjectOutlet {
@@ -80,7 +86,20 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				type: 'string',
 				description: 'Type of oscillator',
 				defaultValue: 'sine',
-				options: ['sine', 'square', 'sawtooth', 'triangle']
+				options: ['sine', 'square', 'sawtooth', 'triangle'],
+
+				formatter(value) {
+					if (Array.isArray(value)) return 'custom';
+
+					return String(value);
+				},
+
+				validator(value) {
+					// Custom!
+					if (Array.isArray(value)) return true;
+
+					return !!(typeof value === 'string' && this.options?.includes(value));
+				}
 			},
 			{
 				name: 'detune',
@@ -304,7 +323,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
-		description: 'Band-pass filter allows frequencies within a range around center frequency to pass through',
+		description:
+			'Band-pass filter allows frequencies within a range around center frequency to pass through',
 		tags: ['audio']
 	},
 
@@ -317,7 +337,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				description: 'The decibel value above which compression starts',
 				defaultValue: -24,
 				isAudioParam: true,
-				minNumber: -100,
+				minNumber: -200,
 				maxNumber: 0,
 				maxPrecision: 1
 			},
@@ -355,7 +375,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				name: 'release',
 				type: 'float',
 				description: 'Time in seconds to increase gain by 10dB',
-				defaultValue: 0.250,
+				defaultValue: 0.25,
 				isAudioParam: true,
 				minNumber: 0,
 				maxNumber: 1,

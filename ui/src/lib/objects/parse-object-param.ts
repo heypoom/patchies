@@ -56,6 +56,8 @@ export const stringifyParamByType = (
 ) => {
 	if (!inlet?.type) return String(value);
 
+	if (inlet.formatter) return inlet.formatter(value);
+
 	return match(inlet.type)
 		.with(P.union(...UNMODIFIABLES), () => `$${index}`)
 		.with(P.union('int[]', 'float[]'), () => `[${(value as number[]).join(', ')}]`)

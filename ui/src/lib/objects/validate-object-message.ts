@@ -9,6 +9,9 @@ export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boo
 	// Signals and schedulable inlets can be scheduled.
 	if ((inlet.type === 'signal' || inlet.isAudioParam) && isScheduledMessage(value)) return true;
 
+	// Use custom validators.
+	if (inlet.validator) return inlet.validator(value);
+
 	const isTypeValid = match<[unknown, ObjectDataType]>([value, inlet.type])
 		.with([P.any, P.union('any', 'signal', 'message', 'marker')], () => true)
 		.with([{ type: 'bang' }, 'bang'], () => true)

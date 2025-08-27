@@ -312,6 +312,20 @@ export class AudioSystem {
 					})
 					.with(['type', P.string], ([, type]) => {
 						node.type = type as OscillatorType;
+					})
+					.with(['type', [PeriodicWavePart, PeriodicWavePart]], ([, waveParts]) => {
+						const [real, imag] = waveParts;
+
+						// both real and imaginary part must be same length.
+						if (real.length !== imag.length) return;
+
+						const wave = new PeriodicWave(this.audioContext, {
+							real,
+							imag,
+							disableNormalization: true
+						});
+
+						node.setPeriodicWave(wave);
 					});
 			})
 			.with({ type: 'gain' }, ({ node }) => {
@@ -488,3 +502,5 @@ export class AudioSystem {
 
 // @ts-expect-error -- expose for debugging!
 window.audioSystem = AudioSystem.getInstance();
+
+const PeriodicWavePart = P.union(P.array(P.number), P.instanceOf(Float32Array));
