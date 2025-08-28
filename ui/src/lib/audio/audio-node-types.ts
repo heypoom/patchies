@@ -45,18 +45,43 @@ interface PsMic extends PsBase {
 	mediaStreamSource?: MediaStreamAudioSourceNode;
 }
 
-interface PsLpf extends PsBase {
-	type: 'lpf~';
+interface PsLowpass extends PsBase {
+	type: 'lowpass~';
 	node: BiquadFilterNode;
 }
 
-interface PsHpf extends PsBase {
-	type: 'hpf~';
+interface PsHighpass extends PsBase {
+	type: 'highpass~';
 	node: BiquadFilterNode;
 }
 
-interface PsBpf extends PsBase {
-	type: 'bpf~';
+interface PsBandpass extends PsBase {
+	type: 'bandpass~';
+	node: BiquadFilterNode;
+}
+
+interface PsAllpass extends PsBase {
+	type: 'allpass~';
+	node: BiquadFilterNode;
+}
+
+interface PsNotch extends PsBase {
+	type: 'notch~';
+	node: BiquadFilterNode;
+}
+
+interface PsLowshelf extends PsBase {
+	type: 'lowshelf~';
+	node: BiquadFilterNode;
+}
+
+interface PsHighshelf extends PsBase {
+	type: 'highshelf~';
+	node: BiquadFilterNode;
+}
+
+interface PsPeaking extends PsBase {
+	type: 'peaking~';
 	node: BiquadFilterNode;
 }
 
@@ -110,9 +135,14 @@ export type PsAudioNode =
 	| PsLyria
 	| PsAnalyzer
 	| PsMic
-	| PsLpf
-	| PsHpf
-	| PsBpf
+	| PsLowpass
+	| PsHighpass
+	| PsBandpass
+	| PsAllpass
+	| PsNotch
+	| PsLowshelf
+	| PsHighshelf
+	| PsPeaking
 	| PsExpr
 	| PsChuck
 	| PsCompressor

@@ -246,7 +246,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	'lpf~': {
+	'lowpass~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to filter' },
 			{
@@ -275,7 +275,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	'hpf~': {
+	'highpass~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to filter' },
 			{
@@ -304,7 +304,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	'bpf~': {
+	'bandpass~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to filter' },
 			{
@@ -331,6 +331,161 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
 		description:
 			'Band-pass filter allows frequencies within a range around center frequency to pass through',
+		tags: ['audio']
+	},
+
+	'allpass~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Center frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 0,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'Q',
+				type: 'float',
+				description: 'Quality factor',
+				defaultValue: 1,
+				isAudioParam: true,
+				minNumber: 0.0001,
+				maxNumber: 1000,
+				maxPrecision: 2
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'All-pass filter passes all frequencies but shifts their phase',
+		tags: ['audio']
+	},
+
+	'notch~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Center frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 0,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'Q',
+				type: 'float',
+				description: 'Quality factor (narrowness of notch)',
+				defaultValue: 1,
+				isAudioParam: true,
+				minNumber: 0.0001,
+				maxNumber: 1000,
+				maxPrecision: 2
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'Notch filter attenuates frequencies around the center frequency',
+		tags: ['audio']
+	},
+
+	'lowshelf~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Cutoff frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 0,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'gain',
+				type: 'float',
+				description: 'Gain in dB',
+				defaultValue: 0,
+				isAudioParam: true,
+				minNumber: -40,
+				maxNumber: 40,
+				maxPrecision: 1
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'Low shelf filter boosts or cuts frequencies below the cutoff frequency',
+		tags: ['audio']
+	},
+
+	'highshelf~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Cutoff frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 0,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'gain',
+				type: 'float',
+				description: 'Gain in dB',
+				defaultValue: 0,
+				isAudioParam: true,
+				minNumber: -40,
+				maxNumber: 40,
+				maxPrecision: 1
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'High shelf filter boosts or cuts frequencies above the cutoff frequency',
+		tags: ['audio']
+	},
+
+	'peaking~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Signal to filter' },
+			{
+				name: 'frequency',
+				type: 'float',
+				description: 'Center frequency in Hz',
+				defaultValue: 1000,
+				isAudioParam: true,
+				minNumber: 0,
+				maxNumber: 22050,
+				maxPrecision: 1
+			},
+			{
+				name: 'Q',
+				type: 'float',
+				description: 'Quality factor (bandwidth)',
+				defaultValue: 1,
+				isAudioParam: true,
+				minNumber: 0.0001,
+				maxNumber: 30,
+				maxPrecision: 2
+			},
+			{
+				name: 'gain',
+				type: 'float',
+				description: 'Gain in dB',
+				defaultValue: 0,
+				isAudioParam: true,
+				minNumber: -40,
+				maxNumber: 40,
+				maxPrecision: 1
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Filtered signal' }],
+		description: 'Peaking filter boosts or cuts frequencies around the center frequency',
 		tags: ['audio']
 	},
 
