@@ -3,9 +3,9 @@ import type { PsAudioNodeGroup, PsAudioType } from './audio-node-types';
 
 export const getAudioNodeGroup = (nodeType: PsAudioType): PsAudioNodeGroup | null =>
 	match<PsAudioType, PsAudioNodeGroup | null>(nodeType)
-		.with(P.union('osc', 'lyria', 'mic', 'sig~', 'loadurl~'), () => 'sources')
-		.with(P.union('gain', 'fft', '+~', 'lpf~', 'hpf~', 'bpf~', 'compressor', 'pan', 'delay~', 'waveshaper~'), () => 'processors')
-		.with('dac', () => 'destinations')
+		.with(P.union('osc~', 'lyria', 'mic~', 'sig~', 'loadurl~'), () => 'sources')
+		.with(P.union('gain~', 'fft~', '+~', 'lpf~', 'hpf~', 'bpf~', 'compressor~', 'pan~', 'delay~', 'waveshaper~'), () => 'processors')
+		.with('dac~', () => 'destinations')
 		.otherwise(() => null);
 
 export const canAudioNodeConnect = (sourceType: PsAudioType, targetType: PsAudioType): boolean => {

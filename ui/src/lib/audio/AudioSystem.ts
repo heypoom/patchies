@@ -77,13 +77,13 @@ export class AudioSystem {
 		if (!entry) return null;
 
 		return match(entry)
-			.with({ type: 'osc' }, ({ node }) =>
+			.with({ type: 'osc~' }, ({ node }) =>
 				match(name)
 					.with('frequency', () => node.frequency)
 					.with('detune', () => node.detune)
 					.otherwise(() => null)
 			)
-			.with({ type: 'gain' }, ({ node }) =>
+			.with({ type: 'gain~' }, ({ node }) =>
 				match(name)
 					.with('gain', () => node.gain)
 					.otherwise(() => null)
@@ -94,7 +94,7 @@ export class AudioSystem {
 					.with('Q', () => node.Q)
 					.otherwise(() => null)
 			)
-			.with({ type: 'compressor' }, ({ node }) =>
+			.with({ type: 'compressor~' }, ({ node }) =>
 				match(name)
 					.with('threshold', () => node.threshold)
 					.with('knee', () => node.knee)
@@ -103,7 +103,7 @@ export class AudioSystem {
 					.with('release', () => node.release)
 					.otherwise(() => null)
 			)
-			.with({ type: 'pan' }, ({ node }) =>
+			.with({ type: 'pan~' }, ({ node }) =>
 				match(name)
 					.with('pan', () => node.pan)
 					.otherwise(() => null)
@@ -139,7 +139,7 @@ export class AudioSystem {
 		const analyzer = this.audioContext.createAnalyser();
 		analyzer.fftSize = fftSize;
 
-		this.nodesById.set(nodeId, { type: 'fft', node: analyzer });
+		this.nodesById.set(nodeId, { type: 'fft~', node: analyzer });
 
 		return analyzer;
 	}
@@ -147,19 +147,19 @@ export class AudioSystem {
 	// Create audio objects for object nodes
 	createAudioObject(nodeId: string, objectType: PsAudioType, params: unknown[] = []) {
 		match(objectType)
-			.with('osc', () => this.createOsc(nodeId, params))
-			.with('gain', () => this.createGain(nodeId, params))
-			.with('dac', () => this.createDac(nodeId))
-			.with('fft', () => this.createAnalyzer(nodeId, params))
+			.with('osc~', () => this.createOsc(nodeId, params))
+			.with('gain~', () => this.createGain(nodeId, params))
+			.with('dac~', () => this.createDac(nodeId))
+			.with('fft~', () => this.createAnalyzer(nodeId, params))
 			.with('+~', () => this.createAdd(nodeId))
-			.with('mic', () => this.createMic(nodeId))
+			.with('mic~', () => this.createMic(nodeId))
 			.with('lpf~', () => this.createLpf(nodeId, params))
 			.with('hpf~', () => this.createHpf(nodeId, params))
 			.with('bpf~', () => this.createBpf(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
-			.with('compressor', () => this.createCompressor(nodeId, params))
-			.with('pan', () => this.createPan(nodeId, params))
+			.with('compressor~', () => this.createCompressor(nodeId, params))
+			.with('pan~', () => this.createPan(nodeId, params))
 			.with('sig~', () => this.createSig(nodeId, params))
 			.with('delay~', () => this.createDelay(nodeId, params))
 			.with('loadurl~', () => this.createLoadurl(nodeId, params))
@@ -174,7 +174,7 @@ export class AudioSystem {
 		osc.type = type;
 		osc.start(0);
 
-		this.nodesById.set(nodeId, { type: 'osc', node: osc });
+		this.nodesById.set(nodeId, { type: 'osc~', node: osc });
 	}
 
 	createGain(nodeId: string, params: unknown[]) {
@@ -183,12 +183,12 @@ export class AudioSystem {
 		const gainNode = this.audioContext.createGain();
 		gainNode.gain.value = gainValue;
 
-		this.nodesById.set(nodeId, { type: 'gain', node: gainNode });
+		this.nodesById.set(nodeId, { type: 'gain~', node: gainNode });
 	}
 
 	createDac(nodeId: string) {
 		if (this.outGain) {
-			this.nodesById.set(nodeId, { type: 'dac', node: this.outGain });
+			this.nodesById.set(nodeId, { type: 'dac~', node: this.outGain });
 		}
 	}
 
@@ -201,7 +201,7 @@ export class AudioSystem {
 
 	async createMic(nodeId: string) {
 		const node = this.audioContext.createGain();
-		this.nodesById.set(nodeId, { type: 'mic', node });
+		this.nodesById.set(nodeId, { type: 'mic~', node });
 
 		this.restartMic(nodeId);
 	}
@@ -256,14 +256,14 @@ export class AudioSystem {
 		compressor.attack.value = attack;
 		compressor.release.value = release;
 
-		this.nodesById.set(nodeId, { type: 'compressor', node: compressor });
+		this.nodesById.set(nodeId, { type: 'compressor~', node: compressor });
 	}
 
 	createPan(nodeId: string, params: unknown[]) {
 		const [, panValue] = params as [unknown, number];
 		const panNode = this.audioContext.createStereoPanner();
 		panNode.pan.value = panValue;
-		this.nodesById.set(nodeId, { type: 'pan', node: panNode });
+		this.nodesById.set(nodeId, { type: 'pan~', node: panNode });
 	}
 
 	createSig(nodeId: string, params: unknown[]) {
@@ -382,7 +382,7 @@ export class AudioSystem {
 		if (!state) return;
 
 		match(state)
-			.with({ type: 'osc' }, ({ node }) => {
+			.with({ type: 'osc~' }, ({ node }) => {
 				match([key, msg])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;
@@ -412,7 +412,7 @@ export class AudioSystem {
 						node.setPeriodicWave(wave);
 					});
 			})
-			.with({ type: 'gain' }, ({ node }) => {
+			.with({ type: 'gain~' }, ({ node }) => {
 				match([key, msg]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
 				});
@@ -426,7 +426,7 @@ export class AudioSystem {
 						node.Q.value = q;
 					});
 			})
-			.with({ type: 'compressor' }, ({ node }) => {
+			.with({ type: 'compressor~' }, ({ node }) => {
 				match([key, msg])
 					.with(['threshold', P.number], ([, threshold]) => {
 						node.threshold.value = threshold;
@@ -444,7 +444,7 @@ export class AudioSystem {
 						node.release.value = release;
 					});
 			})
-			.with({ type: 'pan' }, ({ node }) => {
+			.with({ type: 'pan~' }, ({ node }) => {
 				match([key, msg]).with(['pan', P.number], ([, pan]) => {
 					node.pan.value = pan;
 				});
@@ -460,7 +460,7 @@ export class AudioSystem {
 					node.delayTime.value = Math.min(delayInSeconds, 1.0);
 				});
 			})
-			.with({ type: 'mic' }, () => {
+			.with({ type: 'mic~' }, () => {
 				match(msg).with({ type: 'bang' }, () => {
 					this.restartMic(nodeId);
 				});
@@ -522,11 +522,11 @@ export class AudioSystem {
 
 		if (entry) {
 			match(entry)
-				.with({ type: 'osc' }, (osc) => {
+				.with({ type: 'osc~' }, (osc) => {
 					try {
 						osc.node.stop();
 					} catch (error) {
-						console.log(`osc ${nodeId} was already stopped:`, error);
+						console.log(`osc~ ${nodeId} was already stopped:`, error);
 					}
 				})
 				.with({ type: 'sig~' }, (sig) => {
@@ -536,7 +536,7 @@ export class AudioSystem {
 						console.log(`sig~ ${nodeId} was already stopped:`, error);
 					}
 				})
-				.with({ type: 'mic' }, (mic) => {
+				.with({ type: 'mic~' }, (mic) => {
 					if (mic.mediaStreamSource) {
 						mic.mediaStreamSource.disconnect();
 					}
@@ -562,7 +562,7 @@ export class AudioSystem {
 
 	async restartMic(nodeId: string) {
 		const mic = this.nodesById.get(nodeId);
-		if (!mic || mic.type !== 'mic') return;
+		if (!mic || mic.type !== 'mic~') return;
 
 		// Clean up existing mic resources
 		if (mic.mediaStreamSource) {

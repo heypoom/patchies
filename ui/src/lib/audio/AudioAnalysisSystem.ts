@@ -58,7 +58,7 @@ const WAVEFORM_UNIFORM_NAME = 'waveTexture';
 
 /** Get FFT object's analysis outlet index */
 function getFFTAnalysisOutletIndex(): number {
-	const fftDef = objectDefinitions.fft;
+	const fftDef = objectDefinitions['fft~'];
 	const index = fftDef.outlets.findIndex((outlet) => outlet.name === 'analysis');
 	return index !== -1 ? index : 1; // fallback to index 1 if not found
 }

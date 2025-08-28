@@ -5,17 +5,17 @@ interface PsBase {
 }
 
 interface PsOsc extends PsBase {
-	type: 'osc';
+	type: 'osc~';
 	node: OscillatorNode;
 }
 
 interface PsGain extends PsBase {
-	type: 'gain';
+	type: 'gain~';
 	node: GainNode;
 }
 
 interface PsDac extends PsBase {
-	type: 'dac';
+	type: 'dac~';
 	node: GainNode; // dac uses the outGain node
 }
 
@@ -34,12 +34,12 @@ interface PsLyria extends PsBase {
 }
 
 interface PsAnalyzer extends PsBase {
-	type: 'fft';
+	type: 'fft~';
 	node: AnalyserNode;
 }
 
 interface PsMic extends PsBase {
-	type: 'mic';
+	type: 'mic~';
 	node: GainNode;
 	mediaStream?: MediaStream;
 	mediaStreamSource?: MediaStreamAudioSourceNode;
@@ -72,12 +72,12 @@ interface PsChuck extends PsBase {
 }
 
 interface PsCompressor extends PsBase {
-	type: 'compressor';
+	type: 'compressor~';
 	node: DynamicsCompressorNode;
 }
 
 interface PsPan extends PsBase {
-	type: 'pan';
+	type: 'pan~';
 	node: StereoPannerNode;
 }
 

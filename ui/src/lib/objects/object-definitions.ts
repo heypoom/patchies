@@ -55,7 +55,7 @@ export interface ObjectDefinition {
 }
 
 export const objectDefinitions: Record<string, ObjectDefinition> = {
-	gain: {
+	'gain~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
 			{
@@ -71,7 +71,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	osc: {
+	'osc~': {
 		inlets: [
 			{
 				name: 'frequency',
@@ -114,7 +114,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	dac: {
+	'dac~': {
 		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
 		outlets: [],
 		description: 'Send sounds to speakers',
@@ -133,7 +133,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: []
 	},
 
-	fft: {
+	'fft~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Audio signal to analyze' },
 			{
@@ -233,7 +233,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['envelope']
 	},
 
-	mic: {
+	'mic~': {
 		inlets: [
 			{
 				name: 'message',
@@ -334,7 +334,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	compressor: {
+	'compressor~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to compress' },
 			{
@@ -393,7 +393,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	pan: {
+	'pan~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Audio signal to position in stereo field' },
 			{
