@@ -108,6 +108,16 @@ export class AudioSystem {
 					.with('pan', () => node.pan)
 					.otherwise(() => null)
 			)
+			.with({ type: 'sig~' }, ({ node }) =>
+				match(name)
+					.with('offset', () => node.offset)
+					.otherwise(() => null)
+			)
+			.with({ type: 'delay~' }, ({ node }) =>
+				match(name)
+					.with('delayTime', () => node.delayTime)
+					.otherwise(() => null)
+			)
 			.otherwise(() => null);
 	}
 
@@ -149,7 +159,9 @@ export class AudioSystem {
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('compressor', () => this.createCompressor(nodeId, params))
-			.with('pan', () => this.createPan(nodeId, params));
+			.with('pan', () => this.createPan(nodeId, params))
+			.with('sig~', () => this.createSig(nodeId, params))
+			.with('delay~', () => this.createDelay(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -250,6 +262,26 @@ export class AudioSystem {
 		const panNode = this.audioContext.createStereoPanner();
 		panNode.pan.value = panValue;
 		this.nodesById.set(nodeId, { type: 'pan', node: panNode });
+	}
+
+	createSig(nodeId: string, params: unknown[]) {
+		const [offsetValue] = params as [number];
+
+		const constantSource = this.audioContext.createConstantSource();
+		constantSource.offset.value = offsetValue ?? 1.0;
+		constantSource.start(0);
+
+		this.nodesById.set(nodeId, { type: 'sig~', node: constantSource });
+	}
+
+	createDelay(nodeId: string, params: unknown[]) {
+		const [, delayTime] = params as [unknown, number];
+
+		const maxDelayTime = 1.0;
+		const delayNode = this.audioContext.createDelay(maxDelayTime);
+		delayNode.delayTime.value = delayTime ?? 0.0;
+
+		this.nodesById.set(nodeId, { type: 'delay~', node: delayNode });
 	}
 
 	async initExprWorklet() {
@@ -382,6 +414,16 @@ export class AudioSystem {
 					node.pan.value = pan;
 				});
 			})
+			.with({ type: 'sig~' }, ({ node }) => {
+				match([key, msg]).with(['offset', P.number], ([, offset]) => {
+					node.offset.value = offset;
+				});
+			})
+			.with({ type: 'delay~' }, ({ node }) => {
+				match([key, msg]).with(['delayTime', P.number], ([, delayTime]) => {
+					node.delayTime.value = Math.min(Math.max(0, delayTime), 1.0);
+				});
+			})
 			.with({ type: 'mic' }, () => {
 				match(msg).with({ type: 'bang' }, () => {
 					this.restartMic(nodeId);
@@ -418,6 +460,13 @@ export class AudioSystem {
 						osc.node.stop();
 					} catch (error) {
 						console.log(`osc ${nodeId} was already stopped:`, error);
+					}
+				})
+				.with({ type: 'sig~' }, (sig) => {
+					try {
+						sig.node.stop();
+					} catch (error) {
+						console.log(`sig~ ${nodeId} was already stopped:`, error);
 					}
 				})
 				.with({ type: 'mic' }, (mic) => {

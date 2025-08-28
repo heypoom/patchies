@@ -405,6 +405,40 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'signal', description: 'Stereo positioned signal' }],
 		description: 'Controls the left-right stereo positioning of audio',
 		tags: ['audio']
+	},
+
+	'sig~': {
+		inlets: [
+			{
+				name: 'offset',
+				type: 'float',
+				description: 'Constant signal value',
+				defaultValue: 1.0,
+				isAudioParam: true,
+				maxPrecision: 3
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Constant signal output' }],
+		description: 'Outputs a constant signal value',
+		tags: ['audio']
+	},
+
+	'delay~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Audio signal to delay' },
+			{
+				name: 'delayTime',
+				type: 'float',
+				description: 'Delay time in seconds',
+				defaultValue: 0,
+				isAudioParam: true,
+				minNumber: 0,
+				maxPrecision: 4
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Delayed signal' }],
+		description: 'Delay-line node with configurable delay time',
+		tags: ['audio']
 	}
 };
 

@@ -81,6 +81,16 @@ interface PsPan extends PsBase {
 	node: StereoPannerNode;
 }
 
+interface PsSig extends PsBase {
+	type: 'sig~';
+	node: ConstantSourceNode;
+}
+
+interface PsDelay extends PsBase {
+	type: 'delay~';
+	node: DelayNode;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -95,6 +105,8 @@ export type PsAudioNode =
 	| PsExpr
 	| PsChuck
 	| PsCompressor
-	| PsPan;
+	| PsPan
+	| PsSig
+	| PsDelay;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
