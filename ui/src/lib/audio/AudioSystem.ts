@@ -332,6 +332,10 @@ export class AudioSystem {
 						// both real and imaginary part must be same length.
 						if (real.length !== imag.length) return;
 
+						// both real and imaginary part must be at least 2
+						if (real.length < 2) return;
+						if (imag.length < 2) return;
+
 						const wave = new PeriodicWave(this.audioContext, {
 							real,
 							imag,
@@ -374,10 +378,9 @@ export class AudioSystem {
 					});
 			})
 			.with({ type: 'pan' }, ({ node }) => {
-				match([key, msg])
-					.with(['pan', P.number], ([, pan]) => {
-						node.pan.value = pan;
-					});
+				match([key, msg]).with(['pan', P.number], ([, pan]) => {
+					node.pan.value = pan;
+				});
 			})
 			.with({ type: 'mic' }, () => {
 				match(msg).with({ type: 'bang' }, () => {
