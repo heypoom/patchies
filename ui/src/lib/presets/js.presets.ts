@@ -32,6 +32,16 @@ setInterval(() => {
 const MIDI_CONTROL_ROUTER_JS = `setPortCount(1, 3)
 recv(m => send(m.value, {to: m.control}))`;
 
+const SAWTOOTH_HARMONICS_JS = `recv(hs => {
+  const im = new Float32Array(hs)
+
+  for (let i = 1; i < hs; i++) {
+    im[i] = (i % 2 == 0 ? -1 : 1) / i
+  }
+
+  send([new Float32Array(hs), im])
+})`;
+
 export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -59,5 +69,9 @@ export const JS_PRESETS: Record<
 	'midi-control-router.js': {
 		type: 'js',
 		data: { code: MIDI_CONTROL_ROUTER_JS, showConsole: false, runOnMount: true }
+	},
+	'sawtooth-harmonics.js': {
+		type: 'js',
+		data: { code: SAWTOOTH_HARMONICS_JS, showConsole: false, runOnMount: true }
 	}
 };
