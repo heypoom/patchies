@@ -249,7 +249,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				description: 'Cutoff frequency in Hz',
 				defaultValue: 1000,
 				isAudioParam: true,
-				minNumber: 10,
+				minNumber: 0,
 				maxNumber: 22050,
 				maxPrecision: 1
 			},
@@ -278,7 +278,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				description: 'Cutoff frequency in Hz',
 				defaultValue: 1000,
 				isAudioParam: true,
-				minNumber: 10,
+				minNumber: 0,
 				maxNumber: 22050,
 				maxPrecision: 1
 			},
@@ -307,7 +307,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				description: 'Center frequency in Hz',
 				defaultValue: 1000,
 				isAudioParam: true,
-				minNumber: 10,
+				minNumber: 0,
 				maxNumber: 22050,
 				maxPrecision: 1
 			},
@@ -357,7 +357,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				description: 'Amount of dB change in input for 1 dB change in output',
 				defaultValue: 12,
 				isAudioParam: true,
-				minNumber: 1,
+				minNumber: 0,
 				maxNumber: 20,
 				maxPrecision: 1
 			},
