@@ -60,6 +60,8 @@ We'll slowly work our way through the following list of nodes, implementing them
 - `pan`: stereo panner node, controls the left-right stereo positioning of audio.
 - `delay~`: delay-line node. should contain `delayTime`. uses `DelayNode`.
 - `sig~`: constant signal node. should contain `offset`, defaults to `1.0.`. outputs a constant value. uses `ConstantSourceNode`.
+- `loadurl~`: loads an audio file from a URL. should contain `url`. uses `MediaElementAudioSourceNode`.
+- `waveshaper~`: constructs a `WaveShaperNode`. should have a message port that takes in either an array of number or a `Float32Array`, which then gets converted into `Float32Array` and gets set it `WaveShaperNode.curve`.
 
 ### II
 

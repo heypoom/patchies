@@ -91,6 +91,17 @@ interface PsDelay extends PsBase {
 	node: DelayNode;
 }
 
+interface PsLoadurl extends PsBase {
+	type: 'loadurl~';
+	node: MediaElementAudioSourceNode;
+	audioElement: HTMLAudioElement;
+}
+
+interface PsWaveshaper extends PsBase {
+	type: 'waveshaper~';
+	node: WaveShaperNode;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -107,6 +118,8 @@ export type PsAudioNode =
 	| PsCompressor
 	| PsPan
 	| PsSig
-	| PsDelay;
+	| PsDelay
+	| PsLoadurl
+	| PsWaveshaper;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

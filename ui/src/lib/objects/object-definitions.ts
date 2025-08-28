@@ -445,6 +445,35 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'signal', description: 'Delayed signal' }],
 		description: 'Delay-line node with configurable delay time in milliseconds',
 		tags: ['audio']
+	},
+
+	'loadurl~': {
+		inlets: [
+			{
+				name: 'message',
+				type: 'message',
+				description: 'Control messages: "play", "pause", "stop", or bang to restart'
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Audio output from loaded file' }],
+		description: 'Loads and plays audio files from URL using MediaElementAudioSourceNode',
+		tags: ['audio']
+	},
+
+	'waveshaper~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Audio signal to process' },
+			{
+				name: 'curve',
+				type: 'float[]',
+				description: 'Array of numbers or Float32Array to set as waveshaper curve',
+				defaultValue: [0, 1],
+				isAudioParam: false
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Waveshaped signal' }],
+		description: 'WaveShaperNode for distortion and waveshaping effects',
+		tags: ['audio']
 	}
 };
 

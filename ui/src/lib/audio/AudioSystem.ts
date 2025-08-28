@@ -161,7 +161,9 @@ export class AudioSystem {
 			.with('compressor', () => this.createCompressor(nodeId, params))
 			.with('pan', () => this.createPan(nodeId, params))
 			.with('sig~', () => this.createSig(nodeId, params))
-			.with('delay~', () => this.createDelay(nodeId, params));
+			.with('delay~', () => this.createDelay(nodeId, params))
+			.with('loadurl~', () => this.createLoadurl(nodeId, params))
+			.with('waveshaper~', () => this.createWaveshaper(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -281,6 +283,40 @@ export class AudioSystem {
 		delayNode.delayTime.value = Math.max(0, delayTime ?? 0) / 1000;
 
 		this.nodesById.set(nodeId, { type: 'delay~', node: delayNode });
+	}
+
+	createLoadurl(nodeId: string, params: unknown[]) {
+		const [url] = params as [string];
+
+		const audioElement = new Audio();
+		audioElement.crossOrigin = 'anonymous';
+		audioElement.loop = false;
+
+		if (url) {
+			audioElement.src = url;
+		}
+
+		const mediaElementSource = this.audioContext.createMediaElementSource(audioElement);
+
+		this.nodesById.set(nodeId, {
+			type: 'loadurl~',
+			node: mediaElementSource,
+			audioElement
+		});
+	}
+
+	createWaveshaper(nodeId: string, params: unknown[]) {
+		const [, curve] = params;
+
+		const waveshaper = this.audioContext.createWaveShaper();
+
+		if (curve instanceof Float32Array) {
+			waveshaper.curve = curve as Float32Array<ArrayBuffer>;
+		} else if (Array.isArray(curve)) {
+			waveshaper.curve = new Float32Array(Array.from(curve));
+		}
+
+		this.nodesById.set(nodeId, { type: 'waveshaper~', node: waveshaper });
 	}
 
 	async initExprWorklet() {
@@ -446,6 +482,37 @@ export class AudioSystem {
 			})
 			.with({ type: 'chuck' }, async (state) => {
 				await state.chuckManager?.handleMessage(key, msg);
+			})
+			.with({ type: 'loadurl~' }, ({ audioElement }) => {
+				match([key, msg])
+					.with(['message', P.string], ([, url]) => {
+						audioElement.src = url;
+					})
+					.with(['message', { type: P.string }], ([, command]) => {
+						match(command)
+							.with({ type: 'url', url: P.string }, ({ url }) => {
+								audioElement.src = url;
+							})
+							.with({ type: 'bang' }, () => {
+								audioElement.currentTime = 0;
+								audioElement.play();
+							})
+							.with({ type: 'play' }, () => audioElement.play())
+							.with({ type: 'pause' }, () => audioElement.pause())
+							.with({ type: 'stop' }, () => {
+								audioElement.pause();
+								audioElement.currentTime = 0;
+							});
+					});
+			})
+			.with({ type: 'waveshaper~' }, ({ node }) => {
+				match([key, msg])
+					.with(['curve', P.array(P.number)], ([, curve]) => {
+						node.curve = new Float32Array(curve);
+					})
+					.with(['curve', P.instanceOf(Float32Array)], ([, curve]) => {
+						node.curve = curve;
+					});
 			});
 	}
 
@@ -480,6 +547,10 @@ export class AudioSystem {
 				})
 				.with({ type: 'chuck' }, (entry) => {
 					entry.chuckManager?.destroy();
+				})
+				.with({ type: 'loadurl~' }, (entry) => {
+					entry.audioElement.pause();
+					entry.audioElement.src = '';
 				})
 				.otherwise(() => {});
 

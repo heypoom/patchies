@@ -19,10 +19,12 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 		.with('int', () => limitToValidNumber(inlet, parseInt(strValue)))
 		.with('float', () => limitToValidNumber(inlet, parseFloat(strValue)))
 		.with('float[]', () => {
+			if (!strValue) return inlet.defaultValue ?? [];
+
 			const parsed = JSON5.parse(strValue);
 			if (!Array.isArray(parsed)) return inlet.defaultValue ?? [];
 
-			return parsed.map((v) => limitToValidNumber(inlet, parseFloat(v)));
+			return parsed.map((v) => parseFloat(v));
 		})
 		.with('int[]', () => {
 			const parsed = JSON5.parse(strValue);
@@ -60,7 +62,7 @@ export const stringifyParamByType = (
 
 	return match(inlet.type)
 		.with(P.union(...UNMODIFIABLES), () => `$${index}`)
-		.with(P.union('int[]', 'float[]'), () => `[${(value as number[]).join(', ')}]`)
+		.with(P.union('int[]', 'float[]'), () => `[${(value as number[]).join(',')}]`)
 		.with('float', () => {
 			// always use n floating point
 			if (inlet.precision !== undefined) {
