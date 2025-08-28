@@ -246,7 +246,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	lpf: {
+	'lpf~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to filter' },
 			{
@@ -275,7 +275,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	hpf: {
+	'hpf~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to filter' },
 			{
@@ -304,7 +304,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	bpf: {
+	'bpf~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to filter' },
 			{

@@ -88,7 +88,7 @@ export class AudioSystem {
 					.with('gain', () => node.gain)
 					.otherwise(() => null)
 			)
-			.with({ type: P.union('lpf', 'hpf', 'bpf') }, ({ node }) =>
+			.with({ type: P.union('lpf~', 'hpf~', 'bpf~') }, ({ node }) =>
 				match(name)
 					.with('frequency', () => node.frequency)
 					.with('Q', () => node.Q)
@@ -153,9 +153,9 @@ export class AudioSystem {
 			.with('fft', () => this.createAnalyzer(nodeId, params))
 			.with('+~', () => this.createAdd(nodeId))
 			.with('mic', () => this.createMic(nodeId))
-			.with('lpf', () => this.createLpf(nodeId, params))
-			.with('hpf', () => this.createHpf(nodeId, params))
-			.with('bpf', () => this.createBpf(nodeId, params))
+			.with('lpf~', () => this.createLpf(nodeId, params))
+			.with('hpf~', () => this.createHpf(nodeId, params))
+			.with('bpf~', () => this.createBpf(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('compressor', () => this.createCompressor(nodeId, params))
@@ -214,7 +214,7 @@ export class AudioSystem {
 		filter.frequency.value = frequency;
 		filter.Q.value = Q;
 
-		this.nodesById.set(nodeId, { type: 'lpf', node: filter });
+		this.nodesById.set(nodeId, { type: 'lpf~', node: filter });
 	}
 
 	createHpf(nodeId: string, params: unknown[]) {
@@ -225,7 +225,7 @@ export class AudioSystem {
 		filter.frequency.value = frequency;
 		filter.Q.value = Q;
 
-		this.nodesById.set(nodeId, { type: 'hpf', node: filter });
+		this.nodesById.set(nodeId, { type: 'hpf~', node: filter });
 	}
 
 	createBpf(nodeId: string, params: unknown[]) {
@@ -236,7 +236,7 @@ export class AudioSystem {
 		filter.frequency.value = frequency;
 		filter.Q.value = Q;
 
-		this.nodesById.set(nodeId, { type: 'bpf', node: filter });
+		this.nodesById.set(nodeId, { type: 'bpf~', node: filter });
 	}
 
 	createCompressor(nodeId: string, params: unknown[]) {
@@ -417,7 +417,7 @@ export class AudioSystem {
 					node.gain.value = gain;
 				});
 			})
-			.with({ type: P.union('lpf', 'hpf', 'bpf') }, ({ node }) => {
+			.with({ type: P.union('lpf~', 'hpf~', 'bpf~') }, ({ node }) => {
 				match([key, msg])
 					.with(['frequency', P.number], ([, freq]) => {
 						node.frequency.value = freq;

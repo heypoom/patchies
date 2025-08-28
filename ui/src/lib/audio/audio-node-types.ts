@@ -46,17 +46,17 @@ interface PsMic extends PsBase {
 }
 
 interface PsLpf extends PsBase {
-	type: 'lpf';
+	type: 'lpf~';
 	node: BiquadFilterNode;
 }
 
 interface PsHpf extends PsBase {
-	type: 'hpf';
+	type: 'hpf~';
 	node: BiquadFilterNode;
 }
 
 interface PsBpf extends PsBase {
-	type: 'bpf';
+	type: 'bpf~';
 	node: BiquadFilterNode;
 }
 
