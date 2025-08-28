@@ -277,9 +277,8 @@ export class AudioSystem {
 	createDelay(nodeId: string, params: unknown[]) {
 		const [, delayTime] = params as [unknown, number];
 
-		const maxDelayTime = 1.0;
-		const delayNode = this.audioContext.createDelay(maxDelayTime);
-		delayNode.delayTime.value = delayTime ?? 0.0;
+		const delayNode = this.audioContext.createDelay();
+		delayNode.delayTime.value = Math.max(0, delayTime ?? 0) / 1000;
 
 		this.nodesById.set(nodeId, { type: 'delay~', node: delayNode });
 	}
@@ -421,7 +420,8 @@ export class AudioSystem {
 			})
 			.with({ type: 'delay~' }, ({ node }) => {
 				match([key, msg]).with(['delayTime', P.number], ([, delayTime]) => {
-					node.delayTime.value = Math.min(Math.max(0, delayTime), 1.0);
+					const delayInSeconds = Math.max(0, delayTime) / 1000;
+					node.delayTime.value = Math.min(delayInSeconds, 1.0);
 				});
 			})
 			.with({ type: 'mic' }, () => {

@@ -58,7 +58,7 @@ We'll slowly work our way through the following list of nodes, implementing them
 - `scale`: scales the signal to a specified range.
 - `map`: maps the signal from one range to another.
 - `pan`: stereo panner node, controls the left-right stereo positioning of audio.
-- `delay~`: delay-line node. should contain `delayTime` and `maxDelayTime`. uses `DelayNode`.
+- `delay~`: delay-line node. should contain `delayTime`. uses `DelayNode`.
 - `sig~`: constant signal node. should contain `offset`, defaults to `1.0.`. outputs a constant value. uses `ConstantSourceNode`.
 
 ### II

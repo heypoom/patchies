@@ -159,7 +159,13 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	delay: {
 		inlets: [
 			{ name: 'message', type: 'message', description: 'Message to pass through' },
-			{ name: 'delay', type: 'float', description: 'How long to delay for, in ms.', precision: 0 }
+			{
+				name: 'delay',
+				type: 'float',
+				description: 'How long to delay for, in ms.',
+				precision: 0,
+				defaultValue: 1000
+			}
 		],
 		outlets: [{ name: 'out', type: 'any', description: 'Message outlet' }],
 		tags: ['helper']
@@ -429,15 +435,15 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			{
 				name: 'delayTime',
 				type: 'float',
-				description: 'Delay time in seconds',
-				defaultValue: 0,
+				description: 'Delay time in milliseconds',
+				defaultValue: 1000,
 				isAudioParam: true,
 				minNumber: 0,
-				maxPrecision: 4
+				precision: 0
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Delayed signal' }],
-		description: 'Delay-line node with configurable delay time',
+		description: 'Delay-line node with configurable delay time in milliseconds',
 		tags: ['audio']
 	}
 };
