@@ -385,6 +385,26 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'signal', description: 'Compressed signal' }],
 		description: 'Dynamic range compressor for audio signals',
 		tags: ['audio']
+	},
+
+	pan: {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Audio signal to position in stereo field' },
+			{
+				name: 'pan',
+				type: 'float',
+				description: 'Stereo position: -1 (left) to 1 (right)',
+				defaultValue: 0,
+				isAudioParam: true,
+				minNumber: -1,
+				maxNumber: 1,
+				maxPrecision: 2,
+				precision: 2
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Stereo positioned signal' }],
+		description: 'Controls the left-right stereo positioning of audio',
+		tags: ['audio']
 	}
 };
 

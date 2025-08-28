@@ -57,6 +57,7 @@ We'll slowly work our way through the following list of nodes, implementing them
 - `clip`: clips the signal to a specified range.
 - `scale`: scales the signal to a specified range.
 - `map`: maps the signal from one range to another.
+- `pan`: stereo panner node, controls the left-right stereo positioning of audio.
 
 ### II
 

@@ -103,6 +103,11 @@ export class AudioSystem {
 					.with('release', () => node.release)
 					.otherwise(() => null)
 			)
+			.with({ type: 'pan' }, ({ node }) =>
+				match(name)
+					.with('pan', () => node.pan)
+					.otherwise(() => null)
+			)
 			.otherwise(() => null);
 	}
 
@@ -143,7 +148,8 @@ export class AudioSystem {
 			.with('bpf', () => this.createBpf(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
-			.with('compressor', () => this.createCompressor(nodeId, params));
+			.with('compressor', () => this.createCompressor(nodeId, params))
+			.with('pan', () => this.createPan(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -237,6 +243,13 @@ export class AudioSystem {
 		compressor.release.value = release;
 
 		this.nodesById.set(nodeId, { type: 'compressor', node: compressor });
+	}
+
+	createPan(nodeId: string, params: unknown[]) {
+		const [, panValue] = params as [unknown, number];
+		const panNode = this.audioContext.createStereoPanner();
+		panNode.pan.value = panValue;
+		this.nodesById.set(nodeId, { type: 'pan', node: panNode });
 	}
 
 	async initExprWorklet() {
@@ -358,6 +371,12 @@ export class AudioSystem {
 					})
 					.with(['release', P.number], ([, release]) => {
 						node.release.value = release;
+					});
+			})
+			.with({ type: 'pan' }, ({ node }) => {
+				match([key, msg])
+					.with(['pan', P.number], ([, pan]) => {
+						node.pan.value = pan;
 					});
 			})
 			.with({ type: 'mic' }, () => {

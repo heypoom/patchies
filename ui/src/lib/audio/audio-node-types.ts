@@ -76,6 +76,11 @@ interface PsCompressor extends PsBase {
 	node: DynamicsCompressorNode;
 }
 
+interface PsPan extends PsBase {
+	type: 'pan';
+	node: StereoPannerNode;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -89,6 +94,7 @@ export type PsAudioNode =
 	| PsBpf
 	| PsExpr
 	| PsChuck
-	| PsCompressor;
+	| PsCompressor
+	| PsPan;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
