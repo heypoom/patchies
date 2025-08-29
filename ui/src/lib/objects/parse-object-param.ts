@@ -62,7 +62,15 @@ export const stringifyParamByType = (
 
 	return match(inlet.type)
 		.with(P.union(...UNMODIFIABLES), () => `$${index}`)
-		.with(P.union('int[]', 'float[]'), () => `[${(value as number[]).join(',')}]`)
+		.with(P.union('int[]', 'float[]'), () => {
+			if (!Array.isArray(value)) return '[]';
+
+			if (inlet.maxDisplayLength !== undefined && value.length > inlet.maxDisplayLength) {
+				return inlet.name;
+			}
+
+			return `[${(value as number[]).join(',')}]`;
+		})
 		.with('float', () => {
 			// always use n floating point
 			if (inlet.precision !== undefined) {

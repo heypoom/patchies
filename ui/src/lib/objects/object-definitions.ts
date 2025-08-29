@@ -34,6 +34,9 @@ export interface ObjectInlet {
 	minNumber?: number;
 	maxNumber?: number;
 
+	/** Maximum number of values to display for arrays. */
+	maxDisplayLength?: number;
+
 	/** Custom validator. */
 	validator?: (value: unknown) => boolean;
 
@@ -636,7 +639,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				type: 'float[]',
 				description: 'Array of numbers or Float32Array to set as waveshaper curve',
 				defaultValue: [0, 1],
-				isAudioParam: false
+				isAudioParam: false,
+				maxDisplayLength: 8
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Waveshaped signal' }],
