@@ -21,6 +21,13 @@ export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boo
 		.with([P.boolean, 'bool'], () => true)
 		.with([P.array(P.number), 'int[]'], ([arr]) => arr.every(Number.isInteger))
 		.with([P.array(P.number), 'float[]'], () => true)
+		.with(
+			[
+				P.union(P.instanceOf(Float16Array), P.instanceOf(Float32Array), P.instanceOf(Float64Array)),
+				'float[]'
+			],
+			() => true
+		)
 		.otherwise(() => false);
 
 	if (!isTypeValid) return false;
