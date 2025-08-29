@@ -42,6 +42,18 @@ const SAWTOOTH_HARMONICS_JS = `recv(hs => {
   send([new Float32Array(hs), im])
 })`;
 
+const WAVESHAPER_DISTORTION_JS = `const k = 50
+const s = 44100;
+const curve = new Float32Array(s);
+const deg = Math.PI / 180;
+
+for (let i = 0; i < s; i++) {
+  const x = (i * 2) / s - 1;
+  curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+}
+
+send(curve)`;
+
 export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -73,5 +85,9 @@ export const JS_PRESETS: Record<
 	'sawtooth-harmonics.js': {
 		type: 'js',
 		data: { code: SAWTOOTH_HARMONICS_JS, showConsole: false, runOnMount: true }
+	},
+	'waveshaper-distortion.js': {
+		type: 'js',
+		data: { code: WAVESHAPER_DISTORTION_JS, showConsole: false, runOnMount: false }
 	}
 };
