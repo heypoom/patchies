@@ -641,6 +641,14 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				defaultValue: [0, 1],
 				isAudioParam: false,
 				maxDisplayLength: 8
+			},
+			{
+				name: 'oversample',
+				type: 'string',
+				description: 'Oversample setting: "none", "2x", or "4x"',
+				defaultValue: 'none',
+				isAudioParam: false,
+				options: ['none', '2x', '4x']
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Waveshaped signal' }],

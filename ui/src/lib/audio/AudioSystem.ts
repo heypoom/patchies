@@ -646,6 +646,11 @@ export class AudioSystem {
 					})
 					.with(['curve', P.instanceOf(Float32Array)], ([, curve]) => {
 						node.curve = curve;
+					})
+					.with(['oversample', P.string], ([, oversample]) => {
+						if (oversample === 'none' || oversample === '2x' || oversample === '4x') {
+							node.oversample = oversample;
+						}
 					});
 			});
 	}

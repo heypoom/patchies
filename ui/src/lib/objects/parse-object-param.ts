@@ -63,7 +63,9 @@ export const stringifyParamByType = (
 	return match(inlet.type)
 		.with(P.union(...UNMODIFIABLES), () => `$${index}`)
 		.with(P.union('int[]', 'float[]'), () => {
-			if (!Array.isArray(value)) return '[]';
+			if (!Array.isArray(value) && !(value instanceof Float32Array)) {
+				return '[]';
+			}
 
 			if (inlet.maxDisplayLength !== undefined && value.length > inlet.maxDisplayLength) {
 				return inlet.name;
