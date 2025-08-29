@@ -22,6 +22,7 @@ import MarkdownNode from '$lib/components/nodes/MarkdownNode.svelte';
 import ExprNode from '$lib/components/nodes/ExprNode.svelte';
 import AudioExprNode from '$lib/components/nodes/AudioExprNode.svelte';
 import ChuckNode from '$lib/components/nodes/ChuckNode.svelte';
+import SoundFile from '$lib/components/nodes/SoundFile.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -47,7 +48,8 @@ export const nodeTypes = {
 	markdown: MarkdownNode,
 	expr: ExprNode,
 	'expr~': AudioExprNode,
-	chuck: ChuckNode
+	chuck: ChuckNode,
+	'soundfile~': SoundFile
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;

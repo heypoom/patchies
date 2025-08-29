@@ -88,11 +88,13 @@ export class AudioSystem {
 					.with('gain', () => node.gain)
 					.otherwise(() => null)
 			)
-			.with({ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') }, ({ node }) =>
-				match(name)
-					.with('frequency', () => node.frequency)
-					.with('Q', () => node.Q)
-					.otherwise(() => null)
+			.with(
+				{ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') },
+				({ node }) =>
+					match(name)
+						.with('frequency', () => node.frequency)
+						.with('Q', () => node.Q)
+						.otherwise(() => null)
 			)
 			.with({ type: P.union('lowshelf~', 'highshelf~') }, ({ node }) =>
 				match(name)
@@ -180,8 +182,9 @@ export class AudioSystem {
 			.with('pan~', () => this.createPan(nodeId, params))
 			.with('sig~', () => this.createSig(nodeId, params))
 			.with('delay~', () => this.createDelay(nodeId, params))
-			.with('loadurl~', () => this.createLoadurl(nodeId, params))
-			.with('waveshaper~', () => this.createWaveshaper(nodeId, params));
+			.with('soundurl~', () => this.createSoundUrl(nodeId, params))
+			.with('soundfile~', () => this.createSoundFile(nodeId))
+			.with('waveshaper~', () => this.createWaveShaper(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -359,7 +362,7 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'delay~', node: delayNode });
 	}
 
-	createLoadurl(nodeId: string, params: unknown[]) {
+	createSoundUrl(nodeId: string, params: unknown[]) {
 		const [url] = params as [string];
 
 		const audioElement = new Audio();
@@ -373,13 +376,26 @@ export class AudioSystem {
 		const mediaElementSource = this.audioContext.createMediaElementSource(audioElement);
 
 		this.nodesById.set(nodeId, {
-			type: 'loadurl~',
+			type: 'soundurl~',
 			node: mediaElementSource,
 			audioElement
 		});
 	}
 
-	createWaveshaper(nodeId: string, params: unknown[]) {
+	createSoundFile(nodeId: string) {
+		const audioElement = new Audio();
+		audioElement.loop = false;
+
+		const mediaElementSource = this.audioContext.createMediaElementSource(audioElement);
+
+		this.nodesById.set(nodeId, {
+			type: 'soundfile~',
+			node: mediaElementSource,
+			audioElement
+		});
+	}
+
+	createWaveShaper(nodeId: string, params: unknown[]) {
 		const [, curve] = params;
 
 		const waveshaper = this.audioContext.createWaveShaper();
@@ -491,15 +507,18 @@ export class AudioSystem {
 					node.gain.value = gain;
 				});
 			})
-			.with({ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') }, ({ node }) => {
-				match([key, msg])
-					.with(['frequency', P.number], ([, freq]) => {
-						node.frequency.value = freq;
-					})
-					.with(['Q', P.number], ([, q]) => {
-						node.Q.value = q;
-					});
-			})
+			.with(
+				{ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') },
+				({ node }) => {
+					match([key, msg])
+						.with(['frequency', P.number], ([, freq]) => {
+							node.frequency.value = freq;
+						})
+						.with(['Q', P.number], ([, q]) => {
+							node.Q.value = q;
+						});
+				}
+			)
 			.with({ type: P.union('lowshelf~', 'highshelf~') }, ({ node }) => {
 				match([key, msg])
 					.with(['frequency', P.number], ([, freq]) => {
@@ -578,7 +597,7 @@ export class AudioSystem {
 			.with({ type: 'chuck' }, async (state) => {
 				await state.chuckManager?.handleMessage(key, msg);
 			})
-			.with({ type: 'loadurl~' }, ({ audioElement }) => {
+			.with({ type: 'soundurl~' }, ({ audioElement }) => {
 				match([key, msg])
 					.with(['message', P.string], ([, url]) => {
 						audioElement.src = url;
@@ -598,6 +617,26 @@ export class AudioSystem {
 								audioElement.pause();
 								audioElement.currentTime = 0;
 							});
+					});
+			})
+			.with({ type: 'soundfile~' }, ({ audioElement }) => {
+				match([key, msg])
+					.with(['message', { type: P.string }], ([, command]) => {
+						match(command.type)
+							.with('bang', () => {
+								audioElement.currentTime = 0;
+								audioElement.play();
+							})
+							.with('play', () => audioElement.play())
+							.with('pause', () => audioElement.pause())
+							.with('stop', () => {
+								audioElement.pause();
+								audioElement.currentTime = 0;
+							});
+					})
+					.with(['file', P.instanceOf(File)], ([, file]) => {
+						const url = URL.createObjectURL(file);
+						audioElement.src = url;
 					});
 			})
 			.with({ type: 'waveshaper~' }, ({ node }) => {
@@ -643,8 +682,15 @@ export class AudioSystem {
 				.with({ type: 'chuck' }, (entry) => {
 					entry.chuckManager?.destroy();
 				})
-				.with({ type: 'loadurl~' }, (entry) => {
+				.with({ type: 'soundurl~' }, (entry) => {
 					entry.audioElement.pause();
+					entry.audioElement.src = '';
+				})
+				.with({ type: 'soundfile~' }, (entry) => {
+					entry.audioElement.pause();
+					if (entry.audioElement.src.startsWith('blob:')) {
+						URL.revokeObjectURL(entry.audioElement.src);
+					}
 					entry.audioElement.src = '';
 				})
 				.otherwise(() => {});
