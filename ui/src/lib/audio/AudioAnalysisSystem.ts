@@ -112,7 +112,7 @@ export class AudioAnalysisSystem {
 		if (!analyzerNodeId) return null;
 
 		const state = this.audioSystem.nodesById.get(analyzerNodeId);
-		if (state?.type !== 'fft') return null;
+		if (state?.type !== 'fft~') return null;
 
 		const { node } = state;
 
@@ -164,7 +164,7 @@ export class AudioAnalysisSystem {
 		if (!isSampler2DOutlet) return;
 
 		const node = this.audioSystem.nodesById.get(edge.source);
-		if (node?.type !== 'fft') return;
+		if (node?.type !== 'fft~') return;
 
 		const inletMatch = edge.targetHandle?.match(/video-in-(\d+)-(\w+)-/);
 		if (!inletMatch) return;
@@ -209,7 +209,7 @@ export class AudioAnalysisSystem {
 			if (sourceId.startsWith('object-')) {
 				const node = this.audioSystem.nodesById.get(sourceId);
 
-				if (node?.type === 'fft') {
+				if (node?.type === 'fft~') {
 					fftNodeId = sourceId;
 					break;
 				}
