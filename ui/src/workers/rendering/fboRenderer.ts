@@ -651,7 +651,7 @@ export class FBORenderer {
 			}
 		}
 
-		return textures.slice(0, 4);
+		return textures;
 	}
 
 	async setPreviewSize(width: number, height: number) {
