@@ -682,9 +682,6 @@
 							class={['z-1', outlet.type === 'signal' && '!bg-blue-500']}
 						/>
 					{/each}
-				{:else}
-					<!-- Fallback generic outlet for objects without definitions -->
-					<Handle type="source" position={Position.Bottom} class="z-1" />
 				{/if}
 			</div>
 		</div>
