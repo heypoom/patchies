@@ -15,6 +15,7 @@ import {
 	type AudioAnalysisPayloadWithType,
 	type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
+import { PREVIEW_SCALE_FACTOR } from './constants';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -49,8 +50,8 @@ export class GLSystem {
 	public outputSize: [width: number, height: number] = [800, 600];
 
 	public previewSize: [width: number, height: number] = [
-		this.outputSize[0] / 4,
-		this.outputSize[1] / 4
+		this.outputSize[0] / PREVIEW_SCALE_FACTOR,
+		this.outputSize[1] / PREVIEW_SCALE_FACTOR
 	];
 
 	static getInstance() {

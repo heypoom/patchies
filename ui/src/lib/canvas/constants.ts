@@ -1,5 +1,7 @@
 export const WEBGL_EXTENSIONS = ['OES_texture_float_linear'];
 
+export const PREVIEW_SCALE_FACTOR = 4;
+
 export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse
 // you can define your own uniforms!
 

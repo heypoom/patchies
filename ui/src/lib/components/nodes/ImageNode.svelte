@@ -13,13 +13,17 @@
 		data: {
 			fileName?: string;
 			file?: File;
+			width?: number;
+			height?: number;
 		};
 		selected: boolean;
 		width: number;
 		height: number;
 	} = $props();
 
-	const { updateNodeData } = useSvelteFlow();
+	const { updateNode } = useSvelteFlow();
+
+	const IMAGE_PREVIEW_SCALE_FACTOR = 6;
 
 	let messageContext: MessageContext;
 	let glSystem = GLSystem.getInstance();
@@ -28,8 +32,8 @@
 	let canvasElement: HTMLCanvasElement | null = $state(null);
 	let hasImage = $state(false);
 
-	const [previewWidth, previewHeight] = glSystem.previewSize;
-	const [outputWidth, outputHeight] = glSystem.outputSize;
+	const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
+	const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
 	const hasFile = $derived(!!node.data.file);
 
@@ -48,11 +52,29 @@
 			const res = await fetch(url);
 			const blob = await res.blob();
 
-			const file = new File([blob], 'image.png', { type: blob.type });
+			// Extract filename from URL, fallback to generic name
+			const filename = getFileNameFromUrl(url);
+			const file = new File([blob], filename, { type: blob.type });
 			await loadFile(file);
 		} catch (err) {
 			console.error('Failed to load image from URL:', err);
 		}
+	}
+
+	function getFileNameFromUrl(url: string): string {
+		try {
+			const urlObj = new URL(url);
+			const pathname = urlObj.pathname;
+			const filename = pathname.substring(pathname.lastIndexOf('/') + 1);
+
+			if (filename && filename.includes('.')) {
+				return decodeURIComponent(filename);
+			}
+		} catch (error) {
+			// URL parsing failed, continue to fallback
+		}
+
+		return 'image.png';
 	}
 
 	function handleDragOver(event: DragEvent) {
@@ -91,11 +113,24 @@
 	}
 
 	async function loadFile(file: File) {
-		updateNodeData(node.id, { ...node.data, file, fileName: file.name });
-
 		try {
 			const source = await createImageBitmap(file);
 			const preview = await createImageBitmap(source);
+
+			const previewWidth = Math.round(source.width / IMAGE_PREVIEW_SCALE_FACTOR);
+			const previewHeight = Math.round(source.height / IMAGE_PREVIEW_SCALE_FACTOR);
+
+			updateNode(node.id, {
+				width: previewWidth,
+				height: previewHeight,
+				data: {
+					...node.data,
+					file,
+					fileName: file.name,
+					width: source.width,
+					height: source.height
+				}
+			});
 
 			glSystem.setBitmap(node.id, source);
 			hasImage = true;
@@ -173,11 +208,11 @@
 						<div class="relative">
 							<canvas
 								bind:this={canvasElement}
-								width={outputWidth}
-								height={outputHeight}
+								width={node.data.width ?? defaultOutputWidth}
+								height={node.data.height ?? defaultOutputHeight}
 								class="rounded-md"
-								style="width: {node.width ?? previewWidth}px; height: {node.height ??
-									previewHeight}px"
+								style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
+									defaultPreviewHeight}px"
 							></canvas>
 
 							<button
@@ -192,8 +227,8 @@
 						<div
 							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
-							style="width: {node.width ?? previewWidth}px; height: {node.height ??
-								previewHeight}px"
+							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
+								defaultPreviewHeight}px"
 							ondragover={handleDragOver}
 							ondragleave={handleDragLeave}
 							ondrop={handleDrop}
