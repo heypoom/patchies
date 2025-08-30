@@ -34,6 +34,7 @@
 	let audioSystem = AudioSystem.getInstance();
 	let errorMessage = $state<string | null>(null);
 	let showAdvancedSettings = $state(false);
+	let isLoading = $state(false);
 
 	const audioCacheKey = $derived.by(() => JSON.stringify(data));
 
@@ -163,6 +164,7 @@
 		}
 
 		errorMessage = null;
+		isLoading = true;
 
 		try {
 			const isMita = ttsOptions.voiceId === 'Mita';
@@ -195,6 +197,8 @@
 			if (error instanceof Error) {
 				errorMessage = `Error generating speech: ${error.message}`;
 			}
+		} finally {
+			isLoading = false;
 		}
 	}
 </script>
@@ -221,12 +225,17 @@
 
 				<!-- Generate Button -->
 				<button
-					class={['rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed']}
+					class={[
+						'rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50'
+					]}
 					onclick={() => generateSpeech()}
-					disabled={!!$audioUrlCache[audioCacheKey]}
-					title="Generate Speech"
+					disabled={!!$audioUrlCache[audioCacheKey] || isLoading}
+					title={isLoading ? 'Generating...' : 'Generate Speech'}
 				>
-					<Icon icon="lucide:sparkles" class="h-4 w-4 text-zinc-300" />
+					<Icon
+						icon={isLoading ? 'lucide:loader-2' : 'lucide:sparkles'}
+						class={`h-4 w-4 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
+					/>
 				</button>
 
 				<!-- Play Button -->
