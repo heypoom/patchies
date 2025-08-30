@@ -12,6 +12,7 @@
 		data: {
 			fileName?: string;
 			file?: File;
+			url?: string;
 		};
 		selected: boolean;
 	} = $props();
@@ -22,13 +23,47 @@
 	let audioSystem = AudioSystem.getInstance();
 	let isDragging = $state(false);
 	let fileInputRef: HTMLInputElement;
-	let isPlaying = $state(false);
 
 	const fileName = $derived(node.data.fileName || 'No file selected');
-	const hasFile = $derived(!!node.data.file);
+	const hasFile = $derived(!!node.data.file || !!node.data.url);
 
-	const handleMessage: MessageCallbackFn = (message) =>
-		audioSystem.send(node.id, 'message', message);
+	const handleMessage: MessageCallbackFn = (message) => {
+		match(message)
+			.with(P.string, (url) => setUrl(url))
+			.with({ type: 'load', url: P.string }, ({ url }) => setUrl(url))
+			.otherwise(() => audioSystem.send(node.id, 'message', message));
+	};
+
+	function setUrl(url: string) {
+		const fileName = getFileNameFromUrl(url);
+
+		updateNodeData(node.id, { ...node.data, fileName, url });
+		audioSystem.send(node.id, 'url', url);
+	}
+
+	function getFileNameFromUrl(url: string): string {
+		try {
+			const urlObj = new URL(url);
+			const pathname = urlObj.pathname;
+			const filename = pathname.substring(pathname.lastIndexOf('/') + 1);
+
+			// If we got a meaningful filename, use it
+			if (filename && filename.includes('.')) {
+				return decodeURIComponent(filename);
+			}
+		} catch (error) {
+			// URL parsing failed, continue to fallback
+		}
+
+		// Fallback: use extension-based naming
+		const extension = getUrlExtension(url);
+		return extension ? `audio.${extension}` : 'audio file';
+	}
+
+	function getUrlExtension(url: string): string {
+		const match = url.match(/\.([a-z0-9]+)(\?.*)?$/i);
+		return match ? match[1] : '';
+	}
 
 	function handleDragOver(event: DragEvent) {
 		event.preventDefault();
@@ -83,7 +118,7 @@
 	function playFile() {
 		if (!hasFile) return;
 
-		audioSystem.send(node.id, 'message', { type: 'play' });
+		audioSystem.send(node.id, 'message', { type: 'bang' });
 	}
 
 	function stopFile() {
@@ -96,12 +131,14 @@
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
-		// Create the audio object
 		audioSystem.createAudioObject(node.id, 'soundfile~', []);
 
-		// If we have a file already, load it
 		if (node.data.file) {
 			audioSystem.send(node.id, 'file', node.data.file);
+		}
+
+		if (node.data.url) {
+			audioSystem.send(node.id, 'message', { type: 'load', url: node.data.url });
 		}
 	});
 

@@ -182,7 +182,6 @@ export class AudioSystem {
 			.with('pan~', () => this.createPan(nodeId, params))
 			.with('sig~', () => this.createSig(nodeId, params))
 			.with('delay~', () => this.createDelay(nodeId, params))
-			.with('soundurl~', () => this.createSoundUrl(nodeId, params))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
 			.with('waveshaper~', () => this.createWaveShaper(nodeId, params));
 	}
@@ -362,28 +361,9 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'delay~', node: delayNode });
 	}
 
-	createSoundUrl(nodeId: string, params: unknown[]) {
-		const [url] = params as [string];
-
-		const audioElement = new Audio();
-		audioElement.crossOrigin = 'anonymous';
-		audioElement.loop = false;
-
-		if (url) {
-			audioElement.src = url;
-		}
-
-		const mediaElementSource = this.audioContext.createMediaElementSource(audioElement);
-
-		this.nodesById.set(nodeId, {
-			type: 'soundurl~',
-			node: mediaElementSource,
-			audioElement
-		});
-	}
-
 	createSoundFile(nodeId: string) {
 		const audioElement = new Audio();
+		audioElement.crossOrigin = 'anonymous';
 		audioElement.loop = false;
 
 		const mediaElementSource = this.audioContext.createMediaElementSource(audioElement);
@@ -471,7 +451,7 @@ export class AudioSystem {
 		const state = this.nodesById.get(nodeId);
 		if (!state) return;
 
-		match(state)
+		return match(state)
 			.with({ type: 'osc~' }, ({ node }) => {
 				match([key, msg])
 					.with(['frequency', P.number], ([, freq]) => {
@@ -597,16 +577,10 @@ export class AudioSystem {
 			.with({ type: 'chuck' }, async (state) => {
 				await state.chuckManager?.handleMessage(key, msg);
 			})
-			.with({ type: 'soundurl~' }, ({ audioElement }) => {
+			.with({ type: 'soundfile~' }, ({ audioElement }) => {
 				match([key, msg])
-					.with(['message', P.string], ([, url]) => {
-						audioElement.src = url;
-					})
 					.with(['message', { type: P.string }], ([, command]) => {
 						match(command)
-							.with({ type: 'url', url: P.string }, ({ url }) => {
-								audioElement.src = url;
-							})
 							.with({ type: 'bang' }, () => {
 								audioElement.currentTime = 0;
 								audioElement.play();
@@ -617,25 +591,11 @@ export class AudioSystem {
 								audioElement.pause();
 								audioElement.currentTime = 0;
 							});
-					});
-			})
-			.with({ type: 'soundfile~' }, ({ audioElement }) => {
-				match([key, msg])
-					.with(['message', { type: P.string }], ([, command]) => {
-						match(command.type)
-							.with('bang', () => {
-								audioElement.currentTime = 0;
-								audioElement.play();
-							})
-							.with('play', () => audioElement.play())
-							.with('pause', () => audioElement.pause())
-							.with('stop', () => {
-								audioElement.pause();
-								audioElement.currentTime = 0;
-							});
 					})
 					.with(['file', P.instanceOf(File)], ([, file]) => {
-						const url = URL.createObjectURL(file);
+						audioElement.src = URL.createObjectURL(file);
+					})
+					.with(['url', P.string], ([, url]) => {
 						audioElement.src = url;
 					});
 			})
@@ -652,7 +612,8 @@ export class AudioSystem {
 							node.oversample = oversample;
 						}
 					});
-			});
+			})
+			.otherwise(() => null);
 	}
 
 	// Remove audio object
@@ -686,10 +647,6 @@ export class AudioSystem {
 				})
 				.with({ type: 'chuck' }, (entry) => {
 					entry.chuckManager?.destroy();
-				})
-				.with({ type: 'soundurl~' }, (entry) => {
-					entry.audioElement.pause();
-					entry.audioElement.src = '';
 				})
 				.with({ type: 'soundfile~' }, (entry) => {
 					entry.audioElement.pause();

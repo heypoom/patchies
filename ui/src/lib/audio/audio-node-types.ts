@@ -116,12 +116,6 @@ interface PsDelay extends PsBase {
 	node: DelayNode;
 }
 
-interface PsSoundurl extends PsBase {
-	type: 'soundurl~';
-	node: MediaElementAudioSourceNode;
-	audioElement: HTMLAudioElement;
-}
-
 interface PsSoundfile extends PsBase {
 	type: 'soundfile~';
 	node: MediaElementAudioSourceNode;
@@ -155,7 +149,6 @@ export type PsAudioNode =
 	| PsPan
 	| PsSig
 	| PsDelay
-	| PsSoundurl
 	| PsSoundfile
 	| PsWaveshaper;
 export type PsAudioType = PsAudioNode['type'];

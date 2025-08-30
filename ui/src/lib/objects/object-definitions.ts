@@ -605,19 +605,6 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	'soundurl~': {
-		inlets: [
-			{
-				name: 'message',
-				type: 'message',
-				description: 'Control messages: "play", "pause", "stop", or bang to restart'
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Audio output from loaded file' }],
-		description: 'Loads and plays audio files from URL using MediaElementAudioSourceNode',
-		tags: ['audio']
-	},
-
 	'soundfile~': {
 		inlets: [
 			{
@@ -627,7 +614,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Audio output from loaded file' }],
-		description: 'Loads and plays local audio files with drag-drop and file picker',
+		description: 'Loads and plays audio files from local files or URLs with drag-drop and file picker',
 		tags: ['audio']
 	},
 
