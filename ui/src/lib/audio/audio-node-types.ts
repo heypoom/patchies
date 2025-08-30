@@ -127,6 +127,15 @@ interface PsWaveshaper extends PsBase {
 	node: WaveShaperNode;
 }
 
+interface PsSampler extends PsBase {
+	type: 'sampler~';
+	node: GainNode;
+	destinationNode: MediaStreamAudioDestinationNode;
+	mediaRecorder?: MediaRecorder;
+	audioBuffer?: AudioBuffer;
+	isRecording?: boolean;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -150,6 +159,7 @@ export type PsAudioNode =
 	| PsSig
 	| PsDelay
 	| PsSoundfile
-	| PsWaveshaper;
+	| PsWaveshaper
+	| PsSampler;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

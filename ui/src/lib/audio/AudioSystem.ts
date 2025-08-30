@@ -52,7 +52,12 @@ export class AudioSystem {
 					console.warn(`AudioParam ${paramName} not found on node ${targetId}`);
 				}
 			} else {
-				sourceEntry.node.connect(targetEntry.node);
+				// Special handling for sampler~ - connect to destination for recording
+				if (targetEntry.type === 'sampler~') {
+					sourceEntry.node.connect(targetEntry.destinationNode);
+				} else {
+					sourceEntry.node.connect(targetEntry.node);
+				}
 			}
 		} catch (error) {
 			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
@@ -181,6 +186,7 @@ export class AudioSystem {
 			.with('compressor~', () => this.createCompressor(nodeId, params))
 			.with('pan~', () => this.createPan(nodeId, params))
 			.with('sig~', () => this.createSig(nodeId, params))
+			.with('sampler~', () => this.createSampler(nodeId, params))
 			.with('delay~', () => this.createDelay(nodeId, params))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
 			.with('waveshaper~', () => this.createWaveShaper(nodeId, params));
@@ -350,6 +356,22 @@ export class AudioSystem {
 		constantSource.start(0);
 
 		this.nodesById.set(nodeId, { type: 'sig~', node: constantSource });
+	}
+
+	createSampler(nodeId: string, _params: unknown[]) {
+		// Create a gain node for playback output
+		const gainNode = this.audioContext.createGain();
+		gainNode.gain.value = 1.0;
+
+		// Create a MediaStreamDestination for recording input
+		const destinationNode = this.audioContext.createMediaStreamDestination();
+
+		this.nodesById.set(nodeId, {
+			type: 'sampler~',
+			node: gainNode,
+			destinationNode,
+			isRecording: false
+		});
 	}
 
 	createDelay(nodeId: string, params: unknown[]) {
@@ -599,6 +621,59 @@ export class AudioSystem {
 						audioElement.src = url;
 					});
 			})
+			.with({ type: 'sampler~' }, (samplerState) => {
+				match([key, msg])
+					.with(['message', { type: 'record' }], async () => {
+						if (samplerState.isRecording || samplerState.mediaRecorder) return;
+
+						// Create MediaRecorder from the destination stream
+						const mediaRecorder = new MediaRecorder(samplerState.destinationNode.stream);
+						const recordedChunks: Blob[] = [];
+
+						mediaRecorder.ondataavailable = (event) => {
+							if (event.data.size > 0) {
+								recordedChunks.push(event.data);
+							}
+						};
+
+						mediaRecorder.onstop = async () => {
+							try {
+								const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+								const arrayBuffer = await blob.arrayBuffer();
+								samplerState.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+								samplerState.mediaRecorder = undefined;
+								samplerState.isRecording = false;
+							} catch (error) {
+								console.error('Failed to process recorded audio:', error);
+								samplerState.mediaRecorder = undefined;
+								samplerState.isRecording = false;
+							}
+						};
+
+						mediaRecorder.start();
+						samplerState.mediaRecorder = mediaRecorder;
+						samplerState.isRecording = true;
+					})
+					.with(['message', { type: 'end' }], () => {
+						if (samplerState.mediaRecorder && samplerState.isRecording) {
+							samplerState.mediaRecorder.stop();
+						}
+					})
+					.with(['message', { type: 'play' }], () => {
+						if (!samplerState.audioBuffer) return;
+
+						// Create a buffer source and play the recorded audio
+						const bufferSource = this.audioContext.createBufferSource();
+						bufferSource.buffer = samplerState.audioBuffer;
+						bufferSource.connect(samplerState.node);
+						bufferSource.start();
+					})
+					.with(['message', { type: 'stop' }], () => {
+						// Stop any playing audio sources (they auto-disconnect when done)
+						// Note: We can't directly stop individual buffer sources,
+						// but they will stop naturally when they finish playing
+					});
+			})
 			.with({ type: 'waveshaper~' }, ({ node }) => {
 				match([key, msg])
 					.with(['curve', P.array(P.number)], ([, curve]) => {
@@ -654,6 +729,14 @@ export class AudioSystem {
 						URL.revokeObjectURL(entry.audioElement.src);
 					}
 					entry.audioElement.src = '';
+				})
+				.with({ type: 'sampler~' }, (entry) => {
+					// Stop recording if active
+					if (entry.mediaRecorder && entry.isRecording) {
+						entry.mediaRecorder.stop();
+					}
+					// Disconnect destination node
+					entry.destinationNode.disconnect();
 				})
 				.otherwise(() => {});
 
