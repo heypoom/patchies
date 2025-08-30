@@ -10,6 +10,7 @@
 	import { voicesStore, fetchVoices } from '$lib/stores/voices';
 	import { audioUrlCache } from '$lib/stores/audioCache';
 	import { omit } from 'lodash';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 
 	type TTSOptions = {
 		text: string;
@@ -30,9 +31,8 @@
 	} = $props();
 
 	let messageContext: MessageContext;
+	let audioSystem = AudioSystem.getInstance();
 	let errorMessage = $state<string | null>(null);
-	let playbackState = $state<'loading' | 'playing' | 'paused'>('paused');
-	let audio = $state<HTMLAudioElement | null>(null);
 	let showAdvancedSettings = $state(false);
 
 	const audioCacheKey = $derived.by(() => JSON.stringify(data));
@@ -85,6 +85,13 @@
 				})
 				.with({ type: 'set' }, (m) => {
 					setTTSOptionsFromMessage(m);
+				})
+				.with({ type: 'stop' }, () => {
+					audioSystem.send(nodeId, 'message', { type: 'stop' });
+				})
+				.otherwise(() => {
+					// Forward other messages to AudioSystem for audio manipulation
+					audioSystem.send(nodeId, 'message', message);
 				});
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
@@ -99,12 +106,16 @@
 			return;
 		}
 
-		playAudio(cachedUrl);
+		// Load URL and play through AudioSystem
+		audioSystem.send(nodeId, 'url', cachedUrl);
+		audioSystem.send(nodeId, 'message', { type: 'bang' });
 	}
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+
+		audioSystem.createAudioObject(nodeId, 'soundfile~', []);
 
 		fetchVoices();
 	});
@@ -115,67 +126,19 @@
 			messageContext.destroy();
 		}
 
-		if (audio) {
-			audio.pause();
-			audio = null;
-		}
+		audioSystem.removeAudioObject(nodeId);
 	});
-
-	const getPlayIcon = () => (playbackState === 'playing' ? 'lucide:pause' : 'lucide:play');
-
-	function getPlayTitle() {
-		return match(playbackState)
-			.with('playing', () => 'Pause')
-			.with('loading', () => 'Loading...')
-			.otherwise(() => 'Play');
-	}
 
 	function togglePlayback() {
 		const cachedUrl = $audioUrlCache[audioCacheKey];
 		if (!cachedUrl) return;
 
-		match(playbackState)
-			.with('playing', () => {
-				if (audio) {
-					audio.pause();
-					playbackState = 'paused';
-				}
-			})
-			.with('paused', () => {
-				playAudio(cachedUrl);
-			});
+		audioSystem.send(nodeId, 'message', { type: 'bang' });
 	}
 
 	function playAudio(url: string) {
-		if (audio) {
-			audio.pause();
-		}
-
-		audio = new Audio(url);
-
-		audio.onplay = () => {
-			playbackState = 'playing';
-		};
-		audio.onpause = () => {
-			playbackState = 'paused';
-		};
-		audio.onended = () => {
-			playbackState = 'paused';
-		};
-		audio.onerror = () => {
-			errorMessage = 'Error playing audio';
-			playbackState = 'paused';
-		};
-
-		audio.play().catch((error) => {
-			// ignore DOMException errors (e.g. aborted playback)
-			if (error instanceof DOMException) {
-				return;
-			}
-
-			errorMessage = 'Failed to play audio: ' + error.message;
-			playbackState = 'paused';
-		});
+		audioSystem.send(nodeId, 'url', url);
+		audioSystem.send(nodeId, 'message', { type: 'bang' });
 	}
 
 	async function generateSpeech({ playback = true }: { playback?: boolean } = {}) {
@@ -199,7 +162,6 @@
 			return;
 		}
 
-		playbackState = 'loading';
 		errorMessage = null;
 
 		try {
@@ -228,14 +190,11 @@
 				if (playback) playAudio(json.fileUrl);
 			} else {
 				errorMessage = json.message || 'Speech generation failed';
-				playbackState = 'paused';
 			}
 		} catch (error) {
 			if (error instanceof Error) {
 				errorMessage = `Error generating speech: ${error.message}`;
 			}
-
-			playbackState = 'paused';
 		}
 	}
 </script>
@@ -244,7 +203,7 @@
 	<div class="flex flex-col gap-2">
 		<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 			<div class="z-10 rounded-lg bg-transparent px-2 py-1">
-				<div class="font-mono text-xs font-medium text-zinc-100">ai.text2speech</div>
+				<div class="font-mono text-xs font-medium text-zinc-400">ai.tts</div>
 			</div>
 
 			<div class="flex gap-1">
@@ -262,20 +221,12 @@
 
 				<!-- Generate Button -->
 				<button
-					class={[
-						'rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed',
-
-						playbackState === 'loading' ? 'animate-spin opacity-30' : ''
-					]}
-					onclick={generateSpeech}
-					disabled={playbackState === 'loading' || !!$audioUrlCache[audioCacheKey]}
+					class={['rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed']}
+					onclick={() => generateSpeech()}
+					disabled={!!$audioUrlCache[audioCacheKey]}
 					title="Generate Speech"
-					aria-disabled={playbackState === 'loading'}
 				>
-					<Icon
-						icon={playbackState === 'loading' ? 'lucide:loader' : 'lucide:sparkles'}
-						class="h-4 w-4 text-zinc-300"
-					/>
+					<Icon icon="lucide:sparkles" class="h-4 w-4 text-zinc-300" />
 				</button>
 
 				<!-- Play Button -->
@@ -283,10 +234,9 @@
 					<button
 						class="rounded p-1 transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30"
 						onclick={togglePlayback}
-						disabled={playbackState === 'loading'}
-						title={getPlayTitle()}
+						title="Play"
 					>
-						<Icon icon={getPlayIcon()} class="h-4 w-4 text-zinc-300" />
+						<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
 					</button>
 				{/if}
 			</div>
@@ -295,29 +245,27 @@
 		<div class="relative">
 			<Handle type="target" position={Position.Top} class="z-1" />
 
-			<div class="w-80 rounded-lg border border-zinc-600 bg-zinc-900 p-4">
+			<div>
 				<!-- Main Text Input -->
-				<div class="nodrag mb-4">
-					<textarea
-						value={ttsOptions.text}
-						placeholder="Enter text to read..."
-						class="h-20 w-full resize-none rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
-						oninput={(e) => {
-							updateNodeData(nodeId, { ...data, text: e.currentTarget.value });
-						}}
-						onkeydown={(e) => {
-							if (e.shiftKey && e.key === 'Enter') {
-								generateSpeech();
-								e.preventDefault();
-								return true;
-							}
-						}}
-					></textarea>
-				</div>
+				<textarea
+					value={ttsOptions.text}
+					placeholder="Enter text to read..."
+					class="focus:outline-one nodrag h-20 w-full min-w-60 resize-none rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-400 outline-none focus:border-zinc-500"
+					oninput={(e) => {
+						updateNodeData(nodeId, { ...data, text: e.currentTarget.value });
+					}}
+					onkeydown={(e) => {
+						if (e.shiftKey && e.key === 'Enter') {
+							generateSpeech();
+							e.preventDefault();
+							return true;
+						}
+					}}
+				></textarea>
 
 				<!-- Advanced Settings Section -->
 				{#if showAdvancedSettings}
-					<div class="space-y-3 border-t border-zinc-700 py-3">
+					<div class="space-y-3 pb-6 pt-3">
 						<!-- RVC Model Selection -->
 						<div class="nodrag">
 							<label class="mb-1 block text-[10px] font-medium text-zinc-400">models</label>
@@ -478,17 +426,9 @@
 						{errorMessage}
 					</div>
 				{/if}
-
-				<!-- Playback state indicator -->
-				<div class="mt-3 text-center">
-					<div class="text-[8px] text-zinc-400">
-						Status: <span class="text-zinc-300 capitalize">{playbackState}.</span> Powered by
-						<a href="https://celestiai.co" class="text-blue-300">CelestiAI</a>.
-					</div>
-				</div>
 			</div>
 
-			<Handle type="source" position={Position.Bottom} class="absolute" />
+			<Handle type="source" position={Position.Bottom} />
 		</div>
 	</div>
 </div>
