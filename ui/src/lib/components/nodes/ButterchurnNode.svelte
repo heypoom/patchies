@@ -10,6 +10,7 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { Handle } from '@xyflow/svelte';
 
 	let {
 		id: nodeId,
@@ -67,11 +68,16 @@
 				width: outputWidth / 2,
 				height: outputHeight / 2
 			});
-
-			visualizer.connectAudio(audioSystem.outGain);
 		}
 
+		audioSystem.createAudioObject(nodeId, 'gain~', [, 1]);
 		glSystem.upsertNode(nodeId, 'img', {});
+
+		const audioObject = audioSystem.nodesById.get(nodeId);
+
+		if (audioObject && visualizer) {
+			visualizer.connectAudio(audioObject.node);
+		}
 	});
 
 	$effect(() => {
@@ -88,6 +94,7 @@
 	onDestroy(() => {
 		stop();
 		glSystem.removeNode(nodeId);
+		audioSystem.removeAudioObject(nodeId);
 		visualizer.renderer = null;
 		visualizer = null;
 	});
@@ -102,6 +109,16 @@
 	bind:previewCanvas={canvasElement}
 	{selected}
 >
+	{#snippet topHandle()}
+		<Handle
+			type="target"
+			position={Position.Top}
+			id="audio-in"
+			class="z-1 !bg-blue-500"
+			title="Audio input"
+		/>
+	{/snippet}
+
 	{#snippet bottomHandle()}
 		<VideoHandle
 			type="source"

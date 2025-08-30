@@ -252,7 +252,7 @@
 		</div>
 
 		<div class="relative">
-			<Handle type="target" position={Position.Top} class="z-1" />
+			<Handle type="target" position={Position.Top} class="z-1 absolute" />
 
 			<div>
 				<!-- Main Text Input -->
@@ -437,7 +437,11 @@
 				{/if}
 			</div>
 
-			<Handle type="source" position={Position.Bottom} />
+			<Handle
+				type="source"
+				position={Position.Bottom}
+				class="z-1 absolute !bottom-[2px] !bg-blue-500"
+			/>
 		</div>
 	</div>
 </div>
