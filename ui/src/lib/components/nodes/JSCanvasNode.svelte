@@ -19,6 +19,16 @@
 
 	const { updateNodeData } = useSvelteFlow();
 
+	let bitmapFrameId: number;
+
+	async function uploadBitmap() {
+		if (canvasElement && glSystem.hasOutgoingVideoConnections(nodeId)) {
+			await glSystem.setBitmapSource(nodeId, canvasElement);
+		}
+
+		bitmapFrameId = requestAnimationFrame(uploadBitmap);
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		glSystem.upsertNode(nodeId, 'img', {});
@@ -26,10 +36,14 @@
 		if (canvasElement) {
 			canvasManager = new JSCanvasManager(nodeId, canvasElement);
 			canvasManager.setupSketch({ code: data.code });
+
+			bitmapFrameId = requestAnimationFrame(uploadBitmap);
 		}
 	});
 
 	onDestroy(() => {
+		cancelAnimationFrame(bitmapFrameId);
+
 		glSystem.removeNode(nodeId);
 		canvasManager?.destroy();
 		messageContext?.destroy();
