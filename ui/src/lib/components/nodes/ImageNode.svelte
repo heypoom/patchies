@@ -176,6 +176,10 @@
 
 		// Register node with GLSystem
 		glSystem.upsertNode(node.id, 'img', {});
+
+		if (node.data.file) {
+			loadFile(node.data.file);
+		}
 	});
 
 	onDestroy(() => {
@@ -232,7 +236,7 @@
 							ondragover={handleDragOver}
 							ondragleave={handleDragLeave}
 							ondrop={handleDrop}
-							onclick={openFileDialog}
+							ondblclick={openFileDialog}
 							role="button"
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
@@ -240,7 +244,7 @@
 							<Icon icon="lucide:image" class="h-4 w-4 text-zinc-400" />
 
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
-								<span class="text-zinc-300">select</span> or
+								<span class="text-zinc-300">double click</span> or
 								<span class="text-zinc-300">drop</span><br />
 								image file
 							</div>

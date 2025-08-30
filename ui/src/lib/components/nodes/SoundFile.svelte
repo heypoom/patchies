@@ -195,6 +195,7 @@
 						<div
 							class="flex items-center justify-center gap-2 px-3 py-[7px]"
 							ondblclick={openFileDialog}
+							role="figure"
 						>
 							<Icon icon="lucide:volume-2" class="h-4 w-4 text-zinc-500" />
 
@@ -207,12 +208,14 @@
 					{:else}
 						<div
 							class="flex items-center justify-center gap-2 px-3 py-[7px]"
-							onclick={openFileDialog}
+							ondblclick={openFileDialog}
+							role="figure"
 						>
 							<Icon icon="lucide:upload" class="h-3 w-3 text-zinc-400" />
 
 							<div class="font-mono text-[12px] font-light text-zinc-400">
-								<span class="text-zinc-300">select</span> or <span class="text-zinc-300">drop</span>
+								<span class="text-zinc-300">double click</span> or
+								<span class="text-zinc-300">drop</span>
 								sound file
 							</div>
 						</div>

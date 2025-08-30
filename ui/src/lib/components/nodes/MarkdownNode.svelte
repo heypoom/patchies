@@ -8,7 +8,9 @@
 
 	let props: {
 		id: string;
-		data: { markdown: string };
+		data: { 
+			markdown: string;
+		};
 		selected: boolean;
 		width: number;
 		height: number;
@@ -34,6 +36,7 @@
 		overtypeEditor?.setValue(markdown);
 	}
 
+
 	const handleMessage: MessageCallbackFn = (message) =>
 		match(message)
 			.with(P.string, (value) => updateMarkdown(value))
@@ -46,7 +49,7 @@
 		messageContext.destroy();
 	});
 
-	onMount(() => {
+	onMount(async () => {
 		messageContext = new MessageContext(props.id);
 		messageContext.queue.addCallback(handleMessage);
 

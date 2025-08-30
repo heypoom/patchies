@@ -24,6 +24,7 @@
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
+	import { match } from 'ts-pattern';
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -182,12 +183,93 @@
 		event.preventDefault();
 
 		const type = event.dataTransfer?.getData('application/svelteflow');
-
-		if (!type) return;
+		const files = event.dataTransfer?.files;
 
 		// Get accurate positioning with zoom/pan
 		const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-		createNode(type, position);
+
+		// Handle file drops
+		if (files && files.length > 0) {
+			handleFileDrops(files, position);
+			return;
+		}
+
+		// Handle node palette drops
+		if (type) {
+			createNode(type, position);
+		}
+	}
+
+	// Handle dropped files by creating appropriate nodes
+	function handleFileDrops(files: FileList, basePosition: { x: number; y: number }) {
+		Array.from(files).forEach(async (file, index) => {
+			// Offset multiple files to avoid overlap
+			const position = {
+				x: basePosition.x + (index * 20),
+				y: basePosition.y + (index * 20)
+			};
+
+			const nodeType = getNodeTypeFromFile(file);
+			if (nodeType) {
+				const customData = await getFileNodeData(file, nodeType);
+				createNode(nodeType, position, customData);
+			}
+		});
+	}
+
+	// Map file types to node types based on spec
+	function getNodeTypeFromFile(file: File): string | null {
+		const mimeType = file.type;
+
+		// Image files -> img node
+		if (mimeType.startsWith('image/')) {
+			return 'img';
+		}
+
+		// Text files -> markdown node
+		if (mimeType.startsWith('text/')) {
+			return 'markdown';
+		}
+
+		// Audio files -> soundfile~ node
+		if (mimeType.startsWith('audio/')) {
+			return 'soundfile~';
+		}
+
+		// Unsupported file type
+		return null;
+	}
+
+	// Create appropriate data for file-based nodes
+	async function getFileNodeData(file: File, nodeType: string) {
+		return await match(nodeType)
+			.with('img', () => Promise.resolve({
+				...getDefaultNodeData('img'),
+				file,
+				fileName: file.name,
+				url: URL.createObjectURL(file)
+			}))
+			.with('markdown', async () => {
+				try {
+					const content = await file.text();
+					return {
+						...getDefaultNodeData('markdown'),
+						markdown: content
+					};
+				} catch (error) {
+					console.error('Failed to read markdown file:', error);
+					return {
+						...getDefaultNodeData('markdown'),
+						markdown: `Error loading file: ${file.name}`
+					};
+				}
+			})
+			.with('soundfile~', () => Promise.resolve({
+				...getDefaultNodeData('soundfile~'),
+				file,
+				fileName: file.name
+			}))
+			.otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
 	}
 
 	function onDragOver(event: DragEvent) {
