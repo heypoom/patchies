@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, NodeResizer, Position, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 
 	let node: {
 		id: string;
@@ -14,6 +15,8 @@
 			file?: File;
 		};
 		selected: boolean;
+		width: number;
+		height: number;
 	} = $props();
 
 	const { updateNodeData } = useSvelteFlow();
@@ -25,12 +28,32 @@
 	let canvasElement: HTMLCanvasElement | null = $state(null);
 	let hasImage = $state(false);
 
-	const fileName = $derived(node.data.fileName || 'No file selected');
+	const [previewWidth, previewHeight] = glSystem.previewSize;
+	const [outputWidth, outputHeight] = glSystem.outputSize;
+
 	const hasFile = $derived(!!node.data.file);
 
-	const handleMessage: MessageCallbackFn = () => {
-		// Image node doesn't need to handle messages for now
+	const handleMessage: MessageCallbackFn = (m) => {
+		match(m)
+			.with(P.string, (url) => {
+				loadImageFromUrl(url);
+			})
+			.with({ type: 'load', url: P.string }, ({ url }) => {
+				loadImageFromUrl(url);
+			});
 	};
+
+	async function loadImageFromUrl(url: string) {
+		try {
+			const res = await fetch(url);
+			const blob = await res.blob();
+
+			const file = new File([blob], 'image.png', { type: blob.type });
+			await loadFile(file);
+		} catch (err) {
+			console.error('Failed to load image from URL:', err);
+		}
+	}
 
 	function handleDragOver(event: DragEvent) {
 		event.preventDefault();
@@ -125,22 +148,36 @@
 		messageContext?.destroy();
 		glSystem.removeNode(node.id);
 	});
+
+	const handleCommonClass = $derived.by(() => {
+		return `z-1 ${node.selected ? '' : 'opacity-40'}`;
+	});
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative">
+	<NodeResizer class="z-1" isVisible={node.selected} keepAspectRatio />
+
+	{#if node.selected}
+		<div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900/60 px-2 py-1 backdrop-blur-lg">
+			<div class="font-mono text-xs font-medium text-zinc-400">img</div>
+		</div>
+	{/if}
+
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class="z-1" />
+				<Handle type="target" position={Position.Top} class={handleCommonClass} />
 
 				<div class="flex flex-col gap-2">
 					{#if hasFile && hasImage}
 						<div class="relative">
 							<canvas
 								bind:this={canvasElement}
-								width={800}
-								height={600}
-								class="h-[120px] w-[160px] rounded-md border border-zinc-700 bg-zinc-900"
+								width={outputWidth}
+								height={outputHeight}
+								class="rounded-md"
+								style="width: {node.width ?? previewWidth}px; height: {node.height ??
+									previewHeight}px"
 							></canvas>
 
 							<button
@@ -155,10 +192,15 @@
 						<div
 							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
+							style="width: {node.width ?? previewWidth}px; height: {node.height ??
+								previewHeight}px"
 							ondragover={handleDragOver}
 							ondragleave={handleDragLeave}
 							ondrop={handleDrop}
 							onclick={openFileDialog}
+							role="button"
+							tabindex="0"
+							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
 						>
 							<Icon icon="lucide:image" class="h-4 w-4 text-zinc-400" />
 
@@ -170,7 +212,13 @@
 					{/if}
 				</div>
 
-				<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
+				<VideoHandle
+					type="source"
+					position={Position.Bottom}
+					id="video-out"
+					title="Video output"
+					class={handleCommonClass}
+				/>
 			</div>
 		</div>
 	</div>
