@@ -7,6 +7,7 @@ import SwissGLNode from '$lib/components/nodes/SwissGLNode.svelte';
 import StrudelNode from '$lib/components/nodes/StrudelNode.svelte';
 import ButterchurnNode from '$lib/components/nodes/ButterchurnNode.svelte';
 import AiImageNode from '$lib/components/nodes/AiImageNode.svelte';
+import ImageNode from '$lib/components/nodes/ImageNode.svelte';
 import AiTextNode from '$lib/components/nodes/AiTextNode.svelte';
 import MessageNode from '$lib/components/nodes/MessageNode.svelte';
 import BangNode from '$lib/components/nodes/BangNode.svelte';
@@ -39,6 +40,7 @@ export const nodeTypes = {
 	'bg.out': BackgroundOutputNode,
 	'ai.txt': AiTextNode,
 	'ai.img': AiImageNode,
+	img: ImageNode,
 	'ai.music': AiMusicNode,
 	'ai.tts': AiSpeechNode,
 	'midi.in': MIDIInputNode,
