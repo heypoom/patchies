@@ -9,6 +9,7 @@
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let {
 		id: nodeId,
@@ -119,7 +120,7 @@
 				type="target"
 				position={Position.Top}
 				id={`${def.type === 'sampler2D' ? 'video' : 'msg'}-in-${defIndex}-${def.name}-${def.type}`}
-				style={`left: ${80 + defIndex * 20}px;`}
+				style={`left: ${getPortPosition(data.glUniformDefs.length, defIndex)}`}
 				title={`${def.name} (${def.type})`}
 				class={def.type === 'sampler2D' ? '!bg-orange-500 hover:!bg-orange-400' : ''}
 			/>
@@ -131,6 +132,7 @@
 			type="source"
 			position={Position.Bottom}
 			id={`video-out`}
+			style={`left: ${getPortPosition(1, 0)}`}
 			title="Video output"
 			class="!bg-orange-500 hover:!bg-orange-400"
 		/>
