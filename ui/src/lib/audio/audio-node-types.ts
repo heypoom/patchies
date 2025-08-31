@@ -133,7 +133,7 @@ interface PsSampler extends PsBase {
 	destinationNode: MediaStreamAudioDestinationNode;
 	mediaRecorder?: MediaRecorder;
 	audioBuffer?: AudioBuffer;
-	isRecording?: boolean;
+	sourceNode?: AudioBufferSourceNode;
 }
 
 export type PsAudioNode =

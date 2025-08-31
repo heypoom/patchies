@@ -369,8 +369,7 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, {
 			type: 'sampler~',
 			node: gainNode,
-			destinationNode,
-			isRecording: false
+			destinationNode
 		});
 	}
 
@@ -621,57 +620,52 @@ export class AudioSystem {
 						audioElement.src = url;
 					});
 			})
-			.with({ type: 'sampler~' }, (samplerState) => {
+			.with({ type: 'sampler~' }, (sampler) => {
 				match([key, msg])
 					.with(['message', { type: 'record' }], async () => {
-						if (samplerState.isRecording || samplerState.mediaRecorder) return;
+						if (sampler.mediaRecorder) return;
 
-						// Create MediaRecorder from the destination stream
-						const mediaRecorder = new MediaRecorder(samplerState.destinationNode.stream);
+						const recorder = new MediaRecorder(sampler.destinationNode.stream);
 						const recordedChunks: Blob[] = [];
 
-						mediaRecorder.ondataavailable = (event) => {
+						recorder.ondataavailable = (event) => {
 							if (event.data.size > 0) {
 								recordedChunks.push(event.data);
 							}
 						};
 
-						mediaRecorder.onstop = async () => {
+						recorder.onstop = async () => {
 							try {
 								const blob = new Blob(recordedChunks, { type: 'audio/wav' });
 								const arrayBuffer = await blob.arrayBuffer();
-								samplerState.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-								samplerState.mediaRecorder = undefined;
-								samplerState.isRecording = false;
+								sampler.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+								sampler.mediaRecorder = undefined;
 							} catch (error) {
 								console.error('Failed to process recorded audio:', error);
-								samplerState.mediaRecorder = undefined;
-								samplerState.isRecording = false;
+								sampler.mediaRecorder = undefined;
 							}
 						};
 
-						mediaRecorder.start();
-						samplerState.mediaRecorder = mediaRecorder;
-						samplerState.isRecording = true;
+						recorder.start();
+						sampler.mediaRecorder = recorder;
 					})
 					.with(['message', { type: 'end' }], () => {
-						if (samplerState.mediaRecorder && samplerState.isRecording) {
-							samplerState.mediaRecorder.stop();
+						if (sampler.mediaRecorder?.state === 'recording' && sampler.mediaRecorder) {
+							sampler.mediaRecorder.stop();
 						}
 					})
 					.with(['message', { type: 'play' }], () => {
-						if (!samplerState.audioBuffer) return;
+						if (!sampler.audioBuffer) return;
 
-						// Create a buffer source and play the recorded audio
-						const bufferSource = this.audioContext.createBufferSource();
-						bufferSource.buffer = samplerState.audioBuffer;
-						bufferSource.connect(samplerState.node);
-						bufferSource.start();
+						sampler.sourceNode?.stop();
+
+						sampler.sourceNode = this.audioContext.createBufferSource();
+						sampler.sourceNode.buffer = sampler.audioBuffer;
+						sampler.sourceNode.connect(sampler.node);
+						sampler.sourceNode.start();
 					})
 					.with(['message', { type: 'stop' }], () => {
-						// Stop any playing audio sources (they auto-disconnect when done)
-						// Note: We can't directly stop individual buffer sources,
-						// but they will stop naturally when they finish playing
+						sampler.sourceNode?.stop();
 					});
 			})
 			.with({ type: 'waveshaper~' }, ({ node }) => {
@@ -731,11 +725,10 @@ export class AudioSystem {
 					entry.audioElement.src = '';
 				})
 				.with({ type: 'sampler~' }, (entry) => {
-					// Stop recording if active
-					if (entry.mediaRecorder && entry.isRecording) {
+					if (entry.mediaRecorder?.state === 'recording') {
 						entry.mediaRecorder.stop();
 					}
-					// Disconnect destination node
+
 					entry.destinationNode.disconnect();
 				})
 				.otherwise(() => {});
