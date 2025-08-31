@@ -664,6 +664,12 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'signal', description: 'Convolved signal with reverb effect' }],
 		description: 'ConvolverNode for reverb and acoustic modeling using impulse responses',
 		tags: ['audio']
+	},
+	loadbang: {
+		inlets: [],
+		outlets: [{ name: 'out', type: 'bang', description: 'Bang signal sent on load' }],
+		description: 'Sends a bang signal when the object is created',
+		tags: ['control']
 	}
 };
 
