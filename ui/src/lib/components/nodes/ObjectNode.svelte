@@ -58,6 +58,7 @@
 	let originalName = data.expr || ''; // Store original name for escape functionality
 
 	let isAutomated = $state<Record<number, boolean>>({});
+	let metroInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
 	let audioSystem = AudioSystem.getInstance();
 	const messageContext = new MessageContext(nodeId);
@@ -262,6 +263,30 @@
 						decay: { time: decay / 1000 }
 					});
 				}
+			})
+			.with(['metro', 'message', P.any], ([, , controlMsg]) => {
+				match(controlMsg)
+					.with({ type: 'start' }, () => {
+						const intervalMs = (data.params[1] as number) || 1000;
+						startMetro(intervalMs);
+					})
+					.with({ type: 'stop' }, () => {
+						stopMetro();
+					})
+					.with({ type: 'bang' }, () => {
+						if (metroInterval !== null) {
+							stopMetro();
+						} else {
+							const intervalMs = (data.params[1] as number) || 1000;
+							startMetro(intervalMs);
+						}
+					});
+			})
+			.with(['metro', 'interval', P.number], ([, , intervalMs]) => {
+				updateParamByIndex(1, intervalMs);
+				if (metroInterval !== null) {
+					startMetro(intervalMs);
+				}
 			});
 	};
 
@@ -282,11 +307,30 @@
 	}
 
 	function onObjectLoad(name: string) {
-		match(name).with('loadbang', () => {
-			setTimeout(() => {
-				messageContext.send({ type: 'bang' });
-			}, 500);
-		});
+		match(name)
+			.with('loadbang', () => {
+				setTimeout(() => {
+					messageContext.send({ type: 'bang' });
+				}, 500);
+			})
+			.with('metro', () => {
+				const intervalMs = (data.params[1] as number) || 1000;
+				startMetro(intervalMs);
+			});
+	}
+
+	function startMetro(intervalMs: number) {
+		stopMetro();
+		metroInterval = setInterval(() => {
+			messageContext.send({ type: 'bang' });
+		}, intervalMs);
+	}
+
+	function stopMetro() {
+		if (metroInterval !== null) {
+			clearInterval(metroInterval);
+			metroInterval = null;
+		}
 	}
 
 	function tryCreatePlainObject() {
@@ -524,6 +568,7 @@
 
 	onDestroy(() => {
 		audioSystem.removeAudioObject(nodeId);
+		stopMetro();
 	});
 
 	const getInletTypeHoverClass = (inletIndex: number) => {
