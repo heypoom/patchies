@@ -189,7 +189,8 @@ export class AudioSystem {
 			.with('sampler~', () => this.createSampler(nodeId, params))
 			.with('delay~', () => this.createDelay(nodeId, params))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
-			.with('waveshaper~', () => this.createWaveShaper(nodeId, params));
+			.with('waveshaper~', () => this.createWaveShaper(nodeId, params))
+			.with('convolver~', () => this.createConvolver(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -408,6 +409,15 @@ export class AudioSystem {
 		}
 
 		this.nodesById.set(nodeId, { type: 'waveshaper~', node: waveshaper });
+	}
+
+	createConvolver(nodeId: string, params: unknown[]) {
+		const [, , normalize] = params as [unknown, unknown, boolean];
+
+		const convolver = this.audioContext.createConvolver();
+		convolver.normalize = normalize ?? true;
+
+		this.nodesById.set(nodeId, { type: 'convolver~', node: convolver });
 	}
 
 	async initExprWorklet() {
@@ -680,6 +690,15 @@ export class AudioSystem {
 						if (oversample === 'none' || oversample === '2x' || oversample === '4x') {
 							node.oversample = oversample;
 						}
+					});
+			})
+			.with({ type: 'convolver~' }, ({ node }) => {
+				match([key, msg])
+					.with(['message', P.instanceOf(AudioBuffer)], ([, buffer]) => {
+						node.buffer = buffer;
+					})
+					.with(['normalize', P.boolean], ([, normalize]) => {
+						node.normalize = normalize;
 					});
 			})
 			.otherwise(() => null);

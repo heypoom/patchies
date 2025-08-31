@@ -258,10 +258,7 @@
 										onchange={(e) => {
 											const checked = (e.target as HTMLInputElement).checked;
 											const newTypes = checked
-												? [
-														...events,
-														msgType as EventType
-													]
+												? [...events, msgType as EventType]
 												: events.filter((t) => t !== msgType);
 											updateNodeData(nodeId, { ...data, events: newTypes });
 										}}

@@ -8,7 +8,7 @@
 
 	let props: {
 		id: string;
-		data: { 
+		data: {
 			markdown: string;
 		};
 		selected: boolean;
@@ -35,7 +35,6 @@
 		handleMarkdownChange(markdown);
 		overtypeEditor?.setValue(markdown);
 	}
-
 
 	const handleMessage: MessageCallbackFn = (message) =>
 		match(message)

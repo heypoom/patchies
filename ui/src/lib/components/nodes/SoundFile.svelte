@@ -27,10 +27,11 @@
 	const fileName = $derived(node.data.fileName || 'No file selected');
 	const hasFile = $derived(!!node.data.file || !!node.data.url);
 
-	const handleMessage: MessageCallbackFn = (message) => {
+	const handleMessage: MessageCallbackFn = async (message) => {
 		match(message)
 			.with(P.string, (url) => setUrl(url))
 			.with({ type: 'load', url: P.string }, ({ url }) => setUrl(url))
+			.with({ type: 'read' }, () => readAudioBuffer())
 			.otherwise(() => audioSystem.send(node.id, 'message', message));
 	};
 
@@ -114,6 +115,29 @@
 
 	function openFileDialog() {
 		fileInputRef?.click();
+	}
+
+	async function readAudioBuffer() {
+		if (!hasFile) {
+			console.warn('No file loaded to read');
+			return;
+		}
+
+		try {
+			let buffer: ArrayBuffer;
+
+			if (node.data.file) {
+				buffer = await node.data.file.arrayBuffer();
+			} else if (node.data.url) {
+				const response = await fetch(node.data.url);
+				buffer = await response.arrayBuffer();
+			} else {
+				return;
+			}
+
+			const audioBuffer = await audioSystem.audioContext.decodeAudioData(buffer);
+			messageContext.send(audioBuffer);
+		} catch {}
 	}
 
 	function playFile() {

@@ -136,6 +136,11 @@ interface PsSampler extends PsBase {
 	sourceNode?: AudioBufferSourceNode;
 }
 
+interface PsConvolver extends PsBase {
+	type: 'convolver~';
+	node: ConvolverNode;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -160,6 +165,7 @@ export type PsAudioNode =
 	| PsDelay
 	| PsSoundfile
 	| PsWaveshaper
-	| PsSampler;
+	| PsSampler
+	| PsConvolver;
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

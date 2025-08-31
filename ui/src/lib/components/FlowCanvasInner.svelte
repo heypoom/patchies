@@ -209,8 +209,8 @@
 		Array.from(files).forEach(async (file, index) => {
 			// Offset multiple files to avoid overlap
 			const position = {
-				x: basePosition.x + (index * 20),
-				y: basePosition.y + (index * 20)
+				x: basePosition.x + index * 20,
+				y: basePosition.y + index * 20
 			};
 
 			const nodeType = getNodeTypeFromFile(file);
@@ -247,12 +247,14 @@
 	// Create appropriate data for file-based nodes
 	async function getFileNodeData(file: File, nodeType: string) {
 		return await match(nodeType)
-			.with('img', () => Promise.resolve({
-				...getDefaultNodeData('img'),
-				file,
-				fileName: file.name,
-				url: URL.createObjectURL(file)
-			}))
+			.with('img', () =>
+				Promise.resolve({
+					...getDefaultNodeData('img'),
+					file,
+					fileName: file.name,
+					url: URL.createObjectURL(file)
+				})
+			)
 			.with('markdown', async () => {
 				try {
 					const content = await file.text();
@@ -268,11 +270,13 @@
 					};
 				}
 			})
-			.with('soundfile~', () => Promise.resolve({
-				...getDefaultNodeData('soundfile~'),
-				file,
-				fileName: file.name
-			}))
+			.with('soundfile~', () =>
+				Promise.resolve({
+					...getDefaultNodeData('soundfile~'),
+					file,
+					fileName: file.name
+				})
+			)
 			.otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
 	}
 

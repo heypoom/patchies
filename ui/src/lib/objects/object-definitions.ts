@@ -170,7 +170,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				defaultValue: 1000
 			}
 		],
-		outlets: [{ name: 'out', type: 'any', description: 'Message outlet' }],
+		outlets: [{ name: 'out', type: 'message', description: 'Message outlet' }],
 		tags: ['helper']
 	},
 
@@ -614,7 +614,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			}
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Audio output from loaded file' }],
-		description: 'Loads and plays audio files from local files or URLs with drag-drop and file picker',
+		description:
+			'Loads and plays audio files from local files or URLs with drag-drop and file picker',
 		tags: ['audio']
 	},
 
@@ -640,6 +641,28 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Waveshaped signal' }],
 		description: 'WaveShaperNode for distortion and waveshaping effects',
+		tags: ['audio']
+	},
+
+	'convolver~': {
+		inlets: [
+			{ name: 'in', type: 'signal', description: 'Audio signal to process' },
+			{
+				name: 'message',
+				type: 'message',
+				description: 'AudioBuffer for impulse response',
+				isAudioParam: false
+			},
+			{
+				name: 'normalize',
+				type: 'bool',
+				description: 'Whether to normalize the impulse response',
+				defaultValue: true,
+				isAudioParam: false
+			}
+		],
+		outlets: [{ name: 'out', type: 'signal', description: 'Convolved signal with reverb effect' }],
+		description: 'ConvolverNode for reverb and acoustic modeling using impulse responses',
 		tags: ['audio']
 	}
 };

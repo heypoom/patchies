@@ -92,7 +92,7 @@
 			type="target"
 			position={Position.Top}
 			id={`inlet-${index}`}
-			class="z-1 top-0"
+			class="top-0 z-1"
 			style={`left: ${inletCount === 1 ? '50%' : `${35 + (index / (inletCount - 1)) * 30}%`}`}
 			title={`$${index + 1}`}
 		/>

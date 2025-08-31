@@ -134,7 +134,7 @@
 					{#if isEditing}
 						<div
 							class={[
-								'nodrag w-full min-w-[40px] max-w-[400px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
+								'nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
 								borderColor
 							]}
 						>
@@ -188,7 +188,7 @@
 											<span class={['text-xs text-zinc-400']}>{displayPrefix}</span>
 										{/if}
 
-										<code class="whitespace-pre-wrap text-xs">
+										<code class="text-xs whitespace-pre-wrap">
 											{@html highlightedHtml}
 										</code>
 									</span>
