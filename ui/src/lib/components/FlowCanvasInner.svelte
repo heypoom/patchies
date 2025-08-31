@@ -185,11 +185,15 @@
 		const type = event.dataTransfer?.getData('application/svelteflow');
 		const files = event.dataTransfer?.files;
 
+		// Check if the drop target is within a node (to avoid duplicate handling)
+		const target = event.target as HTMLElement;
+		const isDropOnNode = target.closest('.svelte-flow__node');
+
 		// Get accurate positioning with zoom/pan
 		const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
 
-		// Handle file drops
-		if (files && files.length > 0) {
+		// Handle file drops - only if not dropping on an existing node
+		if (files && files.length > 0 && !isDropOnNode) {
 			handleFileDrops(files, position);
 			return;
 		}

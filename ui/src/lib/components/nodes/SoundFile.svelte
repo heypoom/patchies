@@ -77,6 +77,7 @@
 
 	function handleDrop(event: DragEvent) {
 		event.preventDefault();
+		event.stopPropagation();
 		isDragging = false;
 
 		const files = event.dataTransfer?.files;
