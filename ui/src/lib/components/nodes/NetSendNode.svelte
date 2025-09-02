@@ -121,7 +121,9 @@
 							].join(' ')}
 						>
 							<div class="flex items-center gap-1">
-								<span class="mb-1 font-mono text-xs font-medium text-blue-200">send {channel}</span>
+								<span class="mb-1 font-mono text-xs font-medium text-blue-200"
+									>netsend {channel}</span
+								>
 							</div>
 
 							<div class="font-mono text-[10px] text-zinc-500">

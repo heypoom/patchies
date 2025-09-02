@@ -138,7 +138,7 @@
 							].join(' ')}
 						>
 							<div class="mb-1 flex items-center gap-1 font-mono">
-								<span class="text-xs font-medium text-green-200">recv {channel}</span>
+								<span class="text-xs font-medium text-green-200">netrecv {channel}</span>
 							</div>
 
 							<div class="font-mono text-[10px] text-zinc-500">
