@@ -44,6 +44,7 @@
         "mode-watcher": "0.5.1",
         "ohash": "^2.0.11",
         "overtype": "^1.1.1",
+        "p2pkit": "^0.0.0-2",
         "p5": "^1.11.9",
         "pyodide": "^0.28.1",
         "regl": "^2.1.1",
@@ -1237,6 +1238,8 @@
     "p-map": ["p-map@7.0.3", "", {}, "sha512-VkndIv2fIB99swvQoA65bm+fsmt6UNdGeIB0oxBs+WhAhdh08QA04JXpI7rbB9r08/nkbysKoya9rtDERYOYMA=="],
 
     "p-try": ["p-try@2.2.0", "", {}, "sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ=="],
+
+    "p2pkit": ["p2pkit@0.0.0-2", "", {}, "sha512-B+CkdMWTraTZLmJUAa8GDC+dT9Wl2IUW6s7OHCFAuEO38O9zTMp0gdjnY/zcrbTm1S84xX399GPY3bwbMt2/CQ=="],
 
     "p5": ["p5@1.11.9", "", {}, "sha512-sx0UdE3/0DO+yx11fWGSpGgm/oJV/hgZeJUvcvZvsNKI3G7kVTILUfjngAxiw4wEd1F7XDpv37YNYA9gOieqNQ=="],
 

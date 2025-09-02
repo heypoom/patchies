@@ -25,6 +25,8 @@ import AudioExprNode from '$lib/components/nodes/AudioExprNode.svelte';
 import ChuckNode from '$lib/components/nodes/ChuckNode.svelte';
 import SoundFile from '$lib/components/nodes/SoundFile.svelte';
 import SamplerNode from '$lib/components/nodes/SamplerNode.svelte';
+import NetSendNode from '$lib/components/nodes/NetSendNode.svelte';
+import NetRecvNode from '$lib/components/nodes/NetRecvNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -53,7 +55,9 @@ export const nodeTypes = {
 	'expr~': AudioExprNode,
 	chuck: ChuckNode,
 	'soundfile~': SoundFile,
-	'sampler~': SamplerNode
+	'sampler~': SamplerNode,
+	netsend: NetSendNode,
+	netrecv: NetRecvNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
