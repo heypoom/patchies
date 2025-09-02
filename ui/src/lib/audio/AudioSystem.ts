@@ -632,6 +632,24 @@ export class AudioSystem {
 			})
 			.with({ type: 'sampler~' }, (sampler) => {
 				match([key, msg])
+					.with(['message', { type: 'loop', start: P.number, end: P.number }], async ([, m]) => {
+						if (!sampler.audioBuffer) return;
+
+						sampler.sourceNode?.stop();
+						sampler.sourceNode = this.audioContext.createBufferSource();
+
+						sampler.sourceNode.loop = true;
+						sampler.sourceNode.loopStart = m.start;
+						sampler.sourceNode.loopEnd = m.end;
+						sampler.sourceNode.buffer = sampler.audioBuffer;
+						sampler.sourceNode.connect(sampler.node);
+						sampler.sourceNode.start();
+					})
+					.with(['message', { type: 'noloop' }], async () => {
+						if (!sampler.sourceNode) return;
+
+						sampler.sourceNode.loop = false;
+					})
 					.with(['message', { type: 'record' }], async () => {
 						if (sampler.mediaRecorder) return;
 
