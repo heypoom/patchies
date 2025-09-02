@@ -409,6 +409,11 @@
 
 				return true;
 			})
+			.with(P.union('netsend', 'netrecv'), (key) => {
+				changeNode(key, { channel: expr.replace(name, '').trim() });
+
+				return true;
+			})
 			.with('slider', () => {
 				let [min = 0, max = 100, defaultValue] = expr
 					.replace(name, '')
