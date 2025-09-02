@@ -100,7 +100,7 @@
 					{#if showChannelInput}
 						<input
 							class={[
-								'nodrag w-full min-w-[80px] max-w-[120px] rounded-lg border bg-zinc-900 px-3 py-2 text-center text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500',
+								'nodrag w-full min-w-[80px] rounded-lg border bg-zinc-900 px-3 py-2 text-center text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500',
 								borderColor
 							].join(' ')}
 							type="text"
@@ -116,7 +116,7 @@
 					{:else}
 						<div
 							class={[
-								'flex min-w-[80px] max-w-[120px] flex-col items-center justify-center rounded-lg border bg-zinc-900 px-3 py-2',
+								'flex min-w-[80px] flex-col items-center justify-center rounded-lg border bg-zinc-900 px-3 py-2',
 								borderColor
 							].join(' ')}
 						>
