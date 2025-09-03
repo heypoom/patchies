@@ -572,7 +572,9 @@
 		}
 	}
 
-	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-700');
+	const containerClass = $derived(
+		selected ? 'border-zinc-400 bg-zinc-800/80' : 'border-zinc-700 bg-zinc-900/80'
+	);
 
 	onMount(() => {
 		if (isEditing) {
@@ -645,7 +647,7 @@
 				<div class="relative">
 					{#if isEditing}
 						<!-- Editing state: show input field -->
-						<div class={['w-fit rounded-lg border bg-zinc-900/80 backdrop-blur-lg', borderColor]}>
+						<div class={['w-fit rounded-lg border backdrop-blur-lg', containerClass]}>
 							<input
 								bind:this={inputElement}
 								bind:value={expr}
@@ -697,8 +699,8 @@
 						<div
 							bind:this={nodeElement}
 							class={[
-								'w-full cursor-pointer rounded-lg border bg-zinc-900/80 px-3 py-2 backdrop-blur-lg',
-								borderColor
+								'w-full cursor-pointer rounded-lg border px-3 py-2 backdrop-blur-lg',
+								containerClass
 							]}
 							ondblclick={handleDoubleClick}
 							role="button"

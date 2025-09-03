@@ -147,6 +147,14 @@
 		messageContext?.destroy();
 		audioSystem.removeAudioObject(node.id);
 	});
+
+	const containerClass = $derived.by(() => {
+		if (isDragging) return 'border-blue-400 bg-blue-50/10';
+		if (node.selected) return 'border-zinc-400 bg-zinc-800';
+		if (hasFile) return 'border-zinc-700 bg-zinc-900';
+
+		return 'border-dashed border-zinc-600 bg-zinc-900';
+	});
 </script>
 
 <div class="relative flex gap-x-3">
@@ -180,12 +188,10 @@
 				<Handle type="target" position={Position.Top} />
 
 				<div
-					class="border-1 flex flex-col items-center justify-center gap-3 rounded-lg
-					{isDragging
-						? 'border-blue-400 bg-blue-50/10'
-						: hasFile
-							? 'border-zinc-700 bg-zinc-900'
-							: 'border-dashed border-zinc-600 bg-zinc-900'}"
+					class={[
+						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg',
+						containerClass
+					]}
 					ondragover={handleDragOver}
 					ondragleave={handleDragLeave}
 					ondrop={handleDrop}

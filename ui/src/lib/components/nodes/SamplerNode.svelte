@@ -169,8 +169,8 @@
 
 				<div
 					class={[
-						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg  bg-zinc-900',
-						node.selected ? 'border-zinc-400' : 'border-zinc-700'
+						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg',
+						node.selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'
 					]}
 				>
 					<div class="flex items-center justify-center gap-2 px-3 py-[7px]">
