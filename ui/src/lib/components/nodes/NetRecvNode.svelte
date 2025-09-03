@@ -24,7 +24,6 @@
 	let lastMessage = $state<unknown>(null);
 	let unsubscribe: (() => void) | null = null;
 
-	// Initialize P2P manager and subscribe to channel
 	onMount(() => {
 		p2pManager.initialize();
 		messageContext.queue.addCallback(handleMessage);
@@ -41,18 +40,15 @@
 	});
 
 	onDestroy(() => {
-		if (unsubscribe) {
-			unsubscribe();
-		}
+		unsubscribe?.();
+
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
 	});
 
 	// Subscribe to P2P channel messages
 	function subscribeToChannel() {
-		if (unsubscribe) {
-			unsubscribe();
-		}
+		unsubscribe?.();
 
 		const messageHandler: P2PMessageHandler = (data, peer) => {
 			messagesReceived++;
@@ -67,9 +63,7 @@
 
 	// Re-subscribe when channel changes
 	$effect(() => {
-		if (channel) {
-			subscribeToChannel();
-		}
+		if (channel) subscribeToChannel();
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {

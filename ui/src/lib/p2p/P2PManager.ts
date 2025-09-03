@@ -1,7 +1,10 @@
-// @ts-ignore - p2pkit doesn't have types
-import { P2PT } from 'p2pkit';
+// @ts-expect-error -- p2pkit does not bundle type for p2pt
+import { P2PT as _P2PT } from 'p2pkit';
 
-const trackersAnnounceURLs = [
+import type { Peer } from 'p2pt';
+import type P2PT from 'p2pt';
+
+const TRACKER_URLS = [
 	'wss://tracker.btorrent.xyz',
 	'wss://tracker.openwebtorrent.com',
 	'wss://tracker.fastcast.nz',
@@ -9,18 +12,22 @@ const trackersAnnounceURLs = [
 	'wss://tracker.files.fm:7073/announce'
 ];
 
-export type P2PMessageHandler = (data: unknown, peer: unknown) => void;
+const P2PTKit = _P2PT as typeof P2PT;
+
+export type P2PMessageHandler = (data: unknown, peer: Peer) => void;
+type P2PMessage = { channel: string; data: unknown };
 
 export class P2PManager {
 	private static instance: P2PManager | null = null;
 	private p2pt: P2PT | null = null;
-	private peers = new Set<unknown>();
+	private peers = new Set<Peer>();
 	private channels = new Map<string, Set<P2PMessageHandler>>();
 	private roomId: string = '';
 
 	private constructor() {
 		// Generate or extract room ID from URL hash
 		const roomIdMatch = location.hash.match(/^#?([a-zA-Z0-9-]+)/);
+
 		if (roomIdMatch) {
 			this.roomId = roomIdMatch[1];
 		} else {
@@ -33,46 +40,35 @@ export class P2PManager {
 		if (!P2PManager.instance) {
 			P2PManager.instance = new P2PManager();
 		}
+
 		return P2PManager.instance;
 	}
 
 	public async initialize(): Promise<void> {
-		if (this.p2pt) {
-			return; // Already initialized
-		}
+		if (this.p2pt) return;
 
-		this.p2pt = new P2PT(trackersAnnounceURLs, this.roomId);
+		this.p2pt = new P2PTKit(TRACKER_URLS, this.roomId);
+		if (!this.p2pt) return;
 
-		this.p2pt.on('trackerwarning', (error: unknown, stats: unknown) => {
-			// console.warn('P2P tracker warning:', error, stats);
-		});
-
-		this.p2pt.on('trackerconnect', (tracker: unknown, stats: unknown) => {
-			// console.log('P2P tracker connected:', tracker, stats);
-		});
-
-		this.p2pt.on('peerconnect', (peer: unknown) => {
-			console.log('P2P peer connected:', peer);
+		this.p2pt.on('peerconnect', (peer) => {
 			this.peers.add(peer);
 		});
 
-		this.p2pt.on('peerclose', (peer: unknown) => {
-			console.log('P2P peer disconnected:', peer);
+		this.p2pt.on('peerclose', (peer) => {
 			this.peers.delete(peer);
 		});
 
-		this.p2pt.on('msg', (peer: unknown, message: { channel: string; data: unknown }) => {
-			console.log('P2P message received:', message);
+		this.p2pt.on('msg', (peer: Peer, message: P2PMessage) => {
 			const handlers = this.channels.get(message.channel);
-			if (handlers) {
-				handlers.forEach((handler) => {
-					try {
-						handler(message.data, peer);
-					} catch (error) {
-						console.error('Error handling P2P message:', error);
-					}
-				});
-			}
+			if (!handlers) return;
+
+			handlers.forEach((handler) => {
+				try {
+					handler(message.data, peer);
+				} catch (error) {
+					console.error('Error handling P2P message:', error);
+				}
+			});
 		});
 
 		this.p2pt.start();
@@ -86,9 +82,9 @@ export class P2PManager {
 		const handlers = this.channels.get(channel)!;
 		handlers.add(handler);
 
-		// Return unsubscribe function
 		return () => {
 			handlers.delete(handler);
+
 			if (handlers.size === 0) {
 				this.channels.delete(channel);
 			}
@@ -101,10 +97,9 @@ export class P2PManager {
 			return;
 		}
 
-		const message = { channel, data };
 		this.peers.forEach((peer) => {
 			try {
-				this.p2pt!.send(peer, message);
+				this.p2pt!.send(peer, { channel, data } satisfies P2PMessage);
 			} catch (error) {
 				console.error('Error sending P2P message:', error);
 			}
@@ -115,15 +110,12 @@ export class P2PManager {
 		return this.peers.size;
 	}
 
-	public getRoomId(): string {
-		return this.roomId;
-	}
-
 	public destroy(): void {
 		if (this.p2pt) {
 			this.p2pt.destroy();
 			this.p2pt = null;
 		}
+
 		this.peers.clear();
 		this.channels.clear();
 		P2PManager.instance = null;
