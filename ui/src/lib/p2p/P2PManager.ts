@@ -4,10 +4,16 @@ import { P2PT as _P2PT } from 'p2pkit';
 import type { Peer } from 'p2pt';
 import type P2PT from 'p2pt';
 
+/**
+ * Public WebTorrent trackers.
+ */
 const TRACKER_URLS = [
-	'wss://tracker.btorrent.xyz',
-	'wss://tracker.openwebtorrent.com',
-	'wss://tracker.fastcast.nz',
+	'wss://tracker.btorrent.xyz:443',
+	'wss://tracker.webtorrent.dev:443',
+	'wss://tracker.ghostchu-services.top:443/announce',
+	'wss://tracker.files.fm:7073/announce',
+	// 'ws://tracker.ghostchu-services.top:80/announce',
+	// 'ws://tracker.files.fm:7072/announce',
 	'wss://tracker.novage.com.ua:443/',
 	'wss://tracker.files.fm:7073/announce'
 ];
