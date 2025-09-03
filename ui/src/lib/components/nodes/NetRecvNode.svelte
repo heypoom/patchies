@@ -69,15 +69,10 @@
 	const handleMessage: MessageCallbackFn = (message) => {
 		try {
 			match(message)
-				.with({ type: 'set', value: P.any }, ({ value }) => {
-					// Set channel
-					if (typeof value === 'string' || typeof value === 'number') {
-						updateNodeData(nodeId, { ...data, channel: String(value) });
-					}
+				.with({ type: 'set-channel', channel: P.union(P.string, P.number) }, ({ channel }) => {
+					updateNodeData(nodeId, { ...data, channel: String(channel) });
 				})
-				.otherwise(() => {
-					// NetRecv doesn't handle other incoming messages from patch
-				});
+				.otherwise(() => {});
 		} catch (error) {
 			console.error('NetRecvNode handleMessage error:', error);
 		}

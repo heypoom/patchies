@@ -45,19 +45,10 @@
 	const handleMessage: MessageCallbackFn = (message) => {
 		try {
 			match(message)
-				.with(P.union(null, undefined), () => {
-					// Ignore empty messages
+				.with({ type: 'set-channel', channel: P.union(P.string, P.number) }, ({ channel }) => {
+					updateNodeData(nodeId, { ...data, channel: String(channel) });
 				})
-				.with({ type: 'set', value: P.any }, ({ value }) => {
-					// Set channel
-					if (typeof value === 'string' || typeof value === 'number') {
-						updateNodeData(nodeId, { ...data, channel: String(value) });
-					}
-				})
-				.otherwise((msg) => {
-					// Send any other message over P2P
-					sendMessage(msg);
-				});
+				.otherwise((msg) => sendMessage(msg));
 		} catch (error) {
 			console.error('NetSendNode handleMessage error:', error);
 		}
