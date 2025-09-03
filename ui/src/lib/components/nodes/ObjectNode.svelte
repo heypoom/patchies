@@ -404,6 +404,11 @@
 
 				return true;
 			})
+			.with(P.union('button', 'bang'), () => {
+				changeNode('bang', { message: expr.replace(name, '').trim() });
+
+				return true;
+			})
 			.with('expr', () => {
 				changeNode('expr', { expr: expr.replace(name, '').trim() });
 
