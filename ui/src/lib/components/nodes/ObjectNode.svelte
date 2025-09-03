@@ -32,6 +32,7 @@
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 	import type { PsAudioType } from '$lib/audio/audio-node-types';
+	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 
 	let {
 		id: nodeId,
@@ -406,6 +407,14 @@
 			})
 			.with(P.union('button', 'bang'), () => {
 				changeNode('button', { message: expr.replace(name, '').trim() });
+
+				return true;
+			})
+			.with('soundurl~', () => {
+				const url = expr.replace(name, '').trim();
+				const fileName = getFileNameFromUrl(url);
+
+				changeNode('soundfile~', { fileName, url });
 
 				return true;
 			})

@@ -6,6 +6,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 
 	let node: {
 		id: string;
@@ -40,30 +41,6 @@
 
 		updateNodeData(node.id, { ...node.data, fileName, url });
 		audioSystem.send(node.id, 'url', url);
-	}
-
-	function getFileNameFromUrl(url: string): string {
-		try {
-			const urlObj = new URL(url);
-			const pathname = urlObj.pathname;
-			const filename = pathname.substring(pathname.lastIndexOf('/') + 1);
-
-			// If we got a meaningful filename, use it
-			if (filename && filename.includes('.')) {
-				return decodeURIComponent(filename);
-			}
-		} catch (error) {
-			// URL parsing failed, continue to fallback
-		}
-
-		// Fallback: use extension-based naming
-		const extension = getUrlExtension(url);
-		return extension ? `audio.${extension}` : 'audio file';
-	}
-
-	function getUrlExtension(url: string): string {
-		const match = url.match(/\.([a-z0-9]+)(\?.*)?$/i);
-		return match ? match[1] : '';
 	}
 
 	function handleDragOver(event: DragEvent) {
@@ -162,9 +139,7 @@
 			audioSystem.send(node.id, 'file', node.data.file);
 		}
 
-		if (node.data.url) {
-			audioSystem.send(node.id, 'message', { type: 'load', url: node.data.url });
-		}
+		if (node.data.url) setUrl(node.data.url);
 	});
 
 	onDestroy(() => {

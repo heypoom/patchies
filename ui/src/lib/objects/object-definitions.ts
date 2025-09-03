@@ -139,6 +139,9 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	// alias of 'button'
 	bang: { inlets: [], outlets: [] },
 
+	// alias of 'soundfile~ url'
+	'soundurl~': { inlets: [{ name: 'url' }], outlets: [] },
+
 	'fft~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Audio signal to analyze' },
