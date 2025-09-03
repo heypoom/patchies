@@ -195,6 +195,7 @@
 
 				<!-- Audio Output Handle -->
 				<Handle
+					id="audio-out"
 					type="source"
 					position={Position.Bottom}
 					class="!bg-blue-500"

@@ -247,7 +247,7 @@
 					{/if}
 				</div>
 
-				<Handle type="source" position={Position.Bottom} class="!bg-blue-500" />
+				<Handle type="source" position={Position.Bottom} class="!bg-blue-500" id="audio-out" />
 			</div>
 		</div>
 	</div>

@@ -97,7 +97,7 @@
 	<Handle
 		type="target"
 		position={Position.Top}
-		class="top-0 z-1 !bg-blue-500"
+		class="z-1 top-0 !bg-blue-500"
 		style={`left: ${inletCount === 0 ? '50%' : `${35 + (0 / (totalInlets - 1)) * 30}%`}`}
 		title="Audio Input"
 		id="inlet-audio"
@@ -110,7 +110,7 @@
 				type="target"
 				position={Position.Top}
 				id={`inlet-${index}`}
-				class="top-0 z-1"
+				class="z-1 top-0"
 				style={`left: ${35 + ((index + 1) / (totalInlets - 1)) * 30}%`}
 				title={`$${index + 1}`}
 			/>
@@ -120,7 +120,13 @@
 
 {#snippet audioOutlets()}
 	<!-- Audio output -->
-	<Handle type="source" position={Position.Bottom} class="z-1 !bg-blue-500" title="Audio Output" />
+	<Handle
+		type="source"
+		position={Position.Bottom}
+		class="z-1 !bg-blue-500"
+		title="Audio Output"
+		id="audio-out"
+	/>
 {/snippet}
 
 <CommonExprLayout

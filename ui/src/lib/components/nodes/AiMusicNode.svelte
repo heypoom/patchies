@@ -251,7 +251,7 @@
 			<Handle
 				type="source"
 				position={Position.Bottom}
-				id="audio-0"
+				id="audio-out"
 				title="Audio Outlet"
 				class={['z-1 !bg-blue-500']}
 			/>
