@@ -115,7 +115,9 @@
 		onExpressionChange(value);
 	}
 
-	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-700');
+	const containerClass = $derived(
+		selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'
+	);
 
 	export function focus() {
 		if (isEditing) {
@@ -134,8 +136,8 @@
 					{#if isEditing}
 						<div
 							class={[
-								'nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
-								borderColor
+								'nodrag w-full min-w-[40px] max-w-[400px] resize-none rounded-lg border font-mono text-zinc-200',
+								containerClass
 							]}
 						>
 							<CodeEditor
@@ -174,8 +176,8 @@
 						<div
 							ondblclick={handleDoubleClick}
 							class={[
-								'expr-display max-w-[400px] cursor-pointer rounded-lg border bg-zinc-900 px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
-								borderColor
+								'expr-display max-w-[400px] cursor-pointer rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
+								containerClass
 							]}
 							role="button"
 							tabindex="0"
@@ -188,7 +190,7 @@
 											<span class={['text-xs text-zinc-400']}>{displayPrefix}</span>
 										{/if}
 
-										<code class="text-xs whitespace-pre-wrap">
+										<code class="whitespace-pre-wrap text-xs">
 											{@html highlightedHtml}
 										</code>
 									</span>
