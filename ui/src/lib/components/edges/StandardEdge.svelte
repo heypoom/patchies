@@ -1,8 +1,21 @@
 <script lang="ts">
-	import { getBezierPath, BaseEdge, type EdgeProps, useEdges, EdgeLabel } from '@xyflow/svelte';
+	import { getEdgeTypes } from '$lib/utils/get-edge-types';
+	import {
+		getBezierPath,
+		BaseEdge,
+		type EdgeProps,
+		useEdges,
+		EdgeLabel,
+		useNodesData
+	} from '@xyflow/svelte';
+	import { match } from 'ts-pattern';
 
 	let {
 		id,
+		source,
+		target,
+		sourceHandleId,
+		targetHandleId,
 		sourceX,
 		sourceY,
 		sourcePosition,
@@ -10,10 +23,30 @@
 		targetY,
 		targetPosition,
 		markerEnd,
-		style
+		style,
+		selectable,
+		selected
 	}: EdgeProps = $props();
 
-	let [edgePath, labelX, labelY] = $derived(
+	const type = $derived.by(() => {
+		const [sourceData, targetData] = nodesData.current;
+
+		return getEdgeTypes(sourceData, targetData, sourceHandleId ?? null, targetHandleId ?? null);
+	});
+
+	const edgeClass = $derived.by(() => {
+		const baseClass = match(type)
+			.with('audio', () => '!stroke-blue-500')
+			.with('video', () => '!stroke-orange-500')
+			.with('message', () => '!stroke-zinc-400')
+			.exhaustive();
+
+		return [baseClass, !selected && 'opacity-60'];
+	});
+
+	const nodesData = useNodesData([source, target]);
+
+	let [edgePath] = $derived(
 		getBezierPath({
 			sourceX,
 			sourceY,
@@ -23,13 +56,6 @@
 			targetPosition
 		})
 	);
-
-	const edges = useEdges();
-
-	const onEdgeClick = () => edges.update((eds) => eds.filter((edge) => edge.id !== id));
 </script>
 
-<BaseEdge path={edgePath} {markerEnd} {style} />
-<EdgeLabel x={labelX} y={labelY} class="button-edge__label">
-	<button class="button-edge__button" onclick={onEdgeClick}> × </button>
-</EdgeLabel>
+<BaseEdge path={edgePath} {markerEnd} class={edgeClass} />

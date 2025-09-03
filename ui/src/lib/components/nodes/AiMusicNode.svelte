@@ -243,7 +243,7 @@
 				<!-- Playback state indicator -->
 				<div class="mt-4 text-center">
 					<div class="text-[10px] text-zinc-400">
-						Status: <span class="text-zinc-300 capitalize">{playbackState}</span>
+						Status: <span class="capitalize text-zinc-300">{playbackState}</span>
 					</div>
 				</div>
 			</div>
@@ -251,7 +251,7 @@
 			<Handle
 				type="source"
 				position={Position.Bottom}
-				id="outlet-0"
+				id="audio-0"
 				title="Audio Outlet"
 				class={['z-1 !bg-blue-500']}
 			/>

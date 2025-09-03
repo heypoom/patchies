@@ -18,6 +18,7 @@
 	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
+	import { edgeTypes } from '$lib/components/edges/edge-types';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -371,6 +372,7 @@
 			bind:nodes
 			bind:edges
 			{nodeTypes}
+			{edgeTypes}
 			fitView
 			class="bg-zinc-900"
 			proOptions={{ hideAttribution: true }}
