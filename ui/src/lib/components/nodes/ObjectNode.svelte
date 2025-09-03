@@ -268,7 +268,7 @@
 			.with(['metro', 'message', P.any], ([, , controlMsg]) => {
 				match(controlMsg)
 					.with({ type: 'start' }, () => {
-						const intervalMs = (data.params[1] as number) || 1000;
+						const intervalMs = data.params[1] as number;
 						startMetro(intervalMs);
 					})
 					.with({ type: 'stop' }, () => {
@@ -278,7 +278,7 @@
 						if (metroInterval !== null) {
 							stopMetro();
 						} else {
-							const intervalMs = (data.params[1] as number) || 1000;
+							const intervalMs = data.params[1] as number;
 							startMetro(intervalMs);
 						}
 					});
@@ -307,7 +307,7 @@
 		return { name, params: parseObjectParamFromString(name, params) };
 	}
 
-	function onObjectLoad(name: string) {
+	function onObjectLoad(name: string, params: unknown[]) {
 		match(name)
 			.with('loadbang', () => {
 				setTimeout(() => {
@@ -315,7 +315,9 @@
 				}, 500);
 			})
 			.with('metro', () => {
-				const intervalMs = (data.params[1] as number) || 1000;
+				stopMetro();
+
+				const intervalMs = params[1] as number;
 				startMetro(intervalMs);
 			});
 	}
@@ -338,7 +340,7 @@
 		const { name, params } = getNameAndParams();
 
 		updateNodeData(nodeId, { ...data, expr, name, params });
-		onObjectLoad(name);
+		onObjectLoad(name, params);
 	}
 
 	function tryCreatePreset(): boolean {
@@ -582,7 +584,7 @@
 		}
 
 		messageContext.queue.addCallback(handleMessage);
-		onObjectLoad(data.name);
+		onObjectLoad(data.name, data.params);
 	});
 
 	onDestroy(() => {

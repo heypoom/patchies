@@ -690,7 +690,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 				type: 'int',
 				description: 'Interval in milliseconds',
 				defaultValue: 1000,
-				minNumber: 1,
+				minNumber: 0,
 				isAudioParam: false
 			}
 		],

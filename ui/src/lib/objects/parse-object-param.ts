@@ -16,8 +16,12 @@ export const UNMODIFIABLES = [
 export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 	match(inlet.type)
 		.with(P.union(...UNMODIFIABLES), () => null)
-		.with('int', () => limitToValidNumber(inlet, parseInt(strValue)))
-		.with('float', () => limitToValidNumber(inlet, parseFloat(strValue)))
+		.with('int', () =>
+			strValue === '' ? (inlet.defaultValue ?? 0) : limitToValidNumber(inlet, parseInt(strValue))
+		)
+		.with('float', () =>
+			strValue === '' ? (inlet.defaultValue ?? 0) : limitToValidNumber(inlet, parseFloat(strValue))
+		)
 		.with('float[]', () => {
 			if (!strValue) return inlet.defaultValue ?? [];
 
@@ -49,7 +53,7 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
 		.otherwise(() => strValue || inlet.defaultValue);
 
 export const isUnmodifiableType = (type?: ObjectDataType) =>
-	type && UNMODIFIABLES.includes(type as any);
+	type && UNMODIFIABLES.includes(type as (typeof UNMODIFIABLES)[number]);
 
 export const stringifyParamByType = (
 	inlet: ObjectInlet | undefined,
@@ -126,7 +130,11 @@ const limitToValidNumber = (inlet: ObjectInlet, parsedValue: number) => {
 		return defaultValue;
 	}
 
-	return parsedValue || defaultValue;
+	if (typeof parsedValue === 'number' && !isNaN(parsedValue)) {
+		return parsedValue;
+	}
+
+	return defaultValue;
 };
 
 function formatFloatingPoint(num: number, precision = 0): number {
