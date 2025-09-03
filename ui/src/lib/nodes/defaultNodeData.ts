@@ -27,7 +27,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))
 		.with('ai.txt', () => ({ prompt: 'Write a creative story about...' }))
 		.with('msg', () => ({ message: '' }))
-		.with('bang', () => ({}))
+		.with('button', () => ({}))
 		.with('slider', () => ({
 			min: 0,
 			max: 100,

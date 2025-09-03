@@ -405,7 +405,7 @@
 				return true;
 			})
 			.with(P.union('button', 'bang'), () => {
-				changeNode('bang', { message: expr.replace(name, '').trim() });
+				changeNode('button', { message: expr.replace(name, '').trim() });
 
 				return true;
 			})

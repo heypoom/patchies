@@ -106,7 +106,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in"
-			class="!left-32 z-1"
+			class="z-1 !left-32"
 			title="Video input (optional)"
 		/>
 	{/snippet}
@@ -121,14 +121,14 @@
 				{:else if generatedText}
 					<div class="nodrag relative">
 						<div
-							class="max-h-[200px] min-h-[100px] w-full overflow-y-scroll rounded bg-transparent p-3 font-mono text-xs text-zinc-100 select-text focus:border-zinc-500 focus:outline-none"
+							class="max-h-[200px] min-h-[100px] w-full select-text overflow-y-scroll rounded bg-transparent p-3 font-mono text-xs text-zinc-100 focus:border-zinc-500 focus:outline-none"
 						>
 							{generatedText}
 						</div>
 
 						<button
 							onclick={copyToClipboard}
-							class="absolute top-1 right-1 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 							title="Copy to clipboard"
 						>
 							<Icon icon="lucide:copy" class="h-4 w-4 text-zinc-300" />

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Handle, Position } from '@xyflow/svelte';
-	import { onMount, onDestroy } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();

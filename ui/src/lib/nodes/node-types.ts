@@ -10,7 +10,7 @@ import AiImageNode from '$lib/components/nodes/AiImageNode.svelte';
 import ImageNode from '$lib/components/nodes/ImageNode.svelte';
 import AiTextNode from '$lib/components/nodes/AiTextNode.svelte';
 import MessageNode from '$lib/components/nodes/MessageNode.svelte';
-import BangNode from '$lib/components/nodes/BangNode.svelte';
+import ButtonNode from '$lib/components/nodes/ButtonNode.svelte';
 import AiMusicNode from '$lib/components/nodes/AiMusicNode.svelte';
 import BackgroundOutputNode from '$lib/components/nodes/BackgroundOutputNode.svelte';
 import AiSpeechNode from '$lib/components/nodes/AiSpeechNode.svelte';
@@ -30,7 +30,7 @@ import NetRecvNode from '$lib/components/nodes/NetRecvNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
-	bang: BangNode,
+	button: ButtonNode,
 	msg: MessageNode,
 	p5: P5CanvasNode,
 	js: JSBlockNode,
