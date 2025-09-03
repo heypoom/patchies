@@ -30,13 +30,15 @@
 	});
 
 	const borderColor = $derived(selected ? '!border-zinc-400' : '!border-zinc-600');
+
+	const handleClass = $derived(selected ? '!bg-zinc-700' : '!bg-zinc-900');
 </script>
 
 <div class="relative">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class={borderColor} />
+				<Handle type="target" position={Position.Top} class={[borderColor, handleClass]} />
 
 				<button
 					onclick={() => messageContext.send({ type: 'bang' })}
@@ -52,7 +54,7 @@
 				<Handle
 					type="source"
 					position={Position.Bottom}
-					class={['z-1 absolute !bottom-[5.5px]', borderColor]}
+					class={['z-1 absolute !bottom-[1px]', borderColor, handleClass]}
 				/>
 			</div>
 		</div>
