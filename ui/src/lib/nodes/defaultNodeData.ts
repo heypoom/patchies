@@ -7,7 +7,8 @@ import {
 	DEFAULT_BUTTERCHURN_PRESET,
 	DEFAULT_JS_CANVAS_CODE,
 	DEFAULT_SWISSGL_CODE,
-	DEFAULT_PYTHON_CODE
+	DEFAULT_PYTHON_CODE,
+	DEFAULT_CHUCK_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -56,6 +57,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('markdown', () => ({ markdown: 'hello' }))
 		.with('expr', () => ({ expr: '' }))
 		.with('expr~', () => ({ expr: 's' }))
-		.with('chuck', () => ({ expr: 'SinOsc osc => dac;\n1::second => now;' }))
+		.with('chuck', () => ({ expr: DEFAULT_CHUCK_CODE }))
 		.otherwise(() => ({}));
 }

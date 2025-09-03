@@ -65,3 +65,17 @@ export const DEFAULT_SWISSGL_CODE = `function render({t}) {
 export const DEFAULT_PYTHON_CODE = `import numpy as np
 
 np.arange(15).reshape(3, 5)`;
+
+export const DEFAULT_CHUCK_CODE = `second - (now % second) => now;
+
+Blit s => LPF f => dac;
+f.set(500, 50);
+
+4 => s.freq;
+
+int x;
+
+while (250::ms => now) {
+  (((x * 3) % 8) + 1) * 200 => f.freq;
+  x++;
+}`;
