@@ -153,3 +153,4 @@ Visual nodes can be chained together using orange video inlets/outlets:
 - Utilities: `src/lib/[rendering|save-load|objects]/`
 - Specs: `docs/design-docs/specs/`
 - always use ts-pattern for matching. never ever use switch cases.
+- always update README.md after adding an audio node or visual node
