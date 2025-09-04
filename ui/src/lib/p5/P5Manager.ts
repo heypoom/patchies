@@ -11,6 +11,9 @@ interface P5SketchConfig {
 
 	/** Sets the number of inlets and outlets for the node. */
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
+
+	/** Loads the ML5.js library. The library is 6MB+ */
+	loadML5?: () => void;
 }
 
 export class P5Manager {
@@ -19,6 +22,7 @@ export class P5Manager {
 	public nodeId: string;
 
 	public shouldSendBitmap = true;
+	public shouldLoadML5 = false;
 
 	private container: HTMLElement | null = null;
 
@@ -38,7 +42,7 @@ export class P5Manager {
 
 		if (!this.container) return;
 
-		const [{ default: P5 }, { default: ml5 }] = await Promise.all([import('p5'), import('ml5')]);
+		const [{ default: P5 }, { default: ml5 }] = await Promise.all([import('p5'), this.loadML5()]);
 
 		config.ml5 = ml5;
 
@@ -152,7 +156,7 @@ export class P5Manager {
 		// @ts-expect-error -- no-op
 		sketch['p5'] = P5Constructor;
 
-		if (config.ml5) {
+		if (this.shouldLoadML5 && config.ml5) {
 			// @ts-expect-error -- no-op
 			sketch['ml5'] = config.ml5;
 		}
@@ -173,6 +177,7 @@ export class P5Manager {
 					var noDrag = sketchContext.noDrag;
 					var fft = sketchContext.fft;
 					var setPortCount = sketchContext.setPortCount;
+					var loadML5 = sketchContext.loadML5;
 					var recv = receive = listen = onMessage; // alias for onMessage
 				}
 				
@@ -183,7 +188,13 @@ export class P5Manager {
 		`
 		);
 
-		return userCode(sketch, config.messageContext ?? {});
+		return userCode(sketch, {
+			...config.messageContext,
+			loadML5: () => {
+				this.shouldLoadML5 = true;
+				this.loadML5();
+			}
+		});
 	}
 
 	destroy() {
@@ -203,5 +214,12 @@ export class P5Manager {
 		if (!this.glSystem.hasOutgoingVideoConnections(this.nodeId)) return;
 
 		await this.glSystem.setBitmapSource(this.nodeId, canvas);
+	}
+
+	async loadML5() {
+		if (!this.shouldLoadML5) return { default: null };
+
+		// @ts-expect-error -- load ml5
+		return await import('ml5');
 	}
 }
