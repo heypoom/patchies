@@ -4,15 +4,47 @@ src(s0).out(o0)`;
 const DIFF = `setVideoCount(2)
 src(s0).diff(s1).out(o0)`;
 
-const BEANS = `setPortCount(0, 0)
-setVideoCount(0)
-
-osc(30,0.01,1)
+const BEANS = `osc(30,0.01,1)
   .mult(osc(20,-0.1,1).modulate(noise(3,1)).rotate(0.7))
   .out(o0)`;
 
-export const HYDRA_PRESETS: Record<string, { type: string; data: { code: string } }> = {
-	'passthru.hydra': { type: 'hydra', data: { code: PASSTHRU.trim() } },
-	'diff.hydra': { type: 'hydra', data: { code: DIFF.trim() } },
-	'beans.hydra': { type: 'hydra', data: { code: BEANS.trim() } }
+type HydraNodeData = {
+	code: string;
+	messageInletCount?: number;
+	messageOutletCount?: number;
+	videoInletCount?: number;
+	videoOutletCount?: number;
+};
+
+export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }> = {
+	'passthru.hydra': {
+		type: 'hydra',
+		data: {
+			code: PASSTHRU.trim(),
+			messageInletCount: 0,
+			messageOutletCount: 0,
+			videoInletCount: 1,
+			videoOutletCount: 1
+		}
+	},
+	'diff.hydra': {
+		type: 'hydra',
+		data: {
+			code: DIFF.trim(),
+			messageInletCount: 0,
+			messageOutletCount: 0,
+			videoInletCount: 2,
+			videoOutletCount: 1
+		}
+	},
+	'beans.hydra': {
+		type: 'hydra',
+		data: {
+			code: BEANS.trim(),
+			messageInletCount: 0,
+			messageOutletCount: 0,
+			videoInletCount: 0,
+			videoOutletCount: 1
+		}
+	}
 };

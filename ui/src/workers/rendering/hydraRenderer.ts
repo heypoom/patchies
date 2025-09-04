@@ -148,7 +148,6 @@ export class HydraRenderer {
 
 		this.sourceToParamIndexMap = [null, null, null, null];
 
-		this.setPortCount(1, 1);
 		this.isFFTEnabled = false;
 		this.fftDataCache.clear();
 		this.fftRequestCache.clear();
