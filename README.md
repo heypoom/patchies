@@ -82,18 +82,9 @@ This allows you to create video patches that are more powerful than what you can
 
 Here are the list of objects that we have in Patchies. You can also hit `n` on your keyboard to see list of objects to create, as well as drag in the objects from the bottom bar.
 
-### `js`: A JavaScript code block
+### Visual & Creative Coding Objects
 
-- Use `console.log()` to log messages to the virtual console.
-- Use `setInterval(callback, ms)` to run a callback every `ms` milliseconds.
-  - The code block has a special version of `setInterval` that automatically cleans up the interval on unmount. Do not use `window.setInterval` from the window scope as that will not clean up.
-- Use `send()` and `onMessage()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section below.
-
-### `strudel`: creates a Strudel music environment
-
-- Strudel is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
-- See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
-- Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
+These objects support video chaining and can be connected to create complex visual effects:
 
 ### `p5`: creates a P5.js sketch
 
@@ -121,24 +112,206 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 ### `glsl`: creates a GLSL fragment shader
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `butterchurn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
+- You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
   - These inlets are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in your GLSL uniform.
 - See [ShaderToy](https://www.shadertoy.com) for examples of GLSL shaders. All shaders on ShaderToy are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
 
+### `swgl`: creates a SwissGL compute shader
+
+- SwissGL is a minimalistic wrapper for WebGL to create compute shaders and GPU-accelerated graphics.
+- Perfect for data visualization, image processing, and GPU compute tasks.
+- Supports video chaining for complex processing pipelines.
+
 ### `canvas`: creates a JavaScript canvas
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
-- You can call these special methods in your P5 sketch:
+- You can call these special methods in your canvas code:
 
-  - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your P5 sketch, such as adding sliders. You can call it in your `setup()` function.
+  - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your canvas, such as adding sliders. You can call it in your `setup()` function.
   - `getSource()` to get the video source from the previous video object using [Video Chaining](#video-chaining). This returns the HTML5 canvas element which you can use for e.g. copying pixels. You can call this in your `setup()` function.
   - `send(message)` and `onMessage(callback)`, see [Message Passing](#message-passing).
 
-### `butterchurn`: render the Winamp Milkdrop visualizer
+### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
 - [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
 - You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl`) to derive more visual effects.
+
+### `img`: display and manipulate images
+
+- Load and display images from URLs or local files.
+- Supports video chaining for image processing pipelines.
+- Can be used as texture sources for other visual objects.
+
+### Audio & Music Objects
+
+### `strudel`: creates a Strudel music environment
+
+- Strudel is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
+- See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
+- Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
+
+### `chuck`: creates a ChucK audio programming environment
+
+- ChucK is a programming language for real-time sound synthesis and music creation.
+- Great for algorithmic composition and sound design.
+- Runs in the browser via WebChucK.
+
+### `python`: creates a Python code environment
+
+- Run Python code directly in the browser using Pyodide.
+- Great for data processing, scientific computing, and algorithmic composition.
+- Full Python standard library available.
+
+### Programming & Control Objects
+
+### `js`: A JavaScript code block
+
+- Use `console.log()` to log messages to the virtual console.
+- Use `setInterval(callback, ms)` to run a callback every `ms` milliseconds.
+  - The code block has a special version of `setInterval` that automatically cleans up the interval on unmount. Do not use `window.setInterval` from the window scope as that will not clean up.
+- Use `send()` and `onMessage()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section below.
+
+### `expr`: mathematical expression evaluator
+
+- Evaluate mathematical expressions and formulas.
+- Perfect for control signals and parameter mapping.
+- Supports variables and mathematical functions.
+
+### `expr~`: audio-rate mathematical expression evaluator
+
+- Similar to `expr` but runs at audio rate for signal processing.
+- Use for audio synthesis and real-time signal manipulation.
+
+### Interface & Control Objects
+
+### `button`: creates an interactive button
+
+- Trigger events and send messages when clicked.
+- Perfect for user interaction and patch control.
+- Use `send()` to output bang messages or custom data.
+
+### `msg`: message object
+
+- Store and send predefined messages.
+- Click to send the stored message to connected objects.
+- Great for triggering sequences or sending configuration data.
+
+### `slider`: creates an interactive slider
+
+- Continuous value control with customizable range.
+- Perfect for real-time parameter adjustment.
+- Outputs numeric values that can control other objects.
+
+### `object`: textual object system
+
+- Create Max/MSP-style textual objects with typed inlets and outlets.
+- Supports a wide range of audio processing, control, and utility objects.
+- Type an object name to create specialized functionality.
+
+#### Available textual objects include:
+
+**Audio Processing:**
+
+- `gain~`: Amplifies audio signals with gain control
+- `osc~`: Oscillator for generating audio waveforms (sine, square, sawtooth, triangle)
+- `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`: Various audio filters
+- `lowshelf~`, `highshelf~`, `peaking~`: EQ filters for frequency shaping
+- `compressor~`: Dynamic range compression for audio
+- `pan~`: Stereo positioning control
+- `delay~`: Audio delay line with configurable delay time
+- `+~`: Audio signal addition
+- `sig~`: Generate constant audio signals
+- `waveshaper~`: Distortion and waveshaping effects
+- `convolver~`: Convolution reverb using impulse responses
+- `fft~`: FFT analysis for frequency domain processing
+
+**Sound Sources:**
+
+- `soundfile~`: Load and play audio files with transport controls
+- `sampler~`: Sample playback with triggering capabilities
+- `mic~`: Capture audio from microphone input
+
+**Control & Utility:**
+
+- `mtof`: Convert MIDI note numbers to frequencies
+- `loadbang`: Send bang on patch load
+- `metro`: Metronome for regular timing
+- `delay`: Message delay (not audio)
+- `adsr`: ADSR envelope generator
+- `dac~`: Send audio to speakers
+- `fslider`: Floating-point slider control
+- `bang`: Alias for button object
+
+### MIDI & Network Objects
+
+### `midi.in`: MIDI input
+
+- Receive MIDI messages from connected devices.
+- Outputs note, velocity, and control change data.
+- Perfect for musical controllers and hardware integration.
+
+### `midi.out`: MIDI output
+
+- Send MIDI messages to external devices or software.
+- Control external synthesizers and DAWs.
+- Supports note, CC, and system messages.
+
+### `netsend`: network message sender
+
+- Send messages over network protocols.
+- Communicate with other applications or devices.
+- Supports UDP and TCP protocols.
+
+### `netrecv`: network message receiver
+
+- Receive messages from network sources.
+- Listen for data from other applications.
+- Complements `netsend` for network communication.
+
+### AI & Generation Objects
+
+These objects can be hidden via the "Toggle AI Features" command if you prefer not to use AI:
+
+### `ai.txt`: AI text generation
+
+- Generate text using AI language models.
+- Create dynamic content, lyrics, or procedural text.
+- Integrates with message system for interactive generation.
+
+### `ai.img`: AI image generation
+
+- Generate images from text prompts using AI.
+- Create visual content programmatically.
+- Supports video chaining as texture source.
+
+### `ai.music`: AI music generation
+
+- Generate musical compositions using AI.
+- Create backing tracks, melodies, or soundscapes.
+- Outputs audio that can be processed by other objects.
+
+### `ai.tts`: AI text-to-speech
+
+- Convert text to speech using AI voices.
+- Create dynamic narration or vocal elements.
+- Outputs audio for further processing.
+
+### Output Objects
+
+### `bg.out`: background output
+
+- Set the final output that appears as the background.
+- The endpoint for video chaining pipelines.
+- Determines what the audience sees as the main visual.
+
+### Documentation & Content
+
+### `markdown`: Markdown renderer
+
+- Render Markdown text as formatted content.
+- Perfect for documentation, instructions, or dynamic text display.
+- Supports full Markdown syntax including links and formatting.
 
 ## Hiding AI features
 
