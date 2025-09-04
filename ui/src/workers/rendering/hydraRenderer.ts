@@ -217,7 +217,7 @@ export class HydraRenderer {
 				with (context) {
 					var recv = receive = listen = onMessage; // alias for onMessage
 
-					${this.config.code}
+					${processCode(this.config.code)}
 				}
 			`
 			);
@@ -335,3 +335,5 @@ export class HydraRenderer {
 		}
 	}
 }
+
+const processCode = (code: string) => code.replace('.out()', '.out(o0)');
