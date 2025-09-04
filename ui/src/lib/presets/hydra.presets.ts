@@ -16,35 +16,43 @@ type HydraNodeData = {
 	videoOutletCount?: number;
 };
 
+const defaults: HydraNodeData = {
+	code: '',
+	messageInletCount: 0,
+	messageOutletCount: 0,
+	videoInletCount: 1,
+	videoOutletCount: 1
+};
+
 export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }> = {
 	'passthru.hydra': {
 		type: 'hydra',
 		data: {
-			code: PASSTHRU.trim(),
-			messageInletCount: 0,
-			messageOutletCount: 0,
-			videoInletCount: 1,
-			videoOutletCount: 1
+			...defaults,
+			code: PASSTHRU.trim()
+		}
+	},
+	'null.hydra': {
+		type: 'hydra',
+		data: {
+			...defaults,
+			code: PASSTHRU.trim()
 		}
 	},
 	'diff.hydra': {
 		type: 'hydra',
 		data: {
+			...defaults,
 			code: DIFF.trim(),
-			messageInletCount: 0,
-			messageOutletCount: 0,
-			videoInletCount: 2,
-			videoOutletCount: 1
+			videoInletCount: 2
 		}
 	},
 	'beans.hydra': {
 		type: 'hydra',
 		data: {
+			...defaults,
 			code: BEANS.trim(),
-			messageInletCount: 0,
-			messageOutletCount: 0,
-			videoInletCount: 0,
-			videoOutletCount: 1
+			videoInletCount: 0
 		}
 	}
 };
