@@ -7,7 +7,7 @@ type PsEdgeType = 'message' | 'video' | 'audio';
 type MinimalNode = Pick<Node, 'id' | 'type' | 'data'>;
 
 /** Visual audio nodes. */
-const AUDIO_NODES = ['ai.music', 'ai.tts', 'sampler~', 'soundfile~', 'chuck', 'expr~'];
+const AUDIO_NODES = ['ai.music', 'ai.tts', 'sampler~', 'soundfile~', 'chuck', 'expr~', 'strudel'];
 
 const isAudioObject = (node: MinimalNode): boolean => {
 	if (!node.type) return false;
