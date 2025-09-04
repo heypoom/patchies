@@ -89,22 +89,29 @@
 				evalScope({ send, onMessage: messageContext?.createOnMessageFunction() });
 			},
 			afterEval: () => {
-				setTimeout(() => {
+				let attempts = 0;
+
+				let itv = setInterval(() => {
 					// @ts-expect-error -- hack from patching strudel
 					const g = window.SuperdoughDestinationGain as GainNode;
 					const outGain = audioSystem.nodesById.get(nodeId)?.node;
 
 					if (g && outGain) {
+						clearInterval(itv);
+
 						// destination gain might already be disconnected.
 						try {
 							g.disconnect(audioSystem.audioContext.destination);
 						} catch {}
 
 						g.connect(outGain);
+					} else if (attempts > 500) {
+						console.log('>> failed to hijack strudel output!');
+						clearInterval(itv);
 					} else {
-						console.log('>> failed to hijack strudel output', { g, outGain });
+						attempts++;
 					}
-				}, 100);
+				}, 5);
 			}
 		});
 
