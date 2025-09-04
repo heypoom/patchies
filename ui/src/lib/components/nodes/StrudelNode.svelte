@@ -6,6 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { getPortPosition } from '$lib/utils/node-utils';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -145,6 +146,7 @@
 								updateNodeData(nodeId, { ...data, code: newCode });
 							}}
 							class="w-full"
+							{nodeId}
 							{messageContext}
 						/>
 					</div>
@@ -153,8 +155,17 @@
 				<Handle
 					type="source"
 					position={Position.Bottom}
-					id={`strudel-out-${nodeId}`}
-					class="nodrag z-1 !-bottom-2"
+					id="audio-out"
+					class="z-1 absolute !-bottom-2 !bg-blue-500"
+					style={`left: ${getPortPosition(2, 0)}`}
+				/>
+
+				<Handle
+					type="source"
+					position={Position.Bottom}
+					id="message-out"
+					class="z-1 absolute !-bottom-2"
+					style={`left: ${getPortPosition(2, 1)}`}
 				/>
 
 				<!-- Error display -->

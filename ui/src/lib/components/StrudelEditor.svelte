@@ -4,7 +4,6 @@
 	import { keymap, EditorView } from '@codemirror/view';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
-	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 
 	let {
 		code = '',
@@ -14,6 +13,7 @@
 		onUpdateState = undefined,
 		onchange = undefined,
 		messageContext,
+		nodeId,
 		...props
 	}: {
 		code?: string;
@@ -23,6 +23,7 @@
 		onUpdateState?: (state: unknown) => void;
 		onchange?: (code: string) => void;
 		messageContext?: MessageContext;
+		nodeId: string;
 		[key: string]: unknown;
 	} = $props();
 
@@ -36,6 +37,8 @@
 	};
 
 	onMount(async () => {
+		audioSystem.createAudioObject(nodeId, 'gain~', [, 1]);
+
 		// Load all required Strudel modules
 		const [strudelCore, strudelDraw, strudelTranspiler, strudelWebaudio, strudelCodemirror] =
 			await Promise.all([
@@ -84,6 +87,24 @@
 				};
 
 				evalScope({ send, onMessage: messageContext?.createOnMessageFunction() });
+			},
+			afterEval: () => {
+				setTimeout(() => {
+					// @ts-expect-error -- hack from patching strudel
+					const g = window.SuperdoughDestinationGain as GainNode;
+					const outGain = audioSystem.nodesById.get(nodeId)?.node;
+
+					if (g && outGain) {
+						// destination gain might already be disconnected.
+						try {
+							g.disconnect(audioSystem.audioContext.destination);
+						} catch {}
+
+						g.connect(outGain);
+					} else {
+						console.log('>> failed to hijack strudel output', { g, outGain });
+					}
+				}, 100);
 			}
 		});
 

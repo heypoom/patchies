@@ -141,6 +141,11 @@ interface PsConvolver extends PsBase {
 	node: ConvolverNode;
 }
 
+interface PsStrudel extends PsBase {
+	type: 'strudel';
+	node: GainNode;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -166,6 +171,8 @@ export type PsAudioNode =
 	| PsSoundfile
 	| PsWaveshaper
 	| PsSampler
-	| PsConvolver;
+	| PsConvolver
+	| PsStrudel;
+
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';

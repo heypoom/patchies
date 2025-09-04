@@ -1,11 +1,22 @@
 diff --git a/node_modules/superdough/.bun-tag-a20bbadee748411e b/.bun-tag-a20bbadee748411e
 new file mode 100644
 index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/superdough/.bun-tag-e3c179ba6e839464 b/.bun-tag-e3c179ba6e839464
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/index.mjs b/dist/index.mjs
-index a711bb1440424b0c1a08f21791206048b19da44f..e28b961a99eb426647df8f695106abb7901d9104 100644
+index a711bb1440424b0c1a08f21791206048b19da44f..8e4f8e03f5c04714a7534c0cee8a937d1be32f8c 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
-@@ -920,7 +920,7 @@ const xn = async (t, e, n, c) => {
+@@ -630,6 +630,7 @@ let O = {}, pt, _;
+ function pn() {
+   const t = G(), e = t.destination.maxChannelCount;
+   t.destination.channelCount = e, pt = new ChannelMergerNode(t, { numberOfInputs: t.destination.channelCount }), _ = new GainNode(t), pt.connect(_), _.connect(t.destination);
++  window.SuperdoughDestinationGain = _;
+ }
+ const It = (t, e = [0, 1]) => {
+   const n = G();
+@@ -920,7 +921,7 @@ const xn = async (t, e, n, c) => {
      const W = fn(qt, 2 ** (Ne + 5));
      ne = Ht(ct, W, 1), A.push(ne);
    }
