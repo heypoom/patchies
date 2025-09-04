@@ -6,7 +6,7 @@
 
 Patchies is a tool to build audio-visual patches on the web. Try it out at [patchies.app](https://patchies.app).
 
-You can use audio-visual tools that you know and love: [P5.js](https://p5js.org) (Processing in JavaScript), [Hydra](https://hydra.ojack.xyz) (Video Synth), [Strudel](https://strudel.cc) (TidalCycles in JavaScript), as well as write JavaScript and GLSL fragment shaders directly.
+You can use audio-visual tools that you know and love: [P5.js](https://p5js.org) (Processing in JavaScript), [Hydra](https://hydra.ojack.xyz) (Video Synth), [Strudel](https://strudel.cc) (TidalCycles in JavaScript), [ChucK](https://chuck.cs.princeton.edu/webchuck/) as well as write JavaScript and GLSL fragment shaders directly.
 
 It has support for [Message Passing](#message-passing) and [Video Chaining](#video-chaining), which allows you to create complex audio-visual patches that are more powerful than what you can do with a single object.
 
@@ -15,18 +15,19 @@ It has support for [Message Passing](#message-passing) and [Video Chaining](#vid
 ## How to use
 
 - Go to [patchies.app](https://patchies.app).
-- Press `n` to create a new object.
+- Press `Enter` to create a new object.
 - Click and drag the title of the object on the top left to move.
 - When hovering over an object, you'll see icon buttons such as "edit code" and "play/stop" on the top right.
 - Press `shift+enter` while in a code editor to re-run the code.
 - Click on the title and press `delete` to delete an object.
+- Press `cmd+k` to bring up the command palette.
 
 ## Keyboard Shortcuts
 
 You can use the Shortcuts button on the bottom right to see a list of shortcuts. Here are some of the most useful ones:
 
+- `enter`: create a new object at cursor position.
 - `cmd + k`: open the command palette to search for commands.
-- `n`: create a new object at cursor position.
 - `shift + enter`: run the code in the code editor within the selected object.
 - `delete`: delete the selected object.
 - `cmd + z`: undo the last action.
@@ -49,6 +50,16 @@ onMessage((data, meta) => {
 ```
 
 You can use the `send` and `onMessage` function in all JavaScript-based objects, such as `js`, `p5`, `hydra`, `strudel` and `canvas`.
+
+The `meta` includes the `inlet` which is an index of the inlet. This is helpful to distinguish inlets. You can also do `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
+
+```js
+onMessage((data, meta) => {
+  send(data, {to: meta.inlet})
+})
+```
+
+In JavaScript objects such as `js`, `p5`, `hydra`, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
 You can also `send` messages into GLSL uniforms. If you define a uniform in your GLSL code like so:
 
@@ -100,10 +111,6 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
 - Hydra is a live coding video synthesizer. You can use it to create complex video effects and animations.
 - See the [interactive Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
 - Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
-- The output method `.out(o0)` must always have an explicit output, otherwise it will error.
-  - Example: `src(s0).out(o0)` will output the video from the source `s0` to the output `o0`.
-  - If you copy examples from the Hydra documentation, you must add `.out(o0)` to the end of the code to make it work in Patchies.
-  - This is a limitation of `hydra-ts`, the library that powers Hydra in Patchies.
 - You can call these special methods in your Hydra code:
   - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
     - For example, `setVideoCount(2)` will initialize `s0` and `s1` with the first two video inlets.
