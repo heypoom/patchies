@@ -23,6 +23,8 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
+			videoInletCount?: number;
+			videoOutletCount?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -42,18 +44,32 @@
 	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
 		if (e.nodeId !== nodeId) return;
 
-		updateNodeData(nodeId, {
-			...data,
-			inletCount: e.inletCount,
-			outletCount: e.outletCount
-		});
+		match(e)
+			.with({ portType: 'message' }, (m) => {
+				updateNodeData(nodeId, {
+					...data,
+					inletCount: m.inletCount,
+					outletCount: m.outletCount
+				});
+			})
+			.with({ portType: 'video' }, (m) => {
+				updateNodeData(nodeId, {
+					...data,
+					videoInletCount: m.inletCount,
+					videoOutletCount: m.outletCount
+				});
+			})
+			.exhaustive();
 
 		updateNodeInternals(nodeId);
 	}
 
 	const code = $derived(data.code || '');
+
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 1);
+	let videoInletCount = $derived(data.videoInletCount ?? 1);
+	let videoOutletCount = $derived(data.videoOutletCount ?? 1);
 
 	const setCodeAndUpdate = (newCode: string) => {
 		updateNodeData(nodeId, { ...data, code: newCode });
@@ -151,70 +167,47 @@
 	bind:previewCanvas
 >
 	{#snippet topHandle()}
-		<VideoHandle
-			type="target"
-			position={Position.Top}
-			id="video-in-0"
-			style={`left: ${getPortPosition(inletCount + 4, 0)}`}
-			title="Video input 0"
-			class="z-1"
-		/>
-
-		<VideoHandle
-			type="target"
-			position={Position.Top}
-			id="video-in-1"
-			style={`left: ${getPortPosition(inletCount + 4, 1)}`}
-			title="Video input 1"
-			class="z-1"
-		/>
-
-		<VideoHandle
-			type="target"
-			position={Position.Top}
-			id="video-in-2"
-			style={`left: ${getPortPosition(inletCount + 4, 2)}`}
-			title="Video input 2"
-			class="z-1"
-		/>
-
-		<VideoHandle
-			type="target"
-			position={Position.Top}
-			id="video-in-3"
-			style={`left: ${getPortPosition(inletCount + 4, 3)}`}
-			title="Video input 3"
-			class="z-1"
-		/>
+		{#each Array.from({ length: videoInletCount }) as _, index}
+			<VideoHandle
+				type="target"
+				position={Position.Top}
+				id={`video-in-${index}`}
+				style={`left: ${getPortPosition(inletCount + videoInletCount, index)}`}
+				title={`Video Inlet ${index}`}
+				class="z-1"
+			/>
+		{/each}
 
 		{#each Array.from({ length: inletCount }) as _, index}
 			<Handle
 				type="target"
-				id={`in-${index}`}
+				id={`message-in-${index}`}
 				position={Position.Top}
-				style={`left: ${getPortPosition(inletCount + 4, index + 4)}`}
-				title={`Inlet ${index}`}
+				style={`left: ${getPortPosition(inletCount + videoInletCount, index + videoInletCount)}`}
+				title={`Message Inlet ${index}`}
 				class="z-1"
 			/>
 		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<VideoHandle
-			type="source"
-			position={Position.Bottom}
-			id="video-out"
-			style={`left: ${getPortPosition(outletCount + 1, 0)}`}
-			title="Video output"
-			class="z-1"
-		/>
+		{#each Array.from({ length: videoOutletCount }) as _, index}
+			<VideoHandle
+				type="source"
+				position={Position.Bottom}
+				id={`video-out-${index}`}
+				style={`left: ${getPortPosition(outletCount + videoOutletCount, index)}`}
+				title={`Video Outlet ${index}`}
+				class="z-1"
+			/>
+		{/each}
 
 		{#each Array.from({ length: outletCount }) as _, index}
 			<Handle
 				type="source"
 				id={`out-${index}`}
 				position={Position.Bottom}
-				style={`left: ${getPortPosition(outletCount + 1, index + 1)}`}
+				style={`left: ${getPortPosition(outletCount + videoOutletCount, index + videoOutletCount)}`}
 				title={`Outlet ${index}`}
 				class="z-1"
 			/>

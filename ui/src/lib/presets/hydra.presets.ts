@@ -1,7 +1,7 @@
-const PASSTHRU = `initSources(0)
+const PASSTHRU = `setVideoCount(1)
 src(s0).out(o0)`;
 
-const DIFF = `initSources(0, 1)
+const DIFF = `setVideoCount(2)
 src(s0).diff(s1).out(o0)`;
 
 const BEANS = `osc(30,0.01,1)

@@ -90,7 +90,6 @@ export class HydraRenderer {
 				const paramIndex = this.sourceToParamIndexMap[sourceIndex];
 
 				const param = params.userParams[paramIndex] as regl.Texture2D;
-
 				if (!param) return;
 
 				// Check if the param is a regl texture
@@ -194,7 +193,7 @@ export class HydraRenderer {
 				o2,
 				o3,
 
-				initSources: this.initSources.bind(this),
+				setVideoCount: this.setVideoCount.bind(this),
 
 				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;
@@ -251,19 +250,6 @@ export class HydraRenderer {
 		for (const output of this.hydra.outputs) {
 			output.fbos.forEach((fbo) => fbo.destroy());
 		}
-	}
-
-	initSources(...sources: number[]) {
-		if (sources.length === 0) sources = [0];
-
-		sources.forEach((inputIndex, sourceIndex) => {
-			// skip mapping if inputIndex is null or undefined
-			if (inputIndex === null || inputIndex === undefined) {
-				return;
-			}
-
-			this.sourceToParamIndexMap[sourceIndex] = inputIndex;
-		});
 	}
 
 	sendMessage(data: unknown, options: SendMessageOptions) {
@@ -325,9 +311,28 @@ export class HydraRenderer {
 	setPortCount(inletCount: number, outletCount: number) {
 		self.postMessage({
 			type: 'setPortCount',
+			portType: 'message',
 			nodeId: this.config.nodeId,
 			inletCount,
 			outletCount
 		});
+	}
+
+	setVideoCount(inletCount = 1, outletCount = 1) {
+		// hydra allows max 4 inlets and outlets
+		inletCount = Math.min(inletCount, 4);
+		outletCount = Math.min(outletCount, 4);
+
+		self.postMessage({
+			type: 'setPortCount',
+			portType: 'video',
+			nodeId: this.config.nodeId,
+			inletCount,
+			outletCount
+		});
+
+		for (let i = 0; i < inletCount; i++) {
+			this.sourceToParamIndexMap[i] = i;
+		}
 	}
 }

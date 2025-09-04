@@ -105,10 +105,8 @@ Here are the list of objects that we have in Patchies. You can also hit `n` on y
   - If you copy examples from the Hydra documentation, you must add `.out(o0)` to the end of the code to make it work in Patchies.
   - This is a limitation of `hydra-ts`, the library that powers Hydra in Patchies.
 - You can call these special methods in your Hydra code:
-  - `initSources(...)` connects the Hydra source objects with the video inlets.
-    - `initSources(0)` will initialize the first Hydra source object with the first video inlet.
-    - `initSources(0, 1, 2)` will initialize the three Hydra source objects with the first three video inlets.
-    - `initSources(null, 2, 3)` will map `s1` to inlet 2 and `s2` to inlet 3, while leaving inlet 0 and 1 unconnected.
+  - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
+    - For example, `setVideoCount(2)` will initialize `s0` and `s1` with the first two video inlets.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `send(message)` and `onMessage(callback)`

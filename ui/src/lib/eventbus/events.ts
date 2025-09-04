@@ -33,6 +33,7 @@ export interface GLPreviewFrameCapturedEvent {
 
 export interface NodePortCountUpdateEvent {
 	type: 'nodePortCountUpdate';
+	portType: 'message' | 'video';
 	nodeId: string;
 	inletCount: number;
 	outletCount: number;

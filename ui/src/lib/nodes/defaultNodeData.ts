@@ -37,7 +37,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('bchrn', () => ({ currentPreset: DEFAULT_BUTTERCHURN_PRESET }))
 		.with('p5', () => ({ code: DEFAULT_P5_CODE }))
-		.with('hydra', () => ({ code: DEFAULT_HYDRA_CODE }))
+		.with('hydra', () => ({
+			code: DEFAULT_HYDRA_CODE,
+			inletCount: 1,
+			outletCount: 1,
+			videoInletCount: 1,
+			videoOutletCount: 1
+		}))
 		.with('swgl', () => ({ code: DEFAULT_SWISSGL_CODE }))
 		.with('canvas', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('ai.music', () => ({}))

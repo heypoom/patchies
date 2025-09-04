@@ -112,6 +112,7 @@ export class GLSystem {
 			this.eventBus.dispatch({
 				type: 'nodePortCountUpdate',
 				nodeId: data.nodeId,
+				portType: data.portType,
 				inletCount: data.inletCount,
 				outletCount: data.outletCount
 			});
