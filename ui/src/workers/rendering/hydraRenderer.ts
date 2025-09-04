@@ -308,7 +308,7 @@ export class HydraRenderer {
 		});
 	}
 
-	setPortCount(inletCount: number, outletCount: number) {
+	setPortCount(inletCount = 1, outletCount = 0) {
 		self.postMessage({
 			type: 'setPortCount',
 			portType: 'message',

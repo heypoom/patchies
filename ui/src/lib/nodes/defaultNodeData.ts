@@ -39,8 +39,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('p5', () => ({ code: DEFAULT_P5_CODE }))
 		.with('hydra', () => ({
 			code: DEFAULT_HYDRA_CODE,
-			inletCount: 1,
-			outletCount: 1,
+			messageInletCount: 1,
+			messageOutletCount: 0,
 			videoInletCount: 1,
 			videoOutletCount: 1
 		}))

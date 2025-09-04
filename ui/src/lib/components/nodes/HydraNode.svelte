@@ -21,8 +21,8 @@
 		type: string;
 		data: {
 			code: string;
-			inletCount?: number;
-			outletCount?: number;
+			messageInletCount?: number;
+			messageOutletCount?: number;
 			videoInletCount?: number;
 			videoOutletCount?: number;
 		};
@@ -48,8 +48,8 @@
 			.with({ portType: 'message' }, (m) => {
 				updateNodeData(nodeId, {
 					...data,
-					inletCount: m.inletCount,
-					outletCount: m.outletCount
+					messageInletCount: m.inletCount,
+					messageOutletCount: m.outletCount
 				});
 			})
 			.with({ portType: 'video' }, (m) => {
@@ -66,8 +66,8 @@
 
 	const code = $derived(data.code || '');
 
-	let inletCount = $derived(data.inletCount ?? 1);
-	let outletCount = $derived(data.outletCount ?? 1);
+	let messageInletCount = $derived(data.messageInletCount ?? 1);
+	let messageOutletCount = $derived(data.messageOutletCount ?? 0);
 	let videoInletCount = $derived(data.videoInletCount ?? 1);
 	let videoOutletCount = $derived(data.videoOutletCount ?? 1);
 
@@ -172,18 +172,18 @@
 				type="target"
 				position={Position.Top}
 				id={`video-in-${index}`}
-				style={`left: ${getPortPosition(inletCount + videoInletCount, index)}`}
+				style={`left: ${getPortPosition(messageInletCount + videoInletCount, index)}`}
 				title={`Video Inlet ${index}`}
 				class="z-1"
 			/>
 		{/each}
 
-		{#each Array.from({ length: inletCount }) as _, index}
+		{#each Array.from({ length: messageInletCount }) as _, index}
 			<Handle
 				type="target"
 				id={`message-in-${index}`}
 				position={Position.Top}
-				style={`left: ${getPortPosition(inletCount + videoInletCount, index + videoInletCount)}`}
+				style={`left: ${getPortPosition(messageInletCount + videoInletCount, index + videoInletCount)}`}
 				title={`Message Inlet ${index}`}
 				class="z-1"
 			/>
@@ -196,18 +196,18 @@
 				type="source"
 				position={Position.Bottom}
 				id={`video-out-${index}`}
-				style={`left: ${getPortPosition(outletCount + videoOutletCount, index)}`}
+				style={`left: ${getPortPosition(messageOutletCount + videoOutletCount, index)}`}
 				title={`Video Outlet ${index}`}
 				class="z-1"
 			/>
 		{/each}
 
-		{#each Array.from({ length: outletCount }) as _, index}
+		{#each Array.from({ length: messageOutletCount }) as _, index}
 			<Handle
 				type="source"
 				id={`out-${index}`}
 				position={Position.Bottom}
-				style={`left: ${getPortPosition(outletCount + videoOutletCount, index + videoOutletCount)}`}
+				style={`left: ${getPortPosition(messageOutletCount + videoOutletCount, index + videoOutletCount)}`}
 				title={`Outlet ${index}`}
 				class="z-1"
 			/>
