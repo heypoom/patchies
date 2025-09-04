@@ -4,6 +4,12 @@ src(s0).out(o0)`;
 const DIFF = `setVideoCount(2)
 src(s0).diff(s1).out(o0)`;
 
+const BLEND = `setVideoCount(2)
+src(s0).diff(s1).out(o0)`;
+
+const MASK = `setVideoCount(2)
+src(s0).mask(s1, 0.5).out(o0)`;
+
 const BEANS = `osc(30,0.01,1)
   .mult(osc(20,-0.1,1).modulate(noise(3,1)).rotate(0.7))
   .out(o0)`;
@@ -16,7 +22,7 @@ type HydraNodeData = {
 	videoOutletCount?: number;
 };
 
-const defaults: HydraNodeData = {
+const defaultsOneVideoIn: HydraNodeData = {
 	code: '',
 	messageInletCount: 0,
 	messageOutletCount: 0,
@@ -24,35 +30,31 @@ const defaults: HydraNodeData = {
 	videoOutletCount: 1
 };
 
+const defaultsTwoVideoIn: HydraNodeData = { ...defaultsOneVideoIn, videoInletCount: 2 };
+
 export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }> = {
 	'passthru.hydra': {
 		type: 'hydra',
-		data: {
-			...defaults,
-			code: PASSTHRU.trim()
-		}
+		data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
 	},
 	'null.hydra': {
 		type: 'hydra',
-		data: {
-			...defaults,
-			code: PASSTHRU.trim()
-		}
+		data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
 	},
 	'diff.hydra': {
 		type: 'hydra',
-		data: {
-			...defaults,
-			code: DIFF.trim(),
-			videoInletCount: 2
-		}
+		data: { ...defaultsTwoVideoIn, code: DIFF.trim() }
+	},
+	'blend.hydra': {
+		type: 'hydra',
+		data: { ...defaultsTwoVideoIn, code: BLEND.trim() }
+	},
+	'mask.hydra': {
+		type: 'hydra',
+		data: { ...defaultsTwoVideoIn, code: MASK.trim() }
 	},
 	'beans.hydra': {
 		type: 'hydra',
-		data: {
-			...defaults,
-			code: BEANS.trim(),
-			videoInletCount: 0
-		}
+		data: { ...defaultsOneVideoIn, code: BEANS.trim(), videoInletCount: 0 }
 	}
 };
