@@ -66,5 +66,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('chuck', () => ({ expr: DEFAULT_CHUCK_CODE }))
 		.with('webcam', () => ({ width: 640, height: 480 }))
 		.with('video', () => ({ loop: true }))
+		.with('textbox', () => ({ text: '' }))
 		.otherwise(() => ({}));
 }
