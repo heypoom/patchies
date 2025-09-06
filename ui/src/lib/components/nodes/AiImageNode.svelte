@@ -30,6 +30,8 @@
 	const prompt = $derived(data.prompt || '');
 	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
 
+	const [width, height] = glSystem.outputSize;
+
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
 			.with(P.string, (text) => {
@@ -161,8 +163,8 @@
 
 			<canvas
 				bind:this={canvasElement}
-				width={800}
-				height={600}
+				{width}
+				{height}
 				class="h-[200px] w-[266px] rounded-md bg-zinc-900"
 			></canvas>
 		</div>

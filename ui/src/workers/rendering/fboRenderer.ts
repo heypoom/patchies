@@ -8,7 +8,7 @@ import type {
 	RenderFunction,
 	UserParam
 } from '../../lib/rendering/types';
-import { WEBGL_EXTENSIONS } from '$lib/canvas/constants';
+import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR, WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { getFramebuffer } from './utils';
@@ -23,8 +23,13 @@ import type {
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 
 export class FBORenderer {
-	public outputSize = [800, 600] as [w: number, h: number];
-	public previewSize = [200, 150] as [w: number, h: number];
+	public outputSize = DEFAULT_OUTPUT_SIZE;
+
+	public previewSize: [width: number, height: number] = [
+		this.outputSize[0] / PREVIEW_SCALE_FACTOR,
+		this.outputSize[1] / PREVIEW_SCALE_FACTOR
+	];
+
 	public renderGraph: RenderGraph | null = null;
 	public outputNodeId: string | null = null;
 

@@ -15,7 +15,7 @@ import {
 	type AudioAnalysisPayloadWithType,
 	type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
-import { PREVIEW_SCALE_FACTOR } from './constants';
+import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -47,7 +47,7 @@ export class GLSystem {
 	/** Cache for outgoing video connections to avoid recalculating on every frame */
 	private outgoingConnectionsCache = new Map<string, boolean>();
 
-	public outputSize: [width: number, height: number] = [800, 600];
+	public outputSize = DEFAULT_OUTPUT_SIZE;
 
 	public previewSize: [width: number, height: number] = [
 		this.outputSize[0] / PREVIEW_SCALE_FACTOR,
