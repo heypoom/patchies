@@ -178,7 +178,7 @@ export class P5Manager {
 					var fft = sketchContext.fft;
 					var setPortCount = sketchContext.setPortCount;
 					var loadML5 = sketchContext.loadML5;
-					var recv = receive = listen = onMessage; // alias for onMessage
+					var recv = onMessage; // alias for onMessage
 				}
 				
 				${config.code}

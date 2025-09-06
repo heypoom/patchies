@@ -221,7 +221,7 @@ export class HydraRenderer {
 				let time = performance.now()
 
 				with (context) {
-					var recv = receive = listen = onMessage; // alias for onMessage
+					var recv = onMessage; // alias for onMessage
 
 					${processCode(this.config.code)}
 				}

@@ -286,7 +286,7 @@ export class FBORenderer {
 
 			const funcBody = `
 				with (arguments[0]) {
-					var recv = receive = listen = onMessage; // alias for onMessage
+					var recv = onMessage; // alias for onMessage
 
 					${node.data.code}
 				}
