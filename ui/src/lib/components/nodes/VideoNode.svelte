@@ -219,9 +219,6 @@
 			if (isPaused) {
 				videoElement.play();
 				isPaused = false;
-			} else {
-				// If video was already playing, pause audio since bang auto-plays it
-				audioSystem.send(nodeId, 'message', { type: 'pause' });
 			}
 		}
 	}
