@@ -77,7 +77,7 @@ export class FBORenderer {
 		this.fallbackTexture = this.regl.texture({
 			width: 1,
 			height: 1,
-			data: new Uint8Array([0, 0, 0, 255])
+			data: new Uint8Array([0, 0, 0, 0])
 		});
 	}
 
@@ -202,7 +202,7 @@ export class FBORenderer {
 						.with('int', () => 0)
 						.with('vec2', () => [0, 0])
 						.with('vec3', () => [0, 0, 0])
-						.with('vec4', () => [0, 0, 0, 1])
+						.with('vec4', () => [0, 0, 0, 0])
 						.with('sampler2D', () => null)
 						.otherwise(() => null);
 
