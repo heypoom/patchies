@@ -125,20 +125,20 @@
 
 <ObjectPreviewLayout title="ai.img" onrun={generateImage}>
 	{#snippet topHandle()}
-		<Handle
-			type="target"
-			position={Position.Top}
-			id="msg-in"
-			class="z-1 !absolute"
-			style={`left: ${getPortPosition(2, 0)}`}
-		/>
-
 		<VideoHandle
 			type="target"
 			position={Position.Top}
 			id="video-in"
 			class="z-1 !absolute"
 			title="Image input (Optional)"
+			style={`left: ${getPortPosition(2, 0)}`}
+		/>
+
+		<Handle
+			type="target"
+			position={Position.Top}
+			id="msg-in"
+			class="z-1 !absolute"
 			style={`left: ${getPortPosition(2, 1)}`}
 		/>
 	{/snippet}
