@@ -9,6 +9,7 @@
 		useNodesData
 	} from '@xyflow/svelte';
 	import { match } from 'ts-pattern';
+	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
 
 	let {
 		id,
@@ -45,7 +46,13 @@
 			.with('message', () => 'opacity-30')
 			.otherwise(() => 'opacity-60');
 
-		return [baseClass, !selected && deselectedClass, selected ? '!stroke-1' : '!stroke-[0.7px]'];
+		const strokeStyle = match([selected, $isBackgroundOutputCanvasEnabled])
+			.with([true, true], () => '!stroke-[2.5px] opacity-100')
+			.with([false, true], () => '!stroke-[2px] opacity-80')
+			.with([true, false], () => '!stroke-[1.5px]')
+			.otherwise(() => '!stroke-[0.7px]');
+
+		return [baseClass, !selected && deselectedClass, strokeStyle];
 	});
 
 	const nodesData = useNodesData([source, target]);
