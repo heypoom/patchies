@@ -367,15 +367,42 @@
 				<div
 					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}
 				>
-					<video
-						bind:this={videoElement}
-						class="rounded-lg object-cover {hasFile && isLoaded ? '' : 'hidden'}"
-						style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
-							defaultPreviewHeight}px"
-						muted
-						loop={data.loop ?? true}
-					></video>
-					{#if !hasFile || !isLoaded}
+					{#if !errorMessage}
+						<video
+							bind:this={videoElement}
+							class="rounded-lg object-cover {hasFile && isLoaded ? '' : 'hidden'}"
+							style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
+								defaultPreviewHeight}px"
+							muted
+							loop={data.loop ?? true}
+						></video>
+					{/if}
+
+					{#if (hasFile && !isLoaded) || errorMessage}
+						<div
+							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
+							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
+							style="width: {defaultPreviewWidth}px; height: {defaultPreviewHeight}px"
+						>
+							<Icon
+								icon={errorMessage ? 'lucide:octagon-x' : 'lucide:loader'}
+								class={[
+									'h-8 w-8 text-zinc-400',
+									!errorMessage ? 'animate-spin' : 'text-red-400'
+								].join(' ')}
+							/>
+
+							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
+								{#if errorMessage}
+									<div class="text-xs text-red-400">{errorMessage}</div>
+								{:else}
+									<div>loading video file...</div>
+								{/if}
+							</div>
+						</div>
+					{/if}
+
+					{#if !hasFile}
 						<div
 							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
