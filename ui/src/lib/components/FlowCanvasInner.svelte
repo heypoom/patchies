@@ -231,6 +231,11 @@
 			return 'img';
 		}
 
+		// Video files -> video node
+		if (mimeType.startsWith('video/')) {
+			return 'video';
+		}
+
 		// Text files -> markdown node
 		if (mimeType.startsWith('text/')) {
 			return 'markdown';
@@ -274,6 +279,13 @@
 			.with('soundfile~', () =>
 				Promise.resolve({
 					...getDefaultNodeData('soundfile~'),
+					file,
+					fileName: file.name
+				})
+			)
+			.with('video', () =>
+				Promise.resolve({
+					...getDefaultNodeData('video'),
 					file,
 					fileName: file.name
 				})

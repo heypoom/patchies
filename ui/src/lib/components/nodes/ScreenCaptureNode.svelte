@@ -5,6 +5,8 @@
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
 
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
 
@@ -14,6 +16,12 @@
 	let isCapturing = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let bitmapFrameId: number;
+
+	const handleMessage: MessageCallbackFn = (message) => {
+		match(message)
+			.with({ type: 'bang' }, () => startCapture())
+			.otherwise(() => {});
+	};
 
 	async function startCapture() {
 		try {
@@ -67,12 +75,14 @@
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
+		messageContext.queue.addCallback(handleMessage);
 		glSystem.upsertNode(nodeId, 'img', {});
 	});
 
 	onDestroy(() => {
 		stopCapture();
 		glSystem.removeNode(nodeId);
+		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 	});
 

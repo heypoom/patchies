@@ -29,6 +29,7 @@ import NetSendNode from '$lib/components/nodes/NetSendNode.svelte';
 import NetRecvNode from '$lib/components/nodes/NetRecvNode.svelte';
 import ScreenCaptureNode from '$lib/components/nodes/ScreenCaptureNode.svelte';
 import WebcamNode from '$lib/components/nodes/WebcamNode.svelte';
+import VideoNode from '$lib/components/nodes/VideoNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -61,7 +62,8 @@ export const nodeTypes = {
 	netsend: NetSendNode,
 	netrecv: NetRecvNode,
 	screen: ScreenCaptureNode,
-	webcam: WebcamNode
+	webcam: WebcamNode,
+	video: VideoNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
