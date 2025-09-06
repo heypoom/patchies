@@ -43,7 +43,11 @@
 	let isDragging = $state(false);
 	let fileInputRef: HTMLInputElement;
 
+	let resizerCanvas: OffscreenCanvas | null = null;
+	let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
+
 	const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
+	const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
 
 	const hasFile = $derived(!!data.file || !!data.url);
 
@@ -145,15 +149,11 @@
 			}
 
 			const objectUrl = URL.createObjectURL(file);
-			console.log('Created object URL:', objectUrl);
 
 			videoElement.onloadedmetadata = () => {
-				console.log('Video metadata loaded');
 				if (videoElement) {
 					const videoWidth = videoElement.videoWidth;
 					const videoHeight = videoElement.videoHeight;
-
-					console.log('Video dimensions:', videoWidth, 'x', videoHeight);
 
 					// Scale down for preview while maintaining aspect ratio
 					const aspectRatio = videoWidth / videoHeight;
@@ -182,10 +182,8 @@
 					isPaused = true;
 					errorMessage = null;
 
-					// Send the file to the audio system
 					audioSystem.send(nodeId, 'file', file);
 
-					// Start upload loop
 					bitmapFrameId = requestAnimationFrame(uploadBitmap);
 				}
 			};
@@ -238,14 +236,45 @@
 	}
 
 	async function uploadBitmap() {
-		if (videoElement && isLoaded && !isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
-			try {
-				// Check if video element is in a valid state
-				if (videoElement.readyState >= 2 && !videoElement.ended && !videoElement.error) {
-					await glSystem.setBitmapSource(nodeId, videoElement);
+		const videoReady =
+			videoElement && videoElement.readyState >= 2 && !videoElement.ended && !videoElement.error;
+
+		if (
+			videoElement &&
+			videoReady &&
+			isLoaded &&
+			!isPaused &&
+			glSystem.hasOutgoingVideoConnections(nodeId)
+		) {
+			const videoWidth = videoElement.videoWidth;
+			const videoHeight = videoElement.videoHeight;
+
+			// Check if we need to resize (if video is larger than our max dimensions)
+			if (videoWidth > MAX_UPLOAD_WIDTH || videoHeight > MAX_UPLOAD_HEIGHT) {
+				// Calculate scale to fit within max dimensions while preserving aspect ratio
+				const scale = Math.min(MAX_UPLOAD_WIDTH / videoWidth, MAX_UPLOAD_HEIGHT / videoHeight);
+				const scaledWidth = Math.round(videoWidth * scale);
+				const scaledHeight = Math.round(videoHeight * scale);
+
+				// Create or resize offscreen canvas if needed
+				if (
+					!resizerCanvas ||
+					resizerCanvas.width !== scaledWidth ||
+					resizerCanvas.height !== scaledHeight
+				) {
+					resizerCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
+					resizerCtx = resizerCanvas.getContext('2d');
 				}
-			} catch (error) {
-				console.warn('Failed to upload video bitmap:', error);
+
+				if (resizerCtx) {
+					resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
+
+					const bitmap = await createImageBitmap(resizerCanvas);
+					await glSystem.setBitmap(nodeId, bitmap);
+				}
+			} else {
+				// Video is already small enough, upload directly
+				await glSystem.setBitmapSource(nodeId, videoElement);
 			}
 		}
 
