@@ -365,7 +365,7 @@
 				<Handle type="target" position={Position.Top} class={handleCommonClass} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}
+					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-transparent'}`}
 				>
 					{#if !errorMessage}
 						<video
