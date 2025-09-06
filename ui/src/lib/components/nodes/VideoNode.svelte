@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import VideoHandle from '$lib/components/VideoHandle.svelte';
@@ -254,6 +254,14 @@
 </script>
 
 <div class="relative">
+	<NodeResizer class="z-1" isVisible={selected} keepAspectRatio />
+
+	{#if selected}
+		<div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900/60 px-2 py-1 backdrop-blur-lg">
+			<div class="font-mono text-xs font-medium text-zinc-400">video</div>
+		</div>
+	{/if}
+
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
