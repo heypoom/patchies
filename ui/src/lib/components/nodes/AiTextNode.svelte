@@ -135,8 +135,19 @@
 						</button>
 					</div>
 				{:else}
-					<div class="flex h-full min-h-[100px] items-center justify-center py-2 text-zinc-400">
-						<span class="font-mono text-xs">set a prompt to continue</span>
+					<div
+						class="flex h-full min-h-[100px] items-center justify-center py-2 text-zinc-400"
+						ondblclick={generateText}
+						role="button"
+						tabindex="0"
+					>
+						{#if data.prompt}
+							<span class="font-mono text-xs"
+								><span class="text-zinc-300">double click</span> to run</span
+							>
+						{:else}
+							<span class="font-mono text-xs">set a prompt to continue</span>
+						{/if}
 					</div>
 				{/if}
 			</div>
