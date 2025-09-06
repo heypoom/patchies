@@ -35,21 +35,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = texture(iChannel0, fragCoord / iResolution.xy);
 }`;
 
-const OVERLAY_GL = `uniform sampler2D iChannel0;
-uniform sampler2D iChannel1;
+const OVERLAY_GL = `uniform sampler2D backdrop;
+uniform sampler2D overlay;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
-  vec4 t = texture(iChannel0, uv);
-  vec4 u = texture(iChannel1, uv);
+  vec4 o = texture(overlay, uv);
 
   fragColor = mix(
-    t,
-    u,
-    u.a
+    texture(backdrop, uv),
+    o,
+    o.a
   );
-}
-`;
+}`;
 
 const AUDIO_FFT_FREQ_GL = `uniform sampler2D freqTexture;
 
