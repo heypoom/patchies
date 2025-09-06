@@ -135,6 +135,6 @@ export const P5_PRESETS: Record<string, { type: string; data: { code: string } }
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
 	'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } },
-	'audio-fft-capped.p5': { type: 'p5', data: { code: AUDIO_FFT_CAPPED_P5.trim() } },
-	'audio-fft-full.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } }
+	'fft-capped.p5': { type: 'p5', data: { code: AUDIO_FFT_CAPPED_P5.trim() } },
+	'fft-full.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } }
 };

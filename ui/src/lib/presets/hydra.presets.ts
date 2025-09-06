@@ -14,6 +14,33 @@ const BEANS = `osc(30,0.01,1)
   .mult(osc(20,-0.1,1).modulate(noise(3,1)).rotate(0.7))
   .out(o0)`;
 
+const HYDRA_FFT = `const a = () => {
+  let f = fft()
+  let avg = f.reduce((a, b) => a + b, 0) / f.length
+  
+  return avg / 255 
+}
+
+osc(40, 0.09, 0.9)
+.color(.9,0,5)
+.modulate(osc(10).rotate(1, 0.5))
+.rotate(1, 0.2)
+.out(o1)
+
+shape(({time})=>Math.sin(time)+1*3, .5,.01)
+.repeat(5,3, ()=> a()*2, ()=> a()*2)
+.scrollY(.5,0.1)
+.layer(
+  src(o1)
+  .mask(o0)
+  .luma(.01, .1)
+  .invert(.2)
+)
+.modulate(o1,.02)
+.out(o0)
+
+render(o0)`;
+
 type HydraNodeData = {
 	code: string;
 	messageInletCount?: number;
@@ -56,5 +83,15 @@ export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }
 	'beans.hydra': {
 		type: 'hydra',
 		data: { ...defaultsOneVideoIn, code: BEANS.trim(), videoInletCount: 0 }
+	},
+	'fft.hydra': {
+		type: 'hydra',
+		data: {
+			code: HYDRA_FFT.trim(),
+			messageInletCount: 1,
+			messageOutletCount: 0,
+			videoInletCount: 0,
+			videoOutletCount: 1
+		}
 	}
 };

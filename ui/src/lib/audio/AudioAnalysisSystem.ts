@@ -281,7 +281,7 @@ export class AudioAnalysisSystem {
 				const [type, format] = formatKey.split('-') as [AudioAnalysisType, AudioAnalysisFormat];
 
 				const array = this.getAnalysisForNode(targetId, { type, format });
-				if (array === null) continue;
+				if (array === null || array.length === 0) continue;
 
 				this.onFFTDataReady({ nodeId: targetId, analysisType: type, format, array, inlets });
 			}
