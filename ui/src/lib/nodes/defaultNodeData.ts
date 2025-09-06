@@ -64,5 +64,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('expr', () => ({ expr: '' }))
 		.with('expr~', () => ({ expr: 's' }))
 		.with('chuck', () => ({ expr: DEFAULT_CHUCK_CODE }))
+		.with('webcam', () => ({ width: 640, height: 480 }))
 		.otherwise(() => ({}));
 }

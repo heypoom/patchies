@@ -38,10 +38,14 @@
 		const baseClass = match(type)
 			.with('audio', () => '!stroke-blue-500')
 			.with('video', () => '!stroke-orange-500')
-			.with('message', () => '!stroke-zinc-400')
+			.with('message', () => '!stroke-zinc-300')
 			.exhaustive();
 
-		return [baseClass, !selected && 'opacity-60'];
+		const deselectedClass = match(type)
+			.with('message', () => 'opacity-30')
+			.otherwise(() => 'opacity-60');
+
+		return [baseClass, !selected && deselectedClass];
 	});
 
 	const nodesData = useNodesData([source, target]);

@@ -105,7 +105,9 @@
 		send(msgText);
 	}
 
-	const borderColor = $derived(selected ? 'border-zinc-400' : 'border-zinc-600');
+	const containerClass = $derived(
+		selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-600 bg-zinc-900'
+	);
 </script>
 
 <div class="relative">
@@ -131,8 +133,8 @@
 					{#if showTextInput}
 						<div
 							class={[
-								'nodrag w-full min-w-[40px] max-w-[200px] resize-none rounded-lg border bg-zinc-900 font-mono text-zinc-200',
-								borderColor
+								'nodrag w-full min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
+								containerClass
 							]}
 						>
 							<CodeEditor
@@ -147,8 +149,8 @@
 						<button
 							onclick={sendMessage}
 							class={[
-								'send-message-button max-w-[200px] rounded-lg border bg-zinc-900 px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
-								borderColor
+								'send-message-button rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+								containerClass
 							]}
 						>
 							{#if msgText && isJsonObject}
