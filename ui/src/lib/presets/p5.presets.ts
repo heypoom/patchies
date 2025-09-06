@@ -1,3 +1,9 @@
+import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+
+const defaultWidth = Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR);
+
+const defaultHeight = Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR);
+
 const SLIDER_P5 = `const [MIN, MAX] = [0, 100]
 const [W, H, XO] = [200, 50, 10]
 let slider
@@ -65,8 +71,8 @@ function draw() {
 }`;
 
 const AUDIO_FFT_CAPPED_P5 = `function setup() {
-  createCanvas(200, 150)
-  pixelDensity(4)
+  createCanvas(${defaultWidth}, ${defaultHeight})
+  pixelDensity(${PREVIEW_SCALE_FACTOR})
   strokeWeight(3)
 }
 
@@ -98,8 +104,8 @@ function draw() {
 }`;
 
 const AUDIO_FFT_FULL_P5 = `function setup() {
-  createCanvas(200, 150)
-  pixelDensity(4)
+  createCanvas(${defaultWidth}, ${defaultHeight})
+  pixelDensity(${PREVIEW_SCALE_FACTOR})
 }
 
 function draw() {
@@ -132,8 +138,8 @@ function draw() {
 }`;
 
 const AUDIO_FFT_RMS_P5 = `function setup() {
-  createCanvas(200, 150)
-  pixelDensity(4)
+  createCanvas(${defaultWidth}, ${defaultHeight})
+  pixelDensity(${PREVIEW_SCALE_FACTOR})
   strokeWeight(3)
 }
 
@@ -147,7 +153,7 @@ function draw() {
   textFont('monospace')
   text(\`rms \${rms.toFixed(4)}\`, 20, 35)
 
-  rect(10, 140-(rms*150), 180, (rms*150))
+  rect(10, 152-(rms*150), 232, (rms*150))
 }`;
 
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
