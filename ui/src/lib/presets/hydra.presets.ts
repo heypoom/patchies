@@ -10,6 +10,12 @@ src(s0).diff(s1).out(o0)`;
 const MASK = `setVideoCount(2)
 src(s0).mask(s1, 0.5).out(o0)`;
 
+const ADD = `setVideoCount(2)
+src(s0).add(s1).out(o0)`;
+
+const SUB = `setVideoCount(2)
+src(s0).sub(s1).out(o0)`;
+
 const BEANS = `osc(30,0.01,1)
   .mult(osc(20,-0.1,1).modulate(noise(3,1)).rotate(0.7))
   .out(o0)`;
@@ -66,6 +72,14 @@ export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }
 	'diff.hydra': {
 		type: 'hydra',
 		data: { ...defaultsTwoVideoIn, code: DIFF.trim() }
+	},
+	'add.hydra': {
+		type: 'hydra',
+		data: { ...defaultsTwoVideoIn, code: ADD.trim() }
+	},
+	'sub.hydra': {
+		type: 'hydra',
+		data: { ...defaultsTwoVideoIn, code: SUB.trim() }
 	},
 	'blend.hydra': {
 		type: 'hydra',
