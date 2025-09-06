@@ -88,6 +88,11 @@
 			id: 'open-output-screen',
 			name: 'Open Output Screen',
 			description: 'Open a secondary output screen for live performances.'
+		},
+		{
+			id: 'enter-fullscreen',
+			name: 'Enter fullscreen',
+			description: 'Enter fullscreen mode in the main window.'
 		}
 	];
 
@@ -237,6 +242,10 @@
 			.with('open-output-screen', () => {
 				isBackgroundOutputCanvasEnabled.set(false);
 				ipcSystem.openOutputWindow();
+				onCancel();
+			})
+			.with('enter-fullscreen', () => {
+				document.querySelector('html')?.requestFullscreen();
 				onCancel();
 			})
 			.otherwise(() => {
