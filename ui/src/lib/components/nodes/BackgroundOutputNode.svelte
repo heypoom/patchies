@@ -39,7 +39,7 @@
 				<VideoHandle
 					type="target"
 					position={Position.Top}
-					id="video-out"
+					id="video-out-0"
 					title="Video output"
 					class="z-1"
 				/>

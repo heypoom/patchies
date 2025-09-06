@@ -222,7 +222,7 @@
 
 							<button
 								title="Change image"
-								class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="absolute -right-2 -top-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={openFileDialog}
 							>
 								<Icon icon="lucide:upload" class="h-3 w-3 text-zinc-300" />
@@ -230,7 +230,7 @@
 						</div>
 					{:else}
 						<div
-							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
+							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
 								defaultPreviewHeight}px"
@@ -256,7 +256,7 @@
 				<VideoHandle
 					type="source"
 					position={Position.Bottom}
-					id="video-out"
+					id="video-out-0"
 					title="Video output"
 					class={handleCommonClass}
 				/>

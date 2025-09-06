@@ -87,7 +87,7 @@
 		<VideoHandle
 			type="target"
 			position={Position.Top}
-			id="video-in"
+			id="video-in-0"
 			class="!left-8"
 			title="Video input"
 		/>
@@ -98,7 +98,7 @@
 		<VideoHandle
 			type="source"
 			position={Position.Bottom}
-			id="video-out"
+			id="video-out-0"
 			class="!left-8"
 			title="Video output"
 		/>

@@ -130,7 +130,7 @@
 					{#if isCapturing}
 						<button
 							title={isPaused ? 'Resume webcam' : 'Pause webcam'}
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 							onclick={togglePause}
 						>
 							<Icon
@@ -148,7 +148,7 @@
 					{:else}
 						<button
 							title="Start webcam"
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 							onclick={startCapture}
 						>
 							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
@@ -161,7 +161,7 @@
 				<Handle type="target" position={Position.Top} class={handleCommonClass} />
 
 				<div
-					class={`rounded-lg border-1 ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}
+					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}
 				>
 					<video
 						bind:this={videoElement}
@@ -186,7 +186,7 @@
 				<VideoHandle
 					type="source"
 					position={Position.Bottom}
-					id="video-out"
+					id="video-out-0"
 					title="Video output"
 					class={handleCommonClass}
 				/>

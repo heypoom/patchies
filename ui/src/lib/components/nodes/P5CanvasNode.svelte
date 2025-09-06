@@ -127,7 +127,7 @@
 		<VideoHandle
 			type="source"
 			position={Position.Bottom}
-			id="video-out"
+			id="video-out-0"
 			style={`left: ${getPortPosition(outletCount + 1, 0)}`}
 			title="Video output"
 			class="z-1"

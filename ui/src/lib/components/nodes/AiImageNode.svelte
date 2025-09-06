@@ -139,7 +139,7 @@
 		<VideoHandle
 			type="target"
 			position={Position.Top}
-			id="video-in"
+			id="video-in-0"
 			class="z-1 !absolute"
 			title="Image input (Optional)"
 			style={`left: ${getPortPosition(2, 0)}`}
@@ -181,7 +181,7 @@
 		<VideoHandle
 			type="source"
 			position={Position.Bottom}
-			id="video-out"
+			id="video-out-0"
 			title="Video output"
 			class="z-1 !absolute"
 			style={`left: ${getPortPosition(2, 0)}`}

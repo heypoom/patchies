@@ -156,11 +156,50 @@ function draw() {
   rect(10, 152-(rms*150), 232, (rms*150))
 }`;
 
+const BOUNCING_BALLS_P5 = `let x;
+let y;
+let vx;
+let vy;
+
+let size = 40;
+
+function setup() {
+  createCanvas(${defaultWidth}, ${defaultHeight})
+  pixelDensity(${PREVIEW_SCALE_FACTOR})
+  noStroke()
+
+  x = width / 2;
+  y = height / 2;
+  vx = random(2, 4) * (random() > 0.5 ? 1 : -1);
+  vy = random(2, 4) * (random() > 0.5 ? 1 : -1);
+}
+
+function draw() {
+  clear();
+  fill(255, 255, 255);
+
+  x += vx;
+  y += vy;
+
+  // horizontal wall collisions
+  if (x < size / 2 || x > width - size / 2) {
+    vx *= -1;
+  }
+
+  // vertical wall collisions
+  if (y < size / 2 || y > height - size / 2) {
+    vy *= -1;
+  }
+
+  ellipse(x, y, size, size);
+}`;
+
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
 	'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } },
 	'fft-capped.p5': { type: 'p5', data: { code: AUDIO_FFT_CAPPED_P5.trim() } },
 	'fft-full.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } },
-	'rms.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_P5.trim() } }
+	'rms.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_P5.trim() } },
+	'bouncing-balls.p5': { type: 'p5', data: { code: BOUNCING_BALLS_P5.trim() } }
 };

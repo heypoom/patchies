@@ -335,7 +335,7 @@
 					{#if isLoaded}
 						<button
 							title={isPaused ? 'Play video' : 'Pause video'}
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 							onclick={togglePause}
 						>
 							<Icon
@@ -345,14 +345,14 @@
 						</button>
 						<button
 							title="Restart video"
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 							onclick={restartVideo}
 						>
 							<Icon icon="lucide:skip-back" class="h-4 w-4 text-zinc-300" />
 						</button>
 						<button
 							title="Change video"
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 							onclick={openFileDialog}
 						>
 							<Icon icon="lucide:upload" class="h-4 w-4 text-zinc-300" />
@@ -365,7 +365,7 @@
 				<Handle type="target" position={Position.Top} class={handleCommonClass} />
 
 				<div
-					class={`rounded-lg border-1 ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-transparent'}`}
+					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-transparent'}`}
 				>
 					{#if !errorMessage}
 						<video
@@ -380,7 +380,7 @@
 
 					{#if (hasFile && !isLoaded) || errorMessage}
 						<div
-							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
+							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {defaultPreviewWidth}px; height: {defaultPreviewHeight}px"
 						>
@@ -404,7 +404,7 @@
 
 					{#if !hasFile}
 						<div
-							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
+							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {defaultPreviewWidth}px; height: {defaultPreviewHeight}px"
 							ondragover={handleDragOver}
@@ -431,16 +431,16 @@
 				<VideoHandle
 					type="source"
 					position={Position.Bottom}
-					id="video-out"
+					id="video-out-0"
 					title="Video output"
-					class="absolute z-1 {selected ? '' : 'opacity-40'}"
+					class="z-1 absolute {selected ? '' : 'opacity-40'}"
 					style={`left: ${getPortPosition(2, 0)}`}
 				/>
 
 				<Handle
 					type="source"
 					position={Position.Bottom}
-					class="absolute z-1 !bg-blue-500 {selected ? '' : 'opacity-40'}"
+					class="z-1 absolute !bg-blue-500 {selected ? '' : 'opacity-40'}"
 					id="audio-out"
 					title="Audio output"
 					style={`left: ${getPortPosition(2, 1)}`}

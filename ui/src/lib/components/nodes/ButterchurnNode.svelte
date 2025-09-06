@@ -123,7 +123,7 @@
 		<VideoHandle
 			type="source"
 			position={Position.Bottom}
-			id="video-out"
+			id="video-out-0"
 			class="z-1"
 			title="Video output"
 		/>
