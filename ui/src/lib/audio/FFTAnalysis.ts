@@ -66,6 +66,12 @@ export class FFTAnalysis {
 		return weightedSum / totalMagnitude;
 	}
 
+	get rms(): number {
+		const sumSquares = this.f.reduce((sum, magnitude) => sum + magnitude * magnitude, 0);
+
+		return Math.sqrt(sumSquares / this.bins.length);
+	}
+
 	getEnergy(frequency1: number | FrequencyRangeKey = 0, frequency2?: number): number {
 		const nyquist = this.sampleRate / 2;
 		const freqDomain = this.a;
