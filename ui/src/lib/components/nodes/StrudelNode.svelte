@@ -109,7 +109,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 								onclick={stop}
 								title="Stop"
 							>
@@ -117,7 +117,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 								onclick={evaluate}
 								title="Play"
 							>
@@ -133,7 +133,7 @@
 					type="target"
 					position={Position.Top}
 					id={`strudel-in-${nodeId}`}
-					class="nodrag z-1 !-top-2"
+					class="nodrag !-top-2 z-1"
 				/>
 
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
@@ -156,7 +156,7 @@
 					type="source"
 					position={Position.Bottom}
 					id="audio-out"
-					class="z-1 absolute !-bottom-2 !bg-blue-500"
+					class="absolute !-bottom-2 z-1 !bg-blue-500"
 					style={`left: ${getPortPosition(2, 0)}`}
 				/>
 
@@ -164,7 +164,7 @@
 					type="source"
 					position={Position.Bottom}
 					id="message-out"
-					class="z-1 absolute !-bottom-2"
+					class="absolute !-bottom-2 z-1"
 					style={`left: ${getPortPosition(2, 1)}`}
 				/>
 

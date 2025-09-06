@@ -5,35 +5,51 @@ import type { ContentListUnion } from '@google/genai';
 export async function generateImageWithGemini(
 	prompt: string,
 	{
-		aspectRatio,
 		apiKey,
-		abortSignal
-	}: { aspectRatio: string; apiKey: string; abortSignal?: AbortSignal }
+		abortSignal,
+		inputImageNodeId
+	}: {
+		apiKey: string;
+		abortSignal?: AbortSignal;
+		inputImageNodeId?: string;
+	}
 ): Promise<ImageBitmap | null> {
-	const { GoogleGenAI, PersonGeneration } = await import('@google/genai');
+	const { GoogleGenAI } = await import('@google/genai');
 	const ai = new GoogleGenAI({ apiKey });
 
-	const response = await ai.models.generateImages({
-		model: 'imagen-4.0-generate-preview-06-06',
-		prompt,
-		config: {
-			numberOfImages: 1,
-			aspectRatio,
-			abortSignal,
-			personGeneration: PersonGeneration.ALLOW_ALL
+	const contents: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
+
+	// Add input image if provided (for image-to-image generation)
+	if (inputImageNodeId) {
+		const bitmap = await capturePreviewFrame(inputImageNodeId);
+
+		if (bitmap) {
+			const base64Image = bitmapToBase64Image({ bitmap, format: 'image/jpeg', quality: 0.98 });
+
+			contents.push({
+				inlineData: {
+					mimeType: 'image/jpeg',
+					data: base64Image
+				}
+			});
 		}
+	}
+
+	// Add text prompt
+	contents.push({ text: prompt });
+
+	const response = await ai.models.generateContent({
+		model: 'gemini-2.5-flash-image-preview',
+		contents,
+		config: { abortSignal }
 	});
 
-	for (const out of response.generatedImages ?? []) {
-		const base64Image = out.image?.imageBytes;
-
-		if (!base64Image) {
-			continue;
+	for (const part of response.candidates?.[0]?.content?.parts ?? []) {
+		if (part.inlineData && part.inlineData.data) {
+			const base64Image = part.inlineData.data;
+			const blob = base64ToBlob(base64Image, 'image/png');
+			return createImageBitmap(blob);
 		}
-
-		const blob = base64ToBlob(base64Image, 'image/png');
-
-		return createImageBitmap(blob);
 	}
 
 	return null;
@@ -67,7 +83,7 @@ export function createLLMFunction() {
 			const bitmap = await capturePreviewFrame(context.imageNodeId);
 
 			if (bitmap) {
-				const base64Image = await bitmapToBase64Image({ bitmap, format, quality: 0.7 });
+				const base64Image = bitmapToBase64Image({ bitmap, format, quality: 0.7 });
 				console.log('[llm] base64 input image size:', base64Image.length);
 
 				contents.push({ inlineData: { mimeType: format, data: base64Image } });

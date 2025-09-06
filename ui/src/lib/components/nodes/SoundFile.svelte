@@ -167,7 +167,7 @@
 					<div class="flex gap-1">
 						<button
 							title="Play"
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 							onclick={playFile}
 						>
 							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
@@ -175,7 +175,7 @@
 
 						<button
 							title="Stop"
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 							onclick={stopFile}
 						>
 							<Icon icon="lucide:square" class="h-4 w-4 text-zinc-300" />
@@ -189,7 +189,7 @@
 
 				<div
 					class={[
-						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg',
+						'flex flex-col items-center justify-center gap-3 rounded-lg border-1',
 						containerClass
 					]}
 					ondragover={handleDragOver}

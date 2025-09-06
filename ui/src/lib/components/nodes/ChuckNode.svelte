@@ -123,7 +123,7 @@
 	<Handle
 		type="target"
 		position={Position.Top}
-		class="z-1 top-0"
+		class="top-0 z-1"
 		style="left: 50%"
 		title="Control Input (code, bang, stop)"
 		id="inlet-0"
@@ -179,7 +179,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -243,7 +243,7 @@
 											</div>
 										</div>
 
-										<div class="absolute right-0 top-0">
+										<div class="absolute top-0 right-0">
 											<button
 												onclick={() => removeShred(shred.id)}
 												class="ml-2 rounded p-1 hover:bg-zinc-700"

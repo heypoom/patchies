@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { Handle, Position, useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -11,12 +11,14 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
 	import { match, P } from 'ts-pattern';
+	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
 
 	const { updateNodeData } = useSvelteFlow();
 
 	const messageContext = new MessageContext(nodeId);
+	const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });
 
 	let canvasElement: HTMLCanvasElement;
 	let glSystem = GLSystem.getInstance();
@@ -79,10 +81,14 @@
 
 			abortController = new AbortController();
 
+			const imageNodeId = targetConnections.current.find((conn) =>
+				conn.targetHandle?.startsWith('video-in')
+			)?.source;
+
 			const image = await generateImageWithGemini(prompt, {
 				apiKey,
-				aspectRatio: '4:3',
-				abortSignal: abortController.signal
+				abortSignal: abortController.signal,
+				inputImageNodeId: imageNodeId
 			});
 
 			if (!image) {
@@ -119,7 +125,22 @@
 
 <ObjectPreviewLayout title="ai.img" onrun={generateImage}>
 	{#snippet topHandle()}
-		<Handle type="target" position={Position.Top} class="z-1" />
+		<Handle
+			type="target"
+			position={Position.Top}
+			id="msg-in"
+			class="!absolute z-1"
+			style={`left: ${getPortPosition(2, 0)}`}
+		/>
+
+		<VideoHandle
+			type="target"
+			position={Position.Top}
+			id="video-in"
+			class="!absolute z-1"
+			title="Image input (Optional)"
+			style={`left: ${getPortPosition(2, 1)}`}
+		/>
 	{/snippet}
 
 	{#snippet preview()}

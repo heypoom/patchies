@@ -123,7 +123,7 @@
 					<!-- Record Button -->
 					<button
 						title={isRecording ? 'Stop Recording' : 'Start Recording'}
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 {isRecording
+						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 {isRecording
 							? '!opacity-100'
 							: ''}"
 						onclick={toggleRecording}
@@ -138,7 +138,7 @@
 					{#if hasRecording && !isRecording}
 						<button
 							title="Play Recording"
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 							onclick={playRecording}
 						>
 							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
@@ -169,7 +169,7 @@
 
 				<div
 					class={[
-						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg',
+						'flex flex-col items-center justify-center gap-3 rounded-lg border-1',
 						node.selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'
 					]}
 				>

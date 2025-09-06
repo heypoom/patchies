@@ -252,7 +252,7 @@
 		</div>
 
 		<div class="relative">
-			<Handle type="target" position={Position.Top} class="z-1 absolute" />
+			<Handle type="target" position={Position.Top} class="absolute z-1" />
 
 			<div>
 				<!-- Main Text Input -->
@@ -274,7 +274,7 @@
 
 				<!-- Advanced Settings Section -->
 				{#if showAdvancedSettings}
-					<div class="space-y-3 pb-6 pt-3">
+					<div class="space-y-3 pt-3 pb-6">
 						<!-- RVC Model Selection -->
 						<div class="nodrag">
 							<label class="mb-1 block text-[10px] font-medium text-zinc-400">models</label>
@@ -440,7 +440,7 @@
 			<Handle
 				type="source"
 				position={Position.Bottom}
-				class="z-1 absolute !bottom-[2px] !bg-blue-500"
+				class="absolute !bottom-[2px] z-1 !bg-blue-500"
 				id="audio-out"
 			/>
 		</div>

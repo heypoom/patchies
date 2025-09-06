@@ -145,7 +145,7 @@
 					{:else}
 						<button
 							title="Start screen capture"
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 							onclick={startCapture}
 						>
 							<Icon icon="lucide:monitor" class="h-4 w-4 text-zinc-300" />
@@ -158,7 +158,7 @@
 				<Handle type="target" position={Position.Top} class={handleCommonClass} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}
+					class={`rounded-lg border-1 ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}
 				>
 					<video
 						bind:this={videoElement}

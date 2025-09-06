@@ -88,7 +88,7 @@
 				<div></div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
 					onclick={() => (showChannelInput = !showChannelInput)}
 					title="Edit Channel"
 				>
@@ -106,7 +106,7 @@
 					{#if showChannelInput}
 						<input
 							class={[
-								'nodrag w-full min-w-[80px] rounded-lg border bg-zinc-900 px-3 py-2 text-center text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-green-500',
+								'nodrag w-full min-w-[80px] rounded-lg border bg-zinc-900 px-3 py-2 text-center text-sm text-zinc-200 focus:ring-1 focus:ring-green-500 focus:outline-none',
 								borderColor
 							].join(' ')}
 							type="text"
