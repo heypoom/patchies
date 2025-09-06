@@ -213,7 +213,7 @@ export class HydraRenderer {
 				fft: this.createFFTFunction(),
 
 				// setPortCount function for dynamic port management
-				setPortCount: (inletCount = 1, outletCount = 1) => {
+				setPortCount: (inletCount?: number, outletCount?: number) => {
 					this.setPortCount(inletCount, outletCount);
 				}
 			};
