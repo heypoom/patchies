@@ -5,9 +5,12 @@ const DELAY_JS = `onMessage(async (m) => {
   send(m)
 })`;
 
-const SEND_EVERY_FRAME_JS = `setInterval(() => {
-  send({type: 'bang'})
-}, 1000 / 60)`;
+const BANG_EVERY_FRAME_JS = `const h = () => {
+  send({ type: 'bang' })
+  requestAnimationFrame(h)
+}
+
+requestAnimationFrame(h)`;
 
 const MIDI_ADSR_GAIN_JS = `onMessage(m => {
   if (m.type === 'noteOn') {
@@ -24,10 +27,21 @@ const MIDI_ADSR_GAIN_JS = `onMessage(m => {
 
 const FRAME_COUNTER_JS = `let i = 0
 
+const h = () => {
+  i %= 255
+  i += 1
+  send(i)
+  requestAnimationFrame(h)
+}
+
+requestAnimationFrame(h)`;
+
+const INTERVAL_JS = `let i = 0
+
 setInterval(() => {
   send(i++)
   if (i > 100) i=0
-}, 1000 / 60)`;
+}, 1000)`;
 
 const MIDI_CONTROL_ROUTER_JS = `setPortCount(1, 3)
 recv(m => send(m.value, {to: m.control}))`;
@@ -66,13 +80,17 @@ export const JS_PRESETS: Record<
 		type: 'js',
 		data: { code: DELAY_JS.trim(), showConsole: false, runOnMount: true }
 	},
-	'send-every-frame.js': {
+	'bang-every-frame.js': {
 		type: 'js',
-		data: { code: SEND_EVERY_FRAME_JS, showConsole: false, runOnMount: true }
+		data: { code: BANG_EVERY_FRAME_JS, showConsole: false, runOnMount: true }
 	},
 	'frame-counter.js': {
 		type: 'js',
 		data: { code: FRAME_COUNTER_JS, showConsole: false, runOnMount: true }
+	},
+	'interval.js': {
+		type: 'js',
+		data: { code: INTERVAL_JS, showConsole: false, runOnMount: true }
 	},
 	'midi-adsr-gain.js': {
 		type: 'js',
