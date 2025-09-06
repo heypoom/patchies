@@ -7,6 +7,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import type { LiveMusicGenerationConfig, Scale } from '@google/genai';
+	import JSON5 from 'json5';
 
 	let { id: nodeId }: { id: string } = $props();
 
@@ -99,6 +100,25 @@
 				.with({ type: 'config', config: P.any }, ({ config }) => {
 					if (config) {
 						musicManager.updateConfig(config as LiveMusicGenerationConfig);
+					}
+				})
+				.with(P.string, (prompt) => {
+					try {
+						const parsed = JSON5.parse(prompt);
+
+						const isWeightedPrompts =
+							parsed &&
+							typeof parsed === 'object' &&
+							Object.values(parsed).every((v) => typeof v === 'number');
+
+						if (isWeightedPrompts) {
+							musicManager.setPrompts(parsed);
+							prompts = musicManager.getPrompts();
+						} else if (typeof parsed === 'string') {
+							addPrompt(parsed, 1);
+						}
+					} catch (error) {
+						addPrompt(prompt, 1);
 					}
 				});
 		} catch (error) {
