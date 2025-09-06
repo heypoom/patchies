@@ -92,8 +92,14 @@ export class HydraRenderer {
 				const param = params.userParams[paramIndex] as regl.Texture2D;
 				if (!param) return;
 
-				// Check if the param is a regl texture
-				if (param.name === 'reglTexture2D') {
+				// Check if the param is a valid regl texture - use property detection
+				// instead of name checking since names get mangled in production
+				if (
+					'width' in param &&
+					'height' in param &&
+					// @ts-expect-error -- internal regl property
+					param._reglType === 'texture2d'
+				) {
 					source.tex = param;
 				}
 
