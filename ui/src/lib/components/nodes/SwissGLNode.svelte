@@ -76,7 +76,7 @@
 
 	function updateSwissGL() {
 		try {
-			messageContext.clearIntervals();
+			messageContext.clearTimers();
 			glSystem.upsertNode(nodeId, 'swgl', { code });
 
 			errorMessage = null;

@@ -134,7 +134,7 @@
 
 	function updateHydra() {
 		try {
-			messageContext.clearIntervals();
+			messageContext.clearTimers();
 			audioAnalysisSystem.disableFFT(nodeId);
 
 			const isUpdated = glSystem.upsertNode(nodeId, 'hydra', { code });

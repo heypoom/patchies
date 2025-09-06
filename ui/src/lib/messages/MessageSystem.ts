@@ -55,6 +55,8 @@ export class MessageSystem {
 	private messageQueues = new Map<string, MessageQueue>();
 	private intervals = new Map<number, ReturnType<typeof setInterval>>();
 	private intervalCounter = 0;
+	private animationFrames = new Map<number, number>();
+	private animationFrameCounter = 0;
 	private deletedNodes = new Set<string>();
 
 	private edges: Edge[] = [];
@@ -179,6 +181,25 @@ export class MessageSystem {
 		if (timeout !== undefined) {
 			clearInterval(timeout);
 			this.intervals.delete(intervalId);
+		}
+	}
+
+	// Create an animation frame with automatic cleanup
+	createAnimationFrame(callback: () => void): number {
+		const animationFrameId = this.animationFrameCounter++;
+		const rafId = requestAnimationFrame(callback);
+		this.animationFrames.set(animationFrameId, rafId);
+
+		return animationFrameId;
+	}
+
+	// Clear an animation frame
+	clearAnimationFrame(animationFrameId: number) {
+		const rafId = this.animationFrames.get(animationFrameId);
+
+		if (rafId !== undefined) {
+			cancelAnimationFrame(rafId);
+			this.animationFrames.delete(animationFrameId);
 		}
 	}
 

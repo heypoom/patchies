@@ -37,8 +37,8 @@
 	let messageContext: MessageContext;
 	let isRunning = $state(false);
 	let isMessageCallbackActive = $state(false);
-	let isIntervalCallbackActive = $state(false);
-	let isLongRunningTaskActive = $derived(isMessageCallbackActive || isIntervalCallbackActive);
+	let isTimerCallbackActive = $state(false);
+	let isLongRunningTaskActive = $derived(isMessageCallbackActive || isTimerCallbackActive);
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 1);
 
@@ -89,7 +89,10 @@
 			isMessageCallbackActive = true;
 		};
 		messageContext.onIntervalCallbackRegistered = () => {
-			isIntervalCallbackActive = true;
+			isTimerCallbackActive = true;
+		};
+		messageContext.onAnimationFrameCallbackRegistered = () => {
+			isTimerCallbackActive = true;
 		};
 		messageContext.queue.addCallback(handleMessage);
 
@@ -106,9 +109,9 @@
 		messageContext.destroy();
 	});
 
-	function clearIntervals() {
-		messageContext.clearIntervals();
-		isIntervalCallbackActive = false;
+	function clearTimers() {
+		messageContext.clearTimers();
+		isTimerCallbackActive = false;
 	}
 
 	function clearMessageHandler() {
@@ -117,22 +120,22 @@
 	}
 
 	function stopLongRunningTasks() {
-		clearIntervals();
+		clearTimers();
 		clearMessageHandler();
 	}
 
 	async function executeCode() {
 		isRunning = true;
 		isMessageCallbackActive = false;
-		isIntervalCallbackActive = false;
+		isTimerCallbackActive = false;
 
 		// Clear previous output
 		consoleOutput = [];
 
-		// Don't recreate message context - just clear intervals to avoid duplicates
+		// Don't recreate message context - just clear timers to avoid duplicates
 		if (messageContext) {
-			// Clear only intervals, keep the message context alive for connections
-			messageContext.clearIntervals();
+			// Clear all timers, keep the message context alive for connections
+			messageContext.clearTimers();
 		}
 
 		// Create a custom console that captures output
@@ -176,6 +179,7 @@
 				'send',
 				'onMessage',
 				'setInterval',
+				'requestAnimationFrame',
 				'llm',
 				'setPortCount',
 				'setRunOnMount'
@@ -186,6 +190,7 @@
 				messageSystemContext.send,
 				messageSystemContext.onMessage,
 				messageSystemContext.setInterval,
+				messageSystemContext.requestAnimationFrame,
 				createLLMFunction(),
 				setPortCount,
 				setRunOnMount

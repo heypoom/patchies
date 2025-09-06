@@ -55,7 +55,7 @@
 
 		if (canvasManager && messageContext) {
 			try {
-				messageContext.clearIntervals();
+				messageContext.clearTimers();
 
 				canvasManager.updateSketch({
 					code: data.code,

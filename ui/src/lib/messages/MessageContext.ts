@@ -20,6 +20,9 @@ export interface UserFnRunContext {
 	/** Schedules setInterval with cleanup. */
 	setInterval: (callback: () => void, ms: number) => number;
 
+	/** Schedules requestAnimationFrame with cleanup. */
+	requestAnimationFrame: (callback: () => void) => number;
+
 	/** Disables dragging in canvas. */
 	noDrag: () => void;
 
@@ -38,10 +41,12 @@ export class MessageContext {
 
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
+	private animationFrames: number[] = [];
 
 	public onSend: UserFnRunContext['send'] = () => {};
 	public onMessageCallbackRegistered = () => {};
 	public onIntervalCallbackRegistered = () => {};
+	public onAnimationFrameCallbackRegistered = () => {};
 
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
@@ -83,6 +88,16 @@ export class MessageContext {
 		};
 	}
 
+	// Create the requestAnimationFrame function for this node
+	createRequestAnimationFrameFunction() {
+		return (callback: () => void) => {
+			const animationFrameId = this.messageSystem.createAnimationFrame(callback);
+			this.animationFrames.push(animationFrameId);
+			this.onAnimationFrameCallbackRegistered();
+			return animationFrameId;
+		};
+	}
+
 	// Create an fft function that automatically infers connected FFT nodes
 	createFFTFunction() {
 		return (options: AudioAnalysisProps) => {
@@ -99,24 +114,42 @@ export class MessageContext {
 			send: this.send.bind(this),
 			onMessage: this.createOnMessageFunction(),
 			setInterval: this.createSetIntervalFunction(),
+			requestAnimationFrame: this.createRequestAnimationFrameFunction(),
 			noDrag: () => {},
 			fft: this.createFFTFunction()
 		};
 	}
 
-	// Clear only intervals (for code re-execution)
-	clearIntervals() {
+	// Clear all timers (intervals and animation frames) for code re-execution
+	clearTimers() {
 		// Clear all intervals created by this node
 		for (const intervalId of this.intervals) {
 			this.messageSystem.clearInterval(intervalId);
 		}
 
 		this.intervals = [];
+
+		// Clear all animation frames created by this node
+		for (const animationFrameId of this.animationFrames) {
+			this.messageSystem.clearAnimationFrame(animationFrameId);
+		}
+
+		this.animationFrames = [];
+	}
+
+	// Clear only animation frames (for code re-execution)
+	clearAnimationFrames() {
+		// Clear all animation frames created by this node
+		for (const animationFrameId of this.animationFrames) {
+			this.messageSystem.clearAnimationFrame(animationFrameId);
+		}
+
+		this.animationFrames = [];
 	}
 
 	// Clean up when the node is destroyed
 	destroy() {
-		this.clearIntervals();
+		this.clearTimers();
 		this.queue.removeCallback(this.messageCallbackHandler.bind(this));
 
 		// Unregister the node
