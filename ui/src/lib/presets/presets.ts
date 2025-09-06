@@ -5,6 +5,7 @@ import { JS_PRESETS } from './js.presets';
 import { SLIDER_PRESETS } from './slider.presets';
 import { EXPR_DSP_PRESETS } from './expr-dsp.presets';
 import { CHUCK_DEMO_PRESETS } from './chuck.preset';
+import { AI_TXT_PRESETS } from './ai-txt.preset';
 
 /**
  * Presets are pre-configured nodes with custom default data.
@@ -17,5 +18,6 @@ export const PRESETS: Record<string, { type: string; data: unknown }> = {
 	...JS_PRESETS,
 	...SLIDER_PRESETS,
 	...EXPR_DSP_PRESETS,
-	...CHUCK_DEMO_PRESETS
+	...CHUCK_DEMO_PRESETS,
+	...AI_TXT_PRESETS
 };
