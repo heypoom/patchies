@@ -21,10 +21,20 @@ export async function generateImageWithGemini(
 
 	// Add input image if provided (for image-to-image generation)
 	if (inputImageNodeId) {
-		const bitmap = await capturePreviewFrame(inputImageNodeId);
+		const glSystem = GLSystem.getInstance();
+		const [outWidth, outHeight] = glSystem.outputSize;
+
+		// for image-to-image, we use half resolution of the output size.
+		const customSize = [outWidth, outHeight] as [number, number];
+
+		const bitmap = await capturePreviewFrame(inputImageNodeId, { customSize });
 
 		if (bitmap) {
-			const base64Image = bitmapToBase64Image({ bitmap, format: 'image/jpeg', quality: 0.98 });
+			const base64Image = bitmapToBase64Image({
+				bitmap,
+				format: 'image/jpeg',
+				quality: 0.98
+			});
 
 			contents.push({
 				inlineData: {
@@ -123,7 +133,7 @@ export function bitmapToBase64Image({
 
 export async function capturePreviewFrame(
 	nodeId: string,
-	{ timeout = 10000 }: { timeout?: number } = {}
+	{ timeout = 10000, customSize }: { timeout?: number; customSize?: [number, number] } = {}
 ) {
 	const glSystem = GLSystem.getInstance();
 	const requestId = Math.random().toString(36).substring(2, 15);
@@ -149,6 +159,6 @@ export async function capturePreviewFrame(
 			resolve(null);
 		}, timeout);
 
-		glSystem.send('capturePreview', { nodeId, requestId });
+		glSystem.send('capturePreview', { nodeId, requestId, customSize });
 	});
 }

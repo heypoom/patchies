@@ -29,7 +29,9 @@ self.onmessage = (event) => {
 		.with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
 		.with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
 		.with('toggleNodePause', () => handleToggleNodePause(data.nodeId))
-		.with('capturePreview', () => handleCapturePreview(data.nodeId, data.requestId))
+		.with('capturePreview', () =>
+			handleCapturePreview(data.nodeId, data.requestId, data.customSize)
+		)
 		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
 		.with('setFFTData', () => handleSetFFTData(data));
 };
@@ -132,15 +134,20 @@ function handleUpdateHydra(nodeId: string) {
 	hydraRenderer.updateCode();
 }
 
-async function handleCapturePreview(nodeId: string, requestId?: string) {
-	const pixels = fboRenderer.getPreviewFrameCapture(nodeId);
+async function handleCapturePreview(
+	nodeId: string,
+	requestId?: string,
+	customSize?: [number, number]
+) {
+	const [captureWidth, captureHeight] = customSize ?? fboRenderer.previewSize;
+
+	const pixels = fboRenderer.getPreviewFrameCapture(nodeId, customSize);
 
 	if (pixels) {
-		const [width, height] = fboRenderer.previewSize;
 		const array = new Uint8ClampedArray(pixels.buffer);
 
 		// @ts-expect-error -- something is wrong with the typedef
-		const imageData = new ImageData(array, width, height);
+		const imageData = new ImageData(array, captureWidth, captureHeight);
 		const bitmap = await createImageBitmap(imageData);
 
 		self.postMessage(

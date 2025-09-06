@@ -508,8 +508,8 @@ export class FBORenderer {
 	/**
 	 * Render a single node's preview using regl.read() as per spec
 	 */
-	public renderNodePreview(fboNode: FBONode): Uint8Array | null {
-		const [previewWidth, previewHeight] = this.previewSize;
+	public renderNodePreview(fboNode: FBONode, customSize?: [number, number]): Uint8Array | null {
+		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
 		const [renderWidth, renderHeight] = this.outputSize;
 
 		const previewTexture = this.regl.texture({
@@ -791,18 +791,18 @@ export class FBORenderer {
 	}
 
 	/** Captures the preview frame of a node. Also handles persistent data. */
-	getPreviewFrameCapture(nodeId: string): Uint8Array | null {
+	getPreviewFrameCapture(nodeId: string, customSize?: [number, number]): Uint8Array | null {
 		const externalTexture = this.externalTexturesByNode.get(nodeId);
-		if (externalTexture) return this.getTexturePreview(externalTexture);
+		if (externalTexture) return this.getTexturePreview(externalTexture, customSize);
 
 		const fboNode = this.fboNodes.get(nodeId);
 		if (!fboNode) return null;
 
-		return this.renderNodePreview(fboNode);
+		return this.renderNodePreview(fboNode, customSize);
 	}
 
-	getTexturePreview(texture: regl.Texture2D): Uint8Array {
-		const [previewWidth, previewHeight] = this.previewSize;
+	getTexturePreview(texture: regl.Texture2D, customSize?: [number, number]): Uint8Array {
+		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
 
 		const sourceFbo = this.regl.framebuffer({ color: texture });
 		const previewFbo = this.regl.framebuffer({ width: previewWidth, height: previewHeight });
