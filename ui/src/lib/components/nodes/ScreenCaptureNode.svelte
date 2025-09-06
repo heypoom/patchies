@@ -17,6 +17,11 @@
 	let errorMessage = $state<string | null>(null);
 	let bitmapFrameId: number;
 
+	let resizerCanvas: OffscreenCanvas | null = null;
+	let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
+
+	const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
+
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
 			.with({ type: 'bang' }, () => startCapture())
@@ -65,7 +70,39 @@
 
 	async function uploadBitmap() {
 		if (videoElement && isCapturing && glSystem.hasOutgoingVideoConnections(nodeId)) {
-			await glSystem.setBitmapSource(nodeId, videoElement);
+			// Get video dimensions
+			const videoWidth = videoElement.videoWidth;
+			const videoHeight = videoElement.videoHeight;
+
+			// Check if we need to resize (if video is larger than our max dimensions)
+			if (videoWidth > MAX_UPLOAD_WIDTH || videoHeight > MAX_UPLOAD_HEIGHT) {
+				// Calculate scale to fit within max dimensions while preserving aspect ratio
+				const scale = Math.min(MAX_UPLOAD_WIDTH / videoWidth, MAX_UPLOAD_HEIGHT / videoHeight);
+				const scaledWidth = Math.round(videoWidth * scale);
+				const scaledHeight = Math.round(videoHeight * scale);
+
+				// Create or resize offscreen canvas if needed
+				if (
+					!resizerCanvas ||
+					resizerCanvas.width !== scaledWidth ||
+					resizerCanvas.height !== scaledHeight
+				) {
+					resizerCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
+					resizerCtx = resizerCanvas.getContext('2d');
+				}
+
+				if (resizerCtx) {
+					// Draw scaled video frame to offscreen canvas
+					resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
+
+					// Create ImageBitmap from the scaled canvas and upload
+					const bitmap = await createImageBitmap(resizerCanvas);
+					await glSystem.setBitmap(nodeId, bitmap);
+				}
+			} else {
+				// Video is already small enough, upload directly
+				await glSystem.setBitmapSource(nodeId, videoElement);
+			}
 		}
 
 		if (isCapturing) {
