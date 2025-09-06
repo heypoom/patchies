@@ -1,8 +1,5 @@
-import {
-	AudioAnalysisSystem,
-	type AudioAnalysisProps,
-	type AudioAnalysisValue
-} from '$lib/audio/AudioAnalysisSystem';
+import { AudioAnalysisSystem, type AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
+import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
 export type SendMessageOptions = {
@@ -27,7 +24,7 @@ export interface UserFnRunContext {
 	noDrag: () => void;
 
 	/** Get audio analysis data */
-	fft: (options: AudioAnalysisProps) => AudioAnalysisValue | null;
+	fft: (options: AudioAnalysisProps) => FFTAnalysis;
 
 	/** Sets the number of inlets and outlets for the node. */
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
@@ -89,7 +86,9 @@ export class MessageContext {
 	// Create an fft function that automatically infers connected FFT nodes
 	createFFTFunction() {
 		return (options: AudioAnalysisProps) => {
-			return this.audioAnalysis.getAnalysisForNode(this.nodeId, options);
+			const bins = this.audioAnalysis.getAnalysisForNode(this.nodeId, options);
+
+			return new FFTAnalysis(bins, options.format ?? 'int');
 		};
 	}
 

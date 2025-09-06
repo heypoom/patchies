@@ -6,7 +6,7 @@ import { objectDefinitions } from '$lib/objects/object-definitions';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
-export type AudioAnalysisValue = Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer>;
+export type AudioAnalysisValue = Uint8Array<ArrayBufferLike> | Float32Array<ArrayBufferLike>;
 
 type HydraRenderWorkerMessage =
 	| { type: 'fftEnabled'; enabled: boolean; nodeId: string }

@@ -14,12 +14,7 @@ const BEANS = `osc(30,0.01,1)
   .mult(osc(20,-0.1,1).modulate(noise(3,1)).rotate(0.7))
   .out(o0)`;
 
-const HYDRA_FFT = `const a = () => {
-  let f = fft()
-  let avg = f.reduce((a, b) => a + b, 0) / f.length
-  
-  return avg / 255 
-}
+const HYDRA_FFT = `let a = () => fft().avg / 255
 
 osc(40, 0.09, 0.9)
 .color(.9,0,5)

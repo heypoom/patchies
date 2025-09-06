@@ -6,9 +6,11 @@ import { getFramebuffer } from './utils';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
+
 type AudioAnalysisProps = {
 	id?: string;
 	type?: AudioAnalysisType;
@@ -290,15 +292,10 @@ export class HydraRenderer {
 			}
 
 			const cached = this.fftDataCache.get(cacheKey);
+			const bins = cached?.data ?? null;
 
-			return cached?.data ?? this.getEmpty(format);
+			return new FFTAnalysis(bins, format);
 		};
-	}
-
-	getEmpty(format: AudioAnalysisFormat) {
-		if (format === 'float') return new Float32Array();
-
-		return new Uint8Array();
 	}
 
 	// Method to receive FFT data from main thread
