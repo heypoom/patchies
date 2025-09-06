@@ -129,7 +129,7 @@
 			type="target"
 			position={Position.Top}
 			id="msg-in"
-			class="!absolute z-1"
+			class="z-1 !absolute"
 			style={`left: ${getPortPosition(2, 0)}`}
 		/>
 
@@ -137,7 +137,7 @@
 			type="target"
 			position={Position.Top}
 			id="video-in"
-			class="!absolute z-1"
+			class="z-1 !absolute"
 			title="Image input (Optional)"
 			style={`left: ${getPortPosition(2, 1)}`}
 		/>
@@ -160,7 +160,7 @@
 				bind:this={canvasElement}
 				width={800}
 				height={600}
-				class="h-[150px] w-[200px] rounded-md bg-zinc-900"
+				class="h-[200px] w-[266px] rounded-md bg-zinc-900"
 			></canvas>
 		</div>
 	{/snippet}

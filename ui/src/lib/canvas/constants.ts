@@ -27,7 +27,7 @@ n("<0 -3>, 2 4 <[6,8] [7,9]>")
 .scale("<C:major D:mixolydian>/4")
 .sound("piano")`;
 
-export const DEFAULT_AI_IMAGE_PROMPT = `a sleepy little town in the mountains, masterpiece, realistic, high quality, 4k`;
+export const DEFAULT_AI_IMAGE_PROMPT = `little rainicorn, high quality, 4k, 4:3`;
 
 export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
 
