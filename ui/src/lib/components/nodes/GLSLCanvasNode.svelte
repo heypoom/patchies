@@ -22,7 +22,7 @@
 	} = $props();
 
 	// Get flow utilities to update node data
-	const { updateNodeData } = useSvelteFlow();
+	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	const width = $state(200);
@@ -58,12 +58,42 @@
 		}
 	};
 
+	function removeInvalidEdges(uniformDefs: GLUniformDef[]) {
+		const connectedEdges = getEdges().filter((edge) => edge.target === nodeId);
+
+		const textureUniforms = new Set(
+			uniformDefs.filter((def) => def.type === 'sampler2D').map((def) => def.name)
+		);
+
+		// Find edges that are no longer valid (uniform changed or removed)
+		const invalidEdges = connectedEdges.filter((edge) => {
+			if (!edge.targetHandle?.startsWith('video-in-')) return false;
+
+			// Parse the uniform name: video-in-0-uniformName-sampler2D
+			const handleParts = edge.targetHandle.split('-');
+
+			if (handleParts.length > 3) {
+				return !textureUniforms.has(handleParts[3]);
+			}
+
+			return false;
+		});
+
+		if (invalidEdges.length > 0) {
+			console.log('removing invalid edges:', invalidEdges);
+			deleteElements({ edges: invalidEdges });
+		}
+	}
+
 	function updateShader() {
 		// Construct uniform definitions from the shader code.
 		const nextData = {
 			...data,
 			glUniformDefs: shaderCodeToUniformDefs(data.code)
 		};
+
+		// Remove edges with invalid uniform names before updating
+		removeInvalidEdges(nextData.glUniformDefs);
 
 		updateNodeData(nodeId, nextData);
 		glSystem.upsertNode(nodeId, 'glsl', nextData);
