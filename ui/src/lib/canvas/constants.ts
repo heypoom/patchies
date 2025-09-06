@@ -1,6 +1,6 @@
 export const WEBGL_EXTENSIONS = ['OES_texture_float_linear'];
 
-export const DEFAULT_OUTPUT_SIZE = [800, 600] as [width: number, height: number];
+export const DEFAULT_OUTPUT_SIZE = [1008, 654] as [width: number, height: number];
 export const PREVIEW_SCALE_FACTOR = 4;
 
 export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse
@@ -28,7 +28,7 @@ n("<0 -3>, 2 4 <[6,8] [7,9]>")
 .scale("<C:major D:mixolydian>/4")
 .sound("piano")`;
 
-export const DEFAULT_AI_IMAGE_PROMPT = `little rainicorn, high quality, 4k, 4:3`;
+export const DEFAULT_AI_IMAGE_PROMPT = `little rainicorn, high quality, 16:9 aspect ratio`;
 
 export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
 

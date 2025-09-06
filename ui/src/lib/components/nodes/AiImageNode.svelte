@@ -12,6 +12,7 @@
 	import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
 	import { match, P } from 'ts-pattern';
 	import { getPortPosition } from '$lib/utils/node-utils';
+	import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
 
@@ -30,7 +31,12 @@
 	const prompt = $derived(data.prompt || '');
 	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
 
-	const [width, height] = glSystem.outputSize;
+	const [width, height] = [800 * 1.2, 600 * 1.2];
+
+	const [previewWidth, previewHeight] = [
+		width / PREVIEW_SCALE_FACTOR,
+		height / PREVIEW_SCALE_FACTOR
+	];
 
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
@@ -165,7 +171,8 @@
 				bind:this={canvasElement}
 				{width}
 				{height}
-				class="h-[200px] w-[266px] rounded-md bg-zinc-900"
+				style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+				class="rounded-md bg-zinc-900"
 			></canvas>
 		</div>
 	{/snippet}
