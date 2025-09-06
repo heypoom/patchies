@@ -74,8 +74,8 @@ function draw() {
   clear()
   noStroke();
   
-  const waveform = fft()
-  const spectrum = fft({type: 'freq'})
+  const waveform = fft().a
+  const spectrum = fft({type: 'freq'}).a
   if (!waveform || !spectrum) return
   
   const sl = spectrum.length / 5
@@ -105,8 +105,8 @@ const AUDIO_FFT_FULL_P5 = `function setup() {
 function draw() {
   clear()
   
-  const waveform = fft()
-  const spectrum = fft({type: 'freq'})
+  const waveform = fft().a
+  const spectrum = fft({type: 'freq'}).a
   if (!waveform || !spectrum) return
   
   const sl = spectrum.length / 5

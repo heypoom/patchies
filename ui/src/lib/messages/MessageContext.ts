@@ -87,8 +87,9 @@ export class MessageContext {
 	createFFTFunction() {
 		return (options: AudioAnalysisProps) => {
 			const bins = this.audioAnalysis.getAnalysisForNode(this.nodeId, options);
+			const sampleRate = this.audioAnalysis.sampleRate;
 
-			return new FFTAnalysis(bins, options.format ?? 'int');
+			return new FFTAnalysis(bins, options?.format ?? null, sampleRate);
 		};
 	}
 

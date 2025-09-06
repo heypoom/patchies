@@ -28,6 +28,7 @@ export interface AudioAnalysisPayload {
 	analysisType: AudioAnalysisType;
 	format: AudioAnalysisFormat;
 	array: Uint8Array | Float32Array;
+	sampleRate: number;
 
 	/** GLSL inlets. Currently applies to GLSL only. */
 	inlets?: GlslFFTInletMeta[];
@@ -283,7 +284,14 @@ export class AudioAnalysisSystem {
 				const array = this.getAnalysisForNode(targetId, { type, format });
 				if (array === null || array.length === 0) continue;
 
-				this.onFFTDataReady({ nodeId: targetId, analysisType: type, format, array, inlets });
+				this.onFFTDataReady({
+					nodeId: targetId,
+					analysisType: type,
+					format,
+					array,
+					inlets,
+					sampleRate: this.sampleRate
+				});
 			}
 		}
 	}
@@ -300,6 +308,10 @@ export class AudioAnalysisSystem {
 			.with({ type: 'registerFFTRequest' }, ({ nodeId, analysisType, format }) => {
 				this.registerFFTRequest(nodeId, analysisType, format);
 			});
+	}
+
+	get sampleRate(): number {
+		return this.audioSystem.audioContext.sampleRate;
 	}
 
 	static getInstance(): AudioAnalysisSystem {

@@ -33,6 +33,7 @@ export class HydraRenderer {
 	public onMessage: MessageCallbackFn = () => {};
 
 	private timestamp = performance.now();
+	private sampleRate: number = 44000;
 
 	private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
 
@@ -294,15 +295,16 @@ export class HydraRenderer {
 			const cached = this.fftDataCache.get(cacheKey);
 			const bins = cached?.data ?? null;
 
-			return new FFTAnalysis(bins, format);
+			return new FFTAnalysis(bins, format, 44000);
 		};
 	}
 
 	// Method to receive FFT data from main thread
 	setFFTData(payload: AudioAnalysisPayloadWithType) {
-		const { analysisType, format, array } = payload;
+		const { analysisType, format, array, sampleRate } = payload;
 
 		const cacheKey = `${analysisType}-${format}`;
+		this.sampleRate = sampleRate;
 
 		this.fftDataCache.set(cacheKey, {
 			data: array,
