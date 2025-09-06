@@ -54,7 +54,7 @@
 				<Handle
 					type="source"
 					position={Position.Bottom}
-					class={['absolute !bottom-[1px] z-1', borderColor, handleClass]}
+					class={['z-1 absolute !bottom-1.5', borderColor, handleClass]}
 				/>
 			</div>
 		</div>
