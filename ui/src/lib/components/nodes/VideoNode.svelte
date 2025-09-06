@@ -6,6 +6,8 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { getPortPosition } from '$lib/utils/node-utils';
 	import { match, P } from 'ts-pattern';
 
 	let {
@@ -31,6 +33,7 @@
 
 	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
+	let audioSystem = AudioSystem.getInstance();
 	const { updateNode } = useSvelteFlow();
 	let videoElement = $state<HTMLVideoElement | undefined>();
 	let isLoaded = $state(false);
@@ -69,6 +72,9 @@
 			const filename = getFileNameFromUrl(url);
 			const file = new File([blob], filename, { type: blob.type });
 			await loadFile(file, url);
+
+			// Send URL to audio system as well
+			audioSystem.send(nodeId, 'url', url);
 		} catch (err) {
 			console.error('Failed to load video from URL:', err);
 			errorMessage = 'Failed to load video from URL';
@@ -176,6 +182,9 @@
 					isPaused = true;
 					errorMessage = null;
 
+					// Send the file to the audio system
+					audioSystem.send(nodeId, 'file', file);
+
 					// Start upload loop
 					bitmapFrameId = requestAnimationFrame(uploadBitmap);
 				}
@@ -203,9 +212,16 @@
 	function restartVideo() {
 		if (videoElement && isLoaded) {
 			videoElement.currentTime = 0;
+
+			// Send bang to audio system to restart audio (sets currentTime to 0 and plays)
+			audioSystem.send(nodeId, 'message', { type: 'bang' });
+
 			if (isPaused) {
 				videoElement.play();
 				isPaused = false;
+			} else {
+				// If video was already playing, pause audio since bang auto-plays it
+				audioSystem.send(nodeId, 'message', { type: 'pause' });
 			}
 		}
 	}
@@ -214,9 +230,11 @@
 		if (videoElement && isLoaded) {
 			if (isPaused) {
 				videoElement.play();
+				audioSystem.send(nodeId, 'message', { type: 'play' });
 				isPaused = false;
 			} else {
 				videoElement.pause();
+				audioSystem.send(nodeId, 'message', { type: 'pause' });
 				isPaused = true;
 			}
 		}
@@ -248,8 +266,12 @@
 		messageContext.queue.addCallback(handleMessage);
 		glSystem.upsertNode(nodeId, 'img', {});
 
+		// Create audio object for video
+		audioSystem.createAudioObject(nodeId, 'soundfile~', []);
+
 		if (data.file) {
 			loadFile(data.file, data.url);
+			audioSystem.send(nodeId, 'file', data.file);
 		} else if (data.url) {
 			loadVideoFromUrl(data.url);
 		}
@@ -262,6 +284,7 @@
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 		glSystem.removeNode(nodeId);
+		audioSystem.removeAudioObject(nodeId);
 	});
 
 	const handleCommonClass = $derived.by(() => {
@@ -357,7 +380,17 @@
 					position={Position.Bottom}
 					id="video-out"
 					title="Video output"
-					class={handleCommonClass}
+					class="z-1 absolute {selected ? '' : 'opacity-40'}"
+					style={`left: ${getPortPosition(2, 0)}`}
+				/>
+
+				<Handle
+					type="source"
+					position={Position.Bottom}
+					class="z-1 absolute !bg-blue-500 {selected ? '' : 'opacity-40'}"
+					id="audio-out"
+					title="Audio output"
+					style={`left: ${getPortPosition(2, 1)}`}
 				/>
 			</div>
 		</div>
