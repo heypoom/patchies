@@ -41,13 +41,18 @@
 			.with(P.number, (value) => {
 				const newValue = Math.min(Math.max(value, min), max);
 				updateNodeData(node.id, { ...node.data, value: newValue });
+				messageContext.send(newValue);
 
 				if (sliderElement) sliderElement.value = newValue.toString();
 			})
 			.with(P.union('reset', { type: 'reset' }), () => {
 				updateNodeData(node.id, { ...node.data, value: defaultValue });
+				messageContext.send(defaultValue);
 
 				if (sliderElement) sliderElement.value = defaultValue.toString();
+			})
+			.with({ type: 'bang' }, () => {
+				messageContext.send(currentValue);
 			});
 	};
 
@@ -103,7 +108,7 @@
 				<div></div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -115,7 +120,7 @@
 				<Handle type="target" position={Position.Top} class="!-top-2" />
 
 				<div
-					class="flex w-full max-w-[130px] min-w-[100px] flex-col items-center justify-center gap-1 py-1"
+					class="flex w-full min-w-[100px] max-w-[130px] flex-col items-center justify-center gap-1 py-1"
 				>
 					<div class="pb-2 font-mono text-sm text-zinc-100">
 						{displayValue}
@@ -135,8 +140,8 @@
 							100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%)"
 						class="nodrag h-1 w-full cursor-pointer appearance-none rounded-lg
 							[&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500
-							[&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:cursor-pointer
-							[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300 [&::-moz-range-thumb:hover]:bg-zinc-100
+							[&::-moz-range-thumb:hover]:bg-zinc-100 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3
+							[&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300
 							[&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg
 							[&::-moz-range-track]:border-none
 							[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3
