@@ -22,6 +22,7 @@
 			width?: number;
 			height?: number;
 			url?: string;
+			loop?: boolean;
 		};
 		selected: boolean;
 		width?: number;
@@ -47,6 +48,14 @@
 		match(message)
 			.with({ type: 'bang' }, () => restartVideo())
 			.with({ type: 'pause' }, () => togglePause())
+			.with({ type: 'loop', value: P.optional(P.boolean) }, ({ value }) => {
+				const shouldLoop = value ?? true;
+				updateNode(nodeId, { data: { ...data, loop: shouldLoop } });
+
+				if (videoElement) {
+					videoElement.loop = shouldLoop;
+				}
+			})
 			.with(P.string, (url) => loadVideoFromUrl(url))
 			.with({ type: 'load', url: P.string }, ({ url }) => loadVideoFromUrl(url))
 			.otherwise(() => {});
@@ -315,7 +324,7 @@
 						style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
 							defaultPreviewHeight}px"
 						muted
-						loop
+						loop={data.loop ?? true}
 					></video>
 					{#if !hasFile || !isLoaded}
 						<div
