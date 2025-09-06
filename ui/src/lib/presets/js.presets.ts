@@ -5,7 +5,9 @@ const DELAY_JS = `onMessage(async (m) => {
   send(m)
 })`;
 
-const BANG_EVERY_FRAME_JS = `const h = () => {
+const BANG_EVERY_FRAME_JS = `setRunOnMount(true)
+
+const h = () => {
   send({ type: 'bang' })
   requestAnimationFrame(h)
 }
@@ -25,7 +27,9 @@ const MIDI_ADSR_GAIN_JS = `onMessage(m => {
   }
 })`;
 
-const FRAME_COUNTER_JS = `let i = 0
+const FRAME_COUNTER_JS = `setRunOnMount(true)
+
+let i = 0
 
 const h = () => {
   i %= 255
@@ -36,7 +40,9 @@ const h = () => {
 
 requestAnimationFrame(h)`;
 
-const INTERVAL_JS = `let i = 0
+const INTERVAL_JS = `setRunOnMount(true)
+
+let i = 0
 
 setInterval(() => {
   send(i++)
