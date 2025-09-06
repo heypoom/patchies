@@ -86,7 +86,9 @@
 					messageContext?.send(data, options);
 				};
 
-				evalScope({ send, onMessage: messageContext?.createOnMessageFunction() });
+				const onMessage = messageContext?.createOnMessageFunction();
+
+				evalScope({ send, onMessage, recv: onMessage });
 			},
 			afterEval: () => {
 				let attempts = 0;
