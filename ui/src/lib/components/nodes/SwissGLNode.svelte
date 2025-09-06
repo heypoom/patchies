@@ -8,6 +8,7 @@
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let {
 		id: nodeId,
@@ -116,8 +117,9 @@
 			type="source"
 			position={Position.Bottom}
 			id="video-out"
-			class="!left-22 z-1"
+			class="z-1"
 			title="Video output"
+			style={`left: ${getPortPosition(2, 0)}`}
 		/>
 
 		<Handle
@@ -125,7 +127,8 @@
 			position={Position.Bottom}
 			id="message-out"
 			title="Message output"
-			class="!left-28 z-1"
+			class="z-1"
+			style={`left: ${getPortPosition(2, 1)}`}
 		/>
 	{/snippet}
 

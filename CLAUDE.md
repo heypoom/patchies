@@ -36,7 +36,7 @@ All commands run from the `/ui` directory:
 ```bash
 # Development
 bun run dev                 # Start development server
-bun run build              # Production build  
+bun run build              # Production build
 bun run preview            # Preview production build
 
 # Code Quality
@@ -57,7 +57,7 @@ bun run test               # Run all tests
 
 - **Visual nodes**: `p5`, `glsl`, `hydra`, `butterchurn`, `canvas`, `swissgl` (support video chaining)
 - **Audio nodes**: `strudel` (live coding music), AI music generation
-- **Control nodes**: `js` (JavaScript blocks), `slider`, `bang`, `message`  
+- **Control nodes**: `js` (JavaScript blocks), `slider`, `bang`, `message`
 - **AI nodes**: `ai.txt`, `ai.img`, `ai.tts`, `ai.music` (can be hidden via settings)
 - **I/O nodes**: `midi.in`, `midi.out`, `bg.out` (background output)
 
@@ -65,7 +65,7 @@ bun run test               # Run all tests
 
 ```typescript
 // In any JavaScript-based node:
-send(data, { to: 0 })  // Send to specific outlet number
+send(data, {to: 0}) // Send to specific outlet number
 onMessage((data, meta) => {
   // meta contains { source, inlet, outlet, inletKey, outletKey }
 })
@@ -76,6 +76,7 @@ The `MessageSystem` handles routing through XY Flow edges with handle-based targ
 ### Video Chaining System
 
 Visual nodes can be chained together using orange video inlets/outlets:
+
 - Connect P5.js output → Hydra input → GLSL input → Background output
 - Implemented via FBO (Frame Buffer Object) texture passing
 - Render graphs are topologically sorted to determine execution order
@@ -91,23 +92,27 @@ Visual nodes can be chained together using orange video inlets/outlets:
 ## Core System Classes
 
 ### Message System (`src/lib/messages/MessageSystem.ts`)
+
 - Singleton pattern for inter-node communication
 - Handles XY Flow edge updates and connection mapping
 - Manages message queues per node with error isolation
 - Provides `setInterval` with automatic cleanup
 
-### Event Bus (`src/lib/eventbus/PatchiesEventBus.ts`)  
+### Event Bus (`src/lib/eventbus/PatchiesEventBus.ts`)
+
 - Type-safe event system for system-wide notifications
 - Handles node lifecycle, undo/redo, and collaboration events
 - Singleton pattern with strongly typed event listeners
 
 ### Render Graph (`src/lib/rendering/graphUtils.ts`)
+
 - Builds render graphs from XY Flow nodes/edges
 - Performs topological sorting for correct render order
 - Filters FBO-compatible nodes for video chaining
 - Detects circular dependencies and output nodes
 
 ### Audio System (`src/lib/audio/AudioSystem.ts`)
+
 - Manages Web Audio API context and analysis
 - Handles FFT data for audio visualization
 - Coordinates with Strudel for live coding music
@@ -115,24 +120,28 @@ Visual nodes can be chained together using orange video inlets/outlets:
 ## Development Guidelines
 
 ### Code Patterns
+
 - Use `ts-pattern` instead of `switch` statements always
 - Prefer editing existing files over creating new ones
 - Separate UI components from business logic (manager pattern)
 - Use TypeScript for all new code with proper typing
 
 ### Svelte 5 Requirements
+
 - Only use Svelte 5 rune syntax: `$state`, `$props`, `$effect`, `$derived`
 - Read `docs/llms/svelte-llms-small.txt` for syntax reference
 - Use `onclick` instead of `on:click` for events
 - Components use `{@render children()}` for slot content
 
 ### Workflow
+
 - Before implementing, update relevant spec files in `docs/design-docs/specs/`
 - Write concise, clear commit messages
 - Never start dev server to test - use type checking and build
 - Always run `bun run check` before committing
 
 ### Styling
+
 - Use Tailwind classes over custom CSS
 - Follow Zinc color palette for dark theme
 - Support `class` prop for component extension
@@ -141,7 +150,7 @@ Visual nodes can be chained together using orange video inlets/outlets:
 ## Testing Strategy
 
 - **Unit tests**: Core business logic, utilities, and pure functions
-- **Component tests**: Svelte component rendering and interactions  
+- **Component tests**: Svelte component rendering and interactions
 - **E2E tests**: Critical user workflows like patch creation and node connections
 - **Type checking**: Comprehensive TypeScript coverage with strict mode
 
@@ -154,3 +163,93 @@ Visual nodes can be chained together using orange video inlets/outlets:
 - Specs: `docs/design-docs/specs/`
 - always use ts-pattern for matching. never ever use switch cases.
 - always update README.md after adding an audio node or visual node
+
+## Rendering Pipeline Architecture
+
+### Deep Pipeline Coordination
+
+The rendering system requires careful coordination across multiple files:
+
+- `generateImageWithGemini` → `capturePreviewFrame` → `GLSystem` → `renderWorker` → `fboRenderer`
+- Use consistent parameter patterns (e.g., `customSize?: [number, number]`) throughout the entire chain
+- Changes to rendering capabilities require updates across 5+ files simultaneously
+
+### Frame Capture System
+
+- `fboRenderer.renderNodePreview()` accepts `customSize?: [number, number]` for custom resolution capture
+- `capturePreviewFrame()` supports high-resolution input for AI image-to-image workflows
+- Default preview size is calculated from output size with `PREVIEW_SCALE_FACTOR`
+
+## Node Development Patterns
+
+### UI Design Guidelines
+
+- **Minimalistic Floating Layout**: Follow `ai.tts` pattern for nodes without code editors
+- **No Solid Backgrounds**: Use transparent headers with `absolute -top-7` positioning
+- **Hover Interactions**: Buttons should have `opacity-0 group-hover:opacity-100` for clean appearance
+- **Handle Positioning**: Use `getPortPosition(totalPorts, index)` for consistent spacing
+
+### Message Port Standards
+
+- **Input Handles**: Use `getPortPosition` for consistent spacing across multiple ports
+- **Output Handles**: Send completion signals with `messageContext.send({ type: 'bang' }, { to: 0 })`
+- **Handle IDs**: Use semantic names like `video-in`, `msg-out`, `outlet-0` for clarity
+
+### Node Integration Checklist
+
+When adding new nodes, always update:
+
+1. `src/lib/nodes/node-types.ts` - Add import and node type mapping
+2. `src/lib/nodes/defaultNodeData.ts` - Add default data structure
+3. `README.md` - Update node list for audio/visual nodes
+
+## Development Reflection Process
+
+### Conducting Implementation Reflections
+
+After completing significant features, conduct structured reflections to improve development processes:
+
+#### What Went Right Analysis ✅
+
+- **Systematic Approach**: Document use of TodoWrite tool and progress tracking
+- **Architecture Understanding**: Note successful identification of system dependencies
+- **API Design**: Highlight consistent parameter patterns and type safety
+- **Integration Success**: Record complete feature implementations
+
+#### What Went Wrong Analysis ❌
+
+- **Initial Design Decisions**: Identify parameter inconsistencies or inappropriate patterns
+- **Process Issues**: Note incomplete requirements gathering or multiple iterations
+- **Technical Challenges**: Document complex dependency coordination issues
+- **Missing Context**: Record discoveries that should have been guidelines
+
+#### Key Learning Categories 📚
+
+- **Architecture Insights**: Deep pipeline coordination requirements
+- **Development Process**: Effective tool usage and pattern recognition
+- **Code Quality**: Type safety considerations and consistency patterns
+- **UI Patterns**: Design system understanding and component relationships
+
+#### Future Recommendations 🔄
+
+- **Requirements Analysis**: Spend time understanding scope and existing patterns upfront
+- **API Design**: Design interfaces consistently from the beginning
+- **UI Patterns**: Study similar components thoroughly before implementation
+- **Incremental Development**: Build and test smaller chunks
+- **Documentation**: Identify areas where explicit guidelines would help
+
+### Recent Implementation Learnings
+
+#### Nano Banana Feature (Image Generation)
+
+- **Success**: Systematic TodoWrite tracking through complex multi-file changes
+- **Challenge**: Initial parameter inconsistency (separate width/height vs customSize tuple)
+- **Learning**: Rendering pipeline requires deep coordination across 5+ files
+- **Pattern**: Use `customSize?: [number, number]` consistently throughout chains
+
+#### TextInputNode Development
+
+- **Success**: Complete message handling implementation with proper state management
+- **Challenge**: Wrong initial layout choice (ObjectPreviewLayout vs floating design)
+- **Learning**: Study existing UI patterns (ai.tts) before implementing new components
+- **Pattern**: Minimalistic floating layouts preferred over heavy containers
