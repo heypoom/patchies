@@ -215,7 +215,14 @@
 
 	async function uploadBitmap() {
 		if (videoElement && isLoaded && !isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
-			await glSystem.setBitmapSource(nodeId, videoElement);
+			try {
+				// Check if video element is in a valid state
+				if (videoElement.readyState >= 2 && !videoElement.ended && !videoElement.error) {
+					await glSystem.setBitmapSource(nodeId, videoElement);
+				}
+			} catch (error) {
+				console.warn('Failed to upload video bitmap:', error);
+			}
 		}
 
 		if (isLoaded) {
