@@ -5,6 +5,7 @@ export type RenderNode = {
 	id: string;
 	inputs: string[]; // IDs of input nodes
 	outputs: string[]; // IDs of output nodes
+	inletMap: Map<number, string>; // Maps inlet index to source node ID
 } & (
 	| { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[] } }
 	| { type: 'hydra'; data: { code: string } }

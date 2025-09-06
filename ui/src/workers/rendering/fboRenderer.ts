@@ -434,8 +434,7 @@ export class FBORenderer {
 			return;
 		}
 
-		// TODO: optimize this!
-		const inputTextures = this.getInputTextures(node);
+		const inputTextureMap = this.getInputTextureMap(node);
 
 		let userUniformParams: unknown[] = [];
 
@@ -446,6 +445,8 @@ export class FBORenderer {
 
 			// If this is a GLSL node with FFT inlet, use the FFT texture
 			const fftInlet = this.fftInletsByGlslNode.get(node.id);
+
+			let textureSlotIndex = 0;
 
 			// Define input parameters
 			for (const n of uniformDefs) {
@@ -462,7 +463,11 @@ export class FBORenderer {
 						}
 					}
 
-					userUniformParams.push(inputTextures.shift() ?? this.fallbackTexture);
+					// Use texture from specific inlet slot, fallback to default texture
+					const texture = inputTextureMap.get(textureSlotIndex) ?? this.fallbackTexture;
+
+					userUniformParams.push(texture);
+					textureSlotIndex++;
 				} else {
 					const value = uniformData.get(n.name);
 
@@ -473,9 +478,16 @@ export class FBORenderer {
 			}
 		}
 
-		// use the input textures as-is for now
+		// Convert texture map to array for Hydra (preserving gaps - s0, s1, s2, etc.)
 		if (node.type === 'hydra') {
-			userUniformParams = inputTextures;
+			const maxInletIndex = Math.max(-1, ...inputTextureMap.keys());
+			const textureArray: (regl.Texture2D | undefined)[] = [];
+
+			for (let i = 0; i <= maxInletIndex; i++) {
+				textureArray[i] = inputTextureMap.get(i);
+			}
+
+			userUniformParams = textureArray;
 		}
 
 		// Render to FBO
@@ -638,25 +650,29 @@ export class FBORenderer {
 		this.isAnimating = false;
 	}
 
-	/** Get input textures for a node based on the render graph */
-	private getInputTextures(node: RenderNode): regl.Texture2D[] {
-		const textures: regl.Texture2D[] = [];
+	/**
+	 * Get input texture mapping for a node based on the
+	 * render graph, mapped by inlet index
+	 **/
+	private getInputTextureMap(node: RenderNode): Map<number, regl.Texture2D> {
+		const textureMap = new Map<number, regl.Texture2D>();
 
-		for (const inputId of node.inputs) {
-			const inputFBO = this.fboNodes.get(inputId);
+		// Use inletMap for proper slot-based assignment
+		for (const [inletIndex, sourceNodeId] of node.inletMap) {
+			const inputFBO = this.fboNodes.get(sourceNodeId);
 
 			// If there exists an external texture for an input node, use it.
-			if (this.externalTexturesByNode.has(inputId)) {
-				textures.push(this.externalTexturesByNode.get(inputId)!);
+			if (this.externalTexturesByNode.has(sourceNodeId)) {
+				textureMap.set(inletIndex, this.externalTexturesByNode.get(sourceNodeId)!);
 				continue;
 			}
 
 			if (inputFBO) {
-				textures.push(inputFBO.texture);
+				textureMap.set(inletIndex, inputFBO.texture);
 			}
 		}
 
-		return textures;
+		return textureMap;
 	}
 
 	async setPreviewSize(width: number, height: number) {

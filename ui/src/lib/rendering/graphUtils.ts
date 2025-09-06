@@ -11,7 +11,7 @@ export type RNode = {
 	data: Record<string, unknown>;
 };
 
-export type REdge = Pick<XYEdge, 'id' | 'source' | 'target'>;
+export type REdge = Pick<XYEdge, 'id' | 'source' | 'target' | 'sourceHandle' | 'targetHandle'>;
 
 /**
  * Filter nodes and edges to only include FBO-compatible nodes
@@ -26,10 +26,11 @@ export function filterFBOCompatibleGraph(
 		.map(
 			(node): RenderNode => ({
 				id: node.id,
-				type: node.type,
+				type: node.type as 'img',
 				inputs: [],
 				outputs: [],
-				data: node.data as { code: string }
+				inletMap: new Map(),
+				data: node.data
 			})
 		);
 
@@ -41,7 +42,9 @@ export function filterFBOCompatibleGraph(
 		.map((edge) => ({
 			id: edge.id,
 			source: edge.source,
-			target: edge.target
+			target: edge.target,
+			sourceHandle: edge.sourceHandle ?? undefined,
+			targetHandle: edge.targetHandle ?? undefined
 		}));
 
 	// Build input/output relationships
@@ -54,6 +57,16 @@ export function filterFBOCompatibleGraph(
 		if (sourceNode && targetNode) {
 			sourceNode.outputs.push(edge.target);
 			targetNode.inputs.push(edge.source);
+
+			// Parse inlet index from target handle for video connections
+			if (edge.targetHandle?.startsWith('video-in')) {
+				const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
+
+				if (inletMatch) {
+					const inletIndex = parseInt(inletMatch[1], 10);
+					targetNode.inletMap.set(inletIndex, edge.source);
+				}
+			}
 		}
 	}
 
