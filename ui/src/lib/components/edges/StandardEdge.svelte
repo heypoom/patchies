@@ -45,7 +45,7 @@
 			.with('message', () => 'opacity-30')
 			.otherwise(() => 'opacity-60');
 
-		return [baseClass, !selected && deselectedClass];
+		return [baseClass, !selected && deselectedClass, selected ? '!stroke-1' : '!stroke-[0.7px]'];
 	});
 
 	const nodesData = useNodesData([source, target]);
