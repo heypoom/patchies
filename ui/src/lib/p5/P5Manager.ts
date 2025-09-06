@@ -173,7 +173,7 @@ export class P5Manager {
 				if (sketchContext) {
 					var send = sketchContext.send;
 					var onMessage = sketchContext.onMessage;
-					var setInterval = sketchContext.interval;
+					var setInterval = sketchContext.setInterval;
 					var noDrag = sketchContext.noDrag;
 					var fft = sketchContext.fft;
 					var setPortCount = sketchContext.setPortCount;

@@ -175,7 +175,7 @@
 				'console',
 				'send',
 				'onMessage',
-				'interval',
+				'setInterval',
 				'llm',
 				'setPortCount',
 				'setRunOnMount'
@@ -185,7 +185,7 @@
 				customConsole,
 				messageSystemContext.send,
 				messageSystemContext.onMessage,
-				messageSystemContext.interval,
+				messageSystemContext.setInterval,
 				createLLMFunction(),
 				setPortCount,
 				setRunOnMount
@@ -194,10 +194,9 @@
 			const userFunction = new Function(
 				...functionParams,
 				`
-				const inner = async () => {
+				const inner = () => {
 					var recv = receive = onMessage; // alias
 					var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-					var setInterval = interval;
 				
 					${code}
 				}
@@ -250,7 +249,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={() => {
 							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
@@ -261,7 +260,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -279,7 +278,7 @@
 							position={Position.Top}
 							style={`left: ${getPortPosition(inletCount, index)}`}
 							title={`Inlet ${index}`}
-							class="top-0 z-1"
+							class="z-1 top-0"
 						/>
 					{/each}
 				</div>
@@ -332,10 +331,10 @@
 							bind:this={consoleContainer}
 						>
 							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your code to see results.</div>
+								<div class="italic text-zinc-500">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
-									<div class="mb-1 whitespace-pre-wrap text-zinc-100 select-text">{line}</div>
+									<div class="mb-1 select-text whitespace-pre-wrap text-zinc-100">{line}</div>
 								{/each}
 							{/if}
 						</div>
@@ -365,7 +364,7 @@
 							position={Position.Bottom}
 							style={`left: ${getPortPosition(outletCount, index)}`}
 							title={`Outlet ${index}`}
-							class="bottom-0 z-1"
+							class="z-1 bottom-0"
 						/>
 					{/each}
 				</div>

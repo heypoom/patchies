@@ -18,7 +18,7 @@ export interface UserFnRunContext {
 	onMessage: (callback: MessageCallbackFn) => void;
 
 	/** Schedules setInterval with cleanup. */
-	interval: (callback: () => void, ms: number) => number;
+	setInterval: (callback: () => void, ms: number) => number;
 
 	/** Disables dragging in canvas. */
 	noDrag: () => void;
@@ -74,7 +74,7 @@ export class MessageContext {
 	}
 
 	// Create the interval function for this node
-	createIntervalFunction() {
+	createSetIntervalFunction() {
 		return (callback: () => void, ms: number) => {
 			const intervalId = this.messageSystem.createInterval(callback, ms);
 			this.intervals.push(intervalId);
@@ -98,7 +98,7 @@ export class MessageContext {
 		return {
 			send: this.send.bind(this),
 			onMessage: this.createOnMessageFunction(),
-			interval: this.createIntervalFunction(),
+			setInterval: this.createSetIntervalFunction(),
 			noDrag: () => {},
 			fft: this.createFFTFunction()
 		};
