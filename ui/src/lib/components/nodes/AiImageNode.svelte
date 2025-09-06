@@ -114,6 +114,9 @@
 				);
 
 			hasImage = true;
+
+			// Send bang message when generation finishes
+			messageContext.send({ type: 'bang' }, { to: 0 });
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 			hasImage = false;
@@ -166,7 +169,23 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<VideoHandle type="source" position={Position.Bottom} id="video-out" title="Video output" />
+		<VideoHandle
+			type="source"
+			position={Position.Bottom}
+			id="video-out"
+			title="Video output"
+			class="z-1 !absolute"
+			style={`left: ${getPortPosition(2, 0)}`}
+		/>
+
+		<Handle
+			type="source"
+			position={Position.Bottom}
+			id="outlet-0"
+			class="z-1 !absolute"
+			style={`left: ${getPortPosition(2, 1)}`}
+			title="Message output"
+		/>
 	{/snippet}
 
 	{#snippet codeEditor()}
