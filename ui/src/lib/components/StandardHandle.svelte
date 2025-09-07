@@ -61,3 +61,12 @@
 	style={positionStyle}
 	{title}
 />
+
+<style>
+	:global(.svelte-flow__handle) {
+		min-width: 6px;
+		min-height: 6px;
+		width: 7px;
+		height: 7px;
+	}
+</style>
