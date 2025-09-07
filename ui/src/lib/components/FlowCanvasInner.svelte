@@ -24,6 +24,7 @@
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
+	import { loadPatchFromUrl, getSrcUrlFromSearchParams } from '$lib/save-load/load-patch-from-url';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
 	import { match } from 'ts-pattern';
 
@@ -47,7 +48,6 @@
 	let glSystem = GLSystem.getInstance();
 	let audioSystem = AudioSystem.getInstance();
 	let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
-	let pyodideSystem = PyodideSystem.getInstance();
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -65,7 +65,6 @@
 
 	// Autosave functionality
 	let autosaveInterval: ReturnType<typeof setInterval> | null = null;
-	let lastAutosave = $state<Date | null>(null);
 
 	let selectedNodeIds = $state.raw<string[]>([]);
 
@@ -75,6 +74,10 @@
 	// Clipboard for copy-paste functionality
 	let copiedNodeData: { type: string; data: any } | null = null;
 
+	// URL loading state
+	let isLoadingFromUrl = $state(false);
+	let urlLoadError = $state<string | null>(null);
+
 	useOnSelectionChange(({ nodes }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
 	});
@@ -82,7 +85,6 @@
 	function performAutosave() {
 		try {
 			savePatchToLocalStorage({ name: 'autosave', nodes, edges });
-			lastAutosave = new Date();
 		} catch (error) {
 			console.error('Autosave failed:', error);
 		}
@@ -169,12 +171,15 @@
 		glSystem.start();
 		audioSystem.start();
 
+		loadPatchFromParam();
+
 		document.addEventListener('keydown', handleGlobalKeydown);
 
 		autosaveInterval = setInterval(performAutosave, 3000);
 
 		return () => {
 			document.removeEventListener('keydown', handleGlobalKeydown);
+
 			if (autosaveInterval) {
 				clearInterval(autosaveInterval);
 				autosaveInterval = null;
@@ -196,6 +201,14 @@
 
 		glSystem.renderWorker.terminate();
 	});
+
+	async function loadPatchFromParam() {
+		const url = getSrcUrlFromSearchParams();
+
+		if (url) {
+			await loadPatchFromUrlParam(url);
+		}
+	}
 
 	// Handle drop events
 	function onDrop(event: DragEvent) {
@@ -405,9 +418,79 @@
 		const position = screenToFlowPosition(lastMousePosition);
 		createNode(copiedNodeData.type, position, copiedNodeData.data);
 	}
+
+	// Load patch from URL parameter
+	async function loadPatchFromUrlParam(url: string) {
+		isLoadingFromUrl = true;
+		urlLoadError = null;
+
+		try {
+			const result = await loadPatchFromUrl(url);
+
+			if (result.success) {
+				const { data } = result;
+
+				// Clear existing nodes and edges
+				nodes = [];
+				edges = [];
+
+				// Load new patch data
+				nodes = data.nodes;
+				edges = data.edges;
+
+				// Update node counter based on loaded nodes
+				if (data.nodes.length > 0) {
+					nodeIdCounter = getNodeIdCounterFromSave(data.nodes);
+				}
+
+				console.log(`Successfully loaded patch "${data.name}" from URL:`, url);
+			} else {
+				urlLoadError = result.error;
+				console.error('Failed to load patch from URL:', result.error);
+			}
+		} catch (error) {
+			urlLoadError = error instanceof Error ? error.message : 'Unknown error occurred';
+			console.error('Failed to load patch from URL:', error);
+		} finally {
+			isLoadingFromUrl = false;
+		}
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
+	<!-- URL Loading Indicator -->
+	{#if isLoadingFromUrl}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
+			>
+				<div
+					class="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
+				></div>
+				Loading patch from URL...
+			</div>
+		</div>
+	{/if}
+
+	<!-- URL Loading Error -->
+	{#if urlLoadError}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
+			>
+				<span>Failed to load patch: {urlLoadError}</span>
+
+				<button
+					class="ml-2 text-red-300 hover:text-red-100"
+					onclick={() => (urlLoadError = null)}
+					title="Dismiss"
+				>
+					×
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Main flow area -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->

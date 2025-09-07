@@ -36,22 +36,15 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle
-					port="inlet"
-					type="video"
-					id="0"
-					title="Video output"
-					total={1}
-					index={0}
-				/>
+				<StandardHandle port="inlet" type="video" id="0" title="Video output" total={1} index={0} />
 
 				<div
 					class={[
-						'flex h-[100px] w-[100px] items-center justify-center rounded-lg bg-zinc-900/50 backdrop-blur-xl',
+						'flex h-[60px] w-[60px] items-center justify-center rounded-lg bg-zinc-900/50 backdrop-blur-xl',
 						borderClass
 					]}
 				>
-					<Icon icon="lucide:screen-share" class="h-8 w-8 text-zinc-500" />
+					<Icon icon="lucide:screen-share" class="h-5 w-5 text-zinc-500" />
 				</div>
 			</div>
 		</div>
