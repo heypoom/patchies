@@ -39,7 +39,7 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
-			if (meta.inletKey?.startsWith('msg-in-')) {
+			if (meta.inletKey?.startsWith('message-in-')) {
 				const [, uniformName] = meta.inletKey.split('-').slice(2);
 				glSystem.setUniformData(nodeId, uniformName, message as UserUniformValue);
 
@@ -149,7 +149,7 @@
 			<Handle
 				type="target"
 				position={Position.Top}
-				id={`${def.type === 'sampler2D' ? 'video' : 'msg'}-in-${defIndex}-${def.name}-${def.type}`}
+				id={`${def.type === 'sampler2D' ? 'video' : 'message'}-in-${defIndex}-${def.name}-${def.type}`}
 				style={`left: ${getPortPosition(data.glUniformDefs.length, defIndex)}`}
 				title={`${def.name} (${def.type})`}
 				class={def.type === 'sampler2D' ? '!bg-orange-500 hover:!bg-orange-400' : ''}

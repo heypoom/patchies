@@ -193,7 +193,7 @@ The rendering system requires careful coordination across multiple files:
 
 - **Input Handles**: Use `getPortPosition` for consistent spacing across multiple ports
 - **Output Handles**: Send completion signals with `messageContext.send({ type: 'bang' }, { to: 0 })`
-- **Handle IDs**: Use semantic names like `video-in`, `msg-out`, `outlet-0` for clarity
+- **Handle IDs**: Use semantic names like `video-in`, `message-out`, `outlet-0` for clarity
 
 ### Node Integration Checklist
 

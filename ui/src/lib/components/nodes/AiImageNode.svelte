@@ -148,7 +148,7 @@
 		<Handle
 			type="target"
 			position={Position.Top}
-			id="msg-in"
+			id="message-in"
 			class="z-1 !absolute"
 			style={`left: ${getPortPosition(2, 1)}`}
 		/>
