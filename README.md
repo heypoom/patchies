@@ -140,7 +140,7 @@ This allows you to create video patches that are more powerful than what you can
 
 Similar to video chaining, you can chain many audio objects together to create complex audio effects.
 
-- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `video` as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video` as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
 
@@ -163,10 +163,15 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 - Hydra and P5.js:
 
+  - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
+    - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-audio-code) for why this is needed and how to convert existing code.
+
+- Basic usage
+
   - Try out the `fft.hydra` preset for Hydra examples.
   - Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
   - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
-  - `fft({type: 'freq'}).a` gives you frequency spectrum analysis.
+  - `fft({type: 'freq'})` gives you frequency spectrum analysis.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
   - raw frequency bins: `fft().a`
@@ -176,9 +181,41 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
   - average as float: `fft().avg`
   - spectral centroid as float: `fft().centroid`
 
+## Convert existing P5 and Hydra audio code
+
+- Q: Why not just use standard Hydra and P5.js audio reactivity APIs like `a.fft[0]` and `p5.FFT()`?
+
+  - A: The reason is that the `p5-sound` and `a.fft` APIs only lets you access microphones and audio files. In contrast, Patchies lets you FFT any dynamic audio sources 😊
+  - You can FFT analyze your own audio pipelines like your web audio graph, and other live audio coding environment like Strudel and ChucK.
+  - It makes the API exactly the same between Hydra and P5.js. No need to juggle two.
+
+- Converting Hydra's [Audio Reactivity](https://hydra.ojack.xyz/hydra-docs-v2/docs/learning/sequencing-and-interactivity/audio/#audio-reactivity) API into Patchies:
+
+  - Replace `a.fft[0]` with `fft().a[0]` (un-normalized int8 values from 0 - 255)
+  - Replace `a.fft[0]` with `fft().f[0]` (normalized float values from 0 - 1)
+  - Instead of `a.setBins(32)`, change the fft bins in the `fft~` object instead e.g. `fft~ 32`
+  - Instead of `a.show()`, use the below presets to visualize fft bins.
+  - Using the value to control a variable:
+
+    ```diff
+
+      - osc(10, 0, () => a.fft[0]*4)
+      + osc(10, 0, () => fft().f[0]*4)
+        .out()
+    ```
+
+- Converting P5's [p5.sound](https://p5js.org/reference/p5.sound/) API into Patchies:
+
+  - Replace `p5.Amplitude` with `fft().rms` (rms as float between 0-1)
+  - Replace `p5.FFT` with `fft()`
+  - Replace `fft.analyze()` with nothing - `fft()` is always up to date.
+  - Replace `fft.waveform()` with `fft({ format: 'float' }).a`, as P5's waveform returns a value between -1 and 1. Using `format: 'float'` gives you Float32Array.
+  - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
+  - Replace `fft.getCentroid()` with `fft().centroid`
+
 ## List of objects
 
-Here are the non-exhaustive list of objects that we have in Patchies. You can also hit `n` on your keyboard to see list of objects to create, as well as drag in the objects from the bottom bar.
+Here are the non-exhaustive list of objects that we have in Patchies.
 
 ### Visual & Creative Coding Objects
 
@@ -421,7 +458,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - Supports a wide range of audio processing, control, and utility objects.
 - Create a textual object by pressing `Enter`, and type in the name of the object you want to create.
-- Hover over the argument name to see a tooltip with description of the object. For example, for `gain~` node hover over the gain value to see the tooltip.
+- Hover over the inlet name to see a tooltip with description of what the inlet's type are, and what values it does accept.
+  - Try to hover over a `gain~` object's gain value (e.g. `1.0`) to see the tooltip.
 
 #### Available textual objects
 
@@ -443,6 +481,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 **Sound Sources:**
 
 - `soundfile~`: Load and play audio files with transport controls
+  - use `soundurl~ <url>` to load audio files and streams from URLs directly.
+  - try `soundurl~ http://stream.antenne.de:80/antenne` to stream Antenne Bayern live radio.
 - `sampler~`: Sample playback with triggering capabilities
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers

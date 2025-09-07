@@ -32,7 +32,9 @@ export class ChuckManager {
 			const now = await chuck.now();
 
 			if (now === 0) {
-				console.warn('[chuck] chuck.now() returned 0, chuck instance is likely broken!');
+				console.warn('[chuck] chuck.now() returned 0, chuck is likely broken! reloading.');
+				await this.reloadChuck();
+
 				return;
 			}
 
@@ -162,16 +164,7 @@ export class ChuckManager {
 		if (this.ready) return this.chuck;
 
 		try {
-			const { Chuck } = await import('webchuck');
-			const chuckUrlPrefix = './webchuck/';
-
-			this.chuck = await Chuck.init([], this.audioContext, 2, chuckUrlPrefix);
-			this.chuck.connect(this.gainNode);
-
-			this.chuck.addEventListener('processorerror', (event) => {
-				console.error('ChucK AudioWorkletProcessor error:', event);
-			});
-
+			this.reloadChuck();
 			this.ready = true;
 
 			return this.chuck;
@@ -179,5 +172,23 @@ export class ChuckManager {
 			console.error('Failed to initialize ChucK:', error);
 			return null;
 		}
+	}
+
+	async reloadChuck() {
+		const { Chuck } = await import('webchuck');
+
+		if (this.chuck) {
+			this.chuck.clearChuckInstance();
+			this.chuck.clearGlobals();
+		}
+
+		this.chuck = await Chuck.init([], this.audioContext, 2, './webchuck/');
+		this.chuck.connect(this.gainNode);
+
+		this.chuck.addEventListener('processorerror', (event) => {
+			console.error('ChucK AudioWorkletProcessor error:', event);
+		});
+
+		console.log(`[chuck] reloaded`);
 	}
 }
