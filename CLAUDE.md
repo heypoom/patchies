@@ -187,13 +187,51 @@ The rendering system requires careful coordination across multiple files:
 - **Minimalistic Floating Layout**: Follow `ai.tts` pattern for nodes without code editors
 - **No Solid Backgrounds**: Use transparent headers with `absolute -top-7` positioning
 - **Hover Interactions**: Buttons should have `opacity-0 group-hover:opacity-100` for clean appearance
-- **Handle Positioning**: Use `getPortPosition(totalPorts, index)` for consistent spacing
+
+### StandardHandle Usage
+
+**Always use `StandardHandle` instead of raw `Handle` or `VideoHandle`**:
+
+```svelte
+import StandardHandle from '$lib/components/StandardHandle.svelte';
+
+<StandardHandle
+    port="inlet|outlet"
+    type="video|audio|message" (optional - omit for generic gray handles)
+    id="..." (optional - only for disambiguation/numbering)
+    title="Handle description"
+    total={totalHandles}
+    index={handleIndex}
+    class="" (optional styling)
+/>
+```
+
+**Handle Type Color Coding**:
+
+- `type="video"` → Orange handles (`!bg-orange-500`)
+- `type="audio"` → Blue handles (`!bg-blue-500`)
+- `type="message"` → Gray handles (`!bg-gray-500`)
+- No type → Default gray handles
+
+**ID Construction Rules**:
+
+- StandardHandle auto-generates IDs from `port + type + id`
+- `port="inlet"` + `type="video"` + `id="0"` → `"video-in-0"`
+- `port="outlet"` + `type="audio"` → `"audio-out"` (no id needed)
+- `port="inlet"` + `id="1"` → `"inlet-1"` (no type)
+- Only include `id` prop when disambiguation needed (numbered ports, complex cases)
+
+**Position Handling**:
+
+- StandardHandle automatically calculates position using `getPortPosition(total, index)`
+- No need for manual `style` or `position` attributes
+- Handles `z-1` and `!absolute` positioning internally
 
 ### Message Port Standards
 
-- **Input Handles**: Use `getPortPosition` for consistent spacing across multiple ports
+- **Input Handles**: Use `StandardHandle` with `port="inlet"` and `type="message"`
 - **Output Handles**: Send completion signals with `messageContext.send({ type: 'bang' }, { to: 0 })`
-- **Handle IDs**: Use semantic names like `video-in`, `message-out`, `outlet-0` for clarity
+- **Handle Consistency**: All nodes use StandardHandle for consistent styling and behavior
 
 ### Node Integration Checklist
 
