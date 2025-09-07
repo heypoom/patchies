@@ -404,11 +404,6 @@
 
 				return true;
 			})
-			.with(P.union('button', 'bang'), () => {
-				changeNode('button', { message: expr.replace(name, '').trim() });
-
-				return true;
-			})
 			.with('soundurl~', () => {
 				const url = expr.replace(name, '').trim();
 				const fileName = getFileNameFromUrl(url);
