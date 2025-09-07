@@ -63,15 +63,15 @@ Here is how to use `send` and `recv` in JavaScript objects:
 send('Hello from Object A')
 
 // Object B
-recv((data, meta) => {
-  // data = "Hello from Object A"
+recv((data) => {
+  // data is "Hello from Object A"
   console.log('Received message:', data)
 })
 ```
 
-You can use the `send` and `recv` function in all JavaScript-based objects, such as `js`, `p5`, `hydra`, `strudel` and `canvas`.
+You can use the `send` and `recv` function in all JavaScript-based objects, such as (but not limited to)`js`, `p5`, `hydra`, `strudel` and `canvas`.
 
-The `meta` includes the `inlet` which is an index of the inlet. This is helpful to distinguish inlets. You can also do `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
+The `meta` includes the `inlet` which is an index of the inlet. This is very helpful to distinguish inlets. You can also do `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
 
 ```js
 recv((data, meta) => {
@@ -183,19 +183,17 @@ These objects support video chaining and can be connected to create complex visu
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
 
-### `swgl`: creates a SwissGL compute shader
+### `swgl`: creates a SwissGL shader
 
-- SwissGL is a minimalistic wrapper for WebGL to create compute shaders and GPU-accelerated graphics.
-- Perfect for data visualization, image processing, and GPU compute tasks.
-- Supports video chaining for complex processing pipelines.
+- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code.
 
 ### `canvas`: creates a JavaScript canvas
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
+
 - You can call these special methods in your canvas code:
 
   - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your canvas, such as adding sliders. You can call it in your `setup()` function.
-  - `getSource()` to get the video source from the previous video object using [Video Chaining](#video-chaining). This returns the HTML5 canvas element which you can use for e.g. copying pixels. You can call this in your `setup()` function.
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
@@ -236,7 +234,13 @@ These objects support video chaining and can be connected to create complex visu
 - Use `console.log()` to log messages to the virtual console.
 - Use `setInterval(callback, ms)` to run a callback every `ms` milliseconds.
   - The code block has a special version of `setInterval` that automatically cleans up the interval on unmount. Do not use `window.setInterval` from the window scope as that will not clean up.
-- Use `send()` and `recv()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section below.
+- Use `requestAnimationFrame(callback)` to run a callback on the next animation frame.
+  - The code block has a special version of `requestAnimationFrame` that automatically cleans up on unmount. Do not use `window.requestAnimationFrame` from the window scope as that will not clean up.
+- Use `send()` and `recv()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section above.
+- Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
+- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets you want. By default, there is 1 inlet and 1 outlet.
+  - Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
+  - Use `send(data, { to: inletIndex })` to send data to a specific inlet of another object.
 
 ### `expr`: mathematical expression evaluator
 
