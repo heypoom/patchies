@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -94,25 +95,25 @@
 	{@const totalInlets = 1 + inletCount}
 
 	<!-- Audio input (always present) -->
-	<Handle
-		type="target"
-		position={Position.Top}
-		class="top-0 z-1 !bg-blue-500"
-		style={`left: ${inletCount === 0 ? '50%' : `${35 + (0 / (totalInlets - 1)) * 30}%`}`}
+	<StandardHandle
+		port="inlet"
+		type="audio"
 		title="Audio Input"
-		id="inlet-audio"
+		total={totalInlets}
+		index={0}
+		class="top-0"
 	/>
 
 	<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
 	{#if inletCount > 0}
 		{#each Array.from({ length: inletCount }) as _, index}
-			<Handle
-				type="target"
-				position={Position.Top}
-				id={`inlet-${index}`}
-				class="top-0 z-1"
-				style={`left: ${35 + ((index + 1) / (totalInlets - 1)) * 30}%`}
+			<StandardHandle
+				port="inlet"
+				type="message"
 				title={`$${index + 1}`}
+				total={totalInlets}
+				index={index + 1}
+				class="top-0"
 			/>
 		{/each}
 	{/if}
@@ -120,12 +121,13 @@
 
 {#snippet audioOutlets()}
 	<!-- Audio output -->
-	<Handle
-		type="source"
-		position={Position.Bottom}
-		class="z-1 !bg-blue-500"
-		title="Audio Output"
+	<StandardHandle
+		port="outlet"
+		type="audio"
 		id="audio-out"
+		title="Audio Output"
+		total={1}
+		index={0}
 	/>
 {/snippet}
 

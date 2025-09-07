@@ -1,14 +1,13 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
-	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let {
 		id: nodeId,
@@ -103,32 +102,33 @@
 	bind:previewCanvas
 >
 	{#snippet topHandle()}
-		<Handle
-			type="target"
-			position={Position.Top}
-			class="z-1"
-			id="message-in"
+		<StandardHandle
+			port="inlet"
+			type="message"
+			id="0"
 			title="Message input"
+			total={1}
+			index={0}
 		/>
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<VideoHandle
-			type="source"
-			position={Position.Bottom}
-			id="video-out-0"
-			class="z-1"
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="0"
 			title="Video output"
-			style={`left: ${getPortPosition(2, 0)}`}
+			total={2}
+			index={0}
 		/>
 
-		<Handle
-			type="source"
-			position={Position.Bottom}
-			id="message-out"
+		<StandardHandle
+			port="outlet"
+			type="message"
+			id="1"
 			title="Message output"
-			class="z-1"
-			style={`left: ${getPortPosition(2, 1)}`}
+			total={2}
+			index={1}
 		/>
 	{/snippet}
 

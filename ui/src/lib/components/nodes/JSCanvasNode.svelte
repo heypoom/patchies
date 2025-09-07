@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { JSCanvasManager } from '$lib/canvas/JSCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 
@@ -83,24 +83,26 @@
 	nodrag={!dragEnabled}
 >
 	{#snippet topHandle()}
-		<Handle type="target" position={Position.Top} />
-		<VideoHandle
-			type="target"
-			position={Position.Top}
-			id="video-in-0"
-			class="!left-8"
+		<StandardHandle port="inlet" type="message" total={2} index={0} />
+		<StandardHandle
+			port="inlet"
+			type="video"
+			id="0"
 			title="Video input"
+			total={2}
+			index={1}
 		/>
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<Handle type="source" position={Position.Bottom} />
-		<VideoHandle
-			type="source"
-			position={Position.Bottom}
-			id="video-out-0"
-			class="!left-8"
+		<StandardHandle port="outlet" type="message" total={2} index={0} />
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="0"
 			title="Video output"
+			total={2}
+			index={1}
 		/>
 	{/snippet}
 

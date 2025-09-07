@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -185,7 +186,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 				<div
 					class={[
@@ -228,7 +229,7 @@
 					{/if}
 				</div>
 
-				<Handle type="source" position={Position.Bottom} class="!bg-blue-500" id="audio-out" />
+				<StandardHandle port="outlet" type="audio" id="0" title="Audio output" total={1} index={0} />
 			</div>
 		</div>
 	</div>

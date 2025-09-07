@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Handle, NodeResizer, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import OverType from 'overtype';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -94,7 +95,7 @@
 	{/if}
 
 	<div>
-		<Handle type="target" position={Position.Top} class={handleClass} />
+		<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
 
 		<div
 			bind:this={overtypeElement}
@@ -102,7 +103,7 @@
 			class="nodrag overtype-editor rounded-lg bg-zinc-900/70 backdrop-blur-xl"
 		></div>
 
-		<Handle type="source" position={Position.Bottom} class={handleClass} />
+		<StandardHandle port="outlet" type="message" total={1} index={0} class={handleClass} />
 	</div>
 </div>
 

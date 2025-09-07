@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Handle, Position, useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
+	import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { createLLMFunction } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -101,13 +101,14 @@
 
 <ObjectPreviewLayout title="ai.txt" onrun={generateText}>
 	{#snippet topHandle()}
-		<Handle type="target" position={Position.Top} class="z-1" />
-		<VideoHandle
-			type="target"
-			position={Position.Top}
-			id="video-in-0"
-			class="z-1 !left-32"
+		<StandardHandle port="inlet" type="message" total={2} index={0} />
+		<StandardHandle
+			port="inlet"
+			type="video"
+			id="0"
 			title="Video input (optional)"
+			total={2}
+			index={1}
 		/>
 	{/snippet}
 
@@ -155,7 +156,7 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<Handle type="source" position={Position.Bottom} class="z-1" />
+		<StandardHandle port="outlet" type="message" total={1} index={0} />
 	{/snippet}
 
 	{#snippet codeEditor()}

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -117,7 +118,13 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class="!-top-2" />
+				<StandardHandle 
+					port="inlet" 
+					type="message"
+					total={1} 
+					index={0}
+					class="!-top-2"
+				/>
 
 				<div
 					class="flex w-full min-w-[100px] max-w-[130px] flex-col items-center justify-center gap-1 py-1"
@@ -156,7 +163,12 @@
 					</div>
 				</div>
 
-				<Handle type="source" position={Position.Bottom} />
+				<StandardHandle 
+					port="outlet" 
+					type="message"
+					total={1} 
+					index={0}
+				/>
 			</div>
 		</div>
 	</div>

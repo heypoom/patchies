@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -158,7 +158,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class={handleCommonClass} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} />
 
 				<div
 					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}
@@ -183,11 +183,13 @@
 					{/if}
 				</div>
 
-				<VideoHandle
-					type="source"
-					position={Position.Bottom}
-					id="video-out-0"
+				<StandardHandle
+					port="outlet"
+					type="video"
+					id="0"
 					title="Video output"
+					total={1}
+					index={0}
 					class={handleCommonClass}
 				/>
 			</div>

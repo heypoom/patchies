@@ -1,16 +1,15 @@
 <script lang="ts">
-	import { Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 
 	import butterchurn from 'butterchurn';
 	import butterchurnPresets from 'butterchurn-presets';
 
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
-	import { Handle } from '@xyflow/svelte';
 
 	let {
 		id: nodeId,
@@ -110,22 +109,24 @@
 	{selected}
 >
 	{#snippet topHandle()}
-		<Handle
-			type="target"
-			position={Position.Top}
-			id="audio-in"
-			class="z-1 !bg-blue-500"
+		<StandardHandle
+			port="inlet"
+			type="audio"
+			id="0"
 			title="Audio input"
+			total={1}
+			index={0}
 		/>
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<VideoHandle
-			type="source"
-			position={Position.Bottom}
-			id="video-out-0"
-			class="z-1"
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="0"
 			title="Video output"
+			total={1}
+			index={0}
 		/>
 	{/snippet}
 

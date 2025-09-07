@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Handle, NodeResizer, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -206,7 +206,7 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class={handleCommonClass} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} />
 
 				<div class="flex flex-col gap-2">
 					{#if hasFile && hasImage}
@@ -253,11 +253,13 @@
 					{/if}
 				</div>
 
-				<VideoHandle
-					type="source"
-					position={Position.Bottom}
-					id="video-out-0"
+				<StandardHandle
+					port="outlet"
+					type="video"
+					id="0"
 					title="Video output"
+					total={1}
+					index={0}
 					class={handleCommonClass}
 				/>
 			</div>

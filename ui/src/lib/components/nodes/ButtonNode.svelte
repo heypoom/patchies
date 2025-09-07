@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 
@@ -38,7 +38,13 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class={[borderColor, handleClass]} />
+				<StandardHandle 
+					port="inlet" 
+					type="message"
+					total={1} 
+					index={0}
+					class={handleClass}
+				/>
 
 				<button
 					onclick={() => messageContext.send({ type: 'bang' })}
@@ -51,10 +57,12 @@
 				>
 				</button>
 
-				<Handle
-					type="source"
-					position={Position.Bottom}
-					class={['z-1 absolute !bottom-1.5', borderColor, handleClass]}
+				<StandardHandle
+					port="outlet"
+					type="message"
+					total={1}
+					index={0}
+					class={`absolute !bottom-1.5 ${handleClass}`}
 				/>
 			</div>
 		</div>

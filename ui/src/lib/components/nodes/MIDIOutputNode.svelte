@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { match, P } from 'ts-pattern';
@@ -185,7 +186,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" id="message-in" position={Position.Top} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 				{#if !deviceId}
 					<button

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -7,7 +8,6 @@
 	import { createLLMFunction } from '$lib/ai/google';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let contentContainer: HTMLDivElement | null = null;
 	let consoleContainer: HTMLDivElement | null = $state(null);
@@ -277,13 +277,13 @@
 			<div class="relative">
 				<div>
 					{#each Array.from({ length: inletCount }) as _, index}
-						<Handle
-							type="target"
-							id={`in-${index}`}
-							position={Position.Top}
-							style={`left: ${getPortPosition(inletCount, index)}`}
+						<StandardHandle
+							port="inlet"
+							id={index}
 							title={`Inlet ${index}`}
-							class="z-1 top-0"
+							total={inletCount}
+							index={index}
+							class="top-0"
 						/>
 					{/each}
 				</div>
@@ -363,13 +363,13 @@
 
 				<div>
 					{#each Array.from({ length: outletCount }) as _, index}
-						<Handle
-							type="source"
-							id={`out-${index}`}
-							position={Position.Bottom}
-							style={`left: ${getPortPosition(outletCount, index)}`}
+						<StandardHandle
+							port="outlet"
+							id={index}
 							title={`Outlet ${index}`}
-							class="z-1 bottom-0"
+							total={outletCount}
+							index={index}
+							class="bottom-0"
 						/>
 					{/each}
 				</div>

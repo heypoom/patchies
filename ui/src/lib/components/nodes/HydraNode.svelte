@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
-	import { getPortPosition } from '$lib/utils/node-utils';
 	import type { NodePortCountUpdateEvent } from '$lib/eventbus/events';
 
 	let {
@@ -168,48 +167,48 @@
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: videoInletCount }) as _, index}
-			<VideoHandle
-				type="target"
-				position={Position.Top}
-				id={`video-in-${index}`}
-				style={`left: ${getPortPosition(messageInletCount + videoInletCount, index)}`}
+			<StandardHandle
+				port="inlet"
+				type="video"
+				id={index.toString()}
 				title={`Video Inlet ${index}`}
-				class="z-1"
+				total={messageInletCount + videoInletCount}
+				{index}
 			/>
 		{/each}
 
 		{#each Array.from({ length: messageInletCount }) as _, index}
-			<Handle
-				type="target"
-				id={`message-in-${index}`}
-				position={Position.Top}
-				style={`left: ${getPortPosition(messageInletCount + videoInletCount, index + videoInletCount)}`}
+			<StandardHandle
+				port="inlet"
+				type="message"
+				id={index + videoInletCount}
 				title={`Message Inlet ${index}`}
-				class="z-1"
+				total={messageInletCount + videoInletCount}
+				index={index + videoInletCount}
 			/>
 		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
 		{#each Array.from({ length: videoOutletCount }) as _, index}
-			<VideoHandle
-				type="source"
-				position={Position.Bottom}
-				id={`video-out-${index}`}
-				style={`left: ${getPortPosition(messageOutletCount + videoOutletCount, index)}`}
+			<StandardHandle
+				port="outlet"
+				type="video"
+				id={index.toString()}
 				title={`Video Outlet ${index}`}
-				class="z-1"
+				total={messageOutletCount + videoOutletCount}
+				{index}
 			/>
 		{/each}
 
 		{#each Array.from({ length: messageOutletCount }) as _, index}
-			<Handle
-				type="source"
-				id={`out-${index}`}
-				position={Position.Bottom}
-				style={`left: ${getPortPosition(messageOutletCount + videoOutletCount, index + videoOutletCount)}`}
+			<StandardHandle
+				port="outlet"
+				type="message"
+				id={index + videoOutletCount}
 				title={`Outlet ${index}`}
-				class="z-1"
+				total={messageOutletCount + videoOutletCount}
+				index={index + videoOutletCount}
 			/>
 		{/each}
 	{/snippet}

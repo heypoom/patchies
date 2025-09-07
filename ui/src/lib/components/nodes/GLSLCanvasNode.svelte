@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -9,7 +10,6 @@
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
-	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let {
 		id: nodeId,
@@ -146,26 +146,19 @@
 >
 	{#snippet topHandle()}
 		{#each data.glUniformDefs as def, defIndex}
-			<Handle
-				type="target"
-				position={Position.Top}
-				id={`${def.type === 'sampler2D' ? 'video' : 'message'}-in-${defIndex}-${def.name}-${def.type}`}
-				style={`left: ${getPortPosition(data.glUniformDefs.length, defIndex)}`}
+			<StandardHandle
+				port="inlet"
+				type={def.type === 'sampler2D' ? 'video' : 'message'}
+				id={`${defIndex}-${def.name}-${def.type}`}
 				title={`${def.name} (${def.type})`}
-				class={def.type === 'sampler2D' ? '!bg-orange-500 hover:!bg-orange-400' : ''}
+				total={data.glUniformDefs.length}
+				index={defIndex}
 			/>
 		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<Handle
-			type="source"
-			position={Position.Bottom}
-			id={`video-out`}
-			style={`left: ${getPortPosition(1, 0)}`}
-			title="Video output"
-			class="!bg-orange-500 hover:!bg-orange-400"
-		/>
+		<StandardHandle port="outlet" type="video" id="out" title="Video output" total={1} index={0} />
 	{/snippet}
 
 	{#snippet codeEditor()}

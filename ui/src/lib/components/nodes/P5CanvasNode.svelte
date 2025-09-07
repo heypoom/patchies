@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { P5Manager } from '$lib/p5/P5Manager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
-	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let {
 		id: nodeId,
@@ -97,14 +96,7 @@
 <ObjectPreviewLayout title="p5.canvas" onrun={updateSketch} previewWidth={previewContainerWidth}>
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
-			<Handle
-				type="target"
-				id={`in-${index}`}
-				position={Position.Top}
-				style={`left: ${getPortPosition(inletCount, index)}`}
-				title={`Inlet ${index}`}
-				class="z-1"
-			/>
+			<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
 		{/each}
 	{/snippet}
 
@@ -124,23 +116,23 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<VideoHandle
-			type="source"
-			position={Position.Bottom}
-			id="video-out-0"
-			style={`left: ${getPortPosition(outletCount + 1, 0)}`}
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="0"
 			title="Video output"
-			class="z-1"
+			total={outletCount + 1}
+			index={0}
+			class=""
 		/>
 
 		{#each Array.from({ length: outletCount }) as _, index}
-			<Handle
-				type="source"
-				id={`out-${index}`}
-				position={Position.Bottom}
-				style={`left: ${getPortPosition(outletCount + 1, index + 1)}`}
+			<StandardHandle
+				port="outlet"
+				id={index + 1}
 				title={`Outlet ${index}`}
-				class="z-1"
+				total={outletCount + 1}
+				index={index + 1}
 			/>
 		{/each}
 	{/snippet}

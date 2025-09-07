@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { getPortPosition } from '$lib/utils/node-utils';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -109,7 +109,7 @@
 					{#if isInitialized}
 						{#if isPlaying}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={stop}
 								title="Stop"
 							>
@@ -117,7 +117,7 @@
 							</button>
 						{:else}
 							<button
-								class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+								class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 								onclick={evaluate}
 								title="Play"
 							>
@@ -129,11 +129,13 @@
 			</div>
 
 			<div class="relative">
-				<Handle
-					type="target"
-					position={Position.Top}
-					id={`strudel-in-${nodeId}`}
-					class="nodrag !-top-2 z-1"
+				<StandardHandle
+					port="inlet"
+					type="message"
+					id={nodeId}
+					total={1}
+					index={0}
+					class="nodrag !-top-2"
 				/>
 
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
@@ -152,21 +154,9 @@
 					</div>
 				</div>
 
-				<Handle
-					type="source"
-					position={Position.Bottom}
-					id="audio-out"
-					class="absolute !-bottom-2 z-1 !bg-blue-500"
-					style={`left: ${getPortPosition(2, 0)}`}
-				/>
+				<StandardHandle port="outlet" type="audio" total={2} index={0} class="!-bottom-2" />
 
-				<Handle
-					type="source"
-					position={Position.Bottom}
-					id="message-out"
-					class="absolute !-bottom-2 z-1"
-					style={`left: ${getPortPosition(2, 1)}`}
-				/>
+				<StandardHandle port="outlet" type="message" total={2} index={1} class="!-bottom-2" />
 
 				<!-- Error display -->
 				{#if errorMessage}

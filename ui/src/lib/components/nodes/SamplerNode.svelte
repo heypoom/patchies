@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
-	import { getPortPosition } from '$lib/utils/node-utils';
 
 	let node: {
 		id: string;
@@ -149,21 +149,22 @@
 
 			<div class="relative">
 				<!-- Audio Input Handle -->
-				<Handle
-					type="target"
-					position={Position.Top}
+				<StandardHandle
+					port="inlet"
+					type="audio"
 					id="audio-in"
-					style={`left: ${getPortPosition(2, 0)}`}
-					class="!bg-blue-500"
+					total={2}
+					index={0}
 					title="Audio input"
 				/>
 
 				<!-- Message Input Handle -->
-				<Handle
-					type="target"
-					position={Position.Top}
+				<StandardHandle
+					port="inlet"
+					type="message"
 					id="message-in"
-					style={`left: ${getPortPosition(2, 1)}`}
+					total={2}
+					index={1}
 					title="Message input"
 				/>
 
@@ -194,11 +195,12 @@
 				</div>
 
 				<!-- Audio Output Handle -->
-				<Handle
+				<StandardHandle
+					port="outlet"
+					type="audio"
 					id="audio-out"
-					type="source"
-					position={Position.Bottom}
-					class="!bg-blue-500"
+					total={1}
+					index={0}
 					title="Audio output"
 				/>
 			</div>

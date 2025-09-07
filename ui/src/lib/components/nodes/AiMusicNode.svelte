@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { LiveMusicManager, type Prompt } from '$lib/music/LiveMusicManager';
@@ -189,7 +189,7 @@
 		</div>
 
 		<div class="relative">
-			<Handle type="target" position={Position.Top} class="z-1" />
+			<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 			<div class="w-80 rounded-lg border border-zinc-600 bg-zinc-900 p-4">
 				<!-- Add Prompt Section -->
@@ -268,12 +268,13 @@
 				</div>
 			</div>
 
-			<Handle
-				type="source"
-				position={Position.Bottom}
+			<StandardHandle
+				port="outlet"
+				type="audio"
 				id="audio-out"
 				title="Audio Outlet"
-				class={['z-1 !bg-blue-500']}
+				total={1}
+				index={0}
 			/>
 		</div>
 	</div>

@@ -1,12 +1,11 @@
 <script lang="ts">
 	import {
-		Handle,
-		Position,
 		useEdges,
 		useSvelteFlow,
 		useUpdateNodeInternals
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { nodeNames } from '$lib/nodes/node-types';
 	import {
 		getObjectNames,
@@ -630,18 +629,19 @@
 				<!-- Dynamic inlets -->
 				{#if inlets.length > 0}
 					{#each inlets as inlet, index}
-						<Handle
-							type="target"
-							position={Position.Top}
-							id={`inlet-${index}`}
-							class={['top-0 z-1', inlet.type === 'signal' && '!bg-blue-500']}
-							style={`left: ${inlets.length === 1 ? '50%' : `${35 + (index / (inlets.length - 1)) * 30}%`}`}
+						<StandardHandle
+							port="inlet"
+							type={inlet.type === 'signal' ? 'audio' : 'message'}
+							id={index}
 							title={inlet.name || `Inlet ${index}`}
+							total={inlets.length}
+							index={index}
+							class="top-0"
 						/>
 					{/each}
 				{:else}
 					<!-- Fallback generic inlet for objects without definitions -->
-					<Handle type="target" position={Position.Top} class="z-1" />
+					<StandardHandle port="inlet" type="message" total={1} index={0} />
 				{/if}
 
 				<div class="relative">
@@ -751,13 +751,14 @@
 				<!-- Dynamic outlets -->
 				{#if outlets.length > 0}
 					{#each outlets as outlet, index}
-						<Handle
-							type="source"
-							position={Position.Bottom}
-							id={`outlet-${index}`}
-							style={`left: ${outlets.length === 1 ? '50%' : `${35 + (index / (outlets.length - 1)) * 30}%`}`}
+						<StandardHandle
+							port="outlet"
+							type={outlet.type === 'signal' ? 'audio' : 'message'}
+							id={index}
 							title={outlet.name || `Outlet ${index}`}
-							class={['z-1', outlet.type === 'signal' && '!bg-blue-500']}
+							total={outlets.length}
+							index={index}
+							class="bottom-0"
 						/>
 					{/each}
 				{/if}

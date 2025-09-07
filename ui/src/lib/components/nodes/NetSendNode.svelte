@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -85,7 +86,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class="z-1" />
+				<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 				<div class="relative">
 					{#if showChannelInput}

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -161,7 +162,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" id="message-in" position={Position.Top} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 				{#if !deviceId}
 					<button
@@ -195,7 +196,7 @@
 					</button>
 				{/if}
 
-				<Handle type="source" position={Position.Bottom} />
+				<StandardHandle port="outlet" type="message" total={1} index={0} />
 			</div>
 		</div>
 	</div>

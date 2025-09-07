@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -120,24 +121,23 @@
 
 {#snippet chuckHandles()}
 	<!-- Control inlet for messages and code -->
-	<Handle
-		type="target"
-		position={Position.Top}
-		class="top-0 z-1"
-		style="left: 50%"
+	<StandardHandle
+		port="inlet"
+		type="message"
 		title="Control Input (code, bang, stop)"
-		id="inlet-0"
+		total={1}
+		index={0}
 	/>
 {/snippet}
 
 {#snippet chuckOutlets()}
 	<!-- Audio output -->
-	<Handle
-		type="source"
-		position={Position.Bottom}
-		class="z-1 !bg-blue-500"
+	<StandardHandle
+		port="outlet"
+		type="audio"
 		title="Audio Output"
-		id="audio-out"
+		total={1}
+		index={0}
 	/>
 {/snippet}
 

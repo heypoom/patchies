@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -69,7 +70,7 @@
 		</div>
 
 		<div class="relative">
-			<Handle type="target" position={Position.Top} class="z-1 absolute" />
+			<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 			<div>
 				<!-- Text Input -->
@@ -89,7 +90,7 @@
 				></textarea>
 			</div>
 
-			<Handle type="source" position={Position.Bottom} class="z-1 absolute !bottom-0.5" />
+			<StandardHandle port="outlet" type="message" total={1} index={0} class="!bottom-0.5" />
 		</div>
 	</div>
 </div>

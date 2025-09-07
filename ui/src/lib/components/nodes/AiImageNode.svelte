@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Handle, Position, useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
+	import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { generateImageWithGemini } from '$lib/ai/google';
 	import { EditorView } from 'codemirror';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -11,7 +11,6 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
 	import { match, P } from 'ts-pattern';
-	import { getPortPosition } from '$lib/utils/node-utils';
 	import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
 	let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
@@ -136,21 +135,23 @@
 
 <ObjectPreviewLayout title="ai.img" onrun={generateImage}>
 	{#snippet topHandle()}
-		<VideoHandle
-			type="target"
-			position={Position.Top}
-			id="video-in-0"
-			class="z-1 !absolute"
+		<StandardHandle
+			port="inlet"
+			type="video"
+			id="0"
 			title="Image input (Optional)"
-			style={`left: ${getPortPosition(2, 0)}`}
+			total={2}
+			index={0}
+			class=""
 		/>
 
-		<Handle
-			type="target"
-			position={Position.Top}
-			id="message-in"
-			class="z-1 !absolute"
-			style={`left: ${getPortPosition(2, 1)}`}
+		<StandardHandle
+			port="inlet"
+			type="message"
+			id="1"
+			title="Message input"
+			total={2}
+			index={1}
 		/>
 	{/snippet}
 
@@ -178,22 +179,23 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<VideoHandle
-			type="source"
-			position={Position.Bottom}
-			id="video-out-0"
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="0"
 			title="Video output"
-			class="z-1 !absolute"
-			style={`left: ${getPortPosition(2, 0)}`}
+			total={2}
+			index={0}
+			class=""
 		/>
 
-		<Handle
-			type="source"
-			position={Position.Bottom}
-			id="outlet-0"
-			class="z-1 !absolute"
-			style={`left: ${getPortPosition(2, 1)}`}
+		<StandardHandle
+			port="outlet"
+			type="message"
+			id="1"
 			title="Message output"
+			total={2}
+			index={1}
 		/>
 	{/snippet}
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Handle, Position } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -88,20 +88,21 @@
 {#snippet exprHandles()}
 	<!-- Dynamic inlets based on expression -->
 	{#each Array.from({ length: inletCount }) as _, index}
-		<Handle
-			type="target"
-			position={Position.Top}
-			id={`inlet-${index}`}
-			class="top-0 z-1"
-			style={`left: ${inletCount === 1 ? '50%' : `${35 + (index / (inletCount - 1)) * 30}%`}`}
+		<StandardHandle
+			port="inlet"
+			type="message"
+			id={index}
 			title={`$${index + 1}`}
+			total={inletCount}
+			index={index}
+			class="top-0"
 		/>
 	{/each}
 {/snippet}
 
 {#snippet exprOutlets()}
 	<!-- Single outlet -->
-	<Handle type="source" position={Position.Bottom} class="z-1" title="Result" />
+	<StandardHandle port="outlet" type="message" title="Result" total={1} index={0} />
 {/snippet}
 
 <CommonExprLayout

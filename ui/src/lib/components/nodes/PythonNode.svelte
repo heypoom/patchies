@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
@@ -166,7 +167,7 @@
 
 			<div class="relative">
 				<div>
-					<Handle type="target" position={Position.Top} title="Input" class="top-0 z-1" />
+					<StandardHandle port="inlet" type="message" title="Input" total={1} index={0} />
 				</div>
 
 				{#if data.showConsole}
@@ -238,7 +239,7 @@
 				{/if}
 
 				<div>
-					<Handle type="source" position={Position.Bottom} title="Output" class="bottom-0 z-1" />
+					<StandardHandle port="outlet" type="message" title="Output" total={1} index={0} />
 				</div>
 			</div>
 		</div>

@@ -2,12 +2,11 @@
 	import { Handle, Position, NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
-	import { getPortPosition } from '$lib/utils/node-utils';
 	import { match, P } from 'ts-pattern';
 
 	let {
@@ -362,7 +361,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class={handleCommonClass} />
+				<StandardHandle port="inlet" type="video" class={handleCommonClass} total={1} index={0} />
 
 				<div
 					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-transparent'}`}
@@ -428,22 +427,23 @@
 					{/if}
 				</div>
 
-				<VideoHandle
-					type="source"
-					position={Position.Bottom}
-					id="video-out-0"
+				<StandardHandle
+					port="outlet"
+					type="video"
+					id="0"
 					title="Video output"
-					class="z-1 absolute {selected ? '' : 'opacity-40'}"
-					style={`left: ${getPortPosition(2, 0)}`}
+					total={2}
+					index={0}
+					class={selected ? '' : 'opacity-40'}
 				/>
 
-				<Handle
-					type="source"
-					position={Position.Bottom}
-					class="z-1 absolute !bg-blue-500 {selected ? '' : 'opacity-40'}"
-					id="audio-out"
-					title="Audio output"
-					style={`left: ${getPortPosition(2, 1)}`}
+				<StandardHandle
+					port="outlet"
+					type="message"
+					title="Video output"
+					total={2}
+					index={1}
+					class={selected ? '' : 'opacity-40'}
 				/>
 			</div>
 		</div>

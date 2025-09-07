@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -252,7 +253,7 @@
 		</div>
 
 		<div class="relative">
-			<Handle type="target" position={Position.Top} class="absolute z-1" />
+			<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 			<div>
 				<!-- Main Text Input -->
@@ -437,11 +438,13 @@
 				{/if}
 			</div>
 
-			<Handle
-				type="source"
-				position={Position.Bottom}
-				class="absolute !bottom-[2px] z-1 !bg-blue-500"
+			<StandardHandle
+				port="outlet"
+				type="audio"
 				id="audio-out"
+				total={1}
+				index={0}
+				class="absolute !bottom-[2px]"
 			/>
 		</div>
 	</div>

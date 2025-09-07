@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Position } from '@xyflow/svelte';
 
-	import VideoHandle from '$lib/components/VideoHandle.svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
 	import { GLSystem } from '$lib/canvas/GLSystem';
@@ -36,12 +36,13 @@
 			</div>
 
 			<div class="relative">
-				<VideoHandle
-					type="target"
-					position={Position.Top}
-					id="video-out-0"
+				<StandardHandle
+					port="inlet"
+					type="video"
+					id="0"
 					title="Video output"
-					class="z-1"
+					total={1}
+					index={0}
 				/>
 
 				<div

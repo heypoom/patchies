@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Handle, Position, useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { P2PManager, type P2PMessageHandler } from '$lib/p2p/P2PManager';
@@ -100,7 +101,7 @@
 			</div>
 
 			<div class="relative">
-				<Handle type="target" position={Position.Top} class="z-1" />
+				<StandardHandle port="inlet" type="message" total={1} index={0} />
 
 				<div class="relative">
 					{#if showChannelInput}
@@ -137,7 +138,7 @@
 					{/if}
 				</div>
 
-				<Handle type="source" position={Position.Bottom} class="z-1" />
+				<StandardHandle port="outlet" type="message" total={1} index={0} />
 			</div>
 		</div>
 	</div>
