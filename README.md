@@ -53,24 +53,31 @@ You can use the Shortcuts button on the bottom right to see a list of shortcuts.
 
 ## Message Passing
 
-You can use `send()` and `recv()` functions to send and receive messages between objects. This allows you to create complex interactions between different parts of your patch. This is very similar to messages in Max/MSP.
+Each object can send message to other objects, and receive messages from other objects. Here are some examples to get you started:
 
-Here is how to use `send` and `recv` in JavaScript objects:
+- Create two `button` objects, and connect the outlet of one to the inlet of another.
+  - When you click on the first button, it will send a `{type: 'bang'}` message to the second button, which will flash.
+- Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `message-console.js` preset. Connect them together.
+  - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
+
+In JavaScript-based objects such as `js`, `p5`, `hydra`, `strudel` and `canvas`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
 ```js
-// Object A
+// In the source `js` object
 send('Hello from Object A')
 
-// Object B
+// In the target `js` object
 recv((data) => {
   // data is "Hello from Object A"
   console.log('Received message:', data)
 })
 ```
 
-You can use the `send` and `recv` function in all JavaScript-based objects, such as (but not limited to)`js`, `p5`, `hydra`, `strudel` and `canvas`.
+This is similar to the second example above, but using JavaScript code.
 
-The `meta` includes the `inlet` which is an index of the inlet. This is very helpful to distinguish inlets. You can also do `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
+The `recv` callback also accepts the `meta` argument in addition to the message data. It includes the `inlet` field which lets you know which inlet the message came from.
+
+You can combine this with `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
 
 ```js
 recv((data, meta) => {
@@ -78,16 +85,24 @@ recv((data, meta) => {
 })
 ```
 
-In JavaScript objects such as `js`, `p5`, `hydra`, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+In the above example, if the message came from inlet 2, it will be sent to outlet 2.
 
-You can also `send` messages into GLSL uniforms. If you define a uniform in your GLSL code like so:
+In `js`, `p5` and `hydra` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+
+## Message Passing with GLSL
+
+You can send messages into the GLSL uniforms to set them. First, create a GLSL uniform using the standard GLSL syntax, which adds two dynamic inlets to the GLSL object.
 
 ```glsl
 uniform float iMix;
 uniform vec2 iFoo;
 ```
 
-This will create two inlets in the GLSL object: the first one allows `send(0.5)` for `iMix`, and the other allows `send([0.0, 0.0])` for `iFoo`. When you `send` messages to these inlets, it will set the internal GLSL uniform values for the object.
+You can now send a message of value `0.5` to `iMix`, and send `[0.0, 0.0]` to `iFoo`. When you send messages to these inlets, it will set the internal GLSL uniform values for the object. The type of the message must match the type of the uniform, otherwise the message will not be sent.
+
+If you want to set a default uniform value for when the patch gets loaded, use the `loadbang` object connected to a `msg` object or a slider. `loadbang` sends a `{type: 'bang'}` message when the patch is loaded, which you can use to trigger a `msg` object or a `slider` to send the default value to the GLSL uniform inlet.
+
+Supported uniform types are `bool` (boolean), `int` (number), `float` (floating point number), `vec2`, `vec3`, and `vec4` (arrays of 2, 3, or 4 numbers).
 
 ## Video Chaining
 
@@ -176,7 +191,7 @@ These objects support video chaining and can be connected to create complex visu
 - You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
 - You can create any number of GLSL uniform inlets by defining them in your GLSL code.
   - For example, if you define `uniform float iMix;`, it will create a float inlet for you to send values to.
-  - You can send values to the uniform inlets using [Message Passing](#message-passing).
+  - You can send values to the uniform inlets using [Message Passing](#message-passing). See the [Message Passing with GLSL](#message-passing-with-glsl) section above.
   - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a video inlet for you to connect video sources to.
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
@@ -292,7 +307,13 @@ These objects support video chaining and can be connected to create complex visu
 
 - Store and send predefined messages.
 - Click to send the stored message to connected objects.
-- Great for triggering sequences or sending configuration data.
+- Good for triggering sequences or sending configuration data.
+- You can hit `Enter` and type `m <message>` to create a `msg` object with the given message.
+  - Example: `m {type: 'start'}` creates a `msg` object that sends `{type: 'start'}` when clicked.
+- Examples
+  - `100` sends the number 100
+  - `hello` or `"hello"` sends the string "hello"
+  - `{type: 'bang'}` sends the object `{type: 'bang'}`. this is what `button` does.
 - Messages:
   - `{type: 'bang'}`: outputs the message
 
