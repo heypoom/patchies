@@ -591,13 +591,13 @@
 		<div class="fixed bottom-0 right-0 p-2">
 			<button
 				title="Share link"
-				class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 				onclick={createShareLink}><Icon icon="lucide:link" class="h-4 w-4 text-zinc-300" /></button
 			>
 
 			<button
 				title="Open Command Palette"
-				class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();

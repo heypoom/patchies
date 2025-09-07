@@ -31,7 +31,10 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Trigger class="cursor-pointer rounded p-1 hover:bg-zinc-700" title="Keyboard shortcuts">
+	<Dialog.Trigger
+		class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+		title="Keyboard shortcuts"
+	>
 		<Icon icon="lucide:help-circle" class="h-4 w-4 text-zinc-300" />
 	</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-md">
