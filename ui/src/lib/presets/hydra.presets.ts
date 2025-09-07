@@ -90,7 +90,7 @@ export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }
 		type: 'hydra',
 		data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
 	},
-	'null.hydra': {
+	'pipe.hydra': {
 		type: 'hydra',
 		data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
 	},
