@@ -29,5 +29,5 @@
 		$isBackgroundOutputCanvasEnabled ? '' : 'hidden'
 	}`}
 >
-	<canvas bind:this={outputCanvasElement} class="w-full"></canvas>
+	<canvas bind:this={outputCanvasElement} class="h-screen w-full object-cover"></canvas>
 </div>
