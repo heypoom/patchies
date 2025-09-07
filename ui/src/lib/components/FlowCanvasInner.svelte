@@ -24,9 +24,10 @@
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
-	import { loadPatchFromUrl, getSrcUrlFromSearchParams } from '$lib/save-load/load-patch-from-url';
-	import { PyodideSystem } from '$lib/python/PyodideSystem';
+	import { loadPatchFromUrl } from '$lib/save-load/load-patch-from-url';
 	import { match } from 'ts-pattern';
+	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
+	import { getSharedPatchData } from '$lib/api/pb';
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -203,10 +204,31 @@
 	});
 
 	async function loadPatchFromParam() {
-		const url = getSrcUrlFromSearchParams();
+		if (typeof window === 'undefined') return null;
 
-		if (url) {
-			await loadPatchFromUrlParam(url);
+		const params = new URLSearchParams(window.location.search);
+		const src = params.get('src');
+		const id = params.get('id');
+
+		if (src) {
+			await loadPatchFromUrlParam(src);
+			return;
+		}
+
+		if (id) {
+			isLoadingFromUrl = true;
+
+			try {
+				const save = await getSharedPatchData(id);
+
+				if (save) restorePatchFromSave(save);
+			} catch (err) {
+				urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
+			} finally {
+				isLoadingFromUrl = false;
+			}
+
+			return;
 		}
 	}
 
@@ -419,6 +441,19 @@
 		createNode(copiedNodeData.type, position, copiedNodeData.data);
 	}
 
+	function restorePatchFromSave(save: PatchSaveFormat) {
+		nodes = [];
+		edges = [];
+
+		nodes = save.nodes;
+		edges = save.edges;
+
+		// Update node counter based on loaded nodes
+		if (save.nodes.length > 0) {
+			nodeIdCounter = getNodeIdCounterFromSave(save.nodes);
+		}
+	}
+
 	// Load patch from URL parameter
 	async function loadPatchFromUrlParam(url: string) {
 		isLoadingFromUrl = true;
@@ -429,19 +464,7 @@
 
 			if (result.success) {
 				const { data } = result;
-
-				// Clear existing nodes and edges
-				nodes = [];
-				edges = [];
-
-				// Load new patch data
-				nodes = data.nodes;
-				edges = data.edges;
-
-				// Update node counter based on loaded nodes
-				if (data.nodes.length > 0) {
-					nodeIdCounter = getNodeIdCounterFromSave(data.nodes);
-				}
+				restorePatchFromSave(data);
 
 				console.log(`Successfully loaded patch "${data.name}" from URL:`, url);
 			} else {
@@ -467,7 +490,8 @@
 				<div
 					class="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
 				></div>
-				Loading patch from URL...
+
+				<span>Loading your patch...</span>
 			</div>
 		</div>
 	{/if}

@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/svelte';
 
-export const PATCH_SAVE_VERSION = '1.3';
+export const PATCH_SAVE_VERSION = '0.0.1';
 
 export type PatchSaveFormat = {
 	name: string;

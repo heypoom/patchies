@@ -74,11 +74,3 @@ export async function loadPatchFromUrl(url: string): Promise<LoadFromUrlResult> 
 		};
 	}
 }
-
-export function getSrcUrlFromSearchParams(): string | null {
-	if (typeof window === 'undefined') return null;
-
-	const params = new URLSearchParams(window.location.search);
-
-	return params.get('src');
-}

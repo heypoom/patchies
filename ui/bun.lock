@@ -47,6 +47,7 @@
         "p2pkit": "^0.0.0-2",
         "p2pt": "^1.5.1",
         "p5": "^1.11.9",
+        "pocketbase": "^0.26.2",
         "pyodide": "^0.28.1",
         "regl": "^2.1.1",
         "stats.js": "^0.17.0",
@@ -1359,6 +1360,8 @@
     "playwright": ["playwright@1.54.1", "", { "dependencies": { "playwright-core": "1.54.1" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-peWpSwIBmSLi6aW2auvrUtf2DqY16YYcCMO8rTVx486jKmDTJg7UAhyrraP98GB8BoPURZP8+nxO7TSd4cPr5g=="],
 
     "playwright-core": ["playwright-core@1.54.1", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-Nbjs2zjj0htNhzgiy5wu+3w09YetDx5pkrpI/kZotDlDUaYk0HVA5xrBVPdow4SAUIlhgKcJeJg4GRKW6xHusA=="],
+
+    "pocketbase": ["pocketbase@0.26.2", "", {}, "sha512-WA8EOBc3QnSJh8rJ3iYoi9DmmPOMFIgVfAmIGux7wwruUEIzXgvrO4u0W2htfQjGIcyezJkdZOy5Xmh7SxAftw=="],
 
     "postcss": ["postcss@8.5.6", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg=="],
 

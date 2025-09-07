@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { match, P } from 'ts-pattern';
+	import { match } from 'ts-pattern';
 	import {
 		isAiFeaturesVisible,
 		isBottomBarVisible,
@@ -12,6 +12,7 @@
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
+	import { appHostUrl, createShareablePatch } from '$lib/api/pb';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -93,6 +94,11 @@
 			id: 'enter-fullscreen',
 			name: 'Enter fullscreen',
 			description: 'Enter fullscreen mode in the main window.'
+		},
+		{
+			id: 'share-patch',
+			name: 'Share Patch',
+			description: 'Get a shareable link for your patch.'
 		}
 	];
 
@@ -246,6 +252,19 @@
 			})
 			.with('enter-fullscreen', () => {
 				document.querySelector('html')?.requestFullscreen();
+				onCancel();
+			})
+			.with('share-patch', async () => {
+				const id = await createShareablePatch(patchName, nodes, edges);
+				if (id === null) return;
+
+				const url = `${appHostUrl}/?id=${id}`;
+
+				try {
+					await navigator.clipboard.writeText(url);
+					alert(`Shareable link copied to clipboard: ${url}`);
+				} catch {}
+
 				onCancel();
 			})
 			.otherwise(() => {
