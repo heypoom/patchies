@@ -219,6 +219,14 @@ These objects support video chaining and can be connected to create complex visu
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
+- Try these presets for GLSL to get you started:
+  - `red.gl`: solid red color
+  - `pipe.gl`: passes the image through without any changes
+  - `mix.gl`: mixes two video inputs
+  - `overlay.gl`: put the second video input on top of the first one
+  - `fft-freq.gl`: visualizes the frequency spectrum from audio input
+  - `fft-waveform.gl`: visualizes the audio waveform from audio input
+  - `switcher.gl`: switches between six video inputs by sending an int message of 0 - 5.
 
 #### Message Passing with GLSL
 
