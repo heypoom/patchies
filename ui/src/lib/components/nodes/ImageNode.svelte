@@ -114,12 +114,26 @@
 	}
 
 	async function loadFile(file: File) {
-		try {
-			const source = await createImageBitmap(file);
-			const preview = await createImageBitmap(source);
+		const isFile = file instanceof File;
 
-			const previewWidth = Math.round(source.width / IMAGE_PREVIEW_SCALE_FACTOR);
-			const previewHeight = Math.round(source.height / IMAGE_PREVIEW_SCALE_FACTOR);
+		try {
+			if (!isFile) return;
+
+			const img = new Image();
+			const objectUrl = URL.createObjectURL(file);
+
+			await new Promise<void>((resolve, reject) => {
+				img.onload = () => resolve();
+				img.onerror = () => reject(new Error('failed to load image'));
+				img.src = objectUrl;
+			});
+
+			const preview = await createImageBitmap(img);
+
+			URL.revokeObjectURL(objectUrl);
+
+			const previewWidth = Math.round(preview.width / IMAGE_PREVIEW_SCALE_FACTOR);
+			const previewHeight = Math.round(preview.height / IMAGE_PREVIEW_SCALE_FACTOR);
 
 			updateNode(node.id, {
 				width: previewWidth,
@@ -128,11 +142,12 @@
 					...node.data,
 					file,
 					fileName: file.name,
-					width: source.width,
-					height: source.height
+					width: preview.width,
+					height: preview.height
 				}
 			});
 
+			const source = await createImageBitmap(img);
 			glSystem.setBitmap(node.id, source);
 			hasImage = true;
 
