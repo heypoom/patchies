@@ -52,6 +52,10 @@ setInterval(() => {
 const MIDI_CONTROL_ROUTER_JS = `setPortCount(1, 3)
 recv(m => send(m.value, {to: m.control}))`;
 
+const PIPE_MESSAGE_JS = `setRunOnMount(true)
+
+recv(m => send(m))`;
+
 const SAWTOOTH_HARMONICS_JS = `recv(hs => {
   const im = new Float32Array(hs)
 
@@ -113,5 +117,9 @@ export const JS_PRESETS: Record<
 	'waveshaper-distortion.js': {
 		type: 'js',
 		data: { code: WAVESHAPER_DISTORTION_JS, showConsole: false, runOnMount: false }
+	},
+	'pipe-msg.js': {
+		type: 'js',
+		data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
 	}
 };
