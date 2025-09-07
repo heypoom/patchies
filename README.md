@@ -4,11 +4,19 @@
 
 > The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
-Patchies is a tool to build audio-visual patches on the web. Try it out at [patchies.app](https://patchies.app).
+Patchies is a tool for building interactive audio-visual patches in the browser, using JavaScript. Try it out at [patchies.app](https://patchies.app) - it's open source!
 
-You can use audio-visual tools that you know and love: [P5.js](https://p5js.org) (Processing in JavaScript), [Hydra](https://hydra.ojack.xyz) (Video Synth), [Strudel](https://strudel.cc) (TidalCycles in JavaScript), [ChucK](https://chuck.cs.princeton.edu/webchuck/) as well as write JavaScript and GLSL fragment shaders directly.
+Patchies lets you use the audio-visual tools that you know and love, together in one place. For example:
 
-It has support for [Message Passing](#message-passing) and [Video Chaining](#video-chaining), which allows you to create complex audio-visual patches that are more powerful than what you can do with a single object.
+- [P5.js](https://p5js.org), a JavaScript library for creative coding.
+- [Hydra](https://hydra.ojack.xyz), a live-coding video synthesizer.
+- [Strudel](https://strudel.cc), a TidalCycles-like music environment
+- [ChucK](https://chuck.cs.princeton.edu/webchuck), a programming language for real-time sound synthesis
+- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), a powerful audio synthesis and processing API
+- [GLSL fragment shaders](https://www.shadertoy.com), for complex visual effects
+- ...as well as write JavaScript code directly.
+
+Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It's inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and others.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
@@ -18,19 +26,30 @@ It has support for [Message Passing](#message-passing) and [Video Chaining](#vid
 - Press `Enter` to create a new object.
 - Click and drag the title of the object on the top left to move.
 - When hovering over an object, you'll see icon buttons such as "edit code" and "play/stop" on the top right.
-- Press `shift+enter` while in a code editor to re-run the code.
-- Click on the title and press `delete` to delete an object.
-- Press `cmd+k` to bring up the command palette.
+  - Use the "Edit Code" button to open the code editor.
+  - Press `Shift + Enter` while in a code editor to re-run the code, or hit the "Play" icon.
+- Click on the title to focus on an object.
+  - Drag on the title to move the object around.
+  - Press `Delete` to delete an object.
+- Press `Ctrl/Cmd + K` to bring up the command palette.
+  - You can do many actions here, such as toggling fullscreen, import/export patch files, save/load patches in your browser, setting API keys, opening secondary output screen, toggling FPS monitors and more.
 
 ## Keyboard Shortcuts
 
 You can use the Shortcuts button on the bottom right to see a list of shortcuts. Here are some of the most useful ones:
 
-- `enter`: create a new object at cursor position.
-- `cmd + k`: open the command palette to search for commands.
-- `shift + enter`: run the code in the code editor within the selected object.
-- `delete`: delete the selected object.
-- `cmd + z`: undo the last action.
+- `Click on object / title`: focus on the object.
+- `Drag on object / title`: move the object around.
+- `Scroll up`: zoom in.
+- `Scroll down`: zoom out.
+- `Drag on empty space`: pan the canvas.
+- `Enter`: create a new object at cursor position.
+- `Ctrl/Cmd + K`: open the command palette to search for commands.
+- `Shift + Enter`: run the code in the code editor within the selected object.
+- `Delete`: delete the selected object.
+- `Cmd + Z`: undo the last action.
+- `Ctrl + C`: copy the selected object.
+- `Ctrl + V`: paste the copied object.
 
 ## Message Passing
 
@@ -68,7 +87,7 @@ uniform float iMix;
 uniform vec2 iFoo;
 ```
 
-This will create two inlets in the GLSL object: the first one allows `send(0.5)` for `iMix`, and the other allows `send([0.0, 0.0])` for `iFoo`. When you `send` messages to these inlets, it will set the internal GLSL uniform values for the node.
+This will create two inlets in the GLSL object: the first one allows `send(0.5)` for `iMix`, and the other allows `send([0.0, 0.0])` for `iFoo`. When you `send` messages to these inlets, it will set the internal GLSL uniform values for the object.
 
 ## Video Chaining
 
@@ -77,6 +96,12 @@ You can chain video objects together to create complex video effects, by using t
 To leverage video chaining, use the leftmost orange inlets and outlets on the patch. You can connect the orange video outlet of a `p5` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl`.
 
 This allows you to create video patches that are more powerful than what you can do with a single object. Have fun!
+
+## Audio Chaining
+
+Similar to video chaining, you can chain many audio objects together to create complex audio effects.
+
+For example, you can use these as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `midi.in`, `soundfile~`.
 
 ## List of objects
 
@@ -113,8 +138,12 @@ These objects support video chaining and can be connected to create complex visu
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
 - You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
-  - These inlets are exposed as `iChannel0`, `iChannel1`, `iChannel2`, and `iChannel3` in your GLSL uniform.
-- See [ShaderToy](https://www.shadertoy.com) for examples of GLSL shaders. All shaders on ShaderToy are automatically compatible with `glsl`, as they accept the same uniforms.
+- You can create any number of GLSL uniform inlets by defining them in your GLSL code.
+  - For example, if you define `uniform float iMix;`, it will create a float inlet for you to send values to.
+  - You can send values to the uniform inlets using [Message Passing](#message-passing).
+  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a video inlet for you to connect video sources to.
+- See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
+- All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
 
 ### `swgl`: creates a SwissGL compute shader
