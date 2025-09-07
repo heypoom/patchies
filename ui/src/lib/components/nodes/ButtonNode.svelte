@@ -31,20 +31,16 @@
 
 	const borderColor = $derived(selected ? '!border-zinc-400' : '!border-zinc-600');
 
-	const handleClass = $derived(selected ? '!bg-zinc-700' : '!bg-zinc-900');
+	const handleClass = $derived.by(() => {
+		return `${selected ? '!bg-gray-400' : '!bg-zinc-900 !border-zinc-600'}`;
+	});
 </script>
 
 <div class="relative">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<StandardHandle 
-					port="inlet" 
-					type="message"
-					total={1} 
-					index={0}
-					class={handleClass}
-				/>
+				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
 
 				<button
 					onclick={() => messageContext.send({ type: 'bang' })}
