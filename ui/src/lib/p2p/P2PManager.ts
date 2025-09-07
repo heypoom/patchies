@@ -26,7 +26,7 @@ type P2PMessage = { channel: string; data: unknown };
 export class P2PManager {
 	private static instance: P2PManager | null = null;
 	private p2pt: P2PT | null = null;
-	private peers = new Set<Peer>();
+	private peers: Record<string, Peer> = {};
 	private channels = new Map<string, Set<P2PMessageHandler>>();
 	private roomId: string = '';
 
@@ -57,11 +57,11 @@ export class P2PManager {
 		if (!this.p2pt) return;
 
 		this.p2pt.on('peerconnect', (peer) => {
-			this.peers.add(peer);
+			this.peers[peer.id] = peer;
 		});
 
 		this.p2pt.on('peerclose', (peer) => {
-			this.peers.delete(peer);
+			delete this.peers[peer.id];
 		});
 
 		this.p2pt.on('msg', (peer: Peer, message: P2PMessage) => {
@@ -103,17 +103,19 @@ export class P2PManager {
 			return;
 		}
 
-		this.peers.forEach((peer) => {
+		for (const peerId in this.peers) {
+			const peer = this.peers[peerId];
+
 			try {
 				this.p2pt!.send(peer, { channel, data } satisfies P2PMessage);
 			} catch (error) {
 				console.error('Error sending P2P message:', error);
 			}
-		});
+		}
 	}
 
 	public getPeerCount(): number {
-		return this.peers.size;
+		return Object.keys(this.peers).length;
 	}
 
 	public destroy(): void {
@@ -122,7 +124,7 @@ export class P2PManager {
 			this.p2pt = null;
 		}
 
-		this.peers.clear();
+		this.peers = {};
 		this.channels.clear();
 		P2PManager.instance = null;
 	}

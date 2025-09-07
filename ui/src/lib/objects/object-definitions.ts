@@ -137,9 +137,6 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: []
 	},
 
-	// alias of 'button'
-	bang: { inlets: [], outlets: [] },
-
 	// alias of 'soundfile~ url'
 	'soundurl~': { inlets: [{ name: 'url' }], outlets: [] },
 
