@@ -15,6 +15,7 @@
 	}: {
 		id: string;
 		data: {
+			title?: string;
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
@@ -93,7 +94,11 @@
 	}
 </script>
 
-<ObjectPreviewLayout title="p5.canvas" onrun={updateSketch} previewWidth={previewContainerWidth}>
+<ObjectPreviewLayout
+	title={data.title ?? 'p5'}
+	onrun={updateSketch}
+	previewWidth={previewContainerWidth}
+>
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
 			<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />

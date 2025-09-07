@@ -8,7 +8,7 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 
-	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	let { id: nodeId, data }: { id: string; data: { title: string; code: string } } = $props();
 
 	let canvasElement = $state<HTMLCanvasElement | undefined>();
 	let glSystem = GLSystem.getInstance();
@@ -76,7 +76,7 @@
 </script>
 
 <CanvasPreviewLayout
-	title="js.canvas"
+	title={data.title ?? 'canvas'}
 	onrun={updateCanvas}
 	{errorMessage}
 	bind:previewCanvas={canvasElement}
@@ -84,26 +84,12 @@
 >
 	{#snippet topHandle()}
 		<StandardHandle port="inlet" type="message" total={2} index={0} />
-		<StandardHandle
-			port="inlet"
-			type="video"
-			id="0"
-			title="Video input"
-			total={2}
-			index={1}
-		/>
+		<StandardHandle port="inlet" type="video" id="0" title="Video input" total={2} index={1} />
 	{/snippet}
 
 	{#snippet bottomHandle()}
 		<StandardHandle port="outlet" type="message" total={2} index={0} />
-		<StandardHandle
-			port="outlet"
-			type="video"
-			id="0"
-			title="Video output"
-			total={2}
-			index={1}
-		/>
+		<StandardHandle port="outlet" type="video" id="0" title="Video output" total={2} index={1} />
 	{/snippet}
 
 	{#snippet codeEditor()}

@@ -19,6 +19,7 @@
 		id: string;
 		type: string;
 		data: {
+			title?: string;
 			code: string;
 			messageInletCount?: number;
 			messageOutletCount?: number;
@@ -156,7 +157,7 @@
 </script>
 
 <CanvasPreviewLayout
-	title="hydra"
+	title={data.title ?? 'hydra'}
 	onrun={updateHydra}
 	onPlaybackToggle={togglePause}
 	paused={isPaused}

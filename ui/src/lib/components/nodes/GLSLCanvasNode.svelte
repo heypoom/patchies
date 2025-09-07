@@ -17,7 +17,7 @@
 		selected
 	}: {
 		id: string;
-		data: { code: string; glUniformDefs: GLUniformDef[] };
+		data: { title?: string; code: string; glUniformDefs: GLUniformDef[] };
 		selected: boolean;
 	} = $props();
 
@@ -134,7 +134,7 @@
 </script>
 
 <CanvasPreviewLayout
-	title="glsl.canvas"
+	title={data.title ?? 'glsl'}
 	onrun={updateShader}
 	onPlaybackToggle={togglePause}
 	paused={isPaused}

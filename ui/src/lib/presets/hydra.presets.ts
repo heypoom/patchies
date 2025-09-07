@@ -73,6 +73,7 @@ type HydraNodeData = {
 	messageOutletCount?: number;
 	videoInletCount?: number;
 	videoOutletCount?: number;
+	title?: string;
 };
 
 const defaultsOneVideoIn: HydraNodeData = {
