@@ -575,7 +575,10 @@
 
 	onMount(() => {
 		if (isEditing) {
-			setTimeout(() => inputElement?.focus(), 10);
+			setTimeout(() => {
+				inputElement?.focus();
+				showAutocomplete = true;
+			}, 10);
 		}
 
 		if (audioObjectNames.includes(data.name)) {
