@@ -5,7 +5,7 @@
 
 	interface Props {
 		port: 'inlet' | 'outlet';
-		type?: 'video' | 'audio' | 'message';
+		type?: 'video' | 'audio' | 'message' | 'analysis';
 		id?: string | number;
 		title?: string;
 		total: number;
@@ -46,6 +46,7 @@
 			.with('video', () => '!bg-orange-500 hover:!bg-orange-400')
 			.with('audio', () => '!bg-blue-500 hover:!bg-blue-400')
 			.with('message', () => '!bg-gray-500 hover:!bg-gray-400')
+			.with('analysis', () => '!bg-purple-500 hover:!bg-purple-400')
 			.with(P.nullish, () => '!bg-gray-500 hover:!bg-gray-400')
 			.exhaustive();
 

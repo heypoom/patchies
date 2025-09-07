@@ -2,6 +2,8 @@ import { match, P } from 'ts-pattern';
 import type { ObjectDataType, ObjectInlet } from './object-definitions';
 import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 
+import { ALWAYS_VALID } from './parse-object-param';
+
 // Helper function to validate inlet/outlet types
 export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boolean => {
 	if (!inlet.type) return true;
@@ -13,7 +15,7 @@ export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boo
 	if (inlet.validator) return inlet.validator(value);
 
 	const isTypeValid = match<[unknown, ObjectDataType]>([value, inlet.type])
-		.with([P.any, P.union('any', 'signal', 'message', 'marker')], () => true)
+		.with([P.any, P.union(...ALWAYS_VALID)], () => true)
 		.with([{ type: 'bang' }, 'bang'], () => true)
 		.with([P.number, 'float'], () => true)
 		.with([P.number, 'int'], ([n]) => Number.isInteger(n))

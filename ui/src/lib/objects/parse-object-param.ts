@@ -6,11 +6,28 @@ import {
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
 
+/**
+ * Do not allow modifying these types via object arguments.
+ * These types do not have a sensible representation as arguments.
+ */
 export const UNMODIFIABLES = [
 	'signal',
 	'bang',
 	'message',
-	'marker'
+	'marker',
+	'analysis'
+] as const satisfies ObjectDataType[];
+
+/**
+ * Do not validate incoming messages for these types.
+ * Any messages sent to them are considered to always be valid.
+ */
+export const ALWAYS_VALID = [
+	'any',
+	'signal',
+	'message',
+	'marker',
+	'analysis'
 ] as const satisfies ObjectDataType[];
 
 export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>

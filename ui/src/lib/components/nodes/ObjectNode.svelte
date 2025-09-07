@@ -1,9 +1,5 @@
 <script lang="ts">
-	import {
-		useEdges,
-		useSvelteFlow,
-		useUpdateNodeInternals
-	} from '@xyflow/svelte';
+	import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { nodeNames } from '$lib/nodes/node-types';
@@ -13,7 +9,9 @@
 		audioObjectNames,
 		getObjectNameFromExpr,
 		objectDefinitions,
-		type AdsrParamList
+		type AdsrParamList,
+		type ObjectInlet,
+		type ObjectOutlet
 	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -620,6 +618,12 @@
 	};
 
 	const getShortInletName = (inletIndex: number) => inlets[inletIndex]?.name?.slice(0, 4) || 'auto';
+
+	const getPortType = (port: ObjectInlet | ObjectOutlet) =>
+		match(port.type)
+			.with('signal', () => 'audio' as const)
+			.with('analysis', () => 'analysis' as const)
+			.otherwise(() => 'message' as const);
 </script>
 
 <div class="relative">
@@ -631,11 +635,11 @@
 					{#each inlets as inlet, index}
 						<StandardHandle
 							port="inlet"
-							type={inlet.type === 'signal' ? 'audio' : 'message'}
+							type={getPortType(inlet)}
 							id={index}
 							title={inlet.name || `Inlet ${index}`}
 							total={inlets.length}
-							index={index}
+							{index}
 							class="top-0"
 						/>
 					{/each}
@@ -662,7 +666,7 @@
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div
-								class="absolute top-full left-0 z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+								class="absolute left-0 top-full z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 							>
 								<!-- Results List -->
 								<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
@@ -753,11 +757,11 @@
 					{#each outlets as outlet, index}
 						<StandardHandle
 							port="outlet"
-							type={outlet.type === 'signal' ? 'audio' : 'message'}
+							type={getPortType(outlet)}
 							id={index}
 							title={outlet.name || `Outlet ${index}`}
 							total={outlets.length}
-							index={index}
+							{index}
 							class="bottom-0"
 						/>
 					{/each}

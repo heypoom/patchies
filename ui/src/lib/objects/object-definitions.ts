@@ -9,6 +9,7 @@ export type ObjectDataType =
 	| 'bool'
 	| 'int[]'
 	| 'float[]'
+	| 'analysis'
 	| 'marker';
 
 export interface ObjectInlet {
@@ -157,7 +158,7 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 			{ name: 'out', type: 'signal', description: 'Audio data from the input' },
 			{
 				name: 'analysis',
-				type: 'marker',
+				type: 'analysis',
 				description: 'Marker to indicate where to get the FFT data from.'
 			}
 		],
