@@ -199,15 +199,20 @@ These objects support video chaining and can be connected to create complex visu
 
 ### `hydra`: creates a Hydra video synthesizer
 
-- Hydra is a live coding video synthesizer. You can use it to create complex video effects and animations.
-- See the [interactive Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
+- [Hydra](https://hydra.ojack.xyz) is a live coding video synthesizer created by [Olivia Jack](https://ojack.xyz). You can use it to create all kinds of video effects.
+- See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
 - Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
+  - Use the "shuffle" button on the editor to get code samples you can use. You can copy it into Patchies. Check the license terms first.
 - You can call these special methods in your Hydra code:
   - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
-    - For example, `setVideoCount(2)` will initialize `s0` and `s1` with the first two video inlets.
+    - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two video inlets.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
-  - `send(message)` and `recv(callback)`
+  - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
+- Try out these presets to get you started:
+  - `pipe.hydra`: passes the image through without any changes
+  - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
+  - `filet-mignon.hydra`: example Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl). Licensed under CC BY-NC-SA 4.0.
 
 ### `glsl`: creates a GLSL fragment shader
 
@@ -261,31 +266,29 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
 - You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl`) to derive more visual effects.
 
-### `img`: display and manipulate images
+### `img`: display images
 
 - Load and display images from URLs or local files.
-- Supports video chaining for image processing pipelines.
-- Can be used as texture sources for other visual objects.
+- Supports video chaining - can be used as texture sources for other visual objects.
+- Messages
+  - `string`: load the image from the given url.
 
-### Audio & Music Objects
+### `video`: display videos
 
-### `strudel`: creates a Strudel music environment
+- Load and display images from URLs or local files.
+- Supports audio and video chaining - can be used as texture and audio sources for other objects.
+- Messages
+  - `bang`: restart the video
+  - `string`: load the video from the given url.
+  - `{type: 'play'}`: play the video
+  - `{type: 'pause'}`: pause the video
+  - `{type: 'loop', value: false}`: do not loop the video
 
-- Strudel is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
-- See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
-- Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
+### `bg.out`: background output
 
-### `chuck`: creates a ChucK audio programming environment
-
-- [ChucK](https://chuck.cs.princeton.edu) is a programming language for real-time sound synthesis and music creation.
-- Great for algorithmic composition and sound design.
-- Runs in the browser via [WebChucK](https://chuck.cs.princeton.edu/webchuck/).
-
-### `python`: creates a Python code environment
-
-- Run Python code directly in the browser using Pyodide.
-- Great for data processing, scientific computing, and algorithmic composition.
-- Full Python standard library available.
+- Set the final output that appears as the background.
+- The endpoint for video chaining pipelines.
+- Determines what the audience sees as the main visual.
 
 ### Programming & Control Objects
 
@@ -320,6 +323,12 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   This creates two inlets, and sends the result of `(inlet1 * 2) + (inlet2 + 3)` each time inlet one or two is updated.
 
 - You can also [define functions](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#function-definitions) to make the code easier to read, e.g. `add(a, b) = a + b`.
+
+### `python`: creates a Python code environment
+
+- Run Python code directly in the browser using Pyodide.
+- Great for data processing, scientific computing, and algorithmic composition.
+- Full Python standard library available.
 
 ### `expr~`: audio-rate mathematical expression evaluator
 
@@ -365,26 +374,49 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Messages:
   - `{type: 'bang'}`: outputs the message
 
-### `slider`: creates an interactive slider
+### `slider`: numerical value slider
 
 - Continuous value control with customizable range.
 - Perfect for real-time parameter adjustment.
 - Outputs numeric values that can control other objects.
+- Hit `Enter` and type in these short commands to create sliders with specific ranges:
+  - `slider <min> <max>`: integer slider control. example: `slider 0 100`
+  - `fslider <min> <max>`: floating-point slider control. example: `fslider 0.0 1.0`
 - Messages:
   - `{type: 'bang'}`: outputs the current slider value
   - `number`: sets the slider to the given number within the range and outputs the value
 
-### `textbox`: textbox
+### `textbox`: multi-line text input
 
 - Create a multi-line textbox for user input.
 - Messages:
   - `{type: 'bang'}`: outputs the current text
   - `string`: sets the text to the given string
 
+### Audio & Music Objects
+
+### `strudel`: Strudel music environment
+
+- [Strudel](https://strudel.cc) is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
+- See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
+- Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
+- Use `Ctrl/Cmd + Enter` to re-evaluate the code.
+- Don't forget to connect the `dac~` object to hear the audio output.
+- Limitations
+  - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setCpm)` to automate the cpm value.
+- Please consider supporting the development of TidalCycles and Strudel at [OpenCollective](https://opencollective.com/tidalcycles)!
+
+### `chuck`: creates a ChucK audio programming environment
+
+- [ChucK](https://chuck.cs.princeton.edu) is a programming language for real-time sound synthesis and music creation.
+- Great for algorithmic composition and sound design.
+- Runs in the browser via [WebChucK](https://chuck.cs.princeton.edu/webchuck/).
+
 ### `object`: textual object system
 
-- Create textual objects with typed inlets and outlets.
 - Supports a wide range of audio processing, control, and utility objects.
+- Create a textual object by pressing `Enter`, and type in the name of the object you want to create.
+- Hover over the argument name to see a tooltip with description of the object. For example, for `gain~` node hover over the gain value to see the tooltip.
 
 #### Available textual objects
 
@@ -408,6 +440,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `soundfile~`: Load and play audio files with transport controls
 - `sampler~`: Sample playback with triggering capabilities
 - `mic~`: Capture audio from microphone input
+- `dac~`: Send audio to speakers
 
 **Control & Utility:**
 
@@ -416,9 +449,6 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `metro`: Metronome for regular timing
 - `delay`: Message delay (not audio)
 - `adsr`: ADSR envelope generator
-- `dac~`: Send audio to speakers
-- `fslider`: Floating-point slider control
-- `bang`: Alias for button object
 
 ### MIDI & Network Objects
 
@@ -436,15 +466,13 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `netsend`: network message sender
 
-- Send messages over network protocols.
-- Communicate with other applications or devices.
-- Supports UDP and TCP protocols.
+- Sends message across patches over WebRTC.
+- When creating objects, type in `netsend <channelname>` to create a `netsend` object that sends messages to the specified channel name. Example: `netsend drywet`
 
 ### `netrecv`: network message receiver
 
-- Receive messages from network sources.
-- Listen for data from other applications.
-- Complements `netsend` for network communication.
+- Receives message across patches over WebRTC.
+- When creating objects, type in `netrecv <channelname>` to create a `netrecv` object that receives messages from the specified channel name. Example: `netrecv drywet`
 
 ### AI & Generation Objects
 
@@ -473,14 +501,6 @@ These objects can be hidden via the "Toggle AI Features" command if you prefer n
 - Convert text to speech using AI voices.
 - Create dynamic narration or vocal elements.
 - Outputs audio for further processing.
-
-### Output Objects
-
-### `bg.out`: background output
-
-- Set the final output that appears as the background.
-- The endpoint for video chaining pipelines.
-- Determines what the audience sees as the main visual.
 
 ### Documentation & Content
 
