@@ -1,10 +1,12 @@
-# Patchies.app
+# Patchies.app: creative coding patcher in the browser
 
 <img src="./docs/images/patchies-v3-hero.png" alt="Patchies.app Hero Image" width="700">
 
 > The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
-Patchies is a tool for building interactive audio-visual patches in the browser, using JavaScript. Try it out at [patchies.app](https://patchies.app) - it's open source!
+Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript and GLSL. It's made for live creative coding -- for building visualizations, soundscapes and simulations of all kinds.
+
+Try it out at [patchies.app](https://patchies.app) - it's open source 😎
 
 Patchies lets you use the audio-visual tools that you know and love, together in one place. For example:
 
@@ -17,25 +19,45 @@ Patchies lets you use the audio-visual tools that you know and love, together in
 - [GLSL fragment shaders](https://www.shadertoy.com), for complex visual effects.
 - ...as well as write JavaScript code directly.
 
-Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It's inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and others.
+Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It is very heavily inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and many others.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
-## How to use
+## Wait, what is patching? What's a patcher?
+
+If you haven't used a patching environment before, patching is a visual way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You can connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
+
+Here's a visual example:
+
+<img src="./docs/images/patchies-fft.png" alt="Patchies.app FFT example" width="700">
+
+This patch takes in audio from an audio file, analyzes the frequency spectrum using the `fft~` object, and sends the frequency data to various visual objects to create audio-reactive visuals and meters. You can create your own patches by combining different objects in different ways 😝
+
+## Getting Started
 
 - Go to [patchies.app](https://patchies.app).
+- Use your mouse to pan and zoom the canvas.
+  - Scroll up: zoom in. Scroll down: zoom out.
+  - Drag on empty space to pan the canvas.
 - Press `Enter` to create a new object.
-- Click and drag the title of the object on the top left to move.
-- When hovering over an object, you'll see icon buttons such as "edit code" and "play/stop" on the top right.
-  - Use the "Edit Code" button to open the code editor.
-  - Press `Shift + Enter` while in a code editor to re-run the code, or hit the "Play" icon.
-- Click on the title to focus on an object.
-  - Drag on the title to move the object around.
-  - Press `Delete` to delete an object.
-- Press `Ctrl/Cmd + K` to bring up the command palette.
-  - You can do many actions here, such as toggling fullscreen, import/export patch files, save/load patches in your browser, setting API keys, opening secondary output screen, toggling FPS monitors and more.
+  - Type to search for object name. Try `hydra` or `glsl` or `p5`.
+  - `Arrow Up` and `Arrow Down` to navigate the list.
+  - `Enter` creates the selected object.
+  - `Esc` closes the object menu.
+- Click on the "+ Nodes" button on the bottom left to see a list of objects you can create.
+  - Drag the object name from the bottom bar onto the canvas to create it.
+  - This is slower than using `Enter`, but it lets you see all visual nodes at a glance 👀
+- Click on an object to select it. The outline color should change when an object is selected.
+  - If you can't drag an object, click on the title of the object and drag it.
+- Once selected, drag the object to move it around.
+  - `Delete` to delete an object.
+- When _hovering_ the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
+  - Use "Edit Code" to open the code editor.
+- `Shift + Enter` while in a code editor to run the code again. This helps you to make changes to the code and see the results immediately.
+- `Ctrl/Cmd + K` brings up the command palette.
+  - You can do many actions here, such as toggling fullscreen, import/export patch files, save/load patches in your browser, setting API keys, opening secondary output screen, toggling FPS monitors, toggling bottom bars and more.
 
-## Keyboard Shortcuts
+## Mouse and Keyboard Shortcuts
 
 You can use the Shortcuts button on the bottom right to see a list of shortcuts. Here are some of the most useful ones:
 
@@ -272,6 +294,8 @@ These objects support video chaining and can be connected to create complex visu
   ```
 
   This creates two inlets, and sends the result of `(inlet1 * 2) + (inlet2 + 3)` each time inlet one or two is updated.
+
+- You can also [define functions](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#function-definitions) to make the code easier to read, e.g. `add(a, b) = a + b`.
 
 ### `expr~`: audio-rate mathematical expression evaluator
 
