@@ -19,7 +19,7 @@
 				class={[
 					'flex cursor-pointer items-center justify-end gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors',
 					$isBackgroundOutputCanvasEnabled
-						? 'bg-zinc-900/50 backdrop-blur-xl hover:bg-zinc-900/70'
+						? 'bg-zinc-900/50 hover:bg-zinc-900/70'
 						: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-800'
 				]}
 				onclick={onToggle}
@@ -40,7 +40,7 @@
 							class={[
 								'flex cursor-grab flex-col items-center gap-2 rounded-lg px-[10px] py-[3px] transition-colors',
 								$isBackgroundOutputCanvasEnabled
-									? 'bg-transparent backdrop-blur-xl hover:bg-zinc-900/10'
+									? 'bg-zinc-900/60 hover:bg-zinc-900'
 									: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-700'
 							]}
 							draggable={true}
