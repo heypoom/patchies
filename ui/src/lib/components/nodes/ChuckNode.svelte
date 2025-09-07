@@ -70,13 +70,6 @@
 					handleReplace();
 					return true;
 				}
-			},
-			{
-				key: 'Cmd-Backspace',
-				run: () => {
-					removeChuckCode();
-					return true;
-				}
 			}
 		])
 	];
@@ -101,9 +94,9 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+
 		audioSystem.createAudioObject(nodeId, 'chuck');
 		subscribeShredsStore();
-		runChuckCode(data.expr);
 
 		if (isEditing) {
 			setTimeout(() => layoutRef?.focus(), 10);
@@ -131,14 +124,7 @@
 {/snippet}
 
 {#snippet chuckOutlets()}
-	<!-- Audio output -->
-	<StandardHandle
-		port="outlet"
-		type="audio"
-		title="Audio Output"
-		total={1}
-		index={0}
-	/>
+	<StandardHandle port="outlet" type="audio" title="Audio Output" total={1} index={0} />
 {/snippet}
 
 <div class="relative flex gap-x-3">
@@ -179,7 +165,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -243,7 +229,7 @@
 											</div>
 										</div>
 
-										<div class="absolute top-0 right-0">
+										<div class="absolute right-0 top-0">
 											<button
 												onclick={() => removeShred(shred.id)}
 												class="ml-2 rounded p-1 hover:bg-zinc-700"

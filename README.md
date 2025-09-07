@@ -411,6 +411,11 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - [ChucK](https://chuck.cs.princeton.edu) is a programming language for real-time sound synthesis and music creation.
 - Great for algorithmic composition and sound design.
 - Runs in the browser via [WebChucK](https://chuck.cs.princeton.edu/webchuck/).
+- Actions
+  - Replace Shred `Ctrl/Cmd + \`: replaces the most recent shred
+  - Add Shred `Ctrl/Cmd + Enter`: adds a new shred
+  - Remove Shred `Ctrl/Cmd + Backspace`: removes the most recent shred
+  - Click on the gear button to see list of running shreds. Remove any shred by clicking on the "x" button.
 
 ### `object`: textual object system
 
