@@ -39,6 +39,9 @@ This patch takes in audio from an audio file, analyzes the frequency spectrum us
 - Use your mouse to pan and zoom the canvas.
   - Scroll up: zoom in. Scroll down: zoom out.
   - Drag on empty space to pan the canvas.
+
+### Creating Objects
+
 - Press `Enter` to create a new object.
   - Type to search for object name. Try `hydra` or `glsl` or `p5`.
   - `Arrow Up` and `Arrow Down` to navigate the list.
@@ -47,6 +50,9 @@ This patch takes in audio from an audio file, analyzes the frequency spectrum us
 - Click on the "+ Nodes" button on the bottom left to see a list of objects you can create.
   - Drag the object name from the bottom bar onto the canvas to create it.
   - This is slower than using `Enter`, but it lets you see all visual nodes at a glance 👀
+
+### Modifying Objects
+
 - Click on an object to select it. The outline color should change when an object is selected.
   - If you can't drag an object, click on the title of the object and drag it.
 - Once selected, drag the object to move it around.
@@ -54,8 +60,17 @@ This patch takes in audio from an audio file, analyzes the frequency spectrum us
 - When _hovering_ the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
   - Use "Edit Code" to open the code editor.
 - `Shift + Enter` while in a code editor to run the code again. This helps you to make changes to the code and see the results immediately.
+
+### Command Palette
+
 - `Ctrl/Cmd + K` brings up the command palette.
   - You can do many actions here, such as toggling fullscreen, import/export patch files, save/load patches in your browser, setting API keys, opening secondary output screen, toggling FPS monitors, toggling bottom bars and more.
+
+### Connecting Objects
+
+- Click on the handle on the top and bottom of an object, and drag to connect to another object.
+  - Top handle are inputs. Bottom handle are outputs.
+  - You can connect multiple outlets to a single inlet.
 
 ## Mouse and Keyboard Shortcuts
 
@@ -111,20 +126,7 @@ In the above example, if the message came from inlet 2, it will be sent to outle
 
 In `js`, `p5` and `hydra` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
-## Message Passing with GLSL
-
-You can send messages into the GLSL uniforms to set them. First, create a GLSL uniform using the standard GLSL syntax, which adds two dynamic inlets to the GLSL object.
-
-```glsl
-uniform float iMix;
-uniform vec2 iFoo;
-```
-
-You can now send a message of value `0.5` to `iMix`, and send `[0.0, 0.0]` to `iFoo`. When you send messages to these inlets, it will set the internal GLSL uniform values for the object. The type of the message must match the type of the uniform, otherwise the message will not be sent.
-
-If you want to set a default uniform value for when the patch gets loaded, use the `loadbang` object connected to a `msg` object or a slider. `loadbang` sends a `{type: 'bang'}` message when the patch is loaded, which you can use to trigger a `msg` object or a `slider` to send the default value to the GLSL uniform inlet.
-
-Supported uniform types are `bool` (boolean), `int` (number), `float` (floating point number), `vec2`, `vec3`, and `vec4` (arrays of 2, 3, or 4 numbers).
+See the [Message Passing with GLSL](#message-passing-with-glsl) section for how to use message passing with GLSL shaders to pass data to shaders dynamically.
 
 ## Video Chaining
 
@@ -213,11 +215,25 @@ These objects support video chaining and can be connected to create complex visu
 - You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
 - You can create any number of GLSL uniform inlets by defining them in your GLSL code.
   - For example, if you define `uniform float iMix;`, it will create a float inlet for you to send values to.
-  - You can send values to the uniform inlets using [Message Passing](#message-passing). See the [Message Passing with GLSL](#message-passing-with-glsl) section above.
   - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a video inlet for you to connect video sources to.
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
+
+#### Message Passing with GLSL
+
+You can send messages into the GLSL uniforms to set the uniform values in real-time. First, create a GLSL uniform using the standard GLSL syntax, which adds two dynamic inlets to the GLSL object.
+
+```glsl
+uniform float iMix;
+uniform vec2 iFoo;
+```
+
+You can now send a message of value `0.5` to `iMix`, and send `[0.0, 0.0]` to `iFoo`. When you send messages to these inlets, it will set the internal GLSL uniform values for the object. The type of the message must match the type of the uniform, otherwise the message will not be sent.
+
+If you want to set a default uniform value for when the patch gets loaded, use the `loadbang` object connected to a `msg` object or a slider. `loadbang` sends a `{type: 'bang'}` message when the patch is loaded, which you can use to trigger a `msg` object or a `slider` to send the default value to the GLSL uniform inlet.
+
+Supported uniform types are `bool` (boolean), `int` (number), `float` (floating point number), `vec2`, `vec3`, and `vec4` (arrays of 2, 3, or 4 numbers).
 
 ### `swgl`: creates a SwissGL shader
 
