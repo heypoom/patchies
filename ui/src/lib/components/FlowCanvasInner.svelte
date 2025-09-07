@@ -72,6 +72,9 @@
 	// Node list visibility state
 	let isNodeListVisible = $state(false);
 
+	// Clipboard for copy-paste functionality
+	let copiedNodeData: { type: string; data: any } | null = null;
+
 	useOnSelectionChange(({ nodes }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
 	});
@@ -121,8 +124,23 @@
 
 		const hasNodeSelected = selectedNodeIds.length > 0;
 
-		// Handle CMD+K for command palette
+		// Handle CTRL+C for copy
 		if (
+			event.key.toLowerCase() === 'c' &&
+			(event.metaKey || event.ctrlKey) &&
+			!isTyping &&
+			hasNodeSelected
+		) {
+			event.preventDefault();
+			copySelectedNode();
+		}
+		// Handle CTRL+V for paste
+		else if (event.key.toLowerCase() === 'v' && (event.metaKey || event.ctrlKey) && !isTyping) {
+			event.preventDefault();
+			pasteNode();
+		}
+		// Handle CMD+K for command palette
+		else if (
 			event.key.toLowerCase() === 'k' &&
 			(event.metaKey || event.ctrlKey) &&
 			!showCommandPalette
@@ -366,6 +384,28 @@
 
 		return lastNodeId + 1;
 	}
+
+	// Copy selected node to clipboard
+	function copySelectedNode() {
+		if (selectedNodeIds.length !== 1) return;
+
+		const selectedNode = nodes.find((node) => node.id === selectedNodeIds[0]);
+		if (!selectedNode || !selectedNode.type) return;
+
+		// Deep copy the node data to avoid reference issues
+		copiedNodeData = {
+			type: selectedNode.type,
+			data: { ...selectedNode.data }
+		};
+	}
+
+	// Paste copied node at current mouse position
+	function pasteNode() {
+		if (!copiedNodeData) return;
+
+		const position = screenToFlowPosition(lastMousePosition);
+		createNode(copiedNodeData.type, position, copiedNodeData.data);
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -422,7 +462,7 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed right-0 bottom-0 p-2">
+		<div class="fixed bottom-0 right-0 p-2">
 			<ShortcutHelp />
 		</div>
 	{/if}
