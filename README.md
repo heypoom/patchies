@@ -286,7 +286,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 ### `expr`: mathematical expression evaluator
 
 - Evaluate mathematical expressions and formulas.
-- Use the `$1` and `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition, and sends a message with the result each time inlet one or two is updated.
+- Use the `$1` to `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition, and sends a message with the result each time inlet one or two is updated.
 - This uses the [expr-eval](https://github.com/silentmatt/expr-eval) library from silentmatt under the hood for evaluating mathematical expressions.
 - There are so many mathematical functions and operators you can use here! See the [expression syntax](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#expression-syntax) section.
 - Very helpful for control signals and parameter mapping.
@@ -502,20 +502,22 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
 
-- Usage with GLSL
+### Usage with GLSL
 
-  - Create a `sampler2D` GLSL uniform inlet and connect the purple "analyzer" outlet of `fft~` to it.
-  - Hit `Enter` to insert object, and try out the `fft-freq.gl` and `fft-waveform.gl` presets for working code samples.
-  - To get the waveform (time-domain analysis) instead of the frequency analysis, you must name the uniform as exactly `uniform sampler2D waveTexture;`. Using other uniform names will give you frequency analysis.
+- Create a `sampler2D` GLSL uniform inlet and connect the purple "analyzer" outlet of `fft~` to it.
+- Hit `Enter` to insert object, and try out the `fft-freq.gl` and `fft-waveform.gl` presets for working code samples.
+- To get the waveform (time-domain analysis) instead of the frequency analysis, you must name the uniform as exactly `uniform sampler2D waveTexture;`. Using other uniform names will give you frequency analysis.
 
-- Usage with Hydra and P5.js
+### Usage with Hydra and P5.js
 
-  - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
-    - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-audio-code) for why this is needed and how to convert existing code.
-  - Try out the `fft.hydra` preset for Hydra examples.
-  - Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
-  - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
-  - `fft({type: 'freq'})` gives you frequency spectrum analysis.
+- **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
+
+  - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-fft-code) for why this is needed and how to convert existing code.
+
+- `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
+- `fft({type: 'freq'})` gives you frequency spectrum analysis.
+- Try out the `fft.hydra` preset for Hydra examples.
+- Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
   - raw frequency bins: `fft().a`
@@ -525,7 +527,7 @@ First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connec
   - average as float: `fft().avg`
   - spectral centroid as float: `fft().centroid`
 
-### Convert existing P5 and Hydra audio code
+### Convert existing P5 and Hydra FFT code
 
 - Q: Why not just use standard Hydra and P5.js audio reactivity APIs like `a.fft[0]` and `p5.FFT()`?
 
