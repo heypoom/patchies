@@ -365,7 +365,7 @@
 			connection.targetHandle?.startsWith('video')
 		) {
 			// TODO: use proper analysis outlet detection.
-			if (connection.sourceHandle?.includes('outlet-1')) return true;
+			if (connection.sourceHandle?.includes('message-out-1')) return true;
 
 			return !!(
 				(connection.sourceHandle?.startsWith('video') ||

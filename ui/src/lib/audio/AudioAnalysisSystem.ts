@@ -151,7 +151,7 @@ export class AudioAnalysisSystem {
 	}
 
 	setupGlslPolling(edge: Edge) {
-		const analyzerOutletId = `outlet-${this.fftAnalysisOutletIndex}`;
+		const analyzerOutletId = `message-out-${this.fftAnalysisOutletIndex}`;
 
 		const glslNodeId = edge.target;
 		const analyzerNodeId = edge.source;
