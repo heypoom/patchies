@@ -48,7 +48,6 @@ You can use the Shortcuts button on the bottom right to see a list of shortcuts.
 - `Ctrl/Cmd + K`: open the command palette to search for commands.
 - `Shift + Enter`: run the code in the code editor within the selected object.
 - `Delete`: delete the selected object.
-- `Cmd + Z`: undo the last action.
 - `Ctrl + C`: copy the selected object.
 - `Ctrl + V`: paste the copied object.
 
@@ -245,41 +244,80 @@ These objects support video chaining and can be connected to create complex visu
 ### `expr`: mathematical expression evaluator
 
 - Evaluate mathematical expressions and formulas.
-- Perfect for control signals and parameter mapping.
-- Supports variables and mathematical functions.
+- Use the `$1` and `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition, and sends a message with the result each time inlet one or two is updated.
+- This uses the [expr-eval](https://github.com/silentmatt/expr-eval) library from silentmatt under the hood for evaluating mathematical expressions.
+- There are so many mathematical functions and operators you can use here! See the [expression syntax](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#expression-syntax) section.
+- Very helpful for control signals and parameter mapping.
+- You can also create variables and they are multi-line. Make sure to use `;` to separate statements. For example:
+
+  ```js
+  a = $1 * 2
+  b = $2 + 3
+  a + b
+  ```
+
+  This creates two inlets, and sends the result of `(inlet1 * 2) + (inlet2 + 3)` each time inlet one or two is updated.
 
 ### `expr~`: audio-rate mathematical expression evaluator
 
-- Similar to `expr` but runs at audio rate for signal processing.
-- Use for audio synthesis and real-time signal manipulation.
+- Similar to `expr` but runs at audio rate for audio signal processing.
+- This uses the same [expr-eval](https://github.com/silentmatt/expr-eval) library as `expr`, so the same mathematical expression will work in both `expr` and `expr~`.
+- This is useful for creating DSPs (digital signal processors) to generate audio effects.
+- It requires an audio source to work. You can use `sig~` if you just need a constant signal.
+- It accepts many DSP variables:
+  - `$1` to `$9`: control inlets
+  - `s`: current sample value, a float between -1 and 1
+  - `i`: current sample index in buffer, an integer starting from 0
+  - `channel`: current channel index, usually 0 or 1 for stereo
+  - `bufferSize`: the size of the audio buffer, usually 128
+  - `samples`: an array of samples from the current channel
+  - `input`: first input audio signal (for all connected channels), a float between -1 and 1
+  - `inputs`: every connected input audio signal
+- Example:
+  - `random()` creates white noise
+  - `s` outputs the input audio signal as-is
+  - `s * $1` applies gain control to the input audio signal
+  - `s ^ 2` squares the input audio signal for distortion effect
+- **WARNING**: Please use the `compressor~` object with appropriate limiter-esque setting after `expr~` to avoid loud audio spikes that can and will damage your hearing and speakers. You have been warned!
 
 ### Interface & Control Objects
 
-### `button`: creates an interactive button
+### `button`: a simple button
 
-- Trigger events and send messages when clicked.
-- Perfect for user interaction and patch control.
-- Use `send()` to output bang messages or custom data.
+- Sends the `{type: 'bang'}` message when clicked.
+- Messages:
+  - `any`: flashes the button when it receives any message, and outputs the `{type: 'bang'}` message out.
 
 ### `msg`: message object
 
 - Store and send predefined messages.
 - Click to send the stored message to connected objects.
 - Great for triggering sequences or sending configuration data.
+- Messages:
+  - `{type: 'bang'}`: outputs the message
 
 ### `slider`: creates an interactive slider
 
 - Continuous value control with customizable range.
 - Perfect for real-time parameter adjustment.
 - Outputs numeric values that can control other objects.
+- Messages:
+  - `{type: 'bang'}`: outputs the current slider value
+  - `number`: sets the slider to the given number within the range and outputs the value
+
+### `textbox`: textbox
+
+- Create a multi-line textbox for user input.
+- Messages:
+  - `{type: 'bang'}`: outputs the current text
+  - `string`: sets the text to the given string
 
 ### `object`: textual object system
 
-- Create Max/MSP-style textual objects with typed inlets and outlets.
+- Create textual objects with typed inlets and outlets.
 - Supports a wide range of audio processing, control, and utility objects.
-- Type an object name to create specialized functionality.
 
-#### Available textual objects include:
+#### Available textual objects
 
 **Audio Processing:**
 
