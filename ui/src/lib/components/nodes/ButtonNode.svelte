@@ -1,6 +1,6 @@
 <script lang="ts">
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
@@ -45,9 +45,8 @@
 				<button
 					onclick={() => messageContext.send({ type: 'bang' })}
 					class={[
-						'h-10 w-10 cursor-pointer rounded-full border font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600',
-						borderColor,
-						isFlashing ? 'bg-zinc-500' : 'bg-zinc-900'
+						'h-10 w-10 cursor-pointer rounded-full font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600',
+						isFlashing ? '!border-transparent bg-zinc-500' : `border ${borderColor} bg-zinc-900`
 					]}
 					aria-label="send bang"
 				>
