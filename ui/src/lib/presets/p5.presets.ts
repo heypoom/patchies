@@ -137,7 +137,7 @@ function draw() {
   endShape();
 }`;
 
-const AUDIO_FFT_RMS_P5 = `function setup() {
+const AUDIO_FFT_RMS_WIDE_P5 = `function setup() {
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
   strokeWeight(3)
@@ -194,12 +194,32 @@ function draw() {
   ellipse(x, y, size, size);
 }`;
 
+const AUDIO_FFT_RMS_NARROW_P5 = `function setup() {
+  createCanvas(200, 150)
+  pixelDensity(4)
+  strokeWeight(3)
+}
+
+function draw() {
+  clear()
+  noStroke();
+  
+  const rms = fft().rms
+  textSize(20)
+  fill('yellow')
+  textFont('monospace')
+  text(\`rms \${rms.toFixed(4)}\`, 20, 35)
+
+  rect(10, 152-(rms*150), 181, (rms*150))
+}`;
+
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
 	'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } },
 	'fft-capped.p5': { type: 'p5', data: { code: AUDIO_FFT_CAPPED_P5.trim() } },
 	'fft-full.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } },
-	'rms.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_P5.trim() } },
+	'rms.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_NARROW_P5.trim() } },
+	'rms-wide.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_WIDE_P5.trim() } },
 	'bouncing-balls.p5': { type: 'p5', data: { code: BOUNCING_BALLS_P5.trim() } }
 };
