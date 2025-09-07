@@ -47,8 +47,8 @@
 			.otherwise(() => 'opacity-60');
 
 		const strokeStyle = match([selected, $isBackgroundOutputCanvasEnabled])
-			.with([true, true], () => '!stroke-[2.5px] opacity-100')
-			.with([false, true], () => '!stroke-[2px] opacity-80')
+			.with([true, true], () => '!stroke-[2px] opacity-100')
+			.with([false, true], () => '!stroke-[2px] opacity-70')
 			.with([true, false], () => '!stroke-[1.5px]')
 			.otherwise(() => '!stroke-[0.7px]');
 
