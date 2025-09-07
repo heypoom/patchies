@@ -11,9 +11,10 @@ Patchies lets you use the audio-visual tools that you know and love, together in
 - [P5.js](https://p5js.org), a JavaScript library for creative coding.
 - [Hydra](https://hydra.ojack.xyz), a live-coding video synthesizer.
 - [Strudel](https://strudel.cc), a TidalCycles-like music environment
-- [ChucK](https://chuck.cs.princeton.edu/webchuck), a programming language for real-time sound synthesis
-- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), a powerful audio synthesis and processing API
-- [GLSL fragment shaders](https://www.shadertoy.com), for complex visual effects
+- [ChucK](https://chuck.cs.princeton.edu/webchuck), a programming language for real-time sound synthesis.
+- [ML5.js](https://ml5js.org), friendly machine learning library for the web.
+- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), a powerful audio synthesis and processing API.
+- [GLSL fragment shaders](https://www.shadertoy.com), for complex visual effects.
 - ...as well as write JavaScript code directly.
 
 Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It's inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and others.
@@ -117,9 +118,11 @@ These objects support video chaining and can be connected to create complex visu
 - If you are new to P5.js, I recommend watching [Patt Vira](https://www.youtube.com/@pattvira)'s YouTube tutorials on YouTube, or on her [website](https://www.pattvira.com). They're fantastic for both beginners and experienced developers.
 - Read the [P5.js documentation](https://p5js.org/reference) to see how P5 works.
 - See the [P5.js tutorials](https://p5js.org/tutorials) and [OpenProcessing](https://www.openprocessing.org) for more inspirations.
-- You can call these special methods in your P5 sketch:
+- You can also use [ML5.js](https://ml5js.org) in your P5 sketch to add machine learning capabilities. Call `loadML5()` at the top of your sketch to load the ML5 library.
+- You can call these special methods in your sketch:
 
-  - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your P5 sketch, such as adding sliders. You can call it in your `setup()` function.
+  - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.
+    - When `noDrag()` is enabled, you can still drag the "p5" title to move the whole object around.
   - `send(message)` and `onMessage(callback)`, see [Message Passing](#message-passing).
 
 ### `hydra`: creates a Hydra video synthesizer

@@ -26,6 +26,9 @@
 	let hasRecording = $state(false);
 	let recordingDuration = $state(0);
 	let recordingInterval: ReturnType<typeof setInterval> | null = null;
+	let isPlaying = $state(false);
+	let playbackProgress = $state(0);
+	let playbackInterval: ReturnType<typeof setInterval> | null = null;
 
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
@@ -75,10 +78,35 @@
 		if (!hasRecording) return;
 
 		audioSystem.send(node.id, 'message', { type: 'play' });
+		startPlaybackProgressBar();
+	}
+
+	function startPlaybackProgressBar() {
+		isPlaying = true;
+		playbackProgress = 0;
+
+		// Start playback progress tracking
+		playbackInterval = setInterval(() => {
+			playbackProgress += 0.1;
+			if (playbackProgress >= recordingDuration) {
+				stopPlayback();
+			}
+		}, 100);
+	}
+
+	function stopPlaybackProgressBar() {
+		isPlaying = false;
+		playbackProgress = 0;
+
+		if (playbackInterval) {
+			clearInterval(playbackInterval);
+			playbackInterval = null;
+		}
 	}
 
 	function stopPlayback() {
 		audioSystem.send(node.id, 'message', { type: 'stop' });
+		stopPlaybackProgressBar();
 	}
 
 	function toggleRecording() {
@@ -103,9 +131,8 @@
 	});
 
 	onDestroy(() => {
-		if (recordingInterval) {
-			clearInterval(recordingInterval);
-		}
+		if (recordingInterval) clearInterval(recordingInterval);
+		if (playbackInterval) clearInterval(playbackInterval);
 
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
@@ -170,10 +197,18 @@
 
 				<div
 					class={[
-						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg',
+						'border-1 relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-lg',
 						node.selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'
 					]}
 				>
+					<!-- Playback Progress Bar -->
+					{#if isPlaying && recordingDuration > 0}
+						<div
+							class="pointer-events-none absolute left-0 top-0 h-full bg-zinc-600/30 transition-all"
+							style="width: {(playbackProgress / recordingDuration) * 100}%"
+						></div>
+					{/if}
+
 					<div class="flex items-center justify-center gap-2 px-3 py-[7px]">
 						{#if isRecording}
 							<Icon icon="lucide:circle" class="h-4 w-4 animate-pulse text-red-500" />
