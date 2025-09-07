@@ -627,6 +627,25 @@
 			.with('signal', () => 'audio' as const)
 			.with('analysis', () => 'analysis' as const)
 			.otherwise(() => 'message' as const);
+
+	const selectedDescription = $derived.by(() => {
+		const current = filteredSuggestions[selectedSuggestion];
+		if (!current) return null;
+
+		if (current.type === 'preset') {
+			return `Preset: ${current.name} (using ${current.type})` || null;
+		}
+
+		if (current.type === 'object') {
+			const objectDef = objectDefinitions[current.name];
+
+			if (objectDef) {
+				return objectDef.description || null;
+			}
+		}
+
+		return null;
+	});
 </script>
 
 <div class="relative">
@@ -668,36 +687,44 @@
 
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
-							<div
-								class="absolute left-0 top-full z-50 mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
-							>
-								<!-- Results List -->
-								<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
-									{#each filteredSuggestions as suggestion, index}
-										<button
-											type="button"
-											onclick={() => selectSuggestion(suggestion)}
-											class={[
-												'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
-												index === selectedSuggestion
-													? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
-													: 'border-transparent text-zinc-300 hover:bg-zinc-800/80'
-											]}
-										>
-											<span class="font-mono">{suggestion.name}</span>
+							<div class="absolute left-0 top-full z-50 flex">
+								<div
+									class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+								>
+									<!-- Results List -->
+									<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
+										{#each filteredSuggestions as suggestion, index}
+											<button
+												type="button"
+												onclick={() => selectSuggestion(suggestion)}
+												class={[
+													'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
+													index === selectedSuggestion
+														? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
+														: 'border-transparent text-zinc-300 hover:bg-zinc-800/80'
+												]}
+											>
+												<span class="font-mono">{suggestion.name}</span>
 
-											{#if suggestion.type === 'preset'}
-												<span class="text-[10px] text-zinc-500"
-													>{PRESETS[suggestion.name].type}</span
-												>
-											{/if}
-										</button>
-									{/each}
+												{#if suggestion.type === 'preset'}
+													<span class="text-[10px] text-zinc-500"
+														>{PRESETS[suggestion.name].type}</span
+													>
+												{/if}
+											</button>
+										{/each}
+									</div>
+
+									<!-- Footer with keyboard hints -->
+									<div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
+										<span>↑↓ navigate • Enter select • Esc cancel</span>
+									</div>
 								</div>
 
-								<!-- Footer with keyboard hints -->
-								<div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
-									<span>↑↓ navigate • Enter select • Esc cancel</span>
+								<div class="ml-3 mt-2 min-w-48 font-mono">
+									<div class="text-xs">
+										{selectedDescription}
+									</div>
 								</div>
 							</div>
 						{/if}
