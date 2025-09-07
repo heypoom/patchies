@@ -32,23 +32,23 @@
 
 			{#if isVisible}
 				<!-- Node List -->
-				<div class="flex max-w-[80vw] flex-wrap gap-2 pl-2">
+				<div class="flex flex-wrap gap-2 pl-2">
 					{#each Object.keys(nodeTypes) as nodeType}
 						<div
 							role="button"
 							tabindex="0"
 							class={[
-								'flex cursor-grab flex-col items-center gap-2 rounded-lg px-[6px] py-[2px] transition-colors',
+								'flex cursor-grab flex-col items-center gap-2 rounded-lg px-[10px] py-[3px] transition-colors',
 								$isBackgroundOutputCanvasEnabled
 									? 'bg-transparent backdrop-blur-xl hover:bg-zinc-900/10'
-									: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-800'
+									: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-700'
 							]}
 							draggable={true}
 							ondragstart={(event) => {
 								event.dataTransfer?.setData('application/svelteflow', nodeType);
 							}}
 						>
-							<span class="font-mono text-[10px] text-zinc-300">{nodeType}</span>
+							<span class="font-mono text-[16px] text-zinc-300">{nodeType}</span>
 						</div>
 					{/each}
 				</div>
