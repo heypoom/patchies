@@ -633,7 +633,9 @@
 		if (!current) return null;
 
 		if (current.type === 'preset') {
-			return `Preset: ${current.name} (using ${current.type})` || null;
+			const preset = PRESETS[current.name];
+
+			return `Preset: ${current.name} (using ${preset.type})` || null;
 		}
 
 		if (current.type === 'object') {
