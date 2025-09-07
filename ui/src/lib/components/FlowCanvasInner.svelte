@@ -557,9 +557,10 @@
 			{isValidConnection}
 		>
 			<Background bgColor="#18181b" gap={16} patternColor="oklch(44.2% 0.017 285.786)" />
+
 			<BackgroundOutputCanvas />
 
-			<Controls class={$isBottomBarVisible ? '!bottom-[30px]' : '!hidden'} />
+			<Controls class={$isBottomBarVisible ? '' : '!hidden'} />
 		</SvelteFlow>
 
 		<!-- Command Palette -->
@@ -621,17 +622,30 @@
 	}
 
 	:global(.svelte-flow__controls) {
-		background: rgb(39 39 42) !important;
-		border: 1px solid rgb(63 63 70) !important;
+		position: fixed;
+		bottom: 23px !important;
+		border-radius: 10px;
+		margin: 15px 9px;
 	}
 
 	:global(.svelte-flow__controls button) {
-		background: rgb(39 39 42) !important;
+		background: rgba(39, 39, 42, 0.5) !important;
 		color: rgb(244 244 245) !important;
-		border: 1px solid rgb(63 63 70) !important;
+		border: transparent;
+		height: 28px;
+	}
+
+	:global(.svelte-flow__controls button):first-child {
+		border-top-left-radius: 10px;
+		border-top-right-radius: 10px;
+	}
+
+	:global(.svelte-flow__controls button):last-child {
+		border-bottom-left-radius: 10px;
+		border-bottom-right-radius: 10px;
 	}
 
 	:global(.svelte-flow__controls button:hover) {
-		background: rgb(63 63 70) !important;
+		background: rgb(39, 39, 42) !important;
 	}
 </style>
