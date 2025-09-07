@@ -1,8 +1,8 @@
 # Patchies.app
 
-<img src="./docs/images/visual-chaining.jpg" alt="Patchies.app Hero Image" width="700">
+<img src="./docs/images/patchies-v3-hero.png" alt="Patchies.app Hero Image" width="700">
 
-> The above uses the shader ["Tunnel of Lights"](https://www.shadertoy.com/view/w3KGRK) from nocrex. Hydra sample by [Olivia Jack](https://hydra.ojack.xyz).
+> The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
 Patchies is a tool to build audio-visual patches on the web. Try it out at [patchies.app](https://patchies.app).
 
