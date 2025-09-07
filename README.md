@@ -130,11 +130,13 @@ See the [Message Passing with GLSL](#message-passing-with-glsl) section for how 
 
 ## Video Chaining
 
-You can chain video objects together to create complex video effects, by using the output of a video object as an input to another. For example: P5 -> Hydra -> GLSL. This is similar to shader graphs in TouchDesigner.
+You can chain video objects together to create complex video effects, by using the output of a video object as an input to another. For example: `P5 -> Hydra -> GLSL -> output`. This is similar to shader graphs in programs like TouchDesigner.
 
-To leverage video chaining, use the leftmost orange inlets and outlets on the patch. You can connect the orange video outlet of a `p5` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl`.
+<img src="./docs/images/patchies-video-chain.png" alt="Patchies.app video chain example" width="700">
 
-This allows you to create video patches that are more powerful than what you can do with a single object. Have fun!
+To use video chaining, connect the orange inlets and outlets on the patch. For example, connect the orange video outlet of a `p5` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl`.
+
+See the `glsl` object section for how to create uniforms to accept video inputs.
 
 ## Audio Chaining
 
@@ -148,70 +150,9 @@ Similar to video chaining, you can chain many audio objects together to create c
 
   - These objects correspond to Web Audio API nodes. See the [Web Audio API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for more details.
 
-- Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section below.
+- Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
 - You can use `dac~` to output audio to your speakers.
-
-## Audio Analysis
-
-The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch. Here is how to use it:
-
-- GLSL: connect the purple "analyzer" outlet to a `sampler2D` GLSL uniform inlet.
-
-  - Hit `Enter` to insert object, and try out the `fft-freq.gl` and `fft-waveform.gl` presets for working code samples.
-  - To get the waveform (time-domain analysis) instead of the frequency analysis, you must name the uniform as exactly `uniform sampler2D waveTexture;`. Using other names will give you frequency analysis.
-
-- Hydra and P5.js:
-
-  - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
-    - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-audio-code) for why this is needed and how to convert existing code.
-
-- Basic usage
-
-  - Try out the `fft.hydra` preset for Hydra examples.
-  - Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
-  - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
-  - `fft({type: 'freq'})` gives you frequency spectrum analysis.
-
-- The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
-  - raw frequency bins: `fft().a`
-  - bass energy as float (between 0 - 1): `fft().getEnergy('bass') / 255`. You can use these frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`.
-  - energy between any frequency range as float (between 0 - 1): `fft().getEnergy(40, 200) / 255`
-  - rms as float: `fft().rms`
-  - average as float: `fft().avg`
-  - spectral centroid as float: `fft().centroid`
-
-## Convert existing P5 and Hydra audio code
-
-- Q: Why not just use standard Hydra and P5.js audio reactivity APIs like `a.fft[0]` and `p5.FFT()`?
-
-  - A: The reason is that the `p5-sound` and `a.fft` APIs only lets you access microphones and audio files. In contrast, Patchies lets you FFT any dynamic audio sources 😊
-  - You can FFT analyze your own audio pipelines like your web audio graph, and other live audio coding environment like Strudel and ChucK.
-  - It makes the API exactly the same between Hydra and P5.js. No need to juggle two.
-
-- Converting Hydra's [Audio Reactivity](https://hydra.ojack.xyz/hydra-docs-v2/docs/learning/sequencing-and-interactivity/audio/#audio-reactivity) API into Patchies:
-
-  - Replace `a.fft[0]` with `fft().a[0]` (un-normalized int8 values from 0 - 255)
-  - Replace `a.fft[0]` with `fft().f[0]` (normalized float values from 0 - 1)
-  - Instead of `a.setBins(32)`, change the fft bins in the `fft~` object instead e.g. `fft~ 32`
-  - Instead of `a.show()`, use the below presets to visualize fft bins.
-  - Using the value to control a variable:
-
-    ```diff
-
-      - osc(10, 0, () => a.fft[0]*4)
-      + osc(10, 0, () => fft().f[0]*4)
-        .out()
-    ```
-
-- Converting P5's [p5.sound](https://p5js.org/reference/p5.sound/) API into Patchies:
-
-  - Replace `p5.Amplitude` with `fft().rms` (rms as float between 0-1)
-  - Replace `p5.FFT` with `fft()`
-  - Replace `fft.analyze()` with nothing - `fft()` is always up to date.
-  - Replace `fft.waveform()` with `fft({ format: 'float' }).a`, as P5's waveform returns a value between -1 and 1. Using `format: 'float'` gives you Float32Array.
-  - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
-  - Replace `fft.getCentroid()` with `fft().centroid`
 
 ## List of objects
 
@@ -242,7 +183,7 @@ These objects support video chaining and can be connected to create complex visu
   - Use the "shuffle" button on the editor to get code samples you can use. You can copy it into Patchies. Check the license terms first.
 - You can call these special methods in your Hydra code:
   - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
-    - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two video inlets.
+  - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two video inlets.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
@@ -554,6 +495,67 @@ These objects can be hidden via the "Toggle AI Features" command if you prefer n
 - Render Markdown text as formatted content.
 - Perfect for documentation, instructions, or dynamic text display.
 - Supports full Markdown syntax including links and formatting.
+
+## Audio Analysis
+
+The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch.
+
+First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
+
+- Usage with GLSL
+
+  - Create a `sampler2D` GLSL uniform inlet and connect the purple "analyzer" outlet of `fft~` to it.
+  - Hit `Enter` to insert object, and try out the `fft-freq.gl` and `fft-waveform.gl` presets for working code samples.
+  - To get the waveform (time-domain analysis) instead of the frequency analysis, you must name the uniform as exactly `uniform sampler2D waveTexture;`. Using other uniform names will give you frequency analysis.
+
+- Usage with Hydra and P5.js
+
+  - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
+    - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-audio-code) for why this is needed and how to convert existing code.
+  - Try out the `fft.hydra` preset for Hydra examples.
+  - Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
+  - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
+  - `fft({type: 'freq'})` gives you frequency spectrum analysis.
+
+- The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
+  - raw frequency bins: `fft().a`
+  - bass energy as float (between 0 - 1): `fft().getEnergy('bass') / 255`. You can use these frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`.
+  - energy between any frequency range as float (between 0 - 1): `fft().getEnergy(40, 200) / 255`
+  - rms as float: `fft().rms`
+  - average as float: `fft().avg`
+  - spectral centroid as float: `fft().centroid`
+
+### Convert existing P5 and Hydra audio code
+
+- Q: Why not just use standard Hydra and P5.js audio reactivity APIs like `a.fft[0]` and `p5.FFT()`?
+
+  - A: The reason is that the `p5-sound` and `a.fft` APIs only lets you access microphones and audio files. In contrast, Patchies lets you FFT any dynamic audio sources 😊
+  - You can FFT analyze your own audio pipelines like your web audio graph, and other live audio coding environment like Strudel and ChucK.
+  - It makes the API exactly the same between Hydra and P5.js. No need to juggle two.
+
+- Converting Hydra's [Audio Reactivity](https://hydra.ojack.xyz/hydra-docs-v2/docs/learning/sequencing-and-interactivity/audio/#audio-reactivity) API into Patchies:
+
+  - Replace `a.fft[0]` with `fft().a[0]` (un-normalized int8 values from 0 - 255)
+  - Replace `a.fft[0]` with `fft().f[0]` (normalized float values from 0 - 1)
+  - Instead of `a.setBins(32)`, change the fft bins in the `fft~` object instead e.g. `fft~ 32`
+  - Instead of `a.show()`, use the below presets to visualize fft bins.
+  - Using the value to control a variable:
+
+    ```diff
+
+      - osc(10, 0, () => a.fft[0]*4)
+      + osc(10, 0, () => fft().f[0]*4)
+        .out()
+    ```
+
+- Converting P5's [p5.sound](https://p5js.org/reference/p5.sound/) API into Patchies:
+
+  - Replace `p5.Amplitude` with `fft().rms` (rms as float between 0-1)
+  - Replace `p5.FFT` with `fft()`
+  - Replace `fft.analyze()` with nothing - `fft()` is always up to date.
+  - Replace `fft.waveform()` with `fft({ format: 'float' }).a`, as P5's waveform returns a value between -1 and 1. Using `format: 'float'` gives you Float32Array.
+  - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
+  - Replace `fft.getCentroid()` with `fft().centroid`
 
 ## Hiding AI features
 
