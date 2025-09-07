@@ -27,7 +27,8 @@
 	import { loadPatchFromUrl } from '$lib/save-load/load-patch-from-url';
 	import { match } from 'ts-pattern';
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
-	import { getSharedPatchData } from '$lib/api/pb';
+	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
+	import Icon from '@iconify/svelte';
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -149,10 +150,8 @@
 			!showCommandPalette
 		) {
 			event.preventDefault();
-			const centerX = window.innerWidth / 2 - 160;
-			const centerY = window.innerHeight / 2 - 200;
-			commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
-			showCommandPalette = true;
+
+			triggerCommandPalette();
 		} else if (
 			event.key.toLowerCase() === 'enter' &&
 			!showCommandPalette &&
@@ -166,13 +165,22 @@
 		}
 	}
 
+	function triggerCommandPalette() {
+		const centerX = window.innerWidth / 2 - 160;
+		const centerY = window.innerHeight / 2 - 200;
+
+		commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
+		showCommandPalette = true;
+		console.log('set showCommandPalette to true');
+	}
+
 	onMount(() => {
 		flowContainer?.focus();
 
 		glSystem.start();
 		audioSystem.start();
 
-		loadPatchFromParam();
+		loadPatch();
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 
@@ -203,7 +211,7 @@
 		glSystem.renderWorker.terminate();
 	});
 
-	async function loadPatchFromParam() {
+	async function loadPatch() {
 		if (typeof window === 'undefined') return null;
 
 		const params = new URLSearchParams(window.location.search);
@@ -478,6 +486,18 @@
 			isLoadingFromUrl = false;
 		}
 	}
+
+	async function createShareLink() {
+		const id = await createShareablePatch(null, nodes, edges);
+		if (id === null) return;
+
+		const url = `${appHostUrl}/?id=${id}`;
+
+		try {
+			await navigator.clipboard.writeText(url);
+			alert(`Shareable link copied to clipboard: ${url}`);
+		} catch {}
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -569,6 +589,23 @@
 		/>
 
 		<div class="fixed bottom-0 right-0 p-2">
+			<button
+				title="Share link"
+				class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+				onclick={createShareLink}><Icon icon="lucide:link" class="h-4 w-4 text-zinc-300" /></button
+			>
+
+			<button
+				title="Open Command Palette"
+				class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+
+					triggerCommandPalette();
+				}}><Icon icon="lucide:command" class="h-4 w-4 text-zinc-300" /></button
+			>
+
 			<ShortcutHelp />
 		</div>
 	{/if}

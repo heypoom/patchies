@@ -17,7 +17,7 @@ export const pb = new PocketBase(pocketbaseInstanceUrl);
 window.pb = pb;
 
 export async function createShareablePatch(
-	_name: string,
+	_name: string | null,
 	nodes: Node[],
 	edges: Edge[]
 ): Promise<string | null> {

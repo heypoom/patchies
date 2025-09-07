@@ -72,6 +72,10 @@ This patch takes in audio from an audio file, analyzes the frequency spectrum us
   - Top handle are inputs. Bottom handle are outputs.
   - You can connect multiple outlets to a single inlet.
 
+### Sharing Links
+
+To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
+
 ## Mouse and Keyboard Shortcuts
 
 You can use the Shortcuts button on the bottom right to see a list of shortcuts. Here are some of the most useful ones:
