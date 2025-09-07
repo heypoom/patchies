@@ -31,6 +31,11 @@ export class ChuckManager {
 			const shredId = await chuck.runCode(code);
 			const now = await chuck.now();
 
+			if (now === 0) {
+				console.warn('[chuck] chuck.now() returned 0, chuck instance is likely broken!');
+				return;
+			}
+
 			this.shreds.push({
 				id: shredId,
 				time: now,
@@ -114,6 +119,9 @@ export class ChuckManager {
 
 	async handleMessage(key: string, value: unknown): Promise<void> {
 		match([key, value])
+			.with(['init', P.any], async () => {
+				this.ensureChuck();
+			})
 			.with(['run', P.string], async ([, code]) => {
 				await this.runCode(code);
 			})
@@ -155,10 +163,15 @@ export class ChuckManager {
 
 		try {
 			const { Chuck } = await import('webchuck');
-			const chuckUrlPrefix = 'https://chuck.stanford.edu/webchuck/src/';
+			const chuckUrlPrefix = './webchuck/';
 
 			this.chuck = await Chuck.init([], this.audioContext, 2, chuckUrlPrefix);
 			this.chuck.connect(this.gainNode);
+
+			this.chuck.addEventListener('processorerror', (event) => {
+				console.error('ChucK AudioWorkletProcessor error:', event);
+			});
+
 			this.ready = true;
 
 			return this.chuck;
