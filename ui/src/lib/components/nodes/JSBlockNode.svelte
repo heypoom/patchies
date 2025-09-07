@@ -180,6 +180,7 @@
 				'onMessage',
 				'setInterval',
 				'requestAnimationFrame',
+				'fft',
 				'llm',
 				'setPortCount',
 				'setRunOnMount'
@@ -191,6 +192,7 @@
 				messageSystemContext.onMessage,
 				messageSystemContext.setInterval,
 				messageSystemContext.requestAnimationFrame,
+				messageSystemContext.fft,
 				createLLMFunction(),
 				setPortCount,
 				setRunOnMount
@@ -282,7 +284,7 @@
 							id={index}
 							title={`Inlet ${index}`}
 							total={inletCount}
-							index={index}
+							{index}
 							class="top-0"
 						/>
 					{/each}
@@ -368,7 +370,7 @@
 							id={index}
 							title={`Outlet ${index}`}
 							total={outletCount}
-							index={index}
+							{index}
 							class="bottom-0"
 						/>
 					{/each}

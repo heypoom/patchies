@@ -506,13 +506,17 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
 
+Supported objects are `glsl`, `hydra`, `p5`, `canvas` and `js`.
+
 ### Usage with GLSL
 
 - Create a `sampler2D` GLSL uniform inlet and connect the purple "analyzer" outlet of `fft~` to it.
 - Hit `Enter` to insert object, and try out the `fft-freq.gl` and `fft-waveform.gl` presets for working code samples.
 - To get the waveform (time-domain analysis) instead of the frequency analysis, you must name the uniform as exactly `uniform sampler2D waveTexture;`. Using other uniform names will give you frequency analysis.
 
-### Usage with Hydra and P5.js
+### Usage with JavaScript-based objects
+
+You can call the `fft()` function to get the audio analysis data in the supported JavaScript-based objects: `hydra`, `p5`, `canvas` and `js`.
 
 - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
 
@@ -524,12 +528,32 @@ First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connec
 - Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
+
   - raw frequency bins: `fft().a`
   - bass energy as float (between 0 - 1): `fft().getEnergy('bass') / 255`. You can use these frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`.
   - energy between any frequency range as float (between 0 - 1): `fft().getEnergy(40, 200) / 255`
   - rms as float: `fft().rms`
   - average as float: `fft().avg`
   - spectral centroid as float: `fft().centroid`
+
+- Where to call `fft()`:
+
+  - `p5`: call in your `draw` function.
+  - `canvas`: call in your `draw` function that are gated by `requestAnimationFrame`
+  - `js`: call in your `setInterval` or `requestAnimationFrame` callback
+
+    ```js
+    setInterval(() => {
+      let a = fft().a
+    }, 1000)
+    ```
+
+  - `hydra`: call inside arrow functions for dynamic parameters
+
+    ```js
+    let a = () => fft().getEnergy('bass') / 255
+    src(s0).repeat(5, 3, a, () => a() * 2)
+    ```
 
 ### Convert existing P5 and Hydra FFT code
 
