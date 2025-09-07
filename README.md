@@ -102,11 +102,45 @@ This allows you to create video patches that are more powerful than what you can
 
 Similar to video chaining, you can chain many audio objects together to create complex audio effects.
 
-For example, you can use these as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `midi.in`, `soundfile~`.
+- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `video` as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+
+  - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
+
+- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`.
+
+  - These objects correspond to Web Audio API nodes. See the [Web Audio API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for more details.
+
+- Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section below.
+
+- You can use `dac~` to output audio to your speakers.
+
+## Audio Analysis
+
+The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch. Here is how to use it:
+
+- GLSL: connect the purple "analyzer" outlet to a `sampler2D` GLSL uniform inlet.
+
+  - Hit `Enter` to insert object, and try out the `fft-freq.gl` and `fft-waveform.gl` presets for working code samples.
+  - To get the waveform (time-domain analysis) instead of the frequency analysis, you must name the uniform as exactly `uniform sampler2D waveTexture;`. Using other names will give you frequency analysis.
+
+- Hydra and P5.js:
+
+  - Try out the `fft.hydra` preset for Hydra examples.
+  - Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
+  - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
+  - `fft({type: 'freq'}).a` gives you frequency spectrum analysis.
+
+- The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
+  - raw frequency bins: `fft().a`
+  - bass energy as float (between 0 - 1): `fft().getEnergy('bass') / 255`. You can use these frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`.
+  - energy between any frequency range as float (between 0 - 1): `fft().getEnergy(40, 200) / 255`
+  - rms as float: `fft().rms`
+  - average as float: `fft().avg`
+  - spectral centroid as float: `fft().centroid`
 
 ## List of objects
 
-Here are the list of objects that we have in Patchies. You can also hit `n` on your keyboard to see list of objects to create, as well as drag in the objects from the bottom bar.
+Here are the non-exhaustive list of objects that we have in Patchies. You can also hit `n` on your keyboard to see list of objects to create, as well as drag in the objects from the bottom bar.
 
 ### Visual & Creative Coding Objects
 
@@ -185,9 +219,9 @@ These objects support video chaining and can be connected to create complex visu
 
 ### `chuck`: creates a ChucK audio programming environment
 
-- ChucK is a programming language for real-time sound synthesis and music creation.
+- [ChucK](https://chuck.cs.princeton.edu) is a programming language for real-time sound synthesis and music creation.
 - Great for algorithmic composition and sound design.
-- Runs in the browser via WebChucK.
+- Runs in the browser via [WebChucK](https://chuck.cs.princeton.edu/webchuck/).
 
 ### `python`: creates a Python code environment
 
