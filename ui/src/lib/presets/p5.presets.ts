@@ -43,7 +43,7 @@ const states = ['red', 'yellow', 'green']
 
 let state = 'red'
 
-onMessage(m => {
+recv(m => {
   if (m === 'next' || m?.type === 'bang') {
     state = states[(states.indexOf(state) + 1) % states.length]
     send(state)

@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Event-Driven Architecture**: The `PatchiesEventBus` (singleton) handles system-wide events with type-safe event listeners. This decouples components and enables features like undo/redo, node lifecycle events, and real-time collaboration.
 
-**Message Passing System**: The `MessageSystem` (singleton) enables Max/MSP-style message routing between nodes using `send()` and `onMessage()`. Messages flow through XY Flow edges, supporting typed inlets/outlets and automatic cleanup on node deletion.
+**Message Passing System**: The `MessageSystem` (singleton) enables Max/MSP-style message routing between nodes using `send()` and `recv()`. Messages flow through XY Flow edges, supporting typed inlets/outlets and automatic cleanup on node deletion.
 
 **Rendering Pipeline**: The `graphUtils` module builds render graphs from XY Flow nodes, performs topological sorting, and handles FBO (Frame Buffer Object) rendering chains for video effects. Supports video chaining (P5 → Hydra → GLSL) through texture passing.
 
@@ -66,7 +66,7 @@ bun run test               # Run all tests
 ```typescript
 // In any JavaScript-based node:
 send(data, {to: 0}) // Send to specific outlet number
-onMessage((data, meta) => {
+recv((data, meta) => {
   // meta contains { source, inlet, outlet, inletKey, outletKey }
 })
 ```

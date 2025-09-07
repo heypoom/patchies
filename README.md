@@ -54,27 +54,27 @@ You can use the Shortcuts button on the bottom right to see a list of shortcuts.
 
 ## Message Passing
 
-You can use `send()` and `onMessage()` functions to send and receive messages between objects. This allows you to create complex interactions between different parts of your patch. This is very similar to messages in Max/MSP.
+You can use `send()` and `recv()` functions to send and receive messages between objects. This allows you to create complex interactions between different parts of your patch. This is very similar to messages in Max/MSP.
 
-Here is how to use `send` and `onMessage` in JavaScript objects:
+Here is how to use `send` and `recv` in JavaScript objects:
 
 ```js
 // Object A
 send('Hello from Object A')
 
 // Object B
-onMessage((data, meta) => {
+recv((data, meta) => {
   // data = "Hello from Object A"
   console.log('Received message:', data)
 })
 ```
 
-You can use the `send` and `onMessage` function in all JavaScript-based objects, such as `js`, `p5`, `hydra`, `strudel` and `canvas`.
+You can use the `send` and `recv` function in all JavaScript-based objects, such as `js`, `p5`, `hydra`, `strudel` and `canvas`.
 
 The `meta` includes the `inlet` which is an index of the inlet. This is helpful to distinguish inlets. You can also do `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
 
 ```js
-onMessage((data, meta) => {
+recv((data, meta) => {
   send(data, {to: meta.inlet})
 })
 ```
@@ -157,7 +157,7 @@ These objects support video chaining and can be connected to create complex visu
 
   - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.
     - When `noDrag()` is enabled, you can still drag the "p5" title to move the whole object around.
-  - `send(message)` and `onMessage(callback)`, see [Message Passing](#message-passing).
+  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
 
 ### `hydra`: creates a Hydra video synthesizer
 
@@ -169,7 +169,7 @@ These objects support video chaining and can be connected to create complex visu
     - For example, `setVideoCount(2)` will initialize `s0` and `s1` with the first two video inlets.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
-  - `send(message)` and `onMessage(callback)`
+  - `send(message)` and `recv(callback)`
 
 ### `glsl`: creates a GLSL fragment shader
 
@@ -196,7 +196,7 @@ These objects support video chaining and can be connected to create complex visu
 
   - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your canvas, such as adding sliders. You can call it in your `setup()` function.
   - `getSource()` to get the video source from the previous video object using [Video Chaining](#video-chaining). This returns the HTML5 canvas element which you can use for e.g. copying pixels. You can call this in your `setup()` function.
-  - `send(message)` and `onMessage(callback)`, see [Message Passing](#message-passing).
+  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
@@ -236,7 +236,7 @@ These objects support video chaining and can be connected to create complex visu
 - Use `console.log()` to log messages to the virtual console.
 - Use `setInterval(callback, ms)` to run a callback every `ms` milliseconds.
   - The code block has a special version of `setInterval` that automatically cleans up the interval on unmount. Do not use `window.setInterval` from the window scope as that will not clean up.
-- Use `send()` and `onMessage()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section below.
+- Use `send()` and `recv()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section below.
 
 ### `expr`: mathematical expression evaluator
 

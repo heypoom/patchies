@@ -1,6 +1,6 @@
-const MESSAGE_CONSOLE_JS = `onMessage(m => console.log(m))`;
+const MESSAGE_CONSOLE_JS = `recv(m => console.log(m))`;
 
-const DELAY_JS = `onMessage(async (m) => {
+const DELAY_JS = `recv(async (m) => {
   await delay(1000) // how long to wait for
   send(m)
 })`;
@@ -14,7 +14,7 @@ const h = () => {
 
 requestAnimationFrame(h)`;
 
-const MIDI_ADSR_GAIN_JS = `onMessage(m => {
+const MIDI_ADSR_GAIN_JS = `recv(m => {
   if (m.type === 'noteOn') {
     send({
       type: 'trigger',
