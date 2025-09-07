@@ -13,11 +13,11 @@
 
 <div class={['fixed bottom-0 left-0 w-full bg-transparent px-2 py-1 transition-all duration-300']}>
 	<div class="max-w-full">
-		<div class="flex items-center">
+		<div class="flex items-end">
 			<!-- Toggle Button -->
 			<button
 				class={[
-					'flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors',
+					'flex cursor-pointer items-center justify-end gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors',
 					$isBackgroundOutputCanvasEnabled
 						? 'bg-zinc-900/50 backdrop-blur-xl hover:bg-zinc-900/70'
 						: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-800'
@@ -32,7 +32,7 @@
 
 			{#if isVisible}
 				<!-- Node List -->
-				<div class="flex max-w-[80vw] gap-2 overflow-x-scroll pl-2">
+				<div class="flex max-w-[80vw] flex-wrap gap-2 pl-2">
 					{#each Object.keys(nodeTypes) as nodeType}
 						<div
 							role="button"
