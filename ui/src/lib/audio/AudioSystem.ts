@@ -486,12 +486,7 @@ export class AudioSystem {
 		try {
 			const workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor');
 
-			if (code) {
-				workletNode.port.postMessage({
-					type: 'set-code',
-					code: code
-				});
-			}
+			if (code) workletNode.port.postMessage({ type: 'set-code', code: code });
 
 			this.nodesById.set(nodeId, { type: 'dsp~', node: workletNode });
 		} catch (error) {

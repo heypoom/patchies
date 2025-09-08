@@ -126,12 +126,13 @@
 		inletValues = new Array(inletCount).fill(0);
 		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
 		updateAudioInletValues(inletValues);
+		updateContentWidth();
 
-		// Listen for port count changes from DSP processor
-		const audioNode = audioSystem.nodesById.get(nodeId);
+		setTimeout(() => {
+			const dspNode = audioSystem.nodesById.get(nodeId);
+			if (!dspNode || dspNode.type !== 'dsp~') return;
 
-		if (audioNode && audioNode.type === 'dsp~') {
-			audioNode.node.port.addEventListener('message', (event: MessageEvent) => {
+			dspNode.node.port.onmessage = (event: MessageEvent) => {
 				if (event.data.type === 'port-count-changed') {
 					updateNodeData(nodeId, {
 						code: data.code,
@@ -140,12 +141,11 @@
 
 					setTimeout(() => {
 						updateNodeInternals(nodeId);
+						updateContentWidth();
 					}, 5);
 				}
-			});
-		}
-
-		updateContentWidth();
+			};
+		}, 100);
 	});
 
 	onDestroy(() => {
@@ -163,6 +163,13 @@
 	function toggleEditor() {
 		showEditor = !showEditor;
 	}
+
+	let minContainerWidth = $derived.by(() => {
+		const baseWidth = 20;
+		let inletWidth = 20;
+
+		return baseWidth + (1 + inletCount + messageInletCount) * inletWidth;
+	});
 </script>
 
 <div class="relative flex gap-x-3">
@@ -232,7 +239,8 @@
 				</div>
 
 				<button
-					class={['min-w-[80px] cursor-pointer rounded-lg border px-3 py-2', containerClass]}
+					class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}
+					style={`min-width: ${minContainerWidth}px`}
 					ondblclick={(e) => {
 						e.stopPropagation();
 						e.preventDefault();
