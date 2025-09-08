@@ -550,6 +550,7 @@
 	function resumeAudio() {
 		if (audioSystem.audioContext.state === 'suspended') {
 			audioSystem.audioContext.resume();
+			audioSystem.updateEdges(edges);
 		}
 	}
 </script>
