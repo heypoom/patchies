@@ -1,4 +1,5 @@
 // @ts-expect-error -- p2pkit does not bundle type for p2pt
+import { getSearchParam, setSearchParam } from '$lib/utils/search-params';
 import { P2PT as _P2PT } from 'p2pkit';
 
 import type { Peer } from 'p2pt';
@@ -12,10 +13,8 @@ const TRACKER_URLS = [
 	'wss://tracker.webtorrent.dev:443',
 	'wss://tracker.ghostchu-services.top:443/announce',
 	'wss://tracker.files.fm:7073/announce',
-	// 'ws://tracker.ghostchu-services.top:80/announce',
-	// 'ws://tracker.files.fm:7072/announce',
-	'wss://tracker.novage.com.ua:443/',
-	'wss://tracker.files.fm:7073/announce'
+	'ws://tracker.ghostchu-services.top:80/announce',
+	'ws://tracker.files.fm:7072/announce'
 ];
 
 const P2PTKit = _P2PT as typeof P2PT;
@@ -31,14 +30,14 @@ export class P2PManager {
 	private roomId: string = '';
 
 	private constructor() {
-		// Generate or extract room ID from URL hash
-		const roomIdMatch = location.hash.match(/^#?([a-zA-Z0-9-]+)/);
+		const room = getSearchParam('room');
 
-		if (roomIdMatch) {
-			this.roomId = roomIdMatch[1];
+		if (room) {
+			this.roomId = room;
 		} else {
 			this.roomId = crypto.randomUUID();
-			location.replace('#' + this.roomId);
+
+			setSearchParam('room', this.roomId);
 		}
 	}
 

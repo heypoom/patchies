@@ -13,6 +13,7 @@
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { appHostUrl, createShareablePatch } from '$lib/api/pb';
+	import { deleteSearchParam } from '$lib/utils/search-params';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -192,6 +193,10 @@
 			const selectedCommand = filteredCommands[selectedIndex];
 			executeCommand(selectedCommand.id);
 		} else if (stage === 'save-name' && patchName.trim()) {
+			// remove any URL params related to shared patches
+			deleteSearchParam('id');
+			deleteSearchParam('src');
+
 			savePatchToLocalStorage({ name: patchName, nodes, edges });
 			onCancel();
 		} else if (stage === 'load-list' && filteredPatches.length > 0) {
