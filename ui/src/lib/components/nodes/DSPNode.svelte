@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
@@ -9,6 +9,7 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { parseInletCount } from '$lib/utils/expr-parser';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 
 	let contentContainer: HTMLDivElement | null = null;
 
@@ -21,15 +22,12 @@
 		id: string;
 		data: {
 			code: string;
-			showConsole?: boolean;
 		};
 		selected: boolean;
 	} = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
-
-	const updateNodeInternals = useUpdateNodeInternals();
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
@@ -70,9 +68,8 @@
 
 				updateAudioInletValues(nextInletValues);
 			})
-			.with(P.string, (newCode) => {
-				updateNodeData(nodeId, { code: newCode });
-				updateAudioCode(newCode);
+			.with({ type: 'run' }, () => {
+				runDSP();
 			});
 	};
 
@@ -83,7 +80,6 @@
 
 	function handleCodeChange(newCode: string) {
 		updateNodeData(nodeId, { code: newCode });
-		updateAudioCode(newCode);
 
 		// Update inlet count when code changes
 		const newInletCount = parseInletCount(newCode || '');
@@ -94,12 +90,16 @@
 		}
 	}
 
+	function runDSP() {
+		updateAudioCode(code);
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
 		inletValues = new Array(inletCount).fill(0);
-		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
+		audioSystem.createAudioObject(nodeId, 'dsp~', [null, '']); // Start with empty code
 		updateAudioInletValues(inletValues);
 
 		updateContentWidth();
@@ -126,7 +126,9 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2" bind:this={contentContainer}>
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div></div>
+				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
+					<div class="font-mono text-xs font-medium text-zinc-400">dsp~</div>
+				</div>
 
 				<div>
 					<button
@@ -167,9 +169,11 @@
 					{/if}
 				</div>
 
-				<div class={['min-w-[70px] rounded-md border bg-zinc-900 px-3 py-2', borderColor]}>
+				<div class={['min-w-[120px] rounded-md border bg-zinc-900 px-3 py-2', borderColor]}>
 					<div class="flex items-center justify-center">
-						<div class="font-mono text-sm text-zinc-300">dsp~</div>
+						<div class="font-mono text-sm text-zinc-300">
+							{code.trim() ? 'dsp~' : 'empty'}
+						</div>
 					</div>
 				</div>
 
@@ -191,6 +195,17 @@
 	{#if showEditor}
 		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button onclick={runDSP} class="rounded p-1 hover:bg-zinc-700">
+							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+						</button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>Run Code (shift+enter)</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
 					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
 				</button>
@@ -203,6 +218,7 @@
 					language="javascript"
 					placeholder={placeholderCode}
 					class="nodrag h-64 w-full resize-none"
+					onrun={runDSP}
 				/>
 			</div>
 		</div>
