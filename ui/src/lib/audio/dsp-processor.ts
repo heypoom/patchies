@@ -12,7 +12,7 @@ type ProcessFunction = (inputs: Float32Array[][], outputs: Float32Array[][]) => 
 
 class DSPProcessor extends AudioWorkletProcessor {
 	private processFunction: ProcessFunction | null = null;
-	private inletValues: number[] = new Array(10).fill(0);
+	private inletValues: unknown[] = new Array(10).fill(0);
 	private counter = 0;
 
 	constructor() {
@@ -35,7 +35,6 @@ class DSPProcessor extends AudioWorkletProcessor {
 		try {
 			const isFunction = code.includes('function') || code.includes('=>');
 
-			// Create function that has access to inlet values and counter
 			const userFunction = new Function(
 				'inputs',
 				'outputs',
@@ -62,15 +61,15 @@ class DSPProcessor extends AudioWorkletProcessor {
 				userFunction(
 					inputs,
 					outputs,
-					this.inletValues[0] || 0,
-					this.inletValues[1] || 0,
-					this.inletValues[2] || 0,
-					this.inletValues[3] || 0,
-					this.inletValues[4] || 0,
-					this.inletValues[5] || 0,
-					this.inletValues[6] || 0,
-					this.inletValues[7] || 0,
-					this.inletValues[8] || 0,
+					this.inletValues[0],
+					this.inletValues[1],
+					this.inletValues[2],
+					this.inletValues[3],
+					this.inletValues[4],
+					this.inletValues[5],
+					this.inletValues[6],
+					this.inletValues[7],
+					this.inletValues[8],
 					this.counter
 				);
 			};
@@ -80,11 +79,8 @@ class DSPProcessor extends AudioWorkletProcessor {
 		}
 	}
 
-	private setInletValues(values: number[]): void {
-		// Update inlet values, filling up to 10 slots
-		for (let i = 0; i < Math.min(values.length, 10); i++) {
-			this.inletValues[i] = values[i];
-		}
+	private setInletValues(values: unknown[]): void {
+		this.inletValues = values;
 	}
 
 	process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
