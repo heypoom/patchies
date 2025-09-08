@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
@@ -28,6 +28,7 @@
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
@@ -88,6 +89,11 @@
 			inletValues = new Array(newInletCount).fill(0);
 			updateAudioInletValues(inletValues);
 		}
+
+		setTimeout(() => {
+			updateNodeInternals(nodeId);
+			updateContentWidth();
+		}, 5);
 	}
 
 	function runDSP() {
