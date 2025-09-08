@@ -17,7 +17,7 @@
 			<!-- Toggle Button -->
 			<button
 				class={[
-					'flex cursor-pointer select-none items-center justify-end gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors',
+					'flex cursor-pointer items-center justify-end gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors select-none',
 					$isBackgroundOutputCanvasEnabled
 						? 'bg-zinc-900/50 hover:bg-zinc-900/70'
 						: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-800'
@@ -26,7 +26,7 @@
 				title={isVisible ? 'Hide node palette' : 'Show node palette'}
 			>
 				<Plus class="h-3 w-3" />
-				<span class="font-mono text-zinc-300">Nodes</span>
+				<span class="font-mono text-zinc-300">objects</span>
 				<ChevronUp class={`h-3 w-3 transition-transform ${isVisible ? '' : 'rotate-180'}`} />
 			</button>
 
@@ -38,7 +38,7 @@
 							role="button"
 							tabindex="0"
 							class={[
-								'flex cursor-grab select-none flex-col items-center gap-2 rounded-lg px-[10px] py-[3px] transition-colors',
+								'flex cursor-grab flex-col items-center gap-2 rounded-lg px-[10px] py-[3px] transition-colors select-none',
 								$isBackgroundOutputCanvasEnabled
 									? 'bg-zinc-900/60 hover:bg-zinc-900'
 									: 'border border-zinc-800 bg-zinc-900 hover:bg-zinc-700'
