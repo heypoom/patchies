@@ -52,9 +52,9 @@
 		return parseInletCount(code.trim());
 	});
 
-	const borderColor = $derived.by(() => {
-		if (selected) return 'border-zinc-400';
-		return 'border-zinc-600';
+	const containerClass = $derived.by(() => {
+		if (selected) return 'border-zinc-400 bg-zinc-800';
+		return 'border-zinc-700 bg-zinc-900';
 	});
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
@@ -137,7 +137,12 @@
 				<div>
 					<button
 						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
-						onclick={toggleEditor}
+						onclick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+
+							toggleEditor();
+						}}
 						title="Edit code"
 					>
 						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
@@ -174,11 +179,20 @@
 					{/if}
 				</div>
 
-				<div class={['min-w-[80px] rounded-md border bg-zinc-900 px-3 py-2', borderColor]}>
+				<button
+					class={['min-w-[80px] cursor-pointer rounded-lg border px-3 py-2', containerClass]}
+					ondblclick={(e) => {
+						e.stopPropagation();
+						e.preventDefault();
+
+						toggleEditor();
+					}}
+					title="Double click to edit code"
+				>
 					<div class="flex items-center justify-center">
-						<div class="font-mono text-sm text-zinc-300">dsp~</div>
+						<div class="font-mono text-xs text-zinc-300">dsp~</div>
 					</div>
-				</div>
+				</button>
 
 				<div>
 					<!-- Audio output -->
