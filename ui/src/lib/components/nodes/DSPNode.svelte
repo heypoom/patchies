@@ -99,7 +99,7 @@
 		messageContext.queue.addCallback(handleMessage);
 
 		inletValues = new Array(inletCount).fill(0);
-		audioSystem.createAudioObject(nodeId, 'dsp~', [null, '']); // Start with empty code
+		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
 		updateAudioInletValues(inletValues);
 
 		updateContentWidth();
