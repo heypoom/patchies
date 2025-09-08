@@ -1,3 +1,5 @@
+import { match } from 'ts-pattern';
+
 interface DSPMessage {
 	type: 'set-code';
 	code: string;
@@ -10,7 +12,6 @@ interface InletValuesMessage {
 
 interface MessageInletMessage {
 	type: 'message-inlet';
-	inletIndex: number;
 	message: unknown;
 	meta: RecvMeta;
 }
@@ -39,16 +40,21 @@ class DSPProcessor extends AudioWorkletProcessor {
 
 	constructor() {
 		super();
+
 		this.port.onmessage = (
 			event: MessageEvent<DSPMessage | InletValuesMessage | MessageInletMessage>
 		) => {
-			if (event.data.type === 'set-code') {
-				this.setCode(event.data.code);
-			} else if (event.data.type === 'set-inlet-values') {
-				this.setInletValues(event.data.values);
-			} else if (event.data.type === 'message-inlet') {
-				this.handleMessageInlet(event.data.inletIndex, event.data.message, event.data.meta);
-			}
+			match(event.data)
+				.with({ type: 'set-code' }, ({ code }) => {
+					this.setCode(code);
+				})
+				.with({ type: 'set-inlet-values' }, ({ values }) => {
+					this.setInletValues(values);
+				})
+				.with({ type: 'message-inlet' }, ({ message, meta }) => {
+					this.handleMessageInlet(message, meta);
+				})
+				.exhaustive();
 		};
 	}
 
@@ -117,13 +123,13 @@ class DSPProcessor extends AudioWorkletProcessor {
 		this.inletValues = values;
 	}
 
-	private handleMessageInlet(inletIndex: number, message: unknown, meta: RecvMeta): void {
-		if (this.recvCallback) {
-			try {
-				this.recvCallback(message, meta);
-			} catch (error) {
-				console.error('Error in DSP recv callback:', error);
-			}
+	private handleMessageInlet(message: unknown, meta: RecvMeta): void {
+		if (!this.recvCallback) return;
+
+		try {
+			this.recvCallback(message, meta);
+		} catch (error) {
+			console.error('Error in DSP recv callback:', error);
 		}
 	}
 

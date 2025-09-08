@@ -653,9 +653,9 @@ export class AudioSystem {
 					})
 					.with(['messageInlet', P.any], ([, messageData]) => {
 						const data = messageData as { inletIndex: number; message: unknown; meta: any };
+
 						node.port.postMessage({
 							type: 'message-inlet',
-							inletIndex: data.inletIndex,
 							message: data.message,
 							meta: data.meta
 						});

@@ -49,8 +49,9 @@
   });
 }`;
 
-	const inletCount = $derived.by(() => {
+	const valueInletCount = $derived.by(() => {
 		if (!code.trim()) return 0;
+
 		return parseInletCount(code.trim());
 	});
 
@@ -63,33 +64,35 @@
 		const nextInletValues = [...inletValues];
 
 		match(message)
-			.with({ type: P.union('bang', 'run') }, () => {
+			.with({ type: P.union('run') }, () => {
 				runDSP();
 			})
 			.with(P.any, (value) => {
 				if (meta?.inlet === undefined) return;
 
-				// Check if this is a value inlet (0-based index after audio inlet)
-				const isValueInlet = meta.inlet >= 0 && meta.inlet <= inletCount;
+				// Check if this is a value inlet
+				const isValueInlet =
+					valueInletCount > 0 && meta.inlet >= 0 && meta.inlet <= valueInletCount - 1;
+
+				// Check if this is a message inlet
+				const isMessageInlet =
+					messageInletCount > 0 &&
+					meta.inlet > valueInletCount - 1 &&
+					meta.inlet <= valueInletCount + messageInletCount;
 
 				if (isValueInlet) {
 					const valueInletIndex = meta.inlet;
 					nextInletValues[valueInletIndex] = value;
 					inletValues = nextInletValues;
 					updateAudioInletValues(nextInletValues);
-				} else {
-					// Check if this is a message inlet (starts after value inlets)
-					const isMessageInlet =
-						meta.inlet > inletCount && meta.inlet <= inletCount + messageInletCount;
+				} else if (isMessageInlet) {
+					const messageInletIndex = meta.inlet - valueInletCount;
 
-					if (isMessageInlet) {
-						const messageInletIndex = meta.inlet - inletCount - 1; // Convert to 0-based for message inlets
-						audioSystem.send(nodeId, 'messageInlet', {
-							inletIndex: messageInletIndex,
-							message: value,
-							meta
-						});
-					}
+					audioSystem.send(nodeId, 'messageInlet', {
+						inletIndex: messageInletIndex,
+						message,
+						meta
+					});
 				}
 			});
 	};
@@ -123,7 +126,7 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		inletValues = new Array(inletCount).fill(0);
+		inletValues = new Array(valueInletCount).fill(0);
 		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
 		updateAudioInletValues(inletValues);
 		updateContentWidth();
@@ -168,7 +171,7 @@
 		const baseWidth = 20;
 		let inletWidth = 20;
 
-		return baseWidth + (1 + inletCount + messageInletCount) * inletWidth;
+		return baseWidth + (1 + valueInletCount + messageInletCount) * inletWidth;
 	});
 </script>
 
@@ -202,20 +205,20 @@
 						port="inlet"
 						type="audio"
 						title="Audio Input"
-						total={1 + inletCount + messageInletCount}
+						total={1 + valueInletCount + messageInletCount}
 						index={0}
 						class="top-0"
 					/>
 
 					<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
-					{#if inletCount > 0}
-						{#each Array.from({ length: inletCount }) as _, index}
+					{#if valueInletCount > 0}
+						{#each Array.from({ length: valueInletCount }) as _, index}
 							<StandardHandle
 								port="inlet"
 								type="message"
 								id={index}
 								title={`$${index + 1}`}
-								total={1 + inletCount + messageInletCount}
+								total={1 + valueInletCount + messageInletCount}
 								index={index + 1}
 								class="top-0"
 							/>
@@ -228,10 +231,10 @@
 							<StandardHandle
 								port="inlet"
 								type="message"
-								id={inletCount + index}
+								id={valueInletCount + index}
 								title={`Message Inlet ${index + 1}`}
-								total={1 + inletCount + messageInletCount}
-								index={1 + inletCount + index}
+								total={1 + valueInletCount + messageInletCount}
+								index={1 + valueInletCount + index}
 								class="top-0"
 							/>
 						{/each}
