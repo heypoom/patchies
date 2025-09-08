@@ -59,7 +59,7 @@
 		{ id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
 		{ id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
 		{ id: 'rename-patch', name: 'Rename Patch', description: 'Rename saved patch' },
-		{ id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' },
+		{ id: 'delete-patch', name: 'Delete a Patch', description: 'Delete patch from local storage' },
 		{
 			id: 'set-gemini-api-key',
 			name: 'Set Gemini API Key',
@@ -99,6 +99,11 @@
 			id: 'share-patch',
 			name: 'Share Patch',
 			description: 'Get a shareable link for your patch.'
+		},
+		{
+			id: 'clear-patch',
+			name: 'Clear Patch (!!!!)',
+			description: 'Remove all nodes and edges from the canvas.'
 		}
 	];
 
@@ -266,6 +271,19 @@
 				} catch {}
 
 				onCancel();
+			})
+			.with('clear-patch', async () => {
+				const ok = confirm(
+					'Are you sure you want to delete everything? This action CANNOT be undone.'
+				);
+
+				onCancel();
+
+				if (ok) {
+					setNodes([]);
+					setEdges([]);
+					localStorage.removeItem('patchies-patch-autosave');
+				}
 			})
 			.otherwise(() => {
 				console.warn(`Unknown command: ${commandId}`);

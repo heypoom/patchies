@@ -247,7 +247,7 @@
 
 			if (save) {
 				const parsed: PatchSaveFormat = JSON.parse(save);
-				restorePatchFromSave(parsed);
+				if (parsed) restorePatchFromSave(parsed);
 			}
 		} catch {}
 	}
