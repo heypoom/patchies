@@ -84,7 +84,8 @@ while (250::ms => now) {
 export const DEFAULT_DSP_JS_CODE = `function process(inputs, outputs) {
   outputs[0].forEach((channel) => {
     for (let i = 0; i < channel.length; i++) {
-      channel[i] = Math.random() * 2 - 1
+      let t = (currentFrame + i) / sampleRate
+      channel[i] = Math.sin(t * 440 * Math.PI * 2)
     }
   })
 }`;

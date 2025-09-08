@@ -446,11 +446,26 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 This is similar to `expr~`, but it takes in a single `process` JavaScript function that processes the audio. It essentially wraps an `AudioWorkletProcessor`. The worklet is always kept alive until the node is deleted.
 
+Here's how to make white noise:
+
 ```ts
 function process(inputs, outputs) {
   outputs[0].forEach((channel) => {
     for (let i = 0; i < channel.length; i++) {
       channel[i] = Math.random() * 1 - 1
+    }
+  })
+}
+```
+
+Here's how to make a sine wave oscillator at 440Hz:
+
+```ts
+function process(inputs, outputs) {
+  outputs[0].forEach((channel) => {
+    for (let i = 0; i < channel.length; i++) {
+      let t = (currentFrame + i) / sampleRate
+      channel[i] = Math.sin(t * 440 * Math.PI * 2)
     }
   })
 }
