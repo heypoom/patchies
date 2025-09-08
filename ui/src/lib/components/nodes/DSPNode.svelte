@@ -126,9 +126,7 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2" bind:this={contentContainer}>
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-400">dsp~</div>
-				</div>
+				<div></div>
 
 				<div>
 					<button
@@ -169,11 +167,9 @@
 					{/if}
 				</div>
 
-				<div class={['min-w-[120px] rounded-md border bg-zinc-900 px-3 py-2', borderColor]}>
+				<div class={['min-w-[80px] rounded-md border bg-zinc-900 px-3 py-2', borderColor]}>
 					<div class="flex items-center justify-center">
-						<div class="font-mono text-sm text-zinc-300">
-							{code.trim() ? 'dsp~' : 'empty'}
-						</div>
+						<div class="font-mono text-sm text-zinc-300">dsp~</div>
 					</div>
 				</div>
 
