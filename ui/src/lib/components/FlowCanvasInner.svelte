@@ -29,7 +29,7 @@
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
 	import Icon from '@iconify/svelte';
-	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -598,7 +598,7 @@
 	{/if}
 
 	<!-- Audio Resume Hint -->
-	{#if showAudioHint && !isLoadingFromUrl}
+	{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode}
 		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"

@@ -10,6 +10,7 @@ import { ChuckManager } from './ChuckManager';
 
 import workletUrl from './expression-processor.ts?worker&url';
 import dspWorkletUrl from './dsp-processor.ts?worker&url';
+import { hasSomeAudioNode } from '../../stores/canvas.store';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -168,6 +169,8 @@ export class AudioSystem {
 
 	// Create audio objects for object nodes
 	createAudioObject(nodeId: string, objectType: PsAudioType, params: unknown[] = []) {
+		hasSomeAudioNode.set(true);
+
 		match(objectType)
 			.with('osc~', () => this.createOsc(nodeId, params))
 			.with('gain~', () => this.createGain(nodeId, params))
