@@ -651,15 +651,18 @@ export class AudioSystem {
 			.with({ type: 'dsp~' }, ({ node }) => {
 				match([key, msg])
 					.with(['code', P.string], ([, code]) => {
-						node.port.postMessage({
-							type: 'set-code',
-							code: code
-						});
+						node.port.postMessage({ type: 'set-code', code: code });
 					})
 					.with(['inletValues', P.array(P.any)], ([, values]) => {
+						node.port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
+					})
+					.with(['messageInlet', P.any], ([, messageData]) => {
+						const data = messageData as { inletIndex: number; message: unknown; meta: any };
 						node.port.postMessage({
-							type: 'set-inlet-values',
-							values: Array.from(values)
+							type: 'message-inlet',
+							inletIndex: data.inletIndex,
+							message: data.message,
+							meta: data.meta
 						});
 					});
 			})

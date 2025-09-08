@@ -68,6 +68,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('webcam', () => ({ width: 640, height: 480 }))
 		.with('video', () => ({ loop: true }))
 		.with('textbox', () => ({ text: '' }))
-		.with('dsp~', () => ({ code: DEFAULT_DSP_JS_CODE }))
+		.with('dsp~', () => ({ code: DEFAULT_DSP_JS_CODE, messageInletCount: 0 }))
 		.otherwise(() => ({}));
 }

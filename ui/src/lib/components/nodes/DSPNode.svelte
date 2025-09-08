@@ -22,6 +22,7 @@
 		id: string;
 		data: {
 			code: string;
+			messageInletCount?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -32,11 +33,12 @@
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
-	let inletValues = $state<number[]>([]);
+	let inletValues = $state<unknown[]>([]);
 	let showEditor = $state(false);
 	let contentWidth = $state(100);
 
 	const code = $derived(data.code || '');
+	const messageInletCount = $derived(data.messageInletCount || 0);
 
 	const placeholderCode = `function process(inputs, outputs) {
   // White noise example
@@ -64,25 +66,42 @@
 			.with({ type: P.union('bang', 'run') }, () => {
 				runDSP();
 			})
-			.with(P.number, (value) => {
+			.with(P.any, (value) => {
 				if (meta?.inlet === undefined) return;
 
-				nextInletValues[meta.inlet] = value;
-				inletValues = nextInletValues;
+				// Check if this is a value inlet (0-based index after audio inlet)
+				const isValueInlet = meta.inlet >= 0 && meta.inlet <= inletCount;
 
-				updateAudioInletValues(nextInletValues);
+				if (isValueInlet) {
+					const valueInletIndex = meta.inlet;
+					nextInletValues[valueInletIndex] = value;
+					inletValues = nextInletValues;
+					updateAudioInletValues(nextInletValues);
+				} else {
+					// Check if this is a message inlet (starts after value inlets)
+					const isMessageInlet =
+						meta.inlet > inletCount && meta.inlet <= inletCount + messageInletCount;
+
+					if (isMessageInlet) {
+						const messageInletIndex = meta.inlet - inletCount - 1; // Convert to 0-based for message inlets
+						audioSystem.send(nodeId, 'messageInlet', {
+							inletIndex: messageInletIndex,
+							message: value,
+							meta
+						});
+					}
+				}
 			});
 	};
 
 	const updateAudioCode = (code: string) => audioSystem.send(nodeId, 'code', code);
 
-	const updateAudioInletValues = (values: number[]) =>
+	const updateAudioInletValues = (values: unknown[]) =>
 		audioSystem.send(nodeId, 'inletValues', values);
 
 	function handleCodeChange(newCode: string) {
 		updateNodeData(nodeId, { code: newCode });
 
-		// Update inlet count when code changes
 		const newInletCount = parseInletCount(newCode || '');
 
 		if (newInletCount !== inletValues.length) {
@@ -107,6 +126,24 @@
 		inletValues = new Array(inletCount).fill(0);
 		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
 		updateAudioInletValues(inletValues);
+
+		// Listen for port count changes from DSP processor
+		const audioNode = audioSystem.nodesById.get(nodeId);
+
+		if (audioNode && audioNode.type === 'dsp~') {
+			audioNode.node.port.addEventListener('message', (event: MessageEvent) => {
+				if (event.data.type === 'port-count-changed') {
+					updateNodeData(nodeId, {
+						code: data.code,
+						messageInletCount: event.data.messageInletCount
+					});
+
+					setTimeout(() => {
+						updateNodeInternals(nodeId);
+					}, 5);
+				}
+			});
+		}
 
 		updateContentWidth();
 	});
@@ -151,14 +188,14 @@
 			</div>
 
 			<div class="relative">
-				<!-- Total inlets = 1 audio inlet + control inlets -->
+				<!-- Total inlets = 1 audio inlet + control inlets + message inlets -->
 				<div>
 					<!-- Audio input (always present) -->
 					<StandardHandle
 						port="inlet"
 						type="audio"
 						title="Audio Input"
-						total={1 + inletCount}
+						total={1 + inletCount + messageInletCount}
 						index={0}
 						class="top-0"
 					/>
@@ -171,8 +208,23 @@
 								type="message"
 								id={index}
 								title={`$${index + 1}`}
-								total={1 + inletCount}
+								total={1 + inletCount + messageInletCount}
 								index={index + 1}
+								class="top-0"
+							/>
+						{/each}
+					{/if}
+
+					<!-- Message inlets (only show if messageInletCount > 0) -->
+					{#if messageInletCount > 0}
+						{#each Array.from({ length: messageInletCount }) as _, index}
+							<StandardHandle
+								port="inlet"
+								type="message"
+								id={inletCount + index}
+								title={`Message Inlet ${index + 1}`}
+								total={1 + inletCount + messageInletCount}
+								index={1 + inletCount + index}
 								class="top-0"
 							/>
 						{/each}
