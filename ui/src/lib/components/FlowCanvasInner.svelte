@@ -29,6 +29,7 @@
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
 	import Icon from '@iconify/svelte';
+	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -433,6 +434,8 @@
 	};
 
 	function getNodeIdCounterFromSave(nodes: Node[]): number {
+		if (nodes.length === 0) return 0 + 1;
+
 		const lastNodeId = parseInt(nodes.at(-1)?.id.match(/.*\-(\d+)$/)?.[1] ?? '');
 		if (isNaN(lastNodeId)) throw new Error('corrupted save - cannot get last node id');
 
@@ -529,6 +532,19 @@
 		if (selectedNodes.length > 0 || selectedEdges.length > 0) {
 			deleteElements({ nodes: selectedNodes, edges: selectedEdges });
 		}
+	}
+
+	function newPatch() {
+		const ok = confirm(
+			'Are you sure you want to create a new patch? Unsaved changes will be lost!!!'
+		);
+
+		if (!ok) return;
+
+		nodes = [];
+		edges = [];
+		localStorage.removeItem('patchies-patch-autosave');
+		isBackgroundOutputCanvasEnabled.set(false);
 	}
 </script>
 
@@ -635,7 +651,7 @@
 						if (ok) {
 							deleteSelectedElements();
 						}
-					}}><Icon icon="lucide:trash-2" class="h-4 w-4 text-red-300" /></button
+					}}><Icon icon="lucide:trash-2" class="h-4 w-4 text-red-400" /></button
 				>
 			{/if}
 
@@ -665,6 +681,18 @@
 
 					triggerCommandPalette();
 				}}><Icon icon="lucide:command" class="h-4 w-4 text-zinc-300" /></button
+			>
+
+			<button
+				title="New Patch"
+				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+
+					newPatch();
+				}}
+				><Icon icon="lucide:file-plus-2" class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
 			>
 
 			<ShortcutHelp />
