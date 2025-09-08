@@ -44,12 +44,12 @@ This patch takes in audio from an audio file, analyzes the frequency spectrum us
 
 - Press `Enter` to create a new object.
   - Type to search for object name. Try `hydra` or `glsl` or `p5`.
-  - `Arrow Up` and `Arrow Down` to navigate the list.
-  - `Enter` creates the selected object.
-  - `Esc` closes the object menu.
-- Click on the "+ Nodes" button on the bottom left to see a list of objects you can create.
+  - `Arrow Up/Down` navigates the list.
+  - `Enter` inserts the object.
+  - `Esc` closes the menu.
+- Click on the "+ objects" button on the bottom left to see a list of objects you can create.
   - Drag the object name from the bottom bar onto the canvas to create it.
-  - This is slower than using `Enter`, but it lets you see all visual nodes at a glance 👀
+  - This is slower than `Enter`, but it lets you see all objects at a glance 👀
 
 ### Modifying Objects
 
