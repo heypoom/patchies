@@ -546,6 +546,12 @@
 		localStorage.removeItem('patchies-patch-autosave');
 		isBackgroundOutputCanvasEnabled.set(false);
 	}
+
+	function resumeAudio() {
+		if (audioSystem.audioContext.state === 'suspended') {
+			audioSystem.audioContext.resume();
+		}
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -592,6 +598,7 @@
 		ondrop={onDrop}
 		ondragover={onDragOver}
 		onmousemove={handleMouseMove}
+		onclick={resumeAudio}
 		tabindex="0"
 	>
 		<SvelteFlow
