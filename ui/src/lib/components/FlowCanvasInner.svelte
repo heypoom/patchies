@@ -171,7 +171,6 @@
 
 		commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 		showCommandPalette = true;
-		console.log('set showCommandPalette to true');
 	}
 
 	onMount(() => {
@@ -498,6 +497,17 @@
 			alert(`Shareable link copied to clipboard: ${url}`);
 		} catch {}
 	}
+
+	function insertObjectWithButton() {
+		const position = screenToFlowPosition({
+			x: Math.max(0, window.innerWidth / 2 - 200),
+			y: 50
+		});
+
+		setTimeout(() => {
+			createNode('object', position);
+		}, 50);
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -590,6 +600,17 @@
 		/>
 
 		<div class="fixed right-0 bottom-0 p-2">
+			<button
+				title="Insert Object (Enter)"
+				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+
+					insertObjectWithButton();
+				}}><Icon icon="lucide:circle-plus" class="h-4 w-4 text-zinc-300" /></button
+			>
+
 			<button
 				title="Share link"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
