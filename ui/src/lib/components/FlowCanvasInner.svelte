@@ -30,6 +30,8 @@
 	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
 	import Icon from '@iconify/svelte';
 
+	const AUTOSAVE_INTERVAL = 2500;
+
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
 			Object.entries(nodeTypes).filter(([key]) => {
@@ -185,7 +187,7 @@
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 
-		autosaveInterval = setInterval(performAutosave, 3000);
+		autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
 		return () => {
 			document.removeEventListener('keydown', handleGlobalKeydown);
@@ -239,6 +241,15 @@
 
 			return;
 		}
+
+		try {
+			const save = localStorage.getItem('patchies-patch-autosave');
+
+			if (save) {
+				const parsed: PatchSaveFormat = JSON.parse(save);
+				restorePatchFromSave(parsed);
+			}
+		} catch {}
 	}
 
 	// Handle drop events
