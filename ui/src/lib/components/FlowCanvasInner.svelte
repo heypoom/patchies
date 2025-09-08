@@ -60,7 +60,7 @@
 	let flowContainer: HTMLDivElement;
 
 	// Get flow utilities for coordinate transformation
-	const { screenToFlowPosition } = useSvelteFlow();
+	const { screenToFlowPosition, deleteElements } = useSvelteFlow();
 
 	// Track nodes and edges for message routing
 	let previousNodes = new Set<string>();
@@ -69,6 +69,7 @@
 	let autosaveInterval: ReturnType<typeof setInterval> | null = null;
 
 	let selectedNodeIds = $state.raw<string[]>([]);
+	let selectedEdgeIds = $state.raw<string[]>([]);
 
 	// Node list visibility state
 	let isNodeListVisible = $state(false);
@@ -80,8 +81,9 @@
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
 
-	useOnSelectionChange(({ nodes }) => {
+	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
+		selectedEdgeIds = edges.map((edge) => edge.id);
 	});
 
 	function performAutosave() {
@@ -508,12 +510,21 @@
 			createNode('object', position);
 		}, 50);
 	}
+
+	function deleteSelectedElements() {
+		const selectedNodes = selectedNodeIds.map((id) => ({ id }));
+		const selectedEdges = selectedEdgeIds.map((id) => ({ id }));
+
+		if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+			deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+		}
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
 	<!-- URL Loading Indicator -->
 	{#if isLoadingFromUrl}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
 			>
@@ -528,7 +539,7 @@
 
 	<!-- URL Loading Error -->
 	{#if urlLoadError}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
 			>
@@ -599,7 +610,24 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed right-0 bottom-0 p-2">
+		<div class="fixed bottom-0 right-0 p-2">
+			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
+				<button
+					title="Delete (Del)"
+					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700 sm:hidden"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+
+						const ok = confirm('delete this element?');
+
+						if (ok) {
+							deleteSelectedElements();
+						}
+					}}><Icon icon="lucide:trash-2" class="h-4 w-4 text-red-300" /></button
+				>
+			{/if}
+
 			<button
 				title="Insert Object (Enter)"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
