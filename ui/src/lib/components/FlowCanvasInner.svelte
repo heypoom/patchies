@@ -84,6 +84,9 @@
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
 
+	// Audio resume hint state
+	let showAudioHint = $state(audioSystem.audioContext.state === 'suspended');
+
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
 		selectedEdgeIds = edges.map((edge) => edge.id);
@@ -552,6 +555,10 @@
 			audioSystem.audioContext.resume();
 			audioSystem.updateEdges(edges);
 		}
+
+		if (showAudioHint) {
+			showAudioHint = false;
+		}
 	}
 </script>
 
@@ -586,6 +593,18 @@
 				>
 					×
 				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Audio Resume Hint -->
+	{#if showAudioHint && !isLoadingFromUrl}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
+			>
+				<Icon icon="lucide:volume-2" class="h-4 w-4" />
+				<span>Click anywhere to play sound</span>
 			</div>
 		</div>
 	{/if}
