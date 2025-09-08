@@ -334,7 +334,7 @@
 					{#if isLoaded}
 						<button
 							title={isPaused ? 'Play video' : 'Pause video'}
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={togglePause}
 						>
 							<Icon
@@ -344,14 +344,14 @@
 						</button>
 						<button
 							title="Restart video"
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={restartVideo}
 						>
 							<Icon icon="lucide:skip-back" class="h-4 w-4 text-zinc-300" />
 						</button>
 						<button
 							title="Change video"
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={openFileDialog}
 						>
 							<Icon icon="lucide:upload" class="h-4 w-4 text-zinc-300" />

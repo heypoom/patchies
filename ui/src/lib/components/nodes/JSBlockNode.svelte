@@ -256,7 +256,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={() => {
 							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
@@ -267,7 +267,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>

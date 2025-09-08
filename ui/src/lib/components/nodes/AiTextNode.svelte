@@ -129,7 +129,7 @@
 
 						<button
 							onclick={copyToClipboard}
-							class="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="absolute right-1 top-1 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							title="Copy to clipboard"
 						>
 							<Icon icon="lucide:copy" class="h-4 w-4 text-zinc-300" />

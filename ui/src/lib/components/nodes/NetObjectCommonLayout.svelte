@@ -31,7 +31,7 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div
-				class="absolute -top-7 left-0 flex w-full items-end justify-between opacity-0 transition-opacity group-hover:opacity-100"
+				class="absolute -top-7 left-0 flex w-full items-end justify-between transition-opacity group-hover:opacity-100 sm:opacity-0"
 			>
 				<div class="mb-1 font-mono text-[9px] text-zinc-500">
 					{peerCount} peer{peerCount === 1 ? '' : 's'}

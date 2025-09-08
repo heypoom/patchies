@@ -145,14 +145,7 @@
 			class=""
 		/>
 
-		<StandardHandle
-			port="inlet"
-			type="message"
-			id="1"
-			title="Message input"
-			total={2}
-			index={1}
-		/>
+		<StandardHandle port="inlet" type="message" id="1" title="Message input" total={2} index={1} />
 	{/snippet}
 
 	{#snippet preview()}

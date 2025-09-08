@@ -132,7 +132,7 @@
 		<div class="flex flex-col gap-2">
 			<!-- Floating toolbar -->
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+				<div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
 					<!-- Run button -->
 					<button
 						onclick={handleRun}
@@ -165,7 +165,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>

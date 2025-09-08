@@ -58,7 +58,7 @@
 				<div class="font-mono text-xs font-medium text-zinc-400">textbox</div>
 			</div>
 
-			<div class="flex gap-1 opacity-0 transition-all group-hover:opacity-100">
+			<div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
 				<button
 					onclick={sendText}
 					class="rounded p-1 transition-all hover:bg-zinc-700"

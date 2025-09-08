@@ -94,7 +94,7 @@
 			id={index}
 			title={`$${index + 1}`}
 			total={inletCount}
-			index={index}
+			{index}
 			class="top-0"
 		/>
 	{/each}

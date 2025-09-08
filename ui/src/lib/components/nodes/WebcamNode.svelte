@@ -130,7 +130,7 @@
 					{#if isCapturing}
 						<button
 							title={isPaused ? 'Resume webcam' : 'Pause webcam'}
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={togglePause}
 						>
 							<Icon
@@ -148,7 +148,7 @@
 					{:else}
 						<button
 							title="Start webcam"
-							class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={startCapture}
 						>
 							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />

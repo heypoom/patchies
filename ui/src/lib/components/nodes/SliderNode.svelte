@@ -109,7 +109,7 @@
 				<div></div>
 
 				<button
-					class="rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -118,13 +118,7 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle 
-					port="inlet" 
-					type="message"
-					total={1} 
-					index={0}
-					class="!-top-2"
-				/>
+				<StandardHandle port="inlet" type="message" total={1} index={0} class="!-top-2" />
 
 				<div
 					class="flex w-full min-w-[100px] max-w-[130px] flex-col items-center justify-center gap-1 py-1"
@@ -163,12 +157,7 @@
 					</div>
 				</div>
 
-				<StandardHandle 
-					port="outlet" 
-					type="message"
-					total={1} 
-					index={0}
-				/>
+				<StandardHandle port="outlet" type="message" total={1} index={0} />
 			</div>
 		</div>
 	</div>

@@ -168,7 +168,7 @@
 					<div class="flex gap-1">
 						<button
 							title="Play"
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={playFile}
 						>
 							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
@@ -176,7 +176,7 @@
 
 						<button
 							title="Stop"
-							class="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={stopFile}
 						>
 							<Icon icon="lucide:square" class="h-4 w-4 text-zinc-300" />
@@ -190,7 +190,7 @@
 
 				<div
 					class={[
-						'flex flex-col items-center justify-center gap-3 rounded-lg border-1',
+						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg',
 						containerClass
 					]}
 					ondragover={handleDragOver}
@@ -229,7 +229,14 @@
 					{/if}
 				</div>
 
-				<StandardHandle port="outlet" type="audio" id="0" title="Audio output" total={1} index={0} />
+				<StandardHandle
+					port="outlet"
+					type="audio"
+					id="0"
+					title="Audio output"
+					total={1}
+					index={0}
+				/>
 			</div>
 		</div>
 	</div>

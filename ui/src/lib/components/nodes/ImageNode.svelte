@@ -237,7 +237,7 @@
 
 							<button
 								title="Change image"
-								class="absolute -right-2 -top-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+								class="absolute -right-2 -top-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 								onclick={openFileDialog}
 							>
 								<Icon icon="lucide:upload" class="h-3 w-3 text-zinc-300" />

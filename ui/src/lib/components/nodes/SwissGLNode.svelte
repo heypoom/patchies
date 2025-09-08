@@ -102,25 +102,11 @@
 	bind:previewCanvas
 >
 	{#snippet topHandle()}
-		<StandardHandle
-			port="inlet"
-			type="message"
-			id="0"
-			title="Message input"
-			total={1}
-			index={0}
-		/>
+		<StandardHandle port="inlet" type="message" id="0" title="Message input" total={1} index={0} />
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle
-			port="outlet"
-			type="video"
-			id="0"
-			title="Video output"
-			total={2}
-			index={0}
-		/>
+		<StandardHandle port="outlet" type="video" id="0" title="Video output" total={2} index={0} />
 
 		<StandardHandle
 			port="outlet"
