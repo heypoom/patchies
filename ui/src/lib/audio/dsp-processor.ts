@@ -12,27 +12,21 @@ interface MessageInletMessage {
 	type: 'message-inlet';
 	inletIndex: number;
 	message: unknown;
-	meta: {
-		source: string;
-		outlet?: number;
-		inlet?: number;
-		inletKey?: string;
-		outletKey?: string;
-	};
+	meta: RecvMeta;
 }
+
+type RecvMeta = {
+	source: string;
+	outlet?: number;
+	inlet?: number;
+	inletKey?: string;
+	outletKey?: string;
+};
 
 type ProcessFunction = (
 	inputs: Float32Array[][],
 	outputs: Float32Array[][],
-	$1: unknown,
-	$2: unknown,
-	$3: unknown,
-	$4: unknown,
-	$5: unknown,
-	$6: unknown,
-	$7: unknown,
-	$8: unknown,
-	$9: unknown,
+	inlets: unknown[],
 	counter: number
 ) => void;
 
@@ -41,7 +35,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 	private inletValues: unknown[] = new Array(10).fill(0);
 	private counter = 0;
 	private messageInletCount = 0;
-	private recvCallback: ((message: unknown, meta: any) => void) | null = null;
+	private recvCallback: ((message: unknown, meta: RecvMeta) => void) | null = null;
 
 	constructor() {
 		super();
@@ -79,8 +73,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 				});
 			};
 
-			// Create recv function that will be available in user code
-			const recv = (callback: (message: unknown, meta: any) => void) => {
+			const recv = (callback: (message: unknown, meta: RecvMeta) => void) => {
 				this.recvCallback = callback;
 			};
 
@@ -95,18 +88,18 @@ class DSPProcessor extends AudioWorkletProcessor {
 				return (
 					inputs,
 					outputs,
-					x1,
-					x2,
-					x3,
-					x4,
-					x5,
-					x6,
-					x7,
-					x8,
-					x9,
+					inlets,
 					counter
 				) => {
-					$1 = x1; $2 = x2; $3 = x3; $4 = x4; $5 = x5; $6 = x6; $7 = x7; $8 = x8; $9 = x9;
+					$1 = inlets[0];
+					$2 = inlets[1];
+					$3 = inlets[2];
+					$4 = inlets[3];
+					$5 = inlets[4];
+					$6 = inlets[5];
+					$7 = inlets[6];
+					$8 = inlets[7];
+					$9 = inlets[8];
 
 				  process(inputs, outputs)
 				}
@@ -124,7 +117,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 		this.inletValues = values;
 	}
 
-	private handleMessageInlet(inletIndex: number, message: unknown, meta: any): void {
+	private handleMessageInlet(inletIndex: number, message: unknown, meta: RecvMeta): void {
 		if (this.recvCallback) {
 			try {
 				this.recvCallback(message, meta);
@@ -150,26 +143,11 @@ class DSPProcessor extends AudioWorkletProcessor {
 		}
 
 		try {
-			// Increment counter each time process is called
 			this.counter++;
-
-			// Call user's process function
-			this.processFunction(
-				inputs,
-				outputs,
-				this.inletValues[0],
-				this.inletValues[1],
-				this.inletValues[2],
-				this.inletValues[3],
-				this.inletValues[4],
-				this.inletValues[5],
-				this.inletValues[6],
-				this.inletValues[7],
-				this.inletValues[8],
-				this.counter
-			);
+			this.processFunction(inputs, outputs, this.inletValues, this.counter);
 		} catch (error) {
 			console.error('DSP processing error:', error);
+
 			// Fill with silence on error
 			for (let channel = 0; channel < output.length; channel++) {
 				if (output[channel]) {
