@@ -614,12 +614,12 @@
 			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
 				<button
 					title="Delete (Del)"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700 sm:hidden"
+					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 					onclick={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
 
-						const ok = confirm('delete this element?');
+						const ok = confirm('Delete this element?');
 
 						if (ok) {
 							deleteSelectedElements();
