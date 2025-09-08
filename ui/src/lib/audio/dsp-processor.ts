@@ -26,18 +26,14 @@ class DSPProcessor extends AudioWorkletProcessor {
 		};
 	}
 
-	private setCode(codeString: string): void {
-		if (!codeString || codeString.trim() === '') {
+	private setCode(code: string): void {
+		if (!code || code.trim() === '') {
 			this.processFunction = null;
 			return;
 		}
 
 		try {
-			// Replace $1, $2, etc. with actual inlet values in the code
-			const processedCode = codeString.replace(/\$(\d+)/g, (_, num) => {
-				const index = parseInt(num, 10) - 1;
-				return `this.inletValues[${index}] || 0`;
-			});
+			const isFunction = code.includes('function') || code.includes('=>');
 
 			// Create function that has access to inlet values and counter
 			const userFunction = new Function(
@@ -54,7 +50,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 				'$9',
 				'counter',
 				`
-				const process = ${processedCode.includes('function') || processedCode.includes('=>') ? processedCode : `(inputs, outputs) => {\n${processedCode}\n}`};
+				const process = ${isFunction ? code : `(inputs, outputs) => {\n${code}\n}`};
 				
 				if (typeof process === 'function') {
 					process(inputs, outputs);
@@ -63,8 +59,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 			);
 
 			this.processFunction = (inputs: Float32Array[][], outputs: Float32Array[][]) => {
-				userFunction.call(
-					this,
+				userFunction(
 					inputs,
 					outputs,
 					this.inletValues[0] || 0,

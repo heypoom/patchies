@@ -61,16 +61,16 @@
 		const nextInletValues = [...inletValues];
 
 		match(message)
-			.with(P.union(P.number), (value) => {
+			.with({ type: P.union('bang', 'run') }, () => {
+				runDSP();
+			})
+			.with(P.number, (value) => {
 				if (meta?.inlet === undefined) return;
 
 				nextInletValues[meta.inlet] = value;
 				inletValues = nextInletValues;
 
 				updateAudioInletValues(nextInletValues);
-			})
-			.with({ type: 'run' }, () => {
-				runDSP();
 			});
 	};
 
@@ -164,6 +164,7 @@
 							<StandardHandle
 								port="inlet"
 								type="message"
+								id={index}
 								title={`$${index + 1}`}
 								total={1 + inletCount}
 								index={index + 1}
