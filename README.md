@@ -468,11 +468,14 @@ const process = (inputs, outputs) => {
 }
 ```
 
-You can use the `counter` variable that increments every time `process` is called.
+You can use the `counter` variable that increments every time `process` is called. There are also a couple more variables from the worklet global that you can use.
 
 ```ts
 const process = (inputs, outputs) => {
   counter // increments every time process is called
+  sampleRate // sample rate (e.g. 48000)
+  currentFrame // current frame number (e.g. 7179264)
+  currentTime // current time in seconds (e.g. 149.584)
 }
 ```
 
