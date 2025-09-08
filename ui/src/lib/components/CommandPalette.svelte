@@ -469,7 +469,7 @@
 
 <div
 	bind:this={paletteContainer}
-	class="absolute z-50 w-80 rounded-lg border border-zinc-600 bg-zinc-900/50 shadow-2xl backdrop-blur-xl"
+	class="absolute z-50 w-80 rounded-lg border border-zinc-600 bg-zinc-900/90 shadow-2xl backdrop-blur-xl"
 	style="left: {position.x}px; top: {position.y}px;"
 >
 	<!-- Search Input -->
