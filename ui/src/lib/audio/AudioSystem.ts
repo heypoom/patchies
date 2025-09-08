@@ -656,7 +656,7 @@ export class AudioSystem {
 							code: code
 						});
 					})
-					.with(['inletValues', P.array(P.number)], ([, values]) => {
+					.with(['inletValues', P.array(P.any)], ([, values]) => {
 						node.port.postMessage({
 							type: 'set-inlet-values',
 							values: Array.from(values)
