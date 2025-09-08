@@ -128,7 +128,7 @@ recv((data, meta) => {
 
 In the above example, if the message came from inlet 2, it will be sent to outlet 2.
 
-In `js`, `p5` and `hydra` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+In `js`, `p5`, `hydra` and `dsp~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
 See the [Message Passing with GLSL](#message-passing-with-glsl) section for how to use message passing with GLSL shaders to pass data to shaders dynamically.
 
@@ -471,7 +471,18 @@ function process(inputs, outputs) {
 }
 ```
 
-You can use `$1`, `$2`, ... `$9` to dynamically create control inlets:
+You can use the `counter` variable that increments every time `process` is called. There are also a couple more variables from the worklet global that you can use.
+
+```ts
+const process = (inputs, outputs) => {
+  counter // increments every time process is called
+  sampleRate // sample rate (e.g. 48000)
+  currentFrame // current frame number (e.g. 7179264)
+  currentTime // current time in seconds (e.g. 149.584)
+}
+```
+
+You can use `$1`, `$2`, ... `$9` to dynamically create value inlets. Message sent to the value inlets will be set within the DSP. The number of inlets and the size of the `dsp~` object will adjust automatically.
 
 ```ts
 const process = (inputs, outputs) => {
@@ -483,14 +494,34 @@ const process = (inputs, outputs) => {
 }
 ```
 
-You can use the `counter` variable that increments every time `process` is called. There are also a couple more variables from the worklet global that you can use.
+In addition to the value inlets, we also have standard message inlets. Use `setPortCount(inletCount)` to set the number of message inlets. By default, there is no message inlet. Then, use `recv` to receive messages from the message inlets.
 
 ```ts
+setPortCount(2)
+
+recv((msg, meta) => {
+  if (meta.inlet === 0) {
+    // do something
+  }
+})
+```
+
+You can even use both value inlets and message inlets together in the DSP.
+
+```ts
+let k = 0
+
+recv((m) => {
+  // you can use value inlets `$1` ... `$9` anywhere in the JavaScript DSP code.
+  k = m + $1 + $2
+})
+
 const process = (inputs, outputs) => {
-  counter // increments every time process is called
-  sampleRate // sample rate (e.g. 48000)
-  currentFrame // current frame number (e.g. 7179264)
-  currentTime // current time in seconds (e.g. 149.584)
+  outputs[0].forEach((channel) => {
+    for (let i = 0; i < channel.length; i++) {
+      channel[i] = Math.random() * k
+    }
+  })
 }
 ```
 
