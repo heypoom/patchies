@@ -150,7 +150,7 @@ Similar to video chaining, you can chain many audio objects together to create c
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
 
-- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`.
+- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`.
 
   - These objects correspond to Web Audio API nodes. See the [Web Audio API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for more details.
 
@@ -312,28 +312,6 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Great for data processing, scientific computing, and algorithmic composition.
 - Full Python standard library available.
 
-### `expr~`: audio-rate mathematical expression evaluator
-
-- Similar to `expr` but runs at audio rate for audio signal processing.
-- This uses the same [expr-eval](https://github.com/silentmatt/expr-eval) library as `expr`, so the same mathematical expression will work in both `expr` and `expr~`.
-- This is useful for creating DSPs (digital signal processors) to generate audio effects.
-- It requires an audio source to work. You can use `sig~` if you just need a constant signal.
-- It accepts many DSP variables:
-  - `$1` to `$9`: control inlets
-  - `s`: current sample value, a float between -1 and 1
-  - `i`: current sample index in buffer, an integer starting from 0
-  - `channel`: current channel index, usually 0 or 1 for stereo
-  - `bufferSize`: the size of the audio buffer, usually 128
-  - `samples`: an array of samples from the current channel
-  - `input`: first input audio signal (for all connected channels), a float between -1 and 1
-  - `inputs`: every connected input audio signal
-- Example:
-  - `random()` creates white noise
-  - `s` outputs the input audio signal as-is
-  - `s * $1` applies gain control to the input audio signal
-  - `s ^ 2` squares the input audio signal for distortion effect
-- **WARNING**: Please use the `compressor~` object with appropriate limiter-esque setting after `expr~` to avoid loud audio spikes that can and will damage your hearing and speakers. You have been warned!
-
 ### Interface & Control Objects
 
 ### `button`: a simple button
@@ -422,6 +400,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `waveshaper~`: Distortion and waveshaping effects
 - `convolver~`: Convolution reverb using impulse responses
 - `fft~`: FFT analysis for frequency domain processing
+- `expr~`: Audio expression evaluator for simple math expressions
+- `dsp~`: Dynamic JavaScript DSP processor for custom audio algorithms
 
 **Sound Sources:**
 
@@ -439,6 +419,62 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `metro`: Metronome for regular timing
 - `delay`: Message delay (not audio)
 - `adsr`: ADSR envelope generator
+
+### `expr~`: audio-rate mathematical expression evaluator
+
+- Similar to `expr` but runs at audio rate for audio signal processing.
+- This uses the same [expr-eval](https://github.com/silentmatt/expr-eval) library as `expr`, so the same mathematical expression will work in both `expr` and `expr~`.
+- This is useful for creating DSPs (digital signal processors) to generate audio effects.
+- It requires an audio source to work. You can use `sig~` if you just need a constant signal.
+- It accepts many DSP variables:
+  - `$1` to `$9`: control inlets
+  - `s`: current sample value, a float between -1 and 1
+  - `i`: current sample index in buffer, an integer starting from 0
+  - `channel`: current channel index, usually 0 or 1 for stereo
+  - `bufferSize`: the size of the audio buffer, usually 128
+  - `samples`: an array of samples from the current channel
+  - `input`: first input audio signal (for all connected channels), a float between -1 and 1
+  - `inputs`: every connected input audio signal
+- Example:
+  - `random()` creates white noise
+  - `s` outputs the input audio signal as-is
+  - `s * $1` applies gain control to the input audio signal
+  - `s ^ 2` squares the input audio signal for distortion effect
+- **WARNING**: Please use the `compressor~` object with appropriate limiter-esque setting after `expr~` to avoid loud audio spikes that can and will damage your hearing and speakers. You have been warned!
+
+### `dsp~`: dynamic JavaScript DSP processor
+
+This is similar to `expr~`, but it takes in a single `process` JavaScript function that processes the audio. It essentially wraps an `AudioWorkletProcessor`. The worklet is always kept alive until the node is deleted.
+
+```ts
+function process(inputs, outputs) {
+  outputs[0].forEach((channel) => {
+    for (let i = 0; i < channel.length; i++) {
+      channel[i] = Math.random() * 1 - 1
+    }
+  })
+}
+```
+
+You can use `$1`, `$2`, ... `$9` to dynamically create control inlets:
+
+```ts
+const process = (inputs, outputs) => {
+  outputs[0].forEach((channel) => {
+    for (let i = 0; i < channel.length; i++) {
+      channel[i] = Math.random() * $1 - $2
+    }
+  })
+}
+```
+
+You can use the `counter` variable that increments every time `process` is called.
+
+```ts
+const process = (inputs, outputs) => {
+  counter // increments every time process is called
+}
+```
 
 ### MIDI & Network Objects
 

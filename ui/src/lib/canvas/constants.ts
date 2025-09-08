@@ -80,3 +80,11 @@ while (250::ms => now) {
   (((x * 3) % 8) + 1) * 200 => f.freq;
   x++;
 }`;
+
+export const DEFAULT_DSP_JS_CODE = `function process(inputs, outputs) {
+  outputs[0].forEach((channel) => {
+    for (let i = 0; i < channel.length; i++) {
+      channel[i] = Math.random() * 2 - 1
+    }
+  })
+}`;

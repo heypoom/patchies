@@ -9,6 +9,7 @@ import { isScheduledMessage } from './time-scheduling-types';
 import { ChuckManager } from './ChuckManager';
 
 import workletUrl from './expression-processor.ts?worker&url';
+import dspWorkletUrl from './dsp-processor.ts?worker&url';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -16,6 +17,7 @@ export class AudioSystem {
 	nodesById: Map<string, PsAudioNode> = new Map();
 	private timeScheduler: TimeScheduler;
 	private workletInitialized = false;
+	private dspWorkletInitialized = false;
 
 	outGain: GainNode | null = null;
 
@@ -182,6 +184,7 @@ export class AudioSystem {
 			.with('highshelf~', () => this.createHighshelf(nodeId, params))
 			.with('peaking~', () => this.createPeaking(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
+			.with('dsp~', () => this.createDsp(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('compressor~', () => this.createCompressor(nodeId, params))
 			.with('pan~', () => this.createPan(nodeId, params))
@@ -458,6 +461,44 @@ export class AudioSystem {
 		}
 	}
 
+	async initDspWorklet() {
+		if (this.dspWorkletInitialized) return;
+
+		try {
+			const processorUrl = new URL(dspWorkletUrl, import.meta.url);
+			await this.audioContext.audioWorklet.addModule(processorUrl.href);
+			this.dspWorkletInitialized = true;
+		} catch (error) {
+			console.error('Failed to initialize DSP processor worklet:', error);
+		}
+	}
+
+	async createDsp(nodeId: string, params: unknown[]) {
+		await this.initDspWorklet();
+
+		if (!this.dspWorkletInitialized) {
+			console.error('DSP worklet not initialized');
+			return;
+		}
+
+		const [, code] = params as [unknown, string];
+
+		try {
+			const workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor');
+
+			if (code) {
+				workletNode.port.postMessage({
+					type: 'set-code',
+					code: code
+				});
+			}
+
+			this.nodesById.set(nodeId, { type: 'dsp~', node: workletNode });
+		} catch (error) {
+			console.error('Failed to create DSP node:', error);
+		}
+	}
+
 	async createChuck(nodeId: string) {
 		const gainNode = new GainNode(this.audioContext);
 
@@ -598,6 +639,21 @@ export class AudioSystem {
 						node.port.postMessage({
 							type: 'set-expression',
 							expression: expression
+						});
+					})
+					.with(['inletValues', P.array(P.number)], ([, values]) => {
+						node.port.postMessage({
+							type: 'set-inlet-values',
+							values: Array.from(values)
+						});
+					});
+			})
+			.with({ type: 'dsp~' }, ({ node }) => {
+				match([key, msg])
+					.with(['code', P.string], ([, code]) => {
+						node.port.postMessage({
+							type: 'set-code',
+							code: code
 						});
 					})
 					.with(['inletValues', P.array(P.number)], ([, values]) => {

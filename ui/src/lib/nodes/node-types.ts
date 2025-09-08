@@ -31,6 +31,7 @@ import ScreenCaptureNode from '$lib/components/nodes/ScreenCaptureNode.svelte';
 import WebcamNode from '$lib/components/nodes/WebcamNode.svelte';
 import VideoNode from '$lib/components/nodes/VideoNode.svelte';
 import TextInputNode from '$lib/components/nodes/TextInputNode.svelte';
+import DSPNode from '$lib/components/nodes/DSPNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -65,7 +66,8 @@ export const nodeTypes = {
 	screen: ScreenCaptureNode,
 	webcam: WebcamNode,
 	video: VideoNode,
-	textbox: TextInputNode
+	textbox: TextInputNode,
+	'dsp~': DSPNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;

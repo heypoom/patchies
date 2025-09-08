@@ -33,29 +33,4 @@ const process = (inputs, outputs) => {
 }
 ```
 
-## Audio Parameters
-
-The signal (blue) inlets are created automatically for each audio parameter.
-
-```js
-const params = [
-  {
-    name: 'customGain',
-    defaultValue: 1,
-    minValue: 0,
-    maxValue: 1,
-    automationRate: 'a-rate',
-  },
-]
-
-function process(inputs, outputs, params) {
-  const output = outputs[0]
-  const g = params['customGain']
-
-  output.forEach((channel) => {
-    for (let i = 0; i < channel.length; i++) {
-      channel[i] = (Math.random() * 2 - 1) * (g.length > 1 ? g[i] : g[0])
-    }
-  })
-}
-```
+It would be great if there is a parameter that increment each time the process function is called `counter`.
