@@ -31,6 +31,8 @@
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
+	const [width, height] = glSystem.previewSize;
+
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
 
@@ -107,6 +109,8 @@
 	{errorMessage}
 	bind:previewCanvas={canvasElement}
 	nodrag={!dragEnabled}
+	{width}
+	{height}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
