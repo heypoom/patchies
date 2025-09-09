@@ -4,11 +4,13 @@
 
 > The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
-Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript and GLSL. It's made for live creative coding -- for building visualizations, soundscapes and simulations of all kinds.
+Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript and GLSL. It's made for live creative coding, to build visualizations, soundscapes and simulations.
 
 Try it out at [patchies.app](https://patchies.app) - it's open source 😎
 
-Patchies lets you use many audio-visual tools that you know and love together, all in one patch. For example:
+## Use tools and libraries you love... 🎨
+
+Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
 - [P5.js](https://p5js.org), library for creative coding and making art.
 - [Hydra](https://hydra.ojack.xyz), live-coding video synthesizer.
@@ -22,11 +24,9 @@ Patchies lets you use many audio-visual tools that you know and love together, a
 - [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
 - ...as well as write JavaScript code directly.
 
-Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It is very heavily inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and many others.
+## ...by patching them together ✨
 
-> "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
-
-## Wait, what is patching? What's a patcher?
+Patchies lets you _patch_ multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It is very heavily inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and many others.
 
 If you haven't used a patching environment before, patching is a visual way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You can connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
 
@@ -35,6 +35,8 @@ Here's a visual example:
 <img src="./docs/images/patchies-fft.png" alt="Patchies.app FFT example" width="700">
 
 This patch takes in audio from an audio file, analyzes the frequency spectrum using the `fft~` object, and sends the frequency data to various visual objects to create audio-reactive visuals and meters. You can create your own patches by combining different objects in different ways 😝
+
+> "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
 ## Getting Started
 

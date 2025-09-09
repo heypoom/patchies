@@ -45,7 +45,9 @@ const map = (value, start1, stop1, start2, stop2) =>
 draw()`;
 
 export const FRACTAL_TREE_JS = `let stop = 4
-recv(m => stop=m)
+let grow = 0.75
+
+recv(m => grow=m)
 
 function draw() {
   ctx.clearRect(0, 0, width, height);
@@ -67,8 +69,10 @@ function drawBranch(x, y, length, angle) {
   ctx.lineWidth = length / 10;
   ctx.stroke();
 
-  drawBranch(endX, endY, length * 0.75, angle - Math.PI / 6);
-  drawBranch(endX, endY, length * 0.75, angle + Math.PI / 6);
+  grow = Math.min(grow, 0.78)
+
+  drawBranch(endX, endY, length * grow, angle - Math.PI / 6);
+  drawBranch(endX, endY, length * grow, angle + Math.PI / 6);
 }
 
 draw();`;
