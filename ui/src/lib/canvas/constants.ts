@@ -32,19 +32,14 @@ export const DEFAULT_AI_IMAGE_PROMPT = `little rainicorn, high quality, 16:9 asp
 
 export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
 
-export const DEFAULT_JS_CANVAS_CODE = `ctx.fillStyle = '#18181b'
-ctx.fillRect(0, 0, width, height)
-
-function draw() {
+export const DEFAULT_JS_CANVAS_CODE = `function draw() {
   ctx.clearRect(0, 0, width, height)
-  ctx.fillStyle = '#18181b'
-  ctx.fillRect(0, 0, width, height)
-
+  
   const time = Date.now() * 0.004
   const x = width/2 + Math.cos(time) * 60
   const y = height/2 + Math.sin(time) * 50
 
-  ctx.fillStyle = '#4ade80'
+  ctx.fillStyle = 'white'
   ctx.beginPath()
   ctx.arc(x, y, 80, 0, Math.PI * 2)
   ctx.fill()
