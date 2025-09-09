@@ -154,9 +154,6 @@ export class CanvasRenderer {
 			this.offscreenCanvas.width = width;
 			this.offscreenCanvas.height = height;
 
-			// Clear canvas
-			this.ctx.clearRect(0, 0, width, height);
-
 			// Create execution context similar to JSCanvasManager
 			const context = {
 				canvas: this.offscreenCanvas,
