@@ -103,7 +103,7 @@ Each object can send message to other objects, and receive messages from other o
 - Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `message-console.js` preset. Connect them together.
   - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
 
-In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel` and `dsp~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
+In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~` and `tone~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
 ```js
 // In the source `js` object
@@ -130,7 +130,7 @@ recv((data, meta) => {
 
 In the above example, if the message came from inlet 2, it will be sent to outlet 2.
 
-In `js`, `p5`, `hydra`, `canvas` and `dsp~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+In `js`, `p5`, `hydra`, `canvas`, `dsp~` and `tone~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
 See the [Message Passing with GLSL](#message-passing-with-glsl) section for how to use message passing with GLSL shaders to pass data to shaders dynamically.
 
@@ -542,66 +542,63 @@ const process = (inputs, outputs) => {
 
 The `tone~` object allows you to use [Tone.js](https://tonejs.github.io/) for advanced audio synthesis and processing. Tone.js is a powerful Web Audio framework that provides high-level abstractions for creating synthesizers, effects, and complex audio routing.
 
+By default, `tone~` adds a sample code for sine oscillator.
+
+The Tone.js context gives you these variables:
+
+- `Tone`: the Tone.js library
+- `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
+- `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
+
+Try out these presets:
+
+- `lowpass.tone` - low pass filters
+- `pipe.tone` - directly pipe input to output
+
 ```js
-// Create a simple sine wave oscillator
-const synth = new Tone.Oscillator(440, "sine").start();
-synth.connect(outputNode);
+// Process incoming audio through a filter
+const filter = new Tone.Filter(1000, 'lowpass')
+inputNode.connect(filter.input.input)
+filter.connect(outputNode)
 
 // Handle incoming messages to change frequency
-recv((message, meta) => {
-  if (message.type === 'frequency') {
-    synth.frequency.value = message.value;
-  }
-});
+recv((m) => {
+  filter.frequency.value = m
+})
 
 // Return cleanup function to properly dispose Tone.js objects
 return {
-  cleanup: () => {
-    synth.dispose();
-  }
-};
+  cleanup: () => filter.dispose(),
+}
 ```
 
 Key features of `tone~`:
 
 - **High-level synthesis**: Use `Tone.Oscillator`, `Tone.Filter`, `Tone.Gain`, and other Tone.js classes
-- **Message passing support**: Use `recv()` to handle incoming messages and `send()` to send messages to other nodes
-- **Audio context integration**: Tone.js is automatically set up to use AudioSystem's audio context
-- **Output routing**: Always connect your Tone.js objects to `outputNode` instead of `.toDestination()`
+- **Audio input processing**: Use `inputNode` to process incoming audio from other nodes
+- **Audio output**: Always connect your Tone.js objects to `outputNode` instead of `.toDestination()`
 
-Example of a more complex synthesizer:
+#### Available Variables
 
-```js
-// Create a filtered oscillator with envelope
-const osc = new Tone.Oscillator(220, "sawtooth");
-const filter = new Tone.Filter(1000, "lowpass");
-const env = new Tone.AmplitudeEnvelope();
+- `inputNode`: GainNode for receiving audio input from other nodes
+- `outputNode`: GainNode for sending audio output to connected nodes
+- `recv(callback)`: Handle incoming messages from message inlets
+- `send(message, options)`: Send messages to other connected nodes
+- `setPortCount(count)`: Create additional message inlets
 
-// Chain them together
-osc.chain(filter, env, outputNode);
+#### Built-in Presets
 
-// Handle trigger messages
-recv((message, meta) => {
-  if (message.type === 'trigger') {
-    osc.start();
-    env.triggerAttackRelease(0.5);
-  }
-});
-
-// Return cleanup function
-return {
-  cleanup: () => {
-    osc.dispose();
-    filter.dispose();
-    env.dispose();
-  }
-};
-```
+- `poly-synth.tone`: Polyphonic synthesizer that plays chord sequences
+- `pipe.tone`: Simple audio passthrough that connects input directly to output
+- `lowpass.tone`: Low-pass filter with controllable cutoff frequency (5000Hz default)
 
 **Important notes:**
+
 - Use `setPortCount(count)` to create additional message inlets
 - Always connect to `outputNode` instead of calling `.toDestination()`
+- Use `inputNode` to process incoming audio from other audio nodes
 - The Tone.js context is automatically configured with AudioSystem
+- Remember to dispose all Tone.js objects in the cleanup function
 
 ### MIDI & Network Objects
 
