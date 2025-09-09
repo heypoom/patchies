@@ -26,6 +26,7 @@ export class CanvasRenderer {
 	public framebuffer: regl.Framebuffer2D | null = null;
 	public offscreenCanvas: OffscreenCanvas | null = null;
 	public ctx: OffscreenCanvasRenderingContext2D | null = null;
+	public canvasTexture: regl.Texture2D | null = null;
 
 	public onMessage: MessageCallbackFn = () => {};
 
@@ -58,7 +59,6 @@ export class CanvasRenderer {
 
 		const [width, height] = instance.renderer.outputSize;
 
-		// Create offscreen canvas
 		instance.offscreenCanvas = new OffscreenCanvas(width, height);
 		instance.ctx = instance.offscreenCanvas.getContext('2d');
 
@@ -67,6 +67,7 @@ export class CanvasRenderer {
 		}
 
 		await instance.updateCode();
+
 		return instance;
 	}
 
@@ -74,16 +75,29 @@ export class CanvasRenderer {
 		if (!this.ctx || !this.offscreenCanvas || !this.framebuffer) return;
 
 		this.ensureDrawCommand();
+
+		const [width, height] = this.renderer.outputSize;
+
+		const img = this.ctx.getImageData(0, 0, width, height);
+		this.canvasTexture?.({ data: img.data, width: img.width, height: img.height });
+
 		this.drawCommand?.();
 	}
 
 	ensureDrawCommand() {
-		if (this.drawCommand) return;
+		if (this.drawCommand || !this.ctx) return;
 
-		const fallbackTexture = this.renderer.regl.texture({
-			width: 1,
-			height: 1,
-			data: new Uint8Array([255, 0, 0, 1])
+		const [width, height] = this.renderer.outputSize;
+		const img = this.ctx.getImageData(0, 0, width, height);
+
+		this.canvasTexture = this.renderer.regl.texture({
+			data: img.data,
+			width: img.width,
+			height: img.height,
+			wrapS: 'clamp',
+			wrapT: 'clamp',
+			min: 'linear',
+			mag: 'linear'
 		});
 
 		this.drawCommand = this.renderer.regl({
@@ -113,7 +127,7 @@ export class CanvasRenderer {
 					[1, 1]
 				]
 			},
-			uniforms: { canvasTexture: fallbackTexture },
+			uniforms: { canvasTexture: this.canvasTexture },
 			primitive: 'triangle strip',
 			count: 4
 		});

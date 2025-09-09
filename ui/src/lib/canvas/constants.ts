@@ -46,7 +46,7 @@ function draw() {
 
   ctx.fillStyle = '#4ade80'
   ctx.beginPath()
-  ctx.arc(x, y, 20, 0, Math.PI * 2)
+  ctx.arc(x, y, 80, 0, Math.PI * 2)
   ctx.fill()
 
   requestAnimationFrame(draw)
