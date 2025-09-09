@@ -165,7 +165,7 @@ These objects run entirely on the web worker thread and therefore are very high-
 
 Similar to video chaining, you can chain many audio objects together to create complex audio effects.
 
-- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video` as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
 
@@ -558,8 +558,11 @@ The Tone.js context gives you these variables:
 
 Try out these presets:
 
+- `poly-synth.tone`: Polyphonic synthesizer that plays chord sequences
 - `lowpass.tone` - low pass filters
 - `pipe.tone` - directly pipe input to output
+
+Code example:
 
 ```js
 // Process incoming audio through a filter
@@ -577,34 +580,6 @@ return {
   cleanup: () => filter.dispose(),
 }
 ```
-
-Key features of `tone~`:
-
-- **High-level synthesis**: Use `Tone.Oscillator`, `Tone.Filter`, `Tone.Gain`, and other Tone.js classes
-- **Audio input processing**: Use `inputNode` to process incoming audio from other nodes
-- **Audio output**: Always connect your Tone.js objects to `outputNode` instead of `.toDestination()`
-
-#### Available Variables
-
-- `inputNode`: GainNode for receiving audio input from other nodes
-- `outputNode`: GainNode for sending audio output to connected nodes
-- `recv(callback)`: Handle incoming messages from message inlets
-- `send(message, options)`: Send messages to other connected nodes
-- `setPortCount(count)`: Create additional message inlets
-
-#### Built-in Presets
-
-- `poly-synth.tone`: Polyphonic synthesizer that plays chord sequences
-- `pipe.tone`: Simple audio passthrough that connects input directly to output
-- `lowpass.tone`: Low-pass filter with controllable cutoff frequency (5000Hz default)
-
-**Important notes:**
-
-- Use `setPortCount(count)` to create additional message inlets
-- Always connect to `outputNode` instead of calling `.toDestination()`
-- Use `inputNode` to process incoming audio from other audio nodes
-- The Tone.js context is automatically configured with AudioSystem
-- Remember to dispose all Tone.js objects in the cleanup function
 
 ### MIDI & Network Objects
 
