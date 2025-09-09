@@ -7,6 +7,7 @@ import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definit
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
 import { ChuckManager } from './ChuckManager';
+import { ToneManager } from './ToneManager';
 
 import workletUrl from './expression-processor.ts?worker&url';
 import dspWorkletUrl from './dsp-processor.ts?worker&url';
@@ -188,6 +189,7 @@ export class AudioSystem {
 			.with('peaking~', () => this.createPeaking(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('dsp~', () => this.createDsp(nodeId, params))
+			.with('tone~', () => this.createTone(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('compressor~', () => this.createCompressor(nodeId, params))
 			.with('pan~', () => this.createPan(nodeId, params))
@@ -476,6 +478,7 @@ export class AudioSystem {
 		}
 	}
 
+
 	async createDsp(nodeId: string, params: unknown[]) {
 		await this.initDspWorklet();
 
@@ -494,6 +497,27 @@ export class AudioSystem {
 			this.nodesById.set(nodeId, { type: 'dsp~', node: workletNode });
 		} catch (error) {
 			console.error('Failed to create DSP node:', error);
+		}
+	}
+
+	async createTone(nodeId: string, params: unknown[]) {
+		const [, code] = params as [unknown, string];
+
+		try {
+			const gainNode = new GainNode(this.audioContext);
+			const toneManager = new ToneManager(this.audioContext, gainNode);
+			
+			if (code) {
+				await toneManager.handleMessage('code', code);
+			}
+
+			this.nodesById.set(nodeId, {
+				type: 'tone~',
+				node: gainNode,
+				toneManager
+			});
+		} catch (error) {
+			console.error('Failed to create Tone node:', error);
 		}
 	}
 
@@ -663,6 +687,9 @@ export class AudioSystem {
 							meta: data.meta
 						});
 					});
+			})
+			.with({ type: 'tone~' }, async (state) => {
+				await state.toneManager?.handleMessage(key, msg);
 			})
 			.with({ type: 'chuck' }, async (state) => {
 				await state.chuckManager?.handleMessage(key, msg);

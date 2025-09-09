@@ -9,7 +9,8 @@ import {
 	DEFAULT_SWISSGL_CODE,
 	DEFAULT_PYTHON_CODE,
 	DEFAULT_CHUCK_CODE,
-	DEFAULT_DSP_JS_CODE
+	DEFAULT_DSP_JS_CODE,
+	DEFAULT_TONE_JS_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -69,5 +70,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('video', () => ({ loop: true }))
 		.with('textbox', () => ({ text: '' }))
 		.with('dsp~', () => ({ code: DEFAULT_DSP_JS_CODE, messageInletCount: 0 }))
+		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 0 }))
 		.otherwise(() => ({}));
 }

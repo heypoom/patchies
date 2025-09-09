@@ -84,3 +84,15 @@ export const DEFAULT_DSP_JS_CODE = `function process(inputs, outputs) {
     }
   })
 }`;
+
+export const DEFAULT_TONE_JS_CODE = `setPortCount(1)
+
+const synth = new Tone.Oscillator(440, 'sine').start()
+synth.connect(outputNode)
+
+recv(m => {
+  synth.frequency.value = m;
+})
+
+return { cleanup: () => synth.dispose() }
+`;

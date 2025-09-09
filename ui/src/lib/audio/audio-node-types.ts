@@ -1,4 +1,5 @@
 import type { ChuckManager } from './ChuckManager';
+import type { ToneManager } from './ToneManager';
 
 interface PsBase {
 	node: AudioNode;
@@ -151,6 +152,12 @@ interface PsDsp extends PsBase {
 	node: AudioWorkletNode;
 }
 
+interface PsTone extends PsBase {
+	type: 'tone~';
+	node: GainNode;
+	toneManager?: ToneManager;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -178,7 +185,8 @@ export type PsAudioNode =
 	| PsSampler
 	| PsConvolver
   | PsStrudel
-	| PsDsp;
+	| PsDsp
+	| PsTone;
 
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
