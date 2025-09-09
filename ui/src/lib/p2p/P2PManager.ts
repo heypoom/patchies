@@ -8,7 +8,7 @@ import type P2PT from 'p2pt';
 /**
  * Public WebTorrent trackers.
  */
-const TRACKER_URLS = [
+const FALLBACK_TRACKER_URLS = [
 	'wss://tracker.btorrent.xyz:443',
 	'wss://tracker.webtorrent.dev:443',
 	'wss://tracker.ghostchu-services.top:443/announce',
@@ -28,6 +28,9 @@ export class P2PManager {
 	private peers: Record<string, Peer> = {};
 	private channels = new Map<string, Set<P2PMessageHandler>>();
 	private roomId: string = '';
+	private isTrackerListFetched = false;
+
+	private trackerUrls = FALLBACK_TRACKER_URLS;
 
 	private constructor() {
 		const room = getSearchParam('room');
@@ -52,7 +55,9 @@ export class P2PManager {
 	public async initialize(): Promise<void> {
 		if (this.p2pt) return;
 
-		this.p2pt = new P2PTKit(TRACKER_URLS, this.roomId);
+		await this.ensureTrackersFetched();
+
+		this.p2pt = new P2PTKit(this.trackerUrls, this.roomId);
 		if (!this.p2pt) return;
 
 		this.p2pt.on('peerconnect', (peer) => {
@@ -126,5 +131,30 @@ export class P2PManager {
 		this.peers = {};
 		this.channels.clear();
 		P2PManager.instance = null;
+	}
+
+	private async ensureTrackersFetched() {
+		if (this.isTrackerListFetched) return;
+
+		try {
+			const res = await fetch(
+				'https://cdn.jsdelivr.net/gh/ngosang/trackerslist@master/trackers_all_ws.txt'
+			);
+
+			const text = await res.text();
+
+			const urls = text
+				.split('\n')
+				.map((line) => line.trim())
+				.filter((line) => line.length > 0);
+
+			if (urls.length > 0) {
+				this.trackerUrls = urls;
+			}
+		} catch (error) {
+			console.error('[p2p] error fetching tracker list, using fallback trackers:', error);
+		} finally {
+			this.isTrackerListFetched = true;
+		}
 	}
 }
