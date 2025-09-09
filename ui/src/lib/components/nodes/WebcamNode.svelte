@@ -39,10 +39,12 @@
 
 	async function startCapture() {
 		try {
+			const [defaultWidth, defaultHeight] = glSystem.outputSize;
+
 			const stream = await navigator.mediaDevices.getUserMedia({
 				video: {
-					width: { ideal: data.width || 640 },
-					height: { ideal: data.height || 480 }
+					width: { ideal: data.width ?? defaultWidth },
+					height: { ideal: data.height ?? defaultHeight }
 				},
 				audio: false
 			});
@@ -170,11 +172,12 @@
 						autoplay
 						playsinline
 					></video>
+
 					{#if !isCapturing}
 						<div class="flex h-32 w-48 items-center justify-center">
 							<div class="flex flex-col items-center gap-2">
 								<Icon icon="lucide:camera" class="h-8 w-8 text-zinc-400" />
-								<div class="text-xs text-zinc-400">Webcam</div>
+
 								{#if errorMessage}
 									<div class="text-xs text-red-400">{errorMessage}</div>
 								{/if}
