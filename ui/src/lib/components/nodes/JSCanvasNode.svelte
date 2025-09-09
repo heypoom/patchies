@@ -36,6 +36,7 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	const [outputWidth, outputHeight] = glSystem.outputSize;
+	const [previewWidth, previewHeight] = glSystem.previewSize;
 
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
@@ -138,6 +139,7 @@
 	nodrag={!dragEnabled}
 	width={outputWidth}
 	height={outputHeight}
+	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}

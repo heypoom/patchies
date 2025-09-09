@@ -544,13 +544,25 @@ export class FBORenderer {
 			const fboNode = this.fboNodes.get(nodeId);
 			if (!fboNode) continue;
 
-			const pixels = this.renderNodePreview(fboNode);
+			let customSize: [number, number] | undefined = undefined;
+
+			if (this.canvasByNode.has(nodeId)) {
+				customSize = this.canvasOutputSize;
+			}
+
+			const pixels = this.renderNodePreview(fboNode, customSize);
 			if (!pixels) continue;
 
 			previewPixels.set(nodeId, pixels);
 		}
 
 		return previewPixels;
+	}
+
+	// HACK: use a different preview size for canvas nodes
+	// this is to make the canvas preview looks sharper
+	get canvasOutputSize(): [number, number] {
+		return [this.outputSize[0] / 2, this.outputSize[1] / 2];
 	}
 
 	/**

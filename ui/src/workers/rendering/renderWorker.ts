@@ -80,9 +80,16 @@ function handleStartAnimation() {
 
 		if (fboRenderer.shouldProcessPreviews) {
 			const previewPixels = fboRenderer.renderPreviews();
-			const [previewWidth, previewHeight] = fboRenderer.previewSize;
 
 			for (const [nodeId, pixels] of previewPixels) {
+				let [previewWidth, previewHeight] = fboRenderer.previewSize;
+
+				// HACK: use a different preview size for canvas nodes
+				// this is to make the canvas preview looks sharper
+				if (fboRenderer.canvasByNode.has(nodeId)) {
+					[previewWidth, previewHeight] = fboRenderer.canvasOutputSize;
+				}
+
 				self.postMessage(
 					{
 						type: 'previewFrame',

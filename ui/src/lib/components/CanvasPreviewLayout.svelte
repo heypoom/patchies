@@ -14,6 +14,7 @@
 
 		width,
 		height,
+		style = '',
 
 		topHandle,
 		bottomHandle,
@@ -31,6 +32,7 @@
 
 		width?: string | number;
 		height?: string | number;
+		style?: string;
 
 		topHandle?: Snippet;
 		bottomHandle?: Snippet;
@@ -60,6 +62,7 @@
 			]}
 			{width}
 			{height}
+			{style}
 		></canvas>
 	{/snippet}
 </ObjectPreviewLayout>
