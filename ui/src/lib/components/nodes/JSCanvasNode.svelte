@@ -36,7 +36,6 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	const [outputWidth, outputHeight] = glSystem.outputSize;
-	console.log('Output size:', outputWidth, outputHeight);
 
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
