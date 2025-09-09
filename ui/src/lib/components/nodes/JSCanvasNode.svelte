@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import { JSCanvasManager } from '$lib/canvas/JSCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -27,7 +26,6 @@
 
 	let glSystem = GLSystem.getInstance();
 	let audioAnalysisSystem: AudioAnalysisSystem;
-	let canvasManager: JSCanvasManager | null = null;
 	let messageContext: MessageContext;
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
@@ -37,7 +35,8 @@
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
-	const [width, height] = glSystem.previewSize;
+	const [outputWidth, outputHeight] = glSystem.outputSize;
+	console.log('Output size:', outputWidth, outputHeight);
 
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
@@ -59,11 +58,6 @@
 				// Handle other port types if needed
 			});
 	}
-
-	const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
-		updateNodeData(nodeId, { ...data, inletCount: newInletCount, outletCount: newOutletCount });
-		updateNodeInternals(nodeId);
-	};
 
 	const setCodeAndUpdate = (newCode: string) => {
 		updateNodeData(nodeId, { ...data, code: newCode });
@@ -98,15 +92,10 @@
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
-
-			const [previewWidth, previewHeight] = glSystem.previewSize;
-			previewCanvas.width = previewWidth;
-			previewCanvas.height = previewHeight;
 		}
 
 		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 
-		canvasManager = new JSCanvasManager(nodeId);
 		glSystem.upsertNode(nodeId, 'canvas', { code: data.code });
 
 		setTimeout(() => {
@@ -123,7 +112,6 @@
 
 		audioAnalysisSystem?.disableFFT(nodeId);
 		glSystem?.removeNode(nodeId);
-		canvasManager?.destroy();
 		messageContext?.destroy();
 	});
 
@@ -149,8 +137,8 @@
 	{errorMessage}
 	bind:previewCanvas
 	nodrag={!dragEnabled}
-	{width}
-	{height}
+	width={outputWidth}
+	height={outputHeight}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
