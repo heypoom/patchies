@@ -70,6 +70,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('video', () => ({ loop: true }))
 		.with('textbox', () => ({ text: '' }))
 		.with('dsp~', () => ({ code: DEFAULT_DSP_JS_CODE, messageInletCount: 0 }))
-		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 0 }))
+		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 1 }))
 		.otherwise(() => ({}));
 }
