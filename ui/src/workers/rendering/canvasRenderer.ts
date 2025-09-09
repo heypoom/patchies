@@ -76,28 +76,17 @@ export class CanvasRenderer {
 
 		this.ensureDrawCommand();
 
-		const [width, height] = this.renderer.outputSize;
-
-		const img = this.ctx.getImageData(0, 0, width, height);
-		this.canvasTexture?.({ data: img.data, width: img.width, height: img.height, flipY: true });
-
+		// @ts-expect-error -- regl type is wrong
+		this.canvasTexture?.({ data: this.offscreenCanvas, flipY: true });
 		this.drawCommand?.();
 	}
 
 	ensureDrawCommand() {
 		if (this.drawCommand || !this.ctx) return;
 
-		const [width, height] = this.renderer.outputSize;
-		const img = this.ctx.getImageData(0, 0, width, height);
-
+		// @ts-expect-error -- regl type is wrong
 		this.canvasTexture = this.renderer.regl.texture({
-			data: img.data,
-			width: img.width,
-			height: img.height,
-			wrapS: 'clamp',
-			wrapT: 'clamp',
-			min: 'linear',
-			mag: 'linear',
+			data: this.offscreenCanvas,
 			flipY: true
 		});
 
