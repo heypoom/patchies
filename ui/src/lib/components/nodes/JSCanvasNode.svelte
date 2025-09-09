@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { JSCanvasManager } from '$lib/canvas/JSCanvasManager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -8,7 +8,18 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 
-	let { id: nodeId, data }: { id: string; data: { title: string; code: string } } = $props();
+	let {
+		id: nodeId,
+		data
+	}: {
+		id: string;
+		data: {
+			title: string;
+			code: string;
+			inletCount?: number;
+			outletCount?: number;
+		};
+	} = $props();
 
 	let canvasElement = $state<HTMLCanvasElement | undefined>();
 	let glSystem = GLSystem.getInstance();
@@ -18,8 +29,17 @@
 	let dragEnabled = $state(true);
 
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
+
+	let inletCount = $derived(data.inletCount ?? 1);
+	let outletCount = $derived(data.outletCount ?? 0);
 
 	let bitmapFrameId: number;
+
+	const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
+		updateNodeData(nodeId, { ...data, inletCount: newInletCount, outletCount: newOutletCount });
+		updateNodeInternals(nodeId);
+	};
 
 	async function uploadBitmap() {
 		if (canvasElement && glSystem.hasOutgoingVideoConnections(nodeId)) {
@@ -35,7 +55,7 @@
 
 		if (canvasElement) {
 			canvasManager = new JSCanvasManager(nodeId, canvasElement);
-			canvasManager.setupSketch({ code: data.code });
+			updateCanvas();
 
 			bitmapFrameId = requestAnimationFrame(uploadBitmap);
 		}
@@ -57,13 +77,19 @@
 			try {
 				messageContext.clearTimers();
 
+				const context = messageContext.getContext();
+
 				canvasManager.updateSketch({
 					code: data.code,
 					messageContext: {
-						...messageContext.getContext(),
+						...context,
 						noDrag: () => {
 							dragEnabled = false;
-						}
+						},
+						setPortCount,
+
+						// @ts-expect-error -- alias for onMessage
+						recv: context.onMessage
 					}
 				});
 
@@ -83,13 +109,30 @@
 	nodrag={!dragEnabled}
 >
 	{#snippet topHandle()}
-		<StandardHandle port="inlet" type="message" total={2} index={0} />
-		<StandardHandle port="inlet" type="video" id="0" title="Video input" total={2} index={1} />
+		{#each Array.from({ length: inletCount }) as _, index}
+			<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
+		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle port="outlet" type="message" total={2} index={0} />
-		<StandardHandle port="outlet" type="video" id="0" title="Video output" total={2} index={1} />
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id={0}
+			title="Video output"
+			total={outletCount + 1}
+			index={outletCount}
+		/>
+
+		{#each Array.from({ length: outletCount }) as _, index}
+			<StandardHandle
+				port="outlet"
+				id={index}
+				title={`Outlet ${index}`}
+				total={outletCount + 1}
+				{index}
+			/>
+		{/each}
 	{/snippet}
 
 	{#snippet codeEditor()}
