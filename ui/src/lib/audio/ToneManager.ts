@@ -9,9 +9,11 @@ export class ToneManager {
 	private currentCode = '';
 	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 
+	public onSetPortCount = (inletCount: number) => {};
+
 	constructor(audioContext: AudioContext, gainNode: GainNode) {
 		this.gainNode = gainNode;
-		
+
 		// Set Tone.js to use our audio context
 		Tone.setContext(audioContext);
 	}
@@ -49,7 +51,7 @@ export class ToneManager {
 			// Create setPortCount function available in user code
 			const setPortCount = (count: number) => {
 				this.messageInletCount = Math.max(0, count);
-				// TODO: Notify AudioSystem about port count change
+				this.onSetPortCount(this.messageInletCount);
 			};
 
 			// Create recv function for receiving messages
@@ -66,45 +68,15 @@ export class ToneManager {
 			// Create outputNode that connects to our gain node
 			const outputNode = this.gainNode;
 
-			// Create a Tone proxy that intercepts constructor calls
-			const ToneWrapper = new Proxy(Tone, {
-				get: (target, prop) => {
-					const value = target[prop as keyof typeof Tone];
-					
-					// Check if it's a constructor function by checking if it has a prototype with dispose
-					if (typeof value === 'function' && 
-						value.prototype && 
-						typeof value.prototype.dispose === 'function') {
-						
-						// Return a wrapped constructor that tracks instances
-						return (...args: unknown[]) => {
-							const instance = new (value as new (...args: unknown[]) => { dispose?: () => void })(...args);
-							this.createdNodes.add(instance);
-							return instance;
-						};
-					}
-					
-					return value;
-				}
-			});
-
 			// Execute the Tone.js code with our context
-			const codeFunction = new Function(
-				'Tone',
-				'setPortCount',
-				'recv',
-				'send',
-				'outputNode',
-				code
-			);
+			const codeFunction = new Function('Tone', 'setPortCount', 'recv', 'send', 'outputNode', code);
 
 			// Execute the code and store any returned cleanup function
-			const result = codeFunction(ToneWrapper, setPortCount, recv, send, outputNode);
-			
+			const result = codeFunction(Tone, setPortCount, recv, send, outputNode);
+
 			if (result && typeof result.cleanup === 'function') {
 				this.toneObjects.set('cleanup', result.cleanup);
 			}
-
 		} catch (error) {
 			console.error('Failed to execute Tone.js code:', error);
 		}
@@ -115,10 +87,12 @@ export class ToneManager {
 
 		try {
 			// Type guard to ensure messageData has the expected structure
-			if (typeof messageData === 'object' && 
-				messageData !== null && 
-				'message' in messageData && 
-				'meta' in messageData) {
+			if (
+				typeof messageData === 'object' &&
+				messageData !== null &&
+				'message' in messageData &&
+				'meta' in messageData
+			) {
 				const data = messageData as { message: unknown; meta: unknown };
 				this.recvCallback(data.message, data.meta);
 			}

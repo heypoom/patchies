@@ -122,9 +122,19 @@ return {
 		}
 
 		setTimeout(() => {
+			const toneNode = audioSystem.nodesById.get(nodeId);
+
+			if (!toneNode || toneNode.type !== 'tone~') return;
+
+			if (toneNode?.toneManager) {
+				toneNode.toneManager.onSetPortCount = (inletCount: number) => {
+					updateNodeData(nodeId, { messageInletCount: inletCount });
+				};
+			}
+
 			updateNodeInternals(nodeId);
 			updateContentWidth();
-		}, 5);
+		}, 10);
 	}
 
 	function runTone() {
@@ -137,26 +147,12 @@ return {
 
 		inletValues = new Array(valueInletCount).fill(0);
 		audioSystem.createAudioObject(nodeId, 'tone~', [null, code]);
-		updateAudioInletValues(inletValues);
-		updateContentWidth();
 
 		setTimeout(() => {
-			const toneNode = audioSystem.nodesById.get(nodeId);
-			if (!toneNode || toneNode.type !== 'tone~') return;
+			handleCodeChange(code);
 
-			toneNode.node.port.onmessage = (event: MessageEvent) => {
-				if (event.data.type === 'port-count-changed') {
-					updateNodeData(nodeId, {
-						code: data.code,
-						messageInletCount: event.data.messageInletCount
-					});
-
-					setTimeout(() => {
-						updateNodeInternals(nodeId);
-						updateContentWidth();
-					}, 5);
-				}
-			};
+			updateAudioInletValues(inletValues);
+			updateContentWidth();
 		}, 100);
 	});
 
