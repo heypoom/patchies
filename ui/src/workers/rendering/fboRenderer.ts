@@ -11,6 +11,7 @@ import type {
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR, WEBGL_EXTENSIONS } from '$lib/canvas/constants';
 import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
+import { CanvasRenderer } from './canvasRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -58,6 +59,7 @@ export class FBORenderer {
 	public nodePausedMap: Map<string, boolean> = new Map();
 
 	public hydraByNode = new Map<string, HydraRenderer | null>();
+	public canvasByNode = new Map<string, CanvasRenderer | null>();
 	private swglByNode = new Map<string, SwissGLContext>();
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
@@ -107,6 +109,7 @@ export class FBORenderer {
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
 				.with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
+				.with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
 				.with({ type: 'img' }, () => this.createEmptyRenderer())
 				.with({ type: 'bg.out' }, () => this.createEmptyRenderer())
 				.exhaustive();
@@ -166,6 +169,34 @@ export class FBORenderer {
 			cleanup: () => {
 				hydraRenderer.destroy();
 				this.hydraByNode.delete(node.id);
+			}
+		};
+	}
+
+	async createCanvasRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+		if (node.type !== 'canvas') return null;
+
+		// Delete existing canvas renderer if it exists.
+		if (this.canvasByNode.has(node.id)) {
+			this.canvasByNode.get(node.id)?.destroy();
+		}
+
+		const canvasRenderer = await CanvasRenderer.create(
+			{ code: node.data.code, nodeId: node.id },
+			framebuffer,
+			this
+		);
+
+		this.canvasByNode.set(node.id, canvasRenderer);
+
+		return {
+			render: () => {},
+			cleanup: () => {
+				canvasRenderer.destroy();
+				this.canvasByNode.delete(node.id);
 			}
 		};
 	}
@@ -799,6 +830,11 @@ export class FBORenderer {
 			if (!hydraRenderer) return;
 
 			hydraRenderer.onMessage(message['data'], message);
+		} else if (node.type === 'canvas') {
+			const canvasRenderer = this.canvasByNode.get(nodeId);
+			if (!canvasRenderer) return;
+
+			canvasRenderer.handleMessage(message);
 		} else if (node.type === 'swgl') {
 			const swglContext = this.swglByNode.get(nodeId);
 			if (!swglContext) return;

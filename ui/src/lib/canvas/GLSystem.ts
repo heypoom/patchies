@@ -350,7 +350,7 @@ export class GLSystem {
 		const payloadWithType: AudioAnalysisPayloadWithType = {
 			...payload,
 			type: 'setFFTData',
-			nodeType: node.type as 'hydra' | 'glsl'
+			nodeType: node.type as 'hydra' | 'glsl' | 'canvas'
 		};
 
 		this.renderWorker.postMessage(payloadWithType, { transfer: [payloadWithType.array.buffer] });

@@ -7,6 +7,10 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match, P } from 'ts-pattern';
+	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
+	import type { NodePortCountUpdateEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -21,10 +25,12 @@
 		};
 	} = $props();
 
-	let canvasElement = $state<HTMLCanvasElement | undefined>();
 	let glSystem = GLSystem.getInstance();
+	let audioAnalysisSystem: AudioAnalysisSystem;
 	let canvasManager: JSCanvasManager | null = null;
 	let messageContext: MessageContext;
+	let previewCanvas = $state<HTMLCanvasElement | undefined>();
+	let previewBitmapContext: ImageBitmapRenderingContext;
 	let errorMessage = $state<string | null>(null);
 	let dragEnabled = $state(true);
 
@@ -36,69 +42,103 @@
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
 
-	let bitmapFrameId: number;
+	// Store event handler for cleanup
+	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+
+		match(e)
+			.with({ portType: 'message' }, (m) => {
+				updateNodeData(nodeId, {
+					...data,
+					inletCount: m.inletCount,
+					outletCount: m.outletCount
+				});
+				updateNodeInternals(nodeId);
+			})
+			.otherwise(() => {
+				// Handle other port types if needed
+			});
+	}
 
 	const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
 		updateNodeData(nodeId, { ...data, inletCount: newInletCount, outletCount: newOutletCount });
 		updateNodeInternals(nodeId);
 	};
 
-	async function uploadBitmap() {
-		if (canvasElement && glSystem.hasOutgoingVideoConnections(nodeId)) {
-			await glSystem.setBitmapSource(nodeId, canvasElement);
-		}
+	const setCodeAndUpdate = (newCode: string) => {
+		updateNodeData(nodeId, { ...data, code: newCode });
+		setTimeout(() => updateCanvas());
+	};
 
-		bitmapFrameId = requestAnimationFrame(uploadBitmap);
-	}
+	const handleMessage: MessageCallbackFn = (message, meta) => {
+		try {
+			match(message)
+				.with({ type: 'set', code: P.string }, ({ code }) => {
+					setCodeAndUpdate(code);
+				})
+				.with({ type: 'run' }, () => {
+					updateCanvas();
+				})
+				.otherwise(() => {
+					glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
+				});
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
+		}
+	};
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
-		glSystem.upsertNode(nodeId, 'img', {});
+		messageContext.queue.addCallback(handleMessage);
+		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
-		if (canvasElement) {
-			canvasManager = new JSCanvasManager(nodeId, canvasElement);
-			updateCanvas();
+		// Listen for port count updates from the worker
+		const eventBus = glSystem.eventBus;
+		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
 
-			bitmapFrameId = requestAnimationFrame(uploadBitmap);
+		if (previewCanvas) {
+			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
+
+			const [previewWidth, previewHeight] = glSystem.previewSize;
+			previewCanvas.width = previewWidth;
+			previewCanvas.height = previewHeight;
 		}
+
+		glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+
+		canvasManager = new JSCanvasManager(nodeId);
+		glSystem.upsertNode(nodeId, 'canvas', { code: data.code });
+
+		setTimeout(() => {
+			glSystem.setPreviewEnabled(nodeId, true);
+			updateCanvas();
+		}, 50);
 	});
 
 	onDestroy(() => {
-		cancelAnimationFrame(bitmapFrameId);
+		const eventBus = glSystem?.eventBus;
+		if (eventBus) {
+			eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
+		}
 
-		glSystem.removeNode(nodeId);
+		audioAnalysisSystem?.disableFFT(nodeId);
+		glSystem?.removeNode(nodeId);
 		canvasManager?.destroy();
 		messageContext?.destroy();
 	});
 
 	function updateCanvas() {
-		// use noDrag() to prevent dragging
-		dragEnabled = true;
-
-		if (canvasManager && messageContext) {
-			try {
-				messageContext.clearTimers();
-
-				const context = messageContext.getContext();
-
-				canvasManager.updateSketch({
-					code: data.code,
-					messageContext: {
-						...context,
-						noDrag: () => {
-							dragEnabled = false;
-						},
-						setPortCount,
-
-						// @ts-expect-error -- alias for onMessage
-						recv: context.onMessage
-					}
-				});
-
-				errorMessage = null;
-			} catch (error) {
-				errorMessage = error instanceof Error ? error.message : String(error);
-			}
+		try {
+			messageContext.clearTimers();
+			audioAnalysisSystem.disableFFT(nodeId);
+			const isUpdated = glSystem.upsertNode(nodeId, 'canvas', { code: data.code });
+			// If the code hasn't changed, the code will not be re-run.
+			// This allows us to forcibly re-run canvas to update FFT.
+			if (!isUpdated) glSystem.send('updateCanvas', { nodeId });
+			errorMessage = null;
+		} catch (error) {
+			// Capture compilation/setup errors
+			errorMessage = error instanceof Error ? error.message : String(error);
 		}
 	}
 </script>
@@ -107,7 +147,7 @@
 	title={data.title ?? 'canvas'}
 	onrun={updateCanvas}
 	{errorMessage}
-	bind:previewCanvas={canvasElement}
+	bind:previewCanvas
 	nodrag={!dragEnabled}
 	{width}
 	{height}

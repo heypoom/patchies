@@ -36,7 +36,7 @@ export interface AudioAnalysisPayload {
 
 export type AudioAnalysisPayloadWithType = AudioAnalysisPayload & {
 	type: 'setFFTData';
-	nodeType: 'hydra' | 'glsl';
+	nodeType: 'hydra' | 'glsl' | 'canvas';
 };
 
 export type OnFFTReadyCallback = (data: AudioAnalysisPayload) => void;
