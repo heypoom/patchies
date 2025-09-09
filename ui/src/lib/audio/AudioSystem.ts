@@ -56,9 +56,12 @@ export class AudioSystem {
 					console.warn(`AudioParam ${paramName} not found on node ${targetId}`);
 				}
 			} else {
-				// Special handling for sampler~ - connect to destination for recording
 				if (targetEntry.type === 'sampler~') {
+					// input to sampler~ - connect to destination for recording
 					sourceEntry.node.connect(targetEntry.destinationNode);
+				} else if (targetEntry.type === 'tone~') {
+					// input to tone~ - connect to inputNode for audio input
+					sourceEntry.node.connect(targetEntry.inputNode);
 				} else {
 					sourceEntry.node.connect(targetEntry.node);
 				}
@@ -478,7 +481,6 @@ export class AudioSystem {
 		}
 	}
 
-
 	async createDsp(nodeId: string, params: unknown[]) {
 		await this.initDspWorklet();
 
@@ -505,8 +507,9 @@ export class AudioSystem {
 
 		try {
 			const gainNode = new GainNode(this.audioContext);
-			const toneManager = new ToneManager(this.audioContext, gainNode);
-			
+			const inputNode = new GainNode(this.audioContext);
+			const toneManager = new ToneManager(this.audioContext, gainNode, inputNode);
+
 			if (code) {
 				await toneManager.handleMessage('code', code);
 			}
@@ -514,6 +517,7 @@ export class AudioSystem {
 			this.nodesById.set(nodeId, {
 				type: 'tone~',
 				node: gainNode,
+				inputNode,
 				toneManager
 			});
 		} catch (error) {

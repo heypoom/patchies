@@ -40,23 +40,6 @@
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount || 0);
 
-	const placeholderCode = `// Create a simple sine wave oscillator
-const synth = new Tone.Oscillator(440, "sine").start();
-synth.connect(outputNode);
-
-// Handle incoming messages to change frequency
-recv((message, meta) => {
-  if (message.type === 'frequency') {
-    synth.frequency.value = message.value;
-  }
-});
-
-// Return cleanup function to properly dispose Tone.js objects
-return {
-  cleanup: () => {
-    synth.dispose();
-  }
-};`;
 
 	const valueInletCount = $derived.by(() => {
 		if (!code.trim()) return 0;
@@ -296,7 +279,6 @@ return {
 					value={code}
 					onchange={handleCodeChange}
 					language="javascript"
-					placeholder={placeholderCode}
 					class="nodrag h-64 w-full resize-none"
 					onrun={runTone}
 				/>

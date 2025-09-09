@@ -155,6 +155,7 @@ interface PsDsp extends PsBase {
 interface PsTone extends PsBase {
 	type: 'tone~';
 	node: GainNode;
+	inputNode: GainNode;
 	toneManager?: ToneManager;
 }
 

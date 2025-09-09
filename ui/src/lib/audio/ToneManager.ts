@@ -3,6 +3,7 @@ import { match, P } from 'ts-pattern';
 
 export class ToneManager {
 	private gainNode: GainNode;
+	private inputNode: GainNode;
 	private toneObjects: Map<string, unknown> = new Map();
 	private recvCallback: ((message: unknown, meta: unknown) => void) | null = null;
 	private messageInletCount = 0;
@@ -11,8 +12,9 @@ export class ToneManager {
 
 	public onSetPortCount = (inletCount: number) => {};
 
-	constructor(audioContext: AudioContext, gainNode: GainNode) {
+	constructor(audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
 		this.gainNode = gainNode;
+		this.inputNode = inputNode;
 
 		// Set Tone.js to use our audio context
 		Tone.setContext(audioContext);
@@ -67,12 +69,25 @@ export class ToneManager {
 
 			// Create outputNode that connects to our gain node
 			const outputNode = this.gainNode;
+			// Create inputNode that receives incoming audio
+			const inputNode = this.inputNode;
 
 			// Execute the Tone.js code with our context
-			const codeFunction = new Function('Tone', 'setPortCount', 'recv', 'send', 'outputNode', code);
+			const codeFunction = new Function(
+				'Tone',
+				'setPortCount',
+				'recv',
+				'send',
+				'outputNode',
+				'inputNode',
+				`
+				
+				${code}
+			`
+			);
 
 			// Execute the code and store any returned cleanup function
-			const result = codeFunction(Tone, setPortCount, recv, send, outputNode);
+			const result = codeFunction(Tone, setPortCount, recv, send, outputNode, inputNode);
 
 			if (result && typeof result.cleanup === 'function') {
 				this.toneObjects.set('cleanup', result.cleanup);

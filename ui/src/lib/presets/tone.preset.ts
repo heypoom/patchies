@@ -16,9 +16,33 @@ recv(message => {
 
 return { cleanup: () => synth.dispose() }`;
 
+const PIPE_JS = `inputNode.connect(outputNode)
+
+return { cleanup: () => inputNode.disconnect(outputNode) }`;
+
+const LOWPASS_JS = `setPortCount(1)
+
+const filter = new Tone.Filter(5000, "lowpass")
+inputNode.connect(filter.input.input)
+filter.connect(outputNode)
+
+recv(m => {
+  filter.frequency.value = m;
+})
+
+return { cleanup: () => filter.dispose() }`;
+
 export const TONE_JS_PRESETS = {
-	'poly-synth.js': {
+	'poly-synth.tone': {
 		type: 'tone~',
 		data: { code: POLY_SYNTH_JS, messageInletCount: 1 }
+	},
+	'pipe.tone': {
+		type: 'tone~',
+		data: { code: PIPE_JS, messageInletCount: 0 }
+	},
+	'lowpass.tone': {
+		type: 'tone~',
+		data: { code: LOWPASS_JS, messageInletCount: 1 }
 	}
 };
