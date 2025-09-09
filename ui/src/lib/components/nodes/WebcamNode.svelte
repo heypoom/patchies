@@ -7,6 +7,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
 	let {
 		id: nodeId,
@@ -27,6 +28,9 @@
 	let errorMessage = $state<string | null>(null);
 	let bitmapFrameId: number;
 
+	const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
+	const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
+
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
 			.with({ type: 'bang' }, () => startCapture())
@@ -39,12 +43,10 @@
 
 	async function startCapture() {
 		try {
-			const [defaultWidth, defaultHeight] = glSystem.outputSize;
-
 			const stream = await navigator.mediaDevices.getUserMedia({
 				video: {
-					width: { ideal: data.width ?? defaultWidth },
-					height: { ideal: data.height ?? defaultHeight }
+					width: { ideal: data.width ?? defaultOutputWidth },
+					height: { ideal: data.height ?? defaultOutputHeight }
 				},
 				audio: false
 			});
@@ -97,7 +99,7 @@
 
 	async function uploadBitmap() {
 		if (videoElement && isCapturing && !isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
-			await glSystem.setBitmapSource(nodeId, videoElement);
+			glSystem.setBitmapSource(nodeId, videoElement);
 		}
 
 		if (isCapturing) {
@@ -108,6 +110,7 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+
 		glSystem.upsertNode(nodeId, 'img', {});
 	});
 
@@ -121,6 +124,14 @@
 	const handleCommonClass = $derived.by(() => {
 		return `z-1 ${selected ? '' : 'opacity-40'}`;
 	});
+
+	const canvasWidth = $derived(
+		data.width ? data.width / PREVIEW_SCALE_FACTOR : defaultPreviewWidth
+	);
+
+	const canvasHeight = $derived(
+		data.height ? data.height / PREVIEW_SCALE_FACTOR : defaultPreviewHeight
+	);
 </script>
 
 <div class="relative">
@@ -167,10 +178,13 @@
 				>
 					<video
 						bind:this={videoElement}
-						class="h-32 w-48 rounded object-cover {isCapturing ? '' : 'hidden'}"
+						class="rounded object-cover {isCapturing ? '' : 'hidden'}"
 						muted
 						autoplay
 						playsinline
+						width={data.width ?? defaultOutputWidth}
+						height={data.height ?? defaultOutputHeight}
+						style={`width: ${canvasWidth}px; height: ${canvasHeight}px;`}
 					></video>
 
 					{#if !isCapturing}
