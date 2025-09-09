@@ -89,3 +89,21 @@ export const DEFAULT_DSP_JS_CODE = `function process(inputs, outputs) {
     }
   })
 }`;
+
+export const DEFAULT_TONE_JS_CODE = `// Create a simple sine wave oscillator
+const synth = new Tone.Oscillator(440, "sine").start();
+synth.connect(outputNode);
+
+// Handle incoming messages to change frequency
+recv((message, meta) => {
+  if (message.type === 'frequency') {
+    synth.frequency.value = message.value;
+  }
+});
+
+// Return cleanup function to properly dispose Tone.js objects
+return {
+  cleanup: () => {
+    synth.dispose();
+  }
+};`;

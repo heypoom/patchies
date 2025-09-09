@@ -160,7 +160,7 @@ Similar to video chaining, you can chain many audio objects together to create c
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
 
-- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`.
+- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`.
 
   - These objects correspond to Web Audio API nodes. See the [Web Audio API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for more details.
 
@@ -414,6 +414,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `fft~`: FFT analysis for frequency domain processing
 - `expr~`: Audio expression evaluator for simple math expressions
 - `dsp~`: Dynamic JavaScript DSP processor for custom audio algorithms
+- `tone~`: Tone.js synthesis and processing for advanced audio synthesis
 
 **Sound Sources:**
 
@@ -536,6 +537,71 @@ const process = (inputs, outputs) => {
   })
 }
 ```
+
+### `tone~`: Tone.js synthesis and processing
+
+The `tone~` object allows you to use [Tone.js](https://tonejs.github.io/) for advanced audio synthesis and processing. Tone.js is a powerful Web Audio framework that provides high-level abstractions for creating synthesizers, effects, and complex audio routing.
+
+```js
+// Create a simple sine wave oscillator
+const synth = new Tone.Oscillator(440, "sine").start();
+synth.connect(outputNode);
+
+// Handle incoming messages to change frequency
+recv((message, meta) => {
+  if (message.type === 'frequency') {
+    synth.frequency.value = message.value;
+  }
+});
+
+// Return cleanup function to properly dispose Tone.js objects
+return {
+  cleanup: () => {
+    synth.dispose();
+  }
+};
+```
+
+Key features of `tone~`:
+
+- **High-level synthesis**: Use `Tone.Oscillator`, `Tone.Filter`, `Tone.Gain`, and other Tone.js classes
+- **Message passing support**: Use `recv()` to handle incoming messages and `send()` to send messages to other nodes
+- **Audio context integration**: Tone.js is automatically set up to use AudioSystem's audio context
+- **Output routing**: Always connect your Tone.js objects to `outputNode` instead of `.toDestination()`
+
+Example of a more complex synthesizer:
+
+```js
+// Create a filtered oscillator with envelope
+const osc = new Tone.Oscillator(220, "sawtooth");
+const filter = new Tone.Filter(1000, "lowpass");
+const env = new Tone.AmplitudeEnvelope();
+
+// Chain them together
+osc.chain(filter, env, outputNode);
+
+// Handle trigger messages
+recv((message, meta) => {
+  if (message.type === 'trigger') {
+    osc.start();
+    env.triggerAttackRelease(0.5);
+  }
+});
+
+// Return cleanup function
+return {
+  cleanup: () => {
+    osc.dispose();
+    filter.dispose();
+    env.dispose();
+  }
+};
+```
+
+**Important notes:**
+- Use `setPortCount(count)` to create additional message inlets
+- Always connect to `outputNode` instead of calling `.toDestination()`
+- The Tone.js context is automatically configured with AudioSystem
 
 ### MIDI & Network Objects
 

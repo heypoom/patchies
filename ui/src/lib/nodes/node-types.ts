@@ -32,6 +32,7 @@ import WebcamNode from '$lib/components/nodes/WebcamNode.svelte';
 import VideoNode from '$lib/components/nodes/VideoNode.svelte';
 import TextInputNode from '$lib/components/nodes/TextInputNode.svelte';
 import DSPNode from '$lib/components/nodes/DSPNode.svelte';
+import ToneNode from '$lib/components/nodes/ToneNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -67,7 +68,8 @@ export const nodeTypes = {
 	webcam: WebcamNode,
 	video: VideoNode,
 	textbox: TextInputNode,
-	'dsp~': DSPNode
+	'dsp~': DSPNode,
+	'tone~': ToneNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
