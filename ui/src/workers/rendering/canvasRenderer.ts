@@ -79,7 +79,7 @@ export class CanvasRenderer {
 		const [width, height] = this.renderer.outputSize;
 
 		const img = this.ctx.getImageData(0, 0, width, height);
-		this.canvasTexture?.({ data: img.data, width: img.width, height: img.height });
+		this.canvasTexture?.({ data: img.data, width: img.width, height: img.height, flipY: true });
 
 		this.drawCommand?.();
 	}
@@ -97,7 +97,8 @@ export class CanvasRenderer {
 			wrapS: 'clamp',
 			wrapT: 'clamp',
 			min: 'linear',
-			mag: 'linear'
+			mag: 'linear',
+			flipY: true
 		});
 
 		this.drawCommand = this.renderer.regl({
