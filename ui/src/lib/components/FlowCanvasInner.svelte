@@ -30,6 +30,7 @@
 	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
 	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
+	import { deleteSearchParam } from '$lib/utils/search-params';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -227,6 +228,7 @@
 
 		if (src) {
 			await loadPatchFromUrlParam(src);
+			deleteSearchParam('src');
 			return;
 		}
 
@@ -235,6 +237,7 @@
 
 			try {
 				const save = await getSharedPatchData(id);
+				deleteSearchParam('id');
 
 				if (save) restorePatchFromSave(save);
 			} catch (err) {
