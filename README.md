@@ -8,7 +8,7 @@ Patchies is a tool for building interactive audio-visual patches in the browser 
 
 Try it out at [patchies.app](https://patchies.app) - it's open source 😎
 
-Patchies lets you use the audio-visual tools that you know and love, together in one place. For example:
+Patchies lets you use many audio-visual tools that you know and love together, all in one patch. For example:
 
 - [P5.js](https://p5js.org), library for creative coding and making art.
 - [Hydra](https://hydra.ojack.xyz), live-coding video synthesizer.
@@ -17,8 +17,9 @@ Patchies lets you use the audio-visual tools that you know and love, together in
 - [ML5.js](https://ml5js.org), friendly machine learning library for the web.
 - [SwissGL](https://github.com/google/swissgl), minimal WebGL2 wrapper for shaders.
 - [GLSL fragment shaders](https://www.shadertoy.com), for complex 3D visual effects.
+- [Tone.js](https://tonejs.github.io), framework for creating interactive music in the browser.
 - [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
-- [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
+- [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
 - ...as well as write JavaScript code directly.
 
 Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It is very heavily inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and many others.
@@ -412,11 +413,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `waveshaper~`: Distortion and waveshaping effects
 - `convolver~`: Convolution reverb using impulse responses
 - `fft~`: FFT analysis for frequency domain processing
-- `expr~`: Audio expression evaluator for simple math expressions
-- `dsp~`: Dynamic JavaScript DSP processor for custom audio algorithms
-- `tone~`: Tone.js synthesis and processing for advanced audio synthesis
 
-**Sound Sources:**
+**Sound Input and Output:**
 
 - `soundfile~`: Load and play audio files with transport controls
   - use `soundurl~ <url>` to load audio files and streams from URLs directly.
@@ -540,7 +538,7 @@ const process = (inputs, outputs) => {
 
 ### `tone~`: Tone.js synthesis and processing
 
-The `tone~` object allows you to use [Tone.js](https://tonejs.github.io/) for advanced audio synthesis and processing. Tone.js is a powerful Web Audio framework that provides high-level abstractions for creating synthesizers, effects, and complex audio routing.
+The `tone~` object allows you to use [Tone.js](https://tonejs.github.io/) to create interactive music. Tone.js is a powerful Web Audio framework that provides high-level abstractions for creating synthesizers, effects, and complex audio routing.
 
 By default, `tone~` adds a sample code for sine oscillator.
 
