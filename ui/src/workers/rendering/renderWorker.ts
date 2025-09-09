@@ -33,6 +33,7 @@ self.onmessage = (event) => {
 			handleCapturePreview(data.nodeId, data.requestId, data.customSize)
 		)
 		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
+		.with('updateCanvas', () => handleUpdateCanvas(data.nodeId))
 		.with('setFFTData', () => handleSetFFTData(data));
 };
 
@@ -121,6 +122,12 @@ function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
 
 			hydraRenderer.setFFTData(payload);
 		})
+		.with('canvas', () => {
+			const canvasRenderer = fboRenderer.canvasByNode.get(nodeId);
+			if (!canvasRenderer) return;
+
+			canvasRenderer.setFFTData(payload);
+		})
 		.with('glsl', () => {
 			fboRenderer.setFFTAsGlslUniforms(payload);
 		})
@@ -132,6 +139,13 @@ function handleUpdateHydra(nodeId: string) {
 	if (!hydraRenderer) return;
 
 	hydraRenderer.updateCode();
+}
+
+function handleUpdateCanvas(nodeId: string) {
+	const canvasRenderer = fboRenderer.canvasByNode.get(nodeId);
+	if (!canvasRenderer) return;
+
+	canvasRenderer.updateCode();
 }
 
 async function handleCapturePreview(
