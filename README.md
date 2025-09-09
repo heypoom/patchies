@@ -4,11 +4,11 @@
 
 > The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
-Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript and GLSL. It's made for live creative coding, to build visualizations, soundscapes and simulations.
+Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript and GLSL. It's made for creative coding; patch objects and code snippets together to make visualizations, simulations, soundscapes and artistic explorations 🎨
 
-Try it out at [patchies.app](https://patchies.app) - it's open source 😎
+Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
-## Use tools and libraries you love... 🎨
+## Use tools and libraries you love...
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
@@ -99,7 +99,13 @@ You can use the Shortcuts button on the bottom right to see a list of shortcuts.
 
 ## Message Passing
 
-Each object can send message to other objects, and receive messages from other objects. Here are some examples to get you started:
+Each object can send message to other objects, and receive messages from other objects.
+
+<img src="./docs/images/patchies-message-pass.png" alt="Patchies.app message passing example" width="700">
+
+In this example, two `slider` objects sends out their value to a `expr $1 + $2` object which adds the number together. The result is sent as a message to the `p5` object which displays it.
+
+Here are some examples to get you started:
 
 - Create two `button` objects, and connect the outlet of one to the inlet of another.
   - When you click on the first button, it will send a `{type: 'bang'}` message to the second button, which will flash.
