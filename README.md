@@ -10,13 +10,15 @@ Try it out at [patchies.app](https://patchies.app) - it's open source 😎
 
 Patchies lets you use the audio-visual tools that you know and love, together in one place. For example:
 
-- [P5.js](https://p5js.org), a JavaScript library for creative coding.
-- [Hydra](https://hydra.ojack.xyz), a live-coding video synthesizer.
-- [Strudel](https://strudel.cc), a TidalCycles-like music environment
-- [ChucK](https://chuck.cs.princeton.edu/webchuck), a programming language for real-time sound synthesis.
+- [P5.js](https://p5js.org), library for creative coding and making art.
+- [Hydra](https://hydra.ojack.xyz), live-coding video synthesizer.
+- [Strudel](https://strudel.cc), TidalCycles-like music environment
+- [ChucK](https://chuck.cs.princeton.edu/webchuck), programming language for real-time sound synthesis.
 - [ML5.js](https://ml5js.org), friendly machine learning library for the web.
-- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), a powerful audio synthesis and processing API.
-- [GLSL fragment shaders](https://www.shadertoy.com), for complex visual effects.
+- [SwissGL](https://github.com/google/swissgl), minimal WebGL2 wrapper for shaders.
+- [GLSL fragment shaders](https://www.shadertoy.com), for complex 3D visual effects.
+- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
+- [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
 - ...as well as write JavaScript code directly.
 
 Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It is very heavily inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and many others.
@@ -101,7 +103,7 @@ Each object can send message to other objects, and receive messages from other o
 - Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `message-console.js` preset. Connect them together.
   - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
 
-In JavaScript-based objects such as `js`, `p5`, `hydra`, `strudel` and `canvas`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
+In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel` and `dsp~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
 ```js
 // In the source `js` object
