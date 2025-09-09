@@ -128,7 +128,7 @@ recv((data, meta) => {
 
 In the above example, if the message came from inlet 2, it will be sent to outlet 2.
 
-In `js`, `p5`, `hydra` and `dsp~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+In `js`, `p5`, `hydra`, `canvas` and `dsp~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
 See the [Message Passing with GLSL](#message-passing-with-glsl) section for how to use message passing with GLSL shaders to pass data to shaders dynamically.
 
@@ -141,6 +141,14 @@ You can chain video objects together to create complex video effects, by using t
 To use video chaining, connect the orange inlets and outlets on the patch. For example, connect the orange video outlet of a `p5` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl`.
 
 See the `glsl` object section for how to create uniforms to accept video inputs.
+
+### Rendering Pipeline
+
+Behind the scenes, video chaining constructs a rendering pipeline based on the use of framebuffer objects (FBOs), which allows many objects to run mainly on GPU with minimal transfers needed. The main technology used for the pipeline are Web Workers, WebGL2, Regl and OffscreenCanvas.
+
+This essentially constructs a shader graph that only streams the lower-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
+
+These objects run entirely on the web worker thread and therefore are very high-performance: `hydra`, `glsl`, `swgl`, `canvas` and `img`. Use these objects as much as possible for best performance.
 
 ## Audio Chaining
 
@@ -237,6 +245,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 ### `canvas`: creates a JavaScript canvas
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
+
+- Note that the HTML5 canvas runs on an `OffscreenCanvas` on the rendering pipeline. This means that you cannot use DOM APIs such as `document` or `window` in the canvas code.
 
 - You can call these special methods in your canvas code:
 
