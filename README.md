@@ -8,7 +8,7 @@ Patchies is a tool for building interactive audio-visual patches in the browser 
 
 Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
-## Use tools and libraries you love...
+## Use tools and libraries you love
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
@@ -261,7 +261,21 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `swgl`: creates a SwissGL shader
 
-- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code.
+- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code. Here is how to make a simple animated mesh:
+
+  ```js
+  function render({t}) {
+    glsl({
+      t,
+      Mesh: [10, 10],
+      VP: `XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1`,
+      FP: `UV,0.5,1`,
+    })
+  }
+  ```
+
+- See the [SwissGL examples](https://google.github.io/swissgl) for some inspirations on how to use SwissGL.
+  - Right now, we haven't hooked the mouse and camera to SwissGL yet, so a lot of what you see in the SwissGL demo won't work in Patchies yet. PRs are welcome!
 
 ### `canvas`: creates a JavaScript canvas
 
