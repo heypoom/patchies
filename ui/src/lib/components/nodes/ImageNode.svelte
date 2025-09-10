@@ -205,7 +205,7 @@
 	});
 
 	const handleCommonClass = $derived.by(() => {
-		return `z-1 ${node.selected ? '' : 'opacity-40'}`;
+		return `z-1 ${node.selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});
 </script>
 
