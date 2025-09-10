@@ -313,7 +313,7 @@
 	});
 
 	const handleCommonClass = $derived.by(() => {
-		return `z-1 ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
+		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});
 </script>
 

@@ -27,7 +27,9 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	const handleClass = $derived(
-		props.selected ? 'z-1' : 'z-1 sm:opacity-0 opacity-30 group-hover:opacity-100'
+		props.selected
+			? 'z-1 transition-opacity'
+			: 'z-1 sm:opacity-0 opacity-30 group-hover:opacity-100 transition-opacity'
 	);
 
 	function handleMarkdownChange(markdown: string) {
