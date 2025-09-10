@@ -33,10 +33,12 @@ import VideoNode from '$lib/components/nodes/VideoNode.svelte';
 import TextInputNode from '$lib/components/nodes/TextInputNode.svelte';
 import DSPNode from '$lib/components/nodes/DSPNode.svelte';
 import ToneNode from '$lib/components/nodes/ToneNode.svelte';
+import ToggleButtonNode from '$lib/components/nodes/ToggleButtonNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
 	button: ButtonNode,
+	toggle: ToggleButtonNode,
 	msg: MessageNode,
 	p5: P5CanvasNode,
 	js: JSBlockNode,

@@ -31,6 +31,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('ai.txt', () => ({ prompt: 'Write a creative story about...' }))
 		.with('msg', () => ({ message: '' }))
 		.with('button', () => ({}))
+		.with('toggle', () => ({ value: false }))
 		.with('slider', () => ({
 			min: 0,
 			max: 100,

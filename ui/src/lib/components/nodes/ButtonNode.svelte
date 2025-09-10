@@ -9,7 +9,7 @@
 
 	let isFlashing = $state(false);
 
-	const messageCallback = () => {
+	const handleMessage = () => {
 		isFlashing = true;
 
 		messageContext.send({ type: 'bang' });
@@ -21,10 +21,10 @@
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
-		messageContext.queue.addCallback(messageCallback);
+		messageContext.queue.addCallback(handleMessage);
 
 		return () => {
-			messageContext.queue.removeCallback(messageCallback);
+			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
 		};
 	});
