@@ -173,15 +173,14 @@ Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `
 
 ## Audio Chaining
 
-Similar to video chaining, you can chain many audio objects together to create complex audio effects.
+Similar to video chaining, you can chain many audio objects together to create audio effects and soundscapes. If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), they work almost the same way.
 
 - You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
+  - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
 
 - You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`.
-
-  - These objects correspond to Web Audio API nodes. See the [Web Audio API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for more details.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
@@ -430,7 +429,21 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Hover over the inlet name to see a tooltip with description of what the inlet's type are, and what values it does accept.
   - Try to hover over a `gain~` object's gain value (e.g. `1.0`) to see the tooltip.
 
-#### Available textual objects
+#### Control objects
+
+These objects run on _control rate_, which means they process messages (control signals), but not audio signals.
+
+- `mtof`: Convert MIDI note numbers to frequencies
+- `loadbang`: Send bang on patch load
+- `metro`: Metronome for regular timing
+- `delay`: Message delay (not audio)
+- `adsr`: ADSR envelope generator
+
+Most of these objects are easy to re-implement yourself with the `js` object as they simply emit messages, but they are provided for your convenience!
+
+#### Audio objects
+
+These objects run on _audio rate_, which means they process audio signals in real-time. They are represented with a `~` suffix in their names.
 
 **Audio Processing:**
 
@@ -456,13 +469,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers
 
-**Control & Utility:**
+#### Notes on audio objects
 
-- `mtof`: Convert MIDI note numbers to frequencies
-- `loadbang`: Send bang on patch load
-- `metro`: Metronome for regular timing
-- `delay`: Message delay (not audio)
-- `adsr`: ADSR envelope generator
+- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~` or `tone~` objects. In fact, the default `dsp~` and `tone~` object is a simple sine wave oscillator that works similar to `osc~`.
+- Most of the audio objects correspond to Web Audio API nodes. See the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) documentation on how they work under the hood.
 
 ### `expr~`: audio-rate mathematical expression evaluator
 
