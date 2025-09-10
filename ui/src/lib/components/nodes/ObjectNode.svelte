@@ -285,6 +285,32 @@
 				if (metroInterval !== null) {
 					startMetro(intervalMs);
 				}
+			})
+			.with(['spigot', 'data', P.any], ([, , dataMessage]) => {
+				const allow = data.params[1] ?? false;
+
+				if (allow) {
+					messageContext.send(dataMessage);
+				}
+			})
+			.with(['spigot', 'control', P.any], ([, , condition]) => {
+				match(condition)
+					.with({ type: 'bang' }, () => {
+						const currentAllow = data.params[1] ?? false;
+						updateParamByIndex(1, !currentAllow);
+					})
+					.with(P.boolean, (value) => {
+						updateParamByIndex(1, value);
+					})
+					.with(P.number, (value) => {
+						updateParamByIndex(1, value > 0);
+					})
+					.with(P.string, (value) => {
+						updateParamByIndex(1, value.length > 0);
+					})
+					.otherwise(() => {
+						updateParamByIndex(1, false);
+					});
 			});
 	};
 
@@ -684,7 +710,7 @@
 
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
-							<div class="absolute top-full left-0 z-50 flex">
+							<div class="absolute left-0 top-full z-50 flex">
 								<div
 									class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 								>
@@ -718,7 +744,7 @@
 									</div>
 								</div>
 
-								<div class="mt-2 ml-3 min-w-48 font-mono">
+								<div class="ml-3 mt-2 min-w-48 font-mono">
 									<div class="text-xs">
 										{selectedDescription}
 									</div>

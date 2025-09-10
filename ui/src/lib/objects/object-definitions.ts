@@ -695,6 +695,23 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: [{ name: 'out', type: 'bang', description: 'Bang signal sent at regular intervals' }],
 		description: 'Metronome that sends bang signals at regular intervals',
 		tags: ['control']
+	},
+	spigot: {
+		inlets: [
+			{
+				name: 'data',
+				type: 'message',
+				description: 'Data to pass through when allowed.'
+			},
+			{
+				name: 'control',
+				type: 'message',
+				description: 'Truthy allows data, falsey blocks data. Bang toggles.'
+			}
+		],
+		outlets: [{ name: 'out', type: 'message', description: 'Data output when spigot is open' }],
+		description: 'Message gate that allows or blocks data based on condition',
+		tags: ['control']
 	}
 };
 
