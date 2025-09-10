@@ -13,6 +13,7 @@ interface InletValuesMessage {
 type ExprDspFn = (
 	s: number,
 	i: number,
+	t: number,
 	channel: number,
 	bufferSize: number,
 	samples: Float32Array,
@@ -66,11 +67,12 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
 			const expr = parser.parse(renamedExpression);
 
-			// Create parameter names: s (sample), i (sample index), channel, bufferSize,
+			// Create parameter names: s (sample), i (sample index), t (time in seconds), channel, bufferSize,
 			// samples (current channel samples), input (first input), inputs (all inputs), x1-x9 (inlet values)
 			const parameterNames = [
 				's',
 				'i',
+				't',
 				'channel',
 				'bufferSize',
 				'samples',
@@ -116,12 +118,14 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
 				for (let i = 0; i < bufferSize; i++) {
 					const s = samples[i] || 0;
+					const t = (currentFrame + i) / sampleRate;
 
 					try {
-						// Call evaluator with: s, i, channel, bufferSize, samples, input, inputs, x1-x9
+						// Call evaluator with: s, i, t, channel, bufferSize, samples, input, inputs, x1-x9
 						const result = this.evaluator(
 							s, // current sample value
 							i, // sample index in buffer
+							t, // current time in seconds
 							channel, // current channel number
 							bufferSize, // buffer size
 							samples, // current channel samples array

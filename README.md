@@ -484,12 +484,14 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - `$1` to `$9`: control inlets
   - `s`: current sample value, a float between -1 and 1
   - `i`: current sample index in buffer, an integer starting from 0
+  - `t`: current time in seconds, a float starting from 0
   - `channel`: current channel index, usually 0 or 1 for stereo
   - `bufferSize`: the size of the audio buffer, usually 128
   - `samples`: an array of samples from the current channel
   - `input`: first input audio signal (for all connected channels), a float between -1 and 1
   - `inputs`: every connected input audio signal
 - Example:
+  - `sin(t * 440 * PI * 2)` creates a sine wave oscillator at 440Hz
   - `random()` creates white noise
   - `s` outputs the input audio signal as-is
   - `s * $1` applies gain control to the input audio signal
