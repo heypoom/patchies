@@ -439,8 +439,8 @@
 
 				<StandardHandle
 					port="outlet"
-					type="message"
-					title="Video output"
+					type="audio"
+					title="Audio output"
 					total={2}
 					index={1}
 					class={handleCommonClass}
