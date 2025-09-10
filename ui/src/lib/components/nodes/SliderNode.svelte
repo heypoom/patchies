@@ -118,12 +118,20 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} class="!-top-2" />
+				<StandardHandle
+					port="inlet"
+					type="message"
+					total={1}
+					index={0}
+					class={`!-top-2 ${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+				/>
 
 				<div
 					class="flex w-full min-w-[100px] max-w-[130px] flex-col items-center justify-center gap-1 py-1"
 				>
-					<div class="pb-2 font-mono text-sm text-zinc-100">
+					<div
+						class={['pb-2 font-mono text-sm', node.selected ? 'text-zinc-100' : 'text-zinc-300']}
+					>
 						{displayValue}
 					</div>
 

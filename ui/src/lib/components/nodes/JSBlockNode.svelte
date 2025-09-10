@@ -50,7 +50,9 @@
 	const code = $derived(data.code || '');
 
 	const borderColor = $derived.by(() => {
+		if (isRunning && selected) return 'border-pink-300';
 		if (isRunning) return 'border-pink-500';
+		if (isLongRunningTaskActive && selected) return 'border-emerald-300';
 		if (isLongRunningTaskActive) return 'border-emerald-500';
 		if (selected) return 'border-zinc-400';
 
@@ -363,9 +365,10 @@
 				{:else}
 					<button
 						class={[
-							'flex w-full justify-center rounded-md border bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
+							'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
 							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
-							borderColor
+							borderColor,
+							selected ? 'bg-zinc-800' : 'bg-zinc-900'
 						]}
 						style={`min-width: ${minContainerWidth}px`}
 						onclick={runOrStop}
