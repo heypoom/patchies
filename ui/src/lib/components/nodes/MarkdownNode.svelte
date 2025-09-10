@@ -26,7 +26,9 @@
 
 	const { updateNodeData } = useSvelteFlow();
 
-	const handleClass = $derived(props.selected ? 'z-1 opacity-70' : 'z-1 opacity-10');
+	const handleClass = $derived(
+		props.selected ? 'z-1' : 'z-1 sm:opacity-0 opacity-30 group-hover:opacity-100'
+	);
 
 	function handleMarkdownChange(markdown: string) {
 		updateNodeData(props.id, { markdown });
@@ -94,7 +96,7 @@
 		</div>
 	{/if}
 
-	<div>
+	<div class="group">
 		<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
 
 		<div
