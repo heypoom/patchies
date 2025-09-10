@@ -33,6 +33,7 @@
 	let messageContext: MessageContext;
 	let enableDrag = $state(true);
 	let errorMessage = $state<string | null>(null);
+	let paused = $state(false);
 
 	let previewContainerWidth = $state(0);
 	const code = $derived(data.code || '');
@@ -61,6 +62,7 @@
 	function updateSketch() {
 		// re-enable drag on update. nodrag() must be called on setup().
 		enableDrag = true;
+		paused = false;
 
 		setPortCount(1, 1);
 
@@ -92,12 +94,30 @@
 			previewContainerWidth = Math.max(measureElement.clientWidth, containerElement.clientWidth);
 		}, timeout);
 	}
+
+	function togglePlayback() {
+		const p5 = p5Manager?.p5;
+		if (!p5) return;
+
+		const isLooping = p5?.isLooping();
+
+		if (paused) {
+			p5?.loop();
+		} else {
+			p5?.noLoop();
+		}
+
+		paused = isLooping;
+	}
 </script>
 
 <ObjectPreviewLayout
 	title={data.title ?? 'p5'}
 	onrun={updateSketch}
 	previewWidth={previewContainerWidth}
+	showPauseButton
+	{paused}
+	onPlaybackToggle={togglePlayback}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
