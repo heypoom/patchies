@@ -145,28 +145,31 @@ See the [Message Passing with GLSL](#message-passing-with-glsl) section for how 
 
 ## Video Chaining
 
-You can chain video objects together to create complex video effects, by using the output of a video object as an input to another. This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
+You can chain visual objects together to create video effects and compositions, by using the output of a visual object as an input to another. This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
 
 <img src="./docs/images/patchies-video-chain.png" alt="Patchies.app video chain example" width="700">
 
 To use video chaining:
 
-- The video object must have video inlets and/or outlets (i.e. orange circles on the top and bottom).
-
-  - Inlets provides video input to the object, while outlets outputs video from the object.
-  - In `hydra`, you can call `setVideoCount(ins = 1, outs = 1)` to specify how many video inlets and outlets you want. See [hydra section](#hydra-creates-a-hydra-video-synthesizer) for more details.
-  - For chaining `glsl` objects, you can dynamically create sampler2D uniforms. See [glsl section](#glsl-creates-a-glsl-fragment-shader) for more details.
-
 - Try out the presets to get started quickly.
 
-  - Pipe presets (e.g. `pipe.hydra`, `pipe.gl`) simply passes the video through without any changes. This is the best starting point for chaining.
-  - Hydra has many presets that perform image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two video inputs, see [hydra section](#hydra-creates-a-hydra-video-synthesizer).
+  - Pipe presets (e.g. `pipe.hydra`, `pipe.gl`) simply passes the visual through without any changes. This is the best starting point for chaining.
+  - Hydra has many presets that perform image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two visual inputs, see [hydra section](#hydra-creates-a-hydra-video-synthesizer).
+  - Check out the docs of [each visual objects](#list-of-objects) for more fun presets you can use.
+
+- The visual object should have at least one visual inlets and/or outlets, i.e. orange circles on the top and bottom.
+
+  - Inlets provides visual into the object, while outlets outputs visual from the object.
+  - In `hydra`, you can call `setVideoCount(ins = 1, outs = 1)` to specify how many visual inlets and outlets you want. See [hydra section](#hydra-creates-a-hydra-video-synthesizer) for more details.
+  - For chaining `glsl` objects, you can dynamically create sampler2D uniforms. See [glsl section](#glsl-creates-a-glsl-fragment-shader) for more details.
+
+- The visual object should have code that takes in a visual source, does something, and outputs visual. See the above presets for examples.
 
 - Connect the orange inlets of a source object to the orange outlets of a target object.
 
-Try connecting the orange video outlet of `p5` to an orange video inlet of a `pipe.hydra` preset, and then connect the `hydra` object to a `pipe.gl` preset. You should see the output of the `p5` object being passed through `hydra` and `glsl` objects without modification.
+Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `pipe.hydra` preset, and then connect the `hydra` object to a `pipe.gl` preset. You should see the output of the `p5` object being passed through `hydra` and `glsl` objects without modification.
 
-For tips on how to optimize performance when using video chaining, see the [Rendering Pipeline](#rendering-pipeline) section.
+- Getting lag and slow patches? See the [Rendering Pipeline](#rendering-pipeline) section on how to avoid lag.
 
 ## Audio Chaining
 
@@ -213,7 +216,7 @@ These objects support video chaining and can be connected to create complex visu
   - Use the "shuffle" button on the editor to get code samples you can use. You can copy it into Patchies. Check the license terms first.
 - You can call these special methods in your Hydra code:
   - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
-  - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two video inlets.
+  - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two visual inlets.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
@@ -225,10 +228,10 @@ These objects support video chaining and can be connected to create complex visu
 ### `glsl`: creates a GLSL fragment shader
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
+- You can use video chaining by connecting any visual objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four visual inlets.
 - You can create any number of GLSL uniform inlets by defining them in your GLSL code.
   - For example, if you define `uniform float iMix;`, it will create a float inlet for you to send values to.
-  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a video inlet for you to connect video sources to.
+  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a visual inlet for you to connect video sources to.
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
@@ -274,7 +277,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
 - [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
-- You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl`) to derive more visual effects.
+- You can use it as video source and connect it to other visual objects (e.g. `hydra` and `glsl`) to derive more visual effects.
+- It can be very compute intensive. Use it sparingly otherwise your patch will lag. It also runs on the main thread, see [rendering pipeline](#rendering-pipeline) for more details.
 
 ### `img`: display images
 
@@ -672,8 +676,10 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 
 - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
 - `fft({type: 'freq'})` gives you frequency spectrum analysis.
-- Try out the `fft.hydra` preset for Hydra examples.
-- Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
+- Try out the `fft.hydra` preset for Hydra.
+- Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js.
+  - If you plan to have many instances of P5 canvases that will be used as part of the [video chaining](#video-chaining) pipeline, using the `canvas` object (HTML5 canvas) instead of `p5` will improve performance.
+- Try out the `fft.canvas` preset for HTML5 canvas.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
 
@@ -742,10 +748,12 @@ If you dislike AI features (e.g. text generation, image generation, speech synth
 ## Rendering Pipeline
 
 > [!TIP]
-> TL:DR: try to make use of objects that run on the rendering pipeline such as `hydra`, `glsl`, `swgl`, `canvas` and `img` as much as possible.
+> Use objects that run on the rendering pipeline e.g. `hydra`, `glsl`, `swgl`, `canvas` and `img` to reduce lag.
 
 Behind the scenes, the [video chaining](#video-chaining) feature constructs a _rendering pipeline_ based on the use of [framebuffer objects](https://www.khronos.org/opengl/wiki/Framebuffer_Object) (FBOs), which lets visual objects copy data to one another on a framebuffer level, with no back-and-forth CPU-GPU transfers needed. The pipeline makes use of Web Workers, WebGL2, [Regl](https://github.com/regl-project/regl) and OffscreenCanvas (for `canvas`).
 
 It creates a shader graph that streams the low-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
 
-These objects run entirely on the web worker thread and therefore are very high-performance: . Use these objects as much as possible for best performance.
+Objects such as `hydra`, `glsl`, `swgl`, `canvas` and `img` runs entirely on the web worker thread and therefore are very high-performance.
+
+In contrast, objects such as `p5` and `bchrn` run on the main thread, and at each frame we need to create an image bitmap on the main thread, then transfer it to the web worker thread for rendering. This is much slower than using FBOs and can cause lag if you have many `p5` or `bchrn` objects in your patch.
