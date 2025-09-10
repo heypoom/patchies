@@ -145,21 +145,28 @@ See the [Message Passing with GLSL](#message-passing-with-glsl) section for how 
 
 ## Video Chaining
 
-You can chain video objects together to create complex video effects, by using the output of a video object as an input to another. For example: `P5 -> Hydra -> GLSL -> output`. This is similar to shader graphs in programs like TouchDesigner.
+You can chain video objects together to create complex video effects, by using the output of a video object as an input to another. This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
 
 <img src="./docs/images/patchies-video-chain.png" alt="Patchies.app video chain example" width="700">
 
-To use video chaining, connect the orange inlets and outlets on the patch. For example, connect the orange video outlet of a `p5` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl`.
+To use video chaining:
 
-See the `glsl` object section for how to create uniforms to accept video inputs.
+- The video object must have video inlets and/or outlets (i.e. orange circles on the top and bottom).
 
-### Rendering Pipeline
+  - Inlets provides video input to the object, while outlets outputs video from the object.
+  - In `hydra`, you can call `setVideoCount(ins = 1, outs = 1)` to specify how many video inlets and outlets you want. See [hydra section](#hydra-creates-a-hydra-video-synthesizer) for more details.
+  - For chaining `glsl` objects, you can dynamically create sampler2D uniforms. See [glsl section](#glsl-creates-a-glsl-fragment-shader) for more details.
 
-Behind the scenes, video chaining constructs a rendering pipeline based on the use of framebuffer objects (FBOs), which allows many objects to run mainly on GPU with minimal transfers needed. The main technology used for the pipeline are Web Workers, WebGL2, Regl and OffscreenCanvas.
+- Try out the presets to get started quickly.
 
-This essentially constructs a shader graph that only streams the lower-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
+  - Pipe presets (e.g. `pipe.hydra`, `pipe.gl`) simply passes the video through without any changes. This is the best starting point for chaining.
+  - Hydra has many presets that perform image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two video inputs, see [hydra section](#hydra-creates-a-hydra-video-synthesizer).
 
-These objects run entirely on the web worker thread and therefore are very high-performance: `hydra`, `glsl`, `swgl`, `canvas` and `img`. Use these objects as much as possible for best performance.
+- Connect the orange inlets of a source object to the orange outlets of a target object.
+
+Try connecting the orange video outlet of `p5` to an orange video inlet of a `pipe.hydra` preset, and then connect the `hydra` object to a `pipe.gl` preset. You should see the output of the `p5` object being passed through `hydra` and `glsl` objects without modification.
+
+For tips on how to optimize performance when using video chaining, see the [Rendering Pipeline](#rendering-pipeline) section.
 
 ## Audio Chaining
 
@@ -255,9 +262,9 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `canvas`: creates a JavaScript canvas
 
-- You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
+- You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
 
-- Note that the HTML5 canvas runs on an `OffscreenCanvas` on the rendering pipeline. This means that you cannot use DOM APIs such as `document` or `window` in the canvas code.
+- You cannot use DOM APIs such as `document` or `window` in the canvas code. This is because the HTML5 canvas runs as an [offscreen canvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on the [rendering pipeline](#rendering-pipeline).
 
 - You can call these special methods in your canvas code:
 
@@ -731,3 +738,14 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 ## Hiding AI features
 
 If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features". This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`.
+
+## Rendering Pipeline
+
+> [!TIP]
+> TL:DR: try to make use of objects that run on the rendering pipeline such as `hydra`, `glsl`, `swgl`, `canvas` and `img` as much as possible.
+
+Behind the scenes, the [video chaining](#video-chaining) feature constructs a _rendering pipeline_ based on the use of [framebuffer objects](https://www.khronos.org/opengl/wiki/Framebuffer_Object) (FBOs), which lets visual objects copy data to one another on a framebuffer level, with no back-and-forth CPU-GPU transfers needed. The pipeline makes use of Web Workers, WebGL2, [Regl](https://github.com/regl-project/regl) and OffscreenCanvas (for `canvas`).
+
+It creates a shader graph that streams the low-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
+
+These objects run entirely on the web worker thread and therefore are very high-performance: . Use these objects as much as possible for best performance.
