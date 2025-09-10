@@ -212,7 +212,28 @@ These objects support video chaining and can be connected to create complex visu
 - If you are new to P5.js, I recommend watching [Patt Vira](https://www.youtube.com/@pattvira)'s YouTube tutorials on YouTube, or on her [website](https://www.pattvira.com). They're fantastic for both beginners and experienced developers.
 - Read the [P5.js documentation](https://p5js.org/reference) to see how P5 works.
 - See the [P5.js tutorials](https://p5js.org/tutorials) and [OpenProcessing](https://www.openprocessing.org) for more inspirations.
-- You can also use [ML5.js](https://ml5js.org) in your P5 sketch to add machine learning capabilities. Call `loadML5()` at the top of your sketch to load the ML5 library.
+- You can also use [ML5.js](https://ml5js.org) and [Matter.js](https://brm.io/matter-js/) in your P5 sketch to do machine learning and 2D physics simulations.
+- Use the `loadLibrary` function to load the libraries asynchronously. For example:
+
+  ```ts
+  let Matter
+  let ml5
+
+  async function setup() {
+    createCanvas(252, 164)
+    pixelDensity(4)
+
+    Matter = await loadLibrary('matter')
+    ml5 = await loadLibrary('ml5')
+  }
+
+  function draw() {
+    clear()
+    fill(255, 255, 100)
+    ellipse(126, 82, 80, 80)
+  }
+  ```
+
 - You can call these special methods in your sketch:
 
   - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.

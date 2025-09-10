@@ -6,15 +6,14 @@ interface P5SketchConfig {
 	code: string;
 	messageContext?: UserFnRunContext;
 
-	/** ML5.js module */
-	ml5?: unknown;
-
 	/** Sets the number of inlets and outlets for the node. */
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
 
-	/** Loads the ML5.js library. The library is 6MB+ */
-	loadML5?: () => void;
+	/** Loads a built-in library. */
+	loadLibrary?: (name: LibraryKey) => void;
 }
+
+type LibraryKey = 'ml5' | 'matter';
 
 export class P5Manager {
 	public p5: Sketch | null = null;
@@ -22,7 +21,7 @@ export class P5Manager {
 	public nodeId: string;
 
 	public shouldSendBitmap = true;
-	public shouldLoadML5 = false;
+	public enabledLibraries: Set<LibraryKey> = new Set();
 
 	private container: HTMLElement | null = null;
 
@@ -42,9 +41,7 @@ export class P5Manager {
 
 		if (!this.container) return;
 
-		const [{ default: P5 }, { default: ml5 }] = await Promise.all([import('p5'), this.loadML5()]);
-
-		config.ml5 = ml5;
+		const { default: P5 } = await import('p5');
 
 		const sketch = (p: Sketch) => {
 			const userCode = this.executeUserCode(p, config, P5);
@@ -153,13 +150,7 @@ export class P5Manager {
 			}
 		}
 
-		// @ts-expect-error -- no-op
 		sketch['p5'] = P5Constructor;
-
-		if (this.shouldLoadML5 && config.ml5) {
-			// @ts-expect-error -- no-op
-			sketch['ml5'] = config.ml5;
-		}
 
 		// Execute user code with 'with' statement for clean access
 		const userCode = new Function(
@@ -177,7 +168,7 @@ export class P5Manager {
 					var noDrag = sketchContext.noDrag;
 					var fft = sketchContext.fft;
 					var setPortCount = sketchContext.setPortCount;
-					var loadML5 = sketchContext.loadML5;
+					var loadLibrary = sketchContext.loadLibrary;
 					var recv = onMessage; // alias for onMessage
 				}
 				
@@ -190,9 +181,10 @@ export class P5Manager {
 
 		return userCode(sketch, {
 			...config.messageContext,
-			loadML5: () => {
-				this.shouldLoadML5 = true;
-				this.loadML5();
+			loadLibrary: (library: LibraryKey) => {
+				this.enabledLibraries.add(library);
+
+				return this.loadLibraryIfEnabled(library);
 			}
 		});
 	}
@@ -216,10 +208,20 @@ export class P5Manager {
 		await this.glSystem.setBitmapSource(this.nodeId, canvas);
 	}
 
-	async loadML5() {
-		if (!this.shouldLoadML5) return { default: null };
+	async loadLibraryIfEnabled(library: LibraryKey) {
+		if (!this.enabledLibraries.has(library)) return { default: null };
 
-		// @ts-expect-error -- load ml5
-		return await import('ml5');
+		if (library === 'ml5') {
+			// @ts-expect-error -- no type for ml5
+			const ml5 = await import('ml5');
+
+			return ml5.default;
+		}
+
+		if (library === 'matter') {
+			const matter = await import('matter-js');
+
+			return matter.default;
+		}
 	}
 }
