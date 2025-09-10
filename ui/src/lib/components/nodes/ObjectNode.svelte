@@ -420,6 +420,20 @@
 		updateNodeInternals(nextId);
 	};
 
+	const parseSliderExpr = (expr: string, name: string, defaultMax: number) => {
+		let [min = 0, max = defaultMax, defaultValue] = expr
+			.replace(name, '')
+			.trim()
+			.split(' ')
+			.map(Number);
+
+		if (defaultValue === undefined) {
+			defaultValue = (min + max) / 2;
+		}
+
+		return [min, max, defaultValue];
+	};
+
 	function tryTransformToVisualNode() {
 		const name = getObjectNameFromExpr(expr);
 		if (!name) return false;
@@ -449,28 +463,26 @@
 				return true;
 			})
 			.with('slider', () => {
-				let [min = 0, max = 100, defaultValue] = expr
-					.replace(name, '')
-					.trim()
-					.split(' ')
-					.map(Number);
-
-				if (defaultValue === undefined) {
-					defaultValue = (min + max) / 2;
-				}
-
+				const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
 				changeNode('slider', { min, max, defaultValue, isFloat: false });
 
 				return true;
 			})
 			.with('fslider', () => {
-				let [min = 0, max = 1, defaultValue] = expr.replace(name, '').trim().split(' ').map(Number);
-
-				if (defaultValue === undefined) {
-					defaultValue = (min + max) / 2;
-				}
-
+				const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
 				changeNode('slider', { min, max, defaultValue, isFloat: true });
+
+				return true;
+			})
+			.with('vslider', () => {
+				const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
+				changeNode('slider', { min, max, defaultValue, isFloat: false, vertical: true });
+
+				return true;
+			})
+			.with('vfslider', () => {
+				const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
+				changeNode('slider', { min, max, defaultValue, isFloat: true, vertical: true });
 
 				return true;
 			})

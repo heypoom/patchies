@@ -137,6 +137,18 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		outlets: []
 	},
 
+	// vertical slider
+	vslider: {
+		inlets: [{ name: 'min' }, { name: 'max' }, { name: 'value' }],
+		outlets: []
+	},
+
+	// vertical float slider
+	vfslider: {
+		inlets: [{ name: 'min' }, { name: 'max' }, { name: 'value' }],
+		outlets: []
+	},
+
 	// alias of 'soundfile~ url'
 	'soundurl~': { inlets: [{ name: 'url' }], outlets: [] },
 

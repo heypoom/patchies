@@ -15,6 +15,7 @@
 			defaultValue?: number;
 			isFloat?: boolean;
 			value?: number;
+			vertical?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -100,6 +101,16 @@
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 	});
+
+	const sliderClass = $derived.by(() => {
+		if (node.data.vertical) {
+			return 'h-28';
+		}
+
+		return [
+			'h-1 w-full cursor-pointer appearance-none rounded-lg [&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500 [&::-moz-range-thumb:hover]:bg-zinc-100 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300 [&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-zinc-300 [&::-webkit-slider-track]:h-1 [&::-webkit-slider-track]:rounded-lg'
+		];
+	});
 </script>
 
 <div class="relative flex gap-x-3">
@@ -146,23 +157,19 @@
 						style="background: linear-gradient(to right, #3b82f6 0%, #3b82f6 {((currentValue -
 							min) /
 							(max - min)) *
-							100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%)"
-						class="nodrag h-1 w-full cursor-pointer appearance-none rounded-lg
-							[&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500
-							[&::-moz-range-thumb:hover]:bg-zinc-100 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3
-							[&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300
-							[&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg
-							[&::-moz-range-track]:border-none
-							[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3
-							[&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full
-							[&::-webkit-slider-thumb]:bg-zinc-300 [&::-webkit-slider-track]:h-1
-							[&::-webkit-slider-track]:rounded-lg"
+							100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%); {node
+							.data.vertical
+							? 'writing-mode: vertical-lr; direction: rtl;'
+							: ''};"
+						class={['nodrag', sliderClass]}
 					/>
 
-					<div class="flex w-full justify-between font-mono text-[10px] text-zinc-500">
-						<span>{isFloat ? min.toFixed(2) : min}</span>
-						<span>{isFloat ? max.toFixed(2) : max}</span>
-					</div>
+					{#if !node.data.vertical}
+						<div class="flex w-full justify-between font-mono text-[10px] text-zinc-500">
+							<span>{isFloat ? min.toFixed(2) : min}</span>
+							<span>{isFloat ? max.toFixed(2) : max}</span>
+						</div>
+					{/if}
 				</div>
 
 				<StandardHandle port="outlet" type="message" total={1} index={0} />
@@ -178,98 +185,112 @@
 				</button>
 			</div>
 
-			<div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-				<div class="space-y-4">
-					<div>
-						<label class="mb-2 block text-xs font-medium text-zinc-300">Mode</label>
-						<div class="flex gap-2">
-							<label class="flex items-center">
-								<input
-									type="radio"
-									name="mode"
-									value="int"
-									checked={!isFloat}
-									onchange={() => updateConfig({ isFloat: false })}
-									class="mr-2 h-3 w-3"
-								/>
-								<span class="text-xs text-zinc-300">Integer</span>
-							</label>
-							<label class="flex items-center">
-								<input
-									type="radio"
-									name="mode"
-									value="float"
-									checked={isFloat}
-									onchange={() => updateConfig({ isFloat: true })}
-									class="mr-2 h-3 w-3"
-								/>
-								<span class="text-xs text-zinc-300">Float</span>
-							</label>
-						</div>
-					</div>
-
-					<div>
-						<label class="mb-2 block text-xs font-medium text-zinc-300">Minimum</label>
-						<input
-							type="number"
-							step={isFloat ? 0.01 : 1}
-							value={min}
-							onchange={(e) => {
-								const newMin = parseFloat((e.target as HTMLInputElement).value);
-								updateConfig({ min: newMin });
-							}}
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-						/>
-					</div>
-
-					<div>
-						<label class="mb-2 block text-xs font-medium text-zinc-300">Maximum</label>
-						<input
-							type="number"
-							step={isFloat ? 0.01 : 1}
-							value={max}
-							onchange={(e) => {
-								const newMax = parseFloat((e.target as HTMLInputElement).value);
-								updateConfig({ max: newMax });
-							}}
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-						/>
-					</div>
-
-					<div>
-						<label class="mb-2 block text-xs font-medium text-zinc-300">Default Value</label>
-						<input
-							type="number"
-							step={isFloat ? 0.01 : 1}
-							value={defaultValue}
-							{min}
-							{max}
-							onchange={(e) => {
-								const newDefault = parseFloat((e.target as HTMLInputElement).value);
-								updateConfig({ defaultValue: newDefault });
-							}}
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-						/>
-					</div>
-
-					<div class="pt-2">
-						<button
-							onclick={() => {
-								updateNodeData(node.id, { ...node.data, value: defaultValue });
-
-								if (sliderElement) {
-									sliderElement.value = defaultValue.toString();
-								}
-
-								messageContext.send(defaultValue);
-							}}
-							class="w-full rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
-						>
-							Reset to Default
-						</button>
-					</div>
-				</div>
-			</div>
+			{@render setting()}
 		</div>
 	{/if}
 </div>
+
+{#snippet setting()}
+	<div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+		<div class="space-y-4">
+			<div>
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Mode</label>
+				<div class="flex gap-2">
+					<label class="flex items-center">
+						<input
+							type="radio"
+							name="mode"
+							value="int"
+							checked={!isFloat}
+							onchange={() => updateConfig({ isFloat: false })}
+							class="mr-2 h-3 w-3"
+						/>
+						<span class="text-xs text-zinc-300">Integer</span>
+					</label>
+					<label class="flex items-center">
+						<input
+							type="radio"
+							name="mode"
+							value="float"
+							checked={isFloat}
+							onchange={() => updateConfig({ isFloat: true })}
+							class="mr-2 h-3 w-3"
+						/>
+						<span class="text-xs text-zinc-300">Float</span>
+					</label>
+				</div>
+			</div>
+
+			<div>
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Minimum</label>
+				<input
+					type="number"
+					step={isFloat ? 0.01 : 1}
+					value={min}
+					onchange={(e) => {
+						const newMin = parseFloat((e.target as HTMLInputElement).value);
+						updateConfig({ min: newMin });
+					}}
+					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+				/>
+			</div>
+
+			<div>
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Maximum</label>
+				<input
+					type="number"
+					step={isFloat ? 0.01 : 1}
+					value={max}
+					onchange={(e) => {
+						const newMax = parseFloat((e.target as HTMLInputElement).value);
+						updateConfig({ max: newMax });
+					}}
+					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+				/>
+			</div>
+
+			<div>
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Default Value</label>
+				<input
+					type="number"
+					step={isFloat ? 0.01 : 1}
+					value={defaultValue}
+					{min}
+					{max}
+					onchange={(e) => {
+						const newDefault = parseFloat((e.target as HTMLInputElement).value);
+						updateConfig({ defaultValue: newDefault });
+					}}
+					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+				/>
+			</div>
+
+			<div class="flex gap-x-2">
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Vertical</label>
+				<input
+					type="checkbox"
+					checked={node.data.vertical}
+					onchange={(e) => updateConfig({ vertical: (e.target as HTMLInputElement).checked })}
+					class="h-4 w-4"
+				/>
+			</div>
+
+			<div class="pt-2">
+				<button
+					onclick={() => {
+						updateNodeData(node.id, { ...node.data, value: defaultValue });
+
+						if (sliderElement) {
+							sliderElement.value = defaultValue.toString();
+						}
+
+						messageContext.send(defaultValue);
+					}}
+					class="w-full rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
+				>
+					Reset to Default
+				</button>
+			</div>
+		</div>
+	</div>
+{/snippet}
