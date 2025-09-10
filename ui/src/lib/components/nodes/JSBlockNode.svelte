@@ -20,6 +20,7 @@
 	}: {
 		id: string;
 		data: {
+			title?: string;
 			code: string;
 			showConsole?: boolean;
 			runOnMount?: boolean;
@@ -183,7 +184,8 @@
 				'fft',
 				'llm',
 				'setPortCount',
-				'setRunOnMount'
+				'setRunOnMount',
+				'setTitle'
 			];
 
 			const functionArgs = [
@@ -195,7 +197,8 @@
 				messageSystemContext.fft,
 				createLLMFunction(),
 				setPortCount,
-				setRunOnMount
+				setRunOnMount,
+				setTitle
 			];
 
 			const userFunction = new Function(
@@ -244,14 +247,25 @@
 			executeCode();
 		}
 	}
+
+	function setTitle(title: string) {
+		updateNodeData(nodeId, { ...data, title });
+	}
+
+	let minContainerWidth = $derived.by(() => {
+		const baseWidth = 70;
+		let inletWidth = 15;
+
+		return baseWidth + Math.max(inletCount, 2) * inletWidth;
+	});
 </script>
 
 <div class="relative flex gap-x-3">
 	<div class="group relative">
 		<div class="flex flex-col gap-2" bind:this={contentContainer}>
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-400">js</div>
+				<div class="z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
+					<div class="font-mono text-xs font-medium text-zinc-400">{data.title ?? 'js'}</div>
 				</div>
 
 				<div>
@@ -349,10 +363,11 @@
 				{:else}
 					<button
 						class={[
-							'flex w-full min-w-[100px] justify-center rounded-md border bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
+							'flex w-full justify-center rounded-md border bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
 							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
 							borderColor
 						]}
+						style={`min-width: ${minContainerWidth}px`}
 						onclick={runOrStop}
 						aria-disabled={isRunning}
 						aria-label="Run code"

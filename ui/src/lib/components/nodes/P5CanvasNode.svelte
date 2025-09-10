@@ -75,7 +75,10 @@
 						noDrag: () => {
 							enableDrag = false;
 						},
-						setPortCount
+						setPortCount,
+						setTitle: (title: string) => {
+							updateNodeData(nodeId, { ...data, title });
+						}
 					}
 				});
 

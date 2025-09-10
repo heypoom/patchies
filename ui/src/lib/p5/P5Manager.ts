@@ -168,6 +168,7 @@ export class P5Manager {
 					var noDrag = sketchContext.noDrag;
 					var fft = sketchContext.fft;
 					var setPortCount = sketchContext.setPortCount;
+					var setTitle = sketchContext.setTitle;
 					var loadLibrary = sketchContext.loadLibrary;
 					var recv = onMessage; // alias for onMessage
 				}

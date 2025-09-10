@@ -31,6 +31,9 @@ export interface UserFnRunContext {
 
 	/** Sets the number of inlets and outlets for the node. */
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
+
+	/** Sets the title of the node. */
+	setTitle?: (title: string) => void;
 }
 
 export class MessageContext {
