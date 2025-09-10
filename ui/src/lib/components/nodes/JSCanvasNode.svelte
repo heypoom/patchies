@@ -13,7 +13,8 @@
 
 	let {
 		id: nodeId,
-		data
+		data,
+		selected
 	}: {
 		id: string;
 		data: {
@@ -21,6 +22,7 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
+			selected?: boolean;
 		};
 	} = $props();
 
@@ -140,6 +142,7 @@
 	width={outputWidth}
 	height={outputHeight}
 	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+	{selected}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
