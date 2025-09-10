@@ -313,7 +313,7 @@
 	});
 
 	const handleCommonClass = $derived.by(() => {
-		return `z-1 ${selected ? '' : 'opacity-40'}`;
+		return `z-1 ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});
 </script>
 
@@ -434,7 +434,7 @@
 					title="Video output"
 					total={2}
 					index={0}
-					class={selected ? '' : 'opacity-40'}
+					class={handleCommonClass}
 				/>
 
 				<StandardHandle
@@ -443,7 +443,7 @@
 					title="Video output"
 					total={2}
 					index={1}
-					class={selected ? '' : 'opacity-40'}
+					class={handleCommonClass}
 				/>
 			</div>
 		</div>
