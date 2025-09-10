@@ -26,7 +26,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 
 ## ...by patching them together ✨
 
-Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a complex web of visual objects, Patchies encourages you to write small and compact programs and patch 'em together.
+Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a huge web of small objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
 If you haven't used a patching environment before, patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
 
@@ -149,9 +149,11 @@ See the [Message Passing with GLSL](#message-passing-with-glsl) section for how 
 
 You can chain visual objects together to create video effects and compositions, by using the output of a visual object as an input to another.
 
-This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
-
 <img src="./docs/images/patchies-video-chain.png" alt="Patchies.app video chain example" width="700">
+
+The above example creates a `hydra` object and a `glsl` object that produces a pattern, and connects them to a `hydra` object that subtracts the two visuals together using `src(s0).sub(s1).out(o0)`.
+
+This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
 
 To use video chaining:
 
@@ -171,7 +173,7 @@ To use video chaining:
 
 - Connect the orange inlets of a source object to the orange outlets of a target object.
 
-Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `pipe.hydra` preset, and then connect the `hydra` object to a `pipe.gl` preset. You should see the output of the `p5` object being passed through `hydra` and `glsl` objects without modification.
+  - Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `pipe.hydra` preset, and then connect the `hydra` object to a `pipe.gl` preset. You should see the output of the `p5` object being passed through `hydra` and `glsl` objects without modification.
 
 - Getting lag and slow patches? See the [Rendering Pipeline](#rendering-pipeline) section on how to avoid lag.
 
@@ -468,7 +470,10 @@ These objects run on _audio rate_, which means they process audio signals in rea
 - `sig~`: Generate constant audio signals
 - `waveshaper~`: Distortion and waveshaping effects
 - `convolver~`: Convolution reverb using impulse responses
-- `fft~`: FFT analysis for frequency domain processing
+  - To input the impulse response, connect a `soundfile~` object to the `convolver~` object's `message` inlet. Then, upload a sound file or send a url as an input message.
+  - Then, send a `{type: "read"}` message to the `soundfile~` object to read the impulse response into the `convolver~` object.
+  - The sound file must be a valid [impulse response](https://en.wikipedia.org/wiki/Impulse_response) file. It is a usually a short audio file with a single impulse followed by reverb tail. You can clap your hands in a room and record the sound to create your own impulse response.
+- `fft~`: FFT analysis for frequency domain processing. See the [audio analysis](#audio-analysis) section for how to read the FFT data.
 
 **Sound Input and Output:**
 
@@ -717,8 +722,10 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 - `fft({type: 'freq'})` gives you frequency spectrum analysis.
 - Try out the `fft.hydra` preset for Hydra.
 - Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js.
-  - If you plan to have many instances of P5 canvases that will be used as part of the [video chaining](#video-chaining) pipeline, using the `canvas` object (HTML5 canvas) instead of `p5` will improve performance.
 - Try out the `fft.canvas` preset for HTML5 canvas.
+
+  - Because the canvas lives on the [rendering pipeline](#rendering-pipeline), it has a lot more delay than `p5` in retrieving the audio analysis data. So, the audio reactivity will not be as tight as `p5`.
+  - On the upside, `canvas` will not slow down your patch if you chain it with other visual objects like `hydra` or `glsl`, thanks to running on the rendering pipeline.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
 
