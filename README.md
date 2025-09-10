@@ -32,11 +32,21 @@ If you haven't used a patching environment before, patching is a _visual_ way to
 
 This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). They're heavily inspired by tools like Max/MSP, Pure Data, TouchDesigner and VVVV.
 
-Here's a visual example:
+### What does a patch look like?
 
-<img src="./docs/images/patchies-fft.png" alt="Patchies.app FFT example" width="700">
+Here's a simple Patchies patch that uses [Message Passing](#message-passing) and [Video Chaining](#video-chaining) together:
 
-This patch takes in audio from an audio file, analyzes the frequency spectrum using the `fft~` object, and sends the frequency data to various visual objects to create audio-reactive visuals and meters. You can create your own patches by combining different objects in different ways 😝
+<img src="./docs/images/patchies-random-walk.png" alt="Patchies.app random walk example" width="700">
+
+It contains a [JS](#js-a-javascript-code-block) random walker (using code from [The Nature of Code](https://natureofcode.com/random/#the-random-walker-class)) which handles `add` and `clear` messages. On each frame, it ticks the walker then sends the `[x, y]` position to a [P5](#p5-creates-a-p5js-sketch) object which draws points on the canvas:
+
+<img src="./docs/images/patchies-random-walk-inbetween.png" alt="Patchies.app random walk in between image" width="700">
+
+`p5` then pipes the image to a chain of [Hydra](#hydra-creates-a-hydra-video-synthesizer) nodes which masks and diffs the visuals:
+
+<img src="./docs/images/patchies-random-walk-hydra.png" alt="Patchies.app random walk hydra chain" width="700">
+
+Try out [the patch here](https://patchies.app/?id=9xeuyyxvoukacrk) to see how it works.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
