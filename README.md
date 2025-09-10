@@ -26,9 +26,11 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 
 ## ...by patching them together ✨
 
-Patchies lets you _patch_ multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It is very heavily inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and many others.
+Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a complex web of visual objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
-If you haven't used a patching environment before, patching is a visual way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You can connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
+If you haven't used a patching environment before, patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
+
+This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). They're heavily inspired by tools like Max/MSP, Pure Data, TouchDesigner and VVVV.
 
 Here's a visual example:
 
@@ -145,7 +147,9 @@ See the [Message Passing with GLSL](#message-passing-with-glsl) section for how 
 
 ## Video Chaining
 
-You can chain visual objects together to create video effects and compositions, by using the output of a visual object as an input to another. This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
+You can chain visual objects together to create video effects and compositions, by using the output of a visual object as an input to another.
+
+This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
 
 <img src="./docs/images/patchies-video-chain.png" alt="Patchies.app video chain example" width="700">
 
@@ -173,7 +177,9 @@ Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `
 
 ## Audio Chaining
 
-Similar to video chaining, you can chain many audio objects together to create audio effects and soundscapes. If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), they work almost the same way.
+Similar to video chaining, you can chain many audio objects together to create audio effects and soundscapes.
+
+If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), they work similarly.
 
 - You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
@@ -481,7 +487,6 @@ These objects run on _audio rate_, which means they process audio signals in rea
 - This is useful for creating DSPs (digital signal processors) to generate audio effects.
 - It requires an audio source to work. You can use `sig~` if you just need a constant signal.
 - It accepts many DSP variables:
-  - `$1` to `$9`: control inlets
   - `s`: current sample value, a float between -1 and 1
   - `i`: current sample index in buffer, an integer starting from 0
   - `t`: current time in seconds, a float starting from 0
@@ -490,12 +495,16 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - `samples`: an array of samples from the current channel
   - `input`: first input audio signal (for all connected channels), a float between -1 and 1
   - `inputs`: every connected input audio signal
+  - `$1` to `$9`: dynamic control inlets
 - Example:
   - `sin(t * 440 * PI * 2)` creates a sine wave oscillator at 440Hz
   - `random()` creates white noise
   - `s` outputs the input audio signal as-is
   - `s * $1` applies gain control to the input audio signal
   - `s ^ 2` squares the input audio signal for distortion effect
+- You can create variables from `$1` to `$9` to create dynamic control inlets.
+  - For example, `$1 * 440` creates one message inlet that controls the frequency of a sine wave oscillator.
+  - You can then attach a `slider 1 880` object to control the frequency.
 - **WARNING**: Please use the `compressor~` object with appropriate limiter-esque setting after `expr~` to avoid loud audio spikes that can and will damage your hearing and speakers. You have been warned!
 
 ### `dsp~`: dynamic JavaScript DSP processor

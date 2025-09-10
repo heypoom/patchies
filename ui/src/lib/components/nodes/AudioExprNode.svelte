@@ -110,6 +110,7 @@
 			<StandardHandle
 				port="inlet"
 				type="message"
+				id={index}
 				title={`$${index + 1}`}
 				total={totalInlets}
 				index={index + 1}
