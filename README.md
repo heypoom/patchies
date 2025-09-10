@@ -179,7 +179,11 @@ Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `
 
 Similar to video chaining, you can chain many audio objects together to create audio effects and soundscapes.
 
-If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), they work similarly.
+<img src="./docs/images/patchies-audio-chain.png" alt="Patchies.app audio chain example" width="500">
+
+The above example sets up a [FM synthesizer audio chain](https://patchies.app/?id=l5ydkp2q6y1s9nv) that uses a combination of `osc~` (sine oscillator), `expr` (math expression), `gain~` (gain control), and `fft~` (frequency analysis) objects to create a simple synth with frequency modulation.
+
+If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
 - You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 

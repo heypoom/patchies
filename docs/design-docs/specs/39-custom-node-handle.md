@@ -75,30 +75,6 @@ And this will be `message-in`:
 />
 ```
 
-If the `type` is not provided, we use the prefix `inlet-` for inlets, and `outlet-` for outlets. This will be `inlet-0`.
-
-```svelte
-<StandardHandle
-  port="inlet"
-  id={0}
-  total={1}
-  index={2}
-  class=""
-/>
-```
-
-This will be `outlet-1`:
-
-```svelte
-<StandardHandle
-  port="outlet"
-  id={1}
-  total={1}
-  index={2}
-  class=""
-/>
-```
-
 ## Calculating Position
 
 `total` and `index` are passed as input to getPortPosition to calculate the left styles. Under the hood, it should apply the following style. Make sure to set `!absolute z-1`.
