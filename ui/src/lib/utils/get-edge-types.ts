@@ -28,6 +28,18 @@ const isAudioObject = (node: MinimalNode): boolean => {
 	return AUDIO_NODES.includes(node.type);
 };
 
+export const handleToPortIndex = (handle: string | null): number | null => {
+	if (!handle) return null;
+
+	const id = handle
+		.replace('message-in-', '')
+		.replace('audio-in-', '')
+		.replace('message-out-', '')
+		.replace('audio-out-', '');
+
+	return parseInt(id, 10);
+};
+
 const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolean): boolean => {
 	if (!handle) return false;
 
@@ -37,13 +49,21 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 		const data = node.data as { name: string };
 
 		if (isInlet) {
-			const inletIndex = parseInt(handle.replace('inlet-', ''), 10);
+			const inletIndex = handleToPortIndex(handle);
+			if (inletIndex === null || isNaN(inletIndex)) return false;
 
-			return objectDefinitions[data.name].inlets?.[inletIndex]?.type === 'signal';
+			const inlet = objectDefinitions[data.name].inlets?.[inletIndex];
+			if (!inlet) return false;
+
+			return inlet.type === 'signal' || (inlet.isAudioParam ?? false);
 		} else {
-			const outletIndex = parseInt(handle.replace('outlet-', ''), 10);
+			const outletIndex = handleToPortIndex(handle);
+			if (outletIndex === null || isNaN(outletIndex)) return false;
 
-			return objectDefinitions[data.name].outlets?.[outletIndex]?.type === 'signal';
+			const outlet = objectDefinitions[data.name].outlets?.[outletIndex];
+			if (!outlet) return false;
+
+			return outlet.type === 'signal';
 		}
 	}
 

@@ -22,7 +22,7 @@
 		return match({ type, id })
 			.with({ type: P.string, id: P.not(P.nullish) }, ({ type, id }) => `${type}-${portDir}-${id}`)
 			.with({ type: P.string, id: P.nullish }, ({ type }) => `${type}-${portDir}`)
-			.with({ type: P.nullish, id: P.not(P.nullish) }, ({ id }) => `${port}-${id}`)
+			.with({ type: P.nullish, id: P.not(P.nullish) }, ({ id }) => `${portDir}-${id}`)
 			.otherwise(() => port);
 	});
 

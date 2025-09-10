@@ -12,6 +12,7 @@ import { ToneManager } from './ToneManager';
 import workletUrl from './expression-processor.ts?worker&url';
 import dspWorkletUrl from './dsp-processor.ts?worker&url';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
+import { handleToPortIndex } from '$lib/utils/get-edge-types';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -155,7 +156,8 @@ export class AudioSystem {
 		const objectDef = objectDefinitions[audioNode.type];
 		if (!objectDef) return null;
 
-		const inletIndex = parseInt(targetHandle.replace('inlet-', ''), 10);
+		const inletIndex = handleToPortIndex(targetHandle);
+		if (inletIndex === null || isNaN(inletIndex)) return null;
 
 		return objectDef.inlets[inletIndex] ?? null;
 	}

@@ -218,7 +218,6 @@ import StandardHandle from '$lib/components/StandardHandle.svelte';
 - StandardHandle auto-generates IDs from `port + type + id`
 - `port="inlet"` + `type="video"` + `id="0"` → `"video-in-0"`
 - `port="outlet"` + `type="audio"` → `"audio-out"` (no id needed)
-- `port="inlet"` + `id="1"` → `"inlet-1"` (no type)
 - Only include `id` prop when disambiguation needed (numbered ports, complex cases)
 
 **Position Handling**:

@@ -4,11 +4,13 @@
 
 > The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
-Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript and GLSL. It's made for live creative coding -- for building visualizations, soundscapes and simulations of all kinds.
+Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript and GLSL. It's made for creative coding; patch objects and code snippets together to make visualizations, simulations, soundscapes and artistic explorations 🎨
 
-Try it out at [patchies.app](https://patchies.app) - it's open source 😎
+Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
-Patchies lets you use many audio-visual tools that you know and love together, all in one patch. For example:
+## Use tools and libraries you love
+
+Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
 - [P5.js](https://p5js.org), library for creative coding and making art.
 - [Hydra](https://hydra.ojack.xyz), live-coding video synthesizer.
@@ -22,19 +24,21 @@ Patchies lets you use many audio-visual tools that you know and love together, a
 - [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
 - ...as well as write JavaScript code directly.
 
-Patchies lets you "patch" multiple objects together using [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). It is very heavily inspired by tools such as Max/MSP, Pure Data, TouchDesigner, VVVV, and many others.
+## ...by patching them together ✨
 
-> "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
+Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a huge web of small objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
-## Wait, what is patching? What's a patcher?
+If you haven't used a patching environment before, patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
 
-If you haven't used a patching environment before, patching is a visual way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You can connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
+This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). They're heavily inspired by tools like Max/MSP, Pure Data, TouchDesigner and VVVV.
 
 Here's a visual example:
 
 <img src="./docs/images/patchies-fft.png" alt="Patchies.app FFT example" width="700">
 
 This patch takes in audio from an audio file, analyzes the frequency spectrum using the `fft~` object, and sends the frequency data to various visual objects to create audio-reactive visuals and meters. You can create your own patches by combining different objects in different ways 😝
+
+> "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
 ## Getting Started
 
@@ -97,7 +101,13 @@ You can use the Shortcuts button on the bottom right to see a list of shortcuts.
 
 ## Message Passing
 
-Each object can send message to other objects, and receive messages from other objects. Here are some examples to get you started:
+Each object can send message to other objects, and receive messages from other objects.
+
+<img src="./docs/images/patchies-message-pass.png" alt="Patchies.app message passing example" width="700">
+
+In this example, two `slider` objects sends out their value to a `expr $1 + $2` object which adds the number together. The result is sent as a message to the `p5` object which displays it.
+
+Here are some examples to get you started:
 
 - Create two `button` objects, and connect the outlet of one to the inlet of another.
   - When you click on the first button, it will send a `{type: 'bang'}` message to the second button, which will flash.
@@ -137,33 +147,52 @@ See the [Message Passing with GLSL](#message-passing-with-glsl) section for how 
 
 ## Video Chaining
 
-You can chain video objects together to create complex video effects, by using the output of a video object as an input to another. For example: `P5 -> Hydra -> GLSL -> output`. This is similar to shader graphs in programs like TouchDesigner.
+You can chain visual objects together to create video effects and compositions, by using the output of a visual object as an input to another.
 
 <img src="./docs/images/patchies-video-chain.png" alt="Patchies.app video chain example" width="700">
 
-To use video chaining, connect the orange inlets and outlets on the patch. For example, connect the orange video outlet of a `p5` to an orange video inlet of a `hydra` object, and then connect the `hydra` object to a `glsl`.
+The above example creates a `hydra` object and a `glsl` object that produces a pattern, and connects them to a `hydra` object that subtracts the two visuals together using `src(s0).sub(s1).out(o0)`.
 
-See the `glsl` object section for how to create uniforms to accept video inputs.
+This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
 
-### Rendering Pipeline
+To use video chaining:
 
-Behind the scenes, video chaining constructs a rendering pipeline based on the use of framebuffer objects (FBOs), which allows many objects to run mainly on GPU with minimal transfers needed. The main technology used for the pipeline are Web Workers, WebGL2, Regl and OffscreenCanvas.
+- Try out the presets to get started quickly.
 
-This essentially constructs a shader graph that only streams the lower-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
+  - Pipe presets (e.g. `pipe.hydra`, `pipe.gl`) simply passes the visual through without any changes. This is the best starting point for chaining.
+  - Hydra has many presets that perform image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two visual inputs, see [hydra section](#hydra-creates-a-hydra-video-synthesizer).
+  - Check out the docs of [each visual objects](#list-of-objects) for more fun presets you can use.
 
-These objects run entirely on the web worker thread and therefore are very high-performance: `hydra`, `glsl`, `swgl`, `canvas` and `img`. Use these objects as much as possible for best performance.
+- The visual object should have at least one visual inlets and/or outlets, i.e. orange circles on the top and bottom.
+
+  - Inlets provides visual into the object, while outlets outputs visual from the object.
+  - In `hydra`, you can call `setVideoCount(ins = 1, outs = 1)` to specify how many visual inlets and outlets you want. See [hydra section](#hydra-creates-a-hydra-video-synthesizer) for more details.
+  - For chaining `glsl` objects, you can dynamically create sampler2D uniforms. See [glsl section](#glsl-creates-a-glsl-fragment-shader) for more details.
+
+- The visual object should have code that takes in a visual source, does something, and outputs visual. See the above presets for examples.
+
+- Connect the orange inlets of a source object to the orange outlets of a target object.
+
+  - Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `pipe.hydra` preset, and then connect the `hydra` object to a `pipe.gl` preset. You should see the output of the `p5` object being passed through `hydra` and `glsl` objects without modification.
+
+- Getting lag and slow patches? See the [Rendering Pipeline](#rendering-pipeline) section on how to avoid lag.
 
 ## Audio Chaining
 
-Similar to video chaining, you can chain many audio objects together to create complex audio effects.
+Similar to video chaining, you can chain many audio objects together to create audio effects and soundscapes.
 
-- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video` as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+<img src="./docs/images/patchies-audio-chain.png" alt="Patchies.app audio chain example" width="500">
+
+The above example sets up a [FM synthesizer audio chain](https://patchies.app/?id=l5ydkp2q6y1s9nv) that uses a combination of `osc~` (sine oscillator), `expr` (math expression), `gain~` (gain control), and `fft~` (frequency analysis) objects to create a simple synth with frequency modulation.
+
+If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
+
+- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
+  - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
 
 - You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`.
-
-  - These objects correspond to Web Audio API nodes. See the [Web Audio API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for more details.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
@@ -198,7 +227,7 @@ These objects support video chaining and can be connected to create complex visu
   - Use the "shuffle" button on the editor to get code samples you can use. You can copy it into Patchies. Check the license terms first.
 - You can call these special methods in your Hydra code:
   - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
-  - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two video inlets.
+  - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two visual inlets.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
@@ -210,10 +239,10 @@ These objects support video chaining and can be connected to create complex visu
 ### `glsl`: creates a GLSL fragment shader
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting any video objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four video inlets.
+- You can use video chaining by connecting any visual objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four visual inlets.
 - You can create any number of GLSL uniform inlets by defining them in your GLSL code.
   - For example, if you define `uniform float iMix;`, it will create a float inlet for you to send values to.
-  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a video inlet for you to connect video sources to.
+  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a visual inlet for you to connect video sources to.
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
@@ -243,13 +272,27 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `swgl`: creates a SwissGL shader
 
-- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code.
+- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code. Here is how to make a simple animated mesh:
+
+  ```js
+  function render({t}) {
+    glsl({
+      t,
+      Mesh: [10, 10],
+      VP: `XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1`,
+      FP: `UV,0.5,1`,
+    })
+  }
+  ```
+
+- See the [SwissGL examples](https://google.github.io/swissgl) for some inspirations on how to use SwissGL.
+  - Right now, we haven't hooked the mouse and camera to SwissGL yet, so a lot of what you see in the SwissGL demo won't work in Patchies yet. PRs are welcome!
 
 ### `canvas`: creates a JavaScript canvas
 
-- You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `canvas` in the JavaScript code, so you can use methods like `canvas.fill()` to draw on the canvas.
+- You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
 
-- Note that the HTML5 canvas runs on an `OffscreenCanvas` on the rendering pipeline. This means that you cannot use DOM APIs such as `document` or `window` in the canvas code.
+- You cannot use DOM APIs such as `document` or `window` in the canvas code. This is because the HTML5 canvas runs as an [offscreen canvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on the [rendering pipeline](#rendering-pipeline).
 
 - You can call these special methods in your canvas code:
 
@@ -259,7 +302,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
 - [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
-- You can use it as video source and connect it to other video objects (e.g. `hydra` and `glsl`) to derive more visual effects.
+- You can use it as video source and connect it to other visual objects (e.g. `hydra` and `glsl`) to derive more visual effects.
+- It can be very compute intensive. Use it sparingly otherwise your patch will lag. It also runs on the main thread, see [rendering pipeline](#rendering-pipeline) for more details.
 
 ### `img`: display images
 
@@ -397,7 +441,21 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Hover over the inlet name to see a tooltip with description of what the inlet's type are, and what values it does accept.
   - Try to hover over a `gain~` object's gain value (e.g. `1.0`) to see the tooltip.
 
-#### Available textual objects
+#### Control objects
+
+These objects run on _control rate_, which means they process messages (control signals), but not audio signals.
+
+- `mtof`: Convert MIDI note numbers to frequencies
+- `loadbang`: Send bang on patch load
+- `metro`: Metronome for regular timing
+- `delay`: Message delay (not audio)
+- `adsr`: ADSR envelope generator
+
+Most of these objects are easy to re-implement yourself with the `js` object as they simply emit messages, but they are provided for your convenience!
+
+#### Audio objects
+
+These objects run on _audio rate_, which means they process audio signals in real-time. They are represented with a `~` suffix in their names.
 
 **Audio Processing:**
 
@@ -412,7 +470,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `sig~`: Generate constant audio signals
 - `waveshaper~`: Distortion and waveshaping effects
 - `convolver~`: Convolution reverb using impulse responses
-- `fft~`: FFT analysis for frequency domain processing
+  - To input the impulse response, connect a `soundfile~` object to the `convolver~` object's `message` inlet. Then, upload a sound file or send a url as an input message.
+  - Then, send a `{type: "read"}` message to the `soundfile~` object to read the impulse response into the `convolver~` object.
+  - The sound file must be a valid [impulse response](https://en.wikipedia.org/wiki/Impulse_response) file. It is a usually a short audio file with a single impulse followed by reverb tail. You can clap your hands in a room and record the sound to create your own impulse response.
+- `fft~`: FFT analysis for frequency domain processing. See the [audio analysis](#audio-analysis) section for how to read the FFT data.
 
 **Sound Input and Output:**
 
@@ -423,13 +484,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers
 
-**Control & Utility:**
+#### Notes on audio objects
 
-- `mtof`: Convert MIDI note numbers to frequencies
-- `loadbang`: Send bang on patch load
-- `metro`: Metronome for regular timing
-- `delay`: Message delay (not audio)
-- `adsr`: ADSR envelope generator
+- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~` or `tone~` objects. In fact, the default `dsp~` and `tone~` object is a simple sine wave oscillator that works similar to `osc~`.
+- Most of the audio objects correspond to Web Audio API nodes. See the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) documentation on how they work under the hood.
 
 ### `expr~`: audio-rate mathematical expression evaluator
 
@@ -438,19 +496,24 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - This is useful for creating DSPs (digital signal processors) to generate audio effects.
 - It requires an audio source to work. You can use `sig~` if you just need a constant signal.
 - It accepts many DSP variables:
-  - `$1` to `$9`: control inlets
   - `s`: current sample value, a float between -1 and 1
   - `i`: current sample index in buffer, an integer starting from 0
+  - `t`: current time in seconds, a float starting from 0
   - `channel`: current channel index, usually 0 or 1 for stereo
   - `bufferSize`: the size of the audio buffer, usually 128
   - `samples`: an array of samples from the current channel
   - `input`: first input audio signal (for all connected channels), a float between -1 and 1
   - `inputs`: every connected input audio signal
+  - `$1` to `$9`: dynamic control inlets
 - Example:
+  - `sin(t * 440 * PI * 2)` creates a sine wave oscillator at 440Hz
   - `random()` creates white noise
   - `s` outputs the input audio signal as-is
   - `s * $1` applies gain control to the input audio signal
   - `s ^ 2` squares the input audio signal for distortion effect
+- You can create variables from `$1` to `$9` to create dynamic control inlets.
+  - For example, `$1 * 440` creates one message inlet that controls the frequency of a sine wave oscillator.
+  - You can then attach a `slider 1 880` object to control the frequency.
 - **WARNING**: Please use the `compressor~` object with appropriate limiter-esque setting after `expr~` to avoid loud audio spikes that can and will damage your hearing and speakers. You have been warned!
 
 ### `dsp~`: dynamic JavaScript DSP processor
@@ -550,8 +613,11 @@ The Tone.js context gives you these variables:
 
 Try out these presets:
 
+- `poly-synth.tone`: Polyphonic synthesizer that plays chord sequences
 - `lowpass.tone` - low pass filters
 - `pipe.tone` - directly pipe input to output
+
+Code example:
 
 ```js
 // Process incoming audio through a filter
@@ -569,34 +635,6 @@ return {
   cleanup: () => filter.dispose(),
 }
 ```
-
-Key features of `tone~`:
-
-- **High-level synthesis**: Use `Tone.Oscillator`, `Tone.Filter`, `Tone.Gain`, and other Tone.js classes
-- **Audio input processing**: Use `inputNode` to process incoming audio from other nodes
-- **Audio output**: Always connect your Tone.js objects to `outputNode` instead of `.toDestination()`
-
-#### Available Variables
-
-- `inputNode`: GainNode for receiving audio input from other nodes
-- `outputNode`: GainNode for sending audio output to connected nodes
-- `recv(callback)`: Handle incoming messages from message inlets
-- `send(message, options)`: Send messages to other connected nodes
-- `setPortCount(count)`: Create additional message inlets
-
-#### Built-in Presets
-
-- `poly-synth.tone`: Polyphonic synthesizer that plays chord sequences
-- `pipe.tone`: Simple audio passthrough that connects input directly to output
-- `lowpass.tone`: Low-pass filter with controllable cutoff frequency (5000Hz default)
-
-**Important notes:**
-
-- Use `setPortCount(count)` to create additional message inlets
-- Always connect to `outputNode` instead of calling `.toDestination()`
-- Use `inputNode` to process incoming audio from other audio nodes
-- The Tone.js context is automatically configured with AudioSystem
-- Remember to dispose all Tone.js objects in the cleanup function
 
 ### MIDI & Network Objects
 
@@ -682,8 +720,12 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 
 - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
 - `fft({type: 'freq'})` gives you frequency spectrum analysis.
-- Try out the `fft.hydra` preset for Hydra examples.
-- Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js examples.
+- Try out the `fft.hydra` preset for Hydra.
+- Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js.
+- Try out the `fft.canvas` preset for HTML5 canvas.
+
+  - Because the canvas lives on the [rendering pipeline](#rendering-pipeline), it has a lot more delay than `p5` in retrieving the audio analysis data. So, the audio reactivity will not be as tight as `p5`.
+  - On the upside, `canvas` will not slow down your patch if you chain it with other visual objects like `hydra` or `glsl`, thanks to running on the rendering pipeline.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
 
@@ -748,3 +790,16 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 ## Hiding AI features
 
 If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features". This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`.
+
+## Rendering Pipeline
+
+> [!TIP]
+> Use objects that run on the rendering pipeline e.g. `hydra`, `glsl`, `swgl`, `canvas` and `img` to reduce lag.
+
+Behind the scenes, the [video chaining](#video-chaining) feature constructs a _rendering pipeline_ based on the use of [framebuffer objects](https://www.khronos.org/opengl/wiki/Framebuffer_Object) (FBOs), which lets visual objects copy data to one another on a framebuffer level, with no back-and-forth CPU-GPU transfers needed. The pipeline makes use of Web Workers, WebGL2, [Regl](https://github.com/regl-project/regl) and OffscreenCanvas (for `canvas`).
+
+It creates a shader graph that streams the low-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
+
+Objects such as `hydra`, `glsl`, `swgl`, `canvas` and `img` runs entirely on the web worker thread and therefore are very high-performance.
+
+In contrast, objects such as `p5` and `bchrn` run on the main thread, and at each frame we need to create an image bitmap on the main thread, then transfer it to the web worker thread for rendering. This is much slower than using FBOs and can cause lag if you have many `p5` or `bchrn` objects in your patch.
