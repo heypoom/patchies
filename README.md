@@ -550,10 +550,16 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - For example, `$1 * 440` creates one message inlet that controls the frequency of a sine wave oscillator.
   - You can then attach a `slider 1 880` object to control the frequency.
 - **WARNING**: Please use the `compressor~` object with appropriate limiter-esque setting after `expr~` to avoid loud audio spikes that can and will damage your hearing and speakers. You have been warned!
+- Here are some patches you can play with!
+  - [kicks](https://patchies.app/?id=jf7n1ku67auc5xg) by [@dtinth](https://dt.in.th)
 
 ### `dsp~`: dynamic JavaScript DSP processor
 
 This is similar to `expr~`, but it takes in a single `process` JavaScript function that processes the audio. It essentially wraps an `AudioWorkletProcessor`. The worklet is always kept alive until the node is deleted.
+
+Try out some patches that uses `dsp~` to get an idea of its power:
+
+- [INFINITELY DESCENDING CHORD PROGRESSION (v1.2)](https://patchies.app/?id=05ycs3l2y2cinrx) by [@dtinth](https://dt.in.th). [code explanation](https://notes.dt.in.th/InfinitelyDescendingChord).
 
 Here's how to make white noise:
 
