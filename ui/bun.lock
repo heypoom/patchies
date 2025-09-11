@@ -13,6 +13,7 @@
         "@codemirror/view": "^6.38.1",
         "@google/genai": "^1.11.0",
         "@iconify/svelte": "^5.0.0",
+        "@replit/codemirror-vim": "^6.3.0",
         "@strudel/codemirror": "^1.2.2",
         "@strudel/core": "^1.2.2",
         "@strudel/draw": "^1.2.2",

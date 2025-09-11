@@ -55,6 +55,21 @@
 
 	// Base commands for stage 1
 	const commands = [
+		{
+			id: 'share-patch',
+			name: 'Share Patch',
+			description: 'Get a shareable link for your patch.'
+		},
+		{
+			id: 'new-patch',
+			name: 'New Patch (!!)',
+			description: 'Remove all nodes and edges from the canvas. All unsaved changes will be lost!'
+		},
+		{
+			id: 'enter-fullscreen',
+			name: 'Enter fullscreen',
+			description: 'Enter fullscreen mode in the main window.'
+		},
 		{ id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
 		{ id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
 		{ id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
@@ -92,19 +107,9 @@
 			description: 'Open a secondary output screen for live performances.'
 		},
 		{
-			id: 'enter-fullscreen',
-			name: 'Enter fullscreen',
-			description: 'Enter fullscreen mode in the main window.'
-		},
-		{
-			id: 'share-patch',
-			name: 'Share Patch',
-			description: 'Get a shareable link for your patch.'
-		},
-		{
-			id: 'new-patch',
-			name: 'New Patch (!!)',
-			description: 'Remove all nodes and edges from the canvas. All unsaved changes will be lost!'
+			id: 'toggle-vim-mode',
+			name: 'Toggle Vim Mode',
+			description: 'Enable or disable Vim keybindings in code editors'
 		}
 	];
 
@@ -290,6 +295,13 @@
 					localStorage.removeItem('patchies-patch-autosave');
 					isBackgroundOutputCanvasEnabled.set(false);
 				}
+			})
+			.with('toggle-vim-mode', () => {
+				const current = localStorage.getItem('editor.vim') === 'true';
+				localStorage.setItem('editor.vim', String(!current));
+
+				onCancel();
+				window.location.reload();
 			})
 			.otherwise(() => {
 				console.warn(`Unknown command: ${commandId}`);

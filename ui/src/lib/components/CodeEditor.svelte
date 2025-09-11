@@ -9,6 +9,8 @@
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 	import { LanguageSupport } from '@codemirror/language';
+	import { vim } from '@replit/codemirror-vim';
+	import { useVimInEditor } from '../../stores/editor.store';
 
 	let languageComp = new Compartment();
 
@@ -119,6 +121,10 @@
 				}),
 				...extraExtensions
 			];
+
+			if ($useVimInEditor) {
+				extensions.push(vim());
+			}
 
 			// Add placeholder if provided
 			if (placeholder) {
