@@ -433,7 +433,9 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Outputs numeric values that can control other objects.
 - Hit `Enter` and type in these short commands to create sliders with specific ranges:
   - `slider <min> <max>`: integer slider control. example: `slider 0 100`
-  - `fslider <min> <max>`: floating-point slider control. example: `fslider 0.0 1.0`
+  - `fslider <min> <max>`: floating-point slider control. example: `fslider 0.0 1.0`. `fslider` defaults to `-1.0` to `1.0` range if no arguments are given.
+  - `vslider <min> <max>`: vertical integer slider control. example: `vslider -50 50`
+  - `vfslider <min> <max>`: vertical floating-point slider control. example: `vfslider -1.0 1.0`. `vfslider` defaults to `-1.0` to `1.0` range if no arguments are given.
 - Messages:
   - `{type: 'bang'}`: outputs the current slider value
   - `number`: sets the slider to the given number within the range and outputs the value
