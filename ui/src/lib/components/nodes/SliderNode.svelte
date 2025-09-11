@@ -120,7 +120,10 @@
 				<div></div>
 
 				<button
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class={[
+						'z-4 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0',
+						node.data.vertical && 'absolute right-[25px] top-[30px]'
+					]}
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -138,10 +141,17 @@
 				/>
 
 				<div
-					class="flex w-full min-w-[100px] max-w-[130px] flex-col items-center justify-center gap-1 py-1"
+					class={[
+						'flex w-full flex-col items-center justify-center gap-1 py-1',
+						node.data.vertical ? '' : 'min-w-[100px] max-w-[130px]'
+					]}
 				>
 					<div
-						class={['pb-2 font-mono text-sm', node.selected ? 'text-zinc-100' : 'text-zinc-300']}
+						class={[
+							'pb-2 font-mono text-sm transition-opacity',
+							node.selected ? 'text-zinc-100 opacity-100' : 'text-zinc-300',
+							node.data.vertical ? 'absolute -top-[40px] opacity-0 group-hover:opacity-100' : ''
+						]}
 					>
 						{displayValue}
 					</div>
