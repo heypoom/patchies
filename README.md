@@ -562,7 +562,7 @@ This is similar to `expr~`, but it takes in a single `process` JavaScript functi
 
 Try out some patches that uses `dsp~` to get an idea of its power:
 
-- [INFINITELY DESCENDING CHORD PROGRESSION (v1.2)](https://patchies.app/?id=05ycs3l2y2cinrx) by [@dtinth](https://dt.in.th). [code explanation](https://notes.dt.in.th/InfinitelyDescendingChord).
+- [INFINITELY DESCENDING CHORD PROGRESSION (v1.2)](http://localhost:5173/?id=nxqo5h8mrfchuda) by [@dtinth](https://dt.in.th). [code explanation](https://notes.dt.in.th/InfinitelyDescendingChord).
 
 Here's how to make white noise:
 
