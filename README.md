@@ -46,7 +46,7 @@ It contains a [JS](#js-a-javascript-code-block) random walker (using code from [
 
 <img src="./docs/images/patchies-random-walk-hydra.png" alt="Patchies.app random walk hydra chain" width="700">
 
-Try out [the patch here](https://patchies.app/?id=9xeuyyxvoukacrk) to see how it works. Click on the `add` button to add new random walkers, and `clear` to remove all walkers.
+Try out [the patch here](https://patchies.app/?id=vzbgsg9dsttosj2) to see how it works. Click on the `add` button to add new random walkers, and `clear` to remove all walkers.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
