@@ -9,7 +9,7 @@
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 	import { LanguageSupport } from '@codemirror/language';
-	import { vim } from '@replit/codemirror-vim';
+	import { vim, Vim } from '@replit/codemirror-vim';
 	import { useVimInEditor } from '../../stores/editor.store';
 
 	let languageComp = new Compartment();
@@ -123,7 +123,10 @@
 			];
 
 			if ($useVimInEditor) {
-				extensions.push(vim());
+				Vim.defineEx('write', 'w', onrun);
+
+				extensions.push(drawSelection());
+				extensions.push(vim({ status: false }));
 			}
 
 			// Add placeholder if provided
