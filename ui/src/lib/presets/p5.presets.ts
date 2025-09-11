@@ -213,6 +213,23 @@ function draw() {
   rect(10, 152-(rms*150), 181, (rms*150))
 }`;
 
+const TEXT_BANNER_P5 = `const txt = "perlin noise!"
+
+function setup() {
+  createCanvas(500, 100)
+  pixelDensity(4)
+  noLoop()
+}
+
+function draw() {
+  clear()
+  fill('white')
+  textFont('Monospace')
+  textSize(50)
+  textAlign(CENTER, CENTER)
+  text(txt, width/2, height/2)
+}`;
+
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
@@ -221,5 +238,6 @@ export const P5_PRESETS: Record<string, { type: string; data: { code: string } }
 	'fft-full.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } },
 	'rms.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_NARROW_P5.trim() } },
 	'rms-wide.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_WIDE_P5.trim() } },
-	'bouncing-balls.p5': { type: 'p5', data: { code: BOUNCING_BALLS_P5.trim() } }
+	'bouncing-balls.p5': { type: 'p5', data: { code: BOUNCING_BALLS_P5.trim() } },
+	'text-banner.p5': { type: 'p5', data: { code: TEXT_BANNER_P5.trim() } }
 };
