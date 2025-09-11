@@ -19,6 +19,7 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
+			hidePorts?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -77,7 +78,10 @@
 						},
 						setPortCount,
 						setTitle: (title: string) => {
-							updateNodeData(nodeId, { ...data, title });
+							updateNodeData(nodeId, { title });
+						},
+						setHidePorts: (hide: boolean) => {
+							updateNodeData(nodeId, { hidePorts: hide });
 						}
 					}
 				});
@@ -112,6 +116,12 @@
 
 		paused = isLooping;
 	}
+
+	const handleClass = $derived.by(() => {
+		if (!data.hidePorts) return '';
+
+		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
+	});
 </script>
 
 <ObjectPreviewLayout
@@ -124,7 +134,14 @@
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
-			<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
+			<StandardHandle
+				port="inlet"
+				id={index}
+				title={`Inlet ${index}`}
+				total={inletCount}
+				{index}
+				class={handleClass}
+			/>
 		{/each}
 	{/snippet}
 
@@ -151,7 +168,7 @@
 			title="Video output"
 			total={outletCount + 1}
 			index={0}
-			class=""
+			class={handleClass}
 		/>
 
 		{#each Array.from({ length: outletCount }) as _, index}
@@ -161,6 +178,7 @@
 				title={`Outlet ${index}`}
 				total={outletCount + 1}
 				index={index + 1}
+				class={handleClass}
 			/>
 		{/each}
 	{/snippet}
@@ -169,7 +187,7 @@
 		<CodeEditor
 			value={code}
 			onchange={(newCode) => {
-				updateNodeData(nodeId, { ...data, code: newCode });
+				updateNodeData(nodeId, { code: newCode });
 			}}
 			language="javascript"
 			placeholder="Write your p5.js code here..."

@@ -213,11 +213,13 @@ function draw() {
   rect(10, 152-(rms*150), 181, (rms*150))
 }`;
 
-const TEXT_BANNER_P5 = `const txt = "perlin noise!"
+const TEXT_BANNER_P5 = `const txt = "hello, world!"
 
 function setup() {
   createCanvas(500, 100)
   pixelDensity(4)
+  setHidePorts(true)
+  setPortCount(0, 0)
   noLoop()
 }
 

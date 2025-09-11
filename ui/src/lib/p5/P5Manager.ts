@@ -6,9 +6,6 @@ interface P5SketchConfig {
 	code: string;
 	messageContext?: UserFnRunContext;
 
-	/** Sets the number of inlets and outlets for the node. */
-	setPortCount?: (inletCount?: number, outletCount?: number) => void;
-
 	/** Loads a built-in library. */
 	loadLibrary?: (name: LibraryKey) => void;
 }
@@ -170,6 +167,7 @@ export class P5Manager {
 					var setPortCount = sketchContext.setPortCount;
 					var setTitle = sketchContext.setTitle;
 					var loadLibrary = sketchContext.loadLibrary;
+					var setHidePorts = sketchContext.setHidePorts;
 					var recv = onMessage; // alias for onMessage
 				}
 				
