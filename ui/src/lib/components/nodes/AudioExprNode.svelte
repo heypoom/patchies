@@ -60,10 +60,13 @@
 
 	function handleExpressionChange(newExpr: string) {
 		updateNodeData(nodeId, { expr: newExpr });
-		updateAudioExpression(newExpr);
+	}
+
+	function handleRun() {
+		updateAudioExpression(data.expr);
 
 		// Update inlet count when expression changes
-		const newInletCount = parseInletCount(newExpr || '');
+		const newInletCount = parseInletCount(data.expr || '');
 
 		if (newInletCount !== inletValues.length) {
 			inletValues = new Array(newInletCount).fill(0);
@@ -145,6 +148,9 @@
 	onExpressionChange={handleExpressionChange}
 	handles={audioHandles}
 	outlets={audioOutlets}
+	onRun={handleRun}
+	exitOnRun={false}
+	runOnExit
 />
 
 <style>

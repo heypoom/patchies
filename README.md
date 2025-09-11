@@ -530,6 +530,9 @@ These objects run on _audio rate_, which means they process audio signals in rea
 ### `expr~`: audio-rate mathematical expression evaluator
 
 - Similar to `expr` but runs at audio rate for audio signal processing.
+- Double click to edit the expression.
+- Use `shift+enter` to re-run the expression.
+  - Exiting the editing mode by clicking outside of the `expr~` object will also re-run the expression.
 - This uses the same [expr-eval](https://github.com/silentmatt/expr-eval) library as `expr`, so the same mathematical expression will work in both `expr` and `expr~`.
 - This is useful for creating DSPs (digital signal processors) to generate audio effects.
 - It requires an audio source to work. You can use `sig~` if you just need a constant signal.

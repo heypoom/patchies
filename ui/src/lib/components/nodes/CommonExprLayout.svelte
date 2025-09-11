@@ -22,6 +22,7 @@
 		onExpressionChange = () => {},
 		onRun = () => {},
 		exitOnRun = true,
+		runOnExit = false,
 		extraExtensions = [],
 		children,
 		handles,
@@ -38,6 +39,7 @@
 		onRun?: () => void;
 		onExpressionChange?: (expr: string) => void;
 		exitOnRun?: boolean;
+		runOnExit?: boolean;
 		extraExtensions?: any[];
 		children?: any;
 		handles?: any;
@@ -77,6 +79,10 @@
 
 	function exitEditingMode(save: boolean = true) {
 		isEditing = false;
+
+		if (runOnExit) {
+			onRun?.();
+		}
 
 		if (!save) {
 			// Restore original expression on escape
@@ -136,7 +142,7 @@
 					{#if isEditing}
 						<div
 							class={[
-								'nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
+								'nodrag w-full min-w-[40px] max-w-[400px] resize-none rounded-lg border font-mono text-zinc-200',
 								containerClass
 							]}
 						>
@@ -190,7 +196,7 @@
 											<span class={['text-xs text-zinc-400']}>{displayPrefix}</span>
 										{/if}
 
-										<code class="text-xs whitespace-pre-wrap">
+										<code class="whitespace-pre-wrap text-xs">
 											{@html highlightedHtml}
 										</code>
 									</span>
