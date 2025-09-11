@@ -16,6 +16,7 @@
 			isFloat?: boolean;
 			value?: number;
 			vertical?: boolean;
+			runOnMount?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -95,6 +96,13 @@
 		if (sliderElement) {
 			sliderElement.value = currentValue.toString();
 		}
+
+		// Run on mount by default.
+		setTimeout(() => {
+			if (node.data.runOnMount ?? true) {
+				messageContext.send(currentValue);
+			}
+		}, 100);
 	});
 
 	onDestroy(() => {

@@ -439,6 +439,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Messages:
   - `{type: 'bang'}`: outputs the current slider value
   - `number`: sets the slider to the given number within the range and outputs the value
+- When a patch is loaded, the slider will output its current value automatically 100ms after the patch loads.
 
 ### `textbox`: multi-line text input
 
