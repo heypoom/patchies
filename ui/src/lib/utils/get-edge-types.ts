@@ -14,6 +14,8 @@ const AUDIO_NODES = [
 	'soundfile~',
 	'chuck',
 	'expr~',
+	'dsp~',
+	'tone~',
 	'strudel',
 	'video'
 ];
