@@ -23,7 +23,7 @@
 	let abortController: AbortController | null = null;
 
 	const prompt = $derived(data.prompt || '');
-	const setPrompt = (prompt: string) => updateNodeData(nodeId, { ...data, prompt });
+	const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
 
 	const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });
 
@@ -164,7 +164,7 @@
 			<CodeEditor
 				value={prompt}
 				onchange={(newPrompt) => {
-					updateNodeData(nodeId, { ...data, prompt: newPrompt });
+					updateNodeData(nodeId, { prompt: newPrompt });
 				}}
 				language="plain"
 				placeholder="Write your prompt here..."

@@ -56,7 +56,6 @@
 
 	function setTTSOptionsFromMessage(m: Partial<TTSOptions>) {
 		updateNodeData(nodeId, {
-			...data,
 			...(m.text && { text: m.text }),
 			...(m.emotionVoice && { emotionVoice: m.emotionVoice }),
 			...(m.language && { language: m.language }),
@@ -71,7 +70,7 @@
 		try {
 			match(message)
 				.with(P.string, (text) => {
-					updateNodeData(nodeId, { ...data, text });
+					updateNodeData(nodeId, { text });
 					setTimeout(() => generateSpeech({ playback: true }), 5);
 				})
 				.with({ type: P.union('play', 'bang') }, () => {
@@ -262,7 +261,7 @@
 					placeholder="Enter text to read..."
 					class="focus:outline-one nodrag h-20 w-full min-w-60 resize-none rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-400 outline-none focus:border-zinc-500"
 					oninput={(e) => {
-						updateNodeData(nodeId, { ...data, text: e.currentTarget.value });
+						updateNodeData(nodeId, { text: e.currentTarget.value });
 					}}
 					onkeydown={(e) => {
 						if (e.shiftKey && e.key === 'Enter') {
@@ -275,7 +274,7 @@
 
 				<!-- Advanced Settings Section -->
 				{#if showAdvancedSettings}
-					<div class="space-y-3 pt-3 pb-6">
+					<div class="space-y-3 pb-6 pt-3">
 						<!-- RVC Model Selection -->
 						<div class="nodrag">
 							<label class="mb-1 block text-[10px] font-medium text-zinc-400">models</label>
@@ -285,7 +284,7 @@
 								onValueChange={(value) => {
 									let voiceId = Array.isArray(value) ? value.at(-1) : value;
 
-									updateNodeData(nodeId, { ...data, voiceId });
+									updateNodeData(nodeId, { voiceId });
 								}}
 							>
 								<SelectTrigger
@@ -334,7 +333,7 @@
 								onValueChange={(value) => {
 									const emotionVoice = Array.isArray(value) ? value.at(-1) : value;
 
-									updateNodeData(nodeId, { ...data, emotionVoice });
+									updateNodeData(nodeId, { emotionVoice });
 								}}
 							>
 								<SelectTrigger
@@ -372,7 +371,7 @@
 								placeholder="Language code (e.g., th, en)"
 								class="h-7 w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none"
 								onchange={(e) => {
-									updateNodeData(nodeId, { ...data, language: e.currentTarget.value });
+									updateNodeData(nodeId, { language: e.currentTarget.value });
 								}}
 							/>
 						</div>
@@ -389,7 +388,7 @@
 								step={0.01}
 								class="w-full"
 								onValueChange={(values) => {
-									updateNodeData(nodeId, { ...data, speed: values[0] });
+									updateNodeData(nodeId, { speed: values[0] });
 								}}
 							/>
 						</div>
@@ -406,7 +405,7 @@
 								step={0.01}
 								class="w-full"
 								onValueChange={(values) => {
-									updateNodeData(nodeId, { ...data, volume: values[0] });
+									updateNodeData(nodeId, { volume: values[0] });
 								}}
 							/>
 						</div>
@@ -423,7 +422,7 @@
 								step={0.1}
 								class="w-full"
 								onValueChange={(values) => {
-									updateNodeData(nodeId, { ...data, pitch: values[0] });
+									updateNodeData(nodeId, { pitch: values[0] });
 								}}
 							/>
 						</div>

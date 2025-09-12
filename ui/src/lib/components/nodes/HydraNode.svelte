@@ -47,14 +47,12 @@
 		match(e)
 			.with({ portType: 'message' }, (m) => {
 				updateNodeData(nodeId, {
-					...data,
 					messageInletCount: m.inletCount,
 					messageOutletCount: m.outletCount
 				});
 			})
 			.with({ portType: 'video' }, (m) => {
 				updateNodeData(nodeId, {
-					...data,
 					videoInletCount: m.inletCount,
 					videoOutletCount: m.outletCount
 				});
@@ -72,7 +70,7 @@
 	let videoOutletCount = $derived(data.videoOutletCount ?? 1);
 
 	const setCodeAndUpdate = (newCode: string) => {
-		updateNodeData(nodeId, { ...data, code: newCode });
+		updateNodeData(nodeId, { code: newCode });
 		setTimeout(() => updateHydra());
 	};
 
@@ -218,7 +216,7 @@
 		<CodeEditor
 			value={code}
 			onchange={(newCode) => {
-				updateNodeData(nodeId, { ...data, code: newCode });
+				updateNodeData(nodeId, { code: newCode });
 			}}
 			language="javascript"
 			placeholder="Write your Hydra code here..."

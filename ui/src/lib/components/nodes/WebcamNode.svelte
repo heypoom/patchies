@@ -36,7 +36,7 @@
 			.with({ type: 'bang' }, () => startCapture())
 			.with({ type: 'pause' }, () => togglePause())
 			.with({ type: 'size', width: P.number, height: P.number }, ({ width, height }) => {
-				updateNodeData(nodeId, { ...data, width, height });
+				updateNodeData(nodeId, { width, height });
 			})
 			.otherwise(() => {});
 	};

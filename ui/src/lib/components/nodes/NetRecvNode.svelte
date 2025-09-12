@@ -70,7 +70,7 @@
 		try {
 			match(message)
 				.with({ type: 'set-channel', channel: P.union(P.string, P.number) }, ({ channel }) => {
-					updateNodeData(nodeId, { ...data, channel: String(channel) });
+					updateNodeData(nodeId, { channel: String(channel) });
 				})
 				.otherwise(() => {});
 		} catch (error) {
@@ -94,7 +94,7 @@
 
 	function handleChannelInput(e: Event) {
 		const target = e.currentTarget as HTMLInputElement;
-		updateNodeData(nodeId, { ...data, channel: target.value });
+		updateNodeData(nodeId, { channel: target.value });
 	}
 
 	function handleChannelKeydown(e: KeyboardEvent) {

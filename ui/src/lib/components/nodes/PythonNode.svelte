@@ -147,7 +147,7 @@
 					<button
 						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={() => {
-							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
+							updateNodeData(nodeId, { showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
 						}}
 						title="Console"
@@ -257,7 +257,7 @@
 				<CodeEditor
 					value={code}
 					onchange={(newCode) => {
-						updateNodeData(nodeId, { ...data, code: newCode });
+						updateNodeData(nodeId, { code: newCode });
 					}}
 					language="python"
 					placeholder="Write your Python code here..."

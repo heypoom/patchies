@@ -196,7 +196,7 @@
 	function updateParamByIndex(index: number, value: unknown) {
 		const nextParams = [...data.params];
 		nextParams[index] = value;
-		updateNodeData(nodeId, { ...data, params: nextParams });
+		updateNodeData(nodeId, { params: nextParams });
 
 		isAutomated = { ...isAutomated, [index]: false };
 	}
@@ -362,7 +362,7 @@
 	function tryCreatePlainObject() {
 		const { name, params } = getNameAndParams();
 
-		updateNodeData(nodeId, { ...data, expr, name, params });
+		updateNodeData(nodeId, { expr, name, params });
 		onObjectLoad(name, params);
 	}
 
@@ -393,7 +393,7 @@
 		if (!expr.trim()) return false;
 
 		const { name, params } = getNameAndParams();
-		updateNodeData(nodeId, { ...data, expr, name, params });
+		updateNodeData(nodeId, { expr, name, params });
 
 		if (!audioObjectNames.includes(name)) return false;
 
@@ -444,8 +444,14 @@
 
 				return true;
 			})
-			.with(P.union('label'), () => {
+			.with('label', () => {
 				changeNode('label', { message: expr.replace(name, '').trim() });
+
+				return true;
+			})
+			.with('link', () => {
+				const url = expr.replace(name, '').trim() || 'https://example.com';
+				changeNode('link', { url: url, displayText: url });
 
 				return true;
 			})

@@ -120,7 +120,7 @@
 		<ButterchurnPresetSelect
 			value={data.currentPreset}
 			onchange={(nextPreset) => {
-				updateNodeData(nodeId, { ...data, currentPreset: nextPreset });
+				updateNodeData(nodeId, { currentPreset: nextPreset });
 			}}
 		/>
 	{/snippet}

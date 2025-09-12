@@ -63,7 +63,6 @@
 					{ type: 'set', deviceId: P.string, channel: P.number, events: P.array(P.string) },
 					({ deviceId, channel, events }) => {
 						updateNodeData(nodeId, {
-							...data,
 							...(deviceId !== undefined && { deviceId }),
 							...(channel !== undefined && { channel }),
 							...(events !== undefined && { events })
@@ -218,7 +217,6 @@
 							value={deviceId}
 							onchange={(e) =>
 								updateNodeData(nodeId, {
-									...data,
 									deviceId: (e.target as HTMLSelectElement).value
 								})}
 						>
@@ -236,7 +234,6 @@
 							value={channel}
 							onchange={(e) =>
 								updateNodeData(nodeId, {
-									...data,
 									channel: parseInt((e.target as HTMLSelectElement).value)
 								})}
 						>
@@ -261,7 +258,7 @@
 											const newTypes = checked
 												? [...events, msgType as EventType]
 												: events.filter((t) => t !== msgType);
-											updateNodeData(nodeId, { ...data, events: newTypes });
+											updateNodeData(nodeId, { events: newTypes });
 										}}
 									/>
 									<span class="text-xs text-zinc-300">{msgType}</span>

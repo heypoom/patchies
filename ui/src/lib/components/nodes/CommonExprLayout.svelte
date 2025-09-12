@@ -87,7 +87,7 @@
 		if (!save) {
 			// Restore original expression on escape
 			expr = originalExpr;
-			updateNodeData(nodeId, { ...data, expr: originalExpr });
+			updateNodeData(nodeId, { expr: originalExpr });
 			onExpressionChange(originalExpr);
 
 			// If the original expression was empty, delete the node
@@ -100,7 +100,7 @@
 		if (save) {
 			if (expr.trim()) {
 				const trimmedExpr = expr.trim();
-				updateNodeData(nodeId, { ...data, expr: trimmedExpr });
+				updateNodeData(nodeId, { expr: trimmedExpr });
 				onExpressionChange(trimmedExpr);
 			} else {
 				// If trying to save with empty expression, delete the node
@@ -117,7 +117,7 @@
 
 	function handleExpressionUpdate(value: string) {
 		expr = value;
-		updateNodeData(nodeId, { ...data, expr: value });
+		updateNodeData(nodeId, { expr: value });
 		onExpressionChange(value);
 	}
 

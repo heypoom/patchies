@@ -50,7 +50,6 @@
 		match(e)
 			.with({ portType: 'message' }, (m) => {
 				updateNodeData(nodeId, {
-					...data,
 					inletCount: m.inletCount,
 					outletCount: m.outletCount
 				});
@@ -62,7 +61,7 @@
 	}
 
 	const setCodeAndUpdate = (newCode: string) => {
-		updateNodeData(nodeId, { ...data, code: newCode });
+		updateNodeData(nodeId, { code: newCode });
 		setTimeout(() => updateCanvas());
 	};
 
@@ -179,7 +178,7 @@
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateCanvas}
 			onchange={(newCode) => {
-				updateNodeData(nodeId, { ...data, code: newCode });
+				updateNodeData(nodeId, { code: newCode });
 			}}
 		/>
 	{/snippet}

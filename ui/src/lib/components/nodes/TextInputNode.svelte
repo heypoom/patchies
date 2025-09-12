@@ -16,7 +16,7 @@
 	let textareaElement: HTMLTextAreaElement;
 
 	const text = $derived(data.text || '');
-	const setText = (text: string) => updateNodeData(nodeId, { ...data, text });
+	const setText = (text: string) => updateNodeData(nodeId, { text });
 
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)

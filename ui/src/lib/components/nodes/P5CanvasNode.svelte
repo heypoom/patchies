@@ -56,7 +56,7 @@
 	});
 
 	const setPortCount = (inletCount = 1, outletCount = 1) => {
-		updateNodeData(nodeId, { ...data, inletCount, outletCount });
+		updateNodeData(nodeId, { inletCount, outletCount });
 		updateNodeInternals(nodeId);
 	};
 

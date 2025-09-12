@@ -70,7 +70,7 @@
 		try {
 			match(message)
 				.with({ type: 'set', code: P.string }, ({ code }) => {
-					updateNodeData(nodeId, { ...data, code });
+					updateNodeData(nodeId, { code });
 				})
 				.with({ type: 'run' }, () => {
 					executeCode();
@@ -251,7 +251,7 @@
 	}
 
 	function setTitle(title: string) {
-		updateNodeData(nodeId, { ...data, title });
+		updateNodeData(nodeId, { title });
 	}
 
 	let minContainerWidth = $derived.by(() => {
@@ -274,7 +274,7 @@
 					<button
 						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={() => {
-							updateNodeData(nodeId, { ...data, showConsole: !data.showConsole });
+							updateNodeData(nodeId, { showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
 						}}
 						title="Console"
@@ -409,7 +409,7 @@
 				<CodeEditor
 					value={code}
 					onchange={(newCode) => {
-						updateNodeData(nodeId, { ...data, code: newCode });
+						updateNodeData(nodeId, { code: newCode });
 					}}
 					language="javascript"
 					placeholder="Write your JavaScript code here..."

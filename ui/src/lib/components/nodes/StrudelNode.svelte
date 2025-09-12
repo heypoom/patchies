@@ -23,7 +23,7 @@
 	const code = $derived(data.code || '');
 
 	const setCode = (newCode: string) => {
-		updateNodeData(nodeId, { ...data, code: newCode });
+		updateNodeData(nodeId, { code: newCode });
 		strudelEditor?.editor?.setCode(newCode);
 	};
 
@@ -145,7 +145,7 @@
 							bind:this={strudelEditor}
 							onUpdateState={handleUpdateState}
 							onchange={(newCode) => {
-								updateNodeData(nodeId, { ...data, code: newCode });
+								updateNodeData(nodeId, { code: newCode });
 							}}
 							class="w-full"
 							{nodeId}

@@ -48,7 +48,7 @@
 
 			match(message)
 				.with({ type: 'set', code: P.string }, ({ code }) => {
-					updateNodeData(nodeId, { ...data, code });
+					updateNodeData(nodeId, { code });
 				})
 				.with({ type: 'run' }, () => {
 					updateShader();
@@ -165,7 +165,7 @@
 		<CodeEditor
 			value={code}
 			onchange={(newCode) => {
-				updateNodeData(nodeId, { ...data, code: newCode });
+				updateNodeData(nodeId, { code: newCode });
 			}}
 			language="glsl"
 			placeholder="Write your GLSL fragment shader here..."

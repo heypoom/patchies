@@ -35,6 +35,7 @@ import DSPNode from '$lib/components/nodes/DSPNode.svelte';
 import ToneNode from '$lib/components/nodes/ToneNode.svelte';
 import ToggleButtonNode from '$lib/components/nodes/ToggleButtonNode.svelte';
 import LabelNode from '$lib/components/nodes/LabelNode.svelte';
+import LinkButton from '$lib/components/nodes/LinkButton.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -73,7 +74,8 @@ export const nodeTypes = {
 	textbox: TextInputNode,
 	'dsp~': DSPNode,
 	'tone~': ToneNode,
-	label: LabelNode
+	label: LabelNode,
+	link: LinkButton
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;

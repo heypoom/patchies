@@ -27,7 +27,7 @@
 	const code = $derived(data.code || '');
 
 	const setCodeAndUpdate = (newCode: string) => {
-		updateNodeData(nodeId, { ...data, code: newCode });
+		updateNodeData(nodeId, { code: newCode });
 		setTimeout(() => updateSwissGL());
 	};
 
@@ -122,7 +122,7 @@
 		<CodeEditor
 			value={code}
 			onchange={(newCode) => {
-				updateNodeData(nodeId, { ...data, code: newCode });
+				updateNodeData(nodeId, { code: newCode });
 			}}
 			language="javascript"
 			placeholder="Write your SwissGL code here..."

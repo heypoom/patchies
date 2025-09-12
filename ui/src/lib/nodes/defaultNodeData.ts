@@ -73,5 +73,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('dsp~', () => ({ code: DEFAULT_DSP_JS_CODE, messageInletCount: 0 }))
 		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 1 }))
 		.with('label', () => ({ message: 'label' }))
+		.with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))
 		.otherwise(() => ({}));
 }

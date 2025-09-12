@@ -69,7 +69,7 @@
 					sendMidiMessage();
 				})
 				.with({ type: 'set' }, (md) => {
-					updateNodeData(nodeId, { ...data, ...md });
+					updateNodeData(nodeId, { ...md });
 				})
 				.with({ type: 'send', deviceId: P.string, channel: P.number, event: P.string }, (md) => {
 					const config = {
@@ -144,7 +144,6 @@
 	function updateMessageType(newMessageType: string) {
 		const defaultData = getDefaultDataForMessageType(newMessageType);
 		updateNodeData(nodeId, {
-			...data,
 			event: newMessageType,
 			...defaultData
 		});
@@ -246,7 +245,6 @@
 							value={deviceId}
 							onchange={(e) =>
 								updateNodeData(nodeId, {
-									...data,
 									deviceId: (e.target as HTMLSelectElement).value
 								})}
 						>
@@ -264,7 +262,6 @@
 							value={channel}
 							onchange={(e) =>
 								updateNodeData(nodeId, {
-									...data,
 									channel: parseInt((e.target as HTMLSelectElement).value)
 								})}
 						>
@@ -302,7 +299,6 @@
 										value={data.note || 60}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
-												...data,
 												note: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
@@ -317,7 +313,6 @@
 										value={data.velocity || 127}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
-												...data,
 												velocity: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
@@ -335,7 +330,6 @@
 										value={data.control || 1}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
-												...data,
 												control: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
@@ -350,7 +344,6 @@
 										value={data.value || 64}
 										onchange={(e) =>
 											updateNodeData(nodeId, {
-												...data,
 												value: parseInt((e.target as HTMLInputElement).value)
 											})}
 									/>
@@ -367,7 +360,6 @@
 									value={data.program || 1}
 									onchange={(e) =>
 										updateNodeData(nodeId, {
-											...data,
 											program: parseInt((e.target as HTMLInputElement).value)
 										})}
 								/>

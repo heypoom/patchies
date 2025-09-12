@@ -55,7 +55,7 @@
 						>
 							<CodeEditor
 								value={msgText}
-								onchange={(value) => updateNodeData(nodeId, { ...data, message: value })}
+								onchange={(value) => updateNodeData(nodeId, { message: value })}
 								language="plain"
 								class="message-node-code-editor rounded-lg border !border-transparent focus:outline-none"
 							/>
@@ -69,7 +69,7 @@
 								showTextInput = true;
 							}}
 							class={[
-								'send-message-button rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+								'send-message-button whitespace-pre rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
 								containerClass
 							]}
 						>

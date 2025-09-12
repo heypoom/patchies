@@ -56,7 +56,7 @@
 			.with({ type: 'pause' }, () => togglePause())
 			.with({ type: 'loop', value: P.optional(P.boolean) }, ({ value }) => {
 				const shouldLoop = value ?? true;
-				updateNode(nodeId, { data: { ...data, loop: shouldLoop } });
+				updateNode(nodeId, { data: { loop: shouldLoop } });
 
 				if (videoElement) {
 					videoElement.loop = shouldLoop;
@@ -168,7 +168,6 @@
 						width: Math.round(previewWidth),
 						height: Math.round(previewHeight),
 						data: {
-							...data,
 							file,
 							fileName: file.name,
 							width: videoWidth,
