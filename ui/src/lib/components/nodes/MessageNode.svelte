@@ -115,6 +115,7 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+				<div></div>
 				<button
 					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					onclick={() => (showTextInput = !showTextInput)}

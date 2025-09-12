@@ -444,6 +444,11 @@
 
 				return true;
 			})
+			.with(P.union('label'), () => {
+				changeNode('label', { message: expr.replace(name, '').trim() });
+
+				return true;
+			})
 			.with('soundurl~', () => {
 				const url = expr.replace(name, '').trim();
 				const fileName = getFileNameFromUrl(url);

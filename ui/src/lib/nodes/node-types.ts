@@ -34,6 +34,7 @@ import TextInputNode from '$lib/components/nodes/TextInputNode.svelte';
 import DSPNode from '$lib/components/nodes/DSPNode.svelte';
 import ToneNode from '$lib/components/nodes/ToneNode.svelte';
 import ToggleButtonNode from '$lib/components/nodes/ToggleButtonNode.svelte';
+import LabelNode from '$lib/components/nodes/LabelNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -71,7 +72,8 @@ export const nodeTypes = {
 	video: VideoNode,
 	textbox: TextInputNode,
 	'dsp~': DSPNode,
-	'tone~': ToneNode
+	'tone~': ToneNode,
+	label: LabelNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
