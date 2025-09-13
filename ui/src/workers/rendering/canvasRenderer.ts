@@ -143,8 +143,8 @@ export class CanvasRenderer {
 			this.offscreenCanvas.width = width;
 			this.offscreenCanvas.height = height;
 
-			// Create execution context similar to JSCanvasManager
-			const context = {
+			// Create extra context for canvas-specific functionality
+			const extraContext = {
 				canvas: this.offscreenCanvas,
 				ctx: this.ctx,
 				width: width,
@@ -166,19 +166,8 @@ export class CanvasRenderer {
 					}
 				},
 
-				onMessage: (callback: MessageCallbackFn) => {
-					this.onMessage = callback;
-				},
-
-				send: this.sendMessage.bind(this),
-
 				// FFT function for audio analysis
 				fft: this.createFFTFunction(),
-
-				// setPortCount function for dynamic port management
-				setPortCount: (inletCount?: number, outletCount?: number) => {
-					this.setPortCount(inletCount, outletCount);
-				},
 
 				// Alias for onMessage
 				recv: (callback: MessageCallbackFn) => {
@@ -186,27 +175,29 @@ export class CanvasRenderer {
 				}
 			};
 
-			// Use JSRunner for preprocessing and execution with shared modules
-			const preprocessedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
+			const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
 				nodeId: this.config.nodeId,
-				setLibraryName: () => {} // Canvas nodes don't need library name handling
+				setLibraryName: () => {}
 			});
 
-			if (preprocessedCode === null) {
-				// This was a library module, don't execute
-				return;
-			}
+			if (processedCode === null) return;
 
-			const finalCode = preprocessedCode || this.config.code;
+			console.log('>>> canvas # processed code =', processedCode);
 
-			const params = Object.keys(context);
-			const args = Object.values(context);
-
-			const executeFunction = new Function(...params, finalCode);
-			executeFunction(...args);
+			// Use JSRunner's executeJavaScript method with full module support
+			await this.renderer.jsRunner.executeJavaScript(this.config.nodeId, processedCode, {
+				customConsole: {
+					log: (...args) => console.log(`[canvas ${this.config.nodeId}]`, ...args),
+					error: (...args) => console.error(`[canvas ${this.config.nodeId}]`, ...args),
+					warn: (...args) => console.warn(`[canvas ${this.config.nodeId}]`, ...args)
+				},
+				setPortCount: (inletCount?: number, outletCount?: number) => {
+					this.setPortCount(inletCount, outletCount);
+				},
+				extraContext
+			});
 		} catch (error) {
 			console.error('Error executing canvas code:', error);
-			throw error;
 		}
 	}
 
@@ -215,6 +206,9 @@ export class CanvasRenderer {
 			cancelAnimationFrame(this.animationId);
 			this.animationId = null;
 		}
+
+		// Clean up JSRunner context for this node
+		this.renderer.jsRunner.destroy(this.config.nodeId);
 
 		this.offscreenCanvas = null;
 		this.ctx = null;
@@ -284,6 +278,8 @@ export class CanvasRenderer {
 
 	// Method to handle incoming messages
 	handleMessage(message: Message) {
-		this.onMessage?.(message.data, message);
+		// Forward messages to JSRunner's message context for this node
+		const messageContext = this.renderer.jsRunner.getMessageContext(this.config.nodeId);
+		messageContext.queue.queueMessage(message);
 	}
 }

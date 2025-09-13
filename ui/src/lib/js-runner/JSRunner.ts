@@ -58,6 +58,10 @@ export class JSRunner {
 
 										const key = `${importSource}!!${localName}!!${isDefault ? 'default' : 'named'}`;
 
+										// import sources must start with 'npm'
+										if (typeof importSource !== 'string' || !importSource.startsWith('npm:'))
+											continue;
+
 										importMappings.set(key, {
 											source: importSource,
 											localName,
@@ -258,12 +262,15 @@ export class JSRunner {
 		return userFunction(...functionArgs);
 	}
 
-	setLibraryCode(nodeId: string, code: string) {
+	async setLibraryCode(nodeId: string, code: string) {
 		const libName = getLibName(code);
 		if (!libName) return;
 
 		this.libraryNamesByNode.set(nodeId, libName);
 		this.modules.set(libName, code);
+
+		await this.ensureRenderWorker();
+
 		this.sendToRenderWorkerSlow?.(libName, code);
 	}
 
@@ -277,7 +284,7 @@ export class JSRunner {
 		this.sendToRenderWorker?.(moduleName, code);
 	}
 
-	async initGlSystem() {
+	async ensureRenderWorker() {
 		if (typeof window === 'undefined') return;
 
 		const { GLSystem } = await import('../canvas/GLSystem');
@@ -291,7 +298,6 @@ export class JSRunner {
 	public static getInstance(): JSRunner {
 		if (!JSRunner.instance) {
 			JSRunner.instance = new JSRunner();
-			JSRunner.instance.initGlSystem();
 		}
 
 		return JSRunner.instance;
