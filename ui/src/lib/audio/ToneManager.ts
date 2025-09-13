@@ -1,4 +1,3 @@
-import * as Tone from 'tone';
 import { match, P } from 'ts-pattern';
 
 export class ToneManager {
@@ -9,21 +8,20 @@ export class ToneManager {
 	private messageInletCount = 0;
 	private currentCode = '';
 	private createdNodes: Set<{ dispose?: () => void }> = new Set();
+	private audioContext: AudioContext;
 
 	public onSetPortCount = (inletCount: number) => {};
 
 	constructor(audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
 		this.gainNode = gainNode;
 		this.inputNode = inputNode;
-
-		// Set Tone.js to use our audio context
-		Tone.setContext(audioContext);
+		this.audioContext = audioContext;
 	}
 
 	async handleMessage(key: string, msg: unknown): Promise<void> {
 		return match([key, msg])
 			.with(['code', P.string], ([, code]) => {
-				this.setCode(code);
+				return this.setCode(code);
 			})
 			.with(['messageInlet', P.any], ([, messageData]) => {
 				this.handleMessageInlet(messageData);
@@ -33,7 +31,16 @@ export class ToneManager {
 			});
 	}
 
-	private setCode(code: string): void {
+	async ensureTone() {
+		const Tone = await import('tone');
+		Tone.setContext(this.audioContext);
+
+		return Tone;
+	}
+
+	private async setCode(code: string): Promise<void> {
+		const Tone = await this.ensureTone();
+
 		if (!code || code.trim() === '') {
 			this.cleanup();
 			this.currentCode = '';
@@ -116,7 +123,9 @@ export class ToneManager {
 		}
 	}
 
-	private cleanup(): void {
+	private async cleanup() {
+		const Tone = await this.ensureTone();
+
 		// Call any user-provided cleanup function first
 		const cleanupFn = this.toneObjects.get('cleanup');
 		if (cleanupFn && typeof cleanupFn === 'function') {
@@ -141,8 +150,10 @@ export class ToneManager {
 
 		// Stop and clear the transport
 		try {
-			Tone.getTransport().stop();
-			Tone.getTransport().cancel();
+			const transport = Tone.getTransport();
+
+			transport.stop();
+			transport.cancel();
 		} catch (error) {
 			console.warn('Error stopping Tone.js transport:', error);
 		}

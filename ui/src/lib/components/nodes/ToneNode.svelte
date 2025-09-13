@@ -40,7 +40,6 @@
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount || 0);
 
-
 	const valueInletCount = $derived.by(() => {
 		if (!code.trim()) return 0;
 
@@ -166,7 +165,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={(e) => {
 							e.preventDefault();
 							e.stopPropagation();
