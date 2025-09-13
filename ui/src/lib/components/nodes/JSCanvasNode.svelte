@@ -33,6 +33,7 @@
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let errorMessage = $state<string | null>(null);
 	let dragEnabled = $state(true);
+	let editorReady = $state(false);
 
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
@@ -142,6 +143,7 @@
 	height={outputHeight}
 	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
 	{selected}
+	{editorReady}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
@@ -180,6 +182,7 @@
 			onchange={(newCode) => {
 				updateNodeData(nodeId, { code: newCode });
 			}}
+			onready={() => (editorReady = true)}
 		/>
 	{/snippet}
 </CanvasPreviewLayout>

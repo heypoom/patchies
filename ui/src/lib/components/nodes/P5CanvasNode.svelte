@@ -35,6 +35,7 @@
 	let enableDrag = $state(true);
 	let errorMessage = $state<string | null>(null);
 	let paused = $state(false);
+	let editorReady = $state(false);
 
 	let previewContainerWidth = $state(0);
 	const code = $derived(data.code || '');
@@ -131,6 +132,7 @@
 	showPauseButton
 	{paused}
 	onPlaybackToggle={togglePlayback}
+	{editorReady}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
@@ -193,6 +195,7 @@
 			placeholder="Write your p5.js code here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateSketch}
+			onready={() => (editorReady = true)}
 		/>
 	{/snippet}
 </ObjectPreviewLayout>

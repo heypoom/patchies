@@ -21,6 +21,7 @@
 	let isLoading = $state(false);
 	let generatedText = $state<string>('');
 	let abortController: AbortController | null = null;
+	let editorReady = $state(false);
 
 	const prompt = $derived(data.prompt || '');
 	const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
@@ -99,7 +100,7 @@
 	}
 </script>
 
-<ObjectPreviewLayout title="ai.txt" onrun={generateText}>
+<ObjectPreviewLayout title="ai.txt" onrun={generateText} {editorReady}>
 	{#snippet topHandle()}
 		<StandardHandle port="inlet" type="message" total={2} index={0} />
 		<StandardHandle
@@ -170,6 +171,7 @@
 				placeholder="Write your prompt here..."
 				class="nodrag h-64 w-full max-w-[350px] resize-none"
 				onrun={generateText}
+				onready={() => (editorReady = true)}
 				extraExtensions={[EditorView.lineWrapping]}
 			/>
 

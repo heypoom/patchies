@@ -34,6 +34,7 @@
 	let messageContext: MessageContext;
 
 	let isPaused = $state(false);
+	let editorReady = $state(false);
 
 	const code = $derived(data.code || '');
 
@@ -143,6 +144,7 @@
 	{width}
 	{height}
 	{selected}
+	{editorReady}
 >
 	{#snippet topHandle()}
 		{#each data.glUniformDefs as def, defIndex}
@@ -171,6 +173,7 @@
 			placeholder="Write your GLSL fragment shader here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateShader}
+			onready={() => (editorReady = true)}
 		/>
 	{/snippet}
 </CanvasPreviewLayout>

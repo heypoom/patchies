@@ -2,14 +2,10 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { EditorView, minimalSetup } from 'codemirror';
 	import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
-	import { javascript } from '@codemirror/lang-javascript';
-	import { python } from '@codemirror/lang-python';
-	import { markdown } from '@codemirror/lang-markdown';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { keymap, drawSelection } from '@codemirror/view';
-	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
-	import { LanguageSupport } from '@codemirror/language';
 	import { useVimInEditor } from '../../stores/editor.store';
+	import { loadLanguageExtension } from '$lib/codemirror/language';
 
 	let languageComp = new Compartment();
 
@@ -24,6 +20,7 @@
 		onchange = (code: string) => {},
 		fontSize = '12px',
 		extraExtensions = [],
+		onready,
 		...restProps
 	}: {
 		value?: string;
@@ -34,27 +31,16 @@
 		onchange?: (code: string) => void;
 		extraExtensions?: Extension[];
 		fontSize?: string;
+		onready?: () => void;
 	} = $props();
 
 	let editorElement: HTMLDivElement;
 	let editorView: EditorView | null = null;
 
-	function getLanguageExtension(language: string) {
-		if (language === 'javascript') {
-			return javascript();
-		} else if (language === 'glsl') {
-			return new LanguageSupport(glslLanguage);
-		} else if (language === 'python') {
-			return python();
-		} else if (language === 'markdown') {
-			return markdown();
-		}
-
-		return [];
-	}
-
 	onMount(async () => {
 		if (editorElement) {
+			const languageExtension = await loadLanguageExtension(language);
+
 			const extensions = [
 				Prec.highest(
 					keymap.of([
@@ -72,7 +58,7 @@
 
 				tokyoNight,
 
-				languageComp.of(getLanguageExtension(language)),
+				languageComp.of(languageExtension),
 
 				EditorView.theme({
 					'&': {
@@ -148,6 +134,8 @@
 				state,
 				parent: editorElement
 			});
+
+			onready?.();
 		}
 	});
 
@@ -172,8 +160,12 @@
 
 	// Sync language extension with the `language` prop
 	$effect(() => {
-		editorView?.dispatch({
-			effects: languageComp.reconfigure(getLanguageExtension(language))
+		loadLanguageExtension(language).then((languageExtension) => {
+			if (editorView) {
+				editorView.dispatch({
+					effects: languageComp.reconfigure(languageExtension)
+				});
+			}
 		});
 	});
 </script>
@@ -188,6 +180,8 @@
 	.code-editor-container {
 		width: 100%;
 		height: 100%;
+		min-width: 50px;
+		min-height: 25px;
 	}
 
 	/* Additional dark theme customizations */

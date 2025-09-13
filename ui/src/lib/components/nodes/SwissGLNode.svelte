@@ -22,6 +22,7 @@
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let isPaused = $state(false);
+	let editorReady = $state(false);
 	let errorMessage = $state<string | null>(null);
 
 	const code = $derived(data.code || '');
@@ -98,6 +99,7 @@
 	paused={isPaused}
 	showPauseButton={true}
 	{selected}
+	{editorReady}
 	{errorMessage}
 	bind:previewCanvas
 >
@@ -128,6 +130,7 @@
 			placeholder="Write your SwissGL code here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateSwissGL}
+			onready={() => (editorReady = true)}
 		/>
 	{/snippet}
 </CanvasPreviewLayout>
