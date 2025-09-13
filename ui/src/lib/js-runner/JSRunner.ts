@@ -1,6 +1,7 @@
 import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
+import { GLSystem } from '$lib/canvas/GLSystem';
 
 export interface JSRunnerOptions {
 	customConsole?: {
@@ -149,13 +150,13 @@ export class JSRunner {
 			// Un-register library (if any)
 			const previousLibName = this.libraryNamesByNode.get(nodeId);
 			if (previousLibName) {
-				this.modules.delete(previousLibName);
 				this.libraryNamesByNode.delete(nodeId);
+				this.setModuleAndSync(previousLibName, null);
 			}
 
 			setLibraryName(null);
 
-			this.modules.set(moduleName, code);
+			this.setModuleAndSync(moduleName, code);
 
 			return this.gen(moduleName);
 		}
@@ -175,12 +176,16 @@ export class JSRunner {
 		const libraryName = this.libraryNamesByNode.get(nodeId);
 
 		if (libraryName) {
-			this.modules.delete(libraryName);
+			this.libraryNamesByNode.delete(nodeId);
+			this.setModuleAndSync(libraryName, null);
 		}
 
-		this.libraryNamesByNode.delete(nodeId);
 		this.messageContextMap.delete(nodeId);
-		this.modules.delete(getModuleNameByNode(nodeId));
+
+		const moduleName = getModuleNameByNode(nodeId);
+		if (this.modules.has(moduleName)) {
+			this.setModuleAndSync(moduleName, null);
+		}
 
 		const context = this.messageContextMap.get(nodeId);
 		if (context) {
@@ -253,7 +258,17 @@ export class JSRunner {
 		if (!libName) return;
 
 		this.libraryNamesByNode.set(nodeId, libName);
-		this.modules.set(libName, code);
+		this.setModuleAndSync(libName, code);
+	}
+
+	private setModuleAndSync(moduleName: string, code: string | null) {
+		if (code === null) {
+			this.modules.delete(moduleName);
+		} else {
+			this.modules.set(moduleName, code);
+		}
+
+		GLSystem.getInstance().send('updateJSModule', { moduleName, code });
 	}
 
 	public static getInstance(): JSRunner {

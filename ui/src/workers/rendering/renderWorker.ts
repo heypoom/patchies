@@ -34,7 +34,8 @@ self.onmessage = (event) => {
 		)
 		.with('updateHydra', () => handleUpdateHydra(data.nodeId))
 		.with('updateCanvas', () => handleUpdateCanvas(data.nodeId))
-		.with('setFFTData', () => handleSetFFTData(data));
+		.with('setFFTData', () => handleSetFFTData(data))
+		.with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code));
 };
 
 async function handleBuildRenderGraph(graph: RenderGraph) {

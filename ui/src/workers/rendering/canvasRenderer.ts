@@ -186,10 +186,23 @@ export class CanvasRenderer {
 				}
 			};
 
+			// Use JSRunner for preprocessing and execution with shared modules
+			const preprocessedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
+				nodeId: this.config.nodeId,
+				setLibraryName: () => {} // Canvas nodes don't need library name handling
+			});
+
+			if (preprocessedCode === null) {
+				// This was a library module, don't execute
+				return;
+			}
+
+			const finalCode = preprocessedCode || this.config.code;
+
 			const params = Object.keys(context);
 			const args = Object.values(context);
 
-			const executeFunction = new Function(...params, this.config.code);
+			const executeFunction = new Function(...params, finalCode);
 			executeFunction(...args);
 		} catch (error) {
 			console.error('Error executing canvas code:', error);
