@@ -405,6 +405,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Sharing JavaScript across multiple `js` blocks
 
+> This feature is only available in `js` and `p5` objects, for now.
+
 You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code.
 
 - For example, `// @lib foobar` will register the module as `foobar`. This will turn the object into a library object, as shown by the package icon.
@@ -415,9 +417,6 @@ You can share JavaScript code across multiple `js` blocks by using the `// @lib 
 See the following example:
 
 <img src="./docs/images/patchies-js-modules.png" alt="Patchies.app JS Modules" width="700">
-
-- This feature is available in `js` and `p5` objects, for now.
-  - See [this example](https://patchies.app/?id=y1tstmuewqnc8sf) of using shared P5.js module with third-party imports.
 
 ### `expr`: mathematical expression evaluator
 
