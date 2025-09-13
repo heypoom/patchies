@@ -206,7 +206,7 @@
 			const userFunction = new Function(
 				...functionParams,
 				`
-				const inner = () => {
+				const inner = async () => {
 					var recv = receive = onMessage; // alias
 					var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 				
