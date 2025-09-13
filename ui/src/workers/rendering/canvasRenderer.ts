@@ -182,8 +182,6 @@ export class CanvasRenderer {
 
 			if (processedCode === null) return;
 
-			console.log('>>> canvas # processed code =', processedCode);
-
 			// Use JSRunner's executeJavaScript method with full module support
 			await this.renderer.jsRunner.executeJavaScript(this.config.nodeId, processedCode, {
 				customConsole: {
@@ -276,10 +274,7 @@ export class CanvasRenderer {
 		});
 	}
 
-	// Method to handle incoming messages
 	handleMessage(message: Message) {
-		// Forward messages to JSRunner's message context for this node
-		const messageContext = this.renderer.jsRunner.getMessageContext(this.config.nodeId);
-		messageContext.queue.queueMessage(message);
+		this.onMessage?.(message.data, message);
 	}
 }

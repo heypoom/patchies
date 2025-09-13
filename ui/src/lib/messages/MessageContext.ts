@@ -1,4 +1,4 @@
-import { AudioAnalysisSystem, type AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
+// import { AudioAnalysisSystem, type AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
@@ -104,12 +104,10 @@ export class MessageContext {
 		if (typeof window === 'undefined') return null;
 
 		return (options: AudioAnalysisProps) => {
-			const audioAnalysis = AudioAnalysisSystem.getInstance();
-
-			const bins = audioAnalysis.getAnalysisForNode(this.nodeId, options);
-			const sampleRate = audioAnalysis.sampleRate;
-
-			return new FFTAnalysis(bins, options?.format ?? null, sampleRate);
+			// const audioAnalysis = AudioAnalysisSystem.getInstance();
+			// const bins = audioAnalysis.getAnalysisForNode(this.nodeId, options);
+			// const sampleRate = audioAnalysis.sampleRate;
+			// return new FFTAnalysis(bins, options?.format ?? null, sampleRate);
 		};
 	}
 

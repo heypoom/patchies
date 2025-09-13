@@ -1,6 +1,7 @@
-import { getAudioContext } from '@strudel/webaudio';
 import type { Edge } from '@xyflow/svelte';
 import { match, P } from 'ts-pattern';
+// @ts-expect-error -- no typedefs
+import { getAudioContext } from 'superdough';
 import type { PsAudioNode, PsAudioType } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
@@ -26,6 +27,10 @@ export class AudioSystem {
 
 	constructor() {
 		this.timeScheduler = new TimeScheduler(this.audioContext);
+	}
+
+	get audioContext(): AudioContext {
+		return getAudioContext();
 	}
 
 	start() {
@@ -904,10 +909,6 @@ export class AudioSystem {
 		}
 
 		return AudioSystem.instance;
-	}
-
-	get audioContext(): AudioContext {
-		return getAudioContext();
 	}
 
 	// Update audio connections based on edges

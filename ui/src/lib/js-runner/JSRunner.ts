@@ -132,6 +132,36 @@ export class JSRunner {
 		return '';
 	}
 
+	/** Wait for module dependencies to be available */
+	private async waitForDependencies(code: string, maxWait = 5000): Promise<void> {
+		const importRegex = /import\s+(?:[\w\s{},*]+\s+from\s+)?['"]([^'"]+)['"]/g;
+		const dependencies = new Set<string>();
+		let match;
+
+		// Extract all import statements
+		while ((match = importRegex.exec(code)) !== null) {
+			const moduleName = match[1];
+
+			if (!moduleName.startsWith('npm:') && !moduleName.startsWith('http')) {
+				dependencies.add(moduleName);
+			}
+		}
+
+		const startTime = Date.now();
+
+		// wait for all dependencies to be available.
+		for (const dependency of dependencies) {
+			while (!this.modules.has(dependency)) {
+				if (Date.now() - startTime > maxWait) {
+					console.warn(`dependency '${dependency}' not found within ${maxWait}ms`);
+					break;
+				}
+
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
+		}
+	}
+
 	async preprocessCode(
 		code: string,
 		options: {
@@ -140,6 +170,9 @@ export class JSRunner {
 		}
 	): Promise<string | null> {
 		const { nodeId, setLibraryName } = options;
+
+		// Wait for module dependencies first
+		await this.waitForDependencies(code);
 
 		const isModule = isSnippetModule(code);
 
