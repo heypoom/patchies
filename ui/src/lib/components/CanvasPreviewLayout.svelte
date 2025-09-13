@@ -18,7 +18,9 @@
 
 		topHandle,
 		bottomHandle,
-		codeEditor
+
+		codeEditor,
+		editorReady
 	}: {
 		title: string;
 		selected?: boolean;
@@ -36,7 +38,9 @@
 
 		topHandle?: Snippet;
 		bottomHandle?: Snippet;
+
 		codeEditor: Snippet;
+		editorReady?: boolean;
 	} = $props();
 </script>
 
@@ -49,6 +53,7 @@
 	{topHandle}
 	{bottomHandle}
 	{codeEditor}
+	{editorReady}
 >
 	{#snippet preview()}
 		<canvas

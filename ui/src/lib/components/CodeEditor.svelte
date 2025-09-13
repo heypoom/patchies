@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { useVimInEditor } from '../../stores/editor.store';
-	import type { Extension } from '@codemirror/state';
-	import { match } from 'ts-pattern';
+	import { loadLanguageExtension } from '$lib/codemirror/language';
 
 	async function loadCodeMirrorCore() {
 		const [{ EditorView, minimalSetup }, stateModule, { keymap, drawSelection }, { tokyoNight }] =
@@ -25,34 +24,6 @@
 		};
 	}
 
-	async function loadLanguageExtension(language: string) {
-		return match(language)
-			.with('javascript', async () => {
-				const { javascript } = await import('@codemirror/lang-javascript');
-
-				return javascript();
-			})
-			.with('glsl', async () => {
-				const [{ LanguageSupport }, { glslLanguage }] = await Promise.all([
-					import('@codemirror/language'),
-					import('$lib/codemirror/glsl.codemirror')
-				]);
-
-				return new LanguageSupport(glslLanguage);
-			})
-			.with('python', async () => {
-				const { python } = await import('@codemirror/lang-python');
-
-				return python();
-			})
-			.with('markdown', async () => {
-				const { markdown } = await import('@codemirror/lang-markdown');
-
-				return markdown();
-			})
-			.otherwise(() => []);
-	}
-
 	let languageComp: any = null;
 
 	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'markdown' | 'plain';
@@ -66,6 +37,7 @@
 		onchange = (code: string) => {},
 		fontSize = '12px',
 		extraExtensions = [],
+		onready,
 		...restProps
 	}: {
 		value?: string;
@@ -76,17 +48,19 @@
 		onchange?: (code: string) => void;
 		extraExtensions?: any[];
 		fontSize?: string;
+		onready?: () => void;
 	} = $props();
 
 	let editorElement = $state<HTMLDivElement>();
 	let editorView: any = null;
 	let isLoading = $state(true);
-	let codeMirrorCore: any = null;
 
 	onMount(async () => {
 		try {
-			// Load CodeMirror core modules
-			codeMirrorCore = await loadCodeMirrorCore();
+			const [codemirrorCore, languageExtension] = await Promise.all([
+				loadCodeMirrorCore(),
+				loadLanguageExtension(language)
+			]);
 
 			const {
 				EditorView,
@@ -97,10 +71,10 @@
 				minimalSetup,
 				tokyoNight,
 				Compartment
-			} = codeMirrorCore;
+			} = codemirrorCore;
 
-	onMount(async () => {
-		if (editorElement) {
+			languageComp = new Compartment();
+
 			const extensions = [
 				Prec.highest(
 					keymap.of([
@@ -193,6 +167,7 @@
 			});
 
 			isLoading = false;
+			onready?.();
 		} catch (error) {
 			console.error('Failed to load CodeMirror:', error);
 			isLoading = false;
@@ -240,6 +215,8 @@
 	.code-editor-container {
 		width: 100%;
 		height: 100%;
+		min-width: 50px;
+		min-height: 25px;
 	}
 
 	/* Additional dark theme customizations */

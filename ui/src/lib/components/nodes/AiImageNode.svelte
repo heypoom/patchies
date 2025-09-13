@@ -26,6 +26,7 @@
 	let isLoading = $state(false);
 	let hasImage = $state(false);
 	let abortController: AbortController | null = null;
+	let editorReady = $state(false);
 
 	const prompt = $derived(data.prompt || '');
 	const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
@@ -133,7 +134,7 @@
 	}
 </script>
 
-<ObjectPreviewLayout title="ai.img" onrun={generateImage}>
+<ObjectPreviewLayout title="ai.img" onrun={generateImage} {editorReady}>
 	{#snippet topHandle()}
 		<StandardHandle
 			port="inlet"
@@ -203,6 +204,7 @@
 				placeholder="Write your prompt here..."
 				class="nodrag w-full min-w-[230px] resize-none"
 				onrun={generateImage}
+				onready={() => (editorReady = true)}
 				extraExtensions={[EditorView.lineWrapping]}
 			/>
 
