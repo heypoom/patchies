@@ -4,9 +4,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
-	import { createLLMFunction } from '$lib/ai/google';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import { match, P } from 'ts-pattern';
 
 	let contentContainer: HTMLDivElement | null = null;
@@ -35,7 +34,7 @@
 
 	const updateNodeInternals = useUpdateNodeInternals();
 
-	let messageContext: MessageContext;
+	const jsRunner = JSRunner.getInstance();
 	let isRunning = $state(false);
 	let isMessageCallbackActive = $state(false);
 	let isTimerCallbackActive = $state(false);
@@ -87,7 +86,7 @@
 	};
 
 	onMount(() => {
-		messageContext = new MessageContext(nodeId);
+		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.onMessageCallbackRegistered = () => {
 			isMessageCallbackActive = true;
 		};
@@ -107,17 +106,19 @@
 	});
 
 	onDestroy(() => {
+		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.queue.removeCallback(handleMessage);
-		messageContext.destroy();
-		messageContext.destroy();
+		jsRunner.destroyMessageContext(nodeId);
 	});
 
 	function clearTimers() {
+		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.clearTimers();
 		isTimerCallbackActive = false;
 	}
 
 	function clearMessageHandler() {
+		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.messageCallback = null;
 		isMessageCallbackActive = false;
 	}
@@ -135,18 +136,13 @@
 		// Clear previous output
 		consoleOutput = [];
 
-		// Don't recreate message context - just clear timers to avoid duplicates
-		if (messageContext) {
-			// Clear all timers, keep the message context alive for connections
-			messageContext.clearTimers();
-		}
-
 		// Create a custom console that captures output
 		const customConsole = {
 			log: (...args: any[]) => {
 				const message = args
 					.map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
 					.join(' ');
+
 				consoleOutput = [...consoleOutput, message];
 
 				setTimeout(() => {
@@ -167,57 +163,20 @@
 			}
 		};
 
+		const setPortCount = (inletCount = 1, outletCount = 1) => {
+			updateNodeData(nodeId, { inletCount, outletCount });
+			updateNodeInternals(nodeId);
+		};
+
+		const setRunOnMount = (runOnMount = false) => updateNodeData(nodeId, { runOnMount });
+
 		try {
-			const messageSystemContext = messageContext.getContext();
-
-			const setPortCount = (inletCount = 1, outletCount = 1) => {
-				updateNodeData(nodeId, { inletCount, outletCount });
-				updateNodeInternals(nodeId);
-			};
-
-			const setRunOnMount = (runOnMount = false) => updateNodeData(nodeId, { runOnMount });
-
-			const functionParams = [
-				'console',
-				'send',
-				'onMessage',
-				'setInterval',
-				'requestAnimationFrame',
-				'fft',
-				'llm',
-				'setPortCount',
-				'setRunOnMount',
-				'setTitle'
-			];
-
-			const functionArgs = [
+			await jsRunner.executeJavaScript(nodeId, code, {
 				customConsole,
-				messageSystemContext.send,
-				messageSystemContext.onMessage,
-				messageSystemContext.setInterval,
-				messageSystemContext.requestAnimationFrame,
-				messageSystemContext.fft,
-				createLLMFunction(),
 				setPortCount,
 				setRunOnMount,
 				setTitle
-			];
-
-			const userFunction = new Function(
-				...functionParams,
-				`
-				const inner = async () => {
-					var recv = receive = onMessage; // alias
-					var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-				
-					${code}
-				}
-
-				return inner()
-			`
-			);
-
-			await userFunction(...functionArgs);
+			});
 		} catch (error) {
 			consoleOutput = [
 				...consoleOutput,
