@@ -133,6 +133,19 @@
 		clearMessageHandler();
 	}
 
+	// Keep the console scrolled to the bottom and update width
+	function syncConsoleUi() {
+		setTimeout(() => {
+			updateContentWidth();
+
+			consoleContainer?.scrollTo({
+				left: 0,
+				top: consoleContainer.scrollHeight,
+				behavior: 'instant'
+			});
+		}, 50);
+	}
+
 	async function executeCode() {
 		isRunning = true;
 		isMessageCallbackActive = false;
@@ -150,21 +163,19 @@
 
 				consoleOutput = [...consoleOutput, message];
 
-				setTimeout(() => {
-					consoleContainer?.scrollTo({
-						left: 0,
-						top: consoleContainer.scrollHeight,
-						behavior: 'instant'
-					});
-				}, 50);
+				syncConsoleUi();
 			},
 			error: (...args: any[]) => {
 				const message = args.map((arg) => String(arg)).join(' ');
 				consoleOutput = [...consoleOutput, `ERROR: ${message}`];
+
+				syncConsoleUi();
 			},
 			warn: (...args: any[]) => {
 				const message = args.map((arg) => String(arg)).join(' ');
 				consoleOutput = [...consoleOutput, `WARN: ${message}`];
+
+				syncConsoleUi();
 			}
 		};
 
@@ -283,7 +294,9 @@
 				</div>
 
 				{#if data.showConsole}
-					<div class={['min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor]}>
+					<div
+						class={['min-w-[150px] max-w-[500px] rounded-md border bg-zinc-900 p-3', borderColor]}
+					>
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
 
