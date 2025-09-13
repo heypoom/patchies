@@ -42,7 +42,7 @@ export class ToneManager {
 		const Tone = await this.ensureTone();
 
 		if (!code || code.trim() === '') {
-			this.cleanup();
+			await this.cleanup();
 			this.currentCode = '';
 			return;
 		}
@@ -51,7 +51,7 @@ export class ToneManager {
 
 		try {
 			// Clean up any existing objects
-			this.cleanup();
+			await this.cleanup();
 
 			// Reset message inlet count and recv callback for new code
 			this.messageInletCount = 0;
