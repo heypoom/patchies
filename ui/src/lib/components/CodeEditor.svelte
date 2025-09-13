@@ -9,7 +9,6 @@
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 	import { LanguageSupport } from '@codemirror/language';
-	import { vim, Vim } from '@replit/codemirror-vim';
 	import { useVimInEditor } from '../../stores/editor.store';
 
 	let languageComp = new Compartment();
@@ -54,7 +53,7 @@
 		return [];
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		if (editorElement) {
 			const extensions = [
 				Prec.highest(
@@ -123,8 +122,8 @@
 			];
 
 			if ($useVimInEditor) {
+				const { vim, Vim } = await import('@replit/codemirror-vim');
 				Vim.defineEx('write', 'w', onrun);
-
 				extensions.push(drawSelection());
 				extensions.push(vim({ status: false }));
 			}
