@@ -382,7 +382,9 @@
 						]}
 					>
 						{#if data.libraryName}
-							<div>double click to edit code</div>
+							{#if !showEditor}
+								<div>double click to edit code</div>
+							{/if}
 						{:else}
 							<div>click to run</div>
 						{/if}
