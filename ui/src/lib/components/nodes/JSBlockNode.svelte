@@ -200,8 +200,7 @@
 				customConsole,
 				setPortCount,
 				setRunOnMount,
-				setTitle,
-				isAsync: true
+				setTitle
 			});
 		} catch (error) {
 			consoleOutput = [

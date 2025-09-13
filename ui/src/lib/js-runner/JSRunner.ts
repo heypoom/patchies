@@ -13,7 +13,6 @@ export interface JSRunnerOptions {
 	setRunOnMount?: (runOnMount?: boolean) => void;
 	setTitle?: (title: string) => void;
 	extraContext?: Record<string, unknown>;
-	isAsync?: boolean;
 }
 
 export class JSRunner {
@@ -187,10 +186,8 @@ export class JSRunner {
 			...Object.values(extraContext)
 		];
 
-		const asyncKeyword = options.isAsync ? 'async' : '';
-
 		const codeWithWrapper = `
-			const inner = ${asyncKeyword} () => {
+			const inner = async () => {
 				var recv = receive = onMessage; // alias
 				var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 				var esm = (name) => import('${this.moduleProviderUrl}' + name);

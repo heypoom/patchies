@@ -58,14 +58,17 @@ export class P5Manager {
 			processedCode = deleteAfterComment(processedCode, delimiter).trim();
 		}
 
-		const sketch = (p: Sketch) => {
+		const sketch = async (p: Sketch) => {
 			const sketchConfig: P5SketchConfig = {
 				...config,
 				code: processedCode ?? config.code
 			};
 
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const userCode = this.executeUserCode(p, sketchConfig, P5) as any;
+			const userCode = (await this.executeUserCode(p, sketchConfig, P5)) as any;
+
+			await userCode?.preload?.call(p);
+			await userCode?.setup?.call(p);
 
 			const sendBitmap = this.sendBitmap.bind(this);
 
@@ -194,7 +197,8 @@ export class P5Manager {
 				sketch,
 				noDrag: config.messageContext?.noDrag,
 				setHidePorts: config.setHidePorts
-			}
+			},
+			isAsync: true
 		});
 	}
 
