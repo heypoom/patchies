@@ -1,18 +1,59 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, minimalSetup } from 'codemirror';
-	import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
-	import { javascript } from '@codemirror/lang-javascript';
-	import { python } from '@codemirror/lang-python';
-	import { markdown } from '@codemirror/lang-markdown';
-	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
-	import { keymap, drawSelection } from '@codemirror/view';
-	import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
-	import { LanguageSupport } from '@codemirror/language';
-	import { vim, Vim } from '@replit/codemirror-vim';
 	import { useVimInEditor } from '../../stores/editor.store';
+	import type { Extension } from '@codemirror/state';
+	import { match } from 'ts-pattern';
 
-	let languageComp = new Compartment();
+	async function loadCodeMirrorCore() {
+		const [{ EditorView, minimalSetup }, stateModule, { keymap, drawSelection }, { tokyoNight }] =
+			await Promise.all([
+				import('codemirror'),
+				import('@codemirror/state'),
+				import('@codemirror/view'),
+				import('@uiw/codemirror-theme-tokyo-night')
+			]);
+
+		return {
+			EditorView,
+			minimalSetup,
+			Compartment: stateModule.Compartment,
+			EditorState: stateModule.EditorState,
+			Prec: stateModule.Prec,
+			keymap,
+			drawSelection,
+			tokyoNight
+		};
+	}
+
+	async function loadLanguageExtension(language: string) {
+		return match(language)
+			.with('javascript', async () => {
+				const { javascript } = await import('@codemirror/lang-javascript');
+
+				return javascript();
+			})
+			.with('glsl', async () => {
+				const [{ LanguageSupport }, { glslLanguage }] = await Promise.all([
+					import('@codemirror/language'),
+					import('$lib/codemirror/glsl.codemirror')
+				]);
+
+				return new LanguageSupport(glslLanguage);
+			})
+			.with('python', async () => {
+				const { python } = await import('@codemirror/lang-python');
+
+				return python();
+			})
+			.with('markdown', async () => {
+				const { markdown } = await import('@codemirror/lang-markdown');
+
+				return markdown();
+			})
+			.otherwise(() => []);
+	}
+
+	let languageComp: any = null;
 
 	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'markdown' | 'plain';
 
@@ -33,30 +74,38 @@
 		class?: string;
 		onrun?: () => void;
 		onchange?: (code: string) => void;
-		extraExtensions?: Extension[];
+		extraExtensions?: any[];
 		fontSize?: string;
 	} = $props();
 
-	let editorElement: HTMLDivElement;
-	let editorView: EditorView | null = null;
+	let editorElement = $state<HTMLDivElement>();
+	let editorView: any = null;
+	let isLoading = $state(true);
+	let codeMirrorCore: any = null;
 
-	function getLanguageExtension(language: string) {
-		if (language === 'javascript') {
-			return javascript();
-		} else if (language === 'glsl') {
-			return new LanguageSupport(glslLanguage);
-		} else if (language === 'python') {
-			return python();
-		} else if (language === 'markdown') {
-			return markdown();
-		}
+	onMount(async () => {
+		try {
+			// Load CodeMirror core modules
+			codeMirrorCore = await loadCodeMirrorCore();
 
-		return [];
-	}
+			const {
+				EditorView,
+				EditorState,
+				Prec,
+				keymap,
+				drawSelection,
+				minimalSetup,
+				tokyoNight,
+				Compartment
+			} = codeMirrorCore;
 
-	onMount(() => {
-		if (editorElement) {
-			const extensions = [
+			// Initialize language compartment
+			languageComp = new Compartment();
+
+			// Load language extension
+			const languageExtension = await loadLanguageExtension(language);
+
+			const extensions: Extension[] = [
 				Prec.highest(
 					keymap.of([
 						{
@@ -70,11 +119,8 @@
 				),
 				drawSelection(),
 				minimalSetup,
-
 				tokyoNight,
-
-				languageComp.of(getLanguageExtension(language)),
-
+				languageComp.of(languageExtension),
 				EditorView.theme({
 					'&': {
 						fontSize,
@@ -107,7 +153,7 @@
 						backgroundColor: 'rgba(59, 130, 246, 0.3)'
 					}
 				}),
-				EditorView.updateListener.of((update) => {
+				EditorView.updateListener.of((update: any) => {
 					if (update.docChanged) {
 						const updatedValue = update.state.doc.toString();
 
@@ -123,8 +169,8 @@
 			];
 
 			if ($useVimInEditor) {
+				const { vim, Vim } = await import('@replit/codemirror-vim');
 				Vim.defineEx('write', 'w', onrun);
-
 				extensions.push(drawSelection());
 				extensions.push(vim({ status: false }));
 			}
@@ -149,6 +195,11 @@
 				state,
 				parent: editorElement
 			});
+
+			isLoading = false;
+		} catch (error) {
+			console.error('Failed to load CodeMirror:', error);
+			isLoading = false;
 		}
 	});
 
@@ -160,7 +211,7 @@
 
 	// Update editor when value prop changes externally
 	$effect(() => {
-		if (editorView && editorView.state.doc.toString() !== value) {
+		if (editorView && !isLoading && editorView.state.doc.toString() !== value) {
 			editorView.dispatch({
 				changes: {
 					from: 0,
@@ -173,9 +224,13 @@
 
 	// Sync language extension with the `language` prop
 	$effect(() => {
-		editorView?.dispatch({
-			effects: languageComp.reconfigure(getLanguageExtension(language))
-		});
+		if (editorView && languageComp && !isLoading) {
+			loadLanguageExtension(language).then((languageExtension) => {
+				editorView?.dispatch({
+					effects: languageComp.reconfigure(languageExtension)
+				});
+			});
+		}
 	});
 </script>
 
