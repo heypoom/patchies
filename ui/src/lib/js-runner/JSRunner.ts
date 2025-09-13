@@ -158,9 +158,7 @@ export class JSRunner {
 			const libName = getLibName(code);
 
 			if (libName) {
-				this.modules.set(libName, code);
-				this.libraryNamesByNode.set(nodeId, libName);
-
+				this.setLibraryCode(nodeId, code);
 				setLibraryName(libName);
 				return;
 			} else {
@@ -193,6 +191,14 @@ export class JSRunner {
 		const userFunction = new Function(...functionParams, codeWithWrapper);
 
 		await userFunction(...functionArgs);
+	}
+
+	setLibraryCode(nodeId: string, code: string) {
+		const libName = getLibName(code);
+		if (!libName) return;
+
+		this.libraryNamesByNode.set(nodeId, libName);
+		this.modules.set(libName, code);
 	}
 
 	public static getInstance(): JSRunner {

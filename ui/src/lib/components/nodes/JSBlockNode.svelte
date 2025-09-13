@@ -419,6 +419,10 @@
 				<CodeEditor
 					value={code}
 					onchange={(newCode) => {
+						if (data.libraryName) {
+							jsRunner.setLibraryCode(nodeId, newCode);
+						}
+
 						updateNodeData(nodeId, { code: newCode });
 					}}
 					language="javascript"
