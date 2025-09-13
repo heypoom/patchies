@@ -17,11 +17,15 @@ export interface JSRunnerOptions {
 
 export class JSRunner {
 	private static instance: JSRunner;
+
+	public moduleProviderUrl = `https://esm.run/`;
 	public modules: Map<string, string> = new Map();
 	private messageContextMap: Map<string, MessageContext> = new Map();
 
 	/** Avoid collision caused by multiple nodes having same library names. */
 	private libraryNamesByNode: Map<string, string> = new Map();
+
+	private moduleCache: Map<string, string> = new Map();
 
 	async gen(inputName: string): Promise<string> {
 		try {
@@ -36,10 +40,26 @@ export class JSRunner {
 							if (this.modules.has(source)) {
 								return source;
 							}
+
+							if (source.startsWith('https')) {
+								return source;
+							}
+
+							if (!source.startsWith('.')) {
+								return source;
+							}
 						},
-						load: (id) => {
+						load: async (id) => {
 							if (this.modules.has(id)) {
 								return this.modules.get(id);
+							}
+
+							if (id.startsWith('https')) {
+								return this.loadExternalModule(id);
+							}
+
+							if (!id.startsWith('.')) {
+								return this.loadExternalModule(this.moduleProviderUrl + id);
 							}
 						}
 					}
@@ -54,6 +74,23 @@ export class JSRunner {
 		}
 
 		return '';
+	}
+
+	async loadExternalModule(id: string) {
+		if (this.moduleCache.has(id)) {
+			return this.moduleCache.get(id);
+		}
+
+		const response = await fetch(id);
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch ${id}: ${response.statusText}`);
+		}
+
+		const code = await response.text();
+		this.moduleCache.set(id, code);
+
+		return code;
 	}
 
 	getMessageContext(nodeId: string): MessageContext {
