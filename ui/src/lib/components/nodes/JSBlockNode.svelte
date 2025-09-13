@@ -189,8 +189,13 @@
 		try {
 			const processedCode = await jsRunner.preprocessCode(code, {
 				nodeId,
-				setLibraryName: (libraryName: string | null) =>
-					updateNodeData(nodeId, { libraryName, inletCount: 0, outletCount: 0 })
+				setLibraryName: (libraryName: string | null) => {
+					updateNodeData(nodeId, { libraryName, inletCount: 0, outletCount: 0 });
+
+					setTimeout(() => {
+						updateContentWidth();
+					}, 10);
+				}
 			});
 
 			// library code - do not execute
@@ -300,7 +305,7 @@
 					{/each}
 				</div>
 
-				{#if data.showConsole}
+				{#if data.showConsole && !data.libraryName}
 					<div
 						class={['min-w-[150px] max-w-[500px] rounded-md border bg-zinc-900 p-3', borderColor]}
 					>
@@ -384,8 +389,8 @@
 
 					<div
 						class={[
-							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300',
-							selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
+							selected ? '' : 'group-hover:opacity-100'
 						]}
 					>
 						{#if data.libraryName}
