@@ -21,14 +21,16 @@
 		selected: boolean;
 	} = $props();
 
-	// Get flow utilities to update node data
 	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
-	const width = $state(200);
-	const height = $state(150);
+	let width = $state(200);
+	let height = $state(150);
 
-	let glSystem: GLSystem;
+	let glSystem = GLSystem.getInstance();
+	width = glSystem.previewSize[0];
+	height = glSystem.previewSize[1];
+
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let messageContext: MessageContext;
