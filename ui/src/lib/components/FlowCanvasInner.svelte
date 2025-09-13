@@ -31,8 +31,11 @@
 	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam } from '$lib/utils/search-params';
+	import { JSRunner } from '$lib/js-runner/JSRunner';
 
 	const AUTOSAVE_INTERVAL = 2500;
+
+	window.jsRunner = JSRunner.getInstance();
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
