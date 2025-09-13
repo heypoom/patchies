@@ -25,17 +25,42 @@ export class JSRunner {
 	/** Avoid collision caused by multiple nodes having same library names. */
 	private libraryNamesByNode: Map<string, string> = new Map();
 
-	private moduleCache: Map<string, string> = new Map();
-
 	async gen(inputName: string): Promise<string> {
 		try {
 			const { rollup } = await import('@rollup/browser');
+
+			const importMappings = new Map();
 
 			const bundle = await rollup({
 				input: inputName,
 				plugins: [
 					{
 						name: 'loader',
+
+						moduleParsed(moduleInfo) {
+							const body = moduleInfo.ast?.body;
+							if (!body) return;
+
+							// Find and store import declarations as before
+							for (const node of body) {
+								if (node.type === 'ImportDeclaration') {
+									const importSource = node.source.value;
+
+									for (const specifier of node.specifiers) {
+										const isDefault = specifier.type === 'ImportDefaultSpecifier';
+										const localName = specifier.local.name;
+
+										const key = `${importSource}!!${localName}!!${isDefault ? 'default' : 'named'}`;
+
+										importMappings.set(key, {
+											source: importSource,
+											localName,
+											isDefault
+										});
+									}
+								}
+							}
+						},
 						resolveId: (source) => {
 							if (this.modules.has(source)) {
 								return source;
@@ -45,6 +70,43 @@ export class JSRunner {
 							if (this.modules.has(id)) {
 								return this.modules.get(id);
 							}
+						},
+						renderChunk(code) {
+							let transformedCode = code;
+							const importsToRemove = [];
+
+							for (const { localName, source, isDefault } of importMappings.values()) {
+								const importRegex = new RegExp(
+									`^\\s*import\\s+(?:\\{.*?\\s*${localName}\\s*.*?\\}|${localName})\\s+from\\s+['"]${source}['"];?\\s*`,
+									'm'
+								);
+
+								const match = transformedCode.match(importRegex);
+								const packageName = source.replace('npm:', '');
+
+								if (match) {
+									const fullStatement = match[0];
+									importsToRemove.push(fullStatement);
+
+									let replacement;
+
+									if (isDefault) {
+										replacement = `const ${localName} = (await esm('${packageName}')).default\n`;
+									} else {
+										replacement = `const { ${localName} } = await esm('${packageName}')\n`;
+									}
+
+									transformedCode = transformedCode.replace(fullStatement, replacement);
+								}
+
+								// process side effect imports
+								transformedCode = transformedCode.replace(
+									`import '${source}'`,
+									`await esm('${packageName}')`
+								);
+							}
+
+							return transformedCode;
 						}
 					}
 				]
@@ -97,23 +159,6 @@ export class JSRunner {
 
 			return this.gen(moduleName);
 		}
-
-		return code;
-	}
-
-	async loadExternalModule(id: string) {
-		if (this.moduleCache.has(id)) {
-			return this.moduleCache.get(id);
-		}
-
-		const response = await fetch(id);
-
-		if (!response.ok) {
-			throw new Error(`Failed to fetch ${id}: ${response.statusText}`);
-		}
-
-		const code = await response.text();
-		this.moduleCache.set(id, code);
 
 		return code;
 	}

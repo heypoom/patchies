@@ -21,7 +21,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - [Tone.js](https://tonejs.github.io), framework for creating interactive music in the browser.
 - [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
 - [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
-- Use [any third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
+- Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
 - ...as well as write JavaScript code directly.
 
 ## ...by patching them together ✨
@@ -235,14 +235,13 @@ These objects support video chaining and can be connected to create complex visu
 
 - You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
 
-  - Recommended libraries: [ML5.js](https://ml5js.org) for machine learning, [Matter.js](https://brm.io/matter-js) for physics simulation.
-  - You can use top-level awaits to import packages:
+  - Try out [ML5.js](https://ml5js.org) for machine learning and [Matter.js](https://brm.io/matter-js) for physics simulation. They play well with P5.js.
 
   ```js
-  const {default: Matter} = await esm('matter-js')
+  import ml5 from 'npm:ml5'
 
-  function setup() {
-    console.log(Matter)
+  function preload() {
+    classifier = ml5.imageClassifier('MobileNet')
   }
   ```
 
@@ -377,21 +376,32 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Importing JavaScript packages from NPM
 
-- Import external modules via `const M = await import('https://esm.run/<module>')` to use any NPM package in your code. For example, to use `lodash-es`:
+> This feature is only available in `js` and `p5` objects, for now.
+
+- You can import any JavaScript package by using the `npm:` prefix in the import statement.
+
+  - This uses [esm.run](https://esm.run) under the hood to load the package from NPM.
+  - This gets translated into top-level dynamic imports behind the scenes.
+  - `import * as X` is not yet supported.
+
+  ```js
+  import Matter from 'npm:matter-js'
+  import {uniq} from 'npm:lodash-es'
+
+  console.log(Matter) // Matter.js library
+  console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
+  ```
+
+- Alternatively, write the dynamic import yourself:
 
   ```js
   const {uniq} = await import('https://esm.run/lodash-es')
   console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
-  ```
 
-- You can also use a shorthand `const M = await esm(moduleName)` -- the same as above, but shorter to type.
-
-  ```js
+  // or use a shorthand `await esm()` function that does the same thing
   const {uniq} = await esm('lodash-es')
   console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
   ```
-
-- This feature is available in `js` and `p5` objects, for now.
 
 #### Sharing JavaScript across multiple `js` blocks
 
