@@ -16,12 +16,12 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - [Hydra](https://hydra.ojack.xyz), live-coding video synthesizer.
 - [Strudel](https://strudel.cc), TidalCycles-like music environment
 - [ChucK](https://chuck.cs.princeton.edu/webchuck), programming language for real-time sound synthesis.
-- [ML5.js](https://ml5js.org), friendly machine learning library for the web.
 - [SwissGL](https://github.com/google/swissgl), minimal WebGL2 wrapper for shaders.
 - [GLSL fragment shaders](https://www.shadertoy.com), for complex 3D visual effects.
 - [Tone.js](https://tonejs.github.io), framework for creating interactive music in the browser.
 - [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
 - [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
+- Use [any third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
 - ...as well as write JavaScript code directly.
 
 ## ...by patching them together ✨
@@ -226,33 +226,28 @@ These objects support video chaining and can be connected to create complex visu
 - If you are new to P5.js, I recommend watching [Patt Vira](https://www.youtube.com/@pattvira)'s YouTube tutorials on YouTube, or on her [website](https://www.pattvira.com). They're fantastic for both beginners and experienced developers.
 - Read the [P5.js documentation](https://p5js.org/reference) to see how P5 works.
 - See the [P5.js tutorials](https://p5js.org/tutorials) and [OpenProcessing](https://www.openprocessing.org) for more inspirations.
-- You can also use [ML5.js](https://ml5js.org) and [Matter.js](https://brm.io/matter-js/) in your P5 sketch to do machine learning and 2D physics simulations.
-- Use the `loadLibrary` function to load the libraries asynchronously. For example:
-
-  ```ts
-  let Matter
-  let ml5
-
-  async function setup() {
-    createCanvas(252, 164)
-    pixelDensity(4)
-
-    Matter = await loadLibrary('matter')
-    ml5 = await loadLibrary('ml5')
-  }
-
-  function draw() {
-    clear()
-    fill(255, 255, 100)
-    ellipse(126, 82, 80, 80)
-  }
-  ```
 
 - You can call these special methods in your sketch:
 
   - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.
     - When `noDrag()` is enabled, you can still drag the "p5" title to move the whole object around.
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+
+- You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
+
+  - Make sure to add the `async` to the `setup()` function, as we need to `await esm()` to import packages asynchronously.
+  - Recommended libraries: [ML5.js](https://ml5js.org) for machine learning, [Matter.js](https://brm.io/matter-js) for physics simulation.
+
+  ```js
+  let Matter
+
+  async function setup() {
+    Matter = (await esm('matter-js')).default
+    console.log(Matter)
+  }
+  ```
+
+- You can import shared JavaScript libraries across multiple `p5` objects, see [sharing JavaScript across multiple `js` blocks](#sharing-javascript-across-multiple-js-blocks).
 
 ### `hydra`: creates a Hydra video synthesizer
 
@@ -381,7 +376,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Top-level awaits are supported.
   - Use `await delay(ms)` to pause the code for `ms` milliseconds. For example, `await delay(1000)` pauses the code for 1 second.
 
-#### Importing external dependencies
+#### Importing JavaScript packages from NPM
 
 - Import external modules via `const M = await import('https://esm.run/<module>')` to use any NPM package in your code. For example, to use `lodash-es`:
 
@@ -397,6 +392,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
   ```
 
+- This feature is available in `js` and `p5` objects, for now.
+
 #### Sharing JavaScript across multiple `js` blocks
 
 You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code.
@@ -409,6 +406,9 @@ You can share JavaScript code across multiple `js` blocks by using the `// @lib 
 See the following example:
 
 <img src="./docs/images/patchies-js-modules.png" alt="Patchies.app JS Modules" width="700">
+
+- This feature is available in `js` and `p5` objects, for now.
+  - See [this example](https://patchies.app/?id=y1tstmuewqnc8sf) of using shared P5.js module with third-party imports.
 
 ### `expr`: mathematical expression evaluator
 

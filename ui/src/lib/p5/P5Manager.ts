@@ -8,13 +8,8 @@ interface P5SketchConfig {
 	code: string;
 	messageContext?: UserFnRunContext;
 
-	/** Loads a built-in library. */
-	loadLibrary?: (name: LibraryKey) => void;
-
 	setHidePorts?: (hide: boolean) => void;
 }
-
-type LibraryKey = 'ml5' | 'matter';
 
 export class P5Manager {
 	public p5: Sketch | null = null;
@@ -23,7 +18,6 @@ export class P5Manager {
 	public nodeId: string;
 
 	public shouldSendBitmap = true;
-	public enabledLibraries: Set<LibraryKey> = new Set();
 
 	private container: HTMLElement | null = null;
 
@@ -198,10 +192,6 @@ export class P5Manager {
 			setTitle: config.messageContext?.setTitle,
 			extraContext: {
 				sketch,
-				loadLibrary: (library: LibraryKey) => {
-					this.enabledLibraries.add(library);
-					return this.loadLibraryIfEnabled(library);
-				},
 				noDrag: config.messageContext?.noDrag,
 				setHidePorts: config.setHidePorts
 			}
@@ -228,22 +218,5 @@ export class P5Manager {
 		if (!this.glSystem.hasOutgoingVideoConnections(this.nodeId)) return;
 
 		await this.glSystem.setBitmapSource(this.nodeId, canvas);
-	}
-
-	async loadLibraryIfEnabled(library: LibraryKey) {
-		if (!this.enabledLibraries.has(library)) return { default: null };
-
-		if (library === 'ml5') {
-			// @ts-expect-error -- no type for ml5
-			const ml5 = await import('ml5');
-
-			return ml5.default;
-		}
-
-		if (library === 'matter') {
-			const matter = await import('matter-js');
-
-			return matter.default;
-		}
 	}
 }
