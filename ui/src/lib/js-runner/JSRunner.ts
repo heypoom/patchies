@@ -182,6 +182,7 @@ export class JSRunner {
 			const inner = async () => {
 				var recv = receive = onMessage; // alias
 				var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+				var esm = (name) => import('${this.moduleProviderUrl}' + name);
 
 				${processedCode}
 			}
