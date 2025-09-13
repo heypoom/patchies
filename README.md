@@ -395,9 +395,7 @@ You can share JavaScript code across multiple `js` blocks by using the `// @lib 
 - In your library object, use ES modules `export` syntax, e.g. `export const rand = () => Math.random()`. This works for everything: classes, functions, modules.
   - Note that the constants are NOT shared across objects. Each object has their own isolated execution context. You cannot create shared singletons. Use [message passing](#message-passing) to communicate between objects.
 - You can then use ES modules syntax like `import { Bar } from 'bar.js'`.
-- There are two ways to import external dependencies:
-  - Recommended way ⚡️: use `const M = await import('https://esm.run/<module>')` on the top of your code, as top-level awaits are supported. This is the recommended way, as dynamic imports are evaled at runtime and much, much faster.
-  - Slow way 🐢 🐌: use `import M from '<module>'`, it's convenient but much slower. If the module is not defined locally, it will be fetched from [esm.run](https://esm.run) automatically. This is a lot slower as it needs to eval a whole chunk of code!
+- To import external dependencies, use `const M = await import('https://esm.run/<module>')` on the top of your code, as top-level awaits are supported.
 
 See the following example:
 

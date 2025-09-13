@@ -40,26 +40,10 @@ export class JSRunner {
 							if (this.modules.has(source)) {
 								return source;
 							}
-
-							if (source.startsWith('https')) {
-								return source;
-							}
-
-							if (!source.startsWith('.')) {
-								return source;
-							}
 						},
 						load: async (id) => {
 							if (this.modules.has(id)) {
 								return this.modules.get(id);
-							}
-
-							if (id.startsWith('https')) {
-								return this.loadExternalModule(id);
-							}
-
-							if (!id.startsWith('.')) {
-								return this.loadExternalModule(this.moduleProviderUrl + id);
 							}
 						}
 					}
