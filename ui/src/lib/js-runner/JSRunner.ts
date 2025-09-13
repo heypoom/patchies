@@ -16,7 +16,7 @@ export interface JSRunnerOptions {
 	extraContext?: Record<string, unknown>;
 }
 
-const SET_JS_LIBRARY_CODE_DEBOUNCE = 1000;
+const SET_JS_LIBRARY_CODE_DEBOUNCE = 500;
 
 export class JSRunner {
 	private static instance: JSRunner;
