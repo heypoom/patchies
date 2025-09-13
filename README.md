@@ -235,14 +235,13 @@ These objects support video chaining and can be connected to create complex visu
 
 - You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
 
-  - Make sure to add the `async` to the `setup()` function, as we need to `await esm()` to import packages asynchronously.
   - Recommended libraries: [ML5.js](https://ml5js.org) for machine learning, [Matter.js](https://brm.io/matter-js) for physics simulation.
+  - You can use top-level awaits to import packages:
 
   ```js
-  let Matter
+  const {default: Matter} = await esm('matter-js')
 
-  async function setup() {
-    Matter = (await esm('matter-js')).default
+  function setup() {
     console.log(Matter)
   }
   ```
