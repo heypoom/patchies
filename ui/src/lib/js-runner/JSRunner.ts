@@ -1,4 +1,4 @@
-import { getLibName, isSnippetModule } from './js-module-utils';
+import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
 
@@ -19,6 +19,9 @@ export class JSRunner {
 	private static instance: JSRunner;
 	public modules: Map<string, string> = new Map();
 	private messageContextMap: Map<string, MessageContext> = new Map();
+
+	/** Avoid collision caused by multiple nodes having same library names. */
+	private libraryNamesByNode: Map<string, string> = new Map();
 
 	async gen(inputName: string): Promise<string> {
 		try {
@@ -61,12 +64,21 @@ export class JSRunner {
 		return this.messageContextMap.get(nodeId)!;
 	}
 
-	destroyMessageContext(nodeId: string): void {
-		const context = this.messageContextMap.get(nodeId);
-		if (!context) return;
+	destroy(nodeId: string): void {
+		const libraryName = this.libraryNamesByNode.get(nodeId);
 
-		context.destroy();
+		if (libraryName) {
+			this.modules.delete(libraryName);
+		}
+
+		this.libraryNamesByNode.delete(nodeId);
 		this.messageContextMap.delete(nodeId);
+		this.modules.delete(getModuleNameByNode(nodeId));
+
+		const context = this.messageContextMap.get(nodeId);
+		if (context) {
+			context.destroy();
+		}
 	}
 
 	async executeJavaScript(
@@ -116,30 +128,34 @@ export class JSRunner {
 
 		let processedCode = code;
 
-		const moduleName = `node-${nodeId}.js`;
 		const isModule = isSnippetModule(code);
-		console.log(`--- ${nodeId}::isModule`, isModule);
 
 		if (isModule) {
+			const moduleName = getModuleNameByNode(nodeId);
+
 			// If the module is tagged as `@lib <lib-name>`
 			const libName = getLibName(code);
+
 			if (libName) {
 				this.modules.set(libName, code);
+				this.libraryNamesByNode.set(nodeId, libName);
+
 				setLibraryName(libName);
 				return;
 			} else {
+				// Un-register library
+				const previousLibName = this.libraryNamesByNode.get(nodeId);
+				if (previousLibName) {
+					this.modules.delete(previousLibName);
+					this.libraryNamesByNode.delete(nodeId);
+				}
+
 				setLibraryName(null);
 			}
 
 			this.modules.set(moduleName, code);
-
-			console.log(`--- bundling module`, moduleName);
 			processedCode = await this.gen(moduleName);
-
-			console.log(`--- generated`, processedCode);
 		}
-
-		console.log(`--- executing code for node ${nodeId}:\n`, processedCode);
 
 		const codeWithWrapper = `
 			const inner = async () => {

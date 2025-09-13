@@ -112,7 +112,8 @@
 	onDestroy(() => {
 		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.queue.removeCallback(handleMessage);
-		jsRunner.destroyMessageContext(nodeId);
+
+		jsRunner.destroy(nodeId);
 	});
 
 	function clearTimers() {
