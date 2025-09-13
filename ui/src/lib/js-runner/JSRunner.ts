@@ -1,7 +1,7 @@
 import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
-import { GLSystem } from '$lib/canvas/GLSystem';
+import { debounce } from 'lodash';
 
 export interface JSRunnerOptions {
 	customConsole?: {
@@ -16,6 +16,8 @@ export interface JSRunnerOptions {
 	extraContext?: Record<string, unknown>;
 }
 
+const SET_JS_LIBRARY_CODE_DEBOUNCE = 1000;
+
 export class JSRunner {
 	private static instance: JSRunner;
 
@@ -25,6 +27,9 @@ export class JSRunner {
 
 	/** Avoid collision caused by multiple nodes having same library names. */
 	private libraryNamesByNode: Map<string, string> = new Map();
+
+	private sendToRenderWorker?: (moduleName: string, code: string | null) => void;
+	private sendToRenderWorkerSlow?: (moduleName: string, code: string | null) => void;
 
 	async gen(inputName: string): Promise<string> {
 		try {
@@ -258,7 +263,8 @@ export class JSRunner {
 		if (!libName) return;
 
 		this.libraryNamesByNode.set(nodeId, libName);
-		this.setModuleAndSync(libName, code);
+		this.modules.set(libName, code);
+		this.sendToRenderWorkerSlow?.(libName, code);
 	}
 
 	private setModuleAndSync(moduleName: string, code: string | null) {
@@ -268,12 +274,24 @@ export class JSRunner {
 			this.modules.set(moduleName, code);
 		}
 
-		GLSystem.getInstance().send('updateJSModule', { moduleName, code });
+		this.sendToRenderWorker?.(moduleName, code);
+	}
+
+	async initGlSystem() {
+		if (typeof window === 'undefined') return;
+
+		const { GLSystem } = await import('../canvas/GLSystem');
+
+		this.sendToRenderWorker = (moduleName: string, code: string | null) =>
+			GLSystem.getInstance().send('updateJSModule', { moduleName, code });
+
+		this.sendToRenderWorkerSlow = debounce(this.sendToRenderWorker, SET_JS_LIBRARY_CODE_DEBOUNCE);
 	}
 
 	public static getInstance(): JSRunner {
 		if (!JSRunner.instance) {
 			JSRunner.instance = new JSRunner();
+			JSRunner.instance.initGlSystem();
 		}
 
 		return JSRunner.instance;

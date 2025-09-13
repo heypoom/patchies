@@ -950,7 +950,9 @@ export class AudioSystem {
 	}
 }
 
-// @ts-expect-error -- expose for debugging!
-window.audioSystem = AudioSystem.getInstance();
+if (typeof window !== 'undefined') {
+	// @ts-expect-error -- expose for debugging!
+	window.audioSystem = AudioSystem.getInstance();
+}
 
 const PeriodicWavePart = P.union(P.array(P.number), P.instanceOf(Float32Array));
