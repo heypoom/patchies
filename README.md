@@ -399,12 +399,12 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Sharing JavaScript across multiple `js` blocks
 
-You can share JavaScript code across multiple `js` blocks by using the `// @lib <library-name>` comment at the top of your code.
+You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code.
 
-- For example, `// @lib bar` will register the library as `bar.js`. This will turn the object into a library object, as shown by the package icon.
+- For example, `// @lib foobar` will register the module as `foobar`. This will turn the object into a library object, as shown by the package icon.
 - In your library object, use ES modules `export` syntax, e.g. `export const rand = () => Math.random()`. This works for everything: classes, functions, modules.
   - Note that the constants are NOT shared across objects. Each object has their own isolated execution context. You cannot create shared singletons. Use [message passing](#message-passing) to communicate between objects.
-- You can then use ES modules syntax like `import { Bar } from 'bar'`.
+- You can then use ES modules syntax like `import { rand } from 'foobar'`.
 
 See the following example:
 
