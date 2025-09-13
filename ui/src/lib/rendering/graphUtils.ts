@@ -1,4 +1,4 @@
-import { type Edge as XYEdge } from '@xyflow/svelte';
+import type { Edge as XYEdge } from '@xyflow/svelte';
 
 // Utilities for building and analyzing render graphs
 
