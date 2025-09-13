@@ -184,7 +184,7 @@
 			updateNodeInternals(nodeId);
 		};
 
-		const setRunOnMount = (runOnMount = false) => updateNodeData(nodeId, { runOnMount });
+		const setRunOnMount = (runOnMount = true) => updateNodeData(nodeId, { runOnMount });
 
 		try {
 			const processedCode = await jsRunner.preprocessCode(code, {
