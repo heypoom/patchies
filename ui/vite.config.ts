@@ -5,6 +5,8 @@ import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -22,8 +24,15 @@ export function viteStaticCopyPyodide() {
 }
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit(), devtoolsJson(), viteStaticCopyPyodide()],
-	optimizeDeps: { exclude: ['pyodide'] },
+	plugins: [
+		wasm(),
+		topLevelAwait(),
+		tailwindcss(),
+		sveltekit(),
+		devtoolsJson(),
+		viteStaticCopyPyodide()
+	],
+	optimizeDeps: { exclude: ['pyodide', '@rollup/browser', 'memfs'] },
 	define: {
 		global: 'globalThis'
 	},
