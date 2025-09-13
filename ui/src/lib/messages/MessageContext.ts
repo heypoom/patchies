@@ -27,7 +27,7 @@ export interface UserFnRunContext {
 	noDrag: () => void;
 
 	/** Get audio analysis data */
-	fft: (options: AudioAnalysisProps) => FFTAnalysis;
+	fft?: (options: AudioAnalysisProps) => FFTAnalysis;
 
 	/** Sets the number of inlets and outlets for the node. */
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
@@ -40,7 +40,6 @@ export class MessageContext {
 	public queue: MessageQueue;
 	public messageSystem: MessageSystem;
 	public nodeId: string;
-	public audioAnalysis: AudioAnalysisSystem;
 
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
@@ -54,7 +53,6 @@ export class MessageContext {
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
 		this.messageSystem = MessageSystem.getInstance();
-		this.audioAnalysis = AudioAnalysisSystem.getInstance();
 
 		// Register this node with the message system
 		this.queue = this.messageSystem.registerNode(nodeId);
@@ -103,9 +101,12 @@ export class MessageContext {
 
 	// Create an fft function that automatically infers connected FFT nodes
 	createFFTFunction() {
+		if (typeof window === 'undefined') return null;
+
 		return (options: AudioAnalysisProps) => {
-			const bins = this.audioAnalysis.getAnalysisForNode(this.nodeId, options);
-			const sampleRate = this.audioAnalysis.sampleRate;
+			const audioAnalysis = AudioAnalysisSystem.getInstance();
+			const bins = audioAnalysis.getAnalysisForNode(this.nodeId, options);
+			const sampleRate = audioAnalysis.sampleRate;
 
 			return new FFTAnalysis(bins, options?.format ?? null, sampleRate);
 		};
@@ -113,13 +114,15 @@ export class MessageContext {
 
 	// Get all the context functions to inject
 	getContext(): UserFnRunContext {
+		const fft = this.createFFTFunction();
+
 		return {
 			send: this.send.bind(this),
 			onMessage: this.createOnMessageFunction(),
 			setInterval: this.createSetIntervalFunction(),
 			requestAnimationFrame: this.createRequestAnimationFrameFunction(),
 			noDrag: () => {},
-			fft: this.createFFTFunction()
+			...(fft && { fft })
 		};
 	}
 

@@ -22,6 +22,7 @@ import type {
 	GlslFFTInletMeta
 } from '$lib/audio/AudioAnalysisSystem.js';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 
 export class FBORenderer {
 	public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -68,6 +69,7 @@ export class FBORenderer {
 	private startTime: number = Date.now();
 	private previewState: PreviewState = {};
 	private frameCancellable: regl.Cancellable | null = null;
+	public jsRunner = JSRunner.getInstance();
 
 	constructor() {
 		const [width, height] = this.outputSize;
@@ -902,5 +904,14 @@ export class FBORenderer {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 		return pixels!;
+	}
+
+	/** Update JS module in the worker's JSRunner instance */
+	updateJSModule(moduleName: string, code: string | null) {
+		if (code === null) {
+			this.jsRunner.modules.delete(moduleName);
+		} else {
+			this.jsRunner.modules.set(moduleName, code);
+		}
 	}
 }

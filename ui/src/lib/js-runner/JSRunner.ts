@@ -1,6 +1,7 @@
 import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
+import { debounce } from 'lodash';
 
 export interface JSRunnerOptions {
 	customConsole?: {
@@ -15,6 +16,8 @@ export interface JSRunnerOptions {
 	extraContext?: Record<string, unknown>;
 }
 
+const SET_JS_LIBRARY_CODE_DEBOUNCE = 500;
+
 export class JSRunner {
 	private static instance: JSRunner;
 
@@ -24,6 +27,9 @@ export class JSRunner {
 
 	/** Avoid collision caused by multiple nodes having same library names. */
 	private libraryNamesByNode: Map<string, string> = new Map();
+
+	private sendToRenderWorker?: (moduleName: string, code: string | null) => void;
+	private sendToRenderWorkerSlow?: (moduleName: string, code: string | null) => void;
 
 	async gen(inputName: string): Promise<string> {
 		try {
@@ -126,6 +132,36 @@ export class JSRunner {
 		return '';
 	}
 
+	/** Wait for module dependencies to be available */
+	private async waitForDependencies(code: string, maxWait = 5000): Promise<void> {
+		const importRegex = /import\s+(?:[\w\s{},*]+\s+from\s+)?['"]([^'"]+)['"]/g;
+		const dependencies = new Set<string>();
+		let match;
+
+		// Extract all import statements
+		while ((match = importRegex.exec(code)) !== null) {
+			const moduleName = match[1];
+
+			if (!moduleName.startsWith('npm:') && !moduleName.startsWith('http')) {
+				dependencies.add(moduleName);
+			}
+		}
+
+		const startTime = Date.now();
+
+		// wait for all dependencies to be available.
+		for (const dependency of dependencies) {
+			while (!this.modules.has(dependency)) {
+				if (Date.now() - startTime > maxWait) {
+					console.warn(`dependency '${dependency}' not found within ${maxWait}ms`);
+					break;
+				}
+
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
+		}
+	}
+
 	async preprocessCode(
 		code: string,
 		options: {
@@ -134,6 +170,9 @@ export class JSRunner {
 		}
 	): Promise<string | null> {
 		const { nodeId, setLibraryName } = options;
+
+		// Wait for module dependencies first
+		await this.waitForDependencies(code);
 
 		const isModule = isSnippetModule(code);
 
@@ -153,13 +192,13 @@ export class JSRunner {
 			// Un-register library (if any)
 			const previousLibName = this.libraryNamesByNode.get(nodeId);
 			if (previousLibName) {
-				this.modules.delete(previousLibName);
 				this.libraryNamesByNode.delete(nodeId);
+				this.setModuleAndSync(previousLibName, null);
 			}
 
 			setLibraryName(null);
 
-			this.modules.set(moduleName, code);
+			this.setModuleAndSync(moduleName, code);
 
 			return this.gen(moduleName);
 		}
@@ -179,12 +218,16 @@ export class JSRunner {
 		const libraryName = this.libraryNamesByNode.get(nodeId);
 
 		if (libraryName) {
-			this.modules.delete(libraryName);
+			this.libraryNamesByNode.delete(nodeId);
+			this.setModuleAndSync(libraryName, null);
 		}
 
-		this.libraryNamesByNode.delete(nodeId);
 		this.messageContextMap.delete(nodeId);
-		this.modules.delete(getModuleNameByNode(nodeId));
+
+		const moduleName = getModuleNameByNode(nodeId);
+		if (this.modules.has(moduleName)) {
+			this.setModuleAndSync(moduleName, null);
+		}
 
 		const context = this.messageContextMap.get(nodeId);
 		if (context) {
@@ -252,12 +295,37 @@ export class JSRunner {
 		return userFunction(...functionArgs);
 	}
 
-	setLibraryCode(nodeId: string, code: string) {
+	async setLibraryCode(nodeId: string, code: string) {
 		const libName = getLibName(code);
 		if (!libName) return;
 
 		this.libraryNamesByNode.set(nodeId, libName);
 		this.modules.set(libName, code);
+
+		await this.ensureRenderWorker();
+
+		this.sendToRenderWorkerSlow?.(libName, code);
+	}
+
+	private setModuleAndSync(moduleName: string, code: string | null) {
+		if (code === null) {
+			this.modules.delete(moduleName);
+		} else {
+			this.modules.set(moduleName, code);
+		}
+
+		this.sendToRenderWorker?.(moduleName, code);
+	}
+
+	async ensureRenderWorker() {
+		if (typeof window === 'undefined') return;
+
+		const { GLSystem } = await import('../canvas/GLSystem');
+
+		this.sendToRenderWorker = (moduleName: string, code: string | null) =>
+			GLSystem.getInstance().send('updateJSModule', { moduleName, code });
+
+		this.sendToRenderWorkerSlow = debounce(this.sendToRenderWorker, SET_JS_LIBRARY_CODE_DEBOUNCE);
 	}
 
 	public static getInstance(): JSRunner {
