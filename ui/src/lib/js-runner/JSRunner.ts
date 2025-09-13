@@ -52,6 +52,10 @@ export class JSRunner {
 
 										const key = `${importSource}!!${localName}!!${isDefault ? 'default' : 'named'}`;
 
+										// import sources must start with 'npm'
+										if (typeof importSource !== 'string' || !importSource.startsWith('npm:'))
+											continue;
+
 										importMappings.set(key, {
 											source: importSource,
 											localName,
