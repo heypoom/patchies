@@ -387,6 +387,20 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
   ```
 
+#### Sharing JavaScript across multiple `js` blocks
+
+You can share JavaScript code across multiple `js` blocks by using the `// @lib <library-name>` comment at the top of your code.
+
+- For example, `// @lib bar.js` will register the library as `bar.js`. This will turn the object into a library object, as indicated by the book icon.
+- In your library object, use ES modules `export` syntax, e.g. `export const rand = () => Math.random()`. This works for everything: classes, functions, modules.
+  - Note that the constants are NOT shared across objects. Each object has their own isolated execution context. You cannot create shared singletons. Use [message passing](#message-passing) to communicate between objects.
+- You can then use ES modules syntax like `import { Bar } from 'bar.js'`.
+- In order to import external dependencies, use `await import('https://esm.run/<module>')` on the top of your code, as top-level awaits are supported.
+
+See the following example:
+
+<img src="./docs/images/patchies-js-modules.png" alt="Patchies.app JS Modules" width="700">
+
 ### `expr`: mathematical expression evaluator
 
 - Evaluate mathematical expressions and formulas.
