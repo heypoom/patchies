@@ -89,8 +89,9 @@ export class JSRunner {
 									importsToRemove.push(fullStatement);
 
 									let replacement;
+
 									if (isDefault) {
-										replacement = `const ${localName} = await esm('${packageName}')\n`;
+										replacement = `const ${localName} = (await esm('${packageName}')).default\n`;
 									} else {
 										replacement = `const { ${localName} } = await esm('${packageName}')\n`;
 									}
