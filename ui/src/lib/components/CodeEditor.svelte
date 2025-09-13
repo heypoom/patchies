@@ -99,13 +99,9 @@
 				Compartment
 			} = codeMirrorCore;
 
-			// Initialize language compartment
-			languageComp = new Compartment();
-
-			// Load language extension
-			const languageExtension = await loadLanguageExtension(language);
-
-			const extensions: Extension[] = [
+	onMount(async () => {
+		if (editorElement) {
+			const extensions = [
 				Prec.highest(
 					keymap.of([
 						{
