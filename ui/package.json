@@ -54,6 +54,7 @@
 		"typescript": "^5.0.0",
 		"typescript-eslint": "^8.20.0",
 		"vite": "^7.0.4",
+		"vite-bundle-analyzer": "^1.2.3",
 		"vite-plugin-devtools-json": "^0.2.0",
 		"vite-plugin-top-level-await": "^1.6.0",
 		"vite-plugin-wasm": "^3.5.0",

@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { analyzer } from 'vite-bundle-analyzer';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -30,7 +31,8 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		devtoolsJson(),
-		viteStaticCopyPyodide()
+		viteStaticCopyPyodide(),
+		analyzer()
 	],
 	optimizeDeps: { exclude: ['pyodide', '@rollup/browser', 'memfs'] },
 	define: {
