@@ -60,7 +60,7 @@
 	});
 
 	const playOrStopIcon = $derived.by(() => {
-		if (data.libraryName) return 'lucide:book-open';
+		if (data.libraryName) return 'lucide:package';
 
 		if (isRunning) return 'lucide:loader';
 		if (isLongRunningTaskActive) return 'lucide:pause';
@@ -383,7 +383,7 @@
 					>
 						{#if data.libraryName}
 							{#if !showEditor}
-								<div>double click to edit code</div>
+								<div>double click to edit shared code</div>
 							{/if}
 						{:else}
 							<div>click to run</div>
