@@ -378,6 +378,14 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets you want. By default, there is 1 inlet and 1 outlet.
   - Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
   - Use `send(data, { to: inletIndex })` to send data to a specific inlet of another object.
+- Top-level awaits are supported.
+  - Use `await delay(ms)` to pause the code for `ms` milliseconds. For example, `await delay(1000)` pauses the code for 1 second.
+- Import the module via `await import('https://esm.run/<module>')` to use any NPM package in your code. For example, to use `lodash-es`:
+
+  ```js
+  const {uniq} = await import('https://esm.run/lodash-es')
+  console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
+  ```
 
 ### `expr`: mathematical expression evaluator
 
