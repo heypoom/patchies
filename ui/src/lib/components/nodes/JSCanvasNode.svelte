@@ -22,8 +22,8 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
-			selected?: boolean;
 		};
+		selected?: boolean;
 	} = $props();
 
 	let glSystem = GLSystem.getInstance();
