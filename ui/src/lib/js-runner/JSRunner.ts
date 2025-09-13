@@ -1,3 +1,5 @@
+import { getLibName, isSnippetModule } from './js-module-utils';
+
 export class JSRunner {
 	private static instance: JSRunner;
 	public modules: Map<string, string> = new Map();
@@ -27,6 +29,18 @@ export class JSRunner {
 		const { output } = await bundle.generate({ format: 'es' });
 
 		return output[0].code;
+	}
+
+	processModules(code: string) {
+		if (!code) return;
+		if (!isSnippetModule(code)) return;
+
+		// If the module is tagged as `@lib <lib-name>`
+		const libName = getLibName(code);
+		if (libName) {
+			this.modules.set(libName, code);
+			return;
+		}
 	}
 
 	public static getInstance(): JSRunner {
