@@ -25,6 +25,7 @@
 			runOnMount?: boolean;
 			inletCount?: number;
 			outletCount?: number;
+			libraryName?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -59,6 +60,8 @@
 	});
 
 	const playOrStopIcon = $derived.by(() => {
+		if (data.libraryName) return 'lucide:book-open';
+
 		if (isRunning) return 'lucide:loader';
 		if (isLongRunningTaskActive) return 'lucide:pause';
 
@@ -98,7 +101,8 @@
 		};
 		messageContext.queue.addCallback(handleMessage);
 
-		if (data?.runOnMount) {
+		// libraries should be run on mount to register themselves
+		if (data.runOnMount || data.libraryName) {
 			executeCode();
 		}
 
@@ -175,7 +179,9 @@
 				customConsole,
 				setPortCount,
 				setRunOnMount,
-				setTitle
+				setTitle,
+				setLibraryName: (libraryName: string | null) =>
+					updateNodeData(nodeId, { libraryName, inletCount: 0, outletCount: 0 })
 			});
 		} catch (error) {
 			consoleOutput = [
@@ -213,6 +219,12 @@
 		updateNodeData(nodeId, { title });
 	}
 
+	function handleDoubleClickOnRun() {
+		if (data.libraryName) {
+			toggleEditor();
+		}
+	}
+
 	let minContainerWidth = $derived.by(() => {
 		const baseWidth = 70;
 		let inletWidth = 15;
@@ -225,21 +237,25 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2" bind:this={contentContainer}>
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-400">{data.title ?? 'js'}</div>
+				<div class="z-10 w-fit rounded-lg bg-zinc-900/70 px-2 py-1 backdrop-blur-lg">
+					<div class="font-mono text-xs font-medium text-zinc-400">
+						{data.libraryName ?? data.title ?? 'js'}
+					</div>
 				</div>
 
 				<div>
-					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
-						onclick={() => {
-							updateNodeData(nodeId, { showConsole: !data.showConsole });
-							setTimeout(() => updateContentWidth(), 10);
-						}}
-						title="Console"
-					>
-						<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
-					</button>
+					{#if !data.libraryName}
+						<button
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							onclick={() => {
+								updateNodeData(nodeId, { showConsole: !data.showConsole });
+								setTimeout(() => updateContentWidth(), 10);
+							}}
+							title="Console"
+						>
+							<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+						</button>
+					{/if}
 
 					<button
 						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
@@ -331,6 +347,12 @@
 						]}
 						style={`min-width: ${minContainerWidth}px`}
 						onclick={runOrStop}
+						ondblclick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+
+							handleDoubleClickOnRun();
+						}}
 						aria-disabled={isRunning}
 						aria-label="Run code"
 					>
@@ -338,6 +360,19 @@
 							<Icon icon={playOrStopIcon} />
 						</div>
 					</button>
+
+					<div
+						class={[
+							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300',
+							selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+						]}
+					>
+						{#if data.libraryName}
+							<div>double click to edit code</div>
+						{:else}
+							<div>click to run</div>
+						{/if}
+					</div>
 				{/if}
 
 				<div>

@@ -12,6 +12,7 @@ export interface JSRunnerOptions {
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
 	setRunOnMount?: (runOnMount?: boolean) => void;
 	setTitle?: (title: string) => void;
+	setLibraryName?: (libraryName: string | null) => void;
 }
 
 export class JSRunner {
@@ -48,6 +49,8 @@ export class JSRunner {
 		} catch (error) {
 			console.warn('rollup bundling error', error);
 		}
+
+		return '';
 	}
 
 	getMessageContext(nodeId: string): MessageContext {
@@ -79,7 +82,8 @@ export class JSRunner {
 			customConsole = console,
 			setPortCount = () => {},
 			setRunOnMount = () => {},
-			setTitle = () => {}
+			setTitle = () => {},
+			setLibraryName = () => {}
 		} = options;
 
 		const messageSystemContext = messageContext.getContext();
@@ -121,7 +125,10 @@ export class JSRunner {
 			const libName = getLibName(code);
 			if (libName) {
 				this.modules.set(libName, code);
+				setLibraryName(libName);
 				return;
+			} else {
+				setLibraryName(null);
 			}
 
 			this.modules.set(moduleName, code);

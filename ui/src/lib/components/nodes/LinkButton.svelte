@@ -75,7 +75,7 @@
 									<input
 										type="text"
 										value={displayText}
-										onchange={(e) => updateNodeData(nodeId, { displayText: e.target.value })}
+										onchange={(e) => updateNodeData(nodeId, { displayText: e.currentTarget.value })}
 										placeholder="Link text"
 										class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:border-zinc-400 focus:outline-none"
 									/>
