@@ -1,6 +1,8 @@
 import type Sketch from 'p5';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { UserFnRunContext } from '$lib/messages/MessageContext';
+import { JSRunner } from '$lib/js-runner/JSRunner';
+import { deleteAfterComment } from '$lib/js-runner/js-module-utils';
 
 interface P5SketchConfig {
 	code: string;
@@ -8,6 +10,8 @@ interface P5SketchConfig {
 
 	/** Loads a built-in library. */
 	loadLibrary?: (name: LibraryKey) => void;
+
+	setHidePorts?: (hide: boolean) => void;
 }
 
 type LibraryKey = 'ml5' | 'matter';
@@ -15,6 +19,7 @@ type LibraryKey = 'ml5' | 'matter';
 export class P5Manager {
 	public p5: Sketch | null = null;
 	public glSystem = GLSystem.getInstance();
+	public jsRunner = JSRunner.getInstance();
 	public nodeId: string;
 
 	public shouldSendBitmap = true;
@@ -40,8 +45,34 @@ export class P5Manager {
 
 		const { default: P5 } = await import('p5');
 
+		const delimiter = '// [!!PATCHIES_DELETE!!]';
+
+		// HACK: prevent rollup from tree-shaking unused functions
+		const codeWithTemplate = `
+			${config.code}
+
+			${delimiter}
+			setup(); draw(); preload(); mousePressed(); mouseReleased(); mouseClicked(); mouseMoved(); mouseDragged(); mouseWheel(); doubleClicked(); keyPressed(); keyReleased(); keyTyped(); touchStarted(); touchMoved(); touchEnded(); windowResized(); deviceMoved(); deviceTurned(); deviceShaken();
+		`;
+
+		let processedCode = await this.jsRunner.preprocessCode(codeWithTemplate, {
+			nodeId: this.nodeId,
+			setLibraryName: () => {}
+		});
+
+		if (processedCode !== null) {
+			processedCode = deleteAfterComment(processedCode, delimiter).trim();
+		}
+
 		const sketch = (p: Sketch) => {
-			const userCode = this.executeUserCode(p, config, P5);
+			const sketchConfig: P5SketchConfig = {
+				...config,
+				code: processedCode ?? config.code
+			};
+
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const userCode = this.executeUserCode(p, sketchConfig, P5) as any;
+
 			const sendBitmap = this.sendBitmap.bind(this);
 
 			p.setup = function () {
@@ -138,7 +169,7 @@ export class P5Manager {
 		this.p5 = new P5(sketch, this.container);
 	}
 
-	private executeUserCode(sketch: Sketch, config: P5SketchConfig, P5Constructor: any) {
+	private executeUserCode(sketch: Sketch, config: P5SketchConfig, P5Constructor: unknown) {
 		for (const key in sketch) {
 			// @ts-expect-error -- no-op
 			if (typeof sketch[key] === 'function') {
@@ -147,43 +178,32 @@ export class P5Manager {
 			}
 		}
 
-		sketch['p5'] = P5Constructor;
+		(sketch as unknown as Record<string, unknown>)['p5'] = P5Constructor;
 
-		// Execute user code with 'with' statement for clean access
-		const userCode = new Function(
-			'sketch',
-			'sketchContext',
-			`
+		// P5.js wrapper code that returns the functions
+		const codeWithWrapper = `
 			var setup, draw, preload, mousePressed, mouseReleased, mouseClicked, mouseMoved, mouseDragged, mouseWheel, doubleClicked, keyPressed, keyReleased, keyTyped, touchStarted, touchMoved, touchEnded, windowResized, deviceMoved, deviceTurned, deviceShaken;
 
 			with (sketch) {
-				// Inject message system functions if available
-				if (sketchContext) {
-					var send = sketchContext.send;
-					var onMessage = sketchContext.onMessage;
-					var setInterval = sketchContext.setInterval;
-					var noDrag = sketchContext.noDrag;
-					var fft = sketchContext.fft;
-					var setPortCount = sketchContext.setPortCount;
-					var setTitle = sketchContext.setTitle;
-					var loadLibrary = sketchContext.loadLibrary;
-					var setHidePorts = sketchContext.setHidePorts;
-					var recv = onMessage; // alias for onMessage
-				}
-				
 				${config.code}
 
 				return { setup, draw, preload, mousePressed, mouseReleased, mouseClicked, mouseMoved, mouseDragged, mouseWheel, doubleClicked, keyPressed, keyReleased, keyTyped, touchStarted, touchMoved, touchEnded, windowResized, deviceMoved, deviceTurned, deviceShaken };
 			}
-		`
-		);
+		`;
 
-		return userCode(sketch, {
-			...config.messageContext,
-			loadLibrary: (library: LibraryKey) => {
-				this.enabledLibraries.add(library);
-
-				return this.loadLibraryIfEnabled(library);
+		// Execute using JSRunner with P5-specific extra context
+		return this.jsRunner.executeJavaScript(this.nodeId, codeWithWrapper, {
+			customConsole: console,
+			setPortCount: config.messageContext?.setPortCount,
+			setTitle: config.messageContext?.setTitle,
+			extraContext: {
+				sketch,
+				loadLibrary: (library: LibraryKey) => {
+					this.enabledLibraries.add(library);
+					return this.loadLibraryIfEnabled(library);
+				},
+				noDrag: config.messageContext?.noDrag,
+				setHidePorts: config.setHidePorts
 			}
 		});
 	}
@@ -194,6 +214,9 @@ export class P5Manager {
 			this.p5 = null;
 		}
 		this.container = null;
+
+		// Clean up JSRunner resources for this node
+		this.jsRunner.destroy(this.nodeId);
 	}
 
 	async sendBitmap() {

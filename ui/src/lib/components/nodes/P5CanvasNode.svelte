@@ -79,10 +79,10 @@
 						setPortCount,
 						setTitle: (title: string) => {
 							updateNodeData(nodeId, { title });
-						},
-						setHidePorts: (hide: boolean) => {
-							updateNodeData(nodeId, { hidePorts: hide });
 						}
+					},
+					setHidePorts: (hide: boolean) => {
+						updateNodeData(nodeId, { hidePorts: hide });
 					}
 				});
 

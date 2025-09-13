@@ -12,7 +12,8 @@ export interface JSRunnerOptions {
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
 	setRunOnMount?: (runOnMount?: boolean) => void;
 	setTitle?: (title: string) => void;
-	setLibraryName?: (libraryName: string | null) => void;
+	extraContext?: Record<string, unknown>;
+	isAsync?: boolean;
 }
 
 export class JSRunner {
@@ -60,6 +61,47 @@ export class JSRunner {
 		return '';
 	}
 
+	async preprocessCode(
+		code: string,
+		options: {
+			nodeId: string;
+			setLibraryName: (name: string | null) => void;
+		}
+	): Promise<string | null> {
+		const { nodeId, setLibraryName } = options;
+
+		const isModule = isSnippetModule(code);
+
+		if (isModule) {
+			const moduleName = getModuleNameByNode(nodeId);
+
+			// If the module is tagged as `@lib <lib-name>`
+			const libName = getLibName(code);
+
+			if (libName) {
+				this.setLibraryCode(nodeId, code);
+				setLibraryName(libName);
+
+				return null;
+			}
+
+			// Un-register library (if any)
+			const previousLibName = this.libraryNamesByNode.get(nodeId);
+			if (previousLibName) {
+				this.modules.delete(previousLibName);
+				this.libraryNamesByNode.delete(nodeId);
+			}
+
+			setLibraryName(null);
+
+			this.modules.set(moduleName, code);
+
+			return this.gen(moduleName);
+		}
+
+		return code;
+	}
+
 	async loadExternalModule(id: string) {
 		if (this.moduleCache.has(id)) {
 			return this.moduleCache.get(id);
@@ -102,11 +144,7 @@ export class JSRunner {
 		}
 	}
 
-	async executeJavaScript(
-		nodeId: string,
-		code: string,
-		options: JSRunnerOptions = {}
-	): Promise<void> {
+	executeJavaScript(nodeId: string, code: string, options: JSRunnerOptions = {}) {
 		const messageContext = this.getMessageContext(nodeId);
 
 		messageContext.clearTimers();
@@ -116,7 +154,7 @@ export class JSRunner {
 			setPortCount = () => {},
 			setRunOnMount = () => {},
 			setTitle = () => {},
-			setLibraryName = () => {}
+			extraContext = {}
 		} = options;
 
 		const messageSystemContext = messageContext.getContext();
@@ -131,7 +169,8 @@ export class JSRunner {
 			'llm',
 			'setPortCount',
 			'setRunOnMount',
-			'setTitle'
+			'setTitle',
+			...Object.keys(extraContext)
 		];
 
 		const functionArgs = [
@@ -144,45 +183,19 @@ export class JSRunner {
 			createLLMFunction(),
 			setPortCount,
 			setRunOnMount,
-			setTitle
+			setTitle,
+			...Object.values(extraContext)
 		];
 
-		let processedCode = code;
-
-		const isModule = isSnippetModule(code);
-
-		if (isModule) {
-			const moduleName = getModuleNameByNode(nodeId);
-
-			// If the module is tagged as `@lib <lib-name>`
-			const libName = getLibName(code);
-
-			if (libName) {
-				this.setLibraryCode(nodeId, code);
-				setLibraryName(libName);
-				return;
-			} else {
-				// Un-register library
-				const previousLibName = this.libraryNamesByNode.get(nodeId);
-				if (previousLibName) {
-					this.modules.delete(previousLibName);
-					this.libraryNamesByNode.delete(nodeId);
-				}
-
-				setLibraryName(null);
-			}
-
-			this.modules.set(moduleName, code);
-			processedCode = await this.gen(moduleName);
-		}
+		const asyncKeyword = options.isAsync ? 'async' : '';
 
 		const codeWithWrapper = `
-			const inner = async () => {
+			const inner = ${asyncKeyword} () => {
 				var recv = receive = onMessage; // alias
 				var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 				var esm = (name) => import('${this.moduleProviderUrl}' + name);
 
-				${processedCode}
+				${code}
 			}
 
 			return inner()
@@ -190,7 +203,7 @@ export class JSRunner {
 
 		const userFunction = new Function(...functionParams, codeWithWrapper);
 
-		await userFunction(...functionArgs);
+		return userFunction(...functionArgs);
 	}
 
 	setLibraryCode(nodeId: string, code: string) {

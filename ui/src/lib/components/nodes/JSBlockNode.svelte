@@ -187,13 +187,21 @@
 		const setRunOnMount = (runOnMount = false) => updateNodeData(nodeId, { runOnMount });
 
 		try {
-			await jsRunner.executeJavaScript(nodeId, code, {
+			const processedCode = await jsRunner.preprocessCode(code, {
+				nodeId,
+				setLibraryName: (libraryName: string | null) =>
+					updateNodeData(nodeId, { libraryName, inletCount: 0, outletCount: 0 })
+			});
+
+			// library code - do not execute
+			if (processedCode === null) return;
+
+			await jsRunner.executeJavaScript(nodeId, processedCode, {
 				customConsole,
 				setPortCount,
 				setRunOnMount,
 				setTitle,
-				setLibraryName: (libraryName: string | null) =>
-					updateNodeData(nodeId, { libraryName, inletCount: 0, outletCount: 0 })
+				isAsync: true
 			});
 		} catch (error) {
 			consoleOutput = [
