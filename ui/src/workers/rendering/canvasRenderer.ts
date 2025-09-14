@@ -169,8 +169,7 @@ export class CanvasRenderer {
 				// FFT function for audio analysis
 				fft: this.createFFTFunction(),
 
-				// Alias for onMessage
-				recv: (callback: MessageCallbackFn) => {
+				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;
 				}
 			};

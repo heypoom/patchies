@@ -280,7 +280,7 @@ export class JSRunner {
 
 		const codeWithWrapper = `
 			const inner = async () => {
-				var recv = receive = onMessage; // alias
+				var recv = onMessage; // alias
 				var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 				var esm = (name) => import('${this.moduleProviderUrl}' + name);
 
