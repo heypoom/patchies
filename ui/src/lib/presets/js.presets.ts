@@ -82,7 +82,7 @@ export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
 > = {
-	'message-console.js': {
+	'logger.js': {
 		type: 'js',
 		data: { code: MESSAGE_CONSOLE_JS.trim(), showConsole: true, runOnMount: true }
 	},

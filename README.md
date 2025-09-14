@@ -121,7 +121,7 @@ Here are some examples to get you started:
 
 - Create two `button` objects, and connect the outlet of one to the inlet of another.
   - When you click on the first button, it will send a `{type: 'bang'}` message to the second button, which will flash.
-- Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `message-console.js` preset. Connect them together.
+- Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `logger.js` preset. Connect them together.
   - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
 
 In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~` and `tone~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
