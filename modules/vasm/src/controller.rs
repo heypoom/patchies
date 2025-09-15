@@ -1,0 +1,245 @@
+use crate::sequencer::status::MachineStatus;
+use crate::register::Register::{FP, PC, SP};
+use crate::sequencer::Sequencer;
+use crate::{Event, Message};
+use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::to_value;
+use wasm_bindgen::prelude::*;
+
+const NULL: JsValue = JsValue::NULL;
+
+#[wasm_bindgen]
+pub struct Controller {
+    #[wasm_bindgen(skip)]
+    pub seq: Sequencer,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct InspectedRegister {
+    pc: u16,
+    sp: u16,
+    fp: u16,
+}
+
+/// Machine state returned by the inspection function.
+#[derive(Serialize, Deserialize)]
+pub struct InspectedMachine {
+    pub events: Vec<Event>,
+    pub registers: InspectedRegister,
+
+    pub inbox_size: usize,
+    pub outbox_size: usize,
+    pub status: MachineStatus,
+}
+
+type Return = Result<JsValue, JsValue>;
+
+fn returns<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> Return {
+    match value {
+        Ok(v) => Ok(to_value(&v)?),
+        Err(error) => Err(to_value(&error)?),
+    }
+}
+
+fn return_raw<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> Result<T, JsValue> {
+    match value {
+        Ok(v) => Ok(v),
+        Err(error) => Err(to_value(&error)?),
+    }
+}
+
+/// Controls the interaction with virtual machines.
+#[wasm_bindgen]
+impl Controller {
+    pub fn create() -> Controller {
+        Controller {
+            seq: Sequencer::new(),
+        }
+    }
+
+    pub fn add_machine(&mut self) -> Result<u16, JsValue> {
+        // Generate a simple ID based on current machine count
+        let id = self.seq.machines.len() as u16;
+        self.seq.add(id);
+        Ok(id)
+    }
+
+    pub fn add_machine_with_id(&mut self, id: u16) -> Return {
+        self.seq.add(id);
+        Ok(to_value(&())?)
+    }
+
+    pub fn remove_machine(&mut self, id: u16) -> Return {
+        self.seq.remove(id);
+        Ok(to_value(&())?)
+    }
+
+    pub fn load(&mut self, id: u16, source: &str) -> Return {
+        returns(self.seq.load(id, source))
+    }
+
+    pub fn ready(&mut self) {
+        self.seq.ready()
+    }
+
+    pub fn step(&mut self, count: u16) -> Return {
+        returns(self.seq.step(count))
+    }
+
+    pub fn statuses(&mut self) -> Return {
+        Ok(to_value(&self.seq.get_statuses())?)
+    }
+
+    pub fn is_halted(&self) -> bool {
+        self.seq.is_halted()
+    }
+
+    pub fn inspect_machine(&mut self, id: u16) -> Return {
+        let Some(status) = self.seq.statuses.get(&id) else {
+            return Ok(NULL);
+        };
+
+        let status = status.clone();
+
+        let Some(m) = self.seq.get_mut(id) else {
+            return Ok(NULL);
+        };
+
+        let state = InspectedMachine {
+            events: m.events.clone(),
+            registers: InspectedRegister {
+                pc: m.reg.get(PC),
+                sp: m.reg.get(SP),
+                fp: m.reg.get(FP),
+            },
+            inbox_size: m.inbox.len(),
+            outbox_size: m.outbox.len(),
+            status,
+        };
+
+        Ok(to_value(&state)?)
+    }
+
+    pub fn read_code(&mut self, id: u16, size: u16) -> Return {
+        let Some(m) = self.seq.get_mut(id) else {
+            return Ok(NULL);
+        };
+
+        Ok(to_value(&m.mem.read_code(size))?)
+    }
+
+    pub fn read_mem(&mut self, id: u16, addr: u16, size: u16) -> Return {
+        let Some(m) = self.seq.get_mut(id) else {
+            return Ok(NULL);
+        };
+
+        Ok(to_value(&m.mem.read(addr, size))?)
+    }
+
+    pub fn read_stack(&mut self, id: u16, size: u16) -> Return {
+        let Some(m) = self.seq.get_mut(id) else {
+            return Ok(NULL);
+        };
+
+        Ok(to_value(&m.mem.read_stack(size))?)
+    }
+
+    /// Allows the frontend to consume events from the machine.
+    pub fn consume_machine_side_effects(&mut self, id: u16) -> Return {
+        Ok(to_value(&self.seq.consume_side_effects(id))?)
+    }
+
+    pub fn set_await_watchdog(&mut self, state: bool) {
+        self.seq.await_watchdog = state;
+    }
+
+    pub fn clear(&mut self) {
+        self.seq = Sequencer::new();
+    }
+
+    /// Serialize the entire sequencer state - very slow!
+    /// Should only be used for debugging.
+    pub fn full_serialize_sequencer_state(&self) -> Return {
+        Ok(to_value(&self.seq)?)
+    }
+
+    /// Serialize the sequencer state, excluding the buffers.
+    pub fn partial_serialize_sequencer_state(&self) -> Return {
+        let mut seq = self.seq.clone();
+
+        for m in seq.machines.iter_mut() {
+            m.inbox.clear();
+            m.mem.buffer = vec![];
+            m.reg.buffer = vec![];
+        }
+
+        Ok(to_value(&seq)?)
+    }
+
+    pub fn set_mem(&mut self, id: u16, address: u16, data: Vec<u16>) -> Return {
+        let Some(m) = self.seq.get_mut(id) else {
+            return Ok(false.into());
+        };
+
+        m.mem.write(address, &data);
+        Ok(true.into())
+    }
+
+    pub fn wake(&mut self, machine_id: u16) {
+        self.seq.wake(machine_id);
+    }
+
+    /// Send a message to a machine's inbox directly
+    pub fn send_message_to_machine(&mut self, machine_id: u16, message: Message) -> Return {
+        let Some(machine) = self.seq.get_mut(machine_id) else {
+            return Ok(false.into());
+        };
+
+        machine.inbox.push_back(message);
+        Ok(true.into())
+    }
+
+    /// Consume all outgoing messages from all machines
+    pub fn consume_messages(&mut self) -> Return {
+        let messages = self.seq.consume_messages();
+        Ok(to_value(&messages)?)
+    }
+
+    /// Route messages between machines (simplified version without canvas routing)
+    pub fn route_messages(&mut self) -> Return {
+        let messages = self.seq.consume_messages();
+
+        // Simple routing: broadcast all messages to all machines
+        // In a real implementation, you'd have proper routing logic
+        for message in messages {
+            for machine in &mut self.seq.machines {
+                if let Some(target_id) = machine.id {
+                    if target_id != message.sender.block {
+                        machine.inbox.push_back(message.clone());
+                    }
+                }
+            }
+        }
+
+        Ok(to_value(&())?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_controller_creation() {
+        let controller = Controller::create();
+        assert_eq!(controller.seq.machines.len(), 0);
+    }
+
+    #[test]
+    fn test_add_machine() {
+        let mut controller = Controller::create();
+        let id = controller.add_machine().unwrap();
+        assert_eq!(id, 0);
+        assert_eq!(controller.seq.machines.len(), 1);
+    }
+}

@@ -5,6 +5,9 @@ edition = "2021"
 rust-version = "1.71.0"
 default-run = "machine_cli"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 # command-line interface for the machine
 [[bin]]
 name = "machine_cli"
@@ -20,6 +23,10 @@ wasm-bindgen = "0.2.101"
 serde = { version = "1.0.188", features = ["derive"] }
 serde-json-core = "0.5.1"
 tsify = { version = "0.4.5", features = ["js"] }
+
+# WASM-specific dependencies
+console_error_panic_hook = "0.1.7"
+serde-wasm-bindgen = "0.6"
 
 [dependencies.poom_macros]
 path = "./poom_macros"
