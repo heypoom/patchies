@@ -46,6 +46,10 @@ export function testAssemblySystem() {
 		const inspection = system.inspectMachine(machineId);
 		console.log('🔍 Machine inspection:', inspection);
 
+		// Test 8.5: Consume effects
+		const effects = system.consumeMachineEffects(machineId);
+		console.log('✨ Machine effects:', effects);
+
 		// Test 9: Read stack
 		const stackData = system.readStack(machineId, 5);
 		console.log('📚 Stack data:', stackData);

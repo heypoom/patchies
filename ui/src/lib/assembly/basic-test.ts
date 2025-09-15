@@ -50,9 +50,14 @@ export function basicAssemblyTest(): boolean {
 				status: inspection.status,
 				registers: inspection.registers,
 				inbox_size: inspection.inbox_size,
-				outbox_size: inspection.outbox_size
+				outbox_size: inspection.outbox_size,
+				effects: inspection.effects
 			});
 		}
+
+		// Test 7.5: Consume effects
+		const effects = system.consumeMachineEffects(machineId);
+		console.log('✨ Machine effects:', effects);
 
 		// Test 8: Read stack
 		const stackData = system.readStack(machineId, 3);

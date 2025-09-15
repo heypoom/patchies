@@ -24,7 +24,7 @@ pub struct InspectedRegister {
 /// Machine state returned by the inspection function.
 #[derive(Serialize, Deserialize)]
 pub struct InspectedMachine {
-    pub events: Vec<Event>,
+    pub effects: Vec<Event>,
     pub registers: InspectedRegister,
 
     pub inbox_size: usize,
@@ -41,12 +41,7 @@ fn returns<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> 
     }
 }
 
-fn return_raw<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> Result<T, JsValue> {
-    match value {
-        Ok(v) => Ok(v),
-        Err(error) => Err(to_value(&error)?),
-    }
-}
+// Note: return_raw function removed as it was unused
 
 /// Controls the interaction with virtual machines.
 #[wasm_bindgen]
@@ -106,7 +101,7 @@ impl Controller {
         };
 
         let state = InspectedMachine {
-            events: m.events.clone(),
+            effects: m.events.clone(),
             registers: InspectedRegister {
                 pc: m.reg.get(PC),
                 sp: m.reg.get(SP),
