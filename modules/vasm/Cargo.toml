@@ -1,0 +1,26 @@
+[package]
+name = "machine"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.71.0"
+default-run = "machine_cli"
+
+# command-line interface for the machine
+[[bin]]
+name = "machine_cli"
+path = "src/main.rs"
+
+[dependencies]
+log = "0.4.20"
+snafu = "0.7.5"
+strum = "0.25.0"
+strum_macros = "0.25.2"
+clap = { version = "4.4.6", features = ["derive"] }
+wasm-bindgen = "0.2.101"
+serde = { version = "1.0.188", features = ["derive"] }
+serde-json-core = "0.5.1"
+tsify = { version = "0.4.5", features = ["js"] }
+
+[dependencies.poom_macros]
+path = "./poom_macros"
+
