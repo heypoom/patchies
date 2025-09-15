@@ -9,7 +9,6 @@ export class ToneManager {
 	private currentCode = '';
 	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 	private audioContext: AudioContext;
-	private inletValues: unknown[] = new Array(9).fill(0);
 
 	public onSetPortCount = (inletCount: number) => {};
 
@@ -23,9 +22,6 @@ export class ToneManager {
 		return match([key, msg])
 			.with(['code', P.string], ([, code]) => {
 				return this.setCode(code);
-			})
-			.with(['inletValues', P.array(P.any)], ([, values]) => {
-				this.setInletValues(values);
 			})
 			.with(['messageInlet', P.any], ([, messageData]) => {
 				this.handleMessageInlet(messageData);
@@ -91,15 +87,6 @@ export class ToneManager {
 				'send',
 				'outputNode',
 				'inputNode',
-				'$1',
-				'$2',
-				'$3',
-				'$4',
-				'$5',
-				'$6',
-				'$7',
-				'$8',
-				'$9',
 				`
 
 				${code}
@@ -113,8 +100,7 @@ export class ToneManager {
 				recv,
 				send,
 				outputNode,
-				inputNode,
-				...this.inletValues
+				inputNode
 			);
 
 			if (result && typeof result.cleanup === 'function') {
@@ -125,14 +111,6 @@ export class ToneManager {
 		}
 	}
 
-	private setInletValues(values: unknown[]): void {
-		this.inletValues = values;
-
-		// Re-execute code with new inlet values if we have current code
-		if (this.currentCode) {
-			this.setCode(this.currentCode);
-		}
-	}
 
 	private handleMessageInlet(messageData: unknown): void {
 		if (!this.recvCallback) return;

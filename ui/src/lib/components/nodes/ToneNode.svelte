@@ -8,7 +8,6 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
-	import { parseInletCount } from '$lib/utils/expr-parser';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 
 	let contentContainer: HTMLDivElement | null = null;
@@ -33,18 +32,11 @@
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
-	let inletValues = $state<unknown[]>([]);
 	let showEditor = $state(false);
 	let contentWidth = $state(100);
 
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount || 0);
-
-	const valueInletCount = $derived.by(() => {
-		if (!code.trim()) return 0;
-
-		return parseInletCount(code.trim());
-	});
 
 	const containerClass = $derived.by(() => {
 		if (selected) return 'border-zinc-400 bg-zinc-800';
@@ -52,55 +44,23 @@
 	});
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
-		const nextInletValues = [...inletValues];
-
 		match(message)
 			.with({ type: 'run' }, () => runTone())
-			.with(P.any, (value) => {
+			.with(P.any, () => {
 				if (meta?.inlet === undefined) return;
 
-				// Check if this is a value inlet
-				const isValueInlet =
-					valueInletCount > 0 && meta.inlet >= 0 && meta.inlet <= valueInletCount - 1;
-
-				// Check if this is a message inlet
-				const isMessageInlet =
-					messageInletCount > 0 &&
-					meta.inlet > valueInletCount - 1 &&
-					meta.inlet <= valueInletCount + messageInletCount;
-
-				if (isValueInlet) {
-					const valueInletIndex = meta.inlet;
-					nextInletValues[valueInletIndex] = value;
-					inletValues = nextInletValues;
-
-					updateAudioInletValues(nextInletValues);
-				} else if (isMessageInlet) {
-					const messageInletIndex = meta.inlet - valueInletCount;
-
-					audioSystem.send(nodeId, 'messageInlet', {
-						inletIndex: messageInletIndex,
-						message,
-						meta
-					});
-				}
+				audioSystem.send(nodeId, 'messageInlet', {
+					inletIndex: meta.inlet,
+					message,
+					meta
+				});
 			});
 	};
 
 	const updateAudioCode = (code: string) => audioSystem.send(nodeId, 'code', code);
 
-	const updateAudioInletValues = (values: unknown[]) =>
-		audioSystem.send(nodeId, 'inletValues', values);
-
 	function handleCodeChange(newCode: string) {
 		updateNodeData(nodeId, { code: newCode });
-
-		const newInletCount = parseInletCount(newCode || '');
-
-		if (newInletCount !== inletValues.length) {
-			inletValues = new Array(newInletCount).fill(0);
-			updateAudioInletValues(inletValues);
-		}
 
 		setTimeout(() => {
 			const toneNode = audioSystem.nodesById.get(nodeId);
@@ -126,7 +86,6 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		inletValues = new Array(valueInletCount).fill(0);
 		audioSystem.createAudioObject(nodeId, 'tone~', [null, code]);
 
 		handleCodeChange(code);
@@ -152,7 +111,7 @@
 		const baseWidth = 20;
 		let inletWidth = 20;
 
-		return baseWidth + (1 + valueInletCount + messageInletCount) * inletWidth;
+		return baseWidth + (1 + messageInletCount) * inletWidth;
 	});
 </script>
 
@@ -179,32 +138,17 @@
 			</div>
 
 			<div class="relative">
-				<!-- Total inlets = 1 audio inlet + control inlets + message inlets -->
+				<!-- Total inlets = 1 audio inlet + message inlets -->
 				<div>
 					<!-- Audio input (always present) -->
 					<StandardHandle
 						port="inlet"
 						type="audio"
 						title="Audio Input"
-						total={1 + valueInletCount + messageInletCount}
+						total={1 + messageInletCount}
 						index={0}
 						class="top-0"
 					/>
-
-					<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
-					{#if valueInletCount > 0}
-						{#each Array.from({ length: valueInletCount }) as _, index}
-							<StandardHandle
-								port="inlet"
-								type="message"
-								id={index}
-								title={`$${index + 1}`}
-								total={1 + valueInletCount + messageInletCount}
-								index={index + 1}
-								class="top-0"
-							/>
-						{/each}
-					{/if}
 
 					<!-- Message inlets (only show if messageInletCount > 0) -->
 					{#if messageInletCount > 0}
@@ -212,10 +156,10 @@
 							<StandardHandle
 								port="inlet"
 								type="message"
-								id={valueInletCount + index}
+								id={index}
 								title={`Message Inlet ${index + 1}`}
-								total={1 + valueInletCount + messageInletCount}
-								index={1 + valueInletCount + index}
+								total={1 + messageInletCount}
+								index={1 + index}
 								class="top-0"
 							/>
 						{/each}
