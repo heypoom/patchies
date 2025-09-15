@@ -197,6 +197,7 @@
 			</div>
 		{/if}
 
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="nodrag grid px-1"
 			class:w-full={full}
@@ -213,10 +214,13 @@
 			{#each memory as u, i}
 				{@const value = show(u)}
 				{@const selected = start !== null && end !== null && i >= start && i <= end}
+
 				{@const highlighted = activeRegions().find((r) => {
 					const offset = r.offset - begin;
 					return i >= offset && i < offset + r.size;
 				})}
+
+				<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 				<div
 					onmousedown={(e) => handleMouseDown(e, i)}
 					onmouseover={() => handleMouseOver(i)}
@@ -225,13 +229,13 @@
 						? getRegionClassName(highlighted)
 						: ''}"
 					class:text-zinc-600={!selected && !highlighted && u === 0}
-					class:bg-yellow-500={!canDragOut && selected}
-					class:text-yellow-900={!canDragOut && selected}
+					class:bg-yellow-400={!canDragOut && selected}
+					class:text-yellow-500={!canDragOut && selected}
 					class:hover:text-yellow-800={!canDragOut && selected}
 					class:hover:text-red-300={!canDragOut && !selected}
 					class:bg-red-400={canDragOut && selected}
 					class:text-red-900={canDragOut && selected}
-					class:hover:text-red-900={canDragOut && selected}
+					class:hover:text-red-500={canDragOut && selected}
 					class:text-center={full}
 					class:opacity-0={canDragOut && !selected}
 					class:bg-transparent={canDragOut && !selected}

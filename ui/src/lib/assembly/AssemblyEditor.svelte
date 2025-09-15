@@ -2,7 +2,7 @@
 	import { EditorView } from '@codemirror/view';
 	import { EditorState } from '@codemirror/state';
 	import { basicSetup } from 'codemirror';
-	import { oneDark } from '@codemirror/theme-one-dark';
+	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { javascript } from '@codemirror/lang-javascript';
 	import { onMount } from 'svelte';
 
@@ -13,7 +13,12 @@
 		readonly?: boolean;
 	}
 
-	let { value = '', onchange, placeholder = 'Enter assembly code...', readonly = false }: Props = $props();
+	let {
+		value = '',
+		onchange,
+		placeholder = 'Enter assembly code...',
+		readonly = false
+	}: Props = $props();
 
 	let editorContainer = $state<HTMLDivElement>();
 	let editorView: EditorView | null = null;
@@ -21,7 +26,7 @@
 	onMount(() => {
 		const extensions = [
 			basicSetup,
-			oneDark,
+			tokyoNight,
 			// For now use JavaScript highlighting until we create assembly syntax
 			javascript(),
 			EditorView.updateListener.of((update) => {
@@ -32,7 +37,8 @@
 			EditorView.theme({
 				'&': {
 					fontSize: '13px',
-					fontFamily: 'JetBrains Mono, Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace'
+					fontFamily:
+						'JetBrains Mono, Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace'
 				},
 				'.cm-content': {
 					padding: '8px',
@@ -78,9 +84,12 @@
 	});
 </script>
 
-<div bind:this={editorContainer} class="assembly-editor border border-zinc-700 rounded-md overflow-hidden">
+<div
+	bind:this={editorContainer}
+	class="assembly-editor overflow-hidden rounded-md border border-zinc-700"
+>
 	{#if !editorContainer}
-		<div class="p-4 text-zinc-400 font-mono text-sm">
+		<div class="p-4 font-mono text-sm text-zinc-400">
 			{placeholder}
 		</div>
 	{/if}
@@ -88,6 +97,7 @@
 
 <style>
 	.assembly-editor {
-		--cm-font-family: 'JetBrains Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+		--cm-font-family:
+			'JetBrains Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 	}
 </style>
