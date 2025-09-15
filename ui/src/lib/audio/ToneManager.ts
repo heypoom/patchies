@@ -9,6 +9,7 @@ export class ToneManager {
 	private currentCode = '';
 	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 	private audioContext: AudioContext;
+	private inletValues: unknown[] = new Array(9).fill(0);
 
 	public onSetPortCount = (inletCount: number) => {};
 
@@ -22,6 +23,9 @@ export class ToneManager {
 		return match([key, msg])
 			.with(['code', P.string], ([, code]) => {
 				return this.setCode(code);
+			})
+			.with(['inletValues', P.array(P.any)], ([, values]) => {
+				this.setInletValues(values);
 			})
 			.with(['messageInlet', P.any], ([, messageData]) => {
 				this.handleMessageInlet(messageData);
@@ -87,20 +91,46 @@ export class ToneManager {
 				'send',
 				'outputNode',
 				'inputNode',
+				'$1',
+				'$2',
+				'$3',
+				'$4',
+				'$5',
+				'$6',
+				'$7',
+				'$8',
+				'$9',
 				`
-				
+
 				${code}
 			`
 			);
 
 			// Execute the code and store any returned cleanup function
-			const result = codeFunction(Tone, setPortCount, recv, send, outputNode, inputNode);
+			const result = codeFunction(
+				Tone,
+				setPortCount,
+				recv,
+				send,
+				outputNode,
+				inputNode,
+				...this.inletValues
+			);
 
 			if (result && typeof result.cleanup === 'function') {
 				this.toneObjects.set('cleanup', result.cleanup);
 			}
 		} catch (error) {
 			console.error('Failed to execute Tone.js code:', error);
+		}
+	}
+
+	private setInletValues(values: unknown[]): void {
+		this.inletValues = values;
+
+		// Re-execute code with new inlet values if we have current code
+		if (this.currentCode) {
+			this.setCode(this.currentCode);
 		}
 	}
 
@@ -148,14 +178,22 @@ export class ToneManager {
 		});
 		this.createdNodes.clear();
 
-		// Stop and clear the transport
+		// Stop and clear the transport more safely
 		try {
 			const transport = Tone.getTransport();
 
-			transport.stop();
-			transport.cancel();
-		} catch (error) {
-			console.warn('Error stopping Tone.js transport:', error);
+			// Try to stop without parameters
+			if (transport.state !== 'stopped') {
+				transport.stop();
+			}
+
+			try {
+				transport.cancel();
+			} catch {
+				// ignore
+			}
+		} catch {
+			// ignore
 		}
 
 		this.toneObjects.clear();

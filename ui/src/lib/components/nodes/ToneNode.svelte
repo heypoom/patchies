@@ -55,9 +55,7 @@
 		const nextInletValues = [...inletValues];
 
 		match(message)
-			.with({ type: P.union('run') }, () => {
-				runTone();
-			})
+			.with({ type: 'run' }, () => runTone())
 			.with(P.any, (value) => {
 				if (meta?.inlet === undefined) return;
 
@@ -75,6 +73,7 @@
 					const valueInletIndex = meta.inlet;
 					nextInletValues[valueInletIndex] = value;
 					inletValues = nextInletValues;
+
 					updateAudioInletValues(nextInletValues);
 				} else if (isMessageInlet) {
 					const messageInletIndex = meta.inlet - valueInletCount;
