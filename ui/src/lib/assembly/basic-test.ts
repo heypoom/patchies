@@ -8,7 +8,7 @@ export function basicAssemblyTest(): boolean {
 		console.log('🧪 Starting basic assembly test...');
 
 		// Test 1: Create system
-		const system = new AssemblySystem();
+		const system = AssemblySystem.getInstance();
 		console.log('✅ System created');
 
 		// Test 2: Check initialization

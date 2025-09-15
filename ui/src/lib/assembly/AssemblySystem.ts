@@ -21,12 +21,22 @@ export interface InspectedMachine {
  * within the Patchies environment.
  */
 export class AssemblySystem {
+	public static instance: AssemblySystem | null = null;
 	private controller: Controller;
 	private initialized = false;
+	public eventBus: EventTarget | null = null;
 
-	constructor() {
+	private constructor() {
 		this.controller = Controller.create();
 		this.initialized = true;
+		this.eventBus = new EventTarget();
+	}
+
+	static getInstance(): AssemblySystem {
+		if (!AssemblySystem.instance) {
+			AssemblySystem.instance = new AssemblySystem();
+		}
+		return AssemblySystem.instance;
 	}
 
 	/**
@@ -100,6 +110,18 @@ export class AssemblySystem {
 	 */
 	isHalted(): boolean {
 		return this.controller.is_halted();
+	}
+
+	/**
+	 * Check if a machine exists
+	 */
+	machineExists(machineId: number): boolean {
+		try {
+			const result = this.controller.inspect_machine(machineId);
+			return result !== null;
+		} catch (error) {
+			return false;
+		}
 	}
 
 	/**
@@ -270,27 +292,20 @@ export class AssemblySystem {
 	}
 }
 
-// Singleton instance for global access
-let assemblySystem: AssemblySystem | null = null;
-
 /**
  * Get the global AssemblySystem instance
  */
 export function getAssemblySystem(): AssemblySystem {
-	if (!assemblySystem) {
-		assemblySystem = new AssemblySystem();
-	}
-	return assemblySystem;
+	return AssemblySystem.getInstance();
 }
 
 /**
  * Dispose of the global AssemblySystem instance
  */
 export function disposeAssemblySystem(): void {
-	if (assemblySystem) {
-		assemblySystem.dispose();
-		assemblySystem = null;
-	}
+	const instance = AssemblySystem.getInstance();
+	instance.dispose();
+	AssemblySystem.instance = null;
 }
 
 export type { MachineStatus, Effect, Message };

@@ -1,0 +1,149 @@
+<script lang="ts">
+	import MemoryViewer from './MemoryViewer.svelte';
+	import { memoryActions, getMemoryConfig, getMemoryPage, getMemoryRange } from './memoryStore';
+
+	interface Props {
+		machineId: number;
+	}
+
+	let { machineId }: Props = $props();
+
+	let highlightedAddr = $state<number | null>(null);
+	let isEditOffset = $state(false);
+	let offsetInput = $state('');
+
+	const hex = true;
+	const minDigits = 4;
+	const base = hex ? 16 : 10;
+	const pad = hex ? minDigits : minDigits + 1;
+
+	// Get reactive stores for this machine
+	const memoryConfig = getMemoryConfig(machineId);
+	const memoryPage = getMemoryPage(machineId);
+	const memoryRange = getMemoryRange(machineId);
+
+	// Computed values from stores
+	const memStart = $derived($memoryRange.start);
+	const memEnd = $derived($memoryRange.end);
+	const memory = $derived($memoryPage);
+
+	function show(n: number): string {
+		return `${hex ? '0x' : ''}${n.toString(base).padStart(pad, '0').toUpperCase()}`;
+	}
+
+	function prevPage() {
+		memoryActions.prevPage(machineId);
+	}
+
+	function nextPage() {
+		memoryActions.nextPage(machineId);
+	}
+
+	function gotoDefaultPage() {
+		memoryActions.gotoDefaultPage(machineId);
+	}
+
+	function handleOffsetEdit() {
+		isEditOffset = false;
+		const offset = parseInt(offsetInput, base);
+		if (!isNaN(offset)) {
+			const pageSize = $memoryRange.size;
+			const page = Math.floor(offset / pageSize);
+			memoryActions.setPage(machineId, page);
+		}
+	}
+
+	function handleKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			handleOffsetEdit();
+		}
+	}
+
+	function onConfirm(start: number, end: number): boolean {
+		// In a full implementation, this would handle region selection
+		// For now, just return false to indicate no special handling
+		return false;
+	}
+
+	function onDrag(transfer: DataTransfer, start: number, end: number) {
+		// In a full implementation, this would handle dragging to create value viewers
+		// For now, just set up basic drag data
+		transfer.effectAllowed = 'copy';
+	}
+
+	// Load initial memory page when component mounts
+	$effect(() => {
+		memoryActions.loadMemoryPage(machineId);
+	});
+
+	// Update offset input when editing starts
+	$effect(() => {
+		if (isEditOffset) {
+			offsetInput = show(memStart);
+		}
+	});
+</script>
+
+{#if memory.length > 0}
+	<div class="flex w-fit flex-col gap-y-1">
+		<div>
+			<MemoryViewer
+				{memory}
+				begin={memStart}
+				onHover={(addr) => (highlightedAddr = addr)}
+				{onConfirm}
+				{onDrag}
+				regions={[]}
+			/>
+		</div>
+
+		<div class="flex items-center justify-between px-2 text-xs">
+			<!-- Previous page button -->
+			<button
+				onclick={prevPage}
+				class="nodrag cursor-pointer text-zinc-400 hover:text-red-400"
+				class:invisible={memStart === 0}
+				disabled={memStart === 0}
+			>
+				◀
+			</button>
+
+			<!-- Address range display -->
+			{#if highlightedAddr === null}
+				<div class="flex gap-x-1 text-xs text-zinc-400">
+					{#if isEditOffset}
+						<input
+							bind:value={offsetInput}
+							onkeydown={handleKeyDown}
+							class="w-16 border border-zinc-600 bg-transparent px-1 text-zinc-200 outline-zinc-600"
+							placeholder={show(memStart)}
+							autofocus
+						/>
+					{:else}
+						<div
+							onclick={() => (isEditOffset = true)}
+							class="nodrag cursor-pointer hover:text-zinc-200"
+						>
+							{show(memStart)}
+						</div>
+					{/if}
+
+					<div>-</div>
+
+					<div onclick={gotoDefaultPage} class="nodrag cursor-pointer hover:text-zinc-200">
+						{show(memEnd)}
+					</div>
+				</div>
+			{:else}
+				<div class="text-xs text-red-300">
+					{show(highlightedAddr)}
+				</div>
+			{/if}
+
+			<!-- Next page button -->
+			<button onclick={nextPage} class="nodrag cursor-pointer text-zinc-400 hover:text-red-400">
+				▶
+			</button>
+		</div>
+	</div>
+{/if}

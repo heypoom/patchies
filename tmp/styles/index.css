@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.cm-line {
+  padding: 0 !important;
+  font-weight: 500;
+}
+
+.react-flow__edge-path, .react-flow__connection-path {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #E93D82 !important;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #4CCCE6;
+}

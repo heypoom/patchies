@@ -14,6 +14,7 @@ import {
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
+import { DEFAULT_ASSEMBLY_CODE } from '$lib/assembly/constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -74,5 +75,17 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 1 }))
 		.with('label', () => ({ message: 'label' }))
 		.with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))
+		.with('asm', () => ({
+			code: DEFAULT_ASSEMBLY_CODE,
+			inletCount: 3,
+			outletCount: 1
+		}))
+		.with('asm.value', () => ({
+			machineId: 0,
+			address: 0,
+			size: 4,
+			format: 'hex',
+			signed: false
+		}))
 		.otherwise(() => ({}));
 }

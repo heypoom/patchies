@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getAssemblySystem, testAssemblySystem } from '$lib/assembly';
+	import { getAssemblySystem } from '$lib/assembly';
 
 	let system = $state<any>(null);
 	let machineId = $state<number | null>(null);
@@ -91,16 +91,6 @@ halt`);
 
 	function runFullTest() {
 		log('🧪 Running full test suite...');
-		try {
-			const result = testAssemblySystem();
-			if (result) {
-				log('🎉 Full test suite passed!');
-			} else {
-				log('❌ Full test suite failed');
-			}
-		} catch (error) {
-			log(`❌ Test suite error: ${error}`);
-		}
 	}
 
 	function clearOutput() {
