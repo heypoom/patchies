@@ -98,6 +98,7 @@
 		"json5": "^2.2.3",
 		"lezer-glsl": "^0.6.0",
 		"lodash": "^4.17.21",
+		"machine": "../modules/vasm/pkg",
 		"marked": "^16.1.2",
 		"matter-js": "^0.20.0",
 		"memfs": "^4.39.0",

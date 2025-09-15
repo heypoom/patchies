@@ -16,9 +16,9 @@ pub struct Controller {
 
 #[derive(Serialize, Deserialize)]
 pub struct InspectedRegister {
-    pc: u16,
-    sp: u16,
-    fp: u16,
+    pub pc: u16,
+    pub sp: u16,
+    pub fp: u16,
 }
 
 /// Machine state returned by the inspection function.
