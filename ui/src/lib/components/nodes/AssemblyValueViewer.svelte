@@ -64,15 +64,15 @@
 		setTimeout(updateValue, 10);
 	}
 
-	function updateValue() {
+	async function updateValue() {
 		try {
-			if (!assemblySystem.machineExists(machineId)) {
+			if (!(await assemblySystem.machineExists(machineId))) {
 				values = [];
 				errorMessage = `Machine ${machineId} does not exist`;
 				return;
 			}
 
-			const memoryData = assemblySystem.readMemory(machineId, address, size);
+			const memoryData = await assemblySystem.readMemory(machineId, address, size);
 			if (!memoryData || memoryData.length === 0) {
 				values = [];
 				errorMessage = `Cannot read memory at address ${address}`;

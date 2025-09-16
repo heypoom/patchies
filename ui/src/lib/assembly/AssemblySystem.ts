@@ -1,33 +1,28 @@
-import { Controller, type MachineStatus, type Effect, type Message } from 'machine';
-
-// Define types that are serialized from Rust but not exported in TypeScript
-export interface InspectedRegister {
-	pc: number;
-	sp: number;
-	fp: number;
-}
-
-export interface InspectedMachine {
-	effects: Effect[];
-	registers: InspectedRegister;
-	inbox_size: number;
-	outbox_size: number;
-	status: MachineStatus;
-}
+import type { MachineStatus, Effect, Message } from 'machine';
+import type {
+	AssemblyWorkerMessage,
+	AssemblyWorkerResponse,
+	InspectedRegister,
+	InspectedMachine
+} from '../../workers/assembly/assemblyWorker';
+import AssemblyWorker from '../../workers/assembly/assemblyWorker?worker';
 
 /**
  * AssemblySystem provides a clean interface to the VASM (Visual Assembly)
  * virtual machine controller, managing execution of assembly programs
- * within the Patchies environment.
+ * within the Patchies environment. Now runs on a web worker to avoid blocking the main thread.
  */
 export class AssemblySystem {
 	public static instance: AssemblySystem | null = null;
-	private controller: Controller;
+	private worker: Worker;
 	private initialized = false;
+	private lastId = 1;
+	private pendingRequests = new Map<string, { resolve: (value: any) => void; reject: (error: Error) => void }>();
 	public eventBus: EventTarget | null = null;
 
 	private constructor() {
-		this.controller = Controller.create();
+		this.worker = new AssemblyWorker();
+		this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
 		this.initialized = true;
 		this.eventBus = new EventTarget();
 	}
@@ -39,6 +34,42 @@ export class AssemblySystem {
 		return AssemblySystem.instance;
 	}
 
+	private handleWorkerMessage = (event: MessageEvent<AssemblyWorkerResponse>) => {
+		const { id, type } = event.data;
+
+		if (id && this.pendingRequests.has(id)) {
+			const { resolve, reject } = this.pendingRequests.get(id)!;
+			this.pendingRequests.delete(id);
+
+			if (type === 'success') {
+				resolve(event.data.result);
+			} else if (type === 'error') {
+				reject(new Error(event.data.error));
+			}
+		}
+	};
+
+	private send<T extends AssemblyWorkerMessage['type']>(
+		type: T,
+		payload: Omit<Extract<AssemblyWorkerMessage, { type: T }>, 'type' | 'id'>
+	): Promise<any> {
+		const id = this.getId();
+
+		return new Promise((resolve, reject) => {
+			this.pendingRequests.set(id, { resolve, reject });
+
+			this.worker.postMessage({
+				type,
+				id,
+				...payload
+			});
+		});
+	}
+
+	private getId(): string {
+		return String(this.lastId++);
+	}
+
 	/**
 	 * Check if the system is properly initialized
 	 */
@@ -47,241 +78,83 @@ export class AssemblySystem {
 	}
 
 	/**
-	 * Create a new virtual machine and return its ID
-	 */
-	createMachine(): number {
-		return this.controller.add_machine();
-	}
-
-	/**
 	 * Create a machine with a specific ID
 	 */
-	createMachineWithId(id: number): void {
-		this.controller.add_machine_with_id(id);
+	async createMachineWithId(id: number): Promise<void> {
+		await this.send('createMachineWithId', { machineId: id });
 	}
 
 	/**
 	 * Remove a machine by ID
 	 */
-	removeMachine(id: number): void {
-		this.controller.remove_machine(id);
+	async removeMachine(id: number): Promise<void> {
+		await this.send('removeMachine', { machineId: id });
 	}
 
 	/**
 	 * Load assembly source code into a machine
 	 */
-	loadProgram(machineId: number, source: string): void {
-		try {
-			this.controller.load(machineId, source);
-			this.controller.reset_machine(machineId);
-		} catch (error) {
-			console.error(`Failed to load program into machine ${machineId}:`, error);
-			throw error;
-		}
+	async loadProgram(machineId: number, source: string): Promise<void> {
+		await this.send('loadProgram', { machineId, source });
 	}
 
 	/**
 	 * Execute a number of instruction cycles
 	 */
-	stepMachine(id: number, cycles: number = 1): void {
-		try {
-			this.controller.step_machine(id, cycles);
-		} catch (error) {
-			console.error('Failed to execute step:', error);
-			throw error;
-		}
-	}
-
-	/**
-	 * Get the status of all machines
-	 */
-	getStatuses(): Record<string, MachineStatus> {
-		return this.controller.statuses();
-	}
-
-	/**
-	 * Check if all machines have halted
-	 */
-	isHalted(): boolean {
-		return this.controller.is_halted();
+	async stepMachine(id: number, cycles: number = 1): Promise<void> {
+		await this.send('stepMachine', { machineId: id, cycles });
 	}
 
 	/**
 	 * Check if a machine exists
 	 */
-	machineExists(machineId: number): boolean {
-		try {
-			const result = this.controller.inspect_machine(machineId);
-			return result !== null;
-		} catch (error) {
-			return false;
-		}
+	async machineExists(machineId: number): Promise<boolean> {
+		return await this.send('machineExists', { machineId });
 	}
 
 	/**
 	 * Get detailed information about a specific machine
 	 */
-	inspectMachine(machineId: number): InspectedMachine | null {
-		try {
-			const result = this.controller.inspect_machine(machineId);
-			return result === null ? null : result;
-		} catch (error) {
-			console.error(`Failed to inspect machine ${machineId}:`, error);
-			return null;
-		}
-	}
-
-	/**
-	 * Read code from a machine's memory
-	 */
-	readCode(machineId: number, size: number): number[] | null {
-		try {
-			const result = this.controller.read_code(machineId, size);
-			return result === null ? null : result;
-		} catch (error) {
-			console.error(`Failed to read code from machine ${machineId}:`, error);
-			return null;
-		}
+	async inspectMachine(machineId: number): Promise<InspectedMachine | null> {
+		return await this.send('inspectMachine', { machineId });
 	}
 
 	/**
 	 * Read data from a machine's memory at a specific address
 	 */
-	readMemory(machineId: number, address: number, size: number): number[] | null {
-		try {
-			const result = this.controller.read_mem(machineId, address, size);
-			return result === null ? null : result;
-		} catch (error) {
-			console.error(`Failed to read memory from machine ${machineId}:`, error);
-			return null;
-		}
-	}
-
-	/**
-	 * Read data from a machine's stack
-	 */
-	readStack(machineId: number, size: number): number[] | null {
-		try {
-			const result = this.controller.read_stack(machineId, size);
-			return result === null ? null : result;
-		} catch (error) {
-			console.error(`Failed to read stack from machine ${machineId}:`, error);
-			return null;
-		}
-	}
-
-	/**
-	 * Write data to a machine's memory at a specific address
-	 */
-	writeMemory(machineId: number, address: number, data: number[]): boolean {
-		try {
-			const uint16Array = new Uint16Array(data);
-			return this.controller.set_mem(machineId, address, uint16Array);
-		} catch (error) {
-			console.error(`Failed to write memory to machine ${machineId}:`, error);
-			return false;
-		}
-	}
-
-	/**
-	 * Wake a sleeping machine
-	 */
-	wakeMachine(machineId: number): void {
-		this.controller.wake(machineId);
+	async readMemory(machineId: number, address: number, size: number): Promise<number[] | null> {
+		return await this.send('readMemory', { machineId, address, size });
 	}
 
 	/**
 	 * Consume and return effects generated by a machine
 	 */
-	consumeMachineEffects(machineId: number): Effect[] {
-		try {
-			return this.controller.consume_machine_side_effects(machineId);
-		} catch (error) {
-			console.error(`Failed to consume effects from machine ${machineId}:`, error);
-			return [];
-		}
+	async consumeMachineEffects(machineId: number): Promise<Effect[]> {
+		return await this.send('consumeMachineEffects', { machineId });
 	}
 
 	/**
 	 * Send a message directly to a machine's inbox
 	 */
-	sendMessage(machineId: number, message: Message): boolean {
-		try {
-			return this.controller.send_message_to_machine(machineId, message);
-		} catch (error) {
-			console.error(`Failed to send message to machine ${machineId}:`, error);
-			return false;
-		}
+	async sendMessage(machineId: number, message: Message): Promise<boolean> {
+		return await this.send('sendMessage', { machineId, message });
 	}
 
 	/**
 	 * Consume all outgoing messages from all machines
 	 */
-	consumeMessages(): Message[] {
-		try {
-			return this.controller.consume_messages();
-		} catch (error) {
-			console.error('Failed to consume messages:', error);
-			return [];
-		}
-	}
-
-	/**
-	 * Route messages between machines
-	 */
-	routeMessages(): void {
-		try {
-			this.controller.route_messages();
-		} catch (error) {
-			console.error('Failed to route messages:', error);
-		}
-	}
-
-	/**
-	 * Enable or disable the await watchdog
-	 */
-	setAwaitWatchdog(enabled: boolean): void {
-		this.controller.set_await_watchdog(enabled);
-	}
-
-	/**
-	 * Clear all machines and reset the system
-	 */
-	clear(): void {
-		this.controller.clear();
-	}
-
-	/**
-	 * Get a full serialized state of the system (for debugging)
-	 */
-	getFullState(): unknown {
-		try {
-			return this.controller.full_serialize_sequencer_state();
-		} catch (error) {
-			console.error('Failed to serialize full state:', error);
-			return null;
-		}
-	}
-
-	/**
-	 * Get a partial serialized state of the system (excluding buffers)
-	 */
-	getPartialState(): unknown {
-		try {
-			return this.controller.partial_serialize_sequencer_state();
-		} catch (error) {
-			console.error('Failed to serialize partial state:', error);
-			return null;
-		}
+	async consumeMessages(): Promise<Message[]> {
+		return await this.send('consumeMessages', {});
 	}
 
 	/**
 	 * Dispose of the system and free resources
 	 */
 	dispose(): void {
-		if (this.controller) {
-			this.controller.free();
+		if (this.worker) {
+			this.worker.terminate();
 		}
+		this.pendingRequests.clear();
 		this.initialized = false;
 	}
 }
@@ -302,4 +175,4 @@ export function disposeAssemblySystem(): void {
 	AssemblySystem.instance = null;
 }
 
-export type { MachineStatus, Effect, Message };
+export type { MachineStatus, Effect, Message, InspectedMachine, InspectedRegister };

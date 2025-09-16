@@ -54,18 +54,18 @@
 	const toggleMemoryViewer = () =>
 		updateNodeData(nodeId, { showMemoryViewer: !data.showMemoryViewer });
 
-	const handleMessage: MessageCallbackFn = (message, meta) => {
+	const handleMessage: MessageCallbackFn = async (message, meta) => {
 		try {
-			match(message)
+			await match(message)
 				.with({ type: 'set', code: P.string }, ({ code }) => {
 					setCodeAndUpdate(code);
 				})
 				.with({ type: 'run' }, () => {
 					updateMachine();
 				})
-				.with({ type: 'send', data: P.any }, ({ data }) => {
+				.with({ type: 'send', data: P.any }, async ({ data }) => {
 					// Send message to the assembly machine
-					assemblySystem.sendMessage(machineId, {
+					await assemblySystem.sendMessage(machineId, {
 						sender: new Port(Number(meta.source) || 0, 0),
 						action: {
 							type: 'Data',
@@ -88,35 +88,37 @@
 
 		updateMachine();
 
-		const updateInterval = setInterval(syncMachineState, 100);
+		const updateInterval = setInterval(() => {
+			syncMachineState();
+		}, 100);
 
 		return () => {
 			clearInterval(updateInterval);
 		};
 	});
 
-	onDestroy(() => {
+	onDestroy(async () => {
 		// Clean up the machine when component is destroyed
 		try {
-			assemblySystem.removeMachine(machineId);
+			await assemblySystem.removeMachine(machineId);
 		} catch (error) {}
 
 		messageContext?.destroy();
 	});
 
-	function updateMachine() {
+	async function updateMachine() {
 		try {
 			messageContext.clearTimers();
 
 			// Ensure machine exists before loading program
-			if (!assemblySystem.machineExists(machineId)) {
-				assemblySystem.createMachineWithId(machineId);
+			if (!(await assemblySystem.machineExists(machineId))) {
+				await assemblySystem.createMachineWithId(machineId);
 			}
 
-			assemblySystem.loadProgram(machineId, data.code);
-			assemblySystem.stepMachine(machineId, 100);
+			await assemblySystem.loadProgram(machineId, data.code);
+			await assemblySystem.stepMachine(machineId, 100);
 
-			syncMachineState();
+			await syncMachineState();
 
 			// Refresh memory display after execution
 			memoryActions.refreshMemory(machineId);
@@ -132,17 +134,17 @@
 		}
 	}
 
-	function syncMachineState() {
+	async function syncMachineState() {
 		try {
-			machineState = assemblySystem.inspectMachine(machineId);
+			machineState = await assemblySystem.inspectMachine(machineId);
 
 			// Get effects/logs
-			const effects = assemblySystem.consumeMachineEffects(machineId);
+			const effects = await assemblySystem.consumeMachineEffects(machineId);
 			logs = effects
 				.filter((effect: Effect) => effect.type === 'Print')
 				.map((effect: Effect) => (effect.type === 'Print' ? effect.text : ''));
 
-			const messages = assemblySystem.consumeMessages();
+			const messages = await assemblySystem.consumeMessages();
 
 			messages.forEach((message: Message) => {
 				messageContext.send(message.action, { to: 0 });
@@ -205,7 +207,7 @@
 
 			<div class="flex flex-col gap-2">
 				<!-- Editor -->
-				<div class="nodrag min-h-24">
+				<div class="nodrag">
 					<AssemblyEditor
 						value={data.code}
 						onchange={(newCode) => {

@@ -30,7 +30,7 @@ export const assemblyLanguage = LRLanguage.define({
 				String: t.string,
 				Value: t.number,
 				'hex_number bin_number': t.number,
-				'label': t.labelName,
+				label: t.labelName,
 				'.string .value': t.keyword
 			})
 		]

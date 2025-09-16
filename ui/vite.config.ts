@@ -34,7 +34,20 @@ export default defineConfig({
 		viteStaticCopyPyodide(),
 		analyzer()
 	],
-	optimizeDeps: { exclude: ['pyodide', '@rollup/browser', 'memfs'] },
+	optimizeDeps: {
+		exclude: [
+			'pyodide',
+			'@rollup/browser',
+			'memfs',
+			'codemirror',
+			'@codemirror/commands',
+			'@codemirror/language',
+			'@codemirror/state',
+			'@codemirror/view',
+			'@codemirror/lang-sql',
+			'@lezer/highlight'
+		]
+	},
 	define: {
 		global: 'globalThis'
 	},

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { EditorView, keymap } from '@codemirror/view';
-	import { EditorState, Prec } from '@codemirror/state';
+	import { EditorState, Prec, type Extension } from '@codemirror/state';
 	import { minimalSetup } from 'codemirror';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { insertNewline } from '@codemirror/commands';
 
 	interface Props {
@@ -25,12 +25,20 @@
 
 	let editorContainer = $state<HTMLDivElement>();
 	let editorView: EditorView | null = null;
+	let currentAssemblyExtension: Extension | null = null;
 
-	onMount(() => {
-		let mounted = true;
+	async function createOrUpdateEditor() {
+		const assemblyExtension = await loadLanguageExtension('assembly');
 
-		loadLanguageExtension('assembly').then((assemblyExtension) => {
-			if (!mounted || !editorContainer) return;
+		if (!editorContainer) return;
+
+		// If extension changed or no editor exists, recreate the editor
+		if (!editorView || currentAssemblyExtension !== assemblyExtension) {
+			if (editorView) {
+				editorView.destroy();
+			}
+
+			currentAssemblyExtension = assemblyExtension;
 
 			const asmKeymap = Prec.highest(
 				keymap.of([
@@ -55,8 +63,6 @@
 				asmKeymap,
 				minimalSetup,
 				tokyoNight,
-
-				assemblyExtension,
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged && onchange && !readonly) {
 						onchange(update.state.doc.toString());
@@ -83,7 +89,8 @@
 						padding: '0 2px 0 4px'
 					}
 				}),
-				EditorState.readOnly.of(readonly)
+				EditorState.readOnly.of(readonly),
+				assemblyExtension
 			];
 
 			const startState = EditorState.create({
@@ -95,12 +102,16 @@
 				state: startState,
 				parent: editorContainer
 			});
-		});
+		}
+	}
 
-		return () => {
-			mounted = false;
-			editorView?.destroy();
-		};
+	onMount(() => {
+		createOrUpdateEditor();
+	});
+
+	onDestroy(() => {
+		editorView?.destroy();
+		editorView = null;
 	});
 
 	// Update editor when value prop changes

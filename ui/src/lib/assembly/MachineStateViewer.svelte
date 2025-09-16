@@ -115,9 +115,5 @@
 				</div>
 			{/if}
 		</div>
-	{:else}
-		<div class="border-zinc-700/50 bg-zinc-800/30 px-2 py-1 text-zinc-500">
-			No machine state available
-		</div>
 	{/if}
 </div>

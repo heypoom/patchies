@@ -194,4 +194,4 @@ async function handleCapturePreview(
 	});
 }
 
-console.log('[render worker] hello');
+console.log('[render worker] initialized');

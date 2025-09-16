@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { AssemblySystem } from './AssemblySystem';
 
 export const DEFAULT_PAGE_OFFSET = 0x4100;
@@ -42,7 +42,7 @@ export const memoryActions = {
 	// Set memory configuration for a machine
 	setConfig(machineId: number, config: Partial<MemoryPageConfig>) {
 		memoryPageConfig.update((configs) => {
-			const existing = configs[machineId] || {};
+			const existing = configs[machineId] || { page: DEFAULT_PAGE };
 			configs[machineId] = { ...existing, ...config };
 			return configs;
 		});
@@ -84,30 +84,28 @@ export const memoryActions = {
 	},
 
 	// Load memory page data from the assembly system
-	loadMemoryPage(machineId: number) {
-		memoryPageConfig.update((configs) => {
-			const page = getCurrentPage(configs, machineId);
-			const size = getPageSize(configs, machineId);
-			const offset = pageToOffset(page, size);
+	async loadMemoryPage(machineId: number) {
+		const configs = get(memoryPageConfig);
 
-			try {
-				const assemblySystem = AssemblySystem.getInstance();
-				const memoryData = assemblySystem.readMemory(machineId, offset, size);
+		const page = getCurrentPage(configs, machineId);
+		const size = getPageSize(configs, machineId);
+		const offset = pageToOffset(page, size);
 
-				memoryPages.update((pages) => {
-					pages[machineId] = memoryData || [];
-					return pages;
-				});
-			} catch (error) {
-				console.error(`Failed to load memory for machine ${machineId}:`, error);
-				memoryPages.update((pages) => {
-					pages[machineId] = [];
-					return pages;
-				});
-			}
+		try {
+			const assemblySystem = AssemblySystem.getInstance();
+			const memoryData = await assemblySystem.readMemory(machineId, offset, size);
 
-			return configs;
-		});
+			memoryPages.update((pages) => {
+				pages[machineId] = memoryData || [];
+				return pages;
+			});
+		} catch (error) {
+			console.error(`Failed to load memory for machine ${machineId}:`, error);
+			memoryPages.update((pages) => {
+				pages[machineId] = [];
+				return pages;
+			});
+		}
 	},
 
 	// Force refresh memory for a machine
