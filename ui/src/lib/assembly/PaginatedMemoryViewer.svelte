@@ -67,10 +67,11 @@
 
 	function onDrag(transfer: DataTransfer, start: number, end: number) {
 		// Set up drag data for creating asm.value nodes
+		const selectionSize = end - start + 1;
 		const dragData = {
 			machineId,
 			address: memStart + start,
-			size: Math.min(end - start + 1, 8), // Limit to 8 bytes max
+			size: selectionSize, // Use actual selection size
 			format: 'hex',
 			signed: false
 		};

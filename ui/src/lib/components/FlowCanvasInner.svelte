@@ -43,6 +43,9 @@
 				// If the user dislikes AI features, filter them out.
 				if (key.startsWith('ai.') && !$isAiFeaturesVisible) return false;
 
+				// Hide asm.value from node palette - only created via drag-and-drop
+				if (key === 'asm.value') return false;
+
 				return true;
 			})
 		);
