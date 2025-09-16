@@ -147,10 +147,11 @@
 				<!-- Main display -->
 				<div
 					class={[
-						'relative flex min-w-[120px] flex-col gap-1 rounded-lg border-2 bg-zinc-900 px-2 py-2 font-mono',
-						selected ? 'border-zinc-200' : 'border-zinc-700',
-						errorMessage ? 'border-red-500' : '',
-						'hover:border-zinc-400'
+						'relative flex min-w-[120px] flex-col gap-1 rounded-lg border bg-zinc-900 px-2 py-2 font-mono',
+						selected
+							? 'border-zinc-400 hover:border-zinc-300'
+							: 'border-zinc-800 hover:border-zinc-700',
+						errorMessage ? 'border-red-500' : ''
 					]}
 				>
 					{#if errorMessage}

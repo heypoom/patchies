@@ -78,7 +78,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('asm', () => ({
 			code: DEFAULT_ASSEMBLY_CODE,
 			inletCount: 3,
-			outletCount: 1
+			outletCount: 3
 		}))
 		.with('asm.value', () => ({
 			machineId: 0,

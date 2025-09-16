@@ -11,6 +11,7 @@
 	import type { InspectedMachine, Effect, Message } from './AssemblySystem';
 	import { Port } from 'machine';
 	import { memoryActions } from './memoryStore';
+	import Icon from '@iconify/svelte';
 
 	let {
 		id: nodeId,
@@ -37,7 +38,7 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	let inletCount = $derived(data.inletCount ?? 3);
-	let outletCount = $derived(data.outletCount ?? 1);
+	let outletCount = $derived(data.outletCount ?? 3);
 
 	// Machine ID is derived from node ID
 	const machineId = parseInt(nodeId.replace(/\D/g, '')) || 0;
@@ -142,32 +143,38 @@
 	}
 </script>
 
-<div
-	class="flex min-w-80 flex-col space-y-2 rounded-lg border-2 bg-zinc-900 px-3 py-3 font-mono text-gray-50 hover:border-zinc-400"
-	class:border-red-400={errorMessage}
-	class:border-purple-400={machineState?.status === 'Awaiting'}
-	class:border-gray-600={machineState?.status === 'Halted'}
-	class:border-orange-400={machineState && machineState.inbox_size > 50}
-	class:border-red-600={machineState && machineState.inbox_size > 50}
-	class:border-blue-400={machineState && machineState.outbox_size >= 1}
-	class:border-gray-500={machineState?.status === 'Sleeping'}
-	class:!border-zinc-200={selected}
-	class:nodrag={!dragEnabled}
->
+<div class="group relative">
+	<!-- Floating Action Button -->
+	<div class="absolute -top-7 right-0 flex gap-1">
+		<button
+			onclick={updateMachine}
+			class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+			title="Run assembly code"
+		>
+			<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+		</button>
+	</div>
+
+	<div
+		class="flex min-w-80 flex-col space-y-2 rounded-lg border bg-zinc-900 px-3 py-3 font-mono text-gray-50 hover:border-zinc-400"
+		class:border-red-400={errorMessage}
+		class:border-purple-400={machineState?.status === 'Awaiting'}
+		class:border-gray-600={machineState?.status === 'Halted'}
+		class:border-orange-400={machineState && machineState.inbox_size > 50}
+		class:border-red-600={machineState && machineState.inbox_size > 50}
+		class:border-blue-400={machineState && machineState.outbox_size >= 1}
+		class:border-gray-500={machineState?.status === 'Sleeping'}
+		class:!border-zinc-300={selected}
+		class:nodrag={!dragEnabled}
+	>
 	<!-- Top handles (inputs) -->
 	{#each Array.from({ length: inletCount }) as _, index}
 		<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
 	{/each}
 
 	<!-- Header -->
-	<div class="mb-2 flex items-center justify-between">
+	<div class="mb-2">
 		<h3 class="text-sm font-medium text-zinc-300">{data.title || 'asm'}</h3>
-		<button
-			onclick={updateMachine}
-			class="rounded bg-green-700 px-2 py-1 text-xs text-white hover:bg-green-500"
-		>
-			Run
-		</button>
 	</div>
 
 	<!-- Editor -->
@@ -194,4 +201,5 @@
 			{index}
 		/>
 	{/each}
+	</div>
 </div>
