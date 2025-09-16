@@ -3,7 +3,7 @@
 	import { EditorState } from '@codemirror/state';
 	import { basicSetup } from 'codemirror';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
-	import { javascript } from '@codemirror/lang-javascript';
+	import { loadLanguageExtension } from '$lib/codemirror/language';
 	import { onMount } from 'svelte';
 
 	interface Props {
@@ -24,48 +24,54 @@
 	let editorView: EditorView | null = null;
 
 	onMount(() => {
-		const extensions = [
-			basicSetup,
-			tokyoNight,
-			// For now use JavaScript highlighting until we create assembly syntax
-			javascript(),
-			EditorView.updateListener.of((update) => {
-				if (update.docChanged && onchange && !readonly) {
-					onchange(update.state.doc.toString());
-				}
-			}),
-			EditorView.theme({
-				'&': {
-					fontSize: '13px',
-					fontFamily:
-						'JetBrains Mono, Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace'
-				},
-				'.cm-content': {
-					padding: '8px',
-					minHeight: '100px',
-					maxHeight: '300px'
-				},
-				'.cm-focused': {
-					outline: 'none'
-				},
-				'.cm-editor': {
-					borderRadius: '6px'
-				}
-			}),
-			EditorState.readOnly.of(readonly)
-		];
+		let mounted = true;
 
-		const startState = EditorState.create({
-			doc: value,
-			extensions
-		});
+		loadLanguageExtension('assembly').then((assemblyExtension) => {
+			if (!mounted || !editorContainer) return;
 
-		editorView = new EditorView({
-			state: startState,
-			parent: editorContainer
+			const extensions = [
+				basicSetup,
+				tokyoNight,
+				assemblyExtension,
+				EditorView.updateListener.of((update) => {
+					if (update.docChanged && onchange && !readonly) {
+						onchange(update.state.doc.toString());
+					}
+				}),
+				EditorView.theme({
+					'&': {
+						fontSize: '13px',
+						fontFamily:
+							'JetBrains Mono, Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace'
+					},
+					'.cm-content': {
+						padding: '8px',
+						minHeight: '100px',
+						maxHeight: '300px'
+					},
+					'.cm-focused': {
+						outline: 'none'
+					},
+					'.cm-editor': {
+						borderRadius: '6px'
+					}
+				}),
+				EditorState.readOnly.of(readonly)
+			];
+
+			const startState = EditorState.create({
+				doc: value,
+				extensions
+			});
+
+			editorView = new EditorView({
+				state: startState,
+				parent: editorContainer
+			});
 		});
 
 		return () => {
+			mounted = false;
 			editorView?.destroy();
 		};
 	});

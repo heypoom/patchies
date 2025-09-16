@@ -71,6 +71,8 @@
 		"@codemirror/view": "^6.38.1",
 		"@google/genai": "^1.11.0",
 		"@iconify/svelte": "^5.0.0",
+		"@lezer/generator": "^1.8.0",
+		"@lezer/highlight": "^1.2.1",
 		"@replit/codemirror-vim": "^6.3.0",
 		"@rollup/browser": "^4.50.1",
 		"@strudel/codemirror": "^1.2.2",

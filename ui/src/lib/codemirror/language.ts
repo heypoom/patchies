@@ -22,6 +22,11 @@ export async function loadLanguageExtension(language: string) {
 
 			return new LanguageSupport(glslLanguage);
 		})
+		.with('assembly', async () => {
+			const { assembly } = await import('$lib/codemirror/assembly/assembly');
+
+			return assembly();
+		})
 		.with('python', async () => {
 			const { python } = await import('@codemirror/lang-python');
 
