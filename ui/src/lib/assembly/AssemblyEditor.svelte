@@ -1,14 +1,16 @@
 <script lang="ts">
-	import { EditorView } from '@codemirror/view';
-	import { EditorState } from '@codemirror/state';
+	import { EditorView, keymap } from '@codemirror/view';
+	import { EditorState, Prec } from '@codemirror/state';
 	import { minimalSetup } from 'codemirror';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
 	import { onMount } from 'svelte';
+	import { insertNewline } from '@codemirror/commands';
 
 	interface Props {
 		value: string;
 		onchange?: (value: string) => void;
+		onrun?: () => void;
 		placeholder?: string;
 		readonly?: boolean;
 	}
@@ -17,7 +19,8 @@
 		value = '',
 		onchange,
 		placeholder = 'Enter assembly code...',
-		readonly = false
+		readonly = false,
+		onrun
 	}: Props = $props();
 
 	let editorContainer = $state<HTMLDivElement>();
@@ -29,9 +32,30 @@
 		loadLanguageExtension('assembly').then((assemblyExtension) => {
 			if (!mounted || !editorContainer) return;
 
+			const asmKeymap = Prec.highest(
+				keymap.of([
+					{
+						key: 'Shift-Enter',
+						run: () => {
+							onrun?.();
+							return true;
+						}
+					},
+					{
+						key: 'Enter',
+						run: (view) => {
+							insertNewline(view);
+							return true;
+						}
+					}
+				])
+			);
+
 			const extensions = [
+				asmKeymap,
 				minimalSetup,
 				tokyoNight,
+
 				assemblyExtension,
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged && onchange && !readonly) {

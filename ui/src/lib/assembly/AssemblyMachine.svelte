@@ -112,9 +112,8 @@
 			assemblySystem.loadProgram(machineId, data.code);
 			assemblySystem.step(100);
 
-			console.log('>>> running');
-
 			updateMachineState();
+
 			// Refresh memory display after execution
 			memoryActions.refreshMemory(machineId);
 			errorMessage = null;
@@ -194,6 +193,7 @@
 						onchange={(newCode) => {
 							updateNodeData(nodeId, { code: newCode });
 						}}
+						onrun={updateMachine}
 						placeholder="Enter assembly code..."
 					/>
 				</div>
