@@ -37,8 +37,10 @@
 <div class={['flex flex-col gap-1 px-1 font-mono text-xs']}>
 	<!-- Error Display -->
 	{#if error}
-		<div class="rounded border border-red-500/20 bg-red-500/10 px-2 py-1 text-red-400">
-			❌ {error}
+		<div
+			class="my-1 whitespace-pre rounded border border-red-500/20 bg-red-500/10 px-2 py-1 text-red-400"
+		>
+			{error}
 		</div>
 	{/if}
 

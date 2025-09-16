@@ -73,6 +73,7 @@ export class AssemblySystem {
 	loadProgram(machineId: number, source: string): void {
 		try {
 			this.controller.load(machineId, source);
+			this.controller.ready();
 		} catch (error) {
 			console.error(`Failed to load program into machine ${machineId}:`, error);
 			throw error;
@@ -89,9 +90,9 @@ export class AssemblySystem {
 	/**
 	 * Execute a number of instruction cycles
 	 */
-	step(cycles: number = 1): void {
+	stepMachine(id: number, cycles: number = 1): void {
 		try {
-			this.controller.step(cycles);
+			this.controller.step_machine(id, cycles);
 		} catch (error) {
 			console.error('Failed to execute step:', error);
 			throw error;

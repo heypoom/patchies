@@ -41,8 +41,6 @@ fn returns<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> 
     }
 }
 
-// Note: return_raw function removed as it was unused
-
 /// Controls the interaction with virtual machines.
 #[wasm_bindgen]
 impl Controller {
@@ -77,10 +75,6 @@ impl Controller {
         self.seq.ready()
     }
 
-    pub fn step(&mut self, count: u16) -> Return {
-        returns(self.seq.step(count))
-    }
-
     pub fn step_machine(&mut self, id: u16, count: u16) -> Return {
         returns(self.seq.step_machine(id, count))
     }
@@ -94,12 +88,6 @@ impl Controller {
     }
 
     pub fn inspect_machine(&mut self, id: u16) -> Return {
-        let Some(status) = self.seq.statuses.get(&id) else {
-            return Ok(NULL);
-        };
-
-        let status = status.clone();
-
         let Some(m) = self.seq.get_mut(id) else {
             return Ok(NULL);
         };
@@ -113,7 +101,7 @@ impl Controller {
             },
             inbox_size: m.inbox.len(),
             outbox_size: m.outbox.len(),
-            status,
+            status: m.status.clone(),
         };
 
         Ok(to_value(&state)?)

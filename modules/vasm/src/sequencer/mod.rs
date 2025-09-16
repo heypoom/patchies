@@ -12,15 +12,12 @@ pub use seq_error::SequencerError::*;
 pub use seq_error::SequencerError;
 use crate::status::MachineStatus::{Errored, Invalid, Loaded, Ready, Sleeping};
 
-type Errorable = Result<(), SequencerError>;
 type Statuses = HashMap<u16, MachineStatus>;
+type Errorable = Result<(), SequencerError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Sequencer {
     pub machines: Vec<Machine>,
-
-    /// Stores the statuses of the machine.
-    pub statuses: Statuses,
 
     /// We should disable the message watchdog if we know the message will eventually arrive.
     pub await_watchdog: bool,
@@ -37,7 +34,6 @@ impl Sequencer {
     pub fn new() -> Sequencer {
         Sequencer {
             machines: vec![],
-            statuses: HashMap::new(),
             await_watchdog: true,
             await_watchdog_counter: MAX_WAIT_CYCLES,
         }
@@ -54,7 +50,6 @@ impl Sequencer {
     /// Remove a machine.
     pub fn remove(&mut self, id: u16) {
         self.machines.retain(|m| m.id != Some(id));
-        self.statuses.remove(&id);
     }
 
     /// Load the code and symbols into memory.
@@ -67,7 +62,7 @@ impl Sequencer {
         let parser = match parser {
             Ok(parser) => parser,
             Err(error) => {
-                self.statuses.insert(id, Invalid);
+                machine.status = Invalid;
                 return Err(CannotParse { id, error });
             }
         };
@@ -75,7 +70,7 @@ impl Sequencer {
         machine.mem.load_code(parser.ops);
         machine.mem.load_symbols(parser.symbols);
 
-        self.statuses.insert(id, Loaded);
+        machine.status = Loaded;
 
         Ok(())
     }
@@ -83,42 +78,45 @@ impl Sequencer {
     /// Mark the machines as ready for execution.
     pub fn ready(&mut self) {
         for machine in &mut self.machines {
-            let Some(id) = machine.id else { continue; };
+            let Some(_) = machine.id else { continue; };
 
             // Do not reset the machine if it is invalid.
-            if self.statuses.get(&id) == Some(&Invalid) { continue; }
+            if machine.status == Invalid { continue; }
             machine.partial_reset();
 
             self.await_watchdog_counter = MAX_WAIT_CYCLES;
-            self.statuses.insert(id, Ready);
+            machine.status = Ready;
         }
     }
 
     /// Step a specific machine a number of times.
     /// Messages must be routed before this method is called.
     pub fn step_machine(&mut self, id: u16, count: u16) -> Errorable {
-        // First check if machine exists and get current status
-        let current_status = self.statuses.get(&id).cloned()
-            .ok_or(MachineDoesNotExist { id })?;
-
-        // Handle states that don't require machine access
-        match current_status {
-            Halted | Invalid | Loaded | Errored => return Ok(()),
-            _ => {}
-        }
+        let statuses: Statuses = self.machines
+            .iter()
+            .filter_map(|m| {
+                if let Some(id) = m.id {
+                    Some((id, m.status.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         // Get the machine
         let machine = self.get_mut(id).ok_or(MachineDoesNotExist { id })?;
 
         // Manage state transitions of the machine.
-        match current_status {
+        match machine.status {
+            Halted | Invalid | Loaded | Errored => return Ok(()),
+
             Sleeping => {
                 if machine.remaining_sleep_ticks > 0 {
                     machine.remaining_sleep_ticks -= 1;
 
                     if machine.remaining_sleep_ticks == 0 {
-                        self.statuses.insert(id, Running);
                         machine.sleeping = false;
+                        machine.status = Running;
                     }
                 }
 
@@ -126,30 +124,30 @@ impl Sequencer {
             }
 
             Ready => {
-                self.statuses.insert(id, Running);
+                machine.status = Running;
             }
 
             _ => {}
         }
 
-        // Before each instruction cycle, we collect and process the messages sequentially.
+        // Before each instruction cycle, we collect and process the messages.
         machine.receive_messages().map_err(|error| ReceiveFailed { error: error.into() })?;
 
         // If a message is received, we resume the machine's execution.
         // Otherwise, we suspend the machine's execution until subsequent cycles.
-        if current_status == Awaiting {
+        if machine.status == Awaiting {
             // Do not tick the machine if the still did not receive the message.
             if machine.expected_receives > 0 {
                 // Watchdog prevents the `receive` instruction from blocking forever.
                 if self.await_watchdog {
                     // Raise an error if all peers are halted.
                     if self.await_watchdog_counter == 0 {
-                        self.statuses.insert(id, Errored);
+                        let machine = self.get_mut(id).ok_or(MachineDoesNotExist { id })?;
+                        machine.status = Errored;
+
                         return Err(MessageNeverReceived { id });
                     }
 
-                    // Decrement the watchdog counter
-                    let statuses = self.statuses.clone();
                     if peers_halted(statuses, id) {
                         self.await_watchdog_counter -= 1;
                     }
@@ -160,17 +158,17 @@ impl Sequencer {
 
             // If it's the last instruction, we halt the machine as the message is received.
             if machine.should_halt() {
-                self.statuses.insert(id, Halted);
+                machine.status = Halted;
                 return Ok(());
             }
 
-            self.statuses.insert(id, Running);
+            machine.status = Running;
         }
 
         for _ in 0..count {
             // Execute the instruction.
             if let Err(error) = machine.tick() {
-                self.statuses.insert(id, Errored);
+                machine.status = Errored;
                 return Err(ExecutionFailed { id, error: error.into() });
             }
 
@@ -178,37 +176,21 @@ impl Sequencer {
             // we suspend the machine's execution until subsequent cycles,
             // until the machine receives a message.
             if machine.expected_receives > 0 {
-                self.statuses.insert(id, Awaiting);
+                machine.status = Awaiting;
                 break;
             }
 
             // Sleep the machine.
             if machine.sleeping {
-                self.statuses.insert(id, Sleeping);
+                machine.status = Sleeping;
                 break;
             }
 
             // Halt the machine if we reached the end of the program.
             if machine.should_halt() {
-                self.statuses.insert(id, Halted);
+                machine.status = Halted;
                 break;
             }
-        }
-
-        Ok(())
-    }
-
-    /// Step a number of times for all machines.
-    /// Messages must be routed before this method is called.
-    /// DEPRECATED: Use step_machine for independent stepping.
-    pub fn step(&mut self, count: u16) -> Errorable {
-        // Get all machine IDs to avoid borrowing issues
-        let machine_ids: Vec<u16> = self.machines.iter()
-            .filter_map(|m| m.id)
-            .collect();
-
-        for id in machine_ids {
-            self.step_machine(id, count)?;
         }
 
         Ok(())
@@ -216,22 +198,29 @@ impl Sequencer {
 
     /// Wake the machine up from sleep.
     pub fn wake(&mut self, machine_id: u16) {
-        // Resume the machine's execution state.
-        self.statuses.insert(machine_id, Running);
-
         // Reset the machine's sleeping flag.
         if let Some(machine) = self.get_mut(machine_id) {
+            machine.status = Running;
             machine.sleeping = false;
             machine.remaining_sleep_ticks = 0;
         }
     }
 
     pub fn is_halted(&self) -> bool {
-        self.statuses.values().all(|s| s == &Halted || s == &Invalid || s == &Errored)
+        self.get_statuses().values().all(|s| s == &Halted || s == &Invalid || s == &Errored)
     }
 
     pub fn get_statuses(&self) -> Statuses {
-        self.statuses.clone()
+        self.machines
+            .iter()
+            .filter_map(|m| {
+                if let Some(id) = m.id {
+                    Some((id, m.status.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn get(&self, id: u16) -> Option<&Machine> {

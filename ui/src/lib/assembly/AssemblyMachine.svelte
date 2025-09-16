@@ -88,7 +88,7 @@
 
 		updateMachine();
 
-		const updateInterval = setInterval(updateMachineState, 100);
+		const updateInterval = setInterval(syncMachineState, 100);
 
 		return () => {
 			clearInterval(updateInterval);
@@ -114,19 +114,25 @@
 			}
 
 			assemblySystem.loadProgram(machineId, data.code);
-			assemblySystem.step(100);
+			assemblySystem.stepMachine(machineId, 100);
 
-			updateMachineState();
+			syncMachineState();
 
 			// Refresh memory display after execution
 			memoryActions.refreshMemory(machineId);
 			errorMessage = null;
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			if (error instanceof Error) {
+				errorMessage = error.message;
+			} else if (typeof error === 'string') {
+				errorMessage = error;
+			} else if (typeof error === 'object' && error !== null) {
+				errorMessage = JSON.stringify(error, null, 2);
+			}
 		}
 	}
 
-	function updateMachineState() {
+	function syncMachineState() {
 		try {
 			machineState = assemblySystem.inspectMachine(machineId);
 

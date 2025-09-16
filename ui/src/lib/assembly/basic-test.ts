@@ -37,7 +37,7 @@ export function basicAssemblyTest(): boolean {
 		system.ready();
 		console.log('✅ System ready');
 
-		system.step(5);
+		system.stepMachine(5);
 		console.log('✅ Execution completed');
 
 		// Test 7: Check results
@@ -69,7 +69,6 @@ export function basicAssemblyTest(): boolean {
 
 		console.log('🎉 All basic tests passed!');
 		return true;
-
 	} catch (error) {
 		console.error('❌ Basic test failed:', error);
 		return false;
