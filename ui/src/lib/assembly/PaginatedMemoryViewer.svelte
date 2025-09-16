@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
 	import MemoryViewer from './MemoryViewer.svelte';
 	import { memoryActions, getMemoryConfig, getMemoryPage, getMemoryRange } from './memoryStore';
 
@@ -46,6 +47,7 @@
 	function handleOffsetEdit() {
 		isEditOffset = false;
 		const offset = parseInt(offsetInput, base);
+
 		if (!isNaN(offset)) {
 			const pageSize = $memoryRange.size;
 			const page = Math.floor(offset / pageSize);
@@ -95,63 +97,62 @@
 
 {#if memory.length > 0}
 	<div class="flex w-fit flex-col gap-y-1">
-		<div>
-			<MemoryViewer
-				{memory}
-				begin={memStart}
-				onHover={(addr) => (highlightedAddr = addr)}
-				{onConfirm}
-				{onDrag}
-				regions={[]}
-			/>
-		</div>
+		<MemoryViewer
+			{memory}
+			begin={memStart}
+			onHover={(addr) => (highlightedAddr = addr)}
+			{onConfirm}
+			{onDrag}
+			regions={[]}
+		/>
 
-		<div class="flex items-center justify-between px-2 text-xs">
+		<div class="mt-1 flex items-center justify-between px-2 text-xs">
 			<!-- Previous page button -->
 			<button
 				onclick={prevPage}
-				class="nodrag cursor-pointer text-zinc-400 hover:text-red-400"
+				class="nodrag cursor-pointer text-zinc-500 hover:text-red-400"
 				class:invisible={memStart === 0}
 				disabled={memStart === 0}
 			>
-				◀
+				<Icon icon="lucide:arrow-left" />
 			</button>
 
 			<!-- Address range display -->
 			{#if highlightedAddr === null}
-				<div class="flex gap-x-1 text-xs text-zinc-400">
+				<div class="flex gap-x-1 text-xs text-zinc-500">
 					{#if isEditOffset}
+						<!-- svelte-ignore a11y_autofocus -->
 						<input
 							bind:value={offsetInput}
 							onkeydown={handleKeyDown}
-							class="w-16 border border-zinc-600 bg-transparent px-1 text-zinc-200 outline-zinc-600"
+							class="w-16 rounded-sm border border-zinc-600 bg-transparent px-1 text-zinc-200 outline-0 outline-zinc-600 focus:border-green-400"
 							placeholder={show(memStart)}
 							autofocus
 						/>
 					{:else}
-						<div
+						<button
 							onclick={() => (isEditOffset = true)}
 							class="nodrag cursor-pointer hover:text-zinc-200"
 						>
 							{show(memStart)}
-						</div>
+						</button>
 					{/if}
 
 					<div>-</div>
 
-					<div onclick={gotoDefaultPage} class="nodrag cursor-pointer hover:text-zinc-200">
+					<button onclick={gotoDefaultPage} class="nodrag cursor-pointer hover:text-zinc-200">
 						{show(memEnd)}
-					</div>
+					</button>
 				</div>
 			{:else}
-				<div class="text-xs text-red-300">
+				<div class=" text-red-300">
 					{show(highlightedAddr)}
 				</div>
 			{/if}
 
 			<!-- Next page button -->
-			<button onclick={nextPage} class="nodrag cursor-pointer text-zinc-400 hover:text-red-400">
-				▶
+			<button onclick={nextPage} class="nodrag cursor-pointer text-zinc-500 hover:text-red-400">
+				<Icon icon="lucide:arrow-right" />
 			</button>
 		</div>
 	</div>

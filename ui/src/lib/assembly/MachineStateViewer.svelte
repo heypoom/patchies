@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { InspectedMachine, Effect } from '$lib/assembly';
-	import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
 
 	interface Props {
 		machineId: number;
@@ -24,6 +23,8 @@
 	function getStatusBadge(): string {
 		if (errored) return 'bg-red-500/20 text-red-400';
 		if (awaiting) return 'bg-purple-500/20 text-purple-400';
+		if (backpressuring) return 'bg-orange-500/20 text-orange-400';
+		if (sending) return 'bg-blue-500/20 text-blue-400';
 		if (sleeping) return 'bg-gray-500/20 text-gray-400';
 		if (halted) return 'bg-gray-600/20 text-gray-500';
 		if (running) return 'bg-green-500/20 text-green-400';
@@ -33,7 +34,7 @@
 	}
 </script>
 
-<div class="space-y-2 font-mono text-xs">
+<div class={['flex flex-col gap-1 px-1 font-mono text-xs']}>
 	<!-- Error Display -->
 	{#if error}
 		<div class="rounded border border-red-500/20 bg-red-500/10 px-2 py-1 text-red-400">
@@ -52,28 +53,26 @@
 
 	<!-- Registers and State -->
 	{#if state}
-		<div class="rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1">
-			<div class="mb-1 flex items-center justify-between">
-				<span class="text-zinc-300">Machine {machineId}</span>
-				<span class="rounded px-1.5 py-0.5 text-xs {getStatusBadge()}">
-					{state.status}
-				</span>
-			</div>
-
-			<div class="flex gap-3 text-green-400">
+		<div class="bg-zinc-900">
+			<div class="flex gap-3 font-mono text-green-400">
 				<div>
-					<span class="text-zinc-400">PC</span>
-					<strong class="ml-1">{state.registers.pc.toString().padStart(2, '0')}</strong>
+					<span class="text-[10px] text-zinc-400">ID</span>
+					<span>{machineId}</span>
 				</div>
 
 				<div>
-					<span class="text-zinc-400">SP</span>
-					<strong class="ml-1">{state.registers.sp}</strong>
+					<span class="text-[10px] text-zinc-400">PC</span>
+					<span>{state.registers.pc.toString().padStart(2, '0')}</span>
 				</div>
 
 				<div>
-					<span class="text-zinc-400">FP</span>
-					<strong class="ml-1">{state.registers.fp}</strong>
+					<span class="text-[10px] text-zinc-400">SP</span>
+					<span>{state.registers.sp}</span>
+				</div>
+
+				<div>
+					<span class="text-[10px] text-zinc-400">FP</span>
+					<span>{state.registers.fp}</span>
 				</div>
 			</div>
 
@@ -115,16 +114,8 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="rounded border border-zinc-700/50 bg-zinc-800/30 px-2 py-1 text-zinc-500">
+		<div class="border-zinc-700/50 bg-zinc-800/30 px-2 py-1 text-zinc-500">
 			No machine state available
-		</div>
-	{/if}
-
-	<!-- Memory Viewer -->
-	{#if state}
-		<div class="rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1">
-			<div class="mb-2 text-xs text-zinc-400">Memory:</div>
-			<PaginatedMemoryViewer {machineId} />
 		</div>
 	{/if}
 </div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { EditorView } from '@codemirror/view';
 	import { EditorState } from '@codemirror/state';
-	import { basicSetup } from 'codemirror';
+	import { minimalSetup } from 'codemirror';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
 	import { onMount } from 'svelte';
@@ -30,7 +30,7 @@
 			if (!mounted || !editorContainer) return;
 
 			const extensions = [
-				basicSetup,
+				minimalSetup,
 				tokyoNight,
 				assemblyExtension,
 				EditorView.updateListener.of((update) => {
@@ -45,8 +45,8 @@
 							'JetBrains Mono, Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace'
 					},
 					'.cm-content': {
-						padding: '8px',
-						minHeight: '100px',
+						padding: '0px',
+						minHeight: '50px',
 						maxHeight: '300px'
 					},
 					'.cm-focused': {
@@ -54,6 +54,9 @@
 					},
 					'.cm-editor': {
 						borderRadius: '6px'
+					},
+					'.cm-line': {
+						padding: '0 2px 0 4px'
 					}
 				}),
 				EditorState.readOnly.of(readonly)
@@ -90,10 +93,7 @@
 	});
 </script>
 
-<div
-	bind:this={editorContainer}
-	class="assembly-editor overflow-hidden rounded-md border border-zinc-700"
->
+<div bind:this={editorContainer} class="assembly-editor overflow-hidden">
 	{#if !editorContainer}
 		<div class="p-4 font-mono text-sm text-zinc-400">
 			{placeholder}

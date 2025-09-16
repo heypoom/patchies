@@ -41,7 +41,7 @@ function getPageSize(configs: MemoryPageConfigMap, machineId: number): number {
 export const memoryActions = {
 	// Set memory configuration for a machine
 	setConfig(machineId: number, config: Partial<MemoryPageConfig>) {
-		memoryPageConfig.update(configs => {
+		memoryPageConfig.update((configs) => {
 			const existing = configs[machineId] || {};
 			configs[machineId] = { ...existing, ...config };
 			return configs;
@@ -58,7 +58,7 @@ export const memoryActions = {
 
 	// Navigate to next page
 	nextPage(machineId: number) {
-		memoryPageConfig.update(configs => {
+		memoryPageConfig.update((configs) => {
 			const currentPage = getCurrentPage(configs, machineId);
 			const newPage = Math.min(currentPage + 1, 1000); // Max page limit
 			configs[machineId] = { ...configs[machineId], page: newPage };
@@ -69,7 +69,7 @@ export const memoryActions = {
 
 	// Navigate to previous page
 	prevPage(machineId: number) {
-		memoryPageConfig.update(configs => {
+		memoryPageConfig.update((configs) => {
 			const currentPage = getCurrentPage(configs, machineId);
 			const newPage = Math.max(currentPage - 1, 0);
 			configs[machineId] = { ...configs[machineId], page: newPage };
@@ -85,7 +85,7 @@ export const memoryActions = {
 
 	// Load memory page data from the assembly system
 	loadMemoryPage(machineId: number) {
-		memoryPageConfig.update(configs => {
+		memoryPageConfig.update((configs) => {
 			const page = getCurrentPage(configs, machineId);
 			const size = getPageSize(configs, machineId);
 			const offset = pageToOffset(page, size);
@@ -94,13 +94,13 @@ export const memoryActions = {
 				const assemblySystem = AssemblySystem.getInstance();
 				const memoryData = assemblySystem.readMemory(machineId, offset, size);
 
-				memoryPages.update(pages => {
+				memoryPages.update((pages) => {
 					pages[machineId] = memoryData || [];
 					return pages;
 				});
 			} catch (error) {
 				console.error(`Failed to load memory for machine ${machineId}:`, error);
-				memoryPages.update(pages => {
+				memoryPages.update((pages) => {
 					pages[machineId] = [];
 					return pages;
 				});
@@ -117,11 +117,12 @@ export const memoryActions = {
 
 	// Clear memory data for a machine (when machine is destroyed)
 	clearMachine(machineId: number) {
-		memoryPageConfig.update(configs => {
+		memoryPageConfig.update((configs) => {
 			delete configs[machineId];
 			return configs;
 		});
-		memoryPages.update(pages => {
+
+		memoryPages.update((pages) => {
 			delete pages[machineId];
 			return pages;
 		});
@@ -130,13 +131,16 @@ export const memoryActions = {
 
 // Derived stores for easier access
 export const getMemoryConfig = (machineId: number) =>
-	derived(memoryPageConfig, $config => $config[machineId] || { page: DEFAULT_PAGE, size: DEFAULT_PAGE_SIZE });
+	derived(
+		memoryPageConfig,
+		($config) => $config[machineId] || { page: DEFAULT_PAGE, size: DEFAULT_PAGE_SIZE }
+	);
 
 export const getMemoryPage = (machineId: number) =>
-	derived(memoryPages, $pages => $pages[machineId] || []);
+	derived(memoryPages, ($pages) => $pages[machineId] || []);
 
 export const getMemoryRange = (machineId: number) =>
-	derived(memoryPageConfig, $config => {
+	derived(memoryPageConfig, ($config) => {
 		const config = $config[machineId] || { page: DEFAULT_PAGE, size: DEFAULT_PAGE_SIZE };
 		const offset = pageToOffset(config.page, config.size);
 		return {

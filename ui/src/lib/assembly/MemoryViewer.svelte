@@ -88,8 +88,6 @@
 	}
 
 	function getRegionClassName(region: MemoryRegion) {
-		// Simplified region coloring - in the full implementation you'd want
-		// a proper color mapping system
 		return region.color
 			? `bg-${region.color}-500/20 text-${region.color}-400`
 			: 'bg-blue-500/20 text-blue-400';
@@ -183,7 +181,7 @@
 
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="nodrag grid px-1"
+			class="nodrag grid bg-zinc-900"
 			class:w-full={full}
 			style="grid-template-columns: repeat({columns}, minmax(0, 1fr));"
 			onmouseleave={handleMouseLeave}
@@ -205,7 +203,7 @@
 					onmousedown={(e) => handleMouseDown(e, i)}
 					onmouseover={() => handleMouseOver(i)}
 					onmouseup={handleMouseUp}
-					class="cursor-pointer select-none bg-zinc-800 px-1 text-red-400 {highlighted
+					class="cursor-pointer select-none bg-zinc-900 px-1 text-red-400 {highlighted
 						? getRegionClassName(highlighted)
 						: ''}"
 					class:text-zinc-600={!selected && !highlighted && u === 0}

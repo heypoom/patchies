@@ -12,6 +12,7 @@
 	import { Port } from 'machine';
 	import { memoryActions } from './memoryStore';
 	import Icon from '@iconify/svelte';
+	import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
 
 	let {
 		id: nodeId,
@@ -144,62 +145,79 @@
 </script>
 
 <div class="group relative">
-	<!-- Floating Action Button -->
-	<div class="absolute -top-7 right-0 flex gap-1">
-		<button
-			onclick={updateMachine}
-			class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
-			title="Run assembly code"
+	<div class="flex flex-col gap-2">
+		<!-- Floating Action Button -->
+		<div class="absolute -top-7 left-0 flex w-full items-center justify-between gap-1">
+			<div class="z-10 rounded-lg bg-zinc-900/60 px-2 py-1 backdrop-blur-lg">
+				<div class="font-mono text-xs font-medium text-zinc-400">asm</div>
+			</div>
+
+			<div class="flex">
+				<button
+					onclick={updateMachine}
+					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					title="Run assembly code"
+				>
+					<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
+		</div>
+
+		<div
+			class="flex min-w-80 flex-col rounded-lg border bg-zinc-900 px-3 py-3 font-mono text-gray-50 hover:border-zinc-400"
+			class:border-red-400={errorMessage}
+			class:border-purple-400={machineState?.status === 'Awaiting'}
+			class:border-gray-600={machineState?.status === 'Halted'}
+			class:border-orange-400={machineState && machineState.inbox_size > 50}
+			class:border-red-600={machineState && machineState.inbox_size > 50}
+			class:border-blue-400={machineState && machineState.outbox_size >= 1}
+			class:border-gray-500={machineState?.status === 'Sleeping'}
+			class:!border-zinc-300={selected}
+			class:nodrag={!dragEnabled}
 		>
-			<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
-		</button>
-	</div>
+			<!-- Top handles (inputs) -->
+			{#each Array.from({ length: inletCount }) as _, index}
+				<StandardHandle
+					port="inlet"
+					id={index}
+					title={`Inlet ${index}`}
+					total={inletCount}
+					{index}
+				/>
+			{/each}
 
-	<div
-		class="flex min-w-80 flex-col space-y-2 rounded-lg border bg-zinc-900 px-3 py-3 font-mono text-gray-50 hover:border-zinc-400"
-		class:border-red-400={errorMessage}
-		class:border-purple-400={machineState?.status === 'Awaiting'}
-		class:border-gray-600={machineState?.status === 'Halted'}
-		class:border-orange-400={machineState && machineState.inbox_size > 50}
-		class:border-red-600={machineState && machineState.inbox_size > 50}
-		class:border-blue-400={machineState && machineState.outbox_size >= 1}
-		class:border-gray-500={machineState?.status === 'Sleeping'}
-		class:!border-zinc-300={selected}
-		class:nodrag={!dragEnabled}
-	>
-	<!-- Top handles (inputs) -->
-	{#each Array.from({ length: inletCount }) as _, index}
-		<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
-	{/each}
+			<div class="flex flex-col gap-2">
+				<!-- Editor -->
+				<div class="nodrag min-h-24">
+					<AssemblyEditor
+						value={data.code}
+						onchange={(newCode) => {
+							updateNodeData(nodeId, { code: newCode });
+						}}
+						placeholder="Enter assembly code..."
+					/>
+				</div>
 
-	<!-- Header -->
-	<div class="mb-2">
-		<h3 class="text-sm font-medium text-zinc-300">{data.title || 'asm'}</h3>
-	</div>
+				<!-- Machine State Viewer -->
+				<MachineStateViewer {machineId} state={machineState} error={errorMessage} {logs} />
 
-	<!-- Editor -->
-	<div class="nodrag min-h-24">
-		<AssemblyEditor
-			value={data.code}
-			onchange={(newCode) => {
-				updateNodeData(nodeId, { code: newCode });
-			}}
-			placeholder="Enter assembly code..."
-		/>
-	</div>
+				<!-- Memory Viewer -->
+				{#if machineState}
+					<PaginatedMemoryViewer {machineId} />
+				{/if}
+			</div>
 
-	<!-- Machine State Viewer -->
-	<MachineStateViewer {machineId} state={machineState} error={errorMessage} {logs} />
-
-	<!-- Bottom handles (outputs) -->
-	{#each Array.from({ length: outletCount }) as _, index}
-		<StandardHandle
-			port="outlet"
-			id={index}
-			title={`Outlet ${index}`}
-			total={outletCount}
-			{index}
-		/>
-	{/each}
+			<!-- Bottom handles (outputs) -->
+			{#each Array.from({ length: outletCount }) as _, index}
+				<StandardHandle
+					type="message"
+					port="outlet"
+					id={index}
+					title={`Outlet ${index}`}
+					total={outletCount}
+					{index}
+				/>
+			{/each}
+		</div>
 	</div>
 </div>
