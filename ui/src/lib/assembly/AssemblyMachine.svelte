@@ -163,7 +163,7 @@
 		</div>
 
 		<div
-			class="flex min-w-80 flex-col rounded-lg border bg-zinc-900 px-3 py-3 font-mono text-gray-50 hover:border-zinc-400"
+			class="flex min-w-80 flex-col rounded-lg border bg-zinc-900/95 px-3 py-3 font-mono text-gray-50 hover:border-zinc-400"
 			class:border-red-400={errorMessage}
 			class:border-purple-400={machineState?.status === 'Awaiting'}
 			class:border-gray-600={machineState?.status === 'Halted'}

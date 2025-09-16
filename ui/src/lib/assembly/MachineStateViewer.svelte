@@ -53,7 +53,7 @@
 
 	<!-- Registers and State -->
 	{#if state}
-		<div class="bg-zinc-900">
+		<div class="bg-transparent">
 			<div class="flex gap-3 font-mono text-green-400">
 				<div>
 					<span class="text-[10px] text-zinc-400">ID</span>

@@ -181,7 +181,7 @@
 
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="nodrag grid bg-zinc-900"
+			class="nodrag grid bg-transparent"
 			class:w-full={full}
 			style="grid-template-columns: repeat({columns}, minmax(0, 1fr));"
 			onmouseleave={handleMouseLeave}
@@ -203,11 +203,10 @@
 					onmousedown={(e) => handleMouseDown(e, i)}
 					onmouseover={() => handleMouseOver(i)}
 					onmouseup={handleMouseUp}
-					class="cursor-pointer select-none bg-zinc-900 px-1 text-red-400 {highlighted
+					class="cursor-pointer select-none bg-transparent px-1 text-red-400 {highlighted
 						? getRegionClassName(highlighted)
 						: ''}"
 					class:text-zinc-600={!selected && !highlighted && u === 0}
-					class:bg-yellow-400={!canDragOut && selected}
 					class:text-yellow-500={!canDragOut && selected}
 					class:hover:text-yellow-600={!canDragOut && selected}
 					class:hover:text-red-300={!canDragOut && !selected}

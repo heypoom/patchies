@@ -81,6 +81,10 @@ impl Controller {
         returns(self.seq.step(count))
     }
 
+    pub fn step_machine(&mut self, id: u16, count: u16) -> Return {
+        returns(self.seq.step_machine(id, count))
+    }
+
     pub fn statuses(&mut self) -> Return {
         Ok(to_value(&self.seq.get_statuses())?)
     }
