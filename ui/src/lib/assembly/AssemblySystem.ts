@@ -3,7 +3,8 @@ import type {
 	AssemblyWorkerMessage,
 	AssemblyWorkerResponse,
 	InspectedRegister,
-	InspectedMachine
+	InspectedMachine,
+	MachineConfig
 } from '../../workers/assembly/assemblyWorker';
 import AssemblyWorker from '../../workers/assembly/assemblyWorker?worker';
 
@@ -17,7 +18,10 @@ export class AssemblySystem {
 	private worker: Worker;
 	private initialized = false;
 	private lastId = 1;
-	private pendingRequests = new Map<string, { resolve: (value: any) => void; reject: (error: Error) => void }>();
+	private pendingRequests = new Map<
+		string,
+		{ resolve: (value: unknown) => void; reject: (error: unknown) => void }
+	>();
 	public eventBus: EventTarget | null = null;
 
 	private constructor() {
@@ -44,7 +48,7 @@ export class AssemblySystem {
 			if (type === 'success') {
 				resolve(event.data.result);
 			} else if (type === 'error') {
-				reject(new Error(event.data.error));
+				reject(event.data.error);
 			}
 		}
 	};
@@ -148,6 +152,41 @@ export class AssemblySystem {
 	}
 
 	/**
+	 * Set machine configuration (delayMs, stepBy, isRunning)
+	 */
+	async setMachineConfig(machineId: number, config: Partial<MachineConfig>): Promise<void> {
+		await this.send('setMachineConfig', { machineId, config });
+	}
+
+	/**
+	 * Get machine configuration
+	 */
+	async getMachineConfig(machineId: number): Promise<MachineConfig> {
+		return await this.send('getMachineConfig', { machineId });
+	}
+
+	/**
+	 * Start automatic execution of machine
+	 */
+	async playMachine(machineId: number): Promise<void> {
+		await this.send('playMachine', { machineId });
+	}
+
+	/**
+	 * Pause automatic execution of machine
+	 */
+	async pauseMachine(machineId: number): Promise<void> {
+		await this.send('pauseMachine', { machineId });
+	}
+
+	/**
+	 * Reset machine to initial state
+	 */
+	async resetMachine(machineId: number): Promise<void> {
+		await this.send('resetMachine', { machineId });
+	}
+
+	/**
 	 * Dispose of the system and free resources
 	 */
 	dispose(): void {
@@ -175,4 +214,4 @@ export function disposeAssemblySystem(): void {
 	AssemblySystem.instance = null;
 }
 
-export type { MachineStatus, Effect, Message, InspectedMachine, InspectedRegister };
+export type { MachineStatus, Effect, Message, InspectedMachine, InspectedRegister, MachineConfig };

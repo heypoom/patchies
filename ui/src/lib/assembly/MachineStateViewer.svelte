@@ -21,20 +21,24 @@
 	const sending = $derived((state?.outbox_size || 0) >= 1);
 
 	function getStatusBadge(): string {
-		if (errored) return 'bg-red-500/20 text-red-400';
-		if (awaiting) return 'bg-purple-500/20 text-purple-400';
-		if (backpressuring) return 'bg-orange-500/20 text-orange-400';
-		if (sending) return 'bg-blue-500/20 text-blue-400';
-		if (sleeping) return 'bg-gray-500/20 text-gray-400';
-		if (halted) return 'bg-gray-600/20 text-gray-500';
-		if (running) return 'bg-green-500/20 text-green-400';
-		if (ready) return 'bg-blue-500/20 text-blue-400';
+		if (errored) return 'text-red-400';
+		if (awaiting) return 'text-purple-400';
+		if (backpressuring) return 'text-orange-400';
+		if (sending) return 'text-blue-400';
+		if (sleeping) return 'text-gray-400';
+		if (halted) return 'text-gray-500';
+		if (running) return 'text-green-400';
+		if (ready) return 'text-blue-400';
 
-		return 'bg-zinc-500/20 text-zinc-400';
+		return '';
 	}
 </script>
 
 <div class={['flex flex-col gap-1 px-1 font-mono text-xs']}>
+	<div class={['absolute right-4 top-2.5 font-mono text-xs lowercase', getStatusBadge()]}>
+		{state?.status}
+	</div>
+
 	<!-- Error Display -->
 	{#if error}
 		<div

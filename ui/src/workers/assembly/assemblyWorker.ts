@@ -16,6 +16,12 @@ export interface InspectedMachine {
 	status: MachineStatus;
 }
 
+export interface MachineConfig {
+	isRunning: boolean;
+	delayMs: number;
+	stepBy: number;
+}
+
 export type AssemblyWorkerMessage = { id: string } & (
 	| { type: 'createMachineWithId'; machineId: number }
 	| { type: 'removeMachine'; machineId: number }
@@ -27,16 +33,23 @@ export type AssemblyWorkerMessage = { id: string } & (
 	| { type: 'consumeMachineEffects'; machineId: number }
 	| { type: 'sendMessage'; machineId: number; message: Message }
 	| { type: 'consumeMessages' }
+	| { type: 'setMachineConfig'; machineId: number; config: Partial<MachineConfig> }
+	| { type: 'getMachineConfig'; machineId: number }
+	| { type: 'playMachine'; machineId: number }
+	| { type: 'pauseMachine'; machineId: number }
+	| { type: 'resetMachine'; machineId: number }
 );
 
 export type AssemblyWorkerResponse = { id?: string } & (
 	| { type: 'success'; result?: unknown }
-	| { type: 'error'; error: string }
+	| { type: 'error'; error: unknown }
 );
 
 class AssemblyWorkerController {
 	private controller: Controller;
 	private initialized = false;
+	private machineConfigs = new Map<number, MachineConfig>();
+	private runningIntervals = new Map<number, number | NodeJS.Timeout>();
 
 	constructor() {
 		this.controller = Controller.create();
@@ -45,10 +58,18 @@ class AssemblyWorkerController {
 
 	createMachineWithId(id: number): void {
 		this.controller.add_machine_with_id(id);
+		// Initialize default config
+		this.machineConfigs.set(id, {
+			isRunning: false,
+			delayMs: 100,
+			stepBy: 1
+		});
 	}
 
 	removeMachine(id: number): void {
+		this.pauseMachine(id);
 		this.controller.remove_machine(id);
+		this.machineConfigs.delete(id);
 	}
 
 	machineExists(machineId: number): boolean {
@@ -99,7 +120,80 @@ class AssemblyWorkerController {
 		return this.controller.consume_messages();
 	}
 
+	setMachineConfig(machineId: number, config: Partial<MachineConfig>): void {
+		const currentConfig = this.machineConfigs.get(machineId) || {
+			isRunning: false,
+			delayMs: 100,
+			stepBy: 1
+		};
+
+		const newConfig = { ...currentConfig, ...config };
+		this.machineConfigs.set(machineId, newConfig);
+
+		// If isRunning changed, start/stop the interval
+		if (config.isRunning !== undefined) {
+			if (config.isRunning) {
+				this.startAutoExecution(machineId);
+			} else {
+				this.stopAutoExecution(machineId);
+			}
+		}
+	}
+
+	getMachineConfig(machineId: number): MachineConfig {
+		return (
+			this.machineConfigs.get(machineId) || {
+				isRunning: false,
+				delayMs: 100,
+				stepBy: 1
+			}
+		);
+	}
+
+	playMachine(machineId: number): void {
+		this.setMachineConfig(machineId, { isRunning: true });
+	}
+
+	pauseMachine(machineId: number): void {
+		this.setMachineConfig(machineId, { isRunning: false });
+	}
+
+	resetMachine(machineId: number): void {
+		this.pauseMachine(machineId);
+		this.controller.reset_machine(machineId);
+	}
+
+	private startAutoExecution(machineId: number): void {
+		this.stopAutoExecution(machineId); // Clear any existing interval
+
+		const config = this.getMachineConfig(machineId);
+
+		const intervalId = setInterval(() => {
+			try {
+				this.stepMachine(machineId, config.stepBy);
+			} catch {
+				// If stepping fails, stop the auto execution
+				this.pauseMachine(machineId);
+			}
+		}, config.delayMs);
+
+		this.runningIntervals.set(machineId, intervalId);
+	}
+
+	private stopAutoExecution(machineId: number): void {
+		const intervalId = this.runningIntervals.get(machineId);
+		if (intervalId !== undefined) {
+			clearInterval(intervalId);
+			this.runningIntervals.delete(machineId);
+		}
+	}
+
 	dispose(): void {
+		// Clear all running intervals
+		this.runningIntervals.forEach((intervalId) => clearInterval(intervalId));
+		this.runningIntervals.clear();
+		this.machineConfigs.clear();
+
 		if (this.controller) {
 			this.controller.free();
 		}
@@ -137,15 +231,24 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
 			)
 			.with({ type: 'sendMessage' }, (data) => controller.sendMessage(data.machineId, data.message))
 			.with({ type: 'consumeMessages' }, () => controller.consumeMessages())
+			.with({ type: 'setMachineConfig' }, (data) => {
+				controller.setMachineConfig(data.machineId, data.config);
+			})
+			.with({ type: 'getMachineConfig' }, (data) => controller.getMachineConfig(data.machineId))
+			.with({ type: 'playMachine' }, (data) => {
+				controller.playMachine(data.machineId);
+			})
+			.with({ type: 'pauseMachine' }, (data) => {
+				controller.pauseMachine(data.machineId);
+			})
+			.with({ type: 'resetMachine' }, (data) => {
+				controller.resetMachine(data.machineId);
+			})
 			.exhaustive();
 
 		self.postMessage({ type: 'success', id, result });
 	} catch (error) {
-		self.postMessage({
-			type: 'error',
-			id,
-			error: error instanceof Error ? error.message : String(error)
-		});
+		self.postMessage({ type: 'error', id, error });
 	}
 };
 

@@ -8,7 +8,7 @@
 	import { AssemblySystem } from './AssemblySystem';
 	import AssemblyEditor from './AssemblyEditor.svelte';
 	import MachineStateViewer from './MachineStateViewer.svelte';
-	import type { InspectedMachine, Effect, Message } from './AssemblySystem';
+	import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
 	import { Port } from 'machine';
 	import { memoryActions } from './memoryStore';
 	import Icon from '@iconify/svelte';
@@ -36,11 +36,17 @@
 	let machineState = $state<InspectedMachine | null>(null);
 	let logs = $state<string[]>([]);
 	let dragEnabled = $state(true);
+	let machineConfig = $state<MachineConfig>({ isRunning: false, delayMs: 100, stepBy: 1 });
+	let showSettings = $state(false);
+	let mainContainer: HTMLDivElement;
 
 	const { updateNodeData } = useSvelteFlow();
 
 	let inletCount = $derived(data.inletCount ?? 3);
 	let outletCount = $derived(data.outletCount ?? 3);
+
+	let previewContainerWidth = $state(0);
+	let updateInterval: NodeJS.Timeout | number;
 
 	// Machine ID is derived from node ID
 	const machineId = parseInt(nodeId.replace(/\D/g, '')) || 0;
@@ -48,7 +54,7 @@
 	const setCodeAndUpdate = (newCode: string) => {
 		updateNodeData(nodeId, { code: newCode });
 
-		setTimeout(() => updateMachine());
+		setTimeout(() => reloadProgram());
 	};
 
 	const toggleMemoryViewer = () =>
@@ -61,7 +67,30 @@
 					setCodeAndUpdate(code);
 				})
 				.with({ type: 'run' }, () => {
-					updateMachine();
+					reloadProgram();
+				})
+				.with({ type: 'bang' }, async () => {
+					// Bang message triggers loadProgram if not loaded, stepMachine otherwise
+					try {
+						if (!(await assemblySystem.machineExists(machineId))) {
+							await assemblySystem.createMachineWithId(machineId);
+						}
+
+						const state = await assemblySystem.inspectMachine(machineId);
+
+						if (!state || state.status === 'Halted') {
+							await assemblySystem.loadProgram(machineId, data.code);
+						} else {
+							await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+						}
+
+						await syncMachineState();
+
+						memoryActions.refreshMemory(machineId);
+						errorMessage = null;
+					} catch (error) {
+						displayError(error);
+					}
 				})
 				.with({ type: 'send', data: P.any }, async ({ data }) => {
 					// Send message to the assembly machine
@@ -78,26 +107,83 @@
 					// Handle other message types
 				});
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			displayError(error);
 		}
 	};
 
-	onMount(() => {
+	async function resetMachine() {
+		try {
+			await assemblySystem.resetMachine(machineId);
+			await syncMachineState();
+
+			memoryActions.refreshMemory(machineId);
+			errorMessage = null;
+		} catch (error) {
+			displayError(error);
+		}
+	}
+
+	async function stepMachine() {
+		try {
+			if (!(await assemblySystem.machineExists(machineId))) {
+				await assemblySystem.createMachineWithId(machineId);
+			}
+
+			await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+
+			await syncMachineState();
+
+			memoryActions.refreshMemory(machineId);
+			errorMessage = null;
+		} catch (error) {
+			displayError(error);
+		}
+	}
+
+	async function togglePlayPause() {
+		try {
+			if (machineConfig.isRunning) {
+				await assemblySystem.pauseMachine(machineId);
+			} else {
+				await assemblySystem.playMachine(machineId);
+			}
+
+			// Update local config
+			machineConfig = await assemblySystem.getMachineConfig(machineId);
+		} catch (error) {
+			displayError(error);
+		}
+	}
+
+	function updateConfig(updates: Partial<MachineConfig>) {
+		assemblySystem.setMachineConfig(machineId, updates);
+		machineConfig = { ...machineConfig, ...updates };
+	}
+
+	onMount(async () => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		updateMachine();
+		reloadProgram();
+		measureContainerWidth();
 
-		const updateInterval = setInterval(() => {
-			syncMachineState();
+		// Load machine config
+		try {
+			machineConfig = await assemblySystem.getMachineConfig(machineId);
+		} catch (error) {
+			// Use default config if unable to load
+		}
+
+		updateInterval = setInterval(() => {
+			if (machineConfig.isRunning) {
+				syncMachineState();
+			}
 		}, 100);
-
-		return () => {
-			clearInterval(updateInterval);
-		};
 	});
 
 	onDestroy(async () => {
+		clearInterval(updateInterval);
+
 		// Clean up the machine when component is destroyed
 		try {
 			await assemblySystem.removeMachine(machineId);
@@ -106,17 +192,16 @@
 		messageContext?.destroy();
 	});
 
-	async function updateMachine() {
+	async function reloadProgram() {
 		try {
 			messageContext.clearTimers();
 
-			// Ensure machine exists before loading program
 			if (!(await assemblySystem.machineExists(machineId))) {
 				await assemblySystem.createMachineWithId(machineId);
 			}
 
 			await assemblySystem.loadProgram(machineId, data.code);
-			await assemblySystem.stepMachine(machineId, 100);
+			await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
 
 			await syncMachineState();
 
@@ -124,13 +209,17 @@
 			memoryActions.refreshMemory(machineId);
 			errorMessage = null;
 		} catch (error) {
-			if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === 'string') {
-				errorMessage = error;
-			} else if (typeof error === 'object' && error !== null) {
-				errorMessage = JSON.stringify(error, null, 2);
-			}
+			displayError(error);
+		}
+	}
+
+	function displayError(error: unknown) {
+		if (error instanceof Error) {
+			errorMessage = error.message;
+		} else if (typeof error === 'string') {
+			errorMessage = error;
+		} else if (typeof error === 'object' && error !== null) {
+			errorMessage = JSON.stringify(error, null, 2);
 		}
 	}
 
@@ -140,6 +229,7 @@
 
 			// Get effects/logs
 			const effects = await assemblySystem.consumeMachineEffects(machineId);
+
 			logs = effects
 				.filter((effect: Effect) => effect.type === 'Print')
 				.map((effect: Effect) => (effect.type === 'Print' ? effect.text : ''));
@@ -153,10 +243,18 @@
 			// Silently handle state update errors to avoid spam
 		}
 	}
+
+	function measureContainerWidth() {
+		const gap = 8;
+
+		if (mainContainer) {
+			previewContainerWidth = mainContainer.clientWidth + gap;
+		}
+	}
 </script>
 
-<div class="group relative">
-	<div class="flex flex-col gap-2">
+<div class="group relative flex gap-2">
+	<div class="group relative flex flex-col gap-2" bind:this={mainContainer}>
 		<!-- Floating Action Button -->
 		<div class="absolute -top-7 left-0 flex w-full items-center justify-between gap-1">
 			<div class="z-10 rounded-lg bg-zinc-900/60 px-2 py-1 backdrop-blur-lg">
@@ -165,19 +263,50 @@
 
 			<div class="flex">
 				<button
-					onclick={toggleMemoryViewer}
+					onclick={() => (showSettings = !showSettings)}
 					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
-					title="Toggle memory viewer"
+					title="Machine settings"
 				>
-					<Icon icon="lucide:memory-stick" class="h-4 w-4 text-zinc-300" />
+					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
 				</button>
 
 				<button
-					onclick={updateMachine}
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
-					title="Run assembly code"
+					onclick={toggleMemoryViewer}
+					class="rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 group-hover:opacity-100 sm:opacity-0"
+					title="Toggle memory viewer"
+					disabled={machineState === null}
 				>
-					<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+					<Icon icon="lucide:binary" class="h-4 w-4 text-zinc-300" />
+				</button>
+
+				<button
+					onclick={resetMachine}
+					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					title="Reset machine"
+				>
+					<Icon icon="lucide:refresh-ccw" class="h-4 w-4 text-zinc-300" />
+				</button>
+
+				<button
+					onclick={stepMachine}
+					class="group rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					title={`Step ${machineConfig.stepBy} cycle${machineConfig.stepBy > 1 ? 's' : ''}`}
+				>
+					<Icon
+						icon="lucide:step-forward"
+						class="h-4 w-4 text-zinc-300 group-focus:text-green-300"
+					/>
+				</button>
+
+				<button
+					onclick={togglePlayPause}
+					class="group rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					title={machineConfig.isRunning ? 'Pause machine' : 'Run machine'}
+				>
+					<Icon
+						icon={machineConfig.isRunning ? 'lucide:pause' : 'lucide:play'}
+						class="h-4 w-4 text-zinc-300 group-focus:text-green-300"
+					/>
 				</button>
 			</div>
 		</div>
@@ -213,7 +342,7 @@
 						onchange={(newCode) => {
 							updateNodeData(nodeId, { code: newCode });
 						}}
-						onrun={updateMachine}
+						onrun={reloadProgram}
 						placeholder="Enter assembly code..."
 					/>
 				</div>
@@ -240,4 +369,59 @@
 			{/each}
 		</div>
 	</div>
+
+	{#if showSettings}
+		<div class="absolute" style="left: {previewContainerWidth}px;">
+			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
+
+			{@render settings()}
+		</div>
+	{/if}
 </div>
+
+{#snippet settings()}
+	<div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+		<div class="space-y-4">
+			<div>
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Delay (ms)</label>
+				<input
+					type="number"
+					min="10"
+					max="5000"
+					step="10"
+					value={machineConfig.delayMs}
+					onchange={(e) => {
+						const newDelay = parseInt((e.target as HTMLInputElement).value);
+						if (!isNaN(newDelay) && newDelay >= 10 && newDelay <= 5000) {
+							updateConfig({ delayMs: newDelay });
+						}
+					}}
+					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+				/>
+				<div class="mt-1 text-xs text-zinc-500">Clock speed for automatic execution</div>
+			</div>
+
+			<div>
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Step By</label>
+				<input
+					type="number"
+					min="1"
+					max="1000"
+					value={machineConfig.stepBy}
+					onchange={(e) => {
+						const newStepBy = parseInt((e.target as HTMLInputElement).value);
+						if (!isNaN(newStepBy) && newStepBy >= 1 && newStepBy <= 1000) {
+							updateConfig({ stepBy: newStepBy });
+						}
+					}}
+					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+				/>
+				<div class="mt-1 text-xs text-zinc-500">Cycles to execute per step</div>
+			</div>
+		</div>
+	</div>
+{/snippet}
