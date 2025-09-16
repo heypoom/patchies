@@ -75,18 +75,16 @@ impl Sequencer {
         Ok(())
     }
 
-    /// Mark the machines as ready for execution.
-    pub fn ready(&mut self) {
-        for machine in &mut self.machines {
-            let Some(_) = machine.id else { continue; };
+    pub fn reset_machine(&mut self, machine_id: u16) {
+        self.await_watchdog_counter = MAX_WAIT_CYCLES;
 
-            // Do not reset the machine if it is invalid.
-            if machine.status == Invalid { continue; }
-            machine.partial_reset();
+        let Some(machine) = self.get_mut(machine_id) else {return};
 
-            self.await_watchdog_counter = MAX_WAIT_CYCLES;
-            machine.status = Ready;
-        }
+        // Do not reset the machine if it is invalid.
+        if machine.status == Invalid { return; }
+
+        machine.partial_reset();
+        machine.status = Ready;
     }
 
     /// Step a specific machine a number of times.

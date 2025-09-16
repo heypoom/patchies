@@ -73,18 +73,11 @@ export class AssemblySystem {
 	loadProgram(machineId: number, source: string): void {
 		try {
 			this.controller.load(machineId, source);
-			this.controller.ready();
+			this.controller.reset_machine(machineId);
 		} catch (error) {
 			console.error(`Failed to load program into machine ${machineId}:`, error);
 			throw error;
 		}
-	}
-
-	/**
-	 * Mark all machines as ready for execution
-	 */
-	ready(): void {
-		this.controller.ready();
 	}
 
 	/**

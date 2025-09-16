@@ -1,5 +1,5 @@
-use crate::sequencer::status::MachineStatus;
 use crate::register::Register::{FP, PC, SP};
+use crate::sequencer::status::MachineStatus;
 use crate::sequencer::Sequencer;
 use crate::{Event, Message};
 use serde::{Deserialize, Serialize};
@@ -71,12 +71,12 @@ impl Controller {
         returns(self.seq.load(id, source))
     }
 
-    pub fn ready(&mut self) {
-        self.seq.ready()
-    }
-
     pub fn step_machine(&mut self, id: u16, count: u16) -> Return {
         returns(self.seq.step_machine(id, count))
+    }
+
+    pub fn reset_machine(&mut self, id: u16) {
+        self.seq.reset_machine(id)
     }
 
     pub fn statuses(&mut self) -> Return {
