@@ -100,4 +100,33 @@
 		--cm-font-family:
 			'JetBrains Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 	}
+
+	/* Background color overrides to match CodeEditor.svelte */
+	:global(.assembly-editor .cm-editor) {
+		height: 100%;
+		background: transparent !important;
+	}
+
+	:global(.assembly-editor .cm-content) {
+		background: transparent !important;
+		color: rgb(244 244 245) !important;
+	}
+
+	:global(.assembly-editor .cm-gutters) {
+		background: transparent !important;
+		border-right: 1px solid transparent !important;
+		color: rgb(115 115 115) !important;
+	}
+
+	:global(.assembly-editor .cm-activeLine) {
+		background: rgba(255, 255, 255, 0.05) !important;
+	}
+
+	:global(.assembly-editor .cm-activeLineGutter) {
+		background: rgba(255, 255, 255, 0.05) !important;
+	}
+
+	:global(.assembly-editor .cm-cursor) {
+		border-left-color: rgb(244 244 245) !important;
+	}
 </style>
