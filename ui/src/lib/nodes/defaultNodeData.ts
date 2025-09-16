@@ -83,7 +83,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('asm.value', () => ({
 			machineId: 0,
 			address: 0,
-			size: 4,
+			size: 8,
 			format: 'hex',
 			signed: false
 		}))

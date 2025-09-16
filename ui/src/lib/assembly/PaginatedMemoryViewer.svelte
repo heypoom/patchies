@@ -66,9 +66,17 @@
 	}
 
 	function onDrag(transfer: DataTransfer, start: number, end: number) {
-		// In a full implementation, this would handle dragging to create value viewers
-		// For now, just set up basic drag data
+		// Set up drag data for creating asm.value nodes
+		const dragData = {
+			machineId,
+			address: memStart + start,
+			size: Math.min(end - start + 1, 8), // Limit to 8 bytes max
+			format: 'hex',
+			signed: false
+		};
+
 		transfer.effectAllowed = 'copy';
+		transfer.setData('application/asm-memory', JSON.stringify(dragData));
 	}
 
 	// Load initial memory page when component mounts

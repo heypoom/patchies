@@ -92,13 +92,13 @@
 			return {};
 		}
 
-		if (canDragOut && hasSelection) {
-			return { filter: 'drop-shadow(0 0 10px rgba(78, 18, 47, 1))' };
-		}
+		// if (canDragOut && hasSelection) {
+		// 	return { filter: 'drop-shadow(0 0 10px rgba(78, 18, 47, 1))' };
+		// }
 
-		if (hasSelection) {
-			return { filter: 'drop-shadow(0 0 8px rgba(67, 52, 0, 1))' };
-		}
+		// if (hasSelection) {
+		// 	return { filter: 'drop-shadow(0 0 8px rgba(67, 52, 0, 1))' };
+		// }
 
 		return {};
 	}

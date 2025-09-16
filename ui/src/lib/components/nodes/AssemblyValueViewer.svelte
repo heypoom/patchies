@@ -28,14 +28,14 @@
 
 	let assemblySystem = AssemblySystem.getInstance();
 	let messageContext: MessageContext;
-	let value = $state<number | null>(null);
+	let values = $state<number[]>([]);
 	let errorMessage = $state<string | null>(null);
 	let showSettings = $state(false);
 
 	// Configuration with defaults
 	const machineId = $derived(data.machineId ?? 0);
 	const address = $derived(data.address ?? 0);
-	const size = $derived(data.size ?? 1); // 1, 2, 4, 8 bytes
+	const size = $derived(data.size ?? 8); // Number of bytes to display
 	const format = $derived(data.format ?? 'hex');
 	const signed = $derived(data.signed ?? false);
 
@@ -52,8 +52,8 @@
 			})
 			.with({ type: 'bang' }, () => {
 				updateValue();
-				if (value !== null) {
-					messageContext.send(value);
+				if (values.length > 0) {
+					messageContext.send(values);
 				}
 			});
 	};
@@ -67,47 +67,35 @@
 	function updateValue() {
 		try {
 			if (!assemblySystem.machineExists(machineId)) {
-				value = null;
+				values = [];
 				errorMessage = `Machine ${machineId} does not exist`;
 				return;
 			}
 
 			const memoryData = assemblySystem.readMemory(machineId, address, size);
 			if (!memoryData || memoryData.length === 0) {
-				value = null;
+				values = [];
 				errorMessage = `Cannot read memory at address ${address}`;
 				return;
 			}
 
-			// Convert bytes to value based on size and signedness
-			let rawValue = 0;
-			for (let i = 0; i < size && i < memoryData.length; i++) {
-				rawValue |= (memoryData[i] << (i * 8));
-			}
-
-			// Handle signed values
-			if (signed && size < 8) {
-				const signBit = 1 << (size * 8 - 1);
-				if (rawValue & signBit) {
-					rawValue -= (1 << (size * 8));
-				}
-			}
-
-			value = rawValue;
+			values = memoryData;
 			errorMessage = null;
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
-			value = null;
+			values = [];
 		}
 	}
 
 	function formatValue(val: number): string {
 		return match(format)
-			.with('hex', () => `0x${val.toString(16).toUpperCase().padStart(size * 2, '0')}`)
-			.with('binary', () => `0b${val.toString(2).padStart(size * 8, '0')}`)
-			.with('decimal', () => val.toString())
+			.with('hex', () => val.toString(16).toUpperCase().padStart(2, '0'))
+			.with('binary', () => val.toString(2).padStart(8, '0'))
+			.with('decimal', () => val.toString().padStart(3, '0'))
 			.exhaustive();
 	}
+
+	const columns = $derived(Math.min(values.length, 8));
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
@@ -133,12 +121,10 @@
 	<div class="group relative">
 		<!-- Floating header -->
 		<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-			<div class="text-xs text-zinc-400 opacity-0 group-hover:opacity-100">
-				asm.value
-			</div>
+			<div class="font-mono text-xs text-zinc-400 opacity-0 group-hover:opacity-100">asm.value</div>
 
 			<button
-				class="z-4 rounded p-1 transition-opacity hover:bg-zinc-700 opacity-0 group-hover:opacity-100"
+				class="z-4 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
 				onclick={() => (showSettings = !showSettings)}
 				title="Settings"
 			>
@@ -161,38 +147,44 @@
 				<!-- Main display -->
 				<div
 					class={[
-						'flex min-w-[120px] flex-col items-center justify-center gap-1 rounded-lg border-2 bg-zinc-900 px-3 py-2 font-mono',
+						'relative flex min-w-[120px] flex-col gap-1 rounded-lg border-2 bg-zinc-900 px-2 py-2 font-mono',
 						selected ? 'border-zinc-200' : 'border-zinc-700',
 						errorMessage ? 'border-red-500' : '',
 						'hover:border-zinc-400'
 					]}
 				>
 					{#if errorMessage}
-						<div class="text-xs text-red-400">
+						<div class="px-2 text-xs text-red-400">
 							❌ {errorMessage}
 						</div>
-					{:else if value !== null}
-						<div class="text-sm font-bold text-green-400">
-							{formatValue(value)}
-						</div>
-						<div class="text-xs text-zinc-500">
-							M{machineId}:{address.toString(16).padStart(4, '0')}
+					{:else if values.length > 0}
+						<!-- Values grid -->
+						<div
+							class="grid gap-x-2 font-mono text-xs"
+							style="grid-template-columns: repeat({columns}, minmax(0, 1fr));"
+						>
+							{#each values as val, i}
+								<div class={['px-1 text-center', val === 0 ? 'text-zinc-600' : 'text-green-400']}>
+									{formatValue(val)}
+								</div>
+							{/each}
 						</div>
 					{:else}
-						<div class="text-xs text-zinc-500">
-							No data
+						<div class="px-2 text-center text-xs text-zinc-500">No data</div>
+					{/if}
+
+					<!-- Floating address label -->
+					{#if values.length > 0}
+						<div
+							class="absolute bottom-[-16px] left-0 min-w-[100px] font-mono text-[8px] text-zinc-500"
+						>
+							M{machineId}:0x{address.toString(16).padStart(4, '0')} s={size}
 						</div>
 					{/if}
 				</div>
 
 				<!-- Outlet -->
-				<StandardHandle
-					port="outlet"
-					type="message"
-					total={1}
-					index={0}
-					title="Current value"
-				/>
+				<StandardHandle port="outlet" type="message" total={1} index={0} title="Current value" />
 			</div>
 		</div>
 	</div>
@@ -241,25 +233,25 @@
 						}
 					}}
 					placeholder="0000"
-					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100 font-mono"
+					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-100"
 				/>
 			</div>
 
 			<div>
-				<label class="mb-2 block text-xs font-medium text-zinc-300">Size (bytes)</label>
-				<select
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Size (bytes to display)</label>
+				<input
+					type="number"
+					min="1"
+					max="32"
 					value={size}
 					onchange={(e) => {
-						const newSize = parseInt((e.target as HTMLSelectElement).value);
-						updateConfig({ size: newSize });
+						const newSize = parseInt((e.target as HTMLInputElement).value);
+						if (!isNaN(newSize) && newSize >= 1 && newSize <= 32) {
+							updateConfig({ size: newSize });
+						}
 					}}
 					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-				>
-					<option value={1}>1 byte</option>
-					<option value={2}>2 bytes</option>
-					<option value={4}>4 bytes</option>
-					<option value={8}>8 bytes</option>
-				</select>
+				/>
 			</div>
 
 			<div>
