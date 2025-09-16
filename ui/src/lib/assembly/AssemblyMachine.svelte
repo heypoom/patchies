@@ -25,6 +25,7 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
+			showMemoryViewer?: boolean;
 		};
 		selected?: boolean;
 	} = $props();
@@ -49,6 +50,9 @@
 
 		setTimeout(() => updateMachine());
 	};
+
+	const toggleMemoryViewer = () =>
+		updateNodeData(nodeId, { showMemoryViewer: !data.showMemoryViewer });
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
@@ -153,6 +157,14 @@
 
 			<div class="flex">
 				<button
+					onclick={toggleMemoryViewer}
+					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					title="Toggle memory viewer"
+				>
+					<Icon icon="lucide:memory-stick" class="h-4 w-4 text-zinc-300" />
+				</button>
+
+				<button
 					onclick={updateMachine}
 					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					title="Run assembly code"
@@ -202,7 +214,7 @@
 				<MachineStateViewer {machineId} state={machineState} error={errorMessage} {logs} />
 
 				<!-- Memory Viewer -->
-				{#if machineState}
+				{#if machineState && data.showMemoryViewer}
 					<PaginatedMemoryViewer {machineId} />
 				{/if}
 			</div>
