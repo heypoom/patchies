@@ -211,11 +211,11 @@
 					class:text-zinc-600={!selected && !highlighted && u === 0}
 					class:bg-yellow-400={!canDragOut && selected}
 					class:text-yellow-500={!canDragOut && selected}
-					class:hover:text-yellow-800={!canDragOut && selected}
+					class:hover:text-yellow-600={!canDragOut && selected}
 					class:hover:text-red-300={!canDragOut && !selected}
 					class:bg-red-400={canDragOut && selected}
-					class:text-red-900={canDragOut && selected}
-					class:hover:text-red-500={canDragOut && selected}
+					class:text-red-500={canDragOut && selected}
+					class:hover:text-red-600={canDragOut && selected}
 					class:text-center={full}
 					class:opacity-0={canDragOut && !selected}
 					class:bg-transparent={canDragOut && !selected}
