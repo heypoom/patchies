@@ -87,22 +87,6 @@
 		}
 	}
 
-	function getGlowStyle() {
-		if (activeRegions.length > 0 && !hasSelection) {
-			return {};
-		}
-
-		// if (canDragOut && hasSelection) {
-		// 	return { filter: 'drop-shadow(0 0 10px rgba(78, 18, 47, 1))' };
-		// }
-
-		// if (hasSelection) {
-		// 	return { filter: 'drop-shadow(0 0 8px rgba(67, 52, 0, 1))' };
-		// }
-
-		return {};
-	}
-
 	function getRegionClassName(region: MemoryRegion) {
 		// Simplified region coloring - in the full implementation you'd want
 		// a proper color mapping system
@@ -201,11 +185,7 @@
 		<div
 			class="nodrag grid px-1"
 			class:w-full={full}
-			style="grid-template-columns: repeat({columns}, minmax(0, 1fr)); {Object.entries(
-				getGlowStyle()
-			)
-				.map(([key, value]) => `${key}: ${value}`)
-				.join('; ')}"
+			style="grid-template-columns: repeat({columns}, minmax(0, 1fr));"
 			onmouseleave={handleMouseLeave}
 			draggable={canDragOut}
 			ondragstart={handleDragStart}
