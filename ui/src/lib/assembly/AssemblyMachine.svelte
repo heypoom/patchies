@@ -67,7 +67,7 @@
 	const handleMessage: MessageCallbackFn = async (message, meta) => {
 		try {
 			await match(message)
-				.with({ type: 'bang' }, handleBangSignal)
+				.with({ type: 'bang' }, () => stepMachine())
 				.with({ type: 'set', code: P.string }, ({ code }) => {
 					setCodeAndUpdate(code);
 				})
@@ -103,32 +103,6 @@
 		}
 	};
 
-	// When a 'bang' message is received, load and step the machine.
-	async function handleBangSignal() {
-		try {
-			const hasMachine = await assemblySystem.machineExists(machineId);
-
-			if (!hasMachine) {
-				await assemblySystem.createMachineWithId(machineId);
-			}
-
-			const state = await assemblySystem.inspectMachine(machineId);
-
-			if (!state || state.status === 'Halted') {
-				await assemblySystem.loadProgram(machineId, data.code);
-			} else {
-				await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
-			}
-
-			await syncMachineState();
-
-			memoryActions.refreshMemory(machineId);
-			errorMessage = null;
-		} catch (error) {
-			displayError(error);
-		}
-	}
-
 	async function resetMachine() {
 		try {
 			await assemblySystem.resetMachine(machineId);
@@ -145,22 +119,30 @@
 
 	async function stepMachine() {
 		try {
-			if (!(await assemblySystem.machineExists(machineId))) {
-				await assemblySystem.createMachineWithId(machineId);
-			}
-
 			await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
 
 			await syncMachineState();
-
 			memoryActions.refreshMemory(machineId);
 		} catch (error) {
-			displayError(error);
+			if (
+				error &&
+				typeof error === 'object' &&
+				'type' in error &&
+				error.type === 'MachineDoesNotExist'
+			) {
+				await assemblySystem.createMachineWithId(machineId);
+				await assemblySystem.loadProgram(machineId, data.code);
+				await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+				await pullMachineConfig();
+			} else {
+				displayError(error);
+			}
 		}
 	}
 
 	async function pullMachineConfig() {
 		const nextConfig = await assemblySystem.getMachineConfig(machineId);
+
 		updateNodeData(nodeId, { machineConfig: nextConfig });
 	}
 
@@ -176,6 +158,8 @@
 			}
 
 			await pullMachineConfig();
+
+			clearInterval(updateInterval);
 		} catch (error) {
 			displayError(error);
 		}
@@ -197,7 +181,7 @@
 
 			await assemblySystem.playMachine(machineId);
 
-			await pullMachineConfig();
+			await setupPolling();
 		} catch (error) {
 			displayError(error);
 		}
@@ -242,12 +226,14 @@
 		};
 	}
 
-	function setupPolling() {
+	async function setupPolling() {
 		clearInterval(updateInterval);
 
-		updateInterval = setInterval(async () => {
-			if (!machineConfig.isRunning) return;
+		await pullMachineConfig();
 
+		if (!machineConfig.isRunning) return;
+
+		updateInterval = setInterval(async () => {
 			await syncMachineState();
 
 			memoryActions.refreshMemory(machineId);
