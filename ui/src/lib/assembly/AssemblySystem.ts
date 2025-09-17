@@ -216,7 +216,9 @@ export class AssemblySystem {
 		if (color !== undefined) {
 			// Check if there's already a region at this exact address and size
 			const existingRegions = memoryRegionStore.getRegionsForMachine(machineId);
-			const existingRegion = existingRegions.find(r => r.offset === address && r.size === values.length);
+			const existingRegion = existingRegions.find(
+				(r) => r.offset === address && r.size === values.length
+			);
 
 			if (existingRegion) {
 				// Update existing region with new color
@@ -239,7 +241,6 @@ export class AssemblySystem {
 		}
 
 		// TODO: Implement actual memory setting in the worker
-		console.log(`Setting memory at ${address} with values:`, values, 'color:', color);
 	}
 
 	/**
