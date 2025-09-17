@@ -194,7 +194,7 @@
 	{/snippet}
 
 	{#snippet codeEditor()}
-		<div class="max-w-[350px]">
+		<div class="w-[270px]">
 			<CodeEditor
 				value={prompt}
 				onchange={(newPrompt) => {
@@ -202,7 +202,7 @@
 				}}
 				language="plain"
 				placeholder="Write your prompt here..."
-				class="nodrag w-full min-w-[230px] resize-none"
+				class="nodrag w-full resize-none"
 				onrun={generateImage}
 				onready={() => (editorReady = true)}
 				extraExtensions={[EditorView.lineWrapping]}
