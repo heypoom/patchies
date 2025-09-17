@@ -30,12 +30,9 @@
 	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
 	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
-	import { deleteSearchParam } from '$lib/utils/search-params';
-	import { JSRunner } from '$lib/js-runner/JSRunner';
+	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 
 	const AUTOSAVE_INTERVAL = 2500;
-
-	window.jsRunner = JSRunner.getInstance();
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -100,6 +97,14 @@
 	});
 
 	function performAutosave() {
+		const embedParam = getSearchParam('embed');
+		const isEmbed = embedParam === 'true' || embedParam === '1';
+
+		// do not autosave when in embed mode
+		if (isEmbed) {
+			return;
+		}
+
 		// Only autosave when tab is active and focused to prevent conflicts between browser tabs
 		if (document.hidden || !document.hasFocus()) {
 			return;
