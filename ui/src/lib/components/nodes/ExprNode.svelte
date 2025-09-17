@@ -27,7 +27,7 @@
 	const inletCount = $derived.by(() => {
 		if (!expr.trim()) return 1;
 
-		return parseInletCount(expr.trim());
+		return Math.max(1, parseInletCount(expr.trim()));
 	});
 
 	const evalFunction = $derived.by(() => createExpressionEvaluator(expr));
