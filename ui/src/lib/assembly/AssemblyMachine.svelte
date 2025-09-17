@@ -94,7 +94,7 @@
 						source = parseInt(sourceIdStr);
 					}
 
-					await assemblySystem.sendMessage(machineId, m, source, meta.inlet);
+					await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
 				})
 				.otherwise(() => {
 					// Unknown message type
@@ -328,13 +328,24 @@
 
 			const messages = await assemblySystem.consumeMessages(machineId);
 
+			// Re-map message format of assembly canvas into patchies.
 			messages.forEach((message: Message) => {
-				if (message.action.type === 'Data') {
-					const payload =
-						message.action.body.length === 1 ? message.action.body[0] : message.action.body;
+				const payload = match(message.action)
+					.with({ type: 'Data' }, (action) => {
+						return action.body.length === 1 ? action.body[0] : action.body;
+					})
+					.with({ type: 'Read' }, (action) => {
+						return { type: 'read', address: action.address, count: action.count };
+					})
+					.with({ type: 'Write' }, (action) => {
+						return { type: 'write', address: action.address, data: action.data };
+					})
+					.with({ type: 'Override' }, (action) => {
+						return { type: 'override', data: action.data };
+					})
+					.exhaustive();
 
-					messageContext.send(payload, { to: message.sender.port });
-				}
+				messageContext.send(payload, { to: message.sender.port });
 			});
 
 			if (machineState?.status === 'Halted' || machineState?.status === 'Ready') {
