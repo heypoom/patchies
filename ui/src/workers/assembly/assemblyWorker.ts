@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { Controller, type MachineStatus, type Effect, type Message, Port } from 'machine';
+import type { MachineStatus, Effect, Message, Controller, Port } from 'machine';
 
 // Define types that are serialized from Rust but not exported in TypeScript
 export interface InspectedRegister {
@@ -52,19 +52,28 @@ export type AssemblyWorkerResponse = { id?: string } & (
 	| { type: 'error'; error: unknown }
 );
 
+let MPort: typeof Port | null = null;
+
 class AssemblyWorkerController {
-	private controller: Controller;
-	private initialized = false;
+	private controller: Controller | null = null;
+
+	public initialized = false;
 	private machineConfigs = new Map<number, MachineConfig>();
 	private runningIntervals = new Map<number, number | NodeJS.Timeout>();
 
-	constructor() {
+	async ensureController() {
+		if (this.initialized) return;
+
+		const { Controller, Port } = await import('machine');
+		MPort = Port;
+
 		this.controller = Controller.create();
 		this.initialized = true;
 	}
 
 	createMachineWithId(id: number): void {
-		this.controller.add_machine_with_id(id);
+		this.controller?.add_machine_with_id(id);
+
 		// Initialize default config
 		this.machineConfigs.set(id, {
 			isRunning: false,
@@ -75,13 +84,14 @@ class AssemblyWorkerController {
 
 	removeMachine(id: number): void {
 		this.pauseMachine(id);
-		this.controller.remove_machine(id);
+		this.controller?.remove_machine(id);
 		this.machineConfigs.delete(id);
 	}
 
 	machineExists(machineId: number): boolean {
 		try {
-			const result = this.controller.inspect_machine(machineId);
+			const result = this.controller?.inspect_machine(machineId);
+
 			return result !== null;
 		} catch {
 			return false;
@@ -89,17 +99,17 @@ class AssemblyWorkerController {
 	}
 
 	loadProgram(machineId: number, source: string): void {
-		this.controller.load(machineId, source);
-		this.controller.reset_machine(machineId);
+		this.controller?.load(machineId, source);
+		this.controller?.reset_machine(machineId);
 	}
 
 	stepMachine(id: number, cycles: number = 1): void {
-		this.controller.step_machine(id, cycles);
+		this.controller?.step_machine(id, cycles);
 	}
 
 	inspectMachine(machineId: number): InspectedMachine | null {
 		try {
-			const result = this.controller.inspect_machine(machineId);
+			const result = this.controller?.inspect_machine(machineId);
 
 			return result === null ? null : result;
 		} catch {
@@ -109,7 +119,7 @@ class AssemblyWorkerController {
 
 	readMemory(machineId: number, address: number, size: number): number[] | null {
 		try {
-			const result = this.controller.read_mem(machineId, address, size);
+			const result = this.controller?.read_mem(machineId, address, size);
 			return result === null ? null : result;
 		} catch {
 			return null;
@@ -117,17 +127,19 @@ class AssemblyWorkerController {
 	}
 
 	consumeMachineEffects(machineId: number): Effect[] {
-		return this.controller.consume_machine_side_effects(machineId);
+		return this.controller?.consume_machine_side_effects(machineId);
 	}
 
 	sendMessage(machineId: number, data: number | number[], source: number, inlet: number): boolean {
+		if (!MPort) return false;
+
 		try {
-			return this.controller.send_message_to_machine(machineId, {
+			return this.controller?.send_message_to_machine(machineId, {
 				action: {
 					type: 'Data',
 					body: Array.isArray(data) ? data : [Number(data) || 0]
 				},
-				sender: new Port(source, inlet),
+				sender: new MPort(source, inlet),
 				recipient: machineId
 			});
 		} catch (error) {
@@ -137,7 +149,7 @@ class AssemblyWorkerController {
 	}
 
 	consumeMessages(machineId: number): Message[] {
-		return this.controller.consume_messages(machineId);
+		return this.controller?.consume_messages(machineId);
 	}
 
 	setMachineConfig(machineId: number, config: Partial<MachineConfig>): void {
@@ -180,11 +192,11 @@ class AssemblyWorkerController {
 
 	resetMachine(machineId: number): void {
 		this.pauseMachine(machineId);
-		this.controller.reset_machine(machineId);
+		this.controller?.reset_machine(machineId);
 	}
 
 	wakeMachine(machineId: number): void {
-		this.controller.wake(machineId);
+		this.controller?.wake(machineId);
 	}
 
 	private startAutoExecution(machineId: number): void {
@@ -232,6 +244,13 @@ const controller = new AssemblyWorkerController();
 
 self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
 	const { id } = event.data;
+
+	const initialized = controller.initialized;
+	await controller.ensureController();
+
+	if (!initialized) {
+		console.log('[assembly worker] controller initialized');
+	}
 
 	try {
 		const result = await match(event.data)
@@ -282,5 +301,3 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
 		self.postMessage({ type: 'error', id, error });
 	}
 };
-
-console.log('[assembly worker] initialized');

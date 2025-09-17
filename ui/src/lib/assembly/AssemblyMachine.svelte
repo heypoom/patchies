@@ -38,6 +38,7 @@
 	let dragEnabled = $state(true);
 	let showSettings = $state(false);
 	let mainContainer: HTMLDivElement;
+	let highlightLineCallback: ((lineNo: number) => void) | null = null;
 
 	const { updateNodeData } = useSvelteFlow();
 
@@ -250,6 +251,9 @@
 			await assemblySystem.removeMachine(machineId);
 		} catch (error) {}
 
+		// Unregister the highlighter
+		assemblySystem.unregisterHighlighter(machineId);
+
 		messageContext?.destroy();
 	});
 
@@ -288,7 +292,16 @@
 
 	async function syncMachineState() {
 		try {
+			const previousPc = machineState?.registers.pc;
 			machineState = await assemblySystem.inspectMachine(machineId);
+
+			// Trigger line highlighting if program counter changed
+			if (machineState && machineState.registers.pc !== previousPc && highlightLineCallback) {
+				// Convert PC to line number (assuming 1-based line numbers)
+				// PC represents the instruction index, so we add 1 for line numbering
+				const lineNo = machineState.registers.pc + 1;
+				highlightLineCallback(lineNo);
+			}
 
 			const effects = await assemblySystem.consumeMachineEffects(machineId);
 
@@ -333,6 +346,12 @@
 		if (mainContainer) {
 			previewContainerWidth = mainContainer.clientWidth + gap;
 		}
+	}
+
+	function onHighlightLineSetup(callback: (lineNo: number) => void) {
+		highlightLineCallback = callback;
+		// Register this highlighter with the AssemblySystem
+		assemblySystem.registerHighlighter(machineId, callback);
 	}
 </script>
 
@@ -428,6 +447,7 @@
 						}}
 						onrun={reloadProgram}
 						placeholder="Enter assembly code..."
+						highlightLine={onHighlightLineSetup}
 					/>
 				</div>
 

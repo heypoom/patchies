@@ -23,6 +23,7 @@ export class AssemblySystem {
 		{ resolve: (value: unknown) => void; reject: (error: unknown) => void }
 	>();
 	public eventBus: EventTarget | null = null;
+	public highlighters = new Map<number, (lineNo: number) => void>();
 
 	private constructor() {
 		this.worker = new AssemblyWorker();
@@ -189,6 +190,30 @@ export class AssemblySystem {
 	}
 
 	/**
+	 * Register a line highlighter callback for a machine
+	 */
+	registerHighlighter(machineId: number, callback: (lineNo: number) => void): void {
+		this.highlighters.set(machineId, callback);
+	}
+
+	/**
+	 * Unregister a line highlighter for a machine
+	 */
+	unregisterHighlighter(machineId: number): void {
+		this.highlighters.delete(machineId);
+	}
+
+	/**
+	 * Trigger line highlighting for a specific machine
+	 */
+	highlightLine(machineId: number, lineNo: number): void {
+		const highlighter = this.highlighters.get(machineId);
+		if (highlighter) {
+			highlighter(lineNo);
+		}
+	}
+
+	/**
 	 * Dispose of the system and free resources
 	 */
 	dispose(): void {
@@ -196,6 +221,7 @@ export class AssemblySystem {
 			this.worker.terminate();
 		}
 		this.pendingRequests.clear();
+		this.highlighters.clear();
 		this.initialized = false;
 	}
 }

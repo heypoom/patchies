@@ -42,7 +42,7 @@
         "json5": "^2.2.3",
         "lezer-glsl": "^0.6.0",
         "lodash": "^4.17.21",
-        "machine": "../modules/vasm/pkg",
+        "machine": "./src/assets/vasm",
         "marked": "^16.1.2",
         "matter-js": "^0.20.0",
         "memfs": "^4.39.0",
@@ -1295,7 +1295,7 @@
 
     "lz-string": ["lz-string@1.5.0", "", { "bin": { "lz-string": "bin/bin.js" } }, "sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ=="],
 
-    "machine": ["machine@file:../modules/vasm/pkg", {}],
+    "machine": ["machine@file:src/assets/vasm", {}],
 
     "magic-string": ["magic-string@0.30.17", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0" } }, "sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA=="],
 

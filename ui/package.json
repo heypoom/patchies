@@ -14,7 +14,9 @@
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"vasm:build": "cd ../modules/vasm && wasm-pack build",
+		"vasm:sync": "bun run vasm:build && cp -r ../modules/vasm/pkg/ src/assets/vasm && rm src/assets/vasm/.gitignore"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -100,7 +102,7 @@
 		"json5": "^2.2.3",
 		"lezer-glsl": "^0.6.0",
 		"lodash": "^4.17.21",
-		"machine": "../modules/vasm/pkg",
+		"machine": "./src/assets/vasm",
 		"marked": "^16.1.2",
 		"matter-js": "^0.20.0",
 		"memfs": "^4.39.0",

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { EditorView, keymap } from '@codemirror/view';
-	import { EditorState, Prec, type Extension } from '@codemirror/state';
+	import { EditorView, keymap, Decoration } from '@codemirror/view';
+	import { EditorState, Prec, type Extension, StateEffect, StateField } from '@codemirror/state';
 	import { minimalSetup } from 'codemirror';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
@@ -13,6 +13,7 @@
 		onrun?: () => void;
 		placeholder?: string;
 		readonly?: boolean;
+		highlightLine?: (callback: (lineNo: number) => void) => void;
 	}
 
 	let {
@@ -20,12 +21,50 @@
 		onchange,
 		placeholder = 'Enter assembly code...',
 		readonly = false,
-		onrun
+		onrun,
+		highlightLine
 	}: Props = $props();
 
 	let editorContainer = $state<HTMLDivElement>();
 	let editorView: EditorView | null = null;
 	let currentAssemblyExtension: Extension | null = null;
+
+	// Line highlighter functionality
+	const addLineHighlight = StateEffect.define<number>();
+
+	const HIGHLIGHT_COLOR = 'rgba(59, 130, 246, 0.15)'; // blue-500 with transparency
+
+	const lineHighlightMark = Decoration.line({
+		attributes: { style: `background-color: ${HIGHLIGHT_COLOR}` }
+	});
+
+	const lineHighlighter = StateField.define({
+		create() {
+			return Decoration.none;
+		},
+		update(lines, transaction) {
+			lines = lines.map(transaction.changes);
+			for (const effect of transaction.effects) {
+				if (effect.is(addLineHighlight)) {
+					lines = Decoration.none;
+					lines = lines.update({ add: [lineHighlightMark.range(effect.value)] });
+				}
+			}
+			return lines;
+		},
+		provide: (field) => EditorView.decorations.from(field)
+	});
+
+	function highlightLineNumber(lineNo: number) {
+		if (!editorView) return;
+
+		try {
+			const pos = editorView.state.doc.line(lineNo).from;
+			editorView.dispatch({ effects: addLineHighlight.of(pos) });
+		} catch (error) {
+			console.warn('Failed to highlight line:', lineNo, error);
+		}
+	}
 
 	async function createOrUpdateEditor() {
 		const assemblyExtension = await loadLanguageExtension('assembly');
@@ -63,6 +102,7 @@
 				asmKeymap,
 				minimalSetup,
 				tokyoNight,
+				lineHighlighter,
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged && onchange && !readonly) {
 						onchange(update.state.doc.toString());
@@ -107,6 +147,13 @@
 
 	onMount(() => {
 		createOrUpdateEditor();
+	});
+
+	// Expose the highlight function to parent component
+	$effect(() => {
+		if (highlightLine && editorView) {
+			highlightLine(highlightLineNumber);
+		}
 	});
 
 	onDestroy(() => {
