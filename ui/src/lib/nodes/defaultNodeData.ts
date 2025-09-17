@@ -93,5 +93,11 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			format: 'hex',
 			signed: false
 		}))
+		.with('asm.mem', () => ({
+			machineId: 0,
+			values: [],
+			autoReset: false,
+			format: 'hex'
+		}))
 		.otherwise(() => ({}));
 }

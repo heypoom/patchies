@@ -37,6 +37,12 @@ It gives you a simple stack machine with these features:
   - Then, press `Alt` on your keyboard, and drag the memory region onto the canvas.
   - This will create the memory visualizer object (`asm.value`) that shows the memory cells in real-time.
   - Click on the settings menu to change the memory region and color scheme.
+- Memory storage and manipulation with `asm.mem` objects.
+  - Acts as RAM or ROM for assembly programs to read from and write to.
+  - Supports both hex and decimal display formats with grid and text batch editing modes.
+  - Responds to `Read`, `Write`, `Data`, `Override`, and `Reset` messages from assembly programs.
+  - Can be pre-loaded with initial values and configured for auto-reset on machine restart.
+  - Produces Read and Write side effects when accessed by assembly programs, enabling dynamic memory interactions.
 - Shortcuts
   - `Shift + Enter` in the code editor auto-runs the program.
 - Messages:

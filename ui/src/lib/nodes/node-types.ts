@@ -38,6 +38,7 @@ import LabelNode from '$lib/components/nodes/LabelNode.svelte';
 import LinkButton from '$lib/components/nodes/LinkButton.svelte';
 import { AssemblyMachine } from '$lib/assembly';
 import AssemblyValueViewer from '$lib/components/nodes/AssemblyValueViewer.svelte';
+import AssemblyMemory from '$lib/components/nodes/AssemblyMemory.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -79,7 +80,8 @@ export const nodeTypes = {
 	label: LabelNode,
 	link: LinkButton,
 	asm: AssemblyMachine,
-	'asm.value': AssemblyValueViewer
+	'asm.value': AssemblyValueViewer,
+	'asm.mem': AssemblyMemory
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
