@@ -53,7 +53,7 @@ export class AssemblySystem {
 		}
 	};
 
-	private send<T extends AssemblyWorkerMessage['type']>(
+	send<T extends AssemblyWorkerMessage['type']>(
 		type: T,
 		payload: Omit<Extract<AssemblyWorkerMessage, { type: T }>, 'type' | 'id'>
 	): Promise<any> {
@@ -184,9 +184,6 @@ export class AssemblySystem {
 		await this.send('pauseMachine', { machineId });
 	}
 
-	/**
-	 * Reset machine to initial state
-	 */
 	async resetMachine(machineId: number): Promise<void> {
 		await this.send('resetMachine', { machineId });
 	}

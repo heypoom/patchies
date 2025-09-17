@@ -293,11 +293,23 @@
 			const effects = await assemblySystem.consumeMachineEffects(machineId);
 
 			const printEffects = effects
-				.filter((effect: Effect) => effect.type === 'Print')
-				.map((effect: Effect) => (effect.type === 'Print' ? effect.text : ''));
+				.filter((effect) => effect.type === 'Print')
+				.map((effect) => effect.text);
 
 			if (printEffects.length > 0) {
 				logs = [...logs, ...printEffects].slice(-10);
+			}
+
+			const combinedSleepMs = effects
+				.filter((effect) => effect.type === 'Sleep')
+				.map((effect) => effect.ms)
+				.reduce((a, b) => a + b, 0);
+
+			// Wake the machine after the combined sleep duration.
+			if (combinedSleepMs > 0) {
+				setTimeout(() => {
+					assemblySystem.send('wakeMachine', { machineId });
+				}, combinedSleepMs);
 			}
 
 			const messages = await assemblySystem.consumeMessages(machineId);

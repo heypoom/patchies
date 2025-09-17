@@ -44,6 +44,7 @@ export type AssemblyWorkerMessage = { id: string } & (
 	| { type: 'playMachine'; machineId: number }
 	| { type: 'pauseMachine'; machineId: number }
 	| { type: 'resetMachine'; machineId: number }
+	| { type: 'wakeMachine'; machineId: number }
 );
 
 export type AssemblyWorkerResponse = { id?: string } & (
@@ -182,6 +183,10 @@ class AssemblyWorkerController {
 		this.controller.reset_machine(machineId);
 	}
 
+	wakeMachine(machineId: number): void {
+		this.controller.wake(machineId);
+	}
+
 	private startAutoExecution(machineId: number): void {
 		this.stopAutoExecution(machineId); // Clear any existing interval
 
@@ -266,6 +271,9 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
 			})
 			.with({ type: 'resetMachine' }, (data) => {
 				controller.resetMachine(data.machineId);
+			})
+			.with({ type: 'wakeMachine' }, (data) => {
+				controller.wakeMachine(data.machineId);
 			})
 			.exhaustive();
 
