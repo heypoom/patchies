@@ -29,6 +29,7 @@
 	let messageContext: MessageContext;
 	let isBatch = $state(false);
 	let batchInput = $state('');
+	let showSettings = $state(false);
 
 	const values = $derived(data.values ?? []);
 	const format = $derived(data.format ?? 'hex');
@@ -202,6 +203,14 @@
 				>
 					<Icon icon="lucide:trash" class="h-4 w-4" />
 				</button>
+
+				<button
+					onclick={() => (showSettings = !showSettings)}
+					class={['rounded p-1 hover:bg-zinc-700', showSettings && 'text-blue-400']}
+					title="Settings"
+				>
+					<Icon icon="lucide:settings" class="h-4 w-4" />
+				</button>
 			</div>
 		</div>
 
@@ -211,6 +220,7 @@
 				<StandardHandle
 					port="inlet"
 					type="message"
+					id={0}
 					total={1}
 					index={0}
 					title="Memory operations (Read/Write/Data)"
@@ -286,4 +296,36 @@
 			</div>
 		</div>
 	</div>
+
+	{#if showSettings}
+		<div class="relative">
+			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
+
+			<div class="nodrag w-48 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+				<div class="space-y-3">
+					<div>
+						<label class="mb-2 block text-xs font-medium text-zinc-300">Rows</label>
+						<input
+							type="number"
+							min="1"
+							max="100"
+							value={rows}
+							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 outline-none focus:border-zinc-500"
+							onchange={(e) => {
+								const value = parseInt((e.target as HTMLInputElement).value);
+
+								if (!isNaN(value) && value > 0) {
+									updateConfig({ rows: value });
+								}
+							}}
+						/>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
