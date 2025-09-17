@@ -1,4 +1,4 @@
-import type { MachineStatus, Effect, Message } from 'machine';
+import type { MachineStatus, Effect, Message, Action } from 'machine';
 import type {
 	AssemblyWorkerMessage,
 	AssemblyWorkerResponse,
@@ -154,11 +154,23 @@ export class AssemblySystem {
 	 */
 	async sendMessage(
 		machineId: number,
+		action: Action,
+		source: number,
+		inlet: number
+	): Promise<boolean> {
+		return await this.send('sendMessage', { machineId, action, source, inlet });
+	}
+
+	/**
+	 * Send a 'Data' message directly to a machine's inbox
+	 */
+	async sendDataMessage(
+		machineId: number,
 		data: number | number[],
 		source: number,
 		inlet: number
 	): Promise<boolean> {
-		return await this.send('sendMessage', { machineId, data, source, inlet });
+		return await this.send('sendDataMessage', { machineId, data, source, inlet });
 	}
 
 	/**

@@ -7,6 +7,7 @@
 	import { match, P } from 'ts-pattern';
 	import { AssemblySystem } from '$lib/assembly/AssemblySystem';
 	import Icon from '@iconify/svelte';
+	import type { Action } from 'machine';
 
 	let {
 		id: nodeId,
@@ -15,10 +16,9 @@
 	}: {
 		id: string;
 		data: {
-			machineId?: number;
 			values?: number[];
-			autoReset?: boolean;
 			format?: 'hex' | 'decimal';
+			rows?: number;
 		};
 		selected?: boolean;
 	} = $props();
@@ -27,112 +27,106 @@
 
 	let assemblySystem = AssemblySystem.getInstance();
 	let messageContext: MessageContext;
-	let showSettings = $state(false);
 	let isBatch = $state(false);
 	let batchInput = $state('');
 
-	// Configuration with defaults
-	const machineId = $derived(data.machineId ?? 0);
 	const values = $derived(data.values ?? []);
-	const autoReset = $derived(data.autoReset ?? false);
 	const format = $derived(data.format ?? 'hex');
+	const rows = $derived(data.rows ?? 6);
 
 	const columns = 8;
-	const gridLimit = 1000;
-	const count = $derived(Math.max(columns * 6, values.length));
+	const gridLimit = 2000;
+	const count = $derived(Math.max(columns * rows, values.length));
 	const overGridLimit = $derived(count > gridLimit);
 	const base = $derived(format === 'hex' ? 16 : 10);
 
 	const handleMessage: MessageCallbackFn = async (message, meta) => {
-		await match(message)
-			.with({ type: 'Data', body: P.array(P.number) }, async ({ body }) => {
-				const newValues = [...values, ...body];
-				updateNodeData(nodeId, { ...data, values: newValues });
-				await sendToAssembly({ type: 'Data', body });
-			})
-			.with({ type: 'Override', data: P.array(P.number) }, async ({ data: newData }) => {
-				updateNodeData(nodeId, { ...data, values: newData });
-				await sendToAssembly({ type: 'Override', data: newData });
-			})
-			.with(
-				{ type: 'Write', address: P.number, data: P.array(P.number) },
-				async ({ address, data: writeData }) => {
-					// Handle write to memory
-					const newValues = [...values];
-					for (let i = 0; i < writeData.length; i++) {
-						if (address + i < newValues.length) {
-							newValues[address + i] = writeData[i];
-						}
-					}
-					updateNodeData(nodeId, { ...data, values: newValues });
-					await sendToAssembly({ type: 'Write', address, data: writeData });
-				}
-			)
-			.with({ type: 'Read', address: P.number, count: P.number }, async ({ address, count }) => {
-				// Handle read from memory - send back data to requesting node
-				const readData = values.slice(address, address + count);
-				// Send read data back to sender
-				if (meta?.inlet !== undefined) {
-					messageContext.send({ type: 'Data', body: readData }, { to: 0 });
-				}
-				await sendToAssembly({ type: 'Read', address, count });
-			})
-			.with({ type: 'Reset' }, async () => {
-				updateNodeData(nodeId, { ...data, values: [] });
-				await sendToAssembly({ type: 'Reset' });
-			})
+		const isMatchSimpleMessage = match(message)
 			.with({ type: 'bang' }, () => {
-				// Send current values as output
-				messageContext.send({ type: 'Data', body: values }, { to: 0 });
+				messageContext.send(values, { to: 0 });
+
+				return true;
 			})
-			.otherwise(() => {});
+			.with({ type: 'reset' }, async () => {
+				updateNodeData(nodeId, { values: [] });
+				return true;
+			})
+			.with({ type: 'setRows', value: P.number }, async ({ value }) => {
+				updateNodeData(nodeId, { rows: value });
+				return true;
+			})
+			.otherwise(() => false);
+
+		if (isMatchSimpleMessage) return;
+
+		if (meta.source.startsWith('asm-')) {
+			const machineId = parseInt(meta.source.replace('asm-', ''));
+			if (isNaN(machineId)) return;
+
+			await match(message)
+				.with(P.union(P.array(P.number), P.number), async (v) => {
+					const body = Array.isArray(v) ? v : [v];
+					const nextValues = [...values, ...body];
+
+					updateNodeData(nodeId, { ...data, values: nextValues });
+				})
+				.with({ type: 'override', data: P.array(P.number) }, async ({ data: newData }) => {
+					updateNodeData(nodeId, { ...data, values: newData });
+				})
+				.with(
+					{ type: 'write', address: P.number, data: P.array(P.number) },
+					async ({ address, data: writeData }) => {
+						const nextValues = [...values];
+
+						for (let i = 0; i < writeData.length; i++) {
+							if (address + i < nextValues.length) {
+								nextValues[address + i] = writeData[i];
+							}
+						}
+
+						updateNodeData(nodeId, { ...data, values: nextValues });
+					}
+				)
+				.with({ type: 'read', address: P.number, count: P.number }, async ({ address, count }) => {
+					const memorySlice = values.slice(address, address + count);
+
+					await sendToAssembly({ type: 'Data', body: memorySlice }, machineId);
+				})
+				.otherwise(() => {});
+
+			return;
+		}
 	};
 
-	async function sendToAssembly(action: any) {
+	async function sendToAssembly(action: Action, machineId: number) {
+		let source = parseInt(nodeId.replace('asm.mem-', ''));
+		if (isNaN(source)) source = 0;
+
 		try {
 			if (await assemblySystem.machineExists(machineId)) {
-				console.log(`send to assembly:`, { action, machineId });
-
-				// Send message to assembly system
-				// await assemblySystem.sendMessage(machineId, {
-				// 	action,
-				// 	sender: { block: parseInt(nodeId), port: 0 },
-				// 	recipient: undefined
-				// });
+				await assemblySystem.sendMessage(machineId, action, source, 0);
 			}
 		} catch (error) {
 			console.error('Failed to send message to assembly system:', error);
 		}
 	}
 
-	function updateConfig(updates: Partial<typeof data>) {
+	const updateConfig = (updates: Partial<typeof data>) =>
 		updateNodeData(nodeId, { ...data, ...updates });
-	}
 
 	function setMemoryValue(address: number, value: number) {
 		if (value > 65535) return;
 
 		const newValues = [...values];
 		newValues[address] = value;
+
 		updateNodeData(nodeId, { ...data, values: newValues });
 	}
 
 	function writeMemoryValue(value: number, index: number) {
 		if (value === undefined || value === null) return;
 
-		// Update local state
 		setMemoryValue(index, value);
-
-		// Send write message to assembly system
-		sendToAssembly({
-			type: 'Write',
-			address: index,
-			data: [value]
-		});
-	}
-
-	function toggleReset() {
-		updateConfig({ autoReset: !autoReset });
 	}
 
 	function toggleFormat() {
@@ -150,30 +144,31 @@
 		if (newValues.length === 0) return;
 
 		updateNodeData(nodeId, { ...data, values: newValues });
-		sendToAssembly({ type: 'Override', data: newValues });
 	}
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		// Update batch input when switching to batch mode
-		if (isBatch) {
-			const dataStr = values.map((v) => v.toString(base)).join(' ');
-			batchInput = dataStr;
-		}
+		syncBatchInput();
 	});
 
 	onDestroy(() => {
 		messageContext?.destroy();
 	});
 
+	function syncBatchInput() {
+		if (isBatch) {
+			batchInput = values
+				.filter((v) => v)
+				.map((v) => v.toString(base))
+				.join(' ');
+		}
+	}
+
 	// Update batch input when format or values change
 	$effect(() => {
-		if (isBatch) {
-			const dataStr = values.map((v) => v.toString(base)).join(' ');
-			batchInput = dataStr;
-		}
+		syncBatchInput();
 	});
 </script>
 
@@ -187,7 +182,7 @@
 					class="rounded p-1 hover:bg-zinc-700"
 					title="Toggle format (hex/decimal)"
 				>
-					<span class="text-xs text-zinc-300">{format}</span>
+					<Icon icon={format === 'hex' ? 'lucide:hash' : 'lucide:binary'} class="h-4 w-4" />
 				</button>
 
 				<button
@@ -197,23 +192,17 @@
 				>
 					<Icon icon="lucide:file-text" class="h-4 w-4" />
 				</button>
-
-				<button
-					onclick={toggleReset}
-					class={['rounded p-1 hover:bg-zinc-700', autoReset && 'text-green-400']}
-					title="Auto-reset on machine restart"
-				>
-					<Icon icon="lucide:refresh-cw" class="h-4 w-4" />
-				</button>
 			</div>
 
-			<button
-				class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
-				onclick={() => (showSettings = !showSettings)}
-				title="Settings"
-			>
-				<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
-			</button>
+			<div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+				<button
+					onclick={() => updateNodeData(nodeId, { ...data, values: [] })}
+					class={['rounded p-1 text-red-400 hover:bg-zinc-700']}
+					title="Clear memory (!)"
+				>
+					<Icon icon="lucide:trash" class="h-4 w-4" />
+				</button>
+			</div>
 		</div>
 
 		<div class="flex flex-col gap-2">
@@ -251,9 +240,9 @@
 									value={!value ? '' : value.toString(base).padStart(4, '0')}
 									placeholder="0000"
 									class={[
-										'w-8 bg-transparent text-center text-[10px] uppercase outline-1 outline-gray-400',
-										value === 0 && 'placeholder-gray-500',
-										value === undefined && 'placeholder-gray-600',
+										'w-8 bg-transparent text-center text-[10px] uppercase outline-none outline-1',
+										value === 0 && 'placeholder-zinc-500',
+										value === undefined && 'placeholder-zinc-700',
 										value > 0 && 'text-green-400'
 									]}
 									onchange={(e) => {
@@ -269,7 +258,7 @@
 
 					{#if isBatch}
 						<textarea
-							class="nodrag h-[100px] w-full resize-none bg-transparent font-mono text-xs text-green-400 outline-gray-400"
+							class="nodrag h-[100px] w-full resize-none bg-transparent font-mono text-xs text-green-400 outline-none"
 							value={batchInput}
 							onchange={(e) => (batchInput = (e.target as HTMLTextAreaElement).value)}
 							onblur={updateBatch}
@@ -281,8 +270,7 @@
 					<div
 						class="absolute bottom-[-16px] left-0 min-w-[100px] font-mono text-[8px] text-zinc-500"
 					>
-						M{machineId} • {values.length} bytes • {format}
-						{#if autoReset}• auto-reset{/if}
+						{values.length} bytes • {format}
 					</div>
 				</div>
 
@@ -290,6 +278,7 @@
 				<StandardHandle
 					port="outlet"
 					type="message"
+					id={0}
 					total={1}
 					index={0}
 					title="Memory data output"
@@ -297,85 +286,4 @@
 			</div>
 		</div>
 	</div>
-
-	{#if showSettings}
-		<div class="relative">
-			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
-				</button>
-			</div>
-
-			<div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-				<div class="space-y-4">
-					<div>
-						<label class="mb-2 block text-xs font-medium text-zinc-300">Machine ID</label>
-						<input
-							type="number"
-							min="0"
-							max="255"
-							value={machineId}
-							onchange={(e) => {
-								const newMachineId = parseInt((e.target as HTMLInputElement).value);
-								updateConfig({ machineId: newMachineId });
-							}}
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-						/>
-					</div>
-
-					<div>
-						<label class="mb-2 block text-xs font-medium text-zinc-300">Display Format</label>
-						<select
-							value={format}
-							onchange={(e) => {
-								const newFormat = (e.target as HTMLSelectElement).value as 'hex' | 'decimal';
-								updateConfig({ format: newFormat });
-							}}
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-						>
-							<option value="hex">Hexadecimal</option>
-							<option value="decimal">Decimal</option>
-						</select>
-					</div>
-
-					<div class="flex items-center gap-x-2">
-						<label class="text-xs font-medium text-zinc-300">Auto-reset</label>
-						<input
-							type="checkbox"
-							checked={autoReset}
-							onchange={(e) => updateConfig({ autoReset: (e.target as HTMLInputElement).checked })}
-							class="h-4 w-4"
-						/>
-						<span class="text-xs text-zinc-500">Clear on machine restart</span>
-					</div>
-
-					<div class="space-y-2">
-						<label class="block text-xs font-medium text-zinc-300">Actions</label>
-						<div class="flex gap-2">
-							<button
-								onclick={() => {
-									updateNodeData(nodeId, { ...data, values: [] });
-									sendToAssembly({ type: 'Reset' });
-								}}
-								class="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
-							>
-								Clear Memory
-							</button>
-							<button
-								onclick={() => {
-									// Fill with test pattern
-									const testValues = Array.from({ length: 16 }, (_, i) => i + 1);
-									updateNodeData(nodeId, { ...data, values: testValues });
-									sendToAssembly({ type: 'Override', data: testValues });
-								}}
-								class="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
-							>
-								Test Pattern
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
 </div>
