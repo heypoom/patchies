@@ -85,26 +85,23 @@
 					<span class="text-[10px] text-zinc-400">FP</span>
 					<span>{state.registers.fp}</span>
 				</div>
+
+				<!-- Inbox -->
+				{#if state.inbox_size > 0}
+					<div class="text-orange-400" class:text-red-400={backpressuring}>
+						<span class="text-[10px] text-zinc-400">IB</span>
+						<span class="ml-1">{state.inbox_size}</span>
+					</div>
+				{/if}
+
+				<!-- Outbox -->
+				{#if state.outbox_size > 0}
+					<div class="text-blue-400">
+						<span class="text-[10px] text-zinc-400">OB</span>
+						<span class="ml-1">{state.outbox_size}</span>
+					</div>
+				{/if}
 			</div>
-
-			<!-- Inbox/Outbox indicators -->
-			{#if state.inbox_size > 0 || state.outbox_size > 0}
-				<div class="mt-1 flex gap-3">
-					{#if state.inbox_size > 0}
-						<div class="text-orange-400" class:text-red-400={backpressuring}>
-							<span class="text-zinc-400">IB</span>
-							<strong class="ml-1">{state.inbox_size}</strong>
-						</div>
-					{/if}
-
-					{#if state.outbox_size > 0}
-						<div class="text-blue-400">
-							<span class="text-zinc-400">OB</span>
-							<strong class="ml-1">{state.outbox_size}</strong>
-						</div>
-					{/if}
-				</div>
-			{/if}
 
 			<!-- Effects -->
 			{#if state.effects && state.effects.length > 0}

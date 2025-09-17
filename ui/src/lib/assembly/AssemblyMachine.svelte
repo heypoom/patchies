@@ -295,7 +295,12 @@
 			const messages = await assemblySystem.consumeMessages();
 
 			messages.forEach((message: Message) => {
-				messageContext.send(message.action, { to: 0 });
+				if (message.action.type === 'Data') {
+					const payload =
+						message.action.body.length === 1 ? message.action.body[0] : message.action.body;
+
+					messageContext.send(payload, { to: message.sender.port });
+				}
 			});
 		} catch (error) {
 			// Silently handle state update errors to avoid spam
@@ -473,6 +478,7 @@
 					value={machineConfig.stepBy}
 					onchange={(e) => {
 						const newStepBy = parseInt((e.target as HTMLInputElement).value);
+
 						if (!isNaN(newStepBy) && newStepBy >= 1 && newStepBy <= 1000) {
 							updateConfig({ stepBy: newStepBy });
 						}
