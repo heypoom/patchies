@@ -337,7 +337,7 @@
 				}
 			});
 
-			if (machineState?.status === 'Halted') {
+			if (machineState?.status === 'Halted' || machineState?.status === 'Ready') {
 				await updateMachineConfig({ isRunning: false });
 			}
 		} catch (error) {
