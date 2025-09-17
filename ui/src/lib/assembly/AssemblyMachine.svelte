@@ -66,23 +66,25 @@
 				.with({ type: 'set', code: P.string }, ({ code }) => {
 					setCodeAndUpdate(code);
 				})
-				.with({ type: 'run' }, () => {
-					reloadProgram();
-				})
+				.with({ type: 'run' }, () => reloadProgram())
+				.with({ type: 'play' }, () => playMachine())
+				.with({ type: 'pause' }, () => pauseMachine())
+				.with({ type: 'toggle' }, () => togglePlayPause())
+				.with({ type: 'reset' }, () => resetMachine())
+				.with({ type: 'step' }, () => stepMachine())
 				.with({ type: 'bang' }, handleBangSignal)
-				.with({ type: 'send', data: P.any }, async ({ data }) => {
-					// Send message to the assembly machine
+				.with(P.union(P.number, P.array(P.number)), async (m) => {
 					await assemblySystem.sendMessage(machineId, {
 						sender: new Port(Number(meta.source) || 0, 0),
 						action: {
 							type: 'Data',
-							body: Array.isArray(data) ? data : [Number(data) || 0]
+							body: Array.isArray(m) ? m : [Number(m) || 0]
 						},
-						recipient: undefined
+						recipient: machineId
 					});
 				})
 				.otherwise(() => {
-					// Handle other message types
+					// Unknown message type
 				});
 		} catch (error) {
 			displayError(error);
@@ -142,33 +144,48 @@
 		}
 	}
 
-	async function togglePlayPause() {
+	async function pauseMachine() {
 		try {
-			if (machineConfig.isRunning) {
-				await assemblySystem.pauseMachine(machineId);
-				machineConfig = { ...machineConfig, isRunning: false };
-			} else {
-				// Ensure machine exists and has a program loaded
-				if (!(await assemblySystem.machineExists(machineId))) {
-					await assemblySystem.createMachineWithId(machineId);
-				}
+			await assemblySystem.pauseMachine(machineId);
+			machineConfig = { ...machineConfig, isRunning: false };
 
-				// Check if machine has a program loaded by inspecting its state
-				const currentState = await assemblySystem.inspectMachine(machineId);
-
-				if (!currentState || currentState.status === 'Halted') {
-					await assemblySystem.loadProgram(machineId, data.code);
-				}
-
-				await assemblySystem.playMachine(machineId);
-				machineConfig = { ...machineConfig, isRunning: true };
-			}
-
-			// Double-check with the actual config
 			const latestConfig = await assemblySystem.getMachineConfig(machineId);
 			machineConfig = latestConfig;
 		} catch (error) {
 			displayError(error);
+		}
+	}
+
+	async function playMachine() {
+		try {
+			// Ensure machine exists and has a program loaded
+			if (!(await assemblySystem.machineExists(machineId))) {
+				await assemblySystem.createMachineWithId(machineId);
+			}
+
+			// Check if machine has a program loaded by inspecting its state
+			const currentState = await assemblySystem.inspectMachine(machineId);
+
+			if (!currentState || currentState.status === 'Halted') {
+				await assemblySystem.loadProgram(machineId, data.code);
+			}
+
+			await assemblySystem.playMachine(machineId);
+
+			machineConfig = { ...machineConfig, isRunning: true };
+
+			const latestConfig = await assemblySystem.getMachineConfig(machineId);
+			machineConfig = latestConfig;
+		} catch (error) {
+			displayError(error);
+		}
+	}
+
+	async function togglePlayPause() {
+		if (machineConfig.isRunning) {
+			await pauseMachine();
+		} else {
+			await playMachine();
 		}
 	}
 
