@@ -18,24 +18,12 @@ type Errorable = Result<(), SequencerError>;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Sequencer {
     pub machines: Vec<Machine>,
-
-    /// We should disable the message watchdog if we know the message will eventually arrive.
-    pub await_watchdog: bool,
-
-    /// Are all machines incapable of sending messages?
-    /// Use this to prevent the `receive` instruction from blocking forever.
-    await_watchdog_counter: u16,
 }
-
-/// How many cycles should we wait for the message to be received?
-const MAX_WAIT_CYCLES: u16 = 3;
 
 impl Sequencer {
     pub fn new() -> Sequencer {
         Sequencer {
             machines: vec![],
-            await_watchdog: true,
-            await_watchdog_counter: MAX_WAIT_CYCLES,
         }
     }
 
@@ -76,8 +64,6 @@ impl Sequencer {
     }
 
     pub fn reset_machine(&mut self, machine_id: u16) {
-        self.await_watchdog_counter = MAX_WAIT_CYCLES;
-
         let Some(machine) = self.get_mut(machine_id) else {return};
 
         // Do not reset the machine if it is invalid.
@@ -90,17 +76,6 @@ impl Sequencer {
     /// Step a specific machine a number of times.
     /// Messages must be routed before this method is called.
     pub fn step_machine(&mut self, id: u16, count: u16) -> Errorable {
-        let statuses: Statuses = self.machines
-            .iter()
-            .filter_map(|m| {
-                if let Some(id) = m.id {
-                    Some((id, m.status.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
         // Get the machine
         let machine = self.get_mut(id).ok_or(MachineDoesNotExist { id })?;
 
@@ -136,21 +111,6 @@ impl Sequencer {
         if machine.status == Awaiting {
             // Do not tick the machine if the still did not receive the message.
             if machine.expected_receives > 0 {
-                // Watchdog prevents the `receive` instruction from blocking forever.
-                if self.await_watchdog {
-                    // Raise an error if all peers are halted.
-                    if self.await_watchdog_counter == 0 {
-                        let machine = self.get_mut(id).ok_or(MachineDoesNotExist { id })?;
-                        machine.status = Errored;
-
-                        return Err(MessageNeverReceived { id });
-                    }
-
-                    if peers_halted(statuses, id) {
-                        self.await_watchdog_counter -= 1;
-                    }
-                }
-
                 return Ok(());
             }
 

@@ -136,10 +136,6 @@ impl Controller {
         Ok(to_value(&self.seq.consume_side_effects(id))?)
     }
 
-    pub fn set_await_watchdog(&mut self, state: bool) {
-        self.seq.await_watchdog = state;
-    }
-
     pub fn clear(&mut self) {
         self.seq = Sequencer::new();
     }

@@ -138,7 +138,6 @@
 			await syncMachineState();
 
 			memoryActions.refreshMemory(machineId);
-			errorMessage = null;
 		} catch (error) {
 			displayError(error);
 		}
@@ -146,8 +145,15 @@
 
 	async function pauseMachine() {
 		try {
+			const state = await assemblySystem.inspectMachine(machineId);
+
 			await assemblySystem.pauseMachine(machineId);
 			machineConfig = { ...machineConfig, isRunning: false };
+
+			// If machine is stuck in awaiting state, pausing should reset it.
+			if (state?.status === 'Awaiting') {
+				resetMachine();
+			}
 
 			const latestConfig = await assemblySystem.getMachineConfig(machineId);
 			machineConfig = latestConfig;

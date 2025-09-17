@@ -93,6 +93,7 @@ class AssemblyWorkerController {
 	inspectMachine(machineId: number): InspectedMachine | null {
 		try {
 			const result = this.controller.inspect_machine(machineId);
+
 			return result === null ? null : result;
 		} catch {
 			return null;
@@ -141,11 +142,13 @@ class AssemblyWorkerController {
 	}
 
 	getMachineConfig(machineId: number): MachineConfig {
-		return this.machineConfigs.get(machineId) || {
-			isRunning: false,
-			delayMs: 100,
-			stepBy: 1
-		};
+		return (
+			this.machineConfigs.get(machineId) || {
+				isRunning: false,
+				delayMs: 100,
+				stepBy: 1
+			}
+		);
 	}
 
 	playMachine(machineId: number): void {
