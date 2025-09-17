@@ -76,6 +76,12 @@
 				.with({ type: 'toggle' }, () => togglePlayPause())
 				.with({ type: 'reset' }, () => resetMachine())
 				.with({ type: 'step' }, () => stepMachine())
+				.with({ type: 'setDelayMs', value: P.number }, ({ value }) =>
+					updateMachineConfig({ delayMs: value })
+				)
+				.with({ type: 'setStepBy', value: P.number }, ({ value }) =>
+					updateMachineConfig({ stepBy: value })
+				)
 				.with({ type: 'bang' }, handleBangSignal)
 				.with(P.union(P.number, P.array(P.number)), async (m) => {
 					if (meta.inlet === undefined) return;
