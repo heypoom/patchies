@@ -182,29 +182,10 @@ impl Controller {
         Ok(true.into())
     }
 
-    /// Consume all outgoing messages from all machines
-    pub fn consume_messages(&mut self) -> Return {
-        let messages = self.seq.consume_messages();
+    /// Consume all outgoing messages from a machine
+    pub fn consume_messages(&mut self, machine_id: u16) -> Return {
+        let messages = self.seq.consume_messages(machine_id);
         Ok(to_value(&messages)?)
-    }
-
-    /// Route messages between machines (simplified version without canvas routing)
-    pub fn route_messages(&mut self) -> Return {
-        let messages = self.seq.consume_messages();
-
-        // Simple routing: broadcast all messages to all machines
-        // In a real implementation, you'd have proper routing logic
-        for message in messages {
-            for machine in &mut self.seq.machines {
-                if let Some(target_id) = machine.id {
-                    if target_id != message.sender.block {
-                        machine.inbox.push_back(message.clone());
-                    }
-                }
-            }
-        }
-
-        Ok(to_value(&())?)
     }
 }
 

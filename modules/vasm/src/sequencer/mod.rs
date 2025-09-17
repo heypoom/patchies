@@ -190,8 +190,10 @@ impl Sequencer {
     }
 
     /// Consume the messages.
-    pub fn consume_messages(&mut self) -> Vec<Message> {
-        self.machines.iter_mut().flat_map(|machine| machine.outbox.drain(..)).collect()
+    pub fn consume_messages(&mut self, id: u16) -> Vec<Message> {
+        let Some(machine) = self.get_mut(id) else { return vec![]; };
+
+        machine.outbox.drain(..).collect()
     }
 
     /// Consume the side effect events in the frontend.

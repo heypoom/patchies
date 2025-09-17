@@ -38,7 +38,7 @@ export type AssemblyWorkerMessage = { id: string } & (
 			source: number;
 			inlet: number;
 	  }
-	| { type: 'consumeMessages' }
+	| { type: 'consumeMessages'; machineId: number }
 	| { type: 'setMachineConfig'; machineId: number; config: Partial<MachineConfig> }
 	| { type: 'getMachineConfig'; machineId: number }
 	| { type: 'playMachine'; machineId: number }
@@ -135,8 +135,8 @@ class AssemblyWorkerController {
 		}
 	}
 
-	consumeMessages(): Message[] {
-		return this.controller.consume_messages();
+	consumeMessages(machineId: number): Message[] {
+		return this.controller.consume_messages(machineId);
 	}
 
 	setMachineConfig(machineId: number, config: Partial<MachineConfig>): void {
@@ -251,7 +251,7 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
 			.with({ type: 'sendMessage' }, (data) =>
 				controller.sendMessage(data.machineId, data.data, data.source, data.inlet)
 			)
-			.with({ type: 'consumeMessages' }, () => controller.consumeMessages())
+			.with({ type: 'consumeMessages' }, (data) => controller.consumeMessages(data.machineId))
 			.with({ type: 'setMachineConfig' }, (data) => {
 				controller.setMachineConfig(data.machineId, data.config);
 			})

@@ -23,7 +23,6 @@
 	function getStatusBadge(): string {
 		if (errored) return 'text-red-400';
 		if (awaiting) return 'text-purple-400';
-		if (backpressuring) return 'text-orange-400';
 		if (sending) return 'text-blue-400';
 		if (sleeping) return 'text-gray-400';
 		if (halted) return 'text-gray-500';

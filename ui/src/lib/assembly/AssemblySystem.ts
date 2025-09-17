@@ -152,8 +152,8 @@ export class AssemblySystem {
 	/**
 	 * Consume all outgoing messages from all machines
 	 */
-	async consumeMessages(): Promise<Message[]> {
-		return await this.send('consumeMessages', {});
+	async consumeMessages(machineId: number): Promise<Message[]> {
+		return await this.send('consumeMessages', { machineId });
 	}
 
 	/**

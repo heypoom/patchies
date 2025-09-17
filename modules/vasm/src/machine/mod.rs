@@ -96,15 +96,15 @@ impl Machine {
     pub fn full_reset(&mut self) {
         self.partial_reset();
         self.mem.reset();
-        self.inbox.clear();
-        self.outbox.clear();
-        self.events.clear();
     }
 
     /// Reset the execution state and execution memory of the machine only.
     pub fn partial_reset(&mut self) {
         self.reg.reset();
         self.mem.reset_stacks();
+        self.inbox.clear();
+        self.outbox.clear();
+        self.events.clear();
         self.expected_receives = 0;
         self.sleeping = false;
         self.remaining_sleep_ticks = 0;

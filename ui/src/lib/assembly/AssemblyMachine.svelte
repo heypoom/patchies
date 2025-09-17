@@ -124,6 +124,8 @@
 	async function resetMachine() {
 		try {
 			await assemblySystem.resetMachine(machineId);
+			await assemblySystem.loadProgram(machineId, data.code);
+
 			await syncMachineState();
 
 			memoryActions.refreshMemory(machineId);
@@ -201,7 +203,7 @@
 		}
 	}
 
-	function updateConfig(nextConfig: Partial<MachineConfig>) {
+	function updateMachineConfig(nextConfig: Partial<MachineConfig>) {
 		const mergedConfig = { ...machineConfig, ...nextConfig };
 
 		assemblySystem.setMachineConfig(machineId, mergedConfig);
@@ -212,13 +214,15 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		reloadProgram();
+		pushMachineConfig();
+		setupPolling();
 		measureContainerWidth();
+		reloadProgram();
+	});
 
-		// Sync machine config with worker
-		(async () => {
+	async function pushMachineConfig() {
+		async () => {
 			try {
-				// If we have persisted config, send it to worker
 				if (data.machineConfig) {
 					await assemblySystem.setMachineConfig(machineId, data.machineConfig);
 				}
@@ -227,21 +231,20 @@
 			} catch (error) {
 				// Use default config if unable to load
 			}
-		})();
+		};
+	}
+
+	function setupPolling() {
+		clearInterval(updateInterval);
 
 		updateInterval = setInterval(async () => {
-			try {
-				// Refresh memory when machine is running
-				if (machineConfig.isRunning) {
-					await syncMachineState();
+			if (!machineConfig.isRunning) return;
 
-					memoryActions.refreshMemory(machineId);
-				}
-			} catch (error) {
-				// Ignore config sync errors
-			}
-		}, 300);
-	});
+			await syncMachineState();
+
+			memoryActions.refreshMemory(machineId);
+		}, machineConfig.delayMs);
+	}
 
 	onDestroy(async () => {
 		clearInterval(updateInterval);
@@ -289,14 +292,13 @@
 		try {
 			machineState = await assemblySystem.inspectMachine(machineId);
 
-			// Get effects/logs
 			const effects = await assemblySystem.consumeMachineEffects(machineId);
 
 			logs = effects
 				.filter((effect: Effect) => effect.type === 'Print')
 				.map((effect: Effect) => (effect.type === 'Print' ? effect.text : ''));
 
-			const messages = await assemblySystem.consumeMessages();
+			const messages = await assemblySystem.consumeMessages(machineId);
 
 			messages.forEach((message: Message) => {
 				if (message.action.type === 'Data') {
@@ -350,7 +352,7 @@
 					onclick={resetMachine}
 					class="group-hover:not-disabled:opacity-100 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 group-hover:disabled:opacity-30 sm:opacity-0"
 					title="Reset machine"
-					disabled={machineState === null || machineState.status === 'Ready'}
+					disabled={machineState === null}
 				>
 					<Icon icon="lucide:refresh-ccw" class="h-4 w-4 text-zinc-300" />
 				</button>
@@ -464,8 +466,11 @@
 					value={machineConfig.delayMs}
 					onchange={(e) => {
 						const newDelay = parseInt((e.target as HTMLInputElement).value);
+
 						if (!isNaN(newDelay) && newDelay >= 10 && newDelay <= 5000) {
-							updateConfig({ delayMs: newDelay });
+							updateMachineConfig({ delayMs: newDelay });
+
+							setTimeout(() => setupPolling(), 5);
 						}
 					}}
 					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
@@ -484,7 +489,7 @@
 						const newStepBy = parseInt((e.target as HTMLInputElement).value);
 
 						if (!isNaN(newStepBy) && newStepBy >= 1 && newStepBy <= 1000) {
-							updateConfig({ stepBy: newStepBy });
+							updateMachineConfig({ stepBy: newStepBy });
 						}
 					}}
 					class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
