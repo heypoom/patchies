@@ -37,12 +37,47 @@ It gives you a simple stack machine with these features:
   - Then, press `Alt` on your keyboard, and drag the memory region onto the canvas.
   - This will create the memory visualizer object (`asm.value`) that shows the memory cells in real-time.
   - Click on the settings menu to change the memory region and color scheme.
-- Memory storage and manipulation with `asm.mem` objects.
-  - Acts as RAM or ROM for assembly programs to read from and write to.
-  - Supports both hex and decimal display formats with grid and text batch editing modes.
-  - Responds to `Read`, `Write`, `Data`, `Override`, and `Reset` messages from assembly programs.
-  - Can be pre-loaded with initial values and configured for auto-reset on machine restart.
-  - Produces Read and Write side effects when accessed by assembly programs, enabling dynamic memory interactions.
+- Can send the following messages:
+
+  - `number` or `number[]` when the `send` instruction is executed.
+    - `send 0 1` will send one number to outlet 0.
+    - `send 1 3` will send array of three numbers to outlet 1.
+  - `{type: 'read', address: number, count: number}` when `read` instruction is ran onto a mapped address (e.g. `0x2000`)
+    - used for `asm.mem`
+  - `{type: 'write', address: number, data: number[]}` when `write` instruction is ran onto a mapped address (e.g. `0x2000`)
+    - used for `asm.mem`
+  - `{type: 'override', data: number[]}` when override operation is triggered.
+
+- Use `asm.mem` memory object to store memory cells.
+
+  - Responds to `read`, `write`, `load` and `store` instructions. These instructions can read and write from the virtual memory space.
+
+    ```asm
+    ; reads 5 values from outlet 0's first memory cell (0x2000)
+    push 0x2000
+    read 5
+
+    ; reads 3 values from outlet 0's 5th memory cell (0x2005)
+    push 0x2005
+    read 3
+
+    ; writes 1 value (0xCAAC) to outlet 0's first memory cell (0x2000)
+    push 0xCAAC
+    push 0x2000
+    write 1
+
+    ; writes 2 value (20, 40) to outlet 0's 5th memory cell (0x2005)
+    push 20
+    push 40
+    push 0x2005
+    write 2
+    ```
+
+  - Supports both hex and decimal display formats.
+  - Supports grid and text batch editing modes.
+  - Initial values can be set with the GUI
+  - Can set number of rows to display.
+
 - Shortcuts
   - `Shift + Enter` in the code editor auto-runs the program.
 - Messages:
