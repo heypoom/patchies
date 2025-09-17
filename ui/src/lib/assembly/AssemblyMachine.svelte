@@ -351,6 +351,7 @@
 
 	function onHighlightLineSetup(callback: (lineNo: number) => void) {
 		highlightLineCallback = callback;
+
 		// Register this highlighter with the AssemblySystem
 		assemblySystem.registerHighlighter(machineId, callback);
 	}
@@ -446,7 +447,7 @@
 						onchange={(newCode) => {
 							updateNodeData(nodeId, { code: newCode });
 						}}
-						onrun={reloadProgram}
+						onrun={playMachine}
 						placeholder="Enter assembly code..."
 						highlightLine={onHighlightLineSetup}
 					/>

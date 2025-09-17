@@ -37,6 +37,8 @@ It gives you a simple stack machine with these features:
   - Then, press `Alt` on your keyboard, and drag the memory region onto the canvas.
   - This will create the memory visualizer object (`asm.value`) that shows the memory cells in real-time.
   - Click on the settings menu to change the memory region and color scheme.
+- Shortcuts
+  - `Shift + Enter` in the code editor auto-runs the program.
 - Messages:
   - `{type: 'bang'}`: step the program by one instruction
   - `{type: 'set', code: <string>}`: load the assembly code
