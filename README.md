@@ -19,8 +19,10 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - [SwissGL](https://github.com/google/swissgl), minimal WebGL2 wrapper for shaders.
 - [GLSL fragment shaders](https://www.shadertoy.com), for complex 3D visual effects.
 - [Tone.js](https://tonejs.github.io), framework for creating interactive music in the browser.
-- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
-- [HTML5 Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
+- [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
+- [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
+- [Assembly](./modules/vasm/README.md), for fun stack machine computational puzzles.
+- [Python 3](https://pyodide.org), runs on the browser via Pyodide.
 - Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
 - ...as well as write JavaScript code directly.
 
