@@ -1,1 +1,0 @@
-export { RadixSelect } from "./select"
