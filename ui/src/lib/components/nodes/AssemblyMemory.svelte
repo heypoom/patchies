@@ -223,14 +223,13 @@
 					id={0}
 					total={1}
 					index={0}
-					title="Memory operations (Read/Write/Data)"
-					class="top-0"
+					title="Message inlet"
 				/>
 
 				<div
 					class={[
 						'relative flex min-w-[200px] flex-col gap-2 rounded-lg border bg-zinc-900 px-3 py-3 font-mono',
-						selected ? 'border-green-400' : 'border-zinc-800 hover:border-zinc-700'
+						selected ? 'border-zinc-300' : 'border-zinc-800 hover:border-zinc-700'
 					]}
 				>
 					{#if overGridLimit && !isBatch}
@@ -251,7 +250,7 @@
 									placeholder="0000"
 									class={[
 										'w-8 bg-transparent text-center text-[10px] uppercase outline-none outline-1',
-										value === 0 && 'placeholder-zinc-500',
+										value === 0 && 'placeholder-zinc-600',
 										value === undefined && 'placeholder-zinc-700',
 										value > 0 && 'text-green-400'
 									]}
@@ -291,7 +290,7 @@
 					id={0}
 					total={1}
 					index={0}
-					title="Memory data output"
+					title="Message outlet"
 				/>
 			</div>
 		</div>
