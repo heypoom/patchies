@@ -74,14 +74,16 @@
 				.with({ type: 'step' }, () => stepMachine())
 				.with({ type: 'bang' }, handleBangSignal)
 				.with(P.union(P.number, P.array(P.number)), async (m) => {
-					await assemblySystem.sendMessage(machineId, {
-						sender: new Port(Number(meta.source) || 0, 0),
-						action: {
-							type: 'Data',
-							body: Array.isArray(m) ? m : [Number(m) || 0]
-						},
-						recipient: machineId
-					});
+					if (meta.inlet === undefined) return;
+
+					const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
+					let source = 0;
+
+					if (parseInt(sourceIdStr) >= 0) {
+						source = parseInt(sourceIdStr);
+					}
+
+					await assemblySystem.sendMessage(machineId, m, source, meta.inlet);
 				})
 				.otherwise(() => {
 					// Unknown message type

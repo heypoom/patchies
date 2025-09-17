@@ -140,8 +140,13 @@ export class AssemblySystem {
 	/**
 	 * Send a message directly to a machine's inbox
 	 */
-	async sendMessage(machineId: number, message: Message): Promise<boolean> {
-		return await this.send('sendMessage', { machineId, message });
+	async sendMessage(
+		machineId: number,
+		data: number | number[],
+		source: number,
+		inlet: number
+	): Promise<boolean> {
+		return await this.send('sendMessage', { machineId, data, source, inlet });
 	}
 
 	/**

@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import { Controller, type MachineStatus, type Effect, type Message } from 'machine';
+import { Controller, type MachineStatus, type Effect, type Message, Port } from 'machine';
 
 // Define types that are serialized from Rust but not exported in TypeScript
 export interface InspectedRegister {
@@ -31,7 +31,13 @@ export type AssemblyWorkerMessage = { id: string } & (
 	| { type: 'inspectMachine'; machineId: number }
 	| { type: 'readMemory'; machineId: number; address: number; size: number }
 	| { type: 'consumeMachineEffects'; machineId: number }
-	| { type: 'sendMessage'; machineId: number; message: Message }
+	| {
+			type: 'sendMessage';
+			machineId: number;
+			data: number | number[];
+			source: number;
+			inlet: number;
+	  }
 	| { type: 'consumeMessages' }
 	| { type: 'setMachineConfig'; machineId: number; config: Partial<MachineConfig> }
 	| { type: 'getMachineConfig'; machineId: number }
@@ -113,8 +119,20 @@ class AssemblyWorkerController {
 		return this.controller.consume_machine_side_effects(machineId);
 	}
 
-	sendMessage(machineId: number, message: Message): boolean {
-		return this.controller.send_message_to_machine(machineId, message);
+	sendMessage(machineId: number, data: number | number[], source: number, inlet: number): boolean {
+		try {
+			return this.controller.send_message_to_machine(machineId, {
+				action: {
+					type: 'Data',
+					body: Array.isArray(data) ? data : [Number(data) || 0]
+				},
+				sender: new Port(source, inlet),
+				recipient: machineId
+			});
+		} catch (error) {
+			console.error(`Failed to send message to machine ${machineId}:`, error);
+			throw error;
+		}
 	}
 
 	consumeMessages(): Message[] {
@@ -230,7 +248,9 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
 			.with({ type: 'consumeMachineEffects' }, (data) =>
 				controller.consumeMachineEffects(data.machineId)
 			)
-			.with({ type: 'sendMessage' }, (data) => controller.sendMessage(data.machineId, data.message))
+			.with({ type: 'sendMessage' }, (data) =>
+				controller.sendMessage(data.machineId, data.data, data.source, data.inlet)
+			)
 			.with({ type: 'consumeMessages' }, () => controller.consumeMessages())
 			.with({ type: 'setMachineConfig' }, (data) => {
 				controller.setMachineConfig(data.machineId, data.config);
