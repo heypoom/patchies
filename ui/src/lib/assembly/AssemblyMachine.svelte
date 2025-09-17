@@ -398,8 +398,9 @@
 
 				<button
 					onclick={stepMachine}
-					class="group rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="group-hover:not-disabled:opacity-100 group rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:opacity-100 group-hover:disabled:opacity-30 sm:opacity-0"
 					title={`Step ${machineConfig.stepBy} cycle${machineConfig.stepBy > 1 ? 's' : ''}`}
+					disabled={machineState?.status === 'Halted'}
 				>
 					<Icon
 						icon="lucide:step-forward"
