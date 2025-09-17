@@ -32,7 +32,7 @@
 	// Line highlighter functionality
 	const addLineHighlight = StateEffect.define<number>();
 
-	const HIGHLIGHT_COLOR = 'rgba(59, 130, 246, 0.15)'; // blue-500 with transparency
+	const HIGHLIGHT_COLOR = '#e4e4e722';
 
 	const lineHighlightMark = Decoration.line({
 		attributes: { style: `background-color: ${HIGHLIGHT_COLOR}` }
