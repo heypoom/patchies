@@ -35,7 +35,12 @@
 </script>
 
 <div class={['flex flex-col gap-1 px-1 font-mono text-xs']}>
-	<div class={['absolute right-4 top-2.5 font-mono text-xs lowercase', getStatusBadge()]}>
+	<div
+		class={[
+			'absolute right-4 top-2 rounded-sm bg-zinc-900/80 px-1 py-0.5 font-mono text-[10px] lowercase',
+			getStatusBadge()
+		]}
+	>
 		{state?.status}
 	</div>
 

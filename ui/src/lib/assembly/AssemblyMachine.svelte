@@ -69,29 +69,7 @@
 				.with({ type: 'run' }, () => {
 					reloadProgram();
 				})
-				.with({ type: 'bang' }, async () => {
-					// Bang message triggers loadProgram if not loaded, stepMachine otherwise
-					try {
-						if (!(await assemblySystem.machineExists(machineId))) {
-							await assemblySystem.createMachineWithId(machineId);
-						}
-
-						const state = await assemblySystem.inspectMachine(machineId);
-
-						if (!state || state.status === 'Halted') {
-							await assemblySystem.loadProgram(machineId, data.code);
-						} else {
-							await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
-						}
-
-						await syncMachineState();
-
-						memoryActions.refreshMemory(machineId);
-						errorMessage = null;
-					} catch (error) {
-						displayError(error);
-					}
-				})
+				.with({ type: 'bang' }, handleBangSignal)
 				.with({ type: 'send', data: P.any }, async ({ data }) => {
 					// Send message to the assembly machine
 					await assemblySystem.sendMessage(machineId, {
@@ -110,6 +88,30 @@
 			displayError(error);
 		}
 	};
+
+	// When a 'bang' message is received, load and step the machine.
+	async function handleBangSignal() {
+		try {
+			if (!(await assemblySystem.machineExists(machineId))) {
+				await assemblySystem.createMachineWithId(machineId);
+			}
+
+			const state = await assemblySystem.inspectMachine(machineId);
+
+			if (!state || state.status === 'Halted') {
+				await assemblySystem.loadProgram(machineId, data.code);
+			} else {
+				await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+			}
+
+			await syncMachineState();
+
+			memoryActions.refreshMemory(machineId);
+			errorMessage = null;
+		} catch (error) {
+			displayError(error);
+		}
+	}
 
 	async function resetMachine() {
 		try {
@@ -144,12 +146,27 @@
 		try {
 			if (machineConfig.isRunning) {
 				await assemblySystem.pauseMachine(machineId);
+				machineConfig = { ...machineConfig, isRunning: false };
 			} else {
+				// Ensure machine exists and has a program loaded
+				if (!(await assemblySystem.machineExists(machineId))) {
+					await assemblySystem.createMachineWithId(machineId);
+				}
+
+				// Check if machine has a program loaded by inspecting its state
+				const currentState = await assemblySystem.inspectMachine(machineId);
+
+				if (!currentState || currentState.status === 'Halted') {
+					await assemblySystem.loadProgram(machineId, data.code);
+				}
+
 				await assemblySystem.playMachine(machineId);
+				machineConfig = { ...machineConfig, isRunning: true };
 			}
 
-			// Update local config
-			machineConfig = await assemblySystem.getMachineConfig(machineId);
+			// Double-check with the actual config
+			const latestConfig = await assemblySystem.getMachineConfig(machineId);
+			machineConfig = latestConfig;
 		} catch (error) {
 			displayError(error);
 		}
@@ -160,23 +177,39 @@
 		machineConfig = { ...machineConfig, ...updates };
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
 		reloadProgram();
 		measureContainerWidth();
 
-		// Load machine config
-		try {
-			machineConfig = await assemblySystem.getMachineConfig(machineId);
-		} catch (error) {
-			// Use default config if unable to load
-		}
+		// Load machine config async
+		(async () => {
+			try {
+				machineConfig = await assemblySystem.getMachineConfig(machineId);
+			} catch (error) {
+				// Use default config if unable to load
+			}
+		})();
 
-		updateInterval = setInterval(() => {
-			if (machineConfig.isRunning) {
-				syncMachineState();
+		updateInterval = setInterval(async () => {
+			await syncMachineState();
+
+			// Also sync machine config to keep isRunning state updated
+			try {
+				const latestConfig = await assemblySystem.getMachineConfig(machineId);
+
+				if (latestConfig.isRunning !== machineConfig.isRunning) {
+					machineConfig = latestConfig;
+				}
+
+				// Refresh memory when machine is running
+				if (machineConfig.isRunning) {
+					memoryActions.refreshMemory(machineId);
+				}
+			} catch (error) {
+				// Ignore config sync errors
 			}
 		}, 100);
 	});
@@ -272,7 +305,7 @@
 
 				<button
 					onclick={toggleMemoryViewer}
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 group-hover:opacity-100 sm:opacity-0"
+					class="group-hover:not-disabled:opacity-100 rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
 					title="Toggle memory viewer"
 					disabled={machineState === null}
 				>
@@ -281,8 +314,9 @@
 
 				<button
 					onclick={resetMachine}
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="group-hover:not-disabled:opacity-100 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 group-hover:disabled:opacity-30 sm:opacity-0"
 					title="Reset machine"
+					disabled={machineState === null || machineState.status === 'Ready'}
 				>
 					<Icon icon="lucide:refresh-ccw" class="h-4 w-4 text-zinc-300" />
 				</button>

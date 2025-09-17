@@ -141,13 +141,11 @@ class AssemblyWorkerController {
 	}
 
 	getMachineConfig(machineId: number): MachineConfig {
-		return (
-			this.machineConfigs.get(machineId) || {
-				isRunning: false,
-				delayMs: 100,
-				stepBy: 1
-			}
-		);
+		return this.machineConfigs.get(machineId) || {
+			isRunning: false,
+			delayMs: 100,
+			stepBy: 1
+		};
 	}
 
 	playMachine(machineId: number): void {
@@ -171,7 +169,7 @@ class AssemblyWorkerController {
 		const intervalId = setInterval(() => {
 			try {
 				this.stepMachine(machineId, config.stepBy);
-			} catch {
+			} catch (error) {
 				// If stepping fails, stop the auto execution
 				this.pauseMachine(machineId);
 			}
