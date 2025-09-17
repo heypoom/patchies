@@ -100,6 +100,11 @@
 	});
 
 	function performAutosave() {
+		// Only autosave when tab is active and focused to prevent conflicts between browser tabs
+		if (document.hidden || !document.hasFocus()) {
+			return;
+		}
+
 		try {
 			savePatchToLocalStorage({ name: 'autosave', nodes, edges });
 		} catch (error) {
