@@ -4,7 +4,10 @@ import { match } from 'ts-pattern';
 const cachedLanguages: Record<string, Extension> = {};
 
 export async function loadLanguageExtension(language: string) {
-	if (cachedLanguages[language]) {
+	// Skip caching for assembly during development to handle HMR properly
+	const shouldCache = language !== 'assembly' || !import.meta.hot;
+
+	if (shouldCache && cachedLanguages[language]) {
 		return cachedLanguages[language];
 	}
 
@@ -22,6 +25,11 @@ export async function loadLanguageExtension(language: string) {
 
 			return new LanguageSupport(glslLanguage);
 		})
+		.with('assembly', async () => {
+			const { assembly } = await import('$lib/codemirror/assembly/assembly');
+
+			return assembly();
+		})
 		.with('python', async () => {
 			const { python } = await import('@codemirror/lang-python');
 
@@ -34,7 +42,9 @@ export async function loadLanguageExtension(language: string) {
 		})
 		.otherwise(() => []);
 
-	cachedLanguages[language] = extension;
+	if (shouldCache) {
+		cachedLanguages[language] = extension;
+	}
 
 	return extension;
 }

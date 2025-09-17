@@ -14,6 +14,7 @@ pub use self::decode::Decode;
 pub use crate::canvas::event::Event;
 pub use self::execute::Execute;
 pub use crate::canvas::message::{Action, Message};
+use crate::status::MachineStatus;
 pub use self::runtime_error::RuntimeError;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -36,6 +37,9 @@ pub struct Machine {
     /// Outbox contains messages sent from this machine.
     pub outbox: Vec<Message>,
 
+    /// Status of the machine.
+    pub status: MachineStatus,
+
     /// Is the machine in debug mode?
     pub is_debug: bool,
 
@@ -43,6 +47,7 @@ pub struct Machine {
     pub expected_receives: u16,
 
     /// Is the machine sleeping?
+    /// TODO: remove this
     pub sleeping: bool,
 
     /// How many tick remains until we resume execution?
@@ -61,6 +66,8 @@ impl Machine {
             events: vec![],
             inbox: VecDeque::new(),
             outbox: vec![],
+
+            status: MachineStatus::Halted,
 
             is_debug: false,
             expected_receives: 0,
@@ -89,15 +96,15 @@ impl Machine {
     pub fn full_reset(&mut self) {
         self.partial_reset();
         self.mem.reset();
-        self.inbox.clear();
-        self.outbox.clear();
-        self.events.clear();
     }
 
     /// Reset the execution state and execution memory of the machine only.
     pub fn partial_reset(&mut self) {
         self.reg.reset();
         self.mem.reset_stacks();
+        self.inbox.clear();
+        self.outbox.clear();
+        self.events.clear();
         self.expected_receives = 0;
         self.sleeping = false;
         self.remaining_sleep_ticks = 0;

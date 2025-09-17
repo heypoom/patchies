@@ -43,6 +43,9 @@
 				// If the user dislikes AI features, filter them out.
 				if (key.startsWith('ai.') && !$isAiFeaturesVisible) return false;
 
+				// Hide asm.value from node palette - only created via drag-and-drop
+				if (key === 'asm.value') return false;
+
 				return true;
 			})
 		);
@@ -268,6 +271,7 @@
 
 		const type = event.dataTransfer?.getData('application/svelteflow');
 		const files = event.dataTransfer?.files;
+		const memoryData = event.dataTransfer?.getData('application/asm-memory');
 
 		// Check if the drop target is within a node (to avoid duplicate handling)
 		const target = event.target as HTMLElement;
@@ -275,6 +279,17 @@
 
 		// Get accurate positioning with zoom/pan
 		const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+
+		// Handle assembly memory drops - create asm.value node
+		if (memoryData && !isDropOnNode) {
+			try {
+				const data = JSON.parse(memoryData);
+				createNode('asm.value', position, data);
+				return;
+			} catch (error) {
+				console.warn('Failed to parse memory drag data:', error);
+			}
+		}
 
 		// Handle file drops - only if not dropping on an existing node
 		if (files && files.length > 0 && !isDropOnNode) {
@@ -378,7 +393,18 @@
 
 	function onDragOver(event: DragEvent) {
 		event.preventDefault();
-		event.dataTransfer!.dropEffect = 'move';
+
+		// Check what type of drag this is and set appropriate drop effect
+		const hasMemoryData = event.dataTransfer?.types.includes('application/asm-memory');
+		const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
+
+		if (hasMemoryData) {
+			event.dataTransfer!.dropEffect = 'copy';
+		} else if (hasSvelteFlowData) {
+			event.dataTransfer!.dropEffect = 'move';
+		} else {
+			event.dataTransfer!.dropEffect = 'move';
+		}
 	}
 
 	// Create a new node at the specified position

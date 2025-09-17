@@ -36,6 +36,8 @@ import ToneNode from '$lib/components/nodes/ToneNode.svelte';
 import ToggleButtonNode from '$lib/components/nodes/ToggleButtonNode.svelte';
 import LabelNode from '$lib/components/nodes/LabelNode.svelte';
 import LinkButton from '$lib/components/nodes/LinkButton.svelte';
+import { AssemblyMachine } from '$lib/assembly';
+import AssemblyValueViewer from '$lib/components/nodes/AssemblyValueViewer.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -75,7 +77,9 @@ export const nodeTypes = {
 	'dsp~': DSPNode,
 	'tone~': ToneNode,
 	label: LabelNode,
-	link: LinkButton
+	link: LinkButton,
+	asm: AssemblyMachine,
+	'asm.value': AssemblyValueViewer
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;

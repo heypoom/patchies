@@ -1,5 +1,5 @@
-use crate::sequencer::status::MachineStatus;
 use crate::register::Register::{FP, PC, SP};
+use crate::sequencer::status::MachineStatus;
 use crate::sequencer::Sequencer;
 use crate::{Event, Message};
 use serde::{Deserialize, Serialize};
@@ -16,15 +16,15 @@ pub struct Controller {
 
 #[derive(Serialize, Deserialize)]
 pub struct InspectedRegister {
-    pc: u16,
-    sp: u16,
-    fp: u16,
+    pub pc: u16,
+    pub sp: u16,
+    pub fp: u16,
 }
 
 /// Machine state returned by the inspection function.
 #[derive(Serialize, Deserialize)]
 pub struct InspectedMachine {
-    pub events: Vec<Event>,
+    pub effects: Vec<Event>,
     pub registers: InspectedRegister,
 
     pub inbox_size: usize,
@@ -37,13 +37,6 @@ type Return = Result<JsValue, JsValue>;
 fn returns<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> Return {
     match value {
         Ok(v) => Ok(to_value(&v)?),
-        Err(error) => Err(to_value(&error)?),
-    }
-}
-
-fn return_raw<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> Result<T, JsValue> {
-    match value {
-        Ok(v) => Ok(v),
         Err(error) => Err(to_value(&error)?),
     }
 }
@@ -78,12 +71,12 @@ impl Controller {
         returns(self.seq.load(id, source))
     }
 
-    pub fn ready(&mut self) {
-        self.seq.ready()
+    pub fn step_machine(&mut self, id: u16, count: u16) -> Return {
+        returns(self.seq.step_machine(id, count))
     }
 
-    pub fn step(&mut self, count: u16) -> Return {
-        returns(self.seq.step(count))
+    pub fn reset_machine(&mut self, id: u16) {
+        self.seq.reset_machine(id)
     }
 
     pub fn statuses(&mut self) -> Return {
@@ -95,18 +88,12 @@ impl Controller {
     }
 
     pub fn inspect_machine(&mut self, id: u16) -> Return {
-        let Some(status) = self.seq.statuses.get(&id) else {
-            return Ok(NULL);
-        };
-
-        let status = status.clone();
-
         let Some(m) = self.seq.get_mut(id) else {
             return Ok(NULL);
         };
 
         let state = InspectedMachine {
-            events: m.events.clone(),
+            effects: m.events.clone(),
             registers: InspectedRegister {
                 pc: m.reg.get(PC),
                 sp: m.reg.get(SP),
@@ -114,7 +101,7 @@ impl Controller {
             },
             inbox_size: m.inbox.len(),
             outbox_size: m.outbox.len(),
-            status,
+            status: m.status.clone(),
         };
 
         Ok(to_value(&state)?)
@@ -147,10 +134,6 @@ impl Controller {
     /// Allows the frontend to consume events from the machine.
     pub fn consume_machine_side_effects(&mut self, id: u16) -> Return {
         Ok(to_value(&self.seq.consume_side_effects(id))?)
-    }
-
-    pub fn set_await_watchdog(&mut self, state: bool) {
-        self.seq.await_watchdog = state;
     }
 
     pub fn clear(&mut self) {
@@ -199,29 +182,10 @@ impl Controller {
         Ok(true.into())
     }
 
-    /// Consume all outgoing messages from all machines
-    pub fn consume_messages(&mut self) -> Return {
-        let messages = self.seq.consume_messages();
+    /// Consume all outgoing messages from a machine
+    pub fn consume_messages(&mut self, machine_id: u16) -> Return {
+        let messages = self.seq.consume_messages(machine_id);
         Ok(to_value(&messages)?)
-    }
-
-    /// Route messages between machines (simplified version without canvas routing)
-    pub fn route_messages(&mut self) -> Return {
-        let messages = self.seq.consume_messages();
-
-        // Simple routing: broadcast all messages to all machines
-        // In a real implementation, you'd have proper routing logic
-        for message in messages {
-            for machine in &mut self.seq.machines {
-                if let Some(target_id) = machine.id {
-                    if target_id != message.sender.block {
-                        machine.inbox.push_back(message.clone());
-                    }
-                }
-            }
-        }
-
-        Ok(to_value(&())?)
     }
 }
 
