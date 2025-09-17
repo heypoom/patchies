@@ -2,6 +2,8 @@
 
 This is the source code for the virtual machine that powers the `asm` object in Patchies. This was part of the [visual assembly canvas](https://github.com/heypoom/visual-assembly-canvas) project before it was ported to Patchies.
 
+<img src="../../docs/images/patchies-vasm.png" alt="Patchies.app virtual stack machine assembly" width="700">
+
 It gives you a simple stack machine with these features:
 
 - 50 [stack machine assembly instructions](./src/op/mod.rs) you can use.
@@ -48,36 +50,6 @@ It gives you a simple stack machine with these features:
     - used for `asm.mem`
   - `{type: 'override', data: number[]}` when override operation is triggered.
 
-- Use `asm.mem` memory object to store memory cells.
-
-  - Responds to `read`, `write`, `load` and `store` instructions. These instructions can read and write from the virtual memory space.
-
-    ```asm
-    ; reads 5 values from outlet 0's first memory cell (0x2000)
-    push 0x2000
-    read 5
-
-    ; reads 3 values from outlet 0's 5th memory cell (0x2005)
-    push 0x2005
-    read 3
-
-    ; writes 1 value (0xCAAC) to outlet 0's first memory cell (0x2000)
-    push 0xCAAC
-    push 0x2000
-    write 1
-
-    ; writes 2 value (20, 40) to outlet 0's 5th memory cell (0x2005)
-    push 20
-    push 40
-    push 0x2005
-    write 2
-    ```
-
-  - Supports both hex and decimal display formats.
-  - Supports grid and text batch editing modes.
-  - Initial values can be set with the GUI
-  - Can set number of rows to display.
-
 - Shortcuts
   - `Shift + Enter` in the code editor auto-runs the program.
 - Messages:
@@ -93,5 +65,39 @@ It gives you a simple stack machine with these features:
   - `{type: 'setStepBy', value: <number>}`: set the number of instructions to step by on each (manual and auto) tick
   - `number` or `array of number`: send the number(s) to the program.
     - use the `receive` instruction to tell the machine to wait for one input.
+
+## Memory Cell Module (`asm.mem`)
+
+Use the `asm.mem` memory object to store external memory cells. This is helpful when the 65k internal memory space is not enough, or you want to store values that persist even when the `asm` object is reset, or you want to share memory cells between multiple `asm` objects.
+
+<img src="../../docs/images/patchies-vasm-memory.png" alt="Patchies.app memory cell" width="700">
+
+- It responds to `read`, `write`, `load` and `store` instructions from `asm`. These instructions can read and write from the virtual memory space:
+
+  ```asm
+  ; reads 5 values from outlet 0's first memory cell (0x2000)
+  push 0x2000
+  read 5
+
+  ; reads 3 values from outlet 0's 5th memory cell (0x2005)
+  push 0x2005
+  read 3
+
+  ; writes 1 value (0xCAAC) to outlet 0's first memory cell (0x2000)
+  push 0xCAAC
+  push 0x2000
+  write 1
+
+  ; writes 2 value (20, 40) to outlet 0's 5th memory cell (0x2005)
+  push 20
+  push 40
+  push 0x2005
+  write 2
+  ```
+
+- Supports both hex and decimal display formats.
+- Supports grid and text batch editing modes.
+- Initial values can be set with the GUI
+- Can set number of rows to display.
 
 The virtual machine is written in Rust and compiled to WebAssembly, and runs on the web worker to avoid blocking the main thread. It is still in very early-stage of porting and extremely unoptimized, so expect it to be quite slow. I will optimize it soon.

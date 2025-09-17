@@ -452,7 +452,9 @@ See the following example:
 
 <img src="./docs/images/patchies-vasm.png" alt="Patchies.app virtual stack machine assembly" width="700">
 
-See the [documentation for assembly module](./modules/vasm/README.md) to see the full instruction sets and syntax, what the `asm` object can do, and how to use it.
+The stack machine module is quite extensive, with over 50 assembly instructions and a rich set of features. There are lots of quality-of-life tools unique to Patchies like color-coded memory region visualizer, line-by-line instruction highlighting, and external memory cells (`asm.mem`).
+
+See the [documentation for assembly module](./modules/vasm/README.md) to see the full instruction sets and syntax, what the `asm` object and its friends can do, and how to use it.
 
 Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to get a feel of how it works.
 
