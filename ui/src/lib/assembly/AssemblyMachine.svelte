@@ -59,7 +59,7 @@
 	const setCodeAndUpdate = (newCode: string) => {
 		updateNodeData(nodeId, { code: newCode });
 
-		setTimeout(() => reloadProgram());
+		setTimeout(() => reloadProgram(true));
 	};
 
 	const toggleMemoryViewer = () =>
@@ -72,7 +72,7 @@
 				.with({ type: 'set', code: P.string }, ({ code }) => {
 					setCodeAndUpdate(code);
 				})
-				.with({ type: 'run' }, () => reloadProgram())
+				.with({ type: 'run' }, () => reloadProgram(true))
 				.with({ type: 'play' }, () => playMachine())
 				.with({ type: 'pause' }, () => pauseMachine())
 				.with({ type: 'toggle' }, () => togglePlayPause())
@@ -212,7 +212,7 @@
 		pushMachineConfig();
 		setupPolling();
 		measureContainerWidth();
-		reloadProgram();
+		reloadProgram(false);
 	});
 
 	async function pushMachineConfig() {
@@ -257,7 +257,7 @@
 		messageContext?.destroy();
 	});
 
-	async function reloadProgram() {
+	async function reloadProgram(shouldStep: boolean) {
 		logs = [];
 
 		try {
@@ -268,7 +268,10 @@
 			}
 
 			await assemblySystem.loadProgram(machineId, data.code);
-			await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+
+			if (shouldStep) {
+				await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+			}
 
 			await syncMachineState();
 
@@ -351,7 +354,6 @@
 		// Register this highlighter with the AssemblySystem
 		assemblySystem.registerHighlighter(machineId, callback);
 	}
-
 </script>
 
 <div class="group relative flex gap-2">
@@ -529,7 +531,6 @@
 				/>
 				<div class="mt-1 text-xs text-zinc-500">Cycles to execute per step</div>
 			</div>
-
 		</div>
 	</div>
 {/snippet}
