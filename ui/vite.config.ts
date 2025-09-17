@@ -45,14 +45,19 @@ export default defineConfig({
 			'@codemirror/state',
 			'@codemirror/view',
 			'@codemirror/lang-sql',
-			'@lezer/highlight'
+			'@lezer/highlight',
+			'machine'
 		]
 	},
 	define: {
 		global: 'globalThis'
 	},
 	worker: {
-		format: 'es'
+		format: 'es',
+		plugins: () => [
+			wasm(),
+			topLevelAwait()
+		]
 	},
 	resolve: {
 		alias: {
