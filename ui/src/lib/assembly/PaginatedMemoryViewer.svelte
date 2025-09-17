@@ -2,6 +2,8 @@
 	import Icon from '@iconify/svelte';
 	import MemoryViewer from './MemoryViewer.svelte';
 	import { memoryActions, getMemoryConfig, getMemoryPage, getMemoryRange } from './memoryStore';
+	import { memoryRegionStore } from './memoryRegionStore';
+	import { AssemblySystem } from './AssemblySystem';
 
 	interface Props {
 		machineId: number;
@@ -27,6 +29,9 @@
 	const memStart = $derived($memoryRange.start);
 	const memEnd = $derived($memoryRange.end);
 	const memory = $derived($memoryPage);
+
+	// Get memory regions for this machine (reactive)
+	const regions = $derived($memoryRegionStore[machineId] || []);
 
 	function show(n: number): string {
 		return `${hex ? '0x' : ''}${n.toString(base).padStart(pad, '0').toUpperCase()}`;
@@ -70,12 +75,15 @@
 	function onDrag(transfer: DataTransfer, start: number, end: number) {
 		// Set up drag data for creating asm.value nodes
 		const selectionSize = end - start + 1;
+		// Randomize color from palette when dragging
+		const randomColor = Math.floor(Math.random() * 9); // 9 colors in regionPalettes
 		const dragData = {
 			machineId,
 			address: memStart + start,
 			size: selectionSize, // Use actual selection size
 			format: 'hex',
-			signed: false
+			signed: false,
+			color: randomColor
 		};
 
 		transfer.effectAllowed = 'copy';
@@ -103,7 +111,7 @@
 			onHover={(addr) => (highlightedAddr = addr)}
 			{onConfirm}
 			{onDrag}
-			regions={[]}
+			{regions}
 		/>
 
 		<div class="mt-1 flex items-center justify-between px-2 text-xs">

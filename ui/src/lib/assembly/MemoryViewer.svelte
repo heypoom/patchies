@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-
-	interface MemoryRegion {
-		id: number;
-		offset: number;
-		size: number;
-		color?: string;
-	}
+	import { getRegionClassName } from './regionColors';
+	import type { MemoryRegion } from './memoryRegionStore';
 
 	interface ViewerConfig {
 		hex?: boolean;
@@ -87,10 +82,9 @@
 		}
 	}
 
-	function getRegionClassName(region: MemoryRegion) {
-		return region.color
-			? `bg-${region.color}-500/20 text-${region.color}-400`
-			: 'bg-blue-500/20 text-blue-400';
+	function getRegionClassNames(region: MemoryRegion) {
+		const palette = getRegionClassName(region.color ?? region.id);
+		return palette.highlight;
 	}
 
 	function handleMouseDown(e: MouseEvent, i: number) {
@@ -203,16 +197,18 @@
 					onmousedown={(e) => handleMouseDown(e, i)}
 					onmouseover={() => handleMouseOver(i)}
 					onmouseup={handleMouseUp}
-					class="cursor-pointer select-none bg-transparent px-1 text-red-400 {highlighted
-						? getRegionClassName(highlighted)
-						: ''}"
-					class:text-zinc-600={!selected && !highlighted && u === 0}
-					class:text-yellow-500={!canDragOut && selected}
+					class="cursor-pointer select-none bg-transparent px-1 {selected
+						? (!canDragOut ? 'text-yellow-500' : '')
+						: highlighted
+							? getRegionClassNames(highlighted)
+							: u === 0
+								? 'text-zinc-600'
+								: 'text-red-400'}"
 					class:hover:text-yellow-600={!canDragOut && selected}
-					class:hover:text-red-300={!canDragOut && !selected}
+					class:hover:text-yellow-300={!canDragOut && !selected && !highlighted}
 					class:bg-red-400={canDragOut && selected}
-					class:text-red-500={canDragOut && selected}
-					class:hover:text-red-600={canDragOut && selected}
+					class:text-red-500={canDragOut && selected && !highlighted}
+					class:hover:text-red-600={canDragOut && selected && !highlighted}
 					class:text-center={full}
 					class:opacity-0={canDragOut && !selected}
 					class:bg-transparent={canDragOut && !selected}

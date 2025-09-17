@@ -350,9 +350,8 @@
 		highlightLineCallback = callback;
 		// Register this highlighter with the AssemblySystem
 		assemblySystem.registerHighlighter(machineId, callback);
-
-		console.log('highlighter registered!');
 	}
+
 </script>
 
 <div class="group relative flex gap-2">
@@ -530,6 +529,7 @@
 				/>
 				<div class="mt-1 text-xs text-zinc-500">Cycles to execute per step</div>
 			</div>
+
 		</div>
 	</div>
 {/snippet}

@@ -6,6 +6,8 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AssemblySystem } from '$lib/assembly/AssemblySystem';
+	import { regionPalettes, getRegionClassName } from '$lib/assembly/regionColors';
+	import { memoryRegionStore } from '$lib/assembly/memoryRegionStore';
 	import Icon from '@iconify/svelte';
 
 	let {
@@ -20,6 +22,7 @@
 			size?: number;
 			format?: 'hex' | 'decimal' | 'binary';
 			signed?: boolean;
+			color?: number;
 		};
 		selected?: boolean;
 	} = $props();
@@ -38,6 +41,7 @@
 	const size = $derived(data.size ?? 8); // Number of bytes to display
 	const format = $derived(data.format ?? 'hex');
 	const signed = $derived(data.signed ?? false);
+	const color = $derived(data.color ?? Math.floor(Math.random() * regionPalettes.length));
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		match(message)
@@ -95,6 +99,21 @@
 			.exhaustive();
 	}
 
+	async function setMemoryWithColor(useColor?: number) {
+		try {
+			if (!(await assemblySystem.machineExists(machineId))) {
+				errorMessage = `Machine ${machineId} does not exist`;
+				return;
+			}
+
+			// Set memory value with specified color or current color
+			const colorToUse = useColor !== undefined ? useColor : color;
+			await assemblySystem.setMemoryValue(machineId, address, values, colorToUse);
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
+		}
+	}
+
 	const columns = $derived(Math.min(values.length, 8));
 
 	onMount(() => {
@@ -114,14 +133,43 @@
 
 	onDestroy(() => {
 		messageContext?.destroy();
+
+		// Clean up memory regions when this viewer is destroyed
+		if (values.length > 0) {
+			// Find and remove the memory region for this address/size combination
+			const existingRegions = assemblySystem.getMemoryRegions(machineId);
+			const regionToRemove = existingRegions.find((r) => r.offset === address && r.size === size);
+
+			if (regionToRemove) {
+				memoryRegionStore.removeRegion(machineId, regionToRemove.id);
+			}
+		}
 	});
+
+	// Auto-refresh when configuration changes
+	$effect(() => {
+		// React to changes in machineId, address, or size
+		if (machineId !== undefined && address !== undefined && size !== undefined) {
+			updateValue();
+		}
+	});
+
+	// Auto-update memory region when color changes
+	$effect(() => {
+		// When color changes, update any existing memory region
+		if (values.length > 0) {
+			setMemoryWithColor();
+		}
+	});
+
+	const palette = $derived(getRegionClassName(color));
 </script>
 
 <div class="relative flex gap-x-3">
 	<div class="group relative">
 		<!-- Floating header -->
 		<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-			<div class="font-mono text-xs text-zinc-400 opacity-0 group-hover:opacity-100">asm.value</div>
+			<div></div>
 
 			<button
 				class="z-4 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
@@ -144,12 +192,11 @@
 					class={`!-top-2 ${selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
 				/>
 
-				<!-- Main display -->
 				<div
 					class={[
 						'relative flex min-w-[120px] flex-col gap-1 rounded-lg border bg-zinc-900 px-2 py-2 font-mono',
 						selected
-							? 'border-zinc-400 hover:border-zinc-300'
+							? palette.viewer?.split(' ')[0] || 'border-zinc-400'
 							: 'border-zinc-800 hover:border-zinc-700',
 						errorMessage ? 'border-red-500' : ''
 					]}
@@ -165,7 +212,13 @@
 							style="grid-template-columns: repeat({columns}, minmax(0, 1fr));"
 						>
 							{#each values as val, i}
-								<div class={['px-1 text-center', val === 0 ? 'text-zinc-600' : 'text-green-400']}>
+								{@const palette = getRegionClassName(color)}
+								<div
+									class={[
+										'px-1 text-center',
+										val === 0 ? 'text-zinc-600' : palette.viewer?.split(' ')[1] || 'text-green-400'
+									]}
+								>
 									{formatValue(val)}
 								</div>
 							{/each}
@@ -281,13 +334,21 @@
 				/>
 			</div>
 
-			<div class="pt-2">
-				<button
-					onclick={updateValue}
-					class="w-full rounded bg-green-700 px-3 py-1 text-xs text-white hover:bg-green-600"
-				>
-					Refresh Value
-				</button>
+			<div>
+				<label class="mb-2 block text-xs font-medium text-zinc-300">Memory Color</label>
+				<div class="flex flex-wrap gap-1">
+					{#each regionPalettes as palette, i}
+						<button
+							onclick={() => updateConfig({ color: i })}
+							class={[
+								'h-4 w-4 rounded border transition-all',
+								color === i ? 'border-2 border-white' : 'border-zinc-600 hover:border-zinc-400',
+								palette.bg
+							]}
+							title={palette.name}
+						></button>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</div>

@@ -7,6 +7,7 @@ import type {
 	MachineConfig
 } from '../../workers/assembly/assemblyWorker';
 import AssemblyWorker from '../../workers/assembly/assemblyWorker?worker';
+import { memoryRegionStore, type MemoryRegion } from './memoryRegionStore';
 
 /**
  * AssemblySystem provides a clean interface to the VASM (Visual Assembly)
@@ -25,6 +26,7 @@ export class AssemblySystem {
 	public eventBus: EventTarget | null = null;
 	public highlighters = new Map<number, (lineNo: number) => void>();
 	private highlightMaps = new Map<number, Map<number, number>>();
+	private machineColors = new Map<number, number>();
 
 	private constructor() {
 		this.worker = new AssemblyWorker();
@@ -97,6 +99,10 @@ export class AssemblySystem {
 		await this.send('removeMachine', { machineId: id });
 		// Clean up highlight mapping
 		this.highlightMaps.delete(id);
+		// Clean up memory regions
+		this.clearMemoryRegions(id);
+		// Clean up machine color
+		this.machineColors.delete(id);
 	}
 
 	/**
@@ -195,6 +201,76 @@ export class AssemblySystem {
 	}
 
 	/**
+	 * Set a memory value with color region tracking
+	 */
+	async setMemoryValue(
+		machineId: number,
+		address: number,
+		value: number | number[],
+		color?: number
+	): Promise<void> {
+		// Set the memory value (this would need to be implemented in the worker)
+		const values = Array.isArray(value) ? value : [value];
+
+		// For now, we'll track the region in our store
+		if (color !== undefined) {
+			// Check if there's already a region at this exact address and size
+			const existingRegions = memoryRegionStore.getRegionsForMachine(machineId);
+			const existingRegion = existingRegions.find(r => r.offset === address && r.size === values.length);
+
+			if (existingRegion) {
+				// Update existing region with new color
+				memoryRegionStore.setRegion(machineId, {
+					id: existingRegion.id,
+					offset: address,
+					size: values.length,
+					color
+				});
+			} else {
+				// Create new region
+				const regionId = Date.now(); // Simple ID generation
+				memoryRegionStore.setRegion(machineId, {
+					id: regionId,
+					offset: address,
+					size: values.length,
+					color
+				});
+			}
+		}
+
+		// TODO: Implement actual memory setting in the worker
+		console.log(`Setting memory at ${address} with values:`, values, 'color:', color);
+	}
+
+	/**
+	 * Get memory regions for a machine
+	 */
+	getMemoryRegions(machineId: number): MemoryRegion[] {
+		return memoryRegionStore.getRegionsForMachine(machineId);
+	}
+
+	/**
+	 * Clear memory regions for a machine
+	 */
+	clearMemoryRegions(machineId: number): void {
+		memoryRegionStore.clearMachine(machineId);
+	}
+
+	/**
+	 * Set the default color for a machine
+	 */
+	setMachineColor(machineId: number, color: number): void {
+		this.machineColors.set(machineId, color);
+	}
+
+	/**
+	 * Get the default color for a machine
+	 */
+	getMachineColor(machineId: number): number {
+		return this.machineColors.get(machineId) ?? 0;
+	}
+
+	/**
 	 * Register a line highlighter callback for a machine
 	 */
 	registerHighlighter(machineId: number, callback: (lineNo: number) => void): void {
@@ -277,6 +353,7 @@ export class AssemblySystem {
 		this.pendingRequests.clear();
 		this.highlighters.clear();
 		this.highlightMaps.clear();
+		this.machineColors.clear();
 		this.initialized = false;
 	}
 }
@@ -295,6 +372,22 @@ export function disposeAssemblySystem(): void {
 	const instance = AssemblySystem.getInstance();
 	instance.dispose();
 	AssemblySystem.instance = null;
+}
+
+/**
+ * Global API for assembly code to set colored memory values
+ * This function can be called during assembly execution
+ */
+export function asmValue(
+	machineId: number,
+	address: number,
+	value: number | number[],
+	color?: number
+): void {
+	const system = AssemblySystem.getInstance();
+	// Use machine's default color if no color is specified
+	const finalColor = color !== undefined ? color : system.getMachineColor(machineId);
+	system.setMemoryValue(machineId, address, value, finalColor);
 }
 
 export type { MachineStatus, Effect, Message, InspectedMachine, InspectedRegister, MachineConfig };
