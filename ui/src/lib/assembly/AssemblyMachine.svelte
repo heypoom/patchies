@@ -404,7 +404,7 @@
 				>
 					<Icon
 						icon="lucide:step-forward"
-						class="h-4 w-4 text-zinc-300 group-focus:text-green-300"
+						class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
 					/>
 				</button>
 
@@ -415,7 +415,7 @@
 				>
 					<Icon
 						icon={machineConfig.isRunning ? 'lucide:pause' : 'lucide:play'}
-						class="h-4 w-4 text-zinc-300 group-focus:text-green-300"
+						class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
 					/>
 				</button>
 			</div>
