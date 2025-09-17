@@ -56,7 +56,12 @@ export class ChuckManager {
 		if (!chuck) return;
 
 		try {
-			await chuck.replaceCode(code);
+			if (this.shreds.length === 0) {
+				// if no shreds, just run the code.
+				await this.runCode(code);
+			} else {
+				await chuck.replaceCode(code);
+			}
 
 			// Update the most recent shred's code
 			if (this.shreds.length > 0) {

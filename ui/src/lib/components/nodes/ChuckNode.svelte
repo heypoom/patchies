@@ -67,7 +67,7 @@
 			{
 				key: 'Cmd-\\',
 				run: () => {
-					handleReplace();
+					handleRun();
 					return true;
 				}
 			}
@@ -133,24 +133,24 @@
 			<!-- Floating toolbar -->
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
-					<!-- Run button -->
-					<button
-						onclick={handleRun}
-						class="rounded p-1 hover:bg-zinc-700"
-						title="Run (Cmd+Enter)"
-						disabled={!data.expr.trim()}
-					>
-						<Icon icon="lucide:play" class="h-4 w-4" />
-					</button>
-
 					<!-- Replace button -->
 					<button
 						onclick={handleReplace}
 						class={['rounded p-1 hover:bg-zinc-700', isReplaceDisabled && 'opacity-50']}
-						title="Replace (Cmd+\)"
+						title="Replace (Cmd+Enter)"
 						disabled={isReplaceDisabled}
 					>
 						<Icon icon="lucide:replace" class="h-4 w-4" />
+					</button>
+
+					<!-- Add shred button -->
+					<button
+						onclick={handleRun}
+						class="rounded p-1 hover:bg-zinc-700"
+						title="Add Shred (Cmd+\)"
+						disabled={!data.expr.trim()}
+					>
+						<Icon icon="lucide:circle-plus" class="h-4 w-4" />
 					</button>
 
 					<!-- Remove button -->
@@ -188,7 +188,7 @@
 					onExpressionChange={handleExpressionChange}
 					extraExtensions={chuckKeymaps}
 					exitOnRun={false}
-					onRun={handleRun}
+					onRun={handleReplace}
 				/>
 
 				{@render chuckOutlets()}
