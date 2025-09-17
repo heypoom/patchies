@@ -519,9 +519,10 @@ Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to
 - Great for algorithmic composition and sound design.
 - Runs in the browser via [WebChucK](https://chuck.cs.princeton.edu/webchuck/).
 - Actions
-  - Replace Shred `Ctrl/Cmd + \`: replaces the most recent shred
-  - Add Shred `Ctrl/Cmd + Enter`: adds a new shred
-  - Remove Shred `Ctrl/Cmd + Backspace`: removes the most recent shred
+  - Replace Shred `Ctrl/Cmd + Enter`: replaces the most recent shred.
+    - If there is no previous shred, it creates a new shred.
+  - Add Shred `Ctrl/Cmd + \`: adds a new shred to the shreds list.
+  - Remove Shred `Ctrl/Cmd + Backspace`: removes the most recent shred.
   - Click on the gear button to see list of running shreds. Remove any shred by clicking on the "x" button.
 
 ### `object`: textual object system
