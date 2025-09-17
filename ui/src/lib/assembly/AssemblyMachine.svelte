@@ -67,6 +67,7 @@
 	const handleMessage: MessageCallbackFn = async (message, meta) => {
 		try {
 			await match(message)
+				.with({ type: 'bang' }, handleBangSignal)
 				.with({ type: 'set', code: P.string }, ({ code }) => {
 					setCodeAndUpdate(code);
 				})
@@ -82,7 +83,6 @@
 				.with({ type: 'setStepBy', value: P.number }, ({ value }) =>
 					updateMachineConfig({ stepBy: value })
 				)
-				.with({ type: 'bang' }, handleBangSignal)
 				.with(P.union(P.number, P.array(P.number)), async (m) => {
 					if (meta.inlet === undefined) return;
 
@@ -106,7 +106,9 @@
 	// When a 'bang' message is received, load and step the machine.
 	async function handleBangSignal() {
 		try {
-			if (!(await assemblySystem.machineExists(machineId))) {
+			const hasMachine = await assemblySystem.machineExists(machineId);
+
+			if (!hasMachine) {
 				await assemblySystem.createMachineWithId(machineId);
 			}
 

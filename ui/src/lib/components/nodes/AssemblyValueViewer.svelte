@@ -60,7 +60,7 @@
 
 	function updateConfig(updates: Partial<typeof data>) {
 		updateNodeData(nodeId, { ...data, ...updates });
-		// Update value after config change
+
 		setTimeout(updateValue, 10);
 	}
 
