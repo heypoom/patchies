@@ -87,18 +87,10 @@
 				</div>
 
 				<!-- Inbox -->
-				{#if state.inbox_size > 0}
-					<div class="text-orange-400" class:text-red-400={backpressuring}>
-						<span class="text-[10px] text-zinc-400">IB</span>
-						<span class="ml-1">{state.inbox_size}</span>
-					</div>
-				{/if}
-
-				<!-- Outbox -->
-				{#if state.outbox_size > 0}
-					<div class="text-blue-400">
-						<span class="text-[10px] text-zinc-400">OB</span>
-						<span class="ml-1">{state.outbox_size}</span>
+				{#if state.inbox_size > 0 || state.outbox_size > 0}
+					<div class="text-blue-400" class:text-red-400={backpressuring}>
+						<span class="text-[10px] text-zinc-400">IO</span>
+						<span class="ml-1">{state.inbox_size ?? 0}/{state.outbox_size ?? 0}</span>
 					</div>
 				{/if}
 			</div>

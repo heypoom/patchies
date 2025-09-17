@@ -79,7 +79,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			code: DEFAULT_ASSEMBLY_CODE,
 			inletCount: 3,
 			outletCount: 3,
-			showMemoryViewer: false
+			showMemoryViewer: false,
+			machineConfig: {
+				isRunning: false,
+				delayMs: 100,
+				stepBy: 1
+			}
 		}))
 		.with('asm.value', () => ({
 			machineId: 0,

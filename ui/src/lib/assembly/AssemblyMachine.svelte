@@ -9,7 +9,6 @@
 	import AssemblyEditor from './AssemblyEditor.svelte';
 	import MachineStateViewer from './MachineStateViewer.svelte';
 	import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
-	import { Port } from 'machine';
 	import { memoryActions } from './memoryStore';
 	import Icon from '@iconify/svelte';
 	import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
@@ -26,6 +25,7 @@
 			inletCount?: number;
 			outletCount?: number;
 			showMemoryViewer?: boolean;
+			machineConfig?: MachineConfig;
 		};
 		selected?: boolean;
 	} = $props();
@@ -36,7 +36,6 @@
 	let machineState = $state<InspectedMachine | null>(null);
 	let logs = $state<string[]>([]);
 	let dragEnabled = $state(true);
-	let machineConfig = $state<MachineConfig>({ isRunning: false, delayMs: 100, stepBy: 1 });
 	let showSettings = $state(false);
 	let mainContainer: HTMLDivElement;
 
@@ -44,6 +43,11 @@
 
 	let inletCount = $derived(data.inletCount ?? 3);
 	let outletCount = $derived(data.outletCount ?? 3);
+
+	// Use node data as single source of truth for machine config
+	const machineConfig = $derived(
+		data.machineConfig || { isRunning: false, delayMs: 100, stepBy: 1 }
+	);
 
 	let previewContainerWidth = $state(0);
 	let updateInterval: NodeJS.Timeout | number;
@@ -145,20 +149,23 @@
 		}
 	}
 
+	async function pullMachineConfig() {
+		const nextConfig = await assemblySystem.getMachineConfig(machineId);
+		updateNodeData(nodeId, { machineConfig: nextConfig });
+	}
+
 	async function pauseMachine() {
 		try {
 			const state = await assemblySystem.inspectMachine(machineId);
 
 			await assemblySystem.pauseMachine(machineId);
-			machineConfig = { ...machineConfig, isRunning: false };
 
 			// If machine is stuck in awaiting state, pausing should reset it.
 			if (state?.status === 'Awaiting') {
 				resetMachine();
 			}
 
-			const latestConfig = await assemblySystem.getMachineConfig(machineId);
-			machineConfig = latestConfig;
+			await pullMachineConfig();
 		} catch (error) {
 			displayError(error);
 		}
@@ -180,10 +187,7 @@
 
 			await assemblySystem.playMachine(machineId);
 
-			machineConfig = { ...machineConfig, isRunning: true };
-
-			const latestConfig = await assemblySystem.getMachineConfig(machineId);
-			machineConfig = latestConfig;
+			await pullMachineConfig();
 		} catch (error) {
 			displayError(error);
 		}
@@ -197,9 +201,11 @@
 		}
 	}
 
-	function updateConfig(updates: Partial<MachineConfig>) {
-		assemblySystem.setMachineConfig(machineId, updates);
-		machineConfig = { ...machineConfig, ...updates };
+	function updateConfig(nextConfig: Partial<MachineConfig>) {
+		const mergedConfig = { ...machineConfig, ...nextConfig };
+
+		assemblySystem.setMachineConfig(machineId, mergedConfig);
+		updateNodeData(nodeId, { machineConfig: mergedConfig });
 	}
 
 	onMount(() => {
@@ -209,34 +215,32 @@
 		reloadProgram();
 		measureContainerWidth();
 
-		// Load machine config async
+		// Sync machine config with worker
 		(async () => {
 			try {
-				machineConfig = await assemblySystem.getMachineConfig(machineId);
+				// If we have persisted config, send it to worker
+				if (data.machineConfig) {
+					await assemblySystem.setMachineConfig(machineId, data.machineConfig);
+				}
+
+				pullMachineConfig();
 			} catch (error) {
 				// Use default config if unable to load
 			}
 		})();
 
 		updateInterval = setInterval(async () => {
-			await syncMachineState();
-
-			// Also sync machine config to keep isRunning state updated
 			try {
-				const latestConfig = await assemblySystem.getMachineConfig(machineId);
-
-				if (latestConfig.isRunning !== machineConfig.isRunning) {
-					machineConfig = latestConfig;
-				}
-
 				// Refresh memory when machine is running
 				if (machineConfig.isRunning) {
+					await syncMachineState();
+
 					memoryActions.refreshMemory(machineId);
 				}
 			} catch (error) {
 				// Ignore config sync errors
 			}
-		}, 100);
+		}, 300);
 	});
 
 	onDestroy(async () => {
