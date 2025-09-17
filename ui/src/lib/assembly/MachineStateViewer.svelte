@@ -54,7 +54,7 @@
 
 	<!-- Effects/Logs Display -->
 	{#if logs.length > 0}
-		<div class="rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-400">
+		<div class="mb-2 mt-1 rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-400">
 			{#each logs as log}
 				<div>&gt; {log}</div>
 			{/each}
@@ -93,24 +93,6 @@
 					</div>
 				{/if}
 			</div>
-
-			<!-- Effects -->
-			{#if state.effects && state.effects.length > 0}
-				<div class="mt-2 space-y-1">
-					<div class="text-xs text-zinc-400">Effects:</div>
-					{#each state.effects as effect}
-						<div class="pl-2 text-xs text-yellow-400">
-							{#if effect.type === 'Print'}
-								📝 {effect.text}
-							{:else if effect.type === 'Sleep'}
-								😴 Sleep {effect.ms}ms
-							{:else}
-								⚡ {JSON.stringify(effect)}
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{/if}
 		</div>
 	{/if}
 </div>

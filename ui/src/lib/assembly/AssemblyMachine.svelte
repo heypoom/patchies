@@ -104,6 +104,8 @@
 	};
 
 	async function resetMachine() {
+		logs = [];
+
 		try {
 			await assemblySystem.resetMachine(machineId);
 			await assemblySystem.loadProgram(machineId, data.code);
@@ -252,6 +254,8 @@
 	});
 
 	async function reloadProgram() {
+		logs = [];
+
 		try {
 			messageContext.clearTimers();
 
@@ -288,9 +292,13 @@
 
 			const effects = await assemblySystem.consumeMachineEffects(machineId);
 
-			logs = effects
+			const printEffects = effects
 				.filter((effect: Effect) => effect.type === 'Print')
 				.map((effect: Effect) => (effect.type === 'Print' ? effect.text : ''));
+
+			if (printEffects.length > 0) {
+				logs = [...logs, ...printEffects].slice(-10);
+			}
 
 			const messages = await assemblySystem.consumeMessages(machineId);
 
