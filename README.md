@@ -444,6 +444,16 @@ See the following example:
 - Great for data processing, scientific computing, and algorithmic composition.
 - Full Python standard library available.
 
+### `asm`: virtual stack machine assembly interpreter
+
+`asm` lets you write a simple flavor of stack machine assembly to construct concise programs. This was heavily inspired by Zachtronic games like [TIS-100](https://en.wikipedia.org/wiki/TIS-100) and [Shenzhen I/O](https://en.wikipedia.org/wiki/Shenzhen_I/O), where you write small assembly programs to interact with the world and solve problems:
+
+<img src="./docs/images/patchies-vasm.png" alt="Patchies.app virtual stack machine assembly" width="700">
+
+See the [documentation for assembly module](./modules/vasm/README.md) to see the full instruction sets and syntax, what the `asm` object can do, and how to use it.
+
+Try out my [example assembly patch](https://patchies.app/?id=kfnhtteb3ht0531) to get a feel of how it works.
+
 ### Interface & Control Objects
 
 ### `button`: a simple button
