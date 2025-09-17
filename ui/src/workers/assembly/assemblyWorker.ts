@@ -191,6 +191,8 @@ class AssemblyWorkerController {
 			try {
 				this.stepMachine(machineId, config.stepBy);
 			} catch (error) {
+				console.log(`error during auto step of machine ${machineId}:`, error);
+
 				// If stepping fails, stop the auto execution
 				this.pauseMachine(machineId);
 			}
