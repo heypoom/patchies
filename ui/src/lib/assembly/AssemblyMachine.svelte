@@ -336,6 +336,10 @@
 					messageContext.send(payload, { to: message.sender.port });
 				}
 			});
+
+			if (machineState?.status === 'Halted') {
+				await updateMachineConfig({ isRunning: false });
+			}
 		} catch (error) {
 			// Silently handle state update errors to avoid spam
 		}
