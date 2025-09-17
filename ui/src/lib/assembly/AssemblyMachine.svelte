@@ -296,11 +296,9 @@
 			machineState = await assemblySystem.inspectMachine(machineId);
 
 			// Trigger line highlighting if program counter changed
-			if (machineState && machineState.registers.pc !== previousPc && highlightLineCallback) {
-				// Convert PC to line number (assuming 1-based line numbers)
-				// PC represents the instruction index, so we add 1 for line numbering
-				const lineNo = machineState.registers.pc + 1;
-				highlightLineCallback(lineNo);
+			if (machineState && machineState.registers.pc !== previousPc) {
+				// Use AssemblySystem to properly map PC to source line
+				assemblySystem.highlightLineFromPC(machineId, machineState.registers.pc);
 			}
 
 			const effects = await assemblySystem.consumeMachineEffects(machineId);
@@ -352,6 +350,8 @@
 		highlightLineCallback = callback;
 		// Register this highlighter with the AssemblySystem
 		assemblySystem.registerHighlighter(machineId, callback);
+
+		console.log('highlighter registered!');
 	}
 </script>
 

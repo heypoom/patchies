@@ -26,7 +26,7 @@
 	}: Props = $props();
 
 	let editorContainer = $state<HTMLDivElement>();
-	let editorView: EditorView | null = null;
+	let editorView = $state<EditorView | null>(null);
 	let currentAssemblyExtension: Extension | null = null;
 
 	// Line highlighter functionality
@@ -59,7 +59,14 @@
 		if (!editorView) return;
 
 		try {
-			const pos = editorView.state.doc.line(lineNo).from;
+			// Check if the line number is valid before attempting to highlight
+			const doc = editorView.state.doc;
+			if (lineNo < 1 || lineNo > doc.lines) {
+				console.warn(`Line number ${lineNo} is out of range (1-${doc.lines})`);
+				return;
+			}
+
+			const pos = doc.line(lineNo).from;
 			editorView.dispatch({ effects: addLineHighlight.of(pos) });
 		} catch (error) {
 			console.warn('Failed to highlight line:', lineNo, error);
@@ -149,7 +156,7 @@
 		createOrUpdateEditor();
 	});
 
-	// Expose the highlight function to parent component
+	// Expose the highlight function to parent component when editor is ready
 	$effect(() => {
 		if (highlightLine && editorView) {
 			highlightLine(highlightLineNumber);

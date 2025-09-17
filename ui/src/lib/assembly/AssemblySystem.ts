@@ -24,6 +24,7 @@ export class AssemblySystem {
 	>();
 	public eventBus: EventTarget | null = null;
 	public highlighters = new Map<number, (lineNo: number) => void>();
+	private highlightMaps = new Map<number, Map<number, number>>();
 
 	private constructor() {
 		this.worker = new AssemblyWorker();
@@ -94,6 +95,8 @@ export class AssemblySystem {
 	 */
 	async removeMachine(id: number): Promise<void> {
 		await this.send('removeMachine', { machineId: id });
+		// Clean up highlight mapping
+		this.highlightMaps.delete(id);
 	}
 
 	/**
@@ -101,6 +104,8 @@ export class AssemblySystem {
 	 */
 	async loadProgram(machineId: number, source: string): Promise<void> {
 		await this.send('loadProgram', { machineId, source });
+		// Create highlight mapping for this machine's source code
+		this.highlightMaps.set(machineId, this.createHighlightMap(source));
 	}
 
 	/**
@@ -204,6 +209,55 @@ export class AssemblySystem {
 	}
 
 	/**
+	 * Create a mapping from program counter to source line numbers
+	 */
+	private createHighlightMap(source: string): Map<number, number> {
+		const lines = source.split('\n');
+		const mapping = new Map<number, number>();
+
+		let pc = 0;
+		let linePos = 0;
+
+		for (const line of lines) {
+			const [opcode, ...args] = line.trim().split(' ');
+			linePos++;
+
+			// Skip comments, labels and directives
+			if (line.length === 0) continue;
+			if (opcode.endsWith(':')) continue;
+			if (opcode.startsWith('//')) continue;
+			if (opcode.startsWith(';')) continue;
+			if (opcode.startsWith('.')) continue;
+
+			pc++;
+
+			for (const arg of args) {
+				if (arg.trim().length === 0) continue;
+				if (arg.startsWith(';')) break;
+
+				pc++;
+			}
+
+			mapping.set(pc, linePos - 1);
+		}
+
+		return mapping;
+	}
+
+	/**
+	 * Trigger line highlighting for a specific machine using PC
+	 */
+	highlightLineFromPC(machineId: number, pc: number): void {
+		const highlighter = this.highlighters.get(machineId);
+		const mapping = this.highlightMaps.get(machineId);
+
+		if (highlighter && mapping) {
+			const lineNo = (mapping.get(pc) ?? 0) + 1;
+			highlighter(lineNo);
+		}
+	}
+
+	/**
 	 * Trigger line highlighting for a specific machine
 	 */
 	highlightLine(machineId: number, lineNo: number): void {
@@ -222,6 +276,7 @@ export class AssemblySystem {
 		}
 		this.pendingRequests.clear();
 		this.highlighters.clear();
+		this.highlightMaps.clear();
 		this.initialized = false;
 	}
 }
