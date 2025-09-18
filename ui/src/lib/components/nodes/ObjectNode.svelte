@@ -468,6 +468,11 @@
 
 				return true;
 			})
+			.with('expr~', () => {
+				changeNode('expr~', { expr: expr.replace(name, '').trim() });
+
+				return true;
+			})
 			.with(P.union('netsend', 'netrecv'), (key) => {
 				changeNode(key, { channel: expr.replace(name, '').trim() });
 
