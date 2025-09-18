@@ -612,6 +612,8 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - You can then attach a `slider 1 880` object to control the frequency.
 - **WARNING**: Please use the `compressor~` object with appropriate limiter-esque setting after `expr~` to avoid loud audio spikes that can and will damage your hearing and speakers. You have been warned!
 - Here are some patches you can play with!
+  - [scales](https://patchies.app/?id=tfjdf019hjyxmeu) by [@kijjazz](https://www.instagram.com/kijjaz/)
+    - alt ver: [sleep](https://patchies.app/?id=xhdtrqenaf6ur81)
   - [kicks](https://patchies.app/?id=jf7n1ku67auc5xg) by [@dtinth](https://dt.in.th)
 
 ### `dsp~`: dynamic JavaScript DSP processor
