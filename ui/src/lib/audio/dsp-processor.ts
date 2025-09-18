@@ -1,3 +1,4 @@
+import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { match } from 'ts-pattern';
 
 interface DSPMessage {
@@ -36,6 +37,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 	private inletValues: unknown[] = new Array(10).fill(0);
 	private counter = 0;
 	private messageInletCount = 0;
+	private messageOutletCount = 0;
 	private recvCallback: ((message: unknown, meta: RecvMeta) => void) | null = null;
 
 	constructor() {
@@ -67,17 +69,28 @@ class DSPProcessor extends AudioWorkletProcessor {
 		try {
 			// Reset message inlet count and recv callback for new code
 			this.messageInletCount = 0;
+			this.messageOutletCount = 0;
 			this.recvCallback = null;
 
 			// Create setPortCount function that will be available in user code
-			const setPortCount = (count: number) => {
-				this.messageInletCount = Math.max(0, count);
+			const setPortCount = (inlets = 0, outlets = 0) => {
+				this.messageInletCount = Math.max(0, inlets);
+				this.messageOutletCount = Math.max(0, outlets);
 
 				this.port.postMessage({
 					type: 'port-count-changed',
-					messageInletCount: this.messageInletCount
+					messageInletCount: this.messageInletCount,
+					messageOutletCount: this.messageOutletCount
 				});
 			};
+
+			// Create setPortCount function that will be available in user code
+			const send = (message: unknown, options?: SendMessageOptions) =>
+				this.port.postMessage({
+					type: 'send-message',
+					message,
+					options
+				});
 
 			const recv = (callback: (message: unknown, meta: RecvMeta) => void) => {
 				this.recvCallback = callback;
@@ -86,6 +99,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 			const createProcessorFn = new Function(
 				'setPortCount',
 				'recv',
+				'send',
 				`
 				var $1, $2, $3, $4, $5, $6, $7, $8, $9;
 
@@ -112,7 +126,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 				`
 			);
 
-			this.processFunction = createProcessorFn(setPortCount, recv);
+			this.processFunction = createProcessorFn(setPortCount, recv, send);
 		} catch (error) {
 			console.error('Failed to compile DSP code:', error);
 			this.processFunction = null;

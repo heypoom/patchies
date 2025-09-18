@@ -4,7 +4,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
+	import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
@@ -23,6 +23,7 @@
 		data: {
 			code: string;
 			messageInletCount?: number;
+			messageOutletCount?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -39,6 +40,7 @@
 
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount || 0);
+	const messageOutletCount = $derived(data.messageOutletCount || 0);
 
 	const placeholderCode = `function process(inputs, outputs) {
   // White noise example
@@ -136,17 +138,30 @@
 			if (!dspNode || dspNode.type !== 'dsp~') return;
 
 			dspNode.node.port.onmessage = (event: MessageEvent) => {
-				if (event.data.type === 'port-count-changed') {
-					updateNodeData(nodeId, {
-						code: data.code,
-						messageInletCount: event.data.messageInletCount
-					});
+				match(event.data)
+					.with(
+						{
+							type: 'port-count-changed',
+							messageInletCount: P.number,
+							messageOutletCount: P.number
+						},
+						(m) => {
+							updateNodeData(nodeId, {
+								code: data.code,
+								messageInletCount: m.messageInletCount,
+								messageOutletCount: m.messageOutletCount
+							});
 
-					setTimeout(() => {
-						updateNodeInternals(nodeId);
-						updateContentWidth();
-					}, 5);
-				}
+							setTimeout(() => {
+								updateNodeInternals(nodeId);
+								updateContentWidth();
+							}, 5);
+						}
+					)
+					.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
+						messageContext.send(eventData.message, eventData.options as SendMessageOptions);
+					})
+					.otherwise(() => {});
 			};
 		}, 100);
 	});
@@ -263,10 +278,24 @@
 						port="outlet"
 						type="audio"
 						title="Audio Output"
-						total={1}
+						total={1 + messageOutletCount}
 						index={0}
 						class="bottom-0"
 					/>
+
+					<!-- Message outlets -->
+					{#if messageOutletCount > 0}
+						{#each Array.from({ length: messageOutletCount }) as _, index}
+							<StandardHandle
+								port="outlet"
+								type="message"
+								id={index}
+								title={`Message Outlet ${index + 1}`}
+								total={1 + messageOutletCount}
+								index={1 + index}
+							/>
+						{/each}
+					{/if}
 				</div>
 			</div>
 		</div>
