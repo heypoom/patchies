@@ -24,6 +24,14 @@ function process(inputs, outputs) {
   })
 }`;
 
+const BANG_JS_DSP = `setPortCount(0, 1)
+setAudioPortCount(0, 0)
+setTitle('bang~')
+
+function process() {
+  send({type: 'bang'})
+}`;
+
 export const JS_DSP_PRESETS = {
 	'snapshot~': {
 		type: 'dsp~',
@@ -33,6 +41,17 @@ export const JS_DSP_PRESETS = {
 			messageInletCount: 1,
 			messageOutletCount: 1,
 			audioInletCount: 1,
+			audioOutletCount: 0
+		}
+	},
+	'bang~': {
+		type: 'dsp~',
+		data: {
+			title: 'bang~',
+			code: BANG_JS_DSP,
+			messageInletCount: 0,
+			messageOutletCount: 1,
+			audioInletCount: 0,
 			audioOutletCount: 0
 		}
 	}
