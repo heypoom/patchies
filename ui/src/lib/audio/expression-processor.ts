@@ -112,7 +112,10 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 		try {
 			const bufferSize = input[0] ? input[0].length : 128;
 
-			for (let channel = 0; channel < input.length; channel++) {
+			// Always process at least one channel, even without input
+			const channelCount = Math.max(output.length, 1);
+
+			for (let channel = 0; channel < channelCount; channel++) {
 				const samples = input[channel] || new Float32Array(bufferSize);
 				const outs = output[channel] || new Float32Array(bufferSize);
 
