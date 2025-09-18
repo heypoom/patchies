@@ -72,9 +72,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('video', () => ({ loop: true }))
 		.with('textbox', () => ({ text: '' }))
 		.with('dsp~', () => ({
+			title: 'dsp~',
 			code: DEFAULT_DSP_JS_CODE,
 			messageInletCount: 0,
-			messageOutletCount: 0
+			messageOutletCount: 0,
+			audioInletCount: 1,
+			audioOutletCount: 1
 		}))
 		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 1 }))
 		.with('label', () => ({ message: 'label' }))

@@ -38,6 +38,8 @@ class DSPProcessor extends AudioWorkletProcessor {
 	private counter = 0;
 	private messageInletCount = 0;
 	private messageOutletCount = 0;
+	private audioInletCount = 1;
+	private audioOutletCount = 1;
 	private recvCallback: ((message: unknown, meta: RecvMeta) => void) | null = null;
 
 	constructor() {
@@ -67,20 +69,33 @@ class DSPProcessor extends AudioWorkletProcessor {
 		}
 
 		try {
-			// Reset message inlet count and recv callback for new code
+			// Reset count and recv callback for new code
 			this.messageInletCount = 0;
 			this.messageOutletCount = 0;
+			this.audioInletCount = 1;
+			this.audioOutletCount = 1;
+
 			this.recvCallback = null;
 
-			// Create setPortCount function that will be available in user code
 			const setPortCount = (inlets = 0, outlets = 0) => {
 				this.messageInletCount = Math.max(0, inlets);
 				this.messageOutletCount = Math.max(0, outlets);
 
 				this.port.postMessage({
-					type: 'port-count-changed',
+					type: 'message-port-count-changed',
 					messageInletCount: this.messageInletCount,
 					messageOutletCount: this.messageOutletCount
+				});
+			};
+
+			const setAudioPortCount = (inlets = 1, outlets = 1) => {
+				this.audioInletCount = Math.max(0, inlets);
+				this.audioOutletCount = Math.max(0, outlets);
+
+				this.port.postMessage({
+					type: 'audio-port-count-changed',
+					audioInletCount: this.audioInletCount,
+					audioOutletCount: this.audioOutletCount
 				});
 			};
 
@@ -92,12 +107,20 @@ class DSPProcessor extends AudioWorkletProcessor {
 					options
 				});
 
+			const setTitle = (value: string) =>
+				this.port.postMessage({
+					type: 'set-title',
+					value
+				});
+
 			const recv = (callback: (message: unknown, meta: RecvMeta) => void) => {
 				this.recvCallback = callback;
 			};
 
 			const createProcessorFn = new Function(
 				'setPortCount',
+				'setAudioPortCount',
+				'setTitle',
 				'recv',
 				'send',
 				`
@@ -126,7 +149,13 @@ class DSPProcessor extends AudioWorkletProcessor {
 				`
 			);
 
-			this.processFunction = createProcessorFn(setPortCount, recv, send);
+			this.processFunction = createProcessorFn(
+				setPortCount,
+				setAudioPortCount,
+				setTitle,
+				recv,
+				send
+			);
 		} catch (error) {
 			console.error('Failed to compile DSP code:', error);
 			this.processFunction = null;

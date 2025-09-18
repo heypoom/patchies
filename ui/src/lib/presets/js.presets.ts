@@ -78,6 +78,19 @@ for (let i = 0; i < s; i++) {
 
 send(curve)`;
 
+const ADD_JS = `let a = 1
+let b = 2
+
+setPortCount(2)
+setRunOnMount(true)
+
+recv((m, {inlet}) => {
+  if (inlet == 0) a = m  
+  if (inlet == 1) b = m
+
+  send(a + b)
+})`;
+
 export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -121,5 +134,9 @@ export const JS_PRESETS: Record<
 	'pipe-msg.js': {
 		type: 'js',
 		data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
+	},
+	'add.js': {
+		type: 'js',
+		data: { code: ADD_JS, showConsole: false, runOnMount: true }
 	}
 };

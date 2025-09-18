@@ -24,6 +24,9 @@
 			code: string;
 			messageInletCount?: number;
 			messageOutletCount?: number;
+			audioInletCount?: number;
+			audioOutletCount?: number;
+			title?: string;
 		};
 		selected: boolean;
 	} = $props();
@@ -39,17 +42,10 @@
 	let contentWidth = $state(100);
 
 	const code = $derived(data.code || '');
-	const messageInletCount = $derived(data.messageInletCount || 0);
-	const messageOutletCount = $derived(data.messageOutletCount || 0);
-
-	const placeholderCode = `function process(inputs, outputs) {
-  // White noise example
-  outputs[0].forEach((channel) => {
-    for (let i = 0; i < channel.length; i++) {
-      channel[i] = Math.random() * 2 - 1;
-    }
-  });
-}`;
+	const messageInletCount = $derived(data.messageInletCount ?? 0);
+	const messageOutletCount = $derived(data.messageOutletCount ?? 0);
+	const audioInletCount = $derived(data.audioInletCount ?? 1);
+	const audioOutletCount = $derived(data.audioOutletCount ?? 1);
 
 	const valueInletCount = $derived.by(() => {
 		if (!code.trim()) return 0;
@@ -72,29 +68,40 @@
 			.with(P.any, (value) => {
 				if (meta?.inlet === undefined) return;
 
-				// Check if this is a value inlet
-				const isValueInlet =
-					valueInletCount > 0 && meta.inlet >= 0 && meta.inlet <= valueInletCount - 1;
+				// Determine inlet type based on handle ID pattern
+				const handleId = meta.inletKey || '';
+				const isAudioInlet = handleId.startsWith('audio-in');
+				const isMessageInlet = handleId.startsWith('message-in');
 
-				// Check if this is a message inlet
-				const isMessageInlet =
-					messageInletCount > 0 &&
-					meta.inlet > valueInletCount - 1 &&
-					meta.inlet <= valueInletCount + messageInletCount;
-
-				if (isValueInlet) {
-					const valueInletIndex = meta.inlet;
-					nextInletValues[valueInletIndex] = value;
-					inletValues = nextInletValues;
-					updateAudioInletValues(nextInletValues);
-				} else if (isMessageInlet) {
-					const messageInletIndex = meta.inlet - valueInletCount;
-
-					audioSystem.send(nodeId, 'messageInlet', {
-						inletIndex: messageInletIndex,
+				if (isAudioInlet) {
+					// Audio inlets are handled by the audio system directly
+					const audioInletIndex = meta.inlet;
+					audioSystem.send(nodeId, 'audioInlet', {
+						inletIndex: audioInletIndex,
 						message,
 						meta
 					});
+				} else if (isMessageInlet) {
+					// Parse the message inlet ID to get the index
+					const messageIdMatch = handleId.match(/message-in-(\d+)/);
+					const messageInletId = messageIdMatch ? parseInt(messageIdMatch[1]) : 0;
+
+					// Check if this is a value inlet (first valueInletCount message inlets)
+					if (messageInletId < valueInletCount) {
+						const valueInletIndex = messageInletId;
+						nextInletValues[valueInletIndex] = value;
+						inletValues = nextInletValues;
+						updateAudioInletValues(nextInletValues);
+					} else {
+						// This is a message inlet
+						const messageInletIndex = messageInletId - valueInletCount;
+
+						audioSystem.send(nodeId, 'messageInlet', {
+							inletIndex: messageInletIndex,
+							message,
+							meta
+						});
+					}
 				}
 			});
 	};
@@ -124,6 +131,13 @@
 		updateAudioCode(code);
 	}
 
+	function syncPortLayout() {
+		setTimeout(() => {
+			updateNodeInternals(nodeId);
+			updateContentWidth();
+		}, 5);
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
@@ -141,23 +155,39 @@
 				match(event.data)
 					.with(
 						{
-							type: 'port-count-changed',
+							type: 'message-port-count-changed',
 							messageInletCount: P.number,
 							messageOutletCount: P.number
 						},
 						(m) => {
 							updateNodeData(nodeId, {
-								code: data.code,
 								messageInletCount: m.messageInletCount,
 								messageOutletCount: m.messageOutletCount
 							});
 
-							setTimeout(() => {
-								updateNodeInternals(nodeId);
-								updateContentWidth();
-							}, 5);
+							syncPortLayout();
 						}
 					)
+					.with(
+						{
+							type: 'audio-port-count-changed',
+							audioInletCount: P.number,
+							audioOutletCount: P.number
+						},
+						(m) => {
+							console.log('audio port count changed:', m.audioInletCount, m.audioOutletCount);
+
+							updateNodeData(nodeId, {
+								audioInletCount: m.audioInletCount,
+								audioOutletCount: m.audioOutletCount
+							});
+
+							syncPortLayout();
+						}
+					)
+					.with({ type: 'set-title', value: P.string }, (m) => {
+						updateNodeData(nodeId, { title: m.value });
+					})
 					.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
 						messageContext.send(eventData.message, eventData.options as SendMessageOptions);
 					})
@@ -186,7 +216,7 @@
 		const baseWidth = 20;
 		let inletWidth = 20;
 
-		return baseWidth + (1 + valueInletCount + messageInletCount) * inletWidth;
+		return baseWidth + (audioInletCount + valueInletCount + messageInletCount) * inletWidth;
 	});
 </script>
 
@@ -213,17 +243,20 @@
 			</div>
 
 			<div class="relative">
-				<!-- Total inlets = 1 audio inlet + control inlets + message inlets -->
+				<!-- Total inlets = audio inlets + control inlets + message inlets -->
 				<div>
-					<!-- Audio input (always present) -->
-					<StandardHandle
-						port="inlet"
-						type="audio"
-						title="Audio Input"
-						total={1 + valueInletCount + messageInletCount}
-						index={0}
-						class="top-0"
-					/>
+					<!-- Audio inputs -->
+					{#each Array.from({ length: audioInletCount }) as _, index}
+						<StandardHandle
+							port="inlet"
+							type="audio"
+							id={audioInletCount === 1 && index === 0 ? undefined : index}
+							title={audioInletCount > 1 ? `Audio Input ${index + 1}` : 'Audio Input'}
+							total={audioInletCount + valueInletCount + messageInletCount}
+							{index}
+							class="top-0"
+						/>
+					{/each}
 
 					<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
 					{#if valueInletCount > 0}
@@ -233,8 +266,8 @@
 								type="message"
 								id={index}
 								title={`$${index + 1}`}
-								total={1 + valueInletCount + messageInletCount}
-								index={index + 1}
+								total={audioInletCount + valueInletCount + messageInletCount}
+								index={audioInletCount + index}
 								class="top-0"
 							/>
 						{/each}
@@ -248,8 +281,8 @@
 								type="message"
 								id={valueInletCount + index}
 								title={`Message Inlet ${index + 1}`}
-								total={1 + valueInletCount + messageInletCount}
-								index={1 + valueInletCount + index}
+								total={audioInletCount + valueInletCount + messageInletCount}
+								index={audioInletCount + valueInletCount + index}
 								class="top-0"
 							/>
 						{/each}
@@ -268,20 +301,23 @@
 					title="Double click to edit code"
 				>
 					<div class="flex items-center justify-center">
-						<div class="font-mono text-xs text-zinc-300">dsp~</div>
+						<div class="font-mono text-xs text-zinc-300">{data.title ?? 'dsp~'}</div>
 					</div>
 				</button>
 
 				<div>
-					<!-- Audio output -->
-					<StandardHandle
-						port="outlet"
-						type="audio"
-						title="Audio Output"
-						total={1 + messageOutletCount}
-						index={0}
-						class="bottom-0"
-					/>
+					<!-- Audio outputs -->
+					{#each Array.from({ length: audioOutletCount }) as _, index}
+						<StandardHandle
+							port="outlet"
+							type="audio"
+							id={audioOutletCount === 1 && index === 0 ? undefined : index}
+							title={audioOutletCount > 1 ? `Audio Output ${index + 1}` : 'Audio Output'}
+							total={audioOutletCount + messageOutletCount}
+							{index}
+							class="bottom-0"
+						/>
+					{/each}
 
 					<!-- Message outlets -->
 					{#if messageOutletCount > 0}
@@ -291,8 +327,8 @@
 								type="message"
 								id={index}
 								title={`Message Outlet ${index + 1}`}
-								total={1 + messageOutletCount}
-								index={1 + index}
+								total={audioOutletCount + messageOutletCount}
+								index={audioOutletCount + index}
 							/>
 						{/each}
 					{/if}
@@ -325,7 +361,7 @@
 					value={code}
 					onchange={handleCodeChange}
 					language="javascript"
-					placeholder={placeholderCode}
+					placeholder="Enter dsp code here..."
 					class="nodrag h-64 w-full resize-none"
 					onrun={runDSP}
 				/>
