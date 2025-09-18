@@ -91,6 +91,21 @@ recv((m, {inlet}) => {
   send(a + b)
 })`;
 
+const ADD_COLD_JS = `let a = 1
+let b = 2
+
+setPortCount(2)
+setRunOnMount(true)
+
+recv((m, {inlet}) => {
+  if (inlet == 0) {
+    a = m
+    send(a + b)
+  }
+
+  if (inlet == 1) b = m
+})`;
+
 export const JS_PRESETS: Record<
 	string,
 	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -138,5 +153,9 @@ export const JS_PRESETS: Record<
 	'add.js': {
 		type: 'js',
 		data: { code: ADD_JS, showConsole: false, runOnMount: true }
+	},
+	'add-cold.js': {
+		type: 'js',
+		data: { code: ADD_COLD_JS, showConsole: false, runOnMount: true }
 	}
 };
