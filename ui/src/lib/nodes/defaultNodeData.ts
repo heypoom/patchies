@@ -105,5 +105,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			format: 'hex',
 			rows: 6
 		}))
+		.with('merge~', () => ({ channels: 2 }))
+		.with('split~', () => ({ channels: 2 }))
 		.otherwise(() => ({}));
 }

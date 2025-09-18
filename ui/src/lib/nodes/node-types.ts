@@ -36,6 +36,8 @@ import ToneNode from '$lib/components/nodes/ToneNode.svelte';
 import ToggleButtonNode from '$lib/components/nodes/ToggleButtonNode.svelte';
 import LabelNode from '$lib/components/nodes/LabelNode.svelte';
 import LinkButton from '$lib/components/nodes/LinkButton.svelte';
+import ChannelMergerNode from '$lib/components/nodes/ChannelMergerNode.svelte';
+import ChannelSplitterNode from '$lib/components/nodes/ChannelSplitterNode.svelte';
 import { AssemblyMachine } from '$lib/assembly';
 import AssemblyValueViewer from '$lib/components/nodes/AssemblyValueViewer.svelte';
 import AssemblyMemory from '$lib/components/nodes/AssemblyMemory.svelte';
@@ -81,7 +83,9 @@ export const nodeTypes = {
 	link: LinkButton,
 	asm: AssemblyMachine,
 	'asm.value': AssemblyValueViewer,
-	'asm.mem': AssemblyMemory
+	'asm.mem': AssemblyMemory,
+	'merge~': ChannelMergerNode,
+	'split~': ChannelSplitterNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;

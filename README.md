@@ -566,6 +566,10 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - To input the impulse response, connect a `soundfile~` object to the `convolver~` object's `message` inlet. Then, upload a sound file or send a url as an input message.
   - Then, send a `{type: "read"}` message to the `soundfile~` object to read the impulse response into the `convolver~` object.
   - The sound file must be a valid [impulse response](https://en.wikipedia.org/wiki/Impulse_response) file. It is a usually a short audio file with a single impulse followed by reverb tail. You can clap your hands in a room and record the sound to create your own impulse response.
+- `split~`: Split multi-channel audio into separate mono channels.
+  - Use the settings button to set the number of output channels.
+- `merge~`: Merge multiple mono channels into a single multi-channel audio.
+  - Use the settings button to set the number of input channels.
 - `fft~`: FFT analysis for frequency domain processing. See the [audio analysis](#audio-analysis) section for how to read the FFT data.
 
 **Sound Input and Output:**

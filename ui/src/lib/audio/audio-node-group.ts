@@ -21,7 +21,9 @@ export const getAudioNodeGroup = (nodeType: PsAudioType): PsAudioNodeGroup | nul
 				'pan~',
 				'delay~',
 				'waveshaper~',
-				'convolver~'
+				'convolver~',
+				'split~',
+				'merge~'
 			),
 			() => 'processors'
 		)

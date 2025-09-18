@@ -208,7 +208,9 @@ export class AudioSystem {
 			.with('delay~', () => this.createDelay(nodeId, params))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
 			.with('waveshaper~', () => this.createWaveShaper(nodeId, params))
-			.with('convolver~', () => this.createConvolver(nodeId, params));
+			.with('convolver~', () => this.createConvolver(nodeId, params))
+			.with('merge~', () => this.createChannelMerger(nodeId, params))
+			.with('split~', () => this.createChannelSplitter(nodeId, params));
 	}
 
 	createOsc(nodeId: string, params: unknown[]) {
@@ -436,6 +438,38 @@ export class AudioSystem {
 		convolver.normalize = normalize ?? true;
 
 		this.nodesById.set(nodeId, { type: 'convolver~', node: convolver });
+	}
+
+	createChannelMerger(nodeId: string, params: unknown[]) {
+		const [channels] = params as [number];
+
+		const merger = this.audioContext.createChannelMerger(channels ?? 2);
+
+		this.nodesById.set(nodeId, { type: 'merge~', node: merger });
+	}
+
+	createChannelSplitter(nodeId: string, params: unknown[]) {
+		const [channels] = params as [number];
+
+		const splitter = this.audioContext.createChannelSplitter(channels ?? 2);
+
+		this.nodesById.set(nodeId, { type: 'split~', node: splitter });
+	}
+
+	updateChannelCount(nodeId: string, newChannels: number) {
+		const entry = this.nodesById.get(nodeId);
+		if (!entry) return;
+
+		entry.node.disconnect();
+
+		match(entry)
+			.with({ type: 'merge~' }, () => {
+				this.createChannelMerger(nodeId, [newChannels]);
+			})
+			.with({ type: 'split~' }, () => {
+				this.createChannelSplitter(nodeId, [newChannels]);
+			})
+			.otherwise(() => {});
 	}
 
 	async initExprWorklet() {
@@ -815,6 +849,11 @@ export class AudioSystem {
 					.with(['normalize', P.boolean], ([, normalize]) => {
 						node.normalize = normalize;
 					});
+			})
+			.with({ type: P.union('merge~', 'split~') }, () => {
+				match([key, msg]).with(['channels', P.number], ([, channels]) => {
+					this.updateChannelCount(nodeId, channels);
+				});
 			})
 			.otherwise(() => null);
 	}

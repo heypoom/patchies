@@ -159,6 +159,16 @@ interface PsTone extends PsBase {
 	toneManager?: ToneManager;
 }
 
+interface PsChannelMerger extends PsBase {
+	type: 'merge~';
+	node: ChannelMergerNode;
+}
+
+interface PsChannelSplitter extends PsBase {
+	type: 'split~';
+	node: ChannelSplitterNode;
+}
+
 export type PsAudioNode =
 	| PsOsc
 	| PsGain
@@ -185,9 +195,11 @@ export type PsAudioNode =
 	| PsWaveshaper
 	| PsSampler
 	| PsConvolver
-  | PsStrudel
+	| PsStrudel
 	| PsDsp
-	| PsTone;
+	| PsTone
+	| PsChannelMerger
+	| PsChannelSplitter;
 
 export type PsAudioType = PsAudioNode['type'];
 export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
