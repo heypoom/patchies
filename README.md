@@ -620,7 +620,11 @@ This is similar to `expr~`, but it takes in a single `process` JavaScript functi
 
 Try out some patches that uses `dsp~` to get an idea of its power:
 
-- [INFINITELY DESCENDING CHORD PROGRESSION (v1.2)](https://patchies.app/?id=nxqo5h8mrfchuda) by [@dtinth](https://dt.in.th). [code explanation](https://notes.dt.in.th/InfinitelyDescendingChord).
+- [INFINITELY DESCENDING CHORD PROGRESSION (v1.2)](https://patchies.app/?id=ip0chhw6jzuyo6x) by [@dtinth](https://dt.in.th). [code explanation](https://notes.dt.in.th/InfinitelyDescendingChord).
+
+Some presets are also built on top of `dsp~`:
+
+- `snapshot~`: takes a snapshot of the incoming audio's first sample and outputs it.
 
 Here's how to make white noise:
 
@@ -670,7 +674,16 @@ const process = (inputs, outputs) => {
 }
 ```
 
-In addition to the value inlets, we also have standard message inlets. Use `setPortCount(inletCount)` to set the number of message inlets. By default, there is no message inlet. Then, use `recv` to receive messages from the message inlets.
+In addition to the value inlets, we also have messaging capabilities:
+
+- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets.
+  - By default, there is no message inlet and outlet.
+- Use `setAudioPortCount(inletCount, outletCount)` to set the number of audio inlets and outlets.
+  - By default, there is 1 audio inlet and 1 audio outlet.
+- Use `setTitle(title)` to set the title of the object.
+  - By default, the title is `dsp~`.
+  - This lets you create custom objects with meaningful names.
+- Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
 
 ```ts
 setPortCount(2)
