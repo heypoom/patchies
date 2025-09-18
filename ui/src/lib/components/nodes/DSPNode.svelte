@@ -175,8 +175,6 @@
 							audioOutletCount: P.number
 						},
 						(m) => {
-							console.log('audio port count changed:', m.audioInletCount, m.audioOutletCount);
-
 							updateNodeData(nodeId, {
 								audioInletCount: m.audioInletCount,
 								audioOutletCount: m.audioOutletCount
