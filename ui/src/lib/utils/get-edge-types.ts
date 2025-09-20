@@ -17,7 +17,9 @@ const AUDIO_NODES = [
 	'dsp~',
 	'tone~',
 	'strudel',
-	'video'
+	'video',
+	'split~',
+	'merge~'
 ];
 
 const isAudioObject = (node: MinimalNode): boolean => {
