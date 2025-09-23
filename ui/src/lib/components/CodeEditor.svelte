@@ -6,6 +6,7 @@
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { useVimInEditor } from '../../stores/editor.store';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
+	import { autocompletion } from '@codemirror/autocomplete';
 
 	let languageComp = new Compartment();
 
@@ -104,6 +105,7 @@
 						value = updatedValue;
 					}
 				}),
+				autocompletion(),
 				...extraExtensions
 			];
 

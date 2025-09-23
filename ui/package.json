@@ -64,6 +64,7 @@
 		"vitest-browser-svelte": "^0.1.0"
 	},
 	"dependencies": {
+		"@codemirror/autocomplete": "^6.18.7",
 		"@codemirror/lang-javascript": "^6.2.4",
 		"@codemirror/lang-markdown": "^6.3.4",
 		"@codemirror/lang-python": "^6.2.1",
