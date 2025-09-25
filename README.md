@@ -570,6 +570,10 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - Use the settings button to set the number of output channels.
 - `merge~`: Merge multiple mono channels into a single multi-channel audio.
   - Use the settings button to set the number of input channels.
+- `meter~`: Visual audio level meter that shows the loudness of the audio source.
+  - Displays real-time volume levels with peak hold functionality.
+  - Supports both bar and digital display styles.
+  - Connect to any audio source to visualize audio levels.
 - `fft~`: FFT analysis for frequency domain processing. See the [audio analysis](#audio-analysis) section for how to read the FFT data.
 
 **Sound Input and Output:**
