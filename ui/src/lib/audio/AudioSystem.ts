@@ -39,7 +39,7 @@ export class AudioSystem {
 		this.outGain.connect(this.audioContext.destination);
 	}
 
-	connect(sourceId: string, targetId: string, paramName?: string) {
+	connect(sourceId: string, targetId: string, paramName?: string, sourceHandle?: string | null) {
 		const sourceEntry = this.nodesById.get(sourceId);
 		const targetEntry = this.nodesById.get(targetId);
 
@@ -68,6 +68,17 @@ export class AudioSystem {
 				} else if (targetEntry.type === 'tone~') {
 					// input to tone~ - connect to inputNode for audio input
 					sourceEntry.node.connect(targetEntry.inputNode);
+				} else if (sourceEntry.type === 'split~' && sourceHandle) {
+					// Handle connections from split~ nodes - connect specific output channel
+					const sourceIndex = handleToPortIndex(sourceHandle);
+					if (sourceIndex !== null && !isNaN(sourceIndex)) {
+						sourceEntry.node.connect(targetEntry.node, sourceIndex, 0);
+					} else {
+						sourceEntry.node.connect(targetEntry.node, 0, 0);
+					}
+				} else if (targetEntry.type === 'split~') {
+					// input to split~ - connect to splitter node directly
+					sourceEntry.node.connect(targetEntry.node);
 				} else {
 					sourceEntry.node.connect(targetEntry.node);
 				}
@@ -379,7 +390,7 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'sig~', node: constantSource });
 	}
 
-	createSampler(nodeId: string, _params: unknown[]) {
+	createSampler(nodeId: string, params: unknown[]) {
 		// Create a gain node for playback output
 		const gainNode = this.audioContext.createGain();
 		gainNode.gain.value = 1.0;
@@ -724,7 +735,7 @@ export class AudioSystem {
 						node.port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
 					})
 					.with(['messageInlet', P.any], ([, messageData]) => {
-						const data = messageData as { inletIndex: number; message: unknown; meta: any };
+						const data = messageData as { inletIndex: number; message: unknown; meta: unknown };
 
 						node.port.postMessage({
 							type: 'message-inlet',
@@ -972,7 +983,12 @@ export class AudioSystem {
 
 				const isAudioParam = !!this.getAudioParam(edge.target, inlet?.name ?? '');
 
-				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
+				this.connect(
+					edge.source,
+					edge.target,
+					isAudioParam ? inlet?.name : undefined,
+					edge.sourceHandle ?? null
+				);
 			}
 		} catch (error) {
 			console.error('Error updating audio edges:', error);
