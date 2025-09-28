@@ -108,6 +108,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('merge~', () => ({ channels: 2 }))
 		.with('split~', () => ({ channels: 2 }))
 		.with('meter~', () => ({ smoothing: 0.8, peakHold: true, style: 'bar' }))
-		.with('keyboard', () => ({ keybind: '', mode: 'all', trigger: 'keydown' }))
+		.with('keyboard', () => ({ keybind: '', mode: 'all', trigger: 'keydown', repeat: false }))
 		.otherwise(() => ({}));
 }

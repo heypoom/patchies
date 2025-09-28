@@ -17,6 +17,7 @@
 			keybind?: string;
 			mode?: 'all' | 'filtered';
 			trigger?: 'keydown' | 'keyup' | 'keyupdown';
+			repeat?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -28,10 +29,10 @@
 	let isListening = $state(true);
 	let errorMessage = $state<string | null>(null);
 
-	// Configuration values with defaults
 	const keybind = $derived(data.keybind ?? '');
 	const mode = $derived(data.mode ?? 'filtered');
 	const trigger = $derived(data.trigger ?? 'keydown');
+	const repeat = $derived(data.repeat ?? false);
 
 	const borderColor = $derived.by(() => {
 		if (errorMessage) return 'border-red-500';
@@ -72,6 +73,9 @@
 		// Get the key value
 		const key = event.key.toUpperCase();
 
+		// Skip repeated keys if repeat is disabled
+		if (!repeat && event.repeat) return;
+
 		// Handle different trigger modes using ts-pattern
 		match({ trigger, mode })
 			.with({ trigger: 'keydown', mode: 'all' }, () => {
@@ -85,16 +89,10 @@
 				}
 			})
 			.with({ trigger: 'keyupdown', mode: 'all' }, () => {
-				// For keyupdown mode, ignore repeated keydown events
-				if (event.repeat) return;
-
 				// Send [key, true] for keydown in all mode
 				messageContext.send([key, true]);
 			})
 			.with({ trigger: 'keyupdown', mode: 'filtered' }, () => {
-				// For keyupdown mode, ignore repeated keydown events
-				if (event.repeat) return;
-
 				// Send true only when the chosen keybind is pressed
 				if (keybind && key === keybind.toUpperCase()) {
 					messageContext.send(true);
@@ -121,6 +119,9 @@
 
 		// Get the key value
 		const key = event.key.toUpperCase();
+
+		// Skip repeated keys if repeat is disabled
+		if (!repeat && event.repeat) return;
 
 		// Handle different trigger modes using ts-pattern
 		match({ trigger, mode })
@@ -355,6 +356,20 @@
 							/>
 						</div>
 					{/if}
+
+					<div>
+						<label class="mb-2 block text-xs font-medium text-zinc-300">Options</label>
+
+						<label class="flex items-center">
+							<input
+								type="checkbox"
+								checked={repeat}
+								onchange={(e) => updateConfig({ repeat: (e.target as HTMLInputElement).checked })}
+								class="mr-2 h-3 w-3"
+							/>
+							<span class="text-xs text-zinc-300">Allow repeated keys</span>
+						</label>
+					</div>
 
 					{#if errorMessage}
 						<div class="rounded border border-red-700 bg-red-900/20 p-2">
