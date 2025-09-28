@@ -13,6 +13,7 @@
 	import CommandPalette from './CommandPalette.svelte';
 	import ShortcutHelp from './ShortcutHelp.svelte';
 	import NodeList from './NodeList.svelte';
+	import VolumeControl from './VolumeControl.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
@@ -751,6 +752,8 @@
 					triggerCommandPalette();
 				}}><Icon icon="lucide:command" class="h-4 w-4 text-zinc-300" /></button
 			>
+
+			<VolumeControl />
 
 			<button
 				title="New Patch"
