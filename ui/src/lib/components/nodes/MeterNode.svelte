@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
+	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -20,7 +20,7 @@
 	let ctx: CanvasRenderingContext2D;
 	let messageContext: MessageContext;
 	let animationId: number;
-	let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
+	let audioSystem = AudioSystem.getInstance();
 
 	// Meter state
 	let currentLevel = $state(0);
@@ -48,31 +48,30 @@
 			});
 	};
 
-	function getRMSFromFreqData(freqData: Uint8Array): number {
+	function frequencyToRms(freq: Uint8Array): number {
 		let sum = 0;
-		for (let i = 0; i < freqData.length; i++) {
-			const normalized = freqData[i] / 255.0;
+
+		for (let i = 0; i < freq.length; i++) {
+			const normalized = freq[i] / 255.0;
 			sum += normalized * normalized;
 		}
-		return Math.sqrt(sum / freqData.length);
+
+		return Math.sqrt(sum / freq.length);
 	}
 
 	function updateMeter() {
-		// Get frequency data from connected FFT analyzer
-		const freqData = audioAnalysisSystem.getAnalysisForNode(node.id, {
-			type: 'freq',
-			format: 'int'
-		});
+		const audioNode = audioSystem.nodesById.get(node.id);
 
-		if (freqData && freqData instanceof Uint8Array) {
-			// Calculate RMS level from frequency data
-			const rms = getRMSFromFreqData(freqData);
+		if (audioNode?.type === 'fft~') {
+			const analyserNode = audioNode.node;
+			const freqData = new Uint8Array(analyserNode.fftSize);
+			analyserNode.getByteFrequencyData(freqData);
 
-			// Apply smoothing
+			const rms = frequencyToRms(freqData);
 			currentLevel = currentLevel * smoothing + rms * (1 - smoothing);
 
-			// Update peak hold
 			const now = Date.now();
+
 			if (currentLevel > peakLevel) {
 				peakLevel = currentLevel;
 				peakHoldTime = now;
@@ -112,14 +111,13 @@
 		ctx.fillStyle = gradient;
 		ctx.fillRect(5, CANVAS_HEIGHT - levelHeight, 20, levelHeight);
 
-		// Draw peak hold line
 		if (peakHold && peakLevel > 0) {
 			ctx.fillStyle = '#ffffff';
 			ctx.fillRect(3, CANVAS_HEIGHT - peakHeight - 1, 24, 2);
 		}
 
-		// Draw scale marks
 		ctx.fillStyle = '#52525b';
+
 		for (let i = 0; i <= 10; i++) {
 			const y = (i / 10) * CANVAS_HEIGHT;
 			ctx.fillRect(0, CANVAS_HEIGHT - y, 3, 1);
@@ -137,7 +135,6 @@
 			const y = CANVAS_HEIGHT - (i + 1) * (segmentHeight + 1);
 
 			if (i < levelSegments) {
-				// Active segments
 				if (i < segments * 0.7) {
 					ctx.fillStyle = '#22c55e'; // Green
 				} else if (i < segments * 0.9) {
@@ -146,10 +143,8 @@
 					ctx.fillStyle = '#ef4444'; // Red
 				}
 			} else if (peakHold && i === peakSegment) {
-				// Peak segment
 				ctx.fillStyle = '#ffffff';
 			} else {
-				// Inactive segments
 				ctx.fillStyle = '#27272a';
 			}
 
@@ -160,6 +155,8 @@
 	onMount(() => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
+
+		audioSystem.createAudioObject(node.id, 'fft~', [, 256]);
 
 		if (canvas) {
 			ctx = canvas.getContext('2d')!;
@@ -175,6 +172,11 @@
 		}
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
+
+		// Clean up fft~ node
+		if (audioSystem.nodesById.has(node.id)) {
+			audioSystem.removeAudioObject(node.id);
+		}
 	});
 </script>
 
@@ -182,7 +184,7 @@
 	<div class="relative">
 		<StandardHandle
 			port="inlet"
-			type="message"
+			type="audio"
 			total={1}
 			index={0}
 			title="Audio input"
