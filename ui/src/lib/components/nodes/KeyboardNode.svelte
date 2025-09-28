@@ -81,10 +81,16 @@
 				}
 			})
 			.with({ trigger: 'keyupdown', mode: 'all' }, () => {
+				// For keyupdown mode, ignore repeated keydown events
+				if (event.repeat) return;
+
 				// Send [key, true] for keydown in all mode
 				messageContext.send([key, true]);
 			})
 			.with({ trigger: 'keyupdown', mode: 'filtered' }, () => {
+				// For keyupdown mode, ignore repeated keydown events
+				if (event.repeat) return;
+
 				// Send true only when the chosen keybind is pressed
 				if (keybind && key === keybind.toUpperCase()) {
 					messageContext.send(true);
@@ -301,7 +307,7 @@
 									onchange={() => updateConfig({ trigger: 'keydown' })}
 									class="mr-2 h-3 w-3"
 								/>
-								<span class="text-xs text-zinc-300">Key Down</span>
+								<span class="text-xs text-zinc-300">Down</span>
 							</label>
 							<label class="flex items-center">
 								<input
@@ -312,7 +318,7 @@
 									onchange={() => updateConfig({ trigger: 'keyup' })}
 									class="mr-2 h-3 w-3"
 								/>
-								<span class="text-xs text-zinc-300">Key Up</span>
+								<span class="text-xs text-zinc-300">Up</span>
 							</label>
 							<label class="flex items-center">
 								<input
@@ -323,7 +329,7 @@
 									onchange={() => updateConfig({ trigger: 'keyupdown' })}
 									class="mr-2 h-3 w-3"
 								/>
-								<span class="text-xs text-zinc-300">Key Up/Down</span>
+								<span class="text-xs text-zinc-300">Up/Down</span>
 							</label>
 						</div>
 					</div>
@@ -331,6 +337,7 @@
 					{#if mode === 'filtered'}
 						<div>
 							<label class="mb-2 block text-xs font-medium text-zinc-300">Keybind</label>
+
 							<input
 								type="text"
 								value={keybind}
