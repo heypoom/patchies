@@ -42,6 +42,7 @@ import MeterNode from '$lib/components/nodes/MeterNode.svelte';
 import { AssemblyMachine } from '$lib/assembly';
 import AssemblyValueViewer from '$lib/components/nodes/AssemblyValueViewer.svelte';
 import AssemblyMemory from '$lib/components/nodes/AssemblyMemory.svelte';
+import KeyboardNode from '$lib/components/nodes/KeyboardNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -87,7 +88,8 @@ export const nodeTypes = {
 	'asm.mem': AssemblyMemory,
 	'merge~': ChannelMergerNode,
 	'split~': ChannelSplitterNode,
-	'meter~': MeterNode
+	'meter~': MeterNode,
+	keyboard: KeyboardNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
