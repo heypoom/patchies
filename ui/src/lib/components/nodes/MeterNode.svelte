@@ -182,7 +182,7 @@
 	<div class="relative">
 		<StandardHandle
 			port="inlet"
-			type="audio"
+			type="message"
 			total={1}
 			index={0}
 			title="Audio input"
