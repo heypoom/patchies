@@ -16,6 +16,7 @@
 		data: {
 			keybind?: string;
 			mode?: 'all' | 'filtered';
+			trigger?: 'keydown' | 'keyup' | 'keyupdown';
 		};
 		selected: boolean;
 	} = $props();
@@ -30,6 +31,7 @@
 	// Configuration values with defaults
 	const keybind = $derived(data.keybind ?? '');
 	const mode = $derived(data.mode ?? 'filtered');
+	const trigger = $derived(data.trigger ?? 'keydown');
 
 	const borderColor = $derived.by(() => {
 		if (errorMessage) return 'border-red-500';
@@ -66,15 +68,75 @@
 		// Get the key value
 		const key = event.key.toUpperCase();
 
-		if (mode === 'all') {
-			// Send all keystrokes as strings
-			messageContext.send(key);
-		} else if (mode === 'filtered') {
-			// Send bang only when the chosen keybind is pressed
-			if (keybind && key === keybind.toUpperCase()) {
-				messageContext.send({ type: 'bang' });
-			}
-		}
+		// Handle different trigger modes using ts-pattern
+		match({ trigger, mode })
+			.with({ trigger: 'keydown', mode: 'all' }, () => {
+				// Send all keystrokes as strings
+				messageContext.send(key);
+			})
+			.with({ trigger: 'keydown', mode: 'filtered' }, () => {
+				// Send bang only when the chosen keybind is pressed
+				if (keybind && key === keybind.toUpperCase()) {
+					messageContext.send({ type: 'bang' });
+				}
+			})
+			.with({ trigger: 'keyupdown', mode: 'all' }, () => {
+				// Send [key, true] for keydown in all mode
+				messageContext.send([key, true]);
+			})
+			.with({ trigger: 'keyupdown', mode: 'filtered' }, () => {
+				// Send true only when the chosen keybind is pressed
+				if (keybind && key === keybind.toUpperCase()) {
+					messageContext.send(true);
+				}
+			})
+			.otherwise(() => {
+				// For keyup trigger mode, we don't handle keydown events
+			});
+	}
+
+	function handleKeyup(event: KeyboardEvent) {
+		if (!isListening) return;
+
+		const target = event.target as HTMLElement;
+		const isTyping =
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target.closest('.cm-editor') ||
+			target.closest('.cm-content') ||
+			target.contentEditable === 'true';
+
+		// Skip if typing in an input field
+		if (isTyping) return;
+
+		// Get the key value
+		const key = event.key.toUpperCase();
+
+		// Handle different trigger modes using ts-pattern
+		match({ trigger, mode })
+			.with({ trigger: 'keyupdown', mode: 'all' }, () => {
+				// Send [key, false] for keyup in all mode
+				messageContext.send([key, false]);
+			})
+			.with({ trigger: 'keyupdown', mode: 'filtered' }, () => {
+				// Send false only when the chosen keybind is released
+				if (keybind && key === keybind.toUpperCase()) {
+					messageContext.send(false);
+				}
+			})
+			.with({ trigger: 'keyup', mode: 'all' }, () => {
+				// Send key on keyup
+				messageContext.send(key);
+			})
+			.with({ trigger: 'keyup', mode: 'filtered' }, () => {
+				// Send bang only when the chosen keybind is released
+				if (keybind && key === keybind.toUpperCase()) {
+					messageContext.send({ type: 'bang' });
+				}
+			})
+			.otherwise(() => {
+				// For keydown trigger mode, we don't handle keyup events
+			});
 	}
 
 	function updateConfig(updates: any) {
@@ -104,11 +166,14 @@
 				.with({ type: 'toggle' }, () => {
 					toggleListening();
 				})
-				.otherwise(() => {
-					// Handle any other messages as keybind updates in filtered mode
-					if (mode === 'filtered' && typeof message === 'string') {
-						updateConfig({ keybind: message });
+				.with(P.string, (key) => {
+					// Handle string messages as keybind updates in filtered mode
+					if (mode === 'filtered') {
+						updateConfig({ keybind: key });
 					}
+				})
+				.otherwise(() => {
+					// Ignore other message types
 				});
 		} catch (error) {
 			errorMessage =
@@ -122,11 +187,15 @@
 		// Add global keydown listener
 		document.addEventListener('keydown', handleKeydown);
 
+		// Add global keyup listener
+		document.addEventListener('keyup', handleKeyup);
+
 		// Listen for messages to control listening state
 		messageContext.queue.addCallback(handleMessage);
 
 		return () => {
 			document.removeEventListener('keydown', handleKeydown);
+			document.removeEventListener('keyup', handleKeyup);
 			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
 		};
@@ -216,6 +285,45 @@
 									class="mr-2 h-3 w-3"
 								/>
 								<span class="text-xs text-zinc-300">Filtered</span>
+							</label>
+						</div>
+					</div>
+
+					<div>
+						<label class="mb-2 block text-xs font-medium text-zinc-300">Trigger</label>
+						<div class="flex gap-2">
+							<label class="flex items-center">
+								<input
+									type="radio"
+									name="keyboard-trigger"
+									value="keydown"
+									checked={trigger === 'keydown'}
+									onchange={() => updateConfig({ trigger: 'keydown' })}
+									class="mr-2 h-3 w-3"
+								/>
+								<span class="text-xs text-zinc-300">Key Down</span>
+							</label>
+							<label class="flex items-center">
+								<input
+									type="radio"
+									name="keyboard-trigger"
+									value="keyup"
+									checked={trigger === 'keyup'}
+									onchange={() => updateConfig({ trigger: 'keyup' })}
+									class="mr-2 h-3 w-3"
+								/>
+								<span class="text-xs text-zinc-300">Key Up</span>
+							</label>
+							<label class="flex items-center">
+								<input
+									type="radio"
+									name="keyboard-trigger"
+									value="keyupdown"
+									checked={trigger === 'keyupdown'}
+									onchange={() => updateConfig({ trigger: 'keyupdown' })}
+									class="mr-2 h-3 w-3"
+								/>
+								<span class="text-xs text-zinc-300">Key Up/Down</span>
 							</label>
 						</div>
 					</div>
