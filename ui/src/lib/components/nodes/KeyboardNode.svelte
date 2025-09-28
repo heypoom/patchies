@@ -43,6 +43,10 @@
 		return 'border-green-400';
 	});
 
+	const handleClass = $derived.by(() => {
+		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
+	});
+
 	const statusIcon = $derived.by(() => {
 		if (errorMessage) return 'lucide:alert-circle';
 		if (!isListening) return 'lucide:keyboard-off';
@@ -228,7 +232,7 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
 
 				<button
 					class={[
