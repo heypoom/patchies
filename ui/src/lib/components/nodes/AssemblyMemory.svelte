@@ -78,11 +78,14 @@
 					{ type: 'write', address: P.number, data: P.array(P.number) },
 					async ({ address, data: writeData }) => {
 						const nextValues = [...values];
+						// Ensure the array is large enough to accommodate the write
+						const requiredLength = address + writeData.length;
+						while (nextValues.length < requiredLength) {
+							nextValues.push(0);
+						}
 
 						for (let i = 0; i < writeData.length; i++) {
-							if (address + i < nextValues.length) {
-								nextValues[address + i] = writeData[i];
-							}
+							nextValues[address + i] = writeData[i];
 						}
 
 						updateNodeData(nodeId, { ...data, values: nextValues });
@@ -249,7 +252,7 @@
 									value={!value ? '' : value.toString(base).padStart(4, '0')}
 									placeholder="0000"
 									class={[
-										'w-8 bg-transparent text-center text-[10px] uppercase outline-none outline-1',
+										'w-8 bg-transparent text-center text-[10px] uppercase outline-1 outline-none',
 										value === 0 && 'placeholder-zinc-600',
 										value === undefined && 'placeholder-zinc-700',
 										value > 0 && 'text-green-400'
