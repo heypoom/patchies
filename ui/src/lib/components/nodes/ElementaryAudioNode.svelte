@@ -27,7 +27,7 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		match(message)
-			.with({ type: 'run' }, () => runTone())
+			.with({ type: 'run' }, () => runElementary())
 			.with(P.any, () => {
 				if (meta?.inlet === undefined) return;
 
@@ -45,24 +45,24 @@
 		updateNodeData(nodeId, { code: newCode });
 
 		setTimeout(() => {
-			const toneNode = audioSystem.nodesById.get(nodeId);
+			const elemNode = audioSystem.nodesById.get(nodeId);
 
-			if (!toneNode || toneNode.type !== 'tone~') return;
+			if (!elemNode || elemNode.type !== 'elem~') return;
 
-			if (toneNode?.toneManager) {
-				toneNode.toneManager.onSetPortCount = (inletCount: number) => {
+			if (elemNode?.elementaryManager) {
+				elemNode.elementaryManager.onSetPortCount = (inletCount: number) => {
 					updateNodeData(nodeId, { messageInletCount: inletCount });
 				};
 			}
 		}, 10);
 	}
 
-	function runTone() {
+	function runElementary() {
 		updateAudioCode(data.code);
 	}
 
 	onMount(() => {
-		audioSystem.createAudioObject(nodeId, 'tone~', [null, data.code]);
+		audioSystem.createAudioObject(nodeId, 'elem~', [null, data.code]);
 		handleCodeChange(data.code);
 	});
 
@@ -73,10 +73,10 @@
 
 <SimpleDspLayout
 	{nodeId}
-	nodeName="tone~"
+	nodeName="elem~"
 	{data}
 	{selected}
 	onCodeChange={handleCodeChange}
-	onRun={runTone}
+	onRun={runElementary}
 	{handleMessage}
 />

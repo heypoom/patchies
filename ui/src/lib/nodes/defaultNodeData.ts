@@ -10,7 +10,8 @@ import {
 	DEFAULT_PYTHON_CODE,
 	DEFAULT_CHUCK_CODE,
 	DEFAULT_DSP_JS_CODE,
-	DEFAULT_TONE_JS_CODE
+	DEFAULT_TONE_JS_CODE,
+	DEFAULT_ELEM_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -80,6 +81,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			audioOutletCount: 1
 		}))
 		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 1 }))
+		.with('elem~', () => ({ code: DEFAULT_ELEM_CODE, messageInletCount: 1 }))
 		.with('label', () => ({ message: 'label' }))
 		.with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))
 		.with('asm', () => ({

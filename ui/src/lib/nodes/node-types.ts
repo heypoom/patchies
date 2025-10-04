@@ -33,6 +33,7 @@ import VideoNode from '$lib/components/nodes/VideoNode.svelte';
 import TextInputNode from '$lib/components/nodes/TextInputNode.svelte';
 import DSPNode from '$lib/components/nodes/DSPNode.svelte';
 import ToneNode from '$lib/components/nodes/ToneNode.svelte';
+import ElementaryAudioNode from '$lib/components/nodes/ElementaryAudioNode.svelte';
 import ToggleButtonNode from '$lib/components/nodes/ToggleButtonNode.svelte';
 import LabelNode from '$lib/components/nodes/LabelNode.svelte';
 import LinkButton from '$lib/components/nodes/LinkButton.svelte';
@@ -81,6 +82,7 @@ export const nodeTypes = {
 	textbox: TextInputNode,
 	'dsp~': DSPNode,
 	'tone~': ToneNode,
+	'elem~': ElementaryAudioNode,
 	label: LabelNode,
 	link: LinkButton,
 	asm: AssemblyMachine,

@@ -9,6 +9,7 @@ import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
 import { ChuckManager } from './ChuckManager';
 import { ToneManager } from './ToneManager';
+import { ElementaryAudioManager } from './ElementaryAudioManager';
 
 import workletUrl from './expression-processor.ts?worker&url';
 import dspWorkletUrl from './dsp-processor.ts?worker&url';
@@ -67,6 +68,9 @@ export class AudioSystem {
 					sourceEntry.node.connect(targetEntry.destinationNode);
 				} else if (targetEntry.type === 'tone~') {
 					// input to tone~ - connect to inputNode for audio input
+					sourceEntry.node.connect(targetEntry.inputNode);
+				} else if (targetEntry.type === 'elem~') {
+					// input to elem~ - connect to inputNode for audio input
 					sourceEntry.node.connect(targetEntry.inputNode);
 				} else if (sourceEntry.type === 'split~' && sourceHandle) {
 					// Handle connections from split~ nodes - connect specific output channel
@@ -211,6 +215,7 @@ export class AudioSystem {
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('dsp~', () => this.createDsp(nodeId, params))
 			.with('tone~', () => this.createTone(nodeId, params))
+			.with('elem~', () => this.createElementary(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('compressor~', () => this.createCompressor(nodeId, params))
 			.with('pan~', () => this.createPan(nodeId, params))
@@ -577,6 +582,34 @@ export class AudioSystem {
 		}
 	}
 
+	async createElementary(nodeId: string, params: unknown[]) {
+		const [, code] = params as [unknown, string];
+
+		try {
+			const gainNode = new GainNode(this.audioContext);
+			const inputNode = new GainNode(this.audioContext);
+			const elementaryManager = new ElementaryAudioManager(
+				nodeId,
+				this.audioContext,
+				gainNode,
+				inputNode
+			);
+
+			if (code) {
+				await elementaryManager.handleMessage('code', code);
+			}
+
+			this.nodesById.set(nodeId, {
+				type: 'elem~',
+				node: gainNode,
+				inputNode,
+				elementaryManager
+			});
+		} catch (error) {
+			console.error('Failed to create Elementary node:', error);
+		}
+	}
+
 	async createChuck(nodeId: string) {
 		const gainNode = new GainNode(this.audioContext);
 
@@ -746,6 +779,9 @@ export class AudioSystem {
 			})
 			.with({ type: 'tone~' }, async (state) => {
 				await state.toneManager?.handleMessage(key, msg);
+			})
+			.with({ type: 'elem~' }, async (state) => {
+				await state.elementaryManager?.handleMessage(key, msg);
 			})
 			.with({ type: 'chuck' }, async (state) => {
 				await state.chuckManager?.handleMessage(key, msg);

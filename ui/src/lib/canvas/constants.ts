@@ -10,11 +10,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = fragCoord / iResolution.xy;
     vec3 color = vec3(0.0);
     float time = iTime * 0.5;
-    
+
     color.r = sin(uv.x * 10.0 + time) * 0.5 + 0.5;
     color.g = sin(uv.y * 10.0 + time * 1.2) * 0.5 + 0.5;
     color.b = sin((uv.x + uv.y) * 5.0 + time * 0.8) * 0.5 + 0.5;
-    
+
     float brightness = sin(time * 2.0) * 0.2 + 0.8;
     color *= brightness;
     fragColor = vec4(color, 1.0);
@@ -34,7 +34,7 @@ export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
 
 export const DEFAULT_JS_CANVAS_CODE = `function draw() {
   ctx.clearRect(0, 0, width, height)
-  
+
   const time = Date.now() * 0.004
   const x = width/2 + Math.cos(time) * 60
   const y = height/2 + Math.sin(time) * 50
@@ -96,3 +96,13 @@ recv(m => {
 
 return { cleanup: () => synth.dispose() }
 `;
+
+export const DEFAULT_ELEM_CODE = `setPortCount(1)
+
+recv(freq => {
+  core.render(el.cycle(freq), el.cycle(freq))
+})
+
+function setup() {
+  core.render(el.cycle(110), el.cycle(110))
+}`;

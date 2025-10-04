@@ -19,6 +19,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - [SwissGL](https://github.com/google/swissgl), minimal WebGL2 wrapper for shaders.
 - [GLSL fragment shaders](https://www.shadertoy.com), for complex 3D visual effects.
 - [Tone.js](https://tonejs.github.io), framework for creating interactive music in the browser.
+- [Elementary Audio](https://www.elementary.audio/), library for declarative digital audio signal processing.
 - [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
 - [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
 - [Assembly](./modules/vasm/README.md), for fun stack machine computational puzzles.
@@ -126,7 +127,7 @@ Here are some examples to get you started:
 - Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `logger.js` preset. Connect them together.
   - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
 
-In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~` and `tone~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
+In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~`, `tone~` and `elem~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
 ```js
 // In the source `js` object
@@ -153,7 +154,7 @@ recv((data, meta) => {
 
 In the above example, if the message came from inlet 2, it will be sent to outlet 2.
 
-In `js`, `p5`, `hydra`, `canvas`, `dsp~` and `tone~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+In `js`, `p5`, `hydra`, `canvas`, `dsp~`, `tone~` and `elem~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
 See the [Message Passing with GLSL](#message-passing-with-glsl) section for how to use message passing with GLSL shaders to pass data to shaders dynamically.
 
@@ -203,12 +204,12 @@ For a more fun example, here's [a little patch](https://patchies.app/?id=l8ypbfy
 
 If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
-- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
   - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
 
-- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`.
+- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`, `elem~`.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
@@ -584,7 +585,7 @@ These objects run on _audio rate_, which means they process audio signals in rea
 
 #### Notes on audio objects
 
-- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~` or `tone~` objects. In fact, the default `dsp~` and `tone~` object is a simple sine wave oscillator that works similar to `osc~`.
+- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~` or `elem~` objects. In fact, the default `dsp~`, `tone~` and `elem~` objects are simple sine wave oscillators that work similar to `osc~`.
 - Most of the audio objects correspond to Web Audio API nodes. See the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) documentation on how they work under the hood.
 
 ### `expr~`: audio-rate mathematical expression evaluator
@@ -755,6 +756,33 @@ recv((m) => {
 // Return cleanup function to properly dispose Tone.js objects
 return {
   cleanup: () => filter.dispose(),
+}
+```
+
+### `elem~`: Elementary Audio synthesis and processing
+
+The `elem~` object lets you use the [Elementary Audio](https://www.elementary.audio) library, a declarative digital audio signal processing.
+
+By default, `elem~` adds a sample code for a simple sine wave oscillator.
+
+The `elem~` context gives you these variables:
+
+- `el`: the Elementary Audio core library
+- `core`: the WebRenderer instance for rendering audio graphs
+- `node`: the AudioWorkletNode for connecting to the Web Audio graph
+- `function setup()`: the setup function gets called on initialization.
+
+Code example:
+
+```js
+setPortCount(1)
+
+recv((freq) => {
+  core.render(el.cycle(freq), el.cycle(freq))
+})
+
+function setup() {
+  core.render(el.cycle(220), el.cycle(220))
 }
 ```
 

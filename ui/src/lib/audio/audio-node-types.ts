@@ -1,5 +1,6 @@
 import type { ChuckManager } from './ChuckManager';
 import type { ToneManager } from './ToneManager';
+import type { ElementaryAudioManager } from './ElementaryAudioManager';
 
 interface PsBase {
 	node: AudioNode;
@@ -159,6 +160,13 @@ interface PsTone extends PsBase {
 	toneManager?: ToneManager;
 }
 
+interface PsElementary extends PsBase {
+	type: 'elem~';
+	node: GainNode;
+	inputNode: GainNode;
+	elementaryManager?: ElementaryAudioManager;
+}
+
 interface PsChannelMerger extends PsBase {
 	type: 'merge~';
 	node: ChannelMergerNode;
@@ -198,6 +206,7 @@ export type PsAudioNode =
 	| PsStrudel
 	| PsDsp
 	| PsTone
+	| PsElementary
 	| PsChannelMerger
 	| PsChannelSplitter;
 
