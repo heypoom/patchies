@@ -226,7 +226,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={(e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -273,7 +273,7 @@
 
 					<!-- Message inlets (only show if messageInletCount > 0) -->
 					{#if messageInletCount > 0}
-						{#each Array.from({ length: messageInletCount }) as _, index}
+						{#each Array.from({ length: messageInletCount }) as _, index (index)}
 							<StandardHandle
 								port="inlet"
 								type="message"
@@ -305,7 +305,7 @@
 
 				<div>
 					<!-- Audio outputs -->
-					{#each Array.from({ length: audioOutletCount }) as _, index}
+					{#each Array.from({ length: audioOutletCount }) as _, index (index)}
 						<StandardHandle
 							port="outlet"
 							type="audio"
@@ -319,7 +319,7 @@
 
 					<!-- Message outlets -->
 					{#if messageOutletCount > 0}
-						{#each Array.from({ length: messageOutletCount }) as _, index}
+						{#each Array.from({ length: messageOutletCount }) as _, index (index)}
 							<StandardHandle
 								port="outlet"
 								type="message"

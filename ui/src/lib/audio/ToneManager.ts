@@ -7,13 +7,14 @@ export class ToneManager {
 	private toneObjects: Map<string, unknown> = new Map();
 	private recvCallback: ((message: unknown, meta: unknown) => void) | null = null;
 	private messageInletCount = 0;
+	private messageOutletCount = 0;
 	private currentCode = '';
 	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 	private audioContext: AudioContext;
 	private messageContext: MessageContext;
 	private nodeId: string;
 
-	public onSetPortCount = (inletCount: number) => {};
+	public onSetPortCount = (inletCount: number, outletCount: number) => {};
 
 	constructor(nodeId: string, audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
 		this.nodeId = nodeId;
@@ -60,12 +61,14 @@ export class ToneManager {
 
 			// Reset message inlet count and recv callback for new code
 			this.messageInletCount = 0;
+			this.messageOutletCount = 0;
 			this.recvCallback = null;
 
 			// Create setPortCount function available in user code
-			const setPortCount = (count: number) => {
-				this.messageInletCount = Math.max(0, count);
-				this.onSetPortCount(this.messageInletCount);
+			const setPortCount = (inletCount: number = 0, outletCount: number = 0) => {
+				this.messageInletCount = Math.max(0, inletCount);
+				this.messageOutletCount = Math.max(0, outletCount);
+				this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
 			};
 
 			// Create recv function for receiving messages

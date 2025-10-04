@@ -16,6 +16,7 @@
 		data: {
 			code: string;
 			messageInletCount?: number;
+			messageOutletCount?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -50,8 +51,11 @@
 			if (!toneNode || toneNode.type !== 'tone~') return;
 
 			if (toneNode?.toneManager) {
-				toneNode.toneManager.onSetPortCount = (inletCount: number) => {
-					updateNodeData(nodeId, { messageInletCount: inletCount });
+				toneNode.toneManager.onSetPortCount = (inletCount: number, outletCount: number) => {
+					updateNodeData(nodeId, {
+						messageInletCount: inletCount,
+						messageOutletCount: outletCount
+					});
 				};
 			}
 		}, 10);

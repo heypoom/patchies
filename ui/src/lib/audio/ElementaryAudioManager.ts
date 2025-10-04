@@ -13,12 +13,13 @@ export class ElementaryAudioManager {
 	private workletNode: AudioWorkletNode | null = null;
 	private recvCallback: RecvCallback | null = null;
 	private messageInletCount = 0;
+	private messageOutletCount = 0;
 	private jsRunner: JSRunner;
 	private nodeId: string;
 	private elementaryCore: typeof import('@elemaudio/core') | null = null;
 	private messageContext: MessageContext;
 
-	public onSetPortCount = (inletCount: number) => {};
+	public onSetPortCount = (inletCount: number, outletCount: number) => {};
 
 	constructor(nodeId: string, audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
 		this.nodeId = nodeId;
@@ -97,6 +98,7 @@ export class ElementaryAudioManager {
 
 			// Reset message inlet count and recv callback for new code
 			this.messageInletCount = 0;
+			this.messageOutletCount = 0;
 			this.recvCallback = null;
 
 			// Create recv function for receiving messages
@@ -120,9 +122,10 @@ export class ElementaryAudioManager {
 			}
 
 			await this.jsRunner.executeJavaScript(this.nodeId, processedCode, {
-				setPortCount: (inletCount = 0) => {
+				setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
 					this.messageInletCount = Math.max(0, inletCount);
-					this.onSetPortCount(this.messageInletCount);
+					this.messageOutletCount = Math.max(0, outletCount);
+					this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
 				},
 				extraContext: {
 					el: elementaryCore.el,

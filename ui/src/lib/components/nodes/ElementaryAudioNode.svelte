@@ -16,6 +16,7 @@
 		data: {
 			code: string;
 			messageInletCount?: number;
+			messageOutletCount?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -50,8 +51,11 @@
 			if (!elemNode || elemNode.type !== 'elem~') return;
 
 			if (elemNode?.elementaryManager) {
-				elemNode.elementaryManager.onSetPortCount = (inletCount: number) => {
-					updateNodeData(nodeId, { messageInletCount: inletCount });
+				elemNode.elementaryManager.onSetPortCount = (inletCount: number, outletCount: number) => {
+					updateNodeData(nodeId, {
+						messageInletCount: inletCount,
+						messageOutletCount: outletCount
+					});
 				};
 			}
 		}, 10);

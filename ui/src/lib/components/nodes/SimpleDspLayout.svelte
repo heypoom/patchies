@@ -22,6 +22,7 @@
 		data: {
 			code: string;
 			messageInletCount?: number;
+			messageOutletCount?: number;
 		};
 		selected: boolean;
 		onCodeChange: (code: string) => void;
@@ -38,6 +39,7 @@
 
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount || 0);
+	const messageOutletCount = $derived(data.messageOutletCount || 0);
 
 	const containerClass = $derived.by(() => {
 		if (selected) return 'border-zinc-400 bg-zinc-800';
@@ -116,7 +118,7 @@
 
 					<!-- Message inlets (only show if messageInletCount > 0) -->
 					{#if messageInletCount > 0}
-						{#each Array.from({ length: messageInletCount }) as _, index}
+						{#each Array.from({ length: messageInletCount }) as _, index (index)}
 							<StandardHandle
 								port="inlet"
 								type="message"
@@ -146,15 +148,30 @@
 				</button>
 
 				<div>
-					<!-- Audio output -->
+					<!-- Audio output (always present) -->
 					<StandardHandle
 						port="outlet"
 						type="audio"
 						title="Audio Output"
-						total={1}
+						total={1 + messageOutletCount}
 						index={0}
 						class="bottom-0"
 					/>
+
+					<!-- Message outlets (only show if messageOutletCount > 0) -->
+					{#if messageOutletCount > 0}
+						{#each Array.from({ length: messageOutletCount }) as _, index (index)}
+							<StandardHandle
+								port="outlet"
+								type="message"
+								id={index}
+								title={`Message Outlet ${index + 1}`}
+								total={1 + messageOutletCount}
+								index={1 + index}
+								class="bottom-0"
+							/>
+						{/each}
+					{/if}
 				</div>
 			</div>
 		</div>

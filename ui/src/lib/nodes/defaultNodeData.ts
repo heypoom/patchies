@@ -80,8 +80,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			audioInletCount: 1,
 			audioOutletCount: 1
 		}))
-		.with('tone~', () => ({ code: DEFAULT_TONE_JS_CODE, messageInletCount: 1 }))
-		.with('elem~', () => ({ code: DEFAULT_ELEM_CODE, messageInletCount: 1 }))
+		.with('tone~', () => ({
+			code: DEFAULT_TONE_JS_CODE,
+			messageInletCount: 1,
+			messageOutletCount: 0
+		}))
+		.with('elem~', () => ({ code: DEFAULT_ELEM_CODE, messageInletCount: 1, messageOutletCount: 0 }))
 		.with('label', () => ({ message: 'label' }))
 		.with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))
 		.with('asm', () => ({
