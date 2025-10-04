@@ -103,6 +103,4 @@ recv(freq => {
   core.render(el.cycle(freq), el.cycle(freq))
 })
 
-function setup() {
-  core.render(el.cycle(110), el.cycle(110))
-}`;
+core.render(el.cycle(110), el.cycle(110))`;

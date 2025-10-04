@@ -99,16 +99,8 @@ export class ElementaryAudioManager {
 				console.log('elem~ send:', message, options);
 			};
 
-			const codeWithTemplate = `
-			  var setup;
-
-				${code}
-
-				return { setup }
-			`;
-
 			// Preprocess code using JSRunner
-			const processedCode = await this.jsRunner.preprocessCode(codeWithTemplate, {
+			const processedCode = await this.jsRunner.preprocessCode(code, {
 				nodeId: this.nodeId,
 				setLibraryName: () => {}
 			});
@@ -118,7 +110,7 @@ export class ElementaryAudioManager {
 				return;
 			}
 
-			const { setup } = await this.jsRunner.executeJavaScript(this.nodeId, processedCode, {
+			await this.jsRunner.executeJavaScript(this.nodeId, processedCode, {
 				setPortCount: (inletCount = 0) => {
 					this.messageInletCount = Math.max(0, inletCount);
 					this.onSetPortCount(this.messageInletCount);
@@ -131,11 +123,6 @@ export class ElementaryAudioManager {
 					send
 				}
 			});
-
-			// setup is optional. can be driven entirely by recv.
-			if (typeof setup === 'function') {
-				await setup();
-			}
 		} catch (error) {
 			console.error('Failed to execute Elementary Audio code:', error);
 		}
@@ -161,9 +148,6 @@ export class ElementaryAudioManager {
 	}
 
 	private async cleanup() {
-		// Clear the setup function
-		this.setupFunction = null;
-
 		// Elementary Audio doesn't need explicit cleanup like Tone.js
 		// The WebRenderer manages its own lifecycle
 		// We just need to stop rendering

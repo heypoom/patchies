@@ -770,7 +770,6 @@ The `elem~` context gives you these variables:
 - `el`: the Elementary Audio core library
 - `core`: the WebRenderer instance for rendering audio graphs
 - `node`: the AudioWorkletNode for connecting to the Web Audio graph
-- `function setup()`: the setup function gets called on initialization.
 
 Code example:
 
@@ -781,9 +780,7 @@ recv((freq) => {
   core.render(el.cycle(freq), el.cycle(freq))
 })
 
-function setup() {
-  core.render(el.cycle(220), el.cycle(220))
-}
+core.render(el.cycle(220), el.cycle(220))
 ```
 
 ### MIDI & Network Objects
