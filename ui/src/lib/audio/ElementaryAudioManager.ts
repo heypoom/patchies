@@ -75,7 +75,9 @@ export class ElementaryAudioManager {
 
 	private async setCode(code: string): Promise<void> {
 		if (!code || code.trim() === '') {
-			await this.cleanup();
+			// render silence
+			await this.core?.render();
+			this.core?.gc();
 
 			return;
 		}
@@ -155,24 +157,8 @@ export class ElementaryAudioManager {
 		}
 	}
 
-	private async cleanup() {
-		if (!this.core) return;
-
-		try {
-			const elementaryCore = await this.ensureElementary();
-
-			// Render silence to stop audio
-			this.core.render(
-				elementaryCore.el.const({ key: 'cleanup', value: 0 }),
-				elementaryCore.el.const({ key: 'cleanup', value: 0 })
-			);
-		} catch (error) {
-			console.warn('Error during Elementary cleanup:', error);
-		}
-	}
-
 	public destroy(): void {
-		this.cleanup();
+		this.core?.render();
 		this.core?.gc();
 
 		// Disconnect audio nodes
