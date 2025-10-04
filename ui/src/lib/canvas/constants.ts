@@ -99,8 +99,10 @@ return { cleanup: () => synth.dispose() }
 
 export const DEFAULT_ELEM_CODE = `setPortCount(1)
 
-recv(freq => {
-  core.render(el.cycle(freq), el.cycle(freq))
-})
+let [rate, setRate] = core.createRef("const", {
+  value: 440
+}, []);
 
-core.render(el.cycle(110), el.cycle(110))`;
+recv(freq => setRate({ value: freq }))
+
+core.render(el.cycle(rate), el.cycle(rate))`;
