@@ -1,6 +1,7 @@
 import { match, P } from 'ts-pattern';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import type WebRenderer from '@elemaudio/web-renderer';
+import { MessageContext } from '$lib/messages/MessageContext';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 
@@ -15,6 +16,7 @@ export class ElementaryAudioManager {
 	private jsRunner: JSRunner;
 	private nodeId: string;
 	private elementaryCore: typeof import('@elemaudio/core') | null = null;
+	private messageContext: MessageContext;
 
 	public onSetPortCount = (inletCount: number) => {};
 
@@ -24,6 +26,7 @@ export class ElementaryAudioManager {
 		this.inputNode = inputNode;
 		this.audioContext = audioContext;
 		this.jsRunner = JSRunner.getInstance();
+		this.messageContext = new MessageContext(nodeId);
 	}
 
 	async handleMessage(key: string, msg: unknown): Promise<void> {
@@ -102,10 +105,8 @@ export class ElementaryAudioManager {
 			};
 
 			// Create send function for sending messages
-			const send = (message: unknown, options?: { to?: number }) => {
-				// TODO: Implement message sending to other nodes
-				console.log('elem~ send:', message, options);
-			};
+			const send = (message: unknown, options?: { to?: number }) =>
+				this.messageContext.send(message, options);
 
 			// Preprocess code using JSRunner
 			const processedCode = await this.jsRunner.preprocessCode(code, {
@@ -160,6 +161,7 @@ export class ElementaryAudioManager {
 	public destroy(): void {
 		this.core?.render();
 		this.core?.gc();
+		this.messageContext.destroy();
 
 		// Disconnect audio nodes
 		if (this.workletNode) {
