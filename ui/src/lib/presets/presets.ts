@@ -7,6 +7,7 @@ import { EXPR_DSP_PRESETS } from './expr-dsp.presets';
 import { CHUCK_DEMO_PRESETS } from './chuck.preset';
 import { AI_TXT_PRESETS } from './ai-txt.preset';
 import { TONE_JS_PRESETS } from './tone.preset';
+import { ELEMENTARY_PRESETS } from './elementary.preset';
 import { CANVAS_PRESETS } from './canvas.preset';
 import { JS_DSP_PRESETS } from './js-dsp.presets';
 import { KEYBOARD_PRESETS } from './keyboard.presets';
@@ -25,6 +26,7 @@ export const PRESETS: Record<string, { type: string; data: unknown }> = {
 	...CHUCK_DEMO_PRESETS,
 	...AI_TXT_PRESETS,
 	...TONE_JS_PRESETS,
+	...ELEMENTARY_PRESETS,
 	...CANVAS_PRESETS,
 	...JS_DSP_PRESETS,
 	...KEYBOARD_PRESETS
