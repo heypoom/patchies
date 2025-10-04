@@ -81,12 +81,12 @@ export class ElementaryAudioManager {
 		if (!code || code.trim() === '') {
 			// render silence
 			await this.core?.render();
-			this.core?.gc();
+			this.cleanup();
 
 			return;
 		}
 
-		this.core?.gc();
+		this.cleanup();
 
 		try {
 			// Ensure Elementary is loaded
@@ -161,9 +161,14 @@ export class ElementaryAudioManager {
 		}
 	}
 
+	public cleanup(): void {
+		this.core?.gc();
+		this.core?.pruneVirtualFileSystem();
+	}
+
 	public destroy(): void {
 		this.core?.render();
-		this.core?.gc();
+		this.cleanup();
 		this.messageContext.destroy();
 
 		// Disconnect audio nodes
