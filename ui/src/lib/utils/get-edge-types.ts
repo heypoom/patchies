@@ -20,7 +20,8 @@ const AUDIO_NODES = [
 	'video',
 	'split~',
 	'merge~',
-	'meter~'
+	'meter~',
+	'elem~'
 ];
 
 const isAudioObject = (node: MinimalNode): boolean => {
