@@ -100,6 +100,8 @@ export class ElementaryAudioManager {
 			};
 
 			const codeWithTemplate = `
+			  var setup;
+
 				${code}
 
 				return { setup }
@@ -130,7 +132,10 @@ export class ElementaryAudioManager {
 				}
 			});
 
-			await setup();
+			// setup is optional. can be driven entirely by recv.
+			if (typeof setup === 'function') {
+				await setup();
+			}
 		} catch (error) {
 			console.error('Failed to execute Elementary Audio code:', error);
 		}
