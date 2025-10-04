@@ -1,4 +1,5 @@
 import { match, P } from 'ts-pattern';
+import { MessageContext } from '$lib/messages/MessageContext';
 
 export class ToneManager {
 	private gainNode: GainNode;
@@ -9,13 +10,17 @@ export class ToneManager {
 	private currentCode = '';
 	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 	private audioContext: AudioContext;
+	private messageContext: MessageContext;
+	private nodeId: string;
 
 	public onSetPortCount = (inletCount: number) => {};
 
-	constructor(audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
+	constructor(nodeId: string, audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
+		this.nodeId = nodeId;
 		this.gainNode = gainNode;
 		this.inputNode = inputNode;
 		this.audioContext = audioContext;
+		this.messageContext = new MessageContext(nodeId);
 	}
 
 	async handleMessage(key: string, msg: unknown): Promise<void> {
@@ -69,10 +74,8 @@ export class ToneManager {
 			};
 
 			// Create send function for sending messages
-			const send = (message: unknown, options?: { to?: number }) => {
-				// TODO: Implement message sending to other nodes
-				console.log('Tone~ send:', message, options);
-			};
+			const send = (message: unknown, options?: { to?: number }) =>
+				this.messageContext.send(message, options);
 
 			// Create outputNode that connects to our gain node
 			const outputNode = this.gainNode;
@@ -94,14 +97,7 @@ export class ToneManager {
 			);
 
 			// Execute the code and store any returned cleanup function
-			const result = codeFunction(
-				Tone,
-				setPortCount,
-				recv,
-				send,
-				outputNode,
-				inputNode
-			);
+			const result = codeFunction(Tone, setPortCount, recv, send, outputNode, inputNode);
 
 			if (result && typeof result.cleanup === 'function') {
 				this.toneObjects.set('cleanup', result.cleanup);
@@ -110,7 +106,6 @@ export class ToneManager {
 			console.error('Failed to execute Tone.js code:', error);
 		}
 	}
-
 
 	private handleMessageInlet(messageData: unknown): void {
 		if (!this.recvCallback) return;
@@ -180,5 +175,6 @@ export class ToneManager {
 	public destroy(): void {
 		this.cleanup();
 		this.recvCallback = null;
+		this.messageContext.destroy();
 	}
 }
