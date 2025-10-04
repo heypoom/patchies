@@ -770,8 +770,10 @@ The `elem~` context gives you these variables:
 - `el`: the Elementary Audio core library
 - `core`: the WebRenderer instance for rendering audio graphs
 - `node`: the AudioWorkletNode for connecting to the Web Audio graph
+- `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
+- `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-Code example:
+Basic synthesis example:
 
 ```js
 setPortCount(1)

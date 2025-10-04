@@ -1,13 +1,16 @@
 import { match, P } from 'ts-pattern';
 import { JSRunner } from '$lib/js-runner/JSRunner';
+import type WebRenderer from '@elemaudio/web-renderer';
+
+type RecvCallback = (message: unknown, meta: unknown) => void;
 
 export class ElementaryAudioManager {
 	private gainNode: GainNode;
 	private inputNode: GainNode;
 	private audioContext: AudioContext;
-	private core: unknown | null = null;
+	private core: WebRenderer | null = null;
 	private workletNode: AudioWorkletNode | null = null;
-	private recvCallback: ((message: unknown, meta: unknown) => void) | null = null;
+	private recvCallback: RecvCallback | null = null;
 	private messageInletCount = 0;
 	private jsRunner: JSRunner;
 	private nodeId: string;
@@ -73,8 +76,11 @@ export class ElementaryAudioManager {
 	private async setCode(code: string): Promise<void> {
 		if (!code || code.trim() === '') {
 			await this.cleanup();
+
 			return;
 		}
+
+		this.core?.gc();
 
 		try {
 			// Ensure Elementary is loaded
@@ -119,6 +125,8 @@ export class ElementaryAudioManager {
 					el: elementaryCore.el,
 					core: this.core,
 					node: this.workletNode,
+					inputNode: this.inputNode,
+					outputNode: this.gainNode,
 					recv,
 					send
 				}
@@ -148,28 +156,24 @@ export class ElementaryAudioManager {
 	}
 
 	private async cleanup() {
-		// Elementary Audio doesn't need explicit cleanup like Tone.js
-		// The WebRenderer manages its own lifecycle
-		// We just need to stop rendering
-		if (
-			this.core &&
-			typeof (this.core as { render: (...args: unknown[]) => void }).render === 'function'
-		) {
-			try {
-				// Render silence to stop audio
-				const elementaryCore = await this.ensureElementary();
-				(this.core as { render: (...args: unknown[]) => void }).render(
-					elementaryCore.el.const({ key: 'cleanup', value: 0 }),
-					elementaryCore.el.const({ key: 'cleanup', value: 0 })
-				);
-			} catch (error) {
-				console.warn('Error during Elementary cleanup:', error);
-			}
+		if (!this.core) return;
+
+		try {
+			const elementaryCore = await this.ensureElementary();
+
+			// Render silence to stop audio
+			this.core.render(
+				elementaryCore.el.const({ key: 'cleanup', value: 0 }),
+				elementaryCore.el.const({ key: 'cleanup', value: 0 })
+			);
+		} catch (error) {
+			console.warn('Error during Elementary cleanup:', error);
 		}
 	}
 
 	public destroy(): void {
 		this.cleanup();
+		this.core?.gc();
 
 		// Disconnect audio nodes
 		if (this.workletNode) {
