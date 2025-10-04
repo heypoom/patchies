@@ -773,16 +773,20 @@ The `elem~` context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-Basic synthesis example:
+Here's how to create a simple phasor:
 
 ```js
 setPortCount(1)
 
-recv((freq) => {
-  core.render(el.cycle(freq), el.cycle(freq))
-})
+let [rate, setRate] = core.createRef("const", {
+  value: 440
+}, []);
 
-core.render(el.cycle(220), el.cycle(220))
+recv(freq => setRate({ value: freq }))
+
+// also try el.train and el.cycle in place of el.phasor
+// first arg is left channel, second arg is right channel
+core.render(el.phasor(rate), el.phasor(rate))
 ```
 
 ### MIDI & Network Objects
