@@ -789,6 +789,29 @@ recv(freq => setRate({ value: freq }))
 core.render(el.phasor(rate), el.phasor(rate))
 ```
 
+### `csound~`: Csound synthesis and processing
+
+The `csound~` object allows you to use [Csound](https://csound.com/) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
+
+By default, `csound~` adds a sample code for a simple sine wave oscillator.
+
+Write Csound orchestra code directly in the editor. The code is automatically wrapped in a CSD structure:
+
+```csound
+instr 1
+  a1 oscili 0.3, 440
+  outs a1, a1
+endin
+
+i 1 0 1
+```
+
+You can send messages to control Csound instruments:
+
+- Send `{type: 'bang'}` to trigger instrument 1
+- Send `{type: 'event', instr: 1, start: 0, dur: 1, params: [440, 0.5]}` to trigger with parameters
+- Send numbers to control channels: `chnget "inlet0"` in Csound code
+
 ### MIDI & Network Objects
 
 ### `midi.in`: MIDI input

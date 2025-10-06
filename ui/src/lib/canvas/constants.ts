@@ -106,3 +106,10 @@ let [rate, setRate] = core.createRef("const", {
 recv(freq => setRate({ value: freq }))
 
 core.render(el.cycle(rate), el.cycle(rate))`;
+
+export const DEFAULT_CSOUND_CODE = `instr 1
+  a1 oscili 0.3, 440
+  outs a1, a1
+endin
+
+i 1 0 1`;
