@@ -112,18 +112,17 @@ export class CsoundManager {
 
 					await this.csound!.inputMessage('i 1 0 1');
 				})
-				.with({ type: 'pause' }, async () => {
-					await this.pause();
+				.with({ type: 'pause' }, () => this.pause())
+				.with({ type: 'play' }, () => this.resume())
+				.with({ type: 'stop' }, () => this.csound!.stop())
+				.with({ type: 'reset' }, () => this.csound!.reset())
+				.with({ type: 'setControlChannel', channel: P.string, value: P.number }, (m) => {
+					this.csound!.setControlChannel(m.channel, m.value);
 				})
-				.with({ type: 'play' }, async () => {
-					await this.resume();
+				.with(P.number, (value) => {
+					this.csound!.setControlChannel(`ch${inletIndex}`, value);
 				})
-				.with(P.number, async (num) => {
-					await this.csound!.setControlChannel(`ch${inletIndex}`, num);
-				})
-				.with(P.string, async (scoreEvent) => {
-					await this.csound!.inputMessage(scoreEvent);
-				})
+				.with(P.string, (scoreEvent) => this.csound!.inputMessage(scoreEvent))
 				.otherwise(() => {});
 		} catch (error) {
 			console.error('Error handling inlet message:', error);
