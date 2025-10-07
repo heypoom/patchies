@@ -3,18 +3,27 @@
 	import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { createCsoundMessageHandler } from '$lib/audio/nodes/CsoundManager';
+	import { onDestroy, onMount } from 'svelte';
 
-	let { id, data, selected }: NodeProps = $props();
+	let {
+		id: nodeId,
+		data,
+		selected
+	}: NodeProps & {
+		data: {
+			code: string;
+		};
+	} = $props();
 
 	const audioSystem = AudioSystem.getInstance();
 	const { updateNodeData } = useSvelteFlow();
 
 	function handleCodeChange(newCode: string) {
-		updateNodeData(id, { code: newCode });
+		updateNodeData(nodeId, { code: newCode });
 	}
 
 	function handleRun() {
-		const node = audioSystem.nodesById.get(id);
+		const node = audioSystem.nodesById.get(nodeId);
 
 		if (node?.type === 'csound~' && node.csoundManager) {
 			node.csoundManager.handleMessage('code', data.code || '');
@@ -30,10 +39,18 @@
 			handler(msg, meta);
 		}
 	}
+
+	onMount(() => {
+		AudioSystem.getInstance().createAudioObject(nodeId, 'csound~', [null, data.code]);
+	});
+
+	onDestroy(() => {
+		audioSystem.removeAudioObject(nodeId);
+	});
 </script>
 
 <SimpleDspLayout
-	nodeId={id}
+	{nodeId}
 	nodeName="csound~"
 	{data}
 	{selected}

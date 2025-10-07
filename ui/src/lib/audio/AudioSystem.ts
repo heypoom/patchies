@@ -591,12 +591,13 @@ export class AudioSystem {
 		const [, code] = params as [unknown, string];
 
 		try {
-			const gainNode = new GainNode(this.audioContext);
+			const outputNode = new GainNode(this.audioContext);
 			const inputNode = new GainNode(this.audioContext);
+
 			const elementaryManager = new ElementaryAudioManager(
 				nodeId,
 				this.audioContext,
-				gainNode,
+				outputNode,
 				inputNode
 			);
 
@@ -606,7 +607,7 @@ export class AudioSystem {
 
 			this.nodesById.set(nodeId, {
 				type: 'elem~',
-				node: gainNode,
+				node: outputNode,
 				inputNode,
 				elementaryManager
 			});
@@ -619,9 +620,11 @@ export class AudioSystem {
 		const [, code] = params as [unknown, string];
 
 		try {
-			const gainNode = new GainNode(this.audioContext);
 			const inputNode = new GainNode(this.audioContext);
-			const csoundManager = new CsoundManager(nodeId, this.audioContext, gainNode, inputNode);
+			const outputNode = new GainNode(this.audioContext);
+			const csoundManager = new CsoundManager(nodeId, this.audioContext, outputNode, inputNode);
+
+			await csoundManager.initialize();
 
 			if (code) {
 				await csoundManager.handleMessage('code', code);
@@ -629,7 +632,7 @@ export class AudioSystem {
 
 			this.nodesById.set(nodeId, {
 				type: 'csound~',
-				node: gainNode,
+				node: outputNode,
 				inputNode,
 				csoundManager
 			});

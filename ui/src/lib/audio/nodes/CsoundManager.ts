@@ -1,7 +1,5 @@
-import { Csound } from '@csound/browser';
+import type { CsoundObj } from '@csound/browser';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-
-type CsoundObj = any;
 
 export class CsoundManager {
 	private csound: CsoundObj | null = null;
@@ -9,7 +7,6 @@ export class CsoundManager {
 	private outputNode: GainNode;
 	private inputNode: GainNode;
 	private initialized = false;
-	private currentCode = '';
 
 	constructor(
 		nodeId: string,
@@ -24,17 +21,34 @@ export class CsoundManager {
 
 	async initialize() {
 		if (this.initialized) return;
+		if (typeof window === 'undefined') return;
+
+		const { Csound } = await import('@csound/browser');
 
 		try {
-			this.csound = await Csound();
+			const csound = await Csound({
+				audioContext: this.audioContext
+			});
+
+			console.log('csound initialized');
+
+			if (!csound) return;
+
+			this.csound = csound;
+
 			await this.csound.setOption('-odac');
-			await this.csound.setOption('-iadc');
+			// await this.csound.setOption('-iadc');
 			await this.csound.setOption('-+rtaudio=null');
 			await this.csound.setOption('-d');
 
-			const audioWorkletNode = await this.csound.getAudioContext();
-			if (audioWorkletNode) {
-				audioWorkletNode.connect(this.outputNode);
+			const node = await this.csound.getNode();
+
+			if (this.inputNode && node) {
+				this.inputNode.connect(node);
+			}
+
+			if (node) {
+				node.connect(this.outputNode);
 			}
 
 			this.initialized = true;
@@ -52,7 +66,6 @@ export class CsoundManager {
 
 		try {
 			if (key === 'code' && typeof value === 'string') {
-				this.currentCode = value;
 				await this.runCode(value);
 			} else if (key === 'messageInlet' && typeof value === 'object' && value !== null) {
 				const data = value as { inletIndex: number; message: unknown; meta: unknown };
@@ -69,29 +82,26 @@ export class CsoundManager {
 		try {
 			await this.csound.reset();
 			await this.csound.setOption('-odac');
-			await this.csound.setOption('-iadc');
 
 			const csd = `
+;; Author: Steven Yi
 <CsoundSynthesizer>
 <CsOptions>
--odac -iadc -d
+-o dac --port=10000
 </CsOptions>
 <CsInstruments>
-sr = 44100
-ksmps = 128
-nchnls = 2
-0dbfs = 1
+sr=48000
+ksmps=64
+nchnls=2
+0dbfs=1
 
 ${code}
 
 </CsInstruments>
-<CsScore>
-f0 86400
-</CsScore>
 </CsoundSynthesizer>
 `;
 
-			await this.csound.compileOrc(csd);
+			await this.csound.compileCSD(csd);
 			await this.csound.start();
 		} catch (error) {
 			console.error('Error compiling/running Csound code:', error);
@@ -143,6 +153,7 @@ export const createCsoundMessageHandler =
 		if (!manager) return;
 
 		const inletIndex = meta.inlet ?? 0;
+
 		await manager.handleMessage('messageInlet', {
 			inletIndex,
 			message: data,
