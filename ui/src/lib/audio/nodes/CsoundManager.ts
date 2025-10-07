@@ -7,6 +7,7 @@ export class CsoundManager {
 	private outputNode: GainNode;
 	private inputNode: GainNode;
 	private initialized = false;
+	private isPaused = false;
 
 	constructor(
 		nodeId: string,
@@ -70,6 +71,7 @@ export class CsoundManager {
 		if (!this.csound) return;
 
 		try {
+			await this.csound.stop();
 			await this.csound.reset();
 
 			const csd = `
@@ -122,6 +124,32 @@ export class CsoundManager {
 		} catch (error) {
 			console.error('Error handling inlet message:', error);
 		}
+	}
+
+	async pause() {
+		if (!this.csound || this.isPaused) return;
+
+		try {
+			await this.csound.pause();
+			this.isPaused = true;
+		} catch (error) {
+			console.error('Error pausing Csound:', error);
+		}
+	}
+
+	async resume() {
+		if (!this.csound || !this.isPaused) return;
+
+		try {
+			await this.csound.resume();
+			this.isPaused = false;
+		} catch (error) {
+			console.error('Error resuming Csound:', error);
+		}
+	}
+
+	getIsPaused(): boolean {
+		return this.isPaused;
 	}
 
 	async destroy() {

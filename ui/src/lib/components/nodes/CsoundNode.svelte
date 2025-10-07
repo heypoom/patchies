@@ -4,6 +4,7 @@
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { createCsoundMessageHandler } from '$lib/audio/nodes/CsoundManager';
 	import { onDestroy, onMount } from 'svelte';
+	import Icon from '@iconify/svelte';
 
 	let {
 		id: nodeId,
@@ -18,6 +19,8 @@
 	const audioSystem = AudioSystem.getInstance();
 	const { updateNodeData } = useSvelteFlow();
 
+	let isPlaying = $state(true);
+
 	function handleCodeChange(newCode: string) {
 		updateNodeData(nodeId, { code: newCode });
 	}
@@ -27,6 +30,23 @@
 
 		if (node?.type === 'csound~' && node.csoundManager) {
 			node.csoundManager.handleMessage('code', data.code || '');
+		}
+	}
+
+	async function handlePlayPause() {
+		const node = audioSystem.nodesById.get(nodeId);
+
+		if (node?.type === 'csound~' && node.csoundManager) {
+			const manager = node.csoundManager;
+			const isPaused = manager.getIsPaused();
+
+			if (isPaused) {
+				await manager.resume();
+			} else {
+				await manager.pause();
+			}
+
+			isPlaying = !isPlaying;
 		}
 	}
 
@@ -57,4 +77,19 @@
 	onCodeChange={handleCodeChange}
 	onRun={handleRun}
 	{handleMessage}
-/>
+>
+	{#snippet actionButtons()}
+		<button
+			class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+			onclick={(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+
+				handlePlayPause();
+			}}
+			title={isPlaying ? 'Pause' : 'Play'}
+		>
+			<Icon icon={isPlaying ? 'lucide:pause' : 'lucide:play'} class="h-4 w-4 text-zinc-300" />
+		</button>
+	{/snippet}
+</SimpleDspLayout>

@@ -15,7 +15,8 @@
 		selected,
 		onCodeChange,
 		onRun,
-		handleMessage
+		handleMessage,
+		actionButtons
 	}: {
 		nodeId: string;
 		nodeName: string;
@@ -28,6 +29,7 @@
 		onCodeChange: (code: string) => void;
 		onRun: () => void;
 		handleMessage: MessageCallbackFn;
+		actionButtons?: any;
 	} = $props();
 
 	let contentContainer: HTMLDivElement | null = null;
@@ -89,6 +91,8 @@
 				<div></div>
 
 				<div>
+					{@render actionButtons?.()}
+
 					<button
 						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={(e) => {
