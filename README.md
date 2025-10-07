@@ -793,7 +793,22 @@ core.render(el.phasor(rate), el.phasor(rate))
 
 The `csound~` object allows you to use [Csound](https://csound.com) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
 
-You can send messages to control Csound instruments. See `CsoundManager.ts` for the accepted events.
+You can send messages to control Csound instruments:
+
+- `{type: 'bang'}`: Resume or re-eval Csound code
+- `{type: 'play'}`: Resume playback
+- `{type: 'pause'}`: Pause playback
+- `{type: 'stop'}`: Stop playback
+- `{type: 'reset'}`: Reset the Csound instance
+- `{type: 'setChannel', channel: 'name', value: number}`: Set a control channel value
+- `{type: 'setChannel', channel: 'name', value: 'string'}`: Set a string channel value
+- `{type: 'setOptions', value: '-flagname'}`: Set Csound options and reset
+- `{type: 'noteOn', note: 60, velocity: 127}`: Send MIDI note on
+- `{type: 'noteOff', note: 60, velocity: 0}`: Send MIDI note off
+- `{type: 'readScore', value: 'i1 0 1'}`: Send score statements to Csound
+- `{type: 'eval', code: 'instr 1 ... endin'}`: Evaluate Csound code
+- `number`: Set control channel for the inlet index
+- `string`: Send input messages (or set option if starts with `-`)
 
 ### MIDI & Network Objects
 
