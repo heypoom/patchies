@@ -79,13 +79,32 @@ export class CsoundManager {
 			await this.csound.stop();
 			await this.csound.reset();
 
+			let processedCode = code;
+
+			if (!code.includes('<CsInstruments>')) {
+				processedCode = `<CsInstruments>
+    		  sr = 48000
+          ksmps = 64
+          nchnls = 2
+          0dbfs = 1
+
+					${processedCode}
+				</CsInstruments>`;
+			}
+
+			let defaultCsOptions = '';
+
+			if (!code.includes('<CsOptions>')) {
+				defaultCsOptions = `<CsOptions>
+			  	-odac
+				</CsOptions>`;
+			}
+
 			const csd = `
         <CsoundSynthesizer>
-          <CsOptions>
-            -odac --port=10000
-          </CsOptions>
+          ${processedCode}
 
-          ${code}
+          ${defaultCsOptions}
         </CsoundSynthesizer>
       `;
 
