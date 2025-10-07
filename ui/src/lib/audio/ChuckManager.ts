@@ -149,6 +149,12 @@ export class ChuckManager {
 			.with(['clearAll', P.any], async () => {
 				await this.clearAll();
 			})
+			.with(['signal', { event: P.string }], ([, m]) => {
+				this.chuck?.signalEvent(m.event);
+			})
+			.with(['broadcast', { event: P.string }], ([, m]) => {
+				this.chuck?.broadcastEvent(m.event);
+			})
 			.with(['set', { key: P.string, value: P.string }], async ([, m]) => {
 				this.chuck?.setString(m.key, m.value);
 			})
