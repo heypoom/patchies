@@ -123,7 +123,6 @@
 					{selected}
 					expr={data.expr}
 					bind:isEditing
-					placeholder="instr 1\n  a1 oscil 0.5, 440\n  out a1\nendin\nschedule(1, 0, 1)"
 					editorClass="csound-node-code-editor"
 					onExpressionChange={handleExpressionChange}
 					exitOnRun={false}

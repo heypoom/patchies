@@ -109,32 +109,39 @@ recv(freq => setRate({ value: freq }))
 
 core.render(el.cycle(rate), el.cycle(rate))`;
 
-export const DEFAULT_CSOUND_CODE = `instr 1
-  ioct = octcps(p4)
-  kpwm = oscili(.1, 5)
-  asig = vco2(p5, p4, 4, .5 + kpwm)
-  asig += vco2(p5, p4 * 2)
+export const DEFAULT_CSOUND_CODE = `<CsInstruments>
+  sr = 48000
+  ksmps = 64
+  nchnls = 2
+  0dbfs = 1
 
-  idepth = 3
-  acut = transegr:a(0, .002, 0, idepth, .5, -4.2, 0.001, .5, -4.2, 0)
-  asig = zdf_2pole(asig, cpsoct(ioct + acut), 0.5)
+  instr 1
+    ioct = octcps(p4)
+    kpwm = oscili(.1, 5)
+    asig = vco2(p5, p4, 4, .5 + kpwm)
+    asig += vco2(p5, p4 * 2)
 
-  asig *= linsegr:a(1, p3, 1, .5, 0)
+    idepth = 3
+    acut = transegr:a(0, .002, 0, idepth, .5, -4.2, 0.001, .5, -4.2, 0)
+    asig = zdf_2pole(asig, cpsoct(ioct + acut), 0.5)
 
-  out(asig, asig)
-endin
+    asig *= linsegr:a(1, p3, 1, .5, 0)
 
-instr Main
-  inotes[] fillarray 60, 67, 63, 65, 62
-  ioct[] fillarray 0,1,0,0,1
-  inote = inotes[p4 % 37 % 11 % 5] + 12 * ioct[p4 % 41 % 17 % 5]
-  schedule(1, 0, .25, cpsmidinn(inote), 0.25)
+    out(asig, asig)
+  endin
 
-  if (p4 % 64 % 37 % 17 % 11 == 0 && inote != 74 && inote != 62) then
-    schedule(1, 0, .5, cpsmidinn(inote + 7), 0.125)
-  endif
+  instr Main
+    inotes[] fillarray 60, 67, 63, 65, 62
+    ioct[] fillarray 0,1,0,0,1
+    inote = inotes[p4 % 37 % 11 % 5] + 12 * ioct[p4 % 41 % 17 % 5]
+    schedule(1, 0, .25, cpsmidinn(inote), 0.25)
 
-  schedule(p1, .25, .25, p4 + 1)
-endin
+    if (p4 % 64 % 37 % 17 % 11 == 0 && inote != 74 && inote != 62) then
+      schedule(1, 0, .5, cpsmidinn(inote + 7), 0.125)
+    endif
 
-schedule("Main", 0, 0, 0)`;
+    schedule(p1, .25, .25, p4 + 1)
+  endin
+
+  schedule("Main", 0, 0, 0)
+</CsInstruments>`;

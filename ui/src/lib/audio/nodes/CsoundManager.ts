@@ -85,14 +85,7 @@ export class CsoundManager {
             -odac --port=10000
           </CsOptions>
 
-          <CsInstruments>
-            sr=48000
-            ksmps=64
-            nchnls=2
-            0dbfs=1
-
-            ${code}
-          </CsInstruments>
+          ${code}
         </CsoundSynthesizer>
       `;
 
@@ -124,9 +117,9 @@ export class CsoundManager {
 				.with({ type: 'bang' }, async () => {
 					if (this.isPaused) {
 						await this.resume();
+					} else if (this.codeString) {
+						await this.csound!.evalCode(this.codeString);
 					}
-
-					await this.csound!.inputMessage('i 1 0 1');
 				})
 				.with({ type: 'pause' }, () => this.pause())
 				.with({ type: 'play' }, () => this.resume())
