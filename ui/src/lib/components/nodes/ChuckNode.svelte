@@ -36,11 +36,11 @@
 				updateNodeData(nodeId, { expr: nextExpr });
 				await runChuckCode(nextExpr);
 			})
-			.with({ type: P.union('bang', 'run') }, async () => {
-				await runChuckCode(data.expr);
-			})
-			.with({ type: 'replace' }, async () => {
+			.with({ type: P.union('replace', 'bang') }, async () => {
 				await replaceChuckCode(data.expr);
+			})
+			.with({ type: P.union('run') }, async () => {
+				await runChuckCode(data.expr);
 			})
 			.with({ type: 'remove' }, () => {
 				removeChuckCode();
@@ -165,7 +165,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -229,7 +229,7 @@
 											</div>
 										</div>
 
-										<div class="absolute right-0 top-0">
+										<div class="absolute top-0 right-0">
 											<button
 												onclick={() => removeShred(shred.id)}
 												class="ml-2 rounded p-1 hover:bg-zinc-700"

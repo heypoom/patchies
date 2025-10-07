@@ -62,18 +62,20 @@ export const DEFAULT_PYTHON_CODE = `import numpy as np
 
 np.arange(15).reshape(3, 5)`;
 
-export const DEFAULT_CHUCK_CODE = `second - (now % second) => now;
+export const DEFAULT_CHUCK_CODE = `SinOsc s => JCRev r => dac;
 
-Blit s => LPF f => dac;
-f.set(500, 50);
+.2 => s.gain;
+.1 => r.mix;
 
-4 => s.freq;
+[ 0, 2, 4, 7, 9, 11 ] @=> int hi[];
 
-int x;
+while (true) {
+  Std.mtof(
+    45 + Std.rand2(0, 3) * 12 +
+    hi[Std.rand2(0, hi.cap() - 1)]
+  ) => s.freq;
 
-while (250::ms => now) {
-  (((x * 3) % 8) + 1) * 200 => f.freq;
-  x++;
+  120::ms => now;
 }`;
 
 export const DEFAULT_DSP_JS_CODE = `function process(inputs, outputs) {
