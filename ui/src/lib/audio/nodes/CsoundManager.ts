@@ -1,5 +1,6 @@
 import type { CsoundObj } from '@csound/browser';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { match, P } from 'ts-pattern';
 
 export class CsoundManager {
 	private csound: CsoundObj | null = null;
@@ -56,12 +57,12 @@ export class CsoundManager {
 		if (!this.csound) return;
 
 		try {
-			if (key === 'code' && typeof value === 'string') {
-				await this.runCode(value);
-			} else if (key === 'messageInlet' && typeof value === 'object' && value !== null) {
-				const data = value as { inletIndex: number; message: unknown; meta: unknown };
-				await this.handleInletMessage(data.inletIndex, data.message);
-			}
+			await match([key, value])
+				.with(['code', P.string], async ([, code]) => this.runCode(code))
+				.with(['messageInlet', { inletIndex: P.number, message: P.any, meta: P.any }], ([, data]) =>
+					this.handleInletMessage(data.inletIndex, data.message)
+				)
+				.otherwise(() => {});
 		} catch (error) {
 			console.error('Error in CsoundManager:', error);
 		}
@@ -103,24 +104,27 @@ export class CsoundManager {
 		if (!this.csound) return;
 
 		try {
-			if (typeof message === 'object' && message !== null && 'type' in message) {
-				const msg = message as { type: string; [key: string]: unknown };
+			await match(message)
+				.with({ type: 'bang' }, async () => {
+					if (this.isPaused) {
+						await this.resume();
+					}
 
-				if (msg.type === 'bang') {
-					await this.csound.inputMessage('i 1 0 1');
-				} else if (msg.type === 'i' && typeof msg.instr === 'number') {
-					const instr = msg.instr;
-					const start = typeof msg.start === 'number' ? msg.start : 0;
-					const dur = typeof msg.dur === 'number' ? msg.dur : 1;
-					const params = Array.isArray(msg.params) ? msg.params.join(' ') : '';
-
-					await this.csound.inputMessage(`i ${instr} ${start} ${dur} ${params}`);
-				}
-			} else if (typeof message === 'number') {
-				await this.csound.setControlChannel(`inlet${inletIndex}`, message);
-			} else if (typeof message === 'string') {
-				await this.csound.setStringChannel(`inlet${inletIndex}`, message);
-			}
+					await this.csound!.inputMessage('i 1 0 1');
+				})
+				.with({ type: 'pause' }, async () => {
+					await this.pause();
+				})
+				.with({ type: 'play' }, async () => {
+					await this.resume();
+				})
+				.with(P.number, async (num) => {
+					await this.csound!.setControlChannel(`ch${inletIndex}`, num);
+				})
+				.with(P.string, async (scoreEvent) => {
+					await this.csound!.inputMessage(scoreEvent);
+				})
+				.otherwise(() => {});
 		} catch (error) {
 			console.error('Error handling inlet message:', error);
 		}

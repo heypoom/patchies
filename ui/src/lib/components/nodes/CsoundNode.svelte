@@ -27,19 +27,26 @@
 
 	const { updateNodeData } = useSvelteFlow();
 
-	const handleMessage: MessageCallbackFn = (message) => {
-		if (typeof message === 'string') {
-			updateNodeData(nodeId, { expr: message });
-			runCsoundCode(message);
-		}
-	};
-
-	const runCsoundCode = (code: string) => {
+	const getManager = () => {
 		const node = audioSystem.nodesById.get(nodeId);
 
 		if (node?.type === 'csound~' && node.csoundManager) {
-			node.csoundManager.handleMessage('code', code);
+			return node.csoundManager;
 		}
+	};
+
+	const handleMessage: MessageCallbackFn = (message, meta) => {
+		const manager = getManager();
+		if (!manager) return;
+
+		manager.handleMessage('messageInlet', { inletIndex: meta.inlet, message, meta });
+	};
+
+	const runCsoundCode = (code: string) => {
+		const manager = getManager();
+		if (!manager) return;
+
+		manager.handleMessage('code', code);
 	};
 
 	const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
@@ -47,20 +54,18 @@
 	const handleRun = () => runCsoundCode(data.expr);
 
 	async function handlePlayPause() {
-		const node = audioSystem.nodesById.get(nodeId);
+		const manager = getManager();
+		if (!manager) return;
 
-		if (node?.type === 'csound~' && node.csoundManager) {
-			const manager = node.csoundManager;
-			const isPaused = manager.getIsPaused();
+		const isPaused = manager.getIsPaused();
 
-			if (isPaused) {
-				await manager.resume();
-			} else {
-				await manager.pause();
-			}
-
-			isPlaying = !isPlaying;
+		if (isPaused) {
+			await manager.resume();
+		} else {
+			await manager.pause();
 		}
+
+		isPlaying = !isPlaying;
 	}
 
 	onMount(() => {
@@ -81,8 +86,10 @@
 	});
 </script>
 
-{#snippet csoundHandles()}
-	<StandardHandle port="inlet" type="audio" title="Audio Input" total={1} index={0} />
+{#snippet csoundInlets()}
+	<StandardHandle port="inlet" type="audio" title="Audio Input" total={2} index={0} />
+
+	<StandardHandle port="inlet" type="message" title="Message Input" id={0} total={2} index={1} />
 {/snippet}
 
 {#snippet csoundOutlets()}
@@ -121,7 +128,7 @@
 					onExpressionChange={handleExpressionChange}
 					exitOnRun={false}
 					onRun={handleRun}
-					handles={csoundHandles}
+					handles={csoundInlets}
 					outlets={csoundOutlets}
 				/>
 			</div>
