@@ -27,25 +27,15 @@ export class CsoundManager {
 
 		try {
 			const csound = await Csound({
-				audioContext: this.audioContext
+				audioContext: this.audioContext,
+				autoConnect: false
 			});
-
-			console.log('csound initialized');
 
 			if (!csound) return;
 
 			this.csound = csound;
 
-			await this.csound.setOption('-odac');
-			// await this.csound.setOption('-iadc');
-			await this.csound.setOption('-+rtaudio=null');
-			await this.csound.setOption('-d');
-
 			const node = await this.csound.getNode();
-
-			if (this.inputNode && node) {
-				this.inputNode.connect(node);
-			}
 
 			if (node) {
 				node.connect(this.outputNode);
@@ -81,25 +71,24 @@ export class CsoundManager {
 
 		try {
 			await this.csound.reset();
-			await this.csound.setOption('-odac');
 
 			const csd = `
-;; Author: Steven Yi
-<CsoundSynthesizer>
-<CsOptions>
--o dac --port=10000
-</CsOptions>
-<CsInstruments>
-sr=48000
-ksmps=64
-nchnls=2
-0dbfs=1
+        <CsoundSynthesizer>
+          <CsOptions>
+          -o dac
+          --port=10000
+          </CsOptions>
 
-${code}
+          <CsInstruments>
+            sr=48000
+            ksmps=64
+            nchnls=2
+            0dbfs=1
 
-</CsInstruments>
-</CsoundSynthesizer>
-`;
+            ${code}
+          </CsInstruments>
+        </CsoundSynthesizer>
+      `;
 
 			await this.csound.compileCSD(csd);
 			await this.csound.start();
@@ -117,7 +106,7 @@ ${code}
 
 				if (msg.type === 'bang') {
 					await this.csound.inputMessage('i 1 0 1');
-				} else if (msg.type === 'event' && typeof msg.instr === 'number') {
+				} else if (msg.type === 'i' && typeof msg.instr === 'number') {
 					const instr = msg.instr;
 					const start = typeof msg.start === 'number' ? msg.start : 0;
 					const dur = typeof msg.dur === 'number' ? msg.dur : 1;
@@ -136,13 +125,13 @@ ${code}
 	}
 
 	async destroy() {
-		if (this.csound) {
-			try {
-				await this.csound.stop();
-				await this.csound.reset();
-			} catch (error) {
-				console.error('Error destroying Csound:', error);
-			}
+		if (!this.csound) return;
+
+		try {
+			await this.csound.stop();
+			await this.csound.reset();
+		} catch (error) {
+			console.error('Error destroying Csound:', error);
 		}
 	}
 }

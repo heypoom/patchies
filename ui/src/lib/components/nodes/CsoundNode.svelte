@@ -31,7 +31,7 @@
 	}
 
 	function handleMessage(msg: unknown, meta: unknown) {
-		const node = audioSystem.nodesById.get(id);
+		const node = audioSystem.nodesById.get(nodeId);
 
 		if (node?.type === 'csound~' && node.csoundManager) {
 			const handler = createCsoundMessageHandler(node.csoundManager);
@@ -41,7 +41,7 @@
 	}
 
 	onMount(() => {
-		AudioSystem.getInstance().createAudioObject(nodeId, 'csound~', [null, data.code]);
+		audioSystem.createAudioObject(nodeId, 'csound~', [null, data.code]);
 	});
 
 	onDestroy(() => {

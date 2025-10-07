@@ -568,9 +568,9 @@ export class AudioSystem {
 		const [, code] = params as [unknown, string];
 
 		try {
-			const gainNode = new GainNode(this.audioContext);
+			const outputNode = new GainNode(this.audioContext);
 			const inputNode = new GainNode(this.audioContext);
-			const toneManager = new ToneManager(nodeId, this.audioContext, gainNode, inputNode);
+			const toneManager = new ToneManager(nodeId, this.audioContext, outputNode, inputNode);
 
 			if (code) {
 				await toneManager.handleMessage('code', code);
@@ -578,7 +578,7 @@ export class AudioSystem {
 
 			this.nodesById.set(nodeId, {
 				type: 'tone~',
-				node: gainNode,
+				node: outputNode,
 				inputNode,
 				toneManager
 			});
