@@ -132,8 +132,11 @@ export class CsoundManager {
 				.with({ type: 'play' }, () => this.resume())
 				.with({ type: 'stop' }, () => this.csound!.stop())
 				.with({ type: 'reset' }, () => this.csound!.reset())
-				.with({ type: 'setControlChannel', channel: P.string, value: P.number }, async (m) => {
+				.with({ type: 'setChannel', channel: P.string, value: P.number }, async (m) => {
 					await this.csound!.setControlChannel(m.channel, m.value);
+				})
+				.with({ type: 'setChannel', channel: P.string, value: P.string }, async (m) => {
+					await this.csound!.setStringChannel(m.channel, m.value);
 				})
 				.with({ type: 'noteOn', note: P.number, velocity: P.number }, async (m) => {
 					await this.ensureMidi();
@@ -145,6 +148,9 @@ export class CsoundManager {
 				})
 				.with({ type: 'readScore', value: P.string }, async (m) => {
 					await this.csound!.readScore(m.value);
+				})
+				.with({ type: 'eval', code: P.string }, async (m) => {
+					await this.csound!.evalCode(m.code);
 				})
 				.with(P.number, async (value) => {
 					await this.csound!.setControlChannel(`ch${inletIndex}`, value);
