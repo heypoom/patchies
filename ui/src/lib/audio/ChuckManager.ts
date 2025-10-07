@@ -1,6 +1,7 @@
 import type { Chuck } from 'webchuck';
 import { match, P } from 'ts-pattern';
 import { writable } from 'svelte/store';
+import { MessageContext } from '$lib/messages/MessageContext';
 
 export interface ChuckShred {
 	id: number;
@@ -9,18 +10,22 @@ export interface ChuckShred {
 }
 
 export class ChuckManager {
+	private nodeId: string;
 	private chuck: Chuck | null = null;
 	private shreds: ChuckShred[] = [];
 	private ready = false;
 	private gainNode: GainNode;
 	private audioContext: AudioContext;
+	private messageContext: MessageContext;
 
 	/** Allows Svelte to subscribe to the shreds */
 	public shredsStore = writable<ChuckShred[]>([]);
 
-	constructor(audioContext: AudioContext, gainNode: GainNode) {
+	constructor(nodeId: string, audioContext: AudioContext, gainNode: GainNode) {
 		this.audioContext = audioContext;
 		this.gainNode = gainNode;
+		this.nodeId = nodeId;
+		this.messageContext = new MessageContext(nodeId);
 	}
 
 	async runCode(code: string): Promise<void> {
@@ -143,6 +148,35 @@ export class ChuckManager {
 			})
 			.with(['clearAll', P.any], async () => {
 				await this.clearAll();
+			})
+			.with(['set', { key: P.string, value: P.string }], async ([, m]) => {
+				this.chuck?.setString(m.key, m.value);
+			})
+			.with(['set', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
+				if (m.value.every(Number.isInteger)) {
+					this.chuck?.setIntArray(m.key, m.value);
+				} else {
+					this.chuck?.setFloatArray(m.key, m.value);
+				}
+			})
+			.with(['set', { key: P.string, value: P.number }], async ([, m]) => {
+				if (Number.isInteger(m.value)) {
+					this.chuck?.setInt(m.key, m.value);
+				} else {
+					this.chuck?.setFloat(m.key, m.value);
+				}
+			})
+			.with(['setInt', { key: P.string, value: P.number }], async ([, m]) => {
+				this.chuck?.setInt(m.key, m.value);
+			})
+			.with(['setFloat', { key: P.string, value: P.number }], async ([, m]) => {
+				this.chuck?.setFloat(m.key, m.value);
+			})
+			.with(['setInt', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
+				this.chuck?.setIntArray(m.key, m.value);
+			})
+			.with(['setFloat', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
+				this.chuck?.setFloatArray(m.key, m.value);
 			});
 	}
 
@@ -159,6 +193,7 @@ export class ChuckManager {
 		this.shreds = [];
 		this.chuck = null;
 		this.ready = false;
+		this.messageContext.destroy();
 	}
 
 	private updateStore() {
@@ -189,6 +224,11 @@ export class ChuckManager {
 
 		this.chuck = await Chuck.init([], this.audioContext, 2, './webchuck/');
 		this.chuck.connect(this.gainNode);
+
+		// TODO: replace with virtual console?
+		this.chuck.chuckPrint = (message: string) => {
+			this.messageContext.send(message);
+		};
 
 		this.chuck.addEventListener('processorerror', (event) => {
 			console.error('ChucK AudioWorkletProcessor error:', event);

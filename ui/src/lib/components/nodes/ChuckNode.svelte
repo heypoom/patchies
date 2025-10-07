@@ -39,7 +39,7 @@
 			.with({ type: P.union('replace', 'bang') }, async () => {
 				await send('replace', data.expr);
 			})
-			.with({ type: P.union('run') }, async () => {
+			.with({ type: 'run' }, async () => {
 				await send('run', data.expr);
 			})
 			.with({ type: 'remove' }, () => {
@@ -47,6 +47,9 @@
 			})
 			.with({ type: 'stop' }, () => {
 				stopChuck();
+			})
+			.with({ type: P.string }, async (m) => {
+				await send(m.type, m);
 			});
 	};
 
@@ -122,7 +125,9 @@
 {/snippet}
 
 {#snippet chuckOutlets()}
-	<StandardHandle port="outlet" type="audio" title="Audio Output" total={1} index={0} />
+	<StandardHandle port="outlet" type="audio" title="Audio Output" total={2} index={0} />
+
+	<StandardHandle port="outlet" type="message" title="Message Output" total={2} index={1} id={0} />
 {/snippet}
 
 <div class="relative flex gap-x-3">

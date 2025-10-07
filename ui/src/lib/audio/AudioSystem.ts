@@ -644,7 +644,7 @@ export class AudioSystem {
 	async createChuck(nodeId: string) {
 		const gainNode = new GainNode(this.audioContext);
 
-		const chuckManager = new ChuckManager(this.audioContext, gainNode);
+		const chuckManager = new ChuckManager(nodeId, this.audioContext, gainNode);
 		chuckManager.handleMessage('init', null);
 
 		this.nodesById.set(nodeId, {
