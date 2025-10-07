@@ -9,6 +9,8 @@ export class CsoundManager {
 	private inputNode: GainNode;
 	private initialized = false;
 	private isPaused = false;
+	private optionsString = '';
+	private codeString = '';
 
 	constructor(
 		nodeId: string,
@@ -71,6 +73,8 @@ export class CsoundManager {
 	private async runCode(code: string) {
 		if (!this.csound) return;
 
+		this.codeString = code;
+
 		try {
 			await this.csound.stop();
 			await this.csound.reset();
@@ -78,8 +82,7 @@ export class CsoundManager {
 			const csd = `
         <CsoundSynthesizer>
           <CsOptions>
-          -o dac
-          --port=10000
+            -odac --port=10000
           </CsOptions>
 
           <CsInstruments>
@@ -94,9 +97,22 @@ export class CsoundManager {
       `;
 
 			await this.csound.compileCSD(csd);
+			await this.setOptions(this.optionsString);
 			await this.csound.start();
 		} catch (error) {
 			console.error('Error compiling/running Csound code:', error);
+		}
+	}
+
+	async setOptions(options: string) {
+		if (!this.csound) return;
+
+		this.optionsString = options;
+
+		const trimmedOptions = options.split(' ').map((option) => option.trim());
+
+		for (const option of trimmedOptions) {
+			await this.csound.setOption(option);
 		}
 	}
 
@@ -116,13 +132,32 @@ export class CsoundManager {
 				.with({ type: 'play' }, () => this.resume())
 				.with({ type: 'stop' }, () => this.csound!.stop())
 				.with({ type: 'reset' }, () => this.csound!.reset())
-				.with({ type: 'setControlChannel', channel: P.string, value: P.number }, (m) => {
-					this.csound!.setControlChannel(m.channel, m.value);
+				.with({ type: 'setControlChannel', channel: P.string, value: P.number }, async (m) => {
+					await this.csound!.setControlChannel(m.channel, m.value);
 				})
-				.with(P.number, (value) => {
-					this.csound!.setControlChannel(`ch${inletIndex}`, value);
+				.with({ type: 'noteOn', note: P.number, velocity: P.number }, async (m) => {
+					await this.ensureMidi();
+					await this.csound!.midiMessage(144, m.note, m.velocity);
 				})
-				.with(P.string, (scoreEvent) => this.csound!.inputMessage(scoreEvent))
+				.with({ type: 'noteOff', note: P.number, velocity: P.number }, async (m) => {
+					await this.ensureMidi();
+					await this.csound!.midiMessage(128, m.note, m.velocity);
+				})
+				.with({ type: 'readScore', value: P.string }, async (m) => {
+					await this.csound!.readScore(m.value);
+				})
+				.with(P.number, async (value) => {
+					await this.csound!.setControlChannel(`ch${inletIndex}`, value);
+				})
+				.with(P.string, async (m) => {
+					if (m.startsWith('-')) {
+						await this.setOptions(m);
+						await this.csound!.reset();
+						return;
+					}
+
+					await this.csound!.inputMessage(m);
+				})
 				.otherwise(() => {});
 		} catch (error) {
 			console.error('Error handling inlet message:', error);
@@ -164,6 +199,13 @@ export class CsoundManager {
 		} catch (error) {
 			console.error('Error destroying Csound:', error);
 		}
+	}
+
+	async ensureMidi() {
+		if (this.optionsString.includes('-M0')) return;
+
+		await this.setOptions(`${this.optionsString} -M0`);
+		await this.runCode(this.codeString);
 	}
 }
 
