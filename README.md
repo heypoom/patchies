@@ -789,27 +789,49 @@ recv(freq => setRate({ value: freq }))
 core.render(el.phasor(rate), el.phasor(rate))
 ```
 
-### `csound~`: Csound synthesis and processing
+### `csound~`: Sound and music computing
 
-The `csound~` object allows you to use [Csound](https://csound.com/) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
-
-By default, `csound~` adds a sample code for a simple sine wave oscillator.
+The `csound~` object allows you to use [Csound](https://csound.com) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
 
 Write Csound orchestra code directly in the editor. The code is automatically wrapped in a CSD structure:
 
 ```csound
 instr 1
-  a1 oscili 0.3, 440
-  outs a1, a1
+    ioct = octcps(p4)
+    kpwm = oscili(.1, 5)
+    asig = vco2(p5, p4, 4, .5 + kpwm)
+    asig += vco2(p5, p4 * 2)
+
+    idepth = 2
+    acut = transegr:a(0, .002, 0, idepth, .5, -4.2, 0.001, .5, -4.2, 0)
+    asig = zdf_2pole(asig, cpsoct(ioct + acut), 0.5)
+
+    asig *= linsegr:a(1, p3, 1, .5, 0)
+
+    out(asig, asig)
+
 endin
 
-i 1 0 1
+instr Main
+    inotes[] fillarray 60, 67, 63, 65, 62
+    ioct[] fillarray 0,1,0,0,1
+    inote = inotes[p4 % 37 % 11 % 5] + 12 * ioct[p4 % 41 % 17 % 5]
+    schedule(1, 0, .25, cpsmidinn(inote), 0.25)
+
+    if(p4 % 64 % 37 % 17 % 11 == 0 && inote != 74 && inote != 62) then
+        schedule(1, 0, .5, cpsmidinn(inote + 7), 0.125)
+    endif
+
+    schedule(p1, .25, .25, p4 + 1)
+endin
+
+schedule("Main", 0, 0, 0)
 ```
 
 You can send messages to control Csound instruments:
 
 - Send `{type: 'bang'}` to trigger instrument 1
-- Send `{type: 'event', instr: 1, start: 0, dur: 1, params: [440, 0.5]}` to trigger with parameters
+- Send `{type: 'i', instr: 1, start: 0, dur: 1, params: [440, 0.5]}` to trigger with parameters
 - Send numbers to control channels: `chnget "inlet0"` in Csound code
 
 ### MIDI & Network Objects
