@@ -218,7 +218,7 @@
 							<div class="text-xs text-zinc-500">No running shreds</div>
 						{:else}
 							<div class="space-y-2">
-								{#each shreds as shred (shred.id)}
+								{#each shreds as shred, index (index)}
 									<div class="relative flex items-center justify-between">
 										<div class="flex-1">
 											<div class="font-mono text-xs text-zinc-300">ID: {shred.id}</div>
