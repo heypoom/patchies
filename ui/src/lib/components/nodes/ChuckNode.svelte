@@ -34,13 +34,13 @@
 		match(message)
 			.with(P.string, async (nextExpr) => {
 				updateNodeData(nodeId, { expr: nextExpr });
-				await runChuckCode(nextExpr);
+				await send('run', nextExpr);
 			})
 			.with({ type: P.union('replace', 'bang') }, async () => {
-				await replaceChuckCode(data.expr);
+				await send('replace', data.expr);
 			})
 			.with({ type: P.union('run') }, async () => {
-				await runChuckCode(data.expr);
+				await send('run', data.expr);
 			})
 			.with({ type: 'remove' }, () => {
 				removeChuckCode();
@@ -52,8 +52,6 @@
 
 	const send = (key: string, msg: unknown) => audioSystem.send(nodeId, key, msg);
 
-	const runChuckCode = (code: string) => send('run', code);
-	const replaceChuckCode = (code: string) => send('replace', code);
 	const removeChuckCode = () => send('remove', null);
 	const removeShred = (shredId: number) => send('removeShred', shredId);
 	const stopChuck = () => send('clearAll', null);
@@ -215,7 +213,7 @@
 							<div class="text-xs text-zinc-500">No running shreds</div>
 						{:else}
 							<div class="space-y-2">
-								{#each shreds as shred}
+								{#each shreds as shred (shred.id)}
 									<div class="relative flex items-center justify-between">
 										<div class="flex-1">
 											<div class="font-mono text-xs text-zinc-300">ID: {shred.id}</div>
