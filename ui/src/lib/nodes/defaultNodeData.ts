@@ -88,9 +88,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('elem~', () => ({ code: DEFAULT_ELEM_CODE, messageInletCount: 1, messageOutletCount: 0 }))
 		.with('csound~', () => ({
-			code: DEFAULT_CSOUND_CODE,
-			messageInletCount: 1,
-			messageOutletCount: 0
+			expr: DEFAULT_CSOUND_CODE
 		}))
 		.with('label', () => ({ message: 'label' }))
 		.with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))

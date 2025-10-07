@@ -1,37 +1,50 @@
 <script lang="ts">
-	import SimpleDspLayout from './SimpleDspLayout.svelte';
-	import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
-	import { createCsoundMessageHandler } from '$lib/audio/nodes/CsoundManager';
-	import { onDestroy, onMount } from 'svelte';
+	import CommonExprLayout from './CommonExprLayout.svelte';
 	import Icon from '@iconify/svelte';
 
 	let {
 		id: nodeId,
 		data,
 		selected
-	}: NodeProps & {
-		data: {
-			code: string;
-		};
+	}: {
+		id: string;
+		data: { expr: string };
+		selected: boolean;
 	} = $props();
 
-	const audioSystem = AudioSystem.getInstance();
-	const { updateNodeData } = useSvelteFlow();
-
+	let isEditing = $state(!data.expr);
+	let layoutRef = $state<any>();
 	let isPlaying = $state(true);
 
-	function handleCodeChange(newCode: string) {
-		updateNodeData(nodeId, { code: newCode });
-	}
+	let messageContext: MessageContext;
+	let audioSystem = AudioSystem.getInstance();
 
-	function handleRun() {
+	const { updateNodeData } = useSvelteFlow();
+
+	const handleMessage: MessageCallbackFn = (message) => {
+		if (typeof message === 'string') {
+			updateNodeData(nodeId, { expr: message });
+			runCsoundCode(message);
+		}
+	};
+
+	const runCsoundCode = (code: string) => {
 		const node = audioSystem.nodesById.get(nodeId);
 
 		if (node?.type === 'csound~' && node.csoundManager) {
-			node.csoundManager.handleMessage('code', data.code || '');
+			node.csoundManager.handleMessage('code', code);
 		}
-	}
+	};
+
+	const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
+
+	const handleRun = () => runCsoundCode(data.expr);
 
 	async function handlePlayPause() {
 		const node = audioSystem.nodesById.get(nodeId);
@@ -50,46 +63,83 @@
 		}
 	}
 
-	function handleMessage(msg: unknown, meta: unknown) {
-		const node = audioSystem.nodesById.get(nodeId);
-
-		if (node?.type === 'csound~' && node.csoundManager) {
-			const handler = createCsoundMessageHandler(node.csoundManager);
-
-			handler(msg, meta);
-		}
-	}
-
 	onMount(() => {
-		audioSystem.createAudioObject(nodeId, 'csound~', [null, data.code]);
+		messageContext = new MessageContext(nodeId);
+		messageContext.queue.addCallback(handleMessage);
+
+		audioSystem.createAudioObject(nodeId, 'csound~', [null, data.expr]);
+
+		if (isEditing) {
+			setTimeout(() => layoutRef?.focus(), 10);
+		}
 	});
 
 	onDestroy(() => {
+		messageContext.queue.removeCallback(handleMessage);
+		messageContext.destroy();
 		audioSystem.removeAudioObject(nodeId);
 	});
 </script>
 
-<SimpleDspLayout
-	{nodeId}
-	nodeName="csound~"
-	{data}
-	{selected}
-	onCodeChange={handleCodeChange}
-	onRun={handleRun}
-	{handleMessage}
->
-	{#snippet actionButtons()}
-		<button
-			class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-			onclick={(e) => {
-				e.preventDefault();
-				e.stopPropagation();
+{#snippet csoundHandles()}
+	<StandardHandle port="inlet" type="audio" title="Audio Input" total={1} index={0} />
+{/snippet}
 
-				handlePlayPause();
-			}}
-			title={isPlaying ? 'Pause' : 'Play'}
-		>
-			<Icon icon={isPlaying ? 'lucide:pause' : 'lucide:play'} class="h-4 w-4 text-zinc-300" />
-		</button>
-	{/snippet}
-</SimpleDspLayout>
+{#snippet csoundOutlets()}
+	<StandardHandle port="outlet" type="audio" title="Audio Output" total={1} index={0} />
+{/snippet}
+
+<div class="relative flex gap-x-3">
+	<div class="group relative">
+		<div class="flex flex-col gap-2">
+			<!-- Floating toolbar -->
+			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+				<div></div>
+
+				<div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+					<!-- Play/Pause button -->
+					<button
+						onclick={handlePlayPause}
+						class="rounded p-1 hover:bg-zinc-700"
+						title={isPlaying ? 'Pause' : 'Play'}
+					>
+						<Icon icon={isPlaying ? 'lucide:pause' : 'lucide:play'} class="h-4 w-4" />
+					</button>
+				</div>
+			</div>
+
+			<div class="csound-node-container relative">
+				<CommonExprLayout
+					bind:this={layoutRef}
+					{nodeId}
+					{data}
+					{selected}
+					expr={data.expr}
+					bind:isEditing
+					placeholder="instr 1\n  a1 oscil 0.5, 440\n  out a1\nendin\nschedule(1, 0, 1)"
+					editorClass="csound-node-code-editor"
+					onExpressionChange={handleExpressionChange}
+					exitOnRun={false}
+					onRun={handleRun}
+					handles={csoundHandles}
+					outlets={csoundOutlets}
+				/>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	:global(.csound-node-code-editor .cm-content) {
+		padding: 6px 8px 7px 4px !important;
+	}
+
+	:global(.csound-node-container .expr-preview) {
+		overflow-x: hidden;
+	}
+
+	:global(.csound-node-container .expr-display),
+	:global(.csound-node-container .expr-editor-container) {
+		max-width: 600px !important;
+	}
+</style>
