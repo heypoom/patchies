@@ -138,6 +138,10 @@ export class CsoundManager {
 				.with({ type: 'setChannel', channel: P.string, value: P.string }, async (m) => {
 					await this.csound!.setStringChannel(m.channel, m.value);
 				})
+				.with({ type: 'setOptions', value: P.string }, async (m) => {
+					await this.setOptions(m.value);
+					await this.csound!.reset();
+				})
 				.with({ type: 'noteOn', note: P.number, velocity: P.number }, async (m) => {
 					await this.ensureMidi();
 					await this.csound!.midiMessage(144, m.note, m.velocity);
@@ -153,7 +157,7 @@ export class CsoundManager {
 					await this.csound!.evalCode(m.code);
 				})
 				.with(P.number, async (value) => {
-					await this.csound!.setControlChannel(`ch${inletIndex}`, value);
+					await this.csound!.setControlChannel(String(inletIndex), value);
 				})
 				.with(P.string, async (m) => {
 					if (m.startsWith('-')) {
