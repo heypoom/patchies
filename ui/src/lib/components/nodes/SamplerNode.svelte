@@ -17,6 +17,8 @@
 			loopStart?: number;
 			loopEnd?: number;
 			loop?: boolean;
+			playbackRate?: number;
+			detune?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -41,6 +43,8 @@
 	let loopEnabled = $state(node.data.loop || false);
 	let loopStart = $state(node.data.loopStart || 0);
 	let loopEnd = $state(node.data.loopEnd || 0);
+	let playbackRate = $state(node.data.playbackRate || 1);
+	let detune = $state(node.data.detune || 0);
 
 	const width = 190;
 	const height = 35;
@@ -77,6 +81,16 @@
 				loopEnd = msg.value;
 				updateNodeData(node.id, { ...node.data, loopEnd });
 				audioSystem.send(node.id, 'message', { type: 'setEnd', value: msg.value });
+			})
+			.with({ type: 'playbackRate', value: P.number }, (msg) => {
+				playbackRate = msg.value;
+				updateNodeData(node.id, { ...node.data, playbackRate });
+				audioSystem.send(node.id, 'message', { type: 'playbackRate', value: msg.value });
+			})
+			.with({ type: 'detune', value: P.number }, (msg) => {
+				detune = msg.value;
+				updateNodeData(node.id, { ...node.data, detune });
+				audioSystem.send(node.id, 'message', { type: 'detune', value: msg.value });
 			})
 			.otherwise(() => audioSystem.send(node.id, 'message', message));
 	};
@@ -266,6 +280,18 @@
 		audioSystem.send(node.id, 'message', { type: 'setEnd', value: loopEnd });
 	}
 
+	function updatePlaybackRate(value: number) {
+		playbackRate = value;
+		updateNodeData(node.id, { ...node.data, playbackRate });
+		audioSystem.send(node.id, 'message', { type: 'playbackRate', value: playbackRate });
+	}
+
+	function updateDetune(value: number) {
+		detune = value;
+		updateNodeData(node.id, { ...node.data, detune });
+		audioSystem.send(node.id, 'message', { type: 'detune', value: detune });
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
@@ -277,11 +303,19 @@
 		loopStart = node.data.loopStart || 0;
 		loopEnd = node.data.loopEnd || recordingDuration;
 		loopEnabled = node.data.loop || false;
+		playbackRate = node.data.playbackRate || 1;
+		detune = node.data.detune || 0;
 
-		// Get audio buffer if it exists
+		// Initialize AudioSystem with playbackRate and detune
 		const samplerNode = audioSystem.nodesById.get(node.id);
-		if (samplerNode?.type === 'sampler~' && samplerNode.audioBuffer) {
-			audioBuffer = samplerNode.audioBuffer;
+		if (samplerNode?.type === 'sampler~') {
+			samplerNode.playbackRate = playbackRate;
+			samplerNode.detune = detune;
+
+			// Get audio buffer if it exists
+			if (samplerNode.audioBuffer) {
+				audioBuffer = samplerNode.audioBuffer;
+			}
 		}
 	});
 
@@ -468,15 +502,46 @@
 								{loopEnabled ? 'On' : 'Off'}
 							</button>
 						</div>
+
+						<!-- Playback Rate -->
+						<div class="mb-3 border-t border-zinc-700 pt-3">
+							<div class="mb-1 flex items-center justify-between">
+								<label class="text-xs text-zinc-400">Playback Rate</label>
+								<span class="font-mono text-xs text-zinc-300">{playbackRate.toFixed(2)}</span>
+							</div>
+							<input
+								type="range"
+								min="0.25"
+								max="4"
+								step="0.01"
+								value={playbackRate}
+								oninput={(e) => updatePlaybackRate(parseFloat(e.currentTarget.value))}
+								class="w-full"
+							/>
+						</div>
+
+						<!-- Detune -->
+						<div class="mb-3">
+							<div class="mb-1 flex items-center justify-between">
+								<label class="text-xs text-zinc-400">Detune (cents)</label>
+								<span class="font-mono text-xs text-zinc-300">{detune.toFixed(0)}</span>
+							</div>
+							<input
+								type="range"
+								min="-1200"
+								max="1200"
+								step="1"
+								value={detune}
+								oninput={(e) => updateDetune(parseFloat(e.currentTarget.value))}
+								class="w-full"
+							/>
+						</div>
 					</div>
 
 					<!-- Sample Info -->
 					<div class="border-t border-zinc-700 pt-3">
 						<div class="text-xs text-zinc-500">
-							Total Duration: {recordingDuration.toFixed(2)}s
-						</div>
-						<div class="text-xs text-zinc-500">
-							Playback: {loopStart.toFixed(2)}s - {loopEnd.toFixed(2)}s
+							Duration: {recordingDuration.toFixed(2)}s
 						</div>
 					</div>
 				</div>

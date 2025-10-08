@@ -139,6 +139,8 @@ interface PsSampler extends PsBase {
 	sourceNode?: AudioBufferSourceNode;
 	loopStart?: number;
 	loopEnd?: number;
+	playbackRate?: number;
+	detune?: number;
 }
 
 interface PsConvolver extends PsBase {

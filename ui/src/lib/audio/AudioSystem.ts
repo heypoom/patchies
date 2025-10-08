@@ -880,6 +880,14 @@ export class AudioSystem {
 							sampler.loopStart = sampler.sourceNode.loopStart;
 							sampler.loopEnd = sampler.sourceNode.loopEnd;
 
+							// Apply playbackRate and detune if set
+							if (sampler.playbackRate !== undefined) {
+								sampler.sourceNode.playbackRate.value = sampler.playbackRate;
+							}
+							if (sampler.detune !== undefined) {
+								sampler.sourceNode.detune.value = sampler.detune;
+							}
+
 							sampler.sourceNode.buffer = sampler.audioBuffer;
 							sampler.sourceNode.connect(sampler.node);
 							sampler.sourceNode.start();
@@ -904,6 +912,22 @@ export class AudioSystem {
 						// If currently playing with loop, update the source node
 						if (sampler.sourceNode && sampler.sourceNode.loop) {
 							sampler.sourceNode.loopEnd = m.value;
+						}
+					})
+					.with(['message', { type: 'playbackRate', value: P.number }], ([, m]) => {
+						sampler.playbackRate = m.value;
+
+						// If currently playing, update the source node
+						if (sampler.sourceNode) {
+							sampler.sourceNode.playbackRate.value = m.value;
+						}
+					})
+					.with(['message', { type: 'detune', value: P.number }], ([, m]) => {
+						sampler.detune = m.value;
+
+						// If currently playing, update the source node
+						if (sampler.sourceNode) {
+							sampler.sourceNode.detune.value = m.value;
 						}
 					})
 					.with(['message', { type: 'record' }], async () => {
@@ -958,6 +982,14 @@ export class AudioSystem {
 						const sourceNode = this.audioContext.createBufferSource();
 						sourceNode.buffer = sampler.audioBuffer;
 						sourceNode.connect(sampler.node);
+
+						// Apply playbackRate and detune if set
+						if (sampler.playbackRate !== undefined) {
+							sourceNode.playbackRate.value = sampler.playbackRate;
+						}
+						if (sampler.detune !== undefined) {
+							sourceNode.detune.value = sampler.detune;
+						}
 
 						// Clean up reference when playback ends.
 						sourceNode.onended = () => {

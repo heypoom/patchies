@@ -124,7 +124,9 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			duration: 0,
 			loopStart: 0,
 			loopEnd: 0,
-			loop: false
+			loop: false,
+			playbackRate: 1,
+			detune: 0
 		}))
 		.otherwise(() => ({}));
 }
