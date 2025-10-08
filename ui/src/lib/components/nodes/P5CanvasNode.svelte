@@ -173,10 +173,10 @@
 			class={handleClass}
 		/>
 
-		{#each Array.from({ length: outletCount }) as _, index}
+		{#each Array.from({ length: outletCount }) as _, index (index)}
 			<StandardHandle
 				port="outlet"
-				id={index + 1}
+				id={index}
 				title={`Outlet ${index}`}
 				total={outletCount + 1}
 				index={index + 1}
