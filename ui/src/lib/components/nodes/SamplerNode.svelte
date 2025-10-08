@@ -146,20 +146,25 @@
 
 		while (attempts < maxAttempts) {
 			const samplerNode = audioSystem.nodesById.get(node.id);
+
 			if (samplerNode?.type === 'sampler~' && samplerNode.audioBuffer) {
 				audioBuffer = samplerNode.audioBuffer;
 				hasRecording = true;
 
-				// Set default loop points to full duration if not set
-				if (loopEnd === 0) {
-					loopEnd = audioBuffer.duration;
-				}
+				// Set end point to the actual recording duration
+				loopEnd = recordingDuration;
 
 				updateNodeData(node.id, {
 					...node.data,
 					hasRecording: true,
 					duration: recordingDuration,
-					loopEnd: loopEnd || recordingDuration
+					loopEnd: loopEnd
+				});
+
+				// Update AudioSystem's loop end point as well
+				audioSystem.send(node.id, 'message', {
+					type: 'setEnd',
+					value: loopEnd
 				});
 
 				return;
@@ -378,7 +383,7 @@
 							{playbackProgress}
 							{width}
 							{height}
-							showLoopPoints={loopStart > 0.2 || Math.abs(loopEnd - recordingDuration) > 0.2}
+							showLoopPoints={loopStart > 0.05 || Math.abs(loopEnd - recordingDuration) > 0.05}
 						/>
 					{:else}
 						<div
