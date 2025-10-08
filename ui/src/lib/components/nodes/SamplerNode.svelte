@@ -218,7 +218,8 @@
 
 		// Start playback progress tracking
 		playbackInterval = setInterval(() => {
-			playbackProgress += 0.1;
+			// Advance playback progress based on playbackRate
+			playbackProgress += 0.1 * playbackRate;
 
 			if (loopEnabled) {
 				// Loop back to start if we reach the end
