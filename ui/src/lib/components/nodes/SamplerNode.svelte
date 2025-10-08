@@ -378,7 +378,7 @@
 							{playbackProgress}
 							{width}
 							{height}
-							showLoopPoints={loopEnabled}
+							showLoopPoints={loopStart > 0.2 || Math.abs(loopEnd - recordingDuration) > 0.2}
 						/>
 					{:else}
 						<div
