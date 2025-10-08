@@ -188,7 +188,7 @@
 		}
 
 		if (analyser) {
-			// Real-time mode
+			// Real-time mode - clear cache
 			waveformCache = null;
 			lastDrawnBuffer = null;
 			drawRealtimeWaveform();
@@ -206,6 +206,17 @@
 				createWaveformCache(audioBuffer);
 			}
 			drawComplete();
+		} else {
+			// audioBuffer is null - clear everything
+			waveformCache = null;
+			lastDrawnBuffer = null;
+
+			// Clear the canvas
+			const ctx = canvasRef.getContext('2d');
+			if (ctx) {
+				ctx.fillStyle = '#18181b'; // zinc-900
+				ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
+			}
 		}
 	});
 

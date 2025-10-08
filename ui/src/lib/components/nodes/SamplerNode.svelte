@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import WaveformDisplay from '$lib/components/nodes/WaveformDisplay.svelte';
 	import { onMount, onDestroy } from 'svelte';
@@ -9,8 +9,7 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 
-	let node: {
-		id: string;
+	let node: NodeProps & {
 		data: {
 			hasRecording?: boolean;
 			duration?: number;
@@ -20,7 +19,6 @@
 			playbackRate?: number;
 			detune?: number;
 		};
-		selected: boolean;
 	} = $props();
 
 	const { updateNodeData } = useSvelteFlow();
@@ -46,8 +44,9 @@
 	let playbackRate = $state(node.data.playbackRate || 1);
 	let detune = $state(node.data.detune || 0);
 
-	const width = 190;
-	const height = 35;
+	// Use node dimensions if available, otherwise use defaults
+	const width = $derived(node.width || 190);
+	const height = $derived(node.height || 35);
 
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
