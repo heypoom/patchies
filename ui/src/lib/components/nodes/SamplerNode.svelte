@@ -57,6 +57,15 @@
 			.with({ type: 'loop', start: P.optional(P.number), end: P.optional(P.number) }, (msg) => {
 				updateNodeData(node.id, {
 					...node.data,
+					...(msg.start !== undefined ? { loopStart: msg.start } : {}),
+					...(msg.end !== undefined ? { loopEnd: msg.end } : {})
+				});
+
+				toggleLoop();
+			})
+			.with({ type: 'loopOn', start: P.optional(P.number), end: P.optional(P.number) }, (msg) => {
+				updateNodeData(node.id, {
+					...node.data,
 					loop: true,
 					...(msg.start !== undefined ? { loopStart: msg.start } : {}),
 					...(msg.end !== undefined ? { loopEnd: msg.end } : {})
@@ -68,9 +77,9 @@
 					...(msg.end !== undefined ? { end: msg.end } : {})
 				});
 			})
-			.with({ type: 'noloop' }, () => {
+			.with({ type: 'loopOff' }, () => {
 				updateNodeData(node.id, { ...node.data, loop: false });
-				audioSystem.send(node.id, 'message', { type: 'noloop' });
+				audioSystem.send(node.id, 'message', { type: 'loopOff' });
 			})
 			.with({ type: 'setStart', value: P.number }, (msg) => {
 				updateNodeData(node.id, { ...node.data, loopStart: msg.value });
@@ -265,7 +274,7 @@
 		if (newLoopEnabled) {
 			audioSystem.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
 		} else {
-			audioSystem.send(node.id, 'message', { type: 'noloop' });
+			audioSystem.send(node.id, 'message', { type: 'loopOff' });
 		}
 	}
 
@@ -304,7 +313,7 @@
 		// Update AudioSystem
 		audioSystem.send(node.id, 'message', { type: 'setStart', value: 0 });
 		audioSystem.send(node.id, 'message', { type: 'setEnd', value: recordingDuration });
-		audioSystem.send(node.id, 'message', { type: 'noloop' });
+		audioSystem.send(node.id, 'message', { type: 'loopOff' });
 		audioSystem.send(node.id, 'message', { type: 'playbackRate', value: 1 });
 		audioSystem.send(node.id, 'message', { type: 'detune', value: 0 });
 	}

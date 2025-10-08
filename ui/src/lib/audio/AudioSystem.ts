@@ -893,7 +893,7 @@ export class AudioSystem {
 							sampler.sourceNode.start();
 						}
 					)
-					.with(['message', { type: 'noloop' }], async () => {
+					.with(['message', { type: 'loopOff' }], async () => {
 						if (!sampler.sourceNode) return;
 
 						sampler.sourceNode.loop = false;
