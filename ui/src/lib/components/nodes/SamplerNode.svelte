@@ -11,7 +11,6 @@
 	let node: {
 		id: string;
 		data: {
-			isRecording?: boolean;
 			hasRecording?: boolean;
 			duration?: number;
 		};
@@ -74,7 +73,6 @@
 
 		updateNodeData(node.id, {
 			...node.data,
-			isRecording: false,
 			hasRecording: true,
 			duration: recordingDuration
 		});
@@ -133,19 +131,10 @@
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
-		// Create sampler audio object
 		audioSystem.createAudioObject(node.id, 'sampler~', []);
 
-		// Restore state from node data
-		// IMPORTANT: isRecording should never persist - it's an active process
-		isRecording = false;
 		hasRecording = node.data.hasRecording || false;
 		recordingDuration = node.data.duration || 0;
-
-		// Clean up stale recording state if it exists
-		if (node.data.isRecording) {
-			updateNodeData(node.id, { ...node.data, isRecording: false });
-		}
 	});
 
 	onDestroy(() => {
@@ -155,8 +144,8 @@
 		// Stop any active recording/playback before cleanup
 		if (isRecording) {
 			audioSystem.send(node.id, 'message', { type: 'end' });
-			updateNodeData(node.id, { ...node.data, isRecording: false });
 		}
+
 		if (isPlaying) {
 			audioSystem.send(node.id, 'message', { type: 'stop' });
 		}
@@ -177,7 +166,7 @@
 					<!-- Record Button -->
 					<button
 						title={isRecording ? 'Stop Recording' : 'Start Recording'}
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0 {isRecording
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 {isRecording
 							? '!opacity-100'
 							: ''}"
 						onclick={toggleRecording}
@@ -192,7 +181,7 @@
 					{#if hasRecording && !isRecording}
 						<button
 							title="Play Recording"
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={playRecording}
 						>
 							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
@@ -224,14 +213,14 @@
 
 				<div
 					class={[
-						'border-1 relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-lg',
+						'relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-lg border-1',
 						node.selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'
 					]}
 				>
 					<!-- Playback Progress Bar -->
 					{#if isPlaying && recordingDuration > 0}
 						<div
-							class="pointer-events-none absolute left-0 top-0 h-full bg-zinc-600/30 transition-all"
+							class="pointer-events-none absolute top-0 left-0 h-full bg-zinc-600/30 transition-all"
 							style="width: {(playbackProgress / recordingDuration) * 100}%"
 						></div>
 					{/if}

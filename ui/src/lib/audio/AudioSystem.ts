@@ -916,22 +916,19 @@ export class AudioSystem {
 							}
 						}
 
-						// Create new source node
-						const newSourceNode = this.audioContext.createBufferSource();
-						newSourceNode.buffer = sampler.audioBuffer;
-						newSourceNode.connect(sampler.node);
+						const sourceNode = this.audioContext.createBufferSource();
+						sourceNode.buffer = sampler.audioBuffer;
+						sourceNode.connect(sampler.node);
 
-						// Clean up reference when playback ends
-						// IMPORTANT: Capture the specific node instance to avoid closure bug
-						newSourceNode.onended = () => {
-							// Only clear the reference if this is still the current node
-							if (sampler.sourceNode === newSourceNode) {
+						// Clean up reference when playback ends.
+						sourceNode.onended = () => {
+							if (sampler.sourceNode === sourceNode) {
 								sampler.sourceNode.disconnect();
 								sampler.sourceNode = undefined;
 							}
 						};
 
-						sampler.sourceNode = newSourceNode;
+						sampler.sourceNode = sourceNode;
 						sampler.sourceNode.start();
 					})
 					.with(['message', { type: 'stop' }], () => {
