@@ -24,6 +24,11 @@
 	let canvasRef = $state<HTMLCanvasElement>();
 	let animationFrameId: number | null = null;
 
+	// Store a reference to the last audioBuffer we drew
+	let lastDrawnBuffer: AudioBuffer | null = null;
+	// Cache the base waveform as an OffscreenCanvas for better performance
+	let waveformCache: HTMLCanvasElement | null = null;
+
 	// Real-time waveform drawing for analyser
 	function drawRealtimeWaveform() {
 		if (!canvasRef || !analyser) return;
@@ -76,41 +81,26 @@
 		draw();
 	}
 
-	// Static waveform drawing for audio buffer
-	$effect(() => {
+	// Create and cache the base waveform
+	function createWaveformCache(buffer: AudioBuffer) {
 		if (!canvasRef) return;
-
-		// Clean up any existing animation
-		if (animationFrameId) {
-			cancelAnimationFrame(animationFrameId);
-			animationFrameId = null;
-		}
-
-		if (analyser) {
-			// Real-time mode
-			drawRealtimeWaveform();
-			return () => {
-				if (animationFrameId) {
-					cancelAnimationFrame(animationFrameId);
-					animationFrameId = null;
-				}
-			};
-		}
-
-		if (!audioBuffer) return;
-
-		const ctx = canvasRef.getContext('2d');
-		if (!ctx) return;
 
 		const canvasWidth = canvasRef.width;
 		const canvasHeight = canvasRef.height;
+
+		// Create a cache canvas
+		const cacheCanvas = document.createElement('canvas');
+		cacheCanvas.width = canvasWidth;
+		cacheCanvas.height = canvasHeight;
+		const ctx = cacheCanvas.getContext('2d');
+		if (!ctx) return;
 
 		// Clear canvas
 		ctx.fillStyle = '#18181b'; // zinc-900
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
 		// Get waveform data
-		const channelData = audioBuffer.getChannelData(0);
+		const channelData = buffer.getChannelData(0);
 		const step = Math.ceil(channelData.length / canvasWidth);
 		const amp = canvasHeight / 2;
 
@@ -128,6 +118,23 @@
 		}
 
 		ctx.stroke();
+
+		waveformCache = cacheCanvas;
+		lastDrawnBuffer = buffer;
+	}
+
+	// Draw the complete canvas with cached waveform + overlays
+	function drawComplete() {
+		if (!canvasRef || !waveformCache || !audioBuffer) return;
+
+		const ctx = canvasRef.getContext('2d');
+		if (!ctx) return;
+
+		const canvasWidth = canvasRef.width;
+		const canvasHeight = canvasRef.height;
+
+		// Draw the cached waveform
+		ctx.drawImage(waveformCache, 0, 0);
 
 		// Draw loop points if enabled
 		if (showLoopPoints && loopEnd > loopStart) {
@@ -167,6 +174,52 @@
 			ctx.moveTo(progressX, 0);
 			ctx.lineTo(progressX, canvasHeight);
 			ctx.stroke();
+		}
+	}
+
+	// Main effect for audioBuffer/analyser changes
+	$effect(() => {
+		if (!canvasRef) return;
+
+		// Clean up any existing animation
+		if (animationFrameId) {
+			cancelAnimationFrame(animationFrameId);
+			animationFrameId = null;
+		}
+
+		if (analyser) {
+			// Real-time mode
+			waveformCache = null;
+			lastDrawnBuffer = null;
+			drawRealtimeWaveform();
+			return () => {
+				if (animationFrameId) {
+					cancelAnimationFrame(animationFrameId);
+					animationFrameId = null;
+				}
+			};
+		}
+
+		if (audioBuffer) {
+			// Only recreate cache if the buffer changed
+			if (audioBuffer !== lastDrawnBuffer) {
+				createWaveformCache(audioBuffer);
+			}
+			drawComplete();
+		}
+	});
+
+	// Effect for overlay changes only
+	$effect(() => {
+		// Track these dependencies
+		const _loopStart = loopStart;
+		const _loopEnd = loopEnd;
+		const _showLoopPoints = showLoopPoints;
+		const _playbackProgress = playbackProgress;
+
+		// Only redraw if we have a cache and no analyser
+		if (waveformCache && audioBuffer && !analyser) {
+			drawComplete();
 		}
 	});
 </script>

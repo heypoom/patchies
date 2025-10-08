@@ -104,6 +104,10 @@
 			recordingInterval = null;
 		}
 
+		// Clear old audio buffer and waveform
+		audioBuffer = null;
+		hasRecording = false;
+
 		// Reset start/end points for new recording
 		loopStart = 0;
 		loopEnd = 0;
