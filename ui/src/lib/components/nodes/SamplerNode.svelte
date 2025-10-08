@@ -473,9 +473,6 @@
 						<div class="text-xs text-zinc-500">
 							Playback: {loopStart.toFixed(2)}s - {loopEnd.toFixed(2)}s
 						</div>
-						{#if loopEnabled}
-							<div class="text-xs text-orange-500">Looping enabled</div>
-						{/if}
 					</div>
 				</div>
 			</div>
