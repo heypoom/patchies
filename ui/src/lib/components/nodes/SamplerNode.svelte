@@ -26,8 +26,6 @@
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
 	let isRecording = $state(false);
-	let hasRecording = $state(false);
-	let recordingDuration = $state(0);
 	let recordingInterval: ReturnType<typeof setInterval> | null = null;
 	let isPlaying = $state(false);
 	let playbackProgress = $state(0);
@@ -37,12 +35,14 @@
 	let recordingAnalyser: AnalyserNode | null = null;
 	let recordingAnimationFrame: number | null = null;
 
-	// Loop settings
-	let loopEnabled = $state(node.data.loop || false);
-	let loopStart = $state(node.data.loopStart || 0);
-	let loopEnd = $state(node.data.loopEnd || 0);
-	let playbackRate = $state(node.data.playbackRate || 1);
-	let detune = $state(node.data.detune || 0);
+	// Derive all state from node.data instead of duplicating
+	const hasRecording = $derived(node.data.hasRecording || false);
+	const recordingDuration = $derived(node.data.duration || 0);
+	const loopStart = $derived(node.data.loopStart || 0);
+	const loopEnd = $derived(node.data.loopEnd || recordingDuration);
+	const loopEnabled = $derived(node.data.loop || false);
+	const playbackRate = $derived(node.data.playbackRate || 1);
+	const detune = $derived(node.data.detune || 0);
 
 	// Use node dimensions if available, otherwise use defaults
 	const width = $derived(node.width || 190);
@@ -55,40 +55,37 @@
 			.with({ type: P.union('bang', 'play') }, () => playRecording())
 			.with({ type: 'stop' }, () => stopPlayback())
 			.with({ type: 'loop', start: P.optional(P.number), end: P.optional(P.number) }, (msg) => {
-				loopEnabled = true;
-				if (msg.start !== undefined) loopStart = msg.start;
-				if (msg.end !== undefined) loopEnd = msg.end;
 				updateNodeData(node.id, {
 					...node.data,
 					loop: true,
-					loopStart,
-					loopEnd
+					...(msg.start !== undefined ? { loopStart: msg.start } : {}),
+					...(msg.end !== undefined ? { loopEnd: msg.end } : {})
 				});
-				audioSystem.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
+
+				audioSystem.send(node.id, 'message', {
+					type: 'loop',
+					...(msg.start !== undefined ? { start: msg.start } : {}),
+					...(msg.end !== undefined ? { end: msg.end } : {})
+				});
 			})
 			.with({ type: 'noloop' }, () => {
-				loopEnabled = false;
 				updateNodeData(node.id, { ...node.data, loop: false });
 				audioSystem.send(node.id, 'message', { type: 'noloop' });
 			})
 			.with({ type: 'setStart', value: P.number }, (msg) => {
-				loopStart = msg.value;
-				updateNodeData(node.id, { ...node.data, loopStart });
+				updateNodeData(node.id, { ...node.data, loopStart: msg.value });
 				audioSystem.send(node.id, 'message', { type: 'setStart', value: msg.value });
 			})
 			.with({ type: 'setEnd', value: P.number }, (msg) => {
-				loopEnd = msg.value;
-				updateNodeData(node.id, { ...node.data, loopEnd });
+				updateNodeData(node.id, { ...node.data, loopEnd: msg.value });
 				audioSystem.send(node.id, 'message', { type: 'setEnd', value: msg.value });
 			})
 			.with({ type: 'playbackRate', value: P.number }, (msg) => {
-				playbackRate = msg.value;
-				updateNodeData(node.id, { ...node.data, playbackRate });
+				updateNodeData(node.id, { ...node.data, playbackRate: msg.value });
 				audioSystem.send(node.id, 'message', { type: 'playbackRate', value: msg.value });
 			})
 			.with({ type: 'detune', value: P.number }, (msg) => {
-				detune = msg.value;
-				updateNodeData(node.id, { ...node.data, detune });
+				updateNodeData(node.id, { ...node.data, detune: msg.value });
 				audioSystem.send(node.id, 'message', { type: 'detune', value: msg.value });
 			})
 			.otherwise(() => audioSystem.send(node.id, 'message', message));
@@ -105,11 +102,15 @@
 
 		// Clear old audio buffer and waveform
 		audioBuffer = null;
-		hasRecording = false;
 
 		// Reset start/end points for new recording
-		loopStart = 0;
-		loopEnd = 0;
+		updateNodeData(node.id, {
+			...node.data,
+			hasRecording: false,
+			loopStart: 0,
+			loopEnd: 0,
+			duration: 0
+		});
 
 		// Create analyser for real-time waveform visualization
 		const samplerNode = audioSystem.nodesById.get(node.id);
@@ -125,14 +126,13 @@
 
 		audioSystem.send(node.id, 'message', { type: 'record' });
 		isRecording = true;
-		recordingDuration = 0;
 
 		// Start duration timer
+		let currentDuration = 0;
 		recordingInterval = setInterval(() => {
-			recordingDuration += 0.1;
+			currentDuration += 0.1;
+			updateNodeData(node.id, { ...node.data, duration: currentDuration });
 		}, 100);
-
-		updateNodeData(node.id, { ...node.data, isRecording: true });
 	}
 
 	async function stopRecording() {
@@ -166,22 +166,19 @@
 
 			if (samplerNode?.type === 'sampler~' && samplerNode.audioBuffer) {
 				audioBuffer = samplerNode.audioBuffer;
-				hasRecording = true;
-
-				// Set end point to the actual recording duration
-				loopEnd = recordingDuration;
+				const duration = audioBuffer.duration;
 
 				updateNodeData(node.id, {
 					...node.data,
 					hasRecording: true,
-					duration: recordingDuration,
-					loopEnd: loopEnd
+					duration: duration,
+					loopEnd: duration
 				});
 
 				// Update AudioSystem's loop end point as well
 				audioSystem.send(node.id, 'message', {
 					type: 'setEnd',
-					value: loopEnd
+					value: duration
 				});
 
 				return;
@@ -262,10 +259,10 @@
 	}
 
 	function toggleLoop() {
-		loopEnabled = !loopEnabled;
-		updateNodeData(node.id, { ...node.data, loop: loopEnabled });
+		const newLoopEnabled = !loopEnabled;
+		updateNodeData(node.id, { ...node.data, loop: newLoopEnabled });
 
-		if (loopEnabled) {
+		if (newLoopEnabled) {
 			audioSystem.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
 		} else {
 			audioSystem.send(node.id, 'message', { type: 'noloop' });
@@ -273,38 +270,28 @@
 	}
 
 	function updateLoopStart(value: number) {
-		loopStart = Math.max(0, Math.min(value, loopEnd));
-		updateNodeData(node.id, { ...node.data, loopStart });
-		audioSystem.send(node.id, 'message', { type: 'setStart', value: loopStart });
+		const newLoopStart = Math.max(0, Math.min(value, loopEnd));
+		updateNodeData(node.id, { ...node.data, loopStart: newLoopStart });
+		audioSystem.send(node.id, 'message', { type: 'setStart', value: newLoopStart });
 	}
 
 	function updateLoopEnd(value: number) {
-		loopEnd = Math.max(loopStart, Math.min(value, recordingDuration));
-		updateNodeData(node.id, { ...node.data, loopEnd });
-		audioSystem.send(node.id, 'message', { type: 'setEnd', value: loopEnd });
+		const newLoopEnd = Math.max(loopStart, Math.min(value, recordingDuration));
+		updateNodeData(node.id, { ...node.data, loopEnd: newLoopEnd });
+		audioSystem.send(node.id, 'message', { type: 'setEnd', value: newLoopEnd });
 	}
 
 	function updatePlaybackRate(value: number) {
-		playbackRate = value;
-		updateNodeData(node.id, { ...node.data, playbackRate });
-		audioSystem.send(node.id, 'message', { type: 'playbackRate', value: playbackRate });
+		updateNodeData(node.id, { ...node.data, playbackRate: value });
+		audioSystem.send(node.id, 'message', { type: 'playbackRate', value });
 	}
 
 	function updateDetune(value: number) {
-		detune = value;
-		updateNodeData(node.id, { ...node.data, detune });
-		audioSystem.send(node.id, 'message', { type: 'detune', value: detune });
+		updateNodeData(node.id, { ...node.data, detune: value });
+		audioSystem.send(node.id, 'message', { type: 'detune', value });
 	}
 
 	function resetSettings() {
-		// Reset to defaults
-		loopStart = 0;
-		loopEnd = recordingDuration;
-		loopEnabled = false;
-		playbackRate = 1;
-		detune = 0;
-
-		// Update node data
 		updateNodeData(node.id, {
 			...node.data,
 			loopStart: 0,
@@ -328,19 +315,11 @@
 
 		audioSystem.createAudioObject(node.id, 'sampler~', []);
 
-		hasRecording = node.data.hasRecording || false;
-		recordingDuration = node.data.duration || 0;
-		loopStart = node.data.loopStart || 0;
-		loopEnd = node.data.loopEnd || recordingDuration;
-		loopEnabled = node.data.loop || false;
-		playbackRate = node.data.playbackRate || 1;
-		detune = node.data.detune || 0;
-
-		// Initialize AudioSystem with playbackRate and detune
+		// Initialize AudioSystem with playbackRate and detune from node.data
 		const samplerNode = audioSystem.nodesById.get(node.id);
 		if (samplerNode?.type === 'sampler~') {
-			samplerNode.playbackRate = playbackRate;
-			samplerNode.detune = detune;
+			samplerNode.playbackRate = node.data.playbackRate || 1;
+			samplerNode.detune = node.data.detune || 0;
 
 			// Get audio buffer if it exists
 			if (samplerNode.audioBuffer) {
