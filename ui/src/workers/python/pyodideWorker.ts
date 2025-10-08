@@ -119,7 +119,7 @@ async function handleExecuteCode(data: { nodeId: string; code: string }) {
 	});
 
 	try {
-		const result = await pyodide.runPython(code);
+		const result = await pyodide.runPythonAsync(code);
 
 		self.postMessage({
 			type: 'consoleOutput',
