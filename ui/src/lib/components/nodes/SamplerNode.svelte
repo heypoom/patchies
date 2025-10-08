@@ -293,6 +293,32 @@
 		audioSystem.send(node.id, 'message', { type: 'detune', value: detune });
 	}
 
+	function resetSettings() {
+		// Reset to defaults
+		loopStart = 0;
+		loopEnd = recordingDuration;
+		loopEnabled = false;
+		playbackRate = 1;
+		detune = 0;
+
+		// Update node data
+		updateNodeData(node.id, {
+			...node.data,
+			loopStart: 0,
+			loopEnd: recordingDuration,
+			loop: false,
+			playbackRate: 1,
+			detune: 0
+		});
+
+		// Update AudioSystem
+		audioSystem.send(node.id, 'message', { type: 'setStart', value: 0 });
+		audioSystem.send(node.id, 'message', { type: 'setEnd', value: recordingDuration });
+		audioSystem.send(node.id, 'message', { type: 'noloop' });
+		audioSystem.send(node.id, 'message', { type: 'playbackRate', value: 1 });
+		audioSystem.send(node.id, 'message', { type: 'detune', value: 0 });
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
@@ -446,7 +472,15 @@
 
 	{#if showSettings && hasRecording}
 		<div class="relative">
-			<div class="absolute -top-7 left-0 flex w-full justify-end">
+			<div class="absolute -top-7 left-0 flex w-full justify-end gap-1">
+				<button
+					onclick={resetSettings}
+					class="rounded p-1 hover:bg-zinc-700"
+					title="Reset all settings"
+				>
+					<Icon icon="lucide:refresh-ccw" class="h-4 w-4 text-zinc-300" />
+				</button>
+
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
 					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
 				</button>
