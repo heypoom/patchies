@@ -137,14 +137,29 @@
 		audioSystem.createAudioObject(node.id, 'sampler~', []);
 
 		// Restore state from node data
-		isRecording = node.data.isRecording || false;
+		// IMPORTANT: isRecording should never persist - it's an active process
+		isRecording = false;
 		hasRecording = node.data.hasRecording || false;
 		recordingDuration = node.data.duration || 0;
+
+		// Clean up stale recording state if it exists
+		if (node.data.isRecording) {
+			updateNodeData(node.id, { ...node.data, isRecording: false });
+		}
 	});
 
 	onDestroy(() => {
 		if (recordingInterval) clearInterval(recordingInterval);
 		if (playbackInterval) clearInterval(playbackInterval);
+
+		// Stop any active recording/playback before cleanup
+		if (isRecording) {
+			audioSystem.send(node.id, 'message', { type: 'end' });
+			updateNodeData(node.id, { ...node.data, isRecording: false });
+		}
+		if (isPlaying) {
+			audioSystem.send(node.id, 'message', { type: 'stop' });
+		}
 
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
