@@ -42,6 +42,12 @@
 	function startRecording() {
 		if (isRecording) return;
 
+		// Clear any existing interval to prevent zombie intervals
+		if (recordingInterval) {
+			clearInterval(recordingInterval);
+			recordingInterval = null;
+		}
+
 		audioSystem.send(node.id, 'message', { type: 'record' });
 		isRecording = true;
 		recordingDuration = 0;
@@ -82,6 +88,12 @@
 	}
 
 	function startPlaybackProgressBar() {
+		// Clear any existing interval to prevent zombie intervals
+		if (playbackInterval) {
+			clearInterval(playbackInterval);
+			playbackInterval = null;
+		}
+
 		isPlaying = true;
 		playbackProgress = 0;
 

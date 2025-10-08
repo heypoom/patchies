@@ -911,7 +911,7 @@ export class AudioSystem {
 							try {
 								sampler.sourceNode.stop();
 								sampler.sourceNode.disconnect();
-							} catch (error) {
+							} catch {
 								// Ignore errors if node already stopped
 							}
 						}
