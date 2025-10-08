@@ -964,7 +964,15 @@ export class AudioSystem {
 						};
 
 						sampler.sourceNode = sourceNode;
-						sampler.sourceNode.start();
+
+						// Use stored loopStart/loopEnd for playback
+						const startTime = sampler.loopStart ?? 0;
+						const duration =
+							sampler.loopEnd !== undefined && sampler.loopEnd > startTime
+								? sampler.loopEnd - startTime
+								: undefined;
+
+						sampler.sourceNode.start(0, startTime, duration);
 					})
 					.with(['message', { type: 'stop' }], () => {
 						if (sampler.sourceNode) {

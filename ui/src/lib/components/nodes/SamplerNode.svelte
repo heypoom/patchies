@@ -34,6 +34,8 @@
 	let playbackInterval: ReturnType<typeof setInterval> | null = null;
 	let audioBuffer = $state<AudioBuffer | null>(null);
 	let showSettings = $state(false);
+	let recordingAnalyser: AnalyserNode | null = null;
+	let recordingAnimationFrame: number | null = null;
 
 	// Loop settings
 	let loopEnabled = $state(node.data.loop || false);
@@ -88,6 +90,18 @@
 			recordingInterval = null;
 		}
 
+		// Create analyser for real-time waveform visualization
+		const samplerNode = audioSystem.nodesById.get(node.id);
+		if (samplerNode?.type === 'sampler~') {
+			const audioCtx = audioSystem.audioContext;
+			recordingAnalyser = audioCtx.createAnalyser();
+			recordingAnalyser.fftSize = 2048;
+
+			// Connect the destination node to the analyser
+			const source = audioCtx.createMediaStreamSource(samplerNode.destinationNode.stream);
+			source.connect(recordingAnalyser);
+		}
+
 		audioSystem.send(node.id, 'message', { type: 'record' });
 		isRecording = true;
 		recordingDuration = 0;
@@ -100,35 +114,58 @@
 		updateNodeData(node.id, { ...node.data, isRecording: true });
 	}
 
-	function stopRecording() {
+	async function stopRecording() {
 		if (!isRecording) return;
 
 		audioSystem.send(node.id, 'message', { type: 'end' });
 		isRecording = false;
-		hasRecording = true;
 
 		if (recordingInterval) {
 			clearInterval(recordingInterval);
 			recordingInterval = null;
 		}
 
-		// Get the audio buffer from AudioSystem
-		const samplerNode = audioSystem.nodesById.get(node.id);
-		if (samplerNode?.type === 'sampler~' && samplerNode.audioBuffer) {
-			audioBuffer = samplerNode.audioBuffer;
-
-			// Set default loop points to full duration
-			if (loopEnd === 0) {
-				loopEnd = audioBuffer.duration;
-			}
+		// Clean up analyser and animation
+		if (recordingAnimationFrame) {
+			cancelAnimationFrame(recordingAnimationFrame);
+			recordingAnimationFrame = null;
+		}
+		if (recordingAnalyser) {
+			recordingAnalyser.disconnect();
+			recordingAnalyser = null;
 		}
 
-		updateNodeData(node.id, {
-			...node.data,
-			hasRecording: true,
-			duration: recordingDuration,
-			loopEnd: loopEnd || recordingDuration
-		});
+		// Wait for the MediaRecorder to process the recording
+		// Poll for the audioBuffer to be available
+		let attempts = 0;
+		const maxAttempts = 50; // 5 seconds max wait
+
+		while (attempts < maxAttempts) {
+			const samplerNode = audioSystem.nodesById.get(node.id);
+			if (samplerNode?.type === 'sampler~' && samplerNode.audioBuffer) {
+				audioBuffer = samplerNode.audioBuffer;
+				hasRecording = true;
+
+				// Set default loop points to full duration if not set
+				if (loopEnd === 0) {
+					loopEnd = audioBuffer.duration;
+				}
+
+				updateNodeData(node.id, {
+					...node.data,
+					hasRecording: true,
+					duration: recordingDuration,
+					loopEnd: loopEnd || recordingDuration
+				});
+
+				return;
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			attempts++;
+		}
+
+		console.error('Failed to retrieve audio buffer after recording');
 	}
 
 	function playRecording() {
@@ -324,7 +361,9 @@
 						node.selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'
 					]}
 				>
-					{#if hasRecording && audioBuffer}
+					{#if isRecording && recordingAnalyser}
+						<WaveformDisplay analyser={recordingAnalyser} {width} {height} />
+					{:else if hasRecording && audioBuffer}
 						<WaveformDisplay
 							{audioBuffer}
 							{loopStart}
@@ -334,16 +373,6 @@
 							{height}
 							showLoopPoints={loopEnabled}
 						/>
-					{:else if isRecording}
-						<div
-							class="flex items-center justify-center gap-2 px-3"
-							style="height: {height}px; width: {width}px;"
-						>
-							<Icon icon="lucide:circle" class="h-4 w-4 animate-pulse text-red-500" />
-							<div class="font-mono text-[12px] text-zinc-300">
-								Recording... {recordingDuration.toFixed(1)}s
-							</div>
-						</div>
 					{:else}
 						<div
 							class="flex items-center justify-center gap-2 px-3"
