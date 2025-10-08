@@ -7,6 +7,7 @@
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import CommonExprLayout from './CommonExprLayout.svelte';
 	import Icon from '@iconify/svelte';
+	import { match, P } from 'ts-pattern';
 
 	let {
 		id: nodeId,
@@ -38,6 +39,10 @@
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		const manager = getManager();
 		if (!manager) return;
+
+		match(message).with({ type: P.union('bang', 'run', 'resume') }, () => {
+			isPlaying = true;
+		});
 
 		manager.handleMessage('messageInlet', { inletIndex: meta.inlet, message, meta });
 	};
