@@ -849,7 +849,6 @@ export class AudioSystem {
 						async ([, m]) => {
 							if (!sampler.audioBuffer) return;
 
-							// Properly stop and clean up existing source node
 							if (sampler.sourceNode) {
 								try {
 									sampler.sourceNode.stop();
@@ -859,38 +858,35 @@ export class AudioSystem {
 								}
 							}
 
-							// Create new looping source node
 							sampler.sourceNode = this.audioContext.createBufferSource();
-							sampler.sourceNode.loop = true;
 
-							// Use provided values or existing loopStart/loopEnd from previous sourceNode
-							if (m.start !== undefined) {
-								sampler.sourceNode.loopStart = m.start;
-							} else if (sampler.loopStart !== undefined) {
-								sampler.sourceNode.loopStart = sampler.loopStart;
+							const start = m.start ?? sampler.loopStart;
+							const end = m.end ?? sampler.loopEnd;
+
+							if (start !== undefined) {
+								sampler.sourceNode.loopStart = start;
 							}
 
-							if (m.end !== undefined) {
-								sampler.sourceNode.loopEnd = m.end;
-							} else if (sampler.loopEnd !== undefined) {
-								sampler.sourceNode.loopEnd = sampler.loopEnd;
+							if (end !== undefined) {
+								sampler.sourceNode.loopEnd = end;
 							}
 
-							// Store loop values for future use
-							sampler.loopStart = sampler.sourceNode.loopStart;
-							sampler.loopEnd = sampler.sourceNode.loopEnd;
+							sampler.loopStart = start;
+							sampler.loopEnd = end;
 
 							// Apply playbackRate and detune if set
 							if (sampler.playbackRate !== undefined) {
 								sampler.sourceNode.playbackRate.value = sampler.playbackRate;
 							}
+
 							if (sampler.detune !== undefined) {
 								sampler.sourceNode.detune.value = sampler.detune;
 							}
 
 							sampler.sourceNode.buffer = sampler.audioBuffer;
+							sampler.sourceNode.loop = true;
+							sampler.sourceNode.start(0, start);
 							sampler.sourceNode.connect(sampler.node);
-							sampler.sourceNode.start();
 						}
 					)
 					.with(['message', { type: 'loopOff' }], async () => {
