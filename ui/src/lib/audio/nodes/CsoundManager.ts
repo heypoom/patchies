@@ -8,6 +8,7 @@ export class CsoundManager {
 	private outputNode: GainNode;
 	private inputNode: GainNode;
 	private initialized = false;
+	private isProgramLoaded = false;
 	private isPaused = true;
 	private optionsString = '';
 	private codeString = '';
@@ -122,6 +123,7 @@ export class CsoundManager {
 		await this.setCode(code);
 		await this.csound.start();
 		this.isPaused = false;
+		this.isProgramLoaded = true;
 	}
 
 	async setOptions(options: string) {
@@ -207,6 +209,10 @@ export class CsoundManager {
 
 	async resume() {
 		if (!this.csound || !this.isPaused) return;
+
+		if (!this.isProgramLoaded && this.codeString) {
+			await this.runCode(this.codeString);
+		}
 
 		try {
 			await this.csound.resume();
