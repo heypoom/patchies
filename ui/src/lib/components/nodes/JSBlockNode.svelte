@@ -253,7 +253,7 @@
 		const baseWidth = 70;
 		let inletWidth = 15;
 
-		return baseWidth + Math.max(inletCount, 2) * inletWidth;
+		return baseWidth + Math.max(Math.max(inletCount, 2), Math.max(outletCount, 2)) * inletWidth;
 	});
 </script>
 
@@ -270,7 +270,7 @@
 				<div>
 					{#if !data.libraryName}
 						<button
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={() => {
 								updateNodeData(nodeId, { showConsole: !data.showConsole });
 								setTimeout(() => updateContentWidth(), 10);
@@ -282,7 +282,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -293,7 +293,7 @@
 
 			<div class="relative">
 				<div>
-					{#each Array.from({ length: inletCount }) as _, index}
+					{#each Array.from({ length: inletCount }) as _, index (index)}
 						<StandardHandle
 							port="inlet"
 							id={index}
@@ -307,7 +307,7 @@
 
 				{#if data.showConsole && !data.libraryName}
 					<div
-						class={['min-w-[150px] max-w-[500px] rounded-md border bg-zinc-900 p-3', borderColor]}
+						class={['max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor]}
 					>
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
@@ -355,10 +355,10 @@
 							bind:this={consoleContainer}
 						>
 							{#if consoleOutput.length === 0}
-								<div class="italic text-zinc-500">Run your code to see results.</div>
+								<div class="text-zinc-500 italic">Run your code to see results.</div>
 							{:else}
-								{#each consoleOutput as line}
-									<div class="mb-1 select-text whitespace-pre-wrap text-zinc-100">{line}</div>
+								{#each consoleOutput as line, index (index)}
+									<div class="mb-1 whitespace-pre-wrap text-zinc-100 select-text">{line}</div>
 								{/each}
 							{/if}
 						</div>
@@ -389,7 +389,7 @@
 
 					<div
 						class={[
-							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
+							'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
 							selected ? '' : 'group-hover:opacity-100'
 						]}
 					>
@@ -404,7 +404,7 @@
 				{/if}
 
 				<div>
-					{#each Array.from({ length: outletCount }) as _, index}
+					{#each Array.from({ length: outletCount }) as _, index (index)}
 						<StandardHandle
 							port="outlet"
 							id={index}
