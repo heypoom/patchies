@@ -176,7 +176,7 @@
 				</button>
 			</div>
 
-			<div class="relative">
+			<div class="chuck-node-container relative">
 				{@render chuckHandles()}
 
 				<CommonExprLayout
@@ -255,5 +255,9 @@
 <style>
 	:global(.chuck-node-code-editor .cm-content) {
 		padding: 6px 8px 7px 4px !important;
+	}
+
+	:global(.chuck-node-container .expr-preview) {
+		overflow-x: hidden;
 	}
 </style>
