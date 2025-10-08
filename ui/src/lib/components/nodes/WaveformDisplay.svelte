@@ -29,7 +29,11 @@
 	// Cache the base waveform as an OffscreenCanvas for better performance
 	let waveformCache: HTMLCanvasElement | null = null;
 
-	// Real-time waveform drawing for analyser
+	// For real-time recording visualization
+	let recordingHistory: number[] = [];
+	const MAX_HISTORY_SAMPLES = 2048; // Keep last ~2 seconds at 1024 samples/sec
+
+	// Real-time waveform drawing for analyser - time-based scrolling plot
 	function drawRealtimeWaveform() {
 		if (!canvasRef || !analyser) return;
 
@@ -47,33 +51,48 @@
 
 			analyser.getByteTimeDomainData(dataArray);
 
+			// Accumulate samples into history
+			// Take a downsampled average to keep history manageable
+			const downsampleFactor = Math.ceil(bufferLength / 256); // Get ~256 samples per frame
+			for (let i = 0; i < bufferLength; i += downsampleFactor) {
+				const sample = dataArray[i] / 128.0 - 1.0; // Convert to -1 to 1 range
+				recordingHistory.push(sample);
+			}
+
+			// Keep only the most recent samples
+			if (recordingHistory.length > MAX_HISTORY_SAMPLES) {
+				recordingHistory = recordingHistory.slice(-MAX_HISTORY_SAMPLES);
+			}
+
 			// Clear canvas
 			ctx.fillStyle = '#18181b'; // zinc-900
 			ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-			// Draw waveform
-			ctx.strokeStyle = '#f97316'; // orange-500 for recording
-			ctx.lineWidth = 2;
-			ctx.beginPath();
+			// Draw accumulated waveform
+			if (recordingHistory.length > 1) {
+				ctx.strokeStyle = '#f97316'; // orange-500 for recording
+				ctx.lineWidth = 2;
+				ctx.beginPath();
 
-			const sliceWidth = canvasWidth / bufferLength;
-			let x = 0;
+				const step = Math.max(1, Math.ceil(recordingHistory.length / canvasWidth));
+				const amp = canvasHeight / 2;
 
-			for (let i = 0; i < bufferLength; i++) {
-				const v = dataArray[i] / 128.0;
-				const y = (v * canvasHeight) / 2;
+				for (let i = 0; i < canvasWidth; i++) {
+					const startIdx = i * step;
+					const endIdx = Math.min(startIdx + step, recordingHistory.length);
 
-				if (i === 0) {
-					ctx.moveTo(x, y);
-				} else {
-					ctx.lineTo(x, y);
+					if (endIdx > startIdx) {
+						const slice = recordingHistory.slice(startIdx, endIdx);
+						const min = Math.min(...slice);
+						const max = Math.max(...slice);
+
+						ctx.moveTo(i, (1 + min) * amp);
+						ctx.lineTo(i, (1 + max) * amp);
+					}
 				}
 
-				x += sliceWidth;
+				ctx.stroke();
 			}
-
-			ctx.lineTo(canvasWidth, canvasHeight / 2);
-			ctx.stroke();
 
 			animationFrameId = requestAnimationFrame(draw);
 		};
@@ -188,9 +207,10 @@
 		}
 
 		if (analyser) {
-			// Real-time mode - clear cache
+			// Real-time mode - clear cache and reset history
 			waveformCache = null;
 			lastDrawnBuffer = null;
+			recordingHistory = [];
 			drawRealtimeWaveform();
 			return () => {
 				if (animationFrameId) {
@@ -201,6 +221,9 @@
 		}
 
 		if (audioBuffer) {
+			// Clear recording history when showing recorded buffer
+			recordingHistory = [];
+
 			// Only recreate cache if the buffer changed
 			if (audioBuffer !== lastDrawnBuffer) {
 				createWaveformCache(audioBuffer);
@@ -210,6 +233,7 @@
 			// audioBuffer is null - clear everything
 			waveformCache = null;
 			lastDrawnBuffer = null;
+			recordingHistory = [];
 
 			// Clear the canvas
 			const ctx = canvasRef.getContext('2d');
