@@ -909,6 +909,10 @@ export class AudioSystem {
 					.with(['message', { type: 'record' }], async () => {
 						if (sampler.mediaRecorder) return;
 
+						// Reset loop points for new recording
+						sampler.loopStart = 0;
+						sampler.loopEnd = 0;
+
 						const recorder = new MediaRecorder(sampler.destinationNode.stream);
 						const recordedChunks: Blob[] = [];
 

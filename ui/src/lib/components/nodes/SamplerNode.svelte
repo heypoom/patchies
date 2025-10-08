@@ -90,6 +90,10 @@
 			recordingInterval = null;
 		}
 
+		// Reset start/end points for new recording
+		loopStart = 0;
+		loopEnd = 0;
+
 		// Create analyser for real-time waveform visualization
 		const samplerNode = audioSystem.nodesById.get(node.id);
 		if (samplerNode?.type === 'sampler~') {
@@ -188,7 +192,10 @@
 		}
 
 		isPlaying = true;
-		playbackProgress = loopEnabled ? loopStart : 0;
+		playbackProgress = loopStart;
+
+		// Calculate the effective end point
+		const effectiveEnd = loopEnd > loopStart ? loopEnd : recordingDuration;
 
 		// Start playback progress tracking
 		playbackInterval = setInterval(() => {
@@ -196,12 +203,12 @@
 
 			if (loopEnabled) {
 				// Loop back to start if we reach the end
-				if (playbackProgress >= loopEnd) {
+				if (playbackProgress >= effectiveEnd) {
 					playbackProgress = loopStart;
 				}
 			} else {
 				// Stop if we reach the end (non-looping)
-				if (playbackProgress >= recordingDuration) {
+				if (playbackProgress >= effectiveEnd) {
 					stopPlayback();
 				}
 			}
