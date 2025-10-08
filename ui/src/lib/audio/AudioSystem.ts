@@ -847,9 +847,18 @@ export class AudioSystem {
 					.with(['message', { type: 'loop', start: P.number, end: P.number }], async ([, m]) => {
 						if (!sampler.audioBuffer) return;
 
-						sampler.sourceNode?.stop();
-						sampler.sourceNode = this.audioContext.createBufferSource();
+						// Properly stop and clean up existing source node
+						if (sampler.sourceNode) {
+							try {
+								sampler.sourceNode.stop();
+								sampler.sourceNode.disconnect();
+							} catch {
+								// Ignore errors if node already stopped
+							}
+						}
 
+						// Create new looping source node
+						sampler.sourceNode = this.audioContext.createBufferSource();
 						sampler.sourceNode.loop = true;
 						sampler.sourceNode.loopStart = m.start;
 						sampler.sourceNode.loopEnd = m.end;
@@ -897,15 +906,41 @@ export class AudioSystem {
 					.with(['message', { type: 'play' }], () => {
 						if (!sampler.audioBuffer) return;
 
-						sampler.sourceNode?.stop();
+						// Properly stop and clean up existing source node
+						if (sampler.sourceNode) {
+							try {
+								sampler.sourceNode.stop();
+								sampler.sourceNode.disconnect();
+							} catch (error) {
+								// Ignore errors if node already stopped
+							}
+						}
 
+						// Create new source node
 						sampler.sourceNode = this.audioContext.createBufferSource();
 						sampler.sourceNode.buffer = sampler.audioBuffer;
 						sampler.sourceNode.connect(sampler.node);
+
+						// Clean up reference when playback ends
+						sampler.sourceNode.onended = () => {
+							if (sampler.sourceNode) {
+								sampler.sourceNode.disconnect();
+								sampler.sourceNode = undefined;
+							}
+						};
+
 						sampler.sourceNode.start();
 					})
 					.with(['message', { type: 'stop' }], () => {
-						sampler.sourceNode?.stop();
+						if (sampler.sourceNode) {
+							try {
+								sampler.sourceNode.stop();
+								sampler.sourceNode.disconnect();
+								sampler.sourceNode = undefined;
+							} catch (error) {
+								// Ignore errors if node already stopped
+							}
+						}
 					});
 			})
 			.with({ type: 'waveshaper~' }, ({ node }) => {
