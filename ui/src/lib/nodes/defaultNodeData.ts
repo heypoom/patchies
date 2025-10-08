@@ -119,5 +119,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('split~', () => ({ channels: 2 }))
 		.with('meter~', () => ({ smoothing: 0.8, peakHold: true, style: 'bar' }))
 		.with('keyboard', () => ({ keybind: '', mode: 'all', trigger: 'keydown', repeat: false }))
+		.with('sampler~', () => ({
+			hasRecording: false,
+			duration: 0,
+			loopStart: 0,
+			loopEnd: 0,
+			loop: false
+		}))
 		.otherwise(() => ({}));
 }

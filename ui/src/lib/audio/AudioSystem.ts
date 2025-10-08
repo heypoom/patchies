@@ -844,32 +844,67 @@ export class AudioSystem {
 			})
 			.with({ type: 'sampler~' }, (sampler) => {
 				match([key, msg])
-					.with(['message', { type: 'loop', start: P.number, end: P.number }], async ([, m]) => {
-						if (!sampler.audioBuffer) return;
+					.with(
+						['message', { type: 'loop', start: P.optional(P.number), end: P.optional(P.number) }],
+						async ([, m]) => {
+							if (!sampler.audioBuffer) return;
 
-						// Properly stop and clean up existing source node
-						if (sampler.sourceNode) {
-							try {
-								sampler.sourceNode.stop();
-								sampler.sourceNode.disconnect();
-							} catch {
-								// Ignore errors if node already stopped
+							// Properly stop and clean up existing source node
+							if (sampler.sourceNode) {
+								try {
+									sampler.sourceNode.stop();
+									sampler.sourceNode.disconnect();
+								} catch {
+									// Ignore errors if node already stopped
+								}
 							}
-						}
 
-						// Create new looping source node
-						sampler.sourceNode = this.audioContext.createBufferSource();
-						sampler.sourceNode.loop = true;
-						sampler.sourceNode.loopStart = m.start;
-						sampler.sourceNode.loopEnd = m.end;
-						sampler.sourceNode.buffer = sampler.audioBuffer;
-						sampler.sourceNode.connect(sampler.node);
-						sampler.sourceNode.start();
-					})
+							// Create new looping source node
+							sampler.sourceNode = this.audioContext.createBufferSource();
+							sampler.sourceNode.loop = true;
+
+							// Use provided values or existing loopStart/loopEnd from previous sourceNode
+							if (m.start !== undefined) {
+								sampler.sourceNode.loopStart = m.start;
+							} else if (sampler.loopStart !== undefined) {
+								sampler.sourceNode.loopStart = sampler.loopStart;
+							}
+
+							if (m.end !== undefined) {
+								sampler.sourceNode.loopEnd = m.end;
+							} else if (sampler.loopEnd !== undefined) {
+								sampler.sourceNode.loopEnd = sampler.loopEnd;
+							}
+
+							// Store loop values for future use
+							sampler.loopStart = sampler.sourceNode.loopStart;
+							sampler.loopEnd = sampler.sourceNode.loopEnd;
+
+							sampler.sourceNode.buffer = sampler.audioBuffer;
+							sampler.sourceNode.connect(sampler.node);
+							sampler.sourceNode.start();
+						}
+					)
 					.with(['message', { type: 'noloop' }], async () => {
 						if (!sampler.sourceNode) return;
 
 						sampler.sourceNode.loop = false;
+					})
+					.with(['message', { type: 'setStart', value: P.number }], ([, m]) => {
+						sampler.loopStart = m.value;
+
+						// If currently playing with loop, update the source node
+						if (sampler.sourceNode && sampler.sourceNode.loop) {
+							sampler.sourceNode.loopStart = m.value;
+						}
+					})
+					.with(['message', { type: 'setEnd', value: P.number }], ([, m]) => {
+						sampler.loopEnd = m.value;
+
+						// If currently playing with loop, update the source node
+						if (sampler.sourceNode && sampler.sourceNode.loop) {
+							sampler.sourceNode.loopEnd = m.value;
+						}
 					})
 					.with(['message', { type: 'record' }], async () => {
 						if (sampler.mediaRecorder) return;
