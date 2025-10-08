@@ -8,7 +8,7 @@ export class CsoundManager {
 	private outputNode: GainNode;
 	private inputNode: GainNode;
 	private initialized = false;
-	private isPaused = false;
+	private isPaused = true;
 	private optionsString = '';
 	private codeString = '';
 
@@ -60,7 +60,8 @@ export class CsoundManager {
 
 		try {
 			await match([key, value])
-				.with(['code', P.string], async ([, code]) => this.runCode(code))
+				.with(['code', P.string], async ([, code]) => this.setCode(code))
+				.with(['run', P.string], async ([, code]) => this.runCode(code))
 				.with(['messageInlet', { inletIndex: P.number, message: P.any, meta: P.any }], ([, data]) =>
 					this.handleInletMessage(data.inletIndex, data.message)
 				)
@@ -70,7 +71,7 @@ export class CsoundManager {
 		}
 	}
 
-	private async runCode(code: string) {
+	async setCode(code: string) {
 		if (!this.csound) return;
 
 		this.codeString = code;
@@ -88,16 +89,16 @@ export class CsoundManager {
           nchnls = 2
           0dbfs = 1
 
-					${processedCode}
-				</CsInstruments>`;
+				${processedCode}
+			</CsInstruments>`;
 			}
 
 			let defaultCsOptions = '';
 
 			if (!code.includes('<CsOptions>')) {
 				defaultCsOptions = `<CsOptions>
-			  	-odac
-				</CsOptions>`;
+		  	-odac
+			</CsOptions>`;
 			}
 
 			const csd = `
@@ -110,10 +111,17 @@ export class CsoundManager {
 
 			await this.csound.compileCSD(csd);
 			await this.setOptions(this.optionsString);
-			await this.csound.start();
 		} catch (error) {
 			console.error('Error compiling/running Csound code:', error);
 		}
+	}
+
+	async runCode(code: string) {
+		if (!this.csound) return;
+
+		await this.setCode(code);
+		await this.csound.start();
+		this.isPaused = false;
 	}
 
 	async setOptions(options: string) {
@@ -134,10 +142,10 @@ export class CsoundManager {
 		try {
 			await match(message)
 				.with({ type: 'bang' }, async () => {
-					if (this.isPaused) {
-						await this.resume();
-					} else if (this.codeString) {
-						await this.csound!.evalCode(this.codeString);
+					await this.resume();
+
+					if (this.codeString) {
+						await this.runCode(this.codeString);
 					}
 				})
 				.with({ type: 'pause' }, () => this.pause())
@@ -218,6 +226,7 @@ export class CsoundManager {
 		try {
 			await this.csound.stop();
 			await this.csound.reset();
+			await this.csound.terminateInstance();
 		} catch (error) {
 			console.error('Error destroying Csound:', error);
 		}

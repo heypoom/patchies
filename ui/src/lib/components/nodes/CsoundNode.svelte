@@ -20,7 +20,7 @@
 
 	let isEditing = $state(!data.expr);
 	let layoutRef = $state<any>();
-	let isPlaying = $state(true);
+	let isPlaying = $state(false);
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
@@ -46,7 +46,10 @@
 		const manager = getManager();
 		if (!manager) return;
 
-		manager.handleMessage('code', code);
+		manager.resume();
+		isPlaying = true;
+
+		manager.handleMessage('run', code);
 	};
 
 	const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
@@ -61,11 +64,11 @@
 
 		if (isPaused) {
 			await manager.resume();
+			isPlaying = true;
 		} else {
 			await manager.pause();
+			isPlaying = false;
 		}
-
-		isPlaying = !isPlaying;
 	}
 
 	onMount(() => {
