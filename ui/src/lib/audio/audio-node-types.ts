@@ -137,6 +137,8 @@ interface PsSampler extends PsBase {
 	mediaRecorder?: MediaRecorder;
 	audioBuffer?: AudioBuffer;
 	sourceNode?: AudioBufferSourceNode;
+	loopStart?: number;
+	loopEnd?: number;
 }
 
 interface PsConvolver extends PsBase {
