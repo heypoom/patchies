@@ -46,7 +46,8 @@
 					onclick={() => messageContext.send({ type: 'bang' })}
 					class={[
 						'h-10 w-10 cursor-pointer rounded-full border font-mono text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 active:bg-zinc-600',
-						isFlashing ? '!border-transparent bg-zinc-500' : `${borderColor} bg-zinc-900`
+						isFlashing ? '!border-transparent bg-zinc-500' : `${borderColor} bg-zinc-900`,
+					selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 					]}
 					aria-label="send bang"
 				>

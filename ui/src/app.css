@@ -40,7 +40,7 @@
 }
 
 .dark {
-	--background: oklch(0.141 0.005 285.823);
+	--background: #2d2d30;
 	--foreground: oklch(0.985 0 0);
 	--card: oklch(0.21 0.006 285.885);
 	--card-foreground: oklch(0.985 0 0);
@@ -109,6 +109,9 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+	--shadow-glow-lg: 0 0px 15px rgba(255, 255, 255, 0.3), 0 0px 45px rgba(255, 255, 255, 0.2);
+	--shadow-glow-md: 0 0px 15px rgba(255, 255, 255, 0.17), 0 0px 45px rgba(255, 255, 255, 0.1);
+	--shadow-glow-sm: 0 0px 15px rgba(255, 255, 255, 0.08), 0 0px 45px rgba(255, 255, 255, 0.05);
 }
 
 @layer base {
@@ -118,5 +121,20 @@
 
 	body {
 		@apply bg-background text-foreground;
+	}
+}
+
+@layer components {
+	/* Object container utility classes */
+	.object-container {
+		@apply border-zinc-700 bg-zinc-900 hover:shadow-glow-sm;
+	}
+
+	.object-container-light {
+		@apply border-zinc-600 bg-zinc-900 hover:shadow-glow-sm;
+	}
+
+	.object-container-selected {
+		@apply border-zinc-400 bg-zinc-800 shadow-glow-md;
 	}
 }

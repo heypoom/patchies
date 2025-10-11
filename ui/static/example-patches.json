@@ -1,0 +1,46 @@
+{
+  "patches": [
+    {
+      "id": "audio-reactive-circles",
+      "name": "Audio Reactive Circles",
+      "description": "Visualize audio frequencies with animated circles",
+      "category": "Audio Visualization",
+      "author": "Patchies Team"
+    },
+    {
+      "id": "hydra-feedback",
+      "name": "Hydra Video Feedback",
+      "description": "Psychedelic video feedback loops using Hydra",
+      "category": "Visual Effects",
+      "author": "Patchies Team"
+    },
+    {
+      "id": "strudel-basic",
+      "name": "Basic Strudel Beat",
+      "description": "Simple drum pattern using Strudel live coding",
+      "category": "Music",
+      "author": "Patchies Team"
+    },
+    {
+      "id": "p5-particles",
+      "name": "Particle System",
+      "description": "Interactive particle system with mouse control",
+      "category": "Interactive",
+      "author": "Patchies Team"
+    },
+    {
+      "id": "glsl-shader",
+      "name": "GLSL Shader Art",
+      "description": "Generative shader patterns",
+      "category": "Visual Effects",
+      "author": "Patchies Team"
+    },
+    {
+      "id": "message-passing",
+      "name": "Message Passing Demo",
+      "description": "Learn how to use send() and recv() between nodes",
+      "category": "Tutorial",
+      "author": "Patchies Team"
+    }
+  ]
+}

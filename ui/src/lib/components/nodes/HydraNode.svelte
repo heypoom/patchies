@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals, type NodeProps } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -15,9 +15,7 @@
 		id: nodeId,
 		data,
 		selected
-	}: {
-		id: string;
-		type: string;
+	}: NodeProps & {
 		data: {
 			title?: string;
 			code: string;
@@ -26,7 +24,6 @@
 			videoInletCount?: number;
 			videoOutletCount?: number;
 		};
-		selected: boolean;
 	} = $props();
 
 	const { updateNodeData } = useSvelteFlow();
@@ -163,11 +160,10 @@
 	showPauseButton={true}
 	{selected}
 	{editorReady}
-	{errorMessage}
 	bind:previewCanvas
 >
 	{#snippet topHandle()}
-		{#each Array.from({ length: videoInletCount }) as _, index}
+		{#each Array.from({ length: videoInletCount }) as _, index (index)}
 			<StandardHandle
 				port="inlet"
 				type="video"
@@ -178,7 +174,7 @@
 			/>
 		{/each}
 
-		{#each Array.from({ length: messageInletCount }) as _, index}
+		{#each Array.from({ length: messageInletCount }) as _, index (index)}
 			<StandardHandle
 				port="inlet"
 				type="message"
@@ -191,7 +187,7 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		{#each Array.from({ length: videoOutletCount }) as _, index}
+		{#each Array.from({ length: videoOutletCount }) as _, index (index)}
 			<StandardHandle
 				port="outlet"
 				type="video"
@@ -202,7 +198,7 @@
 			/>
 		{/each}
 
-		{#each Array.from({ length: messageOutletCount }) as _, index}
+		{#each Array.from({ length: messageOutletCount }) as _, index (index)}
 			<StandardHandle
 				port="outlet"
 				type="message"

@@ -107,7 +107,7 @@
 	}
 
 	const containerClass = $derived(
-		selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-600 bg-zinc-900'
+		selected ? 'object-container-selected' : 'object-container-light'
 	);
 </script>
 

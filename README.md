@@ -12,20 +12,13 @@ Try it out at [patchies.app](https://patchies.app) - it's open source and free t
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
-- [P5.js](https://p5js.org), library for creative coding and making art.
-- [Hydra](https://hydra.ojack.xyz), live-coding video synthesizer.
-- [Strudel](https://strudel.cc), TidalCycles-like music environment
-- [ChucK](https://chuck.cs.princeton.edu/webchuck), programming language for real-time sound synthesis.
-- [SwissGL](https://github.com/google/swissgl), minimal WebGL2 wrapper for shaders.
-- [GLSL fragment shaders](https://www.shadertoy.com), for complex 3D visual effects.
-- [Tone.js](https://tonejs.github.io), framework for creating interactive music in the browser.
-- [Elementary Audio](https://www.elementary.audio/), library for declarative digital audio signal processing.
-- [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
-- [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
-- [Assembly](./modules/vasm/README.md), for fun stack machine computational puzzles.
-- [Python 3](https://pyodide.org), runs on the browser via Pyodide.
+- Create interactive graphics with [P5.js] and [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+- Synthesize and process video with [Hydra](https://hydra.ojack.xyz) and [GLSL shaders](https://www.shadertoy.com)
+- Live code music with [Strudel](https://strudel.cc) and [ChucK](https://chuck.cs.princeton.edu/webchuck)
+- Synthesize and process audio with [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) nodes, [Tone.js](https://tonejs.github.io) and [Elementary Audio](https://www.elementary.audio)
+- Compute in a raw and fun way with [stack machine assembly](./modules/vasm/README.md)
+- Run numerical computations with [Python 3](https://pyodide.org)
 - Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
-- ...as well as write JavaScript code directly.
 
 ## ...by patching them together ✨
 
@@ -904,7 +897,7 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
 - `fft({type: 'freq'})` gives you frequency spectrum analysis.
 - Try out the `fft.hydra` preset for Hydra.
-- Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js.
+- Try out the `fft.p5`, `fft-sm.p5` and `rms.p5` presets for P5.js.
 - Try out the `fft.canvas` preset for HTML5 canvas.
 
   - Because the canvas lives on the [rendering pipeline](#rendering-pipeline), it has a lot more delay than `p5` in retrieving the audio analysis data. So, the audio reactivity will not be as tight as `p5`.

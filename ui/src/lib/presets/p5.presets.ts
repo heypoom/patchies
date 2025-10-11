@@ -59,7 +59,7 @@ function setup() {
   noStroke()
 }
 
-function draw() {  
+function draw() {
   fill(state === 'red' ? '#e74c3c' : OFF)
   ellipse(W/2+5, 40, 50, 50)
 
@@ -70,7 +70,7 @@ function draw() {
   ellipse(W/2+5, 160, 50, 50)
 }`;
 
-const AUDIO_FFT_CAPPED_P5 = `function setup() {
+const AUDIO_FFT_SMALL_P5 = `function setup() {
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
   strokeWeight(3)
@@ -79,11 +79,11 @@ const AUDIO_FFT_CAPPED_P5 = `function setup() {
 function draw() {
   clear()
   noStroke();
-  
+
   const waveform = fft().a
   const spectrum = fft({type: 'freq'}).a
   if (!waveform || !spectrum) return
-  
+
   const sl = spectrum.length / 5
   for (let i = 0; i< sl; i++){
     let x = map(i, 0, sl, 0, width);
@@ -110,13 +110,13 @@ const AUDIO_FFT_FULL_P5 = `function setup() {
 
 function draw() {
   clear()
-  
+
   const waveform = fft().a
   const spectrum = fft({type: 'freq'}).a
   if (!waveform || !spectrum) return
-  
+
   const sl = spectrum.length / 5
-  
+
   noStroke();
   for (let i = 0; i< sl; i++){
     let x = map(i, 0, sl, 0, width);
@@ -146,7 +146,7 @@ const AUDIO_FFT_RMS_WIDE_P5 = `function setup() {
 function draw() {
   clear()
   noStroke();
-  
+
   const rms = fft().rms
   textSize(20)
   fill('yellow')
@@ -203,7 +203,7 @@ const AUDIO_FFT_RMS_NARROW_P5 = `function setup() {
 function draw() {
   clear()
   noStroke();
-  
+
   const rms = fft().rms
   textSize(20)
   fill('yellow')
@@ -236,8 +236,8 @@ export const P5_PRESETS: Record<string, { type: string; data: { code: string } }
 	'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
 	'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
 	'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } },
-	'fft-capped.p5': { type: 'p5', data: { code: AUDIO_FFT_CAPPED_P5.trim() } },
-	'fft-full.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } },
+	'fft.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } },
+	'fft-sm.p5': { type: 'p5', data: { code: AUDIO_FFT_SMALL_P5.trim() } },
 	'rms.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_NARROW_P5.trim() } },
 	'rms-wide.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_WIDE_P5.trim() } },
 	'bouncing-balls.p5': { type: 'p5', data: { code: BOUNCING_BALLS_P5.trim() } },

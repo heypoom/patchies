@@ -238,7 +238,8 @@
 				<button
 					class={[
 						'lex-col flex min-h-[32px] min-w-[35px] items-center justify-center rounded-md border bg-zinc-900 px-3 text-zinc-300 hover:bg-zinc-800',
-						borderColor
+						borderColor,
+						selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 					]}
 					onclick={toggleListening}
 					title={isListening ? 'Stop listening' : 'Start listening'}

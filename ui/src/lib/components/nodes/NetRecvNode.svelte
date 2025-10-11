@@ -110,6 +110,7 @@
 	{channel}
 	{borderColor}
 	{textClass}
+	{selected}
 	nodeLabel="netrecv"
 	onChannelInput={handleChannelInput}
 	onChannelKeydown={handleChannelKeydown}

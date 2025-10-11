@@ -11,6 +11,7 @@
 		nodeLabel,
 		hasOutlet = false,
 		channelInputClass = '',
+		selected = false,
 		onChannelInput,
 		onChannelKeydown
 	}: {
@@ -22,6 +23,7 @@
 		nodeLabel: string;
 		hasOutlet?: boolean;
 		channelInputClass?: string;
+		selected?: boolean;
 		onChannelInput: (e: Event) => void;
 		onChannelKeydown: (e: KeyboardEvent) => void;
 	} = $props();
@@ -58,7 +60,8 @@
 							class={[
 								'nodrag h-[34px] w-fit min-w-fit rounded-lg border bg-zinc-900 px-1 text-center font-mono text-sm text-zinc-200 focus:outline-none',
 								borderColor,
-								channelInputClass
+								channelInputClass,
+								selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 							].join(' ')}
 							type="text"
 							value={channel}
@@ -70,7 +73,8 @@
 						<div
 							class={[
 								'flex min-w-[80px] flex-col items-center justify-center rounded-lg border bg-zinc-900 px-3 py-2',
-								borderColor
+								borderColor,
+								selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 							].join(' ')}
 						>
 							<div class="flex items-center gap-1 font-mono">

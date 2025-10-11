@@ -69,5 +69,16 @@
 		min-height: 6px;
 		width: 7px;
 		height: 7px;
+		will-change: width, height;
+		transition:
+			width 0.2s ease-in,
+			height 0.2s ease-in;
+	}
+
+	:global(.svelte-flow__handle):hover {
+		min-width: 10px;
+		min-height: 10px;
+		width: 11px;
+		height: 11px;
 	}
 </style>

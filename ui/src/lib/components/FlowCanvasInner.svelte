@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {
 		SvelteFlow,
-		Background,
 		Controls,
 		type Node,
 		type Edge,
@@ -11,7 +10,7 @@
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import CommandPalette from './CommandPalette.svelte';
-	import ShortcutHelp from './ShortcutHelp.svelte';
+	import StartupModal from './startup-modal/StartupModal.svelte';
 	import NodeList from './NodeList.svelte';
 	import VolumeControl from './VolumeControl.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
@@ -32,6 +31,7 @@
 	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
+	import BackgroundPattern from './BackgroundPattern.svelte';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -85,12 +85,10 @@
 	// Clipboard for copy-paste functionality
 	let copiedNodeData: { type: string; data: any } | null = null;
 
-	// URL loading state
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
-
-	// Audio resume hint state
 	let showAudioHint = $state(audioSystem.audioContext.state === 'suspended');
+	let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
 
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
@@ -206,6 +204,13 @@
 		audioSystem.start();
 
 		loadPatch();
+
+		// Check if the user wants to see the startup modal on launch
+		const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
+		// Default to true if not set (first time users), or respect user's preference
+		if (showStartupSetting === null || showStartupSetting === 'true') {
+			showStartupModal = true;
+		}
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 
@@ -608,7 +613,7 @@
 <div class="flow-container flex h-screen w-full flex-col">
 	<!-- URL Loading Indicator -->
 	{#if isLoadingFromUrl}
-		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
 			>
@@ -623,7 +628,7 @@
 
 	<!-- URL Loading Error -->
 	{#if urlLoadError}
-		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
 			>
@@ -642,7 +647,7 @@
 
 	<!-- Audio Resume Hint -->
 	{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode}
-		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
 			>
@@ -655,6 +660,7 @@
 	<!-- Main flow area -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		bind:this={flowContainer}
 		class="relative flex-1"
@@ -671,10 +677,11 @@
 			{edgeTypes}
 			fitView
 			class="bg-zinc-900"
+			snapGrid={[5, 5]}
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
 		>
-			<Background bgColor="#18181b" gap={16} patternColor="oklch(44.2% 0.017 285.786)" />
+			<BackgroundPattern />
 
 			<BackgroundOutputCanvas />
 
@@ -707,7 +714,7 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed bottom-0 right-0 p-2">
+		<div class="fixed right-0 bottom-0 p-2">
 			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
 				<button
 					title="Delete (Del)"
@@ -767,7 +774,7 @@
 				><Icon icon="lucide:file-plus-2" class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
 			>
 
-			<ShortcutHelp />
+			<StartupModal bind:open={showStartupModal} />
 		</div>
 	{/if}
 </div>
