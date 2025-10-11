@@ -88,7 +88,7 @@
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
 	let showAudioHint = $state(audioSystem.audioContext.state === 'suspended');
-	let showStartupModal = $state(true);
+	let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
 
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
@@ -205,11 +205,11 @@
 
 		loadPatch();
 
-		// Check if this is the first time the user is opening the app
-		const hasSeenStartupModal = localStorage.getItem('patchies-seen-startup-modal');
-		if (!hasSeenStartupModal) {
+		// Check if the user wants to see the startup modal on launch
+		const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
+		// Default to true if not set (first time users), or respect user's preference
+		if (showStartupSetting === null || showStartupSetting === 'true') {
 			showStartupModal = true;
-			localStorage.setItem('patchies-seen-startup-modal', 'true');
 		}
 
 		document.addEventListener('keydown', handleGlobalKeydown);

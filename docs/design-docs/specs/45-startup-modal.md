@@ -93,6 +93,11 @@ The startup modal is implemented as a modular component system in `/ui/src/lib/c
 6. ✅ **Help Button Integration**:
    - Replaced `ShortcutHelp.svelte` with `StartupModal` in `FlowCanvasInner.svelte`
    - Help icon in top-right triggers modal
+7. ✅ **Show on Startup Toggle**:
+   - Toggle switch at bottom of About tab
+   - Stores preference in `localStorage` key `patchies-show-startup-modal`
+   - Defaults to enabled for first-time users
+   - Orange toggle switch with smooth animation
 
 #### Example Patches JSON Format
 
