@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import AboutTab from './AboutTab.svelte';
 	import ExamplesTab from './ExamplesTab.svelte';
+	import ShortcutsTab from './ShortcutsTab.svelte';
 	import type { Tab } from './types';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -21,6 +22,8 @@
 	function handleOpen() {
 		open = true;
 	}
+
+	const tabs: Tab[] = ['about', 'examples', 'shortcuts'];
 </script>
 
 <!-- Help button trigger -->
@@ -58,22 +61,16 @@
 			<!-- Tab navigation -->
 			<div class="border-b border-zinc-800 px-6 pt-6">
 				<nav class="flex gap-6">
-					<button
-						onclick={() => (activeTab = 'about')}
-						class="pb-3 text-sm font-medium transition-colors {activeTab === 'about'
-							? 'border-b-2 border-orange-500 text-orange-500'
-							: 'text-zinc-400 hover:text-zinc-200'}"
-					>
-						About
-					</button>
-					<button
-						onclick={() => (activeTab = 'examples')}
-						class="pb-3 text-sm font-medium transition-colors {activeTab === 'examples'
-							? 'border-b-2 border-orange-500 text-orange-500'
-							: 'text-zinc-400 hover:text-zinc-200'}"
-					>
-						Examples
-					</button>
+					{#each tabs as tab (tab)}
+						<button
+							onclick={() => (activeTab = tab)}
+							class="pb-3 text-sm font-medium transition-colors {activeTab === tab
+								? 'border-b-2 border-orange-500 text-orange-500'
+								: 'text-zinc-400 hover:text-zinc-200'}"
+						>
+							{tab}
+						</button>
+					{/each}
 				</nav>
 			</div>
 
@@ -83,6 +80,8 @@
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'examples'}
 					<ExamplesTab />
+				{:else if activeTab === 'shortcuts'}
+					<ShortcutsTab />
 				{/if}
 			</div>
 		</div>

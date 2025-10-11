@@ -6,7 +6,8 @@
 
 <button
 	onclick={() => onLoad(patch.id)}
-	class="group relative cursor-pointer overflow-hidden rounded-lg border border-zinc-700 bg-zinc-800/50 text-left transition-all hover:border-orange-500 hover:bg-zinc-800"
+	class="group relative cursor-not-allowed overflow-hidden rounded-lg border border-zinc-700 bg-zinc-800/50 text-left opacity-30 transition-all hover:border-orange-500 hover:bg-zinc-800"
+	disabled
 >
 	{#if patch.imageUrl}
 		<div class="aspect-video w-full overflow-hidden bg-zinc-900">
@@ -19,6 +20,7 @@
 	{:else}
 		<div class="aspect-video w-full bg-gradient-to-br from-zinc-800 to-zinc-900"></div>
 	{/if}
+
 	<div class="p-3">
 		<h3 class="font-medium text-zinc-100 group-hover:text-orange-500">
 			{patch.name}

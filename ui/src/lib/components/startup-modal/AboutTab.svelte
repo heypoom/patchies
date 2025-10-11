@@ -20,8 +20,10 @@
 	}
 </script>
 
-<div class="space-y-6">
-	<img src={demoImage} alt="patch demo" class="h-[20dvh] w-full object-cover object-top" />
+<div class="space-y-4">
+	<div class="pb-3">
+		<img src={demoImage} alt="patch demo" class="h-[20dvh] w-full object-cover object-top" />
+	</div>
 
 	<!-- Header -->
 	<div>
@@ -38,7 +40,8 @@
 		</p>
 
 		<div class="rounded-lg bg-zinc-800/50 p-4">
-			<h2 class="mb-3 text-sm font-semibold text-zinc-200">Getting Started</h2>
+			<h2 class="mb-2 text-sm font-semibold text-zinc-200">Getting Started</h2>
+
 			<ul class="space-y-2 text-sm">
 				<li class="flex items-start gap-2">
 					<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
@@ -108,7 +111,7 @@
 		</div>
 
 		<!-- Show on startup toggle -->
-		<div class="flex items-center justify-between gap-x-10 rounded-lg border p-3">
+		<div class="mt-2 flex items-center justify-between gap-x-10 rounded-lg border p-3">
 			<div class="flex items-center gap-2">
 				<Icon icon="lucide:info" class="h-4 w-4 text-zinc-400" />
 				<span class="text-sm text-zinc-300">show on startup</span>
