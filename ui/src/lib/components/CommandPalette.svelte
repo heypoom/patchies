@@ -609,7 +609,7 @@
 	<!-- Results List -->
 	<div bind:this={resultsContainer} class="max-h-64 overflow-y-auto">
 		{#if stage === 'commands'}
-			{#each filteredCommands as command, index}
+			{#each filteredCommands as command, index (command.id)}
 				<div
 					class="cursor-pointer px-3 py-2 {index === selectedIndex
 						? 'bg-zinc-600/50'
@@ -634,7 +634,7 @@
 			{#if filteredPatches.length === 0}
 				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
 			{:else}
-				{#each filteredPatches as patch, index}
+				{#each filteredPatches as patch, index (patch)}
 					<div
 						class="cursor-pointer px-3 py-2 {index === selectedIndex
 							? 'bg-zinc-600/50'
@@ -652,7 +652,7 @@
 			{#if filteredPatches.length === 0}
 				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
 			{:else}
-				{#each filteredPatches as patch, index}
+				{#each filteredPatches as patch, index (patch)}
 					<div
 						class="cursor-pointer px-3 py-2 {index === selectedIndex
 							? 'bg-red-800'
@@ -670,7 +670,7 @@
 			{#if filteredPatches.length === 0}
 				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
 			{:else}
-				{#each filteredPatches as patch, index}
+				{#each filteredPatches as patch, index (patch)}
 					<div
 						class="cursor-pointer px-3 py-2 {index === selectedIndex
 							? 'bg-blue-800'
