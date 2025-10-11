@@ -3,8 +3,10 @@
 	import { onMount } from 'svelte';
 
 	import demoImage from '$lib/images/startup-modal-img-1.png';
+	import type { Tab } from './types';
 
 	let showOnStartup = $state(true);
+	let { setTab }: { setTab: (tab: Tab) => void } = $props();
 
 	onMount(() => {
 		// Load the current setting from localStorage
@@ -69,9 +71,13 @@
 		</div>
 
 		<p class="text-sm">
-			Patchies lets you connect audio, video and compute nodes together through message passing and
-			audio/video chaining. Create generative art, audio-reactive visuals, physics and nature
-			simulations, live coding music, and more.
+			Connect audio, video and compute nodes together through message passing and audio/video
+			chaining. Create generative art, audio-reactive visuals, physics and nature simulations, and
+			live coding music. See <a
+				href="#!"
+				class="text-orange-500 hover:underline"
+				onclick={() => setTab('examples')}>some examples</a
+			> to get started.
 		</p>
 	</div>
 

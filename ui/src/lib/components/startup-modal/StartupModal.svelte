@@ -80,7 +80,7 @@
 			<!-- Tab content -->
 			<div class="overflow-y-auto p-6" style="max-height: calc(85vh - 80px);">
 				{#if activeTab === 'about'}
-					<AboutTab />
+					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'examples'}
 					<ExamplesTab />
 				{/if}
