@@ -135,7 +135,7 @@
 	{editorReady}
 >
 	{#snippet topHandle()}
-		{#each Array.from({ length: inletCount }) as _, index}
+		{#each Array.from({ length: inletCount }) as _, index (index)}
 			<StandardHandle
 				port="inlet"
 				id={index}
@@ -155,8 +155,8 @@
 					'rounded-md border bg-transparent',
 					enableDrag ? 'cursor-grab' : 'nodrag cursor-default',
 					selected
-						? 'border-zinc-200 [&>canvas]:rounded-[7px]'
-						: 'border-transparent [&>canvas]:rounded-md'
+						? 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]'
+						: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md'
 				]}
 			></div>
 		</div>
