@@ -35,13 +35,13 @@
 {#if open}
 	<!-- Modal backdrop (no visual backdrop, just for click handling) -->
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center"
+		class="fixed inset-0 z-50 flex items-center justify-center font-mono"
 		onclick={handleBackdropClick}
 		role="presentation"
 	>
 		<!-- Modal container -->
 		<div
-			class="relative max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl"
+			class="relative max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950/90 shadow-2xl backdrop-blur-lg"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="modal-title"
