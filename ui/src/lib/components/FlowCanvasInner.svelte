@@ -672,6 +672,7 @@
 			{edgeTypes}
 			fitView
 			class="bg-zinc-900"
+			snapGrid={[5, 5]}
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
 		>

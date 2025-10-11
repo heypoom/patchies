@@ -123,3 +123,18 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+@layer components {
+	/* Object container utility classes */
+	.object-container {
+		@apply border-zinc-700 bg-zinc-900 hover:shadow-glow-sm;
+	}
+
+	.object-container-light {
+		@apply border-zinc-600 bg-zinc-900 hover:shadow-glow-sm;
+	}
+
+	.object-container-selected {
+		@apply border-zinc-400 bg-zinc-800 shadow-glow-md;
+	}
+}
