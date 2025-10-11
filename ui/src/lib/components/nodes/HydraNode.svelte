@@ -160,11 +160,10 @@
 	showPauseButton={true}
 	{selected}
 	{editorReady}
-	{errorMessage}
 	bind:previewCanvas
 >
 	{#snippet topHandle()}
-		{#each Array.from({ length: videoInletCount }) as _, index}
+		{#each Array.from({ length: videoInletCount }) as _, index (index)}
 			<StandardHandle
 				port="inlet"
 				type="video"
@@ -175,7 +174,7 @@
 			/>
 		{/each}
 
-		{#each Array.from({ length: messageInletCount }) as _, index}
+		{#each Array.from({ length: messageInletCount }) as _, index (index)}
 			<StandardHandle
 				port="inlet"
 				type="message"
@@ -188,7 +187,7 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		{#each Array.from({ length: videoOutletCount }) as _, index}
+		{#each Array.from({ length: videoOutletCount }) as _, index (index)}
 			<StandardHandle
 				port="outlet"
 				type="video"
@@ -199,7 +198,7 @@
 			/>
 		{/each}
 
-		{#each Array.from({ length: messageOutletCount }) as _, index}
+		{#each Array.from({ length: messageOutletCount }) as _, index (index)}
 			<StandardHandle
 				port="outlet"
 				type="message"
