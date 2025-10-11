@@ -29,7 +29,6 @@
 		paused?: boolean;
 		showPauseButton?: boolean;
 		previewCanvas?: HTMLCanvasElement;
-		errorMessage?: string | null;
 		nodrag?: boolean;
 
 		width?: string | number;
@@ -61,8 +60,8 @@
 			class={[
 				'rounded-md border',
 				selected
-					? 'border-zinc-200 [&>canvas]:rounded-[7px]'
-					: 'border-transparent [&>canvas]:rounded-md',
+					? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
+					: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
 				nodrag ? 'nodrag cursor-default' : 'cursor-grab'
 			]}
 			{width}

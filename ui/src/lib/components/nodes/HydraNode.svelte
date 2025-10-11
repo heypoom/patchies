@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals, type NodeProps } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -15,9 +15,7 @@
 		id: nodeId,
 		data,
 		selected
-	}: {
-		id: string;
-		type: string;
+	}: NodeProps & {
 		data: {
 			title?: string;
 			code: string;
@@ -26,7 +24,6 @@
 			videoInletCount?: number;
 			videoOutletCount?: number;
 		};
-		selected: boolean;
 	} = $props();
 
 	const { updateNodeData } = useSvelteFlow();
