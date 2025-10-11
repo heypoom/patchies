@@ -904,7 +904,7 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
 - `fft({type: 'freq'})` gives you frequency spectrum analysis.
 - Try out the `fft.hydra` preset for Hydra.
-- Try out the `fft-capped.p5`, `fft-full.p5` and `rms.p5` presets for P5.js.
+- Try out the `fft.p5`, `fft-sm.p5` and `rms.p5` presets for P5.js.
 - Try out the `fft.canvas` preset for HTML5 canvas.
 
   - Because the canvas lives on the [rendering pipeline](#rendering-pipeline), it has a lot more delay than `p5` in retrieving the audio analysis data. So, the audio reactivity will not be as tight as `p5`.
