@@ -1,12 +1,16 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+
+	import demoImage from '$lib/images/startup-modal-img-1.png';
 </script>
 
 <div class="space-y-6">
+	<img src={demoImage} alt="patch demo" class="max-h-[250px] w-full object-cover object-top" />
+
 	<!-- Header -->
 	<div>
 		<h1 id="modal-title" class="text-3xl font-bold text-zinc-100">Patchies</h1>
-		<p class="mt-1 text-lg text-zinc-400">Creative coding patcher for your browser</p>
+		<p class="mt-1 text-lg text-zinc-400">Creative coding audio-visual patcher</p>
 	</div>
 
 	<!-- Description -->

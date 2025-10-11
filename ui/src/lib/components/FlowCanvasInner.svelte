@@ -85,15 +85,10 @@
 	// Clipboard for copy-paste functionality
 	let copiedNodeData: { type: string; data: any } | null = null;
 
-	// URL loading state
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
-
-	// Audio resume hint state
 	let showAudioHint = $state(audioSystem.audioContext.state === 'suspended');
-
-	// Startup modal state
-	let showStartupModal = $state(false);
+	let showStartupModal = $state(true);
 
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
