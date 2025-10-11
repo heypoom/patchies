@@ -101,3 +101,35 @@ Use the `asm.mem` memory object to store external memory cells. This is helpful 
 - Can set number of rows to display.
 
 The virtual machine is written in Rust and compiled to WebAssembly, and runs on the web worker to avoid blocking the main thread. It is still in very early-stage of porting and extremely unoptimized, so expect it to be quite slow. I will optimize it soon.
+
+## Examples: Loop
+
+This is a loop from 10 to 50.
+
+```asm
+push 10
+
+l:
+push 1
+add
+dup
+push 50
+less_than
+jump_zero end
+jump l
+
+end:
+push 0xDDDD
+```
+
+This would be roughly equivalent to:
+
+```c
+int main() {
+    int i = 10;
+    while (i < 50) {
+        i++;
+    }
+    return 0xDDDD;
+}
+```
