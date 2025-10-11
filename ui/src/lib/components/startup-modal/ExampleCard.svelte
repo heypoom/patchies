@@ -6,7 +6,7 @@
 
 <button
 	onclick={() => onLoad(patch.id)}
-	class="group relative overflow-hidden rounded-lg border border-zinc-700 bg-zinc-800/50 text-left transition-all hover:border-orange-500 hover:bg-zinc-800"
+	class="group relative cursor-pointer overflow-hidden rounded-lg border border-zinc-700 bg-zinc-800/50 text-left transition-all hover:border-orange-500 hover:bg-zinc-800"
 >
 	{#if patch.imageUrl}
 		<div class="aspect-video w-full overflow-hidden bg-zinc-900">
