@@ -307,7 +307,7 @@
 
 				{#if data.showConsole && !data.libraryName}
 					<div
-						class={['max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor]}
+						class={['max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor, selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm']}
 					>
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
@@ -369,7 +369,7 @@
 							'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
 							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
 							borderColor,
-							selected ? 'bg-zinc-800' : 'bg-zinc-900'
+							selected ? 'bg-zinc-800 shadow-glow-md' : 'bg-zinc-900 hover:shadow-glow-sm'
 						]}
 						style={`min-width: ${minContainerWidth}px`}
 						onclick={runOrStop}

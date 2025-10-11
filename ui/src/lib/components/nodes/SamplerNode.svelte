@@ -356,10 +356,10 @@
 	});
 
 	const containerClass = $derived.by(() => {
-		if (node.data.loop && node.selected) return 'border-orange-300 bg-zinc-800';
-		if (node.selected) return 'border-zinc-400 bg-zinc-800';
-		if (node.data.loop) return 'border-orange-400 bg-zinc-900';
-		return 'border-zinc-700 bg-zinc-900';
+		if (node.data.loop && node.selected) return 'border-orange-300 bg-zinc-800 shadow-glow-md';
+		if (node.selected) return 'border-zinc-400 bg-zinc-800 shadow-glow-md';
+		if (node.data.loop) return 'border-orange-400 bg-zinc-900 hover:shadow-glow-sm';
+		return 'border-zinc-700 bg-zinc-900 hover:shadow-glow-sm';
 	});
 </script>
 

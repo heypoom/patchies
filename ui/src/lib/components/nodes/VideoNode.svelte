@@ -363,7 +363,7 @@
 				<StandardHandle port="inlet" type="video" class={handleCommonClass} total={1} index={0} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800' : 'border-transparent'}`}
+					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800 shadow-glow-md' : 'border-transparent hover:shadow-glow-sm'}`}
 				>
 					{#if !errorMessage}
 						<video

@@ -44,8 +44,8 @@
 	const messageOutletCount = $derived(data.messageOutletCount || 0);
 
 	const containerClass = $derived.by(() => {
-		if (selected) return 'border-zinc-400 bg-zinc-800';
-		return 'border-zinc-700 bg-zinc-900';
+		if (selected) return 'border-zinc-400 bg-zinc-800 shadow-glow-md';
+		return 'border-zinc-700 bg-zinc-900 hover:shadow-glow-sm';
 	});
 
 	function handleCodeChangeInternal(newCode: string) {

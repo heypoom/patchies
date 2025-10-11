@@ -171,7 +171,7 @@
 				</div>
 
 				{#if data.showConsole}
-					<div class={['min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor]}>
+					<div class={['min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor, selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm']}>
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
 
@@ -226,7 +226,8 @@
 						class={[
 							'flex w-full min-w-[100px] justify-center rounded-md border bg-zinc-900 py-3 text-zinc-300 hover:bg-zinc-800',
 							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
-							borderColor
+							borderColor,
+							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
 						onclick={executeCode}
 						aria-disabled={isRunning}

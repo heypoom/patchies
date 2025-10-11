@@ -167,7 +167,8 @@
 					<button
 						class={[
 							'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 px-3 py-2 text-zinc-300 hover:bg-zinc-800',
-							'border-amber-500'
+							'border-amber-500',
+							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
 						onclick={() => (showSettings = true)}
 						title="Select MIDI device"
@@ -182,7 +183,8 @@
 					<button
 						class={[
 							'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 pb-2 text-zinc-300 hover:bg-zinc-800',
-							borderColor
+							borderColor,
+							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
 						onclick={toggleListening}
 						title={isListening ? 'Stop listening' : 'Start listening'}

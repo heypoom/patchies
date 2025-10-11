@@ -61,10 +61,12 @@
 		const baseClass =
 			'h-10 w-10 cursor-pointer rounded-full border font-mono text-xs font-medium transition-colors';
 
+		const glowClass = selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm';
+
 		if (isOn) {
-			return `${baseClass} ${borderColor} bg-zinc-300 hover:bg-zinc-100 active:bg-zinc-400 text-white`;
+			return `${baseClass} ${borderColor} ${glowClass} bg-zinc-300 hover:bg-zinc-100 active:bg-zinc-400 text-white`;
 		} else {
-			return `${baseClass} ${borderColor} bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-600 text-zinc-200`;
+			return `${baseClass} ${borderColor} ${glowClass} bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-600 text-zinc-200`;
 		}
 	});
 </script>

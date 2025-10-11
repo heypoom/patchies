@@ -95,6 +95,7 @@
 	{channel}
 	{borderColor}
 	{textClass}
+	{selected}
 	nodeLabel="netsend"
 	onChannelInput={handleChannelInput}
 	onChannelKeydown={handleChannelKeydown}

@@ -71,8 +71,8 @@
 		height: 7px;
 		will-change: width, height;
 		transition:
-			width 0.2s ease-in-out,
-			height 0.2s ease-in-out;
+			width 0.2s ease-in,
+			height 0.2s ease-in;
 	}
 
 	:global(.svelte-flow__handle):hover {

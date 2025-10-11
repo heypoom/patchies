@@ -23,7 +23,7 @@
 	let msgText = $derived(data.message || '');
 
 	const containerClass = $derived(
-		selected ? 'border-zinc-400 bg-zinc-800' : 'border-zinc-600 bg-zinc-900'
+		selected ? 'border-zinc-400 bg-zinc-800 shadow-glow-md' : 'border-zinc-600 bg-zinc-900 hover:shadow-glow-sm'
 	);
 </script>
 
