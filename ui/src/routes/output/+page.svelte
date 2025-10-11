@@ -9,6 +9,8 @@
 		canvas.height = window.visualViewport?.height ?? window.innerHeight;
 		canvas.style.width = `100%`;
 		canvas.style.height = `100%`;
+		canvas.style.minHeight = '100vh';
+		canvas.style.objectFit = 'cover';
 
 		bitmapRendererContext = canvas.getContext('bitmaprenderer')!;
 
@@ -20,6 +22,4 @@
 	});
 </script>
 
-<div>
-	<canvas id="output" bind:this={canvas}></canvas>
-</div>
+<canvas id="output" bind:this={canvas}></canvas>
