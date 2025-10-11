@@ -51,9 +51,9 @@
 		</div>
 
 		<p class="text-sm">
-			Patchies supports real-time collaboration, message passing between nodes, video chaining, and
-			embeddable shareable experiences. Create generative art, audio-reactive visuals, live coding
-			music, and more.
+			Patchies lets you connect audio, video and compute nodes together through message passing and
+			audio/video chaining. Create generative art, audio-reactive visuals, physics and nature
+			simulations, live coding music, and more.
 		</p>
 	</div>
 
