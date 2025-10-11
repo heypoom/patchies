@@ -57,3 +57,68 @@ There is also an active Discord server and facebook group for hydra users+contri
 
 If you enjoy using Hydra, please consider supporting continued development <3 .
 ```
+
+## Implementation Details
+
+### MVP Implementation (Completed)
+
+#### Component Architecture
+The startup modal is implemented as a modular component system in `/ui/src/lib/components/startup-modal/`:
+
+- **StartupModal.svelte** - Main modal container with tab navigation and backdrop handling
+- **AboutTab.svelte** - About content with app description and getting started guide
+- **ExamplesTab.svelte** - Examples browser with category grouping and loading logic
+- **ExampleCard.svelte** - Individual example patch card component
+- **types.ts** - Shared TypeScript types for examples and tabs
+
+#### Features Implemented
+
+1. ✅ **Custom CSS Modal** - Built with Tailwind classes, no backdrop (transparent overlay for click handling)
+2. ✅ **Tab System** - Two tabs: "About" and "Examples" with orange accent highlighting
+3. ✅ **About Content**:
+   - App name and tagline
+   - Description of capabilities (P5.js, Hydra, Strudel, GLSL, etc.)
+   - Getting Started guide with keyboard shortcuts
+   - Links to GitHub repository and documentation
+4. ✅ **Examples Tab**:
+   - Loads from `/static/example-patches.json`
+   - Grouped by categories
+   - Card grid layout with hover effects
+   - Support for thumbnail images
+   - Clicking a card navigates to `/?patch={id}`
+5. ✅ **Auto-show on First Launch**:
+   - Uses `localStorage` key `patchies-seen-startup-modal`
+   - Shows automatically on first app load
+   - Can be re-opened via help button
+6. ✅ **Help Button Integration**:
+   - Replaced `ShortcutHelp.svelte` with `StartupModal` in `FlowCanvasInner.svelte`
+   - Help icon in top-right triggers modal
+
+#### Example Patches JSON Format
+
+```json
+{
+  "patches": [
+    {
+      "id": "patch-id",
+      "name": "Patch Name",
+      "description": "Brief description",
+      "category": "Category Name",
+      "author": "Author Name",
+      "imageUrl": "/optional/image/path.png"
+    }
+  ]
+}
+```
+
+Categories are automatically generated from the `category` field in each patch.
+
+### Phase 2 (Future)
+
+To implement the "load recents / create new" functionality:
+
+1. Add a third tab: "Recent Patches"
+2. Reference `CommandPalette.svelte` save/load implementation
+3. Read from `localStorage` keys prefixed with `patchies-patch-`
+4. Display recent patches sorted by last modified timestamp
+5. Add "New Patch" button that clears the canvas

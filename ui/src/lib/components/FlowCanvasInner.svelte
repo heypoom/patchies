@@ -10,7 +10,7 @@
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import CommandPalette from './CommandPalette.svelte';
-	import ShortcutHelp from './ShortcutHelp.svelte';
+	import StartupModal from './startup-modal/StartupModal.svelte';
 	import NodeList from './NodeList.svelte';
 	import VolumeControl from './VolumeControl.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
@@ -91,6 +91,9 @@
 
 	// Audio resume hint state
 	let showAudioHint = $state(audioSystem.audioContext.state === 'suspended');
+
+	// Startup modal state
+	let showStartupModal = $state(false);
 
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
@@ -206,6 +209,13 @@
 		audioSystem.start();
 
 		loadPatch();
+
+		// Check if this is the first time the user is opening the app
+		const hasSeenStartupModal = localStorage.getItem('patchies-seen-startup-modal');
+		if (!hasSeenStartupModal) {
+			showStartupModal = true;
+			localStorage.setItem('patchies-seen-startup-modal', 'true');
+		}
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 
@@ -769,7 +779,7 @@
 				><Icon icon="lucide:file-plus-2" class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
 			>
 
-			<ShortcutHelp />
+			<StartupModal bind:open={showStartupModal} />
 		</div>
 	{/if}
 </div>

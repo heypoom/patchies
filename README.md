@@ -12,20 +12,13 @@ Try it out at [patchies.app](https://patchies.app) - it's open source and free t
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
-- [P5.js](https://p5js.org), library for creative coding and making art.
-- [Hydra](https://hydra.ojack.xyz), live-coding video synthesizer.
-- [Strudel](https://strudel.cc), TidalCycles-like music environment
-- [ChucK](https://chuck.cs.princeton.edu/webchuck), programming language for real-time sound synthesis.
-- [SwissGL](https://github.com/google/swissgl), minimal WebGL2 wrapper for shaders.
-- [GLSL fragment shaders](https://www.shadertoy.com), for complex 3D visual effects.
-- [Tone.js](https://tonejs.github.io), framework for creating interactive music in the browser.
-- [Elementary Audio](https://www.elementary.audio/), library for declarative digital audio signal processing.
-- [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), powerful audio synthesis and processing.
-- [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API), for custom 2D graphics.
-- [Assembly](./modules/vasm/README.md), for fun stack machine computational puzzles.
-- [Python 3](https://pyodide.org), runs on the browser via Pyodide.
+- Create interactive graphics with [P5.js] and [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+- Synthesize and process video with [Hydra](https://hydra.ojack.xyz) and [GLSL shaders](https://www.shadertoy.com)
+- Live code music with [Strudel](https://strudel.cc) and [ChucK](https://chuck.cs.princeton.edu/webchuck)
+- Synthesize and process audio with [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) nodes, [Tone.js](https://tonejs.github.io) and [Elementary Audio](https://www.elementary.audio)
+- Compute in a raw and fun way with [stack machine assembly](./modules/vasm/README.md)
+- Run numerical computations with [Python 3](https://pyodide.org)
 - Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
-- ...as well as write JavaScript code directly.
 
 ## ...by patching them together ✨
 
