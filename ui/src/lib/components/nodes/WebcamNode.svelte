@@ -174,7 +174,7 @@
 				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800 shadow-glow-md' : 'border-zinc-700 bg-zinc-900 hover:shadow-glow-sm'}`}
+					class={`border-1 rounded-lg ${selected ? 'object-container-selected' : 'object-container'}`}
 				>
 					<video
 						bind:this={videoElement}

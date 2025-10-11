@@ -68,7 +68,7 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-zinc-900/60 px-2 py-1 backdrop-blur-lg">
+				<div class="z-10 rounded-lg bg-black/60 px-2 py-1 backdrop-blur-lg">
 					<div class="font-mono text-xs font-medium text-zinc-400">{title}</div>
 				</div>
 
@@ -76,7 +76,7 @@
 					{#if showPauseButton}
 						<button
 							title={paused ? 'Resume' : 'Pause'}
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={handlePlaybackToggle}
 						>
 							<Icon icon={paused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
@@ -84,7 +84,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={() => {
 							showEditor = !showEditor;
 							measureContainerWidth();

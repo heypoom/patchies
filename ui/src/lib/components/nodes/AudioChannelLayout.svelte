@@ -41,8 +41,8 @@
 	const channels = $derived(data.channels || 2);
 
 	const containerClass = $derived.by(() => {
-		if (selected) return 'border-zinc-400 bg-zinc-800 shadow-glow-md';
-		return 'border-zinc-700 bg-zinc-900 hover:shadow-glow-sm';
+		if (selected) return 'object-container-selected';
+		return 'object-container';
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
