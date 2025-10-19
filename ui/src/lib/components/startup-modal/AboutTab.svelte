@@ -84,7 +84,7 @@
 		</p>
 	</div>
 
-	<div class="align-center flex justify-between">
+	<div class="align-center flex flex-col justify-between gap-y-2 md:flex-row">
 		<!-- Links -->
 		<div class="space-y-3">
 			<h2 class="text-sm font-semibold text-zinc-200">Resources</h2>
@@ -111,7 +111,7 @@
 		</div>
 
 		<!-- Show on startup toggle -->
-		<div class="mt-2 flex items-center justify-between gap-x-10 rounded-lg border p-3">
+		<div class="mt-2 flex max-w-xs items-center justify-between gap-x-10 rounded-lg border p-3">
 			<div class="flex items-center gap-2">
 				<Icon icon="lucide:info" class="h-4 w-4 text-zinc-400" />
 				<span class="text-sm text-zinc-300">show on startup</span>
