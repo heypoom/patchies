@@ -44,7 +44,7 @@
 	>
 		<!-- Modal container -->
 		<div
-			class="relative h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950/90 shadow-2xl backdrop-blur-lg"
+			class="relative mx-4 h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950/90 shadow-2xl backdrop-blur-lg sm:mx-8 md:mx-12"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="modal-title"
