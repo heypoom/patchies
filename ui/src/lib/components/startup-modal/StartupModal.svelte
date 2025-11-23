@@ -24,7 +24,7 @@
 		open = true;
 	}
 
-	const tabs: Tab[] = ['about', 'examples', 'license', 'shortcuts'];
+	const tabs: Tab[] = ['about', 'examples', 'shortcuts', 'license'];
 </script>
 
 <!-- Help button trigger -->
