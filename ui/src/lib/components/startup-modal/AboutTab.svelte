@@ -82,6 +82,20 @@
 				onclick={() => setTab('examples')}>some examples</a
 			> to get started.
 		</p>
+
+		<!-- License Link -->
+		<div class="rounded-lg bg-zinc-800/50 p-4">
+			<h2 class="mb-2 text-sm font-semibold text-zinc-200">License</h2>
+			<p class="text-sm text-zinc-300">
+				Patchies is open source and built upon amazing creative coding libraries.
+				See the <a
+					href="#!"
+					class="text-orange-400 hover:underline"
+					onclick={() => setTab('license')}
+				>complete licenses & attributions</a
+				>.
+			</p>
+		</div>
 	</div>
 
 	<div class="align-center flex flex-col justify-between gap-y-2 md:flex-row">
