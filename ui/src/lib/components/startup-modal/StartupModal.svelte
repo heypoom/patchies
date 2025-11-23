@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import AboutTab from './AboutTab.svelte';
 	import ExamplesTab from './ExamplesTab.svelte';
+	import LicenseTab from './LicenseTab.svelte';
 	import ShortcutsTab from './ShortcutsTab.svelte';
 	import type { Tab } from './types';
 
@@ -23,7 +24,7 @@
 		open = true;
 	}
 
-	const tabs: Tab[] = ['about', 'examples', 'shortcuts'];
+	const tabs: Tab[] = ['about', 'examples', 'license', 'shortcuts'];
 </script>
 
 <!-- Help button trigger -->
@@ -80,6 +81,8 @@
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'examples'}
 					<ExamplesTab />
+				{:else if activeTab === 'license'}
+					<LicenseTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'shortcuts'}
 					<ShortcutsTab />
 				{/if}

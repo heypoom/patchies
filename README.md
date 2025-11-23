@@ -8,6 +8,10 @@ Patchies is a tool for building interactive audio-visual patches in the browser 
 
 Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
+## License and Attribution
+
+Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
+
 ## Use tools and libraries you love
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
