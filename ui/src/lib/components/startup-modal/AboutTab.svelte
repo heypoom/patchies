@@ -2,7 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import { onMount } from 'svelte';
 
-	import demoImage from '$lib/images/startup-modal-img-1.png';
+	import demoImage from '$lib/images/startup-modal.jpg';
 	import type { Tab } from './types';
 
 	let showOnStartup = $state(true);
@@ -87,12 +87,10 @@
 		<div class="rounded-lg bg-zinc-800/50 p-4">
 			<h2 class="mb-2 text-sm font-semibold text-zinc-200">License</h2>
 			<p class="text-sm text-zinc-300">
-				Patchies is open source and built upon amazing creative coding libraries.
-				See the <a
+				Patchies is open source and built upon amazing creative coding libraries. See the <a
 					href="#!"
 					class="text-orange-400 hover:underline"
-					onclick={() => setTab('license')}
-				>complete licenses & attributions</a
+					onclick={() => setTab('license')}>complete licenses & attributions</a
 				>.
 			</p>
 		</div>
