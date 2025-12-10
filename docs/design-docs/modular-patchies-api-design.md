@@ -23,6 +23,55 @@ Patchies should provide a set of API that lets you access its internal services.
 - **Objects**: registers new objects and create, update and destroy objects in the patcher.
   - **Messaging**: allows listening to messages and sending messages between objects
   - **Svelte UI**: allows registering Svelte view components
+  
+## Registering a new object
+
+Register a `void` text object that does nothing:
+
+```ts
+class Void {
+  static name = "void"
+}
+
+p.registerObject(void)
+```
+
+Register a `delay` text object that delays messages:
+
+```ts
+class Delay {
+  static name = "delay"
+  
+  static inlets = [
+    { name: "in", type: "msg" },
+    { name: "delay", type: "float" }
+  ]
+  
+  static outlets = [
+    { type: "out", type: "bang" }
+  ]
+
+  async onMessage(m) {
+    await sleep(this.param("delay"))
+    send({type: "bang"})
+  }
+}
+
+p.registerObject(Delay)
+```
+
+## HTML Renderer API
+
+```tsx
+class Image {
+  static name = "image"
+  
+  // return string or DOM element
+  getHtml() {
+    return `<img src="${this.args.url}">`
+  }
+}
+```
 
 ## Video Renderer APIs
 
@@ -163,7 +212,7 @@ class MtofObject extends PatchObject {
 objects.register(MtofObject)
 ```
 
-## UI Objects
+## Svelte for UI Objects
 
 If the `viewComponent` is defined, the object will render using the provided view component.
 
@@ -171,7 +220,6 @@ If the `viewComponent` is defined, the object will render using the provided vie
 import GLSLView from './GLSLView.svelte'
 
 class GlslObject extends PatchObject {
-  static type = 'ui'
   static name = 'glsl'
   static viewComponent = GLSLView
 
