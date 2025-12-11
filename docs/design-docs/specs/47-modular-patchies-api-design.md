@@ -36,6 +36,8 @@ This keeps the core engine lightweight, preferably with a bundle size goal (e.g.
 
 I wanted Patchies to be a modular system that lets you run multiple libraries in a virtual machine of sorts, as a way to bridge together different paradigms. Imagine running Uxn/Tal emulators that can send messages to Csound. You can do all sort of experiments on the web.
 
+Also, the code quality as it stands is pretty bad. There are zero tests, neither unit tests nor e2e. By doing a gradular refactoring, we can start writing tests for those small services (e.g. tests for defining objects)
+
 ## Approach - Start small
 
 Instead of doing a big refactoring that has a high risk of breaking everything, we will start small first, by making a simple API that lets you define a new textual object e.g. `p.objects.define`. Then we start gradually moving objects from the current implementation to the new modular architecture.
