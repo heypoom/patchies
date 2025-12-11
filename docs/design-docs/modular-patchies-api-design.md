@@ -1,15 +1,15 @@
 # Modular Patchies
 
-## Goal
+## Objective / Goal
 
-We wanted to modularize patchies so that it became an API-oriented patcher, where you can build plugins to extend patchies' functionality and add custom nodes.
+We wanted to modularize patchies so that it became a headless-first, API-oriented patcher. The idea is that you can build plugins to extend patchies' functionality, add custom nodes on the fly, and use patchies without the node-based GUI.
 
 1. Allow you to easily add third party modules to patchies with a few lines of code.
 2. Keep the core engine lightweight.
 3. Dynamically load heavy modules that may slow down the core
 4. Allow headless usage of the patcher e.g. `patcher.add('glsl')`, so you can use Patchies as a backend for your app without the node-based GUI
 5. Enable sub-patching and abstractions. We want objects to continue running even if it is not the top-level patches. Right now the lifecycle is tied to the Svelte component lifecycle, so it won't run if its in a subpatch.
-6. Allow the use of AGPL-licensed libraries without making the Patchies core AGPL, so the Patchies core can be adopted in projects using any license.
+6. Allow the use of AGPL-licensed components and libraries without making the Patchies core AGPL, so the Patchies core can be adopted in projects using any license.
 
 ## Patchies' Services
 
@@ -24,56 +24,101 @@ Patchies should provide a set of API that lets you access its internal services.
   - **Messaging**: allows listening to messages and sending messages between objects
   - **Svelte UI**: allows registering Svelte view components
   
-## Registering a new object
+## Define a new object
 
-Register a `void` text object that does nothing:
+Define a `void` text object that does nothing:
 
 ```ts
 class Void {
   static name = "void"
 }
 
-p.registerObject(void)
+p.objects.define(Void)
 ```
 
-Register a `delay` text object that delays messages:
+Define a `delay` text object that delays messages via the `delay` parameter:
 
 ```ts
-class Delay {
+class Delay extends PatchObject {
   static name = "delay"
   
   static inlets = [
-    { name: "in", type: "msg" },
+    // without declaring a type, the default inlet type is `msg` (any message)
+    { name: "in" },
     { name: "delay", type: "float" }
   ]
   
   static outlets = [
-    { type: "out", type: "bang" }
+    { type: "out" }
   ]
 
   async onMessage(m) {
-    await sleep(this.param("delay"))
+    await sleep(this.getParam('delay'))
     send({type: "bang"})
   }
 }
 
-p.registerObject(Delay)
+p.objects.define(Delay)
 ```
 
-## HTML Renderer API
+Define a `mtof` text object that converts MIDI note numbers to frequencies:
+
+```ts
+class MtofObject extends PatchObject {
+  static name = 'mtof'
+  
+
+  static inlets = [
+    {name: 'note', type: 'float'}
+  ]
+
+  static outlets = [
+    {name: 'frequency', type: 'float'}
+  ]
+
+  onMessage(data, meta) {
+    // ...
+  }
+}
+
+p.objects.define(MtofObject)
+```
+
+## Use Vue.js to provide a view for an object
+
+You can define the `getView(): Element` method to render a DOM element instead.
+
+This allows you to use any libraries, such as Vue.js, to provide a view for an object.
 
 ```tsx
+
 class Image {
   static name = "image"
   
-  // return string or DOM element
-  getHtml() {
-    return `<img src="${this.args.url}">`
+  viewState = reactive({ imageUrl: null })
+  
+  async onMessage(m) {
+    if (typeof m === 'string' && m.startsWith('http')) {
+      this.setParam('src', m)
+    }
+  }
+  
+  getView() {
+    const app = createApp(ImageView)
+    const root = createElement('div')
+    app.provide('state', this.viewState)
+    app.mount(root)
+    
+    return root
   }
 }
+
+p.objects.define(Image)
 ```
 
 ## Video Renderer APIs
+
+A video renderer lets you receive video inputs and emit video outputs.
 
 The following registers the `glsl` renderer in the video graph.
 
@@ -103,10 +148,10 @@ class GlslRenderer {
   }
 }
 
-register(renderer)
+p.video.define(GlslRenderer)
 ```
 
-These APIs let you alter the patch
+These APIs let you alter the video graph:
 
 ```ts
 // set data, texture, uniform
@@ -114,7 +159,7 @@ video.upsertNode(id, type, data)
 video.setNodeTexture(id, texture)
 video.setNodeUniform(id, key, value)
 
-// update external bitmaps
+// update bitmaps.
 video.setNodeBitmap(id, bitmap)
 video.removeNodeBitmap(id)
 
@@ -159,8 +204,10 @@ class OscNode {
   }
 }
 
-register(OscNode)
+p.audio.define(OscNode)
 ```
+
+These APIs lets you alter the audio graph:
 
 ```ts
 // create/remove nodes
@@ -178,43 +225,11 @@ setOutputGain(value)
 getOutputGain()
 ```
 
-## Text Objects
+## Rendering Svelte Objects
 
-If the `viewComponent` is not defined, the object will be rendered as a text object.
+If the `viewComponent` is defined and it is a valid Svelte component, the object will render with the provided view component.
 
-```ts
-class MtofObject extends PatchObject {
-  static name = 'mtof'
-  static description = '...'
-  static tags = ['helper']
-
-  static inlets = [
-    {name: 'note', type: 'float'}
-  ]
-
-  static outlets = [
-    {name: 'frequency', type: 'float'}
-  ]
-
-  onCreate() {
-    
-  }
-
-  onDestroy() {
-    
-  }
-
-  onMessage(data, meta) {
-    let inlet = getInlet(meta)
-  }
-}
-
-objects.register(MtofObject)
-```
-
-## Svelte for UI Objects
-
-If the `viewComponent` is defined, the object will render using the provided view component.
+We recommend writing your view components in Svelte to make easy use of Svelte Flow.
 
 ```ts
 import GLSLView from './GLSLView.svelte'
@@ -235,12 +250,10 @@ class GlslObject extends PatchObject {
     if (meta.inletKey.startsWith(...)) {
       video.setNodeUniform(id, name, msg) 
     }
-
-    // set and run
   }
 }
 
-objects.register(GlslObject)
+p.objects.define(GlslObject)
 ```
 
 ```svelte
