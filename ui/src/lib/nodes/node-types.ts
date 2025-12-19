@@ -8,6 +8,7 @@ import StrudelNode from '$lib/components/nodes/StrudelNode.svelte';
 import ButterchurnNode from '$lib/components/nodes/ButterchurnNode.svelte';
 import AiImageNode from '$lib/components/nodes/AiImageNode.svelte';
 import ImageNode from '$lib/components/nodes/ImageNode.svelte';
+import IframeNode from '$lib/components/nodes/IframeNode.svelte';
 import AiTextNode from '$lib/components/nodes/AiTextNode.svelte';
 import MessageNode from '$lib/components/nodes/MessageNode.svelte';
 import ButtonNode from '$lib/components/nodes/ButtonNode.svelte';
@@ -63,6 +64,7 @@ export const nodeTypes = {
 	'ai.txt': AiTextNode,
 	'ai.img': AiImageNode,
 	img: ImageNode,
+	iframe: IframeNode,
 	'ai.music': AiMusicNode,
 	'ai.tts': AiSpeechNode,
 	'midi.in': MIDIInputNode,

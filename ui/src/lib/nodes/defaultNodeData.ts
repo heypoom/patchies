@@ -72,6 +72,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('chuck', () => ({ expr: DEFAULT_CHUCK_CODE }))
 		.with('webcam', () => ({}))
 		.with('video', () => ({ loop: true }))
+		.with('iframe', () => ({ url: '', width: 400, height: 300 }))
 		.with('textbox', () => ({ text: '' }))
 		.with('dsp~', () => ({
 			title: 'dsp~',

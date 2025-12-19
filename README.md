@@ -352,6 +352,16 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `{type: 'pause'}`: pause the video
   - `{type: 'loop', value: false}`: do not loop the video
 
+### `iframe`: embed web content
+
+- Embed external web pages and interactive web content in your patches.
+- Resizable iframe with customizable URL.
+- Messages
+  - `string`: load the webpage from the given URL.
+  - `{type: 'load', url: 'https://...'}`: load a specific URL.
+- Double-click to enter a URL when no content is loaded.
+- The iframe is sandboxed for security.
+
 ### `bg.out`: background output
 
 - Set the final output that appears as the background.
