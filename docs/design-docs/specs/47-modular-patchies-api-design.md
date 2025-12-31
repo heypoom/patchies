@@ -2,7 +2,7 @@
 
 ## Problem
 
-Right now, it's very hard to add new objects to Patchies. The codebase is tightly coupled and messy. 
+Right now, it's very hard to add new objects to Patchies. The codebase is tightly coupled and messy.
 
 It's also not possible to implement a plugin system e.g. dynamically adding modules that exposes new objects from a marketplace.
 
@@ -18,7 +18,7 @@ The idea is that you can build plugins to extend patchies' functionality, add cu
 4. Allow headless usage of the patcher e.g. `p.objects.add({x, y, type: 'glsl'})`, so you can use Patchies as a backend for your app without the node-based GUI
 5. Enable sub-patching and abstractions. We want objects to continue running even if it is not the top-level patches. Right now the lifecycle is tied to the Svelte component lifecycle, so it won't run if its in a subpatch.
 6. Allow the use of AGPL-licensed components and libraries without making the Patchies core AGPL, so the Patchies core can be adopted in projects using any license.
-8. Allow you to dynamically define new object types within a patch, e.g. `p.objects.define(GlslObject)`
+7. Allow you to dynamically define new object types within a patch, e.g. `p.objects.define(GlslObject)`
 
 The vision is that to add new objects to patchies, you'd create a new module in the `modules` directory, or publish it as an NPM package:
 
@@ -57,11 +57,11 @@ More milestones to be added soon.
 The patcher global object, `patcher`, contains a couple of services under its namespace, e.g.
 
 ```ts
-let p = patcher
+let p = patcher;
 
-p.objects // ObjectService.
-p.video // VideoService
-p.audio // AudioService
+p.objects; // ObjectService.
+p.video; // VideoService
+p.audio; // AudioService
 ```
 
 You can use the namespaced service objects to interact with the patcher.
@@ -85,10 +85,10 @@ This defines a `void` text object that does nothing:
 
 ```ts
 class Void {
-  static name = "void"
+  static name = "void";
 }
 
-p.objects.define(Void)
+p.objects.define(Void);
 ```
 
 In this case, only the static `name` propery is defined.
@@ -99,25 +99,23 @@ This defines a `delay` text object that delays messages via the `delay` paramete
 
 ```ts
 class Delay extends PatchObject {
-  static name = "delay"
-  
+  static name = "delay";
+
   static inlets = [
     // without declaring a type, the default inlet type is `msg` (any message)
     { name: "in" },
-    { name: "delay", type: "float" }
-  ]
-  
-  static outlets = [
-    { type: "out" }
-  ]
+    { name: "delay", type: "float" },
+  ];
+
+  static outlets = [{ type: "out" }];
 
   async onMessage(data, meta) {
-    await sleep(this.params.delay)
-    this.send({type: "bang"})
+    await sleep(this.params.delay);
+    this.send({ type: "bang" });
   }
 }
 
-p.objects.define(Delay)
+p.objects.define(Delay);
 ```
 
 When messages are sent to the typed inlets e.g. `{ type: 'float' }`, it gets stored in `this.params`.
@@ -134,16 +132,16 @@ Define a `mtof` text object that converts MIDI note numbers to frequencies:
 
 ```ts
 class MtofObject extends PatchObject {
-  static name = 'mtof'
-  static inlets = [{name: 'note', type: 'float'}]
-  static outlets = [{name: 'frequency', type: 'float'}]
+  static name = "mtof";
+  static inlets = [{ name: "note", type: "float" }];
+  static outlets = [{ name: "frequency", type: "float" }];
 
   onMessage(note) {
-    this.send(Math.pow(2, (note - 69) / 12) * 440)
+    this.send(Math.pow(2, (note - 69) / 12) * 440);
   }
 }
 
-p.objects.define(MtofObject)
+p.objects.define(MtofObject);
 ```
 
 ## API: Using Svelte view components
@@ -160,16 +158,16 @@ class GlslObject extends PatchObject {
   static viewComponent = GLSLView
 
   onCreate() {
-    
+
   }
 
   onDestroy() {
-    
+
   }
 
   onMessage(data, meta) {
     if (meta.inletKey.startsWith(...)) {
-      video.setNodeUniform(id, name, msg) 
+      video.setNodeUniform(id, name, msg)
     }
   }
 }
@@ -182,7 +180,7 @@ The `GLSLView` should be a valid Svelte component that receives a couple of prop
 ```svelte
 <script lang="ts">
   let previewCtx
-  
+
   const { video } = getPatcher()
 
   onMount(() => {
@@ -207,58 +205,51 @@ It should be possible to not use Svelte for your view components. You can define
 This allows you to use any libraries, such as Vue.js, to provide a view for an object.
 
 ```tsx
-
 class Image {
-  static name = "image"
-  
-  viewState = reactive({ imageUrl: null })
-  
+  static name = "image";
+
+  viewState = reactive({ imageUrl: null });
+
   async onMessage(m) {
-    if (typeof m === 'string' && m.startsWith('http')) {
-      this.setParam('src', m)
+    if (typeof m === "string" && m.startsWith("http")) {
+      this.setParam("src", m);
     }
   }
-  
+
   getView() {
-    const app = createApp(ImageView)
-    const root = createElement('div')
-    app.provide('state', this.viewState)
-    app.mount(root)
-    
-    return root
+    const app = createApp(ImageView);
+    const root = createElement("div");
+    app.provide("state", this.viewState);
+    app.mount(root);
+
+    return root;
   }
 }
 
-p.objects.define(Image)
+p.objects.define(Image);
 ```
 
 ## API: Define a video node
 
 A video node lets you:
 
-1) receive video inputs from other nodes , and
-2) emit video outputs to other nodes.
+1. receive video inputs from other nodes , and
+2. emit video outputs to other nodes.
 
 The following registers the `glsl` video node in the video graph.
 
 ```ts
 class GlslNode {
-  static name = "glsl"
+  static name = "glsl";
 
-  constructor(renderNode, framebuffer) {
+  constructor(renderNode, framebuffer) {}
 
-  }
+  render() {}
 
-  render() {
-    
-  }
-
-  cleanup() {
-
-  }
+  cleanup() {}
 
   getUniforms(renderNode, fboNode) {
-    return []
+    return [];
   }
 
   // optional: handles FFT packages
@@ -267,7 +258,7 @@ class GlslNode {
   }
 }
 
-p.video.define(GlslNode)
+p.video.define(GlslNode);
 ```
 
 These APIs let you alter the rendering graph:
@@ -298,48 +289,40 @@ video.getOutputBitmap(): ImageBitmap
 
 ```ts
 class OscNode {
-  static name = "osc~"
-  audioContext: AudioContext
+  static name = "osc~";
+  audioContext: AudioContext;
 
-  constructor(nodeId, params) {
-    
-  }
+  constructor(nodeId, params) {}
 
-  cleanup() {
-
-  }
+  cleanup() {}
 
   onConnect(source, target, context) {
-    const { param, sourceHandleId } = context
+    const { param, sourceHandleId } = context;
   }
 
-  onMessage(key, message) {
-    
-  }
+  onMessage(key, message) {}
 
   // e.g. 'frequency' -> AudioParam
-  getAudioParam(key) {
-
-  }
+  getAudioParam(key) {}
 }
 
-p.audio.define(OscNode)
+p.audio.define(OscNode);
 ```
 
 These APIs lets you alter the audio graph:
 
 ```ts
 // create/remove nodes
-p.audio.createNode('node-id', parameters)
-p.audio.removeNode('node-id')
+p.audio.createNode("node-id", parameters);
+p.audio.removeNode("node-id");
 
 // send message to an audio node
-p.audio.send('node-id', key, message)
+p.audio.send("node-id", key, message);
 
 // update edges
-p.audio.updateEdges(edges)
+p.audio.updateEdges(edges);
 
 // output gain
-p.audio.setOutputGain(value)
-p.audio.getOutputGain()
+p.audio.setOutputGain(value);
+p.audio.getOutputGain();
 ```
