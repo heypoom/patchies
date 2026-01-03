@@ -3,7 +3,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 
 export class SamplerNode implements AudioNodeV2 {
 	static type = 'sampler~';
-	static group: AudioNodeGroup = 'sources';
+	static group: AudioNodeGroup = 'processors';
 	static description =
 		'Records audio into a buffer and plays it back with loop points, playback rate, and detune control';
 
@@ -22,10 +22,12 @@ export class SamplerNode implements AudioNodeV2 {
 
 	readonly nodeId: string;
 	readonly audioNode: GainNode;
+
+	audioBuffer: AudioBuffer | null = null;
+
 	private audioContext: AudioContext;
 	private destinationNode: MediaStreamAudioDestinationNode;
 	private mediaRecorder: MediaRecorder | null = null;
-	private audioBuffer: AudioBuffer | null = null;
 	private sourceNode: AudioBufferSourceNode | null = null;
 	private loopStart: number = 0;
 	private loopEnd: number = 0;
@@ -88,6 +90,15 @@ export class SamplerNode implements AudioNodeV2 {
 		} else if (msg.type === 'stop') {
 			this.stopPlayback();
 		}
+	}
+
+	get destinationStream(): MediaStream {
+		return this.destinationNode.stream;
+	}
+
+	connect(target: AudioNodeV2): void {
+		// Route incoming audio to the destination node for recording
+		target.audioNode.connect(this.destinationNode);
 	}
 
 	destroy(): void {

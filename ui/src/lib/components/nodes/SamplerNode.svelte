@@ -8,6 +8,8 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
+	import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
 
 	let node: NodeProps & {
 		data: {
@@ -25,6 +27,8 @@
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
+	let v2Node: SamplerNodeV2 | null = null;
 	let isRecording = $state(false);
 	let recordingInterval: ReturnType<typeof setInterval> | null = null;
 	let isPlaying = $state(false);
@@ -71,7 +75,7 @@
 					...(msg.end !== undefined ? { loopEnd: msg.end } : {})
 				});
 
-				audioSystem.send(node.id, 'message', {
+				audioService.send(node.id, 'message', {
 					type: 'loop',
 					...(msg.start !== undefined ? { start: msg.start } : {}),
 					...(msg.end !== undefined ? { end: msg.end } : {})
@@ -79,25 +83,25 @@
 			})
 			.with({ type: 'loopOff' }, () => {
 				updateNodeData(node.id, { ...node.data, loop: false });
-				audioSystem.send(node.id, 'message', { type: 'loopOff' });
+				audioService.send(node.id, 'message', { type: 'loopOff' });
 			})
 			.with({ type: 'setStart', value: P.number }, (msg) => {
 				updateNodeData(node.id, { ...node.data, loopStart: msg.value });
-				audioSystem.send(node.id, 'message', { type: 'setStart', value: msg.value });
+				audioService.send(node.id, 'message', { type: 'setStart', value: msg.value });
 			})
 			.with({ type: 'setEnd', value: P.number }, (msg) => {
 				updateNodeData(node.id, { ...node.data, loopEnd: msg.value });
-				audioSystem.send(node.id, 'message', { type: 'setEnd', value: msg.value });
+				audioService.send(node.id, 'message', { type: 'setEnd', value: msg.value });
 			})
 			.with({ type: 'playbackRate', value: P.number }, (msg) => {
 				updateNodeData(node.id, { ...node.data, playbackRate: msg.value });
-				audioSystem.send(node.id, 'message', { type: 'playbackRate', value: msg.value });
+				audioService.send(node.id, 'message', { type: 'playbackRate', value: msg.value });
 			})
 			.with({ type: 'detune', value: P.number }, (msg) => {
 				updateNodeData(node.id, { ...node.data, detune: msg.value });
-				audioSystem.send(node.id, 'message', { type: 'detune', value: msg.value });
+				audioService.send(node.id, 'message', { type: 'detune', value: msg.value });
 			})
-			.otherwise(() => audioSystem.send(node.id, 'message', message));
+			.otherwise(() => audioService.send(node.id, 'message', message));
 	};
 
 	function startRecording() {
@@ -122,18 +126,17 @@
 		});
 
 		// Create analyser for real-time waveform visualization
-		const samplerNode = audioSystem.nodesById.get(node.id);
-		if (samplerNode?.type === 'sampler~') {
+		if (v2Node) {
 			const audioCtx = audioSystem.audioContext;
 			recordingAnalyser = audioCtx.createAnalyser();
 			recordingAnalyser.fftSize = 2048;
 
 			// Connect the destination node to the analyser
-			const source = audioCtx.createMediaStreamSource(samplerNode.destinationNode.stream);
+			const source = audioCtx.createMediaStreamSource(v2Node.destinationStream);
 			source.connect(recordingAnalyser);
 		}
 
-		audioSystem.send(node.id, 'message', { type: 'record' });
+		audioService.send(node.id, 'message', { type: 'record' });
 		isRecording = true;
 
 		// Start duration timer
@@ -147,7 +150,7 @@
 	async function stopRecording() {
 		if (!isRecording) return;
 
-		audioSystem.send(node.id, 'message', { type: 'end' });
+		audioService.send(node.id, 'message', { type: 'end' });
 		isRecording = false;
 
 		if (recordingInterval) {
@@ -171,10 +174,8 @@
 		const maxAttempts = 50; // 5 seconds max wait
 
 		while (attempts < maxAttempts) {
-			const samplerNode = audioSystem.nodesById.get(node.id);
-
-			if (samplerNode?.type === 'sampler~' && samplerNode.audioBuffer) {
-				audioBuffer = samplerNode.audioBuffer;
+			if (v2Node && v2Node.audioBuffer) {
+				audioBuffer = v2Node.audioBuffer;
 				const duration = audioBuffer.duration;
 
 				updateNodeData(node.id, {
@@ -185,7 +186,7 @@
 				});
 
 				// Update AudioSystem's loop end point as well
-				audioSystem.send(node.id, 'message', {
+				audioService.send(node.id, 'message', {
 					type: 'setEnd',
 					value: duration
 				});
@@ -204,9 +205,9 @@
 		if (!hasRecording) return;
 
 		if (loopEnabled && loopEnd > loopStart) {
-			audioSystem.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
+			audioService.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
 		} else {
-			audioSystem.send(node.id, 'message', { type: 'play' });
+			audioService.send(node.id, 'message', { type: 'play' });
 		}
 
 		startPlaybackProgressBar();
@@ -255,7 +256,7 @@
 	}
 
 	function stopPlayback() {
-		audioSystem.send(node.id, 'message', { type: 'stop' });
+		audioService.send(node.id, 'message', { type: 'stop' });
 		stopPlaybackProgressBar();
 	}
 
@@ -272,32 +273,32 @@
 		updateNodeData(node.id, { ...node.data, loop: newLoopEnabled });
 
 		if (newLoopEnabled) {
-			audioSystem.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
+			audioService.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
 		} else {
-			audioSystem.send(node.id, 'message', { type: 'loopOff' });
+			audioService.send(node.id, 'message', { type: 'loopOff' });
 		}
 	}
 
 	function updateLoopStart(value: number) {
 		const newLoopStart = Math.max(0, Math.min(value, loopEnd));
 		updateNodeData(node.id, { ...node.data, loopStart: newLoopStart });
-		audioSystem.send(node.id, 'message', { type: 'setStart', value: newLoopStart });
+		audioService.send(node.id, 'message', { type: 'setStart', value: newLoopStart });
 	}
 
 	function updateLoopEnd(value: number) {
 		const newLoopEnd = Math.max(loopStart, Math.min(value, recordingDuration));
 		updateNodeData(node.id, { ...node.data, loopEnd: newLoopEnd });
-		audioSystem.send(node.id, 'message', { type: 'setEnd', value: newLoopEnd });
+		audioService.send(node.id, 'message', { type: 'setEnd', value: newLoopEnd });
 	}
 
 	function updatePlaybackRate(value: number) {
 		updateNodeData(node.id, { ...node.data, playbackRate: value });
-		audioSystem.send(node.id, 'message', { type: 'playbackRate', value });
+		audioService.send(node.id, 'message', { type: 'playbackRate', value });
 	}
 
 	function updateDetune(value: number) {
 		updateNodeData(node.id, { ...node.data, detune: value });
-		audioSystem.send(node.id, 'message', { type: 'detune', value });
+		audioService.send(node.id, 'message', { type: 'detune', value });
 	}
 
 	function resetSettings() {
@@ -310,12 +311,12 @@
 			detune: 0
 		});
 
-		// Update AudioSystem
-		audioSystem.send(node.id, 'message', { type: 'setStart', value: 0 });
-		audioSystem.send(node.id, 'message', { type: 'setEnd', value: recordingDuration });
-		audioSystem.send(node.id, 'message', { type: 'loopOff' });
-		audioSystem.send(node.id, 'message', { type: 'playbackRate', value: 1 });
-		audioSystem.send(node.id, 'message', { type: 'detune', value: 0 });
+		// Update AudioService
+		audioService.send(node.id, 'message', { type: 'setStart', value: 0 });
+		audioService.send(node.id, 'message', { type: 'setEnd', value: recordingDuration });
+		audioService.send(node.id, 'message', { type: 'loopOff' });
+		audioService.send(node.id, 'message', { type: 'playbackRate', value: 1 });
+		audioService.send(node.id, 'message', { type: 'detune', value: 0 });
 	}
 
 	onMount(() => {
@@ -324,15 +325,25 @@
 
 		audioSystem.createAudioObject(node.id, 'sampler~', []);
 
-		// Initialize AudioSystem with playbackRate and detune from node.data
-		const samplerNode = audioSystem.nodesById.get(node.id);
-		if (samplerNode?.type === 'sampler~') {
-			samplerNode.playbackRate = node.data.playbackRate || 1;
-			samplerNode.detune = node.data.detune || 0;
+		// Get the V2 node reference from AudioService
+		v2Node = audioService.getNodeById(node.id) as SamplerNodeV2;
+
+		// Initialize with playbackRate and detune from node.data
+		if (v2Node) {
+			// Send initialization messages for playbackRate and detune
+			if (node.data.playbackRate) {
+				audioService.send(node.id, 'message', {
+					type: 'playbackRate',
+					value: node.data.playbackRate
+				});
+			}
+			if (node.data.detune) {
+				audioService.send(node.id, 'message', { type: 'detune', value: node.data.detune });
+			}
 
 			// Get audio buffer if it exists
-			if (samplerNode.audioBuffer) {
-				audioBuffer = samplerNode.audioBuffer;
+			if (v2Node.audioBuffer) {
+				audioBuffer = v2Node.audioBuffer;
 			}
 		}
 	});
@@ -343,11 +354,11 @@
 
 		// Stop any active recording/playback before cleanup
 		if (isRecording) {
-			audioSystem.send(node.id, 'message', { type: 'end' });
+			audioService.send(node.id, 'message', { type: 'end' });
 		}
 
 		if (isPlaying) {
-			audioSystem.send(node.id, 'message', { type: 'stop' });
+			audioService.send(node.id, 'message', { type: 'stop' });
 		}
 
 		messageContext?.queue.removeCallback(handleMessage);
@@ -373,7 +384,7 @@
 					<!-- Record Button -->
 					<button
 						title={isRecording ? 'Stop Recording' : 'Start Recording'}
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 {isRecording
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0 {isRecording
 							? '!opacity-100'
 							: ''}"
 						onclick={toggleRecording}
@@ -388,7 +399,7 @@
 					{#if hasRecording && !isRecording}
 						<button
 							title="Play Recording"
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={playRecording}
 						>
 							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
@@ -396,7 +407,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={() => (showSettings = !showSettings)}
 						title="Settings"
 					>
@@ -428,7 +439,7 @@
 
 				<div
 					class={[
-						'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border-1',
+						'border-1 relative flex flex-col items-center justify-center overflow-hidden rounded-lg',
 						containerClass
 					]}
 				>

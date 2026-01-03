@@ -62,7 +62,7 @@ export class AudioSystem {
 			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
 
 			if (!isValidConnection) {
-				logger.warn(`cannot connect ${sourceId} to ${targetId}`);
+				logger.warn(`cannot connect ${sourceId} to ${targetId}: invalid connection (v1)`);
 				return;
 			}
 
@@ -75,10 +75,7 @@ export class AudioSystem {
 					logger.warn(`audio parameter ${paramName} does not exist on ${targetId}`);
 				}
 			} else {
-				if (targetEntry.type === 'sampler~') {
-					// input to sampler~ - connect to destination for recording
-					sourceEntry.node.connect(targetEntry.destinationNode);
-				} else if (targetEntry.type === 'tone~') {
+				if (targetEntry.type === 'tone~') {
 					// input to tone~ - connect to inputNode for audio input
 					sourceEntry.node.connect(targetEntry.inputNode);
 				} else if (targetEntry.type === 'elem~') {
@@ -92,7 +89,7 @@ export class AudioSystem {
 				}
 			}
 		} catch (error) {
-			logger.error(`cannot connect ${sourceId} to ${targetId}`, error);
+			logger.error(`cannot connect ${sourceId} to ${targetId}: v1`, error);
 		}
 	}
 
@@ -143,14 +140,7 @@ export class AudioSystem {
 		hasSomeAudioNode.set(true);
 
 		if (this.v2.registry.isDefined(objectType)) {
-			const node = this.v2.createNode(nodeId, objectType, params);
-
-			if (node) {
-				// Store in v1 map for backwards compatibility
-				// Type assertion is safe because node.audioNode matches the node type
-				this.nodesById.set(nodeId, { type: objectType, node: node.audioNode } as V1PatchAudioNode);
-			}
-
+			this.v2.createNode(nodeId, objectType, params);
 			return;
 		}
 
@@ -394,12 +384,12 @@ export class AudioSystem {
 
 	// Remove audio object
 	removeAudioObject(nodeId: string) {
-		// Check if this is a v2 node (migrated to AudioService)
 		const v2Node = this.v2.getNodeById(nodeId);
 
 		if (v2Node) {
 			this.v2.removeNode(v2Node);
 			this.nodesById.delete(nodeId);
+			return;
 		}
 
 		const entry = this.nodesById.get(nodeId);

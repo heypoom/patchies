@@ -34,19 +34,6 @@ interface PatchSoundfileNode extends AudioNodeBase {
 	audioElement: HTMLAudioElement;
 }
 
-interface PatchSamplerNode extends AudioNodeBase {
-	type: 'sampler~';
-	node: GainNode;
-	destinationNode: MediaStreamAudioDestinationNode;
-	mediaRecorder?: MediaRecorder;
-	audioBuffer?: AudioBuffer;
-	sourceNode?: AudioBufferSourceNode;
-	loopStart?: number;
-	loopEnd?: number;
-	playbackRate?: number;
-	detune?: number;
-}
-
 interface PatchStrudelNode extends AudioNodeBase {
 	type: 'strudel';
 	node: GainNode;
@@ -83,7 +70,6 @@ export type V1PatchAudioNode =
 	| PatchExprNode
 	| PatchChuckNode
 	| PatchSoundfileNode
-	| PatchSamplerNode
 	| PatchStrudelNode
 	| PatchDspNode
 	| PatchToneNode

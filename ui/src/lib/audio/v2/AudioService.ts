@@ -244,7 +244,7 @@ export class AudioService {
 		// Validate whether the connection is allowed.
 		// If the connection is to an audio param, we always let the connection through.
 		if (!paramName && !this.canConnect(edge.source, edge.target)) {
-			logger.warn(`cannot connect ${edge.source} to ${edge.target}: invalid connection`);
+			logger.warn(`cannot connect ${edge.source} to ${edge.target}: invalid connection (v2)`);
 			return;
 		}
 

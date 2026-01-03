@@ -136,9 +136,10 @@ Visual nodes can be chained together using orange video inlets/outlets:
 ### Workflow
 
 - Before implementing, update relevant spec files in `docs/design-docs/specs/`
-- Write concise, clear commit messages
-- Never start dev server to test - use type checking and build
-- Always run `bun run check` before committing
+- Never start dev server to test changes.
+- **IMPORTANT**: Never commit and push automatically. Always wait for user review and approval before committing changes. Code changes must be tested and reviewed first.
+- When asked to commit, write concise and clear commit messages.
+  - Always run `bun run check` before committing
 
 ### Styling
 
