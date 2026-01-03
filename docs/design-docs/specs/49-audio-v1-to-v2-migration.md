@@ -29,6 +29,7 @@ The V2 system includes several improvements that make migration cleaner:
 - [x] `osc~` - Oscillator node (source, has destroy)
 - [x] `gain~` - Gain/volume control node (processor, no destroy needed)
 - [x] `dac~` - Digital-to-analog converter (destination, auto-connects to speakers)
+- [x] `sig~` - Constant signal source (source, has destroy)
 
 ## Migration Pattern
 
@@ -401,7 +402,7 @@ The registry-based architecture means V2 nodes automatically work everywhere:
 ## Next Steps
 
 - [ ] Migrate remaining V1 nodes (prioritize commonly used ones):
-  - [ ] `sig~` (constant signal source)
+  - [x] `sig~` (constant signal source)
   - [ ] `+~` (signal addition)
   - [ ] Filter nodes (lowpass~, highpass~, bandpass~, etc.)
   - [ ] Effect nodes (delay~, compressor~, pan~, etc.)

@@ -248,7 +248,6 @@ export class AudioSystem {
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('compressor~', () => this.createCompressor(nodeId, params))
 			.with('pan~', () => this.createPan(nodeId, params))
-			.with('sig~', () => this.createSig(nodeId, params))
 			.with('sampler~', () => this.createSampler(nodeId))
 			.with('delay~', () => this.createDelay(nodeId, params))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
@@ -257,7 +256,6 @@ export class AudioSystem {
 			.with('merge~', () => this.createChannelMerger(nodeId, params))
 			.with('split~', () => this.createChannelSplitter(nodeId, params));
 	}
-
 
 	createAdd(nodeId: string) {
 		const addNode = this.audioContext.createGain();
@@ -387,16 +385,6 @@ export class AudioSystem {
 		const panNode = this.audioContext.createStereoPanner();
 		panNode.pan.value = panValue;
 		this.nodesById.set(nodeId, { type: 'pan~', node: panNode });
-	}
-
-	createSig(nodeId: string, params: unknown[]) {
-		const [offsetValue] = params as [number];
-
-		const constantSource = this.audioContext.createConstantSource();
-		constantSource.offset.value = offsetValue ?? 1.0;
-		constantSource.start(0);
-
-		this.nodesById.set(nodeId, { type: 'sig~', node: constantSource });
 	}
 
 	createSampler(nodeId: string) {
@@ -1029,22 +1017,13 @@ export class AudioSystem {
 
 		if (audioService.isNodeDefined(v2Node)) {
 			audioService.removeNode(v2Node);
-			audioService.unregisterNode(nodeId);
 			this.nodesById.delete(nodeId);
-			return;
 		}
 
 		const entry = this.nodesById.get(nodeId);
 
 		if (entry) {
 			match(entry)
-				.with({ type: 'sig~' }, (sig) => {
-					try {
-						sig.node.stop();
-					} catch {
-						// sig~ was already stopped.
-					}
-				})
 				.with({ type: 'mic~' }, (mic) => {
 					if (mic.mediaStreamSource) {
 						mic.mediaStreamSource.disconnect();

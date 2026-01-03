@@ -479,22 +479,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	'sig~': {
-		inlets: [
-			{
-				name: 'offset',
-				type: 'float',
-				description: 'Constant signal value',
-				defaultValue: 1.0,
-				isAudioParam: true,
-				maxPrecision: 3
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Constant signal output' }],
-		description: 'Outputs a constant signal value',
-		tags: ['audio']
-	},
-
 	'delay~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Audio signal to delay' },

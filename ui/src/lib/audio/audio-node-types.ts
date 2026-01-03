@@ -95,11 +95,6 @@ interface PatchPanNode extends AudioNodeBase {
 	node: StereoPannerNode;
 }
 
-interface PatchSigNode extends AudioNodeBase {
-	type: 'sig~';
-	node: ConstantSourceNode;
-}
-
 interface PatchDelayNode extends AudioNodeBase {
 	type: 'delay~';
 	node: DelayNode;
@@ -192,7 +187,6 @@ export type V1PatchAudioNode =
 	| PatchChuckNode
 	| PatchCompressorNode
 	| PatchPanNode
-	| PatchSigNode
 	| PatchDelayNode
 	| PatchSoundfileNode
 	| PatchWaveshaperNode

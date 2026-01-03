@@ -9,7 +9,7 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 
 	// V1: hard-coded names :-(
 	return match<string, V1PatchAudioNodeGroup | null>(nodeType)
-		.with(P.union('lyria', 'mic~', 'sig~', 'soundfile~'), () => 'sources')
+		.with(P.union('lyria', 'mic~', 'soundfile~'), () => 'sources')
 		.with(
 			P.union(
 				'fft~',
