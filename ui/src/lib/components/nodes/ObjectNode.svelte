@@ -8,7 +8,6 @@
 		getObjectDefinition,
 		getAudioObjectNames,
 		getObjectNameFromExpr,
-		objectDefinitionsV1,
 		type AdsrParamList,
 		type ObjectInlet,
 		type ObjectOutlet
@@ -31,8 +30,8 @@
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 	import type { V1PatchAudioType } from '$lib/audio/audio-node-types';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
-	import { AudioRegistry } from '$lib/registry/AudioRegistry';
 	import { getCompatMetadata } from '$lib/objects/v2/query-metadata-compat';
+	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 
 	let {
 		id: nodeId,
@@ -686,7 +685,7 @@
 	const getPortType = (port: ObjectInlet | ObjectOutlet) =>
 		match(port.type)
 			.with('signal', () => 'audio' as const)
-			.with('analysis', () => 'analysis' as const)
+			.with(ANALYSIS_KEY, () => ANALYSIS_KEY)
 			.otherwise(() => 'message' as const);
 
 	const selectedDescription = $derived.by(() => {

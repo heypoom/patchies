@@ -1,5 +1,6 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { ANALYSIS_KEY } from '../constants/fft';
 
 /**
  * FFT (Fast Fourier Transform) analysis node.
@@ -7,7 +8,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Analyzes audio signals in the frequency domain.
  * Outputs real-time frequency and amplitude data.
  */
-export class FftNode implements AudioNodeV2 {
+export class FFTNode implements AudioNodeV2 {
 	static type = 'fft~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Analyzes audio signals and provides frequency and amplitude data';
@@ -29,8 +30,8 @@ export class FftNode implements AudioNodeV2 {
 
 	static outlets: ObjectOutlet[] = [
 		{
-			name: 'analysis',
-			type: 'analysis',
+			name: ANALYSIS_KEY,
+			type: ANALYSIS_KEY,
 			description: 'Marker to indicate where to get the FFT data from.'
 		}
 	];

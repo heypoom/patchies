@@ -2,6 +2,7 @@ import { type ObjectInlet, type ObjectDataType } from '$lib/objects/object-defin
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
 import { getCompatMetadata } from './v2/query-metadata-compat';
+import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 
 /**
  * Do not allow modifying these types via object arguments.
@@ -12,7 +13,7 @@ export const UNMODIFIABLES = [
 	'bang',
 	'message',
 	'marker',
-	'analysis'
+	ANALYSIS_KEY
 ] as const satisfies ObjectDataType[];
 
 /**
@@ -24,7 +25,7 @@ export const ALWAYS_VALID = [
 	'signal',
 	'message',
 	'marker',
-	'analysis'
+	ANALYSIS_KEY
 ] as const satisfies ObjectDataType[];
 
 export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>

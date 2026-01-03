@@ -33,6 +33,7 @@
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
+	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -474,7 +475,8 @@
 			connection.sourceHandle?.startsWith('video') ||
 			connection.targetHandle?.startsWith('video')
 		) {
-			if (connection.sourceHandle?.startsWith('analysis')) return true;
+			// Allow connecting `fft~` analysis result to video sources
+			if (connection.sourceHandle?.startsWith(ANALYSIS_KEY)) return true;
 
 			return !!(
 				(connection.sourceHandle?.startsWith('video') ||
