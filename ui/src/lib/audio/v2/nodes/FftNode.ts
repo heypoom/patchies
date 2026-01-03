@@ -21,7 +21,7 @@ export class FFTNode implements AudioNodeV2 {
 		},
 		{
 			name: 'fftSize',
-			type: 'float',
+			type: 'int',
 			description: 'Size of the FFT bin. Must be a power of 2, from 32 to 32768.',
 			defaultValue: 256,
 			options: [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
@@ -47,5 +47,11 @@ export class FFTNode implements AudioNodeV2 {
 	create(params: unknown[]): void {
 		const [, fftSize] = params as [unknown, number];
 		this.audioNode.fftSize = fftSize ?? 256;
+	}
+
+	send(key: string, message: unknown): void {
+		if (key === 'fftSize' && typeof message === 'number') {
+			this.audioNode.fftSize = message;
+		}
 	}
 }

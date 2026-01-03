@@ -32,6 +32,7 @@
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 	import { getCompatMetadata } from '$lib/objects/v2/query-metadata-compat';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+	import { logger } from '$lib/utils/logger';
 
 	let {
 		id: nodeId,
@@ -212,7 +213,7 @@
 
 		// Validate message type against inlet specification
 		if (!validateMessageToObject(message, inlet)) {
-			console.warn(
+			logger.warn(
 				`invalid message type for ${data.name} inlet ${inlet.name}: expected ${inlet.type}, got`,
 				message
 			);
