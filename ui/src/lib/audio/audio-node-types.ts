@@ -189,7 +189,7 @@ interface PatchChannelSplitterNode extends AudioNodeBase {
 	node: ChannelSplitterNode;
 }
 
-export type PatchAudioNode =
+export type V1PatchAudioNode =
 	| PatchOscNode
 	| PatchGainNode
 	| PatchDacNode
@@ -223,5 +223,5 @@ export type PatchAudioNode =
 	| PatchChannelMergerNode
 	| PatchChannelSplitterNode;
 
-export type PatchAudioType = PatchAudioNode['type'];
-export type PatchAudioNodeGroup = 'sources' | 'processors' | 'destinations';
+export type V1PatchAudioType = V1PatchAudioNode['type'];
+export type V1PatchAudioNodeGroup = 'sources' | 'processors' | 'destinations';

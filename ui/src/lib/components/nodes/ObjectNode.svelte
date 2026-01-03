@@ -28,7 +28,7 @@
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
-	import type { PatchAudioType } from '$lib/audio/audio-node-types';
+	import type { V1PatchAudioType } from '$lib/audio/audio-node-types';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 
 	let {
@@ -383,7 +383,7 @@
 
 	function syncAudioSystem(name: string, params: unknown[]) {
 		audioSystem.removeAudioObject(nodeId);
-		audioSystem.createAudioObject(nodeId, name as PatchAudioType, params);
+		audioSystem.createAudioObject(nodeId, name as V1PatchAudioType, params);
 
 		const edges = getEdges();
 		audioSystem.updateEdges(edges);
@@ -740,7 +740,7 @@
 
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
-							<div class="absolute top-full left-0 z-50 flex">
+							<div class="absolute left-0 top-full z-50 flex">
 								<div
 									class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 								>
@@ -774,7 +774,7 @@
 									</div>
 								</div>
 
-								<div class="mt-2 ml-3 min-w-48 font-mono">
+								<div class="ml-3 mt-2 min-w-48 font-mono">
 									<div class="text-xs">
 										{selectedDescription}
 									</div>

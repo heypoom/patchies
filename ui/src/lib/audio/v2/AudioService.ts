@@ -1,76 +1,89 @@
 import type { Edge } from '@xyflow/svelte';
+import type { PatchAudioNode, AudioNodeGroup } from './interfaces/PatchAudioNode';
+import type { V1PatchAudioType } from '../audio-node-types';
+import { canAudioNodeConnect } from '../audio-node-group';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
-import { canAudioNodeConnect } from '../audio-node-group';
-import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
-import { hasSomeAudioNode } from '../../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
-import type { PatchAudioNode } from './interfaces/PatchAudioNode';
-import type { PatchAudioType } from '../audio-node-types';
+import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
+import { validateGroupConnection } from './audio-helpers';
+
+type NodeClass = {
+	name: string;
+	group: AudioNodeGroup;
+} & (new (nodeId: string, audioContext: AudioContext) => PatchAudioNode);
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
  * Manages node registry, connections, and edge updates.
  */
-type NodeConstructor = new (nodeId: string, audioContext: AudioContext) => PatchAudioNode;
-
 export class AudioService {
 	private static instance: AudioService | null = null;
 
-	/** Registry of active audio nodes */
-	private nodesById: Map<string, PatchAudioNode> = new Map();
+	/** Registry of node classes */
+	private registry: Map<string, NodeClass> = new Map();
 
-	/** Registry of node type constructors */
-	private nodeConstructors: Map<PatchAudioType, NodeConstructor> = new Map();
+	/** Mapping of active audio nodes */
+	private nodesById: Map<string, PatchAudioNode> = new Map();
 
 	/** Output gain node for audio output */
 	outGain: GainNode | null = null;
 
-	private constructor() {
-		// Private constructor for singleton pattern
-	}
-
-	/**
-	 * Get the AudioContext instance.
-	 */
 	getAudioContext(): AudioContext {
 		return getAudioContext();
 	}
 
-	/**
-	 * Initialize the audio system.
-	 * Creates the output gain node and connects it to the destination.
-	 */
+	/** Create the output gain node and connect it to the destination. */
 	start(): void {
 		this.outGain = this.getAudioContext().createGain();
 		this.outGain.gain.value = 0.8;
 		this.outGain.connect(this.getAudioContext().destination);
 	}
 
-	/**
-	 * Register a node in the registry.
-	 */
+	/** Register a node to the registry. */
 	registerNode(node: PatchAudioNode): void {
 		this.nodesById.set(node.nodeId, node);
-		hasSomeAudioNode.set(true);
 	}
 
-	/**
-	 * Unregister a node from the registry.
-	 */
+	/** Unregister a node from the registry. */
 	unregisterNode(nodeId: string): void {
 		this.nodesById.delete(nodeId);
 	}
 
-	/**
-	 * Get a node by ID.
-	 */
+	/** Removes a node from the graph. */
+	removeNode(node: PatchAudioNode): void {
+		if (node.destroy) {
+			node.destroy();
+			return;
+		}
+
+		node.audioNode.disconnect();
+	}
+
 	getNode(nodeId: string): PatchAudioNode | null {
 		return this.nodesById.get(nodeId) ?? null;
 	}
 
 	/**
+	 * Default implementation for connecting nodes.
+	 * Used when a node doesn't implement its own connect method.
+	 */
+	private defaultConnect(source: PatchAudioNode, target: PatchAudioNode, paramName?: string): void {
+		if (!paramName) {
+			source.audioNode.connect(target.audioNode);
+			return;
+		}
+
+		const audioParam = target.getAudioParam(paramName);
+
+		if (audioParam) {
+			source.audioNode.connect(audioParam);
+		}
+	}
+
+	/**
 	 * Connect two nodes together.
+	 *
 	 * @param sourceId - Source node ID
 	 * @param targetId - Target node ID
 	 * @param paramName - Optional AudioParam name to connect to
@@ -87,22 +100,14 @@ export class AudioService {
 			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
 
 			if (!isValidConnection) {
-				console.warn(`Cannot connect ${sourceId} to ${targetId}: invalid connection type`);
+				console.warn(`cannot connect ${sourceId} to ${targetId}: invalid connection`);
 				return;
 			}
 
-			if (paramName) {
-				const audioParam = targetNode.getAudioParam(paramName);
-
-				if (audioParam) {
-					sourceNode.audioNode.connect(audioParam);
-				} else {
-					console.warn(`AudioParam ${paramName} not found on node ${targetId}`);
-				}
+			if (sourceNode.connect) {
+				sourceNode.connect(targetNode, paramName);
 			} else {
-				// For now, handle basic node-to-node connections
-				// Special cases (sampler~, tone~, etc.) will be handled by individual node classes
-				sourceNode.connect(targetNode);
+				this.defaultConnect(sourceNode, targetNode, paramName);
 			}
 		} catch (error) {
 			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
@@ -125,8 +130,18 @@ export class AudioService {
 			return true;
 		}
 
-		// For regular node-to-node connections, use the existing validation
-		return canAudioNodeConnect(sourceNode.type, targetNode.type);
+		const sourceClass = this.registry.get(sourceNode.type);
+		const targetClass = this.registry.get(targetNode.type);
+
+		// Fallback to V1 validation.
+		if (!sourceClass || !targetClass) {
+			return canAudioNodeConnect(
+				sourceNode.type as V1PatchAudioType,
+				targetNode.type as V1PatchAudioType
+			);
+		}
+
+		return validateGroupConnection(sourceClass.group, targetClass.group);
 	}
 
 	/**
@@ -201,11 +216,11 @@ export class AudioService {
 
 	/**
 	 * Register a node type with its constructor.
-	 * @param nodeType - The node type identifier
-	 * @param constructor - The node class constructor
+	 * The constructor class must have static `name` and `group` properties.
+	 * @param constructor - The node class constructor with static name and group properties
 	 */
-	define(nodeType: PatchAudioType, constructor: NodeConstructor): void {
-		this.nodeConstructors.set(nodeType, constructor);
+	define(constructor: NodeClass): void {
+		this.registry.set(constructor.name, constructor);
 	}
 
 	/**
@@ -213,8 +228,8 @@ export class AudioService {
 	 * @param nodeType - The node type identifier
 	 * @returns True if the node type is defined
 	 */
-	isNodeTypeDefined(nodeType: PatchAudioType): boolean {
-		return this.nodeConstructors.has(nodeType);
+	isNodeTypeDefined(nodeType: string): boolean {
+		return this.registry.has(nodeType);
 	}
 
 	/**
@@ -224,21 +239,19 @@ export class AudioService {
 	 * @param params - Array of parameters for the node
 	 * @returns The created node instance, or null if type not defined
 	 */
-	createNode(
-		nodeId: string,
-		nodeType: PatchAudioType,
-		params: unknown[] = []
-	): PatchAudioNode | null {
-		const Constructor = this.nodeConstructors.get(nodeType);
-		if (!Constructor) {
-			console.warn(`Node type ${nodeType} is not defined. Call AudioService.define() first.`);
+	createNode(nodeId: string, nodeType: string, params: unknown[] = []): PatchAudioNode | null {
+		const NodeConstructor = this.registry.get(nodeType);
+
+		if (!NodeConstructor) {
+			console.warn(`audio node "${nodeType}" is not defined`);
 			return null;
 		}
 
 		const audioContext = this.getAudioContext();
-		const node = new Constructor(nodeId, audioContext);
+		const node = new NodeConstructor(nodeId, audioContext);
 		node.create(params);
 		this.registerNode(node);
+
 		return node;
 	}
 

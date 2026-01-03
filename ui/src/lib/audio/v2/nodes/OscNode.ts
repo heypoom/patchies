@@ -1,6 +1,6 @@
 import { match, P } from 'ts-pattern';
-import type { PatchAudioNode } from '../interfaces/PatchAudioNode';
-import type { PatchAudioType } from '../../audio-node-types';
+
+import type { PatchAudioNode, AudioNodeGroup } from '../interfaces/PatchAudioNode';
 
 const PeriodicWavePart = P.union(P.array(P.number), P.instanceOf(Float32Array));
 
@@ -8,15 +8,19 @@ const PeriodicWavePart = P.union(P.array(P.number), P.instanceOf(Float32Array));
  * OscNode implements the osc~ (oscillator) audio node.
  */
 export class OscNode implements PatchAudioNode {
+	static name = 'osc~';
+	static group: AudioNodeGroup = 'sources';
+
 	readonly nodeId: string;
 	readonly audioNode: OscillatorNode;
-	readonly type: PatchAudioType = 'osc~';
+	readonly type: string;
 
 	private audioContext: AudioContext;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioContext = audioContext;
+		this.type = OscNode.name;
 		this.audioNode = audioContext.createOscillator();
 	}
 
@@ -56,9 +60,6 @@ export class OscNode implements PatchAudioNode {
 				});
 
 				this.audioNode.setPeriodicWave(wave);
-			})
-			.otherwise(() => {
-				// Unknown message, ignore
 			});
 	}
 
@@ -68,6 +69,7 @@ export class OscNode implements PatchAudioNode {
 		} catch (error) {
 			console.log(`osc~ ${this.nodeId} was already stopped:`, error);
 		}
+
 		this.audioNode.disconnect();
 	}
 
@@ -76,16 +78,5 @@ export class OscNode implements PatchAudioNode {
 			.with('frequency', () => this.audioNode.frequency)
 			.with('detune', () => this.audioNode.detune)
 			.otherwise(() => null);
-	}
-
-	connect(target: PatchAudioNode, paramName?: string): void {
-		if (paramName) {
-			const audioParam = target.getAudioParam(paramName);
-			if (audioParam) {
-				this.audioNode.connect(audioParam);
-			}
-		} else {
-			this.audioNode.connect(target.audioNode);
-		}
 	}
 }

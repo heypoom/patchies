@@ -2,7 +2,7 @@ import type { Edge } from '@xyflow/svelte';
 import { match, P } from 'ts-pattern';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
-import type { PatchAudioNode, PatchAudioType } from './audio-node-types';
+import type { V1PatchAudioNode, V1PatchAudioType } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
@@ -22,7 +22,7 @@ import { registerAudioNodes } from './v2/nodes';
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
-	nodesById: Map<string, PatchAudioNode> = new Map();
+	nodesById: Map<string, V1PatchAudioNode> = new Map();
 	private timeScheduler: TimeScheduler;
 	private workletInitialized = false;
 	private dspWorkletInitialized = false;
@@ -214,7 +214,7 @@ export class AudioSystem {
 	}
 
 	// Create audio objects for object nodes
-	createAudioObject(nodeId: string, objectType: PatchAudioType, params: unknown[] = []) {
+	createAudioObject(nodeId: string, objectType: V1PatchAudioType, params: unknown[] = []) {
 		hasSomeAudioNode.set(true);
 
 		// Check if this node type has been migrated to v2
@@ -224,7 +224,7 @@ export class AudioSystem {
 			if (node) {
 				// Store in v1 map for backwards compatibility
 				// Type assertion is safe because node.audioNode matches the node type
-				this.nodesById.set(nodeId, { type: objectType, node: node.audioNode } as PatchAudioNode);
+				this.nodesById.set(nodeId, { type: objectType, node: node.audioNode } as V1PatchAudioNode);
 			}
 			return;
 		}
