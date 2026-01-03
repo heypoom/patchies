@@ -214,6 +214,24 @@ export class MessageSystem {
 			})
 			.map((edge) => edge.source);
 	}
+
+	// Find edges connected from a source node to target nodes with a specific inlet key
+	getConnectedEdgesToTargetInlet(
+		sourceNodeId: string,
+		targetInletKey?: string
+	): { targetNodeId: string; inletKey: string | null | undefined }[] {
+		return this.edges
+			.filter((edge) => {
+				return (
+					edge.source === sourceNodeId &&
+					(targetInletKey === undefined || edge.targetHandle === targetInletKey)
+				);
+			})
+			.map((edge) => ({
+				targetNodeId: edge.target,
+				inletKey: edge.targetHandle ?? undefined
+			}));
+	}
 }
 
 export const getHandleId = (handle?: string) => {

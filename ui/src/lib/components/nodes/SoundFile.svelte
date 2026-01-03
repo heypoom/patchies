@@ -5,9 +5,13 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
+	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
+	import { logger } from '$lib/utils/logger';
 
 	let node: {
 		id: string;
@@ -19,10 +23,12 @@
 		selected: boolean;
 	} = $props();
 
-	const { updateNodeData } = useSvelteFlow();
+	const { updateNodeData, getEdges } = useSvelteFlow();
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
+	let messageSystem = MessageSystem.getInstance();
 	let isDragging = $state(false);
 	let fileInputRef: HTMLInputElement;
 
@@ -42,6 +48,35 @@
 
 		updateNodeData(node.id, { ...node.data, fileName, url });
 		audioSystem.send(node.id, 'url', url);
+
+		autoReadIfConnectedToConvolver();
+	}
+
+	/**
+	 * Check if this soundfile~ is already connected to a convolver~'s buffer inlet,
+	 * and if so, automatically read and send the audio buffer.
+	 *
+	 * TODO: there is a bug where if you connect an already loaded sound file
+	 *       into a convolver~, it will NOT work.
+	 */
+	function autoReadIfConnectedToConvolver() {
+		if (!hasFile) return;
+
+		// Get all edges where this node is the source
+		const connectedEdges = messageSystem.getConnectedEdgesToTargetInlet(node.id);
+
+		// Check if any edge connects to a convolver~'s buffer inlet
+		for (const { targetNodeId, inletKey } of connectedEdges) {
+			const target = audioService.getNode(targetNodeId);
+			if (!target || getNodeType(target) !== 'convolver~') continue;
+
+			const inlet = audioSystem.getInletByHandle(targetNodeId, inletKey ?? null);
+
+			if (inlet?.name === 'buffer') {
+				readAudioBuffer();
+				logger.debug('reading soundfile~ into buffer of convolver~');
+			}
+		}
 	}
 
 	function handleDragOver(event: DragEvent) {
@@ -89,6 +124,8 @@
 
 		// Send the file to the audio system
 		audioSystem.send(node.id, 'file', file);
+
+		autoReadIfConnectedToConvolver();
 	}
 
 	function openFileDialog() {
@@ -96,10 +133,7 @@
 	}
 
 	async function readAudioBuffer() {
-		if (!hasFile) {
-			console.warn('No file loaded to read');
-			return;
-		}
+		if (!hasFile) return;
 
 		try {
 			let buffer: ArrayBuffer;
