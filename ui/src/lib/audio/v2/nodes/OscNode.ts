@@ -36,8 +36,8 @@ export class OscNode implements PatchAudioNode {
 			},
 
 			validator(value) {
-				// Custom!
 				if (Array.isArray(value)) return true;
+
 				return !!(typeof value === 'string' && this.options?.includes(value));
 			}
 		},

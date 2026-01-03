@@ -55,8 +55,8 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 	if (node.type === 'object') {
 		const data = node.data as { name: string };
 		const audioService = AudioService.getInstance();
-		const metadata = audioService.getNodeMetadata(data.name);
 
+		const metadata = audioService.getNodeMetadata(data.name);
 		if (!metadata) return false;
 
 		if (isInlet) {

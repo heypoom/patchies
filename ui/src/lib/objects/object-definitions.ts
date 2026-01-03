@@ -1,62 +1,18 @@
-export type ObjectDataType =
-	| 'any'
-	| 'message'
-	| 'signal'
-	| 'bang'
-	| 'float'
-	| 'int'
-	| 'string'
-	| 'bool'
-	| 'int[]'
-	| 'float[]'
-	| 'analysis'
-	| 'marker';
+import type {
+	ObjectDataType,
+	ObjectInlet,
+	ObjectOutlet,
+	NodeMetadata
+} from '$lib/audio/v2/interfaces/NodeMetadata';
 
-export interface ObjectInlet {
-	name?: string;
-	type?: ObjectDataType;
-	description?: string;
+/**
+ * Legacy type alias for backwards compatibility.
+ * Use NodeMetadata in new code.
+ */
+export type ObjectDefinition = NodeMetadata;
 
-	/** Does this inlet represent an audio parameter in the audio node? **/
-	isAudioParam?: boolean;
-
-	/** Floating point precision for displays. */
-	precision?: number;
-
-	/** Maximum floating point precision. */
-	maxPrecision?: number;
-
-	/** Default value. */
-	defaultValue?: unknown;
-
-	/** Valid values */
-	options?: unknown[];
-
-	minNumber?: number;
-	maxNumber?: number;
-
-	/** Maximum number of values to display for arrays. */
-	maxDisplayLength?: number;
-
-	/** Custom validator. */
-	validator?: (value: unknown) => boolean;
-
-	/** Custom formatter. */
-	formatter?: (value: unknown) => string | null;
-}
-
-export interface ObjectOutlet {
-	name?: string;
-	type?: ObjectDataType;
-	description?: string;
-}
-
-export interface ObjectDefinition {
-	inlets: ObjectInlet[];
-	outlets: ObjectOutlet[];
-	description?: string;
-	tags?: string[];
-}
+// Re-export v2 types for backwards compatibility
+export type { ObjectDataType, ObjectInlet, ObjectOutlet };
 
 /** Legacy object definitions. */
 export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
