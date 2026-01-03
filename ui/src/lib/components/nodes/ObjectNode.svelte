@@ -504,6 +504,18 @@
 
 				return true;
 			})
+			.with('keyboard', () => {
+				const keybindPart = expr.replace(name, '').trim();
+				const nodeData = getDefaultNodeData(name);
+
+				if (keybindPart.length > 0) {
+					nodeData.keybind = keybindPart;
+					nodeData.mode = 'filtered';
+				}
+
+				changeNode(name, nodeData);
+				return true;
+			})
 			.otherwise(() => {
 				if (nodeNames.includes(name as any)) {
 					changeNode(name, getDefaultNodeData(name));
