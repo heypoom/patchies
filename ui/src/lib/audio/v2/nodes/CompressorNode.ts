@@ -8,7 +8,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Useful for controlling loud peaks and maintaining consistent levels.
  */
 export class CompressorNode implements AudioNodeV2 {
-	static name = 'compressor~';
+	static type = 'compressor~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Dynamic range compressor for audio signals';
 

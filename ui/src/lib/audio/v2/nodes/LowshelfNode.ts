@@ -2,7 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class LowshelfNode implements AudioNodeV2 {
-	static name = 'lowshelf~';
+	static type = 'lowshelf~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Low shelf filter boosts or cuts frequencies below the cutoff frequency';
 

@@ -9,7 +9,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * outGain, allowing multiple dac~ nodes to exist in a patch.
  */
 export class DacNode implements AudioNodeV2 {
-	static name = 'dac~';
+	static type = 'dac~';
 	static group: AudioNodeGroup = 'destinations';
 	static description = 'Send sounds to speakers';
 

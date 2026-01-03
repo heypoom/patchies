@@ -8,7 +8,7 @@ import { match, P } from 'ts-pattern';
  * Applies a curve to the input signal for creative distortion effects.
  */
 export class WaveShaperNodeV2 implements AudioNodeV2 {
-	static name = 'waveshaper~';
+	static type = 'waveshaper~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'WaveShaperNode for distortion and waveshaping effects';
 

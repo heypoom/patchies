@@ -76,7 +76,7 @@ V2 nodes are self-contained classes implementing the `AudioNodeV2` interface:
 
 ```typescript
 export class GainNodeV2 implements AudioNodeV2 {
-  static name = "gain~";
+  static type = "gain~";
   static group: AudioNodeGroup = "processors";
   static description = "Controls audio volume/amplitude";
 
@@ -114,7 +114,7 @@ export class GainNodeV2 implements AudioNodeV2 {
 
 ```typescript
 export class LowpassNode implements AudioNodeV2 {
-  static name = "lowpass~";
+  static type = "lowpass~";
   static group: AudioNodeGroup = "processors";
   static description = "Low-pass filter";
 
@@ -166,10 +166,12 @@ Create a new file in `ui/src/lib/audio/v2/nodes/[NodeName].ts`
 ### 2. Implement Static Properties
 
 ```typescript
-static name = 'node~';           // The node type identifier (e.g., 'gain~', 'osc~')
+static type = 'node~';           // The node type identifier (e.g., 'gain~', 'osc~')
 static group: AudioNodeGroup;    // 'sources' | 'processors' | 'destinations'
 static description = 'Brief description';
 ```
+
+**Why `static type` instead of `static name`?** We use `type` to avoid shadowing the constructor's `name` property, which makes the code clearer and aligns with the `getNodeType()` naming convention.
 
 ### 3. Define Inlets
 
@@ -614,7 +616,7 @@ These nodes use dedicated manager classes and will be migrated to AudioService V
 
 ```typescript
 export class ToneNode implements AudioNodeV2 {
-  static name = "tone~";
+  static type = "tone~";
   static group: AudioNodeGroup = "processors";
   static inlets: ObjectInlet[] = [
     { name: "in", type: "signal" },
@@ -675,7 +677,7 @@ Each follows the standard V2 pattern:
 ```typescript
 // Example: CompressorNode
 export class CompressorNode implements AudioNodeV2 {
-  static name = "compressor~";
+  static type = "compressor~";
   static group: AudioNodeGroup = "processors";
 
   static inlets: ObjectInlet[] = [

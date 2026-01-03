@@ -320,11 +320,11 @@ export class AudioService {
 
 	/**
 	 * Register a node type with its constructor.
-	 * The constructor class must have static `name` and `group` properties.
-	 * @param constructor - The node class constructor with static name and group properties
+	 * The constructor class must have static `type` and `group` properties.
+	 * @param constructor - The node class constructor with static type and group properties
 	 */
 	define(constructor: AudioNodeClass): void {
-		this.registry.set(constructor.name, constructor);
+		this.registry.set(constructor.type, constructor);
 	}
 
 	/**

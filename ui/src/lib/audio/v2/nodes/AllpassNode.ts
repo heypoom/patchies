@@ -2,7 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class AllpassNode implements AudioNodeV2 {
-	static name = 'allpass~';
+	static type = 'allpass~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'All-pass filter passes all frequencies but shifts their phase';
 

@@ -18,8 +18,8 @@ export type AudioNodeConstructor = new (nodeId: string, audioContext: AudioConte
  * Audio node class type including required static properties and optional metadata.
  */
 export type AudioNodeClass = {
-	/** Name of the audio node (e.g. `osc~` or `dac~`) */
-	name: string;
+	/** Type identifier of the audio node (e.g. `osc~` or `dac~`) */
+	type: string;
 
 	/** Group of the audio node (e.g. sources or processors) */
 	group: AudioNodeGroup;
@@ -85,11 +85,11 @@ export interface AudioNodeV2 {
 }
 
 /**
- * Get the node type from a PatchAudioNode instance.
- * Extracts the static name property from the node's constructor.
+ * Get the node type from an AudioNodeV2 instance.
+ * Extracts the static `type` property from the node's constructor.
  *
  * @param node - The node instance
  * @returns The node type identifier
  */
 export const getNodeType = (node: AudioNodeV2): string =>
-	(node.constructor as { name: string }).name;
+	(node.constructor as unknown as { type: string }).type;

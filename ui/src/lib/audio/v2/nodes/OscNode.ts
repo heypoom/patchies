@@ -9,7 +9,7 @@ const PeriodicWavePart = P.union(P.array(P.number), P.instanceOf(Float32Array));
  * OscNode implements the osc~ (oscillator) audio node.
  */
 export class OscNode implements AudioNodeV2 {
-	static name = 'osc~';
+	static type = 'osc~';
 	static group: AudioNodeGroup = 'sources';
 	static description = 'Oscillator generates audio signals';
 

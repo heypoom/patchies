@@ -6,7 +6,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Sums multiple audio signals together.
  */
 export class AddNodeV2 implements AudioNodeV2 {
-	static name = '+~';
+	static type = '+~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Sums multiple audio signals together';
 

@@ -6,7 +6,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Controls stereo panning of an audio signal (-1 = left, 0 = center, 1 = right).
  */
 export class PanNodeV2 implements AudioNodeV2 {
-	static name = 'pan~';
+	static type = 'pan~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Controls stereo panning (-1 left to 1 right)';
 

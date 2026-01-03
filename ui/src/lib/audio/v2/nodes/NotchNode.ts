@@ -2,7 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class NotchNode implements AudioNodeV2 {
-	static name = 'notch~';
+	static type = 'notch~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Notch filter attenuates frequencies around the center frequency';
 

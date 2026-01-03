@@ -2,7 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class PeakingNode implements AudioNodeV2 {
-	static name = 'peaking~';
+	static type = 'peaking~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Peaking filter allows peak EQ adjustments at a specific frequency';
 

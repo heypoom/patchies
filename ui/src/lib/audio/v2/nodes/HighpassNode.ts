@@ -2,7 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class HighpassNode implements AudioNodeV2 {
-	static name = 'highpass~';
+	static type = 'highpass~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'High-pass filter allows frequencies above cutoff to pass through';
 

@@ -9,7 +9,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * uses seconds with a max of 1 second, so we convert and clamp internally.
  */
 export class DelayNodeV2 implements AudioNodeV2 {
-	static name = 'delay~';
+	static type = 'delay~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Creates a time-based delay effect on audio';
 

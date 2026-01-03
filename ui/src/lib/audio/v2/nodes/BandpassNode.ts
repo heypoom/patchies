@@ -2,7 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class BandpassNode implements AudioNodeV2 {
-	static name = 'bandpass~';
+	static type = 'bandpass~';
 	static group: AudioNodeGroup = 'processors';
 	static description =
 		'Band-pass filter allows frequencies within a range around center frequency to pass through';

@@ -8,7 +8,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Outputs real-time frequency and amplitude data.
  */
 export class FftNode implements AudioNodeV2 {
-	static name = 'fft~';
+	static type = 'fft~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Analyzes audio signals and provides frequency and amplitude data';
 

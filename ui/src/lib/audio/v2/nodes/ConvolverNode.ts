@@ -7,7 +7,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Applies an impulse response to create reverb and spatial effects.
  */
 export class ConvolverNodeV2 implements AudioNodeV2 {
-	static name = 'convolver~';
+	static type = 'convolver~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'ConvolverNode for reverb and acoustic modeling using impulse responses';
 

@@ -85,7 +85,7 @@ This defines a `void` text object that does nothing:
 
 ```ts
 class Void {
-  static name = "void";
+  static type = "void";
 }
 
 p.objects.define(Void);
@@ -99,7 +99,7 @@ This defines a `delay` text object that delays messages via the `delay` paramete
 
 ```ts
 class Delay extends PatchObject {
-  static name = "delay";
+  static type = "delay";
 
   static inlets = [
     // without declaring a type, the default inlet type is `msg` (any message)
@@ -132,7 +132,7 @@ Define a `mtof` text object that converts MIDI note numbers to frequencies:
 
 ```ts
 class MtofObject extends PatchObject {
-  static name = "mtof";
+  static type = "mtof";
   static inlets = [{ name: "note", type: "float" }];
   static outlets = [{ name: "frequency", type: "float" }];
 
@@ -154,7 +154,7 @@ We recommend writing your view components in Svelte to make full use of Svelte F
 import GLSLView from './GLSLView.svelte'
 
 class GlslObject extends PatchObject {
-  static name = 'glsl'
+  static type = 'glsl'
   static viewComponent = GLSLView
 
   onCreate() {
@@ -206,7 +206,7 @@ This allows you to use any libraries, such as Vue.js, to provide a view for an o
 
 ```tsx
 class Image {
-  static name = "image";
+  static type = "image";
 
   viewState = reactive({ imageUrl: null });
 
@@ -240,7 +240,7 @@ The following registers the `glsl` video node in the video graph.
 
 ```ts
 class GlslNode {
-  static name = "glsl";
+  static type = "glsl";
 
   constructor(renderNode, framebuffer) {}
 
@@ -289,7 +289,7 @@ video.getOutputBitmap(): ImageBitmap
 
 ```ts
 class OscNode {
-  static name = "osc~";
+  static type = "osc~";
   audioContext: AudioContext;
 
   constructor(nodeId, params) {}

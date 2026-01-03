@@ -6,7 +6,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Outputs a constant signal value.
  */
 export class SigNode implements AudioNodeV2 {
-	static name = 'sig~';
+	static type = 'sig~';
 	static group: AudioNodeGroup = 'sources';
 	static description = 'Outputs a constant signal value';
 

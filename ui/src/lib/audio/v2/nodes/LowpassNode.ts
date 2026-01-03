@@ -2,7 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class LowpassNode implements AudioNodeV2 {
-	static name = 'lowpass~';
+	static type = 'lowpass~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Low-pass filter allows frequencies below cutoff to pass through';
 

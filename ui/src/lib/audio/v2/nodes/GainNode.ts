@@ -6,7 +6,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Controls the volume/amplitude of an audio signal.
  */
 export class GainNodeV2 implements AudioNodeV2 {
-	static name = 'gain~';
+	static type = 'gain~';
 	static group: AudioNodeGroup = 'processors';
 	static description = 'Controls audio volume/amplitude';
 
