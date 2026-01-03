@@ -68,7 +68,7 @@ export class WaveShaperNodeV2 implements AudioNodeV2 {
 
 	send(key: string, message: unknown): void {
 		match([key, message])
-			.with(['curve', P.constructor(Float32Array)], ([, m]) => {
+			.with(['curve', P.instanceOf(Float32Array)], ([, m]) => {
 				this.audioNode.curve = m as Float32Array<ArrayBuffer>;
 			})
 			.with(['curve', P.array(P.number)], ([, m]) => {
@@ -82,6 +82,7 @@ export class WaveShaperNodeV2 implements AudioNodeV2 {
 				([, m]) => {
 					this.audioNode.oversample = m as OverSampleType;
 				}
-			);
+			)
+			.otherwise(() => {});
 	}
 }
