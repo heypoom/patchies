@@ -28,7 +28,7 @@
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
-	import type { PsAudioType } from '$lib/audio/audio-node-types';
+	import type { PatchAudioType } from '$lib/audio/audio-node-types';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 
 	let {
@@ -383,7 +383,7 @@
 
 	function syncAudioSystem(name: string, params: unknown[]) {
 		audioSystem.removeAudioObject(nodeId);
-		audioSystem.createAudioObject(nodeId, name as PsAudioType, params);
+		audioSystem.createAudioObject(nodeId, name as PatchAudioType, params);
 
 		const edges = getEdges();
 		audioSystem.updateEdges(edges);

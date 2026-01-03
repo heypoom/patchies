@@ -3,26 +3,26 @@ import type { ToneManager } from './ToneManager';
 import type { ElementaryAudioManager } from './ElementaryAudioManager';
 import type { CsoundManager } from './nodes/CsoundManager';
 
-interface PsBase {
+interface AudioNodeBase {
 	node: AudioNode;
 }
 
-interface PsOsc extends PsBase {
+interface PatchOscNode extends AudioNodeBase {
 	type: 'osc~';
 	node: OscillatorNode;
 }
 
-interface PsGain extends PsBase {
+interface PatchGainNode extends AudioNodeBase {
 	type: 'gain~';
 	node: GainNode;
 }
 
-interface PsDac extends PsBase {
+interface PatchDacNode extends AudioNodeBase {
 	type: 'dac~';
 	node: GainNode; // dac uses the outGain node
 }
 
-interface PsAdd extends PsBase {
+interface PatchAddNode extends AudioNodeBase {
 	type: '+~';
 	node: GainNode;
 }
@@ -31,106 +31,106 @@ interface PsAdd extends PsBase {
  * Lyria music generator by Google DeepMind.
  * Used by the `AiMusicNode`.
  **/
-interface PsLyria extends PsBase {
+interface PatchLyriaNode extends AudioNodeBase {
 	type: 'lyria';
 	node: GainNode;
 }
 
-interface PsAnalyzer extends PsBase {
+interface PatchAnalyzerNode extends AudioNodeBase {
 	type: 'fft~';
 	node: AnalyserNode;
 }
 
-interface PsMic extends PsBase {
+interface PatchMicNode extends AudioNodeBase {
 	type: 'mic~';
 	node: GainNode;
 	mediaStream?: MediaStream;
 	mediaStreamSource?: MediaStreamAudioSourceNode;
 }
 
-interface PsLowpass extends PsBase {
+interface PatchLowpassNode extends AudioNodeBase {
 	type: 'lowpass~';
 	node: BiquadFilterNode;
 }
 
-interface PsHighpass extends PsBase {
+interface PatchHighpassNode extends AudioNodeBase {
 	type: 'highpass~';
 	node: BiquadFilterNode;
 }
 
-interface PsBandpass extends PsBase {
+interface PatchBandpassNode extends AudioNodeBase {
 	type: 'bandpass~';
 	node: BiquadFilterNode;
 }
 
-interface PsAllpass extends PsBase {
+interface PatchAllpassNode extends AudioNodeBase {
 	type: 'allpass~';
 	node: BiquadFilterNode;
 }
 
-interface PsNotch extends PsBase {
+interface PatchNotchNode extends AudioNodeBase {
 	type: 'notch~';
 	node: BiquadFilterNode;
 }
 
-interface PsLowshelf extends PsBase {
+interface PatchLowshelfNode extends AudioNodeBase {
 	type: 'lowshelf~';
 	node: BiquadFilterNode;
 }
 
-interface PsHighshelf extends PsBase {
+interface PatchHighshelfNode extends AudioNodeBase {
 	type: 'highshelf~';
 	node: BiquadFilterNode;
 }
 
-interface PsPeaking extends PsBase {
+interface PatchPeakingNode extends AudioNodeBase {
 	type: 'peaking~';
 	node: BiquadFilterNode;
 }
 
-interface PsExpr extends PsBase {
+interface PatchExprNode extends AudioNodeBase {
 	type: 'expr~';
 	node: AudioWorkletNode;
 }
 
-interface PsChuck extends PsBase {
+interface PatchChuckNode extends AudioNodeBase {
 	type: 'chuck';
 	node: GainNode;
 	chuckManager?: ChuckManager;
 }
 
-interface PsCompressor extends PsBase {
+interface PatchCompressorNode extends AudioNodeBase {
 	type: 'compressor~';
 	node: DynamicsCompressorNode;
 }
 
-interface PsPan extends PsBase {
+interface PatchPanNode extends AudioNodeBase {
 	type: 'pan~';
 	node: StereoPannerNode;
 }
 
-interface PsSig extends PsBase {
+interface PatchSigNode extends AudioNodeBase {
 	type: 'sig~';
 	node: ConstantSourceNode;
 }
 
-interface PsDelay extends PsBase {
+interface PatchDelayNode extends AudioNodeBase {
 	type: 'delay~';
 	node: DelayNode;
 }
 
-interface PsSoundfile extends PsBase {
+interface PatchSoundfileNode extends AudioNodeBase {
 	type: 'soundfile~';
 	node: MediaElementAudioSourceNode;
 	audioElement: HTMLAudioElement;
 }
 
-interface PsWaveshaper extends PsBase {
+interface PatchWaveshaperNode extends AudioNodeBase {
 	type: 'waveshaper~';
 	node: WaveShaperNode;
 }
 
-interface PsSampler extends PsBase {
+interface PatchSamplerNode extends AudioNodeBase {
 	type: 'sampler~';
 	node: GainNode;
 	destinationNode: MediaStreamAudioDestinationNode;
@@ -143,85 +143,85 @@ interface PsSampler extends PsBase {
 	detune?: number;
 }
 
-interface PsConvolver extends PsBase {
+interface PatchConvolverNode extends AudioNodeBase {
 	type: 'convolver~';
 	node: ConvolverNode;
 }
 
-interface PsStrudel extends PsBase {
+interface PatchStrudelNode extends AudioNodeBase {
 	type: 'strudel';
 	node: GainNode;
 }
 
-interface PsDsp extends PsBase {
+interface PatchDspNode extends AudioNodeBase {
 	type: 'dsp~';
 	node: AudioWorkletNode;
 }
 
-interface PsTone extends PsBase {
+interface PatchToneNode extends AudioNodeBase {
 	type: 'tone~';
 	node: GainNode;
 	inputNode: GainNode;
 	toneManager?: ToneManager;
 }
 
-interface PsElementary extends PsBase {
+interface PatchElementaryNode extends AudioNodeBase {
 	type: 'elem~';
 	node: GainNode;
 	inputNode: GainNode;
 	elementaryManager?: ElementaryAudioManager;
 }
 
-interface PsCsound extends PsBase {
+interface PatchCsoundNode extends AudioNodeBase {
 	type: 'csound~';
 	node: GainNode;
 	inputNode: GainNode;
 	csoundManager?: CsoundManager;
 }
 
-interface PsChannelMerger extends PsBase {
+interface PatchChannelMergerNode extends AudioNodeBase {
 	type: 'merge~';
 	node: ChannelMergerNode;
 }
 
-interface PsChannelSplitter extends PsBase {
+interface PatchChannelSplitterNode extends AudioNodeBase {
 	type: 'split~';
 	node: ChannelSplitterNode;
 }
 
-export type PsAudioNode =
-	| PsOsc
-	| PsGain
-	| PsDac
-	| PsAdd
-	| PsLyria
-	| PsAnalyzer
-	| PsMic
-	| PsLowpass
-	| PsHighpass
-	| PsBandpass
-	| PsAllpass
-	| PsNotch
-	| PsLowshelf
-	| PsHighshelf
-	| PsPeaking
-	| PsExpr
-	| PsChuck
-	| PsCompressor
-	| PsPan
-	| PsSig
-	| PsDelay
-	| PsSoundfile
-	| PsWaveshaper
-	| PsSampler
-	| PsConvolver
-	| PsStrudel
-	| PsDsp
-	| PsTone
-	| PsElementary
-	| PsCsound
-	| PsChannelMerger
-	| PsChannelSplitter;
+export type PatchAudioNode =
+	| PatchOscNode
+	| PatchGainNode
+	| PatchDacNode
+	| PatchAddNode
+	| PatchLyriaNode
+	| PatchAnalyzerNode
+	| PatchMicNode
+	| PatchLowpassNode
+	| PatchHighpassNode
+	| PatchBandpassNode
+	| PatchAllpassNode
+	| PatchNotchNode
+	| PatchLowshelfNode
+	| PatchHighshelfNode
+	| PatchPeakingNode
+	| PatchExprNode
+	| PatchChuckNode
+	| PatchCompressorNode
+	| PatchPanNode
+	| PatchSigNode
+	| PatchDelayNode
+	| PatchSoundfileNode
+	| PatchWaveshaperNode
+	| PatchSamplerNode
+	| PatchConvolverNode
+	| PatchStrudelNode
+	| PatchDspNode
+	| PatchToneNode
+	| PatchElementaryNode
+	| PatchCsoundNode
+	| PatchChannelMergerNode
+	| PatchChannelSplitterNode;
 
-export type PsAudioType = PsAudioNode['type'];
-export type PsAudioNodeGroup = 'sources' | 'processors' | 'destinations';
+export type PatchAudioType = PatchAudioNode['type'];
+export type PatchAudioNodeGroup = 'sources' | 'processors' | 'destinations';

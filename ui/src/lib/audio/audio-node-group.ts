@@ -1,8 +1,8 @@
 import { match, P } from 'ts-pattern';
-import type { PsAudioNodeGroup, PsAudioType } from './audio-node-types';
+import type { PatchAudioNodeGroup, PatchAudioType } from './audio-node-types';
 
-export const getAudioNodeGroup = (nodeType: PsAudioType): PsAudioNodeGroup | null =>
-	match<PsAudioType, PsAudioNodeGroup | null>(nodeType)
+export const getAudioNodeGroup = (nodeType: PatchAudioType): PatchAudioNodeGroup | null =>
+	match<PatchAudioType, PatchAudioNodeGroup | null>(nodeType)
 		.with(P.union('osc~', 'lyria', 'mic~', 'sig~', 'soundfile~'), () => 'sources')
 		.with(
 			P.union(
@@ -30,7 +30,10 @@ export const getAudioNodeGroup = (nodeType: PsAudioType): PsAudioNodeGroup | nul
 		.with('dac~', () => 'destinations')
 		.otherwise(() => null);
 
-export const canAudioNodeConnect = (sourceType: PsAudioType, targetType: PsAudioType): boolean => {
+export const canAudioNodeConnect = (
+	sourceType: PatchAudioType,
+	targetType: PatchAudioType
+): boolean => {
 	const source = getAudioNodeGroup(sourceType);
 	const target = getAudioNodeGroup(targetType);
 

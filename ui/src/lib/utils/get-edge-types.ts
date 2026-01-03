@@ -1,5 +1,5 @@
 import { getAudioNodeGroup } from '$lib/audio/audio-node-group';
-import type { PsAudioType } from '$lib/audio/audio-node-types';
+import type { PatchAudioType } from '$lib/audio/audio-node-types';
 import { objectDefinitions } from '$lib/objects/object-definitions';
 import type { Node } from '@xyflow/svelte';
 
@@ -29,7 +29,7 @@ const isAudioObject = (node: MinimalNode): boolean => {
 	if (!node.type) return false;
 
 	if (node.type === 'object') {
-		return !!getAudioNodeGroup(node.data.name as PsAudioType);
+		return !!getAudioNodeGroup(node.data.name as PatchAudioType);
 	}
 
 	return AUDIO_NODES.includes(node.type);

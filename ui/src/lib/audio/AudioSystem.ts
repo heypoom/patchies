@@ -2,7 +2,7 @@ import type { Edge } from '@xyflow/svelte';
 import { match, P } from 'ts-pattern';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
-import type { PsAudioNode, PsAudioType } from './audio-node-types';
+import type { PatchAudioNode, PatchAudioType } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
@@ -16,11 +16,13 @@ import workletUrl from './expression-processor.ts?worker&url';
 import dspWorkletUrl from './dsp-processor.ts?worker&url';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
+import { AudioService } from './v2/AudioService';
+import { registerAudioNodes } from './v2/nodes';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
-	nodesById: Map<string, PsAudioNode> = new Map();
+	nodesById: Map<string, PatchAudioNode> = new Map();
 	private timeScheduler: TimeScheduler;
 	private workletInitialized = false;
 	private dspWorkletInitialized = false;
@@ -36,6 +38,13 @@ export class AudioSystem {
 	}
 
 	start() {
+		// Register v2 audio nodes
+		registerAudioNodes();
+
+		// Initialize v2 AudioService
+		const audioService = AudioService.getInstance();
+		audioService.start();
+
 		this.outGain = this.audioContext.createGain();
 		this.outGain.gain.value = 0.8;
 		this.outGain.connect(this.audioContext.destination);
@@ -110,6 +119,13 @@ export class AudioSystem {
 	}
 
 	getAudioParam(nodeId: string, name: string): AudioParam | null {
+		// Check if this is a v2 node (migrated to AudioService)
+		const audioService = AudioService.getInstance();
+		const v2Node = audioService.getNode(nodeId);
+		if (v2Node && v2Node.type === 'osc~') {
+			return v2Node.getAudioParam(name);
+		}
+
 		const entry = this.nodesById.get(nodeId);
 		if (!entry) return null;
 
@@ -198,11 +214,22 @@ export class AudioSystem {
 	}
 
 	// Create audio objects for object nodes
-	createAudioObject(nodeId: string, objectType: PsAudioType, params: unknown[] = []) {
+	createAudioObject(nodeId: string, objectType: PatchAudioType, params: unknown[] = []) {
 		hasSomeAudioNode.set(true);
 
+		// Check if this node type has been migrated to v2
+		const audioService = AudioService.getInstance();
+		if (audioService.isNodeTypeDefined(objectType)) {
+			const node = audioService.createNode(nodeId, objectType, params);
+			if (node) {
+				// Store in v1 map for backwards compatibility
+				// Type assertion is safe because node.audioNode matches the node type
+				this.nodesById.set(nodeId, { type: objectType, node: node.audioNode } as PatchAudioNode);
+			}
+			return;
+		}
+
 		match(objectType)
-			.with('osc~', () => this.createOsc(nodeId, params))
 			.with('gain~', () => this.createGain(nodeId, params))
 			.with('dac~', () => this.createDac(nodeId))
 			.with('fft~', () => this.createAnalyzer(nodeId, params))
@@ -225,7 +252,7 @@ export class AudioSystem {
 			.with('compressor~', () => this.createCompressor(nodeId, params))
 			.with('pan~', () => this.createPan(nodeId, params))
 			.with('sig~', () => this.createSig(nodeId, params))
-			.with('sampler~', () => this.createSampler(nodeId, params))
+			.with('sampler~', () => this.createSampler(nodeId))
 			.with('delay~', () => this.createDelay(nodeId, params))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
 			.with('waveshaper~', () => this.createWaveShaper(nodeId, params))
@@ -400,7 +427,7 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'sig~', node: constantSource });
 	}
 
-	createSampler(nodeId: string, params: unknown[]) {
+	createSampler(nodeId: string) {
 		// Create a gain node for playback output
 		const gainNode = this.audioContext.createGain();
 		gainNode.gain.value = 1.0;
@@ -661,6 +688,14 @@ export class AudioSystem {
 			if (!audioParam) return;
 
 			this.timeScheduler.processMessage(audioParam, msg);
+			return;
+		}
+
+		// Check if this is a v2 node (migrated to AudioService)
+		const audioService = AudioService.getInstance();
+		const v2Node = audioService.getNode(nodeId);
+		if (v2Node && v2Node.type === 'osc~') {
+			v2Node.send(key, msg);
 			return;
 		}
 
@@ -1012,7 +1047,7 @@ export class AudioSystem {
 								sampler.sourceNode.stop();
 								sampler.sourceNode.disconnect();
 								sampler.sourceNode = undefined;
-							} catch (error) {
+							} catch {
 								// Ignore errors if node already stopped
 							}
 						}
@@ -1051,6 +1086,16 @@ export class AudioSystem {
 
 	// Remove audio object
 	removeAudioObject(nodeId: string) {
+		// Check if this is a v2 node (migrated to AudioService)
+		const audioService = AudioService.getInstance();
+		const v2Node = audioService.getNode(nodeId);
+		if (v2Node && v2Node.type === 'osc~') {
+			v2Node.destroy();
+			audioService.unregisterNode(nodeId);
+			this.nodesById.delete(nodeId);
+			return;
+		}
+
 		const entry = this.nodesById.get(nodeId);
 
 		if (entry) {
