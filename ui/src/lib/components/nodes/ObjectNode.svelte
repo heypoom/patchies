@@ -6,7 +6,7 @@
 	import {
 		getObjectNames,
 		getObjectDefinition,
-		audioObjectNames,
+		getAudioObjectNames,
 		getObjectNameFromExpr,
 		objectDefinitionsV1,
 		type AdsrParamList,
@@ -396,7 +396,7 @@
 		const { name, params } = getNameAndParams();
 		updateNodeData(nodeId, { expr, name, params });
 
-		if (!audioObjectNames.includes(name)) return false;
+		if (!getAudioObjectNames().includes(name)) return false;
 
 		syncAudioSystem(name, params);
 
@@ -633,7 +633,7 @@
 			}, 10);
 		}
 
-		if (audioObjectNames.includes(data.name)) {
+		if (getAudioObjectNames().includes(data.name)) {
 			syncAudioSystem(data.name, data.params);
 		}
 

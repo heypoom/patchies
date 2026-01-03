@@ -4,6 +4,7 @@ import type {
 	ObjectOutlet,
 	NodeMetadata
 } from '$lib/audio/v2/interfaces/NodeMetadata';
+import { AudioService } from '$lib/audio/v2/AudioService';
 
 /**
  * Legacy type alias for backwards compatibility.
@@ -641,9 +642,22 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 	}
 };
 
-export const audioObjectNames = Object.keys(objectDefinitionsV1).filter((key) =>
-	objectDefinitionsV1[key].tags?.includes('audio')
-);
+/**
+ * Get all audio object names from both v1 and v2 systems.
+ */
+export function getAudioObjectNames(): string[] {
+	const audioService = AudioService.getInstance();
+
+	// Get v1 audio objects
+	const v1Audio = Object.keys(objectDefinitionsV1).filter((key) =>
+		objectDefinitionsV1[key].tags?.includes('audio')
+	);
+
+	// Get v2 audio objects
+	const v2Audio = audioService.getNodeNamesByTag('audio');
+
+	return [...v1Audio, ...v2Audio];
+}
 
 export const getObjectNameFromExpr = (expr: string): string =>
 	expr.trim().toLowerCase().split(' ')?.[0];
