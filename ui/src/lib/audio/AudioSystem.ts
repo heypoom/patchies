@@ -122,7 +122,7 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
-		if (v2Node && v2Node.type === 'osc~') {
+		if (v2Node && audioService.isNodeTypeDefined(v2Node.type)) {
 			return v2Node.getAudioParam(name);
 		}
 
@@ -130,12 +130,6 @@ export class AudioSystem {
 		if (!entry) return null;
 
 		return match(entry)
-			.with({ type: 'osc~' }, ({ node }) =>
-				match(name)
-					.with('frequency', () => node.frequency)
-					.with('detune', () => node.detune)
-					.otherwise(() => null)
-			)
 			.with({ type: 'gain~' }, ({ node }) =>
 				match(name)
 					.with('gain', () => node.gain)
@@ -259,17 +253,6 @@ export class AudioSystem {
 			.with('convolver~', () => this.createConvolver(nodeId, params))
 			.with('merge~', () => this.createChannelMerger(nodeId, params))
 			.with('split~', () => this.createChannelSplitter(nodeId, params));
-	}
-
-	createOsc(nodeId: string, params: unknown[]) {
-		const [freq, type] = params as [number, OscillatorType];
-
-		const osc = this.audioContext.createOscillator();
-		osc.frequency.value = freq;
-		osc.type = type;
-		osc.start(0);
-
-		this.nodesById.set(nodeId, { type: 'osc~', node: osc });
 	}
 
 	createGain(nodeId: string, params: unknown[]) {
@@ -694,7 +677,7 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
-		if (v2Node && v2Node.type === 'osc~') {
+		if (v2Node && audioService.isNodeTypeDefined(v2Node.type)) {
 			v2Node.send(key, msg);
 			return;
 		}
@@ -703,36 +686,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with({ type: 'osc~' }, ({ node }) => {
-				match([key, msg])
-					.with(['frequency', P.number], ([, freq]) => {
-						node.frequency.value = freq;
-					})
-					.with(['detune', P.number], ([, detune]) => {
-						node.detune.value = detune;
-					})
-					.with(['type', P.string], ([, type]) => {
-						node.type = type as OscillatorType;
-					})
-					.with(['type', [PeriodicWavePart, PeriodicWavePart]], ([, waveParts]) => {
-						const [real, imag] = waveParts;
-
-						// both real and imaginary part must be same length.
-						if (real.length !== imag.length) return;
-
-						// both real and imaginary part must be at least 2
-						if (real.length < 2) return;
-						if (imag.length < 2) return;
-
-						const wave = new PeriodicWave(this.audioContext, {
-							real,
-							imag,
-							disableNormalization: true
-						});
-
-						node.setPeriodicWave(wave);
-					});
-			})
 			.with({ type: 'gain~' }, ({ node }) => {
 				match([key, msg]).with(['gain', P.number], ([, gain]) => {
 					node.gain.value = gain;
@@ -1232,5 +1185,3 @@ if (typeof window !== 'undefined') {
 	// @ts-expect-error -- expose for debugging!
 	window.audioSystem = AudioSystem.getInstance();
 }
-
-const PeriodicWavePart = P.union(P.array(P.number), P.instanceOf(Float32Array));
