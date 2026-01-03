@@ -32,11 +32,14 @@ export class DacNode implements AudioNodeV2 {
 	send(): void {}
 
 	create(): void {
-		const { outGain } = AudioService.getInstance();
+		// TODO: fix this. not sure why this is needed.
+		setTimeout(() => {
+			const { outGain } = AudioService.getInstance();
 
-		if (outGain) {
-			this.audioNode.connect(outGain);
-		}
+			if (outGain) {
+				this.audioNode.connect(outGain);
+			}
+		}, 0);
 	}
 
 	getAudioParam(): AudioParam | null {
