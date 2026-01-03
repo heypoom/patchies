@@ -16,11 +16,14 @@ import { HighpassNode } from './HighpassNode';
 import { HighshelfNode } from './HighshelfNode';
 import { LowpassNode } from './LowpassNode';
 import { LowshelfNode } from './LowshelfNode';
+import { MergeNode } from './MergeNode';
+import { MicNode } from './MicNode';
 import { NotchNode } from './NotchNode';
 import { OscNode } from './OscNode';
 import { PanNodeV2 } from './PanNode';
 import { PeakingNode } from './PeakingNode';
 import { SigNode } from './SigNode';
+import { SplitNode } from './SplitNode';
 import { WaveShaperNodeV2 } from './WaveShaperNode';
 
 import type { AudioNodeClass } from '../interfaces/audio-nodes';
@@ -39,11 +42,14 @@ const AUDIO_NODES = [
 	HighshelfNode,
 	LowpassNode,
 	LowshelfNode,
+	MergeNode,
+	MicNode,
 	NotchNode,
 	OscNode,
 	PanNodeV2,
 	PeakingNode,
 	SigNode,
+	SplitNode,
 	WaveShaperNodeV2
 ] as const satisfies AudioNodeClass[];
 

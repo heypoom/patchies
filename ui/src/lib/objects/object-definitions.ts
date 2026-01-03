@@ -111,19 +111,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['envelope']
 	},
 
-	'mic~': {
-		inlets: [
-			{
-				name: 'message',
-				type: 'message',
-				description: 'Control messages. Bang to restart.'
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Microphone audio output' }],
-		description: 'Captures audio from microphone',
-		tags: ['audio']
-	},
-
 	'soundfile~': {
 		inlets: [
 			{

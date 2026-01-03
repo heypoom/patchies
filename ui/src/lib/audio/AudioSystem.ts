@@ -169,7 +169,6 @@ export class AudioSystem {
 		}
 
 		match(objectType)
-			.with('mic~', () => this.createMic(nodeId))
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('dsp~', () => this.createDsp(nodeId, params))
 			.with('tone~', () => this.createTone(nodeId, params))
@@ -177,16 +176,7 @@ export class AudioSystem {
 			.with('csound~', () => this.createCsound(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('sampler~', () => this.createSampler(nodeId))
-			.with('soundfile~', () => this.createSoundFile(nodeId))
-			.with('merge~', () => this.createChannelMerger(nodeId, params))
-			.with('split~', () => this.createChannelSplitter(nodeId, params));
-	}
-
-	async createMic(nodeId: string) {
-		const node = this.audioContext.createGain();
-		this.nodesById.set(nodeId, { type: 'mic~', node });
-
-		this.restartMic(nodeId);
+			.with('soundfile~', () => this.createSoundFile(nodeId));
 	}
 
 	createSampler(nodeId: string) {
@@ -216,38 +206,6 @@ export class AudioSystem {
 			node: mediaElementSource,
 			audioElement
 		});
-	}
-
-	createChannelMerger(nodeId: string, params: unknown[]) {
-		const [channels] = params as [number];
-
-		const merger = this.audioContext.createChannelMerger(channels ?? 2);
-
-		this.nodesById.set(nodeId, { type: 'merge~', node: merger });
-	}
-
-	createChannelSplitter(nodeId: string, params: unknown[]) {
-		const [channels] = params as [number];
-
-		const splitter = this.audioContext.createChannelSplitter(channels ?? 2);
-
-		this.nodesById.set(nodeId, { type: 'split~', node: splitter });
-	}
-
-	updateChannelCount(nodeId: string, newChannels: number) {
-		const entry = this.nodesById.get(nodeId);
-		if (!entry) return;
-
-		entry.node.disconnect();
-
-		match(entry)
-			.with({ type: 'merge~' }, () => {
-				this.createChannelMerger(nodeId, [newChannels]);
-			})
-			.with({ type: 'split~' }, () => {
-				this.createChannelSplitter(nodeId, [newChannels]);
-			})
-			.otherwise(() => {});
 	}
 
 	async initExprWorklet() {
@@ -434,11 +392,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with({ type: 'mic~' }, () => {
-				match(msg).with({ type: 'bang' }, () => {
-					this.restartMic(nodeId);
-				});
-			})
 			.with({ type: 'expr~' }, ({ node }) => {
 				match([key, msg])
 					.with(['expression', P.string], ([, expression]) => {
@@ -682,11 +635,6 @@ export class AudioSystem {
 						}
 					});
 			})
-			.with({ type: P.union('merge~', 'split~') }, () => {
-				match([key, msg]).with(['channels', P.number], ([, channels]) => {
-					this.updateChannelCount(nodeId, channels);
-				});
-			})
 			.otherwise(() => null);
 	}
 
@@ -740,36 +688,6 @@ export class AudioSystem {
 		}
 
 		this.nodesById.delete(nodeId);
-	}
-
-	async restartMic(nodeId: string) {
-		const mic = this.nodesById.get(nodeId);
-		if (!mic || mic.type !== 'mic~') return;
-
-		// Clean up existing mic resources
-		if (mic.mediaStreamSource) {
-			mic.mediaStreamSource.disconnect();
-		}
-
-		if (mic.mediaStream) {
-			mic.mediaStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
-		}
-
-		try {
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-			const streamSource = this.audioContext.createMediaStreamSource(stream);
-
-			streamSource.connect(mic.node);
-
-			Object.assign(mic, {
-				mediaStream: stream,
-				mediaStreamSource: streamSource
-			});
-
-			this.nodesById.set(nodeId, mic);
-		} catch (error) {
-			console.error('Failed to restart microphone:', error);
-		}
 	}
 
 	static getInstance(): AudioSystem {
