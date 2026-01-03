@@ -67,7 +67,7 @@
 
 		// Check if any edge connects to a convolver~'s buffer inlet
 		for (const { targetNodeId, inletKey } of connectedEdges) {
-			const target = audioService.getNode(targetNodeId);
+			const target = audioService.getNodeById(targetNodeId);
 			if (!target || getNodeType(target) !== 'convolver~') continue;
 
 			const inlet = audioSystem.getInletByHandle(targetNodeId, inletKey ?? null);

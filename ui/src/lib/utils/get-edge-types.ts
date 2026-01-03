@@ -1,6 +1,6 @@
 import { getAudioNodeGroup } from '$lib/audio/audio-node-group';
 import type { V1PatchAudioType } from '$lib/audio/audio-node-types';
-import { AudioService } from '$lib/audio/v2/AudioService';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import type { Node } from '@xyflow/svelte';
 
 type PsEdgeType = 'message' | 'video' | 'audio';
@@ -54,9 +54,9 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 
 	if (node.type === 'object') {
 		const data = node.data as { name: string };
-		const audioService = AudioService.getInstance();
+		const registry = AudioRegistry.getInstance();
 
-		const metadata = audioService.getNodeMetadata(data.name);
+		const metadata = registry.getNodeMetadataByType(data.name);
 		if (!metadata) return false;
 
 		if (isInlet) {

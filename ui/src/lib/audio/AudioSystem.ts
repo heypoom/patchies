@@ -28,6 +28,7 @@ export class AudioSystem {
 	private timeScheduler: TimeScheduler;
 	private workletInitialized = false;
 	private dspWorkletInitialized = false;
+	private v2 = AudioService.getInstance();
 
 	outGain: GainNode | null = null;
 
@@ -44,8 +45,7 @@ export class AudioSystem {
 		registerAudioNodes();
 
 		// Initialize v2 AudioService
-		const audioService = AudioService.getInstance();
-		audioService.start();
+		this.v2.start();
 
 		this.outGain = this.audioContext.createGain();
 		this.outGain.gain.value = 0.8;
@@ -110,11 +110,10 @@ export class AudioSystem {
 	}
 
 	getAudioParam(nodeId: string, name: string): AudioParam | null {
-		const audioService = AudioService.getInstance();
-		const v2Node = audioService.getNode(nodeId);
+		const v2Node = this.v2.getNodeById(nodeId);
 
-		if (audioService.isNodeDefined(v2Node)) {
-			return audioService.getAudioParamByNode(v2Node, name);
+		if (v2Node) {
+			return this.v2.getAudioParamByNode(v2Node, name);
 		}
 
 		return null;
@@ -122,10 +121,8 @@ export class AudioSystem {
 
 	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
 		// Check if this is a v2 node (migrated to AudioService)
-		const audioService = AudioService.getInstance();
-		const v2Node = audioService.getNode(nodeId);
-		if (audioService.isNodeDefined(v2Node)) {
-			return audioService.getInletByHandle(nodeId, targetHandle);
+		if (this.v2.getNodeById(nodeId)) {
+			return this.v2.getInletByHandle(nodeId, targetHandle);
 		}
 
 		// Fallback to v1 logic
@@ -145,15 +142,15 @@ export class AudioSystem {
 	createAudioObject(nodeId: string, objectType: string, params: unknown[] = []) {
 		hasSomeAudioNode.set(true);
 
-		// Check if this node type has been migrated to v2
-		const audioService = AudioService.getInstance();
-		if (audioService.isNodeTypeDefined(objectType)) {
-			const node = audioService.createNode(nodeId, objectType, params);
+		if (this.v2.registry.isDefined(objectType)) {
+			const node = this.v2.createNode(nodeId, objectType, params);
+
 			if (node) {
 				// Store in v1 map for backwards compatibility
 				// Type assertion is safe because node.audioNode matches the node type
 				this.nodesById.set(nodeId, { type: objectType, node: node.audioNode } as V1PatchAudioNode);
 			}
+
 			return;
 		}
 
@@ -338,11 +335,8 @@ export class AudioSystem {
 		}
 
 		// Check if this is a v2 node (migrated to AudioService)
-		const audioService = AudioService.getInstance();
-		const v2Node = audioService.getNode(nodeId);
-
-		if (audioService.isNodeDefined(v2Node)) {
-			audioService.send(nodeId, key, msg);
+		if (this.v2.getNodeById(nodeId)) {
+			this.v2.send(nodeId, key, msg);
 			return;
 		}
 
@@ -401,11 +395,10 @@ export class AudioSystem {
 	// Remove audio object
 	removeAudioObject(nodeId: string) {
 		// Check if this is a v2 node (migrated to AudioService)
-		const audioService = AudioService.getInstance();
-		const v2Node = audioService.getNode(nodeId);
+		const v2Node = this.v2.getNodeById(nodeId);
 
-		if (audioService.isNodeDefined(v2Node)) {
-			audioService.removeNode(v2Node);
+		if (v2Node) {
+			this.v2.removeNode(v2Node);
 			this.nodesById.delete(nodeId);
 		}
 

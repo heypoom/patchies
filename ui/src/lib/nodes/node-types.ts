@@ -98,6 +98,6 @@ export const nodeTypes = {
 	keyboard: KeyboardNode
 } as const;
 
-export const nodeNames = Object.keys(nodeTypes) as Array<keyof typeof nodeTypes>;
+export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];
 
 export type NodeTypeName = keyof typeof nodeTypes;

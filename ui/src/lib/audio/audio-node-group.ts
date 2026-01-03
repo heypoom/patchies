@@ -1,16 +1,18 @@
 import { match } from 'ts-pattern';
 import type { V1PatchAudioNodeGroup } from './audio-node-types';
-import { AudioService } from './v2/AudioService';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | null => {
-	// V2: check in audio node registry
-	const v2NodeGroup = AudioService.getInstance().getNodeGroup(nodeType);
-	if (v2NodeGroup) return v2NodeGroup;
+	// V2: check in audio registry
+	const nodeGroupV2 = AudioRegistry.getInstance().get(nodeType)?.group;
+	if (nodeGroupV2) return nodeGroupV2;
 
-	// V1: hard-coded names :-(
-	return match<string, V1PatchAudioNodeGroup | null>(nodeType)
-		.with('lyria', () => 'sources')
-		.otherwise(() => null);
+	// TODO: remove hard-coded lyria node
+	if (nodeType === 'lyria') {
+		return 'sources';
+	}
+
+	return null;
 };
 
 export const canAudioNodeConnect = (sourceType: string, targetType: string): boolean => {

@@ -1,15 +1,15 @@
 import type { Edge } from '@xyflow/svelte';
-import type { AudioNodeV2, AudioNodeClass, AudioNodeGroup } from './interfaces/audio-nodes';
+import type { AudioNodeV2 } from './interfaces/audio-nodes';
 import { getNodeType } from './interfaces/audio-nodes';
-import type { ObjectMetadata, ObjectInlet } from '$lib/objects/v2/object-metadata';
+import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { canAudioNodeConnect } from '../audio-node-group';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { validateGroupConnection } from './audio-helpers';
-import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { logger } from '$lib/utils/logger';
 import { getAudioParamValue, setAudioParamValue } from './audio-param-helpers';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -18,8 +18,8 @@ import { getAudioParamValue, setAudioParamValue } from './audio-param-helpers';
 export class AudioService {
 	private static instance: AudioService | null = null;
 
-	/** Registry of node classes */
-	private registry: Map<string, AudioNodeClass> = new Map();
+	/** Reference to registry of audio nodes */
+	registry = AudioRegistry.getInstance();
 
 	/** Mapping of active audio nodes */
 	private nodesById: Map<string, AudioNodeV2> = new Map();
@@ -49,7 +49,7 @@ export class AudioService {
 		this.nodesById.delete(node.nodeId);
 	}
 
-	getNode(nodeId: string): AudioNodeV2 | null {
+	getNodeById(nodeId: string): AudioNodeV2 | null {
 		return this.nodesById.get(nodeId) ?? null;
 	}
 
@@ -106,38 +106,11 @@ export class AudioService {
 	}
 
 	/**
-	 * Get node metadata (inlets, outlets, description, tags).
-	 * Checks v2 registry first, then falls back to v1 objectDefinitions.
-	 * @param nodeType - The node type identifier
-	 * @returns NodeMetadata or null if not found
-	 */
-	getNodeMetadata(nodeType: string): ObjectMetadata | null {
-		const nodeClass = this.registry.get(nodeType);
-
-		// Use V2 registry if available
-		if (nodeClass) {
-			return {
-				inlets: nodeClass.inlets,
-				outlets: nodeClass.outlets,
-				description: nodeClass.description,
-				tags: nodeClass.tags
-			};
-		}
-
-		// Fall back to V1 objectDefinitions otherwise.
-		if (objectDefinitionsV1[nodeType]) {
-			return objectDefinitionsV1[nodeType];
-		}
-
-		return null;
-	}
-
-	/**
 	 * Get all registered v2 node names.
 	 * @returns Array of node type identifiers
 	 */
 	getAllNodeNames(): string[] {
-		return Array.from(this.registry.keys());
+		return this.registry.getNodeTypes();
 	}
 
 	/**
@@ -149,13 +122,13 @@ export class AudioService {
 			return null;
 		}
 
-		const nodeType = getNodeType(audioNode);
 		const inletIndex = handleToPortIndex(targetHandle);
+
 		if (inletIndex === null || isNaN(inletIndex)) {
 			return null;
 		}
 
-		const metadata = this.getNodeMetadata(nodeType);
+		const metadata = this.registry.getNodeMetadataByType(getNodeType(audioNode));
 		if (!metadata?.inlets) {
 			return null;
 		}
@@ -187,9 +160,9 @@ export class AudioService {
 				this.outGain.connect(this.getAudioContext().destination);
 			}
 
-			// Destinations are auto-connected to device outputs.
+			// Connect destination nodes (i.e. dac~) to device outputs
 			for (const node of this.nodesById.values()) {
-				const group = this.getNodeGroup(getNodeType(node));
+				const group = this.registry.get(getNodeType(node))?.group;
 
 				if (this.outGain && group === 'destinations') {
 					try {
@@ -200,7 +173,10 @@ export class AudioService {
 				}
 			}
 
-			for (const edge of edges) this.connectByEdge(edge);
+			// Connect nodes by using its edges
+			for (const edge of edges) {
+				this.connectByEdge(edge);
+			}
 		} catch (error) {
 			logger.error('cannot update audio edges:', error);
 		}
@@ -220,44 +196,6 @@ export class AudioService {
 		if (this.outGain) {
 			this.outGain.gain.value = value ?? 0;
 		}
-	}
-
-	/**
-	 * Register a node type with its constructor.
-	 * The constructor class must have static `type` and `group` properties.
-	 * @param constructor - The node class constructor with static type and group properties
-	 */
-	define(constructor: AudioNodeClass): void {
-		this.registry.set(constructor.type, constructor);
-	}
-
-	/**
-	 * Check if a node type is defined in v2.
-	 * @param nodeType - The node type identifier
-	 * @returns True if the node type is defined
-	 */
-	isNodeTypeDefined(nodeType: string): boolean {
-		return this.registry.has(nodeType);
-	}
-
-	/**
-	 * Get the group of a node type from the registry.
-	 * @param nodeType - The type of node to check
-	 * @returns The node group or null if not defined
-	 */
-	getNodeGroup(nodeType: string): AudioNodeGroup | null {
-		return this.registry.get(nodeType)?.group ?? null;
-	}
-
-	/**
-	 * Check if a node is a v2 node (non-null and has a defined type in the registry).
-	 * @param node - The node instance (can be null)
-	 * @returns True if the node exists and is a v2 node
-	 */
-	isNodeDefined(node: AudioNodeV2 | null): node is AudioNodeV2 {
-		if (!node) return false;
-
-		return this.registry.has(getNodeType(node));
 	}
 
 	/**

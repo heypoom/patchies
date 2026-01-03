@@ -29,11 +29,6 @@ export class FftNode implements AudioNodeV2 {
 
 	static outlets: ObjectOutlet[] = [
 		{
-			name: 'out',
-			type: 'signal',
-			description: 'Audio data from the input'
-		},
-		{
 			name: 'analysis',
 			type: 'analysis',
 			description: 'Marker to indicate where to get the FFT data from.'

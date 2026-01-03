@@ -1,7 +1,7 @@
 import { type ObjectInlet, type ObjectDataType } from '$lib/objects/object-definitions';
-import { AudioService } from '$lib/audio/v2/AudioService';
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
+import { getCompatMetadata } from './v2/query-metadata-compat';
 
 /**
  * Do not allow modifying these types via object arguments.
@@ -108,8 +108,7 @@ export const stringifyParamByType = (
 };
 
 export const parseObjectParamFromString = (name: string, strValues: string[]) => {
-	const audioService = AudioService.getInstance();
-	const definition = audioService.getNodeMetadata(name);
+	const definition = getCompatMetadata(name);
 	if (!definition || !definition.inlets) return strValues;
 
 	const params: unknown[] = [];

@@ -31,6 +31,8 @@
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 	import type { V1PatchAudioType } from '$lib/audio/audio-node-types';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
+	import { AudioRegistry } from '$lib/registry/AudioRegistry';
+	import { getCompatMetadata } from '$lib/objects/v2/query-metadata-compat';
 
 	let {
 		id: nodeId,
@@ -698,11 +700,10 @@
 		}
 
 		if (current.type === 'object') {
-			const audioService = AudioService.getInstance();
-			const metadata = audioService.getNodeMetadata(current.name);
+			const metadata = getCompatMetadata(current.name);
 
 			if (metadata) {
-				return metadata.description || null;
+				return metadata.description ?? null;
 			}
 		}
 
@@ -804,12 +805,8 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="font-mono text-xs">
-								<span
-									class={[
-										!AudioService.getInstance().getNodeMetadata(data.name)
-											? 'text-red-300'
-											: 'text-zinc-200'
-									]}>{data.name}</span
+								<span class={[!getCompatMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
+									>{data.name}</span
 								>
 
 								{#each data.params as param, index}

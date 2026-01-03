@@ -1,8 +1,10 @@
 import { match } from 'ts-pattern';
 import { AudioSystem } from './AudioSystem';
-import { AudioService } from './v2/AudioService';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { AudioService } from './v2/AudioService';
+import { getNodeType } from './v2/interfaces/audio-nodes';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -59,7 +61,7 @@ const WAVEFORM_UNIFORM_NAME = 'waveTexture';
 
 /** Get FFT object's `analysis` outlet index */
 function getFFTAnalysisOutletIndex(): number {
-	const fftMeta = AudioService.getInstance().getNodeMetadata('fft~');
+	const fftMeta = AudioRegistry.getInstance().getNodeMetadataByType('fft~');
 
 	if (fftMeta?.outlets) {
 		const index = fftMeta.outlets.findIndex((outlet) => outlet.name === 'analysis');
@@ -73,6 +75,7 @@ function getFFTAnalysisOutletIndex(): number {
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
 	private audioSystem = AudioSystem.getInstance();
+	private audioService = AudioService.getInstance();
 	private messageSystem = MessageSystem.getInstance();
 
 	// Cache for FFT node connections: nodeId -> fftNodeId
@@ -118,30 +121,34 @@ export class AudioAnalysisSystem {
 
 		if (!analyzerNodeId) return null;
 
-		const state = this.audioSystem.nodesById.get(analyzerNodeId);
-		if (state?.type !== 'fft~') return null;
+		const node = this.audioService.getNodeById(analyzerNodeId);
+		if (!node || getNodeType(node) !== 'fft~') return null;
 
-		const { node } = state;
+		const analyser = node.audioNode as AnalyserNode;
 
 		return match([type, format])
 			.with(['wave', 'int'], () => {
-				const list = new Uint8Array(node.fftSize);
-				node.getByteTimeDomainData(list);
+				const list = new Uint8Array(analyser.fftSize);
+				analyser.getByteTimeDomainData(list);
+
 				return list;
 			})
 			.with(['wave', 'float'], () => {
-				const list = new Float32Array(node.fftSize);
-				node.getFloatTimeDomainData(list);
+				const list = new Float32Array(analyser.fftSize);
+				analyser.getFloatTimeDomainData(list);
+
 				return list;
 			})
 			.with(['freq', 'int'], () => {
-				const list = new Uint8Array(node.fftSize);
-				node.getByteFrequencyData(list);
+				const list = new Uint8Array(analyser.fftSize);
+				analyser.getByteFrequencyData(list);
+
 				return list;
 			})
 			.with(['freq', 'float'], () => {
-				const list = new Float32Array(node.fftSize);
-				node.getFloatFrequencyData(list);
+				const list = new Float32Array(analyser.fftSize);
+				analyser.getFloatFrequencyData(list);
+
 				return list;
 			})
 			.exhaustive();
@@ -170,8 +177,8 @@ export class AudioAnalysisSystem {
 
 		if (!isSampler2DOutlet) return;
 
-		const node = this.audioSystem.nodesById.get(edge.source);
-		if (node?.type !== 'fft~') return;
+		const node = this.audioService.getNodeById(analyzerNodeId);
+		if (!node || getNodeType(node) !== 'fft~') return;
 
 		const inletMatch = edge.targetHandle?.match(/video-in-(\d+)-(\w+)-/);
 		if (!inletMatch) return;
@@ -214,9 +221,9 @@ export class AudioAnalysisSystem {
 
 		for (const sourceId of connectedSourceIds) {
 			if (sourceId.startsWith('object-')) {
-				const node = this.audioSystem.nodesById.get(sourceId);
+				const node = this.audioService.getNodeById(sourceId);
 
-				if (node?.type === 'fft~') {
+				if (node && getNodeType(node) === 'fft~') {
 					fftNodeId = sourceId;
 					break;
 				}

@@ -4,12 +4,10 @@ import type {
 	ObjectOutlet,
 	ObjectMetadata
 } from '$lib/objects/v2/object-metadata';
-import { AudioService } from '$lib/audio/v2/AudioService';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { getCompatMetadata } from './v2/query-metadata-compat';
 
-/**
- * Legacy type alias for backwards compatibility.
- * Use NodeMetadata in new code.
- */
+/** Legacy type alias for backwards compatibility. */
 export type ObjectDefinition = ObjectMetadata;
 
 // Re-export v2 types for backwards compatibility
@@ -171,20 +169,21 @@ function hasSignalPorts(metadata: ObjectMetadata): boolean {
  * Audio objects are automatically detected by having signal inlets or outlets.
  */
 export function getAudioObjectNames(): string[] {
-	const audioService = AudioService.getInstance();
+	const registryV2 = AudioRegistry.getInstance();
 
 	// Get v1 audio objects - detect by signal inlets/outlets
-	const v1Audio = Object.keys(objectDefinitionsV1).filter((key) =>
+	const audioObjectNamesV1 = Object.keys(objectDefinitionsV1).filter((key) =>
 		hasSignalPorts(objectDefinitionsV1[key])
 	);
 
 	// Get v2 audio objects - detect by signal inlets/outlets
-	const v2Audio = audioService.getAllNodeNames().filter((name) => {
-		const metadata = audioService.getNodeMetadata(name);
+	const audioObjectNamesV2 = registryV2.getNodeTypes().filter((name) => {
+		const metadata = registryV2.getNodeMetadataByType(name);
+
 		return metadata && hasSignalPorts(metadata);
 	});
 
-	return [...v1Audio, ...v2Audio];
+	return [...audioObjectNamesV1, ...audioObjectNamesV2];
 }
 
 export const getObjectNameFromExpr = (expr: string): string =>
@@ -192,30 +191,16 @@ export const getObjectNameFromExpr = (expr: string): string =>
 
 /**
  * Get object definition for a given expression.
- * Checks both v2 and v1 systems.
  */
-export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
-	const name = getObjectNameFromExpr(expr);
-	const audioService = AudioService.getInstance();
-
-	// Try v2 first
-	const v2Metadata = audioService.getNodeMetadata(name);
-	if (v2Metadata) {
-		return v2Metadata;
-	}
-
-	// Fall back to v1
-	return objectDefinitionsV1[name];
-}
+export const getObjectDefinition = (expr: string): ObjectDefinition | undefined =>
+	getCompatMetadata(getObjectNameFromExpr(expr)) as ObjectDefinition;
 
 /**
  * Get all object names from both v1 and v2 systems.
  */
 export function getObjectNames(): string[] {
 	const v1Names = Object.keys(objectDefinitionsV1);
-
-	const audioService = AudioService.getInstance();
-	const v2AudioObjectNames = audioService.getAllNodeNames();
+	const v2AudioObjectNames = AudioRegistry.getInstance().getNodeTypes();
 
 	return [...v1Names, ...v2AudioObjectNames];
 }

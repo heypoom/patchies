@@ -4,7 +4,6 @@
 
 import { AddNodeV2 } from './AddNode';
 import { AllpassNode } from './AllpassNode';
-import { AudioService } from '../AudioService';
 import { BandpassNode } from './BandpassNode';
 import { CompressorNode } from './CompressorNode';
 import { ConvolverNodeV2 } from './ConvolverNode';
@@ -27,6 +26,8 @@ import { SplitNode } from './SplitNode';
 import { SamplerNode } from './SamplerNode';
 import { SoundfileNode } from './SoundfileNode';
 import { WaveShaperNodeV2 } from './WaveShaperNode';
+
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 import type { AudioNodeClass } from '../interfaces/audio-nodes';
 
@@ -58,11 +59,11 @@ const AUDIO_NODES = [
 ] as const satisfies AudioNodeClass[];
 
 /**
- * Define all v2 audio nodes with the AudioService.
+ * Define all v2 audio nodes with the AudioRegistry.
  * This should be called during application initialization.
  */
 export function registerAudioNodes(): void {
-	const audioService = AudioService.getInstance();
+	const registry = AudioRegistry.getInstance();
 
-	AUDIO_NODES.forEach((node) => audioService.define(node));
+	AUDIO_NODES.forEach((node) => registry.register(node));
 }
