@@ -31,7 +31,7 @@ The V2 system includes several improvements that make migration cleaner:
 
 8. **Dual updateEdges() Calls**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) are called from `FlowCanvasInner.svelte` to handle both V1 and V2 nodes correctly.
 
-## Completed Migrations
+## Completed Migrations (15 nodes)
 
 - [x] `osc~` - Oscillator node (source, has destroy)
 - [x] `gain~` - Gain/volume control node (processor, no destroy needed)
@@ -40,6 +40,14 @@ The V2 system includes several improvements that make migration cleaner:
 - [x] `+~` - Signal addition (processor, no destroy needed)
 - [x] `pan~` - Stereo panning (processor, no destroy needed)
 - [x] `delay~` - Time-based delay (processor, no destroy needed)
+- [x] `lowpass~` - Low-pass filter (processor)
+- [x] `highpass~` - High-pass filter (processor)
+- [x] `bandpass~` - Band-pass filter (processor)
+- [x] `allpass~` - All-pass filter (processor)
+- [x] `notch~` - Notch filter (processor)
+- [x] `lowshelf~` - Low-shelf filter (processor)
+- [x] `highshelf~` - High-shelf filter (processor)
+- [x] `peaking~` - Peaking filter (processor)
 
 ## Migration Pattern
 
@@ -571,23 +579,266 @@ Successfully refactored all migrated V2 nodes to use default implementations:
 - Eliminated `match` and `ts-pattern` imports from 13 nodes
 - Pattern now scales: New nodes only need inlets definition + `create()` method
 
+## Remaining Work (9 nodes in V1 AudioSystem)
+
+### Overview
+
+After completing migrations, the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 9 nodes remain in V1:
+
+| Node          | Type      | Group      | Status    | Notes                                                                     |
+| ------------- | --------- | ---------- | --------- | ------------------------------------------------------------------------- |
+| `fft~`        | Analyzer  | processors | 🟡 EASY   | Basic creator pattern exists; straightforward wrapping                    |
+| `compressor~` | Processor | processors | 🟢 EASY   | DynamicsCompressorNode with threshold/ratio/knee/attack/release           |
+| `waveshaper~` | Processor | processors | 🟢 EASY   | WaveShaperNode with single curve parameter                                |
+| `convolver~`  | Processor | processors | 🟢 EASY   | ConvolverNode with impulse response buffer                                |
+| `mic~`        | Source    | sources    | 🟡 MEDIUM | Requires special MediaStream + MediaStreamAudioSourceNode handling        |
+| `merge~`      | Processor | processors | 🟡 MEDIUM | ChannelMergerNode with dynamic channel count; handles node resizing       |
+| `split~`      | Processor | processors | 🟡 MEDIUM | ChannelSplitterNode with dynamic channel count; handles node resizing     |
+| `sampler~`    | Source    | sources    | 🔴 HARD   | Complex recording + playback state; MediaRecorder + AudioBufferSourceNode |
+| `soundfile~`  | Source    | sources    | 🔴 HARD   | Audio file loading + streaming; MediaElementAudioSourceNode management    |
+
+### Manager-Based Nodes (To Be Migrated Later - Phase 4+)
+
+These nodes use dedicated manager classes and will be migrated to AudioService V2 AFTER Phase 1-3:
+
+- `expr~` - Expression processor (AudioWorkletNode via ExpressionProcessor)
+- `dsp~` - DSP processor (AudioWorkletNode via DspProcessor)
+- `tone~` - Tone.js integration (ToneManager singleton → ToneNode)
+- `elem~` - Elementary Audio (ElementaryAudioManager singleton → ElementaryNode)
+- `csound~` - Csound integration (CsoundManager singleton → CsoundNode)
+- `chuck` - WebChuck integration (ChuckManager singleton → ChuckNode)
+- `strudel` - Strudel live coding (GainNode + separate music system → StrudelNode)
+- `lyria` - Google DeepMind AI music (GainNode + AI API → LyriaNode)
+
+**Migration Pattern**: Move the manager class logic directly into the V2 node class. Delete the manager singleton. Example:
+
+```typescript
+export class ToneNode implements AudioNodeV2 {
+  static name = "tone~";
+  static group: AudioNodeGroup = "processors";
+  static inlets: ObjectInlet[] = [
+    { name: "in", type: "signal" },
+    { name: "code", type: "string", description: "Tone.js code" },
+  ];
+  static outlets: ObjectOutlet[] = [{ name: "out", type: "signal" }];
+
+  readonly nodeId: string;
+  readonly audioNode: GainNode;
+  readonly inputNode: GainNode;
+
+  // Content from ToneManager moved here
+  private synth: Tone.Synth | null = null;
+  private synths: Tone.Synth[] = [];
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.nodeId = nodeId;
+    this.audioNode = audioContext.createGain();
+    this.inputNode = audioContext.createGain();
+  }
+
+  create(params: unknown[]): void {
+    const [, code] = params as [unknown, string];
+    this.initTone(code);
+  }
+
+  send(key: string, message: unknown): void {
+    if (key === "code" && typeof message === "string") {
+      this.initTone(message);
+    }
+  }
+
+  private initTone(code: string): void {
+    // Content from ToneManager.init() moved here
+    // ...
+  }
+
+  destroy(): void {
+    // Content from ToneManager.cleanup() moved here
+    this.synths.forEach((s) => s.dispose());
+    this.synth?.dispose();
+    this.audioNode.disconnect();
+    this.inputNode.disconnect();
+  }
+}
+```
+
+**Delete**: `ToneManager` singleton and all its methods are no longer needed. The logic lives in the node class itself.
+
+### Migration Priority & Approach
+
+#### Phase 1: Easy Wins (Can do in parallel)
+
+**Nodes**: `fft~`, `compressor~`, `waveshaper~`, `convolver~`
+
+Each follows the standard V2 pattern:
+
+```typescript
+// Example: CompressorNode
+export class CompressorNode implements AudioNodeV2 {
+  static name = "compressor~";
+  static group: AudioNodeGroup = "processors";
+
+  static inlets: ObjectInlet[] = [
+    { name: "in", type: "signal" },
+    { name: "threshold", type: "float", isAudioParam: true, defaultValue: -24 },
+    { name: "ratio", type: "float", isAudioParam: true, defaultValue: 4 },
+    { name: "knee", type: "float", isAudioParam: true, defaultValue: 30 },
+    { name: "attack", type: "float", isAudioParam: true, defaultValue: 0.003 },
+    { name: "release", type: "float", isAudioParam: true, defaultValue: 0.25 },
+  ];
+
+  readonly audioNode: DynamicsCompressorNode;
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.nodeId = nodeId;
+    this.audioNode = audioContext.createDynamicsCompressor();
+  }
+
+  create(params: unknown[]): void {
+    const [, threshold, ratio, knee, attack, release] = params as [
+      unknown,
+      number,
+      number,
+      number,
+      number,
+      number
+    ];
+    this.audioNode.threshold.value = threshold ?? -24;
+    this.audioNode.ratio.value = ratio ?? 4;
+    this.audioNode.knee.value = knee ?? 30;
+    this.audioNode.attack.value = attack ?? 0.003;
+    this.audioNode.release.value = release ?? 0.25;
+  }
+  // No send() or getAudioParam() needed - AudioService provides defaults!
+}
+```
+
+**Steps**:
+
+1. Create new V2 node file in `ui/src/lib/audio/v2/nodes/`
+2. Implement static metadata (name, group, inlets, outlets, description)
+3. Implement constructor and `create()` method
+4. Register in `v2/nodes/index.ts`
+5. Remove V1 references from AudioSystem.ts, audio-node-types.ts, audio-node-group.ts, object-definitions.ts
+
+#### Phase 2: Medium Complexity (`mic~`, `merge~`, `split~`)
+
+**`mic~` Special Handling**:
+
+- Must request user permission for microphone access
+- Manages MediaStream and MediaStreamAudioSourceNode
+- Constructor pattern: Create GainNode wrapper, request media stream in constructor or separate init method
+- Consider: Should `MediaStream` be managed by V2 node or stay in AudioSystem?
+
+**`merge~` / `split~` Channel Management**:
+
+- ChannelMergerNode/ChannelSplitterNode with dynamic channel counts
+- V1 code resizes these nodes when updating edges
+- V2 needs to handle: dynamic inlet/outlet generation based on channel parameter
+
+#### Phase 3: Complex State (`sampler~`, `soundfile~`)
+
+**`sampler~` Recording + Playback**:
+
+- Records audio into buffer via MediaRecorder
+- Plays back with AudioBufferSourceNode
+- State: `loopStart`, `loopEnd`, `playbackRate`, `detune`
+- May need separate AudioBufferSourceNode instance per playback
+
+**`soundfile~` Audio File Loading**:
+
+- Loads audio files via HTMLAudioElement
+- Creates MediaElementAudioSourceNode for streaming
+- Must handle: file URL changes, loading state, error handling
+- Consider: File size, streaming vs. buffering
+
+### Detailed Migration Steps for Phase 1
+
+See the [Simplified Migration Steps](#simplified-migration-steps-tldr) section above. Phase 1 nodes follow the exact same pattern with no special cases.
+
+**Key Points**:
+
+- All Phase 1 nodes have parameters that map to `AudioParam` properties
+- Mark parameters with `isAudioParam: true` - AudioService handles `getAudioParam()` and `send()` automatically
+- No custom `destroy()` needed for processors
+- Expect ~40-50 lines per node file (down from 70+ in V1)
+
+### Post-Migration: Removing AudioSystem Entirely
+
+Once all nodes are migrated (Phase 1-4 complete):
+
+**Final Goal**: Delete `AudioSystem` class entirely. All functionality moves to `AudioService` and manager-based nodes.
+
+**Steps**:
+
+1. **Phase 1-3 Cleanup** (after easy/medium/hard nodes migrated):
+
+   - Delete `createFft()`, `createCompressor()`, `createWaveShaper()`, `createConvolver()`, `createMic()`, `createChannelMerger()`, `createChannelSplitter()`, `createSampler()`, `createSoundFile()` methods
+   - Delete `getAudioParam()` and `send()` methods for V1 nodes
+   - Delete `audio-node-types.ts` V1 interfaces
+   - Clean up `audio-node-group.ts` fallback pattern matching
+   - Simplify `createAudioObject()` to just call `AudioService.createNode()`
+
+2. **Phase 4 Migration** (manager-based nodes):
+
+   - Migrate `tone~`, `elem~`, `csound~`, `chuck` to V2 nodes by moving manager logic into node classes
+   - Move all ToneManager content into ToneNode, delete ToneManager singleton
+   - Move all ElementaryAudioManager content into ElementaryNode, delete ElementaryAudioManager singleton
+   - Move all CsoundManager content into CsoundNode, delete CsoundManager singleton
+   - Move all ChuckManager content into ChuckNode, delete ChuckManager singleton
+   - Same pattern for `expr~`, `dsp~`, `strudel`, `lyria`: inline the logic, delete the manager
+
+3. **Delete AudioSystem**:
+
+   - Move global `outGain` to AudioService
+   - Move audio context management to AudioService (if not already there)
+   - Move connection validation to AudioService
+   - Delete the entire `AudioSystem` class
+   - Update `FlowCanvasInner.svelte` to only call `AudioService.updateEdges()`
+   - Update `PatchiesEventBus` listeners to use AudioService directly
+
+4. **Clean up imports**:
+
+   - All files importing from AudioSystem should import from AudioService instead
+   - Remove AudioSystem from singleton initialization
+
 ## Next Steps
 
-### High Priority (Easy wins with new default system)
+### Immediate (This Sprint)
 
-- [ ] Migrate remaining simple V1 nodes:
-  - Effect nodes (compressor~, waveshaper~, convolver~) - now much easier with defaults
-  - Utility nodes (merge~, split~) - moderate effort
-  - Any processor with audio parameters - trivial with new pattern
+- [ ] **Phase 1 Migrations**: Migrate `fft~`, `compressor~`, `waveshaper~`, `convolver~` (4 nodes, ~2-3 hours)
+  - High-value wins with minimal complexity
+  - Tests should all pass without changes
+- [ ] **Update migration guide**: Document any special patterns discovered during Phase 1
 
-### Medium Priority
+### Short Term (Next Sprint)
 
-- [ ] Build automated migration script (code generation from V1 → V2)
-  - Much simpler now - just needs inlets definition + create() method
-  - Can auto-generate stubs for common Web Audio nodes
-- [ ] Create batch migration tool for similar node types (e.g., all filters, all effects)
+- [ ] **Phase 2 Migrations**: `mic~`, `merge~`, `split~` (3 nodes, ~4-5 hours)
+  - Requires thinking about channel management in V2
+  - May need inlet/outlet generation patterns for dynamic ports
+- [ ] **Phase 3 Planning**: Design for `sampler~` and `soundfile~`
+  - These are the most complex; may require new V2 patterns
+  - Consider: AudioBufferSourceNode lifecycle, MediaElement lifecycle
 
-### Long Term
+### Medium/Long Term (After Phase 3)
 
-- [ ] Eventually deprecate V1 system once all nodes are migrated
-- [ ] Consider code generation for inlet definitions from Web Audio API specs
+- [ ] **Phase 4 Migrations**: Manager-based nodes (8 nodes, ~8-12 hours)
+
+  - `tone~` - Wrap ToneManager in ToneNode
+  - `elem~` - Wrap ElementaryAudioManager in ElementaryNode
+  - `csound~` - Wrap CsoundManager in CsoundNode
+  - `chuck` - Wrap ChuckManager in ChuckNode
+  - `expr~` - Wrap ExpressionProcessor in ExprNode
+  - `dsp~` - Wrap DspProcessor in DspNode
+  - `strudel` - Migrate Strudel integration to StrudelNode
+  - `lyria` - Migrate AI music to LyriaNode
+  - Consider: Refactor managers from singletons to per-node instances
+
+- [ ] **Delete AudioSystem**: Once all Phase 1-4 nodes migrated
+
+  - Move outGain to AudioService
+  - Move audio context to AudioService
+  - Delete all V1 infrastructure
+  - Simplify createAudioObject() to one-liner
+
+- [ ] **Automation**: Build migration script for future integrations
