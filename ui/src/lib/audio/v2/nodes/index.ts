@@ -1,24 +1,43 @@
 /**
- * Node definition file.
- * Import and define all v2 audio nodes here.
+ * Import and define all audio node classes here.
  */
 
-import { AudioService } from '../AudioService';
-import { OscNode } from './OscNode';
-import { GainNodeV2 } from './GainNode';
-import { DacNode } from './DacNode';
-import { SigNode } from './SigNode';
 import { AddNodeV2 } from './AddNode';
-import { PanNodeV2 } from './PanNode';
-import { DelayNodeV2 } from './DelayNode';
-import { LowpassNode } from './LowpassNode';
-import { HighpassNode } from './HighpassNode';
-import { BandpassNode } from './BandpassNode';
 import { AllpassNode } from './AllpassNode';
-import { NotchNode } from './NotchNode';
-import { LowshelfNode } from './LowshelfNode';
+import { AudioService } from '../AudioService';
+import { BandpassNode } from './BandpassNode';
+import { DacNode } from './DacNode';
+import { DelayNodeV2 } from './DelayNode';
+import { GainNodeV2 } from './GainNode';
+import { HighpassNode } from './HighpassNode';
 import { HighshelfNode } from './HighshelfNode';
+import { LowpassNode } from './LowpassNode';
+import { LowshelfNode } from './LowshelfNode';
+import { NotchNode } from './NotchNode';
+import { OscNode } from './OscNode';
+import { PanNodeV2 } from './PanNode';
 import { PeakingNode } from './PeakingNode';
+import { SigNode } from './SigNode';
+
+import type { AudioNodeClass } from '../interfaces/audio-nodes';
+
+const AUDIO_NODES = [
+	AddNodeV2,
+	AllpassNode,
+	BandpassNode,
+	DacNode,
+	DelayNodeV2,
+	GainNodeV2,
+	HighpassNode,
+	HighshelfNode,
+	LowpassNode,
+	LowshelfNode,
+	NotchNode,
+	OscNode,
+	PanNodeV2,
+	PeakingNode,
+	SigNode
+] as const satisfies AudioNodeClass[];
 
 /**
  * Define all v2 audio nodes with the AudioService.
@@ -27,19 +46,5 @@ import { PeakingNode } from './PeakingNode';
 export function registerAudioNodes(): void {
 	const audioService = AudioService.getInstance();
 
-	audioService.define(OscNode);
-	audioService.define(GainNodeV2);
-	audioService.define(DacNode);
-	audioService.define(SigNode);
-	audioService.define(AddNodeV2);
-	audioService.define(PanNodeV2);
-	audioService.define(DelayNodeV2);
-	audioService.define(LowpassNode);
-	audioService.define(HighpassNode);
-	audioService.define(BandpassNode);
-	audioService.define(AllpassNode);
-	audioService.define(NotchNode);
-	audioService.define(LowshelfNode);
-	audioService.define(HighshelfNode);
-	audioService.define(PeakingNode);
+	AUDIO_NODES.forEach((node) => audioService.define(node));
 }
