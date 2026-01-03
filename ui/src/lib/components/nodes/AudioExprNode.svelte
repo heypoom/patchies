@@ -55,8 +55,9 @@
 	const updateAudioExpression = (expression: string) =>
 		audioSystem.send(nodeId, 'expression', expression);
 
+	// Use `Array.from` to avoid sending Svelte proxies
 	const updateAudioInletValues = (values: number[]) =>
-		audioSystem.send(nodeId, 'inletValues', values);
+		audioSystem.send(nodeId, 'inletValues', Array.from(values));
 
 	function handleExpressionChange(newExpr: string) {
 		updateNodeData(nodeId, { expr: newExpr });
@@ -69,7 +70,13 @@
 		const newInletCount = parseInletCount(data.expr || '');
 
 		if (newInletCount !== inletValues.length) {
-			inletValues = new Array(newInletCount).fill(0);
+			const prevValues = Array.from(inletValues);
+
+			// Copy old values to the new resized list.
+			inletValues = Array.from({ length: newInletCount }, (_, i) =>
+				i < prevValues.length ? prevValues[i] : 0
+			);
+
 			updateAudioInletValues(inletValues);
 		}
 	}

@@ -80,7 +80,7 @@ export class ExprNode implements AudioNodeV2 {
 				port.postMessage({ type: 'set-expression', expression });
 			})
 			.with(['inletValues', P.array(P.number)], ([, values]) => {
-				port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
+				port.postMessage({ type: 'set-inlet-values', values });
 			});
 	}
 
