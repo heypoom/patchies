@@ -96,7 +96,51 @@ export class GainNodeV2 implements AudioNodeV2 {
 }
 ```
 
-## Migration Steps
+## Simplified Migration Steps (TL;DR)
+
+**Modern V2 nodes are MUCH simpler:**
+
+```typescript
+export class LowpassNode implements AudioNodeV2 {
+  static name = "lowpass~";
+  static group: AudioNodeGroup = "processors";
+  static description = "Low-pass filter";
+
+  static inlets: ObjectInlet[] = [
+    { name: "in", type: "signal" },
+    {
+      name: "frequency",
+      type: "float",
+      isAudioParam: true,
+      defaultValue: 1000,
+    },
+    { name: "Q", type: "float", isAudioParam: true, defaultValue: 1 },
+  ];
+
+  static outlets: ObjectOutlet[] = [{ name: "out", type: "signal" }];
+
+  readonly nodeId: string;
+  readonly audioNode: BiquadFilterNode;
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.nodeId = nodeId;
+    this.audioNode = audioContext.createBiquadFilter();
+    this.audioNode.type = "lowpass";
+  }
+
+  create(params: unknown[]): void {
+    const [, frequency, Q] = params as [unknown, number, number];
+    this.audioNode.frequency.value = frequency ?? 1000;
+    this.audioNode.Q.value = Q ?? 1;
+  }
+
+  // No getAudioParam() or send() needed! AudioService provides defaults.
+}
+```
+
+That's it! Register in `index.ts` and you're done. 🎉
+
+## Detailed Migration Steps
 
 ### 1. Create Node File
 
@@ -179,9 +223,29 @@ create(params: unknown[]): void {
 
 **Skip this method if your node has no parameters to initialize.**
 
-### 7. Implement getAudioParam() (Optional)
+### 7. Implement getAudioParam() (Optional - Usually Not Needed!)
 
-Only implement if the node has audio parameters:
+**Most nodes don't need this!** `AudioService` provides automatic `getAudioParam()` based on inlet definitions.
+
+Only implement if:
+
+- Your node has special logic for exposing AudioParams (e.g., mapping different names)
+- You need custom behavior beyond property access
+
+For standard nodes, just mark audio parameters with `isAudioParam: true` in inlet definitions:
+
+```typescript
+static inlets: ObjectInlet[] = [
+    {
+        name: 'frequency',
+        type: 'float',
+        isAudioParam: true,  // ← AudioService handles getAudioParam automatically!
+        // ...
+    }
+];
+```
+
+If you need custom implementation:
 
 ```typescript
 getAudioParam(name: string): AudioParam | null {
@@ -192,28 +256,41 @@ getAudioParam(name: string): AudioParam | null {
 }
 ```
 
-**Skip this method if your node has no audio parameters.**
+### 8. Implement send() (Optional - Usually Not Needed!)
 
-### 8. Implement send() (Optional)
+**Most nodes don't need this!** `AudioService` provides automatic `send()` based on inlet definitions.
 
-Only implement if the node needs to handle incoming messages:
+Only implement if:
+
+- Your node has special message logic (e.g., string type changes, unit conversion)
+- You need custom validation or transformation
+
+For standard nodes, just mark audio parameters with `isAudioParam: true`:
+
+```typescript
+static inlets: ObjectInlet[] = [
+    {
+        name: 'gain',
+        type: 'float',
+        isAudioParam: true,  // ← AudioService handles send() automatically!
+        // ...
+    }
+];
+```
+
+If you need custom implementation (e.g., for unit conversion):
 
 ```typescript
 send(key: string, message: unknown): void {
-    match([key, message])
-        .with(['gain', P.number], ([, gain]) => {
-            this.audioNode.gain.value = gain;
-        })
-        .with(['type', P.string], ([, type]) => {
-            this.audioNode.type = type as OscillatorType;
-        })
-        .otherwise(() => {
-            // Ignore unrecognized messages
-        });
+    if (key === 'time' && typeof message === 'number') {
+        // Convert milliseconds to seconds
+        const seconds = message / 1000;
+        this.audioNode.delayTime.value = Math.min(seconds, 1.0);
+    }
 }
 ```
 
-**Skip this method if your node doesn't need to handle messages.**
+**Example**: `DelayNode` handles unit conversion (ms → seconds) in `send()`.
 
 ### 9. Implement destroy() (Optional)
 
@@ -303,13 +380,34 @@ The migration architecture ensures V2 nodes "just work" without manual registrat
 
 ## Common Patterns
 
-### Audio Parameter Inlets
+### Audio Parameter Inlets (Simplified!)
 
-Parameters that map to Web Audio `AudioParam` should:
+For parameters that map to Web Audio `AudioParam`:
 
-- Set `isAudioParam: true` in the inlet definition
-- Be handled in both `create()` and `send()` methods
-- Be returned by `getAudioParam()` method
+```typescript
+static inlets = [
+    {
+        name: 'frequency',
+        type: 'float',
+        isAudioParam: true,  // ← That's it! AudioService provides getAudioParam() and send()
+        defaultValue: 1000,
+        minNumber: 0,
+        maxNumber: 22050
+    }
+];
+
+create(params: unknown[]): void {
+    const [, frequency] = params as [unknown, number];
+    this.audioNode.frequency.value = frequency ?? 1000;
+}
+```
+
+**No need for custom `getAudioParam()` or `send()` methods!**
+
+If you need custom logic:
+
+- Override `send()` for unit conversion or special handling (e.g., `DelayNode`)
+- Override `getAudioParam()` for complex property mapping
 
 ### Source Nodes
 
@@ -417,28 +515,79 @@ The registry-based architecture means V2 nodes automatically work everywhere:
 
 ## Recent Improvements (January 2026)
 
-**Batch Migration of Easy Nodes**: Successfully migrated three simple processor nodes in a single session:
-
-### Migrated Nodes
-
-- **`+~` (Signal Addition)** - Minimal implementation with just constructor. No parameters, no audio parameters, no message handling. Perfect example of how simple nodes can be with optional methods.
-- **`pan~` (Stereo Panning)** - Single audio parameter (pan). Full `create()`, `getAudioParam()`, and `send()` implementation.
-- **`delay~` (Time-based Delay)** - Single audio parameter (delayTime) with unit conversion (ms → seconds).
-
-### Architectural Refinement
+### Phase 1: Optional Method Architecture
 
 Made `create()`, `send()`, and `getAudioParam()` optional in the `AudioNodeV2` interface:
 
 - AudioService now uses optional chaining: `node.create?.(params)`
 - Nodes only implement methods they actually need
-- Results in cleaner, more minimal code for simple nodes like `+~`
+- Results in cleaner, more minimal code
+
+### Phase 2: Default Implementations via Inlet Definitions
+
+Introduced **automatic default implementations** for `getAudioParam()` and `send()`:
+
+**Key Innovation**: `AudioService` now provides sensible defaults based on inlet definitions:
+
+1. **For `getAudioParam()`**: Automatically maps AudioParam names to node properties if the inlet is marked `isAudioParam: true`
+2. **For `send()`**: Automatically routes numeric messages to AudioParam properties
+
+**How it works**:
+
+```typescript
+static inlets = [
+    {
+        name: 'frequency',
+        isAudioParam: true  // ← This is ALL you need!
+    }
+];
+
+// No need for getAudioParam() or send() - AudioService provides defaults!
+```
+
+This means nodes only need custom implementations if they have special logic (like unit conversion).
+
+### Phase 3: Batch Refactoring of All V2 Nodes (14 nodes cleaned up!)
+
+Successfully refactored all migrated V2 nodes to use default implementations:
+
+**Nodes Refactored** (removed boilerplate):
+
+- ✅ `gain~` - Removed custom `getAudioParam()` and `send()`
+- ✅ `sig~` - Removed custom `getAudioParam()` and `send()`
+- ✅ `+~` - Already minimal
+- ✅ `pan~` - Removed custom `getAudioParam()` and `send()`
+- ✅ `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~` - All removed boilerplate
+
+**Nodes with Custom Implementations** (kept where needed):
+
+- ⚠️ `delay~` - Kept custom `send()` for unit conversion (ms → seconds)
+- ⚠️ `osc~` - Kept custom `send()` for type string changes and PeriodicWave handling
+
+**Impact**:
+
+- Removed ~400+ lines of boilerplate code
+- Each simple node reduced by 15-25 lines
+- Eliminated `match` and `ts-pattern` imports from 13 nodes
+- Pattern now scales: New nodes only need inlets definition + `create()` method
 
 ## Next Steps
 
-- [ ] Migrate remaining V1 nodes (prioritize commonly used ones):
-  - Filter nodes (lowpass~, highpass~, bandpass~, etc.) - similar pattern, moderate effort
-  - Effect nodes (compressor~, waveshaper~, convolver~) - more complex, more parameters
-  - Utility nodes (merge~, split~) - dynamic channel count, moderate effort
+### High Priority (Easy wins with new default system)
+
+- [ ] Migrate remaining simple V1 nodes:
+  - Effect nodes (compressor~, waveshaper~, convolver~) - now much easier with defaults
+  - Utility nodes (merge~, split~) - moderate effort
+  - Any processor with audio parameters - trivial with new pattern
+
+### Medium Priority
+
 - [ ] Build automated migration script (code generation from V1 → V2)
-- [ ] Consider batch migration tool for similar node types (e.g., all filters)
+  - Much simpler now - just needs inlets definition + create() method
+  - Can auto-generate stubs for common Web Audio nodes
+- [ ] Create batch migration tool for similar node types (e.g., all filters, all effects)
+
+### Long Term
+
 - [ ] Eventually deprecate V1 system once all nodes are migrated
+- [ ] Consider code generation for inlet definitions from Web Audio API specs

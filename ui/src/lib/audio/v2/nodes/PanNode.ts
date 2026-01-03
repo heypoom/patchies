@@ -1,5 +1,3 @@
-import { match, P } from 'ts-pattern';
-
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
@@ -44,17 +42,5 @@ export class PanNodeV2 implements AudioNodeV2 {
 		const [, panValue] = params as [unknown, number];
 
 		this.audioNode.pan.value = panValue ?? 0.0;
-	}
-
-	getAudioParam(name: string): AudioParam | null {
-		return match(name)
-			.with('pan', () => this.audioNode.pan)
-			.otherwise(() => null);
-	}
-
-	send(key: string, message: unknown): void {
-		match([key, message]).with(['pan', P.number], ([, pan]) => {
-			this.audioNode.pan.value = pan;
-		});
 	}
 }

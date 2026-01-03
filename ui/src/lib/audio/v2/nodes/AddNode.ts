@@ -23,6 +23,5 @@ export class AddNodeV2 implements AudioNodeV2 {
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioNode = audioContext.createGain();
-		this.audioNode.gain.value = 1.0;
 	}
 }

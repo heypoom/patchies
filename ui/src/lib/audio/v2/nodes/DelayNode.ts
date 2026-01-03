@@ -1,11 +1,12 @@
-import { match, P } from 'ts-pattern';
-
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 /**
  * DelayNodeV2 implements the delay~ audio node.
  * Creates a time-based delay effect on an audio signal.
+ *
+ * Note: The 'time' inlet accepts milliseconds but the Web Audio DelayNode
+ * uses seconds with a max of 1 second, so we convert and clamp internally.
  */
 export class DelayNodeV2 implements AudioNodeV2 {
 	static name = 'delay~';
@@ -45,16 +46,10 @@ export class DelayNodeV2 implements AudioNodeV2 {
 		this.setDelayTime(delayTime ?? 0);
 	}
 
-	getAudioParam(name: string): AudioParam | null {
-		return match(name)
-			.with('time', () => this.audioNode.delayTime)
-			.otherwise(() => null);
-	}
-
 	send(key: string, message: unknown): void {
-		match([key, message]).with(['time', P.number], ([, time]) => {
-			this.setDelayTime(time);
-		});
+		if (key === 'time' && typeof message === 'number') {
+			this.setDelayTime(message);
+		}
 	}
 
 	private setDelayTime(milliseconds: number): void {

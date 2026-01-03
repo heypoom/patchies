@@ -1,4 +1,3 @@
-import { match, P } from 'ts-pattern';
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
@@ -57,22 +56,5 @@ export class HighpassNode implements AudioNodeV2 {
 
 		this.audioNode.frequency.value = frequency ?? 1000;
 		this.audioNode.Q.value = Q ?? 1;
-	}
-
-	getAudioParam(name: string): AudioParam | null {
-		return match(name)
-			.with('frequency', () => this.audioNode.frequency)
-			.with('Q', () => this.audioNode.Q)
-			.otherwise(() => null);
-	}
-
-	send(key: string, message: unknown): void {
-		match([key, message])
-			.with(['frequency', P.number], ([, frequency]) => {
-				this.audioNode.frequency.value = frequency;
-			})
-			.with(['Q', P.number], ([, Q]) => {
-				this.audioNode.Q.value = Q;
-			});
 	}
 }
