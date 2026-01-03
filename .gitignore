@@ -3,3 +3,4 @@
 node_modules
 .beads/daemon.log
 .beads/beads.db
+.beads/daemon.lock
