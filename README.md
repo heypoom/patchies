@@ -696,6 +696,10 @@ In addition to the value inlets, we also have messaging capabilities:
 - Use `setTitle(title)` to set the title of the object.
   - By default, the title is `dsp~`.
   - This lets you create custom objects with meaningful names.
+- Use `setKeepAlive(enabled)` to control whether the worklet stays active when not connected.
+  - `setKeepAlive(true)` keeps the worklet processing even when no audio is flowing through it.
+  - (default) `setKeepAlive(false)` lets the worklet to stop processing when it's not connected to other audio nodes, which can improve performance.
+  - see `snapshot~` and `bang~` presets for examples on when to use `setKeepAlive`
 - Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
 
 ```ts
