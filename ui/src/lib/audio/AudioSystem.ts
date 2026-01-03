@@ -125,7 +125,7 @@ export class AudioSystem {
 		const v2Node = v2Audio.getNode(nodeId);
 
 		if (v2Audio.isNodeDefined(v2Node)) {
-			return v2Node.getAudioParam?.(name) ?? null;
+			return v2Audio.getAudioParam(v2Node, name);
 		}
 
 		const entry = this.nodesById.get(nodeId);

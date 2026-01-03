@@ -56,8 +56,10 @@ export class AudioService {
 	 * Get an AudioParam from a node, using the node's implementation or a default fallback.
 	 * The default implementation looks for AudioParam properties on the audioNode
 	 * that are marked as isAudioParam in the node's inlets definition.
+	 *
+	 * This is called by v1 AudioSystem when handling scheduled audio parameter automation.
 	 */
-	private getAudioParam(node: AudioNodeV2, paramName: string): AudioParam | null {
+	getAudioParam(node: AudioNodeV2, paramName: string): AudioParam | null {
 		if (node.getAudioParam) {
 			return node.getAudioParam(paramName);
 		}
