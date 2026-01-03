@@ -84,6 +84,24 @@ export interface AudioNodeV2 {
 	): void;
 
 	/**
+	 * Handle incoming connection from another node.
+	 *
+	 * Optional: used for nodes that have special input handling (e.g., sampler~ which records audio).
+	 * Called instead of connect() when the target node has custom input logic.
+	 *
+	 * @param source - The source node connecting to this node
+	 * @param paramName - Optional AudioParam name being connected to
+	 * @param sourceHandle - Optional source handle for nodes with multiple outputs
+	 * @param targetHandle - Optional target handle for nodes with multiple inputs
+	 */
+	connectFrom?(
+		source: AudioNodeV2,
+		paramName?: string,
+		sourceHandle?: string,
+		targetHandle?: string
+	): void;
+
+	/**
 	 * Cleanup resources and disconnect the node.
 	 *
 	 * Optional: if not implemented, AudioService will use the default implementation.

@@ -1,9 +1,12 @@
+import { match, P } from 'ts-pattern';
+
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export class SamplerNode implements AudioNodeV2 {
 	static type = 'sampler~';
 	static group: AudioNodeGroup = 'processors';
+
 	static description =
 		'Records audio into a buffer and plays it back with loop points, playback rate, and detune control';
 
@@ -26,7 +29,7 @@ export class SamplerNode implements AudioNodeV2 {
 	audioBuffer: AudioBuffer | null = null;
 
 	private audioContext: AudioContext;
-	private destinationNode: MediaStreamAudioDestinationNode;
+	private recordingDestination: MediaStreamAudioDestinationNode;
 	private mediaRecorder: MediaRecorder | null = null;
 	private sourceNode: AudioBufferSourceNode | null = null;
 	private loopStart: number = 0;
@@ -43,7 +46,8 @@ export class SamplerNode implements AudioNodeV2 {
 		this.audioNode.gain.value = 1.0;
 
 		// Create MediaStreamDestination for recording input
-		this.destinationNode = audioContext.createMediaStreamDestination();
+		// This captures audio into a MediaStream for the MediaRecorder
+		this.recordingDestination = audioContext.createMediaStreamDestination();
 	}
 
 	send(key: string, message: unknown): void {
@@ -53,52 +57,61 @@ export class SamplerNode implements AudioNodeV2 {
 
 		const msg = message as Record<string, unknown>;
 
-		if (msg.type === 'loop' && typeof msg.start === 'number' && typeof msg.end === 'number') {
-			this.handleLoop(msg.start, msg.end);
-		} else if (msg.type === 'loopOff') {
-			if (this.sourceNode) {
-				this.sourceNode.loop = false;
-			}
-		} else if (msg.type === 'setStart' && typeof msg.value === 'number') {
-			this.loopStart = msg.value;
-			if (this.sourceNode && this.sourceNode.loop) {
-				this.sourceNode.loopStart = msg.value;
-			}
-		} else if (msg.type === 'setEnd' && typeof msg.value === 'number') {
-			this.loopEnd = msg.value;
-			if (this.sourceNode && this.sourceNode.loop) {
-				this.sourceNode.loopEnd = msg.value;
-			}
-		} else if (msg.type === 'playbackRate' && typeof msg.value === 'number') {
-			this.playbackRate = msg.value;
-			if (this.sourceNode) {
-				this.sourceNode.playbackRate.value = msg.value;
-			}
-		} else if (msg.type === 'detune' && typeof msg.value === 'number') {
-			this.detune = msg.value;
-			if (this.sourceNode) {
-				this.sourceNode.detune.value = msg.value;
-			}
-		} else if (msg.type === 'record') {
-			this.handleRecord();
-		} else if (msg.type === 'end') {
-			if (this.mediaRecorder?.state === 'recording') {
-				this.mediaRecorder.stop();
-			}
-		} else if (msg.type === 'play') {
-			this.handlePlay();
-		} else if (msg.type === 'stop') {
-			this.stopPlayback();
-		}
+		match(msg)
+			.with({ type: 'record' }, this.handleRecord.bind(this))
+			.with({ type: 'end' }, () => {
+				if (this.mediaRecorder?.state === 'recording') {
+					this.mediaRecorder.stop();
+				}
+			})
+			.with({ type: 'play' }, this.handlePlay.bind(this))
+			.with({ type: 'stop' }, this.stopPlayback.bind(this))
+			.with({ type: 'loop', start: P.number, end: P.number }, ({ start, end }) => {
+				this.handleLoop(start, end);
+			})
+			.with({ type: 'loopOff' }, () => {
+				if (this.sourceNode) {
+					this.sourceNode.loop = false;
+				}
+			})
+			.with({ type: 'setStart', value: P.number }, ({ value }) => {
+				this.loopStart = value;
+
+				if (this.sourceNode && this.sourceNode.loop) {
+					this.sourceNode.loopStart = value;
+				}
+			})
+			.with({ type: 'setEnd', value: P.number }, ({ value }) => {
+				this.loopEnd = value;
+
+				if (this.sourceNode && this.sourceNode.loop) {
+					this.sourceNode.loopEnd = value;
+				}
+			})
+			.with({ type: 'playbackRate', value: P.number }, ({ value }) => {
+				this.playbackRate = value;
+
+				if (this.sourceNode) {
+					this.sourceNode.playbackRate.value = value;
+				}
+			})
+			.with({ type: 'detune', value: P.number }, ({ value }) => {
+				this.detune = value;
+
+				if (this.sourceNode) {
+					this.sourceNode.detune.value = value;
+				}
+			});
 	}
 
 	get destinationStream(): MediaStream {
-		return this.destinationNode.stream;
+		return this.recordingDestination.stream;
 	}
 
-	connect(target: AudioNodeV2): void {
-		// Route incoming audio to the destination node for recording
-		target.audioNode.connect(this.destinationNode);
+	connectFrom(source: AudioNodeV2): void {
+		// Custom handler for when another node connects TO sampler~
+		// Route incoming audio to our recordingDestination for capture
+		source.audioNode.connect(this.recordingDestination);
 	}
 
 	destroy(): void {
@@ -107,7 +120,7 @@ export class SamplerNode implements AudioNodeV2 {
 			this.mediaRecorder.stop();
 		}
 		this.audioNode.disconnect();
-		this.destinationNode.disconnect();
+		this.recordingDestination.disconnect();
 	}
 
 	private handleLoop(start: number, end: number): void {
@@ -143,7 +156,7 @@ export class SamplerNode implements AudioNodeV2 {
 		this.loopStart = 0;
 		this.loopEnd = 0;
 
-		const recorder = new MediaRecorder(this.destinationNode.stream);
+		const recorder = new MediaRecorder(this.recordingDestination.stream);
 		const recordedChunks: Blob[] = [];
 
 		recorder.ondataavailable = (event) => {
@@ -200,14 +213,14 @@ export class SamplerNode implements AudioNodeV2 {
 	}
 
 	private stopPlayback(): void {
-		if (this.sourceNode) {
-			try {
-				this.sourceNode.stop();
-				this.sourceNode.disconnect();
-				this.sourceNode = null;
-			} catch {
-				// Ignore errors if node already stopped
-			}
+		if (!this.sourceNode) return;
+
+		try {
+			this.sourceNode.stop();
+			this.sourceNode.disconnect();
+			this.sourceNode = null;
+		} catch {
+			// Ignore errors if node already stopped
 		}
 	}
 }

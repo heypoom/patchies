@@ -248,11 +248,21 @@ export class AudioService {
 			return;
 		}
 
-		// For nodes with custom connect logic (e.g., split~ with multiple outputs, merge~ with multiple inputs),
-		// pass both handles so they can route to specific channels
+		// For nodes with custom connect logic:
+		// - Source nodes (e.g., split~) may have custom logic for how to output to targets
+		// - Target nodes (e.g., sampler~) may have custom logic for how to receive input
+		// Pass both handles so they can route to specific channels
 		if (sourceNode.connect) {
 			sourceNode.connect(
 				targetNode,
+				paramName,
+				edge.sourceHandle ?? undefined,
+				edge.targetHandle ?? undefined
+			);
+		} else if (targetNode.connectFrom) {
+			// If target has special input handling, call it with the source
+			targetNode.connectFrom(
+				sourceNode,
 				paramName,
 				edge.sourceHandle ?? undefined,
 				edge.targetHandle ?? undefined
