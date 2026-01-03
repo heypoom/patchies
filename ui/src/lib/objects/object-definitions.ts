@@ -39,9 +39,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		outlets: []
 	},
 
-	// alias of 'soundfile~ url'
-	'soundurl~': { inlets: [{ name: 'url' }], outlets: [] },
-
 	delay: {
 		inlets: [
 			{ name: 'message', type: 'message', description: 'Message to pass through' },

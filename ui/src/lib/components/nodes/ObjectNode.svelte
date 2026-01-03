@@ -465,14 +465,6 @@
 
 				return true;
 			})
-			.with('soundurl~', () => {
-				const url = expr.replace(name, '').trim();
-				const fileName = getFileNameFromUrl(url);
-
-				changeNode('soundfile~', { fileName, url });
-
-				return true;
-			})
 			.with('expr', () => {
 				changeNode('expr', { expr: expr.replace(name, '').trim() });
 

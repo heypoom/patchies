@@ -9,6 +9,7 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
+	import type { SoundfileNode as SoundfileNodeV2 } from '$lib/audio/v2/nodes/SoundfileNode';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
 	import { logger } from '$lib/utils/logger';
@@ -29,6 +30,7 @@
 	let audioSystem = AudioSystem.getInstance();
 	let audioService = AudioService.getInstance();
 	let messageSystem = MessageSystem.getInstance();
+	let v2Node: SoundfileNodeV2 | null = null;
 	let isDragging = $state(false);
 	let fileInputRef: HTMLInputElement;
 
@@ -40,14 +42,14 @@
 			.with(P.string, (url) => setUrl(url))
 			.with({ type: 'load', url: P.string }, ({ url }) => setUrl(url))
 			.with({ type: 'read' }, () => readAudioBuffer())
-			.otherwise(() => audioSystem.send(node.id, 'message', message));
+			.otherwise(() => audioService.send(node.id, 'message', message));
 	};
 
 	function setUrl(url: string) {
 		const fileName = getFileNameFromUrl(url);
 
 		updateNodeData(node.id, { ...node.data, fileName, url });
-		audioSystem.send(node.id, 'url', url);
+		audioService.send(node.id, 'url', url);
 
 		autoReadIfConnectedToConvolver();
 	}
@@ -123,7 +125,7 @@
 		});
 
 		// Send the file to the audio system
-		audioSystem.send(node.id, 'file', file);
+		audioService.send(node.id, 'file', file);
 
 		autoReadIfConnectedToConvolver();
 	}
@@ -155,12 +157,12 @@
 	function playFile() {
 		if (!hasFile) return;
 
-		audioSystem.send(node.id, 'message', { type: 'bang' });
+		audioService.send(node.id, 'message', { type: 'bang' });
 	}
 
 	function stopFile() {
 		if (hasFile) {
-			audioSystem.send(node.id, 'message', { type: 'stop' });
+			audioService.send(node.id, 'message', { type: 'stop' });
 		}
 	}
 
@@ -170,8 +172,11 @@
 
 		audioSystem.createAudioObject(node.id, 'soundfile~', []);
 
+		// Get the V2 node reference from AudioService
+		v2Node = audioService.getNodeById(node.id) as SoundfileNodeV2;
+
 		if (node.data.file) {
-			audioSystem.send(node.id, 'file', node.data.file);
+			audioService.send(node.id, 'file', node.data.file);
 		}
 
 		if (node.data.url) setUrl(node.data.url);

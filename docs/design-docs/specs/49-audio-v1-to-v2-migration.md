@@ -166,11 +166,11 @@ connectFrom(source: AudioNodeV2): void {
 
 **Rule**: If adding `if (nodeType === 'xyz~')` to `AudioService`, add a method to the node class instead.
 
-## Remaining Work (7 nodes)
+## Remaining Work (6 nodes)
 
 ### Phase 3 (Simple Complex)
 
-- [ ] `soundfile~` - Audio file loading (MediaElementAudioSourceNode)
+- ✅ `soundfile~` - Audio file loading (MediaElementAudioSourceNode) - MIGRATED
 
 ### Phase 4 (Manager-Based - Delete These to Remove AudioSystem)
 

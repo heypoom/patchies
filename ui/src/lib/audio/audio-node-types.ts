@@ -28,12 +28,6 @@ interface PatchChuckNode extends AudioNodeBase {
 	chuckManager?: ChuckManager;
 }
 
-interface PatchSoundfileNode extends AudioNodeBase {
-	type: 'soundfile~';
-	node: MediaElementAudioSourceNode;
-	audioElement: HTMLAudioElement;
-}
-
 interface PatchStrudelNode extends AudioNodeBase {
 	type: 'strudel';
 	node: GainNode;
@@ -69,7 +63,6 @@ export type V1PatchAudioNode =
 	| PatchLyriaNode
 	| PatchExprNode
 	| PatchChuckNode
-	| PatchSoundfileNode
 	| PatchStrudelNode
 	| PatchDspNode
 	| PatchToneNode

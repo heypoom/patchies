@@ -1,5 +1,6 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { match, P } from 'ts-pattern';
 
 export class SoundfileNode implements AudioNodeV2 {
 	static type = 'soundfile~';
@@ -35,28 +36,38 @@ export class SoundfileNode implements AudioNodeV2 {
 	}
 
 	send(key: string, message: unknown): void {
-		if (key === 'message' && message && typeof message === 'object') {
-			const msg = message as Record<string, unknown>;
-			if (msg.type === 'bang') {
-				this.audioElement.currentTime = 0;
-				this.audioElement.play();
-			} else if (msg.type === 'play') {
-				this.audioElement.play();
-			} else if (msg.type === 'pause') {
-				this.audioElement.pause();
-			} else if (msg.type === 'stop') {
-				this.audioElement.pause();
-				this.audioElement.currentTime = 0;
-			}
-		} else if (key === 'file' && message instanceof File) {
-			this.audioElement.src = URL.createObjectURL(message);
-		} else if (key === 'url' && typeof message === 'string') {
-			this.audioElement.src = message;
-		}
+		const element = this.audioElement;
+
+		match([key, message])
+			.with(['message', { type: P.string }], ([, msg]) => {
+				match(msg)
+					.with({ type: 'bang' }, () => {
+						element.currentTime = 0;
+						element.play();
+					})
+					.with({ type: 'play' }, () => element.play())
+					.with({ type: 'pause' }, () => element.pause())
+					.with({ type: 'stop' }, () => {
+						element.pause();
+						element.currentTime = 0;
+					});
+			})
+			.with(['file', P.instanceOf(File)], ([, file]) => {
+				element.src = URL.createObjectURL(file);
+			})
+			.with(['url', P.string], ([, url]) => {
+				element.src = url;
+			});
 	}
 
 	destroy(): void {
 		this.audioElement.pause();
+
+		// Clean up blobs created by createObjectURL
+		if (this.audioElement.src.startsWith('blob:')) {
+			URL.revokeObjectURL(this.audioElement.src);
+		}
+
 		this.audioElement.src = '';
 		this.audioNode.disconnect();
 	}
