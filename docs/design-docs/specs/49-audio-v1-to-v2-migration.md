@@ -20,7 +20,9 @@ The V2 system includes several improvements that make migration cleaner:
 
 5. **Type Safety**: Changed from restrictive V1 types (`V1PatchAudioType`) to `string` in function signatures, allowing both V1 and V2 nodes without type conflicts.
 
-6. **No Hardcoding Node Names in AudioService**: Special node behavior (like `dac~` connecting to `outGain`) lives in the node class itself, not in `AudioService`. Nodes can access `AudioService.getInstance()` to get shared resources without requiring hardcoded logic.
+6. **No Hardcoding Node Names in AudioService**: Special node behavior is handled generically via the `group` property. Destination nodes automatically connect to `outGain` during `updateEdges()` without hardcoded node names.
+
+7. **Dual updateEdges() Calls**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) are called from `FlowCanvasInner.svelte` to handle both V1 and V2 nodes correctly.
 
 ## Completed Migrations
 
@@ -144,20 +146,7 @@ constructor(nodeId: string, audioContext: AudioContext) {
 }
 ```
 
-**Special Case - Destination Nodes**: If the node needs to auto-connect to speakers (like `dac~`), retrieve `outGain` from `AudioService` and connect in the constructor:
-
-```typescript
-constructor(nodeId: string, audioContext: AudioContext) {
-    this.nodeId = nodeId;
-    this.audioNode = audioContext.createGain();
-
-    const { outGain } = AudioService.getInstance();
-
-    if (outGain) {
-      this.audioNode.connect(outGain);
-    }
-}
-```
+**Note for Destination Nodes**: No special connection logic needed in constructor - `AudioService.updateEdges()` automatically connects destination nodes to `outGain` based on the `group` property.
 
 ### 6. Implement create() Method
 
@@ -329,9 +318,9 @@ Nodes that output audio (e.g., dac~):
 
 - Group: `'destinations'`
 - Only have audio input, no output
-- **Auto-connect pattern**: Destination nodes that route to speakers should create their own gain node and auto-connect to `AudioService.getInstance().outGain` in the constructor
+- **Simple pattern**: Create the audio node in constructor - connections handled automatically by `AudioService.updateEdges()`
 - This allows multiple instances (e.g., multiple `dac~` nodes) in a patch
-- **Important**: `AudioService.updateEdges()` automatically reconnects all destination nodes to `outGain` after disconnecting everything (no manual handling needed)
+- **Important**: `AudioService.updateEdges()` must be called (happens in `FlowCanvasInner.svelte`) to connect destination nodes to `outGain`
 
 **Example**:
 
@@ -340,16 +329,13 @@ constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
     this.audioNode = audioContext.createGain();
     this.audioNode.gain.value = 1.0;
-
-    const { outGain } = AudioService.getInstance();
-
-    if (outGain) {
-      this.audioNode.connect(outGain);
-    }
+    // No manual connection needed - updateEdges() handles it
 }
+
+create(): void {}  // Empty - no parameters to initialize
 ```
 
-**Note**: The connection to `outGain` gets disconnected during `updateEdges()` but is automatically restored by checking for `group === 'destinations'` in the registry.
+**Architecture Note**: Both V1 `AudioSystem.updateEdges()` and V2 `AudioService.updateEdges()` are called from `FlowCanvasInner.svelte`. V2's `updateEdges()` reconnects all destination nodes to `outGain` by checking `group === 'destinations'` in the registry.
 
 ## Automation Opportunities
 

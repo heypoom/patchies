@@ -209,6 +209,19 @@ export class AudioService {
 				this.outGain.connect(this.getAudioContext().destination);
 			}
 
+			// Destinations are auto-connected to device outputs.
+			for (const node of this.nodesById.values()) {
+				const group = this.getNodeGroup(getNodeType(node));
+
+				if (this.outGain && group === 'destinations') {
+					try {
+						node.audioNode.connect(this.outGain);
+					} catch (error) {
+						logger.warn(`cannot connect to device's audio output`, error);
+					}
+				}
+			}
+
 			for (const edge of edges) {
 				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
 

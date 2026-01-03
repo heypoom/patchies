@@ -18,7 +18,10 @@ export type AudioNodeConstructor = new (nodeId: string, audioContext: AudioConte
  * Audio node class type including required static properties and optional metadata.
  */
 export type AudioNodeClass = {
+	/** Name of the audio node (e.g. `osc~` or `dac~`) */
 	name: string;
+
+	/** Group of the audio node (e.g. sources or processors) */
 	group: AudioNodeGroup;
 } & ObjectMetadata &
 	AudioNodeConstructor;

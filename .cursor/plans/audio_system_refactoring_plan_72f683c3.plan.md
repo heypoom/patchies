@@ -123,7 +123,7 @@ When a node is migrated, ALL V1 references are removed:
 Node name appears **only once** in codebase: `static name` in V2 class.
 
 ### 5. Destination Node Pattern
-Destination nodes (like `dac~`) auto-connect to `outGain` in constructor. `AudioService.updateEdges()` automatically reconnects all destination nodes after disconnect phase by checking `group === 'destinations'` in registry.
+Destination nodes (like `dac~`) create their audio node in constructor without manual connections. `AudioService.updateEdges()` automatically connects all destination nodes to `outGain` by checking `group === 'destinations'` in registry. Both V1 `AudioSystem.updateEdges()` and V2 `AudioService.updateEdges()` are called from `FlowCanvasInner.svelte`.
 
 ### 6. Optional destroy()
 Most nodes don't need `destroy()` - AudioService calls `audioNode.disconnect()` by default. Only source nodes with special cleanup (e.g., `OscillatorNode.stop()`) need custom `destroy()`.
@@ -143,10 +143,11 @@ Most nodes don't need `destroy()` - AudioService calls `audioNode.disconnect()` 
 - Pattern for most processor nodes
 
 ### DacNode (dac~) - Destination
-- Creates own `GainNode`, auto-connects to `AudioService.outGain` in constructor
-- Demonstrates destination node pattern (connection happens in `create()` to survive `updateEdges()`)
+- Creates own `GainNode` in constructor (no manual connections)
+- Demonstrates destination node pattern (connection handled by `AudioService.updateEdges()`)
 - Allows multiple `dac~` instances in a patch
 - No outlets (terminal node)
+- Empty `create()` method - no parameters to initialize
 
 ## Key Files
 

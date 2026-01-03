@@ -1,6 +1,5 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
-import { AudioService } from '../AudioService';
 
 /**
  * DacNode implements the dac~ (digital-to-analog converter) audio node.
@@ -29,18 +28,8 @@ export class DacNode implements AudioNodeV2 {
 		this.audioNode.gain.value = 1.0;
 	}
 
+	create(): void {}
 	send(): void {}
-
-	create(): void {
-		// TODO: fix this. not sure why this is needed.
-		setTimeout(() => {
-			const { outGain } = AudioService.getInstance();
-
-			if (outGain) {
-				this.audioNode.connect(outGain);
-			}
-		}, 0);
-	}
 
 	getAudioParam(): AudioParam | null {
 		return null;
