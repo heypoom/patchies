@@ -8,6 +8,9 @@ import { OscNode } from './OscNode';
 import { GainNodeV2 } from './GainNode';
 import { DacNode } from './DacNode';
 import { SigNode } from './SigNode';
+import { AddNodeV2 } from './AddNode';
+import { PanNodeV2 } from './PanNode';
+import { DelayNodeV2 } from './DelayNode';
 
 /**
  * Define all v2 audio nodes with the AudioService.
@@ -20,4 +23,7 @@ export function registerAudioNodes(): void {
 	audioService.define(GainNodeV2);
 	audioService.define(DacNode);
 	audioService.define(SigNode);
+	audioService.define(AddNodeV2);
+	audioService.define(PanNodeV2);
+	audioService.define(DelayNodeV2);
 }

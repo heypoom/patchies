@@ -125,7 +125,7 @@ export class AudioSystem {
 		const v2Node = v2Audio.getNode(nodeId);
 
 		if (v2Audio.isNodeDefined(v2Node)) {
-			return v2Node.getAudioParam(name);
+			return v2Node.getAudioParam?.(name) ?? null;
 		}
 
 		const entry = this.nodesById.get(nodeId);
@@ -160,21 +160,6 @@ export class AudioSystem {
 					.with('ratio', () => node.ratio)
 					.with('attack', () => node.attack)
 					.with('release', () => node.release)
-					.otherwise(() => null)
-			)
-			.with({ type: 'pan~' }, ({ node }) =>
-				match(name)
-					.with('pan', () => node.pan)
-					.otherwise(() => null)
-			)
-			.with({ type: 'sig~' }, ({ node }) =>
-				match(name)
-					.with('offset', () => node.offset)
-					.otherwise(() => null)
-			)
-			.with({ type: 'delay~' }, ({ node }) =>
-				match(name)
-					.with('delayTime', () => node.delayTime)
 					.otherwise(() => null)
 			)
 			.otherwise(() => null);
@@ -230,7 +215,6 @@ export class AudioSystem {
 
 		match(objectType)
 			.with('fft~', () => this.createAnalyzer(nodeId, params))
-			.with('+~', () => this.createAdd(nodeId))
 			.with('mic~', () => this.createMic(nodeId))
 			.with('lowpass~', () => this.createLpf(nodeId, params))
 			.with('highpass~', () => this.createHpf(nodeId, params))
@@ -247,21 +231,12 @@ export class AudioSystem {
 			.with('csound~', () => this.createCsound(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
 			.with('compressor~', () => this.createCompressor(nodeId, params))
-			.with('pan~', () => this.createPan(nodeId, params))
 			.with('sampler~', () => this.createSampler(nodeId))
-			.with('delay~', () => this.createDelay(nodeId, params))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
 			.with('waveshaper~', () => this.createWaveShaper(nodeId, params))
 			.with('convolver~', () => this.createConvolver(nodeId, params))
 			.with('merge~', () => this.createChannelMerger(nodeId, params))
 			.with('split~', () => this.createChannelSplitter(nodeId, params));
-	}
-
-	createAdd(nodeId: string) {
-		const addNode = this.audioContext.createGain();
-		addNode.gain.value = 1.0;
-
-		this.nodesById.set(nodeId, { type: '+~', node: addNode });
 	}
 
 	async createMic(nodeId: string) {
@@ -380,13 +355,6 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'compressor~', node: compressor });
 	}
 
-	createPan(nodeId: string, params: unknown[]) {
-		const [, panValue] = params as [unknown, number];
-		const panNode = this.audioContext.createStereoPanner();
-		panNode.pan.value = panValue;
-		this.nodesById.set(nodeId, { type: 'pan~', node: panNode });
-	}
-
 	createSampler(nodeId: string) {
 		// Create a gain node for playback output
 		const gainNode = this.audioContext.createGain();
@@ -400,15 +368,6 @@ export class AudioSystem {
 			node: gainNode,
 			destinationNode
 		});
-	}
-
-	createDelay(nodeId: string, params: unknown[]) {
-		const [, delayTime] = params as [unknown, number];
-
-		const delayNode = this.audioContext.createDelay();
-		delayNode.delayTime.value = Math.max(0, delayTime ?? 0) / 1000;
-
-		this.nodesById.set(nodeId, { type: 'delay~', node: delayNode });
 	}
 
 	createSoundFile(nodeId: string) {
@@ -713,22 +672,6 @@ export class AudioSystem {
 					.with(['release', P.number], ([, release]) => {
 						node.release.value = release;
 					});
-			})
-			.with({ type: 'pan~' }, ({ node }) => {
-				match([key, msg]).with(['pan', P.number], ([, pan]) => {
-					node.pan.value = pan;
-				});
-			})
-			.with({ type: 'sig~' }, ({ node }) => {
-				match([key, msg]).with(['offset', P.number], ([, offset]) => {
-					node.offset.value = offset;
-				});
-			})
-			.with({ type: 'delay~' }, ({ node }) => {
-				match([key, msg]).with(['delayTime', P.number], ([, delayTime]) => {
-					const delayInSeconds = Math.max(0, delayTime) / 1000;
-					node.delayTime.value = Math.min(delayInSeconds, 1.0);
-				});
 			})
 			.with({ type: 'mic~' }, () => {
 				match(msg).with({ type: 'bang' }, () => {

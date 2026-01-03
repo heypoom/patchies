@@ -61,7 +61,7 @@ export class AudioService {
 			return;
 		}
 
-		const audioParam = target.getAudioParam(paramName);
+		const audioParam = target.getAudioParam?.(paramName);
 
 		if (audioParam) {
 			source.audioNode.connect(audioParam);
@@ -226,7 +226,7 @@ export class AudioService {
 				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
 
 				const targetNode = this.nodesById.get(edge.target);
-				const isAudioParam = targetNode ? !!targetNode.getAudioParam(inlet?.name ?? '') : false;
+				const isAudioParam = targetNode ? !!targetNode.getAudioParam?.(inlet?.name ?? '') : false;
 
 				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
 			}
@@ -305,8 +305,10 @@ export class AudioService {
 		}
 
 		const audioContext = this.getAudioContext();
+
 		const node = new NodeClass(nodeId, audioContext);
-		node.create(params);
+		node.create?.(params);
+
 		this.nodesById.set(node.nodeId, node);
 
 		return node;

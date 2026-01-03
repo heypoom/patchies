@@ -39,23 +39,32 @@ export interface AudioNodeV2 {
 
 	/**
 	 * Initialize the node with the given parameters.
+	 *
+	 * Optional: if not implemented, AudioService will use the default implementation.
+	 *
 	 * @param params - Array of parameters specific to the node type
 	 */
-	create(params: unknown[]): void;
+	create?(params: unknown[]): void;
 
 	/**
 	 * Handle incoming messages to the node.
+	 *
+	 * Optional: if not implemented, AudioService will use the default implementation.
+	 *
 	 * @param key - The parameter or message key
 	 * @param message - The message value
 	 */
-	send(key: string, message: unknown): void;
+	send?(key: string, message: unknown): void;
 
 	/**
 	 * Get an AudioParam for modulation.
+	 *
+	 * Optional: if not implemented, returns null.
+	 *
 	 * @param name - The name of the AudioParam
 	 * @returns The AudioParam or null if not found
 	 */
-	getAudioParam(name: string): AudioParam | null;
+	getAudioParam?(name: string): AudioParam | null;
 
 	/**
 	 * Connect this node to another node.

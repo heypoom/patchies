@@ -82,16 +82,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['helper']
 	},
 
-	'+~': {
-		inlets: [
-			{ name: 'left', type: 'signal', description: 'Left signal input' },
-			{ name: 'right', type: 'signal', description: 'Right signal input' }
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Sum of input signals' }],
-		description: 'Adds two audio signals together',
-		tags: ['audio']
-	},
-
 	adsr: {
 		inlets: [
 			{
@@ -456,44 +446,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Compressed signal' }],
 		description: 'Dynamic range compressor for audio signals',
-		tags: ['audio']
-	},
-
-	'pan~': {
-		inlets: [
-			{ name: 'in', type: 'signal', description: 'Audio signal to position in stereo field' },
-			{
-				name: 'pan',
-				type: 'float',
-				description: 'Stereo position: -1 (left) to 1 (right)',
-				defaultValue: 0,
-				isAudioParam: true,
-				minNumber: -1,
-				maxNumber: 1,
-				maxPrecision: 2,
-				precision: 2
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Stereo positioned signal' }],
-		description: 'Controls the left-right stereo positioning of audio',
-		tags: ['audio']
-	},
-
-	'delay~': {
-		inlets: [
-			{ name: 'in', type: 'signal', description: 'Audio signal to delay' },
-			{
-				name: 'delayTime',
-				type: 'float',
-				description: 'Delay time in milliseconds',
-				defaultValue: 1000,
-				isAudioParam: true,
-				minNumber: 0,
-				precision: 0
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Delayed signal' }],
-		description: 'Delay-line node with configurable delay time in milliseconds',
 		tags: ['audio']
 	},
 

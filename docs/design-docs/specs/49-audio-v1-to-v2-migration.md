@@ -16,13 +16,20 @@ The V2 system includes several improvements that make migration cleaner:
 
 3. **Graceful Fallback**: All migration points (group detection, node creation, validation) check V2 first, then fall back to V1. This enables gradual migration without breaking existing functionality.
 
-4. **Optional destroy()**: AudioService provides default cleanup (disconnect), so processor nodes don't need custom `destroy()` methods - only sources with special cleanup (e.g., oscillators needing `.stop()`).
+4. **Optional Methods**: Methods like `create()`, `send()`, and `getAudioParam()` are now optional. Nodes only implement what they need:
 
-5. **Type Safety**: Changed from restrictive V1 types (`V1PatchAudioType`) to `string` in function signatures, allowing both V1 and V2 nodes without type conflicts.
+   - Nodes with no parameters don't need `create()`
+   - Nodes with no messages don't need `send()`
+   - Nodes with no audio parameters don't need `getAudioParam()`
+   - AudioService provides safe optional chaining with `?.` operator
 
-6. **No Hardcoding Node Names in AudioService**: Special node behavior is handled generically via the `group` property. Destination nodes automatically connect to `outGain` during `updateEdges()` without hardcoded node names.
+5. **Optional destroy()**: AudioService provides default cleanup (disconnect), so processor nodes don't need custom `destroy()` methods - only sources with special cleanup (e.g., oscillators needing `.stop()`).
 
-7. **Dual updateEdges() Calls**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) are called from `FlowCanvasInner.svelte` to handle both V1 and V2 nodes correctly.
+6. **Type Safety**: Changed from restrictive V1 types (`V1PatchAudioType`) to `string` in function signatures, allowing both V1 and V2 nodes without type conflicts.
+
+7. **No Hardcoding Node Names in AudioService**: Special node behavior is handled generically via the `group` property. Destination nodes automatically connect to `outGain` during `updateEdges()` without hardcoded node names.
+
+8. **Dual updateEdges() Calls**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) are called from `FlowCanvasInner.svelte` to handle both V1 and V2 nodes correctly.
 
 ## Completed Migrations
 
@@ -30,6 +37,9 @@ The V2 system includes several improvements that make migration cleaner:
 - [x] `gain~` - Gain/volume control node (processor, no destroy needed)
 - [x] `dac~` - Digital-to-analog converter (destination, auto-connects to speakers)
 - [x] `sig~` - Constant signal source (source, has destroy)
+- [x] `+~` - Signal addition (processor, no destroy needed)
+- [x] `pan~` - Stereo panning (processor, no destroy needed)
+- [x] `delay~` - Time-based delay (processor, no destroy needed)
 
 ## Migration Pattern
 
@@ -149,9 +159,9 @@ constructor(nodeId: string, audioContext: AudioContext) {
 
 **Note for Destination Nodes**: No special connection logic needed in constructor - `AudioService.updateEdges()` automatically connects destination nodes to `outGain` based on the `group` property.
 
-### 6. Implement create() Method
+### 6. Implement create() Method (Optional)
 
-Map V1 parameter parsing to V2:
+Only implement if the node has parameters to initialize:
 
 ```typescript
 create(params: unknown[]): void {
@@ -167,9 +177,11 @@ create(params: unknown[]): void {
 }
 ```
 
-### 7. Implement getAudioParam()
+**Skip this method if your node has no parameters to initialize.**
 
-Use `ts-pattern` for matching:
+### 7. Implement getAudioParam() (Optional)
+
+Only implement if the node has audio parameters:
 
 ```typescript
 getAudioParam(name: string): AudioParam | null {
@@ -180,9 +192,11 @@ getAudioParam(name: string): AudioParam | null {
 }
 ```
 
-### 8. Implement send()
+**Skip this method if your node has no audio parameters.**
 
-Handle incoming messages with `ts-pattern`:
+### 8. Implement send() (Optional)
+
+Only implement if the node needs to handle incoming messages:
 
 ```typescript
 send(key: string, message: unknown): void {
@@ -198,6 +212,8 @@ send(key: string, message: unknown): void {
         });
 }
 ```
+
+**Skip this method if your node doesn't need to handle messages.**
 
 ### 9. Implement destroy() (Optional)
 
@@ -399,13 +415,30 @@ The registry-based architecture means V2 nodes automatically work everywhere:
 - ✅ **Metadata**: All metadata in node class (inlets, outlets, description)
 - ✅ **Special behavior**: Nodes access shared resources via `AudioService.getInstance()` directly in their constructors (no hardcoding needed)
 
+## Recent Improvements (January 2026)
+
+**Batch Migration of Easy Nodes**: Successfully migrated three simple processor nodes in a single session:
+
+### Migrated Nodes
+
+- **`+~` (Signal Addition)** - Minimal implementation with just constructor. No parameters, no audio parameters, no message handling. Perfect example of how simple nodes can be with optional methods.
+- **`pan~` (Stereo Panning)** - Single audio parameter (pan). Full `create()`, `getAudioParam()`, and `send()` implementation.
+- **`delay~` (Time-based Delay)** - Single audio parameter (delayTime) with unit conversion (ms → seconds).
+
+### Architectural Refinement
+
+Made `create()`, `send()`, and `getAudioParam()` optional in the `AudioNodeV2` interface:
+
+- AudioService now uses optional chaining: `node.create?.(params)`
+- Nodes only implement methods they actually need
+- Results in cleaner, more minimal code for simple nodes like `+~`
+
 ## Next Steps
 
 - [ ] Migrate remaining V1 nodes (prioritize commonly used ones):
-  - [x] `sig~` (constant signal source)
-  - [ ] `+~` (signal addition)
-  - [ ] Filter nodes (lowpass~, highpass~, bandpass~, etc.)
-  - [ ] Effect nodes (delay~, compressor~, pan~, etc.)
+  - Filter nodes (lowpass~, highpass~, bandpass~, etc.) - similar pattern, moderate effort
+  - Effect nodes (compressor~, waveshaper~, convolver~) - more complex, more parameters
+  - Utility nodes (merge~, split~) - dynamic channel count, moderate effort
 - [ ] Build automated migration script (code generation from V1 → V2)
 - [ ] Consider batch migration tool for similar node types (e.g., all filters)
 - [ ] Eventually deprecate V1 system once all nodes are migrated

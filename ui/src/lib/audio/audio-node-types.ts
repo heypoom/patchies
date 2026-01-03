@@ -8,11 +8,6 @@ interface AudioNodeBase {
 	node: AudioNode;
 }
 
-interface PatchAddNode extends AudioNodeBase {
-	type: '+~';
-	node: GainNode;
-}
-
 /**
  * Lyria music generator by Google DeepMind.
  * Used by the `AiMusicNode`.
@@ -90,16 +85,6 @@ interface PatchCompressorNode extends AudioNodeBase {
 	node: DynamicsCompressorNode;
 }
 
-interface PatchPanNode extends AudioNodeBase {
-	type: 'pan~';
-	node: StereoPannerNode;
-}
-
-interface PatchDelayNode extends AudioNodeBase {
-	type: 'delay~';
-	node: DelayNode;
-}
-
 interface PatchSoundfileNode extends AudioNodeBase {
 	type: 'soundfile~';
 	node: MediaElementAudioSourceNode;
@@ -171,7 +156,6 @@ interface PatchChannelSplitterNode extends AudioNodeBase {
 }
 
 export type V1PatchAudioNode =
-	| PatchAddNode
 	| PatchLyriaNode
 	| PatchAnalyzerNode
 	| PatchMicNode
@@ -186,8 +170,6 @@ export type V1PatchAudioNode =
 	| PatchExprNode
 	| PatchChuckNode
 	| PatchCompressorNode
-	| PatchPanNode
-	| PatchDelayNode
 	| PatchSoundfileNode
 	| PatchWaveshaperNode
 	| PatchSamplerNode

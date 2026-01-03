@@ -13,7 +13,6 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 		.with(
 			P.union(
 				'fft~',
-				'+~',
 				'lowpass~',
 				'highpass~',
 				'bandpass~',
@@ -23,8 +22,6 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 				'highshelf~',
 				'peaking~',
 				'compressor~',
-				'pan~',
-				'delay~',
 				'waveshaper~',
 				'convolver~',
 				'split~',
