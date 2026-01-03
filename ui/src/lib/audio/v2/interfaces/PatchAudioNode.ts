@@ -21,11 +21,8 @@ export type NodeConstructor = new (nodeId: string, audioContext: AudioContext) =
 export type NodeClass = {
 	name: string;
 	group: AudioNodeGroup;
-	inlets?: NodeMetadata['inlets'];
-	outlets?: NodeMetadata['outlets'];
-	description?: NodeMetadata['description'];
-	tags?: NodeMetadata['tags'];
-} & NodeConstructor;
+} & NodeMetadata &
+	NodeConstructor;
 
 /**
  * Interface for audio nodes in the v2 audio system.
