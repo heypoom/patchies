@@ -17,18 +17,6 @@ interface PatchLyriaNode extends AudioNodeBase {
 	node: GainNode;
 }
 
-interface PatchAnalyzerNode extends AudioNodeBase {
-	type: 'fft~';
-	node: AnalyserNode;
-}
-
-interface PatchMicNode extends AudioNodeBase {
-	type: 'mic~';
-	node: GainNode;
-	mediaStream?: MediaStream;
-	mediaStreamSource?: MediaStreamAudioSourceNode;
-}
-
 interface PatchExprNode extends AudioNodeBase {
 	type: 'expr~';
 	node: AudioWorkletNode;
@@ -40,20 +28,10 @@ interface PatchChuckNode extends AudioNodeBase {
 	chuckManager?: ChuckManager;
 }
 
-interface PatchCompressorNode extends AudioNodeBase {
-	type: 'compressor~';
-	node: DynamicsCompressorNode;
-}
-
 interface PatchSoundfileNode extends AudioNodeBase {
 	type: 'soundfile~';
 	node: MediaElementAudioSourceNode;
 	audioElement: HTMLAudioElement;
-}
-
-interface PatchWaveshaperNode extends AudioNodeBase {
-	type: 'waveshaper~';
-	node: WaveShaperNode;
 }
 
 interface PatchSamplerNode extends AudioNodeBase {
@@ -67,11 +45,6 @@ interface PatchSamplerNode extends AudioNodeBase {
 	loopEnd?: number;
 	playbackRate?: number;
 	detune?: number;
-}
-
-interface PatchConvolverNode extends AudioNodeBase {
-	type: 'convolver~';
-	node: ConvolverNode;
 }
 
 interface PatchStrudelNode extends AudioNodeBase {
@@ -105,34 +78,17 @@ interface PatchCsoundNode extends AudioNodeBase {
 	csoundManager?: CsoundManager;
 }
 
-interface PatchChannelMergerNode extends AudioNodeBase {
-	type: 'merge~';
-	node: ChannelMergerNode;
-}
-
-interface PatchChannelSplitterNode extends AudioNodeBase {
-	type: 'split~';
-	node: ChannelSplitterNode;
-}
-
 export type V1PatchAudioNode =
 	| PatchLyriaNode
-	| PatchAnalyzerNode
-	| PatchMicNode
 	| PatchExprNode
 	| PatchChuckNode
-	| PatchCompressorNode
 	| PatchSoundfileNode
-	| PatchWaveshaperNode
 	| PatchSamplerNode
-	| PatchConvolverNode
 	| PatchStrudelNode
 	| PatchDspNode
 	| PatchToneNode
 	| PatchElementaryNode
-	| PatchCsoundNode
-	| PatchChannelMergerNode
-	| PatchChannelSplitterNode;
+	| PatchCsoundNode;
 
 export type V1PatchAudioType = V1PatchAudioNode['type'];
 export type V1PatchAudioNodeGroup = AudioNodeGroup;

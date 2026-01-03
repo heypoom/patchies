@@ -1,4 +1,4 @@
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 import type { V1PatchAudioNodeGroup } from './audio-node-types';
 import { AudioService } from './v2/AudioService';
 
@@ -9,11 +9,8 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 
 	// V1: hard-coded names :-(
 	return match<string, V1PatchAudioNodeGroup | null>(nodeType)
-		.with(P.union('lyria', 'mic~', 'soundfile~'), () => 'sources')
-		.with(
-			P.union('fft~', 'compressor~', 'waveshaper~', 'convolver~', 'split~', 'merge~'),
-			() => 'processors'
-		)
+		.with('lyria', () => 'sources')
+		.with('soundfile~', () => 'sources')
 		.otherwise(() => null);
 };
 

@@ -594,10 +594,10 @@ Successfully refactored all migrated V2 nodes to use default implementations:
 
 After completing Phase 1-2 migrations (23 nodes total), the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 2 nodes remain in V1:
 
-| Node         | Type      | Group      | Status    | Notes                                                                     |
-| ------------ | --------- | ---------- | --------- | ------------------------------------------------------------------------- |
-| `sampler~`   | Source    | sources    | 🔴 HARD   | Complex recording + playback state; MediaRecorder + AudioBufferSourceNode |
-| `soundfile~` | Source    | sources    | 🔴 HARD   | Audio file loading + streaming; MediaElementAudioSourceNode management    |
+| Node         | Type   | Group   | Status  | Notes                                                                     |
+| ------------ | ------ | ------- | ------- | ------------------------------------------------------------------------- |
+| `sampler~`   | Source | sources | 🔴 HARD | Complex recording + playback state; MediaRecorder + AudioBufferSourceNode |
+| `soundfile~` | Source | sources | 🔴 HARD | Audio file loading + streaming; MediaElementAudioSourceNode management    |
 
 ### Manager-Based Nodes (To Be Migrated Later - Phase 4+)
 
