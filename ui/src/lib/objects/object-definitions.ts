@@ -111,20 +111,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['envelope']
 	},
 
-	'soundfile~': {
-		inlets: [
-			{
-				name: 'message',
-				type: 'message',
-				description: 'Control messages: "play", "pause", "stop", or bang to restart'
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Audio output from loaded file' }],
-		description:
-			'Loads and plays audio files from local files or URLs with drag-drop and file picker',
-		tags: ['audio']
-	},
-
 	loadbang: {
 		inlets: [],
 		outlets: [{ name: 'out', type: 'bang', description: 'Bang signal sent on load' }],

@@ -1,5 +1,6 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { handleToPortIndex } from '$lib/utils/get-edge-types';
 
 export class MergeNode implements AudioNodeV2 {
 	static type = 'merge~';
@@ -48,6 +49,26 @@ export class MergeNode implements AudioNodeV2 {
 		if (key === 'channels' && typeof message === 'number') {
 			this.updateChannelCount(message);
 		}
+	}
+
+	connect(
+		source: AudioNodeV2,
+		paramName?: string,
+		sourceHandle?: string,
+		targetHandle?: string
+	): void {
+		// For merge~, targetHandle indicates which input channel to connect to
+		if (targetHandle) {
+			const inputIndex = handleToPortIndex(targetHandle);
+			if (inputIndex !== null && !isNaN(inputIndex)) {
+				// If source is split~, it already specifies output index, just connect
+				source.audioNode.connect(this.audioNode, 0, inputIndex);
+				return;
+			}
+		}
+
+		// Default: connect source to first input
+		source.audioNode.connect(this.audioNode);
 	}
 
 	private updateChannelCount(newChannels: number): void {

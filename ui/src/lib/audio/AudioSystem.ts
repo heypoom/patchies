@@ -87,17 +87,6 @@ export class AudioSystem {
 				} else if (targetEntry.type === 'csound~') {
 					// input to csound~ - connect to inputNode for audio input
 					sourceEntry.node.connect(targetEntry.inputNode);
-				} else if (sourceEntry.type === 'split~' && sourceHandle) {
-					// Handle connections from split~ nodes - connect specific output channel
-					const sourceIndex = handleToPortIndex(sourceHandle);
-					if (sourceIndex !== null && !isNaN(sourceIndex)) {
-						sourceEntry.node.connect(targetEntry.node, sourceIndex, 0);
-					} else {
-						sourceEntry.node.connect(targetEntry.node, 0, 0);
-					}
-				} else if (targetEntry.type === 'split~') {
-					// input to split~ - connect to splitter node directly
-					sourceEntry.node.connect(targetEntry.node);
 				} else {
 					sourceEntry.node.connect(targetEntry.node);
 				}
@@ -174,38 +163,7 @@ export class AudioSystem {
 			.with('tone~', () => this.createTone(nodeId, params))
 			.with('elem~', () => this.createElementary(nodeId, params))
 			.with('csound~', () => this.createCsound(nodeId, params))
-			.with('chuck', () => this.createChuck(nodeId))
-			.with('sampler~', () => this.createSampler(nodeId))
-			.with('soundfile~', () => this.createSoundFile(nodeId));
-	}
-
-	createSampler(nodeId: string) {
-		// Create a gain node for playback output
-		const gainNode = this.audioContext.createGain();
-		gainNode.gain.value = 1.0;
-
-		// Create a MediaStreamDestination for recording input
-		const destinationNode = this.audioContext.createMediaStreamDestination();
-
-		this.nodesById.set(nodeId, {
-			type: 'sampler~',
-			node: gainNode,
-			destinationNode
-		});
-	}
-
-	createSoundFile(nodeId: string) {
-		const audioElement = new Audio();
-		audioElement.crossOrigin = 'anonymous';
-		audioElement.loop = false;
-
-		const mediaElementSource = this.audioContext.createMediaElementSource(audioElement);
-
-		this.nodesById.set(nodeId, {
-			type: 'soundfile~',
-			node: mediaElementSource,
-			audioElement
-		});
+			.with('chuck', () => this.createChuck(nodeId));
 	}
 
 	async initExprWorklet() {
@@ -437,204 +395,6 @@ export class AudioSystem {
 			.with({ type: 'chuck' }, async (state) => {
 				await state.chuckManager?.handleMessage(key, msg);
 			})
-			.with({ type: 'soundfile~' }, ({ audioElement }) => {
-				match([key, msg])
-					.with(['message', { type: P.string }], ([, command]) => {
-						match(command)
-							.with({ type: 'bang' }, () => {
-								audioElement.currentTime = 0;
-								audioElement.play();
-							})
-							.with({ type: 'play' }, () => audioElement.play())
-							.with({ type: 'pause' }, () => audioElement.pause())
-							.with({ type: 'stop' }, () => {
-								audioElement.pause();
-								audioElement.currentTime = 0;
-							});
-					})
-					.with(['file', P.instanceOf(File)], ([, file]) => {
-						audioElement.src = URL.createObjectURL(file);
-					})
-					.with(['url', P.string], ([, url]) => {
-						audioElement.src = url;
-					});
-			})
-			.with({ type: 'sampler~' }, (sampler) => {
-				match([key, msg])
-					.with(
-						['message', { type: 'loop', start: P.optional(P.number), end: P.optional(P.number) }],
-						async ([, m]) => {
-							if (!sampler.audioBuffer) return;
-
-							if (sampler.sourceNode) {
-								try {
-									sampler.sourceNode.stop();
-									sampler.sourceNode.disconnect();
-								} catch {
-									// Ignore errors if node already stopped
-								}
-							}
-
-							sampler.sourceNode = this.audioContext.createBufferSource();
-
-							const start = m.start ?? sampler.loopStart;
-							const end = m.end ?? sampler.loopEnd;
-
-							if (start !== undefined) {
-								sampler.sourceNode.loopStart = start;
-							}
-
-							if (end !== undefined) {
-								sampler.sourceNode.loopEnd = end;
-							}
-
-							sampler.loopStart = start;
-							sampler.loopEnd = end;
-
-							// Apply playbackRate and detune if set
-							if (sampler.playbackRate !== undefined) {
-								sampler.sourceNode.playbackRate.value = sampler.playbackRate;
-							}
-
-							if (sampler.detune !== undefined) {
-								sampler.sourceNode.detune.value = sampler.detune;
-							}
-
-							sampler.sourceNode.buffer = sampler.audioBuffer;
-							sampler.sourceNode.loop = true;
-							sampler.sourceNode.start(0, start);
-							sampler.sourceNode.connect(sampler.node);
-						}
-					)
-					.with(['message', { type: 'loopOff' }], async () => {
-						if (!sampler.sourceNode) return;
-
-						sampler.sourceNode.loop = false;
-					})
-					.with(['message', { type: 'setStart', value: P.number }], ([, m]) => {
-						sampler.loopStart = m.value;
-
-						// If currently playing with loop, update the source node
-						if (sampler.sourceNode && sampler.sourceNode.loop) {
-							sampler.sourceNode.loopStart = m.value;
-						}
-					})
-					.with(['message', { type: 'setEnd', value: P.number }], ([, m]) => {
-						sampler.loopEnd = m.value;
-
-						// If currently playing with loop, update the source node
-						if (sampler.sourceNode && sampler.sourceNode.loop) {
-							sampler.sourceNode.loopEnd = m.value;
-						}
-					})
-					.with(['message', { type: 'playbackRate', value: P.number }], ([, m]) => {
-						sampler.playbackRate = m.value;
-
-						// If currently playing, update the source node
-						if (sampler.sourceNode) {
-							sampler.sourceNode.playbackRate.value = m.value;
-						}
-					})
-					.with(['message', { type: 'detune', value: P.number }], ([, m]) => {
-						sampler.detune = m.value;
-
-						// If currently playing, update the source node
-						if (sampler.sourceNode) {
-							sampler.sourceNode.detune.value = m.value;
-						}
-					})
-					.with(['message', { type: 'record' }], async () => {
-						if (sampler.mediaRecorder) return;
-
-						// Reset loop points for new recording
-						sampler.loopStart = 0;
-						sampler.loopEnd = 0;
-
-						const recorder = new MediaRecorder(sampler.destinationNode.stream);
-						const recordedChunks: Blob[] = [];
-
-						recorder.ondataavailable = (event) => {
-							if (event.data.size > 0) {
-								recordedChunks.push(event.data);
-							}
-						};
-
-						recorder.onstop = async () => {
-							try {
-								const blob = new Blob(recordedChunks, { type: 'audio/wav' });
-								const arrayBuffer = await blob.arrayBuffer();
-								sampler.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-								sampler.mediaRecorder = undefined;
-							} catch (error) {
-								console.error('Failed to process recorded audio:', error);
-								sampler.mediaRecorder = undefined;
-							}
-						};
-
-						recorder.start();
-						sampler.mediaRecorder = recorder;
-					})
-					.with(['message', { type: 'end' }], () => {
-						if (sampler.mediaRecorder?.state === 'recording' && sampler.mediaRecorder) {
-							sampler.mediaRecorder.stop();
-						}
-					})
-					.with(['message', { type: 'play' }], () => {
-						if (!sampler.audioBuffer) return;
-
-						// Properly stop and clean up existing source node
-						if (sampler.sourceNode) {
-							try {
-								sampler.sourceNode.stop();
-								sampler.sourceNode.disconnect();
-							} catch {
-								// Ignore errors if node already stopped
-							}
-						}
-
-						const sourceNode = this.audioContext.createBufferSource();
-						sourceNode.buffer = sampler.audioBuffer;
-						sourceNode.connect(sampler.node);
-
-						// Apply playbackRate and detune if set
-						if (sampler.playbackRate !== undefined) {
-							sourceNode.playbackRate.value = sampler.playbackRate;
-						}
-						if (sampler.detune !== undefined) {
-							sourceNode.detune.value = sampler.detune;
-						}
-
-						// Clean up reference when playback ends.
-						sourceNode.onended = () => {
-							if (sampler.sourceNode === sourceNode) {
-								sampler.sourceNode.disconnect();
-								sampler.sourceNode = undefined;
-							}
-						};
-
-						sampler.sourceNode = sourceNode;
-
-						// Use stored loopStart/loopEnd for playback
-						const startTime = sampler.loopStart ?? 0;
-						const duration =
-							sampler.loopEnd !== undefined && sampler.loopEnd > startTime
-								? sampler.loopEnd - startTime
-								: undefined;
-
-						sampler.sourceNode.start(0, startTime, duration);
-					})
-					.with(['message', { type: 'stop' }], () => {
-						if (sampler.sourceNode) {
-							try {
-								sampler.sourceNode.stop();
-								sampler.sourceNode.disconnect();
-								sampler.sourceNode = undefined;
-							} catch {
-								// Ignore errors if node already stopped
-							}
-						}
-					});
-			})
 			.otherwise(() => null);
 	}
 
@@ -653,34 +413,11 @@ export class AudioSystem {
 
 		if (entry) {
 			match(entry)
-				.with({ type: 'mic~' }, (mic) => {
-					if (mic.mediaStreamSource) {
-						mic.mediaStreamSource.disconnect();
-					}
-
-					if (mic.mediaStream) {
-						mic.mediaStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
-					}
-				})
 				.with({ type: 'chuck' }, (entry) => {
 					entry.chuckManager?.destroy();
 				})
 				.with({ type: 'csound~' }, (entry) => {
 					entry.csoundManager?.destroy();
-				})
-				.with({ type: 'soundfile~' }, (entry) => {
-					entry.audioElement.pause();
-					if (entry.audioElement.src.startsWith('blob:')) {
-						URL.revokeObjectURL(entry.audioElement.src);
-					}
-					entry.audioElement.src = '';
-				})
-				.with({ type: 'sampler~' }, (entry) => {
-					if (entry.mediaRecorder?.state === 'recording') {
-						entry.mediaRecorder.stop();
-					}
-
-					entry.destinationNode.disconnect();
 				})
 				.otherwise(() => {});
 

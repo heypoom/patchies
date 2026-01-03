@@ -10,7 +10,6 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 	// V1: hard-coded names :-(
 	return match<string, V1PatchAudioNodeGroup | null>(nodeType)
 		.with('lyria', () => 'sources')
-		.with('soundfile~', () => 'sources')
 		.otherwise(() => null);
 };
 

@@ -129,7 +129,7 @@ export class AudioService {
 	 * @param targetId - Target node ID
 	 * @param paramName - Optional AudioParam name to connect to
 	 */
-	connect(sourceId: string, targetId: string, paramName?: string): void {
+	connect(sourceId: string, targetId: string, paramName?: string, sourceHandle?: string): void {
 		const sourceNode = this.nodesById.get(sourceId);
 		const targetNode = this.nodesById.get(targetId);
 
@@ -146,7 +146,12 @@ export class AudioService {
 			}
 
 			if (sourceNode.connect) {
-				sourceNode.connect(targetNode, paramName);
+				// Note: We only pass sourceHandle here, not targetHandle.
+				// targetHandle is only available in updateEdges() where we have the full edge info.
+				// This method is used for simple programmatic connections that don't need
+				// multi-channel routing (split~ output -> merge~ input mapping).
+				// For complex routing, use updateEdges() which passes both handles.
+				sourceNode.connect(targetNode, paramName, sourceHandle);
 			} else {
 				this.defaultConnect(sourceNode, targetNode, paramName);
 			}
@@ -295,7 +300,18 @@ export class AudioService {
 				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
 				const isAudioParam = !!this.getAudioParamByNode(targetNode, inlet?.name ?? '');
 
-				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
+				// For nodes with custom connect logic (e.g., split~ with multiple outputs),
+				// pass the handles so they can route to specific channels
+				if (sourceNode.connect) {
+					sourceNode.connect(
+						targetNode,
+						isAudioParam ? inlet?.name : undefined,
+						edge.sourceHandle ?? undefined,
+						edge.targetHandle ?? undefined
+					);
+				} else {
+					this.defaultConnect(sourceNode, targetNode, isAudioParam ? inlet?.name : undefined);
+				}
 			}
 		} catch (error) {
 			logger.error('cannot update audio edges:', error);

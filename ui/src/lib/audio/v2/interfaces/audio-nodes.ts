@@ -73,8 +73,15 @@ export interface AudioNodeV2 {
 	 *
 	 * @param target - The target node to connect to
 	 * @param paramName - Optional AudioParam name to connect to
+	 * @param sourceHandle - Optional source handle for nodes with multiple outputs (e.g., split~)
+	 * @param targetHandle - Optional target handle for nodes with multiple inputs (e.g., merge~)
 	 */
-	connect?(target: AudioNodeV2, paramName?: string): void;
+	connect?(
+		target: AudioNodeV2,
+		paramName?: string,
+		sourceHandle?: string,
+		targetHandle?: string
+	): void;
 
 	/**
 	 * Cleanup resources and disconnect the node.

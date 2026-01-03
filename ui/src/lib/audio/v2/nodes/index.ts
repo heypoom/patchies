@@ -24,6 +24,8 @@ import { PanNodeV2 } from './PanNode';
 import { PeakingNode } from './PeakingNode';
 import { SigNode } from './SigNode';
 import { SplitNode } from './SplitNode';
+import { SamplerNode } from './SamplerNode';
+import { SoundfileNode } from './SoundfileNode';
 import { WaveShaperNodeV2 } from './WaveShaperNode';
 
 import type { AudioNodeClass } from '../interfaces/audio-nodes';
@@ -50,6 +52,8 @@ const AUDIO_NODES = [
 	PeakingNode,
 	SigNode,
 	SplitNode,
+	SamplerNode,
+	SoundfileNode,
 	WaveShaperNodeV2
 ] as const satisfies AudioNodeClass[];
 
