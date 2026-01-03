@@ -44,29 +44,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 	// alias of 'soundfile~ url'
 	'soundurl~': { inlets: [{ name: 'url' }], outlets: [] },
 
-	'fft~': {
-		inlets: [
-			{ name: 'in', type: 'signal', description: 'Audio signal to analyze' },
-			{
-				name: 'fftSize',
-				type: 'float',
-				description: 'Size of the FFT bin. Must be a power of 2, from 32 to 32768.',
-				defaultValue: 256,
-				options: [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
-			}
-		],
-		outlets: [
-			{ name: 'out', type: 'signal', description: 'Audio data from the input' },
-			{
-				name: 'analysis',
-				type: 'analysis',
-				description: 'Marker to indicate where to get the FFT data from.'
-			}
-		],
-		description: 'Analyzes audio signals and provides frequency and amplitude data',
-		tags: ['audio']
-	},
-
 	delay: {
 		inlets: [
 			{ name: 'message', type: 'message', description: 'Message to pass through' },
@@ -147,65 +124,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	'compressor~': {
-		inlets: [
-			{ name: 'in', type: 'signal', description: 'Signal to compress' },
-			{
-				name: 'threshold',
-				type: 'float',
-				description: 'The decibel value above which compression starts',
-				defaultValue: -24,
-				isAudioParam: true,
-				minNumber: -200,
-				maxNumber: 0,
-				maxPrecision: 1
-			},
-			{
-				name: 'knee',
-				type: 'float',
-				description: 'Decibel range above threshold for smooth transition',
-				defaultValue: 30,
-				isAudioParam: true,
-				minNumber: 0,
-				maxNumber: 40,
-				maxPrecision: 1
-			},
-			{
-				name: 'ratio',
-				type: 'float',
-				description: 'Amount of dB change in input for 1 dB change in output',
-				defaultValue: 12,
-				isAudioParam: true,
-				minNumber: 0,
-				maxNumber: 20,
-				maxPrecision: 1
-			},
-			{
-				name: 'attack',
-				type: 'float',
-				description: 'Time in seconds to reduce gain by 10dB',
-				defaultValue: 0.003,
-				isAudioParam: true,
-				minNumber: 0,
-				maxNumber: 1,
-				maxPrecision: 4
-			},
-			{
-				name: 'release',
-				type: 'float',
-				description: 'Time in seconds to increase gain by 10dB',
-				defaultValue: 0.25,
-				isAudioParam: true,
-				minNumber: 0,
-				maxNumber: 1,
-				maxPrecision: 4
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Compressed signal' }],
-		description: 'Dynamic range compressor for audio signals',
-		tags: ['audio']
-	},
-
 	'soundfile~': {
 		inlets: [
 			{
@@ -220,52 +138,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['audio']
 	},
 
-	'waveshaper~': {
-		inlets: [
-			{ name: 'in', type: 'signal', description: 'Audio signal to process' },
-			{
-				name: 'curve',
-				type: 'float[]',
-				description: 'Array of numbers or Float32Array to set as waveshaper curve',
-				defaultValue: [0, 1],
-				isAudioParam: false,
-				maxDisplayLength: 8
-			},
-			{
-				name: 'oversample',
-				type: 'string',
-				description: 'Oversample setting: "none", "2x", or "4x"',
-				defaultValue: 'none',
-				isAudioParam: false,
-				options: ['none', '2x', '4x']
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Waveshaped signal' }],
-		description: 'WaveShaperNode for distortion and waveshaping effects',
-		tags: ['audio']
-	},
-
-	'convolver~': {
-		inlets: [
-			{ name: 'in', type: 'signal', description: 'Audio signal to process' },
-			{
-				name: 'message',
-				type: 'message',
-				description: 'AudioBuffer for impulse response',
-				isAudioParam: false
-			},
-			{
-				name: 'normalize',
-				type: 'bool',
-				description: 'Whether to normalize the impulse response',
-				defaultValue: true,
-				isAudioParam: false
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Convolved signal with reverb effect' }],
-		description: 'ConvolverNode for reverb and acoustic modeling using impulse responses',
-		tags: ['audio']
-	},
 	loadbang: {
 		inlets: [],
 		outlets: [{ name: 'out', type: 'bang', description: 'Bang signal sent on load' }],

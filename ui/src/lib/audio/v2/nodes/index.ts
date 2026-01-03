@@ -6,8 +6,11 @@ import { AddNodeV2 } from './AddNode';
 import { AllpassNode } from './AllpassNode';
 import { AudioService } from '../AudioService';
 import { BandpassNode } from './BandpassNode';
+import { CompressorNode } from './CompressorNode';
+import { ConvolverNodeV2 } from './ConvolverNode';
 import { DacNode } from './DacNode';
 import { DelayNodeV2 } from './DelayNode';
+import { FftNode } from './FftNode';
 import { GainNodeV2 } from './GainNode';
 import { HighpassNode } from './HighpassNode';
 import { HighshelfNode } from './HighshelfNode';
@@ -18,6 +21,7 @@ import { OscNode } from './OscNode';
 import { PanNodeV2 } from './PanNode';
 import { PeakingNode } from './PeakingNode';
 import { SigNode } from './SigNode';
+import { WaveShaperNodeV2 } from './WaveShaperNode';
 
 import type { AudioNodeClass } from '../interfaces/audio-nodes';
 
@@ -25,8 +29,11 @@ const AUDIO_NODES = [
 	AddNodeV2,
 	AllpassNode,
 	BandpassNode,
+	CompressorNode,
+	ConvolverNodeV2,
 	DacNode,
 	DelayNodeV2,
+	FftNode,
 	GainNodeV2,
 	HighpassNode,
 	HighshelfNode,
@@ -36,7 +43,8 @@ const AUDIO_NODES = [
 	OscNode,
 	PanNodeV2,
 	PeakingNode,
-	SigNode
+	SigNode,
+	WaveShaperNodeV2
 ] as const satisfies AudioNodeClass[];
 
 /**

@@ -165,17 +165,6 @@ export class AudioSystem {
 		return objectDef.inlets?.[inletIndex] ?? null;
 	}
 
-	createAnalyzer(nodeId: string, params: unknown[]) {
-		const [, fftSize] = params as [unknown, number];
-
-		const analyzer = this.audioContext.createAnalyser();
-		analyzer.fftSize = fftSize;
-
-		this.nodesById.set(nodeId, { type: 'fft~', node: analyzer });
-
-		return analyzer;
-	}
-
 	// Create audio objects for object nodes
 	createAudioObject(nodeId: string, objectType: string, params: unknown[] = []) {
 		hasSomeAudioNode.set(true);
@@ -193,7 +182,6 @@ export class AudioSystem {
 		}
 
 		match(objectType)
-			.with('fft~', () => this.createAnalyzer(nodeId, params))
 			.with('mic~', () => this.createMic(nodeId))
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('dsp~', () => this.createDsp(nodeId, params))
@@ -201,11 +189,8 @@ export class AudioSystem {
 			.with('elem~', () => this.createElementary(nodeId, params))
 			.with('csound~', () => this.createCsound(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId))
-			.with('compressor~', () => this.createCompressor(nodeId, params))
 			.with('sampler~', () => this.createSampler(nodeId))
 			.with('soundfile~', () => this.createSoundFile(nodeId))
-			.with('waveshaper~', () => this.createWaveShaper(nodeId, params))
-			.with('convolver~', () => this.createConvolver(nodeId, params))
 			.with('merge~', () => this.createChannelMerger(nodeId, params))
 			.with('split~', () => this.createChannelSplitter(nodeId, params));
 	}
@@ -215,26 +200,6 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'mic~', node });
 
 		this.restartMic(nodeId);
-	}
-
-	createCompressor(nodeId: string, params: unknown[]) {
-		const [, threshold, knee, ratio, attack, release] = params as [
-			unknown,
-			number,
-			number,
-			number,
-			number,
-			number
-		];
-
-		const compressor = this.audioContext.createDynamicsCompressor();
-		compressor.threshold.value = threshold;
-		compressor.knee.value = knee;
-		compressor.ratio.value = ratio;
-		compressor.attack.value = attack;
-		compressor.release.value = release;
-
-		this.nodesById.set(nodeId, { type: 'compressor~', node: compressor });
 	}
 
 	createSampler(nodeId: string) {
@@ -264,29 +229,6 @@ export class AudioSystem {
 			node: mediaElementSource,
 			audioElement
 		});
-	}
-
-	createWaveShaper(nodeId: string, params: unknown[]) {
-		const [, curve] = params;
-
-		const waveshaper = this.audioContext.createWaveShaper();
-
-		if (curve instanceof Float32Array) {
-			waveshaper.curve = curve as Float32Array<ArrayBuffer>;
-		} else if (Array.isArray(curve)) {
-			waveshaper.curve = new Float32Array(Array.from(curve));
-		}
-
-		this.nodesById.set(nodeId, { type: 'waveshaper~', node: waveshaper });
-	}
-
-	createConvolver(nodeId: string, params: unknown[]) {
-		const [, , normalize] = params as [unknown, unknown, boolean];
-
-		const convolver = this.audioContext.createConvolver();
-		convolver.normalize = normalize ?? true;
-
-		this.nodesById.set(nodeId, { type: 'convolver~', node: convolver });
 	}
 
 	createChannelMerger(nodeId: string, params: unknown[]) {

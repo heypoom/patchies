@@ -31,7 +31,7 @@ The V2 system includes several improvements that make migration cleaner:
 
 8. **Dual updateEdges() Calls**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) are called from `FlowCanvasInner.svelte` to handle both V1 and V2 nodes correctly.
 
-## Completed Migrations (15 nodes)
+## Completed Migrations (19 nodes)
 
 - [x] `osc~` - Oscillator node (source, has destroy)
 - [x] `gain~` - Gain/volume control node (processor, no destroy needed)
@@ -48,6 +48,10 @@ The V2 system includes several improvements that make migration cleaner:
 - [x] `lowshelf~` - Low-shelf filter (processor)
 - [x] `highshelf~` - High-shelf filter (processor)
 - [x] `peaking~` - Peaking filter (processor)
+- [x] `fft~` - FFT analyzer (processor)
+- [x] `compressor~` - Dynamic range compressor (processor)
+- [x] `waveshaper~` - Waveshaper distortion (processor)
+- [x] `convolver~` - Convolver reverb (processor)
 
 ## Migration Pattern
 
@@ -579,23 +583,19 @@ Successfully refactored all migrated V2 nodes to use default implementations:
 - Eliminated `match` and `ts-pattern` imports from 13 nodes
 - Pattern now scales: New nodes only need inlets definition + `create()` method
 
-## Remaining Work (9 nodes in V1 AudioSystem)
+## Remaining Work (5 nodes in V1 AudioSystem)
 
 ### Overview
 
-After completing migrations, the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 9 nodes remain in V1:
+After completing Phase 1 migrations (fft~, compressor~, waveshaper~, convolver~), the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 5 nodes remain in V1:
 
-| Node          | Type      | Group      | Status    | Notes                                                                     |
-| ------------- | --------- | ---------- | --------- | ------------------------------------------------------------------------- |
-| `fft~`        | Analyzer  | processors | 🟡 EASY   | Basic creator pattern exists; straightforward wrapping                    |
-| `compressor~` | Processor | processors | 🟢 EASY   | DynamicsCompressorNode with threshold/ratio/knee/attack/release           |
-| `waveshaper~` | Processor | processors | 🟢 EASY   | WaveShaperNode with single curve parameter                                |
-| `convolver~`  | Processor | processors | 🟢 EASY   | ConvolverNode with impulse response buffer                                |
-| `mic~`        | Source    | sources    | 🟡 MEDIUM | Requires special MediaStream + MediaStreamAudioSourceNode handling        |
-| `merge~`      | Processor | processors | 🟡 MEDIUM | ChannelMergerNode with dynamic channel count; handles node resizing       |
-| `split~`      | Processor | processors | 🟡 MEDIUM | ChannelSplitterNode with dynamic channel count; handles node resizing     |
-| `sampler~`    | Source    | sources    | 🔴 HARD   | Complex recording + playback state; MediaRecorder + AudioBufferSourceNode |
-| `soundfile~`  | Source    | sources    | 🔴 HARD   | Audio file loading + streaming; MediaElementAudioSourceNode management    |
+| Node         | Type      | Group      | Status    | Notes                                                                     |
+| ------------ | --------- | ---------- | --------- | ------------------------------------------------------------------------- |
+| `mic~`       | Source    | sources    | 🟡 MEDIUM | Requires special MediaStream + MediaStreamAudioSourceNode handling        |
+| `merge~`     | Processor | processors | 🟡 MEDIUM | ChannelMergerNode with dynamic channel count; handles node resizing       |
+| `split~`     | Processor | processors | 🟡 MEDIUM | ChannelSplitterNode with dynamic channel count; handles node resizing     |
+| `sampler~`   | Source    | sources    | 🔴 HARD   | Complex recording + playback state; MediaRecorder + AudioBufferSourceNode |
+| `soundfile~` | Source    | sources    | 🔴 HARD   | Audio file loading + streaming; MediaElementAudioSourceNode management    |
 
 ### Manager-Based Nodes (To Be Migrated Later - Phase 4+)
 
@@ -804,12 +804,12 @@ Once all nodes are migrated (Phase 1-4 complete):
 
 ## Next Steps
 
-### Immediate (This Sprint)
+### Immediate (This Sprint) - ✅ COMPLETED
 
-- [ ] **Phase 1 Migrations**: Migrate `fft~`, `compressor~`, `waveshaper~`, `convolver~` (4 nodes, ~2-3 hours)
+- [x] **Phase 1 Migrations**: Migrate `fft~`, `compressor~`, `waveshaper~`, `convolver~` (4 nodes, ~2-3 hours)
   - High-value wins with minimal complexity
   - Tests should all pass without changes
-- [ ] **Update migration guide**: Document any special patterns discovered during Phase 1
+- [x] **Update migration guide**: Document any special patterns discovered during Phase 1
 
 ### Short Term (Next Sprint)
 
