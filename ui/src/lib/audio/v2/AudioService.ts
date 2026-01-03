@@ -177,18 +177,6 @@ export class AudioService {
 	}
 
 	/**
-	 * Get all registered v2 node names that have a specific tag.
-	 *
-	 * @param tag - The tag to filter by (e.g., 'audio')
-	 * @returns Array of node type identifiers
-	 */
-	getNodeNamesByTag(tag: string): string[] {
-		return Array.from(this.registry.entries())
-			.filter(([, nodeClass]) => nodeClass.tags?.includes(tag))
-			.map(([name]) => name);
-	}
-
-	/**
 	 * Get an inlet definition by handle.
 	 */
 	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {

@@ -12,7 +12,6 @@ export class OscNode implements PatchAudioNode {
 	static name = 'osc~';
 	static group: AudioNodeGroup = 'sources';
 	static description = 'Oscillator generates audio signals';
-	static tags = ['audio'];
 
 	static inlets: ObjectInlet[] = [
 		{

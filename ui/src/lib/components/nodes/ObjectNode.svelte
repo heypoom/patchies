@@ -232,7 +232,12 @@
 			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
-		if (inlet.name && objectDef.tags?.includes('audio')) {
+		// Route to audio system if node has signal inlets/outlets
+		const hasSignalPorts =
+			objectDef.inlets?.some((i) => i.type === 'signal') ||
+			objectDef.outlets?.some((o) => o.type === 'signal');
+
+		if (inlet.name && hasSignalPorts) {
 			audioSystem.send(nodeId, inlet.name, message);
 
 			return;

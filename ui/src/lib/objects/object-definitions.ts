@@ -643,18 +643,31 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 };
 
 /**
+ * Check if a node has any signal inlets or outlets (i.e., is an audio node).
+ */
+function hasSignalPorts(metadata: NodeMetadata): boolean {
+	const hasSignalInlet = metadata.inlets?.some((inlet) => inlet.type === 'signal');
+	const hasSignalOutlet = metadata.outlets?.some((outlet) => outlet.type === 'signal');
+	return !!(hasSignalInlet || hasSignalOutlet);
+}
+
+/**
  * Get all audio object names from both v1 and v2 systems.
+ * Audio objects are automatically detected by having signal inlets or outlets.
  */
 export function getAudioObjectNames(): string[] {
 	const audioService = AudioService.getInstance();
 
-	// Get v1 audio objects
+	// Get v1 audio objects - detect by signal inlets/outlets
 	const v1Audio = Object.keys(objectDefinitionsV1).filter((key) =>
-		objectDefinitionsV1[key].tags?.includes('audio')
+		hasSignalPorts(objectDefinitionsV1[key])
 	);
 
-	// Get v2 audio objects
-	const v2Audio = audioService.getNodeNamesByTag('audio');
+	// Get v2 audio objects - detect by signal inlets/outlets
+	const v2Audio = audioService.getAllNodeNames().filter((name) => {
+		const metadata = audioService.getNodeMetadata(name);
+		return metadata && hasSignalPorts(metadata);
+	});
 
 	return [...v1Audio, ...v2Audio];
 }
@@ -662,14 +675,34 @@ export function getAudioObjectNames(): string[] {
 export const getObjectNameFromExpr = (expr: string): string =>
 	expr.trim().toLowerCase().split(' ')?.[0];
 
-// Helper function to get object definition
+/**
+ * Get object definition for a given expression.
+ * Checks both v2 and v1 systems.
+ */
 export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
 	const name = getObjectNameFromExpr(expr);
+	const audioService = AudioService.getInstance();
 
+	// Try v2 first
+	const v2Metadata = audioService.getNodeMetadata(name);
+	if (v2Metadata) {
+		return v2Metadata;
+	}
+
+	// Fall back to v1
 	return objectDefinitionsV1[name];
 }
 
-// Helper function to get all object names
-export const getObjectNames = () => Object.keys(objectDefinitionsV1);
+/**
+ * Get all object names from both v1 and v2 systems.
+ */
+export function getObjectNames(): string[] {
+	const v1Names = Object.keys(objectDefinitionsV1);
+
+	const audioService = AudioService.getInstance();
+	const v2AudioNodeNames = audioService.getAllNodeNames();
+
+	return [...v1Names, ...v2AudioNodeNames];
+}
 
 export type AdsrParamList = [unknown, number, number, number, number, number];
