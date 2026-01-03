@@ -8,8 +8,11 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { DspNode } from '$lib/audio/v2/nodes/DspNode';
+	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
 
 	let contentContainer: HTMLDivElement | null = null;
 
@@ -37,6 +40,7 @@
 
 	let messageContext: MessageContext;
 	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	let inletValues = $state<unknown[]>([]);
 	let showEditor = $state(false);
 	let contentWidth = $state(100);
@@ -146,53 +150,58 @@
 		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
 		updateAudioInletValues(inletValues);
 		updateContentWidth();
-
-		setTimeout(() => {
-			const dspNode = audioSystem.nodesById.get(nodeId);
-			if (!dspNode || dspNode.type !== 'dsp~') return;
-
-			dspNode.node.port.onmessage = (event: MessageEvent) => {
-				match(event.data)
-					.with(
-						{
-							type: 'message-port-count-changed',
-							messageInletCount: P.number,
-							messageOutletCount: P.number
-						},
-						(m) => {
-							updateNodeData(nodeId, {
-								messageInletCount: m.messageInletCount,
-								messageOutletCount: m.messageOutletCount
-							});
-
-							syncPortLayout();
-						}
-					)
-					.with(
-						{
-							type: 'audio-port-count-changed',
-							audioInletCount: P.number,
-							audioOutletCount: P.number
-						},
-						(m) => {
-							updateNodeData(nodeId, {
-								audioInletCount: m.audioInletCount,
-								audioOutletCount: m.audioOutletCount
-							});
-
-							syncPortLayout();
-						}
-					)
-					.with({ type: 'set-title', value: P.string }, (m) => {
-						updateNodeData(nodeId, { title: m.value });
-					})
-					.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
-						messageContext.send(eventData.message, eventData.options as SendMessageOptions);
-					})
-					.otherwise(() => {});
-			};
-		}, 100);
+		setupWorkletEventHandler();
 	});
+
+	async function setupWorkletEventHandler() {
+		const node = audioService.getNodeById(nodeId) as DspNode;
+		if (!node) return;
+
+		await node.ensureModule();
+
+		const worklet = node.worklet;
+		if (!worklet) return;
+
+		worklet.port.onmessage = (event: MessageEvent) => {
+			match(event.data)
+				.with(
+					{
+						type: 'message-port-count-changed',
+						messageInletCount: P.number,
+						messageOutletCount: P.number
+					},
+					(m) => {
+						updateNodeData(nodeId, {
+							messageInletCount: m.messageInletCount,
+							messageOutletCount: m.messageOutletCount
+						});
+
+						syncPortLayout();
+					}
+				)
+				.with(
+					{
+						type: 'audio-port-count-changed',
+						audioInletCount: P.number,
+						audioOutletCount: P.number
+					},
+					(m) => {
+						updateNodeData(nodeId, {
+							audioInletCount: m.audioInletCount,
+							audioOutletCount: m.audioOutletCount
+						});
+
+						syncPortLayout();
+					}
+				)
+				.with({ type: 'set-title', value: P.string }, (m) => {
+					updateNodeData(nodeId, { title: m.value });
+				})
+				.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
+					messageContext.send(eventData.message, eventData.options as SendMessageOptions);
+				});
+		};
+	}
 
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
@@ -226,7 +235,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={(e) => {
 							e.preventDefault();
 							e.stopPropagation();

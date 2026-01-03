@@ -13,11 +13,12 @@ Migrate V1 audio nodes (defined in `AudioSystem.ts`) to V2 (self-contained class
 3. **🚨 CRITICAL - No Hardcoding Node Names in AudioService**: NEVER check node type with string comparisons like `if (nodeType === 'sampler~')` inside `AudioService`. This breaks encapsulation and causes bugs. Instead: Let individual nodes implement `connect()` or `connectFrom()` methods to handle their own special logic. The node type check belongs in the node class, NOT in the generic service.
 4. **Dual updateEdges()**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) run to handle both systems.
 
-## Completed Migrations (23 nodes)
+## Completed Migrations (25 nodes)
 
 - ✅ Phase 1: `fft~`, `compressor~`, `waveshaper~`, `convolver~`
 - ✅ Phase 2: `mic~`, `merge~`, `split~`
-- ✅ Phase 3 Part 1: `sampler~`
+- ✅ Phase 3 Part 1: `sampler~`, `soundfile~`
+- ✅ Phase 3 Part 2: `expr~`, `dsp~` (AudioWorklet processors with GainNode wrapper)
 - ✅ Simple nodes: `osc~`, `gain~`, `dac~`, `sig~`, `+~`, `pan~`, `delay~`, `lowpass~`–`peaking~`
 
 ## V2 Node Template (Minimal)
@@ -71,7 +72,7 @@ Implement `destroy()` only for sources that need it:
 
 ```typescript
 destroy(): void {
-        this.audioNode.stop();  // OscillatorNode, etc.
+    this.audioNode.stop();  // OscillatorNode, etc.
     this.audioNode.disconnect();
 }
 ```
@@ -166,16 +167,65 @@ connectFrom(source: AudioNodeV2): void {
 
 **Rule**: If adding `if (nodeType === 'xyz~')` to `AudioService`, add a method to the node class instead.
 
-## Remaining Work (6 nodes)
+## Phase 3 Part 2: expr~ Lessons Learned
 
-### Phase 3 (Simple Complex)
+### Problem: Nodes Missing from nodesById During Patch Loading
 
-- ✅ `soundfile~` - Audio file loading (MediaElementAudioSourceNode) - MIGRATED
+**Issue**: When loading patches, `expr~` nodes weren't connecting properly. Logs showed:
+
+```
+v2#connectByEdge: skip expr~-125 -> object-126: missing node {sourceNode: undefined, targetNode: DacNode}
+```
+
+**Root Cause**: `AudioService.createNode()` was adding nodes to `nodesById` AFTER the async `create()` method completed. For nodes with async initialization (AudioWorklets), this meant nodes weren't available for connections.
+
+**Fix**: Move `nodesById.set()` to run IMMEDIATELY after construction, before `await node.create()`:
+
+```typescript
+async createNode(nodeId, nodeType, params) {
+  const node = new NodeClass(nodeId, audioContext);
+  this.nodesById.set(node.nodeId, node);  // ✅ Add immediately
+  await node.create?.(params);             // Then initialize async
+  return node;
+}
+```
+
+### Pattern: Wrapper Node for Async AudioWorklets
+
+For processor nodes using AudioWorklet (which load asynchronously):
+
+1. **Constructor**: Create a `GainNode` as `audioNode` (immediately connectable)
+2. **create()**: Load worklet async, create `workletNode`, connect it to gain
+3. **connectFrom()**: Route incoming audio to worklet input
+4. **Signal flow**: `source → workletNode (processing) → audioNode (output)`
+
+```typescript
+export class ExprNode implements AudioNodeV2 {
+  audioNode: GainNode;                    // Wrapper for output
+  private workletNode: AudioWorkletNode | null = null;
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.audioNode = audioContext.createGain();  // Immediate
+  }
+
+  async create(params: unknown[]): Promise<void> {
+    await ExprNode.ensureModule(this.audioContext);
+    this.workletNode = new AudioWorkletNode(...);
+    this.workletNode.connect(this.audioNode);    // Chain to output
+  }
+
+  connectFrom(source: AudioNodeV2): void {
+    source.audioNode.connect(this.workletNode);  // Route to processor
+  }
+}
+```
+
+**Key insight**: The wrapper pattern ensures nodes are immediately connectable even when internal processing takes time to initialize.
+
+## Remaining Work (4 nodes)
 
 ### Phase 4 (Manager-Based - Delete These to Remove AudioSystem)
 
-- [ ] `expr~` - ExpressionProcessor
-- [ ] `dsp~` - DspProcessor
 - [ ] `tone~` - ToneManager
 - [ ] `elem~` - ElementaryAudioManager
 - [ ] `csound~` - CsoundManager

@@ -1,5 +1,5 @@
 import type { Edge } from '@xyflow/svelte';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
 import type { V1PatchAudioNode } from './audio-node-types';
@@ -11,8 +11,6 @@ import { ChuckManager } from './ChuckManager';
 import { ToneManager } from './ToneManager';
 import { ElementaryAudioManager } from './ElementaryAudioManager';
 import { CsoundManager } from './nodes/CsoundManager';
-
-import dspWorkletUrl from './dsp-processor.ts?worker&url';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { AudioService } from './v2/AudioService';
@@ -25,7 +23,6 @@ export class AudioSystem {
 
 	nodesById: Map<string, V1PatchAudioNode> = new Map();
 	private timeScheduler: TimeScheduler;
-	private dspWorkletInitialized = false;
 	private v2 = AudioService.getInstance();
 
 	outGain: GainNode | null = null;
@@ -143,44 +140,10 @@ export class AudioSystem {
 		}
 
 		match(objectType)
-			.with('dsp~', () => this.createDsp(nodeId, params))
 			.with('tone~', () => this.createTone(nodeId, params))
 			.with('elem~', () => this.createElementary(nodeId, params))
 			.with('csound~', () => this.createCsound(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId));
-	}
-
-	async initDspWorklet() {
-		if (this.dspWorkletInitialized) return;
-
-		try {
-			const processorUrl = new URL(dspWorkletUrl, import.meta.url);
-			await this.audioContext.audioWorklet.addModule(processorUrl.href);
-			this.dspWorkletInitialized = true;
-		} catch (error) {
-			console.error('Failed to initialize DSP processor worklet:', error);
-		}
-	}
-
-	async createDsp(nodeId: string, params: unknown[]) {
-		await this.initDspWorklet();
-
-		if (!this.dspWorkletInitialized) {
-			console.error('DSP worklet not initialized');
-			return;
-		}
-
-		const [, code] = params as [unknown, string];
-
-		try {
-			const workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor');
-
-			if (code) workletNode.port.postMessage({ type: 'set-code', code: code });
-
-			this.nodesById.set(nodeId, { type: 'dsp~', node: workletNode });
-		} catch (error) {
-			console.error('Failed to create DSP node:', error);
-		}
 	}
 
 	async createTone(nodeId: string, params: unknown[]) {
@@ -293,24 +256,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with({ type: 'dsp~' }, ({ node }) => {
-				match([key, msg])
-					.with(['code', P.string], ([, code]) => {
-						node.port.postMessage({ type: 'set-code', code: code });
-					})
-					.with(['inletValues', P.array(P.any)], ([, values]) => {
-						node.port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
-					})
-					.with(['messageInlet', P.any], ([, messageData]) => {
-						const data = messageData as { inletIndex: number; message: unknown; meta: unknown };
-
-						node.port.postMessage({
-							type: 'message-inlet',
-							message: data.message,
-							meta: data.meta
-						});
-					});
-			})
 			.with({ type: 'tone~' }, async (state) => {
 				await state.toneManager?.handleMessage(key, msg);
 			})

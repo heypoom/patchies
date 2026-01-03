@@ -28,11 +28,6 @@ interface PatchStrudelNode extends AudioNodeBase {
 	node: GainNode;
 }
 
-interface PatchDspNode extends AudioNodeBase {
-	type: 'dsp~';
-	node: AudioWorkletNode;
-}
-
 interface PatchToneNode extends AudioNodeBase {
 	type: 'tone~';
 	node: GainNode;
@@ -58,7 +53,6 @@ export type V1PatchAudioNode =
 	| PatchLyriaNode
 	| PatchChuckNode
 	| PatchStrudelNode
-	| PatchDspNode
 	| PatchToneNode
 	| PatchElementaryNode
 	| PatchCsoundNode;

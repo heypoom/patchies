@@ -1,17 +1,17 @@
-import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
+import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
-import workletUrl from '../../../audio/expression-processor?worker&url';
+import workletUrl from '../../../audio/dsp-processor?worker&url';
 
 /**
- * ExprNode implements the expr~ (expression evaluator) audio node.
- * Evaluates mathematical expressions on audio samples.
+ * DspNode implements the dsp~ (DSP processor) audio node.
+ * Executes user-defined JavaScript for sample-level audio processing.
  */
-export class ExprNode implements AudioNodeV2 {
-	static type = 'expr~';
+export class DspNode implements AudioNodeV2 {
+	static type = 'dsp~';
 	static group: AudioNodeGroup = 'processors';
-	static description = 'Evaluates mathematical expressions on audio samples';
+	static description = 'User-programmable DSP processor with dynamic inlets/outlets';
 
 	static inlets: ObjectInlet[] = [
 		{
@@ -20,15 +20,14 @@ export class ExprNode implements AudioNodeV2 {
 			description: 'Audio signal input'
 		},
 		{
-			name: 'expression',
+			name: 'code',
 			type: 'string',
-			description:
-				'Mathematical expression (s=sample, i=index, t=time, channel, bufferSize, samples, input, inputs, $1-$9=inlet values)'
+			description: 'JavaScript code for audio processing'
 		}
 	];
 
 	static outlets: ObjectOutlet[] = [
-		{ name: 'out', type: 'signal', description: 'Expression result as audio output' }
+		{ name: 'out', type: 'signal', description: 'Processed audio output' }
 	];
 
 	// Output gain
@@ -42,6 +41,7 @@ export class ExprNode implements AudioNodeV2 {
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioContext = audioContext;
+
 		// Create gain node immediately for connections
 		this.audioNode = audioContext.createGain();
 		this.audioNode.gain.value = 1.0;
@@ -50,17 +50,17 @@ export class ExprNode implements AudioNodeV2 {
 	async create(params: unknown[]): Promise<void> {
 		await this.ensureModule();
 
-		const [, expression] = params as [unknown, string];
+		const [, code] = params as [unknown, string];
 
 		try {
-			this.workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor');
+			this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor');
 			this.workletNode.connect(this.audioNode);
 
-			if (expression) {
-				this.send('expression', expression);
+			if (code) {
+				this.send('code', code);
 			}
 		} catch (error) {
-			logger.error('Failed to create expression node:', error);
+			logger.error('Failed to create DSP node:', error);
 		}
 	}
 
@@ -70,16 +70,25 @@ export class ExprNode implements AudioNodeV2 {
 		const port = this.workletNode?.port;
 
 		if (!port) {
-			logger.warn('cannot send message to expr~ as worklet port is missing', { key, msg, port });
+			logger.warn('cannot send message to dsp~ as worklet port is missing', { key, msg, port });
 			return;
 		}
 
 		match([key, msg])
-			.with(['expression', P.string], ([, expression]) => {
-				port.postMessage({ type: 'set-expression', expression });
+			.with(['code', P.string], ([, code]) => {
+				port.postMessage({ type: 'set-code', code });
 			})
-			.with(['inletValues', P.array(P.number)], ([, values]) => {
+			.with(['inletValues', P.array(P.any)], ([, values]) => {
 				port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
+			})
+			.with(['messageInlet', P.any], ([, messageData]) => {
+				const data = messageData as { inletIndex: number; message: unknown; meta: unknown };
+
+				port.postMessage({
+					type: 'message-inlet',
+					message: data.message,
+					meta: data.meta
+				});
 			});
 	}
 
@@ -95,7 +104,7 @@ export class ExprNode implements AudioNodeV2 {
 	}
 
 	async ensureModule(): Promise<void> {
-		await ExprNode.ensureModule(this.audioContext);
+		await DspNode.ensureModule(this.audioContext);
 	}
 
 	destroy(): void {
@@ -116,10 +125,15 @@ export class ExprNode implements AudioNodeV2 {
 				await audioContext.audioWorklet.addModule(processorUrl.href);
 				this.moduleReady = true;
 			} catch (error) {
-				logger.error('cannot add expression-processor worklet module:', error);
+				logger.error('cannot add dsp-processor worklet module:', error);
 			}
 		})();
 
 		return this.modulePromise;
+	}
+
+	/** Get the internal worklet node (for UI to access port) */
+	get worklet(): AudioWorkletNode | null {
+		return this.workletNode;
 	}
 }
