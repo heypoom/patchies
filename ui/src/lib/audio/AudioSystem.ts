@@ -128,20 +128,7 @@ export class AudioSystem {
 			return audioService.getAudioParamByNode(v2Node, name);
 		}
 
-		const entry = this.nodesById.get(nodeId);
-		if (!entry) return null;
-
-		return match(entry)
-			.with({ type: 'compressor~' }, ({ node }) =>
-				match(name)
-					.with('threshold', () => node.threshold)
-					.with('knee', () => node.knee)
-					.with('ratio', () => node.ratio)
-					.with('attack', () => node.attack)
-					.with('release', () => node.release)
-					.otherwise(() => null)
-			)
-			.otherwise(() => null);
+		return null;
 	}
 
 	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
@@ -447,24 +434,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with({ type: 'compressor~' }, ({ node }) => {
-				match([key, msg])
-					.with(['threshold', P.number], ([, threshold]) => {
-						node.threshold.value = threshold;
-					})
-					.with(['knee', P.number], ([, knee]) => {
-						node.knee.value = knee;
-					})
-					.with(['ratio', P.number], ([, ratio]) => {
-						node.ratio.value = ratio;
-					})
-					.with(['attack', P.number], ([, attack]) => {
-						node.attack.value = attack;
-					})
-					.with(['release', P.number], ([, release]) => {
-						node.release.value = release;
-					});
-			})
 			.with({ type: 'mic~' }, () => {
 				match(msg).with({ type: 'bang' }, () => {
 					this.restartMic(nodeId);
@@ -711,29 +680,6 @@ export class AudioSystem {
 								// Ignore errors if node already stopped
 							}
 						}
-					});
-			})
-			.with({ type: 'waveshaper~' }, ({ node }) => {
-				match([key, msg])
-					.with(['curve', P.array(P.number)], ([, curve]) => {
-						node.curve = new Float32Array(curve);
-					})
-					.with(['curve', P.instanceOf(Float32Array)], ([, curve]) => {
-						node.curve = curve;
-					})
-					.with(['oversample', P.string], ([, oversample]) => {
-						if (oversample === 'none' || oversample === '2x' || oversample === '4x') {
-							node.oversample = oversample;
-						}
-					});
-			})
-			.with({ type: 'convolver~' }, ({ node }) => {
-				match([key, msg])
-					.with(['message', P.instanceOf(AudioBuffer)], ([, buffer]) => {
-						node.buffer = buffer;
-					})
-					.with(['normalize', P.boolean], ([, normalize]) => {
-						node.normalize = normalize;
 					});
 			})
 			.with({ type: P.union('merge~', 'split~') }, () => {
