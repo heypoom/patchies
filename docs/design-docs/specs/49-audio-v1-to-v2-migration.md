@@ -6,10 +6,24 @@ This document outlines the process for migrating V1 audio nodes to the V2 archit
 
 **Core Principle**: The node name (e.g., `'gain~'`) should be mentioned **only once** in the codebase: in the V2 node class's `static name` property. All V1 references must be removed during migration.
 
+## Key Architectural Improvements
+
+The V2 system includes several improvements that make migration cleaner:
+
+1. **Automatic Group Detection**: `audio-node-group.ts` now checks the V2 registry first, reading the `static group` property directly from node classes. No manual updates needed for new V2 nodes.
+
+2. **Registry-Based Lookup**: `AudioService.getNodeGroup()` provides dynamic node group lookup, eliminating hardcoded type mappings.
+
+3. **Graceful Fallback**: All migration points (group detection, node creation, validation) check V2 first, then fall back to V1. This enables gradual migration without breaking existing functionality.
+
+4. **Optional destroy()**: AudioService provides default cleanup (disconnect), so processor nodes don't need custom `destroy()` methods - only sources with special cleanup (e.g., oscillators needing `.stop()`).
+
+5. **Type Safety**: Changed from restrictive V1 types (`V1PatchAudioType`) to `string` in function signatures, allowing both V1 and V2 nodes without type conflicts.
+
 ## Completed Migrations
 
-- [x] `osc~` - Oscillator node
-- [x] `gain~` - Gain/volume control node
+- [x] `osc~` - Oscillator node (source, has destroy)
+- [x] `gain~` - Gain/volume control node (processor, no destroy needed)
 
 ## Migration Pattern
 
@@ -235,12 +249,33 @@ export function registerAudioNodes(): void {
 
 3. **Remove from `audio-node-group.ts`**:
 
-   - Remove from the `P.union()` in `getAudioNodeGroup()`
+   - Remove from the `P.union()` in the V1 fallback section
+   - **Note**: V2 nodes automatically work via registry lookup - no manual updates needed!
 
 4. **Remove from `object-definitions.ts`**:
    - Remove the entire object definition entry from `objectDefinitionsV1`
 
 After cleanup, the node name should **only appear once** in the codebase: in the V2 class's `static name` property. Usage sites (like `createAudioObject(nodeId, 'gain~', [])`) will automatically use the V2 implementation.
+
+### How V2 Nodes Work Automatically
+
+The migration architecture ensures V2 nodes "just work" without manual registration everywhere:
+
+1. **Group Detection** (`audio-node-group.ts`):
+
+   - Checks V2 registry first via `AudioService.getNodeGroup()`
+   - Falls back to V1 pattern matching only if not found
+   - No manual updates needed for new V2 nodes ✨
+
+2. **Node Creation** (`AudioSystem.createAudioObject()`):
+
+   - Checks V2 registry first via `AudioService.isNodeTypeDefined()`
+   - Falls back to V1 switch statement only if not found
+   - Automatically uses V2 implementation when available
+
+3. **Connection Validation** (`AudioService.validateEdge()`):
+   - Uses V2 node groups for validation
+   - Falls back to V1 validation for unmigrated nodes
 
 ## Common Patterns
 
@@ -309,23 +344,42 @@ To automate this migration, an automated tool should:
    - `create()`: Copy parameter parsing and initialization
    - `getAudioParam()`: Detect AudioParam properties
    - `send()`: Generate handlers for each inlet
-   - `destroy()`: Handle stop() for sources, always disconnect
+   - `destroy()`: Only for sources - most nodes don't need this!
 
 6. **Handle Naming Conflicts**
 
    - Check if class name conflicts with Web Audio API
-   - Add `Patch` prefix if needed
+   - Add `Patch` prefix if needed (e.g., `PatchGainNode`)
 
 7. **Register Node**
-   - Add import statement
-   - Add to `registerAudioNodes()`
+
+   - Add import statement to `v2/nodes/index.ts`
+   - Add to `registerAudioNodes()` function
+   - **That's it!** No other manual updates needed
+
+8. **Remove V1 References** (can be automated)
+   - Remove from `AudioSystem.ts` (method + switch case + getAudioParam + send)
+   - Remove from `audio-node-types.ts` (interface + union type)
+   - Remove from `audio-node-group.ts` (V1 fallback pattern)
+   - Remove from `object-definitions.ts` (V1 definition)
+
+### Why V2 Nodes Need Minimal Registration
+
+The registry-based architecture means V2 nodes automatically work everywhere:
+
+- ✅ **Group detection**: `AudioService.getNodeGroup()` reads from registry
+- ✅ **Node creation**: `AudioService.createNode()` uses registry
+- ✅ **Validation**: Uses V2 node groups from registry
+- ✅ **Metadata**: All metadata in node class (inlets, outlets, description)
 
 ## Next Steps
 
-- [ ] Migrate remaining V1 nodes:
+- [ ] Migrate remaining V1 nodes (prioritize commonly used ones):
   - [ ] `dac~` (destination)
   - [ ] `sig~` (constant signal source)
   - [ ] `+~` (signal addition)
-  - [ ] Filter nodes (lowpass~, highpass~, etc.)
-  - [ ] Effect nodes (delay~, compressor~, etc.)
-- [ ] Deprecate V1 node system once all are migrated
+  - [ ] Filter nodes (lowpass~, highpass~, bandpass~, etc.)
+  - [ ] Effect nodes (delay~, compressor~, pan~, etc.)
+- [ ] Build automated migration script (code generation from V1 → V2)
+- [ ] Consider batch migration tool for similar node types (e.g., all filters)
+- [ ] Eventually deprecate V1 system once all nodes are migrated
