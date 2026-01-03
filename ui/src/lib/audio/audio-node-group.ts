@@ -1,12 +1,18 @@
 import { match, P } from 'ts-pattern';
-import type { V1PatchAudioNodeGroup, V1PatchAudioType } from './audio-node-types';
+import type { V1PatchAudioNodeGroup } from './audio-node-types';
+import { AudioService } from './v2/AudioService';
 
-export const getAudioNodeGroup = (nodeType: V1PatchAudioType): V1PatchAudioNodeGroup | null =>
-	match<V1PatchAudioType, V1PatchAudioNodeGroup | null>(nodeType)
-		.with(P.union('osc~', 'lyria', 'mic~', 'sig~', 'soundfile~'), () => 'sources')
+export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | null => {
+	// Check V2 registry first
+	const v2Audio = AudioService.getInstance();
+	const v2Group = v2Audio.getNodeGroup(nodeType);
+	if (v2Group) return v2Group;
+
+	// Fall back to V1 pattern matching
+	return match<string, V1PatchAudioNodeGroup | null>(nodeType)
+		.with(P.union('lyria', 'mic~', 'sig~', 'soundfile~'), () => 'sources')
 		.with(
 			P.union(
-				'gain~',
 				'fft~',
 				'+~',
 				'lowpass~',
@@ -29,11 +35,9 @@ export const getAudioNodeGroup = (nodeType: V1PatchAudioType): V1PatchAudioNodeG
 		)
 		.with('dac~', () => 'destinations')
 		.otherwise(() => null);
+};
 
-export const canAudioNodeConnect = (
-	sourceType: V1PatchAudioType,
-	targetType: V1PatchAudioType
-): boolean => {
+export const canAudioNodeConnect = (sourceType: string, targetType: string): boolean => {
 	const source = getAudioNodeGroup(sourceType);
 	const target = getAudioNodeGroup(targetType);
 

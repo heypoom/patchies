@@ -2,7 +2,7 @@ import type { Edge } from '@xyflow/svelte';
 import { match, P } from 'ts-pattern';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
-import type { V1PatchAudioNode, V1PatchAudioType } from './audio-node-types';
+import type { V1PatchAudioNode } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
@@ -121,10 +121,10 @@ export class AudioSystem {
 	}
 
 	getAudioParam(nodeId: string, name: string): AudioParam | null {
-		// Check if this is a v2 node (migrated to AudioService)
-		const audioService = AudioService.getInstance();
-		const v2Node = audioService.getNode(nodeId);
-		if (audioService.isNodeDefined(v2Node)) {
+		const v2Audio = AudioService.getInstance();
+		const v2Node = v2Audio.getNode(nodeId);
+
+		if (v2Audio.isNodeDefined(v2Node)) {
 			return v2Node.getAudioParam(name);
 		}
 
@@ -132,11 +132,6 @@ export class AudioSystem {
 		if (!entry) return null;
 
 		return match(entry)
-			.with({ type: 'gain~' }, ({ node }) =>
-				match(name)
-					.with('gain', () => node.gain)
-					.otherwise(() => null)
-			)
 			.with(
 				{ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') },
 				({ node }) =>
@@ -218,7 +213,7 @@ export class AudioSystem {
 	}
 
 	// Create audio objects for object nodes
-	createAudioObject(nodeId: string, objectType: V1PatchAudioType, params: unknown[] = []) {
+	createAudioObject(nodeId: string, objectType: string, params: unknown[] = []) {
 		hasSomeAudioNode.set(true);
 
 		// Check if this node type has been migrated to v2
@@ -234,7 +229,6 @@ export class AudioSystem {
 		}
 
 		match(objectType)
-			.with('gain~', () => this.createGain(nodeId, params))
 			.with('dac~', () => this.createDac(nodeId))
 			.with('fft~', () => this.createAnalyzer(nodeId, params))
 			.with('+~', () => this.createAdd(nodeId))
@@ -263,15 +257,6 @@ export class AudioSystem {
 			.with('convolver~', () => this.createConvolver(nodeId, params))
 			.with('merge~', () => this.createChannelMerger(nodeId, params))
 			.with('split~', () => this.createChannelSplitter(nodeId, params));
-	}
-
-	createGain(nodeId: string, params: unknown[]) {
-		const [, gainValue] = params as [unknown, number];
-
-		const gainNode = this.audioContext.createGain();
-		gainNode.gain.value = gainValue;
-
-		this.nodesById.set(nodeId, { type: 'gain~', node: gainNode });
 	}
 
 	createDac(nodeId: string) {
@@ -696,11 +681,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with({ type: 'gain~' }, ({ node }) => {
-				match([key, msg]).with(['gain', P.number], ([, gain]) => {
-					node.gain.value = gain;
-				});
-			})
 			.with(
 				{ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') },
 				({ node }) => {

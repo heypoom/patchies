@@ -134,11 +134,12 @@ export class AudioService {
 		const sourceClass = this.registry.get(sourceType);
 		const targetClass = this.registry.get(targetType);
 
-		// Fallback to V1 validation.
+		// V1 validation fallback.
 		if (!sourceClass || !targetClass) {
-			return canAudioNodeConnect(sourceType as V1PatchAudioType, targetType as V1PatchAudioType);
+			return canAudioNodeConnect(sourceType, targetType);
 		}
 
+		// V2 validation
 		return validateGroupConnection(sourceClass.group, targetClass.group);
 	}
 
@@ -264,6 +265,16 @@ export class AudioService {
 	 */
 	isNodeTypeDefined(nodeType: string): boolean {
 		return this.registry.has(nodeType);
+	}
+
+	/**
+	 * Get the group of a node type from the registry.
+	 * @param nodeType - The type of node to check
+	 * @returns The node group or null if not defined
+	 */
+	getNodeGroup(nodeType: string): 'sources' | 'processors' | 'destinations' | null {
+		const NodeClass = this.registry.get(nodeType);
+		return NodeClass?.group ?? null;
 	}
 
 	/**

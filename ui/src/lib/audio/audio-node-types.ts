@@ -7,16 +7,6 @@ interface AudioNodeBase {
 	node: AudioNode;
 }
 
-interface PatchOscNode extends AudioNodeBase {
-	type: 'osc~';
-	node: OscillatorNode;
-}
-
-interface PatchGainNode extends AudioNodeBase {
-	type: 'gain~';
-	node: GainNode;
-}
-
 interface PatchDacNode extends AudioNodeBase {
 	type: 'dac~';
 	node: GainNode; // dac uses the outGain node
@@ -190,8 +180,6 @@ interface PatchChannelSplitterNode extends AudioNodeBase {
 }
 
 export type V1PatchAudioNode =
-	| PatchOscNode
-	| PatchGainNode
 	| PatchDacNode
 	| PatchAddNode
 	| PatchLyriaNode

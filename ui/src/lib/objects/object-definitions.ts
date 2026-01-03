@@ -17,22 +17,6 @@ export type { ObjectDataType, ObjectInlet, ObjectOutlet };
 
 /** Legacy object definitions. */
 export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
-	'gain~': {
-		inlets: [
-			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
-			{
-				name: 'gain',
-				type: 'float',
-				description: 'Gain multiplier',
-				precision: 2,
-				isAudioParam: true
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
-		description: 'Amplifies input by gain factor',
-		tags: ['audio']
-	},
-
 	'dac~': {
 		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
 		outlets: [],

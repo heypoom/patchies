@@ -5,6 +5,7 @@
 
 import { AudioService } from '../AudioService';
 import { OscNode } from './OscNode';
+import { GainNodeV2 } from './GainNode';
 
 /**
  * Define all v2 audio nodes with the AudioService.
@@ -14,4 +15,5 @@ export function registerAudioNodes(): void {
 	const audioService = AudioService.getInstance();
 
 	audioService.define(OscNode);
+	audioService.define(GainNodeV2);
 }
