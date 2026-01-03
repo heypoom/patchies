@@ -65,10 +65,10 @@ bun run test               # Run all tests
 
 ```typescript
 // In any JavaScript-based node:
-send(data, {to: 0}) // Send to specific outlet number
+send(data, { to: 0 }); // Send to specific outlet number
 recv((data, meta) => {
   // meta contains { source, inlet, outlet, inletKey, outletKey }
-})
+});
 ```
 
 The `MessageSystem` handles routing through XY Flow edges with handle-based targeting. Messages support outlet filtering and automatic node lifecycle cleanup.
@@ -179,6 +179,25 @@ The rendering system requires careful coordination across multiple files:
 - `fboRenderer.renderNodePreview()` accepts `customSize?: [number, number]` for custom resolution capture
 - `capturePreviewFrame()` supports high-resolution input for AI image-to-image workflows
 - Default preview size is calculated from output size with `PREVIEW_SCALE_FACTOR`
+
+## Structured Reflections
+
+After completing significant refactors or architectural changes:
+
+1. **Create a reflection document** in `docs/reflections/` named `YYYY-MM-DD-topic.md`
+2. **Keep it concise** - 1-2 pages maximum
+3. **Focus on learnings** - What went wrong, what could be improved, action items
+4. **Skip the obvious wins** - Briefly acknowledge successes, focus on challenges
+5. **Include action items** - Clear next steps with timeframes
+
+**Template structure:**
+
+- Objective (1-2 sentences)
+- Key Challenges & Solutions (bullet points)
+- What Could Be Better (specific issues with impact assessment)
+- Action Items (categorized by timeframe)
+
+**Consult existing reflections** in `docs/reflections/` before starting similar work.
 
 ## Node Development Patterns
 

@@ -66,8 +66,8 @@ export class OscNode implements PatchAudioNode {
 	destroy(): void {
 		try {
 			this.audioNode.stop();
-		} catch (error) {
-			console.log(`osc~ ${this.nodeId} was already stopped:`, error);
+		} catch {
+			// ignore node stop errors
 		}
 
 		this.audioNode.disconnect();

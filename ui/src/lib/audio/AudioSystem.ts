@@ -1089,8 +1089,9 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
-		if (v2Node && v2Node.type === 'osc~') {
-			v2Node.destroy();
+
+		if (v2Node && audioService.isNodeTypeDefined(v2Node.type)) {
+			audioService.removeNode(v2Node);
 			audioService.unregisterNode(nodeId);
 			this.nodesById.delete(nodeId);
 			return;
@@ -1100,13 +1101,6 @@ export class AudioSystem {
 
 		if (entry) {
 			match(entry)
-				.with({ type: 'osc~' }, (osc) => {
-					try {
-						osc.node.stop();
-					} catch (error) {
-						console.log(`osc~ ${nodeId} was already stopped:`, error);
-					}
-				})
 				.with({ type: 'sig~' }, (sig) => {
 					try {
 						sig.node.stop();
