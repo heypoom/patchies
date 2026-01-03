@@ -495,8 +495,9 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
+
 		if (audioService.isNodeDefined(v2Node)) {
-			v2Node.send(key, msg);
+			audioService.send(nodeId, key, msg);
 			return;
 		}
 

@@ -9,6 +9,7 @@ import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { validateGroupConnection } from './audio-helpers';
 import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { logger } from '$lib/utils/logger';
+import { getAudioParamValue, setAudioParamValue } from './audio-param-helpers';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -52,6 +53,56 @@ export class AudioService {
 	}
 
 	/**
+	 * Get an AudioParam from a node, using the node's implementation or a default fallback.
+	 * The default implementation looks for AudioParam properties on the audioNode
+	 * that are marked as isAudioParam in the node's inlets definition.
+	 */
+	private getAudioParam(node: AudioNodeV2, paramName: string): AudioParam | null {
+		if (node.getAudioParam) {
+			return node.getAudioParam(paramName);
+		}
+
+		// Get the audio param value by default
+		const nodeType = getNodeType(node);
+		const nodeClass = this.registry.get(nodeType);
+
+		if (nodeClass?.inlets) {
+			return getAudioParamValue(paramName, node.audioNode, nodeClass.inlets);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Send a message to a node by ID, using the node's implementation or a default fallback.
+	 * The default implementation routes numeric messages to AudioParam properties
+	 * that are marked as isAudioParam in the node's inlets definition.
+	 *
+	 * @param nodeId - The ID of the node to send the message to
+	 * @param key - The parameter or message key
+	 * @param message - The message value
+	 */
+	send(nodeId: string, key: string, message: unknown): void {
+		const node = this.nodesById.get(nodeId);
+
+		if (!node) {
+			return;
+		}
+
+		if (node.send) {
+			node.send(key, message);
+			return;
+		}
+
+		const nodeClass = this.registry.get(getNodeType(node));
+
+		// Set the audio parameter value by default
+		if (nodeClass?.inlets) {
+			setAudioParamValue(key, message, node.audioNode, nodeClass.inlets);
+		}
+	}
+
+	/**
 	 * Default implementation for connecting nodes.
 	 * Used when a node doesn't implement its own connect method.
 	 */
@@ -61,7 +112,7 @@ export class AudioService {
 			return;
 		}
 
-		const audioParam = target.getAudioParam?.(paramName);
+		const audioParam = this.getAudioParam(target, paramName);
 
 		if (audioParam) {
 			source.audioNode.connect(audioParam);
@@ -226,7 +277,9 @@ export class AudioService {
 				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
 
 				const targetNode = this.nodesById.get(edge.target);
-				const isAudioParam = targetNode ? !!targetNode.getAudioParam?.(inlet?.name ?? '') : false;
+				const isAudioParam = targetNode
+					? !!this.getAudioParam(targetNode, inlet?.name ?? '')
+					: false;
 
 				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
 			}
