@@ -137,50 +137,16 @@ export class AudioService {
 	}
 
 	/**
-	 * Update audio connections based on XY Flow edges.
-	 *
-	 * IMPORTANT: This ONLY handles connections between V2 nodes.
-	 * V1-to-V2 and V1-to-V1 connections are handled by AudioSystem.updateEdges.
-	 * We skip edges where either node isn't in the V2 registry to avoid
-	 * interfering with V1 node management.
-	 *
-	 * To prevent cross-system connection breakage, we do NOT disconnect V2 nodes
-	 * that are involved in edges where the other endpoint is a V1 node.
-	 * AudioSystem.updateEdges will restore those connections.
+	 * Update audio connections based on object graph's edges.
 	 */
 	updateEdges(edges: Edge[]): void {
 		try {
-			// Identify which V2 nodes are involved ONLY in V2-to-V2 edges
-			// Nodes that are only involved in edges where the other end is V1 should NOT be disconnected
-			const v2NodesInV2ToV2 = new Set<string>();
-			const v2NodesInCrossSystem = new Set<string>();
-
-			for (const edge of edges) {
-				const sourceIsV2 = !!this.nodesById.get(edge.source);
-				const targetIsV2 = !!this.nodesById.get(edge.target);
-
-				if (sourceIsV2 && targetIsV2) {
-					// V2-to-V2 edge
-					v2NodesInV2ToV2.add(edge.source);
-					v2NodesInV2ToV2.add(edge.target);
-				} else if (sourceIsV2 || targetIsV2) {
-					// Cross-system edge (V2→V1 or V1→V2)
-					if (sourceIsV2) v2NodesInCrossSystem.add(edge.source);
-					if (targetIsV2) v2NodesInCrossSystem.add(edge.target);
-				}
-			}
-
-			// Only disconnect V2 nodes that are ONLY involved in V2-to-V2 edges
-			// Do NOT disconnect V2 nodes that are involved in cross-system connections
-			for (const nodeId of v2NodesInV2ToV2) {
-				if (v2NodesInCrossSystem.has(nodeId)) continue; // Skip if involved in cross-system
-				const node = this.nodesById.get(nodeId);
-				if (!node) continue;
-
+			// Disconnect all existing connections
+			for (const node of this.nodesById.values()) {
 				try {
 					node.audioNode?.disconnect();
 				} catch (error) {
-					logger.warn('cannot disconnect node:', error);
+					logger.warn(`cannot disconnect audio node ${node.nodeId}:`, error);
 				}
 			}
 
@@ -202,7 +168,6 @@ export class AudioService {
 				}
 			}
 
-			// Connect nodes by using its edges (V2-to-V2 edges only, due to connectByEdge logic)
 			for (const edge of edges) {
 				this.connectByEdge(edge);
 			}
@@ -268,8 +233,12 @@ export class AudioService {
 		const sourceNode = this.nodesById.get(edge.source);
 		const targetNode = this.nodesById.get(edge.target);
 
-		// IMPORTANT: skip edges involving V1 nodes
+		// skip edges if source or target is not in nodesById
 		if (!sourceNode || !targetNode) {
+			logger.debug(`v2#connectByEdge: skip ${edge.source} -> ${edge.target}: missing node`, {
+				sourceNode,
+				targetNode
+			});
 			return;
 		}
 
@@ -290,6 +259,8 @@ export class AudioService {
 		// - Target nodes (e.g., sampler~) may have custom logic for how to receive input
 		// Pass both handles so they can route to specific channels
 		if (sourceNode.connect) {
+			logger.debug(`v2#connectByEdge: ${edge.source} -> ${edge.target}: connect()`);
+
 			sourceNode.connect(
 				targetNode,
 				paramName,
@@ -297,6 +268,8 @@ export class AudioService {
 				edge.targetHandle ?? undefined
 			);
 		} else if (targetNode.connectFrom) {
+			logger.debug(`v2#connectByEdge: ${edge.source} -> ${edge.target}: connectFrom()`);
+
 			// If target has special input handling, call it with the source
 			targetNode.connectFrom(
 				sourceNode,
@@ -305,6 +278,8 @@ export class AudioService {
 				edge.targetHandle ?? undefined
 			);
 		} else {
+			logger.debug(`v2#connectByEdge: ${edge.source} -> ${edge.target}: defaultConnect()`);
+
 			this.defaultConnect(sourceNode, targetNode, paramName);
 		}
 	}
