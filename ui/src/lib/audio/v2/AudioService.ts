@@ -9,6 +9,7 @@ import { getAudioContext } from 'superdough';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { validateGroupConnection } from './audio-helpers';
 import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
+import { logger } from '$lib/utils/logger';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -97,7 +98,7 @@ export class AudioService {
 			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
 
 			if (!isValidConnection) {
-				console.warn(`cannot connect ${sourceId} to ${targetId}: invalid connection`);
+				logger.warn(`cannot connect ${sourceId} to ${targetId}: invalid connection`);
 				return;
 			}
 
@@ -107,7 +108,7 @@ export class AudioService {
 				this.defaultConnect(sourceNode, targetNode, paramName);
 			}
 		} catch (error) {
-			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
+			logger.error(`cannot connect ${sourceId} to ${targetId}:`, error);
 		}
 	}
 
@@ -209,7 +210,7 @@ export class AudioService {
 				try {
 					node.audioNode.disconnect();
 				} catch (error) {
-					console.warn('Error disconnecting node:', error);
+					logger.warn('cannot disconnect node:', error);
 				}
 			}
 
@@ -227,7 +228,7 @@ export class AudioService {
 				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
 			}
 		} catch (error) {
-			console.error('Error updating audio edges:', error);
+			logger.error('cannot update audio edges:', error);
 		}
 	}
 
@@ -284,15 +285,15 @@ export class AudioService {
 	 * @returns The created node instance, or null if type not defined
 	 */
 	createNode(nodeId: string, nodeType: string, params: unknown[] = []): PatchAudioNode | null {
-		const NodeConstructor = this.registry.get(nodeType);
+		const NodeClass = this.registry.get(nodeType);
 
-		if (!NodeConstructor) {
-			console.warn(`audio node "${nodeType}" is not defined`);
+		if (!NodeClass) {
+			logger.warn(`audio node "${nodeType}" is not defined`);
 			return null;
 		}
 
 		const audioContext = this.getAudioContext();
-		const node = new NodeConstructor(nodeId, audioContext);
+		const node = new NodeClass(nodeId, audioContext);
 		node.create(params);
 		this.registerNode(node);
 

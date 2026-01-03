@@ -18,6 +18,7 @@ import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { AudioService } from './v2/AudioService';
 import { registerAudioNodes } from './v2/nodes';
+import { logger } from '$lib/utils/logger';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
@@ -60,7 +61,7 @@ export class AudioSystem {
 			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
 
 			if (!isValidConnection) {
-				console.warn(`Cannot connect ${sourceId} to ${targetId}: invalid connection type`);
+				logger.warn(`cannot connect ${sourceId} to ${targetId}`);
 				return;
 			}
 
@@ -70,7 +71,7 @@ export class AudioSystem {
 				if (audioParam) {
 					sourceEntry.node.connect(audioParam);
 				} else {
-					console.warn(`AudioParam ${paramName} not found on node ${targetId}`);
+					logger.warn(`audio parameter ${paramName} does not exist on ${targetId}`);
 				}
 			} else {
 				if (targetEntry.type === 'sampler~') {
@@ -101,7 +102,7 @@ export class AudioSystem {
 				}
 			}
 		} catch (error) {
-			console.error(`Failed to connect ${sourceId} to ${targetId}:`, error);
+			logger.error(`cannot connect ${sourceId} to ${targetId}`, error);
 		}
 	}
 
@@ -201,7 +202,7 @@ export class AudioSystem {
 		const inletIndex = handleToPortIndex(targetHandle);
 		if (inletIndex === null || isNaN(inletIndex)) return null;
 
-		return objectDef.inlets[inletIndex] ?? null;
+		return objectDef.inlets?.[inletIndex] ?? null;
 	}
 
 	createAnalyzer(nodeId: string, params: unknown[]) {
@@ -519,7 +520,7 @@ export class AudioSystem {
 			await this.audioContext.audioWorklet.addModule(processorUrl.href);
 			this.workletInitialized = true;
 		} catch (error) {
-			console.error('Failed to initialize expression processor worklet:', error);
+			logger.error('cannot setup expression processor worklet:', error);
 		}
 	}
 
@@ -1065,8 +1066,8 @@ export class AudioSystem {
 				.with({ type: 'sig~' }, (sig) => {
 					try {
 						sig.node.stop();
-					} catch (error) {
-						console.log(`sig~ ${nodeId} was already stopped:`, error);
+					} catch {
+						// sig~ was already stopped.
 					}
 				})
 				.with({ type: 'mic~' }, (mic) => {
