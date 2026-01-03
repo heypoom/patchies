@@ -55,7 +55,7 @@ export interface AudioNodeV2 {
 	 * @param key - The parameter or message key
 	 * @param message - The message value
 	 */
-	send?(key: string, message: unknown): void;
+	send?(key: string, message: unknown): void | Promise<void>;
 
 	/**
 	 * Get an AudioParam for modulation.

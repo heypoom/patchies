@@ -31,13 +31,19 @@ export class ExprNode implements AudioNodeV2 {
 		{ name: 'out', type: 'signal', description: 'Expression result as audio output' }
 	];
 
+	audioNode: GainNode;
+
 	readonly nodeId: string;
-	audioNode: AudioWorkletNode | null = null;
+
+	private workletNode: AudioWorkletNode | null = null;
 	private audioContext: AudioContext;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioContext = audioContext;
+		// Create gain node immediately for connections
+		this.audioNode = audioContext.createGain();
+		this.audioNode.gain.value = 1.0;
 	}
 
 	async create(params: unknown[]): Promise<void> {
@@ -46,7 +52,10 @@ export class ExprNode implements AudioNodeV2 {
 		const [, expression] = params as [unknown, string];
 
 		try {
-			this.audioNode = new AudioWorkletNode(this.audioContext, 'expression-processor');
+			this.workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor');
+
+			// Connect worklet to output gain
+			this.workletNode.connect(this.audioNode);
 
 			if (expression) {
 				this.send('expression', expression);
@@ -59,7 +68,7 @@ export class ExprNode implements AudioNodeV2 {
 	async send(key: string, msg: unknown): Promise<void> {
 		await ExprNode.ensureModule(this.audioContext);
 
-		const port = this.audioNode?.port;
+		const port = this.workletNode?.port;
 
 		if (!port) {
 			logger.warn('cannot send message to expr~ as worklet port is missing', { key, msg, port });
@@ -73,6 +82,20 @@ export class ExprNode implements AudioNodeV2 {
 			.with(['inletValues', P.array(P.number)], ([, values]) => {
 				port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
 			});
+	}
+
+	/**
+	 * Handle incoming connections - route to worklet input
+	 */
+	connectFrom(source: AudioNodeV2): void {
+		if (this.workletNode && source.audioNode) {
+			source.audioNode.connect(this.workletNode);
+		}
+	}
+
+	destroy(): void {
+		this.workletNode?.disconnect();
+		this.audioNode.disconnect();
 	}
 
 	private static moduleReady = false;

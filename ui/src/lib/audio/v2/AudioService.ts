@@ -212,15 +212,15 @@ export class AudioService {
 		}
 
 		const audioContext = this.getAudioContext();
+
 		const node = new NodeClass(nodeId, audioContext);
+		this.nodesById.set(node.nodeId, node);
 
 		try {
 			await node.create?.(params);
 		} catch (error) {
 			logger.error(`cannot create node ${nodeType}`, error);
 		}
-
-		this.nodesById.set(node.nodeId, node);
 
 		return node;
 	}
@@ -235,10 +235,6 @@ export class AudioService {
 
 		// skip edges if source or target is not in nodesById
 		if (!sourceNode || !targetNode) {
-			logger.debug(`v2#connectByEdge: skip ${edge.source} -> ${edge.target}: missing node`, {
-				sourceNode,
-				targetNode
-			});
 			return;
 		}
 
@@ -259,8 +255,6 @@ export class AudioService {
 		// - Target nodes (e.g., sampler~) may have custom logic for how to receive input
 		// Pass both handles so they can route to specific channels
 		if (sourceNode.connect) {
-			logger.debug(`v2#connectByEdge: ${edge.source} -> ${edge.target}: connect()`);
-
 			sourceNode.connect(
 				targetNode,
 				paramName,
@@ -268,8 +262,6 @@ export class AudioService {
 				edge.targetHandle ?? undefined
 			);
 		} else if (targetNode.connectFrom) {
-			logger.debug(`v2#connectByEdge: ${edge.source} -> ${edge.target}: connectFrom()`);
-
 			// If target has special input handling, call it with the source
 			targetNode.connectFrom(
 				sourceNode,
@@ -278,8 +270,6 @@ export class AudioService {
 				edge.targetHandle ?? undefined
 			);
 		} else {
-			logger.debug(`v2#connectByEdge: ${edge.source} -> ${edge.target}: defaultConnect()`);
-
 			this.defaultConnect(sourceNode, targetNode, paramName);
 		}
 	}
