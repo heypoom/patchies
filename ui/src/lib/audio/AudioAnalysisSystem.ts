@@ -1,8 +1,8 @@
 import { match } from 'ts-pattern';
 import { AudioSystem } from './AudioSystem';
+import { AudioService } from './v2/AudioService';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
-import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -57,11 +57,17 @@ export type GlslFFTInletMeta = {
 
 const WAVEFORM_UNIFORM_NAME = 'waveTexture';
 
-/** Get FFT object's analysis outlet index */
+/** Get FFT object's `analysis` outlet index */
 function getFFTAnalysisOutletIndex(): number {
-	const fftDef = objectDefinitionsV1['fft~'];
-	const index = fftDef.outlets.findIndex((outlet) => outlet.name === 'analysis');
-	return index !== -1 ? index : 1; // fallback to index 1 if not found
+	const fftMeta = AudioService.getInstance().getNodeMetadata('fft~');
+
+	if (fftMeta?.outlets) {
+		const index = fftMeta.outlets.findIndex((outlet) => outlet.name === 'analysis');
+
+		if (index !== -1) return index;
+	}
+
+	return 1;
 }
 
 export class AudioAnalysisSystem {
