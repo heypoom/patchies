@@ -132,27 +132,6 @@ export class AudioSystem {
 		if (!entry) return null;
 
 		return match(entry)
-			.with(
-				{ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') },
-				({ node }) =>
-					match(name)
-						.with('frequency', () => node.frequency)
-						.with('Q', () => node.Q)
-						.otherwise(() => null)
-			)
-			.with({ type: P.union('lowshelf~', 'highshelf~') }, ({ node }) =>
-				match(name)
-					.with('frequency', () => node.frequency)
-					.with('gain', () => node.gain)
-					.otherwise(() => null)
-			)
-			.with({ type: 'peaking~' }, ({ node }) =>
-				match(name)
-					.with('frequency', () => node.frequency)
-					.with('Q', () => node.Q)
-					.with('gain', () => node.gain)
-					.otherwise(() => null)
-			)
 			.with({ type: 'compressor~' }, ({ node }) =>
 				match(name)
 					.with('threshold', () => node.threshold)
@@ -216,14 +195,6 @@ export class AudioSystem {
 		match(objectType)
 			.with('fft~', () => this.createAnalyzer(nodeId, params))
 			.with('mic~', () => this.createMic(nodeId))
-			.with('lowpass~', () => this.createLpf(nodeId, params))
-			.with('highpass~', () => this.createHpf(nodeId, params))
-			.with('bandpass~', () => this.createBpf(nodeId, params))
-			.with('allpass~', () => this.createAllpass(nodeId, params))
-			.with('notch~', () => this.createNotch(nodeId, params))
-			.with('lowshelf~', () => this.createLowshelf(nodeId, params))
-			.with('highshelf~', () => this.createHighshelf(nodeId, params))
-			.with('peaking~', () => this.createPeaking(nodeId, params))
 			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('dsp~', () => this.createDsp(nodeId, params))
 			.with('tone~', () => this.createTone(nodeId, params))
@@ -244,95 +215,6 @@ export class AudioSystem {
 		this.nodesById.set(nodeId, { type: 'mic~', node });
 
 		this.restartMic(nodeId);
-	}
-
-	createLpf(nodeId: string, params: unknown[]) {
-		const [, frequency, Q] = params as [unknown, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'lowpass';
-		filter.frequency.value = frequency;
-		filter.Q.value = Q;
-
-		this.nodesById.set(nodeId, { type: 'lowpass~', node: filter });
-	}
-
-	createHpf(nodeId: string, params: unknown[]) {
-		const [, frequency, Q] = params as [unknown, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'highpass';
-		filter.frequency.value = frequency;
-		filter.Q.value = Q;
-
-		this.nodesById.set(nodeId, { type: 'highpass~', node: filter });
-	}
-
-	createBpf(nodeId: string, params: unknown[]) {
-		const [, frequency, Q] = params as [unknown, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'bandpass';
-		filter.frequency.value = frequency;
-		filter.Q.value = Q;
-
-		this.nodesById.set(nodeId, { type: 'bandpass~', node: filter });
-	}
-
-	createAllpass(nodeId: string, params: unknown[]) {
-		const [, frequency, Q] = params as [unknown, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'allpass';
-		filter.frequency.value = frequency;
-		filter.Q.value = Q;
-
-		this.nodesById.set(nodeId, { type: 'allpass~', node: filter });
-	}
-
-	createNotch(nodeId: string, params: unknown[]) {
-		const [, frequency, Q] = params as [unknown, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'notch';
-		filter.frequency.value = frequency;
-		filter.Q.value = Q;
-
-		this.nodesById.set(nodeId, { type: 'notch~', node: filter });
-	}
-
-	createLowshelf(nodeId: string, params: unknown[]) {
-		const [, frequency, gain] = params as [unknown, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'lowshelf';
-		filter.frequency.value = frequency;
-		filter.gain.value = gain;
-
-		this.nodesById.set(nodeId, { type: 'lowshelf~', node: filter });
-	}
-
-	createHighshelf(nodeId: string, params: unknown[]) {
-		const [, frequency, gain] = params as [unknown, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'highshelf';
-		filter.frequency.value = frequency;
-		filter.gain.value = gain;
-
-		this.nodesById.set(nodeId, { type: 'highshelf~', node: filter });
-	}
-
-	createPeaking(nodeId: string, params: unknown[]) {
-		const [, frequency, Q, gain] = params as [unknown, number, number, number];
-
-		const filter = this.audioContext.createBiquadFilter();
-		filter.type = 'peaking';
-		filter.frequency.value = frequency;
-		filter.Q.value = Q;
-		filter.gain.value = gain;
-
-		this.nodesById.set(nodeId, { type: 'peaking~', node: filter });
 	}
 
 	createCompressor(nodeId: string, params: unknown[]) {
@@ -622,39 +504,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with(
-				{ type: P.union('lowpass~', 'highpass~', 'bandpass~', 'allpass~', 'notch~') },
-				({ node }) => {
-					match([key, msg])
-						.with(['frequency', P.number], ([, freq]) => {
-							node.frequency.value = freq;
-						})
-						.with(['Q', P.number], ([, q]) => {
-							node.Q.value = q;
-						});
-				}
-			)
-			.with({ type: P.union('lowshelf~', 'highshelf~') }, ({ node }) => {
-				match([key, msg])
-					.with(['frequency', P.number], ([, freq]) => {
-						node.frequency.value = freq;
-					})
-					.with(['gain', P.number], ([, gain]) => {
-						node.gain.value = gain;
-					});
-			})
-			.with({ type: 'peaking~' }, ({ node }) => {
-				match([key, msg])
-					.with(['frequency', P.number], ([, freq]) => {
-						node.frequency.value = freq;
-					})
-					.with(['Q', P.number], ([, q]) => {
-						node.Q.value = q;
-					})
-					.with(['gain', P.number], ([, gain]) => {
-						node.gain.value = gain;
-					});
-			})
 			.with({ type: 'compressor~' }, ({ node }) => {
 				match([key, msg])
 					.with(['threshold', P.number], ([, threshold]) => {

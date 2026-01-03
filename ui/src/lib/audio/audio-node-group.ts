@@ -11,22 +11,7 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 	return match<string, V1PatchAudioNodeGroup | null>(nodeType)
 		.with(P.union('lyria', 'mic~', 'soundfile~'), () => 'sources')
 		.with(
-			P.union(
-				'fft~',
-				'lowpass~',
-				'highpass~',
-				'bandpass~',
-				'allpass~',
-				'notch~',
-				'lowshelf~',
-				'highshelf~',
-				'peaking~',
-				'compressor~',
-				'waveshaper~',
-				'convolver~',
-				'split~',
-				'merge~'
-			),
+			P.union('fft~', 'compressor~', 'waveshaper~', 'convolver~', 'split~', 'merge~'),
 			() => 'processors'
 		)
 		.otherwise(() => null);

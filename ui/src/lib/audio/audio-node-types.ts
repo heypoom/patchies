@@ -29,46 +29,6 @@ interface PatchMicNode extends AudioNodeBase {
 	mediaStreamSource?: MediaStreamAudioSourceNode;
 }
 
-interface PatchLowpassNode extends AudioNodeBase {
-	type: 'lowpass~';
-	node: BiquadFilterNode;
-}
-
-interface PatchHighpassNode extends AudioNodeBase {
-	type: 'highpass~';
-	node: BiquadFilterNode;
-}
-
-interface PatchBandpassNode extends AudioNodeBase {
-	type: 'bandpass~';
-	node: BiquadFilterNode;
-}
-
-interface PatchAllpassNode extends AudioNodeBase {
-	type: 'allpass~';
-	node: BiquadFilterNode;
-}
-
-interface PatchNotchNode extends AudioNodeBase {
-	type: 'notch~';
-	node: BiquadFilterNode;
-}
-
-interface PatchLowshelfNode extends AudioNodeBase {
-	type: 'lowshelf~';
-	node: BiquadFilterNode;
-}
-
-interface PatchHighshelfNode extends AudioNodeBase {
-	type: 'highshelf~';
-	node: BiquadFilterNode;
-}
-
-interface PatchPeakingNode extends AudioNodeBase {
-	type: 'peaking~';
-	node: BiquadFilterNode;
-}
-
 interface PatchExprNode extends AudioNodeBase {
 	type: 'expr~';
 	node: AudioWorkletNode;
@@ -159,14 +119,6 @@ export type V1PatchAudioNode =
 	| PatchLyriaNode
 	| PatchAnalyzerNode
 	| PatchMicNode
-	| PatchLowpassNode
-	| PatchHighpassNode
-	| PatchBandpassNode
-	| PatchAllpassNode
-	| PatchNotchNode
-	| PatchLowshelfNode
-	| PatchHighshelfNode
-	| PatchPeakingNode
 	| PatchExprNode
 	| PatchChuckNode
 	| PatchCompressorNode
