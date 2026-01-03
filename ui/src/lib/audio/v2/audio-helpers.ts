@@ -1,4 +1,4 @@
-import type { AudioNodeGroup } from './interfaces/PatchAudioNode';
+import type { AudioNodeGroup } from './interfaces/audio-nodes';
 
 /**
  * Validate if a connection is allowed between two nodes based on their group types.

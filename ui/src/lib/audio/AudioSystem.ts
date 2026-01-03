@@ -4,7 +4,7 @@ import { match, P } from 'ts-pattern';
 import { getAudioContext } from 'superdough';
 import type { V1PatchAudioNode, V1PatchAudioType } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
-import { objectDefinitionsV1, type ObjectInlet } from '$lib/objects/object-definitions';
+import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
 import { ChuckManager } from './ChuckManager';
@@ -19,6 +19,7 @@ import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { AudioService } from './v2/AudioService';
 import { registerAudioNodes } from './v2/nodes';
 import { logger } from '$lib/utils/logger';
+import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;

@@ -64,7 +64,7 @@ export interface ObjectOutlet {
  * Metadata for a node type (inlets, outlets, description, tags).
  * These are optional static properties on node classes.
  */
-export interface NodeMetadata {
+export interface ObjectMetadata {
 	inlets?: ObjectInlet[];
 	outlets?: ObjectOutlet[];
 	description?: string;

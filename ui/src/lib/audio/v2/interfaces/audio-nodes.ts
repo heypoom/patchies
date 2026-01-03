@@ -1,4 +1,4 @@
-import type { NodeMetadata } from './NodeMetadata';
+import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
 /**
  * Node group type for v2 audio nodes.
@@ -12,23 +12,22 @@ export type AudioNodeGroup = 'sources' | 'processors' | 'destinations';
 /**
  * Constructor signature for PatchAudioNode classes.
  */
-export type NodeConstructor = new (nodeId: string, audioContext: AudioContext) => PatchAudioNode;
+export type AudioNodeConstructor = new (nodeId: string, audioContext: AudioContext) => AudioNodeV2;
 
 /**
- * Full node class type including required static properties and optional metadata.
- * All v2 node classes must conform to this type.
+ * Audio node class type including required static properties and optional metadata.
  */
-export type NodeClass = {
+export type AudioNodeClass = {
 	name: string;
 	group: AudioNodeGroup;
-} & NodeMetadata &
-	NodeConstructor;
+} & ObjectMetadata &
+	AudioNodeConstructor;
 
 /**
  * Interface for audio nodes in the v2 audio system.
  * All audio node classes must implement this interface.
  */
-export interface PatchAudioNode {
+export interface AudioNodeV2 {
 	/** Unique identifier for this node */
 	readonly nodeId: string;
 
@@ -63,7 +62,7 @@ export interface PatchAudioNode {
 	 * @param target - The target node to connect to
 	 * @param paramName - Optional AudioParam name to connect to
 	 */
-	connect?(target: PatchAudioNode, paramName?: string): void;
+	connect?(target: AudioNodeV2, paramName?: string): void;
 
 	/**
 	 * Cleanup resources and disconnect the node.
@@ -80,5 +79,5 @@ export interface PatchAudioNode {
  * @param node - The node instance
  * @returns The node type identifier
  */
-export const getNodeType = (node: PatchAudioNode): string =>
+export const getNodeType = (node: AudioNodeV2): string =>
 	(node.constructor as { name: string }).name;

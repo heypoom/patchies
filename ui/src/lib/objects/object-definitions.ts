@@ -2,15 +2,15 @@ import type {
 	ObjectDataType,
 	ObjectInlet,
 	ObjectOutlet,
-	NodeMetadata
-} from '$lib/audio/v2/interfaces/NodeMetadata';
+	ObjectMetadata
+} from '$lib/objects/v2/object-metadata';
 import { AudioService } from '$lib/audio/v2/AudioService';
 
 /**
  * Legacy type alias for backwards compatibility.
  * Use NodeMetadata in new code.
  */
-export type ObjectDefinition = NodeMetadata;
+export type ObjectDefinition = ObjectMetadata;
 
 // Re-export v2 types for backwards compatibility
 export type { ObjectDataType, ObjectInlet, ObjectOutlet };
@@ -645,7 +645,7 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 /**
  * Check if a node has any signal inlets or outlets (i.e., is an audio node).
  */
-function hasSignalPorts(metadata: NodeMetadata): boolean {
+function hasSignalPorts(metadata: ObjectMetadata): boolean {
 	const hasSignalInlet = metadata.inlets?.some((inlet) => inlet.type === 'signal');
 	const hasSignalOutlet = metadata.outlets?.some((outlet) => outlet.type === 'signal');
 	return !!(hasSignalInlet || hasSignalOutlet);

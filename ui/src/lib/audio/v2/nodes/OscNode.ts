@@ -1,14 +1,14 @@
 import { match, P } from 'ts-pattern';
 
-import type { PatchAudioNode, AudioNodeGroup } from '../interfaces/PatchAudioNode';
-import type { ObjectInlet, ObjectOutlet } from '../interfaces/NodeMetadata';
+import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 const PeriodicWavePart = P.union(P.array(P.number), P.instanceOf(Float32Array));
 
 /**
  * OscNode implements the osc~ (oscillator) audio node.
  */
-export class OscNode implements PatchAudioNode {
+export class OscNode implements AudioNodeV2 {
 	static name = 'osc~';
 	static group: AudioNodeGroup = 'sources';
 	static description = 'Oscillator generates audio signals';
@@ -31,6 +31,7 @@ export class OscNode implements PatchAudioNode {
 
 			formatter(value) {
 				if (Array.isArray(value)) return 'custom';
+
 				return String(value);
 			},
 

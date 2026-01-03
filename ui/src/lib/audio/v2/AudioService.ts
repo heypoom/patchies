@@ -1,7 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
-import type { PatchAudioNode, NodeClass } from './interfaces/PatchAudioNode';
-import { getNodeType } from './interfaces/PatchAudioNode';
-import type { NodeMetadata, ObjectInlet } from './interfaces/NodeMetadata';
+import type { AudioNodeV2, AudioNodeClass } from './interfaces/audio-nodes';
+import { getNodeType } from './interfaces/audio-nodes';
+import type { ObjectMetadata, ObjectInlet } from '$lib/objects/v2/object-metadata';
 import type { V1PatchAudioType } from '../audio-node-types';
 import { canAudioNodeConnect } from '../audio-node-group';
 // @ts-expect-error -- no typedefs
@@ -19,10 +19,10 @@ export class AudioService {
 	private static instance: AudioService | null = null;
 
 	/** Registry of node classes */
-	private registry: Map<string, NodeClass> = new Map();
+	private registry: Map<string, AudioNodeClass> = new Map();
 
 	/** Mapping of active audio nodes */
-	private nodesById: Map<string, PatchAudioNode> = new Map();
+	private nodesById: Map<string, AudioNodeV2> = new Map();
 
 	/** Output gain node for audio output */
 	outGain: GainNode | null = null;
@@ -39,7 +39,7 @@ export class AudioService {
 	}
 
 	/** Register a node to the registry. */
-	registerNode(node: PatchAudioNode): void {
+	registerNode(node: AudioNodeV2): void {
 		this.nodesById.set(node.nodeId, node);
 	}
 
@@ -49,7 +49,7 @@ export class AudioService {
 	}
 
 	/** Removes a node from the graph. */
-	removeNode(node: PatchAudioNode): void {
+	removeNode(node: AudioNodeV2): void {
 		if (node.destroy) {
 			node.destroy();
 			return;
@@ -58,7 +58,7 @@ export class AudioService {
 		node.audioNode.disconnect();
 	}
 
-	getNode(nodeId: string): PatchAudioNode | null {
+	getNode(nodeId: string): AudioNodeV2 | null {
 		return this.nodesById.get(nodeId) ?? null;
 	}
 
@@ -66,7 +66,7 @@ export class AudioService {
 	 * Default implementation for connecting nodes.
 	 * Used when a node doesn't implement its own connect method.
 	 */
-	private defaultConnect(source: PatchAudioNode, target: PatchAudioNode, paramName?: string): void {
+	private defaultConnect(source: AudioNodeV2, target: AudioNodeV2, paramName?: string): void {
 		if (!paramName) {
 			source.audioNode.connect(target.audioNode);
 			return;
@@ -148,7 +148,7 @@ export class AudioService {
 	 * @param nodeType - The node type identifier
 	 * @returns NodeMetadata or null if not found
 	 */
-	getNodeMetadata(nodeType: string): NodeMetadata | null {
+	getNodeMetadata(nodeType: string): ObjectMetadata | null {
 		const nodeClass = this.registry.get(nodeType);
 
 		// Use V2 registry if available
@@ -253,7 +253,7 @@ export class AudioService {
 	 * The constructor class must have static `name` and `group` properties.
 	 * @param constructor - The node class constructor with static name and group properties
 	 */
-	define(constructor: NodeClass): void {
+	define(constructor: AudioNodeClass): void {
 		this.registry.set(constructor.name, constructor);
 	}
 
@@ -271,7 +271,7 @@ export class AudioService {
 	 * @param node - The node instance (can be null)
 	 * @returns True if the node exists and is a v2 node
 	 */
-	isNodeDefined(node: PatchAudioNode | null): node is PatchAudioNode {
+	isNodeDefined(node: AudioNodeV2 | null): node is AudioNodeV2 {
 		if (!node) return false;
 
 		return this.registry.has(getNodeType(node));
@@ -284,7 +284,7 @@ export class AudioService {
 	 * @param params - Array of parameters for the node
 	 * @returns The created node instance, or null if type not defined
 	 */
-	createNode(nodeId: string, nodeType: string, params: unknown[] = []): PatchAudioNode | null {
+	createNode(nodeId: string, nodeType: string, params: unknown[] = []): AudioNodeV2 | null {
 		const NodeClass = this.registry.get(nodeType);
 
 		if (!NodeClass) {
