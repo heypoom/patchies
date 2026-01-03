@@ -1,21 +1,11 @@
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
-interface DSPMessage {
-	type: 'set-code';
-	code: string;
-}
-
-interface InletValuesMessage {
-	type: 'set-inlet-values';
-	values: number[];
-}
-
-interface MessageInletMessage {
-	type: 'message-inlet';
-	message: unknown;
-	meta: RecvMeta;
-}
+type DspMessage =
+	| { type: 'set-code'; code: string }
+	| { type: 'set-inlet-values'; values: number[] }
+	| { type: 'message-inlet'; message: unknown; meta: RecvMeta }
+	| { type: 'stop' };
 
 type RecvMeta = {
 	source: string;
@@ -41,24 +31,25 @@ class DSPProcessor extends AudioWorkletProcessor {
 	private audioInletCount = 1;
 	private audioOutletCount = 1;
 	private recvCallback: ((message: unknown, meta: RecvMeta) => void) | null = null;
+	private shouldStop = false;
 
 	constructor() {
 		super();
 
-		this.port.onmessage = (
-			event: MessageEvent<DSPMessage | InletValuesMessage | MessageInletMessage>
-		) => {
+		this.port.onmessage = (event: MessageEvent<DspMessage>) => {
 			match(event.data)
-				.with({ type: 'set-code' }, ({ code }) => {
+				.with({ type: 'set-code', code: P.string }, ({ code }) => {
 					this.setCode(code);
 				})
-				.with({ type: 'set-inlet-values' }, ({ values }) => {
+				.with({ type: 'set-inlet-values', values: P.array(P.any) }, ({ values }) => {
 					this.setInletValues(values);
 				})
-				.with({ type: 'message-inlet' }, ({ message, meta }) => {
+				.with({ type: 'message-inlet', message: P.any, meta: P.any }, ({ message, meta }) => {
 					this.handleMessageInlet(message, meta);
 				})
-				.exhaustive();
+				.with({ type: 'stop' }, () => {
+					this.shouldStop = true;
+				});
 		};
 	}
 
@@ -67,6 +58,8 @@ class DSPProcessor extends AudioWorkletProcessor {
 			this.processFunction = null;
 			return;
 		}
+
+		this.shouldStop = false;
 
 		try {
 			// Reset count and recv callback for new code
@@ -177,6 +170,11 @@ class DSPProcessor extends AudioWorkletProcessor {
 	}
 
 	process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+		// Stop processing if destroy was called
+		if (this.shouldStop) {
+			return false;
+		}
+
 		const output = outputs[0] || [];
 
 		// Keep the DSP node alive even without process function

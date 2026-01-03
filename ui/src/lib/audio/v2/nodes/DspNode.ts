@@ -36,6 +36,7 @@ export class DspNode implements AudioNodeV2 {
 	readonly nodeId: string;
 
 	private workletNode: AudioWorkletNode | null = null;
+	private keepAliveGain: GainNode | null = null;
 	private audioContext: AudioContext;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
@@ -55,6 +56,9 @@ export class DspNode implements AudioNodeV2 {
 		try {
 			this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor');
 			this.workletNode.connect(this.audioNode);
+
+			// TODO: optimize this -- now every worklet is active
+			this.keepWorkletActive(this.workletNode);
 
 			if (code) {
 				this.send('code', code);
@@ -103,12 +107,36 @@ export class DspNode implements AudioNodeV2 {
 		}
 	}
 
+	/**
+	 * Keep worklet active by connecting to destination (at zero gain)
+	 * ensures process() runs even when not connected to anything
+	 *
+	 * @param worklet
+	 */
+	keepWorkletActive(worklet: AudioWorkletNode) {
+		this.keepAliveGain = this.audioContext.createGain();
+		this.keepAliveGain.gain.value = 0;
+		worklet.connect(this.keepAliveGain);
+		this.keepAliveGain.connect(this.audioContext.destination);
+	}
+
 	async ensureModule(): Promise<void> {
 		await DspNode.ensureModule(this.audioContext);
 	}
 
 	destroy(): void {
-		this.workletNode?.disconnect();
+		if (this.workletNode) {
+			try {
+				// Signal worklet to stop processing
+				this.workletNode.port.postMessage({ type: 'stop' });
+			} catch {
+				// Port might be closed already
+			}
+
+			this.workletNode.disconnect();
+		}
+
+		this.keepAliveGain?.disconnect();
 		this.audioNode.disconnect();
 	}
 
