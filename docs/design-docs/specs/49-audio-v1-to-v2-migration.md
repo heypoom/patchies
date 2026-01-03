@@ -31,7 +31,7 @@ The V2 system includes several improvements that make migration cleaner:
 
 8. **Dual updateEdges() Calls**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) are called from `FlowCanvasInner.svelte` to handle both V1 and V2 nodes correctly.
 
-## Completed Migrations (22 nodes)
+## Completed Migrations (23 nodes)
 
 - [x] `osc~` - Oscillator node (source, has destroy)
 - [x] `gain~` - Gain/volume control node (processor, no destroy needed)
@@ -55,6 +55,7 @@ The V2 system includes several improvements that make migration cleaner:
 - [x] `mic~` - Microphone input (source, with MediaStream handling)
 - [x] `merge~` - Channel merger (processor, dynamic channel count)
 - [x] `split~` - Channel splitter (processor, dynamic channel count)
+- [x] `sampler~` - Audio sampler/recorder (processor, recording + playback)
 
 ## Migration Pattern
 
@@ -588,27 +589,179 @@ Successfully refactored all migrated V2 nodes to use default implementations:
 - Eliminated `match` and `ts-pattern` imports from 13 nodes
 - Pattern now scales: New nodes only need inlets definition + `create()` method
 
-## Remaining Work (2 nodes in V1 AudioSystem)
+## Phase 3 Complete: Complex State Nodes (sampler~)
 
-### Overview
+### sampler~ Migration - Key Learnings
 
-After completing Phase 1-2 migrations (23 nodes total), the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 2 nodes remain in V1:
+The `sampler~` migration revealed critical architectural patterns for nodes with complex input/output routing:
 
-| Node         | Type   | Group   | Status  | Notes                                                                     |
-| ------------ | ------ | ------- | ------- | ------------------------------------------------------------------------- |
-| `sampler~`   | Source | sources | 🔴 HARD | Complex recording + playback state; MediaRecorder + AudioBufferSourceNode |
-| `soundfile~` | Source | sources | 🔴 HARD | Audio file loading + streaming; MediaElementAudioSourceNode management    |
+#### Problem 1: Node Group Affects Validation
 
-### Manager-Based Nodes (To Be Migrated Later - Phase 4+)
+**The Issue**: sampler~ was initially marked as `group: 'sources'`, which prevented audio connections to it.
+
+**Why It Happened**: sampler~ generates audio when playing back, so it seemed like a source. But it also **receives** audio for recording.
+
+**The Fix**: Changed to `group: 'processors'` because it has dual functionality - it processes/records incoming audio, then outputs playback.
+
+**Lesson**: Node groups should reflect the **primary interface** to the graph:
+
+- Sources: Only output (e.g., `osc~`, `mic~`)
+- Processors: Receive and output (e.g., `gain~`, `sampler~`)
+- Destinations: Only input (e.g., `dac~`)
+
+If a node is primarily a processor (has meaningful audio input), use `'processors'` even if it also generates audio internally.
+
+#### Problem 2: Target-Side Custom Connection Logic
+
+**The Issue**: When mic~ connected to sampler~, the default connection routed audio to `audioNode` (the output), not to `recordingDestination` (for capturing).
+
+**Why It Happened**: `AudioService.connectByEdge()` only called custom `connect()` on the SOURCE node, never on the TARGET. sampler~ needed special target-side logic.
+
+**The Solution**: Introduced `connectFrom()` method to `AudioNodeV2` interface:
+
+- `connect()`: Called on SOURCE nodes (e.g., split~ routing specific output channels)
+- `connectFrom()`: Called on TARGET nodes (e.g., sampler~ receiving audio for recording)
+
+**AudioService Logic**:
+
+```typescript
+if (sourceNode.connect) {
+  sourceNode.connect(targetNode, paramName, sourceHandle, targetHandle);
+} else if (targetNode.connectFrom) {
+  targetNode.connectFrom(sourceNode, paramName, sourceHandle, targetHandle);
+} else {
+  this.defaultConnect(sourceNode, targetNode, paramName);
+}
+```
+
+**Lesson**: Some nodes have special **input handling** (not output). When designing custom connection logic, consider:
+
+- Does the SOURCE need special output routing? → Implement `connect()`
+- Does the TARGET need special input routing? → Implement `connectFrom()`
+- Most nodes use the default connection → No custom methods needed
+
+#### Problem 3: MediaStreamAudioDestinationNode Has No Outputs
+
+**The Issue**: Attempted to connect `recordingDestination` to `audioNode` for monitoring:
+
+```typescript
+// ❌ WRONG - MediaStreamAudioDestinationNode has 0 outputs
+this.recordingDestination.connect(this.audioNode);
+```
+
+This threw: `"output index (0) exceeds number of outputs (0)"`
+
+**Why It Happened**: Confused about the audio path. Thought the destination needed to feed back to output.
+
+**The Solution**: Keep input and output paths completely separate:
+
+- **Recording path**: source → `recordingDestination` (captured by MediaRecorder)
+- **Playback path**: `audioNode` (playback via AudioBufferSourceNode)
+
+The `recordingDestination` is a **destination** - it only receives audio, it doesn't output. It feeds directly to the `MediaStream` for the recorder.
+
+**Lesson**: Understand node types:
+
+- **AudioNode destinations** (e.g., `createGain()`, `createAnalyser()`) - have inputs and outputs
+- **MediaStreamAudioDestinationNode** - a capture node, has input but no audio outputs (streams to MediaStream)
+- **MediaStreamAudioSourceNode** - creates audio from a stream, has output but no input
+
+These special stream nodes don't chain like regular audio nodes.
+
+#### Problem 4: Naming Confusion
+
+**The Issue**: Called the field `destinationNode` which was ambiguous:
+
+- Is it an audio destination (like `dac~`)?
+- Is it a Web Audio "destination"?
+- Is it something else?
+
+**The Fix**: Renamed to `recordingDestination` - clear that it's specifically for capturing audio for the recorder.
+
+**Lesson**: Use specific names for complex functionality:
+
+- `destinationNode` → too generic
+- `recordingDestination` → exactly describes its purpose
+- `outputGain` → better than `outputNode`
+
+#### Problem 5: No Hardcoding Node Names in AudioService
+
+**Initial Approach** (Wrong):
+
+```typescript
+// ❌ Don't hardcode node names in generic service code!
+if (targetType === "sampler~" && !paramName) {
+  samplerNode.recordingDestination.connect(sourceNode);
+}
+```
+
+**Correct Approach**:
+Let the node handle its own routing via `connectFrom()`:
+
+```typescript
+// ✅ Node encapsulates its logic
+if (targetNode.connectFrom) {
+  targetNode.connectFrom(sourceNode, paramName, sourceHandle, targetHandle);
+}
+```
+
+**Lesson**: The architecture principle: **No hardcoded node type strings in AudioService**. Use the node's custom methods to encapsulate special behavior.
+
+### sampler~ Implementation Pattern
+
+```typescript
+export class SamplerNode implements AudioNodeV2 {
+  static type = "sampler~";
+  static group: AudioNodeGroup = "processors"; // ← Processor, not source!
+
+  readonly audioNode: GainNode; // Output for playback
+  private recordingDestination: MediaStreamAudioDestinationNode; // ← Clear name
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    // Create audio output node
+    this.audioNode = audioContext.createGain();
+
+    // Create separate recording capture node (for input side)
+    this.recordingDestination = audioContext.createMediaStreamDestination();
+  }
+
+  // Handle incoming audio connections (e.g., mic~ → sampler~)
+  connectFrom(source: AudioNodeV2): void {
+    // Route incoming audio to recording, not to output
+    source.audioNode.connect(this.recordingDestination);
+  }
+
+  // Normal output connections work automatically via audioNode
+}
+```
+
+## Remaining Work (7 nodes in V1 AudioSystem)
+
+After completing Phase 1-3 migrations (23 nodes total), the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 7 nodes remain in V1:
+
+### Simple Complex Nodes (Phase 3 Remaining)
+
+| Node         | Type   | Group   | Status  | Notes                                                                  |
+| ------------ | ------ | ------- | ------- | ---------------------------------------------------------------------- |
+| `soundfile~` | Source | sources | 🔴 HARD | Audio file loading + streaming; MediaElementAudioSourceNode management |
+
+### Manager-Based Nodes (Phase 4 - Highest Priority for Deletion)
 
 These nodes use dedicated manager classes and will be migrated to AudioService V2 AFTER Phase 1-3:
 
-- `expr~` - Expression processor (AudioWorkletNode via ExpressionProcessor)
-- `dsp~` - DSP processor (AudioWorkletNode via DspProcessor)
-- `tone~` - Tone.js integration (ToneManager singleton → ToneNode)
-- `elem~` - Elementary Audio (ElementaryAudioManager singleton → ElementaryNode)
-- `csound~` - Csound integration (CsoundManager singleton → CsoundNode)
-- `chuck` - WebChuck integration (ChuckManager singleton → ChuckNode)
+| Node      | Manager                | Status  | Notes                                                                |
+| --------- | ---------------------- | ------- | -------------------------------------------------------------------- |
+| `expr~`   | ExpressionProcessor    | 🔴 HARD | Expression processor (AudioWorkletNode via ExpressionProcessor)      |
+| `dsp~`    | DspProcessor           | 🔴 HARD | DSP processor (AudioWorkletNode via DspProcessor)                    |
+| `tone~`   | ToneManager singleton  | 🔴 HARD | Tone.js integration (ToneManager singleton → ToneNode)               |
+| `elem~`   | ElementaryAudioManager | 🔴 HARD | Elementary Audio (ElementaryAudioManager singleton → ElementaryNode) |
+| `csound~` | CsoundManager          | 🔴 HARD | Csound integration (CsoundManager singleton → CsoundNode)            |
+| `chuck`   | ChuckManager           | 🔴 HARD | WebChuck integration (ChuckManager singleton → ChuckNode)            |
+
+### Future Integration Nodes (Phase 4+ - Lower Priority)
+
+These nodes may require special handling but are not currently blocking AudioSystem deletion:
+
 - `strudel` - Strudel live coding (GainNode + separate music system → StrudelNode)
 - `lyria` - Google DeepMind AI music (GainNode + AI API → LyriaNode)
 
@@ -819,10 +972,12 @@ Once all nodes are migrated (Phase 1-4 complete):
 
 ### Immediate (This Sprint)
 
-- [ ] **Phase 3 Migrations**: Design and implement `sampler~` and `soundfile~` (2 nodes, ~6-8 hours)
-  - `sampler~`: Recording + playback state with MediaRecorder + AudioBufferSourceNode
+- [x] **Phase 3 Migrations - Part 1**: Implement `sampler~` (1 node, ~4-5 hours)
+  - [x] `sampler~`: Recording + playback state with MediaRecorder + AudioBufferSourceNode
+  - Key learnings documented above (group, connectFrom, naming, no hardcoding)
+- [ ] **Phase 3 Migrations - Part 2**: Design and implement `soundfile~` (1 node, ~3-4 hours)
   - `soundfile~`: File loading with MediaElementAudioSourceNode
-  - These are the most complex; may require new V2 patterns
+  - May use similar `connectFrom()` pattern if it has special input handling
 
 ### Medium/Long Term (After Phase 3)
 
