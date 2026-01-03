@@ -52,7 +52,7 @@ export class AudioSystem {
 		this.outGain.connect(this.audioContext.destination);
 	}
 
-	connect(sourceId: string, targetId: string, paramName?: string, sourceHandle?: string | null) {
+	private connect(sourceId: string, targetId: string, paramName?: string) {
 		const sourceEntry = this.nodesById.get(sourceId);
 		const targetEntry = this.nodesById.get(targetId);
 
@@ -457,12 +457,7 @@ export class AudioSystem {
 
 				const isAudioParam = !!this.getAudioParam(edge.target, inlet?.name ?? '');
 
-				this.connect(
-					edge.source,
-					edge.target,
-					isAudioParam ? inlet?.name : undefined,
-					edge.sourceHandle ?? null
-				);
+				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
 			}
 		} catch (error) {
 			console.error('Error updating audio edges:', error);

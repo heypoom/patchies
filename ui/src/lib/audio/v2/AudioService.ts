@@ -106,92 +106,6 @@ export class AudioService {
 	}
 
 	/**
-	 * Default implementation for connecting nodes.
-	 * Used when a node doesn't implement its own connect method.
-	 */
-	private defaultConnect(source: AudioNodeV2, target: AudioNodeV2, paramName?: string): void {
-		if (!paramName) {
-			source.audioNode.connect(target.audioNode);
-			return;
-		}
-
-		const audioParam = this.getAudioParamByNode(target, paramName);
-
-		if (audioParam) {
-			source.audioNode.connect(audioParam);
-		}
-	}
-
-	/**
-	 * Connect two nodes together.
-	 *
-	 * @param sourceId - Source node ID
-	 * @param targetId - Target node ID
-	 * @param paramName - Optional AudioParam name to connect to
-	 */
-	connect(sourceId: string, targetId: string, paramName?: string, sourceHandle?: string): void {
-		const sourceNode = this.nodesById.get(sourceId);
-		const targetNode = this.nodesById.get(targetId);
-
-		if (!sourceNode || !targetNode) {
-			return;
-		}
-
-		try {
-			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
-
-			if (!isValidConnection) {
-				logger.warn(`cannot connect ${sourceId} to ${targetId}: invalid connection`);
-				return;
-			}
-
-			if (sourceNode.connect) {
-				// Note: We only pass sourceHandle here, not targetHandle.
-				// targetHandle is only available in updateEdges() where we have the full edge info.
-				// This method is used for simple programmatic connections that don't need
-				// multi-channel routing (split~ output -> merge~ input mapping).
-				// For complex routing, use updateEdges() which passes both handles.
-				sourceNode.connect(targetNode, paramName, sourceHandle);
-			} else {
-				this.defaultConnect(sourceNode, targetNode, paramName);
-			}
-		} catch (error) {
-			logger.error(`cannot connect ${sourceId} to ${targetId}:`, error);
-		}
-	}
-
-	/**
-	 * Validate if a connection is allowed between two node types.
-	 */
-	validateConnection(sourceId: string, targetId: string, paramName?: string): boolean {
-		// If connecting to an AudioParam, allow any source to connect to any target.
-		if (paramName) {
-			return true;
-		}
-
-		const sourceNode = this.nodesById.get(sourceId);
-		const targetNode = this.nodesById.get(targetId);
-
-		if (!sourceNode || !targetNode) {
-			return true;
-		}
-
-		const sourceType = getNodeType(sourceNode);
-		const targetType = getNodeType(targetNode);
-
-		const sourceClass = this.registry.get(sourceType);
-		const targetClass = this.registry.get(targetType);
-
-		// V1 validation fallback.
-		if (!sourceClass || !targetClass) {
-			return canAudioNodeConnect(sourceType, targetType);
-		}
-
-		// V2 validation
-		return validateGroupConnection(sourceClass.group, targetClass.group);
-	}
-
-	/**
 	 * Get node metadata (inlets, outlets, description, tags).
 	 * Checks v2 registry first, then falls back to v1 objectDefinitions.
 	 * @param nodeType - The node type identifier
@@ -286,33 +200,7 @@ export class AudioService {
 				}
 			}
 
-			// Only process edges where BOTH source and target are V2 nodes.
-			// This prevents interference with V1 node management by AudioSystem.
-			for (const edge of edges) {
-				const sourceNode = this.nodesById.get(edge.source);
-				const targetNode = this.nodesById.get(edge.target);
-
-				// Skip edges involving V1-only nodes
-				if (!sourceNode || !targetNode) {
-					continue;
-				}
-
-				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
-				const isAudioParam = !!this.getAudioParamByNode(targetNode, inlet?.name ?? '');
-
-				// For nodes with custom connect logic (e.g., split~ with multiple outputs),
-				// pass the handles so they can route to specific channels
-				if (sourceNode.connect) {
-					sourceNode.connect(
-						targetNode,
-						isAudioParam ? inlet?.name : undefined,
-						edge.sourceHandle ?? undefined,
-						edge.targetHandle ?? undefined
-					);
-				} else {
-					this.defaultConnect(sourceNode, targetNode, isAudioParam ? inlet?.name : undefined);
-				}
-			}
+			for (const edge of edges) this.connectByEdge(edge);
 		} catch (error) {
 			logger.error('cannot update audio edges:', error);
 		}
@@ -395,6 +283,86 @@ export class AudioService {
 		this.nodesById.set(node.nodeId, node);
 
 		return node;
+	}
+
+	/**
+	 * Connect two nodes together via an edge.
+	 * Handles validation, node's custom connect() methods, and multi-channel routing.
+	 */
+	private connectByEdge(edge: Edge): void {
+		const sourceNode = this.nodesById.get(edge.source);
+		const targetNode = this.nodesById.get(edge.target);
+
+		// IMPORTANT: skip edges involving V1 nodes
+		if (!sourceNode || !targetNode) {
+			return;
+		}
+
+		const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
+		const isAudioParam = !!this.getAudioParamByNode(targetNode, inlet?.name ?? '');
+
+		const paramName = isAudioParam ? inlet?.name : undefined;
+
+		// Validate whether the connection is allowed.
+		// If the connection is to an audio param, we always let the connection through.
+		if (!paramName && !this.canConnect(edge.source, edge.target)) {
+			logger.warn(`cannot connect ${edge.source} to ${edge.target}: invalid connection`);
+			return;
+		}
+
+		// For nodes with custom connect logic (e.g., split~ with multiple outputs, merge~ with multiple inputs),
+		// pass both handles so they can route to specific channels
+		if (sourceNode.connect) {
+			sourceNode.connect(
+				targetNode,
+				paramName,
+				edge.sourceHandle ?? undefined,
+				edge.targetHandle ?? undefined
+			);
+		} else {
+			this.defaultConnect(sourceNode, targetNode, paramName);
+		}
+	}
+
+	/**
+	 * Default implementation for connecting nodes.
+	 * Used when a node doesn't implement its own connect method.
+	 */
+	private defaultConnect(source: AudioNodeV2, target: AudioNodeV2, paramName?: string): void {
+		if (!paramName) {
+			source.audioNode.connect(target.audioNode);
+			return;
+		}
+
+		const audioParam = this.getAudioParamByNode(target, paramName);
+
+		if (audioParam) {
+			source.audioNode.connect(audioParam);
+		}
+	}
+
+	/** Validate if a connection is allowed between the two nodes. */
+	private canConnect(sourceNodeId: string, targetNodeId: string): boolean {
+		const sourceNode = this.nodesById.get(sourceNodeId);
+		const targetNode = this.nodesById.get(targetNodeId);
+
+		if (!sourceNode || !targetNode) {
+			return true;
+		}
+
+		const sourceType = getNodeType(sourceNode);
+		const targetType = getNodeType(targetNode);
+
+		const sourceClass = this.registry.get(sourceType);
+		const targetClass = this.registry.get(targetType);
+
+		// V1 validation fallback.
+		if (!sourceClass || !targetClass) {
+			return canAudioNodeConnect(sourceType, targetType);
+		}
+
+		// V2 validation
+		return validateGroupConnection(sourceClass.group, targetClass.group);
 	}
 
 	/**
