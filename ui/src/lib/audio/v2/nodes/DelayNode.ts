@@ -34,7 +34,7 @@ export class DelayNodeV2 implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: DelayNode;
+	audioNode: DelayNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

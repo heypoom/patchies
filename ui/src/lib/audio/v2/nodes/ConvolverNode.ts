@@ -29,7 +29,7 @@ export class ConvolverNodeV2 implements AudioNodeV2 {
 	static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal' }];
 
 	readonly nodeId: string;
-	readonly audioNode: ConvolverNode;
+	audioNode: ConvolverNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

@@ -9,6 +9,7 @@ import { CompressorNode } from './CompressorNode';
 import { ConvolverNodeV2 } from './ConvolverNode';
 import { DacNode } from './DacNode';
 import { DelayNodeV2 } from './DelayNode';
+import { ExprNode } from './ExprNode';
 import { FFTNode } from './FFTNode';
 import { GainNodeV2 } from './GainNode';
 import { HighpassNode } from './HighpassNode';
@@ -39,6 +40,7 @@ const AUDIO_NODES = [
 	ConvolverNodeV2,
 	DacNode,
 	DelayNodeV2,
+	ExprNode,
 	FFTNode,
 	GainNodeV2,
 	HighpassNode,

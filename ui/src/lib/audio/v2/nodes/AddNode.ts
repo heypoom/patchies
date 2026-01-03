@@ -18,7 +18,7 @@ export class AddNodeV2 implements AudioNodeV2 {
 	static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal' }];
 
 	readonly nodeId: string;
-	readonly audioNode: GainNode;
+	audioNode: GainNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

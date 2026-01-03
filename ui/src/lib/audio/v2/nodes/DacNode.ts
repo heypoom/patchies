@@ -20,7 +20,7 @@ export class DacNode implements AudioNodeV2 {
 	static outlets: ObjectOutlet[] = [];
 
 	readonly nodeId: string;
-	readonly audioNode: GainNode;
+	audioNode: GainNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

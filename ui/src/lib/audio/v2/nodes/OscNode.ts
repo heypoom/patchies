@@ -55,7 +55,7 @@ export class OscNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: OscillatorNode;
+	audioNode: OscillatorNode;
 
 	private audioContext: AudioContext;
 

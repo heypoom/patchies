@@ -19,7 +19,7 @@ export class MicNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: GainNode;
+	audioNode: GainNode;
 
 	private audioContext: AudioContext;
 	private mediaStream: MediaStream | null = null;

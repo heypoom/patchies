@@ -24,7 +24,7 @@ export class SamplerNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: GainNode;
+	audioNode: GainNode;
 
 	audioBuffer: AudioBuffer | null = null;
 
@@ -111,7 +111,9 @@ export class SamplerNode implements AudioNodeV2 {
 	connectFrom(source: AudioNodeV2): void {
 		// Custom handler for when another node connects TO sampler~
 		// Route incoming audio to our recordingDestination for capture
-		source.audioNode.connect(this.recordingDestination);
+		if (source.audioNode) {
+			source.audioNode.connect(this.recordingDestination);
+		}
 	}
 
 	destroy(): void {

@@ -43,7 +43,7 @@ export class WaveShaperNodeV2 implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: WaveShaperNode;
+	audioNode: WaveShaperNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

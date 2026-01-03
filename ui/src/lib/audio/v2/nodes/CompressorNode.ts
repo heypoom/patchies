@@ -79,7 +79,7 @@ export class CompressorNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: DynamicsCompressorNode;
+	audioNode: DynamicsCompressorNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

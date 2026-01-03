@@ -1,261 +1,133 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**Patchies**: Visual programming environment for audio-visual patches. Connect nodes (P5.js, Hydra, Strudel, GLSL, JavaScript) to build creative projects with real-time collaboration and message passing.
 
-## Project Overview
+## Core Stack
 
-**Patchies** is a visual programming environment for creating interactive audio-visual patches on the web. Users can connect nodes to build complex creative coding projects using familiar tools like P5.js, Hydra, Strudel, GLSL shaders, and JavaScript. The project emphasizes real-time collaboration, message passing between nodes, video chaining, and embeddable shareable experiences.
-
-## Architecture Overview
-
-### Core Stack
-
-- **SvelteKit 5** with TypeScript (web application)
-- **@xyflow/svelte** for the visual node editor
-- **Bun** as package manager (use `bun install`, not `npm install`)
-- **Tailwind CSS 4** with Zinc color scheme and dark theme
-- **CodeMirror 6** for in-browser code editing
-- Creative coding integrations: **p5.js**, **Hydra**, **Strudel**, **GLSL**, **Butterchurn**
-
-### Key System Architectures
-
-**Event-Driven Architecture**: The `PatchiesEventBus` (singleton) handles system-wide events with type-safe event listeners. This decouples components and enables features like undo/redo, node lifecycle events, and real-time collaboration.
-
-**Message Passing System**: The `MessageSystem` (singleton) enables Max/MSP-style message routing between nodes using `send()` and `recv()`. Messages flow through XY Flow edges, supporting typed inlets/outlets and automatic cleanup on node deletion.
-
-**Rendering Pipeline**: The `graphUtils` module builds render graphs from XY Flow nodes, performs topological sorting, and handles FBO (Frame Buffer Object) rendering chains for video effects. Supports video chaining (P5 → Hydra → GLSL) through texture passing.
-
-**Live Code Execution**: Each node type has specialized managers (e.g., `P5Manager`, `JSCanvasManager`) that provide sandboxed execution environments with curated APIs exposed via JavaScript's `with` statement.
-
-**Save/Load System**: Patches are serialized as JSON with version tracking (`serialize-patch.ts`). Local storage automatically saves work with conflict resolution.
+- **SvelteKit 5** + TypeScript
+- **@xyflow/svelte** (node editor)
+- **Bun** (package manager - use `bun install`)
+- **Tailwind CSS 4** (Zinc/dark theme)
+- **CodeMirror 6** (code editing)
 
 ## Development Commands
 
-All commands run from the `/ui` directory:
+Run from `/ui` directory:
 
 ```bash
-# Development
-bun run dev                 # Start development server
-bun run build              # Production build
-bun run preview            # Preview production build
-
-# Code Quality
-bun run format             # Format with Prettier
-bun run lint               # Lint and format check
-bun run check              # TypeScript and Svelte type check
-bun run check:watch        # Continuous type checking
-
-# Testing
-bun run test:unit          # Run Vitest unit tests
-bun run test:e2e           # Run Playwright E2E tests
-bun run test               # Run all tests
+bun run dev              # Start dev server (USER starts this)
+bun run build            # Production build
+bun run check            # TypeScript & Svelte check
+bun run lint             # Lint & format check
+bun run test             # All tests
 ```
 
-## Key Architectural Systems
+## Key Architectures
 
-### Node Types & Capabilities
+**Event Bus**: Type-safe system events (undo/redo, lifecycle, collaboration)
 
-- **Visual nodes**: `p5`, `glsl`, `hydra`, `butterchurn`, `canvas`, `swissgl` (support video chaining)
-- **Audio nodes**: `strudel` (live coding music), AI music generation
-- **Control nodes**: `js` (JavaScript blocks), `slider`, `bang`, `message`
-- **AI nodes**: `ai.txt`, `ai.img`, `ai.tts`, `ai.music` (can be hidden via settings)
-- **I/O nodes**: `midi.in`, `midi.out`, `bg.out` (background output)
+**Message System**: Max/MSP-style routing with `send()` / `recv()`, auto-cleanup on node deletion
 
-### Message Passing Architecture
+**Rendering Pipeline**: FBO-based video chaining (P5 → Hydra → GLSL → Background). Topologically sorted render graphs.
 
-```typescript
-// In any JavaScript-based node:
-send(data, { to: 0 }); // Send to specific outlet number
-recv((data, meta) => {
-  // meta contains { source, inlet, outlet, inletKey, outletKey }
-});
-```
+**Audio System**: V2 AudioService (new) + V1 AudioSystem (legacy). Migrating nodes to V2 classes with async `create()` support.
 
-The `MessageSystem` handles routing through XY Flow edges with handle-based targeting. Messages support outlet filtering and automatic node lifecycle cleanup.
+**State**: Singletons (`MessageSystem`, `PatchiesEventBus`, `AudioSystem`) + Svelte stores + local storage auto-save
 
-### Video Chaining System
+## Code Patterns
 
-Visual nodes can be chained together using orange video inlets/outlets:
+- **Always use `ts-pattern`**, never `switch` statements
+- Separate UI from business logic (manager pattern)
+- TypeScript for all code
+- Svelte 5: `$state`, `$props`, `$effect`, `$derived` (no `on:click`, use `onclick`)
+- Prefer editing existing files
 
-- Connect P5.js output → Hydra input → GLSL input → Background output
-- Implemented via FBO (Frame Buffer Object) texture passing
-- Render graphs are topologically sorted to determine execution order
-- Background output (`bg.out`) determines final render target
+## Workflow Rules
 
-### State Management
+- **CRITICAL**: Never start dev server manually. User will start if needed.
+- Before implementing: update relevant spec files in `docs/design-docs/specs/`
+- Never auto-commit/push. Wait for user review.
+- Always run `bun run check` before committing
+- Use concise, clear commit messages
 
-- **Global singletons**: `MessageSystem`, `PatchiesEventBus`, `AudioSystem`
-- **Svelte stores**: Canvas state, MIDI state, renderer state, UI state (in `/src/stores/`)
-- **Local storage**: Auto-saving patches with conflict resolution
-- **Context API**: Component-level state sharing (avoid prop drilling)
+## Styling
 
-## Core System Classes
-
-### Message System (`src/lib/messages/MessageSystem.ts`)
-
-- Singleton pattern for inter-node communication
-- Handles XY Flow edge updates and connection mapping
-- Manages message queues per node with error isolation
-- Provides `setInterval` with automatic cleanup
-
-### Event Bus (`src/lib/eventbus/PatchiesEventBus.ts`)
-
-- Type-safe event system for system-wide notifications
-- Handles node lifecycle, undo/redo, and collaboration events
-- Singleton pattern with strongly typed event listeners
-
-### Render Graph (`src/lib/rendering/graphUtils.ts`)
-
-- Builds render graphs from XY Flow nodes/edges
-- Performs topological sorting for correct render order
-- Filters FBO-compatible nodes for video chaining
-- Detects circular dependencies and output nodes
-
-### Audio System (`src/lib/audio/AudioSystem.ts`)
-
-- Manages Web Audio API context and analysis
-- Handles FFT data for audio visualization
-- Coordinates with Strudel for live coding music
-
-## Development Guidelines
-
-### Code Patterns
-
-- Use `ts-pattern` instead of `switch` statements always
-- Prefer editing existing files over creating new ones
-- Separate UI components from business logic (manager pattern)
-- Use TypeScript for all new code with proper typing
-
-### Svelte 5 Requirements
-
-- Only use Svelte 5 rune syntax: `$state`, `$props`, `$effect`, `$derived`
-- Read `docs/llms/svelte-llms-small.txt` for syntax reference
-- Use `onclick` instead of `on:click` for events
-- Components use `{@render children()}` for slot content
-
-### Workflow
-
-- Before implementing, update relevant spec files in `docs/design-docs/specs/`
-- Never start dev server to test changes.
-- **IMPORTANT**: Never commit and push automatically. Always wait for user review and approval before committing changes. Code changes must be tested and reviewed first.
-- When asked to commit, write concise and clear commit messages.
-  - Always run `bun run check` before committing
-
-### Styling
-
-- Use Tailwind classes over custom CSS
-- Follow Zinc color palette for dark theme
+- Tailwind classes only (no custom CSS)
+- Zinc palette, dark theme
 - Support `class` prop for component extension
-- Icons from `@iconify/svelte` or `@lucide/svelte`
+- Icons: `@iconify/svelte` or `@lucide/svelte`
 
-## Testing Strategy
+## Node Development
 
-- **Unit tests**: Core business logic, utilities, and pure functions
-- **Component tests**: Svelte component rendering and interactions
-- **E2E tests**: Critical user workflows like patch creation and node connections
-- **Type checking**: Comprehensive TypeScript coverage with strict mode
+### StandardHandle (Always use this)
 
-## Key File Locations
+```svelte
+<StandardHandle
+  port="inlet|outlet"
+  type="video|audio|message" {/* optional */}
+  id="..." {/* only if needed for disambiguation */}
+  title="Description"
+  total={count}
+  index={idx}
+/>
+```
 
-- Node components: `src/lib/components/nodes/`
+**Handle colors**: video=orange, audio=blue, message=gray
+
+**Auto-generated IDs**: `port + type + id` (e.g., `video-in-0`)
+
+**Auto-positioned**: Uses `getPortPosition()`, no manual styling needed
+
+### New Node Checklist
+
+1. Update `src/lib/nodes/node-types.ts`
+2. Update `src/lib/nodes/defaultNodeData.ts`
+3. Update `README.md` (for audio/visual nodes)
+
+## Audio V2 Migration
+
+**Pattern**: V2 nodes are self-contained classes implementing `AudioNodeV2` interface.
+
+**Key rule**: Node name (e.g., `'gain~'`) appears **only once** in static `type` property.
+
+**Optional methods**: `create()`, `send()`, `getAudioParam()`, `connect()`, `connectFrom()`, `destroy()`
+
+**Don't hardcode node types in `AudioService`** - let nodes implement custom logic via methods.
+
+**Async `create()`**: Supported for nodes needing resource loading (AudioWorklets, etc.)
+
+**No manager names in AudioService**: If adding `if (nodeType === 'xyz~')`, add a method to the node class instead.
+
+## Testing
+
+- **Unit**: Business logic, utilities, pure functions
+- **Component**: Svelte rendering and interactions
+- **E2E**: Critical user workflows
+- **Type checking**: Strict mode coverage
+
+## File Locations
+
+- Nodes: `src/lib/components/nodes/`
 - System managers: `src/lib/[audio|canvas|messages|eventbus]/`
 - Stores: `src/stores/`
 - Utilities: `src/lib/[rendering|save-load|objects]/`
 - Specs: `docs/design-docs/specs/`
-- always use ts-pattern for matching. never ever use switch cases.
-- always update README.md after adding an audio node or visual node
 
-## Rendering Pipeline Architecture
+## Rendering Pipeline
 
-### Deep Pipeline Coordination
-
-The rendering system requires careful coordination across multiple files:
+The pipeline coordinates across multiple files:
 
 - `generateImageWithGemini` → `capturePreviewFrame` → `GLSystem` → `renderWorker` → `fboRenderer`
-- Use consistent parameter patterns (e.g., `customSize?: [number, number]`) throughout the entire chain
-- Changes to rendering capabilities require updates across 5+ files simultaneously
-
-### Frame Capture System
-
-- `fboRenderer.renderNodePreview()` accepts `customSize?: [number, number]` for custom resolution capture
-- `capturePreviewFrame()` supports high-resolution input for AI image-to-image workflows
-- Default preview size is calculated from output size with `PREVIEW_SCALE_FACTOR`
+- Use consistent parameter patterns (e.g., `customSize?: [number, number]`)
+- Changes require updates across 5+ files
 
 ## Structured Reflections
 
-After completing significant refactors or architectural changes:
-
-1. **Create a reflection document** in `docs/reflections/` named `YYYY-MM-DD-topic.md`
-2. **Keep it concise** - 1-2 pages maximum
-3. **Focus on learnings** - What went wrong, what could be improved, action items
-4. **Skip the obvious wins** - Briefly acknowledge successes, focus on challenges
-5. **Include action items** - Clear next steps with timeframes
-
-**Template structure:**
+After significant refactors, create `docs/reflections/YYYY-MM-DD-topic.md`:
 
 - Objective (1-2 sentences)
-- Key Challenges & Solutions (bullet points)
-- What Could Be Better (specific issues with impact assessment)
-- Action Items (categorized by timeframe)
+- Key Challenges & Solutions
+- What Could Be Better (specific impacts)
+- Action Items (by timeframe)
 
-**Consult existing reflections** in `docs/reflections/` before starting similar work.
-
-## Node Development Patterns
-
-### UI Design Guidelines
-
-- **Minimalistic Floating Layout**: Follow `ai.tts` pattern for nodes without code editors
-- **No Solid Backgrounds**: Use transparent headers with `absolute -top-7` positioning
-- **Hover Interactions**: Buttons should have `opacity-0 group-hover:opacity-100` for clean appearance
-
-### StandardHandle Usage
-
-**Always use `StandardHandle` instead of raw `Handle` or `VideoHandle`**:
-
-```svelte
-import StandardHandle from '$lib/components/StandardHandle.svelte';
-
-<StandardHandle
-    port="inlet|outlet"
-    type="video|audio|message" (optional - omit for generic gray handles)
-    id="..." (optional - only for disambiguation/numbering)
-    title="Handle description"
-    total={totalHandles}
-    index={handleIndex}
-    class="" (optional styling)
-/>
-```
-
-**Handle Type Color Coding**:
-
-- `type="video"` → Orange handles (`!bg-orange-500`)
-- `type="audio"` → Blue handles (`!bg-blue-500`)
-- `type="message"` → Gray handles (`!bg-gray-500`)
-- No type → Default gray handles
-
-**ID Construction Rules**:
-
-- StandardHandle auto-generates IDs from `port + type + id`
-- `port="inlet"` + `type="video"` + `id="0"` → `"video-in-0"`
-- `port="outlet"` + `type="audio"` → `"audio-out"` (no id needed)
-- Only include `id` prop when disambiguation needed (numbered ports, complex cases)
-
-**Position Handling**:
-
-- StandardHandle automatically calculates position using `getPortPosition(total, index)`
-- No need for manual `style` or `position` attributes
-- Handles `z-1` and `!absolute` positioning internally
-
-### Message Port Standards
-
-- **Input Handles**: Use `StandardHandle` with `port="inlet"` and `type="message"`
-- **Output Handles**: Send completion signals with `messageContext.send({ type: 'bang' }, { to: 0 })`
-- **Handle Consistency**: All nodes use StandardHandle for consistent styling and behavior
-
-### Node Integration Checklist
-
-When adding new nodes, always update:
-
-1. `src/lib/nodes/node-types.ts` - Add import and node type mapping
-2. `src/lib/nodes/defaultNodeData.ts` - Add default data structure
-3. `README.md` - Update node list for audio/visual nodes
+**Consult existing reflections** before similar work.

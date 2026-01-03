@@ -34,17 +34,18 @@ export interface AudioNodeV2 {
 	/** Unique identifier for this node */
 	readonly nodeId: string;
 
-	/** The underlying Web Audio API node */
-	readonly audioNode: AudioNode;
+	/** The underlying Web Audio API node (can be reassigned for lazy-loaded nodes) */
+	audioNode: AudioNode | null;
 
 	/**
 	 * Initialize the node with the given parameters.
 	 *
 	 * Optional: if not implemented, AudioService will use the default implementation.
+	 * Can be async for nodes that need to load resources (e.g., AudioWorklets).
 	 *
 	 * @param params - Array of parameters specific to the node type
 	 */
-	create?(params: unknown[]): void;
+	create?(params: unknown[]): void | Promise<void>;
 
 	/**
 	 * Handle incoming messages to the node.

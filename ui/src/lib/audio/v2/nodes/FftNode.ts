@@ -37,7 +37,7 @@ export class FFTNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: AnalyserNode;
+	audioNode: AnalyserNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

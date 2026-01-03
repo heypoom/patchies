@@ -43,7 +43,7 @@ export class AudioService {
 		if (node.destroy) {
 			node.destroy();
 		} else {
-			node.audioNode.disconnect();
+			node.audioNode?.disconnect();
 		}
 
 		this.nodesById.delete(node.nodeId);
@@ -69,7 +69,7 @@ export class AudioService {
 		const nodeType = getNodeType(node);
 		const nodeClass = this.registry.get(nodeType);
 
-		if (nodeClass?.inlets) {
+		if (node.audioNode && nodeClass?.inlets) {
 			return getAudioParamValue(paramName, node.audioNode, nodeClass.inlets);
 		}
 
@@ -100,7 +100,7 @@ export class AudioService {
 		const nodeClass = this.registry.get(getNodeType(node));
 
 		// Set the audio parameter value by default
-		if (nodeClass?.inlets) {
+		if (node.audioNode && nodeClass?.inlets) {
 			setAudioParamValue(key, message, node.audioNode, nodeClass.inlets);
 		}
 	}
@@ -143,13 +143,42 @@ export class AudioService {
 	 * V1-to-V2 and V1-to-V1 connections are handled by AudioSystem.updateEdges.
 	 * We skip edges where either node isn't in the V2 registry to avoid
 	 * interfering with V1 node management.
+	 *
+	 * To prevent cross-system connection breakage, we do NOT disconnect V2 nodes
+	 * that are involved in edges where the other endpoint is a V1 node.
+	 * AudioSystem.updateEdges will restore those connections.
 	 */
 	updateEdges(edges: Edge[]): void {
 		try {
-			// Disconnect all existing connections
-			for (const node of this.nodesById.values()) {
+			// Identify which V2 nodes are involved ONLY in V2-to-V2 edges
+			// Nodes that are only involved in edges where the other end is V1 should NOT be disconnected
+			const v2NodesInV2ToV2 = new Set<string>();
+			const v2NodesInCrossSystem = new Set<string>();
+
+			for (const edge of edges) {
+				const sourceIsV2 = !!this.nodesById.get(edge.source);
+				const targetIsV2 = !!this.nodesById.get(edge.target);
+
+				if (sourceIsV2 && targetIsV2) {
+					// V2-to-V2 edge
+					v2NodesInV2ToV2.add(edge.source);
+					v2NodesInV2ToV2.add(edge.target);
+				} else if (sourceIsV2 || targetIsV2) {
+					// Cross-system edge (V2→V1 or V1→V2)
+					if (sourceIsV2) v2NodesInCrossSystem.add(edge.source);
+					if (targetIsV2) v2NodesInCrossSystem.add(edge.target);
+				}
+			}
+
+			// Only disconnect V2 nodes that are ONLY involved in V2-to-V2 edges
+			// Do NOT disconnect V2 nodes that are involved in cross-system connections
+			for (const nodeId of v2NodesInV2ToV2) {
+				if (v2NodesInCrossSystem.has(nodeId)) continue; // Skip if involved in cross-system
+				const node = this.nodesById.get(nodeId);
+				if (!node) continue;
+
 				try {
-					node.audioNode.disconnect();
+					node.audioNode?.disconnect();
 				} catch (error) {
 					logger.warn('cannot disconnect node:', error);
 				}
@@ -166,14 +195,14 @@ export class AudioService {
 
 				if (this.outGain && group === 'destinations') {
 					try {
-						node.audioNode.connect(this.outGain);
+						node.audioNode?.connect(this.outGain);
 					} catch (error) {
 						logger.warn(`cannot connect to device's audio output`, error);
 					}
 				}
 			}
 
-			// Connect nodes by using its edges
+			// Connect nodes by using its edges (V2-to-V2 edges only, due to connectByEdge logic)
 			for (const edge of edges) {
 				this.connectByEdge(edge);
 			}
@@ -205,7 +234,11 @@ export class AudioService {
 	 * @param params - Array of parameters for the node
 	 * @returns The created node instance, or null if type not defined
 	 */
-	createNode(nodeId: string, nodeType: string, params: unknown[] = []): AudioNodeV2 | null {
+	async createNode(
+		nodeId: string,
+		nodeType: string,
+		params: unknown[] = []
+	): Promise<AudioNodeV2 | null> {
 		const NodeClass = this.registry.get(nodeType);
 
 		if (!NodeClass) {
@@ -214,9 +247,13 @@ export class AudioService {
 		}
 
 		const audioContext = this.getAudioContext();
-
 		const node = new NodeClass(nodeId, audioContext);
-		node.create?.(params);
+
+		try {
+			await node.create?.(params);
+		} catch (error) {
+			logger.error(`cannot create node ${nodeType}`, error);
+		}
 
 		this.nodesById.set(node.nodeId, node);
 
@@ -278,14 +315,17 @@ export class AudioService {
 	 */
 	private defaultConnect(source: AudioNodeV2, target: AudioNodeV2, paramName?: string): void {
 		if (!paramName) {
-			source.audioNode.connect(target.audioNode);
+			if (target.audioNode) {
+				source.audioNode?.connect(target.audioNode);
+			}
+
 			return;
 		}
 
 		const audioParam = this.getAudioParamByNode(target, paramName);
 
 		if (audioParam) {
-			source.audioNode.connect(audioParam);
+			source.audioNode?.connect(audioParam);
 		}
 	}
 

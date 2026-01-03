@@ -26,7 +26,7 @@ export class SigNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: ConstantSourceNode;
+	audioNode: ConstantSourceNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

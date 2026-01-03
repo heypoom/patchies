@@ -20,7 +20,7 @@ export class SoundfileNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: MediaElementAudioSourceNode;
+	audioNode: MediaElementAudioSourceNode;
 	private audioElement: HTMLAudioElement;
 
 	constructor(nodeId: string, audioContext: AudioContext) {

@@ -12,7 +12,6 @@ import { ToneManager } from './ToneManager';
 import { ElementaryAudioManager } from './ElementaryAudioManager';
 import { CsoundManager } from './nodes/CsoundManager';
 
-import workletUrl from './expression-processor.ts?worker&url';
 import dspWorkletUrl from './dsp-processor.ts?worker&url';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
@@ -26,7 +25,6 @@ export class AudioSystem {
 
 	nodesById: Map<string, V1PatchAudioNode> = new Map();
 	private timeScheduler: TimeScheduler;
-	private workletInitialized = false;
 	private dspWorkletInitialized = false;
 	private v2 = AudioService.getInstance();
 
@@ -145,50 +143,11 @@ export class AudioSystem {
 		}
 
 		match(objectType)
-			.with('expr~', () => this.createExpr(nodeId, params))
 			.with('dsp~', () => this.createDsp(nodeId, params))
 			.with('tone~', () => this.createTone(nodeId, params))
 			.with('elem~', () => this.createElementary(nodeId, params))
 			.with('csound~', () => this.createCsound(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId));
-	}
-
-	async initExprWorklet() {
-		if (this.workletInitialized) return;
-
-		try {
-			const processorUrl = new URL(workletUrl, import.meta.url);
-			await this.audioContext.audioWorklet.addModule(processorUrl.href);
-			this.workletInitialized = true;
-		} catch (error) {
-			logger.error('cannot setup expression processor worklet:', error);
-		}
-	}
-
-	async createExpr(nodeId: string, params: unknown[]) {
-		await this.initExprWorklet();
-
-		if (!this.workletInitialized) {
-			console.error('Expression worklet not initialized');
-			return;
-		}
-
-		const [, expression] = params as [unknown, string];
-
-		try {
-			const workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor');
-
-			if (expression) {
-				workletNode.port.postMessage({
-					type: 'set-expression',
-					expression: expression
-				});
-			}
-
-			this.nodesById.set(nodeId, { type: 'expr~', node: workletNode });
-		} catch (error) {
-			console.error('Failed to create expression node:', error);
-		}
 	}
 
 	async initDspWorklet() {
@@ -334,21 +293,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with({ type: 'expr~' }, ({ node }) => {
-				match([key, msg])
-					.with(['expression', P.string], ([, expression]) => {
-						node.port.postMessage({
-							type: 'set-expression',
-							expression: expression
-						});
-					})
-					.with(['inletValues', P.array(P.number)], ([, values]) => {
-						node.port.postMessage({
-							type: 'set-inlet-values',
-							values: Array.from(values)
-						});
-					});
-			})
 			.with({ type: 'dsp~' }, ({ node }) => {
 				match([key, msg])
 					.with(['code', P.string], ([, code]) => {

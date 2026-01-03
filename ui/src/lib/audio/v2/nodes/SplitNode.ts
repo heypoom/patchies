@@ -65,7 +65,7 @@ export class SplitNode implements AudioNodeV2 {
 		if (sourceHandle) {
 			const outputIndex = handleToPortIndex(sourceHandle);
 
-			if (outputIndex !== null && !isNaN(outputIndex)) {
+			if (outputIndex !== null && !isNaN(outputIndex) && target.audioNode) {
 				// If target is multi-channel (e.g. merge~), route to specific input channel
 				if (targetHandle) {
 					const inputIndex = handleToPortIndex(targetHandle);
@@ -84,7 +84,9 @@ export class SplitNode implements AudioNodeV2 {
 		}
 
 		// Default: connect all channels
-		this.audioNode.connect(target.audioNode);
+		if (target.audioNode) {
+			this.audioNode.connect(target.audioNode);
+		}
 	}
 
 	private updateChannelCount(newChannels: number): void {

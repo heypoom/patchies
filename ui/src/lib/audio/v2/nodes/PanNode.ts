@@ -31,7 +31,7 @@ export class PanNodeV2 implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: StereoPannerNode;
+	audioNode: StereoPannerNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;

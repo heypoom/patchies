@@ -44,7 +44,7 @@ export class BandpassNode implements AudioNodeV2 {
 	];
 
 	readonly nodeId: string;
-	readonly audioNode: BiquadFilterNode;
+	audioNode: BiquadFilterNode;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
