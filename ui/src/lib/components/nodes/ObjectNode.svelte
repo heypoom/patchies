@@ -8,13 +8,14 @@
 		getObjectDefinition,
 		audioObjectNames,
 		getObjectNameFromExpr,
-		objectDefinitions,
+		objectDefinitionsV1,
 		type AdsrParamList,
 		type ObjectInlet,
 		type ObjectOutlet
 	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -690,10 +691,11 @@
 		}
 
 		if (current.type === 'object') {
-			const objectDef = objectDefinitions[current.name];
+			const audioService = AudioService.getInstance();
+			const metadata = audioService.getNodeMetadata(current.name);
 
-			if (objectDef) {
-				return objectDef.description || null;
+			if (metadata) {
+				return metadata.description || null;
 			}
 		}
 
@@ -795,8 +797,12 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="font-mono text-xs">
-								<span class={[!objectDefinitions[data.name] ? 'text-red-300' : 'text-zinc-200']}
-									>{data.name}</span
+								<span
+									class={[
+										!AudioService.getInstance().getNodeMetadata(data.name)
+											? 'text-red-300'
+											: 'text-zinc-200'
+									]}>{data.name}</span
 								>
 
 								{#each data.params as param, index}

@@ -1,6 +1,6 @@
 import { getAudioNodeGroup } from '$lib/audio/audio-node-group';
 import type { V1PatchAudioType } from '$lib/audio/audio-node-types';
-import { objectDefinitions } from '$lib/objects/object-definitions';
+import { AudioService } from '$lib/audio/v2/AudioService';
 import type { Node } from '@xyflow/svelte';
 
 type PsEdgeType = 'message' | 'video' | 'audio';
@@ -54,12 +54,16 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 
 	if (node.type === 'object') {
 		const data = node.data as { name: string };
+		const audioService = AudioService.getInstance();
+		const metadata = audioService.getNodeMetadata(data.name);
+
+		if (!metadata) return false;
 
 		if (isInlet) {
 			const inletIndex = handleToPortIndex(handle);
 			if (inletIndex === null || isNaN(inletIndex)) return false;
 
-			const inlet = objectDefinitions[data.name].inlets?.[inletIndex];
+			const inlet = metadata.inlets?.[inletIndex];
 			if (!inlet) return false;
 
 			return inlet.type === 'signal' || (inlet.isAudioParam ?? false);
@@ -67,7 +71,7 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 			const outletIndex = handleToPortIndex(handle);
 			if (outletIndex === null || isNaN(outletIndex)) return false;
 
-			const outlet = objectDefinitions[data.name].outlets?.[outletIndex];
+			const outlet = metadata.outlets?.[outletIndex];
 			if (!outlet) return false;
 
 			return outlet.type === 'signal';

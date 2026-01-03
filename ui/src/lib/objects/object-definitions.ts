@@ -58,7 +58,8 @@ export interface ObjectDefinition {
 	tags?: string[];
 }
 
-export const objectDefinitions: Record<string, ObjectDefinition> = {
+/** Legacy object definitions. */
+export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 	'gain~': {
 		inlets: [
 			{ name: 'in', type: 'signal', description: 'Signal to amplify' },
@@ -72,49 +73,6 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 		],
 		outlets: [{ name: 'out', type: 'signal', description: 'Amplified signal' }],
 		description: 'Amplifies input by gain factor',
-		tags: ['audio']
-	},
-
-	'osc~': {
-		inlets: [
-			{
-				name: 'frequency',
-				type: 'float',
-				description: 'Oscillator frequency in hertz',
-				defaultValue: 440,
-				isAudioParam: true,
-				maxPrecision: 2
-			},
-			{
-				name: 'type',
-				type: 'string',
-				description: 'Type of oscillator',
-				defaultValue: 'sine',
-				options: ['sine', 'square', 'sawtooth', 'triangle'],
-
-				formatter(value) {
-					if (Array.isArray(value)) return 'custom';
-
-					return String(value);
-				},
-
-				validator(value) {
-					// Custom!
-					if (Array.isArray(value)) return true;
-
-					return !!(typeof value === 'string' && this.options?.includes(value));
-				}
-			},
-			{
-				name: 'detune',
-				type: 'float',
-				description: 'Detune amount in cents',
-				defaultValue: 0,
-				isAudioParam: true
-			}
-		],
-		outlets: [{ name: 'out', type: 'signal', description: 'Oscillator output' }],
-		description: 'Oscillator generates audio signals',
 		tags: ['audio']
 	},
 
@@ -727,8 +685,8 @@ export const objectDefinitions: Record<string, ObjectDefinition> = {
 	}
 };
 
-export const audioObjectNames = Object.keys(objectDefinitions).filter((key) =>
-	objectDefinitions[key].tags?.includes('audio')
+export const audioObjectNames = Object.keys(objectDefinitionsV1).filter((key) =>
+	objectDefinitionsV1[key].tags?.includes('audio')
 );
 
 export const getObjectNameFromExpr = (expr: string): string =>
@@ -738,10 +696,10 @@ export const getObjectNameFromExpr = (expr: string): string =>
 export function getObjectDefinition(expr: string): ObjectDefinition | undefined {
 	const name = getObjectNameFromExpr(expr);
 
-	return objectDefinitions[name];
+	return objectDefinitionsV1[name];
 }
 
 // Helper function to get all object names
-export const getObjectNames = () => Object.keys(objectDefinitions);
+export const getObjectNames = () => Object.keys(objectDefinitionsV1);
 
 export type AdsrParamList = [unknown, number, number, number, number, number];

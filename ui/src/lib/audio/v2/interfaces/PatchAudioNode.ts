@@ -1,3 +1,5 @@
+import type { NodeMetadata } from './NodeMetadata';
+
 /**
  * Node group type for v2 audio nodes.
  *
@@ -6,6 +8,24 @@
  * * destinations: outputs audio (e.g. speaker)
  */
 export type AudioNodeGroup = 'sources' | 'processors' | 'destinations';
+
+/**
+ * Constructor signature for PatchAudioNode classes.
+ */
+export type NodeConstructor = new (nodeId: string, audioContext: AudioContext) => PatchAudioNode;
+
+/**
+ * Full node class type including required static properties and optional metadata.
+ * All v2 node classes must conform to this type.
+ */
+export type NodeClass = {
+	name: string;
+	group: AudioNodeGroup;
+	inlets?: NodeMetadata['inlets'];
+	outlets?: NodeMetadata['outlets'];
+	description?: NodeMetadata['description'];
+	tags?: NodeMetadata['tags'];
+} & NodeConstructor;
 
 /**
  * Interface for audio nodes in the v2 audio system.

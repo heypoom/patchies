@@ -1,18 +1,14 @@
 import type { Edge } from '@xyflow/svelte';
-import type { PatchAudioNode, AudioNodeGroup } from './interfaces/PatchAudioNode';
+import type { PatchAudioNode, NodeClass } from './interfaces/PatchAudioNode';
 import { getNodeType } from './interfaces/PatchAudioNode';
+import type { NodeMetadata, ObjectInlet } from './interfaces/NodeMetadata';
 import type { V1PatchAudioType } from '../audio-node-types';
 import { canAudioNodeConnect } from '../audio-node-group';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
-import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
 import { validateGroupConnection } from './audio-helpers';
-
-type NodeClass = {
-	name: string;
-	group: AudioNodeGroup;
-} & (new (nodeId: string, audioContext: AudioContext) => PatchAudioNode);
+import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -146,7 +142,35 @@ export class AudioService {
 	}
 
 	/**
+	 * Get node metadata (inlets, outlets, description, tags).
+	 * Checks v2 registry first, then falls back to v1 objectDefinitions.
+	 * @param nodeType - The node type identifier
+	 * @returns NodeMetadata or null if not found
+	 */
+	getNodeMetadata(nodeType: string): NodeMetadata | null {
+		const nodeClass = this.registry.get(nodeType);
+
+		// Use V2 registry if available
+		if (nodeClass) {
+			return {
+				inlets: nodeClass.inlets,
+				outlets: nodeClass.outlets,
+				description: nodeClass.description,
+				tags: nodeClass.tags
+			};
+		}
+
+		// Fall back to V1 objectDefinitions otherwise.
+		if (objectDefinitionsV1[nodeType]) {
+			return objectDefinitionsV1[nodeType];
+		}
+
+		return null;
+	}
+
+	/**
 	 * Get an inlet definition by handle.
+	 * Checks v2 node metadata first, then falls back to v1 objectDefinitions.
 	 */
 	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
 		const audioNode = this.nodesById.get(nodeId);
@@ -155,17 +179,17 @@ export class AudioService {
 		}
 
 		const nodeType = getNodeType(audioNode);
-		const objectDef = objectDefinitions[nodeType];
-		if (!objectDef) {
-			return null;
-		}
-
 		const inletIndex = handleToPortIndex(targetHandle);
 		if (inletIndex === null || isNaN(inletIndex)) {
 			return null;
 		}
 
-		return objectDef.inlets[inletIndex] ?? null;
+		const metadata = this.getNodeMetadata(nodeType);
+		if (!metadata?.inlets) {
+			return null;
+		}
+
+		return metadata.inlets[inletIndex] ?? null;
 	}
 
 	/**
@@ -232,6 +256,17 @@ export class AudioService {
 	 */
 	isNodeTypeDefined(nodeType: string): boolean {
 		return this.registry.has(nodeType);
+	}
+
+	/**
+	 * Check if a node is a v2 node (non-null and has a defined type in the registry).
+	 * @param node - The node instance (can be null)
+	 * @returns True if the node exists and is a v2 node
+	 */
+	isNodeDefined(node: PatchAudioNode | null): node is PatchAudioNode {
+		if (!node) return false;
+
+		return this.registry.has(getNodeType(node));
 	}
 
 	/**

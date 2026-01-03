@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 import { AudioSystem } from './AudioSystem';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
-import { objectDefinitions } from '$lib/objects/object-definitions';
+import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -59,7 +59,7 @@ const WAVEFORM_UNIFORM_NAME = 'waveTexture';
 
 /** Get FFT object's analysis outlet index */
 function getFFTAnalysisOutletIndex(): number {
-	const fftDef = objectDefinitions['fft~'];
+	const fftDef = objectDefinitionsV1['fft~'];
 	const index = fftDef.outlets.findIndex((outlet) => outlet.name === 'analysis');
 	return index !== -1 ? index : 1; // fallback to index 1 if not found
 }

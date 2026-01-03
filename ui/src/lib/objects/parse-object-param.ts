@@ -1,8 +1,5 @@
-import {
-	objectDefinitions,
-	type ObjectInlet,
-	type ObjectDataType
-} from '$lib/objects/object-definitions';
+import { type ObjectInlet, type ObjectDataType } from '$lib/objects/object-definitions';
+import { AudioService } from '$lib/audio/v2/AudioService';
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
 
@@ -111,8 +108,9 @@ export const stringifyParamByType = (
 };
 
 export const parseObjectParamFromString = (name: string, strValues: string[]) => {
-	const definition = objectDefinitions[name];
-	if (!definition) return strValues;
+	const audioService = AudioService.getInstance();
+	const definition = audioService.getNodeMetadata(name);
+	if (!definition || !definition.inlets) return strValues;
 
 	const params: unknown[] = [];
 	let inputInletIndex = 0;

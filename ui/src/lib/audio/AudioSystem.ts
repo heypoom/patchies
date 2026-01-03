@@ -4,7 +4,7 @@ import { match, P } from 'ts-pattern';
 import { getAudioContext } from 'superdough';
 import type { V1PatchAudioNode, V1PatchAudioType } from './audio-node-types';
 import { canAudioNodeConnect } from './audio-node-group';
-import { objectDefinitions, type ObjectInlet } from '$lib/objects/object-definitions';
+import { objectDefinitionsV1, type ObjectInlet } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
 import { ChuckManager } from './ChuckManager';
@@ -17,7 +17,6 @@ import dspWorkletUrl from './dsp-processor.ts?worker&url';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { AudioService } from './v2/AudioService';
-import { getNodeType } from './v2/interfaces/PatchAudioNode';
 import { registerAudioNodes } from './v2/nodes';
 
 export class AudioSystem {
@@ -123,7 +122,7 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
-		if (v2Node && audioService.isNodeTypeDefined(getNodeType(v2Node))) {
+		if (audioService.isNodeDefined(v2Node)) {
 			return v2Node.getAudioParam(name);
 		}
 
@@ -185,10 +184,18 @@ export class AudioSystem {
 	}
 
 	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
+		// Check if this is a v2 node (migrated to AudioService)
+		const audioService = AudioService.getInstance();
+		const v2Node = audioService.getNode(nodeId);
+		if (audioService.isNodeDefined(v2Node)) {
+			return audioService.getInletByHandle(nodeId, targetHandle);
+		}
+
+		// Fallback to v1 logic
 		const audioNode = this.nodesById.get(nodeId);
 		if (!audioNode || !targetHandle) return null;
 
-		const objectDef = objectDefinitions[audioNode.type];
+		const objectDef = objectDefinitionsV1[audioNode.type];
 		if (!objectDef) return null;
 
 		const inletIndex = handleToPortIndex(targetHandle);
@@ -678,7 +685,7 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
-		if (v2Node && audioService.isNodeTypeDefined(getNodeType(v2Node))) {
+		if (audioService.isNodeDefined(v2Node)) {
 			v2Node.send(key, msg);
 			return;
 		}
@@ -1044,7 +1051,7 @@ export class AudioSystem {
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
 
-		if (v2Node && audioService.isNodeTypeDefined(getNodeType(v2Node))) {
+		if (audioService.isNodeDefined(v2Node)) {
 			audioService.removeNode(v2Node);
 			audioService.unregisterNode(nodeId);
 			this.nodesById.delete(nodeId);
