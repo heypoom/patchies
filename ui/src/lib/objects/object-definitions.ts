@@ -370,9 +370,9 @@ export function getObjectNames(): string[] {
 	const v1Names = Object.keys(objectDefinitionsV1);
 
 	const audioService = AudioService.getInstance();
-	const v2AudioNodeNames = audioService.getAllNodeNames();
+	const v2AudioObjectNames = audioService.getAllNodeNames();
 
-	return [...v1Names, ...v2AudioNodeNames];
+	return [...v1Names, ...v2AudioObjectNames];
 }
 
 export type AdsrParamList = [unknown, number, number, number, number, number];

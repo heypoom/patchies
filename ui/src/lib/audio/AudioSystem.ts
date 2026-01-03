@@ -121,11 +121,11 @@ export class AudioSystem {
 	}
 
 	getAudioParam(nodeId: string, name: string): AudioParam | null {
-		const v2Audio = AudioService.getInstance();
-		const v2Node = v2Audio.getNode(nodeId);
+		const audioService = AudioService.getInstance();
+		const v2Node = audioService.getNode(nodeId);
 
-		if (v2Audio.isNodeDefined(v2Node)) {
-			return v2Audio.getAudioParamByNode(v2Node, name);
+		if (audioService.isNodeDefined(v2Node)) {
+			return audioService.getAudioParamByNode(v2Node, name);
 		}
 
 		const entry = this.nodesById.get(nodeId);
