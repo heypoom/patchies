@@ -13,13 +13,13 @@ Migrate V1 audio nodes (defined in `AudioSystem.ts`) to V2 (self-contained class
 3. **🚨 CRITICAL - No Hardcoding Node Names in AudioService**: NEVER check node type with string comparisons like `if (nodeType === 'sampler~')` inside `AudioService`. This breaks encapsulation and causes bugs. Instead: Let individual nodes implement `connect()` or `connectFrom()` methods to handle their own special logic. The node type check belongs in the node class, NOT in the generic service.
 4. **Dual updateEdges()**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) run to handle both systems.
 
-## Completed Migrations (26 nodes)
+## Completed Migrations (27 nodes)
 
 - ✅ Phase 1: `fft~`, `compressor~`, `waveshaper~`, `convolver~`
 - ✅ Phase 2: `mic~`, `merge~`, `split~`
 - ✅ Phase 3 Part 1: `sampler~`, `soundfile~`
 - ✅ Phase 3 Part 2: `expr~`, `dsp~` (AudioWorklet processors with GainNode wrapper)
-- ✅ Phase 4 Part 1: `tone~` (Manager-based node with async Tone.js code execution)
+- ✅ Phase 4: `tone~`, `elem~` (Manager-based nodes with async library code execution)
 - ✅ Simple nodes: `osc~`, `gain~`, `dac~`, `sig~`, `+~`, `pan~`, `delay~`, `lowpass~`–`peaking~`
 
 ## V2 Node Template (Minimal)
@@ -223,31 +223,71 @@ export class ExprNode implements AudioNodeV2 {
 
 **Key insight**: The wrapper pattern ensures nodes are immediately connectable even when internal processing takes time to initialize.
 
-## Remaining Work (4 nodes)
+## Phase 4: tone~ and elem~ Lessons Learned
 
-### Phase 4 (Manager-Based - Delete These to Remove AudioSystem)
+### Pattern: Manager-to-Node Migration
 
-- [ ] `tone~` - ToneManager
-- [ ] `elem~` - ElementaryAudioManager
+Successfully migrated `ToneManager` and `ElementaryAudioManager` to V2 node classes.
+
+**Key Patterns**:
+
+1. **Dual-Gain-Node**: `audioNode` (output) + `inputNode` (for external audio input)
+2. **Target-Side Connection**: Implement `connectFrom()` to route incoming audio to `inputNode`
+3. **Dynamic Ports**: Expose `onSetPortCount: OnSetPortCount = () => {}` callback for UI
+4. **Async Loading**: Lazy-load libraries (`import('tone')`, `import('@elemaudio/core')`)
+5. **Message Integration**: Use `MessageContext` for `send()`/`recv()`
+6. **Cleanup**: Disconnect audio nodes, destroy message context, library-specific cleanup
+
+**elem~ Specifics**: Uses `JSRunner` for code preprocessing and creates `AudioWorkletNode` via `WebRenderer.initialize()`
+
+**Migration Checklist**:
+
+- Create V2 node with `connectFrom()`, `onSetPortCount`, `MessageContext`
+- Update Svelte: Use `AudioService.getNodeById()`, cast type, set callback
+- Remove V1: Delete manager method/import/case from `AudioSystem.ts`, interface from `audio-node-types.ts`
+- Register in `v2/nodes/index.ts`
+- Delete manager file
+
+## Remaining Work (2 nodes)
+
+### Phase 5 (Manager-Based - Delete These to Remove AudioSystem)
+
 - [ ] `csound~` - CsoundManager
 - [ ] `chuck` - ChuckManager
 
-**Pattern**: Move manager logic into node class, delete manager singleton.
+**Pattern**: Follow the tone~/elem~ pattern documented above.
+
+**Reference Implementation** (`tone~` as example):
 
 ```typescript
 export class ToneNode implements AudioNodeV2 {
   static type = "tone~";
-  private synth: Tone.Synth | null = null; // Move from ToneManager
+  audioNode: GainNode;
 
-  send(key: string, msg: unknown): void {
-    if (key === "code" && typeof msg === "string") {
-      this.initTone(msg); // Move from ToneManager.init()
-    }
+  private inputNode: GainNode;
+  private messageContext: MessageContext;
+  public onSetPortCount: OnSetPortCount = () => {};
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.audioNode = audioContext.createGain();
+    this.inputNode = audioContext.createGain();
+    this.messageContext = new MessageContext(nodeId);
+  }
+
+  async create(params: unknown[]): Promise<void> {
+    const [, code] = params as [unknown, string];
+    if (code) await this.setCode(code);
+  }
+
+  connectFrom(source: AudioNodeV2): void {
+    source.audioNode.connect(this.inputNode);
   }
 
   destroy(): void {
-    this.synth?.dispose(); // Move from ToneManager.cleanup()
+    this.cleanup();
+    this.messageContext.destroy();
     this.audioNode.disconnect();
+    this.inputNode.disconnect();
   }
 }
 ```

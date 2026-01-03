@@ -8,7 +8,6 @@ import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
 import { ChuckManager } from './ChuckManager';
-import { ElementaryAudioManager } from './ElementaryAudioManager';
 import { CsoundManager } from './nodes/CsoundManager';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
@@ -69,10 +68,7 @@ export class AudioSystem {
 					logger.warn(`audio parameter ${paramName} does not exist on ${targetId}`);
 				}
 			} else {
-				if (targetEntry.type === 'elem~') {
-					// input to elem~ - connect to inputNode for audio input
-					sourceEntry.node.connect(targetEntry.inputNode);
-				} else if (targetEntry.type === 'csound~') {
+				if (targetEntry.type === 'csound~') {
 					// input to csound~ - connect to inputNode for audio input
 					sourceEntry.node.connect(targetEntry.inputNode);
 				} else {
@@ -136,38 +132,8 @@ export class AudioSystem {
 		}
 
 		match(objectType)
-			.with('elem~', () => this.createElementary(nodeId, params))
 			.with('csound~', () => this.createCsound(nodeId, params))
 			.with('chuck', () => this.createChuck(nodeId));
-	}
-
-	async createElementary(nodeId: string, params: unknown[]) {
-		const [, code] = params as [unknown, string];
-
-		try {
-			const outputNode = new GainNode(this.audioContext);
-			const inputNode = new GainNode(this.audioContext);
-
-			const elementaryManager = new ElementaryAudioManager(
-				nodeId,
-				this.audioContext,
-				outputNode,
-				inputNode
-			);
-
-			if (code) {
-				await elementaryManager.handleMessage('code', code);
-			}
-
-			this.nodesById.set(nodeId, {
-				type: 'elem~',
-				node: outputNode,
-				inputNode,
-				elementaryManager
-			});
-		} catch (error) {
-			console.error('Failed to create Elementary node:', error);
-		}
 	}
 
 	async createCsound(nodeId: string, params: unknown[]) {
@@ -228,9 +194,6 @@ export class AudioSystem {
 		if (!state) return;
 
 		return match(state)
-			.with({ type: 'elem~' }, async (state) => {
-				await state.elementaryManager?.handleMessage(key, msg);
-			})
 			.with({ type: 'csound~' }, async (state) => {
 				await state.csoundManager?.handleMessage(key, msg);
 			})
