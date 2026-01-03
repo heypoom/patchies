@@ -17,6 +17,7 @@ import dspWorkletUrl from './dsp-processor.ts?worker&url';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { AudioService } from './v2/AudioService';
+import { getNodeType } from './v2/interfaces/PatchAudioNode';
 import { registerAudioNodes } from './v2/nodes';
 
 export class AudioSystem {
@@ -122,7 +123,7 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
-		if (v2Node && audioService.isNodeTypeDefined(v2Node.type)) {
+		if (v2Node && audioService.isNodeTypeDefined(getNodeType(v2Node))) {
 			return v2Node.getAudioParam(name);
 		}
 
@@ -677,7 +678,7 @@ export class AudioSystem {
 		// Check if this is a v2 node (migrated to AudioService)
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
-		if (v2Node && audioService.isNodeTypeDefined(v2Node.type)) {
+		if (v2Node && audioService.isNodeTypeDefined(getNodeType(v2Node))) {
 			v2Node.send(key, msg);
 			return;
 		}
@@ -1043,7 +1044,7 @@ export class AudioSystem {
 		const audioService = AudioService.getInstance();
 		const v2Node = audioService.getNode(nodeId);
 
-		if (v2Node && audioService.isNodeTypeDefined(v2Node.type)) {
+		if (v2Node && audioService.isNodeTypeDefined(getNodeType(v2Node))) {
 			audioService.removeNode(v2Node);
 			audioService.unregisterNode(nodeId);
 			this.nodesById.delete(nodeId);

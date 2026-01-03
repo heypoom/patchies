@@ -13,14 +13,12 @@ export class OscNode implements PatchAudioNode {
 
 	readonly nodeId: string;
 	readonly audioNode: OscillatorNode;
-	readonly type: string;
 
 	private audioContext: AudioContext;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioContext = audioContext;
-		this.type = OscNode.name;
 		this.audioNode = audioContext.createOscillator();
 	}
 

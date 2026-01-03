@@ -1,5 +1,6 @@
 import type { Edge } from '@xyflow/svelte';
 import type { PatchAudioNode, AudioNodeGroup } from './interfaces/PatchAudioNode';
+import { getNodeType } from './interfaces/PatchAudioNode';
 import type { V1PatchAudioType } from '../audio-node-types';
 import { canAudioNodeConnect } from '../audio-node-group';
 // @ts-expect-error -- no typedefs
@@ -130,15 +131,15 @@ export class AudioService {
 			return true;
 		}
 
-		const sourceClass = this.registry.get(sourceNode.type);
-		const targetClass = this.registry.get(targetNode.type);
+		const sourceType = getNodeType(sourceNode);
+		const targetType = getNodeType(targetNode);
+
+		const sourceClass = this.registry.get(sourceType);
+		const targetClass = this.registry.get(targetType);
 
 		// Fallback to V1 validation.
 		if (!sourceClass || !targetClass) {
-			return canAudioNodeConnect(
-				sourceNode.type as V1PatchAudioType,
-				targetNode.type as V1PatchAudioType
-			);
+			return canAudioNodeConnect(sourceType as V1PatchAudioType, targetType as V1PatchAudioType);
 		}
 
 		return validateGroupConnection(sourceClass.group, targetClass.group);
@@ -153,7 +154,8 @@ export class AudioService {
 			return null;
 		}
 
-		const objectDef = objectDefinitions[audioNode.type];
+		const nodeType = getNodeType(audioNode);
+		const objectDef = objectDefinitions[nodeType];
 		if (!objectDef) {
 			return null;
 		}

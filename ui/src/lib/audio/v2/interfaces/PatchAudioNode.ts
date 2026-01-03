@@ -12,9 +12,6 @@ export type AudioNodeGroup = 'sources' | 'processors' | 'destinations';
  * All audio node classes must implement this interface.
  */
 export interface PatchAudioNode {
-	/** Node type identifier */
-	readonly type: string;
-
 	/** Unique identifier for this node */
 	readonly nodeId: string;
 
@@ -58,3 +55,13 @@ export interface PatchAudioNode {
 	 */
 	destroy?(): void;
 }
+
+/**
+ * Get the node type from a PatchAudioNode instance.
+ * Extracts the static name property from the node's constructor.
+ *
+ * @param node - The node instance
+ * @returns The node type identifier
+ */
+export const getNodeType = (node: PatchAudioNode): string =>
+	(node.constructor as { name: string }).name;
