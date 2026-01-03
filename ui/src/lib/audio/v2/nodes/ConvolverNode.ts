@@ -14,7 +14,7 @@ export class ConvolverNodeV2 implements AudioNodeV2 {
 	static inlets: ObjectInlet[] = [
 		{ name: 'in', type: 'signal' },
 		{
-			name: 'message',
+			name: 'buffer',
 			type: 'message',
 			description: 'AudioBuffer for impulse response'
 		},
@@ -42,9 +42,11 @@ export class ConvolverNodeV2 implements AudioNodeV2 {
 	}
 
 	send(key: string, message: unknown): void {
-		if (key === 'message' && message instanceof AudioBuffer) {
+		if (key === 'buffer' && message instanceof AudioBuffer) {
 			this.audioNode.buffer = message;
-		} else if (key === 'normalize' && typeof message === 'boolean') {
+		}
+
+		if (key === 'normalize' && typeof message === 'boolean') {
 			this.audioNode.normalize = message;
 		}
 	}
