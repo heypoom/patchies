@@ -36,8 +36,9 @@ export class DspNode implements AudioNodeV2 {
 	readonly nodeId: string;
 
 	private workletNode: AudioWorkletNode | null = null;
-	private keepAliveGain: GainNode | null = null;
 	private audioContext: AudioContext;
+
+	private keepAliveGain: GainNode | null = null;
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
@@ -56,9 +57,6 @@ export class DspNode implements AudioNodeV2 {
 		try {
 			this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor');
 			this.workletNode.connect(this.audioNode);
-
-			// TODO: optimize this -- now every worklet is active
-			this.keepWorkletActive(this.workletNode);
 
 			if (code) {
 				this.send('code', code);
@@ -93,6 +91,17 @@ export class DspNode implements AudioNodeV2 {
 					message: data.message,
 					meta: data.meta
 				});
+			})
+			.with(['setKeepAlive', P.boolean], ([, enabled]) => {
+				if (enabled) {
+					if (this.workletNode) {
+						this.enableKeepAlive(this.workletNode);
+					}
+				} else {
+					this.disableKeepAlive();
+				}
+
+				port.postMessage({ type: 'set-keep-alive', enabled });
 			});
 	}
 
@@ -108,16 +117,29 @@ export class DspNode implements AudioNodeV2 {
 	}
 
 	/**
-	 * Keep worklet active by connecting to destination (at zero gain)
-	 * ensures process() runs even when not connected to anything
+	 * Keep worklet active by connecting to destination at zero gain.
+	 * Ensures process() runs even when not connected to anything
 	 *
 	 * @param worklet
 	 */
-	keepWorkletActive(worklet: AudioWorkletNode) {
-		this.keepAliveGain = this.audioContext.createGain();
-		this.keepAliveGain.gain.value = 0;
-		worklet.connect(this.keepAliveGain);
-		this.keepAliveGain.connect(this.audioContext.destination);
+	private enableKeepAlive(worklet: AudioWorkletNode) {
+		if (!this.keepAliveGain) {
+			this.keepAliveGain = this.audioContext.createGain();
+			this.keepAliveGain.gain.value = 0;
+			worklet.connect(this.keepAliveGain);
+			this.keepAliveGain.connect(this.audioContext.destination);
+		}
+	}
+
+	/**
+	 * Disconnect the keep-alive gain node to allow the worklet
+	 * to stop when it's not connected to anything.
+	 */
+	private disableKeepAlive() {
+		if (this.keepAliveGain) {
+			this.keepAliveGain.disconnect();
+			this.keepAliveGain = null;
+		}
 	}
 
 	async ensureModule(): Promise<void> {

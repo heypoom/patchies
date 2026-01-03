@@ -197,6 +197,9 @@
 				.with({ type: 'set-title', value: P.string }, (m) => {
 					updateNodeData(nodeId, { title: m.value });
 				})
+				.with({ type: 'set-keep-alive', enabled: P.boolean }, (m) => {
+					node.send('setKeepAlive', m.enabled);
+				})
 				.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
 					messageContext.send(eventData.message, eventData.options as SendMessageOptions);
 				});

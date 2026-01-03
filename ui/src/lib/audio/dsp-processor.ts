@@ -3,8 +3,9 @@ import { match, P } from 'ts-pattern';
 
 type DspMessage =
 	| { type: 'set-code'; code: string }
-	| { type: 'set-inlet-values'; values: number[] }
 	| { type: 'message-inlet'; message: unknown; meta: RecvMeta }
+	| { type: 'set-inlet-values'; values: number[] }
+	| { type: 'set-keep-alive'; enabled: boolean }
 	| { type: 'stop' };
 
 type RecvMeta = {
@@ -100,15 +101,14 @@ class DSPProcessor extends AudioWorkletProcessor {
 					options
 				});
 
-			const setTitle = (value: string) =>
-				this.port.postMessage({
-					type: 'set-title',
-					value
-				});
+			const setTitle = (value: string) => this.port.postMessage({ type: 'set-title', value });
 
 			const recv = (callback: (message: unknown, meta: RecvMeta) => void) => {
 				this.recvCallback = callback;
 			};
+
+			const setKeepAlive = (enabled: boolean) =>
+				this.port.postMessage({ type: 'set-keep-alive', enabled });
 
 			const createProcessorFn = new Function(
 				'setPortCount',
@@ -116,30 +116,31 @@ class DSPProcessor extends AudioWorkletProcessor {
 				'setTitle',
 				'recv',
 				'send',
+				'setKeepAlive',
 				`
-				var $1, $2, $3, $4, $5, $6, $7, $8, $9;
+			var $1, $2, $3, $4, $5, $6, $7, $8, $9;
 
-				${code}
-				
-				return (
-					inputs,
-					outputs,
-					inlets,
-					counter
-				) => {
-					$1 = inlets[0];
-					$2 = inlets[1];
-					$3 = inlets[2];
-					$4 = inlets[3];
-					$5 = inlets[4];
-					$6 = inlets[5];
-					$7 = inlets[6];
-					$8 = inlets[7];
-					$9 = inlets[8];
+			${code}
+			
+			return (
+				inputs,
+				outputs,
+				inlets,
+				counter
+			) => {
+				$1 = inlets[0];
+				$2 = inlets[1];
+				$3 = inlets[2];
+				$4 = inlets[3];
+				$5 = inlets[4];
+				$6 = inlets[5];
+				$7 = inlets[6];
+				$8 = inlets[7];
+				$9 = inlets[8];
 
-				  process(inputs, outputs)
-				}
-				`
+			  process(inputs, outputs)
+			}
+			`
 			);
 
 			this.processFunction = createProcessorFn(
@@ -147,7 +148,8 @@ class DSPProcessor extends AudioWorkletProcessor {
 				setAudioPortCount,
 				setTitle,
 				recv,
-				send
+				send,
+				setKeepAlive
 			);
 		} catch (error) {
 			console.error('Failed to compile DSP code:', error);

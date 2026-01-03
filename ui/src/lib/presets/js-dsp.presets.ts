@@ -4,6 +4,7 @@ let capture = false
 setPortCount(1, 1)
 setAudioPortCount(1, 0)
 setTitle('snapshot~')
+setKeepAlive(true)
 
 recv(m => {
   if (m.type === 'bang') {
@@ -27,6 +28,7 @@ function process(inputs, outputs) {
 const BANG_JS_DSP = `setPortCount(0, 1)
 setAudioPortCount(0, 0)
 setTitle('bang~')
+setKeepAlive(true)
 
 function process() {
   send({type: 'bang'})
