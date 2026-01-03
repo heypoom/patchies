@@ -21,7 +21,7 @@ export class DelayNodeV2 implements AudioNodeV2 {
 		{
 			name: 'time',
 			type: 'float',
-			description: 'Delay time in milliseconds',
+			description: 'Delay time in milliseconds (max 1000ms)',
 			defaultValue: 0.0,
 			isAudioParam: true,
 			maxPrecision: 1
@@ -42,9 +42,7 @@ export class DelayNodeV2 implements AudioNodeV2 {
 
 	create(params: unknown[]): void {
 		const [, delayTime] = params as [unknown, number];
-
-		// Convert milliseconds to seconds
-		this.audioNode.delayTime.value = Math.max(0, delayTime ?? 0) / 1000;
+		this.setDelayTime(delayTime ?? 0);
 	}
 
 	getAudioParam(name: string): AudioParam | null {
@@ -55,8 +53,15 @@ export class DelayNodeV2 implements AudioNodeV2 {
 
 	send(key: string, message: unknown): void {
 		match([key, message]).with(['time', P.number], ([, time]) => {
-			// Convert milliseconds to seconds
-			this.audioNode.delayTime.value = Math.max(0, time) / 1000;
+			this.setDelayTime(time);
 		});
+	}
+
+	private setDelayTime(milliseconds: number): void {
+		// Convert milliseconds to seconds and clamp to [0, 1]
+		// This is a Web Audio limitation
+		const seconds = Math.max(0, milliseconds) / 1000;
+
+		this.audioNode.delayTime.value = Math.min(seconds, 1.0);
 	}
 }
