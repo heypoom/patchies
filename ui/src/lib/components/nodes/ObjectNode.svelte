@@ -60,6 +60,7 @@
 	let metroInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
 	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	const messageContext = new MessageContext(nodeId);
 
 	// Combine all searchable items (objects + presets) with metadata
@@ -393,6 +394,7 @@
 
 		const edges = getEdges();
 		audioSystem.updateEdges(edges);
+		audioService.updateEdges(edges);
 	}
 
 	function tryCreateAudioObject() {
