@@ -32,6 +32,13 @@ export class OscNode implements PatchAudioNode {
 		this.audioNode.start(0);
 	}
 
+	getAudioParam(name: string): AudioParam | null {
+		return match(name)
+			.with('frequency', () => this.audioNode.frequency)
+			.with('detune', () => this.audioNode.detune)
+			.otherwise(() => null);
+	}
+
 	send(key: string, message: unknown): void {
 		match([key, message])
 			.with(['frequency', P.number], ([, freq]) => {
@@ -71,12 +78,5 @@ export class OscNode implements PatchAudioNode {
 		}
 
 		this.audioNode.disconnect();
-	}
-
-	getAudioParam(name: string): AudioParam | null {
-		return match(name)
-			.with('frequency', () => this.audioNode.frequency)
-			.with('detune', () => this.audioNode.detune)
-			.otherwise(() => null);
 	}
 }
