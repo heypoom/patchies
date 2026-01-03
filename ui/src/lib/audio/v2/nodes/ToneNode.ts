@@ -1,30 +1,79 @@
+import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 
-export class ToneManager {
-	private gainNode: GainNode;
+type RecvCallback = (message: unknown, meta: unknown) => void;
+
+type OnSetPortCount = (inletCount: number, outletCount: number) => void;
+
+/**
+ * ToneNode implements the tone~ audio node.
+ * Executes user-defined Tone.js code for music synthesis and audio processing.
+ */
+export class ToneNode implements AudioNodeV2 {
+	static type = 'tone~';
+	static group: AudioNodeGroup = 'processors';
+	static description = 'Tone.js synthesis and audio processing node';
+
+	static inlets: ObjectInlet[] = [
+		{
+			name: 'in',
+			type: 'signal',
+			description: 'Audio signal input'
+		},
+		{
+			name: 'code',
+			type: 'string',
+			description: 'Tone.js code to execute'
+		}
+	];
+
+	static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal', description: 'Audio output' }];
+
+	// Output gain node
+	audioNode: GainNode;
+
+	readonly nodeId: string;
+
 	private inputNode: GainNode;
-	private toneObjects: Map<string, unknown> = new Map();
-	private recvCallback: ((message: unknown, meta: unknown) => void) | null = null;
-	private messageInletCount = 0;
-	private messageOutletCount = 0;
-	private currentCode = '';
-	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 	private audioContext: AudioContext;
 	private messageContext: MessageContext;
-	private nodeId: string;
 
-	public onSetPortCount = (inletCount: number, outletCount: number) => {};
+	private toneObjects: Map<string, unknown> = new Map();
+	private recvCallback: RecvCallback | null = null;
+	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 
-	constructor(nodeId: string, audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
+	// Dynamic port counts for UI
+	private messageInletCount = 0;
+	private messageOutletCount = 0;
+
+	public onSetPortCount: OnSetPortCount = () => {};
+
+	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
-		this.gainNode = gainNode;
-		this.inputNode = inputNode;
 		this.audioContext = audioContext;
+
+		// Create gain nodes immediately for connections
+		this.audioNode = audioContext.createGain();
+		this.audioNode.gain.value = 1.0;
+
+		this.inputNode = audioContext.createGain();
+		this.inputNode.gain.value = 1.0;
+
 		this.messageContext = new MessageContext(nodeId);
 	}
 
-	async handleMessage(key: string, msg: unknown): Promise<void> {
+	async create(params: unknown[]): Promise<void> {
+		const [, code] = params as [unknown, string];
+
+		if (code) {
+			await this.setCode(code);
+		}
+	}
+
+	async send(key: string, msg: unknown): Promise<void> {
 		return match([key, msg])
 			.with(['code', P.string], ([, code]) => {
 				return this.setCode(code);
@@ -37,10 +86,18 @@ export class ToneManager {
 			});
 	}
 
-	async ensureTone() {
+	/**
+	 * Handle incoming connections - route to input node
+	 */
+	connectFrom(source: AudioNodeV2): void {
+		if (source.audioNode) {
+			source.audioNode.connect(this.inputNode);
+		}
+	}
+
+	private async ensureTone() {
 		const Tone = await import('tone');
 		Tone.setContext(this.audioContext);
-
 		return Tone;
 	}
 
@@ -49,11 +106,8 @@ export class ToneManager {
 
 		if (!code || code.trim() === '') {
 			await this.cleanup();
-			this.currentCode = '';
 			return;
 		}
-
-		this.currentCode = code;
 
 		try {
 			// Clean up any existing objects
@@ -81,7 +135,7 @@ export class ToneManager {
 				this.messageContext.send(message, options);
 
 			// Create outputNode that connects to our gain node
-			const outputNode = this.gainNode;
+			const outputNode = this.audioNode;
 			// Create inputNode that receives incoming audio
 			const inputNode = this.inputNode;
 
@@ -106,7 +160,7 @@ export class ToneManager {
 				this.toneObjects.set('cleanup', result.cleanup);
 			}
 		} catch (error) {
-			console.error('Failed to execute Tone.js code:', error);
+			logger.error('Failed to execute Tone.js code:', error);
 		}
 	}
 
@@ -125,7 +179,7 @@ export class ToneManager {
 				this.recvCallback(data.message, data.meta);
 			}
 		} catch (error) {
-			console.error('Error in Tone recv callback:', error);
+			logger.error('Error in Tone recv callback:', error);
 		}
 	}
 
@@ -138,7 +192,7 @@ export class ToneManager {
 			try {
 				cleanupFn();
 			} catch (error) {
-				console.error('Error during user cleanup:', error);
+				logger.error('Error during user cleanup:', error);
 			}
 		}
 
@@ -149,7 +203,7 @@ export class ToneManager {
 					node.dispose();
 				}
 			} catch (error) {
-				console.warn('Error disposing Tone.js object:', error);
+				logger.warn('Error disposing Tone.js object:', error);
 			}
 		});
 		this.createdNodes.clear();
@@ -175,9 +229,11 @@ export class ToneManager {
 		this.toneObjects.clear();
 	}
 
-	public destroy(): void {
+	destroy(): void {
 		this.cleanup();
 		this.recvCallback = null;
 		this.messageContext.destroy();
+		this.audioNode.disconnect();
+		this.inputNode.disconnect();
 	}
 }

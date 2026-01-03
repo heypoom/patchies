@@ -13,12 +13,13 @@ Migrate V1 audio nodes (defined in `AudioSystem.ts`) to V2 (self-contained class
 3. **🚨 CRITICAL - No Hardcoding Node Names in AudioService**: NEVER check node type with string comparisons like `if (nodeType === 'sampler~')` inside `AudioService`. This breaks encapsulation and causes bugs. Instead: Let individual nodes implement `connect()` or `connectFrom()` methods to handle their own special logic. The node type check belongs in the node class, NOT in the generic service.
 4. **Dual updateEdges()**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) run to handle both systems.
 
-## Completed Migrations (25 nodes)
+## Completed Migrations (26 nodes)
 
 - ✅ Phase 1: `fft~`, `compressor~`, `waveshaper~`, `convolver~`
 - ✅ Phase 2: `mic~`, `merge~`, `split~`
 - ✅ Phase 3 Part 1: `sampler~`, `soundfile~`
 - ✅ Phase 3 Part 2: `expr~`, `dsp~` (AudioWorklet processors with GainNode wrapper)
+- ✅ Phase 4 Part 1: `tone~` (Manager-based node with async Tone.js code execution)
 - ✅ Simple nodes: `osc~`, `gain~`, `dac~`, `sig~`, `+~`, `pan~`, `delay~`, `lowpass~`–`peaking~`
 
 ## V2 Node Template (Minimal)
@@ -173,7 +174,7 @@ connectFrom(source: AudioNodeV2): void {
 
 **Issue**: When loading patches, `expr~` nodes weren't connecting properly. Logs showed:
 
-```
+```txt
 v2#connectByEdge: skip expr~-125 -> object-126: missing node {sourceNode: undefined, targetNode: DacNode}
 ```
 

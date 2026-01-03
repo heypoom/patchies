@@ -1,5 +1,4 @@
 import type { ChuckManager } from './ChuckManager';
-import type { ToneManager } from './ToneManager';
 import type { ElementaryAudioManager } from './ElementaryAudioManager';
 import type { CsoundManager } from './nodes/CsoundManager';
 import type { AudioNodeGroup } from './v2/interfaces/audio-nodes';
@@ -28,13 +27,6 @@ interface PatchStrudelNode extends AudioNodeBase {
 	node: GainNode;
 }
 
-interface PatchToneNode extends AudioNodeBase {
-	type: 'tone~';
-	node: GainNode;
-	inputNode: GainNode;
-	toneManager?: ToneManager;
-}
-
 interface PatchElementaryNode extends AudioNodeBase {
 	type: 'elem~';
 	node: GainNode;
@@ -53,7 +45,6 @@ export type V1PatchAudioNode =
 	| PatchLyriaNode
 	| PatchChuckNode
 	| PatchStrudelNode
-	| PatchToneNode
 	| PatchElementaryNode
 	| PatchCsoundNode;
 
