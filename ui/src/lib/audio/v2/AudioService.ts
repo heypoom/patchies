@@ -57,9 +57,9 @@ export class AudioService {
 	 * The default implementation looks for AudioParam properties on the audioNode
 	 * that are marked as isAudioParam in the node's inlets definition.
 	 *
-	 * This is called by v1 AudioSystem when handling scheduled audio parameter automation.
+	 * This is called by AudioSystem when processing scheduled messages for V2 nodes.
 	 */
-	getAudioParam(node: AudioNodeV2, paramName: string): AudioParam | null {
+	getAudioParamByNode(node: AudioNodeV2, paramName: string): AudioParam | null {
 		if (node.getAudioParam) {
 			return node.getAudioParam(paramName);
 		}
@@ -114,7 +114,7 @@ export class AudioService {
 			return;
 		}
 
-		const audioParam = this.getAudioParam(target, paramName);
+		const audioParam = this.getAudioParamByNode(target, paramName);
 
 		if (audioParam) {
 			source.audioNode.connect(audioParam);
@@ -245,6 +245,11 @@ export class AudioService {
 
 	/**
 	 * Update audio connections based on XY Flow edges.
+	 *
+	 * IMPORTANT: This ONLY handles connections between V2 nodes.
+	 * V1-to-V2 and V1-to-V1 connections are handled by AudioSystem.updateEdges.
+	 * We skip edges where either node isn't in the V2 registry to avoid
+	 * interfering with V1 node management.
 	 */
 	updateEdges(edges: Edge[]): void {
 		try {
@@ -275,13 +280,19 @@ export class AudioService {
 				}
 			}
 
+			// Only process edges where BOTH source and target are V2 nodes.
+			// This prevents interference with V1 node management by AudioSystem.
 			for (const edge of edges) {
-				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
-
+				const sourceNode = this.nodesById.get(edge.source);
 				const targetNode = this.nodesById.get(edge.target);
-				const isAudioParam = targetNode
-					? !!this.getAudioParam(targetNode, inlet?.name ?? '')
-					: false;
+
+				// Skip edges involving V1-only nodes
+				if (!sourceNode || !targetNode) {
+					continue;
+				}
+
+				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
+				const isAudioParam = !!this.getAudioParamByNode(targetNode, inlet?.name ?? '');
 
 				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
 			}
