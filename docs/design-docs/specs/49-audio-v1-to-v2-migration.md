@@ -31,7 +31,7 @@ The V2 system includes several improvements that make migration cleaner:
 
 8. **Dual updateEdges() Calls**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) are called from `FlowCanvasInner.svelte` to handle both V1 and V2 nodes correctly.
 
-## Completed Migrations (19 nodes)
+## Completed Migrations (22 nodes)
 
 - [x] `osc~` - Oscillator node (source, has destroy)
 - [x] `gain~` - Gain/volume control node (processor, no destroy needed)
@@ -52,6 +52,9 @@ The V2 system includes several improvements that make migration cleaner:
 - [x] `compressor~` - Dynamic range compressor (processor)
 - [x] `waveshaper~` - Waveshaper distortion (processor)
 - [x] `convolver~` - Convolver reverb (processor)
+- [x] `mic~` - Microphone input (source, with MediaStream handling)
+- [x] `merge~` - Channel merger (processor, dynamic channel count)
+- [x] `split~` - Channel splitter (processor, dynamic channel count)
 
 ## Migration Pattern
 
@@ -585,17 +588,14 @@ Successfully refactored all migrated V2 nodes to use default implementations:
 - Eliminated `match` and `ts-pattern` imports from 13 nodes
 - Pattern now scales: New nodes only need inlets definition + `create()` method
 
-## Remaining Work (5 nodes in V1 AudioSystem)
+## Remaining Work (2 nodes in V1 AudioSystem)
 
 ### Overview
 
-After completing Phase 1 migrations (fft~, compressor~, waveshaper~, convolver~), the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 5 nodes remain in V1:
+After completing Phase 1-2 migrations (23 nodes total), the goal is to **delete AudioSystem entirely** and use only AudioService. Currently, 2 nodes remain in V1:
 
 | Node         | Type      | Group      | Status    | Notes                                                                     |
 | ------------ | --------- | ---------- | --------- | ------------------------------------------------------------------------- |
-| `mic~`       | Source    | sources    | 🟡 MEDIUM | Requires special MediaStream + MediaStreamAudioSourceNode handling        |
-| `merge~`     | Processor | processors | 🟡 MEDIUM | ChannelMergerNode with dynamic channel count; handles node resizing       |
-| `split~`     | Processor | processors | 🟡 MEDIUM | ChannelSplitterNode with dynamic channel count; handles node resizing     |
 | `sampler~`   | Source    | sources    | 🔴 HARD   | Complex recording + playback state; MediaRecorder + AudioBufferSourceNode |
 | `soundfile~` | Source    | sources    | 🔴 HARD   | Audio file loading + streaming; MediaElementAudioSourceNode management    |
 
@@ -806,21 +806,23 @@ Once all nodes are migrated (Phase 1-4 complete):
 
 ## Next Steps
 
-### Immediate (This Sprint) - ✅ COMPLETED
+### Completed (Jan 2026)
 
 - [x] **Phase 1 Migrations**: Migrate `fft~`, `compressor~`, `waveshaper~`, `convolver~` (4 nodes, ~2-3 hours)
   - High-value wins with minimal complexity
-  - Tests should all pass without changes
-- [x] **Update migration guide**: Document any special patterns discovered during Phase 1
+  - Tests all pass without changes
+- [x] **Update migration guide**: Document special patterns discovered
+- [x] **Phase 2 Migrations**: Migrate `mic~`, `merge~`, `split~` (3 nodes, ~4-5 hours)
+  - `mic~`: Source node with MediaStream/getUserMedia handling
+  - `merge~` / `split~`: Dynamic channel count via send() method
+  - Update migration guide
 
-### Short Term (Next Sprint)
+### Immediate (This Sprint)
 
-- [ ] **Phase 2 Migrations**: `mic~`, `merge~`, `split~` (3 nodes, ~4-5 hours)
-  - Requires thinking about channel management in V2
-  - May need inlet/outlet generation patterns for dynamic ports
-- [ ] **Phase 3 Planning**: Design for `sampler~` and `soundfile~`
+- [ ] **Phase 3 Migrations**: Design and implement `sampler~` and `soundfile~` (2 nodes, ~6-8 hours)
+  - `sampler~`: Recording + playback state with MediaRecorder + AudioBufferSourceNode
+  - `soundfile~`: File loading with MediaElementAudioSourceNode
   - These are the most complex; may require new V2 patterns
-  - Consider: AudioBufferSourceNode lifecycle, MediaElement lifecycle
 
 ### Medium/Long Term (After Phase 3)
 
