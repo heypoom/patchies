@@ -229,7 +229,6 @@ export class AudioSystem {
 		}
 
 		match(objectType)
-			.with('dac~', () => this.createDac(nodeId))
 			.with('fft~', () => this.createAnalyzer(nodeId, params))
 			.with('+~', () => this.createAdd(nodeId))
 			.with('mic~', () => this.createMic(nodeId))
@@ -259,11 +258,6 @@ export class AudioSystem {
 			.with('split~', () => this.createChannelSplitter(nodeId, params));
 	}
 
-	createDac(nodeId: string) {
-		if (this.outGain) {
-			this.nodesById.set(nodeId, { type: 'dac~', node: this.outGain });
-		}
-	}
 
 	createAdd(nodeId: string) {
 		const addNode = this.audioContext.createGain();

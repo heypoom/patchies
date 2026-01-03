@@ -3,12 +3,11 @@ import type { V1PatchAudioNodeGroup } from './audio-node-types';
 import { AudioService } from './v2/AudioService';
 
 export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | null => {
-	// Check V2 registry first
-	const v2Audio = AudioService.getInstance();
-	const v2Group = v2Audio.getNodeGroup(nodeType);
+	// V2 registry check
+	const v2Group = AudioService.getInstance().getNodeGroup(nodeType);
 	if (v2Group) return v2Group;
 
-	// Fall back to V1 pattern matching
+	// V1 hard coded check
 	return match<string, V1PatchAudioNodeGroup | null>(nodeType)
 		.with(P.union('lyria', 'mic~', 'sig~', 'soundfile~'), () => 'sources')
 		.with(
@@ -33,7 +32,6 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 			),
 			() => 'processors'
 		)
-		.with('dac~', () => 'destinations')
 		.otherwise(() => null);
 };
 

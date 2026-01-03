@@ -17,13 +17,6 @@ export type { ObjectDataType, ObjectInlet, ObjectOutlet };
 
 /** Legacy object definitions. */
 export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
-	'dac~': {
-		inlets: [{ name: 'in', type: 'signal', description: 'Audio signal to output' }],
-		outlets: [],
-		description: 'Send sounds to speakers',
-		tags: ['audio']
-	},
-
 	mtof: {
 		inlets: [{ name: 'note', type: 'float', description: 'MIDI note value (0-127)' }],
 		outlets: [{ name: 'frequency', type: 'float', description: 'Frequency in Hz' }],

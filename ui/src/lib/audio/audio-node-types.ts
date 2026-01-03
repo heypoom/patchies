@@ -2,14 +2,10 @@ import type { ChuckManager } from './ChuckManager';
 import type { ToneManager } from './ToneManager';
 import type { ElementaryAudioManager } from './ElementaryAudioManager';
 import type { CsoundManager } from './nodes/CsoundManager';
+import type { AudioNodeGroup } from './v2/interfaces/audio-nodes';
 
 interface AudioNodeBase {
 	node: AudioNode;
-}
-
-interface PatchDacNode extends AudioNodeBase {
-	type: 'dac~';
-	node: GainNode; // dac uses the outGain node
 }
 
 interface PatchAddNode extends AudioNodeBase {
@@ -180,7 +176,6 @@ interface PatchChannelSplitterNode extends AudioNodeBase {
 }
 
 export type V1PatchAudioNode =
-	| PatchDacNode
 	| PatchAddNode
 	| PatchLyriaNode
 	| PatchAnalyzerNode
@@ -212,4 +207,4 @@ export type V1PatchAudioNode =
 	| PatchChannelSplitterNode;
 
 export type V1PatchAudioType = V1PatchAudioNode['type'];
-export type V1PatchAudioNodeGroup = 'sources' | 'processors' | 'destinations';
+export type V1PatchAudioNodeGroup = AudioNodeGroup;

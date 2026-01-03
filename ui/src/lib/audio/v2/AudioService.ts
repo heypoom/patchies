@@ -1,8 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
-import type { AudioNodeV2, AudioNodeClass } from './interfaces/audio-nodes';
+import type { AudioNodeV2, AudioNodeClass, AudioNodeGroup } from './interfaces/audio-nodes';
 import { getNodeType } from './interfaces/audio-nodes';
 import type { ObjectMetadata, ObjectInlet } from '$lib/objects/v2/object-metadata';
-import type { V1PatchAudioType } from '../audio-node-types';
 import { canAudioNodeConnect } from '../audio-node-group';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
@@ -36,16 +35,6 @@ export class AudioService {
 		this.outGain = this.getAudioContext().createGain();
 		this.outGain.gain.value = 0.8;
 		this.outGain.connect(this.getAudioContext().destination);
-	}
-
-	/** Register a node to the registry. */
-	registerNode(node: AudioNodeV2): void {
-		this.nodesById.set(node.nodeId, node);
-	}
-
-	/** Unregister a node from the registry. */
-	unregisterNode(nodeId: string): void {
-		this.nodesById.delete(nodeId);
 	}
 
 	/** Removes a node from the graph. */
@@ -272,9 +261,8 @@ export class AudioService {
 	 * @param nodeType - The type of node to check
 	 * @returns The node group or null if not defined
 	 */
-	getNodeGroup(nodeType: string): 'sources' | 'processors' | 'destinations' | null {
-		const NodeClass = this.registry.get(nodeType);
-		return NodeClass?.group ?? null;
+	getNodeGroup(nodeType: string): AudioNodeGroup | null {
+		return this.registry.get(nodeType)?.group ?? null;
 	}
 
 	/**
@@ -306,7 +294,7 @@ export class AudioService {
 		const audioContext = this.getAudioContext();
 		const node = new NodeClass(nodeId, audioContext);
 		node.create(params);
-		this.registerNode(node);
+		this.nodesById.set(node.nodeId, node);
 
 		return node;
 	}

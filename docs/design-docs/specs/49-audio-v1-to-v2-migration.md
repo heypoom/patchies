@@ -20,10 +20,13 @@ The V2 system includes several improvements that make migration cleaner:
 
 5. **Type Safety**: Changed from restrictive V1 types (`V1PatchAudioType`) to `string` in function signatures, allowing both V1 and V2 nodes without type conflicts.
 
+6. **No Hardcoding Node Names in AudioService**: Special node behavior (like `dac~` connecting to `outGain`) lives in the node class itself, not in `AudioService`. Nodes can access `AudioService.getInstance()` to get shared resources without requiring hardcoded logic.
+
 ## Completed Migrations
 
 - [x] `osc~` - Oscillator node (source, has destroy)
 - [x] `gain~` - Gain/volume control node (processor, no destroy needed)
+- [x] `dac~` - Digital-to-analog converter (destination, auto-connects to speakers)
 
 ## Migration Pattern
 
@@ -138,6 +141,21 @@ static outlets: ObjectOutlet[] = [
 constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
     this.audioNode = audioContext.createGain(); // Or appropriate Web Audio node
+}
+```
+
+**Special Case - Destination Nodes**: If the node needs to auto-connect to speakers (like `dac~`), retrieve `outGain` from `AudioService` and connect in the constructor:
+
+```typescript
+constructor(nodeId: string, audioContext: AudioContext) {
+    this.nodeId = nodeId;
+    this.audioNode = audioContext.createGain();
+
+    const { outGain } = AudioService.getInstance();
+
+    if (outGain) {
+      this.audioNode.connect(outGain);
+    }
 }
 ```
 
@@ -311,6 +329,27 @@ Nodes that output audio (e.g., dac~):
 
 - Group: `'destinations'`
 - Only have audio input, no output
+- **Auto-connect pattern**: Destination nodes that route to speakers should create their own gain node and auto-connect to `AudioService.getInstance().outGain` in the constructor
+- This allows multiple instances (e.g., multiple `dac~` nodes) in a patch
+- **Important**: `AudioService.updateEdges()` automatically reconnects all destination nodes to `outGain` after disconnecting everything (no manual handling needed)
+
+**Example**:
+
+```typescript
+constructor(nodeId: string, audioContext: AudioContext) {
+    this.nodeId = nodeId;
+    this.audioNode = audioContext.createGain();
+    this.audioNode.gain.value = 1.0;
+
+    const { outGain } = AudioService.getInstance();
+
+    if (outGain) {
+      this.audioNode.connect(outGain);
+    }
+}
+```
+
+**Note**: The connection to `outGain` gets disconnected during `updateEdges()` but is automatically restored by checking for `group === 'destinations'` in the registry.
 
 ## Automation Opportunities
 
@@ -371,11 +410,11 @@ The registry-based architecture means V2 nodes automatically work everywhere:
 - ✅ **Node creation**: `AudioService.createNode()` uses registry
 - ✅ **Validation**: Uses V2 node groups from registry
 - ✅ **Metadata**: All metadata in node class (inlets, outlets, description)
+- ✅ **Special behavior**: Nodes access shared resources via `AudioService.getInstance()` directly in their constructors (no hardcoding needed)
 
 ## Next Steps
 
 - [ ] Migrate remaining V1 nodes (prioritize commonly used ones):
-  - [ ] `dac~` (destination)
   - [ ] `sig~` (constant signal source)
   - [ ] `+~` (signal addition)
   - [ ] Filter nodes (lowpass~, highpass~, bandpass~, etc.)
