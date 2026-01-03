@@ -42,10 +42,11 @@ export class AudioService {
 	removeNode(node: AudioNodeV2): void {
 		if (node.destroy) {
 			node.destroy();
-			return;
+		} else {
+			node.audioNode.disconnect();
 		}
 
-		node.audioNode.disconnect();
+		this.nodesById.delete(node.nodeId);
 	}
 
 	getNode(nodeId: string): AudioNodeV2 | null {
