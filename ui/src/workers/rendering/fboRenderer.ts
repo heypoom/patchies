@@ -36,7 +36,6 @@ export class FBORenderer {
 	public outputNodeId: string | null = null;
 
 	public isOutputEnabled: boolean = false;
-	public shouldProcessPreviews: boolean = false;
 	public isAnimating: boolean = false;
 
 	public offscreenCanvas: OffscreenCanvas;
@@ -406,9 +405,6 @@ export class FBORenderer {
 
 	setPreviewEnabled(nodeId: string, enabled: boolean) {
 		this.previewState[nodeId] = enabled;
-
-		const enabledPreviews = this.getEnabledPreviews() ?? [];
-		this.shouldProcessPreviews = enabledPreviews.length > 0;
 	}
 
 	/** Toggle pause state for a node */
