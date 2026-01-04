@@ -8,7 +8,6 @@
 		getAudioObjectNames,
 		getObjectNameFromExpr
 	} from '$lib/objects/object-definitions';
-	import { tryTransformShorthand } from '$lib/objects/object-shorthands';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { ObjectService } from '$lib/objects/v2/ObjectService';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -24,11 +23,11 @@
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
-	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 	import { getCombinedMetadata } from '$lib/objects/v2/get-metadata';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 	import { logger } from '$lib/utils/logger';
 	import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+	import { ObjectShorthandRegistry } from '$lib/objects/object-shorthands';
 
 	let {
 		id: nodeId,
@@ -323,7 +322,7 @@
 	};
 
 	function tryTransformToVisualNode() {
-		const result = tryTransformShorthand(expr);
+		const result = ObjectShorthandRegistry.getInstance().tryTransform(expr);
 
 		if (result) {
 			changeNode(result.nodeType, result.data);
