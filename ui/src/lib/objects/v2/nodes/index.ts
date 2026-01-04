@@ -4,6 +4,7 @@
 
 import { LoadbangObject } from './LoadbangObject';
 import { MtofObject } from './MtofObject';
+
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
 import type { TextObjectClass } from '../interfaces/text-objects';

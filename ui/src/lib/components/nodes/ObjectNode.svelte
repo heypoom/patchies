@@ -731,7 +731,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="relative">
 				<!-- Dynamic inlets -->
-				{#if inlets.length > 0}
+				{#if inlets}
 					{#each inlets as inlet, index}
 						<StandardHandle
 							port="inlet"
@@ -861,7 +861,7 @@
 				</div>
 
 				<!-- Dynamic outlets -->
-				{#if outlets.length > 0}
+				{#if outlets}
 					{#each outlets as outlet, index}
 						<StandardHandle
 							port="outlet"

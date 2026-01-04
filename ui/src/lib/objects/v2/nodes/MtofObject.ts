@@ -18,9 +18,8 @@ export class MtofObject implements TextObjectV2 {
 		{ name: 'frequency', type: 'float', description: 'Frequency in Hz' }
 	];
 
-	readonly nodeId: string;
 	params: unknown[] = [];
-
+	readonly nodeId: string;
 	private messageContext: MessageContext;
 
 	constructor(nodeId: string, messageContext: MessageContext) {
@@ -31,6 +30,7 @@ export class MtofObject implements TextObjectV2 {
 	onMessage(data: unknown, meta: MessageMeta): void {
 		if (meta.inlet === 0 && typeof data === 'number') {
 			const frequency = 440 * Math.pow(2, (data - 69) / 12);
+
 			this.messageContext.send(frequency);
 		}
 	}
