@@ -77,22 +77,6 @@ This lets you visually see the program's core composition and its in-between res
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
 
-## Mouse and Keyboard Shortcuts
-
-You can use the Shortcuts button on the bottom right to see a list of shortcuts. Here are some of the most useful ones:
-
-- `Click on object / title`: focus on the object.
-- `Drag on object / title`: move the object around.
-- `Scroll up`: zoom in.
-- `Scroll down`: zoom out.
-- `Drag on empty space`: pan the canvas.
-- `Enter`: create a new object at cursor position.
-- `Ctrl/Cmd + K`: open the command palette to search for commands.
-- `Shift + Enter`: run the code in the code editor within the selected object.
-- `Delete`: delete the selected object.
-- `Ctrl + C`: copy the selected object.
-- `Ctrl + V`: paste the copied object.
-
 ## Message Passing
 
 Each object can send message to other objects, and receive messages from other objects.
@@ -205,6 +189,22 @@ If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Pat
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
 - You can use `dac~` to output audio to your speakers.
+
+## Mouse and Keyboard Shortcuts
+
+Patchies is designed to be relatively fast to use so you can get in the flow, albeit with a bit of a learning curve. Go to "Help (bottom right button) > Shortcuts tab" to see a list of shortcuts. Here are some of the most useful ones:
+
+- `Click on object / title`: focus on the object.
+- `Drag on object / title`: move the object around.
+- `Scroll up`: zoom in.
+- `Scroll down`: zoom out.
+- `Drag on empty space`: pan the canvas.
+- `Enter`: create a new object at cursor position.
+- `Ctrl/Cmd + K`: open the command palette to search for commands.
+- `Shift + Enter`: run the code in the code editor within the selected object.
+- `Delete`: delete the selected object.
+- `Ctrl + C`: copy the selected object.
+- `Ctrl + V`: paste the copied object.
 
 ## List of objects
 
