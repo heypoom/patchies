@@ -8,9 +8,9 @@ I want to add these nodes that allows us to send and receive MIDI messages:
 Let's use the `webmidi` library <https://github.com/djipco/webmidi> to handle this. You will also need to enable SysEx messages (ref: <https://webmidijs.org/docs/getting-started/basics>)
 
 ```ts
-WebMidi.enable({sysex: true})
-  .then(() => console.log('WebMidi with sysex enabled!'))
-  .catch((err) => alert(err))
+WebMidi.enable({ sysex: true })
+  .then(() => console.log("WebMidi with sysex enabled!"))
+  .catch((err) => alert(err));
 ```
 
 ## `midi.in`
@@ -33,7 +33,7 @@ Node data for `midi.in` includes:
 
 The object listens to these messages:
 
-- `{ type: 'bang' }` - start listening to MIDI messages using the current configuration.
+- `bang` - start listening to MIDI messages using the current configuration.
   - This should call the `MidiSystem` to start setting up the MIDI input.
 - `{ type: 'set', deviceId?: number, channel?: number, events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[] }` - set the configuration for MID input. if any parameter is not provided, it should use the current configuration of the node.
 
@@ -59,7 +59,7 @@ Node data for `midi.out` includes:
 
 ### Messages for `midi.out`
 
-- `{ type: 'bang' }` - send the MIDI message using the current configuration.
+- `bang` - send the MIDI message using the current configuration.
   - This should call the `MidiSystem` to send the MIDI message.
 - `{ type: 'send', deviceId?: number, channel?: number, event?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange', data?: any }` - send a MIDI message with the specified parameters.
   - if any parameter is not provided, it should use the current configuration of the node.

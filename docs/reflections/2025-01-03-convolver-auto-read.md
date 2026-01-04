@@ -2,14 +2,14 @@
 
 ## Objective
 
-Simplify the user workflow for using `convolver~` by automatically detecting when `soundfile~` is connected to `convolver~`'s `buffer` inlet and automatically reading/sending the audio buffer without requiring manual `{ type: 'read' }` messages.
+Simplify the user workflow for using `convolver~` by automatically detecting when `soundfile~` is connected to `convolver~`'s `buffer` inlet and automatically reading/sending the audio buffer without requiring manual `read` messages.
 
 ## Problem Statement
 
 Previously, to use `convolver~` for reverb effects, users had to:
 
 1. Load an audio file into `soundfile~`
-2. Manually send a `{ type: 'read' }` message to trigger buffer reading
+2. Manually send a `read` message to trigger buffer reading
 3. Connect the output to `convolver~`'s `buffer` inlet
 
 This workflow was unintuitive because the connection implied data flow, but the buffer wasn't automatically sent.
@@ -66,7 +66,7 @@ This method returns all edges connected from a source node, filtered by an optio
 
 ## Backward Compatibility
 
-- The manual `{ type: 'read' }` message handling is preserved
+- The manual `read` message handling is preserved
 - Users can still manually trigger buffer reading if needed
 - Existing patches continue to work without changes
 

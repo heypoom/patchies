@@ -28,7 +28,7 @@ It gives you a simple stack machine with these features:
   - See the [memory segments definition](./src/mem/segments.rs) on how the memory space is laid out.
 - Automatic clock: use the play and pause buttons (or its messages) to start and stop automatic clocking.
   - The clock speed can be adjusted via `Delay (ms)` in the settings menu, or send a `setDelayMs` message.
-- Manual clock: send a `{type: 'bang'}` message to step the program by one instruction.
+- Manual clock: send a `bang` message to step the program by one instruction.
   - This is slower than automatic clocking, but useful for debugging.
 - Adjustable instructions per cycle.
   - Default is 1 instructions. You can set it to higher number of instructions per cycle (e.g. 20) to speed up the program significantly.
@@ -53,14 +53,14 @@ It gives you a simple stack machine with these features:
 - Shortcuts
   - `Shift + Enter` in the code editor auto-runs the program.
 - Messages:
-  - `{type: 'bang'}`: step the program by one instruction
+  - `bang`: step the program by one instruction
   - `{type: 'set', code: <string>}`: load the assembly code
-  - `{type: 'run'}`: reload the program and step N times
-  - `{type: 'play'}`: start automatic clocking
-  - `{type: 'pause'}`: pause automatic clocking
-  - `{type: 'toggle'}`: toggle automatic clocking
-  - `{type: 'reset'}`: reset the program
-  - `{type: 'step'}`: step the program by one instruction
+  - `run`: reload the program and step N times
+  - `play`: start automatic clocking
+  - `pause`: pause automatic clocking
+  - `toggle`: toggle automatic clocking
+  - `reset`: reset the program
+  - `step`: step the program by one instruction
   - `{type: 'setDelayMs', value: <number>}`: set the delay between automatic clock ticks in milliseconds
   - `{type: 'setStepBy', value: <number>}`: set the number of instructions to step by on each (manual and auto) tick
   - `number` or `array of number`: send the number(s) to the program.

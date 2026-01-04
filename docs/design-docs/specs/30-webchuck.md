@@ -5,20 +5,20 @@ Create a `chuck` object for the ChucK programming language.
 Here's an example from <https://chuck.cs.princeton.edu/webchuck/docs/classes/Chuck.html>
 
 ```ts
-import {Chuck} from 'webchuck'
+import { Chuck } from "webchuck";
 
-let theChuck
+let theChuck;
 
-document.getElementById('start').addEventListener('click', async () => {
+document.getElementById("start").addEventListener("click", async () => {
   if (theChuck === undefined) {
-    const chuckUrlPrefix = 'https://chuck.stanford.edu/webchuck/src/'
+    const chuckUrlPrefix = "https://chuck.stanford.edu/webchuck/src/";
 
-    theChuck = await Chuck.init([], audioContext, 2, chunkUrlPrefix)
+    theChuck = await Chuck.init([], audioContext, 2, chunkUrlPrefix);
   }
 
-  theChuck.runCode('SinOsc osc => dac; 1::second => now;')
-  theChuck.connect(audioContext.destination)
-})
+  theChuck.runCode("SinOsc osc => dac; 1::second => now;");
+  theChuck.connect(audioContext.destination);
+});
 ```
 
 You can use `AudioSystem.audioContext` to get the audio context. Make sure each audio node has its own `Chuck` instance.
@@ -35,19 +35,19 @@ We need these capabilities to replicate the WebChuck IDE's features:
 
   - Should use the `onrun` handler (keybind defaults to CMD+Enter)
   - Should have a floating icon
-  - also triggerable by `{type: 'run'}` or `{type: 'bang'}`
+  - also triggerable by `run` or `bang`
 
 - Replace button: uses `chuck.replaceCode`
 
   - Should have a floating icon
   - Should add a custom keybind to CodeMirror for 'CMD+\'
-  - also triggerable by `{type: 'replace'}`
+  - also triggerable by `replace`
 
 - Remove button: uses `chuck.removeLastCode`
 
   - Should have a floating icon
   - Should add a custom keybind to CodeMirror for 'CMD+Backspace'
-  - also triggerable by `{type: 'remove'}`
+  - also triggerable by `remove`
 
 - A floating settings button and settings panel that allows us to view running shreds and remove them.
 

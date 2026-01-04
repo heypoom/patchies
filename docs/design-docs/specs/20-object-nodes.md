@@ -16,18 +16,21 @@ This allows us to quickly create nodes without having to design a specific visua
 Object nodes have two distinct states to optimize both editing and usage:
 
 ### Locked State
+
 - **Default state** for existing nodes with content
 - Allows **node dragging** for repositioning
 - Displays the object name as **read-only text**
 - **Double-click** to enter editing state
 
 ### Editing State
+
 - **Text input field** is active and focused
 - **Disables node dragging** (input has `nodrag` class)
 - Shows **autocompletion dropdown** when typing
 - **Auto-focuses** when entering editing state
 
 ### State Transitions
+
 - **New nodes**: Start in editing state with auto-focused input
 - **Double-click locked node**: Enter editing state
 - **Enter key**: Exit editing state, save changes, enter locked state
@@ -89,7 +92,7 @@ const objectDefs = {
     inlets: [{}, {}, {}],
     outlets: [{}],
   },
-}
+};
 ```
 
 Here is an example configuration for a node with named, yet untyped inlets and outlets:
@@ -98,13 +101,13 @@ Here is an example configuration for a node with named, yet untyped inlets and o
 const objectDefs = {
   clip: {
     inlets: [
-      {name: 'value', description: 'Value to clip'},
-      {name: 'min', description: 'Minimum value'},
-      {name: 'max', description: 'Maximum value'},
+      { name: "value", description: "Value to clip" },
+      { name: "min", description: "Minimum value" },
+      { name: "max", description: "Maximum value" },
     ],
-    outlets: [{name: 'clippedValue', description: 'Clipped value'}],
+    outlets: [{ name: "clippedValue", description: "Clipped value" }],
   },
-}
+};
 ```
 
 When an inlet or outlet is typed, type validation will be performed automatically. If the type does not match, the message will not be sent to the object. In the future, this shall log to the virtual console that the message was not sent due to type mismatch.
@@ -113,15 +116,15 @@ When an inlet or outlet is typed, type validation will be performed automaticall
 const objectDefs = {
   clip: {
     inlets: [
-      {name: 'value', type: 'float', description: 'Value to clip'},
-      {name: 'min', type: 'float', description: 'Minimum value'},
-      {name: 'max', type: 'float', description: 'Maximum value'},
+      { name: "value", type: "float", description: "Value to clip" },
+      { name: "min", type: "float", description: "Minimum value" },
+      { name: "max", type: "float", description: "Maximum value" },
     ],
     outlets: [
-      {name: 'clippedValue', type: 'float', description: 'Clipped value'},
+      { name: "clippedValue", type: "float", description: "Clipped value" },
     ],
   },
-}
+};
 ```
 
 One inlet can be overloaded.
@@ -130,7 +133,6 @@ One inlet can be overloaded.
 
 - `any`: any type of value, no type validation is performed.
 - `bang`: a bang message, used to trigger events.
-  - this is an alias for `{ type: 'bang' }`
 - `float`: a floating point number, e.g. `0.5`, `1.0`, `-2.3`.
 - `int`: an integer number.
   - uses `Number.isInteger()` to validate.

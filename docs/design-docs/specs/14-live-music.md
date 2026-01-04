@@ -20,8 +20,8 @@ It implements the `MessageSystem` interface, which means it can handle messages 
 
 - It should have one inlet.
 - It should handle these actions via our `MessageSystem`
-  - Play: `{ type: 'play' }`
-  - Pause: `{ type: 'pause' }`
+  - Play: `play`
+  - Pause: `pause`
   - Add Weighted Prompt: `{ type: 'addPrompt', prompt: string, weight: number }`
   - Delete Weighted Prompt: `{ type: 'deletePrompt', prompt: string }`
 

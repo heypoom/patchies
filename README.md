@@ -125,9 +125,9 @@ Here are some examples to get you started:
 - Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `logger.js` preset. Connect them together.
   - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
 
-Most messages are simply objects with a `type` field. For example, `bang` is a `{type: 'bang'}` object, and `start` is `{type: 'start'}`. If you need more properties, then you can add more fields to the object, e.g. `{type: 'loop', value: false}`.
+Most messages in Patchies are objects with a `type` field. For example, `bang` is `{type: 'bang'}`, and `start` is `{type: 'start'}`. If you need more properties, then you can add more fields to the object, e.g. `{type: 'loop', value: false}`.
 
-Typing just `bang` in the message box sends `{type: 'bang'}` for convenience. See the [message object](#msg-message-object)'s documentation for the message box syntax.
+Typing `bang` in the message box sends `{type: 'bang'}` for convenience. If you want to send a string "bang", type in `"bang"` with quotes. See the [message object](#msg-message-object)'s documentation for the message box syntax.
 
 In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~`, `tone~` and `elem~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
