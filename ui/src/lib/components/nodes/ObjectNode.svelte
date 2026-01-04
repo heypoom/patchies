@@ -3,11 +3,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { nodeNames } from '$lib/nodes/node-types';
-	import {
-		getObjectNames,
-		getAudioObjectNames,
-		getObjectNameFromExpr
-	} from '$lib/objects/object-definitions';
+	import { getObjectNames, getObjectNameFromExpr } from '$lib/objects/object-definitions';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { ObjectService } from '$lib/objects/v2/ObjectService';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -28,6 +24,7 @@
 	import { logger } from '$lib/utils/logger';
 	import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
+	import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
 
 	let {
 		id: nodeId,
@@ -231,12 +228,8 @@
 			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
-		const hasSignalPorts =
-			objectMeta.inlets?.some((i) => i.type === 'signal') ||
-			objectMeta.outlets?.some((o) => o.type === 'signal');
-
-		// Route to audio service if node has signal inlets/outlets
-		if (inlet.name && hasSignalPorts) {
+		// Route to audio service if node has signal inlets or outlets
+		if (inlet.name && hasSignalPorts(objectMeta)) {
 			audioService.send(nodeId, inlet.name, message);
 			return;
 		}
