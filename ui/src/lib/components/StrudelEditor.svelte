@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { Prec, StateEffect } from '@codemirror/state';
 	import { keymap, EditorView } from '@codemirror/view';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
 
 	let {
@@ -29,7 +29,7 @@
 
 	let containerElement: HTMLElement;
 	let editor: any | null = null;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 
 	const hap2value = (hap: any) => {
 		hap.ensureObjectValue();
@@ -37,7 +37,7 @@
 	};
 
 	onMount(async () => {
-		audioSystem.createAudioObject(nodeId, 'gain~', [, 1]);
+		audioService.createNode(nodeId, 'gain~', [, 1]);
 
 		// Load all required Strudel modules
 		const [strudelCore, strudelDraw, strudelTranspiler, strudelWebaudio, strudelCodemirror] =
@@ -68,7 +68,7 @@
 
 		editor = new StrudelMirror({
 			defaultOutput: webaudioOutput,
-			getTime: () => audioSystem.audioContext.currentTime,
+			getTime: () => audioService.getAudioContext().currentTime,
 			transpiler,
 			root: containerElement,
 			initialCode: '// loading...',
@@ -96,14 +96,14 @@
 				let itv = setInterval(() => {
 					// @ts-expect-error -- hack from patching strudel
 					const g = window.SuperdoughDestinationGain as GainNode;
-					const outGain = audioSystem.nodesById.get(nodeId)?.node;
+					const outGain = audioService.getNodeById(nodeId)?.audioNode;
 
 					if (g && outGain) {
 						clearInterval(itv);
 
 						// destination gain might already be disconnected.
 						try {
-							g.disconnect(audioSystem.audioContext.destination);
+							g.disconnect(audioService.getAudioContext().destination);
 						} catch {}
 
 						g.connect(outGain);

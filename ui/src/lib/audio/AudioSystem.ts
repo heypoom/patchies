@@ -1,22 +1,15 @@
-import type { Edge } from '@xyflow/svelte';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
-import type { V1PatchAudioNode } from './audio-node-types';
-import { canAudioNodeConnect } from './audio-node-group';
-import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
-import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { AudioService } from './v2/AudioService';
 import { registerAudioNodes } from './v2/nodes';
-import { logger } from '$lib/utils/logger';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 
 export class AudioSystem {
 	private static instance: AudioSystem | null = null;
 
-	nodesById: Map<string, V1PatchAudioNode> = new Map();
 	private timeScheduler: TimeScheduler;
 	private v2 = AudioService.getInstance();
 
@@ -42,49 +35,6 @@ export class AudioSystem {
 		this.outGain.connect(this.audioContext.destination);
 	}
 
-	private connect(sourceId: string, targetId: string, paramName?: string) {
-		const sourceEntry = this.nodesById.get(sourceId);
-		const targetEntry = this.nodesById.get(targetId);
-
-		if (!sourceEntry || !targetEntry) return;
-
-		try {
-			const isValidConnection = this.validateConnection(sourceId, targetId, paramName);
-
-			if (!isValidConnection) {
-				logger.warn(`cannot connect ${sourceId} to ${targetId}: invalid connection (v1)`);
-				return;
-			}
-
-			if (paramName) {
-				const audioParam = this.getAudioParam(targetId, paramName);
-
-				if (audioParam) {
-					sourceEntry.node.connect(audioParam);
-				} else {
-					logger.warn(`audio parameter ${paramName} does not exist on ${targetId}`);
-				}
-			} else {
-				sourceEntry.node.connect(targetEntry.node);
-			}
-		} catch (error) {
-			logger.error(`cannot connect ${sourceId} to ${targetId}: v1`, error);
-		}
-	}
-
-	validateConnection(sourceId: string, targetId: string, paramName?: string): boolean {
-		// If connecting to an AudioParam, allow any source to connect to any target.
-		// AudioParams can accept modulation from any audio node.
-		if (paramName) return true;
-
-		const sourceEntry = this.nodesById.get(sourceId);
-		const targetEntry = this.nodesById.get(targetId);
-		if (!sourceEntry || !targetEntry) return true;
-
-		// For regular node-to-node connections, use the existing validation
-		return canAudioNodeConnect(sourceEntry.type, targetEntry.type);
-	}
-
 	getAudioParam(nodeId: string, name: string): AudioParam | null {
 		const v2Node = this.v2.getNodeById(nodeId);
 
@@ -96,22 +46,11 @@ export class AudioSystem {
 	}
 
 	getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
-		// Check if this is a v2 node (migrated to AudioService)
 		if (this.v2.getNodeById(nodeId)) {
 			return this.v2.getInletByHandle(nodeId, targetHandle);
 		}
 
-		// Fallback to v1 logic
-		const audioNode = this.nodesById.get(nodeId);
-		if (!audioNode || !targetHandle) return null;
-
-		const objectDef = objectDefinitionsV1[audioNode.type];
-		if (!objectDef) return null;
-
-		const inletIndex = handleToPortIndex(targetHandle);
-		if (inletIndex === null || isNaN(inletIndex)) return null;
-
-		return objectDef.inlets?.[inletIndex] ?? null;
+		return null;
 	}
 
 	// Create audio objects for object nodes
@@ -147,7 +86,6 @@ export class AudioSystem {
 
 		if (v2Node) {
 			this.v2.removeNode(v2Node);
-			this.nodesById.delete(nodeId);
 			return;
 		}
 	}
@@ -160,34 +98,8 @@ export class AudioSystem {
 		return AudioSystem.instance;
 	}
 
-	// Update audio connections based on edges
-	updateEdges(edges: Edge[]) {
-		try {
-			// Disconnect all existing connections
-			for (const entry of this.nodesById.values()) {
-				try {
-					entry.node.disconnect();
-				} catch (error) {
-					console.warn('Error disconnecting node:', error);
-				}
-			}
-
-			// Reconnect the output gain to destination
-			if (this.outGain) {
-				this.outGain.connect(this.audioContext.destination);
-			}
-
-			for (const edge of edges) {
-				const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
-
-				const isAudioParam = !!this.getAudioParam(edge.target, inlet?.name ?? '');
-
-				this.connect(edge.source, edge.target, isAudioParam ? inlet?.name : undefined);
-			}
-		} catch (error) {
-			console.error('Error updating audio edges:', error);
-		}
-	}
+	// NO-OP: update audio connections based on edges
+	updateEdges() {}
 
 	get outVolume() {
 		return this.outGain?.gain?.value ?? 0;
