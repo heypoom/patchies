@@ -1,5 +1,4 @@
 import type { Edge } from '@xyflow/svelte';
-import { match } from 'ts-pattern';
 // @ts-expect-error -- no typedefs
 import { getAudioContext } from 'superdough';
 import type { V1PatchAudioNode } from './audio-node-types';
@@ -7,7 +6,6 @@ import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
-import { CsoundManager } from './nodes/CsoundManager';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { AudioService } from './v2/AudioService';
@@ -67,12 +65,7 @@ export class AudioSystem {
 					logger.warn(`audio parameter ${paramName} does not exist on ${targetId}`);
 				}
 			} else {
-				if (targetEntry.type === 'csound~') {
-					// input to csound~ - connect to inputNode for audio input
-					sourceEntry.node.connect(targetEntry.inputNode);
-				} else {
-					sourceEntry.node.connect(targetEntry.node);
-				}
+				sourceEntry.node.connect(targetEntry.node);
 			}
 		} catch (error) {
 			logger.error(`cannot connect ${sourceId} to ${targetId}: v1`, error);
@@ -129,33 +122,6 @@ export class AudioSystem {
 			this.v2.createNode(nodeId, objectType, params);
 			return;
 		}
-
-		match(objectType).with('csound~', () => this.createCsound(nodeId, params));
-	}
-
-	async createCsound(nodeId: string, params: unknown[]) {
-		const [, code] = params as [unknown, string];
-
-		try {
-			const inputNode = new GainNode(this.audioContext);
-			const outputNode = new GainNode(this.audioContext);
-			const csoundManager = new CsoundManager(nodeId, this.audioContext, outputNode, inputNode);
-
-			await csoundManager.initialize();
-
-			if (code) {
-				await csoundManager.handleMessage('code', code);
-			}
-
-			this.nodesById.set(nodeId, {
-				type: 'csound~',
-				node: outputNode,
-				inputNode,
-				csoundManager
-			});
-		} catch (error) {
-			console.error('Failed to create Csound node:', error);
-		}
 	}
 
 	send(nodeId: string, key: string, msg: unknown) {
@@ -173,15 +139,6 @@ export class AudioSystem {
 			this.v2.send(nodeId, key, msg);
 			return;
 		}
-
-		const state = this.nodesById.get(nodeId);
-		if (!state) return;
-
-		return match(state)
-			.with({ type: 'csound~' }, async (state) => {
-				await state.csoundManager?.handleMessage(key, msg);
-			})
-			.otherwise(() => null);
 	}
 
 	// Remove audio object
@@ -193,20 +150,6 @@ export class AudioSystem {
 			this.nodesById.delete(nodeId);
 			return;
 		}
-
-		const entry = this.nodesById.get(nodeId);
-
-		if (entry) {
-			match(entry)
-				.with({ type: 'csound~' }, (entry) => {
-					entry.csoundManager?.destroy();
-				})
-				.otherwise(() => {});
-
-			entry.node.disconnect();
-		}
-
-		this.nodesById.delete(nodeId);
 	}
 
 	static getInstance(): AudioSystem {
