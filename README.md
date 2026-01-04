@@ -106,8 +106,9 @@ Here are some examples to get you started:
 - Create two `button` objects, and connect the outlet of one to the inlet of another.
   - When you click on the first button, it will send a `bang` message to the second button, which will flash.
   - In JavaScript, you will receive this as an object: `{type: 'bang'}`
-- Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `logger.js` preset. Connect them together.
-  - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
+- Create a `msg` object with the message `'hello world'` (you can hit `Enter` and type `m 'hello world'`). Mind the quotes.
+  - Then, hit `Enter` again and search for the `logger.js` preset. Connect them together.
+  - When you click on the message object, it will send the string `'hello world'` to the console object, which will log it to the virtual console.
 
 Most messages in Patchies are objects with a `type` field. For example, `bang` is `{type: 'bang'}`, and `start` is `{type: 'start'}`. If you need more properties, then you can add more fields to the object, e.g. `{type: 'loop', value: false}`.
 
