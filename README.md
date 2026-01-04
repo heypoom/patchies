@@ -173,7 +173,7 @@ Similar to video chaining, you can chain many audio objects together to create a
 
 <img src="./docs/images/patchies-audio-chain.png" alt="Patchies.app audio chain example" width="500">
 
-The above example sets up a [FM synthesizer audio chain](https://patchies.app/?id=l5ydkp2q6y1s9nv) that uses a combination of `osc~` (sine oscillator), `expr` (math expression), `gain~` (gain control), and `fft~` (frequency analysis) objects to create a simple synth with frequency modulation.
+Try the [above example here](https://patchies.app/?id=u7mgx2xkv2wmdbl). This is a FM synthesis demo that uses a combination of `osc~` (sine oscillator), `expr` (math expression), `gain~` (gain control), and `fft~` (frequency analysis) objects to create a simple synth with frequency modulation.
 
 For a more fun example, here's [a little patch](https://patchies.app/?id=l8ypbfy88xfakyd) by [@kijjaz](https://www.instagram.com/kijjaz) that uses `expr~` to create a funky beat:
 
