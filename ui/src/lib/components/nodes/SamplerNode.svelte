@@ -7,7 +7,6 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
 
@@ -26,7 +25,6 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
 	let audioService = AudioService.getInstance();
 	let v2Node: SamplerNodeV2 | null = null;
 	let isRecording = $state(false);
@@ -127,7 +125,7 @@
 
 		// Create analyser for real-time waveform visualization
 		if (v2Node) {
-			const audioCtx = audioSystem.audioContext;
+			const audioCtx = audioService.getAudioContext();
 			recordingAnalyser = audioCtx.createAnalyser();
 			recordingAnalyser.fftSize = 2048;
 
@@ -323,7 +321,7 @@
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
-		audioSystem.createAudioObject(node.id, 'sampler~', []);
+		audioService.createNode(node.id, 'sampler~', []);
 
 		// Get the V2 node reference from AudioService
 		v2Node = audioService.getNodeById(node.id) as SamplerNodeV2;
@@ -363,7 +361,7 @@
 
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
-		audioSystem.removeAudioObject(node.id);
+		audioService.removeNode(audioService.getNodeById(node.id)!);
 	});
 
 	const containerClass = $derived.by(() => {

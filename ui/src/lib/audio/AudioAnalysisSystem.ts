@@ -1,5 +1,4 @@
 import { match } from 'ts-pattern';
-import { AudioSystem } from './AudioSystem';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
 import { AudioService } from './v2/AudioService';
@@ -61,7 +60,6 @@ const WAVEFORM_UNIFORM_NAME = 'waveTexture';
 
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
-	private audioSystem = AudioSystem.getInstance();
 	private audioService = AudioService.getInstance();
 	private messageSystem = MessageSystem.getInstance();
 
@@ -302,7 +300,7 @@ export class AudioAnalysisSystem {
 	}
 
 	get sampleRate(): number {
-		return this.audioSystem.audioContext.sampleRate;
+		return this.audioService.getAudioContext().sampleRate;
 	}
 
 	static getInstance(): AudioAnalysisSystem {

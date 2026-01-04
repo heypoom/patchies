@@ -7,7 +7,6 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { SoundfileNode as SoundfileNodeV2 } from '$lib/audio/v2/nodes/SoundfileNode';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
@@ -27,7 +26,6 @@
 	const { updateNodeData, getEdges } = useSvelteFlow();
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
 	let audioService = AudioService.getInstance();
 	let messageSystem = MessageSystem.getInstance();
 	let v2Node: SoundfileNodeV2 | null = null;
@@ -72,7 +70,7 @@
 			const target = audioService.getNodeById(targetNodeId);
 			if (!target || getNodeType(target) !== 'convolver~') continue;
 
-			const inlet = audioSystem.getInletByHandle(targetNodeId, inletKey ?? null);
+			const inlet = audioService.getInletByHandle(targetNodeId, inletKey ?? null);
 
 			if (inlet?.name === 'buffer') {
 				readAudioBuffer();
@@ -149,7 +147,7 @@
 				return;
 			}
 
-			const audioBuffer = await audioSystem.audioContext.decodeAudioData(buffer);
+			const audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
 			messageContext.send(audioBuffer);
 		} catch {}
 	}
@@ -170,7 +168,7 @@
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
-		audioSystem.createAudioObject(node.id, 'soundfile~', []);
+		audioService.createNode(node.id, 'soundfile~', []);
 
 		// Get the V2 node reference from AudioService
 		v2Node = audioService.getNodeById(node.id) as SoundfileNodeV2;
@@ -185,7 +183,7 @@
 	onDestroy(() => {
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
-		audioSystem.removeAudioObject(node.id);
+		audioService.removeNode(audioService.getNodeById(node.id)!);
 	});
 
 	const containerClass = $derived.by(() => {

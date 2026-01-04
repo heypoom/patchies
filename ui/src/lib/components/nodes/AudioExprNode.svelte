@@ -5,7 +5,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import CommonExprLayout from './CommonExprLayout.svelte';
 
@@ -23,7 +23,7 @@
 	let inletValues = $state<number[]>([]);
 
 	const messageContext = new MessageContext(nodeId);
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	let layoutRef = $state<any>();
 
 	const { updateNodeData } = useSvelteFlow();
@@ -53,11 +53,11 @@
 	};
 
 	const updateAudioExpression = (expression: string) =>
-		audioSystem.send(nodeId, 'expression', expression);
+		audioService.send(nodeId, 'expression', expression);
 
 	// Use `Array.from` to avoid sending Svelte proxies
 	const updateAudioInletValues = (values: number[]) =>
-		audioSystem.send(nodeId, 'inletValues', Array.from(values));
+		audioService.send(nodeId, 'inletValues', Array.from(values));
 
 	function handleExpressionChange(newExpr: string) {
 		updateNodeData(nodeId, { expr: newExpr });
@@ -85,7 +85,7 @@
 		messageContext.queue.addCallback(handleMessage);
 
 		inletValues = new Array(inletCount).fill(0);
-		audioSystem.createAudioObject(nodeId, 'expr~', [null, data.expr]);
+		audioService.createNode(nodeId, 'expr~', [null, data.expr]);
 		updateAudioInletValues(inletValues);
 
 		if (isEditing) {
@@ -96,7 +96,7 @@
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
-		audioSystem.removeAudioObject(nodeId);
+		audioService.removeNode(audioService.getNodeById(nodeId)!);
 	});
 </script>
 

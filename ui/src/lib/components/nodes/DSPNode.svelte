@@ -7,7 +7,6 @@
 	import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -39,7 +38,6 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
 	let audioService = AudioService.getInstance();
 	let inletValues = $state<unknown[]>([]);
 	let showEditor = $state(false);
@@ -78,9 +76,9 @@
 				const isMessageInlet = handleId.startsWith('message-in');
 
 				if (isAudioInlet) {
-					// Audio inlets are handled by the audio system directly
+					// Audio inlets are handled by the audio service directly
 					const audioInletIndex = meta.inlet;
-					audioSystem.send(nodeId, 'audioInlet', {
+					audioService.send(nodeId, 'audioInlet', {
 						inletIndex: audioInletIndex,
 						message,
 						meta
@@ -100,7 +98,7 @@
 						// This is a message inlet
 						const messageInletIndex = messageInletId - valueInletCount;
 
-						audioSystem.send(nodeId, 'messageInlet', {
+						audioService.send(nodeId, 'messageInlet', {
 							inletIndex: messageInletIndex,
 							message,
 							meta
@@ -110,10 +108,10 @@
 			});
 	};
 
-	const updateAudioCode = (code: string) => audioSystem.send(nodeId, 'code', code);
+	const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
 
 	const updateAudioInletValues = (values: unknown[]) =>
-		audioSystem.send(nodeId, 'inletValues', values);
+		audioService.send(nodeId, 'inletValues', values);
 
 	function handleCodeChange(newCode: string) {
 		updateNodeData(nodeId, { code: newCode });
@@ -147,7 +145,7 @@
 		messageContext.queue.addCallback(handleMessage);
 
 		inletValues = new Array(valueInletCount).fill(0);
-		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
+		audioService.createNode(nodeId, 'dsp~', [null, code]);
 		updateAudioInletValues(inletValues);
 		updateContentWidth();
 		setupWorkletEventHandler();
@@ -209,7 +207,7 @@
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
-		audioSystem.removeAudioObject(nodeId);
+		audioService.removeNode(audioService.getNodeById(nodeId)!);
 	});
 
 	function updateContentWidth() {

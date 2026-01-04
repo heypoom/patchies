@@ -9,7 +9,7 @@
 	import type { Node, Edge } from '@xyflow/svelte';
 	import { IpcSystem } from '$lib/canvas/IpcSystem';
 	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { appHostUrl, createShareablePatch } from '$lib/api/pb';
@@ -373,7 +373,7 @@
 				`[load] found ${patchSave.nodes.length} nodes and ${patchSave.edges.length} edges`
 			);
 
-			AudioSystem.getInstance().audioContext.resume();
+			AudioService.getInstance().getAudioContext().resume();
 
 			patchName = patchSave.name || 'Untitled';
 		} catch (error) {

@@ -10,6 +10,9 @@ import { validateGroupConnection } from './audio-helpers';
 import { logger } from '$lib/utils/logger';
 import { getAudioParamValue, setAudioParamValue } from './audio-param-helpers';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { TimeScheduler } from '../TimeScheduler';
+import { isScheduledMessage } from '../time-scheduling-types';
+import { registerAudioNodes } from './nodes';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -27,15 +30,20 @@ export class AudioService {
 	/** Output gain node for audio output */
 	outGain: GainNode | null = null;
 
+	/** Scheduler for time-based audio parameter messages */
+	private timeScheduler: TimeScheduler | null = null;
+
 	getAudioContext(): AudioContext {
 		return getAudioContext();
 	}
 
 	/** Create the output gain node and connect it to the destination. */
 	start(): void {
-		this.outGain = this.getAudioContext().createGain();
+		const audioContext = this.getAudioContext();
+		this.outGain = audioContext.createGain();
 		this.outGain.gain.value = 0.8;
-		this.outGain.connect(this.getAudioContext().destination);
+		this.outGain.connect(audioContext.destination);
+		this.timeScheduler = new TimeScheduler(audioContext);
 	}
 
 	/** Removes a node from the graph. */
@@ -81,6 +89,8 @@ export class AudioService {
 	 * The default implementation routes numeric messages to AudioParam properties
 	 * that are marked as isAudioParam in the node's inlets definition.
 	 *
+	 * Scheduled messages (set/trigger/release) are handled by the TimeScheduler for precise audio-rate timing.
+	 *
 	 * @param nodeId - The ID of the node to send the message to
 	 * @param key - The parameter or message key
 	 * @param message - The message value
@@ -89,6 +99,15 @@ export class AudioService {
 		const node = this.nodesById.get(nodeId);
 
 		if (!node) {
+			return;
+		}
+
+		// Handle scheduled messages via TimeScheduler for precise timing
+		if (isScheduledMessage(message)) {
+			const audioParam = this.getAudioParamByNode(node, key);
+			if (audioParam && this.timeScheduler) {
+				this.timeScheduler.processMessage(audioParam, message);
+			}
 			return;
 		}
 
@@ -329,3 +348,5 @@ export class AudioService {
 		return AudioService.instance;
 	}
 }
+
+registerAudioNodes();

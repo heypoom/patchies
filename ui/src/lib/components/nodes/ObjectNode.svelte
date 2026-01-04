@@ -13,7 +13,6 @@
 		type ObjectOutlet
 	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -28,7 +27,6 @@
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
-	import type { V1PatchAudioType } from '$lib/audio/audio-node-types';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 	import { getCompatMetadata } from '$lib/objects/v2/query-metadata-compat';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
@@ -61,7 +59,6 @@
 	let isAutomated = $state<Record<number, boolean>>({});
 	let metroInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
-	let audioSystem = AudioSystem.getInstance();
 	let audioService = AudioService.getInstance();
 	const messageContext = new MessageContext(nodeId);
 
@@ -235,14 +232,13 @@
 			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
-		// Route to audio system if node has signal inlets/outlets
+		// Route to audio service if node has signal inlets/outlets
 		const hasSignalPorts =
 			objectDef.inlets?.some((i) => i.type === 'signal') ||
 			objectDef.outlets?.some((o) => o.type === 'signal');
 
 		if (inlet.name && hasSignalPorts) {
-			audioSystem.send(nodeId, inlet.name, message);
-
+			audioService.send(nodeId, inlet.name, message);
 			return;
 		}
 
@@ -390,13 +386,15 @@
 		return true;
 	}
 
-	function syncAudioSystem(name: string, params: unknown[]) {
-		audioSystem.removeAudioObject(nodeId);
-		audioSystem.createAudioObject(nodeId, name as V1PatchAudioType, params);
+	function syncAudioService(name: string, params: unknown[]) {
+		const node = audioService.getNodeById(nodeId);
 
-		const edges = getEdges();
-		audioSystem.updateEdges(edges);
-		audioService.updateEdges(edges);
+		if (node) {
+			audioService.removeNode(node);
+		}
+
+		audioService.createNode(nodeId, name, params);
+		audioService.updateEdges(getEdges());
 	}
 
 	function tryCreateAudioObject() {
@@ -407,7 +405,7 @@
 
 		if (!getAudioObjectNames().includes(name)) return false;
 
-		syncAudioSystem(name, params);
+		syncAudioService(name, params);
 
 		return true;
 	}
@@ -647,7 +645,7 @@
 		}
 
 		if (getAudioObjectNames().includes(data.name)) {
-			syncAudioSystem(data.name, data.params);
+			syncAudioService(data.name, data.params);
 		}
 
 		messageContext.queue.addCallback(handleMessage);
@@ -655,7 +653,12 @@
 	});
 
 	onDestroy(() => {
-		audioSystem.removeAudioObject(nodeId);
+		const node = audioService.getNodeById(nodeId);
+
+		if (node) {
+			audioService.removeNode(node);
+		}
+
 		stopMetro();
 	});
 

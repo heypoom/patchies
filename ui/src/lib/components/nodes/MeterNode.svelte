@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
 
 	let node: {
 		id: string;
@@ -20,7 +21,7 @@
 	let ctx: CanvasRenderingContext2D;
 	let messageContext: MessageContext;
 	let animationId: number;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 
 	// Meter state
 	let currentLevel = $state(0);
@@ -60,10 +61,10 @@
 	}
 
 	function updateMeter() {
-		const audioNode = audioSystem.nodesById.get(node.id);
+		const audioNodeById = audioService.getNodeById(node.id);
 
-		if (audioNode?.type === 'fft~') {
-			const analyserNode = audioNode.node;
+		if (audioNodeById && getNodeType(audioNodeById) === 'fft~') {
+			const analyserNode = audioNodeById.audioNode as AnalyserNode;
 			const freqData = new Uint8Array(analyserNode.fftSize);
 			analyserNode.getByteFrequencyData(freqData);
 
@@ -156,7 +157,7 @@
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
-		audioSystem.createAudioObject(node.id, 'fft~', [, 256]);
+		audioService.createNode(node.id, 'fft~', [, 256]);
 
 		if (canvas) {
 			ctx = canvas.getContext('2d')!;
@@ -173,9 +174,11 @@
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 
+		const audioNode = audioService.getNodeById(node.id);
+
 		// Clean up fft~ node
-		if (audioSystem.nodesById.has(node.id)) {
-			audioSystem.removeAudioObject(node.id);
+		if (audioNode) {
+			audioService.removeNode(audioNode);
 		}
 	});
 </script>

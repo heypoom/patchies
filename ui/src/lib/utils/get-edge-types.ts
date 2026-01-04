@@ -1,5 +1,4 @@
 import { getAudioNodeGroup } from '$lib/audio/audio-node-group';
-import type { V1PatchAudioType } from '$lib/audio/audio-node-types';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import type { Node } from '@xyflow/svelte';
 
@@ -22,14 +21,15 @@ const AUDIO_NODES = [
 	'merge~',
 	'meter~',
 	'elem~',
-	'csound~'
+	'csound~',
+	'bchrn'
 ];
 
 const isAudioObject = (node: MinimalNode): boolean => {
 	if (!node.type) return false;
 
 	if (node.type === 'object') {
-		return !!getAudioNodeGroup(node.data.name as V1PatchAudioType);
+		return !!getAudioNodeGroup(node.data.name as string);
 	}
 
 	return AUDIO_NODES.includes(node.type);

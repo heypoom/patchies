@@ -21,7 +21,6 @@
 	import { edgeTypes } from '$lib/components/edges/edge-types';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
@@ -58,7 +57,6 @@
 	let nodeIdCounter = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
-	let audioSystem = AudioSystem.getInstance();
 	let audioService = AudioService.getInstance();
 	let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
@@ -90,7 +88,7 @@
 
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
-	let showAudioHint = $state(audioSystem.audioContext.state === 'suspended');
+	let showAudioHint = $state(audioService.getAudioContext().state === 'suspended');
 	let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
 
 	useOnSelectionChange(({ nodes, edges }) => {
@@ -128,7 +126,10 @@
 		for (const prevNodeId of previousNodes) {
 			if (!currentNodes.has(prevNodeId)) {
 				messageSystem.unregisterNode(prevNodeId);
-				audioSystem.removeAudioObject(prevNodeId);
+				const node = audioService.getNodeById(prevNodeId);
+				if (node) {
+					audioService.removeNode(node);
+				}
 			}
 		}
 
@@ -138,7 +139,6 @@
 	$effect(() => {
 		messageSystem.updateEdges(edges);
 		glSystem.updateEdges(edges);
-		audioSystem.updateEdges(edges);
 		audioService.updateEdges(edges);
 		audioAnalysisSystem.updateEdges(edges);
 	});
@@ -205,7 +205,7 @@
 		flowContainer?.focus();
 
 		glSystem.start();
-		audioSystem.start();
+		audioService.start();
 
 		loadPatch();
 
@@ -604,9 +604,10 @@
 	}
 
 	function resumeAudio() {
-		if (audioSystem.audioContext.state === 'suspended') {
-			audioSystem.audioContext.resume();
-			audioSystem.updateEdges(edges);
+		const audioContext = audioService.getAudioContext();
+
+		if (audioContext.state === 'suspended') {
+			audioContext.resume();
 			audioService.updateEdges(edges);
 		}
 

@@ -10,7 +10,7 @@
 	import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 
 	let {
 		id: nodeId,
@@ -25,7 +25,7 @@
 	let isPlaying = $state(true);
 	let visualizer: any = null;
 	let glSystem = GLSystem.getInstance();
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 
 	let frame = 0;
 
@@ -69,19 +69,19 @@
 
 			const [outputWidth, outputHeight] = glSystem.outputSize;
 
-			visualizer = butterchurn.createVisualizer(audioSystem.audioContext, canvasElement, {
+			visualizer = butterchurn.createVisualizer(audioService.getAudioContext(), canvasElement, {
 				width: outputWidth / 2,
 				height: outputHeight / 2
 			});
 		}
 
-		audioSystem.createAudioObject(nodeId, 'gain~', [, 1]);
+		audioService.createNode(nodeId, 'gain~', [, 1]);
 		glSystem.upsertNode(nodeId, 'img', {});
 
-		const audioObject = audioSystem.nodesById.get(nodeId);
+		const audioObject = audioService.getNodeById(nodeId);
 
 		if (audioObject && visualizer) {
-			visualizer.connectAudio(audioObject.node);
+			visualizer.connectAudio(audioObject.audioNode);
 		}
 
 		const preset = presets[data.currentPreset];
@@ -94,7 +94,13 @@
 	onDestroy(() => {
 		stop();
 		glSystem.removeNode(nodeId);
-		audioSystem.removeAudioObject(nodeId);
+
+		const node = audioService.getNodeById(nodeId);
+
+		if (node) {
+			audioService.removeNode(node);
+		}
+
 		visualizer.renderer = null;
 		visualizer = null;
 	});
@@ -105,7 +111,6 @@
 	onPlaybackToggle={isPlaying ? stop : start}
 	paused={!isPlaying}
 	showPauseButton={true}
-	{errorMessage}
 	bind:previewCanvas={canvasElement}
 	{selected}
 >

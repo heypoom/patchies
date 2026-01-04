@@ -1,8 +1,8 @@
 import { match } from 'ts-pattern';
-import type { V1PatchAudioNodeGroup } from './audio-node-types';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import type { AudioNodeGroup } from './v2/interfaces/audio-nodes';
 
-export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | null => {
+export const getAudioNodeGroup = (nodeType: string): AudioNodeGroup | null => {
 	// V2: check in audio registry
 	const nodeGroupV2 = AudioRegistry.getInstance().get(nodeType)?.group;
 	if (nodeGroupV2) return nodeGroupV2;
