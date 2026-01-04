@@ -179,6 +179,10 @@ For a more fun example, here's [a little patch](https://patchies.app/?id=l8ypbfy
 
 <img src="./docs/images/patchies-audio-super-fun.png" alt="Patchies.app beat example" width="500">
 
+If you don't have an idea where to start, why not build your own drum machine? [Try it out](https://patchies.app/?id=w46um7gafe7hgle)! Use the `W A S D` keys on your keyboard to play some drums 🥁.
+
+<img src="./docs/images/patchies-simple-drums.png" alt="Patchies.app simple drum machine" width="500">
+
 If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
 - You can use these objects as audio sources: `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
