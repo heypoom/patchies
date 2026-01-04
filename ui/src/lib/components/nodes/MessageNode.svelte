@@ -29,13 +29,13 @@
 	let showTextInput = $state(false);
 	let msgText = $derived(data.message || '');
 
-	let isJsonObject = $derived.by(() => {
-		try {
-			const result = Json5.parse(data.message);
+	const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
 
-			return result && typeof result !== 'number';
+	let parsedObject = $derived.by(() => {
+		try {
+			return Json5.parse(data.message);
 		} catch {
-			return false;
+			return CANNOT_PARSE_SYMBOL;
 		}
 	});
 
@@ -48,7 +48,7 @@
 	});
 
 	let highlightedHtml = $derived.by(() => {
-		if (!isJsonObject || !msgText) return '';
+		if (parsedObject === CANNOT_PARSE_SYMBOL || !msgText) return '';
 
 		try {
 			return hljs.highlight(msgText, {
@@ -95,15 +95,24 @@
 
 	const send = (data: unknown) => messageContext.send(data);
 
+	/**
+	 * Send the message to connected objects.
+	 *
+	 * Message format:
+	 * - Bare strings (e.g. `hello world`) are sent as symbols: `{ type: 'hello world' }`
+	 * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
+	 * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
+	 * - Numbers (e.g. `100`) are sent as numbers
+	 */
 	function sendMessage() {
-		// Try to send the message as a JSON object
+		// Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
 		try {
 			send(Json5.parse(msgText));
 			return;
 		} catch (e) {}
 
-		// If all else fails, send the message as a string
-		send(msgText);
+		// Bare strings are treated as symbols: { type: <string> }
+		send({ type: msgText });
 	}
 
 	const containerClass = $derived(
@@ -155,12 +164,14 @@
 								containerClass
 							]}
 						>
-							{#if msgText && isJsonObject}
+							{#if msgText && parsedObject !== CANNOT_PARSE_SYMBOL && typeof parsedObject !== 'number'}
 								<code class="whitespace-pre">
 									{@html highlightedHtml}
 								</code>
+							{:else if msgText && typeof parsedObject === 'number'}
+								<span class="text-gray-200">{msgText}</span>
 							{:else}
-								{msgText ? msgText : '<messagebox>'}
+								<span class="text-purple-300">{msgText ? msgText : '<messagebox>'}</span>
 							{/if}
 						</button>
 					{/if}

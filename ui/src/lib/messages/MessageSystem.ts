@@ -10,6 +10,9 @@ export interface Message<T = unknown> {
 
 	inletKey?: string;
 	outletKey?: string;
+
+	/** Resolved inlet name from object definition (e.g. 'note', 'interval') */
+	inletName?: string;
 }
 
 export type MessageCallbackFn = (data: Message['data'], meta: Omit<Message, 'data'>) => void;

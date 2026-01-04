@@ -5,14 +5,10 @@
 	import { nodeNames } from '$lib/nodes/node-types';
 	import {
 		getObjectNames,
-		getObjectDefinition,
 		getAudioObjectNames,
-		getObjectNameFromExpr,
-		type AdsrParamList,
-		type ObjectInlet,
-		type ObjectOutlet
+		getObjectNameFromExpr
 	} from '$lib/objects/object-definitions';
-	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
+	import { tryTransformShorthand } from '$lib/objects/object-shorthands';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { ObjectService } from '$lib/objects/v2/ObjectService';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -29,9 +25,10 @@
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
-	import { getCompatMetadata } from '$lib/objects/v2/query-metadata-compat';
+	import { getCombinedMetadata } from '$lib/objects/v2/get-metadata';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 	import { logger } from '$lib/utils/logger';
+	import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 	let {
 		id: nodeId,
@@ -58,7 +55,6 @@
 	let originalName = data.expr || ''; // Store original name for escape functionality
 
 	let isAutomated = $state<Record<number, boolean>>({});
-	let metroInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
 	let audioService = AudioService.getInstance();
 	let objectService = ObjectService.getInstance();
@@ -96,22 +92,24 @@
 	});
 
 	// Get object definition for current name (if it exists)
-	const objectDef = $derived.by(() => {
+	const objectMeta = $derived.by(() => {
 		if (!expr || expr.trim() === '') return null;
 
-		return getObjectDefinition(expr);
+		return getCombinedMetadata(getObjectNameFromExpr(expr));
 	});
 
 	// Dynamic inlets based on object definition
 	const inlets = $derived.by(() => {
-		if (!objectDef) return []; // No definition = no specific inlets
-		return objectDef.inlets || [];
+		if (!objectMeta) return [];
+
+		return objectMeta.inlets || [];
 	});
 
 	// Dynamic outlets based on object definition
 	const outlets = $derived.by(() => {
-		if (!objectDef) return []; // No definition = no specific outlets
-		return objectDef.outlets || [];
+		if (!objectMeta) return [];
+
+		return objectMeta.outlets || [];
 	});
 
 	const filteredSuggestions = $derived.by(() => {
@@ -205,9 +203,9 @@
 	}
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
-		if (!objectDef || !objectDef.inlets || meta?.inlet === undefined) return;
+		if (!objectMeta || !objectMeta.inlets || meta?.inlet === undefined) return;
 
-		const inlet = objectDef.inlets[meta.inlet];
+		const inlet = objectMeta.inlets[meta.inlet];
 		if (!inlet) return;
 
 		// Validate message type against inlet specification
@@ -234,93 +232,15 @@
 			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
-		// Route to audio service if node has signal inlets/outlets
 		const hasSignalPorts =
-			objectDef.inlets?.some((i) => i.type === 'signal') ||
-			objectDef.outlets?.some((o) => o.type === 'signal');
+			objectMeta.inlets?.some((i) => i.type === 'signal') ||
+			objectMeta.outlets?.some((o) => o.type === 'signal');
 
+		// Route to audio service if node has signal inlets/outlets
 		if (inlet.name && hasSignalPorts) {
 			audioService.send(nodeId, inlet.name, message);
 			return;
 		}
-
-		// Skip V2 objects - they handle their own messages via ObjectService
-		if (objectService.isV2Object(data.name)) {
-			return;
-		}
-
-		match([data.name, inlet.name, message])
-			.with(['delay', 'message', P.any], ([, , message]) => {
-				const [_, delayMs] = data.params as [unknown, number];
-
-				setTimeout(() => {
-					messageContext.send(message);
-				}, delayMs ?? 0);
-			})
-			.with(['adsr', 'trigger', P.any], ([, , trigger]) => {
-				const [_, peak, attack, decay, sustain, release] = data.params as AdsrParamList;
-
-				if (trigger === 0 || trigger === false) {
-					messageContext.send({ type: 'release', release: { time: release / 1000 }, endValue: 0 });
-				} else {
-					messageContext.send({
-						type: 'trigger',
-						values: { start: 0, peak, sustain },
-						attack: { time: attack / 1000 },
-						decay: { time: decay / 1000 }
-					});
-				}
-			})
-			.with(['metro', 'message', P.any], ([, , controlMsg]) => {
-				match(controlMsg)
-					.with({ type: 'start' }, () => {
-						const intervalMs = data.params[1] as number;
-						startMetro(intervalMs);
-					})
-					.with({ type: 'stop' }, () => {
-						stopMetro();
-					})
-					.with({ type: 'bang' }, () => {
-						if (metroInterval !== null) {
-							stopMetro();
-						} else {
-							const intervalMs = data.params[1] as number;
-							startMetro(intervalMs);
-						}
-					});
-			})
-			.with(['metro', 'interval', P.number], ([, , intervalMs]) => {
-				updateParamByIndex(1, intervalMs);
-				if (metroInterval !== null) {
-					startMetro(intervalMs);
-				}
-			})
-			.with(['spigot', 'data', P.any], ([, , dataMessage]) => {
-				const allow = data.params[1] ?? false;
-
-				if (allow) {
-					messageContext.send(dataMessage);
-				}
-			})
-			.with(['spigot', 'control', P.any], ([, , condition]) => {
-				match(condition)
-					.with({ type: 'bang' }, () => {
-						const currentAllow = data.params[1] ?? false;
-						updateParamByIndex(1, !currentAllow);
-					})
-					.with(P.boolean, (value) => {
-						updateParamByIndex(1, value);
-					})
-					.with(P.number, (value) => {
-						updateParamByIndex(1, value > 0);
-					})
-					.with(P.string, (value) => {
-						updateParamByIndex(1, value.length > 0);
-					})
-					.otherwise(() => {
-						updateParamByIndex(1, false);
-					});
-			});
 	};
 
 	function handleNameChange() {
@@ -339,37 +259,10 @@
 		return { name, params: parseObjectParamFromString(name, params) };
 	}
 
-	function onObjectLoad(name: string, params: unknown[]) {
-		// Skip V2 objects - they handle their own initialization via create()
-		if (objectService.isV2Object(name)) return;
-
-		match(name).with('metro', () => {
-			stopMetro();
-
-			const intervalMs = params[1] as number;
-			startMetro(intervalMs);
-		});
-	}
-
-	function startMetro(intervalMs: number) {
-		stopMetro();
-		metroInterval = setInterval(() => {
-			messageContext.send({ type: 'bang' });
-		}, intervalMs);
-	}
-
-	function stopMetro() {
-		if (metroInterval !== null) {
-			clearInterval(metroInterval);
-			metroInterval = null;
-		}
-	}
-
 	function tryCreatePlainObject() {
 		const { name, params } = getNameAndParams();
 
 		updateNodeData(nodeId, { expr, name, params });
-		onObjectLoad(name, params);
 	}
 
 	function tryCreatePreset(): boolean {
@@ -429,101 +322,15 @@
 		updateNodeInternals(nextId);
 	};
 
-	const parseSliderExpr = (expr: string, name: string, defaultMax: number) => {
-		let [min = 0, max = defaultMax, defaultValue] = expr
-			.replace(name, '')
-			.trim()
-			.split(' ')
-			.map(Number);
+	function tryTransformToVisualNode() {
+		const result = tryTransformShorthand(expr);
 
-		if (defaultValue === undefined) {
-			defaultValue = (min + max) / 2;
+		if (result) {
+			changeNode(result.nodeType, result.data);
+			return true;
 		}
 
-		return [min, max, defaultValue];
-	};
-
-	function tryTransformToVisualNode() {
-		const name = getObjectNameFromExpr(expr);
-		if (!name) return false;
-
-		return match(name)
-			.with(P.union('msg', 'm'), () => {
-				changeNode('msg', { message: expr.replace(name, '').trim() });
-
-				return true;
-			})
-			.with('label', () => {
-				changeNode('label', { message: expr.replace(name, '').trim() });
-
-				return true;
-			})
-			.with('link', () => {
-				const url = expr.replace(name, '').trim() || 'https://example.com';
-				changeNode('link', { url: url, displayText: url });
-
-				return true;
-			})
-			.with('expr', () => {
-				changeNode('expr', { expr: expr.replace(name, '').trim() });
-
-				return true;
-			})
-			.with('expr~', () => {
-				changeNode('expr~', { expr: expr.replace(name, '').trim() });
-
-				return true;
-			})
-			.with(P.union('netsend', 'netrecv'), (key) => {
-				changeNode(key, { channel: expr.replace(name, '').trim() });
-
-				return true;
-			})
-			.with('slider', () => {
-				const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
-				changeNode('slider', { min, max, defaultValue, isFloat: false });
-
-				return true;
-			})
-			.with('fslider', () => {
-				const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
-				changeNode('slider', { min, max, defaultValue, isFloat: true });
-
-				return true;
-			})
-			.with('vslider', () => {
-				const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
-				changeNode('slider', { min, max, defaultValue, isFloat: false, vertical: true });
-
-				return true;
-			})
-			.with('vfslider', () => {
-				const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
-				changeNode('slider', { min, max, defaultValue, isFloat: true, vertical: true });
-
-				return true;
-			})
-			.with('keyboard', () => {
-				const keybindPart = expr.replace(name, '').trim();
-				const nodeData = getDefaultNodeData(name);
-
-				if (keybindPart.length > 0) {
-					nodeData.keybind = keybindPart;
-					nodeData.mode = 'filtered';
-				}
-
-				changeNode(name, nodeData);
-				return true;
-			})
-			.otherwise(() => {
-				if (nodeNames.includes(name as any)) {
-					changeNode(name, getDefaultNodeData(name));
-
-					return true;
-				}
-
-				return false;
-			});
+		return false;
 	}
 
 	function handleInput() {
@@ -650,12 +457,11 @@
 		}
 
 		// Create V2 text object if applicable
-		if (objectService.isV2Object(data.name)) {
+		if (objectService.isV2ObjectType(data.name)) {
 			objectService.createObject(nodeId, data.name, data.params);
 		}
 
 		messageContext.queue.addCallback(handleMessage);
-		onObjectLoad(data.name, data.params);
 	});
 
 	onDestroy(() => {
@@ -666,8 +472,6 @@
 		}
 
 		objectService.removeObjectById(nodeId);
-
-		stopMetro();
 	});
 
 	const getInletTypeHoverClass = (inletIndex: number) => {
@@ -715,7 +519,7 @@
 		}
 
 		if (current.type === 'object') {
-			const metadata = getCompatMetadata(current.name);
+			const metadata = getCombinedMetadata(current.name);
 
 			if (metadata) {
 				return metadata.description ?? null;
@@ -731,7 +535,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="relative">
 				<!-- Dynamic inlets -->
-				{#if inlets.length > 0}
+				{#if inlets}
 					{#each inlets as inlet, index}
 						<StandardHandle
 							port="inlet"
@@ -820,7 +624,7 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="font-mono text-xs">
-								<span class={[!getCompatMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
+								<span class={[!getCombinedMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
 									>{data.name}</span
 								>
 
@@ -861,7 +665,7 @@
 				</div>
 
 				<!-- Dynamic outlets -->
-				{#if outlets.length > 0}
+				{#if outlets}
 					{#each outlets as outlet, index}
 						<StandardHandle
 							port="outlet"

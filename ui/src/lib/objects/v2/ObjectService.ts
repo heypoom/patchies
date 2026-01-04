@@ -1,4 +1,4 @@
-import { MessageContext } from '$lib/messages/MessageContext';
+import { ObjectContext } from './ObjectContext';
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import { logger } from '$lib/utils/logger';
 import { registerTextObjects } from './nodes';
@@ -21,9 +21,6 @@ export class ObjectService {
 	/** Mapping of active text object instances by nodeId */
 	private objectsById: Map<string, TextObjectV2> = new Map();
 
-	/** Mapping of MessageContext instances by nodeId */
-	private messageContextsById: Map<string, MessageContext> = new Map();
-
 	/**
 	 * Create an object by type.
 	 * @param nodeId - Unique identifier for the object
@@ -42,19 +39,16 @@ export class ObjectService {
 			return null;
 		}
 
-		// Create or reuse MessageContext for this node
-		let messageContext = this.messageContextsById.get(nodeId);
-		if (!messageContext) {
-			messageContext = new MessageContext(nodeId);
-			this.messageContextsById.set(nodeId, messageContext);
-		}
+		// Create ObjectContext with inlet definitions from the class
+		const context = new ObjectContext(nodeId, ObjectClass.inlets);
+		context.initParams(params);
 
-		const object = new ObjectClass(nodeId, messageContext);
+		const object = new ObjectClass(nodeId, context);
 		this.objectsById.set(nodeId, object);
 
-		// Set up message routing from MessageContext to the object
-		messageContext.queue.addCallback((data, meta) => {
-			object.onMessage?.(data, meta);
+		// Set up message routing from ObjectContext to the object
+		context.queue.addCallback((data, meta) => {
+			this.dispatchMessage(object, data, meta);
 		});
 
 		try {
@@ -85,12 +79,8 @@ export class ObjectService {
 			object.destroy();
 		}
 
-		// Clean up MessageContext
-		const messageContext = this.messageContextsById.get(object.nodeId);
-		if (messageContext) {
-			messageContext.destroy();
-			this.messageContextsById.delete(object.nodeId);
-		}
+		// Clean up ObjectContext
+		object.context.destroy();
 
 		this.objectsById.delete(object.nodeId);
 	}
@@ -114,12 +104,9 @@ export class ObjectService {
 	 */
 	send(nodeId: string, data: unknown, meta: MessageMeta): void {
 		const object = this.objectsById.get(nodeId);
+		if (!object) return;
 
-		if (!object) {
-			return;
-		}
-
-		object.onMessage?.(data, meta);
+		this.dispatchMessage(object, data, meta);
 	}
 
 	/**
@@ -135,8 +122,17 @@ export class ObjectService {
 	 * @param objectType - The object type to check
 	 * @returns True if defined
 	 */
-	isV2Object(objectType: string): boolean {
+	isV2ObjectType(objectType: string): boolean {
 		return this.registry.isDefined(objectType);
+	}
+
+	/**
+	 * Dispatch a message to an object, enriching meta with resolved inlet name.
+	 */
+	private dispatchMessage(object: TextObjectV2, data: unknown, meta: MessageMeta): void {
+		const inletName = object.context.getInletName(meta.inlet);
+
+		object.onMessage?.(data, { ...meta, inletName });
 	}
 
 	/**

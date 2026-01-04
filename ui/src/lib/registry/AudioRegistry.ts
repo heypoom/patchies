@@ -1,4 +1,3 @@
-import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import type { AudioNodeClass } from '../audio/v2/interfaces/audio-nodes';
 
 /**
@@ -43,30 +42,6 @@ export class AudioRegistry {
 	 */
 	getNodeTypes(): string[] {
 		return Array.from(this.registry.keys());
-	}
-
-	/**
-	 * Get node metadata (inlets, outlets, etc.) by type.
-	 * @param nodeType - The type of node
-	 * @returns The node metadata or null if not found
-	 */
-	getNodeMetadataByType(nodeType: string) {
-		const constructor = this.registry.get(nodeType);
-
-		if (constructor) {
-			return {
-				type: constructor.type,
-				group: constructor.group,
-				description: constructor.description,
-				inlets: constructor.inlets,
-				outlets: constructor.outlets
-			};
-		}
-
-		// Fall back to V1 objectDefinitions otherwise.
-		if (objectDefinitionsV1[nodeType]) {
-			return objectDefinitionsV1[nodeType];
-		}
 	}
 
 	/**

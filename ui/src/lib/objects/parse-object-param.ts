@@ -1,8 +1,8 @@
-import { type ObjectInlet, type ObjectDataType } from '$lib/objects/object-definitions';
 import { match, P } from 'ts-pattern';
 import JSON5 from 'json5';
-import { getCompatMetadata } from './v2/query-metadata-compat';
+import { getCombinedMetadata } from './v2/get-metadata';
 import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+import type { ObjectDataType, ObjectInlet } from './v2/object-metadata';
 
 /**
  * Do not allow modifying these types via object arguments.
@@ -109,13 +109,13 @@ export const stringifyParamByType = (
 };
 
 export const parseObjectParamFromString = (name: string, strValues: string[]) => {
-	const definition = getCompatMetadata(name);
-	if (!definition || !definition.inlets) return strValues;
+	const metadata = getCombinedMetadata(name);
+	if (!metadata || !metadata.inlets) return strValues;
 
 	const params: unknown[] = [];
 	let inputInletIndex = 0;
 
-	for (const inlet of definition.inlets) {
+	for (const inlet of metadata.inlets) {
 		if (isUnmodifiableType(inlet.type)) {
 			params.push(null);
 			continue;
