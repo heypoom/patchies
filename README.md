@@ -120,19 +120,26 @@ In this example, two `slider` objects sends out their value to a `expr $1 + $2` 
 Here are some examples to get you started:
 
 - Create two `button` objects, and connect the outlet of one to the inlet of another.
-  - When you click on the first button, it will send a `{type: 'bang'}` message to the second button, which will flash.
+  - When you click on the first button, it will send a `bang` message to the second button, which will flash.
+  - In JavaScript, you will receive this as an object: `{type: 'bang'}`
 - Create a `msg` object with the message `hello world` (you can hit `Enter` and type `m hello world`). Then, hit `Enter` again and search for the `logger.js` preset. Connect them together.
   - When you click on the message object, it will send the string `hello world` to the console object, which will log it to the virtual console.
+
+Most messages are simply objects with a `type` field. For example, `bang` is a `{type: 'bang'}` object, and `start` is `{type: 'start'}`. If you need more properties, then you can add more fields to the object, e.g. `{type: 'loop', value: false}`.
+
+Typing just `bang` in the message box sends `{type: 'bang'}` for convenience. See the [message object](#msg-message-object)'s documentation for the message box syntax.
 
 In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~`, `tone~` and `elem~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
 ```js
 // In the source `js` object
+send({ type: "bang" });
 send("Hello from Object A");
 
 // In the target `js` object
 recv((data) => {
-  // data is "Hello from Object A"
+  // data 0 is { type: 'bang' }
+  // data 1 is "Hello from Object A"
   console.log("Received message:", data);
 });
 ```
@@ -295,7 +302,7 @@ uniform vec2 iFoo;
 
 You can now send a message of value `0.5` to `iMix`, and send `[0.0, 0.0]` to `iFoo`. When you send messages to these inlets, it will set the internal GLSL uniform values for the object. The type of the message must match the type of the uniform, otherwise the message will not be sent.
 
-If you want to set a default uniform value for when the patch gets loaded, use the `loadbang` object connected to a `msg` object or a slider. `loadbang` sends a `{type: 'bang'}` message when the patch is loaded, which you can use to trigger a `msg` object or a `slider` to send the default value to the GLSL uniform inlet.
+If you want to set a default uniform value for when the patch gets loaded, use the `loadbang` object connected to a `msg` object or a slider. `loadbang` sends a `bang` message when the patch is loaded, which you can use to trigger a `msg` object or a `slider` to send the default value to the GLSL uniform inlet.
 
 Supported uniform types are `bool` (boolean), `int` (number), `float` (floating point number), `vec2`, `vec3`, and `vec4` (arrays of 2, 3, or 4 numbers).
 
@@ -348,8 +355,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Messages
   - `bang`: restart the video
   - `string`: load the video from the given url.
-  - `{type: 'play'}`: play the video
-  - `{type: 'pause'}`: pause the video
+  - `play`: play the video
+  - `pause`: pause the video
   - `{type: 'loop', value: false}`: do not loop the video
 
 ### `iframe`: embed web content
@@ -470,9 +477,9 @@ Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to
 
 ### `button`: a simple button
 
-- Sends the `{type: 'bang'}` message when clicked.
+- Sends the `bang` message when clicked.
 - Messages:
-  - `any`: flashes the button when it receives any message, and outputs the `{type: 'bang'}` message out.
+  - `any`: flashes the button when it receives any message, and outputs the `bang` message out.
 
 ### `msg`: message object
 
@@ -480,20 +487,21 @@ Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to
 - Click to send the stored message to connected objects.
 - Good for triggering sequences or sending configuration data.
 - You can hit `Enter` and type `m <message>` to create a `msg` object with the given message.
-  - Example: `m start` creates a `msg` object that sends `{type: 'start'}` when clicked.
+  - Example: `m start` creates a `msg` object that sends `start` when clicked.
 - Message format:
-  - Bare strings (e.g. `hello` or `start`) are sent as **symbols**: `{ type: 'hello' }` or `{ type: 'start' }`
-  - Quoted strings (e.g. `"hello"`) are sent as **strings**: `"hello"`
+  - Bare strings (e.g. `hello` or `start`) are sent as **symbols**: i.e. `{type: 'hello'}` or `{type: 'start'}`
+  - Quoted strings (e.g. `"hello"`) are sent as **JS strings**: `"hello"`
   - Numbers (e.g. `100`) are sent as **numbers**: `100`
   - JSON objects (e.g. `{foo: 'bar'}`) are sent **as-is**: `{foo: 'bar'}`
+  - You can use the [JSON5 syntax](https://json5.org) to create the JSON objects.
 - Examples
-  - `bang` sends `{type: 'bang'}` (symbol) - this is what `button` does
-  - `start` sends `{type: 'start'}` (symbol)
+  - `bang` sends `{type: 'bang'}` object - this is what `button` does when you click it
+  - `start` sends `{type: 'start'}` object
   - `"hello world"` sends the string `"hello world"`
   - `100` sends the number `100`
   - `{x: 1, y: 2}` sends the object `{x: 1, y: 2}`
 - Messages:
-  - `{type: 'bang'}`: outputs the message
+  - `bang`: outputs the message
 
 ### `slider`: numerical value slider
 
@@ -506,7 +514,7 @@ Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to
   - `vslider <min> <max>`: vertical integer slider control. example: `vslider -50 50`
   - `vfslider <min> <max>`: vertical floating-point slider control. example: `vfslider -1.0 1.0`. `vfslider` defaults to `-1.0` to `1.0` range if no arguments are given.
 - Messages:
-  - `{type: 'bang'}`: outputs the current slider value
+  - `bang`: outputs the current slider value
   - `number`: sets the slider to the given number within the range and outputs the value
 - When a patch is loaded, the slider will output its current value automatically 100ms after the patch loads.
 
@@ -514,7 +522,7 @@ Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to
 
 - Create a multi-line textbox for user input.
 - Messages:
-  - `{type: 'bang'}`: outputs the current text
+  - `bang`: outputs the current text
   - `string`: sets the text to the given string
 
 ### Audio & Music Objects
@@ -579,7 +587,7 @@ These objects run on _audio rate_, which means they process audio signals in rea
 - `waveshaper~`: Distortion and waveshaping effects
 - `convolver~`: Convolution reverb using impulse responses
   - To input the impulse response, connect a `soundfile~` object to the `convolver~` object's `message` inlet. Then, upload a sound file or send a url as an input message.
-  - Then, send a `{type: "read"}` message to the `soundfile~` object to read the impulse response into the `convolver~` object.
+  - Then, send a `read` message to the `soundfile~` object to read the impulse response into the `convolver~` object.
   - The sound file must be a valid [impulse response](https://en.wikipedia.org/wiki/Impulse_response) file. It is a usually a short audio file with a single impulse followed by reverb tail. You can clap your hands in a room and record the sound to create your own impulse response.
 - `split~`: Split multi-channel audio into separate mono channels.
   - Use the settings button to set the number of output channels.
@@ -815,11 +823,11 @@ The `csound~` object allows you to use [Csound](https://csound.com) for audio sy
 
 You can send messages to control Csound instruments:
 
-- `{type: 'bang'}`: Resume or re-eval Csound code
-- `{type: 'play'}`: Resume playback
-- `{type: 'pause'}`: Pause playback
-- `{type: 'stop'}`: Stop playback
-- `{type: 'reset'}`: Reset the Csound instance
+- `bang`: Resume or re-eval Csound code
+- `play`: Resume playback
+- `pause`: Pause playback
+- `stop`: Stop playback
+- `reset`: Reset the Csound instance
 - `{type: 'setChannel', channel: 'name', value: number}`: Set a control channel value
 - `{type: 'setChannel', channel: 'name', value: 'string'}`: Set a string channel value
 - `{type: 'setOptions', value: '-flagname'}`: Set Csound options and reset
