@@ -260,6 +260,11 @@
 		const { name, params } = getNameAndParams();
 
 		updateNodeData(nodeId, { expr, name, params });
+
+		if (objectService.isV2ObjectType(name)) {
+			objectService.removeObjectById(nodeId);
+			objectService.createObject(nodeId, name, messageContext, params);
+		}
 	}
 
 	function tryCreatePreset(): boolean {
@@ -455,7 +460,7 @@
 
 		// Create V2 text object if applicable
 		if (objectService.isV2ObjectType(data.name)) {
-			objectService.createObject(nodeId, data.name, data.params);
+			objectService.createObject(nodeId, data.name, messageContext, data.params);
 		}
 
 		messageContext.queue.addCallback(handleObjectMessage);

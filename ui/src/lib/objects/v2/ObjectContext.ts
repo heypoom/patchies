@@ -17,9 +17,9 @@ export class ObjectContext {
 	private inlets: ObjectInlet[] = [];
 	private paramsChangeCallbacks: ParamsChangeCallback[] = [];
 
-	constructor(nodeId: string, inlets: ObjectInlet[] = []) {
+	constructor(nodeId: string, messageContext: MessageContext, inlets: ObjectInlet[] = []) {
 		this.nodeId = nodeId;
-		this.messageContext = new MessageContext(nodeId);
+		this.messageContext = messageContext;
 		this.inlets = inlets;
 
 		// Initialize params with default values from inlets
@@ -126,7 +126,6 @@ export class ObjectContext {
 	 * Clean up resources.
 	 */
 	destroy(): void {
-		this.messageContext.destroy();
 		this.paramsChangeCallbacks = [];
 	}
 }
