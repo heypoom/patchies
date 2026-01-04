@@ -5,7 +5,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
+	import { getObjectType } from '$lib/objects/get-type';
 
 	let node: {
 		id: string;
@@ -63,7 +63,7 @@
 	function updateMeter() {
 		const audioNodeById = audioService.getNodeById(node.id);
 
-		if (audioNodeById && getNodeType(audioNodeById) === 'fft~') {
+		if (audioNodeById && getObjectType(audioNodeById) === 'fft~') {
 			const analyserNode = audioNodeById.audioNode as AnalyserNode;
 			const freqData = new Uint8Array(analyserNode.fftSize);
 			analyserNode.getByteFrequencyData(freqData);

@@ -1,6 +1,5 @@
 import type { Edge } from '@xyflow/svelte';
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
-import { getNodeType } from './interfaces/audio-nodes';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { canAudioNodeConnect } from '../audio-node-group';
 // @ts-expect-error -- no typedefs
@@ -13,6 +12,7 @@ import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import { TimeScheduler } from '../TimeScheduler';
 import { isScheduledMessage } from '../time-scheduling-types';
 import { registerAudioNodes } from './nodes';
+import { getObjectType } from '$lib/objects/get-type';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -74,7 +74,7 @@ export class AudioService {
 		}
 
 		// Get the audio param value by default
-		const nodeType = getNodeType(node);
+		const nodeType = getObjectType(node);
 		const nodeClass = this.registry.get(nodeType);
 
 		if (node.audioNode && nodeClass?.inlets) {
@@ -116,7 +116,7 @@ export class AudioService {
 			return;
 		}
 
-		const nodeClass = this.registry.get(getNodeType(node));
+		const nodeClass = this.registry.get(getObjectType(node));
 
 		// Set the audio parameter value by default
 		if (node.audioNode && nodeClass?.inlets) {
@@ -129,7 +129,7 @@ export class AudioService {
 	 * @returns Array of node type identifiers
 	 */
 	getAllNodeNames(): string[] {
-		return this.registry.getNodeTypes();
+		return this.registry.getObjectTypes();
 	}
 
 	/**
@@ -147,7 +147,7 @@ export class AudioService {
 			return null;
 		}
 
-		const nodeClass = this.registry.get(getNodeType(audioNode));
+		const nodeClass = this.registry.get(getObjectType(audioNode));
 		if (!nodeClass?.inlets) {
 			return null;
 		}
@@ -176,7 +176,7 @@ export class AudioService {
 
 			// Connect destination nodes (i.e. dac~) to device outputs
 			for (const node of this.nodesById.values()) {
-				const group = this.registry.get(getNodeType(node))?.group;
+				const group = this.registry.get(getObjectType(node))?.group;
 
 				if (this.outGain && group === 'destinations') {
 					try {
@@ -322,8 +322,8 @@ export class AudioService {
 			return true;
 		}
 
-		const sourceType = getNodeType(sourceNode);
-		const targetType = getNodeType(targetNode);
+		const sourceType = getObjectType(sourceNode);
+		const targetType = getObjectType(targetNode);
 
 		const sourceClass = this.registry.get(sourceType);
 		const targetClass = this.registry.get(targetType);

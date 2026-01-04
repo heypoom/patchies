@@ -109,13 +109,3 @@ export interface AudioNodeV2 {
 	 */
 	destroy?(): void;
 }
-
-/**
- * Get the node type from an AudioNodeV2 instance.
- * Extracts the static `type` property from the node's constructor.
- *
- * @param node - The node instance
- * @returns The node type identifier
- */
-export const getNodeType = (node: AudioNodeV2): string =>
-	(node.constructor as unknown as { type: string }).type;

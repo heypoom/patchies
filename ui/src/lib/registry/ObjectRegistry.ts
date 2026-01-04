@@ -1,5 +1,4 @@
 import type { TextObjectClass } from '$lib/objects/v2/interfaces/text-objects';
-import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 
 /**
  * Registry for text object types and their constructors.
@@ -43,25 +42,6 @@ export class ObjectRegistry {
 	 */
 	getObjectTypes(): string[] {
 		return Array.from(this.registry.keys());
-	}
-
-	/**
-	 * Get object metadata (inlets, outlets, etc.) by type.
-	 * @param objectType - The type of object
-	 * @returns The object metadata or null if not found
-	 */
-	getObjectMetadataByType(objectType: string): ObjectMetadata | null {
-		const constructor = this.registry.get(objectType);
-
-		if (constructor) {
-			return {
-				description: constructor.description,
-				inlets: constructor.inlets,
-				outlets: constructor.outlets
-			};
-		}
-
-		return null;
 	}
 
 	/**

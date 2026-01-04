@@ -63,13 +63,3 @@ export type TextObjectClass = {
 	/** Outlet definitions */
 	outlets?: ObjectOutlet[];
 } & TextObjectConstructor;
-
-/**
- * Get the object type from a TextObjectV2 instance.
- * Extracts the static `type` property from the object's constructor.
- *
- * @param object - The object instance
- * @returns The object type identifier
- */
-export const getObjectType = (object: TextObjectV2): string =>
-	(object.constructor as unknown as { type: string }).type;

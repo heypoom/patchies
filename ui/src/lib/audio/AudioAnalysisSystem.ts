@@ -2,8 +2,8 @@ import { match } from 'ts-pattern';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
 import { AudioService } from './v2/AudioService';
-import { getNodeType } from './v2/interfaces/audio-nodes';
 import { ANALYSIS_KEY, GLSL_FFT_WAVEFORM_UNIFORM_NAME } from './v2/constants/fft';
+import { getObjectType } from '$lib/objects/get-type';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -98,7 +98,7 @@ export class AudioAnalysisSystem {
 		if (!analyzerNodeId) return null;
 
 		const node = this.audioService.getNodeById(analyzerNodeId);
-		if (!node || getNodeType(node) !== 'fft~') return null;
+		if (!node || getObjectType(node) !== 'fft~') return null;
 
 		const analyser = node.audioNode as AnalyserNode;
 
@@ -152,7 +152,7 @@ export class AudioAnalysisSystem {
 		if (!isSampler2DOutlet) return;
 
 		const node = this.audioService.getNodeById(analyzerNodeId);
-		if (!node || getNodeType(node) !== 'fft~') return;
+		if (!node || getObjectType(node) !== 'fft~') return;
 
 		const inletMatch = edge.targetHandle?.match(/video-in-(\d+)-(\w+)-/);
 		if (!inletMatch) return;
@@ -198,7 +198,7 @@ export class AudioAnalysisSystem {
 			if (sourceId.startsWith('object-')) {
 				const node = this.audioService.getNodeById(sourceId);
 
-				if (node && getNodeType(node) === 'fft~') {
+				if (node && getObjectType(node) === 'fft~') {
 					fftNodeId = sourceId;
 					break;
 				}

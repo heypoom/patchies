@@ -1,9 +1,11 @@
 import { ObjectContext } from './ObjectContext';
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import { logger } from '$lib/utils/logger';
+import { validateMessageToObject } from '$lib/objects/validate-object-message';
 import { registerTextObjects } from './nodes';
 
 import type { TextObjectV2, MessageMeta } from './interfaces/text-objects';
+import { getObjectType } from '../get-type';
 
 /**
  * ObjectService provides shared logic for the V2 text object system.
@@ -128,9 +130,26 @@ export class ObjectService {
 
 	/**
 	 * Dispatch a message to an object, enriching meta with resolved inlet name.
+	 * Validates the message against inlet specifications.
 	 */
 	private dispatchMessage(object: TextObjectV2, data: unknown, meta: MessageMeta): void {
 		const inletName = object.context.getInletName(meta.inlet);
+		const type = getObjectType(object);
+		const objectClass = this.registry.get(type);
+
+		// Validate message type against inlet specification if inlets are defined
+		if (objectClass?.inlets && meta.inlet !== undefined) {
+			const inlet = objectClass?.inlets[meta.inlet];
+
+			if (inlet && !validateMessageToObject(data, inlet)) {
+				logger.warn(
+					`invalid message type for text object "${type}" at inlet "${inlet.name}": expected "${inlet.type}"`,
+					{ message: data, spec: inlet }
+				);
+
+				return;
+			}
+		}
 
 		object.onMessage?.(data, { ...meta, inletName });
 	}

@@ -11,7 +11,6 @@
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { DspNode } from '$lib/audio/v2/nodes/DspNode';
-	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
 
 	let contentContainer: HTMLDivElement | null = null;
 

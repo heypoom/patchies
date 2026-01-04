@@ -8,7 +8,7 @@
 	import { ObjectService } from '$lib/objects/v2/ObjectService';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { match, P } from 'ts-pattern';
+	import { match } from 'ts-pattern';
 	import { PRESETS } from '$lib/presets/presets';
 	import Fuse from 'fuse.js';
 	import * as Tooltip from '../ui/tooltip';
@@ -198,18 +198,23 @@
 		isAutomated = { ...isAutomated, [index]: false };
 	}
 
-	const handleMessage: MessageCallbackFn = (message, meta) => {
+	const handleObjectMessage: MessageCallbackFn = (message, meta) => {
 		if (!objectMeta || !objectMeta.inlets || meta?.inlet === undefined) return;
 
 		const inlet = objectMeta.inlets[meta.inlet];
 		if (!inlet) return;
 
-		// Validate message type against inlet specification
+		const isAudioObject = hasSignalPorts(objectMeta);
+
+		// Validate message types against inlet specification
 		if (!validateMessageToObject(message, inlet)) {
-			logger.warn(
-				`invalid message type for ${data.name} inlet ${inlet.name}: expected ${inlet.type}, got`,
-				message
-			);
+			// We already do this in `ObjectService.dispatchMessage` for text objects.
+			if (isAudioObject) {
+				logger.warn(
+					`invalid message type for audio object "${data.name}" at inlet "${inlet.name}": expected "${inlet.type}"`,
+					{ message, spec: inlet }
+				);
+			}
 
 			return;
 		}
@@ -228,8 +233,8 @@
 			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
-		// Route to audio service if node has signal inlets or outlets
-		if (inlet.name && hasSignalPorts(objectMeta)) {
+		// Route audio object messages to audio service
+		if (inlet.name && isAudioObject) {
 			audioService.send(nodeId, inlet.name, message);
 			return;
 		}
@@ -453,7 +458,7 @@
 			objectService.createObject(nodeId, data.name, data.params);
 		}
 
-		messageContext.queue.addCallback(handleMessage);
+		messageContext.queue.addCallback(handleObjectMessage);
 	});
 
 	onDestroy(() => {

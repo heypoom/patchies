@@ -10,8 +10,8 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { SoundfileNode as SoundfileNodeV2 } from '$lib/audio/v2/nodes/SoundfileNode';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
-	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
 	import { logger } from '$lib/utils/logger';
+	import { getObjectType } from '$lib/objects/get-type';
 
 	let node: {
 		id: string;
@@ -68,7 +68,7 @@
 		// Check if any edge connects to a convolver~'s buffer inlet
 		for (const { targetNodeId, inletKey } of connectedEdges) {
 			const target = audioService.getNodeById(targetNodeId);
-			if (!target || getNodeType(target) !== 'convolver~') continue;
+			if (!target || getObjectType(target) !== 'convolver~') continue;
 
 			const inlet = audioService.getInletByHandle(targetNodeId, inletKey ?? null);
 
