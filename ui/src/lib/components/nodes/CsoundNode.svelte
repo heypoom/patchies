@@ -4,10 +4,11 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import CommonExprLayout from './CommonExprLayout.svelte';
 	import Icon from '@iconify/svelte';
 	import { match, P } from 'ts-pattern';
+	import type { CsoundNode } from '$lib/audio/v2/nodes/CsoundNode';
 
 	let {
 		id: nodeId,
@@ -24,37 +25,31 @@
 	let isPlaying = $state(false);
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 
 	const { updateNodeData } = useSvelteFlow();
 
-	const getManager = () => {
-		const node = audioSystem.nodesById.get(nodeId);
-
-		if (node?.type === 'csound~' && node.csoundManager) {
-			return node.csoundManager;
-		}
-	};
+	const getCsoundNode = () => audioService.getNodeById(nodeId) as CsoundNode | undefined;
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
-		const manager = getManager();
-		if (!manager) return;
+		const csoundNode = getCsoundNode();
+		if (!csoundNode) return;
 
 		match(message).with({ type: P.union('bang', 'run', 'resume') }, () => {
 			isPlaying = true;
 		});
 
-		manager.handleMessage('messageInlet', { inletIndex: meta.inlet, message, meta });
+		csoundNode.send('messageInlet', { inletIndex: meta.inlet, message, meta });
 	};
 
 	const runCsoundCode = (code: string) => {
-		const manager = getManager();
-		if (!manager) return;
+		const csoundNode = getCsoundNode();
+		if (!csoundNode) return;
 
-		manager.resume();
+		csoundNode.resume();
 		isPlaying = true;
 
-		manager.handleMessage('run', code);
+		csoundNode.send('run', code);
 	};
 
 	const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
@@ -62,16 +57,16 @@
 	const handleRun = () => runCsoundCode(data.expr);
 
 	async function handlePlayPause() {
-		const manager = getManager();
-		if (!manager) return;
+		const csoundNode = getCsoundNode();
+		if (!csoundNode) return;
 
-		const isPaused = manager.getIsPaused();
+		const isPaused = csoundNode.getIsPaused();
 
 		if (isPaused) {
-			await manager.resume();
+			await csoundNode.resume();
 			isPlaying = true;
 		} else {
-			await manager.pause();
+			await csoundNode.pause();
 			isPlaying = false;
 		}
 	}
@@ -80,7 +75,7 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		audioSystem.createAudioObject(nodeId, 'csound~', [null, data.expr]);
+		audioService.createNode(nodeId, 'csound~', [null, data.expr]);
 
 		if (isEditing) {
 			setTimeout(() => layoutRef?.focus(), 10);
@@ -90,7 +85,12 @@
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
-		audioSystem.removeAudioObject(nodeId);
+
+		const node = audioService.getNodeById(nodeId);
+
+		if (node) {
+			audioService.removeNode(node);
+		}
 	});
 </script>
 

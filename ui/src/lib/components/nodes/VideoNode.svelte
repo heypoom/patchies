@@ -6,8 +6,9 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { match, P } from 'ts-pattern';
+	import { createNode } from '@elemaudio/core';
 
 	let {
 		id: nodeId,
@@ -32,7 +33,7 @@
 
 	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	const { updateNode } = useSvelteFlow();
 	let videoElement = $state<HTMLVideoElement | undefined>();
 	let isLoaded = $state(false);
@@ -77,7 +78,7 @@
 			await loadFile(file, url);
 
 			// Send URL to audio system as well
-			audioSystem.send(nodeId, 'url', url);
+			audioService.send(nodeId, 'url', url);
 		} catch (err) {
 			console.error('Failed to load video from URL:', err);
 			errorMessage = 'Failed to load video from URL';
@@ -180,7 +181,7 @@
 					isPaused = true;
 					errorMessage = null;
 
-					audioSystem.send(nodeId, 'file', file);
+					audioService.send(nodeId, 'file', file);
 
 					bitmapFrameId = requestAnimationFrame(uploadBitmap);
 				}
@@ -210,7 +211,7 @@
 			videoElement.currentTime = 0;
 
 			// Send bang to audio system to restart audio (sets currentTime to 0 and plays)
-			audioSystem.send(nodeId, 'message', { type: 'bang' });
+			audioService.send(nodeId, 'message', { type: 'bang' });
 
 			if (isPaused) {
 				videoElement.play();
@@ -223,11 +224,11 @@
 		if (videoElement && isLoaded) {
 			if (isPaused) {
 				videoElement.play();
-				audioSystem.send(nodeId, 'message', { type: 'play' });
+				audioService.send(nodeId, 'message', { type: 'play' });
 				isPaused = false;
 			} else {
 				videoElement.pause();
-				audioSystem.send(nodeId, 'message', { type: 'pause' });
+				audioService.send(nodeId, 'message', { type: 'pause' });
 				isPaused = true;
 			}
 		}
@@ -291,11 +292,11 @@
 		glSystem.upsertNode(nodeId, 'img', {});
 
 		// Create audio object for video
-		audioSystem.createAudioObject(nodeId, 'soundfile~', []);
+		audioService.createNode(nodeId, 'soundfile~', []);
 
 		if (data.file) {
 			loadFile(data.file, data.url);
-			audioSystem.send(nodeId, 'file', data.file);
+			audioService.send(nodeId, 'file', data.file);
 		} else if (data.url) {
 			loadVideoFromUrl(data.url);
 		}
@@ -308,7 +309,7 @@
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 		glSystem.removeNode(nodeId);
-		audioSystem.removeAudioObject(nodeId);
+		audioService.removeNode(audioService.getNodeById(nodeId)!);
 	});
 
 	const handleCommonClass = $derived.by(() => {
@@ -360,10 +361,10 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="video" class={handleCommonClass} total={1} index={0} />
+				<StandardHandle port="inlet" type="message" class={handleCommonClass} total={1} index={0} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'border-zinc-400 bg-zinc-800 shadow-glow-md' : 'border-transparent hover:shadow-glow-sm'}`}
+					class={`border-1 rounded-lg ${selected ? 'shadow-glow-md border-zinc-400 bg-zinc-800' : 'hover:shadow-glow-sm border-transparent'}`}
 				>
 					{#if !errorMessage}
 						<video

@@ -6,7 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	let contentContainer: HTMLDivElement | null = null;
 
 	// Props
@@ -33,7 +33,7 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	let contentWidth = $state(100);
 	let showChannelEditor = $state(false);
 	let channelInput = $state('');
@@ -57,7 +57,8 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		audioSystem.createAudioObject(nodeId, audioType, [channels]);
+		audioService.createNode(nodeId, audioType, [channels]);
+
 		updateContentWidth();
 		channelInput = channels.toString();
 	});
@@ -65,7 +66,12 @@
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
-		audioSystem.removeAudioObject(nodeId);
+
+		const node = audioService.getNodeById(nodeId);
+
+		if (node) {
+			audioService.removeNode(node);
+		}
 	});
 
 	function updateContentWidth() {
@@ -78,7 +84,7 @@
 
 		if (channelCount >= 1 && channelCount <= 32 && channelCount !== channels) {
 			updateNodeData(nodeId, { channels: channelCount });
-			audioSystem.send(nodeId, 'channels', channelCount);
+			audioService.send(nodeId, 'channels', channelCount);
 
 			setTimeout(() => {
 				updateNodeInternals(nodeId);

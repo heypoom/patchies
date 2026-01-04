@@ -1,4 +1,4 @@
-import { AudioSystem } from '$lib/audio/AudioSystem';
+import { AudioService } from '$lib/audio/v2/AudioService';
 import type {
 	GoogleGenAI,
 	AudioChunk,
@@ -18,7 +18,7 @@ export interface Prompt {
 
 export class LiveMusicManager {
 	public nodeId: string;
-	private audioSystem = AudioSystem.getInstance();
+	private audioService = AudioService.getInstance();
 
 	private ai: GoogleGenAI | null = null;
 	private session: LiveMusicSession | null = null;
@@ -46,29 +46,30 @@ export class LiveMusicManager {
 	}
 
 	get gainNode(): GainNode | null {
-		const ps = this.audioSystem.nodesById.get(this.nodeId);
-		if (ps?.type !== 'lyria') return null;
-
-		return ps.node;
+		const node = this.audioService.getNodeById(this.nodeId);
+		return (node?.audioNode as GainNode) ?? null;
 	}
 
-	/** Create a gain node inside the audio system. */
+	/** Create a gain node inside the audio service. */
 	setupGainNode() {
-		if (this.audioSystem.nodesById.has(this.nodeId)) return;
+		if (this.audioService.getNodeById(this.nodeId)) return;
 
-		const node = this.audioSystem.audioContext.createGain();
-		node.gain.value = 1;
-
-		this.audioSystem.nodesById.set(this.nodeId, { type: 'lyria', node });
+		// Create a gain~ node for audio output
+		this.audioService.createNode(this.nodeId, 'gain~');
 	}
 
 	destroy() {
 		this.stop();
-		this.audioSystem.removeAudioObject(this.nodeId);
+
+		const node = this.audioService.getNodeById(this.nodeId);
+
+		if (node) {
+			this.audioService.removeNode(node);
+		}
 	}
 
 	get audioContext() {
-		return this.audioSystem.audioContext;
+		return this.audioService.getAudioContext();
 	}
 
 	private async getSession(): Promise<LiveMusicSession> {

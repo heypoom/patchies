@@ -1,27 +1,98 @@
-import type { CsoundObj } from '@csound/browser';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
+import type { CsoundObj } from '@csound/browser';
 
-export class CsoundManager {
-	private csound: CsoundObj | null = null;
-	private audioContext: AudioContext;
-	private outputNode: GainNode;
+/**
+ * CsoundNode implements the csound~ audio node.
+ * Executes Csound code for sound synthesis and processing.
+ */
+export class CsoundNode implements AudioNodeV2 {
+	static type = 'csound~';
+	static group: AudioNodeGroup = 'processors';
+	static description = 'Csound synthesis and audio processing';
+
+	static inlets: ObjectInlet[] = [
+		{
+			name: 'in',
+			type: 'signal',
+			description: 'Audio signal input'
+		},
+		{
+			name: 'msg',
+			type: 'message',
+			description: 'Control messages'
+		}
+	];
+
+	static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal', description: 'Audio output' }];
+
+	// Output gain node
+	audioNode: GainNode;
+
+	readonly nodeId: string;
+
 	private inputNode: GainNode;
+	private audioContext: AudioContext;
+
+	// Csound state
+	private csound: CsoundObj | null = null;
 	private initialized = false;
 	private isProgramLoaded = false;
 	private isPaused = true;
 	private optionsString = '';
 	private codeString = '';
 
-	constructor(
-		nodeId: string,
-		audioContext: AudioContext,
-		outputNode: GainNode,
-		inputNode: GainNode
-	) {
+	constructor(nodeId: string, audioContext: AudioContext) {
+		this.nodeId = nodeId;
 		this.audioContext = audioContext;
-		this.outputNode = outputNode;
-		this.inputNode = inputNode;
+
+		// Create gain nodes immediately for connections
+		this.audioNode = audioContext.createGain();
+		this.audioNode.gain.value = 1.0;
+
+		this.inputNode = audioContext.createGain();
+		this.inputNode.gain.value = 1.0;
+	}
+
+	async create(params: unknown[]): Promise<void> {
+		const [, code] = params as [unknown, string];
+
+		await this.initialize();
+
+		if (code) {
+			await this.setCode(code);
+		}
+	}
+
+	async send(key: string, value: unknown): Promise<void> {
+		if (!this.initialized) {
+			await this.initialize();
+		}
+
+		if (!this.csound) return;
+
+		try {
+			await match([key, value])
+				.with(['code', P.string], async ([, code]) => this.setCode(code))
+				.with(['run', P.string], async ([, code]) => this.runCode(code))
+				.with(['messageInlet', { inletIndex: P.number, message: P.any, meta: P.any }], ([, data]) =>
+					this.handleInletMessage(data.inletIndex, data.message)
+				)
+				.run();
+		} catch (error) {
+			logger.error('error in csound~ send:', error);
+		}
+	}
+
+	/**
+	 * Handle incoming connections - route to input node
+	 */
+	connectFrom(source: AudioNodeV2): void {
+		if (source.audioNode) {
+			source.audioNode.connect(this.inputNode);
+		}
 	}
 
 	async initialize() {
@@ -43,32 +114,12 @@ export class CsoundManager {
 			const node = await this.csound.getNode();
 
 			if (node) {
-				node.connect(this.outputNode);
+				node.connect(this.audioNode);
 			}
 
 			this.initialized = true;
 		} catch (error) {
-			console.error('Failed to initialize Csound:', error);
-		}
-	}
-
-	async handleMessage(key: string, value: unknown): Promise<void> {
-		if (!this.initialized) {
-			await this.initialize();
-		}
-
-		if (!this.csound) return;
-
-		try {
-			await match([key, value])
-				.with(['code', P.string], async ([, code]) => this.setCode(code))
-				.with(['run', P.string], async ([, code]) => this.runCode(code))
-				.with(['messageInlet', { inletIndex: P.number, message: P.any, meta: P.any }], ([, data]) =>
-					this.handleInletMessage(data.inletIndex, data.message)
-				)
-				.otherwise(() => {});
-		} catch (error) {
-			console.error('Error in CsoundManager:', error);
+			logger.error('failed to initialize csound~:', error);
 		}
 	}
 
@@ -113,7 +164,7 @@ export class CsoundManager {
 			await this.csound.compileCSD(csd);
 			await this.setOptions(this.optionsString);
 		} catch (error) {
-			console.error('Error compiling/running Csound code:', error);
+			logger.error('error compiling/running csound~ code:', error);
 		}
 	}
 
@@ -190,9 +241,9 @@ export class CsoundManager {
 
 					await this.csound!.inputMessage(m);
 				})
-				.otherwise(() => {});
+				.run();
 		} catch (error) {
-			console.error('Error handling inlet message:', error);
+			logger.error('error handling csound~ inlet message:', error);
 		}
 	}
 
@@ -203,7 +254,7 @@ export class CsoundManager {
 			await this.csound.pause();
 			this.isPaused = true;
 		} catch (error) {
-			console.error('Error pausing Csound:', error);
+			logger.error('error pausing csound~:', error);
 		}
 	}
 
@@ -218,12 +269,19 @@ export class CsoundManager {
 			await this.csound.resume();
 			this.isPaused = false;
 		} catch (error) {
-			console.error('Error resuming Csound:', error);
+			logger.error('error resuming csound~:', error);
 		}
 	}
 
 	getIsPaused(): boolean {
 		return this.isPaused;
+	}
+
+	async ensureMidi() {
+		if (this.optionsString.includes('-M0')) return;
+
+		await this.setOptions(`${this.optionsString} -M0`);
+		await this.runCode(this.codeString);
 	}
 
 	async destroy() {
@@ -234,28 +292,10 @@ export class CsoundManager {
 			await this.csound.reset();
 			await this.csound.terminateInstance();
 		} catch (error) {
-			console.error('Error destroying Csound:', error);
+			logger.error('error destroying csound~:', error);
 		}
-	}
 
-	async ensureMidi() {
-		if (this.optionsString.includes('-M0')) return;
-
-		await this.setOptions(`${this.optionsString} -M0`);
-		await this.runCode(this.codeString);
+		this.audioNode.disconnect();
+		this.inputNode.disconnect();
 	}
 }
-
-export const createCsoundMessageHandler =
-	(manager: CsoundManager | undefined): MessageCallbackFn =>
-	async (data, meta) => {
-		if (!manager) return;
-
-		const inletIndex = meta.inlet ?? 0;
-
-		await manager.handleMessage('messageInlet', {
-			inletIndex,
-			message: data,
-			meta
-		});
-	};

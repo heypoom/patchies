@@ -1,36 +1,84 @@
+import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
+import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
+import { MessageContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import type WebRenderer from '@elemaudio/web-renderer';
-import { MessageContext } from '$lib/messages/MessageContext';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
+type OnSetPortCount = (inletCount: number, outletCount: number) => void;
 
-export class ElementaryAudioManager {
-	private gainNode: GainNode;
+/**
+ * ElementaryNode implements the elem~ audio node.
+ * Executes user-defined Elementary Audio code for DSP synthesis and processing.
+ */
+export class ElementaryNode implements AudioNodeV2 {
+	static type = 'elem~';
+	static group: AudioNodeGroup = 'processors';
+	static description = 'Elementary Audio DSP synthesis and processing node';
+
+	static inlets: ObjectInlet[] = [
+		{
+			name: 'in',
+			type: 'signal',
+			description: 'Audio signal input'
+		},
+		{
+			name: 'code',
+			type: 'string',
+			description: 'Elementary Audio code to execute'
+		}
+	];
+
+	static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal', description: 'Audio output' }];
+
+	// Output gain node
+	audioNode: GainNode;
+
+	readonly nodeId: string;
+
 	private inputNode: GainNode;
 	private audioContext: AudioContext;
+	private messageContext: MessageContext;
+	private jsRunner: JSRunner;
+
+	// Elementary Audio state
 	private core: WebRenderer | null = null;
 	private workletNode: AudioWorkletNode | null = null;
+	private elementaryCore: typeof import('@elemaudio/core') | null = null;
 	private recvCallback: RecvCallback | null = null;
+
+	// Dynamic port counts for UI
 	private messageInletCount = 0;
 	private messageOutletCount = 0;
-	private jsRunner: JSRunner;
-	private nodeId: string;
-	private elementaryCore: typeof import('@elemaudio/core') | null = null;
-	private messageContext: MessageContext;
 
-	public onSetPortCount = (inletCount: number, outletCount: number) => {};
+	public onSetPortCount: OnSetPortCount = () => {};
 
-	constructor(nodeId: string, audioContext: AudioContext, gainNode: GainNode, inputNode: GainNode) {
+	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
-		this.gainNode = gainNode;
-		this.inputNode = inputNode;
 		this.audioContext = audioContext;
-		this.jsRunner = JSRunner.getInstance();
+
+		// Create gain nodes immediately for connections
+		this.audioNode = audioContext.createGain();
+		this.audioNode.gain.value = 1.0;
+
+		this.inputNode = audioContext.createGain();
+		this.inputNode.gain.value = 1.0;
+
 		this.messageContext = new MessageContext(nodeId);
+		this.jsRunner = JSRunner.getInstance();
 	}
 
-	async handleMessage(key: string, msg: unknown): Promise<void> {
+	async create(params: unknown[]): Promise<void> {
+		const [, code] = params as [unknown, string];
+
+		if (code) {
+			await this.setCode(code);
+		}
+	}
+
+	async send(key: string, msg: unknown): Promise<void> {
 		return match([key, msg])
 			.with(['code', P.string], ([, code]) => {
 				return this.setCode(code);
@@ -38,9 +86,16 @@ export class ElementaryAudioManager {
 			.with(['messageInlet', P.any], ([, messageData]) => {
 				this.handleMessageInlet(messageData);
 			})
-			.otherwise(() => {
-				// Handle other message types if needed
-			});
+			.otherwise(() => {});
+	}
+
+	/**
+	 * Handle incoming connections - route to input node
+	 */
+	connectFrom(source: AudioNodeV2): void {
+		if (source.audioNode) {
+			source.audioNode.connect(this.inputNode);
+		}
 	}
 
 	private async ensureElementary() {
@@ -70,7 +125,7 @@ export class ElementaryAudioManager {
 
 				// Connect the worklet node to our audio graph
 				this.inputNode.connect(this.workletNode);
-				this.workletNode.connect(this.gainNode);
+				this.workletNode.connect(this.audioNode);
 			}
 		}
 
@@ -82,7 +137,6 @@ export class ElementaryAudioManager {
 			// render silence
 			await this.core?.render();
 			this.cleanup();
-
 			return;
 		}
 
@@ -117,7 +171,7 @@ export class ElementaryAudioManager {
 			});
 
 			if (!processedCode) {
-				console.warn('Code preprocessing returned null');
+				logger.warn('code preprocessing returned null');
 				return;
 			}
 
@@ -132,56 +186,61 @@ export class ElementaryAudioManager {
 					core: this.core,
 					node: this.workletNode,
 					inputNode: this.inputNode,
-					outputNode: this.gainNode,
+					outputNode: this.audioNode,
 					recv,
 					send
 				}
 			});
 		} catch (error) {
-			console.error('Failed to execute Elementary Audio code:', error);
+			logger.error('Failed to execute elem~ code:', error);
 		}
 	}
 
-	private handleMessageInlet(messageData: unknown): void {
+	private handleMessageInlet(message: unknown): void {
 		if (!this.recvCallback) return;
 
 		try {
 			// Type guard to ensure messageData has the expected structure
 			if (
-				typeof messageData === 'object' &&
-				messageData !== null &&
-				'message' in messageData &&
-				'meta' in messageData
+				typeof message === 'object' &&
+				message !== null &&
+				'message' in message &&
+				'meta' in message
 			) {
-				const data = messageData as { message: unknown; meta: unknown };
+				const data = message as { message: unknown; meta: unknown };
+
 				this.recvCallback(data.message, data.meta);
 			}
 		} catch (error) {
-			console.error('Error in Elementary recv callback:', error);
+			logger.error('error in elem~ recv callback:', error);
 		}
 	}
 
-	public cleanup(): void {
+	private cleanup(): void {
 		this.core?.gc();
 		this.core?.pruneVirtualFileSystem();
 	}
 
-	public destroy(): void {
+	destroy(): void {
 		this.core?.render();
+
 		this.cleanup();
+		this.recvCallback = null;
+
 		this.messageContext.destroy();
+		this.jsRunner.destroy(this.nodeId);
 
 		// Disconnect audio nodes
 		if (this.workletNode) {
 			try {
 				this.inputNode.disconnect(this.workletNode);
-				this.workletNode.disconnect(this.gainNode);
+				this.workletNode.disconnect(this.audioNode);
 			} catch (error) {
-				console.warn('Error disconnecting Elementary audio nodes:', error);
+				logger.warn('cannot disconnect elem~ node:', error);
 			}
 		}
 
-		this.recvCallback = null;
-		this.jsRunner.destroy(this.nodeId);
+		this.audioNode.disconnect();
+		this.inputNode.disconnect();
 	}
 }

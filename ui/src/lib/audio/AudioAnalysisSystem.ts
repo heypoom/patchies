@@ -1,8 +1,9 @@
 import { match } from 'ts-pattern';
-import { AudioSystem } from './AudioSystem';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
-import { objectDefinitions } from '$lib/objects/object-definitions';
+import { AudioService } from './v2/AudioService';
+import { getNodeType } from './v2/interfaces/audio-nodes';
+import { ANALYSIS_KEY, GLSL_FFT_WAVEFORM_UNIFORM_NAME } from './v2/constants/fft';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -55,18 +56,9 @@ export type GlslFFTInletMeta = {
 	uniformName: string;
 };
 
-const WAVEFORM_UNIFORM_NAME = 'waveTexture';
-
-/** Get FFT object's analysis outlet index */
-function getFFTAnalysisOutletIndex(): number {
-	const fftDef = objectDefinitions['fft~'];
-	const index = fftDef.outlets.findIndex((outlet) => outlet.name === 'analysis');
-	return index !== -1 ? index : 1; // fallback to index 1 if not found
-}
-
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
-	private audioSystem = AudioSystem.getInstance();
+	private audioService = AudioService.getInstance();
 	private messageSystem = MessageSystem.getInstance();
 
 	// Cache for FFT node connections: nodeId -> fftNodeId
@@ -87,13 +79,6 @@ export class AudioAnalysisSystem {
 	/** Mapping of GLSL nodeId to inlet metadata. */
 	private glslInlets: Map<string, GlslFFTInletMeta[]> = new Map();
 
-	/** Cache FFT object's analysis outlet index */
-	private fftAnalysisOutletIndex: number;
-
-	constructor() {
-		this.fftAnalysisOutletIndex = getFFTAnalysisOutletIndex();
-	}
-
 	getAnalysisForNode(
 		consumerNodeId: string,
 		{ id, type = 'wave', format = 'int' }: AudioAnalysisProps = {}
@@ -112,30 +97,34 @@ export class AudioAnalysisSystem {
 
 		if (!analyzerNodeId) return null;
 
-		const state = this.audioSystem.nodesById.get(analyzerNodeId);
-		if (state?.type !== 'fft~') return null;
+		const node = this.audioService.getNodeById(analyzerNodeId);
+		if (!node || getNodeType(node) !== 'fft~') return null;
 
-		const { node } = state;
+		const analyser = node.audioNode as AnalyserNode;
 
 		return match([type, format])
 			.with(['wave', 'int'], () => {
-				const list = new Uint8Array(node.fftSize);
-				node.getByteTimeDomainData(list);
+				const list = new Uint8Array(analyser.fftSize);
+				analyser.getByteTimeDomainData(list);
+
 				return list;
 			})
 			.with(['wave', 'float'], () => {
-				const list = new Float32Array(node.fftSize);
-				node.getFloatTimeDomainData(list);
+				const list = new Float32Array(analyser.fftSize);
+				analyser.getFloatTimeDomainData(list);
+
 				return list;
 			})
 			.with(['freq', 'int'], () => {
-				const list = new Uint8Array(node.fftSize);
-				node.getByteFrequencyData(list);
+				const list = new Uint8Array(analyser.fftSize);
+				analyser.getByteFrequencyData(list);
+
 				return list;
 			})
 			.with(['freq', 'float'], () => {
-				const list = new Float32Array(node.fftSize);
-				node.getFloatFrequencyData(list);
+				const list = new Float32Array(analyser.fftSize);
+				analyser.getFloatFrequencyData(list);
+
 				return list;
 			})
 			.exhaustive();
@@ -151,21 +140,19 @@ export class AudioAnalysisSystem {
 	}
 
 	setupGlslPolling(edge: Edge) {
-		const analyzerOutletId = `analysis-out-${this.fftAnalysisOutletIndex}`;
-
 		const glslNodeId = edge.target;
 		const analyzerNodeId = edge.source;
 
 		const isSampler2DOutlet =
-			edge.sourceHandle === analyzerOutletId &&
+			edge.sourceHandle?.startsWith(ANALYSIS_KEY) &&
 			analyzerNodeId.startsWith('object-') &&
 			glslNodeId.startsWith('glsl-') &&
 			edge.targetHandle?.includes('video');
 
 		if (!isSampler2DOutlet) return;
 
-		const node = this.audioSystem.nodesById.get(edge.source);
-		if (node?.type !== 'fft~') return;
+		const node = this.audioService.getNodeById(analyzerNodeId);
+		if (!node || getNodeType(node) !== 'fft~') return;
 
 		const inletMatch = edge.targetHandle?.match(/video-in-(\d+)-(\w+)-/);
 		if (!inletMatch) return;
@@ -180,7 +167,8 @@ export class AudioAnalysisSystem {
 
 		// Do frequency analysis by default.
 		// If the uniform name is set as "waveTexture" then we do time-domain analysis.
-		const analysisType: AudioAnalysisType = uniformName === WAVEFORM_UNIFORM_NAME ? 'wave' : 'freq';
+		const analysisType: AudioAnalysisType =
+			uniformName === GLSL_FFT_WAVEFORM_UNIFORM_NAME ? 'wave' : 'freq';
 
 		this.glslInlets.get(glslNodeId)?.push({
 			analyzerNodeId,
@@ -208,9 +196,9 @@ export class AudioAnalysisSystem {
 
 		for (const sourceId of connectedSourceIds) {
 			if (sourceId.startsWith('object-')) {
-				const node = this.audioSystem.nodesById.get(sourceId);
+				const node = this.audioService.getNodeById(sourceId);
 
-				if (node?.type === 'fft~') {
+				if (node && getNodeType(node) === 'fft~') {
 					fftNodeId = sourceId;
 					break;
 				}
@@ -311,7 +299,7 @@ export class AudioAnalysisSystem {
 	}
 
 	get sampleRate(): number {
-		return this.audioSystem.audioContext.sampleRate;
+		return this.audioService.getAudioContext().sampleRate;
 	}
 
 	static getInstance(): AudioAnalysisSystem {

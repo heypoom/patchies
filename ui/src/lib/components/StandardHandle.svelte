@@ -2,6 +2,7 @@
 	import { Handle, Position } from '@xyflow/svelte';
 	import { getPortPosition } from '$lib/utils/node-utils';
 	import { match, P } from 'ts-pattern';
+	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 
 	interface Props {
 		port: 'inlet' | 'outlet';
@@ -46,7 +47,7 @@
 			.with('video', () => '!bg-orange-500 hover:!bg-orange-400')
 			.with('audio', () => '!bg-blue-500 hover:!bg-blue-400')
 			.with('message', () => '!bg-gray-500 hover:!bg-gray-400')
-			.with('analysis', () => '!bg-purple-500 hover:!bg-purple-400')
+			.with(ANALYSIS_KEY, () => '!bg-purple-500 hover:!bg-purple-400')
 			.with(P.nullish, () => '!bg-gray-500 hover:!bg-gray-400')
 			.exhaustive();
 

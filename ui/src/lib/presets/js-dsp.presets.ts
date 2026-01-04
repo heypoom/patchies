@@ -4,6 +4,7 @@ let capture = false
 setPortCount(1, 1)
 setAudioPortCount(1, 0)
 setTitle('snapshot~')
+setKeepAlive(true)
 
 recv(m => {
   if (m.type === 'bang') {
@@ -27,9 +28,22 @@ function process(inputs, outputs) {
 const BANG_JS_DSP = `setPortCount(0, 1)
 setAudioPortCount(0, 0)
 setTitle('bang~')
+setKeepAlive(true)
 
 function process() {
   send({type: 'bang'})
+}`;
+
+const NOISE_JS_DSP = `setPortCount(0, 0)
+setAudioPortCount(0, 1)
+setTitle('noise~')
+
+function process(inputs, outputs) {
+  outputs[0].forEach((channel) => {
+    for (let i = 0; i < channel.length; i++) {
+      channel[i] = Math.random() * 2 - 1
+    }
+  })
 }`;
 
 export const JS_DSP_PRESETS = {
@@ -53,6 +67,17 @@ export const JS_DSP_PRESETS = {
 			messageOutletCount: 1,
 			audioInletCount: 0,
 			audioOutletCount: 0
+		}
+	},
+	'noise~': {
+		type: 'dsp~',
+		data: {
+			title: 'noise~',
+			code: NOISE_JS_DSP,
+			messageInletCount: 0,
+			messageOutletCount: 0,
+			audioInletCount: 0,
+			audioOutletCount: 1
 		}
 	}
 };

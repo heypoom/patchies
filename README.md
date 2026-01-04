@@ -128,13 +128,13 @@ In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `d
 
 ```js
 // In the source `js` object
-send('Hello from Object A')
+send("Hello from Object A");
 
 // In the target `js` object
 recv((data) => {
   // data is "Hello from Object A"
-  console.log('Received message:', data)
-})
+  console.log("Received message:", data);
+});
 ```
 
 This is similar to the second example above, but using JavaScript code.
@@ -145,8 +145,8 @@ You can combine this with `send(data, {to: inletIndex})` to send data to only a 
 
 ```js
 recv((data, meta) => {
-  send(data, {to: meta.inlet})
-})
+  send(data, { to: meta.inlet });
+});
 ```
 
 In the above example, if the message came from inlet 2, it will be sent to outlet 2.
@@ -201,7 +201,7 @@ For a more fun example, here's [a little patch](https://patchies.app/?id=l8ypbfy
 
 If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
-- You can use these objects as audio sources: `strudel`, `chuck`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+- You can use these objects as audio sources: `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
   - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
@@ -238,10 +238,10 @@ These objects support video chaining and can be connected to create complex visu
   - Try out [ML5.js](https://ml5js.org) for machine learning and [Matter.js](https://brm.io/matter-js) for physics simulation. They play well with P5.js.
 
   ```js
-  import ml5 from 'npm:ml5'
+  import ml5 from "npm:ml5";
 
   function preload() {
-    classifier = ml5.imageClassifier('MobileNet')
+    classifier = ml5.imageClassifier("MobileNet");
   }
   ```
 
@@ -304,13 +304,13 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code. Here is how to make a simple animated mesh:
 
   ```js
-  function render({t}) {
+  function render({ t }) {
     glsl({
       t,
       Mesh: [10, 10],
       VP: `XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1`,
       FP: `UV,0.5,1`,
-    })
+    });
   }
   ```
 
@@ -396,22 +396,22 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `import * as X` is not yet supported.
 
   ```js
-  import Matter from 'npm:matter-js'
-  import {uniq} from 'npm:lodash-es'
+  import Matter from "npm:matter-js";
+  import { uniq } from "npm:lodash-es";
 
-  console.log(Matter) // Matter.js library
-  console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
+  console.log(Matter); // Matter.js library
+  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
   ```
 
 - Alternatively, write the dynamic import yourself:
 
   ```js
-  const {uniq} = await import('https://esm.run/lodash-es')
-  console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
+  const { uniq } = await import("https://esm.run/lodash-es");
+  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
 
   // or use a shorthand `await esm()` function that does the same thing
-  const {uniq} = await esm('lodash-es')
-  console.log(uniq([1, 1, 2, 2, 3, 3])) // [1, 2, 3]
+  const { uniq } = await esm("lodash-es");
+  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
   ```
 
 #### Sharing JavaScript across multiple `js` blocks
@@ -439,9 +439,9 @@ See the following example:
 - You can also create variables and they are multi-line. Make sure to use `;` to separate statements. For example:
 
   ```js
-  a = $1 * 2
-  b = $2 + 3
-  a + b
+  a = $1 * 2;
+  b = $2 + 3;
+  a + b;
   ```
 
   This creates two inlets, and sends the result of `(inlet1 * 2) + (inlet2 + 3)` each time inlet one or two is updated.
@@ -523,7 +523,7 @@ Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to
   - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setCpm)` to automate the cpm value.
 - Please consider supporting the development of TidalCycles and Strudel at [OpenCollective](https://opencollective.com/tidalcycles)!
 
-### `chuck`: creates a ChucK audio programming environment
+### `chuck~`: creates a ChucK audio programming environment
 
 - [ChucK](https://chuck.cs.princeton.edu) is a programming language for real-time sound synthesis and music creation.
 - Great for algorithmic composition and sound design.
@@ -584,8 +584,6 @@ These objects run on _audio rate_, which means they process audio signals in rea
 **Sound Input and Output:**
 
 - `soundfile~`: Load and play audio files with transport controls
-  - use `soundurl~ <url>` to load audio files and streams from URLs directly.
-  - try `soundurl~ http://stream.antenne.de:80/antenne` to stream Antenne Bayern live radio.
 - `sampler~`: Sample playback with triggering capabilities
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers
@@ -647,9 +645,9 @@ Here's how to make white noise:
 function process(inputs, outputs) {
   outputs[0].forEach((channel) => {
     for (let i = 0; i < channel.length; i++) {
-      channel[i] = Math.random() * 1 - 1
+      channel[i] = Math.random() * 1 - 1;
     }
-  })
+  });
 }
 ```
 
@@ -659,10 +657,10 @@ Here's how to make a sine wave oscillator at 440Hz:
 function process(inputs, outputs) {
   outputs[0].forEach((channel) => {
     for (let i = 0; i < channel.length; i++) {
-      let t = (currentFrame + i) / sampleRate
-      channel[i] = Math.sin(t * 440 * Math.PI * 2)
+      let t = (currentFrame + i) / sampleRate;
+      channel[i] = Math.sin(t * 440 * Math.PI * 2);
     }
-  })
+  });
 }
 ```
 
@@ -670,11 +668,11 @@ You can use the `counter` variable that increments every time `process` is calle
 
 ```ts
 const process = (inputs, outputs) => {
-  counter // increments every time process is called
-  sampleRate // sample rate (e.g. 48000)
-  currentFrame // current frame number (e.g. 7179264)
-  currentTime // current time in seconds (e.g. 149.584)
-}
+  counter; // increments every time process is called
+  sampleRate; // sample rate (e.g. 48000)
+  currentFrame; // current frame number (e.g. 7179264)
+  currentTime; // current time in seconds (e.g. 149.584)
+};
 ```
 
 You can use `$1`, `$2`, ... `$9` to dynamically create value inlets. Message sent to the value inlets will be set within the DSP. The number of inlets and the size of the `dsp~` object will adjust automatically.
@@ -683,10 +681,10 @@ You can use `$1`, `$2`, ... `$9` to dynamically create value inlets. Message sen
 const process = (inputs, outputs) => {
   outputs[0].forEach((channel) => {
     for (let i = 0; i < channel.length; i++) {
-      channel[i] = Math.random() * $1 - $2
+      channel[i] = Math.random() * $1 - $2;
     }
-  })
-}
+  });
+};
 ```
 
 In addition to the value inlets, we also have messaging capabilities:
@@ -698,35 +696,39 @@ In addition to the value inlets, we also have messaging capabilities:
 - Use `setTitle(title)` to set the title of the object.
   - By default, the title is `dsp~`.
   - This lets you create custom objects with meaningful names.
+- Use `setKeepAlive(enabled)` to control whether the worklet stays active when not connected.
+  - `setKeepAlive(true)` keeps the worklet processing even when no audio is flowing through it.
+  - (default) `setKeepAlive(false)` lets the worklet to stop processing when it's not connected to other audio nodes, which can improve performance.
+  - see `snapshot~` and `bang~` presets for examples on when to use `setKeepAlive`
 - Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
 
 ```ts
-setPortCount(2)
+setPortCount(2);
 
 recv((msg, meta) => {
   if (meta.inlet === 0) {
     // do something
   }
-})
+});
 ```
 
 You can even use both value inlets and message inlets together in the DSP.
 
 ```ts
-let k = 0
+let k = 0;
 
 recv((m) => {
   // you can use value inlets `$1` ... `$9` anywhere in the JavaScript DSP code.
-  k = m + $1 + $2
-})
+  k = m + $1 + $2;
+});
 
 const process = (inputs, outputs) => {
   outputs[0].forEach((channel) => {
     for (let i = 0; i < channel.length; i++) {
-      channel[i] = Math.random() * k
+      channel[i] = Math.random() * k;
     }
-  })
-}
+  });
+};
 ```
 
 ### `tone~`: Tone.js synthesis and processing
@@ -751,19 +753,19 @@ Code example:
 
 ```js
 // Process incoming audio through a filter
-const filter = new Tone.Filter(1000, 'lowpass')
-inputNode.connect(filter.input.input)
-filter.connect(outputNode)
+const filter = new Tone.Filter(1000, "lowpass");
+inputNode.connect(filter.input.input);
+filter.connect(outputNode);
 
 // Handle incoming messages to change frequency
 recv((m) => {
-  filter.frequency.value = m
-})
+  filter.frequency.value = m;
+});
 
 // Return cleanup function to properly dispose Tone.js objects
 return {
   cleanup: () => filter.dispose(),
-}
+};
 ```
 
 ### `elem~`: Elementary Audio synthesis and processing
@@ -783,17 +785,21 @@ The `elem~` context gives you these variables:
 Here's how to create a simple phasor:
 
 ```js
-setPortCount(1)
+setPortCount(1);
 
-let [rate, setRate] = core.createRef("const", {
-  value: 440
-}, []);
+let [rate, setRate] = core.createRef(
+  "const",
+  {
+    value: 440,
+  },
+  []
+);
 
-recv(freq => setRate({ value: freq }))
+recv((freq) => setRate({ value: freq }));
 
 // also try el.train and el.cycle in place of el.phasor
 // first arg is left channel, second arg is right channel
-core.render(el.phasor(rate), el.phasor(rate))
+core.render(el.phasor(rate), el.phasor(rate));
 ```
 
 ### `csound~`: Sound and music computing
@@ -934,15 +940,15 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 
     ```js
     setInterval(() => {
-      let a = fft().a
-    }, 1000)
+      let a = fft().a;
+    }, 1000);
     ```
 
   - `hydra`: call inside arrow functions for dynamic parameters
 
     ```js
-    let a = () => fft().getEnergy('bass') / 255
-    src(s0).repeat(5, 3, a, () => a() * 2)
+    let a = () => fft().getEnergy("bass") / 255;
+    src(s0).repeat(5, 3, a, () => a() * 2);
     ```
 
 ### Convert existing P5 and Hydra FFT code

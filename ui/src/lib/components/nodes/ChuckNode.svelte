@@ -5,11 +5,11 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import CommonExprLayout from './CommonExprLayout.svelte';
 	import Icon from '@iconify/svelte';
 	import { keymap } from '@codemirror/view';
-	import type { ChuckShred } from '$lib/audio/ChuckManager';
+	import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
 
 	let {
 		id: nodeId,
@@ -26,7 +26,7 @@
 	let showSettings = $state(false);
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 
 	const { updateNodeData } = useSvelteFlow();
 
@@ -53,7 +53,7 @@
 			});
 	};
 
-	const send = (key: string, msg: unknown) => audioSystem.send(nodeId, key, msg);
+	const send = (key: string, msg: unknown) => audioService.send(nodeId, key, msg);
 
 	const removeChuckCode = () => send('remove', null);
 	const removeShred = (shredId: number) => send('removeShred', shredId);
@@ -81,10 +81,10 @@
 	const handleReplace = () => send('replace', data.expr);
 
 	function subscribeShredsStore() {
-		const entry = audioSystem.nodesById.get(nodeId);
+		const chuckNode = audioService.getNodeById(nodeId) as ChuckNode | undefined;
 
-		if (entry?.type === 'chuck' && entry.chuckManager) {
-			const unsubscribe = entry.chuckManager.shredsStore.subscribe((newShreds) => {
+		if (chuckNode) {
+			const unsubscribe = chuckNode.shredsStore.subscribe((newShreds) => {
 				shreds = newShreds;
 			});
 
@@ -96,7 +96,7 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		audioSystem.createAudioObject(nodeId, 'chuck');
+		audioService.createNode(nodeId, 'chuck~');
 		subscribeShredsStore();
 
 		if (isEditing) {
@@ -107,7 +107,12 @@
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
-		audioSystem.removeAudioObject(nodeId);
+
+		const node = audioService.getNodeById(nodeId);
+
+		if (node) {
+			audioService.removeNode(node);
+		}
 	});
 
 	const isReplaceDisabled = $derived(!data.expr.trim() || shreds.length === 0);
@@ -168,7 +173,7 @@
 				</div>
 
 				<button
-					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
@@ -232,7 +237,7 @@
 											</div>
 										</div>
 
-										<div class="absolute top-0 right-0">
+										<div class="absolute right-0 top-0">
 											<button
 												onclick={() => removeShred(shred.id)}
 												class="ml-2 rounded p-1 hover:bg-zinc-700"

@@ -6,15 +6,14 @@
 	import {
 		getObjectNames,
 		getObjectDefinition,
-		audioObjectNames,
+		getAudioObjectNames,
 		getObjectNameFromExpr,
-		objectDefinitions,
 		type AdsrParamList,
 		type ObjectInlet,
 		type ObjectOutlet
 	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -28,8 +27,10 @@
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
-	import type { PsAudioType } from '$lib/audio/audio-node-types';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
+	import { getCompatMetadata } from '$lib/objects/v2/query-metadata-compat';
+	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+	import { logger } from '$lib/utils/logger';
 
 	let {
 		id: nodeId,
@@ -58,7 +59,7 @@
 	let isAutomated = $state<Record<number, boolean>>({});
 	let metroInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	const messageContext = new MessageContext(nodeId);
 
 	// Combine all searchable items (objects + presets) with metadata
@@ -209,7 +210,7 @@
 
 		// Validate message type against inlet specification
 		if (!validateMessageToObject(message, inlet)) {
-			console.warn(
+			logger.warn(
 				`invalid message type for ${data.name} inlet ${inlet.name}: expected ${inlet.type}, got`,
 				message
 			);
@@ -231,9 +232,13 @@
 			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
-		if (inlet.name && objectDef.tags?.includes('audio')) {
-			audioSystem.send(nodeId, inlet.name, message);
+		// Route to audio service if node has signal inlets/outlets
+		const hasSignalPorts =
+			objectDef.inlets?.some((i) => i.type === 'signal') ||
+			objectDef.outlets?.some((o) => o.type === 'signal');
 
+		if (inlet.name && hasSignalPorts) {
+			audioService.send(nodeId, inlet.name, message);
 			return;
 		}
 
@@ -381,12 +386,15 @@
 		return true;
 	}
 
-	function syncAudioSystem(name: string, params: unknown[]) {
-		audioSystem.removeAudioObject(nodeId);
-		audioSystem.createAudioObject(nodeId, name as PsAudioType, params);
+	function syncAudioService(name: string, params: unknown[]) {
+		const node = audioService.getNodeById(nodeId);
 
-		const edges = getEdges();
-		audioSystem.updateEdges(edges);
+		if (node) {
+			audioService.removeNode(node);
+		}
+
+		audioService.createNode(nodeId, name, params);
+		audioService.updateEdges(getEdges());
 	}
 
 	function tryCreateAudioObject() {
@@ -395,9 +403,9 @@
 		const { name, params } = getNameAndParams();
 		updateNodeData(nodeId, { expr, name, params });
 
-		if (!audioObjectNames.includes(name)) return false;
+		if (!getAudioObjectNames().includes(name)) return false;
 
-		syncAudioSystem(name, params);
+		syncAudioService(name, params);
 
 		return true;
 	}
@@ -452,14 +460,6 @@
 			.with('link', () => {
 				const url = expr.replace(name, '').trim() || 'https://example.com';
 				changeNode('link', { url: url, displayText: url });
-
-				return true;
-			})
-			.with('soundurl~', () => {
-				const url = expr.replace(name, '').trim();
-				const fileName = getFileNameFromUrl(url);
-
-				changeNode('soundfile~', { fileName, url });
 
 				return true;
 			})
@@ -644,8 +644,8 @@
 			}, 10);
 		}
 
-		if (audioObjectNames.includes(data.name)) {
-			syncAudioSystem(data.name, data.params);
+		if (getAudioObjectNames().includes(data.name)) {
+			syncAudioService(data.name, data.params);
 		}
 
 		messageContext.queue.addCallback(handleMessage);
@@ -653,7 +653,12 @@
 	});
 
 	onDestroy(() => {
-		audioSystem.removeAudioObject(nodeId);
+		const node = audioService.getNodeById(nodeId);
+
+		if (node) {
+			audioService.removeNode(node);
+		}
+
 		stopMetro();
 	});
 
@@ -688,7 +693,7 @@
 	const getPortType = (port: ObjectInlet | ObjectOutlet) =>
 		match(port.type)
 			.with('signal', () => 'audio' as const)
-			.with('analysis', () => 'analysis' as const)
+			.with(ANALYSIS_KEY, () => ANALYSIS_KEY)
 			.otherwise(() => 'message' as const);
 
 	const selectedDescription = $derived.by(() => {
@@ -702,10 +707,10 @@
 		}
 
 		if (current.type === 'object') {
-			const objectDef = objectDefinitions[current.name];
+			const metadata = getCompatMetadata(current.name);
 
-			if (objectDef) {
-				return objectDef.description || null;
+			if (metadata) {
+				return metadata.description ?? null;
 			}
 		}
 
@@ -807,7 +812,7 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="font-mono text-xs">
-								<span class={[!objectDefinitions[data.name] ? 'text-red-300' : 'text-zinc-200']}
+								<span class={[!getCompatMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
 									>{data.name}</span
 								>
 

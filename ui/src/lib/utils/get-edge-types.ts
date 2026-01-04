@@ -1,6 +1,5 @@
 import { getAudioNodeGroup } from '$lib/audio/audio-node-group';
-import type { PsAudioType } from '$lib/audio/audio-node-types';
-import { objectDefinitions } from '$lib/objects/object-definitions';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import type { Node } from '@xyflow/svelte';
 
 type PsEdgeType = 'message' | 'video' | 'audio';
@@ -12,7 +11,7 @@ const AUDIO_NODES = [
 	'ai.tts',
 	'sampler~',
 	'soundfile~',
-	'chuck',
+	'chuck~',
 	'expr~',
 	'dsp~',
 	'tone~',
@@ -22,14 +21,15 @@ const AUDIO_NODES = [
 	'merge~',
 	'meter~',
 	'elem~',
-	'csound~'
+	'csound~',
+	'bchrn'
 ];
 
 const isAudioObject = (node: MinimalNode): boolean => {
 	if (!node.type) return false;
 
 	if (node.type === 'object') {
-		return !!getAudioNodeGroup(node.data.name as PsAudioType);
+		return !!getAudioNodeGroup(node.data.name as string);
 	}
 
 	return AUDIO_NODES.includes(node.type);
@@ -54,12 +54,16 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 
 	if (node.type === 'object') {
 		const data = node.data as { name: string };
+		const registry = AudioRegistry.getInstance();
+
+		const metadata = registry.getNodeMetadataByType(data.name);
+		if (!metadata) return false;
 
 		if (isInlet) {
 			const inletIndex = handleToPortIndex(handle);
 			if (inletIndex === null || isNaN(inletIndex)) return false;
 
-			const inlet = objectDefinitions[data.name].inlets?.[inletIndex];
+			const inlet = metadata.inlets?.[inletIndex];
 			if (!inlet) return false;
 
 			return inlet.type === 'signal' || (inlet.isAudioParam ?? false);
@@ -67,7 +71,7 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 			const outletIndex = handleToPortIndex(handle);
 			if (outletIndex === null || isNaN(outletIndex)) return false;
 
-			const outlet = objectDefinitions[data.name].outlets?.[outletIndex];
+			const outlet = metadata.outlets?.[outletIndex];
 			if (!outlet) return false;
 
 			return outlet.type === 'signal';

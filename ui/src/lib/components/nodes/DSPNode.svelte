@@ -7,9 +7,11 @@
 	import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { DspNode } from '$lib/audio/v2/nodes/DspNode';
+	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
 
 	let contentContainer: HTMLDivElement | null = null;
 
@@ -36,7 +38,7 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	let inletValues = $state<unknown[]>([]);
 	let showEditor = $state(false);
 	let contentWidth = $state(100);
@@ -74,9 +76,9 @@
 				const isMessageInlet = handleId.startsWith('message-in');
 
 				if (isAudioInlet) {
-					// Audio inlets are handled by the audio system directly
+					// Audio inlets are handled by the audio service directly
 					const audioInletIndex = meta.inlet;
-					audioSystem.send(nodeId, 'audioInlet', {
+					audioService.send(nodeId, 'audioInlet', {
 						inletIndex: audioInletIndex,
 						message,
 						meta
@@ -96,7 +98,7 @@
 						// This is a message inlet
 						const messageInletIndex = messageInletId - valueInletCount;
 
-						audioSystem.send(nodeId, 'messageInlet', {
+						audioService.send(nodeId, 'messageInlet', {
 							inletIndex: messageInletIndex,
 							message,
 							meta
@@ -106,10 +108,10 @@
 			});
 	};
 
-	const updateAudioCode = (code: string) => audioSystem.send(nodeId, 'code', code);
+	const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
 
 	const updateAudioInletValues = (values: unknown[]) =>
-		audioSystem.send(nodeId, 'inletValues', values);
+		audioService.send(nodeId, 'inletValues', values);
 
 	function handleCodeChange(newCode: string) {
 		updateNodeData(nodeId, { code: newCode });
@@ -143,61 +145,69 @@
 		messageContext.queue.addCallback(handleMessage);
 
 		inletValues = new Array(valueInletCount).fill(0);
-		audioSystem.createAudioObject(nodeId, 'dsp~', [null, code]);
+		audioService.createNode(nodeId, 'dsp~', [null, code]);
 		updateAudioInletValues(inletValues);
 		updateContentWidth();
-
-		setTimeout(() => {
-			const dspNode = audioSystem.nodesById.get(nodeId);
-			if (!dspNode || dspNode.type !== 'dsp~') return;
-
-			dspNode.node.port.onmessage = (event: MessageEvent) => {
-				match(event.data)
-					.with(
-						{
-							type: 'message-port-count-changed',
-							messageInletCount: P.number,
-							messageOutletCount: P.number
-						},
-						(m) => {
-							updateNodeData(nodeId, {
-								messageInletCount: m.messageInletCount,
-								messageOutletCount: m.messageOutletCount
-							});
-
-							syncPortLayout();
-						}
-					)
-					.with(
-						{
-							type: 'audio-port-count-changed',
-							audioInletCount: P.number,
-							audioOutletCount: P.number
-						},
-						(m) => {
-							updateNodeData(nodeId, {
-								audioInletCount: m.audioInletCount,
-								audioOutletCount: m.audioOutletCount
-							});
-
-							syncPortLayout();
-						}
-					)
-					.with({ type: 'set-title', value: P.string }, (m) => {
-						updateNodeData(nodeId, { title: m.value });
-					})
-					.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
-						messageContext.send(eventData.message, eventData.options as SendMessageOptions);
-					})
-					.otherwise(() => {});
-			};
-		}, 100);
+		setupWorkletEventHandler();
 	});
+
+	async function setupWorkletEventHandler() {
+		const node = audioService.getNodeById(nodeId) as DspNode;
+		if (!node) return;
+
+		await node.ensureModule();
+
+		const worklet = node.worklet;
+		if (!worklet) return;
+
+		worklet.port.onmessage = (event: MessageEvent) => {
+			match(event.data)
+				.with(
+					{
+						type: 'message-port-count-changed',
+						messageInletCount: P.number,
+						messageOutletCount: P.number
+					},
+					(m) => {
+						updateNodeData(nodeId, {
+							messageInletCount: m.messageInletCount,
+							messageOutletCount: m.messageOutletCount
+						});
+
+						syncPortLayout();
+					}
+				)
+				.with(
+					{
+						type: 'audio-port-count-changed',
+						audioInletCount: P.number,
+						audioOutletCount: P.number
+					},
+					(m) => {
+						updateNodeData(nodeId, {
+							audioInletCount: m.audioInletCount,
+							audioOutletCount: m.audioOutletCount
+						});
+
+						syncPortLayout();
+					}
+				)
+				.with({ type: 'set-title', value: P.string }, (m) => {
+					updateNodeData(nodeId, { title: m.value });
+				})
+				.with({ type: 'set-keep-alive', enabled: P.boolean }, (m) => {
+					node.send('setKeepAlive', m.enabled);
+				})
+				.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
+					messageContext.send(eventData.message, eventData.options as SendMessageOptions);
+				});
+		};
+	}
 
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
-		audioSystem.removeAudioObject(nodeId);
+		audioService.removeNode(audioService.getNodeById(nodeId)!);
 	});
 
 	function updateContentWidth() {
@@ -226,7 +236,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={(e) => {
 							e.preventDefault();
 							e.stopPropagation();

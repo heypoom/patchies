@@ -1,21 +1,21 @@
 <script lang="ts">
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 	import { Slider } from '$lib/components/ui/slider';
 	import Icon from '@iconify/svelte';
 	import { onMount } from 'svelte';
 
-	const audioSystem = AudioSystem.getInstance();
+	const audioService = AudioService.getInstance();
 
 	let isHovered = $state(false);
 	let isMuted = $state(false);
 	let volume = $state(0.8);
 	let previousVolume = 0.8;
 
-	// Update AudioSystem when volume changes
+	// Update AudioService when volume changes
 	$effect(() => {
 		if (!isMuted) {
-			audioSystem.setOutVolume(volume);
+			audioService.setOutVolume(volume);
 		}
 	});
 
@@ -26,11 +26,11 @@
 
 			volume = previousVolume === 0 ? 0.5 : previousVolume;
 
-			audioSystem.setOutVolume(volume);
+			audioService.setOutVolume(volume);
 		} else {
 			previousVolume = volume;
 			isMuted = true;
-			audioSystem.setOutVolume(0);
+			audioService.setOutVolume(0);
 		}
 	}
 
@@ -55,7 +55,7 @@
 
 	onMount(() => {
 		setInterval(() => {
-			volume = audioSystem.outVolume;
+			volume = audioService.outVolume;
 		}, 1000);
 	});
 </script>

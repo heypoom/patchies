@@ -21,7 +21,7 @@
 	import { edgeTypes } from '$lib/components/edges/edge-types';
 	import { PRESETS } from '$lib/presets/presets';
 	import { GLSystem } from '$lib/canvas/GLSystem';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { loadPatchFromUrl } from '$lib/save-load/load-patch-from-url';
@@ -32,6 +32,7 @@
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
+	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -56,7 +57,7 @@
 	let nodeIdCounter = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
 	let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
 	// Object palette state
@@ -87,7 +88,7 @@
 
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
-	let showAudioHint = $state(audioSystem.audioContext.state === 'suspended');
+	let showAudioHint = $state(audioService.getAudioContext().state === 'suspended');
 	let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
 
 	useOnSelectionChange(({ nodes, edges }) => {
@@ -125,7 +126,10 @@
 		for (const prevNodeId of previousNodes) {
 			if (!currentNodes.has(prevNodeId)) {
 				messageSystem.unregisterNode(prevNodeId);
-				audioSystem.removeAudioObject(prevNodeId);
+				const node = audioService.getNodeById(prevNodeId);
+				if (node) {
+					audioService.removeNode(node);
+				}
 			}
 		}
 
@@ -135,7 +139,7 @@
 	$effect(() => {
 		messageSystem.updateEdges(edges);
 		glSystem.updateEdges(edges);
-		audioSystem.updateEdges(edges);
+		audioService.updateEdges(edges);
 		audioAnalysisSystem.updateEdges(edges);
 	});
 
@@ -201,7 +205,7 @@
 		flowContainer?.focus();
 
 		glSystem.start();
-		audioSystem.start();
+		audioService.start();
 
 		loadPatch();
 
@@ -471,7 +475,8 @@
 			connection.sourceHandle?.startsWith('video') ||
 			connection.targetHandle?.startsWith('video')
 		) {
-			if (connection.sourceHandle?.startsWith('analysis')) return true;
+			// Allow connecting `fft~` analysis result to video sources
+			if (connection.sourceHandle?.startsWith(ANALYSIS_KEY)) return true;
 
 			return !!(
 				(connection.sourceHandle?.startsWith('video') ||
@@ -599,9 +604,11 @@
 	}
 
 	function resumeAudio() {
-		if (audioSystem.audioContext.state === 'suspended') {
-			audioSystem.audioContext.resume();
-			audioSystem.updateEdges(edges);
+		const audioContext = audioService.getAudioContext();
+
+		if (audioContext.state === 'suspended') {
+			audioContext.resume();
+			audioService.updateEdges(edges);
 		}
 
 		if (showAudioHint) {
@@ -613,7 +620,7 @@
 <div class="flow-container flex h-screen w-full flex-col">
 	<!-- URL Loading Indicator -->
 	{#if isLoadingFromUrl}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
 			>
@@ -628,7 +635,7 @@
 
 	<!-- URL Loading Error -->
 	{#if urlLoadError}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
 			>
@@ -647,7 +654,7 @@
 
 	<!-- Audio Resume Hint -->
 	{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
 			>
@@ -714,7 +721,7 @@
 			onToggle={handleNodeListToggle}
 		/>
 
-		<div class="fixed right-0 bottom-0 p-2">
+		<div class="fixed bottom-0 right-0 p-2">
 			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
 				<button
 					title="Delete (Del)"

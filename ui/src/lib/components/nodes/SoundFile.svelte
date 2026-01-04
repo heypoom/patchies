@@ -5,9 +5,13 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { AudioSystem } from '$lib/audio/AudioSystem';
+	import { AudioService } from '$lib/audio/v2/AudioService';
+	import type { SoundfileNode as SoundfileNodeV2 } from '$lib/audio/v2/nodes/SoundfileNode';
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
+	import { getNodeType } from '$lib/audio/v2/interfaces/audio-nodes';
+	import { logger } from '$lib/utils/logger';
 
 	let node: {
 		id: string;
@@ -19,10 +23,12 @@
 		selected: boolean;
 	} = $props();
 
-	const { updateNodeData } = useSvelteFlow();
+	const { updateNodeData, getEdges } = useSvelteFlow();
 
 	let messageContext: MessageContext;
-	let audioSystem = AudioSystem.getInstance();
+	let audioService = AudioService.getInstance();
+	let messageSystem = MessageSystem.getInstance();
+	let v2Node: SoundfileNodeV2 | null = null;
 	let isDragging = $state(false);
 	let fileInputRef: HTMLInputElement;
 
@@ -34,14 +40,43 @@
 			.with(P.string, (url) => setUrl(url))
 			.with({ type: 'load', url: P.string }, ({ url }) => setUrl(url))
 			.with({ type: 'read' }, () => readAudioBuffer())
-			.otherwise(() => audioSystem.send(node.id, 'message', message));
+			.otherwise(() => audioService.send(node.id, 'message', message));
 	};
 
 	function setUrl(url: string) {
 		const fileName = getFileNameFromUrl(url);
 
 		updateNodeData(node.id, { ...node.data, fileName, url });
-		audioSystem.send(node.id, 'url', url);
+		audioService.send(node.id, 'url', url);
+
+		autoReadIfConnectedToConvolver();
+	}
+
+	/**
+	 * Check if this soundfile~ is already connected to a convolver~'s buffer inlet,
+	 * and if so, automatically read and send the audio buffer.
+	 *
+	 * TODO: there is a bug where if you connect an already loaded sound file
+	 *       into a convolver~, it will NOT work.
+	 */
+	function autoReadIfConnectedToConvolver() {
+		if (!hasFile) return;
+
+		// Get all edges where this node is the source
+		const connectedEdges = messageSystem.getConnectedEdgesToTargetInlet(node.id);
+
+		// Check if any edge connects to a convolver~'s buffer inlet
+		for (const { targetNodeId, inletKey } of connectedEdges) {
+			const target = audioService.getNodeById(targetNodeId);
+			if (!target || getNodeType(target) !== 'convolver~') continue;
+
+			const inlet = audioService.getInletByHandle(targetNodeId, inletKey ?? null);
+
+			if (inlet?.name === 'buffer') {
+				readAudioBuffer();
+				logger.debug('reading soundfile~ into buffer of convolver~');
+			}
+		}
 	}
 
 	function handleDragOver(event: DragEvent) {
@@ -88,7 +123,9 @@
 		});
 
 		// Send the file to the audio system
-		audioSystem.send(node.id, 'file', file);
+		audioService.send(node.id, 'file', file);
+
+		autoReadIfConnectedToConvolver();
 	}
 
 	function openFileDialog() {
@@ -96,10 +133,7 @@
 	}
 
 	async function readAudioBuffer() {
-		if (!hasFile) {
-			console.warn('No file loaded to read');
-			return;
-		}
+		if (!hasFile) return;
 
 		try {
 			let buffer: ArrayBuffer;
@@ -113,7 +147,7 @@
 				return;
 			}
 
-			const audioBuffer = await audioSystem.audioContext.decodeAudioData(buffer);
+			const audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
 			messageContext.send(audioBuffer);
 		} catch {}
 	}
@@ -121,12 +155,12 @@
 	function playFile() {
 		if (!hasFile) return;
 
-		audioSystem.send(node.id, 'message', { type: 'bang' });
+		audioService.send(node.id, 'message', { type: 'bang' });
 	}
 
 	function stopFile() {
 		if (hasFile) {
-			audioSystem.send(node.id, 'message', { type: 'stop' });
+			audioService.send(node.id, 'message', { type: 'stop' });
 		}
 	}
 
@@ -134,10 +168,13 @@
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
-		audioSystem.createAudioObject(node.id, 'soundfile~', []);
+		audioService.createNode(node.id, 'soundfile~', []);
+
+		// Get the V2 node reference from AudioService
+		v2Node = audioService.getNodeById(node.id) as SoundfileNodeV2;
 
 		if (node.data.file) {
-			audioSystem.send(node.id, 'file', node.data.file);
+			audioService.send(node.id, 'file', node.data.file);
 		}
 
 		if (node.data.url) setUrl(node.data.url);
@@ -146,7 +183,7 @@
 	onDestroy(() => {
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
-		audioSystem.removeAudioObject(node.id);
+		audioService.removeNode(audioService.getNodeById(node.id)!);
 	});
 
 	const containerClass = $derived.by(() => {

@@ -1,36 +1,16 @@
-import { match, P } from 'ts-pattern';
-import type { PsAudioNodeGroup, PsAudioType } from './audio-node-types';
+import { match } from 'ts-pattern';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import type { AudioNodeGroup } from './v2/interfaces/audio-nodes';
 
-export const getAudioNodeGroup = (nodeType: PsAudioType): PsAudioNodeGroup | null =>
-	match<PsAudioType, PsAudioNodeGroup | null>(nodeType)
-		.with(P.union('osc~', 'lyria', 'mic~', 'sig~', 'soundfile~'), () => 'sources')
-		.with(
-			P.union(
-				'gain~',
-				'fft~',
-				'+~',
-				'lowpass~',
-				'highpass~',
-				'bandpass~',
-				'allpass~',
-				'notch~',
-				'lowshelf~',
-				'highshelf~',
-				'peaking~',
-				'compressor~',
-				'pan~',
-				'delay~',
-				'waveshaper~',
-				'convolver~',
-				'split~',
-				'merge~'
-			),
-			() => 'processors'
-		)
-		.with('dac~', () => 'destinations')
-		.otherwise(() => null);
+export const getAudioNodeGroup = (nodeType: string): AudioNodeGroup | null => {
+	// V2: check in audio registry
+	const nodeGroupV2 = AudioRegistry.getInstance().get(nodeType)?.group;
+	if (nodeGroupV2) return nodeGroupV2;
 
-export const canAudioNodeConnect = (sourceType: PsAudioType, targetType: PsAudioType): boolean => {
+	return null;
+};
+
+export const canAudioNodeConnect = (sourceType: string, targetType: string): boolean => {
 	const source = getAudioNodeGroup(sourceType);
 	const target = getAudioNodeGroup(targetType);
 
