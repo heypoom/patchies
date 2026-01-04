@@ -5,6 +5,7 @@
 import { AddNodeV2 } from './AddNode';
 import { AllpassNode } from './AllpassNode';
 import { BandpassNode } from './BandpassNode';
+import { ChuckNode } from './ChuckNode';
 import { CompressorNode } from './CompressorNode';
 import { ConvolverNodeV2 } from './ConvolverNode';
 import { DacNode } from './DacNode';
@@ -39,6 +40,7 @@ const AUDIO_NODES = [
 	AddNodeV2,
 	AllpassNode,
 	BandpassNode,
+	ChuckNode,
 	CompressorNode,
 	ConvolverNodeV2,
 	DacNode,

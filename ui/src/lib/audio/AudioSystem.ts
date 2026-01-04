@@ -7,7 +7,6 @@ import { canAudioNodeConnect } from './audio-node-group';
 import { objectDefinitionsV1 } from '$lib/objects/object-definitions';
 import { TimeScheduler } from './TimeScheduler';
 import { isScheduledMessage } from './time-scheduling-types';
-import { ChuckManager } from './ChuckManager';
 import { CsoundManager } from './nodes/CsoundManager';
 import { hasSomeAudioNode } from '../../stores/canvas.store';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
@@ -131,9 +130,7 @@ export class AudioSystem {
 			return;
 		}
 
-		match(objectType)
-			.with('csound~', () => this.createCsound(nodeId, params))
-			.with('chuck', () => this.createChuck(nodeId));
+		match(objectType).with('csound~', () => this.createCsound(nodeId, params));
 	}
 
 	async createCsound(nodeId: string, params: unknown[]) {
@@ -161,19 +158,6 @@ export class AudioSystem {
 		}
 	}
 
-	async createChuck(nodeId: string) {
-		const gainNode = new GainNode(this.audioContext);
-
-		const chuckManager = new ChuckManager(nodeId, this.audioContext, gainNode);
-		chuckManager.handleMessage('init', null);
-
-		this.nodesById.set(nodeId, {
-			type: 'chuck',
-			node: gainNode,
-			chuckManager
-		});
-	}
-
 	send(nodeId: string, key: string, msg: unknown) {
 		// TimeScheduler handles scheduled messages.
 		if (isScheduledMessage(msg)) {
@@ -197,9 +181,6 @@ export class AudioSystem {
 			.with({ type: 'csound~' }, async (state) => {
 				await state.csoundManager?.handleMessage(key, msg);
 			})
-			.with({ type: 'chuck' }, async (state) => {
-				await state.chuckManager?.handleMessage(key, msg);
-			})
 			.otherwise(() => null);
 	}
 
@@ -217,9 +198,6 @@ export class AudioSystem {
 
 		if (entry) {
 			match(entry)
-				.with({ type: 'chuck' }, (entry) => {
-					entry.chuckManager?.destroy();
-				})
 				.with({ type: 'csound~' }, (entry) => {
 					entry.csoundManager?.destroy();
 				})

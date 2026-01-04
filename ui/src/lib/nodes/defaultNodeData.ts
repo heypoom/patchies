@@ -69,7 +69,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('markdown', () => ({ markdown: 'hello' }))
 		.with('expr', () => ({ expr: '' }))
 		.with('expr~', () => ({ expr: 's' }))
-		.with('chuck', () => ({ expr: DEFAULT_CHUCK_CODE }))
+		.with('chuck~', () => ({ expr: DEFAULT_CHUCK_CODE }))
 		.with('webcam', () => ({}))
 		.with('video', () => ({ loop: true }))
 		.with('iframe', () => ({ url: '', width: 400, height: 300 }))

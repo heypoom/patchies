@@ -13,13 +13,14 @@ Migrate V1 audio nodes (defined in `AudioSystem.ts`) to V2 (self-contained class
 3. **🚨 CRITICAL - No Hardcoding Node Names in AudioService**: NEVER check node type with string comparisons like `if (nodeType === 'sampler~')` inside `AudioService`. This breaks encapsulation and causes bugs. Instead: Let individual nodes implement `connect()` or `connectFrom()` methods to handle their own special logic. The node type check belongs in the node class, NOT in the generic service.
 4. **Dual updateEdges()**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) run to handle both systems.
 
-## Completed Migrations (27 nodes)
+## Completed Migrations (28 nodes)
 
 - ✅ Phase 1: `fft~`, `compressor~`, `waveshaper~`, `convolver~`
 - ✅ Phase 2: `mic~`, `merge~`, `split~`
 - ✅ Phase 3 Part 1: `sampler~`, `soundfile~`
 - ✅ Phase 3 Part 2: `expr~`, `dsp~` (AudioWorklet processors with GainNode wrapper)
 - ✅ Phase 4: `tone~`, `elem~` (Manager-based nodes with async library code execution)
+- ✅ Phase 5: `chuck~` (renamed from `chuck`, manager-based with WebChucK integration)
 - ✅ Simple nodes: `osc~`, `gain~`, `dac~`, `sig~`, `+~`, `pan~`, `delay~`, `lowpass~`–`peaking~`
 
 ## V2 Node Template (Minimal)
@@ -248,46 +249,47 @@ Successfully migrated `ToneManager` and `ElementaryAudioManager` to V2 node clas
 - Register in `v2/nodes/index.ts`
 - Delete manager file
 
-## Remaining Work (2 nodes)
+## Remaining Work (1 node)
 
-### Phase 5 (Manager-Based - Delete These to Remove AudioSystem)
+### Phase 6 (Manager-Based - Last Node Before AudioSystem Removal)
 
 - [ ] `csound~` - CsoundManager
-- [ ] `chuck` - ChuckManager
 
-**Pattern**: Follow the tone~/elem~ pattern documented above.
+**Pattern**: Follow the tone~/elem~/chuck~ pattern documented above.
 
-**Reference Implementation** (`tone~` as example):
+**Reference Implementation** (`chuck~` as example - without dual gain nodes):
 
 ```typescript
-export class ToneNode implements AudioNodeV2 {
-  static type = "tone~";
+export class ChuckNode implements AudioNodeV2 {
+  static type = "chuck~";
+  static group: AudioNodeGroup = "sources";
   audioNode: GainNode;
 
-  private inputNode: GainNode;
   private messageContext: MessageContext;
-  public onSetPortCount: OnSetPortCount = () => {};
+  private chuck: Chuck | null = null;
+  public shredsStore = writable<ChuckShred[]>([]);
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.audioNode = audioContext.createGain();
-    this.inputNode = audioContext.createGain();
     this.messageContext = new MessageContext(nodeId);
   }
 
-  async create(params: unknown[]): Promise<void> {
-    const [, code] = params as [unknown, string];
-    if (code) await this.setCode(code);
+  async create(): Promise<void> {
+    await this.ensureChuck();
   }
 
-  connectFrom(source: AudioNodeV2): void {
-    source.audioNode.connect(this.inputNode);
+  async send(key: string, value: unknown): Promise<void> {
+    // Handle commands like 'run', 'replace', 'clearAll', etc.
+  }
+
+  async ensureChuck(): Promise<Chuck | null> {
+    // Lazy-load and initialize WebChucK
   }
 
   destroy(): void {
-    this.cleanup();
+    this.chuck?.removeLastCode();
     this.messageContext.destroy();
     this.audioNode.disconnect();
-    this.inputNode.disconnect();
   }
 }
 ```

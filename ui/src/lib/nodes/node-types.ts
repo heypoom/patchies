@@ -74,7 +74,7 @@ export const nodeTypes = {
 	markdown: MarkdownNode,
 	expr: ExprNode,
 	'expr~': AudioExprNode,
-	chuck: ChuckNode,
+	'chuck~': ChuckNode,
 	'soundfile~': SoundFile,
 	'sampler~': SamplerNode,
 	netsend: NetSendNode,

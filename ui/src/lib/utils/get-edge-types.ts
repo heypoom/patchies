@@ -12,7 +12,7 @@ const AUDIO_NODES = [
 	'ai.tts',
 	'sampler~',
 	'soundfile~',
-	'chuck',
+	'chuck~',
 	'expr~',
 	'dsp~',
 	'tone~',
