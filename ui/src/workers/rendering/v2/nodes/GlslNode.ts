@@ -62,10 +62,11 @@ export class GlslNode implements VideoNodeV2 {
 		const [width, height] = this.ctx.outputSize;
 
 		// Create the shader draw command
+		// Pass null for framebuffer so we can dynamically set it with framebuffer.use()
 		this.drawCommand = createShaderToyDrawCommand({
 			width,
 			height,
-			framebuffer: this.framebuffer,
+			framebuffer: null,
 			regl: this.ctx.regl,
 			code,
 			uniformDefs: this.uniformDefs
@@ -73,16 +74,20 @@ export class GlslNode implements VideoNodeV2 {
 	}
 
 	render(params: RenderParams, inputs: Map<number, regl.Texture2D>): void {
-		if (!this.drawCommand || !this.stores) return;
+		if (!this.drawCommand || !this.stores) {
+			return;
+		}
 
-		// Render to framebuffer
+		const userParams = this.getUniformValues(inputs);
+
+		// Render to framebuffer using framebuffer.use()
 		this.framebuffer.use(() => {
 			this.drawCommand!({
 				lastTime: params.lastTime,
 				iFrame: params.iFrame,
 				mouseX: params.mouseX,
 				mouseY: params.mouseY,
-				userParams: this.getUniformValues(inputs)
+				userParams
 			});
 		});
 	}

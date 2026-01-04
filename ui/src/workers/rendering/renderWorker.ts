@@ -94,14 +94,14 @@ function handleStartAnimation() {
 
 	isRunning = true;
 
-	videoService.startLoop(() => {
-		const outputBitmap = videoService.getOutputBitmap();
+	videoService.startLoop(async () => {
+		const outputBitmap = await videoService.getOutputBitmap();
 
 		if (outputBitmap) {
 			self.postMessage({ type: 'animationFrame', outputBitmap }, { transfer: [outputBitmap] });
 		}
 
-		const previewPixels = videoService.renderPreviews();
+		const previewPixels = videoService.renderNodePreviews();
 
 		for (const [nodeId, pixels] of previewPixels) {
 			const [previewWidth, previewHeight] = videoContext.previewSize;

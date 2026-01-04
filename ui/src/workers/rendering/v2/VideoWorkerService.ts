@@ -10,6 +10,7 @@ import { TextureStore } from './stores/TextureStore';
 import { UniformsStore } from './stores/UniformsStore';
 import { VideoRegistry } from './VideoRegistry';
 import { capturePreview, captureTexturePreview, blitToOutput } from './PreviewHelper';
+import { logger } from '$lib/utils/logger';
 
 /**
  * VideoWorkerService is the main orchestrator for the V2 video rendering system.
@@ -108,6 +109,11 @@ export class VideoWorkerService {
 		this.stopLoop();
 		this.isAnimating = true;
 
+		// WORKAROUND: Start V1 render loop to initialize shared WebGL/regl time context
+		// When V1 and V2 share the same WebGL context, V1's regl.frame() needs to run
+		// for time to propagate correctly. Once all nodes are migrated to V2, we can remove this.
+		this.v1.startRenderLoop(() => {});
+
 		this.frameCancellable = this.ctx.regl.frame(() => {
 			if (!this.isAnimating) {
 				this.frameCancellable?.cancel();
@@ -125,11 +131,15 @@ export class VideoWorkerService {
 	stopLoop(): void {
 		this.isAnimating = false;
 		this.frameCancellable?.cancel();
+		this.v1.stopRenderLoop();
 	}
 
 	/** Render a single frame. */
 	renderFrame(): void {
-		if (!this.renderGraph) return;
+		if (!this.renderGraph) {
+			logger.warn('[VideoWorkerService.renderFrame] No render graph');
+			return;
+		}
 
 		// Update time
 		const currentTime = (Date.now() - this.startTime) / 1000;
@@ -157,13 +167,15 @@ export class VideoWorkerService {
 				const inputs = this.getInputTextures(renderNode);
 
 				// Render the node
-				node.render?.(params, inputs);
+				if (node.render) {
+					node.render(params, inputs);
+				}
 			}
 		}
 
 		this.v1.renderFrame();
 
-		// Render to main output if needed
+		// Render to main output canvas (only if we have an explicit output node like bg.out)
 		if (this.outputNodeId) {
 			const outputNode = this.nodes.get(this.outputNodeId);
 
@@ -176,8 +188,9 @@ export class VideoWorkerService {
 	/**
 	 * Render previews for all enabled nodes.
 	 */
-	renderPreviews(): Map<string, Uint8Array> {
+	renderNodePreviews(): Map<string, Uint8Array> {
 		const previewPixels = new Map<string, Uint8Array>();
+
 		const enabledPreviews = Object.keys(this.previewEnabledById).filter(
 			(id) => this.previewEnabledById[id]
 		);
@@ -187,6 +200,7 @@ export class VideoWorkerService {
 
 			if (nodeV2) {
 				const pixels = capturePreview(this.ctx, nodeV2.framebuffer);
+
 				previewPixels.set(nodeId, pixels);
 			}
 		}
@@ -312,7 +326,23 @@ export class VideoWorkerService {
 	/**
 	 * Get output bitmap for the final frame.
 	 */
-	getOutputBitmap(): ImageBitmap | null {
+	async getOutputBitmap(): Promise<ImageBitmap | null> {
+		// Check if we have a V2 output node
+		if (this.outputNodeId && this.nodes.has(this.outputNodeId)) {
+			// V2 has already blitted to the canvas in renderFrame
+			// Convert the offscreen canvas to a bitmap
+			try {
+				const bitmap = await this.ctx.offscreenCanvas
+					.convertToBlob()
+					.then((blob) => createImageBitmap(blob));
+				return bitmap;
+			} catch (error) {
+				logger.error('[VideoWorkerService] failed to convert canvas to bitmap:', error);
+				return null;
+			}
+		}
+
+		// Fallback to V1
 		return this.v1.getOutputBitmap();
 	}
 

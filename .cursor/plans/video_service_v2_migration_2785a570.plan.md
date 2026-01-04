@@ -424,4 +424,3 @@ ui/src/workers/rendering/
 
 1. Remove V1 code paths
 2. Delete old FBORenderer
-3. Update renderWorker.ts to only use V2
