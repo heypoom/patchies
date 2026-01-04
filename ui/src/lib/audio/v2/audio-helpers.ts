@@ -7,6 +7,8 @@ export function validateGroupConnection(
 	sourceGroup: AudioNodeGroup,
 	targetGroup: AudioNodeGroup
 ): boolean {
+	// Destinations are input-only (e.g. dac~) and must never act as a source.
+	if (sourceGroup === 'destinations') return false;
 	if (sourceGroup === 'sources' && targetGroup === 'sources') return false;
 	if (sourceGroup === 'sources' && targetGroup === 'processors') return true;
 	if (sourceGroup === 'sources' && targetGroup === 'destinations') return true;
