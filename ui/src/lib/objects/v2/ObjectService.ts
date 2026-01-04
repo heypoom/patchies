@@ -48,7 +48,7 @@ export class ObjectService {
 
 		// Set up message routing from ObjectContext to the object
 		context.queue.addCallback((data, meta) => {
-			object.onMessage?.(data, meta);
+			this.dispatchMessage(object, data, meta);
 		});
 
 		try {
@@ -104,12 +104,9 @@ export class ObjectService {
 	 */
 	send(nodeId: string, data: unknown, meta: MessageMeta): void {
 		const object = this.objectsById.get(nodeId);
+		if (!object) return;
 
-		if (!object) {
-			return;
-		}
-
-		object.onMessage?.(data, meta);
+		this.dispatchMessage(object, data, meta);
 	}
 
 	/**
@@ -127,6 +124,15 @@ export class ObjectService {
 	 */
 	isV2ObjectType(objectType: string): boolean {
 		return this.registry.isDefined(objectType);
+	}
+
+	/**
+	 * Dispatch a message to an object, enriching meta with resolved inlet name.
+	 */
+	private dispatchMessage(object: TextObjectV2, data: unknown, meta: MessageMeta): void {
+		const inletName = object.context.getInletName(meta.inlet);
+
+		object.onMessage?.(data, { ...meta, inletName });
 	}
 
 	/**

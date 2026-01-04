@@ -27,9 +27,7 @@ export class MtofObject implements TextObjectV2 {
 	}
 
 	onMessage(data: unknown, meta: MessageMeta): void {
-		const inlet = this.context.getInletName(meta.inlet);
-
-		if (inlet === 'note' && typeof data === 'number') {
+		if (meta.inletName === 'note' && typeof data === 'number') {
 			const frequency = 440 * Math.pow(2, (data - 69) / 12);
 			this.context.send(frequency);
 		}

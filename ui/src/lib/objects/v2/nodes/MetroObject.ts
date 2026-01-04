@@ -45,9 +45,7 @@ export class MetroObject implements TextObjectV2 {
 	}
 
 	onMessage(data: unknown, meta: MessageMeta): void {
-		const inlet = this.context.getInletName(meta.inlet);
-
-		match([inlet, data])
+		match([meta.inletName, data])
 			.with(['message', { type: 'start' }], () => this.start())
 			.with(['message', { type: 'stop' }], () => this.stop())
 			.with(['message', { type: 'bang' }], () => {
