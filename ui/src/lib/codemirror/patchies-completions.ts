@@ -133,6 +133,53 @@ const patchiesAPICompletions: Completion[] = [
 	}
 ];
 
+// Setup functions that should only appear at top-level (not in function bodies)
+const topLevelOnlyFunctions = new Set([
+	'setPortCount',
+	'setAudioPortCount',
+	'setTitle',
+	'setRunOnMount',
+	'setKeepAlive',
+	'setHidePorts',
+	'noDrag',
+	'recv',
+	'onMessage'
+]);
+
+/**
+ * Check if cursor is inside a function body by counting braces
+ */
+function isInsideFunctionBody(text: string): boolean {
+	// Look for function patterns followed by opening brace
+	const functionPatterns = [
+		/\bfunction\s*\w*\s*\([^)]*\)\s*\{/g,
+		/\([^)]*\)\s*=>\s*\{/g, // arrow functions with braces
+		/\w+\s*\([^)]*\)\s*\{/g // method definitions
+	];
+
+	let braceDepth = 0;
+	let inFunctionBody = false;
+
+	// Find all function starts and track brace depth
+	for (const pattern of functionPatterns) {
+		const matches = [...text.matchAll(pattern)];
+		if (matches.length > 0) {
+			inFunctionBody = true;
+			break;
+		}
+	}
+
+	if (!inFunctionBody) return false;
+
+	// Count braces to see if we're still inside
+	for (let i = 0; i < text.length; i++) {
+		if (text[i] === '{') braceDepth++;
+		if (text[i] === '}') braceDepth--;
+	}
+
+	return braceDepth > 0;
+}
+
 /**
  * Custom completion source for Patchies API functions
  */
@@ -154,9 +201,22 @@ function patchiesCompletionSource(context: CompletionContext) {
 		return null;
 	}
 
+	// Check if we're inside a function body - look at more context
+	const allTextBefore = context.state.doc.sliceString(0, word.from);
+	const insideFunction = isInsideFunctionBody(allTextBefore);
+
+	// Filter completions based on context
+	let options = patchiesAPICompletions;
+
+	if (insideFunction) {
+		options = patchiesAPICompletions.filter(
+			(completion) => !topLevelOnlyFunctions.has(completion.label)
+		);
+	}
+
 	return {
 		from: word.from,
-		options: patchiesAPICompletions
+		options
 	};
 }
 
