@@ -41,25 +41,28 @@ export class MetroObject implements TextObjectV2 {
 	}
 
 	create(): void {
-		// Auto-start metro on load
 		this.start();
 	}
 
 	onMessage(data: unknown, meta: MessageMeta): void {
-		match([meta.inlet, data])
-			.with([0, { type: 'start' }], () => this.start())
-			.with([0, { type: 'stop' }], () => this.stop())
-			.with([0, { type: 'bang' }], () => {
+		const inlet = this.context.getInletName(meta.inlet);
+
+		match([inlet, data])
+			.with(['message', { type: 'start' }], () => this.start())
+			.with(['message', { type: 'stop' }], () => this.stop())
+			.with(['message', { type: 'bang' }], () => {
 				if (this.intervalId !== null) {
 					this.stop();
 				} else {
 					this.start();
 				}
 			})
-			.with([1, P.number], ([, ms]) => {
+			.with(['interval', P.number], ([, ms]) => {
 				this.context.setParam('interval', ms);
+
+				// Restart with new interval
 				if (this.intervalId !== null) {
-					this.start(); // Restart with new interval
+					this.start();
 				}
 			});
 	}

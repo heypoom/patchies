@@ -93,7 +93,10 @@ export class ObjectContext {
 	/**
 	 * Get inlet name by index.
 	 */
-	getInletName(index: number): string | undefined {
+	getInletName(index: number | undefined): string | undefined {
+		// meta.inlet is optional and is usually passed to getInletName
+		if (index === undefined) return undefined;
+
 		return this.inlets[index]?.name;
 	}
 
