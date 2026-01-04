@@ -31,91 +31,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 	vfslider: {
 		inlets: [{ name: 'min' }, { name: 'max' }, { name: 'value' }],
 		outlets: []
-	},
-
-	delay: {
-		inlets: [
-			{ name: 'message', type: 'message', description: 'Message to pass through' },
-			{
-				name: 'delay',
-				type: 'float',
-				description: 'How long to delay for, in ms.',
-				precision: 0,
-				defaultValue: 1000
-			}
-		],
-		outlets: [{ name: 'out', type: 'message', description: 'Message outlet' }],
-		tags: ['helper']
-	},
-
-	adsr: {
-		inlets: [
-			{
-				name: 'trigger',
-				type: 'message',
-				description: 'Trigger the ADSR envelope. 0 = release, 1 = attack.'
-			},
-			{
-				name: 'peak',
-				type: 'float',
-				description: 'Peak value',
-				defaultValue: 1,
-				minNumber: 0,
-				maxPrecision: 2
-			},
-			{
-				name: 'attack',
-				type: 'float',
-				description: 'Attack time in ms',
-				defaultValue: 100,
-				minNumber: 0,
-				precision: 0
-			},
-			{
-				name: 'decay',
-				type: 'float',
-				description: 'Decay time in ms',
-				defaultValue: 200,
-				minNumber: 0,
-				precision: 0
-			},
-			{
-				name: 'sustain',
-				type: 'float',
-				description: 'Sustain value',
-				defaultValue: 0.5,
-				minNumber: 0,
-				maxPrecision: 2
-			},
-			{
-				name: 'release',
-				type: 'float',
-				description: 'Release time in ms',
-				defaultValue: 300,
-				precision: 0
-			}
-		],
-		outlets: [{ name: 'out', type: 'message', description: 'ADSR envelope message' }],
-		description: 'ADSR envelope generator with trigger and parameter control inlets',
-		tags: ['envelope']
-	},
-
-	spigot: {
-		inlets: [
-			{
-				name: 'data',
-				type: 'message',
-				description: 'Data to pass through when allowed.'
-			},
-			{
-				name: 'control',
-				type: 'message',
-				description: 'Truthy allows data, falsey blocks data. Bang toggles.'
-			}
-		],
-		outlets: [{ name: 'out', type: 'message', description: 'Data output when spigot is open' }],
-		description: 'Message gate that allows or blocks data based on condition',
-		tags: ['control']
 	}
 };
 
@@ -169,5 +84,3 @@ export function getObjectNames(): string[] {
 
 	return [...v1Names, ...v2AudioObjectNames, ...v2TextObjectNames];
 }
-
-export type AdsrParamList = [unknown, number, number, number, number, number];

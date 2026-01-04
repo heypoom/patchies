@@ -8,7 +8,6 @@
 		getObjectDefinition,
 		getAudioObjectNames,
 		getObjectNameFromExpr,
-		type AdsrParamList,
 		type ObjectInlet,
 		type ObjectOutlet
 	} from '$lib/objects/object-definitions';
@@ -233,69 +232,15 @@
 			isAutomated = { ...isAutomated, [meta.inlet]: true };
 		}
 
-		// Route to audio service if node has signal inlets/outlets
 		const hasSignalPorts =
 			objectDef.inlets?.some((i) => i.type === 'signal') ||
 			objectDef.outlets?.some((o) => o.type === 'signal');
 
+		// Route to audio service if node has signal inlets/outlets
 		if (inlet.name && hasSignalPorts) {
 			audioService.send(nodeId, inlet.name, message);
 			return;
 		}
-
-		// Skip V2 objects - they handle their own messages via ObjectService
-		if (objectService.isV2ObjectType(data.name)) {
-			return;
-		}
-
-		match([data.name, inlet.name, message])
-			.with(['delay', 'message', P.any], ([, , message]) => {
-				const [_, delayMs] = data.params as [unknown, number];
-
-				setTimeout(() => {
-					messageContext.send(message);
-				}, delayMs ?? 0);
-			})
-			.with(['adsr', 'trigger', P.any], ([, , trigger]) => {
-				const [_, peak, attack, decay, sustain, release] = data.params as AdsrParamList;
-
-				if (trigger === 0 || trigger === false) {
-					messageContext.send({ type: 'release', release: { time: release / 1000 }, endValue: 0 });
-				} else {
-					messageContext.send({
-						type: 'trigger',
-						values: { start: 0, peak, sustain },
-						attack: { time: attack / 1000 },
-						decay: { time: decay / 1000 }
-					});
-				}
-			})
-			.with(['spigot', 'data', P.any], ([, , dataMessage]) => {
-				const allow = data.params[1] ?? false;
-
-				if (allow) {
-					messageContext.send(dataMessage);
-				}
-			})
-			.with(['spigot', 'control', P.any], ([, , condition]) => {
-				match(condition)
-					.with({ type: 'bang' }, () => {
-						const currentAllow = data.params[1] ?? false;
-						updateParamByIndex(1, !currentAllow);
-					})
-					.with(P.boolean, (value) => {
-						updateParamByIndex(1, value);
-					})
-					.with(P.number, (value) => {
-						updateParamByIndex(1, value > 0);
-					})
-					.with(P.string, (value) => {
-						updateParamByIndex(1, value.length > 0);
-					})
-					.otherwise(() => {
-						updateParamByIndex(1, false);
-					});
-			});
 	};
 
 	function handleNameChange() {
