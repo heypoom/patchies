@@ -13,9 +13,13 @@ export async function loadLanguageExtension(language: string) {
 
 	const extension = await match(language)
 		.with('javascript', async () => {
-			const { javascript } = await import('@codemirror/lang-javascript');
+			const [{ javascript }, { autocompletion }, { patchiesCompletions }] = await Promise.all([
+				import('@codemirror/lang-javascript'),
+				import('@codemirror/autocomplete'),
+				import('$lib/codemirror/patchies-completions')
+			]);
 
-			return javascript();
+			return [javascript(), autocompletion({ override: [patchiesCompletions] })];
 		})
 		.with('glsl', async () => {
 			const [{ LanguageSupport }, { glslLanguage }] = await Promise.all([

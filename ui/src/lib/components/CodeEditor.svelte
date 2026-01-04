@@ -6,7 +6,8 @@
 	import { keymap, drawSelection } from '@codemirror/view';
 	import { useVimInEditor } from '../../stores/editor.store';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
-	import { autocompletion } from '@codemirror/autocomplete';
+	import { autocompletion, acceptCompletion, completionStatus } from '@codemirror/autocomplete';
+	import { indentMore } from '@codemirror/commands';
 
 	let languageComp = new Compartment();
 
@@ -50,6 +51,17 @@
 							run: () => {
 								onrun();
 								return true;
+							}
+						},
+						{
+							key: 'Tab',
+							run: (view) => {
+								// Accept completion if one is active, otherwise indent
+								if (completionStatus(view.state) === 'active') {
+									return acceptCompletion(view);
+								}
+
+								return indentMore(view);
 							}
 						}
 					])
