@@ -29,13 +29,13 @@
 	let showTextInput = $state(false);
 	let msgText = $derived(data.message || '');
 
-	let isJsonObject = $derived.by(() => {
-		try {
-			const result = Json5.parse(data.message);
+	const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
 
-			return result && typeof result !== 'number';
+	let parsedObject = $derived.by(() => {
+		try {
+			return Json5.parse(data.message);
 		} catch {
-			return false;
+			return CANNOT_PARSE_SYMBOL;
 		}
 	});
 
@@ -48,7 +48,7 @@
 	});
 
 	let highlightedHtml = $derived.by(() => {
-		if (!isJsonObject || !msgText) return '';
+		if (parsedObject === CANNOT_PARSE_SYMBOL || !msgText) return '';
 
 		try {
 			return hljs.highlight(msgText, {
@@ -164,12 +164,14 @@
 								containerClass
 							]}
 						>
-							{#if msgText && isJsonObject}
+							{#if msgText && parsedObject !== CANNOT_PARSE_SYMBOL && typeof parsedObject !== 'number'}
 								<code class="whitespace-pre">
 									{@html highlightedHtml}
 								</code>
+							{:else if msgText && typeof parsedObject === 'number'}
+								<span class="text-gray-200">{msgText}</span>
 							{:else}
-								{msgText ? msgText : '<messagebox>'}
+								<span class="text-purple-300">{msgText ? msgText : '<messagebox>'}</span>
 							{/if}
 						</button>
 					{/if}

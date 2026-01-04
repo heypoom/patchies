@@ -477,7 +477,8 @@
 	}
 
 	function handleClickOutside(event: MouseEvent) {
-		if (paletteContainer && !paletteContainer.contains(event.target as Node)) {
+		// @ts-expect-error -- to fix
+		if (paletteContainer && !paletteContainer.contains(event.target)) {
 			onCancel();
 		}
 	}

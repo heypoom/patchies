@@ -147,12 +147,12 @@ export class AudioService {
 			return null;
 		}
 
-		const metadata = this.registry.getNodeMetadataByType(getNodeType(audioNode));
-		if (!metadata?.inlets) {
+		const nodeClass = this.registry.get(getNodeType(audioNode));
+		if (!nodeClass?.inlets) {
 			return null;
 		}
 
-		return metadata.inlets[inletIndex] ?? null;
+		return nodeClass.inlets[inletIndex] ?? null;
 	}
 
 	/**

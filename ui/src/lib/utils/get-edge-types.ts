@@ -56,7 +56,7 @@ const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolea
 		const data = node.data as { name: string };
 		const registry = AudioRegistry.getInstance();
 
-		const metadata = registry.getNodeMetadataByType(data.name);
+		const metadata = registry.get(data.name);
 		if (!metadata) return false;
 
 		if (isInlet) {

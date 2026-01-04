@@ -1,8 +1,9 @@
 import { match, P } from 'ts-pattern';
-import type { ObjectDataType, ObjectInlet } from './object-definitions';
 import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 
 import { ALWAYS_VALID } from './parse-object-param';
+
+import type { ObjectInlet, ObjectDataType } from './v2/object-metadata';
 
 // Helper function to validate inlet/outlet types
 export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boolean => {
