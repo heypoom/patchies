@@ -3,7 +3,7 @@ import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
 import { AudioService } from './v2/AudioService';
 import { getNodeType } from './v2/interfaces/audio-nodes';
-import { ANALYSIS_KEY } from './v2/constants/fft';
+import { ANALYSIS_KEY, GLSL_FFT_WAVEFORM_UNIFORM_NAME } from './v2/constants/fft';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -55,8 +55,6 @@ export type GlslFFTInletMeta = {
 	/** What is the name of the sampler2D uniform? */
 	uniformName: string;
 };
-
-const WAVEFORM_UNIFORM_NAME = 'waveTexture';
 
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
@@ -169,7 +167,8 @@ export class AudioAnalysisSystem {
 
 		// Do frequency analysis by default.
 		// If the uniform name is set as "waveTexture" then we do time-domain analysis.
-		const analysisType: AudioAnalysisType = uniformName === WAVEFORM_UNIFORM_NAME ? 'wave' : 'freq';
+		const analysisType: AudioAnalysisType =
+			uniformName === GLSL_FFT_WAVEFORM_UNIFORM_NAME ? 'wave' : 'freq';
 
 		this.glslInlets.get(glslNodeId)?.push({
 			analyzerNodeId,
