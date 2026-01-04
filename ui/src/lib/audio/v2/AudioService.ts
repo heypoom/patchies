@@ -13,6 +13,7 @@ import { TimeScheduler } from '../TimeScheduler';
 import { isScheduledMessage } from '../time-scheduling-types';
 import { registerAudioNodes } from './nodes';
 import { getObjectType } from '$lib/objects/get-type';
+import { hasSomeAudioNode } from '../../../stores/canvas.store';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -231,6 +232,7 @@ export class AudioService {
 		}
 
 		const audioContext = this.getAudioContext();
+		hasSomeAudioNode.set(true);
 
 		const node = new NodeClass(nodeId, audioContext);
 		this.nodesById.set(node.nodeId, node);
