@@ -9,7 +9,7 @@ Migrate V1 audio nodes (defined in `AudioSystem.ts`) to V2 (self-contained class
 ## Key Architectural Points
 
 1. **Optional Methods**: Only implement `create()`, `send()`, `getAudioParam()` if needed. AudioService provides defaults.
-2. **Node Groups**: `'sources'` (output only), `'processors'` (input+output), `'destinations'` (input only)
+2. **Node Groups**: `'sources'` (output only), `'processors'` (input+output), `'destinations'` (input only). **Destinations must never act as a source** (no outgoing audio connections).
 3. **🚨 CRITICAL - No Hardcoding Node Names in AudioService**: NEVER check node type with string comparisons like `if (nodeType === 'sampler~')` inside `AudioService`. This breaks encapsulation and causes bugs. Instead: Let individual nodes implement `connect()` or `connectFrom()` methods to handle their own special logic. The node type check belongs in the node class, NOT in the generic service.
 4. **Dual updateEdges()**: Both `AudioSystem.updateEdges()` (V1) and `AudioService.updateEdges()` (V2) run to handle both systems.
 

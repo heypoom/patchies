@@ -14,12 +14,16 @@ export const canAudioNodeConnect = (sourceType: string, targetType: string): boo
 	const source = getAudioNodeGroup(sourceType);
 	const target = getAudioNodeGroup(targetType);
 
-	return match({ source, target })
-		.with({ source: 'sources', target: 'sources' }, () => false)
-		.with({ source: 'sources', target: 'processors' }, () => true)
-		.with({ source: 'sources', target: 'destinations' }, () => true)
-		.with({ source: 'processors', target: 'sources' }, () => false)
-		.with({ source: 'processors', target: 'processors' }, () => true)
-		.with({ source: 'processors', target: 'destinations' }, () => true)
-		.otherwise(() => true);
+	return (
+		match({ source, target })
+			// Destinations are input-only (e.g. dac~) and must never act as a source.
+			.with({ source: 'destinations' }, () => false)
+			.with({ source: 'sources', target: 'sources' }, () => false)
+			.with({ source: 'sources', target: 'processors' }, () => true)
+			.with({ source: 'sources', target: 'destinations' }, () => true)
+			.with({ source: 'processors', target: 'sources' }, () => false)
+			.with({ source: 'processors', target: 'processors' }, () => true)
+			.with({ source: 'processors', target: 'destinations' }, () => true)
+			.otherwise(() => true)
+	);
 };
