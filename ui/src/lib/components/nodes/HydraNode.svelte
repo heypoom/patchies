@@ -217,6 +217,7 @@
 				updateNodeData(nodeId, { code: newCode });
 			}}
 			language="javascript"
+			nodeType="hydra"
 			placeholder="Write your Hydra code here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateHydra}

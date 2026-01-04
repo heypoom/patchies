@@ -1,4 +1,7 @@
-import { CompletionContext, type Completion } from '@codemirror/autocomplete';
+import {
+	CompletionContext as CMCompletionContext,
+	type Completion
+} from '@codemirror/autocomplete';
 
 /**
  * Patchies API function completions for JavaScript-based nodes
@@ -146,6 +149,19 @@ const topLevelOnlyFunctions = new Set([
 	'onMessage'
 ]);
 
+// Node-specific functions - only show in certain node types
+const nodeSpecificFunctions: Record<string, string[]> = {
+	setKeepAlive: ['dsp~'],
+	setAudioPortCount: ['dsp~'],
+	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
+	noDrag: ['p5', 'canvas'],
+	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel']
+};
+
+export interface PatchiesContext {
+	nodeType?: string;
+}
+
 /**
  * Check if cursor is inside a function body by counting braces
  */
@@ -183,44 +199,62 @@ function isInsideFunctionBody(text: string): boolean {
 /**
  * Custom completion source for Patchies API functions
  */
-function patchiesCompletionSource(context: CompletionContext) {
-	const word = context.matchBefore(/\w*/);
-	if (!word) return null;
-	if (word.from === word.to && !context.explicit) return null;
+function createPatchiesCompletionSource(patchiesContext?: PatchiesContext) {
+	return (context: CMCompletionContext) => {
+		const word = context.matchBefore(/\w*/);
+		if (!word) return null;
+		if (word.from === word.to && !context.explicit) return null;
 
-	// Check the text before the word to avoid inappropriate contexts
-	const textBefore = context.state.doc.sliceString(Math.max(0, word.from - 20), word.from);
+		// Check the text before the word to avoid inappropriate contexts
+		const textBefore = context.state.doc.sliceString(Math.max(0, word.from - 20), word.from);
 
-	// Don't complete after keywords where function names are expected
-	if (/\b(function|class|const|let|var|interface|type|enum)\s+$/.test(textBefore)) {
-		return null;
-	}
+		// Don't complete after keywords where function names are expected
+		if (/\b(function|class|const|let|var|interface|type|enum)\s+$/.test(textBefore)) {
+			return null;
+		}
 
-	// Don't complete in object property definitions (key: value)
-	if (/:\s*$/.test(textBefore)) {
-		return null;
-	}
+		// Don't complete in object property definitions (key: value)
+		if (/:\s*$/.test(textBefore)) {
+			return null;
+		}
 
-	// Check if we're inside a function body - look at more context
-	const allTextBefore = context.state.doc.sliceString(0, word.from);
-	const insideFunction = isInsideFunctionBody(allTextBefore);
+		// Check if we're inside a function body - look at more context
+		const allTextBefore = context.state.doc.sliceString(0, word.from);
+		const insideFunction = isInsideFunctionBody(allTextBefore);
 
-	// Filter completions based on context
-	let options = patchiesAPICompletions;
+		// Filter completions based on context
+		let options = patchiesAPICompletions;
 
-	if (insideFunction) {
-		options = patchiesAPICompletions.filter(
-			(completion) => !topLevelOnlyFunctions.has(completion.label)
-		);
-	}
+		// Filter out top-level only functions when inside a function body
+		if (insideFunction) {
+			options = options.filter((completion) => !topLevelOnlyFunctions.has(completion.label));
+		}
 
-	return {
-		from: word.from,
-		options
+		// Filter based on node type
+		if (patchiesContext?.nodeType) {
+			options = options.filter((completion) => {
+				const allowedNodes = nodeSpecificFunctions[completion.label];
+
+				// If function has node restrictions, check if current node is allowed
+				if (allowedNodes) {
+					return allowedNodes.includes(patchiesContext.nodeType!);
+				}
+
+				// No restrictions, always show
+				return true;
+			});
+		}
+
+		return {
+			from: word.from,
+			options
+		};
 	};
 }
 
 /**
  * CodeMirror extension that provides Patchies API completions
+ * @param context Optional context with node type information
  */
-export const patchiesCompletions = patchiesCompletionSource;
+export const patchiesCompletions = (context?: PatchiesContext) =>
+	createPatchiesCompletionSource(context);

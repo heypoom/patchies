@@ -192,6 +192,7 @@
 				updateNodeData(nodeId, { code: newCode });
 			}}
 			language="javascript"
+			nodeType="p5"
 			placeholder="Write your p5.js code here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateSketch}

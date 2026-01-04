@@ -1,9 +1,10 @@
 import type { Extension } from '@codemirror/state';
 import { match } from 'ts-pattern';
+import type { PatchiesContext } from '$lib/codemirror/patchies-completions';
 
 const cachedLanguages: Record<string, Extension> = {};
 
-export async function loadLanguageExtension(language: string) {
+export async function loadLanguageExtension(language: string, context?: PatchiesContext) {
 	// Skip caching for assembly during development to handle HMR properly
 	const shouldCache = language !== 'assembly' || !import.meta.hot;
 
@@ -19,7 +20,7 @@ export async function loadLanguageExtension(language: string) {
 				import('$lib/codemirror/patchies-completions')
 			]);
 
-			return [javascript(), autocompletion({ override: [patchiesCompletions] })];
+			return [javascript(), autocompletion({ override: [patchiesCompletions(context)] })];
 		})
 		.with('glsl', async () => {
 			const [{ LanguageSupport }, { glslLanguage }] = await Promise.all([

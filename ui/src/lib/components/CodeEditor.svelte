@@ -23,6 +23,7 @@
 		fontSize = '12px',
 		extraExtensions = [],
 		onready,
+		nodeType,
 		...restProps
 	}: {
 		value?: string;
@@ -34,6 +35,7 @@
 		extraExtensions?: Extension[];
 		fontSize?: string;
 		onready?: () => void;
+		nodeType?: string;
 	} = $props();
 
 	let editorElement: HTMLDivElement;
@@ -41,7 +43,7 @@
 
 	onMount(async () => {
 		if (editorElement) {
-			const languageExtension = await loadLanguageExtension(language);
+			const languageExtension = await loadLanguageExtension(language, { nodeType });
 
 			const extensions = [
 				Prec.highest(
@@ -174,7 +176,7 @@
 
 	// Sync language extension with the `language` prop
 	$effect(() => {
-		loadLanguageExtension(language).then((languageExtension) => {
+		loadLanguageExtension(language, { nodeType }).then((languageExtension) => {
 			if (editorView) {
 				editorView.dispatch({
 					effects: languageComp.reconfigure(languageExtension)

@@ -11,6 +11,7 @@
 	let {
 		nodeId,
 		nodeName,
+		nodeType,
 		data,
 		selected,
 		onCodeChange,
@@ -20,6 +21,7 @@
 	}: {
 		nodeId: string;
 		nodeName: string;
+		nodeType?: string;
 		data: {
 			code: string;
 			messageInletCount?: number;
@@ -94,7 +96,7 @@
 					{@render actionButtons?.()}
 
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={(e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -205,6 +207,7 @@
 					value={code}
 					onchange={handleCodeChangeInternal}
 					language="javascript"
+					{nodeType}
 					class="nodrag h-64 w-full resize-none"
 					onrun={onRun}
 				/>

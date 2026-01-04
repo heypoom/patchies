@@ -368,6 +368,7 @@
 					value={code}
 					onchange={handleCodeChange}
 					language="javascript"
+					nodeType="dsp~"
 					placeholder="Enter dsp code here..."
 					class="nodrag h-64 w-full resize-none"
 					onrun={runDSP}

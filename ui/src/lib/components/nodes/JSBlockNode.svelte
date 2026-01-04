@@ -270,7 +270,7 @@
 				<div>
 					{#if !data.libraryName}
 						<button
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={() => {
 								updateNodeData(nodeId, { showConsole: !data.showConsole });
 								setTimeout(() => updateContentWidth(), 10);
@@ -282,7 +282,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -307,7 +307,11 @@
 
 				{#if data.showConsole && !data.libraryName}
 					<div
-						class={['max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor, selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm']}
+						class={[
+							'min-w-[150px] max-w-[500px] rounded-md border bg-zinc-900 p-3',
+							borderColor,
+							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
+						]}
 					>
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
@@ -355,10 +359,10 @@
 							bind:this={consoleContainer}
 						>
 							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your code to see results.</div>
+								<div class="italic text-zinc-500">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line, index (index)}
-									<div class="mb-1 whitespace-pre-wrap text-zinc-100 select-text">{line}</div>
+									<div class="mb-1 select-text whitespace-pre-wrap text-zinc-100">{line}</div>
 								{/each}
 							{/if}
 						</div>
@@ -369,7 +373,7 @@
 							'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
 							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
 							borderColor,
-							selected ? 'bg-zinc-800 shadow-glow-md' : 'bg-zinc-900 hover:shadow-glow-sm'
+							selected ? 'shadow-glow-md bg-zinc-800' : 'hover:shadow-glow-sm bg-zinc-900'
 						]}
 						style={`min-width: ${minContainerWidth}px`}
 						onclick={runOrStop}
@@ -389,7 +393,7 @@
 
 					<div
 						class={[
-							'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
+							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
 							selected ? '' : 'group-hover:opacity-100'
 						]}
 					>
@@ -438,6 +442,7 @@
 						updateNodeData(nodeId, { code: newCode });
 					}}
 					language="javascript"
+					nodeType="js"
 					placeholder="Write your JavaScript code here..."
 					class="nodrag h-64 w-full resize-none"
 					onrun={executeCode}

@@ -176,6 +176,7 @@
 		<CodeEditor
 			value={data.code}
 			language="javascript"
+			nodeType="canvas"
 			placeholder="Write your Canvas API code here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateCanvas}
