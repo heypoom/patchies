@@ -14,6 +14,7 @@
 	} from '$lib/objects/object-definitions';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { AudioService } from '$lib/audio/v2/AudioService';
+	import { ObjectService } from '$lib/objects/v2/ObjectService';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -60,6 +61,7 @@
 	let metroInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
 	let audioService = AudioService.getInstance();
+	let objectService = ObjectService.getInstance();
 	const messageContext = new MessageContext(nodeId);
 
 	// Combine all searchable items (objects + presets) with metadata
@@ -242,10 +244,12 @@
 			return;
 		}
 
+		// Skip V2 objects - they handle their own messages via ObjectService
+		if (objectService.isV2Object(data.name)) {
+			return;
+		}
+
 		match([data.name, inlet.name, message])
-			.with(['mtof', 'note', P.number], ([, , note]) => {
-				messageContext.send(440 * Math.pow(2, (note - 69) / 12));
-			})
 			.with(['delay', 'message', P.any], ([, , message]) => {
 				const [_, delayMs] = data.params as [unknown, number];
 
@@ -336,18 +340,15 @@
 	}
 
 	function onObjectLoad(name: string, params: unknown[]) {
-		match(name)
-			.with('loadbang', () => {
-				setTimeout(() => {
-					messageContext.send({ type: 'bang' });
-				}, 500);
-			})
-			.with('metro', () => {
-				stopMetro();
+		// Skip V2 objects - they handle their own initialization via create()
+		if (objectService.isV2Object(name)) return;
 
-				const intervalMs = params[1] as number;
-				startMetro(intervalMs);
-			});
+		match(name).with('metro', () => {
+			stopMetro();
+
+			const intervalMs = params[1] as number;
+			startMetro(intervalMs);
+		});
 	}
 
 	function startMetro(intervalMs: number) {
@@ -648,16 +649,23 @@
 			syncAudioService(data.name, data.params);
 		}
 
+		// Create V2 text object if applicable
+		if (objectService.isV2Object(data.name)) {
+			objectService.createObject(nodeId, data.name, data.params);
+		}
+
 		messageContext.queue.addCallback(handleMessage);
 		onObjectLoad(data.name, data.params);
 	});
 
 	onDestroy(() => {
-		const node = audioService.getNodeById(nodeId);
+		const audioNode = audioService.getNodeById(nodeId);
 
-		if (node) {
-			audioService.removeNode(node);
+		if (audioNode) {
+			audioService.removeNode(audioNode);
 		}
+
+		objectService.removeObjectById(nodeId);
 
 		stopMetro();
 	});

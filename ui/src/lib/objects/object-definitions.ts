@@ -5,6 +5,7 @@ import type {
 	ObjectMetadata
 } from '$lib/objects/v2/object-metadata';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import { getCompatMetadata } from './v2/query-metadata-compat';
 
 /** Legacy type alias for backwards compatibility. */
@@ -15,13 +16,6 @@ export type { ObjectDataType, ObjectInlet, ObjectOutlet };
 
 /** Legacy object definitions. */
 export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
-	mtof: {
-		inlets: [{ name: 'note', type: 'float', description: 'MIDI note value (0-127)' }],
-		outlets: [{ name: 'frequency', type: 'float', description: 'Frequency in Hz' }],
-		description: 'Converts MIDI note values to frequency float values',
-		tags: ['helper']
-	},
-
 	fslider: {
 		inlets: [{ name: 'min' }, { name: 'max' }, { name: 'value' }],
 		outlets: []
@@ -106,12 +100,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['envelope']
 	},
 
-	loadbang: {
-		inlets: [],
-		outlets: [{ name: 'out', type: 'bang', description: 'Bang signal sent on load' }],
-		description: 'Sends a bang signal when the object is created',
-		tags: ['control']
-	},
 	metro: {
 		inlets: [
 			{
@@ -198,8 +186,9 @@ export const getObjectDefinition = (expr: string): ObjectDefinition | undefined 
 export function getObjectNames(): string[] {
 	const v1Names = Object.keys(objectDefinitionsV1);
 	const v2AudioObjectNames = AudioRegistry.getInstance().getNodeTypes();
+	const v2TextObjectNames = ObjectRegistry.getInstance().getObjectTypes();
 
-	return [...v1Names, ...v2AudioObjectNames];
+	return [...v1Names, ...v2AudioObjectNames, ...v2TextObjectNames];
 }
 
 export type AdsrParamList = [unknown, number, number, number, number, number];
