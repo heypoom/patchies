@@ -8,7 +8,6 @@ import type { TextObjectV2 } from '../interfaces/text-objects';
 export class LoadbangObject implements TextObjectV2 {
 	static type = 'loadbang';
 	static description = 'Sends a bang signal when the object is created';
-	static tags = ['control'];
 
 	static inlets: ObjectInlet[] = [];
 

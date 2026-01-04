@@ -9,7 +9,6 @@ import { match, P } from 'ts-pattern';
 export class SpigotObject implements TextObjectV2 {
 	static type = 'spigot';
 	static description = 'Message gate that allows or blocks data based on condition';
-	static tags = ['control'];
 
 	static inlets: ObjectInlet[] = [
 		{ name: 'data', type: 'message', description: 'Data to pass through when allowed.' },

@@ -9,7 +9,6 @@ import { match, P } from 'ts-pattern';
 export class AdsrObject implements TextObjectV2 {
 	static type = 'adsr';
 	static description = 'ADSR envelope generator with trigger and parameter control inlets';
-	static tags = ['envelope'];
 
 	static inlets: ObjectInlet[] = [
 		{
@@ -105,4 +104,3 @@ export class AdsrObject implements TextObjectV2 {
 		});
 	}
 }
-

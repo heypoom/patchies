@@ -1,6 +1,7 @@
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
+import { match } from 'ts-pattern';
 
 /**
  * DelayObject delays messages by a specified time.
@@ -8,22 +9,13 @@ import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 export class DelayObject implements TextObjectV2 {
 	static type = 'delay';
 	static description = 'Delays messages by a specified time';
-	static tags = ['helper'];
 
 	static inlets: ObjectInlet[] = [
 		{ name: 'message', type: 'message', description: 'Message to pass through' },
-		{
-			name: 'delay',
-			type: 'float',
-			description: 'How long to delay for, in ms.',
-			precision: 0,
-			defaultValue: 1000
-		}
+		{ name: 'delay', type: 'int', description: 'How long to delay for in ms', defaultValue: 1000 }
 	];
 
-	static outlets: ObjectOutlet[] = [
-		{ name: 'out', type: 'message', description: 'Message outlet' }
-	];
+	static outlets: ObjectOutlet[] = [{ name: 'out', type: 'message' }];
 
 	readonly nodeId: string;
 	readonly context: ObjectContext;
@@ -35,19 +27,23 @@ export class DelayObject implements TextObjectV2 {
 		this.context = context;
 	}
 
-	onMessage(data: unknown, meta: MessageMeta): void {
-		if (meta.inletName === 'message') {
-			const delayMs = (this.context.getParam('delay') as number) ?? 1000;
+	onMessage(value: unknown, meta: MessageMeta): void {
+		match(meta.inletName)
+			.with('message', () => {
+				const delayMs = this.context.getParam('delay') as number;
 
-			const timeoutId = window.setTimeout(() => {
-				this.context.send(data);
-				this.pendingTimeouts = this.pendingTimeouts.filter((id) => id !== timeoutId);
-			}, delayMs);
+				const timeoutId = window.setTimeout(() => {
+					this.context.send(value);
+					this.pendingTimeouts = this.pendingTimeouts.filter((id) => id !== timeoutId);
+				}, delayMs);
 
-			this.pendingTimeouts.push(timeoutId);
-		} else if (meta.inletName === 'delay' && typeof data === 'number') {
-			this.context.setParam('delay', data);
-		}
+				this.pendingTimeouts.push(timeoutId);
+			})
+			.with('delay', () => {
+				if (typeof value === 'number') {
+					this.context.setParam('delay', value);
+				}
+			});
 	}
 
 	destroy(): void {
@@ -55,6 +51,7 @@ export class DelayObject implements TextObjectV2 {
 		for (const id of this.pendingTimeouts) {
 			clearTimeout(id);
 		}
+
 		this.pendingTimeouts = [];
 	}
 }

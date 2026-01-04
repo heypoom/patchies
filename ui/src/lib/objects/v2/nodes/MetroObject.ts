@@ -9,7 +9,6 @@ import { match, P } from 'ts-pattern';
 export class MetroObject implements TextObjectV2 {
 	static type = 'metro';
 	static description = 'Metronome that sends bang signals at regular intervals';
-	static tags = ['control'];
 
 	static inlets: ObjectInlet[] = [
 		{
