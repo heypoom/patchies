@@ -1,5 +1,5 @@
-import type { MessageContext } from '$lib/messages/MessageContext';
 import type { Message } from '$lib/messages/MessageSystem';
+import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 
 /**
@@ -15,8 +15,8 @@ export interface TextObjectV2 {
 	/** Unique identifier for this object instance */
 	readonly nodeId: string;
 
-	/** Parameters stored by the object (owned by the object, not Svelte) */
-	params: unknown[];
+	/** Object context for messaging and params (injected by ObjectService) */
+	readonly context: ObjectContext;
 
 	/**
 	 * Initialize the object with the given parameters.
@@ -39,25 +39,13 @@ export interface TextObjectV2 {
 	 * @param meta - Message metadata (source, inlet, outlet, etc.)
 	 */
 	onMessage?(data: unknown, meta: MessageMeta): void;
-
-	/**
-	 * Callback for UI sync (optional, set by Svelte component).
-	 * Enables view to subscribe to state changes without owning state.
-	 * In headless mode, this callback is simply not set.
-	 *
-	 * @param params - Updated params array
-	 */
-	onParamsChange?: (params: unknown[]) => void;
 }
 
 /**
  * Constructor signature for TextObject classes.
- * Receives nodeId and MessageContext for sending messages.
+ * Receives nodeId and ObjectContext.
  */
-export type TextObjectConstructor = new (
-	nodeId: string,
-	messageContext: MessageContext
-) => TextObjectV2;
+export type TextObjectConstructor = new (nodeId: string, context: ObjectContext) => TextObjectV2;
 
 /**
  * Text object class type including required static properties and optional metadata.

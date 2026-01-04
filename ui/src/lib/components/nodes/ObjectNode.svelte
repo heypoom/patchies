@@ -58,7 +58,6 @@
 	let originalName = data.expr || ''; // Store original name for escape functionality
 
 	let isAutomated = $state<Record<number, boolean>>({});
-	let metroInterval = $state<ReturnType<typeof setInterval> | null>(null);
 
 	let audioService = AudioService.getInstance();
 	let objectService = ObjectService.getInstance();
@@ -245,7 +244,7 @@
 		}
 
 		// Skip V2 objects - they handle their own messages via ObjectService
-		if (objectService.isV2Object(data.name)) {
+		if (objectService.isV2ObjectType(data.name)) {
 			return;
 		}
 
@@ -269,30 +268,6 @@
 						attack: { time: attack / 1000 },
 						decay: { time: decay / 1000 }
 					});
-				}
-			})
-			.with(['metro', 'message', P.any], ([, , controlMsg]) => {
-				match(controlMsg)
-					.with({ type: 'start' }, () => {
-						const intervalMs = data.params[1] as number;
-						startMetro(intervalMs);
-					})
-					.with({ type: 'stop' }, () => {
-						stopMetro();
-					})
-					.with({ type: 'bang' }, () => {
-						if (metroInterval !== null) {
-							stopMetro();
-						} else {
-							const intervalMs = data.params[1] as number;
-							startMetro(intervalMs);
-						}
-					});
-			})
-			.with(['metro', 'interval', P.number], ([, , intervalMs]) => {
-				updateParamByIndex(1, intervalMs);
-				if (metroInterval !== null) {
-					startMetro(intervalMs);
 				}
 			})
 			.with(['spigot', 'data', P.any], ([, , dataMessage]) => {
@@ -339,37 +314,10 @@
 		return { name, params: parseObjectParamFromString(name, params) };
 	}
 
-	function onObjectLoad(name: string, params: unknown[]) {
-		// Skip V2 objects - they handle their own initialization via create()
-		if (objectService.isV2Object(name)) return;
-
-		match(name).with('metro', () => {
-			stopMetro();
-
-			const intervalMs = params[1] as number;
-			startMetro(intervalMs);
-		});
-	}
-
-	function startMetro(intervalMs: number) {
-		stopMetro();
-		metroInterval = setInterval(() => {
-			messageContext.send({ type: 'bang' });
-		}, intervalMs);
-	}
-
-	function stopMetro() {
-		if (metroInterval !== null) {
-			clearInterval(metroInterval);
-			metroInterval = null;
-		}
-	}
-
 	function tryCreatePlainObject() {
 		const { name, params } = getNameAndParams();
 
 		updateNodeData(nodeId, { expr, name, params });
-		onObjectLoad(name, params);
 	}
 
 	function tryCreatePreset(): boolean {
@@ -650,12 +598,11 @@
 		}
 
 		// Create V2 text object if applicable
-		if (objectService.isV2Object(data.name)) {
+		if (objectService.isV2ObjectType(data.name)) {
 			objectService.createObject(nodeId, data.name, data.params);
 		}
 
 		messageContext.queue.addCallback(handleMessage);
-		onObjectLoad(data.name, data.params);
 	});
 
 	onDestroy(() => {
@@ -666,8 +613,6 @@
 		}
 
 		objectService.removeObjectById(nodeId);
-
-		stopMetro();
 	});
 
 	const getInletTypeHoverClass = (inletIndex: number) => {

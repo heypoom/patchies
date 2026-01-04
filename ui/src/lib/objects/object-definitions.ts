@@ -100,27 +100,6 @@ export const objectDefinitionsV1: Record<string, ObjectDefinition> = {
 		tags: ['envelope']
 	},
 
-	metro: {
-		inlets: [
-			{
-				name: 'message',
-				type: 'message',
-				description: 'Control messages: "start", "stop", or bang to toggle',
-				isAudioParam: false
-			},
-			{
-				name: 'interval',
-				type: 'int',
-				description: 'Interval in milliseconds',
-				defaultValue: 1000,
-				minNumber: 0,
-				isAudioParam: false
-			}
-		],
-		outlets: [{ name: 'out', type: 'bang', description: 'Bang signal sent at regular intervals' }],
-		description: 'Metronome that sends bang signals at regular intervals',
-		tags: ['control']
-	},
 	spigot: {
 		inlets: [
 			{
