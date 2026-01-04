@@ -455,7 +455,7 @@ The stack machine module is quite extensive, with over 50 assembly instructions 
 
 See the [documentation for assembly module](./modules/vasm/README.md) to see the full instruction sets and syntax, what the `asm` object and its friends can do, and how to use it.
 
-Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to get a feel of how it works.
+Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to get a feel of how it works.
 
 ### Interface & Control Objects
 
