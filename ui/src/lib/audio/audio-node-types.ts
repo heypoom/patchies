@@ -1,15 +1,6 @@
 import type { AudioNodeGroup } from './v2/interfaces/audio-nodes';
 
-interface AudioNodeBase {
-	node: AudioNode;
-}
-
-interface PatchStrudelNode extends AudioNodeBase {
-	type: 'strudel';
-	node: GainNode;
-}
-
-export type V1PatchAudioNode = PatchStrudelNode;
-
-export type V1PatchAudioType = V1PatchAudioNode['type'];
+// No V1 audio nodes remaining - all migrated to V2 or don't use audio graph
+export type V1PatchAudioNode = never;
+export type V1PatchAudioType = never;
 export type V1PatchAudioNodeGroup = AudioNodeGroup;

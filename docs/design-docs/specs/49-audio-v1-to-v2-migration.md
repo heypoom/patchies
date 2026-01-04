@@ -263,13 +263,18 @@ The `lyria` node (used by `ai.music`) was migrated using a **pragmatic approach*
 - All Lyria-specific logic remains in `LiveMusicManager` (API calls, audio streaming, prompt management)
 - Cleaner than creating a wrapper node with no additional functionality
 
-### What's Left in AudioSystem
+### AudioSystem Status
 
-AudioSystem now only handles **one non-audio V1 node** (`strudel`):
+**AudioSystem is now audio-graph free!** 🎉
 
-- Doesn't have audio connections (uses Strudel's own audio system)
-- Uses simple gain node output
-- Will remain in V1 until a separate refactor (if needed)
+The last remaining node type (`strudel`):
+
+- Never actually used AudioSystem/AudioService
+- Manages its own audio entirely through the Strudel library
+- No audio graph integration needed
+- `PatchStrudelNode` type removed as it was unused
+
+AudioSystem now serves only as a compatibility layer for V2 `AudioService` during the transition period.
 
 ### Next Steps
 
