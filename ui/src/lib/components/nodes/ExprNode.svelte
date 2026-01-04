@@ -18,7 +18,7 @@
 	} = $props();
 
 	let isEditing = $state(!data.expr); // Start in editing mode if no expression
-	let expr = $state(data.expr || '');
+	let expr = $state(data.expr || ''); // Active expression being evaluated
 	let inletValues = $state<number[]>([]);
 	let layoutRef = $state<any>();
 
@@ -59,9 +59,16 @@
 	};
 
 	function handleExpressionChange(newExpr: string) {
-		expr = newExpr;
+		// Just update data, don't re-evaluate yet
+		data.expr = newExpr;
+	}
+
+	function handleRun() {
+		// Update active expression when SHIFT+ENTER is pressed
+		expr = data.expr;
+
 		// Update inlet count when expression changes
-		const newInletCount = parseInletCount(newExpr || '');
+		const newInletCount = parseInletCount(data.expr || '');
 		if (newInletCount !== inletValues.length) {
 			inletValues = new Array(newInletCount).fill(0);
 		}
@@ -110,7 +117,7 @@
 	{nodeId}
 	{data}
 	{selected}
-	bind:expr
+	expr={data.expr}
 	bind:isEditing
 	placeholder="$1 + 2"
 	displayPrefix="expr"
@@ -118,6 +125,9 @@
 	onExpressionChange={handleExpressionChange}
 	handles={exprHandles}
 	outlets={exprOutlets}
+	onRun={handleRun}
+	exitOnRun={false}
+	runOnExit
 />
 
 <style>
