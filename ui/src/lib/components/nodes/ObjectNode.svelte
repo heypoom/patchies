@@ -27,7 +27,7 @@
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 	import { logger } from '$lib/utils/logger';
 	import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
-	import { ObjectShorthandRegistry } from '$lib/objects/object-shorthands';
+	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 
 	let {
 		id: nodeId,

@@ -2,7 +2,7 @@ import type { ObjectMetadata } from '$lib/objects/v2/object-metadata';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
-import { ObjectShorthandRegistry } from './object-shorthands';
+import { ObjectShorthandRegistry } from '../registry/ObjectShorthandRegistry';
 
 /**
  * Check if a node has any signal inlets or outlets (i.e., is an audio node).

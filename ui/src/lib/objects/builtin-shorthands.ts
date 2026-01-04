@@ -1,6 +1,6 @@
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 
-import type { ObjectShorthand } from './object-shorthands';
+import type { ObjectShorthand } from './v2/interfaces/shorthands';
 
 /**
  * Default built-in shorthands.
