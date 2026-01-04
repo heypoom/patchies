@@ -95,15 +95,24 @@
 
 	const send = (data: unknown) => messageContext.send(data);
 
+	/**
+	 * Send the message to connected objects.
+	 *
+	 * Message format:
+	 * - Bare strings (e.g. `hello world`) are sent as symbols: `{ type: 'hello world' }`
+	 * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
+	 * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
+	 * - Numbers (e.g. `100`) are sent as numbers
+	 */
 	function sendMessage() {
-		// Try to send the message as a JSON object
+		// Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
 		try {
 			send(Json5.parse(msgText));
 			return;
 		} catch (e) {}
 
-		// If all else fails, send the message as a string
-		send(msgText);
+		// Bare strings are treated as symbols: { type: <string> }
+		send({ type: msgText });
 	}
 
 	const containerClass = $derived(

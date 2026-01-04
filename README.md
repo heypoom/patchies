@@ -480,11 +480,18 @@ Try out my [example assembly patch](https://patchies.app/?id=727bt0s3rlyeyh2) to
 - Click to send the stored message to connected objects.
 - Good for triggering sequences or sending configuration data.
 - You can hit `Enter` and type `m <message>` to create a `msg` object with the given message.
-  - Example: `m {type: 'start'}` creates a `msg` object that sends `{type: 'start'}` when clicked.
+  - Example: `m start` creates a `msg` object that sends `{type: 'start'}` when clicked.
+- Message format:
+  - Bare strings (e.g. `hello` or `start`) are sent as **symbols**: `{ type: 'hello' }` or `{ type: 'start' }`
+  - Quoted strings (e.g. `"hello"`) are sent as **strings**: `"hello"`
+  - Numbers (e.g. `100`) are sent as **numbers**: `100`
+  - JSON objects (e.g. `{foo: 'bar'}`) are sent **as-is**: `{foo: 'bar'}`
 - Examples
-  - `100` sends the number 100
-  - `hello` or `"hello"` sends the string "hello"
-  - `{type: 'bang'}` sends the object `{type: 'bang'}`. this is what `button` does.
+  - `bang` sends `{type: 'bang'}` (symbol) - this is what `button` does
+  - `start` sends `{type: 'start'}` (symbol)
+  - `"hello world"` sends the string `"hello world"`
+  - `100` sends the number `100`
+  - `{x: 1, y: 2}` sends the object `{x: 1, y: 2}`
 - Messages:
   - `{type: 'bang'}`: outputs the message
 
