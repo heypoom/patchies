@@ -254,13 +254,22 @@ Successfully migrated `ToneManager` and `ElementaryAudioManager` to V2 node clas
 
 **All 29 audio nodes successfully migrated to V2 architecture.**
 
+### Lyria (AI Music) Migration
+
+The `lyria` node (used by `ai.music`) was migrated using a **pragmatic approach**:
+
+- `LiveMusicManager` now creates a `gain~` V2 node via `AudioService.createNode(nodeId, 'gain~')`
+- No custom `LyriaNode` class needed - just reuses existing `gain~` infrastructure
+- All Lyria-specific logic remains in `LiveMusicManager` (API calls, audio streaming, prompt management)
+- Cleaner than creating a wrapper node with no additional functionality
+
 ### What's Left in AudioSystem
 
-AudioSystem now only handles **non-audio V1 nodes** (`lyria`, `strudel`) which are not part of the audio graph migration. These nodes:
+AudioSystem now only handles **one non-audio V1 node** (`strudel`):
 
-- Don't have audio connections
-- Use simple gain node outputs
-- Will remain in V1 until a separate refactor
+- Doesn't have audio connections (uses Strudel's own audio system)
+- Uses simple gain node output
+- Will remain in V1 until a separate refactor (if needed)
 
 ### Next Steps
 

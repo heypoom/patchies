@@ -7,11 +7,6 @@ export const getAudioNodeGroup = (nodeType: string): V1PatchAudioNodeGroup | nul
 	const nodeGroupV2 = AudioRegistry.getInstance().get(nodeType)?.group;
 	if (nodeGroupV2) return nodeGroupV2;
 
-	// TODO: remove hard-coded lyria node
-	if (nodeType === 'lyria') {
-		return 'sources';
-	}
-
 	return null;
 };
 
