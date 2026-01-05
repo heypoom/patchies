@@ -44,6 +44,8 @@
 	let isPlaying = $state(true);
 	let previewContainerWidth = $state(0);
 	let showSettings = $state(false);
+	let showInterface = $state(false);
+	let showGuide = $state(false);
 
 	// Tile dimensions for mouse interaction
 	const TILE_W = 10;
@@ -255,7 +257,7 @@
 	function render(): void {
 		if (!renderer || !clock) return;
 
-		renderer.render(cursorX, cursorY, clock.isPaused);
+		renderer.render(cursorX, cursorY, clock.isPaused, showInterface, showGuide);
 	}
 
 	function increaseBpm(): void {
@@ -410,6 +412,29 @@
 								}}
 								class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white"
 							/>
+						</label>
+					</div>
+
+					<div class="space-y-2">
+						<div class="text-xs font-medium text-zinc-400">Display Options</div>
+						<label class="flex items-center gap-2 text-xs text-zinc-400">
+							<input
+								type="checkbox"
+								bind:checked={showInterface}
+								onchange={() => render()}
+								class="rounded"
+							/>
+							<span>Show Status Interface</span>
+						</label>
+
+						<label class="flex items-center gap-2 text-xs text-zinc-400">
+							<input
+								type="checkbox"
+								bind:checked={showGuide}
+								onchange={() => render()}
+								class="rounded"
+							/>
+							<span>Show Operator Guide</span>
 						</label>
 					</div>
 

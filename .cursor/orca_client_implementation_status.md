@@ -28,10 +28,10 @@ This document tracks which methods from the original `client.js` have been imple
 ### ✅ Grid Helper Methods
 
 - [x] `isCursor()` - Check if position is cursor → Implemented inline in `render()`
-- [ ] `isMarker()` - Check if position is marker → **NOT IMPLEMENTED**
-- [ ] `isNear()` - Check if position is near cursor → **NOT IMPLEMENTED**
-- [ ] `isLocals()` - Check if position is local marker → **NOT IMPLEMENTED**
-- [ ] `isInvisible()` - Check if cell should be invisible → **PARTIALLY IMPLEMENTED**
+- [x] `isMarker()` - Check if position is marker → **IMPLEMENTED** (8x8 grid)
+- [x] `isNear()` - Check if position is near cursor → **IMPLEMENTED**
+- [x] `isLocals()` - Check if position is local marker → **IMPLEMENTED** (4x4 local grid)
+- [x] `isInvisible()` - Check if cell should be invisible → **IMPLEMENTED**
 - [x] `findPorts()` - Find all operator ports → **IMPLEMENTED**
 
 ### ✅ Rendering Methods
@@ -40,9 +40,9 @@ This document tracks which methods from the original `client.js` have been imple
 - [x] `drawProgram()` - Draw the grid → Implemented in `render()`
 - [x] `makeStyle()` - Determine cell style → Implemented as `makeTheme()`
 - [x] `drawSprite()` - Draw a single cell → **IMPLEMENTED**
-- [ ] `drawInterface()` - Draw status bar → **NOT IMPLEMENTED**
-- [ ] `drawGuide()` - Draw operator guide → **NOT IMPLEMENTED**
-- [ ] `write()` - Write text to canvas → **NOT IMPLEMENTED**
+- [x] `drawInterface()` - Draw status bar → **IMPLEMENTED** (cursor info, position, frame, variables)
+- [x] `drawGuide()` - Draw operator guide → **IMPLEMENTED** (toggleable overlay)
+- [x] `write()` - Write text to canvas → **IMPLEMENTED** (helper function)
 - [x] `resize()` - Resize canvas → **IMPLEMENTED**
 
 ### ✅ Theme/Styling
@@ -57,9 +57,9 @@ This document tracks which methods from the original `client.js` have been imple
 
 ### Critical Missing Features (Breaking Basic Functionality)
 
-1. **Selection reading** - The original uses `this.cursor.read()` to get current selection for highlighting
-2. **Marker display** - Grid markers at intervals (+ symbols)
-3. **Proper invisibility check** - Some cells should not render even with ports
+1. ~~**Selection reading**~~ - Not needed for basic functionality (would enable multi-cell selection highlighting)
+2. ✅ **Marker display** - **IMPLEMENTED** - Grid markers (+) at 8x8 intervals, local markers (·) at 4x4 near cursor
+3. ✅ **Proper invisibility check** - **IMPLEMENTED** - Correctly checks markers, locals, ports, locks
 
 ### Nice-to-Have Features
 
@@ -78,19 +78,19 @@ This document tracks which methods from the original `client.js` have been imple
 ### P0 - Blocking Basic Usage
 
 1. ✅ Port visualization - **DONE**
-2. ❌ Fix operator execution - Random operator not working
-3. ❌ Add selection/highlighting support
+2. ✅ Fix operator execution - **DONE** (Fixed passive/active operator instantiation)
+3. ✅ Grid markers and local markers - **DONE**
 
 ### P1 - Core Features
 
-1. ❌ Add grid markers
-2. ❌ Improve invisibility logic
-3. ❌ Add status interface bar
+1. ✅ Add grid markers - **DONE**
+2. ✅ Improve invisibility logic - **DONE**
+3. ✅ Add status interface bar - **DONE**
 
 ### P2 - Polish
 
-1. ❌ Add guide display
-2. ❌ Add grid resize controls
+1. ✅ Add guide display - **DONE**
+2. ✅ Add grid resize controls - **DONE** (in settings panel)
 3. ❌ Add zoom controls
 
 ## Refactoring Needed

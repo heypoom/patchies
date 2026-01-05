@@ -29,6 +29,11 @@ export class Orca {
 	private library: Record<string, any>;
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	getLibrary(): Record<string, any> {
+		return this.library;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	constructor(library: Record<string, any>) {
 		this.library = library;
 		this.w = 1;
