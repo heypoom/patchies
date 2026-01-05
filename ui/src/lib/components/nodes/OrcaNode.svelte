@@ -47,6 +47,11 @@
 	let showInterface = $state(false);
 	let showGuide = $state(false);
 
+	// Selection state (matching original Orca cursor.js)
+	let selectionW = $state(0);
+	let selectionH = $state(0);
+	let mouseFrom: { x: number; y: number } | null = $state(null);
+
 	// Tile dimensions for mouse interaction
 	const TILE_W = 10;
 	const TILE_H = 15;
@@ -195,6 +200,22 @@
 	function handleOrcaKeyInput(e: KeyboardEvent): boolean {
 		if (!orca) return false;
 
+		// Handle clipboard shortcuts (trap to prevent XYFlow from handling)
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+			performCopy();
+			return true;
+		}
+
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+			performCut();
+			return true;
+		}
+
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+			performPaste();
+			return true;
+		}
+
 		switch (e.key) {
 			case 'ArrowLeft':
 				cursorX = Math.max(0, cursorX - 1);
@@ -241,31 +262,113 @@
 		return false;
 	}
 
-	function handleCanvasClick(e: MouseEvent): void {
+	function handleCanvasMouseDown(e: MouseEvent): void {
 		if (!canvas) return;
-
-		// Get canvas position accounting for XYFlow zoom/pan
 		const rect = canvas.getBoundingClientRect();
-
-		// Calculate position within canvas, accounting for zoom
 		const canvasX = (e.clientX - rect.left) / viewport.current.zoom;
 		const canvasY = (e.clientY - rect.top) / viewport.current.zoom;
-
-		// Convert to grid coordinates
 		const x = Math.floor(canvasX / TILE_W);
 		const y = Math.floor(canvasY / TILE_H);
 
 		if (orca && x >= 0 && x < orca.w && y >= 0 && y < orca.h) {
 			cursorX = x;
 			cursorY = y;
+			selectionW = 0;
+			selectionH = 0;
+			mouseFrom = { x, y };
 			render();
+		}
+	}
+
+	function handleCanvasMouseMove(e: MouseEvent): void {
+		if (!canvas || !mouseFrom) return;
+		const rect = canvas.getBoundingClientRect();
+		const canvasX = (e.clientX - rect.left) / viewport.current.zoom;
+		const canvasY = (e.clientY - rect.top) / viewport.current.zoom;
+		const x = Math.floor(canvasX / TILE_W);
+		const y = Math.floor(canvasY / TILE_H);
+
+		if (orca && x >= 0 && x < orca.w && y >= 0 && y < orca.h) {
+			selectionW = x - mouseFrom.x;
+			selectionH = y - mouseFrom.y;
+			render();
+		}
+	}
+
+	function handleCanvasMouseUp(): void {
+		mouseFrom = null;
+	}
+
+	// Copy/paste functionality (matching original Orca)
+	function getSelection(): string {
+		if (!orca) return '';
+		const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
+		const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
+		const maxX = cursorX > cursorX + selectionW ? cursorX : cursorX + selectionW;
+		const maxY = cursorY > cursorY + selectionH ? cursorY : cursorY + selectionH;
+		const w = maxX - minX + 1;
+		const h = maxY - minY + 1;
+		return orca.getBlock(minX, minY, w, h);
+	}
+
+	function performCopy(): void {
+		if (!orca) return;
+		const selection = getSelection();
+		navigator.clipboard.writeText(selection).catch((err) => {
+			console.error('Failed to copy:', err);
+		});
+	}
+
+	function performCut(): void {
+		if (!orca) return;
+		const selection = getSelection();
+		navigator.clipboard.writeText(selection).catch((err) => {
+			console.error('Failed to copy:', err);
+		});
+
+		// Erase selected area
+		const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
+		const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
+		const maxX = cursorX > cursorX + selectionW ? cursorX : cursorX + selectionW;
+		const maxY = cursorY > cursorY + selectionH ? cursorY : cursorY + selectionH;
+
+		for (let y = minY; y <= maxY; y++) {
+			for (let x = minX; x <= maxX; x++) {
+				orca.write(x, y, '.');
+			}
+		}
+		updateNodeData(nodeId, { grid: orca.s });
+		render();
+	}
+
+	async function performPaste(): Promise<void> {
+		if (!orca) return;
+
+		try {
+			const data = await navigator.clipboard.readText();
+			if (!data) return;
+
+			const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
+			const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
+
+			orca.writeBlock(minX, minY, data.trim(), false);
+			updateNodeData(nodeId, { grid: orca.s });
+
+			// Update selection to match pasted content
+			const lines = data.trim().split(/\r?\n/);
+			selectionW = lines[0].length - 1;
+			selectionH = lines.length - 1;
+			render();
+		} catch (err) {
+			console.error('Failed to paste:', err);
 		}
 	}
 
 	function render(): void {
 		if (!renderer || !clock) return;
 
-		renderer.render(cursorX, cursorY, clock.isPaused, showInterface, showGuide);
+		const selection = { x: cursorX, y: cursorY, w: selectionW, h: selectionH };
+		renderer.render(cursorX, cursorY, clock.isPaused, showInterface, showGuide, selection);
 	}
 
 	function increaseBpm(): void {
@@ -330,7 +433,9 @@
 					<canvas
 						bind:this={canvas}
 						onkeydown={handleKeyDown}
-						onmousedown={handleCanvasClick}
+						onmousedown={handleCanvasMouseDown}
+						onmousemove={handleCanvasMouseMove}
+						onmouseup={handleCanvasMouseUp}
 						tabindex="0"
 						role="textbox"
 						aria-label="Orca grid editor"

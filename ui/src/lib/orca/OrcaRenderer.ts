@@ -185,7 +185,8 @@ export class OrcaRenderer {
 		cursorY: number,
 		isPaused: boolean,
 		showInterface: boolean = false,
-		showGuide: boolean = false
+		showGuide: boolean = false,
+		selection?: { x: number; y: number; w: number; h: number }
 	): void {
 		// Update ports map
 		this.findPorts();
@@ -211,20 +212,50 @@ export class OrcaRenderer {
 		this.ctx.fillStyle = this.colors.background;
 		this.ctx.fillRect(0, 0, width, height);
 
+		// Calculate selection bounds
+		let selMinX = cursorX,
+			selMinY = cursorY,
+			selMaxX = cursorX,
+			selMaxY = cursorY;
+		if (selection && (selection.w !== 0 || selection.h !== 0)) {
+			selMinX = selection.x < selection.x + selection.w ? selection.x : selection.x + selection.w;
+			selMinY = selection.y < selection.y + selection.h ? selection.y : selection.y + selection.h;
+			selMaxX = selection.x > selection.x + selection.w ? selection.x : selection.x + selection.w;
+			selMaxY = selection.y > selection.y + selection.h ? selection.y : selection.y + selection.h;
+		}
+
 		// Draw grid
 		for (let y = 0; y < this.orca.h; y++) {
 			for (let x = 0; x < this.orca.w; x++) {
-				// Skip invisible cells
-				if (this.isInvisible(x, y, cursorX, cursorY) && !(x === cursorX && y === cursorY)) {
-					continue;
-				}
-
 				const glyph = this.orca.glyphAt(x, y);
 				const isCursor = x === cursorX && y === cursorY;
 				const isLocked = this.orca.lockAt(x, y);
 				const port = this.ports[this.orca.indexAt(x, y)];
+				const isSelected =
+					selection &&
+					(selection.w !== 0 || selection.h !== 0) &&
+					x >= selMinX &&
+					x <= selMaxX &&
+					y >= selMinY &&
+					y <= selMaxY;
 
-				this.drawSprite(x, y, glyph, isCursor, isLocked, isPaused, port, cursorX, cursorY);
+				// Skip invisible cells (but not selected cells - they should always show)
+				if (!isSelected && !isCursor && this.isInvisible(x, y, cursorX, cursorY)) {
+					continue;
+				}
+
+				this.drawSprite(
+					x,
+					y,
+					glyph,
+					isCursor,
+					isLocked,
+					isPaused,
+					port,
+					cursorX,
+					cursorY,
+					isSelected
+				);
 			}
 		}
 
@@ -246,13 +277,17 @@ export class OrcaRenderer {
 		isPaused: boolean,
 		port?: [number, number, number, string],
 		cursorX?: number,
-		cursorY?: number
+		cursorY?: number,
+		isSelected?: boolean
 	): void {
 		// Determine what to display
 		let displayGlyph = glyph;
 		if (glyph === '.') {
 			if (isCursor) {
 				displayGlyph = isPaused ? '~' : '@';
+			} else if (isSelected) {
+				// Show dot in selected cells (matching original Orca)
+				displayGlyph = '.';
 			} else if (this.isMarker(x, y)) {
 				displayGlyph = '+';
 			} else if (
@@ -264,7 +299,7 @@ export class OrcaRenderer {
 			}
 		}
 
-		const theme = this.makeTheme(glyph, isCursor, isLocked, port);
+		const theme = this.makeTheme(glyph, isCursor, isLocked, port, isSelected);
 
 		// Draw background if present
 		if (theme.bg) {
@@ -283,10 +318,16 @@ export class OrcaRenderer {
 		glyph: string,
 		isCursor: boolean,
 		isLocked: boolean,
-		port?: [number, number, number, string]
+		port?: [number, number, number, string],
+		isSelected?: boolean
 	): { bg?: string; fg?: string } {
 		// Cursor (selected)
 		if (isCursor) {
+			return { bg: this.colors.b_inv, fg: this.colors.f_inv };
+		}
+
+		// Multi-cell selection highlighting (orange background with black text)
+		if (isSelected) {
 			return { bg: this.colors.b_inv, fg: this.colors.f_inv };
 		}
 
