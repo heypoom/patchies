@@ -124,31 +124,33 @@ export class OrcaRenderer {
 	drawInterface(cursorX: number, cursorY: number, isPaused: boolean): void {
 		if (!this.ctx) return;
 
-		const interfaceY = this.orca.h;
 		const gridSize = 8;
+		const offsetX = 1; // Left padding (1 tile)
 
-		// Line 1: Cursor info, position, selection size, frame count
+		// Line 1: Cursor info, position, selection size, frame count (at bottom)
+		const interfaceY = this.orca.h + 1;
 		const cursorGlyph = this.orca.glyphAt(cursorX, cursorY);
-		this.write(`[${cursorGlyph}]`, gridSize * 0, interfaceY, gridSize - 1, 'f_med');
-		this.write(`${cursorX},${cursorY}`, gridSize * 1, interfaceY, gridSize, 'f_low');
-		this.write(`${this.orca.w}:${this.orca.h}`, gridSize * 2, interfaceY, gridSize, 'f_low');
+		this.write(`[${cursorGlyph}]`, offsetX + gridSize * 0, interfaceY, gridSize - 1, 'f_med');
+		this.write(`${cursorX},${cursorY}`, offsetX + gridSize * 1, interfaceY, gridSize, 'f_low');
+		this.write(
+			`${this.orca.w}:${this.orca.h}`,
+			offsetX + gridSize * 2,
+			interfaceY,
+			gridSize,
+			'f_low'
+		);
 		this.write(
 			`${this.orca.f}f${isPaused ? '~' : ''}`,
-			gridSize * 3,
+			offsetX + gridSize * 3,
 			interfaceY,
 			gridSize,
 			'f_med'
 		);
 
-		// Line 2: Version info, grid size, variables
-		const interfaceY2 = this.orca.h + 1;
-		this.write(`${this.orca.w}x${this.orca.h}`, gridSize * 1, interfaceY2, gridSize, 'f_low');
-		this.write(`${gridSize}/${gridSize}`, gridSize * 2, interfaceY2, gridSize, 'f_low');
-
-		// Show variables if any
+		// Show variables if any (on same line, to the right)
 		const varKeys = Object.keys(this.orca.variables);
 		if (varKeys.length > 0) {
-			this.write(varKeys.join(''), gridSize * 4, interfaceY2, gridSize - 1, 'f_high');
+			this.write(varKeys.join(''), offsetX + gridSize * 4, interfaceY, gridSize - 1, 'f_high');
 		}
 	}
 
@@ -188,17 +190,16 @@ export class OrcaRenderer {
 		// Update ports map
 		this.findPorts();
 
-		// Set canvas dimensions (add 2 extra rows if showing interface)
-		const interfaceRows = showInterface ? 2 : 0;
+		// Set canvas dimensions (interface uses the last row, no extra rows needed)
 		const width = this.tileWS * this.orca.w;
-		const height = (this.tileHS + this.tileHS / 5) * (this.orca.h + interfaceRows);
+		const height = (this.tileHS + this.tileHS / 5) * this.orca.h;
 
 		// Only resize canvas if dimensions changed
 		if (this.canvas.width !== width || this.canvas.height !== height) {
 			this.canvas.width = width;
 			this.canvas.height = height;
 			this.canvas.style.width = `${Math.ceil(this.tileW * this.orca.w)}px`;
-			this.canvas.style.height = `${Math.ceil((this.tileH + this.tileH / 5) * (this.orca.h + interfaceRows))}px`;
+			this.canvas.style.height = `${Math.ceil((this.tileH + this.tileH / 5) * this.orca.h)}px`;
 
 			// Setup context
 			this.ctx.textBaseline = 'bottom';
