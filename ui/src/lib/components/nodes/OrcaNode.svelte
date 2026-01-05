@@ -44,7 +44,7 @@
 	let isPlaying = $state(true);
 	let previewContainerWidth = $state(0);
 	let showSettings = $state(false);
-	let showInterface = $state(false);
+	let showInterface = $state(true);
 	let showGuide = $state(false);
 
 	// Selection state (matching original Orca cursor.js)
