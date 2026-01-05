@@ -131,10 +131,14 @@
 			<!-- License Link -->
 			<div>
 				<p class="text-sm text-zinc-300">
-					Patchies is open source and built upon amazing creative coding libraries. See the <a
-						href="#!"
-						class="text-orange-300 hover:underline"
-						onclick={() => setTab('license')}>complete licenses & attributions</a
+					Check out the
+					<a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
+						>examples</a
+					>
+					to get some inspirations! Patchies is open source and built upon amazing creative coding libraries,
+					see
+					<a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('license')}
+						>licenses & attributions</a
 					>.
 				</p>
 			</div>
