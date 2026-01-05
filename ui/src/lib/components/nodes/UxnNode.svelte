@@ -8,6 +8,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { AudioService } from '$lib/audio/v2/AudioService';
 
 	let {
 		id: nodeId,
@@ -39,7 +40,7 @@
 	let fileInputRef: HTMLInputElement;
 	let isDragging = $state(false);
 	const fileName = $derived(data.fileName || 'No ROM loaded');
-	const hasROM = $derived(!!data.rom);
+	const audioService = AudioService.getInstance();
 
 	const handleConsoleOutput = (output: string, isError: boolean) => {
 		consoleOutput += output;
@@ -75,6 +76,10 @@
 				};
 
 				emulator = new UxnEmulator(options);
+
+				// Create audio node for Uxn audio device
+				await audioService.createNode(nodeId, 'uxn', [emulator.audio]);
+
 				await emulator.init(options);
 
 				// Load ROM if provided
@@ -101,6 +106,13 @@
 
 	onDestroy(() => {
 		cleanupEventHandlers?.();
+
+		// Remove audio node
+		const audioNode = audioService.getNodeById(nodeId);
+		if (audioNode) {
+			audioService.removeNode(audioNode);
+		}
+
 		emulator?.destroy();
 		messageContext?.destroy();
 	});
@@ -314,7 +326,8 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle port="outlet" type="video" id={0} title="Video output" total={1} index={0} />
+		<StandardHandle port="outlet" type="audio" id={0} title="Audio output" total={2} index={0} />
+		<StandardHandle port="outlet" type="video" id={0} title="Video output" total={2} index={1} />
 	{/snippet}
 
 	{#snippet codeEditor()}

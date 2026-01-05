@@ -8,6 +8,7 @@ import { ConsoleDevice, type ConsoleOutputCallback } from './devices/ConsoleDevi
 import { ControllerDevice } from './devices/ControllerDevice';
 import { ScreenDevice } from './devices/ScreenDevice';
 import { MouseDevice } from './devices/MouseDevice';
+import { AudioDevice } from './devices/AudioDevice';
 import { default_zoom } from './boot';
 
 export interface UxnEmulatorOptions {
@@ -24,6 +25,7 @@ export class UxnEmulator {
 	public screen: ScreenDevice;
 	public datetime: DateTimeDevice;
 	public mouse: MouseDevice;
+	public audio: AudioDevice;
 	public uxn: Uxn;
 
 	private renderLoopId: ReturnType<typeof setInterval> | null = null;
@@ -37,6 +39,7 @@ export class UxnEmulator {
 		this.screen = new ScreenDevice(this);
 		this.datetime = new DateTimeDevice(this);
 		this.mouse = new MouseDevice(this);
+		this.audio = new AudioDevice(this);
 
 		// Initialize Uxn core (using uxn.wasm)
 		this.uxn = new Uxn();
@@ -56,6 +59,7 @@ export class UxnEmulator {
 		}
 		// Controller doesn't need init (events handled at node level)
 		// Mouse doesn't need init (events handled at node level)
+		// Audio device will be initialized when UxnAudioNode is created by the component
 
 		// Start render loop
 		this.startRenderLoop();
@@ -146,6 +150,8 @@ export class UxnEmulator {
 				return this.datetime.dei(port);
 			case 0x20:
 				return this.screen.dei(port);
+			case 0x30:
+				return this.audio.dei(port);
 		}
 		return this.uxn.dev[port];
 	}
@@ -162,10 +168,15 @@ export class UxnEmulator {
 			case 0x20:
 				this.screen.deo(port);
 				break;
+			case 0x30:
+				this.audio.deo(port);
+				break;
 		}
 	}
 
 	destroy(): void {
 		this.stopRenderLoop();
+		this.audio.stop();
+		// Audio node cleanup is handled by AudioService
 	}
 }
