@@ -204,7 +204,7 @@
 		// Handle font size shortcuts (Ctrl/Cmd +/-)
 		if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
 			e.preventDefault();
-			fontSize = Math.min(2.0, fontSize + 0.1);
+			fontSize = Math.min(3.0, fontSize + 0.1);
 			render();
 			measureWidth();
 			return true;
