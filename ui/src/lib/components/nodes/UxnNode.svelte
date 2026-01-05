@@ -10,6 +10,7 @@
 	import { match, P } from 'ts-pattern';
 	import { asm } from 'uxn.wasm/util';
 	import * as Tooltip from '../ui/tooltip';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	let {
 		id: nodeId,
@@ -43,6 +44,8 @@
 	let messageContext: MessageContext;
 	let fileInputRef: HTMLInputElement;
 	let isDragging = $state(false);
+	let glSystem = GLSystem.getInstance();
+	let bitmapFrameId: number | null = null;
 	const fileName = $derived(data.fileName || 'No ROM loaded');
 	const hasROM = $derived(!!data.rom);
 	const code = $derived(data.code || '');
@@ -63,10 +66,10 @@
 	const handleConsoleOutput = (output: string, isError: boolean) => {
 		consoleOutput += output;
 		updateNodeData(nodeId, { consoleOutput, showConsole });
-		// Auto-show console if there's output
-		if (!showConsole && output) {
-			showConsole = true;
-			updateNodeData(nodeId, { showConsole: true });
+
+		// Send console output as message
+		if (messageContext) {
+			messageContext.send(output);
 		}
 	};
 
@@ -88,6 +91,8 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 		measureContainerWidth();
+		glSystem.upsertNode(nodeId, 'img', {});
+		startBitmapUpload();
 
 		(async () => {
 			if (!canvas) return;
@@ -125,8 +130,10 @@
 	});
 
 	onDestroy(() => {
+		stopBitmapUpload();
 		cleanupEventHandlers?.();
 		emulator?.destroy();
+		glSystem.removeNode(nodeId);
 		messageContext?.destroy();
 	});
 
@@ -270,8 +277,10 @@
 		isPaused = !isPaused;
 		if (isPaused) {
 			emulator?.stopRenderLoop();
+			stopBitmapUpload();
 		} else {
 			emulator?.startRenderLoop();
+			startBitmapUpload();
 		}
 	}
 
@@ -319,6 +328,28 @@
 
 	function openFileDialog() {
 		fileInputRef?.click();
+	}
+
+	async function uploadBitmap() {
+		if (!canvas || !emulator || isPaused) return;
+
+		if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+			await glSystem.setBitmapSource(nodeId, canvas);
+		}
+
+		bitmapFrameId = requestAnimationFrame(uploadBitmap);
+	}
+
+	function startBitmapUpload() {
+		if (bitmapFrameId !== null) return;
+		bitmapFrameId = requestAnimationFrame(uploadBitmap);
+	}
+
+	function stopBitmapUpload() {
+		if (bitmapFrameId !== null) {
+			cancelAnimationFrame(bitmapFrameId);
+			bitmapFrameId = null;
+		}
 	}
 
 	function assembleAndLoad() {
@@ -433,6 +464,22 @@
 						style="width: 512px; height: 320px; image-rendering: pixelated; image-rendering: crisp-edges;"
 					></canvas>
 				</div>
+				<StandardHandle
+					port="outlet"
+					type="video"
+					id={0}
+					title="Video output"
+					total={2}
+					index={0}
+				/>
+				<StandardHandle
+					port="outlet"
+					type="message"
+					id={0}
+					title="Console output"
+					total={2}
+					index={1}
+				/>
 			</div>
 
 			{#if errorMessage}
@@ -443,7 +490,8 @@
 
 			{#if showConsole}
 				<div
-					class="max-h-32 overflow-y-auto whitespace-pre-wrap rounded bg-zinc-900 p-2 font-mono text-xs text-white"
+					class="max-h-32 w-full overflow-y-auto whitespace-pre-wrap break-words rounded bg-zinc-900 p-2 font-mono text-xs text-white"
+					style="word-wrap: break-word; overflow-wrap: break-word;"
 				>
 					{consoleOutput || '(no output)'}
 				</div>
