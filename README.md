@@ -342,7 +342,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 <img src="./docs/images/patchies-uxn.png" alt="Patchies.app uxn node" width="700">
 
 - [Uxn](https://100r.co/site/uxn.html) is a virtual machine for running small programs written in [Uxntal](https://wiki.xxiivv.com/site/uxntal.html), an assembly language for the Uxn stack machine. Conforms with the [Varvara](https://wiki.xxiivv.com/site/varvara.html) device specifications.
-- Run classic Uxn programs and games like [Left](https://100r.co/site/left.html), and [Orca](https://100r.co/site/orca.html).
+- Run classic Uxn programs like [Orca](https://100r.co/site/orca.html) and [Left](https://100r.co/site/left.html). Run games like [Oquonie](https://hundredrabbits.itch.io/oquonie) and [Donsol](https://hundredrabbits.itch.io/donsol).
 - Write and assemble your own Uxntal programs directly in the editor.
 - Supports video chaining - connect the video outlet to other visual objects (e.g. `hydra` and `glsl`) to process the Uxn screen output.
 - Console output is automatically sent as messages through the message outlet, allowing you to process program output with other objects.
