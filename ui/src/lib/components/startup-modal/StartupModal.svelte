@@ -51,7 +51,7 @@
 			aria-labelledby="modal-title"
 		>
 			<!-- Tab navigation -->
-			<div class="relative border-b border-zinc-800 px-4 pt-4 sm:px-6 sm:pt-6">
+			<div class="relative border-b border-zinc-800 px-4 pt-10 sm:px-6 sm:pt-4">
 				<div class="flex items-start gap-4">
 					<nav class="flex flex-1 gap-4 overflow-x-auto sm:gap-6">
 						{#each tabs as tab (tab)}
