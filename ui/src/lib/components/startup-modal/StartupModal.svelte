@@ -6,7 +6,10 @@
 	import ShortcutsTab from './ShortcutsTab.svelte';
 	import type { Tab } from './types';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	let {
+		open = $bindable(false),
+		onLoadPatch
+	}: { open?: boolean; onLoadPatch?: (patchId: string) => Promise<void> } = $props();
 
 	let activeTab = $state<Tab>('about');
 
@@ -91,7 +94,7 @@
 				{#if activeTab === 'about'}
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'demos'}
-					<ExamplesTab />
+					<ExamplesTab {onLoadPatch} />
 				{:else if activeTab === 'license'}
 					<LicenseTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'shortcuts'}

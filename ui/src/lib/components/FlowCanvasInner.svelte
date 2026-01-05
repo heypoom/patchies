@@ -533,6 +533,19 @@
 		}
 	}
 
+	async function loadPatchById(patchId: string) {
+		try {
+			const save = await getSharedPatchData(patchId);
+			if (save) {
+				restorePatchFromSave(save);
+				// Close the startup modal after loading
+				showStartupModal = false;
+			}
+		} catch (err) {
+			console.error('Failed to load patch:', err);
+		}
+	}
+
 	// Load patch from URL parameter
 	async function loadPatchFromUrlParam(url: string) {
 		isLoadingFromUrl = true;
@@ -781,7 +794,7 @@
 				><Icon icon="lucide:file-plus-2" class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
 			>
 
-			<StartupModal bind:open={showStartupModal} />
+			<StartupModal bind:open={showStartupModal} onLoadPatch={loadPatchById} />
 		</div>
 	{/if}
 </div>

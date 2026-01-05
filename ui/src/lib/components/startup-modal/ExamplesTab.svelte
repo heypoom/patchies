@@ -4,6 +4,8 @@
 	import ExampleCard from './ExampleCard.svelte';
 	import type { ExampleCategory } from './types';
 
+	let { onLoadPatch }: { onLoadPatch?: (patchId: string) => Promise<void> } = $props();
+
 	let exampleCategories = $state<ExampleCategory[]>([]);
 	let isLoadingExamples = $state(false);
 
@@ -36,9 +38,13 @@
 		}
 	});
 
-	function loadExample(patchId: string) {
-		// Navigate to the example patch
-		window.location.href = `/?id=${patchId}`;
+	async function loadExample(patchId: string) {
+		if (onLoadPatch) {
+			await onLoadPatch(patchId);
+		} else {
+			// Fallback to URL navigation if function not provided
+			window.location.href = `/?id=${patchId}`;
+		}
 	}
 </script>
 
