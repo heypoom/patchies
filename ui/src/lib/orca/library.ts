@@ -678,3 +678,33 @@ library['!'] = class OperatorCC extends Operator {
 		this.draw = false;
 	}
 };
+
+// ? - PB (Pitch Bend)
+library['?'] = class OperatorPB extends Operator {
+	constructor(orca: Orca, x: number, y: number) {
+		super(orca, x, y, '?', true);
+		this.name = 'pb';
+		this.info = 'Sends MIDI pitch bend';
+		this.ports.channel = { x: 1, y: 0, clamp: { min: 0, max: 15 } };
+		this.ports.lsb = { x: 2, y: 0, clamp: { min: 0 } };
+		this.ports.msb = { x: 3, y: 0, clamp: { min: 0 } };
+	}
+
+	operation(force: boolean = false): void {
+		if (!this.hasNeighbor('*') && force === false) return;
+		if (this.listen(this.ports.channel) === '.') return;
+		if (this.listen(this.ports.lsb) === '.') return;
+
+		const channel = this.listen(this.ports.channel, true) as number;
+		const rawLsb = this.listen(this.ports.lsb, true) as number;
+		const lsb = Math.ceil((127 * rawLsb) / 35);
+		const rawMsb = this.listen(this.ports.msb, true) as number;
+		const msb = Math.ceil((127 * rawMsb) / 35);
+
+		if (this.orca.io) {
+			this.orca.io.cc.stack.push({ channel, lsb, msb, type: 'pb' });
+		}
+
+		this.draw = false;
+	}
+};
