@@ -1,6 +1,20 @@
 {
 	"patches": [
 		{
+			"id": "w46um7gafe7hgle",
+			"name": "Drum Machine",
+			"description": "Build your own drum machine! Use the W A S D keys on your keyboard to play some drums 🥁",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "ip0chhw6jzuyo6x",
+			"name": "Chord Progression",
+			"description": "Advanced DSP example using dsp~ to create an infinitely descending chord progression",
+			"category": "Audio",
+			"author": "@dtinth"
+		},
+		{
 			"id": "u7mgx2xkv2wmdbl",
 			"name": "FM Synthesis Demo",
 			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth.",
@@ -13,13 +27,6 @@
 			"description": "A funky beat created using expr~ for audio-rate mathematical expressions",
 			"category": "Audio",
 			"author": "@kijjaz"
-		},
-		{
-			"id": "w46um7gafe7hgle",
-			"name": "Drum Machine",
-			"description": "Build your own drum machine! Use the W A S D keys on your keyboard to play some drums 🥁",
-			"category": "Audio",
-			"author": "@heypoom"
 		},
 		{
 			"id": "b2vsbbe4jt87qyz",
@@ -50,9 +57,9 @@
 			"author": "@dtinth"
 		},
 		{
-			"id": "ip0chhw6jzuyo6x",
-			"name": "Chord Progression",
-			"description": "Advanced DSP example using dsp~ to create an infinitely descending chord progression",
+			"id": "a2uwlxishlipgf6",
+			"name": "ChucK Music Piece",
+			"description": "ChucK music composition featuring an arp using StifKarp, random melody, kick drum with sweeping sine wave, bassline track, and feedback delay lines",
 			"category": "Audio",
 			"author": "@dtinth"
 		},
