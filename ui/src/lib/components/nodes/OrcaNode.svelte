@@ -255,7 +255,20 @@
 			return true;
 		}
 
-		// Handle clipboard shortcuts (trap to prevent XYFlow from handling)
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+			e.preventDefault();
+
+			// Select all cells
+			cursorX = 0;
+			cursorY = 0;
+			selectionW = orca.w - 1;
+			selectionH = orca.h - 1;
+
+			render();
+
+			return true;
+		}
+
 		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
 			performCopy();
 			return true;
