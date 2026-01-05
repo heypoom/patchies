@@ -14,12 +14,6 @@
 		open = false;
 	}
 
-	function handleBackdropClick(event: MouseEvent) {
-		if (event.target === event.currentTarget) {
-			handleClose();
-		}
-	}
-
 	function handleOpen() {
 		open = true;
 	}
@@ -37,18 +31,34 @@
 </button>
 
 {#if open}
-	<!-- Modal backdrop (no visual backdrop, just for click handling) -->
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center font-mono"
-		onclick={handleBackdropClick}
-		role="presentation"
-	>
+	<!-- Modal backdrop -->
+	<div class="fixed inset-0 z-50 flex items-center justify-center font-mono" role="presentation">
+		<!-- Backdrop overlay -->
+		<div
+			class="fixed inset-0 bg-black/60 backdrop-blur-sm"
+			role="button"
+			tabindex="-1"
+			onclick={handleClose}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') handleClose();
+			}}
+			aria-label="Close modal"
+		></div>
+
 		<!-- Modal container -->
 		<div
-			class="relative h-screen w-full overflow-hidden bg-zinc-950/90 sm:mx-4 sm:h-[85vh] sm:max-w-3xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
+			class="relative z-10 h-screen w-full overflow-hidden bg-zinc-950 sm:mx-4 sm:h-[85vh] sm:max-w-3xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="modal-title"
+			tabindex="-1"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') {
+					e.stopPropagation();
+					handleClose();
+				}
+			}}
 		>
 			<!-- Tab navigation -->
 			<div class="relative border-b border-zinc-800 px-4 pt-10 sm:px-6 sm:pt-4">
