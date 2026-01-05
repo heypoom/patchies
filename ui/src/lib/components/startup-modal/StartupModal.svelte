@@ -53,7 +53,7 @@
 			<!-- Close button -->
 			<button
 				onclick={handleClose}
-				class="absolute top-4 right-4 z-10 rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+				class="absolute right-4 top-4 z-10 rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
 				aria-label="Close modal"
 			>
 				<Icon icon="lucide:x" class="h-5 w-5" />
@@ -76,7 +76,7 @@
 			</div>
 
 			<!-- Tab content -->
-			<div class="overflow-y-auto p-6" style="max-height: calc(85vh - 80px);">
+			<div class="flex overflow-y-auto p-6" style="max-height: calc(85vh - 80px);">
 				{#if activeTab === 'about'}
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'examples'}
