@@ -53,8 +53,9 @@
 	let mouseFrom: { x: number; y: number } | null = $state(null);
 
 	// Tile dimensions for mouse interaction
-	const TILE_W = 10;
-	const TILE_H = 15;
+	let fontSize = $state(1.0); // Scale factor for font size
+	let TILE_W = $derived(10 * fontSize);
+	let TILE_H = $derived(15 * fontSize);
 
 	const COLORS = {
 		background: '#000000',
@@ -78,7 +79,7 @@
 
 		clock = new Clock(orca);
 		io = new IO(messageContext);
-		renderer = new OrcaRenderer(canvas, orca, COLORS);
+		renderer = new OrcaRenderer(canvas, orca, COLORS, fontSize);
 
 		// Connect IO to Orca so operators can access it
 		orca.io = io;
@@ -199,6 +200,22 @@
 
 	function handleOrcaKeyInput(e: KeyboardEvent): boolean {
 		if (!orca) return false;
+
+		// Handle font size shortcuts (Ctrl/Cmd +/-)
+		if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+			e.preventDefault();
+			fontSize = Math.min(2.0, fontSize + 0.1);
+			render();
+			measureWidth();
+			return true;
+		}
+		if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+			e.preventDefault();
+			fontSize = Math.max(0.5, fontSize - 0.1);
+			render();
+			measureWidth();
+			return true;
+		}
 
 		// Handle clipboard shortcuts (trap to prevent XYFlow from handling)
 		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
@@ -385,6 +402,9 @@
 	function render(): void {
 		if (!renderer || !clock) return;
 
+		// Update font scale if it changed
+		renderer.updateFontScale(fontSize);
+
 		const selection = { x: cursorX, y: cursorY, w: selectionW, h: selectionH };
 		renderer.render(cursorX, cursorY, clock.isPaused, showInterface, showGuide, selection);
 	}
@@ -494,7 +514,9 @@
 									onchange={(e) => {
 										const val = parseInt(e.currentTarget.value);
 										if (orca && !isNaN(val) && val > 0) {
-											orca.reset(val, orca.h);
+											// Preserve existing content when resizing
+											const oldGrid = orca.s;
+											orca.load(val, orca.h, oldGrid, orca.f);
 											updateNodeData(nodeId, { width: val, grid: orca.s });
 											render();
 											measureWidth();
@@ -513,7 +535,9 @@
 									onchange={(e) => {
 										const val = parseInt(e.currentTarget.value);
 										if (orca && !isNaN(val) && val > 0) {
-											orca.reset(orca.w, val);
+											// Preserve existing content when resizing
+											const oldGrid = orca.s;
+											orca.load(orca.w, val, oldGrid, orca.f);
 											updateNodeData(nodeId, { height: val, grid: orca.s });
 											render();
 											measureWidth();
@@ -566,6 +590,33 @@
 								class="rounded"
 							/>
 							<span>Show Operator Guide</span>
+						</label>
+
+						<label class="flex flex-col text-xs text-zinc-400">
+							<span>Font Size: {fontSize.toFixed(1)}x</span>
+							<div class="mt-1 flex items-center gap-2">
+								<button
+									onclick={() => {
+										fontSize = Math.max(0.5, fontSize - 0.1);
+										render();
+										measureWidth();
+									}}
+									class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
+								>
+									−
+								</button>
+								<button
+									onclick={() => {
+										fontSize = Math.min(2.0, fontSize + 0.1);
+										render();
+										measureWidth();
+									}}
+									class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
+								>
+									+
+								</button>
+								<span class="flex-1 text-xs text-zinc-500">(Ctrl +/−)</span>
+							</div>
 						</label>
 					</div>
 

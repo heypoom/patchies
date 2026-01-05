@@ -32,15 +32,17 @@ export class OrcaRenderer {
 	private tileH: number;
 	private tileWS: number;
 	private tileHS: number;
+	private fontScale: number;
 	private ports: Array<[number, number, number, string] | undefined> = [];
 
-	constructor(canvas: HTMLCanvasElement, orca: Orca, colors: OrcaColors) {
+	constructor(canvas: HTMLCanvasElement, orca: Orca, colors: OrcaColors, fontScale: number = 1.0) {
 		this.canvas = canvas;
 		this.orca = orca;
 		this.colors = colors;
+		this.fontScale = fontScale;
 		this.scale = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
-		this.tileW = 10;
-		this.tileH = 15;
+		this.tileW = 10 * fontScale;
+		this.tileH = 15 * fontScale;
 		this.tileWS = Math.floor(this.tileW * this.scale);
 		this.tileHS = Math.floor(this.tileH * this.scale);
 
@@ -49,6 +51,14 @@ export class OrcaRenderer {
 			throw new Error('Could not get 2D context from canvas');
 		}
 		this.ctx = ctx;
+	}
+
+	updateFontScale(fontScale: number): void {
+		this.fontScale = fontScale;
+		this.tileW = 10 * fontScale;
+		this.tileH = 15 * fontScale;
+		this.tileWS = Math.floor(this.tileW * this.scale);
+		this.tileHS = Math.floor(this.tileH * this.scale);
 	}
 
 	findPorts(): void {
