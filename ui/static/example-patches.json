@@ -50,7 +50,7 @@
 			"author": "@dtinth"
 		},
 		{
-			"id": "u7mgx2xkv2wmdbl",
+			"id": "b17136cy9rxxebw",
 			"name": "FM Synth",
 			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth.",
 			"category": "Audio",
