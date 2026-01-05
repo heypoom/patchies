@@ -525,7 +525,8 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - [Orca](https://github.com/hundredrabbits/Orca) is an esoteric programming language where every character is an operation that runs sequentially every frame.
 - Create procedural sequences with 26 letter operators (A-Z) and special symbols for MIDI control.
 - **Output-agnostic**: Orca emits standard Patchies MIDI messages (noteOn, noteOff, controlChange) that work with any audio node.
-- Connect the outlet to `midi.out` for hardware synths, `tone~` for synthesis, or `sampler~` for sample playback.
+  - Connect the outlet to `midi.out` for MIDI output.
+  - Try using the `poly-synth-midi.tone` preset, which uses `tone~` node to playback MIDI messages.
 - **Key operators**:
   - `A-Z`: Mathematical, logical, and movement operations
   - `:`: MIDI note output (channel, octave, note, velocity, length)
