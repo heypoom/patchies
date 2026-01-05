@@ -336,6 +336,54 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - You can use it as video source and connect it to other visual objects (e.g. `hydra` and `glsl`) to derive more visual effects.
 - It can be very compute intensive. Use it sparingly otherwise your patch will lag. It also runs on the main thread, see [rendering pipeline](#rendering-pipeline) for more details.
 
+### `uxn`: Uxn virtual machine
+
+<img src="./docs/images/patchies-uxn.png" alt="Patchies.app uxn node" width="700">
+
+- [Uxn](https://100r.co/site/uxn.html) is a virtual machine for running small programs written in [Uxntal](https://wiki.xxiivv.com/site/uxntal.html), an assembly language for the Uxn stack machine. Conforms with the [Varvara](https://wiki.xxiivv.com/site/varvara.html) device specifications.
+- Run classic Uxn programs and games like [Left](https://100r.co/site/left.html), and [Orca](https://100r.co/site/orca.html).
+- Write and assemble your own Uxntal programs directly in the editor.
+- Supports video chaining - connect the video outlet to other visual objects (e.g. `hydra` and `glsl`) to process the Uxn screen output.
+- Console output is automatically sent as messages through the message outlet, allowing you to process program output with other objects.
+
+**Loading ROMs:**
+
+- **File**: Click the "Load ROM" button (folder icon) to load a `.rom` file from your computer.
+- **Drag & Drop**: Drag a `.rom` file onto the canvas to load it.
+- **URL**: Send a URL string message to the inlet to load a ROM from the web.
+- **Message**: Send a `Uint8Array` or `File` object to the inlet to load a ROM programmatically.
+
+**Writing Code:**
+
+- Click the "Edit Code" button (code icon) to open the Uxntal code editor.
+- Write your Uxntal assembly code in the editor.
+- Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
+- Assembler errors are displayed in the console.
+
+**Console:**
+
+- Click the "Console" button (terminal icon) to view program output and assembler errors.
+- Console output is automatically sent as string messages through the message outlet.
+- Long messages automatically wrap to fit the node width.
+
+**Controls:**
+
+- **Pause/Resume**: Click the pause button to pause/resume program execution.
+- **Keyboard Input**: The canvas captures keyboard input for Uxn programs. Click on the canvas to focus it.
+- **Mouse Input**: Mouse movement and clicks are automatically sent to the Uxn program.
+
+- Messages
+
+  - `string` (URL): Load ROM from URL
+  - `Uint8Array`: Load ROM from binary data
+  - `File`: Load ROM from file object
+  - `{type: 'load', url: string}`: Load ROM from URL
+  - Outputs string messages from console device
+
+- See the [Uxn documentation](https://wiki.xxiivv.com/site/uxn.html) and [Uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html) to learn how to write Uxn programs.
+- Check out [100r.co](https://100r.co) for Uxn programs and resources.
+- See [Awesome Uxn](https://github.com/hundredrabbits/awesome-uxn) for cool resources and projects from the Uxn community.
+
 ### `img`: display images
 
 - Load and display images from URLs or local files.
