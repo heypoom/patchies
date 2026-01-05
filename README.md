@@ -27,6 +27,8 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 
 ## ...by patching them together ✨
 
+<img src="./docs/images/patchies-advanced-drums.png" alt="Patchies.app advanced drum synthesizer" width="700">
+
 Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a huge web of small objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
 If you haven't used a patching environment before, patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You connect the output of one object to the input of another object to create a flow of data. We call the whole visual program a "patch" or "patcher".
@@ -182,7 +184,7 @@ For a more fun example, here's [a little patch](https://patchies.app/?id=l8ypbfy
 
 <img src="./docs/images/patchies-audio-super-fun.png" alt="Patchies.app beat example" width="500">
 
-If you don't have an idea where to start, why not build your own drum machine? [Try it out](https://patchies.app/?id=w46um7gafe7hgle)! Use the `W A S D` keys on your keyboard to play some drums 🥁.
+If you don't have an idea where to start, why not build your own drum machine? [Try it out](https://patchies.app/?id=w46um7gafe7hgle)! Use the `W A S D` keys on your keyboard to play some drums 🥁. Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz) as well: use `P` to play and `K` to stop.
 
 <img src="./docs/images/patchies-simple-drums.png" alt="Patchies.app simple drum machine" width="500">
 
