@@ -22,6 +22,13 @@
 			"author": "@kijjaz"
 		},
 		{
+			"id": "mjjh5j78q46oe9i",
+			"name": "Orca Tones",
+			"description": "Basic Orca operators and Tone.js poly synth. Makes for a nice lullaby.",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
 			"id": "b2vsbbe4jt87qyz",
 			"name": "Drum Sequencer",
 			"description": "Interactive drum sequencer. Use P to play and K to stop",
