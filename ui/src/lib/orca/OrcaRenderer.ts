@@ -148,7 +148,6 @@ export class OrcaRenderer {
 	): void {
 		if (!this.ctx) return;
 
-		const gridSize = 8;
 		const offsetX = 1; // Left padding (1 tile)
 		const interfaceY = this.orca.h + 1;
 
@@ -168,28 +167,34 @@ export class OrcaRenderer {
 			}
 		}
 
-		// Line 1: Operator info, position, grid size, frame count
-		this.write(operatorInfo, offsetX + gridSize * 0, interfaceY, gridSize - 1, 'f_med');
-		this.write(`${cursorX},${cursorY}`, offsetX + gridSize * 1, interfaceY, gridSize, 'f_low');
-		this.write(
-			`${this.orca.w}:${this.orca.h}`,
-			offsetX + gridSize * 2,
-			interfaceY,
-			gridSize,
-			'f_low'
-		);
-		this.write(
-			`${this.orca.f}f${isPaused ? '~' : ''}`,
-			offsetX + gridSize * 3,
-			interfaceY,
-			gridSize,
-			'f_med'
-		);
+		// Calculate positions with tighter spacing
+		let currentX = offsetX;
+		const spaceBy = 2;
+
+		// Operator info (e.g., "empty", "Random", "multi")
+		this.write(operatorInfo, currentX, interfaceY, operatorInfo.length + 1, 'f_med');
+		currentX += operatorInfo.length + spaceBy; // Move cursor position for next element
+
+		// Position (e.g., "10,7")
+		const positionStr = `${cursorX},${cursorY}`;
+		this.write(positionStr, currentX, interfaceY, positionStr.length + 1, 'f_low');
+		currentX += positionStr.length + spaceBy;
+
+		// Grid size (e.g., "32:16")
+		const gridSizeStr = `${this.orca.w}:${this.orca.h}`;
+		this.write(gridSizeStr, currentX, interfaceY, gridSizeStr.length + 1, 'f_low');
+		currentX += gridSizeStr.length + spaceBy;
+
+		// Frame count (e.g., "27f" or "27f~")
+		const frameStr = `${this.orca.f}f${isPaused ? '~' : ''}`;
+		this.write(frameStr, currentX, interfaceY, frameStr.length + 1, 'f_med');
+		currentX += frameStr.length + spaceBy;
 
 		// Show variables if any (on same line, to the right)
 		const varKeys = Object.keys(this.orca.variables);
 		if (varKeys.length > 0) {
-			this.write(varKeys.join(''), offsetX + gridSize * 4, interfaceY, gridSize - 1, 'f_high');
+			const varsStr = varKeys.join('');
+			this.write(varsStr, currentX, interfaceY, varsStr.length + 1, 'f_high');
 		}
 	}
 
