@@ -15,13 +15,6 @@
 			"author": "@dtinth"
 		},
 		{
-			"id": "u7mgx2xkv2wmdbl",
-			"name": "FM Synthesis Demo",
-			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth.",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
 			"id": "l8ypbfy88xfakyd",
 			"name": "Funky Beat",
 			"description": "A funky beat created using expr~ for audio-rate mathematical expressions",
@@ -55,6 +48,13 @@
 			"description": "Drum kicks created with expr~",
 			"category": "Audio",
 			"author": "@dtinth"
+		},
+		{
+			"id": "u7mgx2xkv2wmdbl",
+			"name": "FM Synth",
+			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth.",
+			"category": "Audio",
+			"author": "@heypoom"
 		},
 		{
 			"id": "a2uwlxishlipgf6",

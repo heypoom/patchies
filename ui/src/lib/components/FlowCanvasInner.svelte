@@ -69,7 +69,7 @@
 	let flowContainer: HTMLDivElement;
 
 	// Get flow utilities for coordinate transformation
-	const { screenToFlowPosition, deleteElements } = useSvelteFlow();
+	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
 
 	// Track nodes and edges for message routing
 	let previousNodes = new Set<string>();
@@ -538,6 +538,12 @@
 			const save = await getSharedPatchData(patchId);
 			if (save) {
 				restorePatchFromSave(save);
+
+				// Reset viewport to center and default zoom
+				setTimeout(() => {
+					fitView({ padding: 0.2, duration: 300 });
+				}, 100);
+
 				// Close the startup modal after loading
 				showStartupModal = false;
 			}
