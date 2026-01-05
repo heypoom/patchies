@@ -534,6 +534,9 @@
 	}
 
 	async function loadPatchById(patchId: string) {
+		isLoadingFromUrl = true;
+		urlLoadError = null;
+
 		try {
 			const save = await getSharedPatchData(patchId);
 			if (save) {
@@ -548,7 +551,10 @@
 				showStartupModal = false;
 			}
 		} catch (err) {
+			urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
 			console.error('Failed to load patch:', err);
+		} finally {
+			isLoadingFromUrl = false;
 		}
 	}
 
