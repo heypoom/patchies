@@ -43,6 +43,8 @@ This lets you visually see the program's core composition and its in-between res
 
 ### Creating Objects
 
+<img src="./docs/images/patchies-insert-object-with-enter.png" alt="Patchies.app orca node" width="700">
+
 - Press `Enter` to create a new object.
   - Type to search for object name. Try `hydra` or `glsl` or `p5`.
   - `Arrow Up/Down` navigates the list.
