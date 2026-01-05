@@ -20,6 +20,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - Synthesize and process video with [Hydra](https://hydra.ojack.xyz) and [GLSL shaders](https://www.shadertoy.com)
 - Live code music with [Strudel](https://strudel.cc), [ChucK](https://chuck.cs.princeton.edu/webchuck) and [Orca](https://github.com/hundredrabbits/Orca)
 - Synthesize and process audio with [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) nodes, [Tone.js](https://tonejs.github.io) and [Elementary Audio](https://www.elementary.audio)
+- Run programs and games on the [Uxn](https://wiki.xxiivv.com/site/uxn.html) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) assembly.
 - Compute in a raw and fun way with [stack machine assembly](./modules/vasm/README.md)
 - Run numerical computations with [Python 3](https://pyodide.org)
 - Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
