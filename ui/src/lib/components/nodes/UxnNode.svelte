@@ -490,7 +490,7 @@
 
 			{#if showConsole}
 				<div
-					class="max-h-32 w-full overflow-y-auto whitespace-pre-wrap break-words rounded bg-zinc-900 p-2 font-mono text-xs text-white"
+					class="max-h-32 w-full max-w-[512px] overflow-y-auto whitespace-pre-wrap break-words rounded bg-zinc-900 p-2 font-mono text-xs text-white"
 					style="word-wrap: break-word; overflow-wrap: break-word;"
 				>
 					{consoleOutput || '(no output)'}
