@@ -1,46 +1,74 @@
 {
-  "patches": [
-    {
-      "id": "audio-reactive-circles",
-      "name": "Audio Reactive Circles",
-      "description": "Visualize audio frequencies with animated circles",
-      "category": "Audio Visualization",
-      "author": "Patchies Team"
-    },
-    {
-      "id": "hydra-feedback",
-      "name": "Hydra Video Feedback",
-      "description": "Psychedelic video feedback loops using Hydra",
-      "category": "Visual Effects",
-      "author": "Patchies Team"
-    },
-    {
-      "id": "strudel-basic",
-      "name": "Basic Strudel Beat",
-      "description": "Simple drum pattern using Strudel live coding",
-      "category": "Music",
-      "author": "Patchies Team"
-    },
-    {
-      "id": "p5-particles",
-      "name": "Particle System",
-      "description": "Interactive particle system with mouse control",
-      "category": "Interactive",
-      "author": "Patchies Team"
-    },
-    {
-      "id": "glsl-shader",
-      "name": "GLSL Shader Art",
-      "description": "Generative shader patterns",
-      "category": "Visual Effects",
-      "author": "Patchies Team"
-    },
-    {
-      "id": "message-passing",
-      "name": "Message Passing Demo",
-      "description": "Learn how to use send() and recv() between nodes",
-      "category": "Tutorial",
-      "author": "Patchies Team"
-    }
-  ]
+	"patches": [
+		{
+			"id": "u7mgx2xkv2wmdbl",
+			"name": "FM Synthesis Demo",
+			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth.",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "l8ypbfy88xfakyd",
+			"name": "Funky Beat",
+			"description": "A funky beat created using expr~ for audio-rate mathematical expressions",
+			"category": "Audio",
+			"author": "@kijjaz"
+		},
+		{
+			"id": "w46um7gafe7hgle",
+			"name": "Drum Machine",
+			"description": "Build your own drum machine! Use the W A S D keys on your keyboard to play some drums 🥁",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "b2vsbbe4jt87qyz",
+			"name": "Drum Sequencer",
+			"description": "Interactive drum sequencer. Use P to play and K to stop",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "tfjdf019hjyxmeu",
+			"name": "Scales",
+			"description": "Musical scales created with expr~",
+			"category": "Audio",
+			"author": "@kijjazz"
+		},
+		{
+			"id": "xhdtrqenaf6ur81",
+			"name": "Sleep",
+			"description": "Alternative version of scales patch",
+			"category": "Audio",
+			"author": "@kijjazz"
+		},
+		{
+			"id": "jf7n1ku67auc5xg",
+			"name": "Kicks",
+			"description": "Drum kicks created with expr~",
+			"category": "Audio",
+			"author": "@dtinth"
+		},
+		{
+			"id": "ip0chhw6jzuyo6x",
+			"name": "Chord Progression",
+			"description": "Advanced DSP example using dsp~ to create an infinitely descending chord progression",
+			"category": "Audio",
+			"author": "@dtinth"
+		},
+		{
+			"id": "08wca4jzuz5wpng",
+			"name": "Matter.js Physics Simulation",
+			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code. Demonstrates shared JavaScript libraries across multiple objects",
+			"category": "Interactive",
+			"author": "@heypoom"
+		},
+		{
+			"id": "6pyirxuw3cqvwhg",
+			"name": "Assembly Stack Machine",
+			"description": "Example assembly patch demonstrating the virtual stack machine with color-coded memory visualization",
+			"category": "Programming",
+			"author": "@heypoom"
+		}
+	]
 }

@@ -24,7 +24,7 @@
 		open = true;
 	}
 
-	const tabs: Tab[] = ['about', 'examples', 'shortcuts', 'license'];
+	const tabs: Tab[] = ['about', 'demos', 'shortcuts', 'license'];
 </script>
 
 <!-- Help button trigger -->
@@ -80,7 +80,7 @@
 			<div class="tab-content flex overflow-y-auto p-4 sm:p-6">
 				{#if activeTab === 'about'}
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
-				{:else if activeTab === 'examples'}
+				{:else if activeTab === 'demos'}
 					<ExamplesTab />
 				{:else if activeTab === 'license'}
 					<LicenseTab setTab={(tab) => (activeTab = tab)} />

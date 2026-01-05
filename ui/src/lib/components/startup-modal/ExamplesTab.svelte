@@ -38,7 +38,7 @@
 
 	function loadExample(patchId: string) {
 		// Navigate to the example patch
-		window.location.href = `/?patch=${patchId}`;
+		window.location.href = `/?id=${patchId}`;
 	}
 </script>
 
@@ -55,7 +55,7 @@
 	{:else}
 		{#each exampleCategories as category (category.name)}
 			<div>
-				<h2 class="mb-3 text-lg font-semibold text-zinc-200">{category.name} 🚧</h2>
+				<h2 class="mb-3 text-lg font-semibold text-zinc-200">{category.name}</h2>
 
 				<div class="grid grid-cols-2 gap-4">
 					{#each category.patches as patch (patch.id)}
