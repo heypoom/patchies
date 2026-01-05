@@ -50,29 +50,30 @@
 			aria-modal="true"
 			aria-labelledby="modal-title"
 		>
-			<!-- Close button -->
-			<button
-				onclick={handleClose}
-				class="absolute right-4 top-4 z-10 rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-				aria-label="Close modal"
-			>
-				<Icon icon="lucide:x" class="h-5 w-5" />
-			</button>
-
 			<!-- Tab navigation -->
-			<div class="border-b border-zinc-800 px-6 pt-6">
-				<nav class="flex gap-6">
-					{#each tabs as tab (tab)}
-						<button
-							onclick={() => (activeTab = tab)}
-							class="pb-3 text-sm font-medium transition-colors {activeTab === tab
-								? 'border-b-2 border-orange-500 text-orange-500'
-								: 'text-zinc-400 hover:text-zinc-200'}"
-						>
-							{tab}
-						</button>
-					{/each}
-				</nav>
+			<div class="relative border-b border-zinc-800 px-6 pt-6">
+				<div class="flex items-start justify-between gap-4">
+					<nav class="flex flex-wrap gap-4 sm:gap-6">
+						{#each tabs as tab (tab)}
+							<button
+								onclick={() => (activeTab = tab)}
+								class="pb-3 text-sm font-medium transition-colors {activeTab === tab
+									? 'border-b-2 border-orange-500 text-orange-500'
+									: 'text-zinc-400 hover:text-zinc-200'}"
+							>
+								{tab}
+							</button>
+						{/each}
+					</nav>
+					<!-- Close button -->
+					<button
+						onclick={handleClose}
+						class="flex-shrink-0 rounded text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+						aria-label="Close modal"
+					>
+						<Icon icon="lucide:x" class="h-5 w-5" />
+					</button>
+				</div>
 			</div>
 
 			<!-- Tab content -->
