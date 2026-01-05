@@ -1,7 +1,7 @@
 // Uxn Emulator - main emulator class
 // Ported from uxn5/src/emu.js
 
-import { Uxn } from 'uxn.wasm';
+import type { Uxn } from 'uxn.wasm';
 import { DateTimeDevice } from './devices/DateTimeDevice';
 import { SystemDevice } from './devices/SystemDevice';
 import { ConsoleDevice, type ConsoleOutputCallback } from './devices/ConsoleDevice';
@@ -24,10 +24,11 @@ export class UxnEmulator {
 	public screen: ScreenDevice;
 	public datetime: DateTimeDevice;
 	public mouse: MouseDevice;
-	public uxn: Uxn;
+	public uxn: Uxn | null = null;
 
 	private renderLoopId: ReturnType<typeof setInterval> | null = null;
 	private isRunning: boolean = false;
+	private uxnModule: typeof import('uxn.wasm') | null = null;
 
 	constructor(options: UxnEmulatorOptions) {
 		// Initialize devices
@@ -37,12 +38,18 @@ export class UxnEmulator {
 		this.screen = new ScreenDevice(this);
 		this.datetime = new DateTimeDevice(this);
 		this.mouse = new MouseDevice(this);
-
-		// Initialize Uxn core (using uxn.wasm)
-		this.uxn = new Uxn();
 	}
 
 	async init(options: UxnEmulatorOptions): Promise<void> {
+		// Lazy-load uxn.wasm module
+		if (!this.uxnModule) {
+			this.uxnModule = await import('uxn.wasm');
+		}
+
+		// Initialize Uxn core (using uxn.wasm)
+		this.uxn = new this.uxnModule.Uxn();
+		console.log('uxn loaded!');
+
 		// Initialize Uxn core with dei/deo callbacks
 		await this.uxn.init({
 			dei: (port: number) => this.dei(port),
@@ -73,7 +80,7 @@ export class UxnEmulator {
 
 			window.requestAnimationFrame(() => {
 				// Call screen vector if set
-				if (this.screen.vector) {
+				if (this.screen.vector && this.uxn) {
 					this.uxn.eval(this.screen.vector);
 				}
 
@@ -130,6 +137,8 @@ export class UxnEmulator {
 	}
 
 	start(rom: Uint8Array): void {
+		if (!this.uxn) return;
+
 		this.console.start();
 		this.screen.set_zoom(default_zoom || 1);
 		this.uxn.load(rom);
@@ -141,17 +150,23 @@ export class UxnEmulator {
 	}
 
 	dei(port: number): number {
+		if (!this.uxn) return 0;
+
 		switch (port & 0xf0) {
 			case 0xc0:
 				return this.datetime.dei(port);
 			case 0x20:
 				return this.screen.dei(port);
 		}
+
 		return this.uxn.dev[port];
 	}
 
 	deo(port: number, val: number): void {
+		if (!this.uxn) return;
+
 		this.uxn.dev[port] = val;
+
 		switch (port & 0xf0) {
 			case 0x00:
 				this.system.deo(port);

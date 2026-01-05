@@ -8,7 +8,6 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { asm } from 'uxn.wasm/util';
 	import * as Tooltip from '../ui/tooltip';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 
@@ -352,7 +351,7 @@
 		}
 	}
 
-	function assembleAndLoad() {
+	async function assembleAndLoad() {
 		if (!emulator) return;
 
 		try {
@@ -360,6 +359,9 @@
 			errorMessage = null;
 			consoleOutput = '';
 			updateNodeData(nodeId, { consoleOutput: '', errorMessage: null });
+
+			// Lazy-load uxn.wasm/util module
+			const { asm } = await import('uxn.wasm/util');
 
 			// Assemble the code
 			const rom = asm(code);
