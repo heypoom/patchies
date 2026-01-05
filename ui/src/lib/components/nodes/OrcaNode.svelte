@@ -681,13 +681,6 @@
 							</div>
 						</label>
 					</div>
-
-					<button
-						onclick={clearGrid}
-						class="w-full rounded bg-red-900 px-3 py-2 text-xs font-medium text-white transition hover:bg-red-800"
-					>
-						Clear Grid
-					</button>
 				</div>
 			</div>
 		</div>
