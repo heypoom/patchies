@@ -33,14 +33,14 @@
 			"name": "Scales",
 			"description": "Musical scales created with expr~",
 			"category": "Audio",
-			"author": "@kijjazz"
+			"author": "@kijjaz"
 		},
 		{
 			"id": "xhdtrqenaf6ur81",
 			"name": "Sleep",
 			"description": "Alternative version of scales patch",
 			"category": "Audio",
-			"author": "@kijjazz"
+			"author": "@kijjaz"
 		},
 		{
 			"id": "jf7n1ku67auc5xg",
@@ -48,6 +48,13 @@
 			"description": "Drum kicks created with expr~",
 			"category": "Audio",
 			"author": "@dtinth"
+		},
+		{
+			"id": "73zo2rxeclhrynw",
+			"name": "8 Pad Sampler",
+			"description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
+			"category": "Audio",
+			"author": "@heypoom"
 		},
 		{
 			"id": "b17136cy9rxxebw",
