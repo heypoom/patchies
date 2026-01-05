@@ -486,7 +486,7 @@
 					onchange={(newCode) => {
 						updateNodeData(nodeId, { code: newCode });
 					}}
-					language="plain"
+					language="assembly"
 					placeholder="Write your Uxntal code here..."
 					class="nodrag h-64 w-[500px] resize-none"
 					onrun={assembleAndLoad}

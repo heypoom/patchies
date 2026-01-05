@@ -11,7 +11,7 @@
 
 	let languageComp = new Compartment();
 
-	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'markdown' | 'plain';
+	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'markdown' | 'plain' | 'assembly';
 
 	let {
 		value = $bindable(),
