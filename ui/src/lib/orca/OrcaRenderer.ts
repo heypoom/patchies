@@ -148,7 +148,7 @@ export class OrcaRenderer {
 	): void {
 		if (!this.ctx) return;
 
-		const offsetX = 1; // Left padding (1 tile)
+		const offsetX = 2; // Left padding in tiles
 		const interfaceY = this.orca.h + 1;
 
 		// Get operator info at cursor (matching original Orca's cursor.inspect())
