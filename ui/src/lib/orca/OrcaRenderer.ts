@@ -121,16 +121,37 @@ export class OrcaRenderer {
 		}
 	}
 
-	drawInterface(cursorX: number, cursorY: number, isPaused: boolean): void {
+	drawInterface(
+		cursorX: number,
+		cursorY: number,
+		isPaused: boolean,
+		selectionW: number,
+		selectionH: number
+	): void {
 		if (!this.ctx) return;
 
 		const gridSize = 8;
 		const offsetX = 1; // Left padding (1 tile)
-
-		// Line 1: Cursor info, position, selection size, frame count (at bottom)
 		const interfaceY = this.orca.h + 1;
-		const cursorGlyph = this.orca.glyphAt(cursorX, cursorY);
-		this.write(`[${cursorGlyph}]`, offsetX + gridSize * 0, interfaceY, gridSize - 1, 'f_med');
+
+		// Get operator info at cursor (matching original Orca's cursor.inspect())
+		let operatorInfo = '';
+		if (selectionW !== 0 || selectionH !== 0) {
+			operatorInfo = 'multi';
+		} else {
+			const index = this.orca.indexAt(cursorX, cursorY);
+			const port = this.ports[index];
+			if (port) {
+				operatorInfo = port[3]; // Port name (e.g., "Random", "Uclid")
+			} else if (this.orca.lockAt(cursorX, cursorY)) {
+				operatorInfo = 'locked';
+			} else {
+				operatorInfo = 'empty';
+			}
+		}
+
+		// Line 1: Operator info, position, grid size, frame count
+		this.write(operatorInfo, offsetX + gridSize * 0, interfaceY, gridSize - 1, 'f_med');
 		this.write(`${cursorX},${cursorY}`, offsetX + gridSize * 1, interfaceY, gridSize, 'f_low');
 		this.write(
 			`${this.orca.w}:${this.orca.h}`,
@@ -264,7 +285,9 @@ export class OrcaRenderer {
 			this.drawGuide();
 		}
 		if (showInterface) {
-			this.drawInterface(cursorX, cursorY, isPaused);
+			const selW = selection ? selection.w : 0;
+			const selH = selection ? selection.h : 0;
+			this.drawInterface(cursorX, cursorY, isPaused, selW, selH);
 		}
 	}
 
