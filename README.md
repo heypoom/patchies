@@ -4,7 +4,7 @@
 
 > The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
-Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript. It's made for creative coding; patch objects and code snippets together to make visualizations, simulations, soundscapes and artistic explorations 🎨
+Patchies is a tool for building interactive audio-visual patches in the browser with JavaScript. It's made for creative coding; patch objects and code snippets together to make visualizations, soundscapes and artistic explorations 🎨
 
 Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
