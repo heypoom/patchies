@@ -26,107 +26,15 @@ export const ORCA_PRESETS = {
 			grid: createGrid(
 				DEFAULT_ORCA_WIDTH,
 				DEFAULT_ORCA_HEIGHT,
-				`..D8....
-......*.
-A12.....`
+				`....
+....
+....
+....
+...1D8....
+..........
+..........
+...5A4.....`
 			),
-			width: DEFAULT_ORCA_WIDTH,
-			height: DEFAULT_ORCA_HEIGHT,
-			bpm: 120,
-			frame: 0
-		}
-	},
-
-	'orca.clock': {
-		type: 'orca',
-		data: {
-			grid: createGrid(
-				DEFAULT_ORCA_WIDTH,
-				DEFAULT_ORCA_HEIGHT,
-				`..C4....
-......*.
-A12.....`
-			),
-			width: DEFAULT_ORCA_WIDTH,
-			height: DEFAULT_ORCA_HEIGHT,
-			bpm: 120,
-			frame: 0
-		}
-	},
-
-	'orca.euclidean': {
-		type: 'orca',
-		data: {
-			grid: createGrid(
-				DEFAULT_ORCA_WIDTH,
-				DEFAULT_ORCA_HEIGHT,
-				`..U24...
-......*.
-:.35C.*.
-B12.....`
-			),
-			width: DEFAULT_ORCA_WIDTH,
-			height: DEFAULT_ORCA_HEIGHT,
-			bpm: 140,
-			frame: 0
-		}
-	},
-
-	'orca.melody': {
-		type: 'orca',
-		data: {
-			grid: createGrid(
-				DEFAULT_ORCA_WIDTH,
-				DEFAULT_ORCA_HEIGHT,
-				`..D8....
-:.35C.*.
-A12.....`
-			),
-			width: DEFAULT_ORCA_WIDTH,
-			height: DEFAULT_ORCA_HEIGHT,
-			bpm: 120,
-			frame: 0
-		}
-	},
-
-	'orca.random': {
-		type: 'orca',
-		data: {
-			grid: createGrid(
-				DEFAULT_ORCA_WIDTH,
-				DEFAULT_ORCA_HEIGHT,
-				`..D8....
-:R05C.*.
-A12.....`
-			),
-			width: DEFAULT_ORCA_WIDTH,
-			height: DEFAULT_ORCA_HEIGHT,
-			bpm: 120,
-			frame: 0
-		}
-	},
-
-	'orca.counter': {
-		type: 'orca',
-		data: {
-			grid: createGrid(
-				DEFAULT_ORCA_WIDTH,
-				DEFAULT_ORCA_HEIGHT,
-				`..C1....
-......*.
-I12.....`
-			),
-			width: DEFAULT_ORCA_WIDTH,
-			height: DEFAULT_ORCA_HEIGHT,
-			bpm: 120,
-			frame: 0
-		}
-	},
-
-	'orca.empty': {
-		type: 'orca',
-		data: {
-			grid: new Array(DEFAULT_ORCA_WIDTH * DEFAULT_ORCA_HEIGHT).fill('.').join(''),
 			width: DEFAULT_ORCA_WIDTH,
 			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 120,
