@@ -45,13 +45,13 @@
 	>
 		<!-- Modal container -->
 		<div
-			class="relative mx-4 h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950/90 shadow-2xl backdrop-blur-lg sm:mx-8 md:mx-12"
+			class="relative h-screen w-full overflow-hidden bg-zinc-950/90 sm:mx-4 sm:h-[85vh] sm:max-w-3xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="modal-title"
 		>
 			<!-- Tab navigation -->
-			<div class="relative border-b border-zinc-800 px-6 pt-6">
+			<div class="relative border-b border-zinc-800 px-4 pt-4 sm:px-6 sm:pt-6">
 				<div class="flex items-start gap-4">
 					<nav class="flex flex-1 gap-4 overflow-x-auto sm:gap-6">
 						{#each tabs as tab (tab)}
@@ -77,7 +77,7 @@
 			</div>
 
 			<!-- Tab content -->
-			<div class="flex overflow-y-auto p-6" style="max-height: calc(85vh - 80px);">
+			<div class="flex overflow-y-auto p-4 sm:p-6" style="max-height: calc(100vh - 80px);">
 				{#if activeTab === 'about'}
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'examples'}
