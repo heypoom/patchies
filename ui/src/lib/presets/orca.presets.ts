@@ -4,6 +4,8 @@
  * Pre-configured Orca patterns and demos
  */
 
+import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
+
 // Helper to create a grid string from a visual pattern
 function createGrid(width: number, height: number, pattern: string): string {
 	const grid = new Array(width * height).fill('.');
@@ -22,14 +24,14 @@ export const ORCA_PRESETS = {
 		type: 'orca',
 		data: {
 			grid: createGrid(
-				64,
-				16,
+				DEFAULT_ORCA_WIDTH,
+				DEFAULT_ORCA_HEIGHT,
 				`..D8....
 ......*.
 A12.....`
 			),
-			width: 64,
-			height: 16,
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 120,
 			frame: 0
 		}
@@ -39,14 +41,14 @@ A12.....`
 		type: 'orca',
 		data: {
 			grid: createGrid(
-				64,
-				16,
+				DEFAULT_ORCA_WIDTH,
+				DEFAULT_ORCA_HEIGHT,
 				`..C4....
 ......*.
 A12.....`
 			),
-			width: 64,
-			height: 16,
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 120,
 			frame: 0
 		}
@@ -56,15 +58,15 @@ A12.....`
 		type: 'orca',
 		data: {
 			grid: createGrid(
-				64,
-				16,
+				DEFAULT_ORCA_WIDTH,
+				DEFAULT_ORCA_HEIGHT,
 				`..U24...
 ......*.
 :.35C.*.
 B12.....`
 			),
-			width: 64,
-			height: 16,
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 140,
 			frame: 0
 		}
@@ -74,14 +76,14 @@ B12.....`
 		type: 'orca',
 		data: {
 			grid: createGrid(
-				64,
-				16,
+				DEFAULT_ORCA_WIDTH,
+				DEFAULT_ORCA_HEIGHT,
 				`..D8....
 :.35C.*.
 A12.....`
 			),
-			width: 64,
-			height: 16,
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 120,
 			frame: 0
 		}
@@ -91,14 +93,14 @@ A12.....`
 		type: 'orca',
 		data: {
 			grid: createGrid(
-				64,
-				16,
+				DEFAULT_ORCA_WIDTH,
+				DEFAULT_ORCA_HEIGHT,
 				`..D8....
 :R05C.*.
 A12.....`
 			),
-			width: 64,
-			height: 16,
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 120,
 			frame: 0
 		}
@@ -108,14 +110,14 @@ A12.....`
 		type: 'orca',
 		data: {
 			grid: createGrid(
-				64,
-				16,
+				DEFAULT_ORCA_WIDTH,
+				DEFAULT_ORCA_HEIGHT,
 				`..C1....
 ......*.
 I12.....`
 			),
-			width: 64,
-			height: 16,
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 120,
 			frame: 0
 		}
@@ -124,9 +126,9 @@ I12.....`
 	'orca.empty': {
 		type: 'orca',
 		data: {
-			grid: new Array(64 * 16).fill('.').join(''),
-			width: 64,
-			height: 16,
+			grid: new Array(DEFAULT_ORCA_WIDTH * DEFAULT_ORCA_HEIGHT).fill('.').join(''),
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
 			bpm: 120,
 			frame: 0
 		}

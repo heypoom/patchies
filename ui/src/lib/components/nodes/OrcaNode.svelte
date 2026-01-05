@@ -9,9 +9,10 @@
 	import { OrcaRenderer } from '$lib/orca/OrcaRenderer';
 	import { library } from '$lib/orca/library';
 	import { match, P } from 'ts-pattern';
-	import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/nodes/defaultNodeData';
+
 	import StandardHandle from '../StandardHandle.svelte';
 	import Icon from '@iconify/svelte';
+	import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
 
 	let {
 		id: nodeId,
