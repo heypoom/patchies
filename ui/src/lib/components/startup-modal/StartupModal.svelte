@@ -77,7 +77,7 @@
 			</div>
 
 			<!-- Tab content -->
-			<div class="flex overflow-y-auto p-4 sm:p-6" style="max-height: calc(100vh - 80px);">
+			<div class="tab-content flex overflow-y-auto p-4 sm:p-6">
 				{#if activeTab === 'about'}
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'examples'}
@@ -109,5 +109,16 @@
 
 	:global(.overflow-y-auto::-webkit-scrollbar-thumb:hover) {
 		background: rgb(82 82 91); /* zinc-600 */
+	}
+
+	/* Tab content max-height */
+	:global(.tab-content) {
+		max-height: calc(100vh - 80px);
+	}
+
+	@media (min-width: 640px) {
+		:global(.tab-content) {
+			max-height: calc(85vh - 80px);
+		}
 	}
 </style>
