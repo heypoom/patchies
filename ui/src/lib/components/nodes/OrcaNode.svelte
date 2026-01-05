@@ -241,8 +241,26 @@
 				return true;
 			case 'Delete':
 			case 'Backspace':
-				// Erase cell at cursor
-				orca.write(cursorX, cursorY, '.');
+				// Erase selection or single cell
+				if (selectionW !== 0 || selectionH !== 0) {
+					// Erase entire selection
+					const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
+					const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
+					const maxX = cursorX > cursorX + selectionW ? cursorX : cursorX + selectionW;
+					const maxY = cursorY > cursorY + selectionH ? cursorY : cursorY + selectionH;
+
+					for (let y = minY; y <= maxY; y++) {
+						for (let x = minX; x <= maxX; x++) {
+							orca.write(x, y, '.');
+						}
+					}
+					// Reset selection
+					selectionW = 0;
+					selectionH = 0;
+				} else {
+					// Erase single cell at cursor
+					orca.write(cursorX, cursorY, '.');
+				}
 				updateNodeData(nodeId, { grid: orca.s });
 				render();
 				return true;
