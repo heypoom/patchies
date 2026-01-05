@@ -53,8 +53,13 @@
 	let selectionH = $state(0);
 	let mouseFrom: { x: number; y: number } | null = $state(null);
 
+	// Scale factor for font size
+	let fontSize = $state(1.0);
+
+	// Canvas rendering scale
+	let canvasDensity = $state(Math.round(window.devicePixelRatio) ?? 1);
+
 	// Tile dimensions for mouse interaction
-	let fontSize = $state(1.0); // Scale factor for font size
 	let TILE_W = $derived(10 * fontSize);
 	let TILE_H = $derived(15 * fontSize);
 
@@ -80,7 +85,7 @@
 
 		clock = new Clock(orca);
 		io = new IO(messageContext);
-		renderer = new OrcaRenderer(canvas, orca, COLORS, fontSize);
+		renderer = new OrcaRenderer(canvas, orca, COLORS, fontSize, canvasDensity);
 
 		// Connect IO to Orca so operators can access it
 		orca.io = io;
@@ -215,6 +220,38 @@
 			fontSize = Math.max(0.5, fontSize - 0.1);
 			render();
 			measureWidth();
+			return true;
+		}
+
+		// Frame by frame: Ctrl/Cmd+F
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+			e.preventDefault();
+			if (clock) clock.touch();
+			return true;
+		}
+
+		// Reset frame: Ctrl/Cmd+Shift+R
+		if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
+			e.preventDefault();
+			if (orca) {
+				orca.f = 0;
+				updateNodeData(nodeId, { frame: 0 });
+				render();
+			}
+			return true;
+		}
+
+		// Speed increase: >
+		if (e.key === '>' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault();
+			increaseBpm();
+			return true;
+		}
+
+		// Speed decrease: <
+		if (e.key === '<' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault();
+			decreaseBpm();
 			return true;
 		}
 
@@ -615,6 +652,32 @@
 									+
 								</button>
 								<span class="flex-1 text-xs text-zinc-500">(Ctrl +/−)</span>
+							</div>
+						</label>
+
+						<label class="flex flex-col text-xs text-zinc-400">
+							<span>Canvas Density: {canvasDensity}x</span>
+							<div class="mt-1 flex items-center gap-2">
+								<button
+									onclick={() => {
+										canvasDensity = Math.max(1, canvasDensity - 1);
+										if (renderer) renderer.updateCanvasScale(canvasDensity);
+										render();
+									}}
+									class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
+								>
+									−
+								</button>
+								<button
+									onclick={() => {
+										canvasDensity = Math.min(5, canvasDensity + 1);
+										if (renderer) renderer.updateCanvasScale(canvasDensity);
+										render();
+									}}
+									class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
+								>
+									+
+								</button>
 							</div>
 						</label>
 					</div>

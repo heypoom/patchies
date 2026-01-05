@@ -28,19 +28,27 @@ export class OrcaRenderer {
 	private ctx: CanvasRenderingContext2D;
 	private colors: OrcaColors;
 	private scale: number;
+	private fontScale: number;
 	private tileW: number;
 	private tileH: number;
 	private tileWS: number;
 	private tileHS: number;
-	private fontScale: number;
 	private ports: Array<[number, number, number, string] | undefined> = [];
 
-	constructor(canvas: HTMLCanvasElement, orca: Orca, colors: OrcaColors, fontScale: number = 1.0) {
+	constructor(
+		canvas: HTMLCanvasElement,
+		orca: Orca,
+		colors: OrcaColors,
+		fontScale: number,
+		canvasScale: number
+	) {
 		this.canvas = canvas;
 		this.orca = orca;
 		this.colors = colors;
 		this.fontScale = fontScale;
-		this.scale = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+
+		this.scale = canvasScale;
+
 		this.tileW = 10 * fontScale;
 		this.tileH = 15 * fontScale;
 		this.tileWS = Math.floor(this.tileW * this.scale);
@@ -412,5 +420,11 @@ export class OrcaRenderer {
 
 	resize(): void {
 		// This will be handled automatically on next render
+	}
+
+	updateCanvasScale(canvasScale: number): void {
+		this.scale = canvasScale > 0 ? canvasScale : 1;
+		this.tileWS = Math.floor(this.tileW * this.scale);
+		this.tileHS = Math.floor(this.tileH * this.scale);
 	}
 }
