@@ -129,5 +129,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			playbackRate: 1,
 			detune: 0
 		}))
+		.with('orca', () => ({
+			grid: new Array(64 * 16).fill('.').join(''),
+			width: 64,
+			height: 16,
+			bpm: 120,
+			frame: 0
+		}))
 		.otherwise(() => ({}));
 }

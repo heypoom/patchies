@@ -11,6 +11,7 @@ import { ELEMENTARY_PRESETS } from './elementary.preset';
 import { CANVAS_PRESETS } from './canvas.preset';
 import { JS_DSP_PRESETS } from './js-dsp.presets';
 import { KEYBOARD_PRESETS } from './keyboard.presets';
+import { ORCA_PRESETS } from './orca.presets';
 
 /**
  * Presets are pre-configured nodes with custom default data.
@@ -29,5 +30,6 @@ export const PRESETS: Record<string, { type: string; data: unknown }> = {
 	...ELEMENTARY_PRESETS,
 	...CANVAS_PRESETS,
 	...JS_DSP_PRESETS,
-	...KEYBOARD_PRESETS
+	...KEYBOARD_PRESETS,
+	...ORCA_PRESETS
 };
