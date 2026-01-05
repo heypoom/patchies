@@ -18,6 +18,10 @@ import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
 import { DEFAULT_ASSEMBLY_CODE } from '$lib/assembly/constants';
 
+// Orca grid defaults
+export const DEFAULT_ORCA_WIDTH = 32;
+export const DEFAULT_ORCA_HEIGHT = 16;
+
 // TODO: make this type-safe!
 export type NodeData = {
 	[key: string]: any;
@@ -128,6 +132,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			loop: false,
 			playbackRate: 1,
 			detune: 0
+		}))
+		.with('orca', () => ({
+			grid: new Array(DEFAULT_ORCA_WIDTH * DEFAULT_ORCA_HEIGHT).fill('.').join(''),
+			width: DEFAULT_ORCA_WIDTH,
+			height: DEFAULT_ORCA_HEIGHT,
+			bpm: 120,
+			frame: 0
 		}))
 		.otherwise(() => ({}));
 }

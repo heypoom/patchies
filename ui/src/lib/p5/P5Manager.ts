@@ -3,6 +3,7 @@ import { GLSystem } from '$lib/canvas/GLSystem';
 import type { UserFnRunContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import { deleteAfterComment } from '$lib/js-runner/js-module-utils';
+import type { Viewport } from '@xyflow/svelte';
 
 interface P5SketchConfig {
 	code: string;
@@ -20,10 +21,12 @@ export class P5Manager {
 	public shouldSendBitmap = true;
 
 	private container: HTMLElement | null = null;
+	private viewport: { current: Viewport } | null = null;
 
-	constructor(nodeId: string, container: HTMLElement) {
+	constructor(nodeId: string, container: HTMLElement, viewport?: { current: Viewport }) {
 		this.nodeId = nodeId;
 		this.container = container;
+		this.viewport = viewport || null;
 
 		// @ts-expect-error -- expose for debugging
 		window[nodeId] = this;
@@ -94,23 +97,46 @@ export class P5Manager {
 				userCode?.preload?.call(p);
 			};
 
+			// Helper to adjust mouse coordinates for zoom
+			const adjustMouseForZoom = () => {
+				if (this.viewport) {
+					const zoom = this.viewport.current.zoom;
+					// Store original values
+					const originalMouseX = p.mouseX;
+					const originalMouseY = p.mouseY;
+					const originalPmouseX = p.pmouseX;
+					const originalPmouseY = p.pmouseY;
+
+					// Adjust for zoom
+					p.mouseX = originalMouseX / zoom;
+					p.mouseY = originalMouseY / zoom;
+					p.pmouseX = originalPmouseX / zoom;
+					p.pmouseY = originalPmouseY / zoom;
+				}
+			};
+
 			p.mousePressed = function (event: MouseEvent) {
+				adjustMouseForZoom();
 				userCode?.mousePressed?.call(p, event);
 			};
 
 			p.mouseReleased = function (event: MouseEvent) {
+				adjustMouseForZoom();
 				userCode?.mouseReleased?.call(p, event);
 			};
 
 			p.mouseClicked = function (event: MouseEvent) {
+				adjustMouseForZoom();
 				userCode?.mouseClicked?.call(p, event);
 			};
 
 			p.mouseMoved = function (event: MouseEvent) {
+				adjustMouseForZoom();
 				userCode?.mouseMoved?.call(p, event);
 			};
 
 			p.mouseDragged = function (event: MouseEvent) {
+				adjustMouseForZoom();
 				userCode?.mouseDragged?.call(p, event);
 			};
 

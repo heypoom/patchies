@@ -520,6 +520,33 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 
 ### Audio & Music Objects
 
+### `orca`: Orca livecoding sequencer
+
+- [Orca](https://github.com/hundredrabbits/Orca) is an esoteric programming language where every character is an operation that runs sequentially every frame.
+- Create procedural sequences with 26 letter operators (A-Z) and special symbols for MIDI control.
+- **Output-agnostic**: Orca emits standard Patchies MIDI messages (noteOn, noteOff, controlChange) that work with any audio node.
+  - Connect the outlet to `midi.out` for MIDI output.
+  - Try using the `poly-synth-midi.tone` preset, which uses `tone~` node to playback MIDI messages.
+- **Key operators**:
+  - `A-Z`: Mathematical, logical, and movement operations
+  - `:`: MIDI note output (channel, octave, note, velocity, length)
+  - `%`: Monophonic MIDI (only one note per channel)
+  - `!`: MIDI Control Change
+  - `U`: Euclidean rhythm generator (very useful for drum patterns!)
+  - `V`: Variables for storing values
+  - `R`: Random values
+  - `*`: Bang operator to trigger adjacent operators
+  - `#`: Comment (halts line)
+- **Controls**:
+  - Click on the canvas to move the cursor
+  - Arrow keys to navigate
+  - Type characters to edit the grid directly
+  - Space to play/pause
+  - Enter to advance one frame
+  - BPM control to adjust tempo
+  - Settings button for grid size management
+- **Attribution**: Based on the original Orca by Hundred Rabbits, licensed under [MIT License](https://github.com/hundredrabbits/Orca/blob/main/LICENSE.md).
+
 ### `strudel`: Strudel music environment
 
 - [Strudel](https://strudel.cc) is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
