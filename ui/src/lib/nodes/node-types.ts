@@ -47,6 +47,7 @@ import AssemblyValueViewer from '$lib/components/nodes/AssemblyValueViewer.svelt
 import AssemblyMemory from '$lib/components/nodes/AssemblyMemory.svelte';
 import KeyboardNode from '$lib/components/nodes/KeyboardNode.svelte';
 import OrcaNode from '$lib/components/nodes/OrcaNode.svelte';
+import UxnNode from '$lib/components/nodes/UxnNode.svelte';
 
 export const nodeTypes = {
 	object: ObjectNode,
@@ -97,7 +98,8 @@ export const nodeTypes = {
 	'split~': ChannelSplitterNode,
 	'meter~': MeterNode,
 	keyboard: KeyboardNode,
-	orca: OrcaNode
+	orca: OrcaNode,
+	uxn: UxnNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

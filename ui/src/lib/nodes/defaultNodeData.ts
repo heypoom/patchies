@@ -137,5 +137,10 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			bpm: 120,
 			frame: 0
 		}))
+		.with('uxn', () => ({
+			rom: undefined,
+			showConsole: false,
+			consoleOutput: ''
+		}))
 		.otherwise(() => ({}));
 }
