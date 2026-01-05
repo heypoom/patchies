@@ -37,21 +37,25 @@ export class MonoMessageHandler {
 	}
 
 	run(): void {
+		// Match original Orca's order: check length first, then isPlayed
 		for (const channelStr in this.stack) {
 			const channel = parseInt(channelStr);
-			const item = this.stack[channel];
 
-			if (!item) continue;
-
-			if (item.isPlayed === false) {
-				this.press(item);
+			// Check length and release if needed
+			if (this.stack[channel] && this.stack[channel].length < 1) {
+				this.release(this.stack[channel]);
 			}
 
-			if (item.length < 1) {
-				this.release(item);
-			} else {
-				item.length--;
+			// Check if item still exists after potential release
+			if (!this.stack[channel]) continue;
+
+			// Press if not yet played
+			if (this.stack[channel].isPlayed === false) {
+				this.press(this.stack[channel]);
 			}
+
+			// Decrement length
+			this.stack[channel].length--;
 		}
 	}
 
@@ -84,29 +88,21 @@ export class MonoMessageHandler {
 
 	private orcaNoteToMidi(note: string, octave: number): number {
 		// Convert Orca note format to MIDI number
+		// Matches original Orca implementation
 		const transposed = transposeTable[note];
 		if (!transposed) return 60; // Default to middle C
 
 		const octaveOffset = parseInt(transposed.charAt(1));
 		const noteName = transposed.charAt(0);
-		const noteValues: Record<string, number> = {
-			C: 0,
-			c: 1,
-			D: 2,
-			d: 3,
-			E: 4,
-			F: 5,
-			f: 6,
-			G: 7,
-			g: 8,
-			A: 9,
-			a: 10,
-			B: 11
-		};
 
-		const noteValue = noteValues[noteName] ?? 0;
+		// Note values match original Orca's array order
+		const noteValues = ['C', 'c', 'D', 'd', 'E', 'F', 'f', 'G', 'g', 'A', 'a', 'B'];
+		const noteValue = noteValues.indexOf(noteName);
+		if (noteValue === -1) return 60;
+
 		const finalOctave = clamp(octave + octaveOffset, 0, 8);
-		return (finalOctave + 1) * 12 + noteValue;
+		// Add 24 to match original Orca (shifts range up 2 octaves)
+		return clamp(finalOctave * 12 + noteValue + 24, 0, 127);
 	}
 
 	silence(): void {

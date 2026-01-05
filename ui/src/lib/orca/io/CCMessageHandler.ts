@@ -36,52 +36,53 @@ export class CCMessageHandler {
 		if (this.stack.length < 1) return;
 
 		for (const msg of this.stack) {
+			// Match original Orca's !isNaN() checks
 			if (
 				msg.type === 'cc' &&
-				msg.channel !== undefined &&
-				msg.knob !== undefined &&
-				msg.value !== undefined
+				!isNaN(msg.channel as number) &&
+				!isNaN(msg.knob as number) &&
+				!isNaN(msg.value as number)
 			) {
 				this.messageContext.send({
 					type: 'controlChange',
-					channel: msg.channel,
-					control: this.offset + msg.knob,
-					value: msg.value
+					channel: msg.channel as number,
+					control: this.offset + (msg.knob as number),
+					value: msg.value as number
 				});
 			} else if (
 				msg.type === 'pb' &&
-				msg.channel !== undefined &&
-				msg.lsb !== undefined &&
-				msg.msb !== undefined
+				!isNaN(msg.channel as number) &&
+				!isNaN(msg.lsb as number) &&
+				!isNaN(msg.msb as number)
 			) {
 				this.messageContext.send({
 					type: 'pitchBend',
-					channel: msg.channel,
-					lsb: msg.lsb,
-					msb: msg.msb
+					channel: msg.channel as number,
+					lsb: msg.lsb as number,
+					msb: msg.msb as number
 				});
-			} else if (msg.type === 'pg' && msg.channel !== undefined) {
-				if (msg.bank !== undefined) {
+			} else if (msg.type === 'pg' && !isNaN(msg.channel as number)) {
+				if (!isNaN(msg.bank as number)) {
 					this.messageContext.send({
 						type: 'controlChange',
-						channel: msg.channel,
+						channel: msg.channel as number,
 						control: 0,
-						value: msg.bank
+						value: msg.bank as number
 					});
 				}
-				if (msg.sub !== undefined) {
+				if (!isNaN(msg.sub as number)) {
 					this.messageContext.send({
 						type: 'controlChange',
-						channel: msg.channel,
+						channel: msg.channel as number,
 						control: 32,
-						value: msg.sub
+						value: msg.sub as number
 					});
 				}
-				if (msg.pgm !== undefined) {
+				if (!isNaN(msg.pgm as number)) {
 					this.messageContext.send({
 						type: 'programChange',
-						channel: msg.channel,
-						program: msg.pgm
+						channel: msg.channel as number,
+						program: msg.pgm as number
 					});
 				}
 			}
