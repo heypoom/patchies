@@ -21,3 +21,14 @@ declare module 'uxn.wasm' {
 		eval(at?: number): void;
 	}
 }
+
+// Type declarations for uxn.wasm/util
+declare module 'uxn.wasm/util' {
+	/**
+	 * Assembles Uxntal source code into a Uint8Array ROM
+	 * @param source Uxntal assembly source code
+	 * @returns Compiled ROM as Uint8Array
+	 * @throws Error if assembly fails
+	 */
+	export function asm(source: string): Uint8Array;
+}

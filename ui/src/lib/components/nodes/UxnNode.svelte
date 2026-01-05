@@ -4,10 +4,12 @@
 	import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';
 	import StandardHandle from '../StandardHandle.svelte';
 	import Icon from '@iconify/svelte';
-	import CanvasPreviewLayout from '../CanvasPreviewLayout.svelte';
+	import CodeEditor from '../CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { asm } from 'uxn.wasm/util';
+	import * as Tooltip from '../ui/tooltip';
 
 	let {
 		id: nodeId,
@@ -21,6 +23,7 @@
 			url?: string;
 			code?: string;
 			showConsole?: boolean;
+			showEditor?: boolean;
 			consoleOutput?: string;
 		};
 		selected: boolean;
@@ -29,9 +32,11 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	let canvas: HTMLCanvasElement | undefined = $state();
+	let previewContainer: HTMLDivElement | null = $state(null);
 	let emulator: UxnEmulator | null = $state(null);
 	let consoleOutput = $state(data.consoleOutput || '');
 	let showConsole = $state(data.showConsole ?? false);
+	let showEditor = $state(data.showEditor ?? false);
 	let isPaused = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let cleanupEventHandlers: (() => void) | null | undefined = null;
@@ -40,10 +45,29 @@
 	let isDragging = $state(false);
 	const fileName = $derived(data.fileName || 'No ROM loaded');
 	const hasROM = $derived(!!data.rom);
+	const code = $derived(data.code || '');
+
+	const editorGap = 10;
+	let previewContainerWidth = $state(0);
+
+	function measureContainerWidth() {
+		if (previewContainer) {
+			previewContainerWidth = previewContainer.clientWidth;
+		}
+	}
+
+	let editorLeftPos = $derived.by(() => {
+		return (previewContainerWidth ?? 512) + editorGap;
+	});
 
 	const handleConsoleOutput = (output: string, isError: boolean) => {
 		consoleOutput += output;
 		updateNodeData(nodeId, { consoleOutput, showConsole });
+		// Auto-show console if there's output
+		if (!showConsole && output) {
+			showConsole = true;
+			updateNodeData(nodeId, { showConsole: true });
+		}
 	};
 
 	const handleMessage: MessageCallbackFn = async (message) => {
@@ -63,6 +87,7 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+		measureContainerWidth();
 
 		(async () => {
 			if (!canvas) return;
@@ -295,73 +320,189 @@
 	function openFileDialog() {
 		fileInputRef?.click();
 	}
+
+	function assembleAndLoad() {
+		if (!emulator) return;
+
+		try {
+			// Clear previous errors and console output
+			errorMessage = null;
+			consoleOutput = '';
+			updateNodeData(nodeId, { consoleOutput: '', errorMessage: null });
+
+			// Assemble the code
+			const rom = asm(code);
+
+			// Load the assembled ROM
+			loadROM(rom, undefined, 'assembled.rom');
+			updateNodeData(nodeId, { code, rom, fileName: 'assembled.rom' });
+
+			// Add success message to console
+			handleConsoleOutput('✓ Assembled successfully\n', false);
+			measureContainerWidth();
+		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			errorMessage = errorMsg;
+			handleConsoleOutput(`✗ Assembler error: ${errorMsg}\n`, true);
+			updateNodeData(nodeId, { errorMessage: errorMsg });
+		}
+	}
 </script>
 
-<CanvasPreviewLayout
-	title="uxn"
-	bind:previewCanvas={canvas}
-	width={512}
-	height={320}
-	style="width: 512px; height: 320px; image-rendering: pixelated; image-rendering: crisp-edges;"
-	{selected}
-	showPauseButton={true}
-	paused={isPaused}
-	onPlaybackToggle={togglePause}
-	nodrag
->
-	{#snippet topHandle()}
-		<StandardHandle port="inlet" type="message" id={0} title="ROM input" total={1} index={0} />
-	{/snippet}
-
-	{#snippet bottomHandle()}
-		<StandardHandle port="outlet" type="video" id={0} title="Video output" total={1} index={0} />
-	{/snippet}
-
-	{#snippet codeEditor()}
+<div class="relative flex gap-x-3">
+	<div class="group relative">
 		<div class="flex flex-col gap-2">
+			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+				<div class="z-10 rounded-lg bg-black/60 px-2 py-1 backdrop-blur-lg">
+					<div class="font-mono text-xs font-medium text-zinc-400">uxn</div>
+				</div>
+
+				<div class="flex gap-1">
+					<button
+						title={isPaused ? 'Resume' : 'Pause'}
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						onclick={togglePause}
+					>
+						<Icon icon={isPaused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
+					</button>
+
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								onclick={openFileDialog}
+								title="Load ROM file"
+							>
+								<Icon icon="lucide:folder-open" class="h-4 w-4 text-zinc-300" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Load ROM</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								onclick={() => {
+									showEditor = !showEditor;
+									updateNodeData(nodeId, { showEditor });
+									measureContainerWidth();
+								}}
+								title="Edit code"
+							>
+								<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Edit Code</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								onclick={() => {
+									showConsole = !showConsole;
+									updateNodeData(nodeId, { showConsole });
+								}}
+								title="Toggle console"
+							>
+								<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Console</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</div>
+			</div>
+
+			<div class="relative">
+				<StandardHandle port="inlet" type="message" id={0} title="ROM input" total={1} index={0} />
+				<div bind:this={previewContainer}>
+					<canvas
+						bind:this={canvas}
+						class={[
+							'nodrag cursor-default rounded-md border',
+							selected
+								? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
+								: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md'
+						]}
+						width={512}
+						height={320}
+						style="width: 512px; height: 320px; image-rendering: pixelated; image-rendering: crisp-edges;"
+					></canvas>
+				</div>
+				<StandardHandle
+					port="outlet"
+					type="video"
+					id={0}
+					title="Video output"
+					total={1}
+					index={0}
+				/>
+			</div>
+
 			{#if errorMessage}
 				<div class="rounded border border-red-700 bg-red-900/50 p-2 font-mono text-xs text-red-300">
 					{errorMessage}
 				</div>
 			{/if}
 
-			<div class="flex flex-col gap-2 p-2">
-				<div class="text-xs text-zinc-400">{fileName}</div>
-				<div class="flex items-center gap-2">
-					<button
-						onclick={openFileDialog}
-						class="rounded bg-zinc-700 px-2 py-1 text-xs text-white hover:bg-zinc-600"
-						title="Load ROM file"
-					>
-						<Icon icon="lucide:folder-open" class="h-4 w-4" />
-						Load ROM
-					</button>
-					<button
-						onclick={() => {
-							showConsole = !showConsole;
-							updateNodeData(nodeId, { showConsole });
-						}}
-						class="rounded bg-zinc-700 px-2 py-1 text-xs text-white hover:bg-zinc-600"
-						title="Toggle console"
-					>
-						<Icon icon="lucide:terminal" class="h-4 w-4" />
-					</button>
-				</div>
-			</div>
-
-			<input
-				type="file"
-				bind:this={fileInputRef}
-				accept=".rom"
-				onchange={handleFileSelect}
-				class="hidden"
-			/>
-
-			{#if showConsole && consoleOutput}
-				<div class="max-h-32 overflow-y-auto rounded bg-zinc-900 p-2 font-mono text-xs text-white">
-					{consoleOutput}
+			{#if showConsole}
+				<div
+					class="max-h-32 overflow-y-auto whitespace-pre-wrap rounded bg-zinc-900 p-2 font-mono text-xs text-white"
+				>
+					{consoleOutput || '(no output)'}
 				</div>
 			{/if}
 		</div>
-	{/snippet}
-</CanvasPreviewLayout>
+	</div>
+
+	<input
+		type="file"
+		bind:this={fileInputRef}
+		accept=".rom"
+		onchange={handleFileSelect}
+		class="hidden"
+	/>
+
+	{#if showEditor}
+		<div class="absolute" style="left: {editorLeftPos}px;">
+			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+				{#if assembleAndLoad}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button onclick={assembleAndLoad} class="rounded p-1 hover:bg-zinc-700">
+								<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Assemble & Load (shift+enter)</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				{/if}
+
+				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+				</button>
+			</div>
+
+			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+				<CodeEditor
+					value={code}
+					onchange={(newCode) => {
+						updateNodeData(nodeId, { code: newCode });
+					}}
+					language="plain"
+					placeholder="Write your Uxntal code here..."
+					class="nodrag h-64 w-[500px] resize-none"
+					onrun={assembleAndLoad}
+				/>
+			</div>
+		</div>
+	{/if}
+</div>
