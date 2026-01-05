@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow, useViewport } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { Orca } from '$lib/orca/Orca';
@@ -22,7 +22,8 @@
 		selected: boolean;
 	} = $props();
 
-	const { updateNodeData } = useSvelteFlow();
+	const { updateNodeData, screenToFlowPosition } = useSvelteFlow();
+	const viewport = useViewport();
 	const messageContext = new MessageContext(nodeId);
 
 	// Orca engine
@@ -231,9 +232,17 @@
 
 	function handleCanvasClick(e: MouseEvent): void {
 		if (!canvas) return;
+
+		// Get canvas position accounting for XYFlow zoom/pan
 		const rect = canvas.getBoundingClientRect();
-		const x = Math.floor((e.clientX - rect.left) / TILE_W);
-		const y = Math.floor((e.clientY - rect.top) / TILE_H);
+
+		// Calculate position within canvas, accounting for zoom
+		const canvasX = (e.clientX - rect.left) / viewport.current.zoom;
+		const canvasY = (e.clientY - rect.top) / viewport.current.zoom;
+
+		// Convert to grid coordinates
+		const x = Math.floor(canvasX / TILE_W);
+		const y = Math.floor(canvasY / TILE_H);
 
 		if (orca && x >= 0 && x < orca.w && y >= 0 && y < orca.h) {
 			cursorX = x;
@@ -244,6 +253,7 @@
 
 	function render(): void {
 		if (!renderer || !clock) return;
+
 		renderer.render(cursorX, cursorY, clock.isPaused);
 	}
 
