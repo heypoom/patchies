@@ -9,6 +9,7 @@
 	import { OrcaRenderer } from '$lib/orca/OrcaRenderer';
 	import { library } from '$lib/orca/library';
 	import { match, P } from 'ts-pattern';
+	import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/nodes/defaultNodeData';
 	import StandardHandle from '../StandardHandle.svelte';
 	import Icon from '@iconify/svelte';
 
@@ -36,8 +37,8 @@
 	let canvas: HTMLCanvasElement | undefined = $state();
 	let containerElement: HTMLDivElement | undefined = $state();
 	let bpm = $derived(data.bpm || 120);
-	let gridWidth = $derived(data.width || 64);
-	let gridHeight = $derived(data.height || 16);
+	let gridWidth = $derived(data.width || DEFAULT_ORCA_WIDTH);
+	let gridHeight = $derived(data.height || DEFAULT_ORCA_HEIGHT);
 	let cursorX = $state(0);
 	let cursorY = $state(0);
 	let isPlaying = $state(true);

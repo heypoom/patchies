@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals, useViewport } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { P5Manager } from '$lib/p5/P5Manager';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -26,6 +26,7 @@
 
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
+	const viewport = useViewport();
 
 	let containerElement: HTMLDivElement;
 	let measureElement: HTMLDivElement;
@@ -44,7 +45,7 @@
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
-		p5Manager = new P5Manager(nodeId, containerElement);
+		p5Manager = new P5Manager(nodeId, containerElement, viewport);
 		glSystem.upsertNode(nodeId, 'img', {});
 		updateSketch();
 		measureWidth(1000);
