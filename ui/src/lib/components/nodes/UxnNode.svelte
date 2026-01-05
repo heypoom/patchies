@@ -436,14 +436,6 @@
 						style="width: 512px; height: 320px; image-rendering: pixelated; image-rendering: crisp-edges;"
 					></canvas>
 				</div>
-				<StandardHandle
-					port="outlet"
-					type="video"
-					id={0}
-					title="Video output"
-					total={1}
-					index={0}
-				/>
 			</div>
 
 			{#if errorMessage}
