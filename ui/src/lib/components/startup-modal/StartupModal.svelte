@@ -52,21 +52,12 @@
 		>
 			<!-- Tab navigation -->
 			<div class="relative border-b border-zinc-800 px-6 pt-6">
-<<<<<<< Updated upstream
-				<div class="flex items-start justify-between gap-4">
-					<nav class="flex flex-wrap gap-4 sm:gap-6">
-						{#each tabs as tab (tab)}
-							<button
-								onclick={() => (activeTab = tab)}
-								class="pb-3 text-sm font-medium transition-colors {activeTab === tab
-=======
 				<div class="flex items-start gap-4">
 					<nav class="flex flex-1 gap-4 overflow-x-auto sm:gap-6">
 						{#each tabs as tab (tab)}
 							<button
 								onclick={() => (activeTab = tab)}
 								class="flex-shrink-0 pb-3 text-sm font-medium transition-colors {activeTab === tab
->>>>>>> Stashed changes
 									? 'border-b-2 border-orange-500 text-orange-500'
 									: 'text-zinc-400 hover:text-zinc-200'}"
 							>
