@@ -593,7 +593,7 @@
 								type="number"
 								min="60"
 								max="300"
-								value={clock?.speed.value ?? bpm}
+								value={bpm}
 								onchange={(e) => {
 									const val = parseInt(e.currentTarget.value);
 									if (clock && !isNaN(val)) {
