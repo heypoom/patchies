@@ -337,13 +337,10 @@
 			loadROM(rom, undefined, 'assembled.rom');
 			updateNodeData(nodeId, { code, rom, fileName: 'assembled.rom' });
 
-			// Add success message to console
-			handleConsoleOutput('✓ Assembled successfully\n', false);
 			measureContainerWidth();
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
 			errorMessage = errorMsg;
-			handleConsoleOutput(`✗ Assembler error: ${errorMsg}\n`, true);
 			updateNodeData(nodeId, { errorMessage: errorMsg });
 		}
 	}
