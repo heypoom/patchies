@@ -44,34 +44,34 @@
 				>,
 				<a
 					class="text-orange-300"
-					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
+					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#video-chaining"
 					target="_blank">visual</a
 				>
 				and
 				<a
 					class="text-orange-300"
-					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
+					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#message-passing"
 					target="_blank">computational</a
 				>
 				objects like
 				<a
 					class="text-orange-300"
-					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
+					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#p5-creates-a-p5js-sketch"
 					target="_blank">P5</a
 				>,
 				<a
 					class="text-orange-300"
-					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
+					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#hydra-creates-a-hydra-video-synthesizer"
 					target="_blank">Hydra</a
 				>,
 				<a
 					class="text-orange-300"
-					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
+					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#strudel-strudel-music-environment"
 					target="_blank">Strudel</a
 				>,
 				<a
 					class="text-orange-300"
-					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
+					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#chuck-creates-a-chuck-audio-programming-environment"
 					target="_blank">ChucK</a
 				>,
 				<a
