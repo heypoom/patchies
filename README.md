@@ -8,10 +8,6 @@ Patchies is a tool for building interactive audio-visual patches in the browser 
 
 Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
-## License and Attribution
-
-Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
-
 ## Use tools and libraries you love
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
@@ -36,6 +32,10 @@ If you haven't used a patching environment before, patching is a _visual_ way to
 This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). They're heavily inspired by tools like Max/MSP, Pure Data, TouchDesigner and VVVV.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
+
+## License and Attribution
+
+Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
 
 ## Getting Started
 
