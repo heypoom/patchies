@@ -25,7 +25,7 @@
 
 	const { updateNodeData, screenToFlowPosition } = useSvelteFlow();
 	const viewport = useViewport();
-	const messageContext = new MessageContext(nodeId);
+	let messageContext = new MessageContext(nodeId);
 
 	// Orca engine
 	let orca: Orca | null = $state(null);
@@ -78,6 +78,9 @@
 		// Connect IO to Orca so operators can access it
 		orca.io = io;
 
+		// Connect IO to Clock so it can silence notes on stop
+		clock.setIO(io);
+
 		// Set up clock callback
 		clock.setCallback({
 			onTick() {
@@ -115,8 +118,13 @@
 	});
 
 	onDestroy(() => {
-		if (clock) clock.stop();
-		if (io) io.silence();
+		if (clock) {
+			clock.stop();
+		}
+		if (io) {
+			io.silence();
+			io.clear();
+		}
 		messageContext.destroy();
 	});
 

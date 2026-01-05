@@ -45,11 +45,9 @@ export class MidiMessageHandler {
 	}
 
 	run(): void {
-		// Iterate using for-in to match original Orca behavior
-		// This allows safe deletion during iteration
-		for (const id in this.stack) {
-			const item = this.stack[id];
-			if (!item) continue; // Skip deleted items
+		for (let i = 0; i < this.stack.length; i++) {
+			const item = this.stack[i];
+			if (item === null || item === undefined) continue;
 
 			if (!item.isPlayed) {
 				this.press(item);

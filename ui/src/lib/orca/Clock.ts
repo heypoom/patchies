@@ -10,6 +10,7 @@
  */
 
 import type { Orca } from './Orca';
+import type { IO } from './io/IO';
 
 export interface ClockCallback {
 	onTick(): void;
@@ -23,11 +24,16 @@ export class Clock {
 	private worker: Worker | null = null;
 	private ticks: number[] = [];
 	private callback: ClockCallback | null = null;
+	private io: IO | null = null;
 
-	constructor(orca: Orca) {
+	constructor(_orca: Orca) {
 		this.speed.value = 120;
 		this.speed.target = 120;
 		this.loadSpeed();
+	}
+
+	setIO(io: IO): void {
+		this.io = io;
 	}
 
 	start(): void {
@@ -35,7 +41,7 @@ export class Clock {
 		this.play();
 	}
 
-	play(msg: boolean = false, midiStart: boolean = false): void {
+	play(msg: boolean = false, _midiStart: boolean = false): void {
 		if (this.isPaused === false) return;
 		this.isPaused = false;
 
@@ -54,6 +60,11 @@ export class Clock {
 
 		if (msg) {
 			// Emit MIDI clock stop
+		}
+
+		// Silence all active notes (matching original Orca)
+		if (this.io) {
+			this.io.silence();
 		}
 	}
 
@@ -97,7 +108,7 @@ export class Clock {
 		}
 	}
 
-	setFrame(f: number): void {
+	setFrame(_f: number): void {
 		// Used by nodes to set frame (when puppet mode enabled)
 	}
 
@@ -167,7 +178,7 @@ export class Clock {
 	private saveSpeed(): void {
 		try {
 			localStorage.setItem('orca-bpm', String(this.speed.value));
-		} catch (e) {
+		} catch {
 			console.warn('Could not save BPM to localStorage');
 		}
 	}
@@ -182,7 +193,7 @@ export class Clock {
 					this.speed.target = bpm;
 				}
 			}
-		} catch (e) {
+		} catch {
 			console.warn('Could not load BPM from localStorage');
 		}
 	}
