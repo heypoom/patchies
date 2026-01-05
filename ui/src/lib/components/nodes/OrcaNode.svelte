@@ -438,9 +438,7 @@
 			<!-- Floating title and controls -->
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-black/60 px-2 py-1 backdrop-blur-lg">
-					<div class="font-mono text-xs font-medium text-zinc-400">
-						orca · {bpm}bpm · f{orca?.f ?? 0}
-					</div>
+					<div class="font-mono text-xs font-medium text-zinc-400">orca</div>
 				</div>
 
 				<div class="flex gap-1">
