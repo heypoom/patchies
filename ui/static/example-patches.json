@@ -94,7 +94,7 @@
 		{
 			"id": "08wca4jzuz5wpng",
 			"name": "Matter.js Physics Simulation",
-			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code. Demonstrates shared JavaScript libraries across multiple objects",
+			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
 			"category": "Interactive",
 			"author": "@heypoom"
 		},
