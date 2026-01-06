@@ -8,8 +8,11 @@ export async function loadLanguageExtension(language: string, context?: Patchies
 	// Skip caching for assembly during development to handle HMR properly
 	const shouldCache = language !== 'assembly' || !import.meta.hot;
 
-	if (shouldCache && cachedLanguages[language]) {
-		return cachedLanguages[language];
+	// Create cache key that includes node type to avoid context conflicts
+	const cacheKey = context?.nodeType ? `${language}-${context.nodeType}` : language;
+
+	if (shouldCache && cachedLanguages[cacheKey]) {
+		return cachedLanguages[cacheKey];
 	}
 
 	const extension = await match(language)
@@ -48,7 +51,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
 		.otherwise(() => []);
 
 	if (shouldCache) {
-		cachedLanguages[language] = extension;
+		cachedLanguages[cacheKey] = extension;
 	}
 
 	return extension;
