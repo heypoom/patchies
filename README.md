@@ -71,13 +71,19 @@ See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control
 
 ### Modifying Objects
 
+<img src="./docs/images/patchies-select-object.png" alt="Patchies.app selecting objects" width="700">
+
 - Click on an object to select it. The outline color should change when an object is selected.
   - If you can't drag an object, click on the title of the object and drag it.
 - Once selected, drag the object to move it around.
   - `Delete` to delete an object.
-- When _hovering_ the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
-  - Use "Edit Code" to open the code editor.
-- `Shift + Enter` while in a code editor to run the code again. This helps you to make changes to the code and see the results immediately.
+  - `Ctrl + C/V` to copy and paste an object.
+- When hovering the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
+
+<img src="./docs/images/patchies-edit-code.png" alt="Patchies.app editing code" width="700">
+
+- Use "Edit Code" hover button to open the code editor.
+  - `Shift + Enter` when in a code editor re-runs the code. This helps you to make changes to the code and see the results right away.
 
 ### Keyboard Shortcuts
 
