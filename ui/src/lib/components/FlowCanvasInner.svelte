@@ -33,7 +33,9 @@
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
-	import { getObjectNames } from '$lib/objects/object-definitions';
+	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
+	import { AudioRegistry } from '$lib/registry/AudioRegistry';
+	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -52,21 +54,11 @@
 	});
 
 	/**
-	 * All available object names for the node list palette.
-	 * Includes: visual nodes, audio objects, and text objects.
+	 * Visual node names for the bottom palette.
+	 * Only shows visual nodes (not textual objects) to avoid overwhelming UI.
 	 */
-	const allAvailableObjectNames = $derived.by(() => {
-		// Get visual node names (excluding object and asm.value)
-		const visualNodeNames = Object.keys(visibleNodeTypes);
-
-		// Get text objects (expr, dac~, etc.) from registries
-		const textObjectNames = getObjectNames();
-
-		// Combine and deduplicate
-		const combinedNames = new Set([...visualNodeNames, ...textObjectNames]);
-
-		// Sort alphabetically for better UX
-		return Array.from(combinedNames).sort((a, b) => a.localeCompare(b));
+	const visualNodeNames = $derived.by(() => {
+		return Object.keys(visibleNodeTypes).sort((a, b) => a.localeCompare(b));
 	});
 
 	// Initial nodes and edges
@@ -338,7 +330,7 @@
 
 		// Handle node palette drops
 		if (type) {
-			createNode(type, position);
+			createNodeFromName(type, position);
 		}
 	}
 
@@ -460,15 +452,51 @@
 		nodes = [...nodes, newNode];
 	}
 
+	/**
+	 * Create a node from an object name (handles both visual nodes and textual objects).
+	 * Textual objects (like dac~, expr, adsr) are created as 'object' nodes.
+	 * Visual nodes (like p5, hydra, glsl) are created with their actual type.
+	 */
+	function createNodeFromName(name: string, position: { x: number; y: number }) {
+		// Check if it's a visual node type
+		if (nodeTypes[name as keyof typeof nodeTypes]) {
+			createNode(name, position);
+			return;
+		}
+
+		// Check if it's a textual object (audio or text object)
+		const audioRegistry = AudioRegistry.getInstance();
+		const objectRegistry = ObjectRegistry.getInstance();
+
+		if (audioRegistry.isDefined(name) || objectRegistry.isDefined(name)) {
+			// Create an 'object' node with the textual object name
+			createNode('object', position, {
+				expr: name,
+				name: name,
+				params: []
+			});
+			return;
+		}
+
+		// Fallback: try shorthand transformation
+		const shorthandResult = ObjectShorthandRegistry.getInstance().tryTransform(name);
+		if (shorthandResult) {
+			createNode(shorthandResult.nodeType, position, shorthandResult.data);
+			return;
+		}
+
+		// Last resort: create as-is
+		createNode(name, position);
+	}
+
 	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
 		const position = screenToFlowPosition(lastMousePosition);
 
 		if (isPreset && PRESETS[nodeType]) {
 			const preset = PRESETS[nodeType];
-
 			createNode(preset.type, position, preset.data);
 		} else {
-			createNode(nodeType, position);
+			createNodeFromName(nodeType, position);
 		}
 	}
 
@@ -760,7 +788,7 @@
 	<!-- Bottom toolbar for draggable nodes -->
 	{#if $isBottomBarVisible}
 		<NodeList
-			objectNames={allAvailableObjectNames}
+			objectNames={visualNodeNames}
 			isVisible={isNodeListVisible}
 			onToggle={handleNodeListToggle}
 		/>
