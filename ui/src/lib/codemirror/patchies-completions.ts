@@ -45,6 +45,13 @@ const patchiesAPICompletions: Completion[] = [
 		info: 'Set the number of audio inlets and outlets in dsp~ nodes',
 		apply: 'setAudioPortCount(0, 1)'
 	},
+	{
+		label: 'setVideoCount',
+		type: 'function',
+		detail: '(inlets?: number, outlets?: number) => void',
+		info: 'Set the number of video inlets and outlets for Hydra nodes (max 4 each). Defaults to 1 if not specified',
+		apply: 'setVideoCount(2, 1)'
+	},
 
 	// Node Configuration
 	{
@@ -140,6 +147,7 @@ const patchiesAPICompletions: Completion[] = [
 const topLevelOnlyFunctions = new Set([
 	'setPortCount',
 	'setAudioPortCount',
+	'setVideoCount',
 	'setTitle',
 	'setRunOnMount',
 	'setKeepAlive',
@@ -153,6 +161,7 @@ const topLevelOnlyFunctions = new Set([
 const nodeSpecificFunctions: Record<string, string[]> = {
 	setKeepAlive: ['dsp~'],
 	setAudioPortCount: ['dsp~'],
+	setVideoCount: ['hydra'],
 	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
 	noDrag: ['p5', 'canvas'],
 	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel']

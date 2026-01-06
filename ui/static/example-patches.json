@@ -78,6 +78,13 @@
 			"author": "@dtinth"
 		},
 		{
+			"id": "qbnonbgwyvzov2c",
+			"name": "Random Walk World",
+			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
+			"category": "Interactive",
+			"author": "@heypoom"
+		}
+		{
 			"id": "08wca4jzuz5wpng",
 			"name": "Matter.js Physics Simulation",
 			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code. Demonstrates shared JavaScript libraries across multiple objects",
