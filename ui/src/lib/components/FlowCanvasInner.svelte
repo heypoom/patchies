@@ -11,7 +11,6 @@
 	import { onDestroy, onMount } from 'svelte';
 	import CommandPalette from './CommandPalette.svelte';
 	import StartupModal from './startup-modal/StartupModal.svelte';
-	import NodeList from './NodeList.svelte';
 	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
@@ -787,10 +786,8 @@
 		{/if}
 	</div>
 
-	<!-- Bottom toolbar for browse button -->
+	<!-- Bottom toolbar buttons -->
 	{#if $isBottomBarVisible}
-		<NodeList onOpenBrowser={() => (showObjectBrowser = true)} />
-
 		<div class="fixed bottom-0 right-0 p-2">
 			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
 				<button
@@ -818,6 +815,17 @@
 
 					insertObjectWithButton();
 				}}><Icon icon="lucide:circle-plus" class="h-4 w-4 text-zinc-300" /></button
+			>
+
+			<button
+				title="Browse objects"
+				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+
+					showObjectBrowser = true;
+				}}><Icon icon="lucide:search" class="h-4 w-4 text-zinc-300" /></button
 			>
 
 			<button
@@ -868,13 +876,6 @@
 		background: transparent !important;
 	}
 
-	:global(.svelte-flow__controls) {
-		position: fixed;
-		bottom: 23px !important;
-		border-radius: 10px;
-		margin: 15px 9px;
-	}
-
 	:global(.svelte-flow__controls button) {
 		background: rgba(39, 39, 42, 0.5) !important;
 		color: rgb(244 244 245) !important;
@@ -883,13 +884,13 @@
 	}
 
 	:global(.svelte-flow__controls button):first-child {
-		border-top-left-radius: 10px;
-		border-top-right-radius: 10px;
+		border-top-left-radius: 8px;
+		border-top-right-radius: 8px;
 	}
 
 	:global(.svelte-flow__controls button):last-child {
-		border-bottom-left-radius: 10px;
-		border-bottom-right-radius: 10px;
+		border-bottom-left-radius: 8px;
+		border-bottom-right-radius: 8px;
 	}
 
 	:global(.svelte-flow__controls button:hover) {
