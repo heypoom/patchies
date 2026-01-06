@@ -1,0 +1,223 @@
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+import { nodeNames } from '$lib/nodes/node-types';
+
+export interface ObjectItem {
+	name: string;
+	description: string;
+	category: string;
+}
+
+export interface CategoryGroup {
+	title: string;
+	objects: ObjectItem[];
+}
+
+/**
+ * Manual descriptions for visual nodes and other special nodes
+ */
+const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
+	p5: 'P5.js creative coding canvas for generative graphics',
+	hydra: 'Live coding video synthesizer with feedback loops',
+	glsl: 'GLSL fragment shader for GPU-accelerated graphics',
+	swgl: 'SwissGL shader programming with simplified syntax',
+	canvas: 'JavaScript canvas for 2D drawing and animations',
+	bchrn: 'Butterchurn milkdrop visualizer with audio reactivity',
+	'bg.out': 'Background output canvas for fullscreen visuals',
+	img: 'Static image display from file or URL',
+	webcam: 'Live webcam video input capture',
+	screen: 'Screen capture for desktop/window recording',
+	video: 'Video file player with playback controls',
+	button: 'Clickable button that sends bang messages',
+	toggle: 'Toggle switch for boolean on/off states',
+	slider: 'Number slider for parameter control',
+	keyboard: 'Keyboard input capture for key events',
+	textbox: 'Text input field for string messages',
+	msg: 'Message box for sending fixed messages',
+	label: 'Text label for annotations and notes',
+	markdown: 'Markdown text display with formatting',
+	js: 'JavaScript code execution environment',
+	python: 'Python code execution with Pyodide',
+	expr: 'Mathematical expression evaluator',
+	'ai.txt': 'AI text generation with GPT models',
+	'ai.img': 'AI image generation with DALL-E/Stable Diffusion',
+	'ai.music': 'AI music generation',
+	'ai.tts': 'AI text-to-speech synthesis',
+	'midi.in': 'MIDI input device receiver',
+	'midi.out': 'MIDI output device sender',
+	netsend: 'Network message sender via WebSocket',
+	netrecv: 'Network message receiver via WebSocket',
+	asm: 'Assembly virtual machine (VASM)',
+	orca: 'Orca livecoding environment',
+	uxn: 'UXN virtual machine',
+	iframe: 'Embedded web page in iframe',
+	link: 'Clickable hyperlink button',
+	'merge~': 'Audio channel merger (mono to stereo)',
+	'split~': 'Audio channel splitter (stereo to mono)',
+	'meter~': 'Audio level meter display'
+};
+
+/**
+ * Category mapping for visual nodes
+ */
+const VISUAL_NODE_CATEGORIES: Record<string, string> = {
+	p5: 'Visual',
+	hydra: 'Visual',
+	glsl: 'Visual',
+	swgl: 'Visual',
+	canvas: 'Visual',
+	'bg.out': 'Visual',
+	webcam: 'Video',
+	screen: 'Video',
+	video: 'Video',
+	img: 'Video',
+	button: 'UI',
+	toggle: 'UI',
+	slider: 'UI',
+	keyboard: 'UI',
+	textbox: 'UI',
+	msg: 'UI',
+	label: 'UI',
+	markdown: 'UI',
+	js: 'Code',
+	python: 'Code',
+	expr: 'Code',
+	'ai.txt': 'AI',
+	'ai.img': 'AI',
+	'ai.music': 'AI',
+	'ai.tts': 'AI',
+	'midi.in': 'I/O',
+	'midi.out': 'I/O',
+	netsend: 'I/O',
+	netrecv: 'I/O',
+	asm: 'Experimental',
+	orca: 'Experimental',
+	uxn: 'Experimental',
+	iframe: 'Experimental',
+	bchrn: 'Unstable',
+	link: 'UI',
+	'merge~': 'Audio FX',
+	'split~': 'Audio FX',
+	'meter~': 'Audio Output'
+};
+
+/**
+ * Audio node categories based on group classification
+ */
+const AUDIO_CODE_NODES = ['chuck~', 'tone~', 'dsp~', 'elem~', 'csound~', 'expr~'];
+
+/**
+ * Get all objects categorized by type
+ */
+export function getCategorizedObjects(): CategoryGroup[] {
+	const allObjects: ObjectItem[] = [];
+	const seenNames = new Set<string>();
+
+	const audioRegistry = AudioRegistry.getInstance();
+	const objectRegistry = ObjectRegistry.getInstance();
+
+	// Get audio nodes from AudioRegistry
+	const audioNodeTypes = audioRegistry.getNodeTypes();
+	for (const nodeType of audioNodeTypes) {
+		if (seenNames.has(nodeType)) continue;
+		seenNames.add(nodeType);
+
+		const nodeClass = audioRegistry.get(nodeType);
+		if (!nodeClass) continue;
+
+		let category = '';
+		if (AUDIO_CODE_NODES.includes(nodeType)) {
+			category = 'Audio (Code)';
+		} else if (nodeClass.group === 'sources') {
+			category = 'Audio Sources';
+		} else if (nodeClass.group === 'processors') {
+			category = 'Audio FX';
+		} else if (nodeClass.group === 'destinations') {
+			category = 'Audio Output';
+		}
+
+		allObjects.push({
+			name: nodeType,
+			description: nodeClass.description || `${nodeType} audio node`,
+			category
+		});
+	}
+
+	// Get text objects from ObjectRegistry
+	const textObjectTypes = objectRegistry.getObjectTypes();
+	for (const objectType of textObjectTypes) {
+		if (seenNames.has(objectType)) continue;
+		seenNames.add(objectType);
+
+		const objectClass = objectRegistry.get(objectType);
+		if (!objectClass) continue;
+
+		allObjects.push({
+			name: objectType,
+			description: objectClass.description || `${objectType} control object`,
+			category: 'Control'
+		});
+	}
+
+	// Get visual nodes
+	for (const nodeName of nodeNames) {
+		// Skip 'object' and 'asm.value' as they're not user-facing
+		if (nodeName === 'object' || nodeName === 'asm.value') continue;
+
+		// Skip if already added from registries
+		if (seenNames.has(nodeName)) continue;
+		seenNames.add(nodeName);
+
+		const category = VISUAL_NODE_CATEGORIES[nodeName];
+		if (!category) continue;
+
+		allObjects.push({
+			name: nodeName,
+			description: VISUAL_NODE_DESCRIPTIONS[nodeName] || `${nodeName} node`,
+			category
+		});
+	}
+
+	// Group objects by category
+	const categoryMap = new Map<string, ObjectItem[]>();
+	for (const obj of allObjects) {
+		if (!categoryMap.has(obj.category)) {
+			categoryMap.set(obj.category, []);
+		}
+		categoryMap.get(obj.category)!.push(obj);
+	}
+
+	// Sort objects within each category
+	for (const objects of categoryMap.values()) {
+		objects.sort((a, b) => a.name.localeCompare(b.name));
+	}
+
+	// Define category order
+	const categoryOrder = [
+		'Visual',
+		'Video',
+		'Audio Sources',
+		'Audio FX',
+		'Audio Output',
+		'Audio (Code)',
+		'Experimental',
+		'Control',
+		'UI',
+		'Code',
+		'AI',
+		'I/O'
+	];
+
+	// Build final category groups in order
+	const result: CategoryGroup[] = [];
+
+	for (const title of categoryOrder) {
+		const objects = categoryMap.get(title);
+
+		if (objects && objects.length > 0) {
+			result.push({ title, objects });
+		}
+	}
+
+	return result;
+}

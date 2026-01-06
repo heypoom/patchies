@@ -13,6 +13,7 @@
 	import StartupModal from './startup-modal/StartupModal.svelte';
 	import NodeList from './NodeList.svelte';
 	import VolumeControl from './VolumeControl.svelte';
+	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
@@ -53,14 +54,6 @@
 		);
 	});
 
-	/**
-	 * Visual node names for the bottom palette.
-	 * Only shows visual nodes (not textual objects) to avoid overwhelming UI.
-	 */
-	const visualNodeNames = $derived.by(() => {
-		return Object.keys(visibleNodeTypes).sort((a, b) => a.localeCompare(b));
-	});
-
 	// Initial nodes and edges
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
@@ -78,6 +71,9 @@
 	let showCommandPalette = $state(false);
 	let commandPalettePosition = $state.raw({ x: 0, y: 0 });
 	let flowContainer: HTMLDivElement;
+
+	// Object browser modal state
+	let showObjectBrowser = $state(false);
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
@@ -513,8 +509,9 @@
 		};
 	}
 
-	function handleNodeListToggle() {
-		isNodeListVisible = !isNodeListVisible;
+	function handleObjectBrowserSelect(name: string) {
+		const position = screenToFlowPosition(lastMousePosition);
+		createNodeFromName(name, position);
 	}
 
 	const isValidConnection: IsValidConnection = (connection) => {
@@ -785,13 +782,9 @@
 		{/if}
 	</div>
 
-	<!-- Bottom toolbar for draggable nodes -->
+	<!-- Bottom toolbar for browse button -->
 	{#if $isBottomBarVisible}
-		<NodeList
-			objectNames={visualNodeNames}
-			isVisible={isNodeListVisible}
-			onToggle={handleNodeListToggle}
-		/>
+		<NodeList onOpenBrowser={() => (showObjectBrowser = true)} />
 
 		<div class="fixed bottom-0 right-0 p-2">
 			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
@@ -856,6 +849,9 @@
 			<StartupModal bind:open={showStartupModal} onLoadPatch={loadPatchById} />
 		</div>
 	{/if}
+
+	<!-- Object Browser Modal -->
+	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
 </div>
 
 <style>
