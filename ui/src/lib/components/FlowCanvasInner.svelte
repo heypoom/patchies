@@ -510,7 +510,12 @@
 	}
 
 	function handleObjectBrowserSelect(name: string) {
-		const position = screenToFlowPosition(lastMousePosition);
+		// Get the center of the viewport in screen coordinates
+		const viewportCenterX = window.innerWidth / 2;
+		const viewportCenterY = window.innerHeight / 2;
+
+		// Convert to flow coordinates (accounts for pan and zoom)
+		const position = screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
 		createNodeFromName(name, position);
 	}
 
