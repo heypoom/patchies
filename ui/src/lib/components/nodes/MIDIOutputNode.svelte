@@ -65,6 +65,31 @@
 	const handleMessage: MessageCallbackFn = (message) => {
 		try {
 			match(message)
+				.with(
+					{
+						type: P.union(
+							'noteOn',
+							'noteOff',
+							'controlChange',
+							'programChange',
+							'pitchBend',
+							'raw'
+						),
+						channel: P.optional(P.number),
+						deviceId: P.optional(P.string)
+					},
+					(md) => {
+						const config = {
+							...data,
+							...md,
+							channel: md.channel ?? data.channel,
+							deviceId: md.deviceId ?? data.deviceId,
+							event: md.type ?? data.event
+						};
+
+						sendMidiMessage(config as MIDIOutputConfig);
+					}
+				)
 				.with({ type: 'bang' }, () => {
 					sendMidiMessage();
 				})
@@ -81,26 +106,7 @@
 					};
 
 					sendMidiMessage(config as MIDIOutputConfig);
-				})
-				.with(
-					{
-						type: P.union('noteOn', 'noteOff', 'controlChange', 'programChange'),
-						deviceId: P.optional(P.string),
-						channel: P.optional(P.number),
-						event: P.optional(P.string)
-					},
-					(md) => {
-						const config = {
-							...data,
-							...md,
-							deviceId: md.deviceId ?? data.deviceId,
-							channel: md.channel ?? data.channel,
-							event: md.event ?? data.event
-						};
-
-						sendMidiMessage(config as MIDIOutputConfig);
-					}
-				);
+				});
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 		}
