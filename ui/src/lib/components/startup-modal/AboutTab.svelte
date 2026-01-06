@@ -2,7 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import { onMount } from 'svelte';
 
-	import demoImage from '$lib/images/startup-modal-compressed.png';
+	import demoImage from '$lib/images/startup-modal.webp';
 	import type { Tab } from './types';
 
 	let showOnStartup = $state(true);
