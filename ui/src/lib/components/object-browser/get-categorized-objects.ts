@@ -61,16 +61,16 @@ const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
  * Category mapping for visual nodes
  */
 const VISUAL_NODE_CATEGORIES: Record<string, string> = {
-	p5: 'Visual',
-	hydra: 'Visual',
-	glsl: 'Visual',
-	swgl: 'Visual',
-	canvas: 'Visual',
-	'bg.out': 'Visual',
-	webcam: 'Video',
-	screen: 'Video',
-	video: 'Video',
-	img: 'Video',
+	p5: 'Video',
+	hydra: 'Video',
+	glsl: 'Video',
+	swgl: 'Video',
+	canvas: 'Video',
+	'bg.out': 'Video',
+	webcam: 'Video Sources',
+	screen: 'Video Sources',
+	video: 'Video Sources',
+	img: 'Video Sources',
 	button: 'UI',
 	toggle: 'UI',
 	slider: 'UI',
@@ -90,15 +90,15 @@ const VISUAL_NODE_CATEGORIES: Record<string, string> = {
 	'midi.out': 'I/O',
 	netsend: 'I/O',
 	netrecv: 'I/O',
-	asm: 'Experimental',
-	orca: 'Experimental',
-	uxn: 'Experimental',
-	iframe: 'Experimental',
-	bchrn: 'Unstable',
+	asm: 'Code',
+	orca: 'Audio',
+	uxn: 'Code',
+	iframe: 'Code',
 	link: 'UI',
 	'merge~': 'Audio FX',
 	'split~': 'Audio FX',
-	'meter~': 'Audio Output'
+	'meter~': 'Audio',
+	bchrn: 'Unstable'
 };
 
 /**
@@ -127,13 +127,13 @@ export function getCategorizedObjects(): CategoryGroup[] {
 
 		let category = '';
 		if (AUDIO_CODE_NODES.includes(nodeType)) {
-			category = 'Audio (Code)';
+			category = 'Audio';
 		} else if (nodeClass.group === 'sources') {
 			category = 'Audio Sources';
 		} else if (nodeClass.group === 'processors') {
 			category = 'Audio FX';
 		} else if (nodeClass.group === 'destinations') {
-			category = 'Audio Output';
+			category = 'Audio';
 		}
 
 		allObjects.push({
@@ -194,18 +194,17 @@ export function getCategorizedObjects(): CategoryGroup[] {
 
 	// Define category order
 	const categoryOrder = [
-		'Visual',
 		'Video',
+		'Video Sources',
 		'Audio Sources',
+		'Audio',
 		'Audio FX',
-		'Audio Output',
-		'Audio (Code)',
-		'Experimental',
-		'Control',
-		'UI',
 		'Code',
+		'Control',
+		'I/O',
+		'UI',
 		'AI',
-		'I/O'
+		'Unstable'
 	];
 
 	// Build final category groups in order
