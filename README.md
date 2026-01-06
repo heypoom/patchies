@@ -337,34 +337,6 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - You can use it as video source and connect it to other visual objects (e.g. `hydra` and `glsl`) to derive more visual effects.
 - It can be very compute intensive. Use it sparingly otherwise your patch will lag. It also runs on the main thread, see [rendering pipeline](#rendering-pipeline) for more details.
 
-### `uxn`: Uxn virtual machine
-
-<img src="./docs/images/patchies-uxn.png" alt="Patchies.app uxn node" width="700">
-
-- [Uxn](https://100r.co/site/uxn.html) is a virtual machine for running small programs written in [Uxntal](https://wiki.xxiivv.com/site/uxntal.html), an assembly language for the Uxn stack machine. Conforms with the [Varvara](https://wiki.xxiivv.com/site/varvara.html) device specifications.
-- Run classic Uxn programs like [Orca](https://100r.co/site/orca.html) and [Left](https://100r.co/site/left.html). Run games like [Oquonie](https://hundredrabbits.itch.io/oquonie) and [Donsol](https://hundredrabbits.itch.io/donsol).
-- Write and assemble your own Uxntal programs directly in the editor.
-- Supports video chaining - connect the video outlet to other visual objects (e.g. `hydra` and `glsl`) to process the Uxn screen output.
-- Console output is automatically sent as messages through the message outlet, allowing you to process program output with other objects.
-- Load ROM files by dropping a `.rom` file, or use the Load ROM button (folder icon)
-- "Edit Code" button (code icon) opens the Uxntal assembly code editor.
-  - Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
-  - Assembler errors are displayed below the node.
-- "Console" button (terminal icon) shows program output
-  - Console output is automatically sent as string messages through the message outlet.
-- "Pause" button pauses and resumes program execution.
-- The canvas captures keyboard and mouse input for Uxn programs. Click on the canvas to focus it.
-- Messages
-- `string` (URL): Load ROM from URL
-- `Uint8Array`: Load ROM from raw binary data
-- `File`: Load ROM from file object
-- `{type: 'load', url: string}`: Load ROM from URL
-- Outputs string messages from console device
-
-- See the [Uxn documentation](https://wiki.xxiivv.com/site/uxn.html) and [Uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html) to learn how to write Uxn programs.
-- Check out [100r.co](https://100r.co) for Uxn design principles.
-- See [Awesome Uxn](https://github.com/hundredrabbits/awesome-uxn) for cool resources and projects from the Uxn community.
-
 ### `img`: display images
 
 - Load and display images from URLs or local files.
@@ -478,11 +450,33 @@ See the following example:
 
 - You can also [define functions](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#function-definitions) to make the code easier to read, e.g. `add(a, b) = a + b`.
 
-### `python`: creates a Python code environment
+### `uxn`: Uxn virtual machine
 
-- Run Python code directly in the browser using Pyodide.
-- Great for data processing, scientific computing, and algorithmic composition.
-- Full Python standard library available.
+<img src="./docs/images/patchies-uxn.png" alt="Patchies.app uxn node" width="700">
+
+- [Uxn](https://100r.co/site/uxn.html) is a virtual machine for running small programs written in [Uxntal](https://wiki.xxiivv.com/site/uxntal.html), an assembly language for the Uxn stack machine. Conforms with the [Varvara](https://wiki.xxiivv.com/site/varvara.html) device specifications.
+- Run classic Uxn programs like [Orca](https://100r.co/site/orca.html) and [Left](https://100r.co/site/left.html). Run games like [Oquonie](https://hundredrabbits.itch.io/oquonie) and [Donsol](https://hundredrabbits.itch.io/donsol).
+- Write and assemble your own Uxntal programs directly in the editor.
+- Supports video chaining - connect the video outlet to other visual objects (e.g. `hydra` and `glsl`) to process the Uxn screen output.
+- Console output is automatically sent as messages through the message outlet, allowing you to process program output with other objects.
+- Load ROM files by dropping a `.rom` file, or use the Load ROM button (folder icon)
+- "Edit Code" button (code icon) opens the Uxntal assembly code editor.
+  - Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
+  - Assembler errors are displayed below the node.
+- "Console" button (terminal icon) shows program output
+  - Console output is automatically sent as string messages through the message outlet.
+- "Pause" button pauses and resumes program execution.
+- The canvas captures keyboard and mouse input for Uxn programs. Click on the canvas to focus it.
+- Messages
+- `string` (URL): Load ROM from URL
+- `Uint8Array`: Load ROM from raw binary data
+- `File`: Load ROM from file object
+- `{type: 'load', url: string}`: Load ROM from URL
+- Outputs string messages from console device
+
+- See the [Uxn documentation](https://wiki.xxiivv.com/site/uxn.html) and [Uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html) to learn how to write Uxn programs.
+- Check out [100r.co](https://100r.co) for Uxn design principles.
+- See [Awesome Uxn](https://github.com/hundredrabbits/awesome-uxn) for cool resources and projects from the Uxn community.
 
 ### `asm`: virtual stack machine assembly interpreter
 
@@ -495,6 +489,12 @@ The stack machine module is quite extensive, with over 50 assembly instructions 
 See the [documentation for assembly module](./modules/vasm/README.md) to see the full instruction sets and syntax, what the `asm` object and its friends can do, and how to use it.
 
 Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to get a feel of how it works.
+
+### `python`: creates a Python code environment
+
+- Run Python code directly in the browser using [Pyodide](https://pyodide.org/en/stable/).
+- Great for data processing, scientific computing, and algorithmic composition.
+- Full Python standard library available.
 
 ### Interface & Control Objects
 
