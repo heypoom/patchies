@@ -520,7 +520,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Examples
   - `bang` sends `{type: 'bang'}` object - this is what `button` does when you click it
   - `start` sends `{type: 'start'}` object
-  - `"hello world"` sends the string `"hello world"`
+  - `'hello world'` or `"hello world"` sends the string `'hello world'`
   - `100` sends the number `100`
   - `{x: 1, y: 2}` sends the object `{x: 1, y: 2}`
 - Messages:
