@@ -30,22 +30,19 @@
 	const deviceId = $derived(data.deviceId || '');
 	const channel = $derived(data.channel || 1);
 	const event = $derived(data.event || 'noteOn');
+	const isActive = $derived(data.active !== false); // Default to true
 
 	const borderColor = $derived.by(() => {
-		const now = Date.now();
 		if (errorMessage) return 'border-red-500';
-		if (now - lastSentTime < 200) return 'border-blue-500';
+		if (isActive) return 'border-emerald-500';
 		if (selected) return 'border-zinc-400';
-
 		return 'border-zinc-600';
 	});
 
 	const statusIcon = $derived.by(() => {
-		const now = Date.now();
 		if (errorMessage) return 'lucide:alert-circle';
-		if (now - lastSentTime < 200) return 'lucide:zap';
-
-		return 'lucide:volume-2';
+		if (isActive) return 'lucide:volume-2';
+		return 'lucide:volume-x';
 	});
 
 	const dataFieldType = $derived.by(() => {
@@ -113,6 +110,9 @@
 	};
 
 	async function sendMidiMessage(userConfig?: MIDIOutputConfig) {
+		// Don't send if node is inactive
+		if (!isActive) return;
+
 		const config = { ...data, ...userConfig };
 
 		if (!config.deviceId) {
@@ -137,6 +137,10 @@
 		} catch (error) {
 			errorMessage = 'Failed to send MIDI message';
 		}
+	}
+
+	function toggleActive() {
+		updateNodeData(nodeId, { active: !isActive });
 	}
 
 	function getDefaultDataForMessageType(msgType: string) {
@@ -178,7 +182,7 @@
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-					<div class="font-mono text-xs font-medium text-zinc-100">midi.out</div>
+					<div class="font-mono text-xs font-medium text-zinc-400">midi.out</div>
 				</div>
 
 				<button
@@ -196,37 +200,31 @@
 				{#if !deviceId}
 					<button
 						class={[
-							'flex w-full min-w-[120px] flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 text-zinc-300 hover:bg-zinc-800',
+							'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 px-3 py-2 text-zinc-300 hover:bg-zinc-800',
 							'border-amber-500',
 							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
 						onclick={() => (showSettings = true)}
 						title="Select MIDI device"
 					>
-						<Icon icon="lucide:settings" class="mb-2 h-5 w-5" />
-						<div class="text-xs">
+						<Icon icon="lucide:settings" class="mb-1 h-4 w-4" />
+
+						<div class="text-[10px]">
 							<span class="text-amber-400">Select device</span>
 						</div>
-						<div class="mt-1 text-[10px] text-zinc-500">Configure first</div>
 					</button>
 				{:else}
 					<button
 						class={[
-							'flex w-full min-w-[120px] flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 text-zinc-300 hover:bg-zinc-800',
+							'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 pb-2 text-zinc-300 hover:bg-zinc-800',
 							borderColor,
 							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
-						onclick={() => sendMidiMessage()}
-						title="Send MIDI message"
+						onclick={toggleActive}
+						title={isActive ? 'Deactivate' : 'Activate'}
 					>
-						<Icon icon={statusIcon} class="mb-2 h-5 w-5" />
-						<div class="text-xs">
-							{#if errorMessage}
-								<span class="text-red-400">Error</span>
-							{:else}
-								<span class="text-zinc-400">{event}</span>
-							{/if}
-						</div>
+						<Icon icon={statusIcon} class="h-4 w-4" />
+
 						<div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
 							{midiSystem.getOutputById(deviceId)?.name || 'Unknown'}
 						</div>
@@ -290,6 +288,7 @@
 							<option value="noteOff">Note Off</option>
 							<option value="controlChange">Control Change</option>
 							<option value="programChange">Program Change</option>
+							<option value="pitchBend">Pitch Bend</option>
 						</select>
 					</div>
 

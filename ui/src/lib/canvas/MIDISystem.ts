@@ -24,6 +24,7 @@ export interface MIDIInputConfig {
 export type MIDIOutputConfig = {
 	deviceId?: string;
 	channel?: number;
+	active?: boolean;
 } & (
 	| { event: 'noteOn'; note: number; velocity: number }
 	| { event: 'noteOff'; note: number; velocity: number }
