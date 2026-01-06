@@ -83,7 +83,7 @@
 			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
 			"category": "Interactive",
 			"author": "@heypoom"
-		}
+		},
 		{
 			"id": "08wca4jzuz5wpng",
 			"name": "Matter.js Physics Simulation",

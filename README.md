@@ -263,6 +263,8 @@ These objects support video chaining and can be connected to create complex visu
 
 ### `hydra`: creates a Hydra video synthesizer
 
+<img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="500">
+
 - [Hydra](https://hydra.ojack.xyz) is a live coding video synthesizer created by [Olivia Jack](https://ojack.xyz). You can use it to create all kinds of video effects.
 - See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
 - Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
@@ -277,6 +279,7 @@ These objects support video chaining and can be connected to create complex visu
   - `pipe.hydra`: passes the image through without any changes
   - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
   - `filet-mignon.hydra`: example Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl). Licensed under CC BY-NC-SA 4.0.
+- Try out [this demo](https://patchies.app/?id=qbnonbgwyvzov2c) which uses P5.js with Hydra to create a random walk shader
 
 ### `glsl`: creates a GLSL fragment shader
 
