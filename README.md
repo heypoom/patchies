@@ -42,9 +42,8 @@ Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open
 ## Getting Started
 
 - Go to [patchies.app](https://patchies.app).
-- Use your mouse to pan and zoom the canvas.
-  - Scroll up: zoom in. Scroll down: zoom out.
-  - Drag on empty space to pan the canvas.
+- Use the mouse to pan the canvas.
+- Use the scroll wheel to zoom the canvas.
 
 ### Try out some examples
 
