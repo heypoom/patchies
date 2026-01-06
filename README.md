@@ -23,7 +23,9 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 
 ## ...by patching them together ✨
 
-<img src="./docs/images/patchies-advanced-drums.png" alt="Patchies.app advanced drum synthesizer" width="700">
+<img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="500">
+
+> Try out [the above demo](https://patchies.app/?id=f4tvzfxk1qr4xr2) which uses P5.js with Hydra to create a random walk shader.
 
 Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a huge web of small objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
@@ -192,7 +194,7 @@ For a more fun example, here's [a little patch](https://patchies.app/?id=l8ypbfy
 
 <img src="./docs/images/patchies-audio-super-fun.png" alt="Patchies.app beat example" width="500">
 
-If you don't have an idea where to start, why not build your own drum machine? [Try it out](https://patchies.app/?id=w46um7gafe7hgle)! Use the `W A S D` keys on your keyboard to play some drums 🥁. Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz) as well: use `P` to play and `K` to stop.
+If you don't have an idea where to start, why not build your own drum machine? [Try it out](https://patchies.app/?id=w46um7gafe7hgle)! Use the `W A S D` keys on your keyboard to play some drums 🥁.
 
 <img src="./docs/images/patchies-simple-drums.png" alt="Patchies.app simple drum machine" width="500">
 
@@ -262,10 +264,6 @@ These objects support video chaining and can be connected to create complex visu
   - Try out this [Matter.js example](https://patchies.app/?id=08wca4jzuz5wpng) from Daniel Shiffman's [The Nature of Code](https://natureofcode.com) that creates a simple physics simulation. In this example, the code for the Boundary and Box class is separated into shared library objects.
 
 ### `hydra`: creates a Hydra video synthesizer
-
-<img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="500">
-
-> Try out [the above demo](https://patchies.app/?id=qbnonbgwyvzov2c) which uses P5.js with Hydra to create a random walk shader.
 
 - [Hydra](https://hydra.ojack.xyz) is a live coding video synthesizer created by [Olivia Jack](https://ojack.xyz). You can use it to create all kinds of video effects.
 - See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
@@ -691,6 +689,10 @@ These objects run on _audio rate_, which means they process audio signals in rea
 - `meter~`: Visual audio level meter that shows the loudness of the audio source.
 
 **Sound Input and Output:**
+
+<img src="./docs/images/patchies-advanced-drums.png" alt="Patchies.app advanced drum synthesizer" width="700">
+
+> Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz): use `P` to play and `K` to stop!
 
 - `soundfile~`: Load and play audio files with transport controls
 - `sampler~`: Sample playback with triggering capabilities
