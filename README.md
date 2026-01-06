@@ -265,6 +265,11 @@ These objects support video chaining and can be connected to create complex visu
 
 <img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="500">
 
+<<<<<<< Updated upstream
+=======
+> Try out [the above demo](https://patchies.app/?id=qbnonbgwyvzov2c) which uses P5.js with Hydra to create a random walk shader.
+
+>>>>>>> Stashed changes
 - [Hydra](https://hydra.ojack.xyz) is a live coding video synthesizer created by [Olivia Jack](https://ojack.xyz). You can use it to create all kinds of video effects.
 - See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
 - Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
