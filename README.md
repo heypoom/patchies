@@ -359,43 +359,23 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Write and assemble your own Uxntal programs directly in the editor.
 - Supports video chaining - connect the video outlet to other visual objects (e.g. `hydra` and `glsl`) to process the Uxn screen output.
 - Console output is automatically sent as messages through the message outlet, allowing you to process program output with other objects.
-
-**Loading ROMs:**
-
-- **File**: Click the "Load ROM" button (folder icon) to load a `.rom` file from your computer.
-- **Drag & Drop**: Drag a `.rom` file onto the canvas to load it.
-- **URL**: Send a URL string message to the inlet to load a ROM from the web.
-- **Message**: Send a `Uint8Array` or `File` object to the inlet to load a ROM programmatically.
-
-**Writing Code:**
-
-- Click the "Edit Code" button (code icon) to open the Uxntal code editor.
-- Write your Uxntal assembly code in the editor.
-- Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
-- Assembler errors are displayed in the console.
-
-**Console:**
-
-- Click the "Console" button (terminal icon) to view program output and assembler errors.
-- Console output is automatically sent as string messages through the message outlet.
-- Long messages automatically wrap to fit the node width.
-
-**Controls:**
-
-- **Pause/Resume**: Click the pause button to pause/resume program execution.
-- **Keyboard Input**: The canvas captures keyboard input for Uxn programs. Click on the canvas to focus it.
-- **Mouse Input**: Mouse movement and clicks are automatically sent to the Uxn program.
-
+- Load ROM files by dropping a `.rom` file, or use the Load ROM button (folder icon)
+- "Edit Code" button (code icon) opens the Uxntal assembly code editor.
+  - Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
+  - Assembler errors are displayed below the node.
+- "Console" button (terminal icon) shows program output
+  - Console output is automatically sent as string messages through the message outlet.
+- "Pause" button pauses and resumes program execution.
+- The canvas captures keyboard and mouse input for Uxn programs. Click on the canvas to focus it.
 - Messages
-
-  - `string` (URL): Load ROM from URL
-  - `Uint8Array`: Load ROM from binary data
-  - `File`: Load ROM from file object
-  - `{type: 'load', url: string}`: Load ROM from URL
-  - Outputs string messages from console device
+- `string` (URL): Load ROM from URL
+- `Uint8Array`: Load ROM from raw binary data
+- `File`: Load ROM from file object
+- `{type: 'load', url: string}`: Load ROM from URL
+- Outputs string messages from console device
 
 - See the [Uxn documentation](https://wiki.xxiivv.com/site/uxn.html) and [Uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html) to learn how to write Uxn programs.
-- Check out [100r.co](https://100r.co) for Uxn programs and resources.
+- Check out [100r.co](https://100r.co) for Uxn design principles.
 - See [Awesome Uxn](https://github.com/hundredrabbits/awesome-uxn) for cool resources and projects from the Uxn community.
 
 ### `img`: display images
@@ -421,8 +401,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Embed external web pages and interactive web content in your patches.
 - Resizable iframe with customizable URL.
 - Messages
-  - `string`: load the webpage from the given URL.
-  - `{type: 'load', url: 'https://...'}`: load a specific URL.
+  - `string` or `{type: 'load', url: 'https://...'}`: loads the webpage from the given URL.
 - Double-click to enter a URL when no content is loaded.
 - The iframe is sandboxed for security.
 
