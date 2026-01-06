@@ -50,9 +50,7 @@ Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open
 
 <img src="./docs/images/patchies-demo-modal.png" alt="Patchies.app demo modal" width="700">
 
-In the help modal (accessible by clicking the "Help" button on the bottom right), we have many demos for you to try out on the demos tab.
-
-Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand!
+Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand. Go to "Help" (the button with the question mark on the bottom right) then "demos" to view the list of demos you can play with!
 
 ### Creating Objects
 
