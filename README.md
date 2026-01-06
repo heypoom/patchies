@@ -74,8 +74,8 @@ See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control
 <img src="./docs/images/patchies-select-object.png" alt="Patchies.app selecting objects" width="700">
 
 - Click on an object to select it. The outline color should change when an object is selected.
-  - If you can't drag an object, click on the title of the object and drag it.
 - Once selected, drag the object to move it around.
+  - If you can't drag an object, click on the title of the object and drag it instead.
   - `Delete` to delete an object.
   - `Ctrl + C/V` to copy and paste an object.
 - When hovering the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
