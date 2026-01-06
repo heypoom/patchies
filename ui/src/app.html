@@ -68,13 +68,37 @@
 		<div style="display: contents">%sveltekit.body%</div>
 
 		<script>
-			// Hide loader once SvelteKit hydrates
-			document.addEventListener('DOMContentLoaded', () => {
-				// Give SvelteKit a moment to mount
-				setTimeout(() => {
-					document.body.classList.add('app-loaded');
-				}, 50);
+			// Hide loader once the actual patcher UI is loaded
+			function hideLoader() {
+				document.body.classList.add('app-loaded');
+			}
+
+			// Wait for window load (all resources including JS bundles)
+			window.addEventListener('load', () => {
+				// Poll for actual patcher content to ensure route is loaded
+				const checkAppMounted = () => {
+					// Check for the flow-container - this is the main patcher UI container
+					// that only exists when FlowCanvasInner has actually rendered
+					const flowContainer =
+						// patcher - svelte flow
+						document.querySelector('.svelte-flow') ||
+						// secondary output screen
+						document.querySelector('canvas#output');
+
+					if (flowContainer) {
+						// Patcher UI is mounted, hide loader after brief delay
+						setTimeout(hideLoader, 200);
+					} else {
+						// Not yet mounted, check again soon
+						setTimeout(checkAppMounted, 100);
+					}
+				};
+
+				checkAppMounted();
 			});
+
+			// Fallback: hide after 15 seconds even if checks fail
+			setTimeout(hideLoader, 15000);
 		</script>
 	</body>
 </html>
