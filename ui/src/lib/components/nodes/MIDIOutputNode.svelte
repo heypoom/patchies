@@ -85,9 +85,9 @@
 				.with(
 					{
 						type: P.union('noteOn', 'noteOff', 'controlChange', 'programChange'),
-						deviceId: P.string,
-						channel: P.number,
-						event: P.string
+						deviceId: P.optional(P.string),
+						channel: P.optional(P.number),
+						event: P.optional(P.string)
 					},
 					(md) => {
 						const config = {
