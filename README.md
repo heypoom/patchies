@@ -57,18 +57,18 @@ Playing around with demos first is a nice way to get inspirations and see what P
 <img src="./docs/images/patchies-insert-object-with-enter.png" alt="Patchies.app orca node" width="700">
 
 - Press `Enter` to create a new object.
-  - Type to search for object name. Try `hydra` or `glsl` or `p5`.
-  - `Arrow Up/Down` navigates the list.
-  - `Enter` inserts the object.
-  - `Esc` closes the menu.
+- Type to search for object name. Try `hydra` or `glsl` or `p5`.
+- `Arrow Up/Down` navigates the list.
+- `Enter` inserts the object.
+- `Esc` closes the menu.
 
 ### Browsing Objects
 
 <img src="./docs/images/patchies-browse-objects.png" alt="Patchies.app browse objects modal" width="700">
 
-Press `Ctrl/Cmd + B` or click the search icon button (bottom right) to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
+Use `Ctrl/Cmd + B` or the search icon button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
 
-See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control_, etc.), with searchable names and brief description.
+See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control_, etc.), with searchable names and brief description. Drag a random object and see what you can do with it!
 
 ### Modifying Objects
 
