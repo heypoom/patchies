@@ -820,7 +820,7 @@
 			{/if}
 
 			<button
-				title="Insert Object (Enter)"
+				title="Quick Insert Object (Enter)"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 				onclick={(e) => {
 					e.preventDefault();
@@ -831,7 +831,7 @@
 			>
 
 			<button
-				title="Browse objects (Cmd+B)"
+				title="Browse Objects (Cmd+B)"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 				onclick={(e) => {
 					e.preventDefault();
@@ -842,7 +842,7 @@
 			>
 
 			<button
-				title="Share link"
+				title="Share Link"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 				onclick={createShareLink}><Icon icon="lucide:link" class="h-4 w-4 text-zinc-300" /></button
 			>
