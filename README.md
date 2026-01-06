@@ -93,6 +93,8 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 ### Connecting Objects
 
+<img src="./docs/images/patchies-connect-objects.gif" alt="Patchies.app connecting objects" width="700">
+
 - Click on the handle on the top and bottom of an object, and drag to connect to another object.
   - Top handle are inputs. Bottom handle are outputs.
   - You can connect multiple outlets to a single inlet.
