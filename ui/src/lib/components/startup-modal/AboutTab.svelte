@@ -121,7 +121,7 @@
 					<li class="flex items-start gap-2">
 						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
-							>Run your code in code editors with <kbd
+							>Run code in code editor with <kbd
 								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd
 							>
 						</span>
