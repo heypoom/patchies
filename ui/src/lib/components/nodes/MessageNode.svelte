@@ -99,7 +99,7 @@
 	 * Send the message to connected objects.
 	 *
 	 * Message format:
-	 * - Bare strings (e.g. `hello world`) are sent as symbols: `{ type: 'hello world' }`
+	 * - Bare strings (e.g. `hello world`) are sent as objects with type field: `{ type: 'hello world' }`
 	 * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
 	 * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
 	 * - Numbers (e.g. `100`) are sent as numbers

@@ -512,7 +512,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - You can hit `Enter` and type `m <message>` to create a `msg` object with the given message.
   - Example: `m start` creates a `msg` object that sends `start` when clicked.
 - Message format:
-  - Bare strings (e.g. `hello` or `start`) are sent as **symbols**: i.e. `{type: 'hello'}` or `{type: 'start'}`
+  - Bare strings (e.g. `hello` or `start`) are sent as **objects with type field**: i.e. `{type: 'hello'}` or `{type: 'start'}`
   - Quoted strings (e.g. `"hello"`) are sent as **JS strings**: `"hello"`
   - Numbers (e.g. `100`) are sent as **numbers**: `100`
   - JSON objects (e.g. `{foo: 'bar'}`) are sent **as-is**: `{foo: 'bar'}`
