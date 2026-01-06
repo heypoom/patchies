@@ -27,6 +27,7 @@
 	import { loadPatchFromUrl } from '$lib/save-load/load-patch-from-url';
 	import { match } from 'ts-pattern';
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
+	import { serializePatch } from '$lib/save-load/serialize-patch';
 	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
 	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
@@ -186,6 +187,18 @@
 			event.preventDefault();
 
 			triggerCommandPalette();
+		}
+		// Handle CMD+B for browse objects
+		else if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey) && !isTyping) {
+			event.preventDefault();
+			showObjectBrowser = true;
+		}
+		// Handle CMD+S for manual save
+		else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
+			event.preventDefault();
+			// Save to autosave slot
+			const patchJson = serializePatch({ name: 'autosave', nodes, edges });
+			localStorage.setItem('patchies-patch-autosave', patchJson);
 		} else if (
 			event.key.toLowerCase() === 'enter' &&
 			!showCommandPalette &&
@@ -818,7 +831,7 @@
 			>
 
 			<button
-				title="Browse objects"
+				title="Browse objects (Cmd+B)"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 				onclick={(e) => {
 					e.preventDefault();
@@ -874,6 +887,10 @@
 
 	:global(.svelte-flow__background) {
 		background: transparent !important;
+	}
+
+	:global(.svelte-flow__controls) {
+		border-radius: 8px;
 	}
 
 	:global(.svelte-flow__controls button) {

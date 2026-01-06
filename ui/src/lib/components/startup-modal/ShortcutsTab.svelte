@@ -12,59 +12,69 @@
 		{
 			keys: ['Click on object / title'],
 			description: 'Focus on the object',
-			category: 'mouse',
+			category: 'mouse'
 		},
 		{
 			keys: ['Drag on object / title'],
 			description: 'Move the object around',
-			category: 'mouse',
+			category: 'mouse'
 		},
 		{
 			keys: ['Scroll up'],
 			description: 'Zoom in',
-			category: 'mouse',
+			category: 'mouse'
 		},
 		{
 			keys: ['Scroll down'],
 			description: 'Zoom out',
-			category: 'mouse',
+			category: 'mouse'
 		},
 		{
 			keys: ['Drag on empty space'],
 			description: 'Pan the canvas',
-			category: 'mouse',
+			category: 'mouse'
 		},
 		// Keyboard shortcuts
 		{
 			keys: ['Enter'],
 			description: 'Create a new object at cursor position',
-			category: 'keyboard',
+			category: 'keyboard'
 		},
 		{
 			keys: ['Ctrl', 'K'],
 			description: 'Open the command palette to search for commands',
-			category: 'keyboard',
+			category: 'keyboard'
+		},
+		{
+			keys: ['Ctrl', 'B'],
+			description: 'Browse all objects with search and categories',
+			category: 'keyboard'
+		},
+		{
+			keys: ['Ctrl', 'S'],
+			description: 'Manually save patch to browser storage',
+			category: 'keyboard'
 		},
 		{
 			keys: ['Shift', 'Enter'],
 			description: 'Run the code in the code editor within the selected object',
-			category: 'keyboard',
+			category: 'keyboard'
 		},
 		{
 			keys: ['Delete'],
 			description: 'Delete the selected object',
-			category: 'keyboard',
+			category: 'keyboard'
 		},
 		{
 			keys: ['Ctrl', 'C'],
 			description: 'Copy the selected object',
-			category: 'keyboard',
+			category: 'keyboard'
 		},
 		{
 			keys: ['Ctrl', 'V'],
 			description: 'Paste the copied object',
-			category: 'keyboard',
-		},
+			category: 'keyboard'
+		}
 	];
 
 	const mouseShortcuts = shortcuts.filter((s) => s.category === 'mouse');
@@ -75,7 +85,9 @@
 	<!-- Header -->
 	<div>
 		<h1 class="text-2xl font-bold text-zinc-100">Keyboard and Mouse Shortcuts</h1>
-		<p class="mt-1 text-sm text-zinc-400">Quick reference for navigating and working with Patchies</p>
+		<p class="mt-1 text-sm text-zinc-400">
+			Quick reference for navigating and working with Patchies
+		</p>
 	</div>
 
 	<!-- Mouse Shortcuts -->
@@ -127,8 +139,8 @@
 		<div class="flex items-start gap-2">
 			<Icon icon="lucide:info" class="mt-0.5 h-4 w-4 text-blue-400" />
 			<p class="text-sm text-zinc-300">
-				On macOS, use <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Cmd</kbd> instead
-				of <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl</kbd>
+				On macOS, use <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Cmd</kbd>
+				instead of <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl</kbd>
 			</p>
 		</div>
 	</div>
