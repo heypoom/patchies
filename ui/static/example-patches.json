@@ -10,21 +10,21 @@
 		{
 			"id": "ip0chhw6jzuyo6x",
 			"name": "Chord Progression",
-			"description": "Advanced DSP example using dsp~ to create an infinitely descending chord progression",
+			"description": "Advanced DSP example using dsp~ to create an infinitely descending chord progression 🎹",
 			"category": "Audio",
 			"author": "@dtinth"
 		},
 		{
 			"id": "l8ypbfy88xfakyd",
 			"name": "Funky Beat",
-			"description": "A funky beat created using expr~ for audio-rate mathematical expressions",
+			"description": "A funky beat created using expr~ for audio-rate mathematical expressions 🎧",
 			"category": "Audio",
 			"author": "@kijjaz"
 		},
 		{
 			"id": "mjjh5j78q46oe9i",
 			"name": "Orca Tones",
-			"description": "Basic Orca operators and Tone.js poly synth. Makes for a nice lullaby.",
+			"description": "Basic Orca operators and Tone.js poly synth. Makes for a nice lullaby 😴",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
@@ -66,7 +66,7 @@
 		{
 			"id": "b17136cy9rxxebw",
 			"name": "FM Synth",
-			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth.",
+			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
@@ -81,6 +81,13 @@
 			"id": "f4tvzfxk1qr4xr2",
 			"name": "Random Walk World",
 			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
+			"category": "Interactive",
+			"author": "@heypoom"
+		},
+		{
+			"id": "84et6trrsq2ouoc",
+			"name": "Random Walk Lullaby",
+			"description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
 			"category": "Interactive",
 			"author": "@heypoom"
 		},
