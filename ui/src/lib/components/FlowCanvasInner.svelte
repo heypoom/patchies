@@ -706,7 +706,7 @@
 <div class="flow-container flex h-screen w-full flex-col">
 	<!-- URL Loading Indicator -->
 	{#if isLoadingFromUrl}
-		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
 			>
@@ -721,7 +721,7 @@
 
 	<!-- URL Loading Error -->
 	{#if urlLoadError}
-		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
 			>
@@ -739,8 +739,8 @@
 	{/if}
 
 	<!-- Audio Resume Hint -->
-	{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode}
-		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+	{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal}
+		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
 			>
@@ -801,7 +801,7 @@
 
 	<!-- Bottom toolbar buttons -->
 	{#if $isBottomBarVisible}
-		<div class="fixed bottom-0 right-0 p-2">
+		<div class="fixed right-0 bottom-0 p-2">
 			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
 				<button
 					title="Delete (Del)"
