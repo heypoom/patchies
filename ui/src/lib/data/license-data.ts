@@ -20,6 +20,16 @@ export interface DependenciesSection {
 	dependencies: ProjectLicense[];
 }
 
+export interface PortedCode {
+	name: string;
+	description: string;
+	authors: string;
+	repository: string;
+	license: string;
+	copyright?: string;
+	notes?: string;
+}
+
 export const projectLicense: LicenseSection = {
 	title: 'Project License',
 	description: 'Patchies is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).',
@@ -103,7 +113,7 @@ export const dependencies: ProjectLicense[] = [
 	{
 		name: '@google/genai',
 		version: '^1.11.0',
-		license: 'MIT',
+		license: 'Apache-2.0',
 		url: 'https://npmjs.com/package/@google/genai'
 	},
 	{
@@ -304,6 +314,21 @@ export const dependencies: ProjectLicense[] = [
 	{ name: 'memfs', version: '^4.39.0', license: 'MIT', url: 'https://npmjs.com/package/memfs' },
 	{ name: 'meyda', version: '^5.6.3', license: 'MIT', url: 'https://npmjs.com/package/meyda' },
 	{ name: 'ml5', version: '^1.2.1', license: 'MIT', url: 'https://npmjs.com/package/ml5' },
+	{
+		name: 'mode-watcher',
+		version: '0.5.1',
+		license: 'MIT',
+		url: 'https://npmjs.com/package/mode-watcher'
+	},
+	{ name: 'ohash', version: '^2.0.11', license: 'MIT', url: 'https://npmjs.com/package/ohash' },
+	{
+		name: 'overtype',
+		version: '^1.1.1',
+		license: 'MIT',
+		url: 'https://npmjs.com/package/overtype'
+	},
+	{ name: 'p2pkit', version: '^0.0.0-2', license: 'MIT', url: 'https://npmjs.com/package/p2pkit' },
+	{ name: 'p2pt', version: '^1.5.1', license: 'MIT', url: 'https://npmjs.com/package/p2pt' },
 	{ name: 'p5', version: '^1.11.9', license: 'LGPL-2.1', url: 'https://npmjs.com/package/p5' },
 	{
 		name: 'pocketbase',
@@ -325,6 +350,12 @@ export const dependencies: ProjectLicense[] = [
 		version: '^5.8.0',
 		license: 'MIT',
 		url: 'https://npmjs.com/package/ts-pattern'
+	},
+	{
+		name: 'uxn.wasm',
+		version: '^0.9.0',
+		license: 'MIT',
+		url: 'https://npmjs.com/package/uxn.wasm'
 	},
 	{
 		name: 'vite-plugin-static-copy',
@@ -351,3 +382,28 @@ export const dependenciesSection: DependenciesSection = {
 	description: 'Complete list of all third-party packages used in Patchies, sorted alphabetically:',
 	dependencies
 };
+
+export const portedCode: PortedCode[] = [
+	{
+		name: 'Orca',
+		description:
+			'The Orca node in Patchies is based on the Orca livecoding environment by Hundred Rabbits.',
+		authors: 'Hundred Rabbits (Devine Lu Linvega and Rekka Bellum)',
+		repository: 'https://github.com/hundredrabbits/Orca',
+		license: 'MIT',
+		copyright: '© Hundred Rabbits',
+		notes:
+			'Core modules (Orca.ts, Operator.ts, library.ts, Clock.ts, transpose.ts) were ported from the original desktop implementation. MIDI/IO system and renderer were rewritten for Patchies.'
+	},
+	{
+		name: 'Uxn',
+		description:
+			'The Uxn node contains a port of the uxn5 emulator from Hundred Rabbits for running Uxn virtual machine programs.',
+		authors: 'Devine Lu Linvega',
+		repository: 'https://git.sr.ht/~rabbits/uxn5',
+		license: 'MIT',
+		copyright: '© 2020 Devine Lu Linvega',
+		notes:
+			'Ported to work within the Patchies patcher environment with integration for video chaining and message passing.'
+	}
+];

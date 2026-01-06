@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import type { Tab } from './types';
-	import { projectLicense, dependenciesSection } from '$lib/data/license-data';
+	import { projectLicense, dependenciesSection, portedCode } from '$lib/data/license-data';
 
 	let { setTab }: { setTab: (tab: Tab) => void } = $props();
 </script>
@@ -36,6 +36,57 @@
 				<Icon icon="lucide:file-text" class="h-4 w-4" />
 				{projectLicense.fullLicenseText}
 			</a>
+		</div>
+	</div>
+
+	<!-- Ported/Adapted Code -->
+	<div class="rounded-lg bg-zinc-800/50 p-4">
+		<h2 class="mb-3 text-lg font-semibold text-zinc-200">Ported & Adapted Code</h2>
+		<p class="mb-4 text-sm text-zinc-300">
+			Patchies includes code ported from other open source projects:
+		</p>
+
+		<div class="space-y-4">
+			{#each portedCode as code}
+				<div class="rounded-lg bg-zinc-900/50 p-3">
+					<div class="mb-2 flex items-start justify-between">
+						<div>
+							<h3 class="text-sm font-semibold text-zinc-100">{code.name}</h3>
+							<p class="mt-1 text-xs text-zinc-400">{code.description}</p>
+						</div>
+						<span class="ml-2 rounded bg-zinc-700 px-2 py-1 font-mono text-xs text-zinc-300"
+							>{code.license}</span
+						>
+					</div>
+
+					<div class="mt-2 space-y-1 text-xs text-zinc-400">
+						<p>
+							<span class="font-semibold text-zinc-300">Authors:</span>
+							{code.authors}
+						</p>
+						{#if code.copyright}
+							<p>
+								<span class="font-semibold text-zinc-300">Copyright:</span>
+								{code.copyright}
+							</p>
+						{/if}
+						<p>
+							<span class="font-semibold text-zinc-300">Repository:</span>
+							<a
+								href={code.repository}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="text-blue-400 hover:underline"
+							>
+								{code.repository}
+							</a>
+						</p>
+						{#if code.notes}
+							<p class="mt-2 italic text-zinc-500">{code.notes}</p>
+						{/if}
+					</div>
+				</div>
+			{/each}
 		</div>
 	</div>
 
