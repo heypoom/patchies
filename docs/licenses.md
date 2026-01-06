@@ -109,11 +109,11 @@ The emulator was ported to work within the Patchies patcher environment with int
 
 #### Superdough (Package Patch)
 
-Patchies uses a patched version of [Superdough](https://github.com/tidalcycles/strudel), which is part of the Strudel ecosystem.
+Patchies uses a patched version of [Superdough](https://codeberg.org/uzu/strudel), which is part of the Strudel ecosystem.
 
 - **Original Project**: Superdough - Audio synthesis engine for Strudel
 - **Authors**: Felix Roos and Strudel contributors
-- **Repository**: <https://github.com/tidalcycles/strudel>
+- **Repository**: <https://codeberg.org/uzu/strudel>
 - **License**: AGPL-3.0
 - **Package Version**: 1.2.3 (patched)
 - **Patch File**: `ui/patches/superdough@1.2.3.patch`
