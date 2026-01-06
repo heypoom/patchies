@@ -101,8 +101,17 @@
 					<li class="flex items-start gap-2">
 						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
-							>Press <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Enter</kbd> to
-							create a new node</span
+							>Insert an object with <kbd
+								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Enter</kbd
+							>
+						</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
+						<span
+							>Browse objects with <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+								>Ctrl + B</kbd
+							></span
 						>
 					</li>
 					<li class="flex items-start gap-2">
@@ -112,16 +121,16 @@
 					<li class="flex items-start gap-2">
 						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
-							>Press <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-								>Shift + Enter</kbd
-							> in code editors to run your code</span
-						>
+							>Run your code in code editors with <kbd
+								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd
+							>
+						</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
 							>Open the command palette with <kbd
-								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Cmd + K</kbd
+								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl + K</kbd
 							></span
 						>
 					</li>
