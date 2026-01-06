@@ -107,6 +107,24 @@ The Uxn node in Patchies contains a port of the [uxn5 emulator](https://git.sr.h
 
 The emulator was ported to work within the Patchies patcher environment with integration for video chaining and message passing. The original MIT license is preserved in the source files.
 
+#### Superdough (Package Patch)
+
+Patchies uses a patched version of [Superdough](https://github.com/tidalcycles/strudel), which is part of the Strudel ecosystem.
+
+- **Original Project**: Superdough - Audio synthesis engine for Strudel
+- **Authors**: Felix Roos and Strudel contributors
+- **Repository**: <https://github.com/tidalcycles/strudel>
+- **License**: AGPL-3.0
+- **Package Version**: 1.2.3 (patched)
+- **Patch File**: `ui/patches/superdough@1.2.3.patch`
+
+The package patch makes minor modifications to expose internal audio nodes for integration with Patchies' audio system:
+
+- Exposes the destination gain node as `window.SuperdoughDestinationGain` for volume control
+- Exposes audio node chains as `window.strudelNodes` and returns them for connectivity with other Patchies audio objects
+
+These modifications enable seamless integration between Strudel's audio engine and Patchies' audio chaining system while maintaining full compatibility with the AGPL-3.0 license.
+
 ### Source Code Access
 
 The complete source code for Patchies is available on [GitHub](https://github.com/heypoom/patchies)

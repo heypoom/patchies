@@ -405,5 +405,15 @@ export const portedCode: PortedCode[] = [
 		copyright: '© 2020 Devine Lu Linvega',
 		notes:
 			'Ported to work within the Patchies patcher environment with integration for video chaining and message passing.'
+	},
+	{
+		name: 'Superdough (patched)',
+		description:
+			'Superdough is used by the Strudel node for audio synthesis. Patchies includes a patched version with minor modifications.',
+		authors: 'Felix Roos and Strudel contributors',
+		repository: 'https://github.com/tidalcycles/strudel',
+		license: 'AGPL-3.0',
+		notes:
+			'Package patch (superdough@1.2.3.patch) adds window globals for audio node integration: exposes destination gain node and audio node chains for connectivity with other Patchies audio objects.'
 	}
 ];
