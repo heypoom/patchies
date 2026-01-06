@@ -95,9 +95,11 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 <img src="./docs/images/patchies-connect-objects.gif" alt="Patchies.app connecting objects" width="700">
 
-- Click on the handle on the top and bottom of an object, and drag to connect to another object.
-  - Top handle are inputs. Bottom handle are outputs.
-  - You can connect multiple outlets to a single inlet.
+Click on the bottom handle (outlet) of an object, and drag it all the way to the another object's top handle (inlet).
+
+- Top handle are called inlets. Bottom handle are called outlets.
+- You can connect multiple outlets to a single inlet, and vice-versa.
+- The type of the inlet and outlet must match. You cannot connect a visual or audio outlet to a message inlet, for example.
 
 ### Sharing Links
 
