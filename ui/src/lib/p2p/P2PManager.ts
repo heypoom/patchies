@@ -9,12 +9,8 @@ import type P2PT from 'p2pt';
  * Public WebTorrent trackers.
  */
 const FALLBACK_TRACKER_URLS = [
-	'wss://tracker.btorrent.xyz:443',
-	'wss://tracker.webtorrent.dev:443',
-	'wss://tracker.ghostchu-services.top:443/announce',
 	'wss://tracker.files.fm:7073/announce',
-	'ws://tracker.ghostchu-services.top:80/announce',
-	'ws://tracker.files.fm:7072/announce'
+	'wss://tracker.btorrent.xyz:443'
 ];
 
 const P2PTKit = _P2PT as typeof P2PT;
@@ -137,19 +133,15 @@ export class P2PManager {
 		if (this.isTrackerListFetched) return;
 
 		try {
-			const res = await fetch(
-				'https://cdn.jsdelivr.net/gh/ngosang/trackerslist@master/trackers_all_ws.txt'
+			const urls = await fetchList(
+				'https://cdn.jsdelivr.net/gh/ngosang/trackerslist@master/trackers_all_ws.txt',
+				'wss'
 			);
 
-			const text = await res.text();
-
-			const urls = text
-				.split('\n')
-				.map((line) => line.trim())
-				.filter((line) => line.length > 0);
-
 			if (urls.length > 0) {
-				this.trackerUrls = urls;
+				console.log('[p2p] loaded tracker urls:', urls);
+
+				this.trackerUrls = [...urls, ...FALLBACK_TRACKER_URLS];
 			}
 		} catch (error) {
 			console.error('[p2p] error fetching tracker list, using fallback trackers:', error);
@@ -158,3 +150,14 @@ export class P2PManager {
 		}
 	}
 }
+
+const fetchList = async (listFile: string, prefix: string) => {
+	const res = await fetch(listFile);
+	const text = await res.text();
+
+	return text
+		.split('\n')
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0)
+		.filter((line) => line.startsWith(prefix));
+};
