@@ -33,6 +33,7 @@
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+	import { getObjectNames } from '$lib/objects/object-definitions';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -48,6 +49,24 @@
 				return true;
 			})
 		);
+	});
+
+	/**
+	 * All available object names for the node list palette.
+	 * Includes: visual nodes, audio objects, and text objects.
+	 */
+	const allAvailableObjectNames = $derived.by(() => {
+		// Get visual node names (excluding object and asm.value)
+		const visualNodeNames = Object.keys(visibleNodeTypes);
+
+		// Get text objects (expr, dac~, etc.) from registries
+		const textObjectNames = getObjectNames();
+
+		// Combine and deduplicate
+		const combinedNames = new Set([...visualNodeNames, ...textObjectNames]);
+
+		// Sort alphabetically for better UX
+		return Array.from(combinedNames).sort((a, b) => a.localeCompare(b));
 	});
 
 	// Initial nodes and edges
@@ -741,7 +760,7 @@
 	<!-- Bottom toolbar for draggable nodes -->
 	{#if $isBottomBarVisible}
 		<NodeList
-			nodeTypes={visibleNodeTypes}
+			objectNames={allAvailableObjectNames}
 			isVisible={isNodeListVisible}
 			onToggle={handleNodeListToggle}
 		/>
