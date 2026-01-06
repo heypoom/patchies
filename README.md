@@ -468,11 +468,12 @@ See the following example:
 - "Pause" button pauses and resumes program execution.
 - The canvas captures keyboard and mouse input for Uxn programs. Click on the canvas to focus it.
 - Messages
-- `string` (URL): Load ROM from URL
-- `Uint8Array`: Load ROM from raw binary data
-- `File`: Load ROM from file object
-- `{type: 'load', url: string}`: Load ROM from URL
-- Outputs string messages from console device
+
+  - `string` (URL): Load ROM from URL
+  - `Uint8Array`: Load ROM from raw binary data
+  - `File`: Load ROM from file object
+  - `{type: 'load', url: string}`: Load ROM from URL
+  - Outputs string messages from console device
 
 - See the [Uxn documentation](https://wiki.xxiivv.com/site/uxn.html) and [Uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html) to learn how to write Uxn programs.
 - Check out [100r.co](https://100r.co) for Uxn design principles.
