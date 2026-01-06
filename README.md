@@ -23,7 +23,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 
 ## ...by patching them together ✨
 
-<img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="500">
+<img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="700">
 
 > Try out [the above demo](https://patchies.app/?id=f4tvzfxk1qr4xr2) which uses P5.js with Hydra to create a random walk shader.
 
@@ -186,17 +186,17 @@ To use video chaining:
 
 Similar to video chaining, you can chain many audio objects together to create audio effects and soundscapes.
 
-<img src="./docs/images/patchies-audio-chain.png" alt="Patchies.app audio chain example" width="500">
+<img src="./docs/images/patchies-audio-chain.png" alt="Patchies.app audio chain example" width="700">
 
 Try the [above example here](https://patchies.app/?id=u7mgx2xkv2wmdbl). This is a FM synthesis demo that uses a combination of `osc~` (sine oscillator), `expr` (math expression), `gain~` (gain control), and `fft~` (frequency analysis) objects to create a simple synth with frequency modulation.
 
 For a more fun example, here's [a little patch](https://patchies.app/?id=l8ypbfy88xfakyd) by [@kijjaz](https://www.instagram.com/kijjaz) that uses `expr~` to create a funky beat:
 
-<img src="./docs/images/patchies-audio-super-fun.png" alt="Patchies.app beat example" width="500">
+<img src="./docs/images/patchies-audio-super-fun.png" alt="Patchies.app beat example" width="700">
 
 If you don't have an idea where to start, why not build your own drum machine? [Try it out](https://patchies.app/?id=w46um7gafe7hgle)! Use the `W A S D` keys on your keyboard to play some drums 🥁.
 
-<img src="./docs/images/patchies-simple-drums.png" alt="Patchies.app simple drum machine" width="500">
+<img src="./docs/images/patchies-simple-drums.png" alt="Patchies.app simple drum machine" width="700">
 
 If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
