@@ -271,10 +271,10 @@ These objects support video chaining and can be connected to create complex visu
 ### `glsl`: creates a GLSL fragment shader
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting any visual objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via the four visual inlets.
+- You can use video chaining by connecting any visual objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via `sampler2D` video inlets.
 - You can create any number of GLSL uniform inlets by defining them in your GLSL code.
   - For example, if you define `uniform float iMix;`, it will create a float inlet for you to send values to.
-  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create a visual inlet for you to connect video sources to.
+  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create an orange video inlet for you to connect video sources to.
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
