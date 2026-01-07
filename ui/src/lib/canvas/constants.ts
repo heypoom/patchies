@@ -111,17 +111,14 @@ core.render(el.cycle(rate), el.cycle(rate))`;
 
 export const DEFAULT_SONIC_CODE = `setPortCount(1)
 
-// Load a synth definition
 await sonic.loadSynthDef('sonic-pi-prophet')
 
 // Trigger synth when receiving messages
-recv(note => {
-  // Play a note (middle C by default)
-  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note || 60)
-})
+recv(msg => {
+  const note = typeof msg === 'number' ? msg : 60
 
-// Trigger on mount
-sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', 60)`;
+  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2)
+})`;
 
 export const DEFAULT_CSOUND_CODE = `instr 1
   ioct = octcps(p4)
