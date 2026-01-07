@@ -211,6 +211,8 @@ function isInsideFunctionBody(text: string): boolean {
  */
 function createPatchiesCompletionSource(patchiesContext?: PatchiesContext) {
 	return (context: CMCompletionContext) => {
+		if (patchiesContext?.nodeType === 'expr') return null;
+
 		const word = context.matchBefore(/\w*/);
 		if (!word) return null;
 		if (word.from === word.to && !context.explicit) return null;

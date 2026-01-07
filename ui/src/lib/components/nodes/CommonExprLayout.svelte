@@ -121,9 +121,7 @@
 		onExpressionChange(value);
 	}
 
-	const containerClass = $derived(
-		selected ? 'object-container-selected' : 'object-container'
-	);
+	const containerClass = $derived(selected ? 'object-container-selected' : 'object-container');
 
 	export function focus() {
 		if (isEditing) {
@@ -142,7 +140,7 @@
 					{#if isEditing}
 						<div
 							class={[
-								'expr-editor-container nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
+								'expr-editor-container nodrag w-full min-w-[40px] max-w-[400px] resize-none rounded-lg border font-mono text-zinc-200',
 								containerClass
 							]}
 						>
@@ -157,6 +155,7 @@
 								language="javascript"
 								class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}
 								{placeholder}
+								nodeType="expr"
 								extraExtensions={[
 									keymap.of([
 										{
@@ -196,7 +195,7 @@
 											<span class={['text-xs text-zinc-400']}>{displayPrefix}</span>
 										{/if}
 
-										<code class="text-xs whitespace-pre">
+										<code class="whitespace-pre text-xs">
 											{@html highlightedHtml}
 										</code>
 									</span>
