@@ -45,6 +45,7 @@ export default defineConfig({
 			'@codemirror/lang-sql',
 			'@lezer/highlight',
 			'machine',
+			'uxn.wasm',
 
 			// Heavy dependencies - don't pre-bundle
 			'@csound/browser',
