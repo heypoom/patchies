@@ -11,6 +11,7 @@ import {
 	DEFAULT_CHUCK_CODE,
 	DEFAULT_DSP_JS_CODE,
 	DEFAULT_TONE_JS_CODE,
+	DEFAULT_SONIC_CODE,
 	DEFAULT_ELEM_CODE,
 	DEFAULT_CSOUND_CODE
 } from '$lib/canvas/constants';
@@ -85,6 +86,11 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('tone~', () => ({
 			code: DEFAULT_TONE_JS_CODE,
+			messageInletCount: 1,
+			messageOutletCount: 0
+		}))
+		.with('sonic~', () => ({
+			code: DEFAULT_SONIC_CODE,
 			messageInletCount: 1,
 			messageOutletCount: 0
 		}))

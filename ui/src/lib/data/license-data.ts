@@ -344,6 +344,12 @@ export const dependencies: ProjectLicense[] = [
 		license: 'MIT',
 		url: 'https://npmjs.com/package/stats.js'
 	},
+	{
+		name: 'supersonic-scsynth',
+		version: '^0.25.5',
+		license: 'Tiered: MIT (client) + GPL-3.0-or-later (core)',
+		url: 'https://npmjs.com/package/supersonic-scsynth'
+	},
 	{ name: 'tone', version: '^15.1.22', license: 'MIT', url: 'https://npmjs.com/package/tone' },
 	{
 		name: 'ts-pattern',

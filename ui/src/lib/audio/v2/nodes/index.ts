@@ -29,6 +29,7 @@ import { PeakingNode } from './PeakingNode';
 import { SigNode } from './SigNode';
 import { SplitNode } from './SplitNode';
 import { SamplerNode } from './SamplerNode';
+import { SonicNode } from './SonicNode';
 import { SoundfileNode } from './SoundfileNode';
 import { ToneNode } from './ToneNode';
 import { WaveShaperNodeV2 } from './WaveShaperNode';
@@ -65,6 +66,7 @@ const AUDIO_NODES = [
 	SigNode,
 	SplitNode,
 	SamplerNode,
+	SonicNode,
 	SoundfileNode,
 	ToneNode,
 	WaveShaperNodeV2
