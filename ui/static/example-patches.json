@@ -120,6 +120,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "3k3qnwk022tfj7e",
+			"name": "Signed Distance Flowers",
+			"description": "GLSL shader from @dtinth's talk 'the power of signed distance functions'",
+			"category": "Interactive",
+			"author": "@dtinth"
+		},
+		{
 			"id": "08wca4jzuz5wpng",
 			"name": "Matter.js Physics Simulation",
 			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
