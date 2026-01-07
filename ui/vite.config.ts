@@ -56,6 +56,7 @@ export default defineConfig({
 					if (id.includes('/workers/')) return;
 
 					// Heavy audio dependencies - chunk separately
+					if (id.includes('superdough')) return 'superdough';
 					if (id.includes('@csound/browser')) return 'csound';
 					if (id.includes('tone/build/esm')) return 'tone';
 					if (id.includes('@elemaudio/web-renderer')) return 'elementary';
