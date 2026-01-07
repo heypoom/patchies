@@ -108,7 +108,7 @@ const VISUAL_NODE_CATEGORIES: Record<string, string> = {
 /**
  * Audio node categories based on group classification
  */
-const AUDIO_CODE_NODES = ['chuck~', 'tone~', 'dsp~', 'elem~', 'csound~', 'expr~'];
+const AUDIO_CODE_NODES = ['chuck~', 'tone~', 'dsp~', 'elem~', 'csound~', 'expr~', 'sonic~'];
 
 /**
  * Get all objects categorized by type
