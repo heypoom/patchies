@@ -532,8 +532,10 @@
 	}
 
 	const isValidConnection: IsValidConnection = (connection) => {
-		// Allow connecting `fft~` analysis result to anything.
-		if (connection.sourceHandle?.startsWith(ANALYSIS_KEY)) return true;
+		// Allow connecting `fft~` analysis result to anything except audio inlets.
+		if (connection.sourceHandle?.startsWith(ANALYSIS_KEY)) {
+			return !connection.targetHandle?.startsWith('audio');
+		}
 
 		if (
 			connection.sourceHandle?.startsWith('video') ||
