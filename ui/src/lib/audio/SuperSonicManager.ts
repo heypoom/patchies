@@ -60,6 +60,9 @@ export class SuperSonicManager {
 			// Use the shared AudioContext from AudioService
 			audioContext: this.audioContext,
 
+			// Disable auto-connect to speakers - we'll connect through SonicNode's gain node
+			autoConnect: false,
+
 			// Use unpkg CDN for all assets (WASM, workers, samples, synthdefs)
 			coreBaseURL: `${cdnBase}supersonic-scsynth-core@${version}/`,
 			sampleBaseURL: `${cdnBase}supersonic-scsynth-samples@${version}/samples/`,
