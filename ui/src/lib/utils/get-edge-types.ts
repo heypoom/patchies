@@ -16,6 +16,7 @@ const AUDIO_NODES = [
 	'dsp~',
 	'tone~',
 	'strudel',
+	'sonic~',
 	'video',
 	'split~',
 	'merge~',
