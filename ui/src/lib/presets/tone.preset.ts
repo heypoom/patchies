@@ -1,22 +1,5 @@
-const POLY_SYNTH_TRIGGER_JS = `setPortCount(1)
-
-const synth = new Tone.PolySynth(Tone.Synth)
-synth.connect(outputNode)
-
-recv(message => {
-  const now = Tone.now();
-  
-  synth.triggerAttack("D4", now);
-  synth.triggerAttack("F4", now + 0.5);
-  synth.triggerAttack("A4", now + 1);
-  synth.triggerAttack("C5", now + 1.5);
-  synth.triggerAttack("E5", now + 2);
-  synth.triggerRelease(["D4", "F4", "A4", "C5", "E5"], now + 4);
-})
-
-return { cleanup: () => synth.dispose() }`;
-
 const POLY_SYNTH_MIDI_JS = `setPortCount(1)
+setTitle('synth~')
 
 const reverb = new Tone.Reverb({
   decay: 2,
@@ -66,6 +49,7 @@ const PIPE_JS = `inputNode.connect(outputNode)
 return { cleanup: () => inputNode.disconnect(outputNode) }`;
 
 const REVERB_JS = `setPortCount(0)
+setTitle('reverb~')
 
 const reverb = new Tone.Reverb({
   decay: 2,
@@ -81,6 +65,7 @@ return {
 }`;
 
 const LOWPASS_JS = `setPortCount(1)
+setTitle('lowpass~')
 
 const filter = new Tone.Filter(5000, "lowpass")
 inputNode.connect(filter.input.input)
@@ -93,13 +78,9 @@ recv(m => {
 return { cleanup: () => filter.dispose() }`;
 
 export const TONE_JS_PRESETS = {
-	'poly-synth-trigger.tone': {
-		type: 'tone~',
-		data: { code: POLY_SYNTH_TRIGGER_JS, messageInletCount: 1 }
-	},
 	'poly-synth-midi.tone': {
 		type: 'tone~',
-		data: { code: POLY_SYNTH_MIDI_JS, messageInletCount: 1 }
+		data: { code: POLY_SYNTH_MIDI_JS, messageInletCount: 1, title: 'synth~' }
 	},
 	'pipe.tone': {
 		type: 'tone~',
@@ -107,10 +88,10 @@ export const TONE_JS_PRESETS = {
 	},
 	'reverb.tone': {
 		type: 'tone~',
-		data: { code: REVERB_JS, messageInletCount: 0 }
+		data: { code: REVERB_JS, messageInletCount: 0, title: 'reverb~' }
 	},
 	'lowpass.tone': {
 		type: 'tone~',
-		data: { code: LOWPASS_JS, messageInletCount: 1 }
+		data: { code: LOWPASS_JS, messageInletCount: 1, title: 'lowpass~' }
 	}
 };
