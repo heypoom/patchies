@@ -160,7 +160,7 @@ const topLevelOnlyFunctions = new Set([
 // Node-specific functions - only show in certain node types
 const nodeSpecificFunctions: Record<string, string[]> = {
 	setKeepAlive: ['dsp~'],
-	setAudioPortCount: ['dsp~'],
+	setAudioPortCount: ['dsp~', 'tone~', 'sonic~', 'elem~'],
 	setVideoCount: ['hydra'],
 	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
 	noDrag: ['p5', 'canvas'],

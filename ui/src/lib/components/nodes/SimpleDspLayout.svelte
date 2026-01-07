@@ -26,6 +26,7 @@
 			code: string;
 			messageInletCount?: number;
 			messageOutletCount?: number;
+			title?: string;
 		};
 		selected: boolean;
 		onCodeChange: (code: string) => void;
@@ -44,6 +45,7 @@
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount || 0);
 	const messageOutletCount = $derived(data.messageOutletCount || 0);
+	const displayTitle = $derived(data.title || nodeName);
 
 	const containerClass = $derived.by(() => {
 		if (selected) return 'object-container-selected';
@@ -149,7 +151,7 @@
 					title="Double click to edit code"
 				>
 					<div class="flex items-center justify-center">
-						<div class="font-mono text-xs text-zinc-300">{nodeName}</div>
+						<div class="font-mono text-xs text-zinc-300">{displayTitle}</div>
 					</div>
 				</button>
 

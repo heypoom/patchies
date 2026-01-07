@@ -8,6 +8,8 @@ import type WebRenderer from '@elemaudio/web-renderer';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
+type OnSetTitle = (title: string) => void;
+type OnSetAudioPortCount = (inletCount: number, outletCount: number) => void;
 
 /**
  * ElementaryNode implements the elem~ audio node.
@@ -52,8 +54,12 @@ export class ElementaryNode implements AudioNodeV2 {
 	// Dynamic port counts for UI
 	private messageInletCount = 0;
 	private messageOutletCount = 0;
+	private audioInletCount = 1;
+	private audioOutletCount = 1;
 
 	public onSetPortCount: OnSetPortCount = () => {};
+	public onSetTitle: OnSetTitle = () => {};
+	public onSetAudioPortCount: OnSetAudioPortCount = () => {};
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
@@ -153,6 +159,8 @@ export class ElementaryNode implements AudioNodeV2 {
 			// Reset message inlet count and recv callback for new code
 			this.messageInletCount = 0;
 			this.messageOutletCount = 0;
+			this.audioInletCount = 1;
+			this.audioOutletCount = 1;
 			this.recvCallback = null;
 
 			// Create recv function for receiving messages
@@ -181,6 +189,9 @@ export class ElementaryNode implements AudioNodeV2 {
 					this.messageOutletCount = Math.max(0, outletCount);
 					this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
 				},
+				setTitle: (title: string) => {
+					this.onSetTitle(title);
+				},
 				extraContext: {
 					el: elementaryCore.el,
 					core: this.core,
@@ -188,7 +199,12 @@ export class ElementaryNode implements AudioNodeV2 {
 					inputNode: this.inputNode,
 					outputNode: this.audioNode,
 					recv,
-					send
+					send,
+					setAudioPortCount: (inletCount: number = 1, outletCount: number = 1) => {
+						this.audioInletCount = Math.max(0, inletCount);
+						this.audioOutletCount = Math.max(0, outletCount);
+						this.onSetAudioPortCount(this.audioInletCount, this.audioOutletCount);
+					}
 				}
 			});
 		} catch (error) {

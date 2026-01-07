@@ -898,6 +898,17 @@ The Tone.js context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
+In addition to the audio processing capabilities, `tone~` also supports messaging:
+
+- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
+  - By default, there are no message inlets or outlets.
+- Use `setAudioPortCount(inletCount, outletCount)` to set the number of audio inlets and outlets.
+  - By default, there is 1 audio inlet and 1 audio outlet.
+- Use `setTitle(title)` to set the title of the object.
+  - By default, the title is `tone~`.
+  - This lets you create custom objects with meaningful names.
+- Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
+
 Try out these presets:
 
 - `poly-synth.tone`: Polyphonic synthesizer that plays chord sequences
@@ -939,6 +950,17 @@ The `sonic~` context provides:
 - `outputNode`: Audio output GainNode
 
 Available events: `'ready'`, `'loading:start'`, `'loading:complete'`, `'error'`, `'message'`
+
+In addition to the synthesis capabilities, `sonic~` also supports messaging:
+
+- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
+  - By default, there are no message inlets or outlets.
+- Use `setAudioPortCount(inletCount, outletCount)` to set the number of audio inlets and outlets.
+  - By default, there is 1 audio inlet and 1 audio outlet.
+- Use `setTitle(title)` to set the title of the object.
+  - By default, the title is `sonic~`.
+  - This lets you create custom objects with meaningful names.
+- Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
 
 Load and play a synth:
 
@@ -997,6 +1019,17 @@ The `elem~` context gives you these variables:
 - `node`: the AudioWorkletNode for connecting to the Web Audio graph
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
+
+In addition to the audio processing capabilities, `elem~` also supports messaging:
+
+- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
+  - By default, there are no message inlets or outlets.
+- Use `setAudioPortCount(inletCount, outletCount)` to set the number of audio inlets and outlets.
+  - By default, there is 1 audio inlet and 1 audio outlet.
+- Use `setTitle(title)` to set the title of the object.
+  - By default, the title is `elem~`.
+  - This lets you create custom objects with meaningful names.
+- Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
 
 Here's how to create a simple phasor:
 
