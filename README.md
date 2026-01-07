@@ -682,10 +682,10 @@ These objects run on _audio rate_, which means they process audio signals in rea
 
 > Try this patch out [in the app](https://patchies.app/?id=ocj3v2xp790gq8u)
 
-The `osc~` oscillator object supports custom waveforms using PeriodicWave by sending `[real: Float32Array, imaginary: Float32Array]` to the type inlet. Both arrays must be Float32Array or TypedArray of the same length (minimum 2).
+The `osc~` oscillator object supports custom waveforms using [PeriodicWave](https://developer.mozilla.org/en-US/docs/Web/API/PeriodicWave) by sending `[real: Float32Array, imaginary: Float32Array]` to the type inlet. Both arrays must be Float32Array or TypedArray of the same length (minimum 2).
 
 1. Create a `js` object
-2. Connect it to `osc~`'s `type` inlet (second inlet from the left)'
+2. Connect it to `osc~`'s `type` inlet (second message inlet from the left)'
 3. Paste the below code snippet in.
 4. Hit `Run` on the `js` object to send the arrays to the `osc~` object.
 5. The `type` property on the object should say "custom" now.
@@ -701,6 +701,38 @@ for (let n = 1; n < 64; n++) {
 }
 
 send([real, imag]);
+```
+
+#### Using custom distortion curves in the `waveshaper~`
+
+<img src="./docs/images/patchies-waveshaper-curve.png" alt="Patchies.app wave shaping distortion curve" width="700">
+
+> Try this patch out [in the app](https://patchies.app/?id=55oju82ir1ujko1)
+
+Similar to the periodic wave example above, you can also send a [wave shaping distortion curve](https://developer.mozilla.org/en-US/docs/Web/API/WaveShaperNode) to the `curve` inlet of the `waveshaper~`. It expects a single `Float32Array` describing the distortion curve.
+
+1. Create a `js` object
+2. Connect it to `waveshaper~`'s `curve` inlet (second message inlet from the left)'
+3. Paste the below code snippet in.
+4. Hit `Run` on the `js` object to send the array to the `waveshaper~` object.
+5. The `curve` property on the object should say "curve" now.
+
+Here's an example distortion curve:
+
+```js
+setRunOnMount(true);
+
+const k = 50;
+const s = 44100;
+const curve = new Float32Array(s);
+const deg = Math.PI / 180;
+
+for (let i = 0; i < s; i++) {
+  const x = (i * 2) / s - 1;
+  curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+}
+
+send(curve);
 ```
 
 #### Notes on audio objects
