@@ -1,5 +1,6 @@
-import { AudioAnalysisSystem, type AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
+import type { AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
+import { logger } from '$lib/utils/logger';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 
 export type SendMessageOptions = {
@@ -50,6 +51,14 @@ export class MessageContext {
 	public onIntervalCallbackRegistered = () => {};
 	public onAnimationFrameCallbackRegistered = () => {};
 
+	// Cache for lazy-loaded AudioAnalysisSystem (only loaded in browser, not workers)
+	private static audioAnalysisSystemPromise: Promise<
+		typeof import('$lib/audio/AudioAnalysisSystem')
+	> | null = null;
+
+	private static audioAnalysisSystemModule: typeof import('$lib/audio/AudioAnalysisSystem') | null =
+		null;
+
 	constructor(nodeId: string) {
 		this.nodeId = nodeId;
 		this.messageSystem = MessageSystem.getInstance();
@@ -59,6 +68,9 @@ export class MessageContext {
 
 		// Set up the onMessage callback forwarding
 		this.queue.addCallback(this.messageCallbackHandler.bind(this));
+
+		// Lets you use `fft()` methods
+		this.preloadAudioAnalysisSystem();
 	}
 
 	messageCallbackHandler: MessageCallbackFn = (data, meta) => {
@@ -104,9 +116,18 @@ export class MessageContext {
 		if (typeof window === 'undefined') return null;
 
 		return (options: AudioAnalysisProps) => {
-			const audioAnalysis = AudioAnalysisSystem.getInstance();
-			const bins = audioAnalysis.getAnalysisForNode(this.nodeId, options);
-			const sampleRate = audioAnalysis.sampleRate;
+			if (!MessageContext.audioAnalysisSystemModule) {
+				logger.warn('AudioAnalysisSystem not loaded yet, FFT data unavailable!');
+
+				return new FFTAnalysis(null, options?.format ?? null, 48000);
+			}
+
+			// Use the preloaded AudioAnalysisSystem module loaded in constructor
+			// This breaks the import chain that was causing 2MB+ of audio nodes to be bundled in workers
+			const analysis = MessageContext.audioAnalysisSystemModule.AudioAnalysisSystem.getInstance();
+
+			const bins = analysis.getAnalysisForNode(this.nodeId, options);
+			const sampleRate = analysis.sampleRate;
 
 			return new FFTAnalysis(bins, options?.format ?? null, sampleRate);
 		};
@@ -163,5 +184,20 @@ export class MessageContext {
 
 		// Clear callback
 		this.messageCallback = null;
+	}
+
+	private preloadAudioAnalysisSystem() {
+		// Preload AudioAnalysisSystem in browser context (but NOT in workers)
+		// If we load this in workers, it will bloat the bundle by 5MB+
+		// This ensures it's available synchronously when fft() is called
+		if (typeof window !== 'undefined' && !MessageContext.audioAnalysisSystemPromise) {
+			MessageContext.audioAnalysisSystemPromise = import('$lib/audio/AudioAnalysisSystem').then(
+				(module) => {
+					MessageContext.audioAnalysisSystemModule = module;
+
+					return module;
+				}
+			);
+		}
 	}
 }
