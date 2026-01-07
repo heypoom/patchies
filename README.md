@@ -745,7 +745,7 @@ send(curve);
 
 #### Notes on audio objects
 
-- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~`, `elem~` or `sonic~` objects. In fact, the default `dsp~`, `tone~`, `elem~` and `sonic~` objects are simple sine wave oscillators that work similar to `osc~`.
+- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~`, `elem~` or `sonic~` objects. In fact, the default `dsp~`, `tone~` and `elem~` objects are simple sine wave oscillators that work similar to `osc~`.
 - Most of the audio objects correspond to Web Audio API nodes. See the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) documentation on how they work under the hood.
 
 ### `expr~`: audio-rate mathematical expression evaluator
