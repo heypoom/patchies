@@ -2,6 +2,7 @@ import P5CanvasNode from '$lib/components/nodes/P5CanvasNode.svelte';
 import JSBlockNode from '$lib/components/nodes/JSBlockNode.svelte';
 import HydraNode from '$lib/components/nodes/HydraNode.svelte';
 import JSCanvasNode from '$lib/components/nodes/JSCanvasNode.svelte';
+import CanvasDom from '$lib/components/nodes/CanvasDom.svelte';
 import GLSLCanvasNode from '$lib/components/nodes/GLSLCanvasNode.svelte';
 import SwissGLNode from '$lib/components/nodes/SwissGLNode.svelte';
 import StrudelNode from '$lib/components/nodes/StrudelNode.svelte';
@@ -60,6 +61,7 @@ export const nodeTypes = {
 	hydra: HydraNode,
 	swgl: SwissGLNode,
 	canvas: JSCanvasNode,
+	'canvas.dom': CanvasDom,
 	glsl: GLSLCanvasNode,
 	strudel: StrudelNode,
 	bchrn: ButterchurnNode,
