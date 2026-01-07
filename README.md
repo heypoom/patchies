@@ -902,8 +902,6 @@ In addition to the audio processing capabilities, `tone~` also supports messagin
 
 - Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
   - By default, there are no message inlets or outlets.
-- Use `setAudioPortCount(inletCount, outletCount)` to set the number of audio inlets and outlets.
-  - By default, there is 1 audio inlet and 1 audio outlet.
 - Use `setTitle(title)` to set the title of the object.
   - By default, the title is `tone~`.
   - This lets you create custom objects with meaningful names.
@@ -955,8 +953,6 @@ In addition to the synthesis capabilities, `sonic~` also supports messaging:
 
 - Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
   - By default, there are no message inlets or outlets.
-- Use `setAudioPortCount(inletCount, outletCount)` to set the number of audio inlets and outlets.
-  - By default, there is 1 audio inlet and 1 audio outlet.
 - Use `setTitle(title)` to set the title of the object.
   - By default, the title is `sonic~`.
   - This lets you create custom objects with meaningful names.
@@ -1024,8 +1020,6 @@ In addition to the audio processing capabilities, `elem~` also supports messagin
 
 - Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
   - By default, there are no message inlets or outlets.
-- Use `setAudioPortCount(inletCount, outletCount)` to set the number of audio inlets and outlets.
-  - By default, there is 1 audio inlet and 1 audio outlet.
 - Use `setTitle(title)` to set the title of the object.
   - By default, the title is `elem~`.
   - This lets you create custom objects with meaningful names.

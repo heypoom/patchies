@@ -26,8 +26,6 @@
 			code: string;
 			messageInletCount?: number;
 			messageOutletCount?: number;
-			audioInletCount?: number;
-			audioOutletCount?: number;
 			title?: string;
 		};
 		selected: boolean;
@@ -47,8 +45,6 @@
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount || 0);
 	const messageOutletCount = $derived(data.messageOutletCount || 0);
-	const audioInletCount = $derived(data.audioInletCount || 1);
-	const audioOutletCount = $derived(data.audioOutletCount || 1);
 	const displayTitle = $derived(data.title || nodeName);
 
 	const containerClass = $derived.by(() => {
@@ -88,7 +84,7 @@
 	let minContainerWidth = $derived.by(() => {
 		const baseWidth = 20;
 		let inletWidth = 20;
-		return baseWidth + (audioInletCount + messageInletCount) * inletWidth;
+		return baseWidth + (1 + messageInletCount) * inletWidth;
 	});
 </script>
 
@@ -116,20 +112,17 @@
 			</div>
 
 			<div class="relative">
-				<!-- Total inlets = audio inlets + message inlets -->
+				<!-- Total inlets = 1 audio inlet + message inlets -->
 				<div>
-					<!-- Audio inputs -->
-					{#each Array.from({ length: audioInletCount }) as _, index}
-						<StandardHandle
-							port="inlet"
-							type="audio"
-							id={audioInletCount === 1 && index === 0 ? undefined : index}
-							title={audioInletCount > 1 ? `Audio Input ${index + 1}` : 'Audio Input'}
-							total={audioInletCount + messageInletCount}
-							{index}
-							class="top-0"
-						/>
-					{/each}
+					<!-- Audio input (always present) -->
+					<StandardHandle
+						port="inlet"
+						type="audio"
+						title="Audio Input"
+						total={1 + messageInletCount}
+						index={0}
+						class="top-0"
+					/>
 
 					<!-- Message inlets (only show if messageInletCount > 0) -->
 					{#if messageInletCount > 0}
@@ -139,8 +132,8 @@
 								type="message"
 								id={index}
 								title={`Message Inlet ${index + 1}`}
-								total={audioInletCount + messageInletCount}
-								index={audioInletCount + index}
+								total={1 + messageInletCount}
+								index={1 + index}
 								class="top-0"
 							/>
 						{/each}
@@ -163,18 +156,15 @@
 				</button>
 
 				<div>
-					<!-- Audio outputs -->
-					{#each Array.from({ length: audioOutletCount }) as _, index (index)}
-						<StandardHandle
-							port="outlet"
-							type="audio"
-							id={audioOutletCount === 1 && index === 0 ? undefined : index}
-							title={audioOutletCount > 1 ? `Audio Output ${index + 1}` : 'Audio Output'}
-							total={audioOutletCount + messageOutletCount}
-							{index}
-							class="bottom-0"
-						/>
-					{/each}
+					<!-- Audio output (always present) -->
+					<StandardHandle
+						port="outlet"
+						type="audio"
+						title="Audio Output"
+						total={1 + messageOutletCount}
+						index={0}
+						class="bottom-0"
+					/>
 
 					<!-- Message outlets (only show if messageOutletCount > 0) -->
 					{#if messageOutletCount > 0}
@@ -184,8 +174,8 @@
 								type="message"
 								id={index}
 								title={`Message Outlet ${index + 1}`}
-								total={audioOutletCount + messageOutletCount}
-								index={audioOutletCount + index}
+								total={1 + messageOutletCount}
+								index={1 + index}
 								class="bottom-0"
 							/>
 						{/each}

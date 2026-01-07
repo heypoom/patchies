@@ -18,8 +18,6 @@
 			code: string;
 			messageInletCount?: number;
 			messageOutletCount?: number;
-			audioInletCount?: number;
-			audioOutletCount?: number;
 			title?: string;
 		};
 		selected: boolean;
@@ -63,13 +61,6 @@
 
 			sonicNode.onSetTitle = (title: string) => {
 				updateNodeData(nodeId, { title });
-			};
-
-			sonicNode.onSetAudioPortCount = (inletCount: number, outletCount: number) => {
-				updateNodeData(nodeId, {
-					audioInletCount: inletCount,
-					audioOutletCount: outletCount
-				});
 			};
 		}, 10);
 	}
