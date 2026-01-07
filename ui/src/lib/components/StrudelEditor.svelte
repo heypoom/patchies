@@ -40,43 +40,43 @@
 	onMount(async () => {
 		audioService.createNode(nodeId, 'gain~', [, 1]);
 
+		const superdough = // @ts-expect-error -- no typedef
+			await import('superdough');
+
+		// Tell superdough to use our AudioContext instead of creating its own
+		const context = audioService.getAudioContext();
+
+		if ('setAudioContext' in superdough) {
+			console.log('[superdough] patched to use patchies audio context');
+			superdough.setAudioContext(context);
+		}
+
+		superdough.setLogger((msg: string) => logger.log(`[superdough] ${msg}`));
+
 		// Load all required Strudel modules (including superdough)
-		const [
-			strudelCore,
-			strudelDraw,
-			strudelTranspiler,
-			strudelWebaudio,
-			strudelCodemirror,
-			superdough
-		] = await Promise.all([
-			// @ts-expect-error -- no typedef
-			import('@strudel/core'),
+		const [strudelCore, strudelDraw, strudelTranspiler, strudelWebaudio, strudelCodemirror] =
+			await Promise.all([
+				// @ts-expect-error -- no typedef
+				import('@strudel/core'),
 
-			// @ts-expect-error -- no typedef
-			import('@strudel/draw'),
+				// @ts-expect-error -- no typedef
+				import('@strudel/draw'),
 
-			// @ts-expect-error -- no typedef
-			import('@strudel/transpiler'),
+				// @ts-expect-error -- no typedef
+				import('@strudel/transpiler'),
 
-			// @ts-expect-error -- no typedef
-			import('@strudel/webaudio'),
+				// @ts-expect-error -- no typedef
+				import('@strudel/webaudio'),
 
-			// @ts-expect-error -- no typedef
-			import('@strudel/codemirror'),
-
-			// @ts-expect-error -- no typedef
-			import('superdough')
-		]);
+				// @ts-expect-error -- no typedef
+				import('@strudel/codemirror')
+			]);
 
 		const { silence, evalScope } = strudelCore;
 		const { getDrawContext } = strudelDraw;
 		const { transpiler } = strudelTranspiler;
 		const { webaudioOutput } = strudelWebaudio;
 		const { StrudelMirror, codemirrorSettings, settings: themeSettings } = strudelCodemirror;
-		const { setDefaultAudioContext } = superdough;
-
-		// Tell superdough to use our AudioContext instead of creating its own
-		setDefaultAudioContext(audioService.getAudioContext());
 
 		// Dynamically import and create prebake function
 		const { prebake } = await import('$lib/strudel/prebake');

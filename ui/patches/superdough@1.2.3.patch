@@ -1,3 +1,6 @@
+diff --git a/node_modules/superdough/.bun-tag-1fed9cfe762b3685 b/.bun-tag-1fed9cfe762b3685
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/node_modules/superdough/.bun-tag-a20bbadee748411e b/.bun-tag-a20bbadee748411e
 new file mode 100644
 index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
@@ -8,10 +11,20 @@ diff --git a/node_modules/superdough/.bun-tag-e3c179ba6e839464 b/.bun-tag-e3c179
 new file mode 100644
 index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/index.mjs b/dist/index.mjs
-index a711bb1440424b0c1a08f21791206048b19da44f..8e4f8e03f5c04714a7534c0cee8a937d1be32f8c 100644
+index a711bb1440424b0c1a08f21791206048b19da44f..e7a121b9d8c6ad6e739c6543975b92378115cf4f 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
-@@ -630,6 +630,7 @@ let O = {}, pt, _;
+@@ -581,6 +581,9 @@ function kn(t) {
+ const Bn = () => at.set({});
+ let ht;
+ const Xn = () => (ht = new AudioContext(), ht), G = () => ht || Xn();
++const setAudioContext = (context) => {
++  ht = context;
++};
+ function vn() {
+   return G().currentTime;
+ }
+@@ -630,6 +633,7 @@ let O = {}, pt, _;
  function pn() {
    const t = G(), e = t.destination.maxChannelCount;
    t.destination.channelCount = e, pt = new ChannelMergerNode(t, { numberOfInputs: t.destination.channelCount }), _ = new GainNode(t), pt.connect(_), _.connect(t.destination);
@@ -19,7 +32,7 @@ index a711bb1440424b0c1a08f21791206048b19da44f..8e4f8e03f5c04714a7534c0cee8a937d
  }
  const It = (t, e = [0, 1]) => {
    const n = G();
-@@ -920,7 +921,7 @@ const xn = async (t, e, n, c) => {
+@@ -920,7 +924,7 @@ const xn = async (t, e, n, c) => {
      const W = fn(qt, 2 ** (Ne + 5));
      ne = Ht(ct, W, 1), A.push(ne);
    }
@@ -28,6 +41,14 @@ index a711bb1440424b0c1a08f21791206048b19da44f..8e4f8e03f5c04714a7534c0cee8a937d
  }, Dn = (t, e, n, c) => {
    xn(e, t - n, e.duration / c, c);
  };
+@@ -1417,6 +1421,7 @@ export {
+   cn as reverseBuffer,
+   an as samples,
+   Xn as setDefaultAudioContext,
++  setAudioContext,
+   fe as setDefaultValue,
+   Pn as setDefaultValues,
+   Cn as setGainCurve,
 diff --git a/superdough.mjs b/superdough.mjs
 index 1069d4e84c6b13df3dea812a8b56aef31b353435..c88c99fb9cfee0fffcfc448e71e7a5e9acb5ef44 100644
 --- a/superdough.mjs
