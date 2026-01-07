@@ -192,6 +192,11 @@ export class ElementaryNode implements AudioNodeV2 {
 				setTitle: (title: string) => {
 					this.onSetTitle(title);
 				},
+				setAudioPortCount: (inletCount: number = 1, outletCount: number = 1) => {
+					this.audioInletCount = Math.max(0, inletCount);
+					this.audioOutletCount = Math.max(0, outletCount);
+					this.onSetAudioPortCount(this.audioInletCount, this.audioOutletCount);
+				},
 				extraContext: {
 					el: elementaryCore.el,
 					core: this.core,
@@ -199,12 +204,7 @@ export class ElementaryNode implements AudioNodeV2 {
 					inputNode: this.inputNode,
 					outputNode: this.audioNode,
 					recv,
-					send,
-					setAudioPortCount: (inletCount: number = 1, outletCount: number = 1) => {
-						this.audioInletCount = Math.max(0, inletCount);
-						this.audioOutletCount = Math.max(0, outletCount);
-						this.onSetAudioPortCount(this.audioInletCount, this.audioOutletCount);
-					}
+					send
 				}
 			});
 		} catch (error) {

@@ -166,6 +166,11 @@ export class SonicNode implements AudioNodeV2 {
 				setTitle: (title: string) => {
 					this.onSetTitle(title);
 				},
+				setAudioPortCount: (inletCount: number = 1, outletCount: number = 1) => {
+					this.audioInletCount = Math.max(0, inletCount);
+					this.audioOutletCount = Math.max(0, outletCount);
+					this.onSetAudioPortCount(this.audioInletCount, this.audioOutletCount);
+				},
 				extraContext: {
 					sonic,
 					SuperSonic,
@@ -174,12 +179,7 @@ export class SonicNode implements AudioNodeV2 {
 					inputNode: this.inputNode,
 					outputNode: this.audioNode,
 					recv,
-					send,
-					setAudioPortCount: (inletCount: number = 1, outletCount: number = 1) => {
-						this.audioInletCount = Math.max(0, inletCount);
-						this.audioOutletCount = Math.max(0, outletCount);
-						this.onSetAudioPortCount(this.audioInletCount, this.audioOutletCount);
-					}
+					send
 				}
 			});
 		} catch (error) {
