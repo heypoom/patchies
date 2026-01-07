@@ -13,7 +13,6 @@ import {
 	updateMIDIOutputDevices,
 	midiInitialized
 } from '../../stores/midi.store';
-import { Launchpad } from '$lib/midi/launchpad';
 
 export interface MIDIInputConfig {
 	deviceId?: string;
@@ -51,7 +50,6 @@ export class MIDISystem {
 
 	public isInitialized = false;
 	public webmidi = WebMidi;
-	public lpx = Launchpad.getInstance();
 
 	get inputs(): Input[] {
 		return WebMidi.inputs;
@@ -306,10 +304,6 @@ export class MIDISystem {
 			this.stopListening(nodeId);
 		}
 		this.inputListeners.clear();
-	}
-
-	setupLaunchpad() {
-		this.lpx.setup(this.outputs);
 	}
 }
 

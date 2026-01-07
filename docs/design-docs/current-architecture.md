@@ -422,7 +422,6 @@ registerGlslInlet(nodeId: string, inletMeta: GlslFFTInletMeta[]): void
 - WebMidi integration: Uses webmidi library for device access
 - Channel filtering: Supports specific channel or 'all' channels
 - Event routing: Routes MIDI events to nodes via MessageSystem
-- Launchpad support: Special handling for Novation Launchpad devices
 
 **Core Methods**:
 
@@ -481,7 +480,6 @@ type MIDIOutputConfig = {
 - `inputListeners`: Map of nodeId → NodeListeners
 - `isInitialized`: Boolean flag
 - `webmidi`: WebMidi instance
-- `lpx`: Launchpad instance (singleton)
 
 **Integration Points**:
 
