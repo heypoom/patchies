@@ -676,6 +676,33 @@ These objects run on _audio rate_, which means they process audio signals in rea
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers
 
+#### Using periodic waves in `osc~` oscillator
+
+<img src="./docs/images/patchies-periodic-waves.png" alt="Patchies.app periodic wave oscillator" width="700">
+
+> Try this patch out [in the app](https://patchies.app/?id=ocj3v2xp790gq8u)
+
+The `osc~` oscillator object supports custom waveforms using PeriodicWave by sending `[real: Float32Array, imaginary: Float32Array]` to the type inlet. Both arrays must be Float32Array or TypedArray of the same length (minimum 2).
+
+1. Create a `js` object
+2. Connect it to `osc~`'s `type` inlet (second inlet from the left)'
+3. Paste the below code snippet in.
+4. Hit `Run` on the `js` object to send the arrays to the `osc~` object.
+5. The `type` property on the object should say "custom" now.
+
+```js
+setRunOnMount(true);
+
+const real = new Float32Array(64);
+const imag = new Float32Array(64);
+
+for (let n = 1; n < 64; n++) {
+  real[n] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * 0.5);
+}
+
+send([real, imag]);
+```
+
 #### Notes on audio objects
 
 - You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~` or `elem~` objects. In fact, the default `dsp~`, `tone~` and `elem~` objects are simple sine wave oscillators that work similar to `osc~`.

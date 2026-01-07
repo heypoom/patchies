@@ -78,6 +78,13 @@
 			"author": "@dtinth"
 		},
 		{
+			"id": "ocj3v2xp790gq8u",
+			"name": "Periodic Wave Oscillator",
+			"description": "Creates a periodic wave to shape the oscillator output",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
 			"id": "f4tvzfxk1qr4xr2",
 			"name": "Random Walk World",
 			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
