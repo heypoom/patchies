@@ -2,8 +2,6 @@ import type { Edge } from '@xyflow/svelte';
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 import { canAudioNodeConnect } from '../audio-node-group';
-// @ts-expect-error -- no typedefs
-import { getAudioContext } from 'superdough';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { validateGroupConnection } from './audio-helpers';
 import { logger } from '$lib/utils/logger';
@@ -34,8 +32,15 @@ export class AudioService {
 	/** Scheduler for time-based audio parameter messages */
 	private timeScheduler: TimeScheduler | null = null;
 
+	/** Our own AudioContext instance */
+	private audioContext: AudioContext | null = null;
+
 	getAudioContext(): AudioContext {
-		return getAudioContext();
+		if (!this.audioContext) {
+			this.audioContext = new AudioContext({ latencyHint: 'interactive' });
+		}
+
+		return this.audioContext;
 	}
 
 	/** Create the output gain node and connect it to the destination. */
@@ -130,7 +135,7 @@ export class AudioService {
 	 * @returns Array of node type identifiers
 	 */
 	getAllNodeNames(): string[] {
-		return this.registry.getObjectTypes();
+		return this.registry.getNodeTypes();
 	}
 
 	/**
