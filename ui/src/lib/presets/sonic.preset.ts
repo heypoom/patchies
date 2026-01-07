@@ -1,0 +1,62 @@
+export const SONIC_PRESETS = {
+	'sonic-prophet': {
+		type: 'sonic~',
+		data: {
+			code: `setPortCount(1)
+
+await sonic.loadSynthDef('sonic-pi-prophet')
+
+recv(msg => {
+  // sonic.send expects only number and string
+  if (typeof msg !== 'number') return
+  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', msg, 'release', 2)
+})`
+		}
+	},
+	'sonic-tb303': {
+		type: 'sonic~',
+		data: {
+			code: `setPortCount(1)
+
+await sonic.loadSynthDef('sonic-pi-tb303')
+
+recv(msg => {
+  // sonic.send expects only number and string
+  if (typeof msg !== 'number') return
+  sonic.send('/s_new', 'sonic-pi-tb303', -1, 0, 0, 'note', msg, 'cutoff', 80, 'res', 0.9)
+})`
+		}
+	},
+	'sonic-sample-loop': {
+		type: 'sonic~',
+		data: {
+			code: `// Track loading state
+on('loading:start', ({type, name}) => console.log(\`Loading \${type}: \${name}\`))
+on('loading:complete', ({type, name}) => console.log(\`Loaded \${type}: \${name}\`))
+
+await sonic.loadSynthDef('sonic-pi-basic_stereo_player')
+await sonic.loadSample(0, 'loop_amen.flac')
+await sonic.sync()
+
+sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0, 'buf', 0, 'rate', 1)`
+		}
+	},
+	'sonic-multi-synth': {
+		type: 'sonic~',
+		data: {
+			code: `setPortCount(1)
+
+// Load multiple synthdefs efficiently
+await sonic.loadSynthDefs(['sonic-pi-beep', 'sonic-pi-prophet', 'sonic-pi-saw'])
+
+const synths = ['sonic-pi-beep', 'sonic-pi-prophet', 'sonic-pi-saw']
+let idx = 0
+
+recv(msg => {
+  // sonic.send expects only number and string
+  if (typeof msg !== 'number') return
+  sonic.send('/s_new', synths[idx++ % synths.length], -1, 0, 0, 'note', msg)
+})`
+		}
+	}
+};

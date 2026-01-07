@@ -923,6 +923,47 @@ return {
 };
 ```
 
+### `sonic~`: SuperCollider synthesis engine
+
+The `sonic~` object integrates [SuperSonic](https://sonic-pi.net/supersonic/demo.html), which brings SuperCollider's powerful `scsynth` audio engine to the browser via AudioWorklet.
+
+By default, `sonic~` loads and triggers the Prophet synth.
+
+The `sonic~` context provides:
+
+- `sonic`: SuperSonic instance for synthesis control
+- `SuperSonic`: Class for static methods (e.g., `SuperSonic.osc.encode()`)
+- `sonicNode`: Audio node wrapper (`sonic.node`) for Web Audio connections
+- `on(event, callback)`: Subscribe to SuperSonic events
+- `inputNode`: Audio input GainNode
+- `outputNode`: Audio output GainNode
+
+Available events: `'ready'`, `'loading:start'`, `'loading:complete'`, `'error'`, `'message'`
+
+Load and play a synth:
+
+```js
+setPortCount(1)
+
+await sonic.loadSynthDef('sonic-pi-prophet')
+
+recv(note => {
+  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2)
+})
+```
+
+Load and play samples:
+
+```js
+await sonic.loadSynthDef('sonic-pi-basic_stereo_player')
+await sonic.loadSample(0, 'loop_amen.flac')
+await sonic.sync()
+
+sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0, 'buf', 0, 'rate', 1)
+```
+
+See the [SuperSonic documentation](https://github.com/samaaron/supersonic) and [scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html) for more details.
+
 ### `elem~`: Elementary Audio synthesis and processing
 
 The `elem~` object lets you use the [Elementary Audio](https://www.elementary.audio) library, a declarative digital audio signal processing.
