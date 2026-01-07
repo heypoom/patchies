@@ -447,6 +447,10 @@ See the following example:
 
 ### `expr`: mathematical expression evaluator
 
+<img src="./docs/images/patchies-expr-plot.png" alt="Patchies.app expression plot" width="700">
+
+> Try this patch out [in the app](https://patchies.app/?id=c6adsknw8iix3m2)
+
 - Evaluate mathematical expressions and formulas.
 - Use the `$1` to `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition, and sends a message with the result each time inlet one or two is updated.
 - This uses the [expr-eval](https://github.com/silentmatt/expr-eval) library from silentmatt under the hood for evaluating mathematical expressions.

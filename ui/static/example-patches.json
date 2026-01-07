@@ -127,6 +127,13 @@
 			"author": "@dtinth"
 		},
 		{
+			"id": "c6adsknw8iix3m2",
+			"name": "Plotting Equations",
+			"description": "Uses expr node to create mathematical plots",
+			"category": "Interactive",
+			"author": "@heypoom"
+		}
+		{
 			"id": "08wca4jzuz5wpng",
 			"name": "Matter.js Physics Simulation",
 			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
