@@ -86,6 +86,7 @@
 <SimpleDspLayout
 	{nodeId}
 	nodeName="tone~"
+	nodeType="tone~"
 	{data}
 	{selected}
 	onCodeChange={handleCodeChange}

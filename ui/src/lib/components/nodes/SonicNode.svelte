@@ -86,6 +86,7 @@
 <SimpleDspLayout
 	{nodeId}
 	nodeName="sonic~"
+	nodeType="sonic~"
 	{data}
 	{selected}
 	onCodeChange={handleCodeChange}

@@ -164,7 +164,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	setVideoCount: ['hydra'],
 	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
 	noDrag: ['p5', 'canvas'],
-	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel']
+	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel'],
+	setRunOnMount: ['js']
 };
 
 export interface PatchiesContext {

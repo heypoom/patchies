@@ -85,6 +85,7 @@
 <SimpleDspLayout
 	{nodeId}
 	nodeName="elem~"
+	nodeType="elem~"
 	{data}
 	{selected}
 	onCodeChange={handleCodeChange}
