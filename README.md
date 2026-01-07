@@ -936,7 +936,7 @@ return {
 
 The `sonic~` object integrates [SuperSonic](https://sonic-pi.net/supersonic/demo.html), which brings SuperCollider's powerful `scsynth` audio engine to the browser via AudioWorklet.
 
-By default, `sonic~` loads and triggers the Prophet synth.
+By default, `sonic~` loads and triggers the Prophet synth on message.
 
 The `sonic~` context provides:
 
