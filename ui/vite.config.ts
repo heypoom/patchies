@@ -45,19 +45,7 @@ export default defineConfig({
 			'@codemirror/lang-sql',
 			'@lezer/highlight',
 			'machine',
-			'uxn.wasm',
-
-			// Heavy dependencies - don't pre-bundle
-			'@csound/browser',
-			'tone',
-			'@elemaudio/web-renderer',
-			'butterchurn',
-			'@strudel/core',
-			'@strudel/draw',
-			'@strudel/mini',
-			'@strudel/serial',
-			'@strudel/transpiler',
-			'@strudel/webaudio'
+			'uxn.wasm'
 		]
 	},
 	build: {
