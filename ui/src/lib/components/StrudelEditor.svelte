@@ -4,6 +4,7 @@
 	import { keymap, EditorView } from '@codemirror/view';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
+	import { logger } from '$lib/utils/logger';
 
 	let {
 		code = '',
@@ -130,7 +131,7 @@
 
 						g.connect(outGain);
 					} else if (attempts > 500) {
-						console.log('>> failed to hijack strudel output!');
+						logger.error('>> failed to hijack strudel output!');
 						clearInterval(itv);
 					} else {
 						attempts++;
