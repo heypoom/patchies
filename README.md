@@ -130,7 +130,7 @@ Typing `bang` in the message box sends `{type: 'bang'}` for convenience. If you 
 
 <img src="./docs/images/patchies-implicit-message-type.png" alt="Patchies.app implicit message type" width="700">
 
-In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~`, `tone~` and `elem~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
+In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~`, `tone~`, `elem~` and `sonic~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
 ```js
 // In the source `js` object
@@ -159,7 +159,7 @@ recv((data, meta) => {
 
 In the above example, if the message came from inlet 2, it will be sent to outlet 2.
 
-In `js`, `p5`, `hydra`, `canvas`, `dsp~`, `tone~` and `elem~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+In `js`, `p5`, `hydra`, `canvas`, `dsp~`, `tone~`, `elem~` and `sonic~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
 See the [Message Passing with GLSL](#message-passing-with-glsl) section for how to use message passing with GLSL shaders to pass data to shaders dynamically.
 
@@ -213,12 +213,12 @@ If you don't have an idea where to start, why not build your own drum machine? [
 
 If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
-- You can use these objects as audio sources: `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+- You can use these objects as audio sources: `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, `sonic~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
   - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
 
-- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`, `elem~`.
+- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`, `elem~`, `sonic~`.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
@@ -745,7 +745,7 @@ send(curve);
 
 #### Notes on audio objects
 
-- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~` or `elem~` objects. In fact, the default `dsp~`, `tone~` and `elem~` objects are simple sine wave oscillators that work similar to `osc~`.
+- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~`, `elem~` or `sonic~` objects. In fact, the default `dsp~`, `tone~`, `elem~` and `sonic~` objects are simple sine wave oscillators that work similar to `osc~`.
 - Most of the audio objects correspond to Web Audio API nodes. See the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) documentation on how they work under the hood.
 
 ### `expr~`: audio-rate mathematical expression evaluator
@@ -943,23 +943,43 @@ Available events: `'ready'`, `'loading:start'`, `'loading:complete'`, `'error'`,
 Load and play a synth:
 
 ```js
-setPortCount(1)
+setPortCount(1);
 
-await sonic.loadSynthDef('sonic-pi-prophet')
+await sonic.loadSynthDef("sonic-pi-prophet");
 
-recv(note => {
-  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2)
-})
+recv((note) => {
+  sonic.send(
+    "/s_new",
+    "sonic-pi-prophet",
+    -1,
+    0,
+    0,
+    "note",
+    note,
+    "release",
+    2
+  );
+});
 ```
 
 Load and play samples:
 
 ```js
-await sonic.loadSynthDef('sonic-pi-basic_stereo_player')
-await sonic.loadSample(0, 'loop_amen.flac')
-await sonic.sync()
+await sonic.loadSynthDef("sonic-pi-basic_stereo_player");
+await sonic.loadSample(0, "loop_amen.flac");
+await sonic.sync();
 
-sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0, 'buf', 0, 'rate', 1)
+sonic.send(
+  "/s_new",
+  "sonic-pi-basic_stereo_player",
+  -1,
+  0,
+  0,
+  "buf",
+  0,
+  "rate",
+  1
+);
 ```
 
 See the [SuperSonic documentation](https://github.com/samaaron/supersonic) and [scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html) for more details.
