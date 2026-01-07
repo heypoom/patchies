@@ -85,6 +85,20 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "55oju82ir1ujko1",
+			"name": "Distortion Curve Waveshaper",
+			"description": "Creates a distortion curve to shape the waveshaper output",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "sgov4pl7f9ku4h7",
+			"name": "Audio Reactive Circle",
+			"description": "Uses a shadertoy shader from @airtight with a basic strudel melody",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
 			"id": "f4tvzfxk1qr4xr2",
 			"name": "Random Walk World",
 			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
