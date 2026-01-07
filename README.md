@@ -1041,6 +1041,10 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 ## Audio Analysis
 
+<img src="./docs/images/patchies-audio-reactive.png" alt="Patchies.app audio reactive" width="700">
+
+> Try this patch out [in the app](https://patchies.app/?id=sgov4pl7f9ku4h7)
+
 The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch.
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
