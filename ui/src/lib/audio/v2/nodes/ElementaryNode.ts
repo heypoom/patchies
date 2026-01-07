@@ -8,6 +8,7 @@ import type WebRenderer from '@elemaudio/web-renderer';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
+type OnSetTitle = (title: string) => void;
 
 /**
  * ElementaryNode implements the elem~ audio node.
@@ -54,6 +55,7 @@ export class ElementaryNode implements AudioNodeV2 {
 	private messageOutletCount = 0;
 
 	public onSetPortCount: OnSetPortCount = () => {};
+	public onSetTitle: OnSetTitle = () => {};
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
@@ -180,6 +182,9 @@ export class ElementaryNode implements AudioNodeV2 {
 					this.messageInletCount = Math.max(0, inletCount);
 					this.messageOutletCount = Math.max(0, outletCount);
 					this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
+				},
+				setTitle: (title: string) => {
+					this.onSetTitle(title);
 				},
 				extraContext: {
 					el: elementaryCore.el,

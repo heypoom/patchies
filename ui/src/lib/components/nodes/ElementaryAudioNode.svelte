@@ -18,6 +18,7 @@
 			code: string;
 			messageInletCount?: number;
 			messageOutletCount?: number;
+			title?: string;
 		};
 		selected: boolean;
 	} = $props();
@@ -56,6 +57,10 @@
 					messageInletCount: inletCount,
 					messageOutletCount: outletCount
 				});
+
+			elemNode.onSetTitle = (title: string) => {
+				updateNodeData(nodeId, { title });
+			};
 		}, 10);
 	}
 

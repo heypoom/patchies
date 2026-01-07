@@ -7,6 +7,7 @@ import { MessageContext } from '$lib/messages/MessageContext';
 type RecvCallback = (message: unknown, meta: unknown) => void;
 
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
+type OnSetTitle = (title: string) => void;
 
 /**
  * ToneNode implements the tone~ audio node.
@@ -50,6 +51,7 @@ export class ToneNode implements AudioNodeV2 {
 	private messageOutletCount = 0;
 
 	public onSetPortCount: OnSetPortCount = () => {};
+	public onSetTitle: OnSetTitle = () => {};
 
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
@@ -125,6 +127,11 @@ export class ToneNode implements AudioNodeV2 {
 				this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
 			};
 
+			// Create setTitle function available in user code
+			const setTitle = (title: string) => {
+				this.onSetTitle(title);
+			};
+
 			// Create recv function for receiving messages
 			const recv = (callback: (message: unknown, meta: unknown) => void) => {
 				this.recvCallback = callback;
@@ -143,6 +150,7 @@ export class ToneNode implements AudioNodeV2 {
 			const codeFunction = new Function(
 				'Tone',
 				'setPortCount',
+				'setTitle',
 				'recv',
 				'send',
 				'outputNode',
@@ -154,7 +162,7 @@ export class ToneNode implements AudioNodeV2 {
 			);
 
 			// Execute the code and store any returned cleanup function
-			const result = codeFunction(Tone, setPortCount, recv, send, outputNode, inputNode);
+			const result = codeFunction(Tone, setPortCount, setTitle, recv, send, outputNode, inputNode);
 
 			if (result && typeof result.cleanup === 'function') {
 				this.toneObjects.set('cleanup', result.cleanup);
