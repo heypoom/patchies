@@ -51,7 +51,6 @@ export default defineConfig({
 			'@csound/browser',
 			'tone',
 			'@elemaudio/web-renderer',
-			'p5',
 			'butterchurn',
 			'@strudel/core',
 			'@strudel/draw',
