@@ -282,7 +282,7 @@ These objects support video chaining and can be connected to create complex visu
 
 <img src="./docs/images/patchies-glsl-sdf.png" alt="Patchies.app GLSL shader with SDF" width="700">
 
-> Try this patch out [in the app](https://patchies.app/?id=3k3qnwk022tfj7e)
+> Try this patch out [in the app](https://patchies.app/?id=3k3qnwk022tfj7e). Shader is from @dtinth's talk, [the power of signed distance functions](https://dt.in.th/SDFTalk).
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
 - You can use video chaining by connecting any visual objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via `sampler2D` video inlets.
