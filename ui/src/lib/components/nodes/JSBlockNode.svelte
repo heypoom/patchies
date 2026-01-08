@@ -36,6 +36,7 @@
 			inletCount?: number;
 			outletCount?: number;
 			libraryName?: boolean;
+			executeCode?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -58,6 +59,15 @@
 	let contentWidth = $state(100);
 
 	const code = $derived(data.code || '');
+	let previousExecuteCode = $state<number | undefined>(undefined);
+	
+	// Watch for executeCode timestamp changes and re-run when it changes
+	$effect(() => {
+		if (data.executeCode && data.executeCode !== previousExecuteCode) {
+			previousExecuteCode = data.executeCode;
+			executeCode();
+		}
+	});
 
 	const borderColor = $derived.by(() => {
 		if (isRunning && selected) return 'border-pink-300';

@@ -22,6 +22,7 @@
 	import StartupModal from './startup-modal/StartupModal.svelte';
 	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
+	import AiObjectPrompt from './AiObjectPrompt.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
@@ -82,6 +83,11 @@
 
 	// Object browser modal state
 	let showObjectBrowser = $state(false);
+
+	// AI object prompt state
+	let showAiPrompt = $state(false);
+	let aiPromptPosition = $state.raw({ x: 0, y: 0 });
+	let aiEditingNodeId = $state<string | null>(null);
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
@@ -201,6 +207,34 @@
 			event.preventDefault();
 			showObjectBrowser = true;
 		}
+		// Handle CMD+I for AI object insertion/editing
+		else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
+			event.preventDefault();
+			
+			// Respect the "Hide AI features" setting
+			if (!$isAiFeaturesVisible) {
+				return;
+			}
+			
+			// Check if Gemini API key is set, show helpful message if not
+			const hasApiKey = localStorage.getItem('gemini-api-key');
+			if (!hasApiKey) {
+				const shouldSetKey = confirm(
+					'AI Object Insertion requires a Gemini API key. Would you like to set it now?'
+				);
+				if (shouldSetKey) {
+					triggerCommandPalette();
+				}
+			} else {
+				// If a single node is selected, edit it; otherwise create new
+				if (selectedNodeIds.length === 1) {
+					aiEditingNodeId = selectedNodeIds[0];
+				} else {
+					aiEditingNodeId = null;
+				}
+				triggerAiPrompt();
+			}
+		}
 		// Handle CMD+S for manual save
 		else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
@@ -226,6 +260,70 @@
 
 		commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 		showCommandPalette = true;
+	}
+
+	function triggerAiPrompt() {
+		const centerX = window.innerWidth / 2 - 192; // Half of 384px (w-96)
+		const centerY = window.innerHeight / 2 - 150;
+
+		aiPromptPosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
+		showAiPrompt = true;
+	}
+
+	function handleAiObjectInsert(type: string, data: any) {
+		const position = screenToFlowPosition(lastMousePosition);
+		createNode(type, position, data);
+	}
+
+	function handleAiObjectEdit(nodeId: string, data: any) {
+		// Update only specific fields from the AI result to preserve node structure
+		nodes = nodes.map(node => {
+			if (node.id !== nodeId) return node;
+			
+			// Merge only the fields that should be updated (primarily code and related config)
+			const updatedData = { ...node.data };
+			
+			// Track if code was updated to trigger re-execution
+			let codeUpdated = false;
+			
+			// Update code if provided
+			if (data.code !== undefined) {
+				updatedData.code = data.code;
+				codeUpdated = true;
+			}
+			
+			// Update title if provided
+			if (data.title !== undefined) {
+				updatedData.title = data.title;
+			}
+			
+			// Update inlet/outlet counts if provided
+			if (data.messageInletCount !== undefined) {
+				updatedData.messageInletCount = data.messageInletCount;
+			}
+			if (data.messageOutletCount !== undefined) {
+				updatedData.messageOutletCount = data.messageOutletCount;
+			}
+			if (data.audioInletCount !== undefined) {
+				updatedData.audioInletCount = data.audioInletCount;
+			}
+			if (data.audioOutletCount !== undefined) {
+				updatedData.audioOutletCount = data.audioOutletCount;
+			}
+			if (data.inletCount !== undefined) {
+				updatedData.inletCount = data.inletCount;
+			}
+			if (data.outletCount !== undefined) {
+				updatedData.outletCount = data.outletCount;
+			}
+			
+			// Add a flag to trigger code re-execution if code was updated
+			if (codeUpdated) {
+				updatedData.executeCode = Date.now();
+			}
+			
+			return { ...node, data: updatedData };
+		});
 	}
 
 	onMount(() => {
@@ -897,6 +995,15 @@
 
 	<!-- Object Browser Modal -->
 	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+
+	<!-- AI Object Prompt Dialog -->
+	<AiObjectPrompt
+		bind:open={showAiPrompt}
+		position={aiPromptPosition}
+		editingNode={aiEditingNodeId ? nodes.find(n => n.id === aiEditingNodeId) : null}
+		onInsertObject={handleAiObjectInsert}
+		onEditObject={handleAiObjectEdit}
+	/>
 </div>
 
 <style>

@@ -19,6 +19,7 @@
 			messageInletCount?: number;
 			messageOutletCount?: number;
 			title?: string;
+			executeCode?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -27,6 +28,15 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	let audioService = AudioService.getInstance();
+	let previousExecuteCode = $state<number | undefined>(undefined);
+	
+	// Watch for executeCode timestamp changes and re-run when it changes
+	$effect(() => {
+		if (data.executeCode && data.executeCode !== previousExecuteCode) {
+			previousExecuteCode = data.executeCode;
+			runTone();
+		}
+	});
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		match(message)

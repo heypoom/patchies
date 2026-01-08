@@ -1285,9 +1285,23 @@ You can call the `fft()` function to get the audio analysis data in the supporte
   - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
   - Replace `fft.getCentroid()` with `fft().centroid`
 
+### Experimental: Insert and edit objects with AI
+
+> [!CAUTION]
+> API keys are currently stored on localStorage as `gemini-api-key` for Gemini. In addition, this feature is experimental and unstable, and it has a high chance of corrupting and destroying your code and patches without any way to restore it. Backup your node and patch before trying this out!
+
+Press `Ctrl/Cmd + I` to open the AI object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate the appropriate object with code for you.
+
+- **Insert Mode** (no object selected): creates a new object at your cursor position
+- **Edit Mode** (object selected): modifies the selected object's code based on your description
+
+This feature uses Google Gemini AI to understand your prompt and generate the right object configuration. Make sure to set your Gemini API key in the command palette (`Cmd/Ctrl + K` → "Set Gemini API Key").
+
 ## Hiding AI features
 
-If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features". This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`.
+If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features".
+
+This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also hides the experimental `Cmd/Ctrl + I` AI object insertion shortcut.
 
 ## Rendering Pipeline
 
