@@ -25,6 +25,7 @@
 	import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 	import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
+	import { isAiFeaturesVisible } from '../../../stores/ui.store';
 
 	let {
 		id: nodeId,
@@ -64,8 +65,12 @@
 
 		const items: Array<{ name: string; type: 'object' | 'preset' }> = [];
 
-		// Add regular objects
+		// Add regular objects, filtering AI objects if AI features are disabled
 		Array.from(combinedObjectNames).forEach((name) => {
+			// Filter out AI objects if AI features are disabled
+			if (!$isAiFeaturesVisible && name.startsWith('ai.')) {
+				return;
+			}
 			items.push({ name, type: 'object' });
 		});
 
