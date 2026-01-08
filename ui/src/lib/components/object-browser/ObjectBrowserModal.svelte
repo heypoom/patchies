@@ -6,6 +6,7 @@
 		type ObjectItem
 	} from './get-categorized-objects';
 	import Fuse from 'fuse.js';
+	import { isAiFeaturesVisible } from '../../../stores/ui.store';
 
 	let {
 		open = $bindable(false),
@@ -15,22 +16,24 @@
 	let searchQuery = $state('');
 	let expandedCategories = $state<Set<string>>(new Set());
 
-	// Get all categorized objects
-	const allCategories = getCategorizedObjects();
+	// Get all categorized objects, filtering AI features based on the store
+	const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible));
 
-	// Create Fuse instance for fuzzy search
-	const fuse = new Fuse(
-		allCategories.flatMap((cat) =>
-			cat.objects.map((obj) => ({
-				...obj,
-				categoryTitle: cat.title
-			}))
-		),
-		{
-			keys: ['name', 'description', 'categoryTitle'],
-			threshold: 0.3,
-			includeScore: true
-		}
+	// Create Fuse instance for fuzzy search - update when categories change
+	const fuse = $derived(
+		new Fuse(
+			allCategories.flatMap((cat) =>
+				cat.objects.map((obj) => ({
+					...obj,
+					categoryTitle: cat.title
+				}))
+			),
+			{
+				keys: ['name', 'description', 'categoryTitle'],
+				threshold: 0.3,
+				includeScore: true
+			}
+		)
 	);
 
 	// Filtered categories based on search

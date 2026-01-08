@@ -114,8 +114,9 @@ const AUDIO_CODE_NODES = ['chuck~', 'tone~', 'dsp~', 'elem~', 'csound~', 'expr~'
 
 /**
  * Get all objects categorized by type
+ * @param includeAiFeatures - Whether to include AI-related objects (default: true)
  */
-export function getCategorizedObjects(): CategoryGroup[] {
+export function getCategorizedObjects(includeAiFeatures: boolean = true): CategoryGroup[] {
 	const allObjects: ObjectItem[] = [];
 	const seenNames = new Set<string>();
 
@@ -184,9 +185,14 @@ export function getCategorizedObjects(): CategoryGroup[] {
 		});
 	}
 
+	// Filter out AI objects if AI features are disabled
+	const filteredObjects = includeAiFeatures
+		? allObjects
+		: allObjects.filter((obj) => !obj.name.startsWith('ai.'));
+
 	// Group objects by category
 	const categoryMap = new Map<string, ObjectItem[]>();
-	for (const obj of allObjects) {
+	for (const obj of filteredObjects) {
 		if (!categoryMap.has(obj.category)) {
 			categoryMap.set(obj.category, []);
 		}
