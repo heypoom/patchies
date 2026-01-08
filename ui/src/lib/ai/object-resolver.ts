@@ -75,9 +75,9 @@ AVAILABLE OBJECT TYPES AND FUNCTIONS:
 Audio Objects (use "tone~" type with custom code):
 - tone~: Tone.js audio synthesis and processing
   - Available functions: setTitle(), setPortCount(inlets, outlets), recv(callback), send(data), inputNode, outputNode
-  - Tone.js usually outputs to destination with .toDestination(). However, we need to route all audio to the gain node of the tone object. This is so it can be patched with other audio objects.
+  - Tone.js usually outputs to destination with .toDestination(). However, we need to route all audio to the output gain node of the tone object. This is so it can be patched with other audio objects.
     - The outputNode variable is a web audio GainNode that exists in the object's context.
-    - Bad: "synth.toDestination()" ❌
+    - Bad: "new Tone.Reverb(...).toDestination()" ❌
     - Good: "synth.connect(outputNode)". Yes, outputNode is already in scope for you to use.
     - Again, please do not emit "toDestination" in your generated code. This is extremely serious.
   - IMPORTANT: To connect the audio inlet to a Tone.js node such as Tone.reverb, you MUST write "inputNode.connect(reverb.input.input)" where reverb is the Tone.js node. Mind the "input.input" part.
