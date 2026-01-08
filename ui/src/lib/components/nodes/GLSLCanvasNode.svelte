@@ -17,9 +17,9 @@
 		selected
 	}: {
 		id: string;
-		data: { 
-			title?: string; 
-			code: string; 
+		data: {
+			title?: string;
+			code: string;
 			glUniformDefs: GLUniformDef[];
 			executeCode?: number;
 		};
@@ -45,7 +45,7 @@
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
-	
+
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
 		if (data.executeCode && data.executeCode !== previousExecuteCode) {
