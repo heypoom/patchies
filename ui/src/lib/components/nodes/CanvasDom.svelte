@@ -183,26 +183,23 @@
 		if (!canvas) return;
 
 		const onKeyDown = (e: KeyboardEvent) => {
-			// Stop propagation for all keyboard events to prevent leaking to xyflow
-			e.stopPropagation();
-
-			// Call user-defined callback if provided
 			if (keyboardCallbacks.onKeyDown) {
+				// Stop propagation for all keyboard events to prevent leaking to xyflow
+				e.stopPropagation();
+
 				keyboardCallbacks.onKeyDown(e);
 			}
 		};
 
 		const onKeyUp = (e: KeyboardEvent) => {
-			// Stop propagation for all keyboard events to prevent leaking to xyflow
-			e.stopPropagation();
-
-			// Call user-defined callback if provided
 			if (keyboardCallbacks.onKeyUp) {
+				// Stop propagation for all keyboard events to prevent leaking to xyflow
+				e.stopPropagation();
+
 				keyboardCallbacks.onKeyUp(e);
 			}
 		};
 
-		// Attach keyboard listeners to the canvas element
 		canvas.addEventListener('keydown', onKeyDown);
 		canvas.addEventListener('keyup', onKeyUp);
 
@@ -317,6 +314,7 @@
 
 			// Execute user code
 			const userFunction = new Function(...Object.keys(userGlobals), `"use strict";\n${data.code}`);
+
 			userFunction(...Object.values(userGlobals));
 		} catch (error) {
 			logger.error(`[canvas.dom] user code error:`, error);
