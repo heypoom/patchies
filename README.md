@@ -1287,6 +1287,8 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 
 **Objects on the main thread:**
 
-- `p5`, `canvas.dom` and `bchrn` run on the main thread. At each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
-- This is slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
+- `p5`, `canvas.dom` and `bchrn` runs on the main thread.
+- If these objects are connected to video outlets, at each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
+  - This is slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
+  - If you don't connect its video outlet to another video object, we don't perform the bitmap copy so the performance overhead is minimal.
 - Use these only when you need instant FFT reactivity, mouse interactivity, or DOM access.
