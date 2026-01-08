@@ -127,6 +127,13 @@
 			"author": "@dtinth"
 		},
 		{
+			"id": "lt7xazl0rbb6vnh",
+			"name": "X-Y Distance Flowers",
+			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader.",
+			"category": "Interactive",
+			"author": "@heypoom"
+		},
+		{
 			"id": "c6adsknw8iix3m2",
 			"name": "Plotting Equations",
 			"description": "Uses expr node to create mathematical plots",
