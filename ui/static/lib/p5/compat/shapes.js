@@ -57,7 +57,10 @@ function addShapes(p5, fn, lifecycles) {
   }
 
   fn.endShape = function(mode) {
-    this._renderer._currentShape.at(-1, -1).handlesClose = () => false;
+    const shape = this._renderer._currentShape?.at?.(-1, -1);
+    if (shape) {
+      shape.handlesClose = () => false;
+    }
     oldEndShape.call(this, mode);
   }
 
