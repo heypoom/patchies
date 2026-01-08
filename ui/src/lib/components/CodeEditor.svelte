@@ -79,6 +79,13 @@
 
 				languageComp.of(languageExtension),
 
+				// Prevent wheel events from bubbling to XYFlow
+				EditorView.domEventHandlers({
+					wheel: (event) => {
+						event.stopPropagation();
+					}
+				}),
+
 				EditorView.theme({
 					'&': {
 						fontSize,
