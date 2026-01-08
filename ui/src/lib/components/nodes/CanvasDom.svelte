@@ -183,27 +183,22 @@
 		if (!canvas) return;
 
 		const onKeyDown = (e: KeyboardEvent) => {
+			// Stop propagation for all keyboard events to prevent leaking to xyflow
+			e.stopPropagation();
+
 			// Call user-defined callback if provided
 			if (keyboardCallbacks.onKeyDown) {
 				keyboardCallbacks.onKeyDown(e);
 			}
-
-			// Always prevent Delete/Backspace from bubbling to xyflow
-			// to avoid deleting the node when the canvas is focused
-			if (e.key === 'Delete' || e.key === 'Backspace') {
-				e.stopPropagation();
-			}
 		};
 
 		const onKeyUp = (e: KeyboardEvent) => {
+			// Stop propagation for all keyboard events to prevent leaking to xyflow
+			e.stopPropagation();
+
 			// Call user-defined callback if provided
 			if (keyboardCallbacks.onKeyUp) {
 				keyboardCallbacks.onKeyUp(e);
-			}
-
-			// Also trap Delete/Backspace on keyup
-			if (e.key === 'Delete' || e.key === 'Backspace') {
-				e.stopPropagation();
 			}
 		};
 

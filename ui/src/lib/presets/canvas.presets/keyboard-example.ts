@@ -34,7 +34,7 @@ function draw() {
   ctx.font = '16px monospace'
   ctx.textAlign = 'center'
   ctx.fillText('Click canvas and press keys', width / 2, 40)
-  ctx.fillText('(Delete key won\\'t delete node!)', width / 2, 65)
+  ctx.fillText('(Delete key won't delete node!)', width / 2, 65)
   
   // Draw last key pressed
   if (lastKey) {

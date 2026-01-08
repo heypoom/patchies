@@ -31,7 +31,7 @@
 		showPauseButton?: boolean;
 		previewCanvas?: HTMLCanvasElement;
 		nodrag?: boolean;
-		tabindex?: string;
+		tabindex?: string | number;
 
 		width?: string | number;
 		height?: string | number;
