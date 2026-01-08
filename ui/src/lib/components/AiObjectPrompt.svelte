@@ -172,10 +172,18 @@
 			{#if !isEditMode}
 				<button
 					onclick={() => (isMultiObjectMode = !isMultiObjectMode)}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							isMultiObjectMode = !isMultiObjectMode;
+						}
+					}}
 					class="rounded px-2 py-1 text-xs font-medium transition-colors {isMultiObjectMode
 						? 'bg-blue-600 text-white'
 						: 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}"
 					title="Toggle between single and multiple object mode"
+					aria-label="Toggle between single and multiple object mode"
+					aria-pressed={isMultiObjectMode}
 				>
 					{isMultiObjectMode ? 'Multi' : 'Single'}
 				</button>

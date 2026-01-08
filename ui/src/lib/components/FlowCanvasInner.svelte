@@ -69,6 +69,7 @@
 	let edges = $state.raw<Edge[]>([]);
 
 	let nodeIdCounter = 0;
+	let edgeIdCounter = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
 	let audioService = AudioService.getInstance();
@@ -335,12 +336,12 @@
 				
 				return true;
 			})
-			.map((edge, index) => {
+			.map((edge) => {
 				const sourceId = createdNodeIds[edge.source];
 				const targetId = createdNodeIds[edge.target];
 
 				return {
-					id: `edge-${Date.now()}-${index}`,
+					id: `edge-${edgeIdCounter++}`,
 					source: sourceId,
 					target: targetId,
 					sourceHandle: edge.sourceHandle,
