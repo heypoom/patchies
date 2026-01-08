@@ -23,6 +23,8 @@ export class P5Manager {
 	private container: HTMLElement | null = null;
 	private viewport: { current: Viewport } | null = null;
 
+	private static compatLibsLoaded = false;
+
 	constructor(nodeId: string, container: HTMLElement, viewport?: { current: Viewport }) {
 		this.nodeId = nodeId;
 		this.container = container;
@@ -41,6 +43,12 @@ export class P5Manager {
 		if (!this.container) return;
 
 		const { default: P5 } = await import('p5');
+
+		// Load P5.js v2 compatibility libraries (only once)
+		if (!P5Manager.compatLibsLoaded) {
+			await this.loadCompatibilityLibraries(P5);
+			P5Manager.compatLibsLoaded = true;
+		}
 
 		const delimiter = '// [!!PATCHIES_DELETE!!]';
 
@@ -226,6 +234,35 @@ export class P5Manager {
 				setHidePorts: config.setHidePorts
 			}
 		});
+	}
+
+	private async loadCompatibilityLibraries(P5: any) {
+		// Load P5.js v1 compatibility add-ons for P5.js v2
+		// These preserve v1 APIs: preload(), bezierVertex(), curveVertex(), data structures, etc.
+		const compatLibs = [
+			{ path: '/lib/p5/compat/preload.js', fn: 'addPreloadCompat' },
+			{ path: '/lib/p5/compat/shapes.js', fn: 'addShapesCompat' },
+			{ path: '/lib/p5/compat/data.js', fn: 'addDataCompat' }
+		];
+
+		for (const lib of compatLibs) {
+			// Load the script
+			await new Promise<void>((resolve, reject) => {
+				const script = document.createElement('script');
+				script.src = lib.path;
+				script.onload = () => resolve();
+				script.onerror = () => reject(new Error(`Failed to load ${lib.path}`));
+				document.head.appendChild(script);
+			});
+
+			// Call the compatibility function with P5 constructor
+			const compatFn = (window as any)[lib.fn];
+			if (compatFn) {
+				compatFn(P5);
+				// Clean up the global function
+				delete (window as any)[lib.fn];
+			}
+		}
 	}
 
 	destroy() {
