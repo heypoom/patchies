@@ -191,6 +191,12 @@ export class CanvasRenderer {
 				setPortCount: (inletCount?: number, outletCount?: number) => {
 					this.setPortCount(inletCount, outletCount);
 				},
+				setTitle: (title: string) => {
+					this.setTitle(title);
+				},
+				setHidePorts: (hidePorts: boolean) => {
+					this.setHidePorts(hidePorts);
+				},
 				extraContext
 			});
 		} catch (error) {
@@ -270,6 +276,22 @@ export class CanvasRenderer {
 			nodeId: this.config.nodeId,
 			inletCount,
 			outletCount
+		});
+	}
+
+	setTitle(title: string) {
+		self.postMessage({
+			type: 'setTitle',
+			nodeId: this.config.nodeId,
+			title
+		});
+	}
+
+	setHidePorts(hidePorts: boolean) {
+		self.postMessage({
+			type: 'setHidePorts',
+			nodeId: this.config.nodeId,
+			hidePorts
 		});
 	}
 

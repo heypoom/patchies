@@ -21,6 +21,7 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
+			hidePorts?: boolean;
 		};
 		selected?: boolean;
 	} = $props();
@@ -64,7 +65,7 @@
 		setTimeout(() => runCode());
 	};
 
-	const handleMessage: MessageCallbackFn = (message, meta) => {
+	const handleMessage: MessageCallbackFn = (message, _meta) => {
 		try {
 			match(message)
 				.with({ type: 'set', code: P.string }, ({ code }) => {
@@ -180,6 +181,8 @@
 				noDrag: () => {
 					dragEnabled = false;
 				},
+				setTitle: (title: string) => updateNodeData(nodeId, { title }),
+				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					animationFrameId = requestAnimationFrame((time) => {
 						callback(time);
@@ -232,11 +235,18 @@
 		glSystem?.removeNode(nodeId);
 		messageContext?.destroy();
 	});
+
+	const handleClass = $derived.by(() => {
+		if (!data.hidePorts) return '';
+
+		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
+	});
 </script>
 
 <CanvasPreviewLayout
 	title={data.title ?? 'canvas.dom'}
 	onrun={runCode}
+	{errorMessage}
 	bind:previewCanvas={canvas}
 	nodrag={!dragEnabled}
 	width={outputWidth}
@@ -247,7 +257,14 @@
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
-			<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
+			<StandardHandle
+				port="inlet"
+				id={index}
+				title={`Inlet ${index}`}
+				total={inletCount}
+				{index}
+				class={handleClass}
+			/>
 		{/each}
 	{/snippet}
 
@@ -259,6 +276,7 @@
 			title="Video output"
 			total={outletCount + 1}
 			index={0}
+			class={handleClass}
 		/>
 
 		{#each Array.from({ length: outletCount }) as _, index}
@@ -268,6 +286,7 @@
 				title={`Outlet ${index}`}
 				total={outletCount + 1}
 				index={index + 1}
+				class={handleClass}
 			/>
 		{/each}
 	{/snippet}

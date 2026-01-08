@@ -4,7 +4,9 @@ export type PatchiesEvent =
 	| GLPreviewFrameCapturedEvent
 	| PyodideConsoleOutputEvent
 	| PyodideSendMessageEvent
-	| NodePortCountUpdateEvent;
+	| NodePortCountUpdateEvent
+	| NodeTitleUpdateEvent
+	| NodeHidePortsUpdateEvent;
 
 export interface PyodideConsoleOutputEvent {
 	type: 'pyodideConsoleOutput';
@@ -37,4 +39,16 @@ export interface NodePortCountUpdateEvent {
 	nodeId: string;
 	inletCount: number;
 	outletCount: number;
+}
+
+export interface NodeTitleUpdateEvent {
+	type: 'nodeTitleUpdate';
+	nodeId: string;
+	title: string;
+}
+
+export interface NodeHidePortsUpdateEvent {
+	type: 'nodeHidePortsUpdate';
+	nodeId: string;
+	hidePorts: boolean;
 }

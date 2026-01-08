@@ -9,7 +9,11 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
-	import type { NodePortCountUpdateEvent } from '$lib/eventbus/events';
+	import type {
+		NodePortCountUpdateEvent,
+		NodeTitleUpdateEvent,
+		NodeHidePortsUpdateEvent
+	} from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -22,6 +26,7 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
+			hidePorts?: boolean;
 		};
 		selected?: boolean;
 	} = $props();
@@ -44,7 +49,7 @@
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
 
-	// Store event handler for cleanup
+	// Event handlers for worker messages
 	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
 		if (e.nodeId !== nodeId) return;
 
@@ -59,6 +64,16 @@
 			.otherwise(() => {
 				// Handle other port types if needed
 			});
+	}
+
+	function handleTitleUpdate(e: NodeTitleUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		updateNodeData(nodeId, { title: e.title });
+	}
+
+	function handleHidePortsUpdate(e: NodeHidePortsUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		updateNodeData(nodeId, { hidePorts: e.hidePorts });
 	}
 
 	const setCodeAndUpdate = (newCode: string) => {
@@ -88,9 +103,11 @@
 		messageContext.queue.addCallback(handleMessage);
 		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
-		// Listen for port count updates from the worker
+		// Listen for updates from the worker
 		const eventBus = glSystem.eventBus;
 		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
+		eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
+		eventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
@@ -110,11 +127,19 @@
 		const eventBus = glSystem?.eventBus;
 		if (eventBus) {
 			eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
+			eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
+			eventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
 		}
 
 		audioAnalysisSystem?.disableFFT(nodeId);
 		glSystem?.removeNode(nodeId);
 		messageContext?.destroy();
+	});
+
+	const handleClass = $derived.by(() => {
+		if (!data.hidePorts) return '';
+
+		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});
 
 	function updateCanvas() {
@@ -147,7 +172,14 @@
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
-			<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
+			<StandardHandle
+				port="inlet"
+				id={index}
+				title={`Inlet ${index}`}
+				total={inletCount}
+				{index}
+				class={handleClass}
+			/>
 		{/each}
 	{/snippet}
 
@@ -159,6 +191,7 @@
 			title="Video output"
 			total={outletCount + 1}
 			index={outletCount}
+			class={handleClass}
 		/>
 
 		{#each Array.from({ length: outletCount }) as _, index}
@@ -168,6 +201,7 @@
 				title={`Outlet ${index}`}
 				total={outletCount + 1}
 				{index}
+				class={handleClass}
 			/>
 		{/each}
 	{/snippet}

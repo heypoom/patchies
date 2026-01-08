@@ -11,6 +11,7 @@
 		showPauseButton = false,
 		previewCanvas = $bindable<HTMLCanvasElement>(),
 		nodrag = false,
+		errorMessage = null,
 
 		width,
 		height,
@@ -30,6 +31,7 @@
 		showPauseButton?: boolean;
 		previewCanvas?: HTMLCanvasElement;
 		nodrag?: boolean;
+		errorMessage?: string | null;
 
 		width?: string | number;
 		height?: string | number;

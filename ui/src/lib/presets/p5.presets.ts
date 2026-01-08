@@ -4,7 +4,10 @@ const defaultWidth = Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR);
 
 const defaultHeight = Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR);
 
-const SLIDER_P5 = `const [MIN, MAX] = [0, 100]
+const SLIDER_P5 = `setHidePorts(true)
+setPortCount(0, 1)
+
+const [MIN, MAX] = [0, 100]
 const [W, H, XO] = [200, 50, 10]
 let slider
 let prev = 0
