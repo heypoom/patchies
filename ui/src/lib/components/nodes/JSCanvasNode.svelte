@@ -14,6 +14,7 @@
 		NodeTitleUpdateEvent,
 		NodeHidePortsUpdateEvent
 	} from '$lib/eventbus/events';
+	import { logger } from '$lib/utils/logger';
 
 	let {
 		id: nodeId,
@@ -36,7 +37,6 @@
 	let messageContext: MessageContext;
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
-	let errorMessage = $state<string | null>(null);
 	let dragEnabled = $state(true);
 	let editorReady = $state(false);
 
@@ -94,7 +94,7 @@
 					glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
 				});
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			console.error('Error handling message:', error);
 		}
 	};
 
@@ -147,13 +147,12 @@
 			messageContext.clearTimers();
 			audioAnalysisSystem.disableFFT(nodeId);
 			const isUpdated = glSystem.upsertNode(nodeId, 'canvas', { code: data.code });
+
 			// If the code hasn't changed, the code will not be re-run.
 			// This allows us to forcibly re-run canvas to update FFT.
 			if (!isUpdated) glSystem.send('updateCanvas', { nodeId });
-			errorMessage = null;
 		} catch (error) {
-			// Capture compilation/setup errors
-			errorMessage = error instanceof Error ? error.message : String(error);
+			logger.error(`[canvas] update canvas error:`, error);
 		}
 	}
 </script>
@@ -161,7 +160,6 @@
 <CanvasPreviewLayout
 	title={data.title ?? 'canvas'}
 	onrun={updateCanvas}
-	{errorMessage}
 	bind:previewCanvas
 	nodrag={!dragEnabled}
 	width={outputWidth}

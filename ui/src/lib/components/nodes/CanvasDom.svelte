@@ -9,6 +9,7 @@
 	import { match, P } from 'ts-pattern';
 	import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { logger } from '$lib/utils/logger';
 
 	let {
 		id: nodeId,
@@ -30,7 +31,6 @@
 	let messageContext: MessageContext;
 	let canvas = $state<HTMLCanvasElement | undefined>();
 	let ctx: CanvasRenderingContext2D | null = null;
-	let errorMessage = $state<string | null>(null);
 	let dragEnabled = $state(true);
 	let editorReady = $state(false);
 	let animationFrameId: number | null = null;
@@ -78,7 +78,7 @@
 					// Messages are delivered via recv() callback set by user code
 				});
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			console.error('Error handling message:', error);
 		}
 	};
 
@@ -201,10 +201,8 @@
 			// Execute user code
 			const userFunction = new Function(...Object.keys(userGlobals), `"use strict";\n${data.code}`);
 			userFunction(...Object.values(userGlobals));
-
-			errorMessage = null;
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			logger.error(`[canvas.dom] user code error:`, error);
 		}
 	}
 
@@ -246,7 +244,6 @@
 <CanvasPreviewLayout
 	title={data.title ?? 'canvas.dom'}
 	onrun={runCode}
-	{errorMessage}
 	bind:previewCanvas={canvas}
 	nodrag={!dragEnabled}
 	width={outputWidth}
