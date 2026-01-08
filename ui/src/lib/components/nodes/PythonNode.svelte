@@ -8,10 +8,13 @@
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { PyodideConsoleOutputEvent, PyodideSendMessageEvent } from '$lib/eventbus/events';
 	import Code from '@lucide/svelte/icons/code';
+	import Loader from '@lucide/svelte/icons/loader';
+	import Play from '@lucide/svelte/icons/play';
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import Terminal from '@lucide/svelte/icons/terminal';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import X from '@lucide/svelte/icons/x';
+	import type { ComponentType } from 'svelte';
 
 	let {
 		id: nodeId,
@@ -46,7 +49,7 @@
 		return 'border-zinc-600';
 	});
 
-	const playIcon = $derived(isRunning ? 'lucide:loader' : 'lucide:play');
+	const PlayIcon = $derived.by<ComponentType>(() => (isRunning ? Loader : Play));
 
 	function handlePyodideConsoleOutput(event: PyodideConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
@@ -200,7 +203,7 @@
 									title="Run"
 									aria-disabled={isRunning}
 								>
-									<Icon icon={playIcon} class={isRunning ? 'animate-spin' : ''} font-size="12px" />
+									<PlayIcon class={isRunning ? 'animate-spin' : ''} font-size="12px" />
 								</button>
 
 								<button
@@ -238,7 +241,7 @@
 						aria-label="Run Python code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={playIcon} />
+							<PlayIcon />
 						</div>
 					</button>
 				{/if}

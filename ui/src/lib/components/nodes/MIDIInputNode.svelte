@@ -7,8 +7,12 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { midiInputDevices } from '../../../stores/midi.store';
 	import { match, P } from 'ts-pattern';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import Music from '@lucide/svelte/icons/music';
 	import Settings from '@lucide/svelte/icons/settings';
+	import VolumeX from '@lucide/svelte/icons/volume-x';
 	import X from '@lucide/svelte/icons/x';
+	import type { ComponentType } from 'svelte';
 
 	type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend';
 
@@ -48,10 +52,10 @@
 		return 'border-zinc-600';
 	});
 
-	const statusIcon = $derived.by(() => {
-		if (errorMessage) return 'lucide:alert-circle';
-		if (isListening) return 'lucide:music';
-		return 'lucide:volume-x';
+	const StatusIcon = $derived.by<ComponentType>(() => {
+		if (errorMessage) return AlertCircle;
+		if (isListening) return Music;
+		return VolumeX;
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
@@ -190,7 +194,7 @@
 						onclick={toggleListening}
 						title={isListening ? 'Stop listening' : 'Start listening'}
 					>
-						<Icon icon={statusIcon} class="h-4 w-4" />
+						<StatusIcon class="h-4 w-4" />
 
 						<div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
 							{midiSystem.getInputById(deviceId)?.name || 'Unknown'}

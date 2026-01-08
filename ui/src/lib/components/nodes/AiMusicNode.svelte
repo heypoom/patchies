@@ -7,7 +7,11 @@
 	import { match, P } from 'ts-pattern';
 	import type { LiveMusicGenerationConfig, Scale } from '@google/genai';
 	import JSON5 from 'json5';
+	import Loader2 from '@lucide/svelte/icons/loader-2';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Play from '@lucide/svelte/icons/play';
 	import X from '@lucide/svelte/icons/x';
+	import type { ComponentType } from 'svelte';
 
 	let { id: nodeId }: { id: string } = $props();
 
@@ -155,12 +159,12 @@
 		musicManager.playOrPause();
 	}
 
-	function getPlayIcon() {
+	const PlayIcon = $derived.by<ComponentType>(() => {
 		return match(playbackState)
-			.with(P.union('playing'), () => 'lucide:pause')
-			.with('loading', () => 'lucide:loader-2')
-			.otherwise(() => 'lucide:play');
-	}
+			.with(P.union('playing'), () => Pause)
+			.with('loading', () => Loader2)
+			.otherwise(() => Play);
+	});
 
 	function getPlayTitle() {
 		return match(playbackState)
@@ -183,7 +187,7 @@
 					onclick={togglePlayback}
 					title={getPlayTitle()}
 				>
-					<Icon icon={getPlayIcon()} class={['h-4 w-4 text-zinc-300']} />
+					<PlayIcon class={['h-4 w-4 text-zinc-300']} />
 				</button>
 			</div>
 		</div>

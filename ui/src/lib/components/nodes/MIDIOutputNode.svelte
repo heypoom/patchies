@@ -7,8 +7,12 @@
 	import { MIDISystem, type MIDIOutputConfig } from '$lib/canvas/MIDISystem';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { midiOutputDevices } from '../../../stores/midi.store';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
 	import Settings from '@lucide/svelte/icons/settings';
+	import Volume2 from '@lucide/svelte/icons/volume-2';
+	import VolumeX from '@lucide/svelte/icons/volume-x';
 	import X from '@lucide/svelte/icons/x';
+	import type { ComponentType } from 'svelte';
 
 	let {
 		id: nodeId,
@@ -40,10 +44,10 @@
 		return 'border-zinc-600';
 	});
 
-	const statusIcon = $derived.by(() => {
-		if (errorMessage) return 'lucide:alert-circle';
-		if (isActive) return 'lucide:volume-2';
-		return 'lucide:volume-x';
+	const StatusIcon = $derived.by<ComponentType>(() => {
+		if (errorMessage) return AlertCircle;
+		if (isActive) return Volume2;
+		return VolumeX;
 	});
 
 	const dataFieldType = $derived.by(() => {
@@ -224,7 +228,7 @@
 						onclick={toggleActive}
 						title={isActive ? 'Deactivate' : 'Activate'}
 					>
-						<Icon icon={statusIcon} class="h-4 w-4" />
+						<StatusIcon class="h-4 w-4" />
 
 						<div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
 							{midiSystem.getOutputById(deviceId)?.name || 'Unknown'}
