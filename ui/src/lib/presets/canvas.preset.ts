@@ -120,7 +120,9 @@ function draw() {
 
 requestAnimationFrame(draw)`;
 
-const MOUSE_PAINT_JS = `let particles = []
+const MOUSE_PAINT_JS = `noDrag()
+
+let particles = []
 
 function draw() {
   // Fade effect

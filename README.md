@@ -334,16 +334,39 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - See the [SwissGL examples](https://google.github.io/swissgl) for some inspirations on how to use SwissGL.
   - Right now, we haven't hooked the mouse and camera to SwissGL yet, so a lot of what you see in the SwissGL demo won't work in Patchies yet. PRs are welcome!
 
-### `canvas`: creates a JavaScript canvas
+### `canvas`: creates a JavaScript canvas (offscreen, web worker)
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
 
-- You cannot use DOM APIs such as `document` or `window` in the canvas code. This is because the HTML5 canvas runs as an [offscreen canvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on the [rendering pipeline](#rendering-pipeline).
+- **Runs on the [rendering pipeline](#rendering-pipeline)** (web worker thread) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas). This means:
+  - High performance - doesn't block the main thread
+  - Can chain with other visual objects (`glsl`, `hydra`, etc.) without lag
+  - Cannot use DOM APIs like `document` or `window`
+  - FFT data has slight delay due to worker message passing
 
 - You can call these special methods in your canvas code:
 
-  - `noDrag()` to disable dragging the whole canvas. this is needed if you want to add interactivity to your canvas, such as adding sliders. You can call it in your `setup()` function.
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
+
+### `canvas.dom`: creates a JavaScript canvas (main thread)
+
+- Same as `canvas` but runs on the **main thread** instead of a web worker.
+
+- **When to use `canvas.dom` instead of `canvas`**:
+  - **Instant FFT reactivity** - No worker message passing delay, perfect for tight audio-reactive visuals (use `fft.canvas` preset)
+  - **Mouse interactivity** - Access to `mouse.x`, `mouse.y`, `mouse.down` for interactive sketches (try `paint.canvas` preset)
+  - **DOM access** - Can use `document`, `window`, and other browser APIs when needed
+
+- **Trade-offs**:
+  - Runs on main thread, so heavy computation can affect UI responsiveness
+  - Still outputs video for chaining with other visual objects
+
+- Additional features in `canvas.dom`:
+
+  - `mouse` object with properties: `x`, `y`, `down`, `buttons`
+  - `noDrag()` to disable node dragging for interactive canvases
+  - Full DOM and browser API access
 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
@@ -1145,7 +1168,7 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
 
-Supported objects are `glsl`, `hydra`, `p5`, `canvas` and `js`.
+Supported objects are `glsl`, `hydra`, `p5`, `canvas`, `canvas.dom` and `js`.
 
 ### Usage with GLSL
 
@@ -1155,7 +1178,7 @@ Supported objects are `glsl`, `hydra`, `p5`, `canvas` and `js`.
 
 ### Usage with JavaScript-based objects
 
-You can call the `fft()` function to get the audio analysis data in the supported JavaScript-based objects: `hydra`, `p5`, `canvas` and `js`.
+You can call the `fft()` function to get the audio analysis data in the supported JavaScript-based objects: `hydra`, `p5`, `canvas`, `canvas.dom` and `js`.
 
 - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
 
@@ -1165,10 +1188,11 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 - `fft({type: 'freq'})` gives you frequency spectrum analysis.
 - Try out the `fft.hydra` preset for Hydra.
 - Try out the `fft.p5`, `fft-sm.p5` and `rms.p5` presets for P5.js.
-- Try out the `fft.canvas` preset for HTML5 canvas.
+- Try out the `fft.canvas` preset for HTML5 canvas with **instant audio reactivity**.
 
-  - Because the canvas lives on the [rendering pipeline](#rendering-pipeline), it has a lot more delay than `p5` in retrieving the audio analysis data. So, the audio reactivity will not be as tight as `p5`.
-  - On the upside, `canvas` will not slow down your patch if you chain it with other visual objects like `hydra` or `glsl`, thanks to running on the rendering pipeline.
+  - The `fft.canvas` preset uses `canvas.dom` (main thread), giving you the same tight audio reactivity as `p5`.
+  - For audio-reactive visuals, use `canvas.dom` or `p5` for best results.
+  - The worker-based `canvas` node has slight FFT delay but won't slow down your patch when chained with other visual objects.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
 
@@ -1182,7 +1206,7 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 - Where to call `fft()`:
 
   - `p5`: call in your `draw` function.
-  - `canvas`: call in your `draw` function that are gated by `requestAnimationFrame`
+  - `canvas` and `canvas.dom`: call in your `draw` function that are gated by `requestAnimationFrame`
   - `js`: call in your `setInterval` or `requestAnimationFrame` callback
 
     ```js
@@ -1243,6 +1267,12 @@ Behind the scenes, the [video chaining](#video-chaining) feature constructs a _r
 
 It creates a shader graph that streams the low-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
 
-Objects such as `hydra`, `glsl`, `swgl`, `canvas` and `img` runs entirely on the web worker thread and therefore are very high-performance.
+**Objects on the rendering pipeline (web worker thread):**
 
-In contrast, objects such as `p5` and `bchrn` run on the main thread, and at each frame we need to create an image bitmap on the main thread, then transfer it to the web worker thread for rendering. This is much slower than using FBOs and can cause lag if you have many `p5` or `bchrn` objects in your patch.
+- `hydra`, `glsl`, `swgl`, `canvas` and `img` run entirely on the web worker thread and are very high-performance.
+
+**Objects on the main thread:**
+
+- `p5`, `canvas.dom` and `bchrn` run on the main thread. At each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
+- This is slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
+- Use these when you need instant FFT reactivity, mouse interactivity, or DOM access.

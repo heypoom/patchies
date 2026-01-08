@@ -8,6 +8,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+	import { GLSystem } from '$lib/canvas/GLSystem';
 
 	let {
 		id: nodeId,
@@ -24,6 +25,7 @@
 		selected?: boolean;
 	} = $props();
 
+	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
 	let canvas = $state<HTMLCanvasElement | undefined>();
 	let ctx: CanvasRenderingContext2D | null = null;
@@ -137,6 +139,13 @@
 		ctx = canvas.getContext('2d');
 	}
 
+	async function sendBitmap() {
+		if (!canvas) return;
+		if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
+
+		await glSystem.setBitmapSource(nodeId, canvas);
+	}
+
 	function runCode() {
 		if (!canvas || !ctx) return;
 
@@ -164,12 +173,18 @@
 				width: outputWidth,
 				height: outputHeight,
 				mouse,
+				setPortCount,
+				...context,
+				recv: context.onMessage, // Alias for consistency with worker canvas
+				// Override context defaults with custom implementations (must be after ...context)
 				noDrag: () => {
 					dragEnabled = false;
 				},
-				setPortCount,
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
-					animationFrameId = requestAnimationFrame(callback);
+					animationFrameId = requestAnimationFrame((time) => {
+						callback(time);
+						sendBitmap();
+					});
 					return animationFrameId;
 				},
 				cancelAnimationFrame: (id: number) => {
@@ -177,16 +192,11 @@
 					if (animationFrameId === id) {
 						animationFrameId = null;
 					}
-				},
-				...context,
-				recv: context.onMessage // Alias for consistency with worker canvas
+				}
 			};
 
 			// Execute user code
-			const userFunction = new Function(
-				...Object.keys(userGlobals),
-				`"use strict";\n${data.code}`
-			);
+			const userFunction = new Function(...Object.keys(userGlobals), `"use strict";\n${data.code}`);
 			userFunction(...Object.values(userGlobals));
 
 			errorMessage = null;
@@ -198,6 +208,9 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+
+		// Register with GLSystem for video output
+		glSystem.upsertNode(nodeId, 'img', {});
 
 		setupCanvas();
 
@@ -216,6 +229,7 @@
 		if (animationFrameId !== null) {
 			cancelAnimationFrame(animationFrameId);
 		}
+		glSystem?.removeNode(nodeId);
 		messageContext?.destroy();
 	});
 </script>
@@ -238,13 +252,22 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="0"
+			title="Video output"
+			total={outletCount + 1}
+			index={0}
+		/>
+
 		{#each Array.from({ length: outletCount }) as _, index}
 			<StandardHandle
 				port="outlet"
 				id={index}
 				title={`Outlet ${index}`}
-				total={outletCount}
-				{index}
+				total={outletCount + 1}
+				index={index + 1}
 			/>
 		{/each}
 	{/snippet}
