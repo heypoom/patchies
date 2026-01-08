@@ -95,6 +95,17 @@
 			mouse.buttons = e.buttons;
 		};
 
+		const updateTouchPosition = (e: TouchEvent) => {
+			if (e.touches.length === 0) return;
+			const touch = e.touches[0];
+			const rect = canvas!.getBoundingClientRect();
+			// Scale touch coordinates to canvas resolution (outputWidth × outputHeight)
+			mouse.x = ((touch.clientX - rect.left) / rect.width) * outputWidth;
+			mouse.y = ((touch.clientY - rect.top) / rect.height) * outputHeight;
+			// Set buttons to 1 (primary button) for touch events
+			mouse.buttons = 1;
+		};
+
 		const onMouseMove = (e: MouseEvent) => {
 			updateMousePosition(e);
 		};
@@ -114,16 +125,47 @@
 			mouse.buttons = 0;
 		};
 
+		const onTouchStart = (e: TouchEvent) => {
+			e.preventDefault(); // Prevent mouse events from firing
+			updateTouchPosition(e);
+			mouse.down = true;
+		};
+
+		const onTouchMove = (e: TouchEvent) => {
+			e.preventDefault(); // Prevent scrolling
+			updateTouchPosition(e);
+		};
+
+		const onTouchEnd = (e: TouchEvent) => {
+			e.preventDefault();
+			mouse.down = false;
+			mouse.buttons = 0;
+		};
+
+		const onTouchCancel = (e: TouchEvent) => {
+			e.preventDefault();
+			mouse.down = false;
+			mouse.buttons = 0;
+		};
+
 		canvas.addEventListener('mousemove', onMouseMove);
 		canvas.addEventListener('mousedown', onMouseDown);
 		canvas.addEventListener('mouseup', onMouseUp);
 		canvas.addEventListener('mouseleave', onMouseLeave);
+		canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+		canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+		canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+		canvas.addEventListener('touchcancel', onTouchCancel, { passive: false });
 
 		return () => {
 			canvas?.removeEventListener('mousemove', onMouseMove);
 			canvas?.removeEventListener('mousedown', onMouseDown);
 			canvas?.removeEventListener('mouseup', onMouseUp);
 			canvas?.removeEventListener('mouseleave', onMouseLeave);
+			canvas?.removeEventListener('touchstart', onTouchStart);
+			canvas?.removeEventListener('touchmove', onTouchMove);
+			canvas?.removeEventListener('touchend', onTouchEnd);
+			canvas?.removeEventListener('touchcancel', onTouchCancel);
 		};
 	}
 
