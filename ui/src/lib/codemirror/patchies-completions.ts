@@ -183,7 +183,9 @@ const topLevelOnlyFunctions = new Set([
 	'noDrag',
 	'noOutput',
 	'recv',
-	'onMessage'
+	'onMessage',
+	'onKeyDown',
+	'onKeyUp'
 ]);
 
 // Node-specific functions - only show in certain node types
