@@ -39,11 +39,12 @@
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
-	const [outputWidth, outputHeight] = DEFAULT_OUTPUT_SIZE;
-	const [previewWidth, previewHeight] = [
-		outputWidth / PREVIEW_SCALE_FACTOR,
-		outputHeight / PREVIEW_SCALE_FACTOR
-	];
+	const [defaultOutputWidth, defaultOutputHeight] = DEFAULT_OUTPUT_SIZE;
+	
+	let outputWidth = $state(defaultOutputWidth);
+	let outputHeight = $state(defaultOutputHeight);
+	let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
+	let previewHeight = $derived(outputHeight / PREVIEW_SCALE_FACTOR);
 
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
@@ -141,6 +142,21 @@
 		ctx = canvas.getContext('2d');
 	}
 
+	function setCanvasSize(width: number, height: number) {
+		if (!canvas) return;
+
+		outputWidth = width;
+		outputHeight = height;
+
+		// Update canvas resolution
+		canvas.width = width;
+		canvas.height = height;
+
+		// Update display size
+		canvas.style.width = `${previewWidth}px`;
+		canvas.style.height = `${previewHeight}px`;
+	}
+
 	async function sendBitmap() {
 		if (!canvas) return;
 		if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
@@ -189,6 +205,7 @@
 				},
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+				setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					animationFrameId = requestAnimationFrame((time) => {
 						callback(time);

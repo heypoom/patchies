@@ -361,6 +361,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
   - Use `mouse` object with properties: `x`, `y`, `down`, `buttons` to get current mouse position and state.
   - Full DOM and browser API access (e.g. `document` and `window`)
+  - Use `setCanvasSize(width, height)` to dynamically resize the canvas resolution (e.g., `setCanvasSize(500, 500)`).
   - Otherwise, the API remains the same as `canvas`: `noDrag()`, `noOutput()`, `setTitle(title)`, `send(message)`, `recv(callback)`, `fft()` can all be used in `canvas.dom`.
 
 - When to use `canvas.dom` instead of `canvas`:

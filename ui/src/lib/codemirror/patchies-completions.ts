@@ -121,6 +121,13 @@ const patchiesAPICompletions: Completion[] = [
 		info: 'Hide the video output port in canvas nodes',
 		apply: 'noOutput()'
 	},
+	{
+		label: 'setCanvasSize',
+		type: 'function',
+		detail: '(width: number, height: number) => void',
+		info: 'Set the canvas resolution (canvas.dom only)',
+		apply: 'setCanvasSize(500, 500)'
+	},
 
 	// Audio Analysis
 	{
@@ -173,6 +180,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
 	noDrag: ['p5', 'canvas', 'canvas.dom'],
 	noOutput: ['p5', 'canvas', 'canvas.dom'],
+	setCanvasSize: ['canvas.dom'],
 	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel'],
 	setRunOnMount: ['js']
 };
