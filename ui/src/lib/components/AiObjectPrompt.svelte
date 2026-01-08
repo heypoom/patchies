@@ -69,17 +69,21 @@
 			// For edit mode, enhance the prompt with context about the existing node
 			let enhancedPrompt = promptText;
 			if (isEditMode && editingNode) {
-				const nodeType = editingNode.type;
+				const nodeType = editingNode.type || 'unknown';
 				const existingCode = editingNode.data?.code;
-				enhancedPrompt = `Modify this existing ${nodeType} object. ${existingCode ? `Current code:\n${existingCode}\n\n` : ''}User request: ${promptText}`;
+				if (existingCode) {
+					enhancedPrompt = `Modify this existing ${nodeType} object. Current code:\n${existingCode}\n\nUser request: ${promptText}`;
+				} else {
+					enhancedPrompt = `Modify this existing ${nodeType} object. User request: ${promptText}`;
+				}
 			}
 
 			const result = await resolveObjectFromPrompt(enhancedPrompt);
 
 			if (result) {
-				if (isEditMode && editingNode && onEditObject) {
+				if (isEditMode && onEditObject) {
 					// In edit mode, only update the data
-					onEditObject(editingNode.id, result.data);
+					onEditObject(editingNode!.id, result.data);
 				} else {
 					// In insert mode, create a new object
 					onInsertObject(result.type, result.data);

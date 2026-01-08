@@ -271,10 +271,45 @@
 	}
 
 	function handleAiObjectEdit(nodeId: string, data: any) {
-		// Update the existing node's data
-		nodes = nodes.map(node => 
-			node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
-		);
+		// Update only specific fields from the AI result to preserve node structure
+		nodes = nodes.map(node => {
+			if (node.id !== nodeId) return node;
+			
+			// Merge only the fields that should be updated (primarily code and related config)
+			const updatedData = { ...node.data };
+			
+			// Update code if provided
+			if (data.code !== undefined) {
+				updatedData.code = data.code;
+			}
+			
+			// Update title if provided
+			if (data.title !== undefined) {
+				updatedData.title = data.title;
+			}
+			
+			// Update inlet/outlet counts if provided
+			if (data.messageInletCount !== undefined) {
+				updatedData.messageInletCount = data.messageInletCount;
+			}
+			if (data.messageOutletCount !== undefined) {
+				updatedData.messageOutletCount = data.messageOutletCount;
+			}
+			if (data.audioInletCount !== undefined) {
+				updatedData.audioInletCount = data.audioInletCount;
+			}
+			if (data.audioOutletCount !== undefined) {
+				updatedData.audioOutletCount = data.audioOutletCount;
+			}
+			if (data.inletCount !== undefined) {
+				updatedData.inletCount = data.inletCount;
+			}
+			if (data.outletCount !== undefined) {
+				updatedData.outletCount = data.outletCount;
+			}
+			
+			return { ...node, data: updatedData };
+		});
 	}
 
 	onMount(() => {
