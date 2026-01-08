@@ -30,6 +30,7 @@
 			inletCount?: number;
 			outletCount?: number;
 			hidePorts?: boolean;
+			executeCode?: number;
 		};
 		selected?: boolean;
 	} = $props();
@@ -51,6 +52,15 @@
 
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
+	let previousExecuteCode = $state<number | undefined>(undefined);
+
+	// Watch for executeCode timestamp changes and re-run when it changes
+	$effect(() => {
+		if (data.executeCode && data.executeCode !== previousExecuteCode) {
+			previousExecuteCode = data.executeCode;
+			updateCanvas();
+		}
+	});
 
 	// Event handlers for worker messages
 	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
