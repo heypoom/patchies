@@ -22,7 +22,7 @@ const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
 	glsl: 'GLSL fragment shader for GPU-accelerated graphics',
 	swgl: 'SwissGL shader programming with simplified syntax',
 	canvas: 'Offscreen canvas for 2D drawing and animations',
-	'canvas.dom': 'Main-thread canvas with instant FFT and mouse interactivity',
+	'canvas.dom': 'Interactive canvas with mouse and keyboard inputs',
 	bchrn: 'Butterchurn milkdrop visualizer with audio reactivity',
 	'bg.out': 'Background output canvas for fullscreen visuals',
 	img: 'Static image display from file or URL',
