@@ -361,9 +361,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - When to use `canvas.dom` instead of `canvas`:
 
   - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual.
-    - Try it out with the `fft.canvas` preset.
+    - Try the `fft.canvas` preset which takes in analysis output from `fft~` object.
   - Mouse interactivity: use `mouse.x`, `mouse.y`, `mouse.down` for interactive sketches.
-    - Try this out on the `paint.canvas` preset.
+    - Try the `particle.canvas` preset which adds a particle canvas that reacts to your mouse inputs.
+    - Try the `xy-pad.canvas` preset which adds an X-Y pad that you can send `[x, y]` coordinates into to set the position of the crosshair. It also sends `[x, y]` coordinates to the message outlet when you drag on it.
   - DOM access: use `document`, `window` and other browser APIs when needed.
 
 - Performance trade-offs:

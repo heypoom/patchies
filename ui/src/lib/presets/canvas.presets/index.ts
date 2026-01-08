@@ -8,6 +8,6 @@ export const CANVAS_PRESETS = {
 	'fft.canvas': fftPreset,
 	'fractal-tree.canvas': fractalTreePreset,
 	'plotter.canvas': plotterPreset,
-	'paint.canvas': paintPreset,
+	'particle.canvas': paintPreset,
 	'xy-pad.canvas': xyPadPreset
 };
