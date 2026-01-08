@@ -272,6 +272,7 @@ These objects support video chaining and can be connected to create complex visu
 - You can call these special methods in your Hydra code:
   - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
   - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two visual inlets.
+  - `setTitle(title)` sets the title of the node. Use this to create custom, reusable visual effects with meaningful names.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
