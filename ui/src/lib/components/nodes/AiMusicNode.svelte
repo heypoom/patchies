@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Loader2, Pause, Play, X } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { LiveMusicManager, type Prompt } from '$lib/music/LiveMusicManager';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -157,9 +157,9 @@
 
 	function getPlayIcon() {
 		return match(playbackState)
-			.with(P.union('playing'), () => 'lucide:pause')
-			.with('loading', () => 'lucide:loader-2')
-			.otherwise(() => 'lucide:play');
+			.with(P.union('playing'), () => Pause)
+			.with('loading', () => Loader2)
+			.otherwise(() => Play);
 	}
 
 	function getPlayTitle() {
@@ -183,7 +183,7 @@
 					onclick={togglePlayback}
 					title={getPlayTitle()}
 				>
-					<Icon icon={getPlayIcon()} class={['h-4 w-4 text-zinc-300']} />
+					<svelte:component this={getPlayIcon()} class={['h-4 w-4 text-zinc-300']} />
 				</button>
 			</div>
 		</div>
@@ -225,7 +225,7 @@
 											class="rounded text-zinc-400 hover:bg-zinc-600 hover:text-zinc-200"
 											title="Remove prompt"
 										>
-											<Icon icon="lucide:x" class="h-3 w-3" />
+											<X class="h-3 w-3" />
 										</button>
 									</div>
 

@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Code, Loader, Play, RefreshCcw, Terminal, Trash2, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -42,7 +42,7 @@
 		return 'border-zinc-600';
 	});
 
-	const playIcon = $derived(isRunning ? 'lucide:loader' : 'lucide:play');
+	const playIcon = $derived(isRunning ? Loader : Play);
 
 	function handlePyodideConsoleOutput(event: PyodideConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
@@ -152,7 +152,7 @@
 						}}
 						title="Console"
 					>
-						<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+						<Terminal class="h-4 w-4 text-zinc-300" />
 					</button>
 
 					<button
@@ -160,7 +160,7 @@
 						onclick={toggleEditor}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -183,7 +183,7 @@
 										title="Run again"
 										aria-label="Run again"
 									>
-										<Icon icon="lucide:refresh-ccw" font-size="12px" />
+										<RefreshCcw font-size="12px" />
 									</button>
 								{/if}
 
@@ -196,7 +196,7 @@
 									title="Run"
 									aria-disabled={isRunning}
 								>
-									<Icon icon={playIcon} class={isRunning ? 'animate-spin' : ''} font-size="12px" />
+									<svelte:component this={playIcon} class={isRunning ? 'animate-spin' : ''} font-size="12px" />
 								</button>
 
 								<button
@@ -204,7 +204,7 @@
 									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Icon icon="lucide:trash-2" font-size="12px" />
+									<Trash2 font-size="12px" />
 								</button>
 							</div>
 						</div>
@@ -234,7 +234,7 @@
 						aria-label="Run Python code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={playIcon} />
+							<svelte:component this={playIcon} />
 						</div>
 					</button>
 				{/if}
@@ -250,7 +250,7 @@
 		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

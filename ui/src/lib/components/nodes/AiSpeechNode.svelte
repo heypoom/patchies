@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { ChevronUp, Loader2, Play, Settings, Sparkles } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -223,8 +223,7 @@
 					onclick={() => (showAdvancedSettings = !showAdvancedSettings)}
 					title="Toggle Settings"
 				>
-					<Icon
-						icon={showAdvancedSettings ? 'lucide:chevron-up' : 'lucide:settings'}
+					<svelte:component this={showAdvancedSettings ? ChevronUp : Settings}
 						class="h-4 w-4 text-zinc-300"
 					/>
 				</button>
@@ -238,8 +237,7 @@
 					disabled={!!$audioUrlCache[audioCacheKey] || isLoading}
 					title={isLoading ? 'Generating...' : 'Generate Speech'}
 				>
-					<Icon
-						icon={isLoading ? 'lucide:loader-2' : 'lucide:sparkles'}
+					<svelte:component this={isLoading ? Loader2 : Sparkles}
 						class={`h-4 w-4 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
 					/>
 				</button>
@@ -251,7 +249,7 @@
 						onclick={togglePlayback}
 						title="Play"
 					>
-						<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+						<Play class="h-4 w-4 text-zinc-300" />
 					</button>
 				{/if}
 			</div>

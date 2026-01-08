@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { Monitor, Square } from '@lucide/svelte/icons';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -139,7 +139,7 @@
 							class="rounded p-1 opacity-100 transition-opacity hover:bg-zinc-700"
 							onclick={stopCapture}
 						>
-							<Icon icon="lucide:square" class="h-4 w-4 text-red-500" />
+							<Square class="h-4 w-4 text-red-500" />
 						</button>
 					{:else}
 						<button
@@ -147,7 +147,7 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={startCapture}
 						>
-							<Icon icon="lucide:monitor" class="h-4 w-4 text-zinc-300" />
+							<Monitor class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 				</div>
@@ -169,7 +169,7 @@
 					{#if !isCapturing}
 						<div class="flex h-32 w-48 items-center justify-center">
 							<div class="flex flex-col items-center gap-2">
-								<Icon icon="lucide:monitor" class="h-8 w-8 text-zinc-400" />
+								<Monitor class="h-8 w-8 text-zinc-400" />
 								<div class="text-xs text-zinc-400">Screen Capture</div>
 								{#if errorMessage}
 									<div class="text-xs text-red-400">{errorMessage}</div>

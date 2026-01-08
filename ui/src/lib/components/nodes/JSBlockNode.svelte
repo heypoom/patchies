@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { Code, Loader, Package, Pause, Play, RefreshCcw, Terminal, Trash2, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -60,12 +60,12 @@
 	});
 
 	const playOrStopIcon = $derived.by(() => {
-		if (data.libraryName) return 'lucide:package';
+		if (data.libraryName) return Package;
 
-		if (isRunning) return 'lucide:loader';
-		if (isLongRunningTaskActive) return 'lucide:pause';
+		if (isRunning) return Loader;
+		if (isLongRunningTaskActive) return Pause;
 
-		return 'lucide:play';
+		return Play;
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
@@ -277,7 +277,7 @@
 							}}
 							title="Console"
 						>
-							<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+							<Terminal class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 
@@ -286,7 +286,7 @@
 						onclick={toggleEditor}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -324,7 +324,7 @@
 										title="Run again"
 										aria-label="Run again"
 									>
-										<Icon icon="lucide:refresh-ccw" font-size="12px" />
+										<RefreshCcw font-size="12px" />
 									</button>
 								{/if}
 
@@ -337,8 +337,7 @@
 									title={isLongRunningTaskActive ? 'Stop' : 'Run'}
 									aria-disabled={isRunning}
 								>
-									<Icon
-										icon={playOrStopIcon}
+									<svelte:component this={playOrStopIcon}
 										class={isRunning ? 'animate-spin' : ''}
 										font-size="12px"
 									/>
@@ -349,7 +348,7 @@
 									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Icon icon="lucide:trash-2" font-size="12px" />
+									<Trash2 font-size="12px" />
 								</button>
 							</div>
 						</div>
@@ -387,7 +386,7 @@
 						aria-label="Run code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={playOrStopIcon} />
+							<svelte:component this={playOrStopIcon} />
 						</div>
 					</button>
 
@@ -427,7 +426,7 @@
 		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

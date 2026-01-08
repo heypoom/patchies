@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { ScreenShare } from '@lucide/svelte/icons';
 	import { Position } from '@xyflow/svelte';
 
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { onDestroy, onMount } from 'svelte';
@@ -44,7 +44,7 @@
 						borderClass
 					]}
 				>
-					<Icon icon="lucide:screen-share" class="h-5 w-5 text-zinc-500" />
+					<ScreenShare class="h-5 w-5 text-zinc-500" />
 				</div>
 			</div>
 		</div>

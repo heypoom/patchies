@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import { HelpCircle, X } from '@lucide/svelte/icons';
 	import AboutTab from './AboutTab.svelte';
 	import ExamplesTab from './ExamplesTab.svelte';
 	import LicenseTab from './LicenseTab.svelte';
@@ -30,7 +30,7 @@
 	class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 	title="Help and examples"
 >
-	<Icon icon="lucide:help-circle" class="h-4 w-4 text-zinc-300" />
+	<HelpCircle class="h-4 w-4 text-zinc-300" />
 </button>
 
 {#if open}
@@ -84,7 +84,7 @@
 						class="flex-shrink-0 rounded text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
 						aria-label="Close modal"
 					>
-						<Icon icon="lucide:x" class="h-5 w-5" />
+						<X class="h-5 w-5" />
 					</button>
 				</div>
 			</div>

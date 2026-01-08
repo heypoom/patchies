@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { ChevronUp, Edit } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 
-	import Icon from '@iconify/svelte';
 
 	import hljs from 'highlight.js/lib/core';
 	import javascript from 'highlight.js/lib/languages/javascript';
@@ -37,8 +37,7 @@
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
-					<Icon
-						icon={showTextInput ? 'lucide:chevron-up' : 'lucide:edit'}
+					<svelte:component this={showTextInput ? ChevronUp : Edit}
 						class="h-4 w-4 text-zinc-300"
 					/>
 				</button>

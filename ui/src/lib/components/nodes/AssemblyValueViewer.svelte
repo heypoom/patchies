@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Settings, X } from '@lucide/svelte/icons';
 	import { onMount, onDestroy } from 'svelte';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -8,7 +9,6 @@
 	import { AssemblySystem } from '$lib/assembly/AssemblySystem';
 	import { regionPalettes, getRegionClassName } from '$lib/assembly/regionColors';
 	import { memoryRegionStore } from '$lib/assembly/memoryRegionStore';
-	import Icon from '@iconify/svelte';
 
 	let {
 		id: nodeId,
@@ -176,7 +176,7 @@
 				onclick={() => (showSettings = !showSettings)}
 				title="Settings"
 			>
-				<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+				<Settings class="h-4 w-4 text-zinc-300" />
 			</button>
 		</div>
 
@@ -247,7 +247,7 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

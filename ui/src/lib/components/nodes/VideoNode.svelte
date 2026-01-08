@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Loader, OctagonX, Pause, Play, SkipBack, Upload, Video } from '@lucide/svelte/icons';
 	import { Handle, Position, NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -337,8 +337,7 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={togglePause}
 						>
-							<Icon
-								icon={isPaused ? 'lucide:play' : 'lucide:pause'}
+							<svelte:component this={isPaused ? Play : Pause}
 								class="h-4 w-4 text-zinc-300"
 							/>
 						</button>
@@ -347,14 +346,14 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={restartVideo}
 						>
-							<Icon icon="lucide:skip-back" class="h-4 w-4 text-zinc-300" />
+							<SkipBack class="h-4 w-4 text-zinc-300" />
 						</button>
 						<button
 							title="Change video"
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={openFileDialog}
 						>
-							<Icon icon="lucide:upload" class="h-4 w-4 text-zinc-300" />
+							<Upload class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 				</div>
@@ -383,8 +382,7 @@
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {defaultPreviewWidth}px; height: {defaultPreviewHeight}px"
 						>
-							<Icon
-								icon={errorMessage ? 'lucide:octagon-x' : 'lucide:loader'}
+							<svelte:component this={errorMessage ? OctagonX : Loader}
 								class={[
 									'h-8 w-8 text-zinc-400',
 									!errorMessage ? 'animate-spin' : 'text-red-400'
@@ -414,7 +412,7 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
 						>
-							<Icon icon="lucide:video" class="h-8 w-8 text-zinc-400" />
+							<Video class="h-8 w-8 text-zinc-400" />
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
 								<span class="text-zinc-300">double click</span> or
 								<span class="text-zinc-300">drop</span><br />

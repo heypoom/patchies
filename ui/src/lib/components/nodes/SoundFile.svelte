@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Play, Square, Upload, Volume2 } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -208,7 +208,7 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={playFile}
 						>
-							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							<Play class="h-4 w-4 text-zinc-300" />
 						</button>
 
 						<button
@@ -216,7 +216,7 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={stopFile}
 						>
-							<Icon icon="lucide:square" class="h-4 w-4 text-zinc-300" />
+							<Square class="h-4 w-4 text-zinc-300" />
 						</button>
 					</div>
 				{/if}
@@ -241,7 +241,7 @@
 							ondblclick={openFileDialog}
 							role="figure"
 						>
-							<Icon icon="lucide:volume-2" class="h-4 w-4 text-zinc-500" />
+							<Volume2 class="h-4 w-4 text-zinc-500" />
 
 							<div class="text-center font-mono">
 								<div class="max-w-[150px] truncate text-[12px] font-light text-zinc-300">
@@ -255,7 +255,7 @@
 							ondblclick={openFileDialog}
 							role="figure"
 						>
-							<Icon icon="lucide:upload" class="h-3 w-3 text-zinc-400" />
+							<Upload class="h-3 w-3 text-zinc-400" />
 
 							<div class="font-mono text-[12px] font-light text-zinc-400">
 								<span class="text-zinc-300">double click</span> or

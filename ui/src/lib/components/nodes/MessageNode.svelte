@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { ChevronUp, Edit } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -130,8 +130,7 @@
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
-					<Icon
-						icon={showTextInput ? 'lucide:chevron-up' : 'lucide:edit'}
+					<svelte:component this={showTextInput ? ChevronUp : Edit}
 						class="h-4 w-4 text-zinc-300"
 					/>
 				</button>

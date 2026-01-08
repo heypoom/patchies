@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Check, Edit, Globe, X } from '@lucide/svelte/icons';
 	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -126,7 +126,7 @@
 								class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={toggleUrlInput}
 							>
-								<Icon icon="lucide:edit" class="h-3 w-3 text-zinc-300" />
+								<Edit class="h-3 w-3 text-zinc-300" />
 							</button>
 						</div>
 					{:else}
@@ -139,7 +139,7 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && toggleUrlInput()}
 						>
-							<Icon icon="lucide:globe" class="h-4 w-4 text-zinc-400" />
+							<Globe class="h-4 w-4 text-zinc-400" />
 
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
 								<span class="text-zinc-300">double click</span> to<br />
@@ -165,7 +165,7 @@
 								class="rounded bg-zinc-700 p-1 hover:bg-zinc-600"
 								onclick={handleUrlSubmit}
 							>
-								<Icon icon="lucide:check" class="h-4 w-4 text-zinc-300" />
+								<Check class="h-4 w-4 text-zinc-300" />
 							</button>
 							<button
 								title="Cancel"
@@ -175,7 +175,7 @@
 									tempUrl = '';
 								}}
 							>
-								<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+								<X class="h-4 w-4 text-zinc-300" />
 							</button>
 						</div>
 					{/if}

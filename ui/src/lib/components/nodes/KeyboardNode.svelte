@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { AlertCircle, Keyboard, KeyboardOff, Settings, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -49,11 +49,11 @@
 	});
 
 	const statusIcon = $derived.by(() => {
-		if (errorMessage) return 'lucide:alert-circle';
-		if (!isListening) return 'lucide:keyboard-off';
-		if (mode === 'all') return 'lucide:keyboard';
+		if (errorMessage) return AlertCircle;
+		if (!isListening) return KeyboardOff;
+		if (mode === 'all') return Keyboard;
 
-		return 'lucide:keyboard';
+		return Keyboard;
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -228,7 +228,7 @@
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+					<Settings class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
@@ -251,8 +251,7 @@
 							{keybind || 'no keybind'}
 						</div>
 					{:else}
-						<Icon
-							icon={statusIcon}
+						<svelte:component this={statusIcon}
 							class={`h-4 w-4 ${isListening ? 'text-green-400' : 'text-zinc-500'}`}
 						/>
 					{/if}
@@ -267,7 +266,7 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

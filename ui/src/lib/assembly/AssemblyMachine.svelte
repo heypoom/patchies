@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Binary, Pause, Play, RefreshCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -10,7 +11,6 @@
 	import MachineStateViewer from './MachineStateViewer.svelte';
 	import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
 	import { memoryActions } from './memoryStore';
-	import Icon from '@iconify/svelte';
 	import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
 
 	let {
@@ -386,7 +386,7 @@
 					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					title="Machine settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+					<Settings class="h-4 w-4 text-zinc-300" />
 				</button>
 
 				<button
@@ -395,7 +395,7 @@
 					title="Toggle memory viewer"
 					disabled={machineState === null}
 				>
-					<Icon icon="lucide:binary" class="h-4 w-4 text-zinc-300" />
+					<Binary class="h-4 w-4 text-zinc-300" />
 				</button>
 
 				<button
@@ -404,7 +404,7 @@
 					title="Reset machine"
 					disabled={machineState === null}
 				>
-					<Icon icon="lucide:refresh-ccw" class="h-4 w-4 text-zinc-300" />
+					<RefreshCcw class="h-4 w-4 text-zinc-300" />
 				</button>
 
 				<button
@@ -413,8 +413,7 @@
 					title={`Step ${machineConfig.stepBy} cycle${machineConfig.stepBy > 1 ? 's' : ''}`}
 					disabled={machineState?.status === 'Halted'}
 				>
-					<Icon
-						icon="lucide:step-forward"
+					<StepForward
 						class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
 					/>
 				</button>
@@ -424,8 +423,7 @@
 					class="group rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					title={machineConfig.isRunning ? 'Pause machine' : 'Run machine'}
 				>
-					<Icon
-						icon={machineConfig.isRunning ? 'lucide:pause' : 'lucide:play'}
+					<svelte:component this={machineConfig.isRunning ? Pause : Play}
 						class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
 					/>
 				</button>
@@ -496,7 +494,7 @@
 		<div class="absolute" style="left: {previewContainerWidth}px;">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

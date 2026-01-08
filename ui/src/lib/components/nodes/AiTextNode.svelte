@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Copy, Loader } from '@lucide/svelte/icons';
 	import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { createLLMFunction } from '$lib/ai/google';
@@ -118,7 +118,7 @@
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900">
 				{#if isLoading}
 					<div class="flex h-full min-h-[100px] items-center justify-center">
-						<Icon icon="lucide:loader" class="h-6 w-6 animate-spin text-zinc-300" />
+						<Loader class="h-6 w-6 animate-spin text-zinc-300" />
 					</div>
 				{:else if generatedText}
 					<div class="nodrag relative">
@@ -133,7 +133,7 @@
 							class="absolute right-1 top-1 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							title="Copy to clipboard"
 						>
-							<Icon icon="lucide:copy" class="h-4 w-4 text-zinc-300" />
+							<Copy class="h-4 w-4 text-zinc-300" />
 						</button>
 					</div>
 				{:else}
