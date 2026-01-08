@@ -222,9 +222,9 @@ export class P5Manager {
 			extraContext: {
 				sketch,
 				noDrag: config.messageContext?.noDrag,
+				noOutput: config.messageContext?.noOutput,
 				setHidePorts: config.setHidePorts
-			},
-			isAsync: true
+			}
 		});
 	}
 

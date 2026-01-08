@@ -9,7 +9,14 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
-	import type { NodePortCountUpdateEvent } from '$lib/eventbus/events';
+	import type {
+		NodePortCountUpdateEvent,
+		NodeTitleUpdateEvent,
+		NodeHidePortsUpdateEvent,
+		NodeDragEnabledUpdateEvent,
+		NodeVideoOutputEnabledUpdateEvent
+	} from '$lib/eventbus/events';
+	import { logger } from '$lib/utils/logger';
 
 	let {
 		id: nodeId,
@@ -22,6 +29,7 @@
 			code: string;
 			inletCount?: number;
 			outletCount?: number;
+			hidePorts?: boolean;
 		};
 		selected?: boolean;
 	} = $props();
@@ -31,8 +39,8 @@
 	let messageContext: MessageContext;
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
-	let errorMessage = $state<string | null>(null);
 	let dragEnabled = $state(true);
+	let videoOutputEnabled = $state(true);
 	let editorReady = $state(false);
 
 	const { updateNodeData } = useSvelteFlow();
@@ -44,7 +52,7 @@
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
 
-	// Store event handler for cleanup
+	// Event handlers for worker messages
 	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
 		if (e.nodeId !== nodeId) return;
 
@@ -59,6 +67,27 @@
 			.otherwise(() => {
 				// Handle other port types if needed
 			});
+	}
+
+	function handleTitleUpdate(e: NodeTitleUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		updateNodeData(nodeId, { title: e.title });
+	}
+
+	function handleHidePortsUpdate(e: NodeHidePortsUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		updateNodeData(nodeId, { hidePorts: e.hidePorts });
+	}
+
+	function handleDragEnabledUpdate(e: NodeDragEnabledUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		dragEnabled = e.dragEnabled;
+	}
+
+	function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		videoOutputEnabled = e.videoOutputEnabled;
+		updateNodeInternals(nodeId);
 	}
 
 	const setCodeAndUpdate = (newCode: string) => {
@@ -79,7 +108,7 @@
 					glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
 				});
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			console.error('Error handling message:', error);
 		}
 	};
 
@@ -88,9 +117,13 @@
 		messageContext.queue.addCallback(handleMessage);
 		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
-		// Listen for port count updates from the worker
+		// Listen for updates from the worker
 		const eventBus = glSystem.eventBus;
 		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
+		eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
+		eventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+		eventBus.addEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+		eventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
@@ -110,6 +143,10 @@
 		const eventBus = glSystem?.eventBus;
 		if (eventBus) {
 			eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
+			eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
+			eventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+			eventBus.removeEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+			eventBus.removeEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
 		}
 
 		audioAnalysisSystem?.disableFFT(nodeId);
@@ -117,18 +154,23 @@
 		messageContext?.destroy();
 	});
 
+	const handleClass = $derived.by(() => {
+		if (!data.hidePorts) return '';
+
+		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
+	});
+
 	function updateCanvas() {
 		try {
 			messageContext.clearTimers();
 			audioAnalysisSystem.disableFFT(nodeId);
 			const isUpdated = glSystem.upsertNode(nodeId, 'canvas', { code: data.code });
+
 			// If the code hasn't changed, the code will not be re-run.
 			// This allows us to forcibly re-run canvas to update FFT.
 			if (!isUpdated) glSystem.send('updateCanvas', { nodeId });
-			errorMessage = null;
 		} catch (error) {
-			// Capture compilation/setup errors
-			errorMessage = error instanceof Error ? error.message : String(error);
+			logger.error(`[canvas] update canvas error:`, error);
 		}
 	}
 </script>
@@ -136,7 +178,6 @@
 <CanvasPreviewLayout
 	title={data.title ?? 'canvas'}
 	onrun={updateCanvas}
-	{errorMessage}
 	bind:previewCanvas
 	nodrag={!dragEnabled}
 	width={outputWidth}
@@ -147,27 +188,38 @@
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
-			<StandardHandle port="inlet" id={index} title={`Inlet ${index}`} total={inletCount} {index} />
+			<StandardHandle
+				port="inlet"
+				id={index}
+				title={`Inlet ${index}`}
+				total={inletCount}
+				{index}
+				class={handleClass}
+			/>
 		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle
-			port="outlet"
-			type="video"
-			id={0}
-			title="Video output"
-			total={outletCount + 1}
-			index={outletCount}
-		/>
+		{#if videoOutputEnabled}
+			<StandardHandle
+				port="outlet"
+				type="video"
+				id={0}
+				title="Video output"
+				total={outletCount + 1}
+				index={outletCount}
+				class={handleClass}
+			/>
+		{/if}
 
 		{#each Array.from({ length: outletCount }) as _, index}
 			<StandardHandle
 				port="outlet"
 				id={index}
 				title={`Outlet ${index}`}
-				total={outletCount + 1}
+				total={videoOutputEnabled ? outletCount + 1 : outletCount}
 				{index}
+				class={handleClass}
 			/>
 		{/each}
 	{/snippet}

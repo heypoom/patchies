@@ -118,6 +118,42 @@ export class GLSystem {
 			});
 		}
 
+		// Handle setTitle messages from workers
+		if (data.type === 'setTitle') {
+			this.eventBus.dispatch({
+				type: 'nodeTitleUpdate',
+				nodeId: data.nodeId,
+				title: data.title
+			});
+		}
+
+		// Handle setHidePorts messages from workers
+		if (data.type === 'setHidePorts') {
+			this.eventBus.dispatch({
+				type: 'nodeHidePortsUpdate',
+				nodeId: data.nodeId,
+				hidePorts: data.hidePorts
+			});
+		}
+
+		// Handle setDragEnabled messages from workers
+		if (data.type === 'setDragEnabled') {
+			this.eventBus.dispatch({
+				type: 'nodeDragEnabledUpdate',
+				nodeId: data.nodeId,
+				dragEnabled: data.dragEnabled
+			});
+		}
+
+		// Handle setVideoOutputEnabled messages from workers
+		if (data.type === 'setVideoOutputEnabled') {
+			this.eventBus.dispatch({
+				type: 'nodeVideoOutputEnabledUpdate',
+				nodeId: data.nodeId,
+				videoOutputEnabled: data.videoOutputEnabled
+			});
+		}
+
 		// A block has requested a preview frame capture from a node.
 		if (data.type === 'previewFrameCaptured') {
 			this.eventBus.dispatch(data);

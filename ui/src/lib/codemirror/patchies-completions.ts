@@ -114,6 +114,13 @@ const patchiesAPICompletions: Completion[] = [
 		info: 'Disable dragging interaction in canvas nodes',
 		apply: 'noDrag()'
 	},
+	{
+		label: 'noOutput',
+		type: 'function',
+		detail: '() => void',
+		info: 'Hide the video output port in canvas nodes',
+		apply: 'noOutput()'
+	},
 
 	// Audio Analysis
 	{
@@ -153,6 +160,7 @@ const topLevelOnlyFunctions = new Set([
 	'setKeepAlive',
 	'setHidePorts',
 	'noDrag',
+	'noOutput',
 	'recv',
 	'onMessage'
 ]);
@@ -163,7 +171,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	setAudioPortCount: ['dsp~'],
 	setVideoCount: ['hydra'],
 	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
-	noDrag: ['p5', 'canvas'],
+	noDrag: ['p5', 'canvas', 'canvas.dom'],
+	noOutput: ['p5', 'canvas', 'canvas.dom'],
 	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel'],
 	setRunOnMount: ['js']
 };

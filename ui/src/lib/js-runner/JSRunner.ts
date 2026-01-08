@@ -13,6 +13,7 @@ export interface JSRunnerOptions {
 	setPortCount?: (inletCount?: number, outletCount?: number) => void;
 	setRunOnMount?: (runOnMount?: boolean) => void;
 	setTitle?: (title: string) => void;
+	setHidePorts?: (hidePorts: boolean) => void;
 	extraContext?: Record<string, unknown>;
 }
 
@@ -245,6 +246,7 @@ export class JSRunner {
 			setPortCount = () => {},
 			setRunOnMount = () => {},
 			setTitle = () => {},
+			setHidePorts = () => {},
 			extraContext = {}
 		} = options;
 
@@ -261,6 +263,7 @@ export class JSRunner {
 			'setPortCount',
 			'setRunOnMount',
 			'setTitle',
+			'setHidePorts',
 			...Object.keys(extraContext)
 		];
 
@@ -275,6 +278,7 @@ export class JSRunner {
 			setPortCount,
 			setRunOnMount,
 			setTitle,
+			setHidePorts,
 			...Object.values(extraContext)
 		];
 

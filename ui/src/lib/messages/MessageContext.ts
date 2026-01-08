@@ -27,6 +27,9 @@ export interface UserFnRunContext {
 	/** Disables dragging in canvas. */
 	noDrag: () => void;
 
+	/** Hides the video output port in canvas/p5 nodes. */
+	noOutput?: () => void;
+
 	/** Get audio analysis data */
 	fft?: (options: AudioAnalysisProps) => FFTAnalysis;
 

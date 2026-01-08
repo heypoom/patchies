@@ -9,7 +9,7 @@ import { AI_TXT_PRESETS } from './ai-txt.preset';
 import { TONE_JS_PRESETS } from './tone.preset';
 import { SONIC_PRESETS } from './sonic.preset';
 import { ELEMENTARY_PRESETS } from './elementary.preset';
-import { CANVAS_PRESETS } from './canvas.preset';
+import { CANVAS_PRESETS } from './canvas.presets';
 import { JS_DSP_PRESETS } from './js-dsp.presets';
 import { KEYBOARD_PRESETS } from './keyboard.presets';
 import { ORCA_PRESETS } from './orca.presets';
