@@ -168,14 +168,17 @@ export class P5Manager {
 				userCode?.keyTyped?.call(p, event);
 			};
 
+			// @ts-expect-error -- not typed
 			p.touchStarted = function (event: TouchEvent) {
 				userCode?.touchStarted?.call(p, event);
 			};
 
+			// @ts-expect-error -- not typed
 			p.touchMoved = function (event: TouchEvent) {
 				userCode?.touchMoved?.call(p, event);
 			};
 
+			// @ts-expect-error -- not typed
 			p.touchEnded = function (event: TouchEvent) {
 				userCode?.touchEnded?.call(p, event);
 			};

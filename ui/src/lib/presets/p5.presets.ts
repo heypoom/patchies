@@ -78,7 +78,7 @@ function draw() {
 const AUDIO_FFT_SMALL_P5 = `function setup() {
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
-  strokeWeight(3)
+  strokeWeight(1)
 }
 
 function draw() {
@@ -133,7 +133,7 @@ function draw() {
   noFill();
   beginShape();
   stroke('white');
-  strokeWeight(3)
+  strokeWeight(1)
   for (let i = 0; i < waveform.length; i++){
     let x = map(i, 0, waveform.length, 0, width);
     let y = map( waveform[i], 0, 120, 0, height) - 80;
