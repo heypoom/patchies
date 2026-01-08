@@ -4,6 +4,7 @@ import { plotterPreset } from './plotter';
 import { paintPreset } from './paint';
 import { xyPadPreset } from './xy-pad';
 import { hslaPickerPreset } from './hsla-picker';
+import { rgbaPickerPreset } from './rgba-picker';
 
 export const CANVAS_PRESETS = {
 	'fft.canvas': fftPreset,
@@ -11,5 +12,6 @@ export const CANVAS_PRESETS = {
 	'plotter.canvas': plotterPreset,
 	'particle.canvas': paintPreset,
 	'xy-pad.canvas': xyPadPreset,
-	'hsla.picker': hslaPickerPreset
+	'hsla.picker': hslaPickerPreset,
+	'rgba.picker': rgbaPickerPreset
 };
