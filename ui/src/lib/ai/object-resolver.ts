@@ -65,6 +65,10 @@ export async function resolveMultipleObjectsFromPrompt(
 			}
 		}
 
+		console.log('[AI Multi-Object Resolver] Parsed result:', result);
+		console.log('[AI Multi-Object Resolver] Nodes count:', result.nodes.length);
+		console.log('[AI Multi-Object Resolver] Edges count:', result.edges.length);
+
 		return {
 			nodes: result.nodes,
 			edges: result.edges
