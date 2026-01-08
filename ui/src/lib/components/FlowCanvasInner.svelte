@@ -87,6 +87,7 @@
 	// AI object prompt state
 	let showAiPrompt = $state(false);
 	let aiPromptPosition = $state.raw({ x: 0, y: 0 });
+	let aiEditingNodeId = $state<string | null>(null);
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
@@ -220,6 +221,12 @@
 					triggerCommandPalette();
 				}
 			} else {
+				// If a single node is selected, edit it; otherwise create new
+				if (selectedNodeIds.length === 1) {
+					aiEditingNodeId = selectedNodeIds[0];
+				} else {
+					aiEditingNodeId = null;
+				}
 				triggerAiPrompt();
 			}
 		}
@@ -261,6 +268,13 @@
 	function handleAiObjectInsert(type: string, data: any) {
 		const position = screenToFlowPosition(lastMousePosition);
 		createNode(type, position, data);
+	}
+
+	function handleAiObjectEdit(nodeId: string, data: any) {
+		// Update the existing node's data
+		nodes = nodes.map(node => 
+			node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
+		);
 	}
 
 	onMount(() => {
@@ -937,7 +951,9 @@
 	<AiObjectPrompt
 		bind:open={showAiPrompt}
 		position={aiPromptPosition}
+		editingNode={aiEditingNodeId ? nodes.find(n => n.id === aiEditingNodeId) : null}
 		onInsertObject={handleAiObjectInsert}
+		onEditObject={handleAiObjectEdit}
 	/>
 </div>
 

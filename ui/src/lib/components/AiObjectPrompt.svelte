@@ -1,21 +1,40 @@
 <script lang="ts">
-	import { Loader, Sparkles } from '@lucide/svelte/icons';
+	import { Loader, Sparkles, Edit3 } from '@lucide/svelte/icons';
 	import { resolveObjectFromPrompt } from '$lib/ai/object-resolver';
+	import type { Node } from '@xyflow/svelte';
 
 	let {
 		open = $bindable(false),
 		position,
-		onInsertObject
+		editingNode = null,
+		onInsertObject,
+		onEditObject
 	}: {
 		open?: boolean;
 		position: { x: number; y: number };
+		editingNode?: Node | null;
 		onInsertObject: (type: string, data: any) => void;
+		onEditObject?: (nodeId: string, data: any) => void;
 	} = $props();
 
 	let promptInput: HTMLTextAreaElement | undefined = $state();
 	let promptText = $state('');
 	let isLoading = $state(false);
 	let errorMessage = $state<string | null>(null);
+
+	const isEditMode = $derived(editingNode !== null);
+	const title = $derived(isEditMode ? 'AI Object Edit' : 'AI Object Insert');
+	const description = $derived(
+		isEditMode 
+			? `Editing: ${editingNode?.data?.name || editingNode?.data?.title || editingNode?.type || 'object'}`
+			: 'Describe the object you want to create'
+	);
+	const buttonText = $derived(isEditMode ? 'Update' : 'Insert');
+	const placeholderText = $derived(
+		isEditMode
+			? 'e.g., "change it to a sawtooth wave oscillator"'
+			: 'e.g., "give me a simple fat sine oscillator"'
+	);
 
 	// Auto-focus input when opened
 	$effect(() => {
@@ -47,10 +66,24 @@
 		errorMessage = null;
 
 		try {
-			const result = await resolveObjectFromPrompt(promptText);
+			// For edit mode, enhance the prompt with context about the existing node
+			let enhancedPrompt = promptText;
+			if (isEditMode && editingNode) {
+				const nodeType = editingNode.type;
+				const existingCode = editingNode.data?.code;
+				enhancedPrompt = `Modify this existing ${nodeType} object. ${existingCode ? `Current code:\n${existingCode}\n\n` : ''}User request: ${promptText}`;
+			}
+
+			const result = await resolveObjectFromPrompt(enhancedPrompt);
 
 			if (result) {
-				onInsertObject(result.type, result.data);
+				if (isEditMode && editingNode && onEditObject) {
+					// In edit mode, only update the data
+					onEditObject(editingNode.id, result.data);
+				} else {
+					// In insert mode, create a new object
+					onInsertObject(result.type, result.data);
+				}
 				handleClose();
 			} else {
 				errorMessage = 'Could not resolve object from prompt';
@@ -87,10 +120,14 @@
 	>
 		<!-- Header -->
 		<div class="flex items-center gap-2 border-b border-zinc-700 px-4 py-3">
-			<Sparkles class="h-5 w-5 text-purple-400" />
+			{#if isEditMode}
+				<Edit3 class="h-5 w-5 text-amber-400" />
+			{:else}
+				<Sparkles class="h-5 w-5 text-purple-400" />
+			{/if}
 			<div class="flex-1">
-				<div class="font-mono text-sm font-medium text-zinc-100">AI Object Insert</div>
-				<div class="text-xs text-zinc-400">Describe the object you want to create</div>
+				<div class="font-mono text-sm font-medium text-zinc-100">{title}</div>
+				<div class="text-xs text-zinc-400">{description}</div>
 			</div>
 		</div>
 
@@ -100,7 +137,7 @@
 				bind:this={promptInput}
 				bind:value={promptText}
 				onkeydown={handleKeydown}
-				placeholder="e.g., &quot;give me a simple fat sine oscillator&quot;"
+				placeholder={placeholderText}
 				class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
 				rows="3"
 			></textarea>
@@ -120,6 +157,8 @@
 						<Loader class="h-3 w-3 animate-spin" />
 						Resolving...
 					</span>
+				{:else if isEditMode}
+					Enter to update • Esc to cancel
 				{:else}
 					Enter to insert • Esc to cancel
 				{/if}
@@ -128,9 +167,9 @@
 			<button
 				onclick={handleSubmit}
 				disabled={!promptText.trim() || isLoading}
-				class="rounded bg-purple-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+				class="rounded {isEditMode ? 'bg-amber-600 hover:bg-amber-700' : 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				{isLoading ? 'Resolving...' : 'Insert'}
+				{isLoading ? 'Resolving...' : buttonText}
 			</button>
 		</div>
 	</div>
