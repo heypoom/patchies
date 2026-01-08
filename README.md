@@ -440,7 +440,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Importing JavaScript packages from NPM
 
-> This feature is only available in `js` and `p5` objects, for now.
+> This feature is only available in `js`, `p5`, `sonic~` and `elem~` objects, for now.
 
 - You can import any JavaScript package by using the `npm:` prefix in the import statement.
 
@@ -469,7 +469,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Sharing JavaScript across multiple `js` blocks
 
-> This feature is only available in `js` and `p5` objects, for now.
+> This feature is only available in `js`, `p5`, `sonic~` and `elem~` objects, for now.
 
 You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
 
