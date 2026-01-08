@@ -238,6 +238,7 @@ These objects support video chaining and can be connected to create complex visu
 - If you are new to P5.js, I recommend watching [Patt Vira](https://www.youtube.com/@pattvira)'s YouTube tutorials on YouTube, or on her [website](https://www.pattvira.com). They're fantastic for both beginners and experienced developers.
 - Read the [P5.js documentation](https://p5js.org/reference) to see how P5 works.
 - See the [P5.js tutorials](https://p5js.org/tutorials) and [OpenProcessing](https://www.openprocessing.org) for more inspirations.
+- **Note**: Patchies uses P5.js v2.x with backward compatibility libraries for v1 features. All existing P5.js v1 sketches should work without modification.
 
 - You can call these special methods in your sketch:
 
