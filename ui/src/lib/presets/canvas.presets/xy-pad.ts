@@ -21,12 +21,10 @@ recv(m => {
 
   if (x !== undefined) {
     padX = x * width
-    isDragging = true
   }
 
   if (y !== undefined) {
     padY = y * height
-    isDragging = true
   }
 
   send([padX / width, padY / height])
