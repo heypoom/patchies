@@ -471,12 +471,13 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 > This feature is only available in `js` and `p5` objects, for now.
 
-You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code.
+You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
 
-- For example, `// @lib foobar` will register the module as `foobar`. This will turn the object into a library object, as shown by the package icon.
-- In your library object, use ES modules `export` syntax, e.g. `export const rand = () => Math.random()`. This works for everything: classes, functions, modules.
+- For example, adding `// @lib foobar` on top of the code snippet with an exported constant, function, class, or module will register the module as `foobar`.
+  - This will turn the object into a library object, as shown by the package icon.
+- You must use the ES modules `export` syntax in your library `js` object, e.g. `export const rand = () => Math.random()`. This works for everything: classes, functions, modules.
   - Note that the constants are NOT shared across objects. Each object has their own isolated execution context. You cannot create shared singletons. Use [message passing](#message-passing) to communicate between objects.
-- You can then use ES modules syntax like `import { rand } from 'foobar'`.
+- You can then use ES modules syntax like `import { rand } from 'foobar'` from other objects that supports this feature.
 
 See the following example:
 
