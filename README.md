@@ -73,11 +73,20 @@ See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control
 
 Press `Ctrl/Cmd + I` to open the **AI Object Insertion** prompt. Simply describe what you want to create in natural language, and the AI will generate the appropriate object with code for you!
 
-**Examples:**
+**Two Modes:**
+- **Insert Mode** (no object selected): Creates a new object at your cursor position
+- **Edit Mode** (object selected): Modifies the selected object's code based on your description
+
+**Insert Mode Examples:**
 - "give me a simple fat sine oscillator" → Creates a Tone.js synth with a fat sine wave
 - "rotating cube in p5" → Creates a P5.js sketch with a rotating 3D cube
 - "lowpass filter at 500hz" → Creates a Tone.js lowpass filter
 - "a slider from 0 to 1000" → Creates a slider with the specified range
+
+**Edit Mode Examples:**
+- Select a synth object, press Cmd/Ctrl+I, type "change it to a sawtooth wave"
+- Select a visual object, press Cmd/Ctrl+I, type "make it rotate faster"
+- Select any object, press Cmd/Ctrl+I, type "add more reverb"
 
 This feature uses Google Gemini AI to understand your prompt and generate the right object configuration. Make sure to set your Gemini API key in the command palette (`Cmd/Ctrl + K` → "Set Gemini API Key").
 

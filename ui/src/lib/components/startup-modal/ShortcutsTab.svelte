@@ -52,7 +52,7 @@
 		},
 		{
 			keys: ['Ctrl', 'I'],
-			description: 'AI-powered object insertion - describe what you want to create',
+			description: 'AI-powered object insertion/editing - create new objects or modify selected ones',
 			category: 'keyboard'
 		},
 		{
