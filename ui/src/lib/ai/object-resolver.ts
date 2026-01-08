@@ -66,10 +66,10 @@ IMPORTANT RULES:
 3. You must resolve to exactly ONE object - do not suggest multiple objects
 4. Focus on the CODE SNIPPET within the object, not just the object type
 5. ALWAYS include appropriate helper functions for the object type:
-   - For interactive canvas.dom objects: Use noDrag() and noOutput() at the start if the user wants mouse/keyboard interaction
-   - For tone~ objects: Use setTitle() and setPortCount() at the start
-   - For dsp~ objects: Use setTitle(), setPortCount(), setAudioPortCount(), and implement process() function
-   - For hydra objects: Use setVideoCount() if multiple video inputs are needed
+   - For interactive canvas.dom objects: ALWAYS use noDrag() at the start to prevent node dragging when capturing mouse events, and use noOutput() if no video output is needed
+   - For tone~ audio objects: ALWAYS use setTitle() and setPortCount() at the start
+   - For dsp~ audio objects: ALWAYS use setTitle(), setPortCount(), setAudioPortCount(), and must implement process(inputs, outputs) function for audio processing
+   - For hydra video objects: Use setVideoCount(inlets, outlets) when multiple video inputs are needed (default is 1 inlet, 1 outlet)
 
 AVAILABLE OBJECT TYPES AND FUNCTIONS:
 
@@ -79,7 +79,8 @@ Audio Objects (use "tone~" type with custom code):
   Example data: { code: "const synth = new Tone.Synth().toDestination();", messageInletCount: 1 }
 - dsp~: Custom DSP audio processing with AudioWorklet
   Available functions: setTitle(), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets), setKeepAlive(enabled), recv(callback), send(data), process(inputs, outputs)
-  Must implement process() function for audio processing
+  Must implement process(inputs, outputs) function - called for each audio processing block. inputs and outputs are arrays of audio channels.
+  Example: function process(inputs, outputs) { outputs[0][0] = inputs[0][0]; } for passthrough
 - elem~: Elementary Audio synthesis
 - sonic~: SuperSonic audio synthesis
 - chuck~: ChucK audio programming
