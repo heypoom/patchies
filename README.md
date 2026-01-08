@@ -334,39 +334,40 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - See the [SwissGL examples](https://google.github.io/swissgl) for some inspirations on how to use SwissGL.
   - Right now, we haven't hooked the mouse and camera to SwissGL yet, so a lot of what you see in the SwissGL demo won't work in Patchies yet. PRs are welcome!
 
-### `canvas`: creates a JavaScript canvas (offscreen, web worker)
+### `canvas`: creates a JavaScript canvas (offscreen)
 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
-
-- **Runs on the [rendering pipeline](#rendering-pipeline)** (web worker thread) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas). This means:
-  - High performance - doesn't block the main thread
-  - Can chain with other visual objects (`glsl`, `hydra`, etc.) without lag
-  - Cannot use DOM APIs like `document` or `window`
-  - FFT data has slight delay due to worker message passing
 
 - You can call these special methods in your canvas code:
 
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
 
+- This runs on the [rendering pipeline](#rendering-pipeline) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on web workers. This means:
+
+  - Can chain with other visual objects (`glsl`, `hydra`, etc.) without lag
+  - High performance - doesn't block the main thread
+  - Cannot use DOM APIs like `document` or `window`
+  - FFT data has very high delay due to worker message passing
+
 ### `canvas.dom`: creates a JavaScript canvas (main thread)
 
-- Same as `canvas` but runs on the **main thread** instead of a web worker.
+- Same as `canvas` but runs directly on the main thread instead of on the [rendering pipeline thread](#rendering-pipeline), and comes with some additional features:
 
-- **When to use `canvas.dom` instead of `canvas`**:
-  - **Instant FFT reactivity** - No worker message passing delay, perfect for tight audio-reactive visuals (use `fft.canvas` preset)
-  - **Mouse interactivity** - Access to `mouse.x`, `mouse.y`, `mouse.down` for interactive sketches (try `paint.canvas` preset)
-  - **DOM access** - Can use `document`, `window`, and other browser APIs when needed
+  - Use `mouse` object with properties: `x`, `y`, `down`, `buttons` to get current mouse position and state.
+  - `noDrag()` to disable node dragging, so you can add mouse interactivity.
+  - Full DOM and browser API access (e.g. `document` and `window`)
 
-- **Trade-offs**:
-  - Runs on main thread, so heavy computation can affect UI responsiveness
-  - Still outputs video for chaining with other visual objects
+- When to use `canvas.dom` instead of `canvas`:
 
-- Additional features in `canvas.dom`:
+  - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual. Try it out with the `fft.canvas` preset, which uses `canvas.dom`.
+  - Mouse interactivity: use `mouse.x`, `mouse.y`, `mouse.down` for interactive sketches. Try this out on the `paint.canvas` preset.
+  - DOM access: use `document`, `window`, and other browser APIs when needed.
 
-  - `mouse` object with properties: `x`, `y`, `down`, `buttons`
-  - `noDrag()` to disable node dragging for interactive canvases
-  - Full DOM and browser API access
+- Performance trade-offs:
+
+  - When using [video chaining](#video-chaining), to output the canvas content to the video outlet, it drastically slow down the browser by a huge margin as it needs to copy each frame to the [rendering pipeline](#rendering-pipeline).
+  - It runs on main thread, so heavy computation can affect UI responsiveness.
 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
@@ -1275,4 +1276,4 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 
 - `p5`, `canvas.dom` and `bchrn` run on the main thread. At each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
 - This is slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
-- Use these when you need instant FFT reactivity, mouse interactivity, or DOM access.
+- Use these only when you need instant FFT reactivity, mouse interactivity, or DOM access.
