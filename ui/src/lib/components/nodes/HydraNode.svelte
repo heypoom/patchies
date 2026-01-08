@@ -39,12 +39,12 @@
 	let editorReady = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let previousExecuteCode = $state<number | undefined>(undefined);
-	
+
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
 		if (data.executeCode && data.executeCode !== previousExecuteCode) {
 			previousExecuteCode = data.executeCode;
-			runHydra();
+			updateHydra();
 		}
 	});
 
