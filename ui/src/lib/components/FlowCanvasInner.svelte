@@ -22,6 +22,7 @@
 	import StartupModal from './startup-modal/StartupModal.svelte';
 	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
+	import AiObjectPrompt from './AiObjectPrompt.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
@@ -82,6 +83,10 @@
 
 	// Object browser modal state
 	let showObjectBrowser = $state(false);
+
+	// AI object prompt state
+	let showAiPrompt = $state(false);
+	let aiPromptPosition = $state.raw({ x: 0, y: 0 });
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
@@ -201,6 +206,11 @@
 			event.preventDefault();
 			showObjectBrowser = true;
 		}
+		// Handle CMD+I for AI object insertion
+		else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
+			event.preventDefault();
+			triggerAiPrompt();
+		}
 		// Handle CMD+S for manual save
 		else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
@@ -226,6 +236,19 @@
 
 		commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
 		showCommandPalette = true;
+	}
+
+	function triggerAiPrompt() {
+		const centerX = window.innerWidth / 2 - 192; // Half of 384px (w-96)
+		const centerY = window.innerHeight / 2 - 150;
+
+		aiPromptPosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
+		showAiPrompt = true;
+	}
+
+	function handleAiObjectInsert(type: string, data: any) {
+		const position = screenToFlowPosition(lastMousePosition);
+		createNode(type, position, data);
 	}
 
 	onMount(() => {
@@ -897,6 +920,13 @@
 
 	<!-- Object Browser Modal -->
 	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+
+	<!-- AI Object Prompt Dialog -->
+	<AiObjectPrompt
+		bind:open={showAiPrompt}
+		position={aiPromptPosition}
+		onInsertObject={handleAiObjectInsert}
+	/>
 </div>
 
 <style>
