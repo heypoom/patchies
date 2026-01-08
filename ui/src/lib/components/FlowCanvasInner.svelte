@@ -319,19 +319,34 @@
 		// Add all new nodes
 		nodes = [...nodes, ...newNodes];
 
-		// Create edges using the created node IDs
-		const newEdges: Edge[] = simplifiedEdges.map((edge, index) => {
-			const sourceId = createdNodeIds[edge.source];
-			const targetId = createdNodeIds[edge.target];
+		// Create edges using the created node IDs, with validation
+		const newEdges: Edge[] = simplifiedEdges
+			.filter((edge) => {
+				// Validate edge indices are within bounds
+				const validSource = edge.source >= 0 && edge.source < createdNodeIds.length;
+				const validTarget = edge.target >= 0 && edge.target < createdNodeIds.length;
+				
+				if (!validSource || !validTarget) {
+					console.warn(
+						`Invalid edge indices: source=${edge.source}, target=${edge.target}, max=${createdNodeIds.length - 1}`
+					);
+					return false;
+				}
+				
+				return true;
+			})
+			.map((edge, index) => {
+				const sourceId = createdNodeIds[edge.source];
+				const targetId = createdNodeIds[edge.target];
 
-			return {
-				id: `edge-${Date.now()}-${index}`,
-				source: sourceId,
-				target: targetId,
-				sourceHandle: edge.sourceHandle,
-				targetHandle: edge.targetHandle
-			};
-		});
+				return {
+					id: `edge-${Date.now()}-${index}`,
+					source: sourceId,
+					target: targetId,
+					sourceHandle: edge.sourceHandle,
+					targetHandle: edge.targetHandle
+				};
+			});
 
 		// Add all new edges
 		edges = [...edges, ...newEdges];
