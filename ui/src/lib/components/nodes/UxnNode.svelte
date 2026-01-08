@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { Code, FolderOpen, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
 	import { onMount, onDestroy } from 'svelte';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';
 	import StandardHandle from '../StandardHandle.svelte';
-	import Icon from '@iconify/svelte';
 	import CodeEditor from '../CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -390,20 +390,20 @@
 				<div class="flex gap-1">
 					<button
 						title={isPaused ? 'Resume' : 'Pause'}
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={togglePause}
 					>
-						<Icon icon={isPaused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
+						<svelte:component this={isPaused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
 					</button>
 
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button
-								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={openFileDialog}
 								title="Load ROM file"
 							>
-								<Icon icon="lucide:folder-open" class="h-4 w-4 text-zinc-300" />
+								<FolderOpen class="h-4 w-4 text-zinc-300" />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -414,7 +414,7 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button
-								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={() => {
 									showEditor = !showEditor;
 									updateNodeData(nodeId, { showEditor });
@@ -422,7 +422,7 @@
 								}}
 								title="Edit code"
 							>
-								<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+								<Code class="h-4 w-4 text-zinc-300" />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -433,14 +433,14 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button
-								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={() => {
 									showConsole = !showConsole;
 									updateNodeData(nodeId, { showConsole });
 								}}
 								title="Toggle console"
 							>
-								<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+								<Terminal class="h-4 w-4 text-zinc-300" />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -492,7 +492,7 @@
 
 			{#if showConsole}
 				<div
-					class="max-h-32 w-full max-w-[512px] overflow-y-auto whitespace-pre-wrap break-words rounded bg-zinc-900 p-2 font-mono text-xs text-white"
+					class="max-h-32 w-full max-w-[512px] overflow-y-auto rounded bg-zinc-900 p-2 font-mono text-xs break-words whitespace-pre-wrap text-white"
 					style="word-wrap: break-word; overflow-wrap: break-word;"
 				>
 					{consoleOutput || '(no output)'}
@@ -516,7 +516,7 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button onclick={assembleAndLoad} class="rounded p-1 hover:bg-zinc-700">
-								<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+								<Play class="h-4 w-4 text-zinc-300" />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -526,7 +526,7 @@
 				{/if}
 
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

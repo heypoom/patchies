@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import { ArrowLeft, ArrowRight } from '@lucide/svelte/icons';
 	import MemoryViewer from './MemoryViewer.svelte';
 	import { memoryActions, getMemoryConfig, getMemoryPage, getMemoryRange } from './memoryStore';
 	import { memoryRegionStore } from './memoryRegionStore';
@@ -122,7 +122,7 @@
 				class:invisible={memStart === 0}
 				disabled={memStart === 0}
 			>
-				<Icon icon="lucide:arrow-left" />
+				<ArrowLeft />
 			</button>
 
 			<!-- Address range display -->
@@ -160,7 +160,7 @@
 
 			<!-- Next page button -->
 			<button onclick={nextPage} class="nodrag cursor-pointer text-zinc-500 hover:text-red-400">
-				<Icon icon="lucide:arrow-right" />
+				<ArrowRight />
 			</button>
 		</div>
 	</div>

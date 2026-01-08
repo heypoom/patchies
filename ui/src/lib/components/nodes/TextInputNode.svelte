@@ -1,11 +1,11 @@
 <script lang="ts">
+	import { Play } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import Icon from '@iconify/svelte';
 
 	let { id: nodeId, data }: { id: string; data: { text: string } } = $props();
 
@@ -64,7 +64,7 @@
 					class="rounded p-1 transition-all hover:bg-zinc-700"
 					title="Send (or Shift + Enter)"
 				>
-					<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+					<Play class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 		</div>

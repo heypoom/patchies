@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Pause, Play } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -6,7 +7,6 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import CommonExprLayout from './CommonExprLayout.svelte';
-	import Icon from '@iconify/svelte';
 	import { match, P } from 'ts-pattern';
 	import type { CsoundNode } from '$lib/audio/v2/nodes/CsoundNode';
 
@@ -118,7 +118,7 @@
 						class="rounded p-1 hover:bg-zinc-700"
 						title={isPlaying ? 'Pause' : 'Play'}
 					>
-						<Icon icon={isPlaying ? 'lucide:pause' : 'lucide:play'} class="h-4 w-4" />
+						<svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4" />
 					</button>
 				</div>
 			</div>

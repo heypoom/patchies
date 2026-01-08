@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Image, Upload } from '@lucide/svelte/icons';
 	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -237,15 +237,15 @@
 
 							<button
 								title="Change image"
-								class="absolute -right-2 -top-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={openFileDialog}
 							>
-								<Icon icon="lucide:upload" class="h-3 w-3 text-zinc-300" />
+								<Upload class="h-3 w-3 text-zinc-300" />
 							</button>
 						</div>
 					{:else}
 						<div
-							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
+							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
 								defaultPreviewHeight}px"
@@ -257,7 +257,7 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
 						>
-							<Icon icon="lucide:image" class="h-4 w-4 text-zinc-400" />
+							<Image class="h-4 w-4 text-zinc-400" />
 
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
 								<span class="text-zinc-300">double click</span> or

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import { ChevronUp, Edit } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 
 	let {
@@ -44,8 +44,8 @@
 					onclick={() => (showChannelInput = !showChannelInput)}
 					title="Edit Channel"
 				>
-					<Icon
-						icon={showChannelInput ? 'lucide:chevron-up' : 'lucide:edit'}
+					<svelte:component
+						this={showChannelInput ? ChevronUp : Edit}
 						class="h-4 w-4 text-zinc-300"
 					/>
 				</button>

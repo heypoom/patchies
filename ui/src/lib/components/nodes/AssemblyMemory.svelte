@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Binary, FileText, Hash, Settings, Trash, X } from '@lucide/svelte/icons';
 	import { onMount, onDestroy } from 'svelte';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -6,7 +7,6 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AssemblySystem } from '$lib/assembly/AssemblySystem';
-	import Icon from '@iconify/svelte';
 	import type { Action } from 'machine';
 
 	let {
@@ -186,7 +186,7 @@
 					class="rounded p-1 hover:bg-zinc-700"
 					title="Toggle format (hex/decimal)"
 				>
-					<Icon icon={format === 'hex' ? 'lucide:hash' : 'lucide:binary'} class="h-4 w-4" />
+					<svelte:component this={format === 'hex' ? Hash : Binary} class="h-4 w-4" />
 				</button>
 
 				<button
@@ -194,7 +194,7 @@
 					class={['rounded p-1 hover:bg-zinc-700', isBatch && 'text-green-400']}
 					title="Toggle batch edit mode"
 				>
-					<Icon icon="lucide:file-text" class="h-4 w-4" />
+					<FileText class="h-4 w-4" />
 				</button>
 			</div>
 
@@ -204,7 +204,7 @@
 					class={['rounded p-1 text-red-400 hover:bg-zinc-700']}
 					title="Clear memory (!)"
 				>
-					<Icon icon="lucide:trash" class="h-4 w-4" />
+					<Trash class="h-4 w-4" />
 				</button>
 
 				<button
@@ -212,7 +212,7 @@
 					class={['rounded p-1 hover:bg-zinc-700', showSettings && 'text-blue-400']}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4" />
+					<Settings class="h-4 w-4" />
 				</button>
 			</div>
 		</div>
@@ -303,7 +303,7 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

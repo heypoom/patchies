@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import { ChevronDown, Search, SearchX, X } from '@lucide/svelte/icons';
 	import {
 		getCategorizedObjects,
 		type CategoryGroup,
@@ -143,7 +143,7 @@
 		>
 			<!-- Header with close button -->
 			<div
-				class="flex items-center justify-between border-b border-zinc-800 px-4 pb-3 pt-10 sm:px-6 sm:pt-4"
+				class="flex items-center justify-between border-b border-zinc-800 px-4 pt-10 pb-3 sm:px-6 sm:pt-4"
 			>
 				<h2 id="modal-title" class="text-lg font-medium text-zinc-200">Browse Objects</h2>
 				<button
@@ -151,30 +151,27 @@
 					class="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
 					aria-label="Close modal"
 				>
-					<Icon icon="lucide:x" class="h-5 w-5" />
+					<X class="h-5 w-5" />
 				</button>
 			</div>
 
 			<!-- Search bar -->
 			<div class="border-b border-zinc-800 px-4 py-3 sm:px-6">
 				<div class="relative">
-					<Icon
-						icon="lucide:search"
-						class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-					/>
+					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
 					<input
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search objects..."
-						class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-2 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
+						class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-2 pr-4 pl-10 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
 					/>
 					{#if searchQuery}
 						<button
 							onclick={() => (searchQuery = '')}
-							class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+							class="absolute top-1/2 right-3 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
 							aria-label="Clear search"
 						>
-							<Icon icon="lucide:x" class="h-4 w-4" />
+							<X class="h-4 w-4" />
 						</button>
 					{/if}
 				</div>
@@ -185,7 +182,7 @@
 				{#if filteredCategories.length === 0}
 					<div class="flex h-full items-center justify-center text-zinc-500">
 						<div class="text-center">
-							<Icon icon="lucide:search-x" class="mx-auto mb-2 h-12 w-12" />
+							<SearchX class="mx-auto mb-2 h-12 w-12" />
 							<p>No objects found</p>
 						</div>
 					</div>
@@ -202,8 +199,7 @@
 										{category.title}
 										<span class="text-zinc-600">({category.objects.length})</span>
 									</span>
-									<Icon
-										icon="lucide:chevron-down"
+									<ChevronDown
 										class="h-4 w-4 text-zinc-500 transition-transform {expandedCategories.has(
 											category.title
 										)

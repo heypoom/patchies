@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Camera, Pause, Play, Square } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -143,28 +143,25 @@
 					{#if isCapturing}
 						<button
 							title={isPaused ? 'Resume webcam' : 'Pause webcam'}
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={togglePause}
 						>
-							<Icon
-								icon={isPaused ? 'lucide:play' : 'lucide:pause'}
-								class="h-4 w-4 text-zinc-300"
-							/>
+							<svelte:component this={isPaused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
 						</button>
 						<button
 							title="Stop webcam"
 							class="rounded p-1 opacity-100 transition-opacity hover:bg-zinc-700"
 							onclick={stopCapture}
 						>
-							<Icon icon="lucide:square" class="h-4 w-4 text-red-500" />
+							<Square class="h-4 w-4 text-red-500" />
 						</button>
 					{:else}
 						<button
 							title="Start webcam"
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={startCapture}
 						>
-							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							<Play class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 				</div>
@@ -174,7 +171,7 @@
 				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'object-container-selected' : 'object-container'}`}
+					class={`rounded-lg border-1 ${selected ? 'object-container-selected' : 'object-container'}`}
 				>
 					<video
 						bind:this={videoElement}
@@ -190,7 +187,7 @@
 					{#if !isCapturing}
 						<div class="flex h-32 w-48 items-center justify-center">
 							<div class="flex flex-col items-center gap-2">
-								<Icon icon="lucide:camera" class="h-8 w-8 text-zinc-400" />
+								<Camera class="h-8 w-8 text-zinc-400" />
 
 								{#if errorMessage}
 									<div class="text-xs text-red-400">{errorMessage}</div>

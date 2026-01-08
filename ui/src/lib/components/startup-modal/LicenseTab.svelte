@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import { FileText } from '@lucide/svelte/icons';
 	import type { Tab } from './types';
 	import { projectLicense, dependenciesSection, portedCode } from '$lib/data/license-data';
 
@@ -33,7 +33,7 @@
 				rel="noopener noreferrer"
 				class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
 			>
-				<Icon icon="lucide:file-text" class="h-4 w-4" />
+				<FileText class="h-4 w-4" />
 				{projectLicense.fullLicenseText}
 			</a>
 		</div>
@@ -82,7 +82,7 @@
 							</a>
 						</p>
 						{#if code.notes}
-							<p class="mt-2 italic text-zinc-500">{code.notes}</p>
+							<p class="mt-2 text-zinc-500 italic">{code.notes}</p>
 						{/if}
 					</div>
 				</div>

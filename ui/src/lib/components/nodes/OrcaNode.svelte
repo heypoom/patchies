@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Pause, Play, Settings, X } from '@lucide/svelte/icons';
 	import { onMount, onDestroy } from 'svelte';
 	import { useSvelteFlow, useViewport } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -11,7 +12,6 @@
 	import { match, P } from 'ts-pattern';
 
 	import StandardHandle from '../StandardHandle.svelte';
-	import Icon from '@iconify/svelte';
 	import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
 
 	let {
@@ -495,21 +495,21 @@
 				<div class="flex gap-1">
 					<button
 						title={isPlaying ? 'Pause' : 'Play'}
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={togglePlay}
 					>
-						<Icon icon={isPlaying ? 'lucide:pause' : 'lucide:play'} class="h-4 w-4 text-zinc-300" />
+						<svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4 text-zinc-300" />
 					</button>
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={() => {
 							showSettings = !showSettings;
 							measureWidth();
 						}}
 						title="Settings"
 					>
-						<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+						<Settings class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -544,7 +544,7 @@
 		<div class="absolute" style="left: {previewContainerWidth + 10}px;">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

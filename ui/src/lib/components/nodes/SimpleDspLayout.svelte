@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { Code, Play, X } from '@lucide/svelte/icons';
 	import { useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -98,7 +98,7 @@
 					{@render actionButtons?.()}
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={(e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -106,7 +106,7 @@
 						}}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -191,7 +191,7 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						<button onclick={onRun} class="rounded p-1 hover:bg-zinc-700">
-							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							<Play class="h-4 w-4 text-zinc-300" />
 						</button>
 					</Tooltip.Trigger>
 					<Tooltip.Content>
@@ -200,7 +200,7 @@
 				</Tooltip.Root>
 
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

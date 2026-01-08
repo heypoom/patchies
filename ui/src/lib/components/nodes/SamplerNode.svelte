@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { Circle, Mic, Play, RefreshCcw, Settings, Square, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import WaveformDisplay from '$lib/components/nodes/WaveformDisplay.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -382,13 +382,13 @@
 					<!-- Record Button -->
 					<button
 						title={isRecording ? 'Stop Recording' : 'Start Recording'}
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0 {isRecording
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 {isRecording
 							? '!opacity-100'
 							: ''}"
 						onclick={toggleRecording}
 					>
-						<Icon
-							icon={isRecording ? 'lucide:square' : 'lucide:circle'}
+						<svelte:component
+							this={isRecording ? Square : Circle}
 							class="h-4 w-4 {isRecording ? 'text-red-500' : 'text-zinc-300'}"
 						/>
 					</button>
@@ -397,19 +397,19 @@
 					{#if hasRecording && !isRecording}
 						<button
 							title="Play Recording"
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={playRecording}
 						>
-							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							<Play class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={() => (showSettings = !showSettings)}
 						title="Settings"
 					>
-						<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+						<Settings class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -437,7 +437,7 @@
 
 				<div
 					class={[
-						'border-1 relative flex flex-col items-center justify-center overflow-hidden rounded-lg',
+						'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border-1',
 						containerClass
 					]}
 				>
@@ -458,7 +458,7 @@
 							class="flex items-center justify-center gap-2 px-3"
 							style="height: {height}px; width: {width}px;"
 						>
-							<Icon icon="lucide:mic" class="h-4 w-4 text-zinc-400" />
+							<Mic class="h-4 w-4 text-zinc-400" />
 							<div class="font-mono text-[12px] font-light text-zinc-400">Ready to record</div>
 						</div>
 					{/if}
@@ -485,11 +485,11 @@
 					class="rounded p-1 hover:bg-zinc-700"
 					title="Reset all settings"
 				>
-					<Icon icon="lucide:refresh-ccw" class="h-4 w-4 text-zinc-300" />
+					<RefreshCcw class="h-4 w-4 text-zinc-300" />
 				</button>
 
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

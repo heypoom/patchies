@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import { Info, Keyboard, MousePointer } from '@lucide/svelte/icons';
 
 	interface Shortcut {
 		keys: string[];
@@ -93,7 +93,7 @@
 	<!-- Mouse Shortcuts -->
 	<div class="space-y-3">
 		<h2 class="flex items-center gap-2 text-lg font-semibold text-zinc-200">
-			<Icon icon="lucide:mouse-pointer" class="h-5 w-5 text-orange-500" />
+			<MousePointer class="h-5 w-5 text-orange-500" />
 			Mouse Shortcuts
 		</h2>
 		<div class="space-y-2">
@@ -115,7 +115,7 @@
 	<!-- Keyboard Shortcuts -->
 	<div class="space-y-3">
 		<h2 class="flex items-center gap-2 text-lg font-semibold text-zinc-200">
-			<Icon icon="lucide:keyboard" class="h-5 w-5 text-orange-500" />
+			<Keyboard class="h-5 w-5 text-orange-500" />
 			Keyboard Shortcuts
 		</h2>
 		<div class="space-y-2">
@@ -137,7 +137,7 @@
 	<!-- Additional note -->
 	<div class="rounded-lg bg-zinc-800/50 p-4">
 		<div class="flex items-start gap-2">
-			<Icon icon="lucide:info" class="mt-0.5 h-4 w-4 text-blue-400" />
+			<Info class="mt-0.5 h-4 w-4 text-blue-400" />
 			<p class="text-sm text-zinc-300">
 				On macOS, use <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Cmd</kbd>
 				instead of <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl</kbd>

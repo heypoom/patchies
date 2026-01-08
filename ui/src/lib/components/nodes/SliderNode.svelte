@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { Settings, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -129,13 +129,13 @@
 
 				<button
 					class={[
-						'z-4 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0',
-						node.data.vertical && 'absolute right-[25px] top-[30px]'
+						'z-4 rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0',
+						node.data.vertical && 'absolute top-[30px] right-[25px]'
 					]}
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+					<Settings class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
@@ -151,7 +151,7 @@
 				<div
 					class={[
 						'flex w-full flex-col items-center justify-center gap-1 py-1',
-						node.data.vertical ? '' : 'min-w-[100px] max-w-[130px]'
+						node.data.vertical ? '' : 'max-w-[130px] min-w-[100px]'
 					]}
 				>
 					<div
@@ -199,7 +199,7 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { CirclePlus, Delete, Replace, Settings, Trash, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -7,7 +8,6 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import CommonExprLayout from './CommonExprLayout.svelte';
-	import Icon from '@iconify/svelte';
 	import { keymap } from '@codemirror/view';
 	import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
 
@@ -148,7 +148,7 @@
 						title="Replace (Cmd+Enter)"
 						disabled={isReplaceDisabled}
 					>
-						<Icon icon="lucide:replace" class="h-4 w-4" />
+						<Replace class="h-4 w-4" />
 					</button>
 
 					<!-- Add shred button -->
@@ -158,7 +158,7 @@
 						title="Add Shred (Cmd+\)"
 						disabled={!data.expr.trim()}
 					>
-						<Icon icon="lucide:circle-plus" class="h-4 w-4" />
+						<CirclePlus class="h-4 w-4" />
 					</button>
 
 					<!-- Remove button -->
@@ -168,16 +168,16 @@
 						title="Remove (Cmd+Backspace)"
 						disabled={shreds.length === 0}
 					>
-						<Icon icon="lucide:delete" class="h-4 w-4" />
+						<Delete class="h-4 w-4" />
 					</button>
 				</div>
 
 				<button
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+					<Settings class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
@@ -208,11 +208,11 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={stopChuck} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:trash" class="h-4 w-4 text-zinc-300" />
+					<Trash class="h-4 w-4 text-zinc-300" />
 				</button>
 
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
@@ -237,13 +237,13 @@
 											</div>
 										</div>
 
-										<div class="absolute right-0 top-0">
+										<div class="absolute top-0 right-0">
 											<button
 												onclick={() => removeShred(shred.id)}
 												class="ml-2 rounded p-1 hover:bg-zinc-700"
 												title="Remove shred"
 											>
-												<Icon icon="lucide:x" class="h-3 w-3 text-red-400" />
+												<X class="h-3 w-3 text-red-400" />
 											</button>
 										</div>
 									</div>

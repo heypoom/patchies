@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { AlertCircle, Music, Settings, VolumeX, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { MIDISystem, type MIDIInputConfig } from '$lib/canvas/MIDISystem';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -48,9 +48,9 @@
 	});
 
 	const statusIcon = $derived.by(() => {
-		if (errorMessage) return 'lucide:alert-circle';
-		if (isListening) return 'lucide:music';
-		return 'lucide:volume-x';
+		if (errorMessage) return AlertCircle;
+		if (isListening) return Music;
+		return VolumeX;
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
@@ -152,11 +152,11 @@
 				</div>
 
 				<button
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+					<Settings class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
@@ -173,7 +173,7 @@
 						onclick={() => (showSettings = true)}
 						title="Select MIDI device"
 					>
-						<Icon icon="lucide:settings" class="mb-1 h-4 w-4" />
+						<Settings class="mb-1 h-4 w-4" />
 
 						<div class="text-[10px]">
 							<span class="text-amber-400">Select device</span>
@@ -189,7 +189,7 @@
 						onclick={toggleListening}
 						title={isListening ? 'Stop listening' : 'Start listening'}
 					>
-						<Icon icon={statusIcon} class="h-4 w-4" />
+						<svelte:component this={statusIcon} class="h-4 w-4" />
 
 						<div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
 							{midiSystem.getInputById(deviceId)?.name || 'Unknown'}
@@ -206,7 +206,7 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

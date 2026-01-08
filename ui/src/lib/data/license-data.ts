@@ -117,12 +117,6 @@ export const dependencies: ProjectLicense[] = [
 		url: 'https://npmjs.com/package/@google/genai'
 	},
 	{
-		name: '@iconify/svelte',
-		version: '^5.0.0',
-		license: 'MIT',
-		url: 'https://npmjs.com/package/@iconify/svelte'
-	},
-	{
 		name: '@lezer/generator',
 		version: '^1.8.0',
 		license: 'MIT',

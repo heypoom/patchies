@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { Code, Loader, Play, RefreshCcw, Terminal, Trash2, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -42,7 +42,7 @@
 		return 'border-zinc-600';
 	});
 
-	const playIcon = $derived(isRunning ? 'lucide:loader' : 'lucide:play');
+	const playIcon = $derived(isRunning ? Loader : Play);
 
 	function handlePyodideConsoleOutput(event: PyodideConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
@@ -145,22 +145,22 @@
 
 				<div>
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={() => {
 							updateNodeData(nodeId, { showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
 						}}
 						title="Console"
 					>
-						<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+						<Terminal class="h-4 w-4 text-zinc-300" />
 					</button>
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -171,7 +171,13 @@
 				</div>
 
 				{#if data.showConsole}
-					<div class={['min-w-[150px] rounded-md border bg-zinc-900 p-3', borderColor, selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm']}>
+					<div
+						class={[
+							'min-w-[150px] rounded-md border bg-zinc-900 p-3',
+							borderColor,
+							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
+						]}
+					>
 						<div class="mb-2 flex min-w-[280px] items-center justify-between">
 							<span class="font-mono text-[11px] text-zinc-400">console</span>
 
@@ -183,7 +189,7 @@
 										title="Run again"
 										aria-label="Run again"
 									>
-										<Icon icon="lucide:refresh-ccw" font-size="12px" />
+										<RefreshCcw font-size="12px" />
 									</button>
 								{/if}
 
@@ -196,7 +202,11 @@
 									title="Run"
 									aria-disabled={isRunning}
 								>
-									<Icon icon={playIcon} class={isRunning ? 'animate-spin' : ''} font-size="12px" />
+									<svelte:component
+										this={playIcon}
+										class={isRunning ? 'animate-spin' : ''}
+										font-size="12px"
+									/>
 								</button>
 
 								<button
@@ -204,7 +214,7 @@
 									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Icon icon="lucide:trash-2" font-size="12px" />
+									<Trash2 font-size="12px" />
 								</button>
 							</div>
 						</div>
@@ -213,7 +223,7 @@
 							class="nodrag h-32 max-w-[280px] cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 						>
 							{#if consoleOutput.length === 0}
-								<div class="italic text-zinc-500">Run your Python code to see results.</div>
+								<div class="text-zinc-500 italic">Run your Python code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
 									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
@@ -234,7 +244,7 @@
 						aria-label="Run Python code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={playIcon} />
+							<svelte:component this={playIcon} />
 						</div>
 					</button>
 				{/if}
@@ -250,7 +260,7 @@
 		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 

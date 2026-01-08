@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import { Code, Pause, Play, X } from '@lucide/svelte/icons';
 	import { onMount, type Snippet } from 'svelte';
 	import * as Tooltip from './ui/tooltip';
 	import { derived } from 'svelte/store';
@@ -79,7 +79,7 @@
 							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={handlePlaybackToggle}
 						>
-							<Icon icon={paused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
+							<svelte:component this={paused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 
@@ -91,7 +91,7 @@
 						}}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -112,7 +112,7 @@
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								<button onclick={handleRun} class="rounded p-1 hover:bg-zinc-700">
-									<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+									<Play class="h-4 w-4 text-zinc-300" />
 								</button>
 							</Tooltip.Trigger>
 							<Tooltip.Content>
@@ -122,7 +122,7 @@
 					{/if}
 
 					<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-						<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+						<X class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			{/if}

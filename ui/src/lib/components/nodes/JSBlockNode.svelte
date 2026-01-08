@@ -1,8 +1,18 @@
 <script lang="ts">
+	import {
+		Code,
+		Loader,
+		Package,
+		Pause,
+		Play,
+		RefreshCcw,
+		Terminal,
+		Trash2,
+		X
+	} from '@lucide/svelte/icons';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -60,12 +70,12 @@
 	});
 
 	const playOrStopIcon = $derived.by(() => {
-		if (data.libraryName) return 'lucide:package';
+		if (data.libraryName) return Package;
 
-		if (isRunning) return 'lucide:loader';
-		if (isLongRunningTaskActive) return 'lucide:pause';
+		if (isRunning) return Loader;
+		if (isLongRunningTaskActive) return Pause;
 
-		return 'lucide:play';
+		return Play;
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
@@ -270,23 +280,23 @@
 				<div>
 					{#if !data.libraryName}
 						<button
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={() => {
 								updateNodeData(nodeId, { showConsole: !data.showConsole });
 								setTimeout(() => updateContentWidth(), 10);
 							}}
 							title="Console"
 						>
-							<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+							<Terminal class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
 			</div>
@@ -308,7 +318,7 @@
 				{#if data.showConsole && !data.libraryName}
 					<div
 						class={[
-							'min-w-[150px] max-w-[500px] rounded-md border bg-zinc-900 p-3',
+							'max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3',
 							borderColor,
 							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
@@ -324,7 +334,7 @@
 										title="Run again"
 										aria-label="Run again"
 									>
-										<Icon icon="lucide:refresh-ccw" font-size="12px" />
+										<RefreshCcw font-size="12px" />
 									</button>
 								{/if}
 
@@ -337,8 +347,8 @@
 									title={isLongRunningTaskActive ? 'Stop' : 'Run'}
 									aria-disabled={isRunning}
 								>
-									<Icon
-										icon={playOrStopIcon}
+									<svelte:component
+										this={playOrStopIcon}
 										class={isRunning ? 'animate-spin' : ''}
 										font-size="12px"
 									/>
@@ -349,7 +359,7 @@
 									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Icon icon="lucide:trash-2" font-size="12px" />
+									<Trash2 font-size="12px" />
 								</button>
 							</div>
 						</div>
@@ -359,10 +369,10 @@
 							bind:this={consoleContainer}
 						>
 							{#if consoleOutput.length === 0}
-								<div class="italic text-zinc-500">Run your code to see results.</div>
+								<div class="text-zinc-500 italic">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line, index (index)}
-									<div class="mb-1 select-text whitespace-pre-wrap text-zinc-100">{line}</div>
+									<div class="mb-1 whitespace-pre-wrap text-zinc-100 select-text">{line}</div>
 								{/each}
 							{/if}
 						</div>
@@ -387,13 +397,13 @@
 						aria-label="Run code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={playOrStopIcon} />
+							<svelte:component this={playOrStopIcon} />
 						</div>
 					</button>
 
 					<div
 						class={[
-							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
+							'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
 							selected ? '' : 'group-hover:opacity-100'
 						]}
 					>
@@ -427,7 +437,7 @@
 		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
