@@ -6,7 +6,7 @@
 		type ObjectItem
 	} from './get-categorized-objects';
 	import Fuse from 'fuse.js';
-	import { isAiFeaturesVisible } from '../../../stores/ui.store';
+	import { isAiFeaturesVisible } from '$lib/stores/ui.store';
 
 	let {
 		open = $bindable(false),
