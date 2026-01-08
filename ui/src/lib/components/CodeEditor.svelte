@@ -83,7 +83,7 @@
 					'.cm-content': {
 						padding: '12px',
 						minHeight: '100%',
-						maxHeight: '1000px',
+						maxHeight: '500px',
 						color: 'rgb(244 244 245)'
 					},
 					'.cm-focused': {
