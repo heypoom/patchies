@@ -31,9 +31,7 @@
 	);
 	const buttonText = $derived(isEditMode ? 'Update' : 'Insert');
 	const placeholderText = $derived(
-		isEditMode
-			? 'e.g., "change it to a sawtooth wave oscillator"'
-			: 'e.g., "give me a simple fat sine oscillator"'
+		isEditMode ? 'e.g., "make it go faster"' : 'e.g., "a bouncing ball"'
 	);
 
 	// Auto-focus input when opened
