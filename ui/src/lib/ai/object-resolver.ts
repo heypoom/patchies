@@ -1,10 +1,10 @@
-import { PRESETS } from '$lib/presets/presets';
-
 /**
  * Uses Gemini AI to resolve a natural language prompt to a single object configuration
  */
 export async function resolveObjectFromPrompt(prompt: string): Promise<{
 	type: string;
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
 	data: any;
 } | null> {
 	const apiKey = localStorage.getItem('gemini-api-key');
@@ -53,9 +53,6 @@ export async function resolveObjectFromPrompt(prompt: string): Promise<{
 }
 
 function buildSystemPrompt(): string {
-	// Get all preset names for reference
-	const presetNames = Object.keys(PRESETS);
-
 	return `You are an AI assistant that helps users create objects in Patchies, a visual patching environment for creative coding.
 
 Your task is to convert a natural language prompt into a SINGLE object configuration that best matches the user's intent.
@@ -76,7 +73,7 @@ AVAILABLE OBJECT TYPES AND FUNCTIONS:
 Audio Objects (use "tone~" type with custom code):
 - tone~: Tone.js audio synthesis and processing
   Available functions: setTitle(), setPortCount(inlets, outlets), recv(callback), send(data), inputNode, outputNode
-  Example data: { code: "const synth = new Tone.Synth().toDestination();", messageInletCount: 1 }
+  Use .connect(outputNode) not .toDestination(). Always return { cleanup: () => node.dispose() }
 - dsp~: Custom DSP audio processing with AudioWorklet
   Available functions: setTitle(), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets), setKeepAlive(enabled), recv(callback), send(data), process(inputs, outputs)
   Must implement process(inputs, outputs) function - called for each audio processing block. inputs and outputs are arrays of audio channels.
@@ -119,9 +116,6 @@ AI Objects:
 - ai.txt: AI text generation
 - ai.img: AI image generation
 
-Common Presets Available:
-${presetNames.slice(0, 20).join(', ')}... and more
-
 EXAMPLES:
 
 User: "polyphonic synth that responds to MIDI"
@@ -156,12 +150,12 @@ Response:
   }
 }
 
-User: "lowpass filter at 500hz"
+User: "lowpass filter"
 Response:
 {
   "type": "tone~",
   "data": {
-    "code": "setPortCount(1)\\nsetTitle('lowpass~')\\n\\nconst filter = new Tone.Filter(500, 'lowpass');\\ninputNode.connect(filter.input.input);\\nfilter.connect(outputNode);\\n\\nrecv(m => {\\n  filter.frequency.value = m;\\n});\\n\\nreturn { cleanup: () => filter.dispose() };",
+    "code": "setPortCount(1)\\nsetTitle('lowpass~')\\n\\nconst filter = new Tone.Filter(5000, \\"lowpass\\")\\ninputNode.connect(filter.input.input)\\nfilter.connect(outputNode)\\n\\nrecv(m => {\\n  filter.frequency.value = m;\\n})\\n\\nreturn { cleanup: () => filter.dispose() }",
     "messageInletCount": 1,
     "title": "lowpass~"
   }
