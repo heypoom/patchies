@@ -209,7 +209,19 @@
 		// Handle CMD+I for AI object insertion
 		else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
-			triggerAiPrompt();
+			
+			// Check if Gemini API key is set, show helpful message if not
+			const hasApiKey = localStorage.getItem('gemini-api-key');
+			if (!hasApiKey) {
+				const shouldSetKey = confirm(
+					'AI Object Insertion requires a Gemini API key. Would you like to set it now?'
+				);
+				if (shouldSetKey) {
+					triggerCommandPalette();
+				}
+			} else {
+				triggerAiPrompt();
+			}
 		}
 		// Handle CMD+S for manual save
 		else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
