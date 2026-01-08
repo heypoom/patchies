@@ -350,10 +350,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - This runs on the [rendering pipeline](#rendering-pipeline) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on web workers. This means:
 
-  - Can chain with other visual objects (`glsl`, `hydra`, etc.) without lag
-  - High performance - doesn't block the main thread
-  - Cannot use DOM APIs like `document` or `window`
-  - FFT data has very high delay due to worker message passing
+  - Pro: It can chain with other visual objects (`glsl`, `hydra`, etc.) without lag. You can draw animations using the canvas API and output it at 60fps.
+  - Pro: It's fast as it doesn't block the main thread. You can do complex animations and computations there.
+  - Con: You cannot use DOM APIs like `document` or `window`
+  - Con: `fft~` inputs has very high delay due to worker message passing
 
 ### `canvas.dom`: creates a JavaScript canvas (main thread)
 
