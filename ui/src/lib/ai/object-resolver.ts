@@ -272,15 +272,19 @@ IMPORTANT RULES:
 4. Each node can optionally have a "position" field with relative x, y coordinates (for layout suggestions)
 5. Each edge in the "edges" array connects nodes by their index in the nodes array
 6. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
-7. Handle names follow patterns: "message-0", "message-1" for message ports, "audio-0", "audio-1" for audio ports
+7. Handle names MUST follow the pattern: "{type}-{direction}-{index}" where:
+   - type is "message", "audio", or "video"
+   - direction is "out" for source/outlet or "in" for target/inlet
+   - index is the port number (0, 1, 2, ...)
+   Examples: "message-out-0" (first message output), "message-in-0" (first message input), "audio-out-0", "audio-in-0"
 8. Focus on creating FUNCTIONAL, CONNECTED systems of objects
 9. ALWAYS include appropriate helper functions for each object type (same as single object mode)
 
 EDGE STRUCTURE:
 - source: index of source node (0-based)
 - target: index of target node (0-based)
-- sourceHandle: output port identifier (optional, e.g., "message-0", "audio-0")
-- targetHandle: input port identifier (optional, e.g., "message-0", "audio-0")
+- sourceHandle: output port identifier (e.g., "message-out-0", "audio-out-0")
+- targetHandle: input port identifier (e.g., "message-in-0", "audio-in-0")
 
 AVAILABLE OBJECT TYPES (same as single object mode):
 Audio Objects: tone~, dsp~, elem~, sonic~, chuck~
@@ -319,8 +323,8 @@ Response:
     {
       "source": 0,
       "target": 1,
-      "sourceHandle": "message-0",
-      "targetHandle": "message-0"
+      "sourceHandle": "message-out-0",
+      "targetHandle": "message-in-0"
     }
   ]
 }
@@ -364,14 +368,14 @@ Response:
     {
       "source": 0,
       "target": 1,
-      "sourceHandle": "message-0",
-      "targetHandle": "message-0"
+      "sourceHandle": "message-out-0",
+      "targetHandle": "message-in-0"
     },
     {
       "source": 1,
       "target": 2,
-      "sourceHandle": "audio-0",
-      "targetHandle": "audio-0"
+      "sourceHandle": "audio-out-0",
+      "targetHandle": "audio-in-0"
     }
   ]
 }
@@ -399,8 +403,8 @@ Response:
     {
       "source": 0,
       "target": 1,
-      "sourceHandle": "message-0",
-      "targetHandle": "message-0"
+      "sourceHandle": "message-out-0",
+      "targetHandle": "message-in-0"
     }
   ]
 }
