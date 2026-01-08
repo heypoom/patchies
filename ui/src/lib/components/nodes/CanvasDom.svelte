@@ -95,9 +95,11 @@
 			mouse.buttons = e.buttons;
 		};
 
-		const updateTouchPosition = (e: TouchEvent) => {
-			if (e.touches.length === 0) return;
-			const touch = e.touches[0];
+		const updateTouchPosition = (e: TouchEvent, useChangedTouches = false) => {
+			// Use changedTouches for touchend/touchcancel, touches for touchstart/touchmove
+			const touchList = useChangedTouches ? e.changedTouches : e.touches;
+			if (touchList.length === 0) return;
+			const touch = touchList[0];
 			const rect = canvas!.getBoundingClientRect();
 			// Scale touch coordinates to canvas resolution (outputWidth × outputHeight)
 			mouse.x = ((touch.clientX - rect.left) / rect.width) * outputWidth;
@@ -138,12 +140,14 @@
 
 		const onTouchEnd = (e: TouchEvent) => {
 			e.preventDefault();
+			updateTouchPosition(e, true); // Use changedTouches for final position
 			mouse.down = false;
 			mouse.buttons = 0;
 		};
 
 		const onTouchCancel = (e: TouchEvent) => {
 			e.preventDefault();
+			updateTouchPosition(e, true); // Use changedTouches for final position
 			mouse.down = false;
 			mouse.buttons = 0;
 		};
