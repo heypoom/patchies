@@ -3,11 +3,13 @@ import { fractalTreePreset } from './fractal-tree';
 import { plotterPreset } from './plotter';
 import { paintPreset } from './paint';
 import { xyPadPreset } from './xy-pad';
+import { hslaPickerPreset } from './hsla-picker';
 
 export const CANVAS_PRESETS = {
 	'fft.canvas': fftPreset,
 	'fractal-tree.canvas': fractalTreePreset,
 	'plotter.canvas': plotterPreset,
 	'particle.canvas': paintPreset,
-	'xy-pad.canvas': xyPadPreset
+	'xy-pad.canvas': xyPadPreset,
+	'hsla.picker': hslaPickerPreset
 };
