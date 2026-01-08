@@ -8,6 +8,7 @@
 	import { loadLanguageExtension } from '$lib/codemirror/language';
 	import { autocompletion, acceptCompletion, completionStatus } from '@codemirror/autocomplete';
 	import { indentMore } from '@codemirror/commands';
+	import { search, searchKeymap } from '@codemirror/search';
 
 	let languageComp = new Compartment();
 
@@ -46,6 +47,7 @@
 			const languageExtension = await loadLanguageExtension(language, { nodeType });
 
 			const extensions = [
+				keymap.of(searchKeymap),
 				Prec.highest(
 					keymap.of([
 						{
@@ -72,6 +74,8 @@
 				minimalSetup,
 
 				tokyoNight,
+
+				search(),
 
 				languageComp.of(languageExtension),
 
