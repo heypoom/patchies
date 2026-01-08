@@ -207,9 +207,14 @@
 			event.preventDefault();
 			showObjectBrowser = true;
 		}
-		// Handle CMD+I for AI object insertion
+		// Handle CMD+I for AI object insertion/editing
 		else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
+			
+			// Respect the "Hide AI features" setting
+			if (!$isAiFeaturesVisible) {
+				return;
+			}
 			
 			// Check if Gemini API key is set, show helpful message if not
 			const hasApiKey = localStorage.getItem('gemini-api-key');
