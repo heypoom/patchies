@@ -33,9 +33,9 @@ export async function resolveObjectFromPrompt(prompt: string): Promise<{
 		// Extract JSON from response (handle markdown code blocks)
 		const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
 		const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-		
+
 		const result = JSON.parse(jsonText);
-		
+
 		// Validate the result has required fields
 		if (!result.type) {
 			throw new Error('Response missing required "type" field');
@@ -55,7 +55,7 @@ export async function resolveObjectFromPrompt(prompt: string): Promise<{
 function buildSystemPrompt(): string {
 	// Get all preset names for reference
 	const presetNames = Object.keys(PRESETS);
-	
+
 	return `You are an AI assistant that helps users create objects in Patchies, a visual patching environment for creative coding.
 
 Your task is to convert a natural language prompt into a SINGLE object configuration that best matches the user's intent.
@@ -124,14 +124,14 @@ ${presetNames.slice(0, 20).join(', ')}... and more
 
 EXAMPLES:
 
-User: "give me a simple fat sine oscillator"
+User: "polyphonic synth that responds to MIDI"
 Response:
 {
   "type": "tone~",
   "data": {
-    "code": "setTitle('sine~')\\n\\nconst synth = new Tone.Synth({\\n  oscillator: {\\n    type: 'fatsine'\\n  }\\n}).toDestination();\\n\\nrecv(m => {\\n  if (m.type === 'noteOn') {\\n    const freq = Tone.Frequency(m.note, 'midi').toFrequency();\\n    synth.triggerAttackRelease(freq, '8n');\\n  }\\n});",
+    "code": "setPortCount(1)\\nsetTitle('synth~')\\n\\nconst synth = new Tone.PolySynth(Tone.Synth, {\\n  oscillator: {\\n    type: \\"fatsine\\",\\n    count: 1,\\n    spread: 3\\n  },\\n  envelope: {\\n    attack: 0.01,\\n    release: 0.9\\n  }\\n}).connect(outputNode);\\n\\nrecv(m => {\\n  const now = Tone.now();\\n  if (m.type === 'noteOn') {\\n    const freq = Tone.Frequency(m.note, \\"midi\\").toNote();\\n    const velocity = m.velocity / 127;\\n    synth.triggerAttack(freq, now, velocity);\\n  } else if (m.type === 'noteOff') {\\n    const freq = Tone.Frequency(m.note, \\"midi\\").toNote();\\n    synth.triggerRelease(freq, now);\\n  }\\n});\\n\\nreturn { cleanup: () => synth.dispose() };",
     "messageInletCount": 1,
-    "title": "sine~"
+    "title": "synth~"
   }
 }
 
@@ -161,7 +161,7 @@ Response:
 {
   "type": "tone~",
   "data": {
-    "code": "setTitle('lowpass~')\\nsetPortCount(1)\\n\\nconst filter = new Tone.Filter(500, 'lowpass');\\ninputNode.connect(filter);\\nfilter.toDestination();\\n\\nrecv(m => {\\n  filter.frequency.value = m;\\n});",
+    "code": "setPortCount(1)\\nsetTitle('lowpass~')\\n\\nconst filter = new Tone.Filter(500, 'lowpass');\\ninputNode.connect(filter.input.input);\\nfilter.connect(outputNode);\\n\\nrecv(m => {\\n  filter.frequency.value = m;\\n});\\n\\nreturn { cleanup: () => filter.dispose() };",
     "messageInletCount": 1,
     "title": "lowpass~"
   }
