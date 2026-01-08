@@ -90,6 +90,9 @@
 	let aiPromptPosition = $state.raw({ x: 0, y: 0 });
 	let aiEditingNodeId = $state<string | null>(null);
 
+	// Check if Gemini API key is set (for showing AI button)
+	let hasGeminiApiKey = $state(false);
+
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
 
@@ -334,6 +337,9 @@
 		audioService.start();
 
 		loadPatch();
+
+		// Check if Gemini API key is set
+		hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
 
 		// Check if the user wants to see the startup modal on launch
 		const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
@@ -617,6 +623,8 @@
 
 	function handleCommandPaletteCancel() {
 		showCommandPalette = false;
+		// Re-check if API key was just set
+		hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
 	}
 
 	// Track mouse position for palette positioning
@@ -960,7 +968,7 @@
 				}}><Search class="h-4 w-4 text-zinc-300" /></button
 			>
 
-			{#if $isAiFeaturesVisible}
+			{#if $isAiFeaturesVisible && hasGeminiApiKey}
 				<button
 					title="AI Create/Edit Object (Cmd+I)"
 					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
@@ -986,7 +994,7 @@
 							}
 							triggerAiPrompt();
 						}
-					}}><Sparkles class="h-4 w-4 text-purple-400" /></button
+					}}><Sparkles class="h-4 w-4 text-zinc-300" /></button
 				>
 			{/if}
 
