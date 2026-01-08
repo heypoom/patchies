@@ -73,8 +73,8 @@ AVAILABLE OBJECT TYPES AND FUNCTIONS:
 Audio Objects (use "tone~" type with custom code):
 - tone~: Tone.js audio synthesis and processing
   Available functions: setTitle(), setPortCount(inlets, outlets), recv(callback), send(data), inputNode, outputNode
-  IMPORTANT: To output to destination, you MUST use "synth.connect(outputNode)" where outputNode is the output gain node.
-  IMPORTANT: DO NOT use "synth.toDestination()" in your generated code.
+  IMPORTANT: YOU MUST NEVER EVER use "toDestination()" in your generated tone~ code. This is because Patchies uses its own web audio system. Using toDestination WILL 100% CRASH THE PATCHER.
+  IMPORTANT: To output to destination, YOU MUST use "synth.connect(outputNode)" where outputNode is the output gain node.
   IMPORTANT: To connect the audio inlet to a Tone.js node such as Tone.reverb, you MUST write "inputNode.connect(reverb.input.input)" where reverb is the Tone.js node. Mind the "input.input" part.
   ALWAYS return the cleanup object: { cleanup: () => node.dispose() }. You MUST dispose each and every node you create.
 - dsp~: Custom DSP audio processing with AudioWorklet
