@@ -128,6 +128,20 @@ const patchiesAPICompletions: Completion[] = [
 		info: 'Set the canvas resolution (canvas.dom only)',
 		apply: 'setCanvasSize(500, 500)'
 	},
+	{
+		label: 'onKeyDown',
+		type: 'function',
+		detail: '(callback: (event: KeyboardEvent) => void) => void',
+		info: 'Register a callback for keyboard keydown events (canvas.dom only). Events are trapped and do not leak to xyflow.',
+		apply: 'onKeyDown((e) => {\n  console.log(e.key)\n})'
+	},
+	{
+		label: 'onKeyUp',
+		type: 'function',
+		detail: '(callback: (event: KeyboardEvent) => void) => void',
+		info: 'Register a callback for keyboard keyup events (canvas.dom only). Events are trapped and do not leak to xyflow.',
+		apply: 'onKeyUp((e) => {\n  console.log(e.key)\n})'
+	},
 
 	// Audio Analysis
 	{
@@ -169,7 +183,9 @@ const topLevelOnlyFunctions = new Set([
 	'noDrag',
 	'noOutput',
 	'recv',
-	'onMessage'
+	'onMessage',
+	'onKeyDown',
+	'onKeyUp'
 ]);
 
 // Node-specific functions - only show in certain node types
@@ -181,6 +197,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	noDrag: ['p5', 'canvas', 'canvas.dom'],
 	noOutput: ['p5', 'canvas', 'canvas.dom'],
 	setCanvasSize: ['canvas.dom'],
+	onKeyDown: ['canvas.dom'],
+	onKeyUp: ['canvas.dom'],
 	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel'],
 	setRunOnMount: ['js']
 };

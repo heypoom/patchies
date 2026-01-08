@@ -57,6 +57,12 @@
 		buttons: 0
 	});
 
+	// Keyboard state and user callbacks
+	let keyboardCallbacks = $state<{
+		onKeyDown?: (event: KeyboardEvent) => void;
+		onKeyUp?: (event: KeyboardEvent) => void;
+	}>({});
+
 	const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
 		updateNodeData(nodeId, { inletCount: newInletCount, outletCount: newOutletCount });
 		updateNodeInternals(nodeId);
@@ -173,6 +179,36 @@
 		};
 	}
 
+	function setupKeyboardListeners() {
+		if (!canvas) return;
+
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (keyboardCallbacks.onKeyDown) {
+				// Stop propagation for all keyboard events to prevent leaking to xyflow
+				e.stopPropagation();
+
+				keyboardCallbacks.onKeyDown(e);
+			}
+		};
+
+		const onKeyUp = (e: KeyboardEvent) => {
+			if (keyboardCallbacks.onKeyUp) {
+				// Stop propagation for all keyboard events to prevent leaking to xyflow
+				e.stopPropagation();
+
+				keyboardCallbacks.onKeyUp(e);
+			}
+		};
+
+		canvas.addEventListener('keydown', onKeyDown);
+		canvas.addEventListener('keyup', onKeyUp);
+
+		return () => {
+			canvas?.removeEventListener('keydown', onKeyDown);
+			canvas?.removeEventListener('keyup', onKeyUp);
+		};
+	}
+
 	function setupCanvas() {
 		if (!canvas) return;
 
@@ -217,6 +253,9 @@
 		dragEnabled = true;
 		videoOutputEnabled = true;
 
+		// Clear keyboard callbacks when code is re-run
+		keyboardCallbacks = {};
+
 		try {
 			// Clear any previous animation frame
 			if (animationFrameId !== null) {
@@ -252,6 +291,12 @@
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
 				setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
+				onKeyDown: (callback: (event: KeyboardEvent) => void) => {
+					keyboardCallbacks.onKeyDown = callback;
+				},
+				onKeyUp: (callback: (event: KeyboardEvent) => void) => {
+					keyboardCallbacks.onKeyUp = callback;
+				},
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					animationFrameId = requestAnimationFrame((time) => {
 						callback(time);
@@ -269,6 +314,7 @@
 
 			// Execute user code
 			const userFunction = new Function(...Object.keys(userGlobals), `"use strict";\n${data.code}`);
+
 			userFunction(...Object.values(userGlobals));
 		} catch (error) {
 			logger.error(`[canvas.dom] user code error:`, error);
@@ -285,6 +331,7 @@
 		setupCanvas();
 
 		const cleanupMouse = setupMouseListeners();
+		const cleanupKeyboard = setupKeyboardListeners();
 
 		setTimeout(() => {
 			runCode();
@@ -292,6 +339,7 @@
 
 		return () => {
 			cleanupMouse?.();
+			cleanupKeyboard?.();
 		};
 	});
 
@@ -315,6 +363,7 @@
 	onrun={runCode}
 	bind:previewCanvas={canvas}
 	nodrag={!dragEnabled}
+	tabindex="0"
 	width={outputWidth}
 	height={outputHeight}
 	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
