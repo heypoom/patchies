@@ -34,6 +34,11 @@
 			description: 'Pan the canvas',
 			category: 'mouse'
 		},
+		{
+			keys: ['Shift', 'Drag on empty space'],
+			description: 'Select multiple objects',
+			category: 'mouse'
+		},
 		// Keyboard shortcuts
 		{
 			keys: ['Enter'],
