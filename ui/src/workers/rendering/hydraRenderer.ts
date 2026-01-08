@@ -215,6 +215,11 @@ export class HydraRenderer {
 				// setPortCount function for dynamic port management
 				setPortCount: (inletCount?: number, outletCount?: number) => {
 					this.setPortCount(inletCount, outletCount);
+				},
+
+				// setTitle function for dynamic title management
+				setTitle: (title: string) => {
+					this.setTitle(title);
 				}
 			};
 
@@ -319,6 +324,14 @@ export class HydraRenderer {
 			nodeId: this.config.nodeId,
 			inletCount,
 			outletCount
+		});
+	}
+
+	setTitle(title: string) {
+		self.postMessage({
+			type: 'setTitle',
+			nodeId: this.config.nodeId,
+			title
 		});
 	}
 
