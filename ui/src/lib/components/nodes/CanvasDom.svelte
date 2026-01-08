@@ -32,6 +32,7 @@
 	let canvas = $state<HTMLCanvasElement | undefined>();
 	let ctx: CanvasRenderingContext2D | null = null;
 	let dragEnabled = $state(true);
+	let videoOutputEnabled = $state(true);
 	let editorReady = $state(false);
 	let animationFrameId: number | null = null;
 
@@ -150,8 +151,9 @@
 	function runCode() {
 		if (!canvas || !ctx) return;
 
-		// Reset drag state
+		// Reset drag state and video output state
 		dragEnabled = true;
+		videoOutputEnabled = true;
 
 		try {
 			// Clear any previous animation frame
@@ -180,6 +182,10 @@
 				// Override context defaults with custom implementations (must be after ...context)
 				noDrag: () => {
 					dragEnabled = false;
+				},
+				noOutput: () => {
+					videoOutputEnabled = false;
+					updateNodeInternals(nodeId);
 				},
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
@@ -266,15 +272,17 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle
-			port="outlet"
-			type="video"
-			id="0"
-			title="Video output"
-			total={outletCount + 1}
-			index={0}
-			class={handleClass}
-		/>
+		{#if videoOutputEnabled}
+			<StandardHandle
+				port="outlet"
+				type="video"
+				id="0"
+				title="Video output"
+				total={outletCount + 1}
+				index={0}
+				class={handleClass}
+			/>
+		{/if}
 
 		{#each Array.from({ length: outletCount }) as _, index}
 			<StandardHandle

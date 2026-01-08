@@ -6,7 +6,9 @@ export type PatchiesEvent =
 	| PyodideSendMessageEvent
 	| NodePortCountUpdateEvent
 	| NodeTitleUpdateEvent
-	| NodeHidePortsUpdateEvent;
+	| NodeHidePortsUpdateEvent
+	| NodeDragEnabledUpdateEvent
+	| NodeVideoOutputEnabledUpdateEvent;
 
 export interface PyodideConsoleOutputEvent {
 	type: 'pyodideConsoleOutput';
@@ -51,4 +53,16 @@ export interface NodeHidePortsUpdateEvent {
 	type: 'nodeHidePortsUpdate';
 	nodeId: string;
 	hidePorts: boolean;
+}
+
+export interface NodeDragEnabledUpdateEvent {
+	type: 'nodeDragEnabledUpdate';
+	nodeId: string;
+	dragEnabled: boolean;
+}
+
+export interface NodeVideoOutputEnabledUpdateEvent {
+	type: 'nodeVideoOutputEnabledUpdate';
+	nodeId: string;
+	videoOutputEnabled: boolean;
 }

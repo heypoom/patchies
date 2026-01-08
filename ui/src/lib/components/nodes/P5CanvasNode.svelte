@@ -34,6 +34,7 @@
 	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
 	let enableDrag = $state(true);
+	let videoOutputEnabled = $state(true);
 	let errorMessage = $state<string | null>(null);
 	let paused = $state(false);
 	let editorReady = $state(false);
@@ -65,6 +66,7 @@
 	function updateSketch() {
 		// re-enable drag on update. nodrag() must be called on setup().
 		enableDrag = true;
+		videoOutputEnabled = true;
 		paused = false;
 
 		setPortCount(1, 1);
@@ -77,6 +79,10 @@
 						...messageContext.getContext(),
 						noDrag: () => {
 							enableDrag = false;
+						},
+						noOutput: () => {
+							videoOutputEnabled = false;
+							updateNodeInternals(nodeId);
 						},
 						setPortCount,
 						setTitle: (title: string) => {
@@ -164,15 +170,17 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle
-			port="outlet"
-			type="video"
-			id="0"
-			title="Video output"
-			total={outletCount + 1}
-			index={0}
-			class={handleClass}
-		/>
+		{#if videoOutputEnabled}
+			<StandardHandle
+				port="outlet"
+				type="video"
+				id="0"
+				title="Video output"
+				total={outletCount + 1}
+				index={0}
+				class={handleClass}
+			/>
+		{/if}
 
 		{#each Array.from({ length: outletCount }) as _, index (index)}
 			<StandardHandle

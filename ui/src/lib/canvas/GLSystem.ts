@@ -136,6 +136,24 @@ export class GLSystem {
 			});
 		}
 
+		// Handle setDragEnabled messages from workers
+		if (data.type === 'setDragEnabled') {
+			this.eventBus.dispatch({
+				type: 'nodeDragEnabledUpdate',
+				nodeId: data.nodeId,
+				dragEnabled: data.dragEnabled
+			});
+		}
+
+		// Handle setVideoOutputEnabled messages from workers
+		if (data.type === 'setVideoOutputEnabled') {
+			this.eventBus.dispatch({
+				type: 'nodeVideoOutputEnabledUpdate',
+				nodeId: data.nodeId,
+				videoOutputEnabled: data.videoOutputEnabled
+			});
+		}
+
 		// A block has requested a preview frame capture from a node.
 		if (data.type === 'previewFrameCaptured') {
 			this.eventBus.dispatch(data);

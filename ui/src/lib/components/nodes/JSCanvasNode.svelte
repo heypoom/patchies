@@ -12,7 +12,9 @@
 	import type {
 		NodePortCountUpdateEvent,
 		NodeTitleUpdateEvent,
-		NodeHidePortsUpdateEvent
+		NodeHidePortsUpdateEvent,
+		NodeDragEnabledUpdateEvent,
+		NodeVideoOutputEnabledUpdateEvent
 	} from '$lib/eventbus/events';
 	import { logger } from '$lib/utils/logger';
 
@@ -38,6 +40,7 @@
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let dragEnabled = $state(true);
+	let videoOutputEnabled = $state(true);
 	let editorReady = $state(false);
 
 	const { updateNodeData } = useSvelteFlow();
@@ -76,6 +79,17 @@
 		updateNodeData(nodeId, { hidePorts: e.hidePorts });
 	}
 
+	function handleDragEnabledUpdate(e: NodeDragEnabledUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		dragEnabled = e.dragEnabled;
+	}
+
+	function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		videoOutputEnabled = e.videoOutputEnabled;
+		updateNodeInternals(nodeId);
+	}
+
 	const setCodeAndUpdate = (newCode: string) => {
 		updateNodeData(nodeId, { code: newCode });
 		setTimeout(() => updateCanvas());
@@ -108,6 +122,8 @@
 		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
 		eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
 		eventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+		eventBus.addEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+		eventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
@@ -129,6 +145,8 @@
 			eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
 			eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
 			eventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+			eventBus.removeEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+			eventBus.removeEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
 		}
 
 		audioAnalysisSystem?.disableFFT(nodeId);
@@ -182,15 +200,17 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle
-			port="outlet"
-			type="video"
-			id={0}
-			title="Video output"
-			total={outletCount + 1}
-			index={outletCount}
-			class={handleClass}
-		/>
+		{#if videoOutputEnabled}
+			<StandardHandle
+				port="outlet"
+				type="video"
+				id={0}
+				title="Video output"
+				total={outletCount + 1}
+				index={outletCount}
+				class={handleClass}
+			/>
+		{/if}
 
 		{#each Array.from({ length: outletCount }) as _, index}
 			<StandardHandle

@@ -130,6 +130,10 @@ export class CanvasRenderer {
 		this.fftDataCache.clear();
 		this.fftRequestCache.clear();
 
+		// Reset drag and video output state
+		this.setDragEnabled(true);
+		this.setVideoOutputEnabled(true);
+
 		// Cancel any existing animation frame
 		if (this.animationId !== null) {
 			cancelAnimationFrame(this.animationId);
@@ -171,6 +175,14 @@ export class CanvasRenderer {
 
 				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;
+				},
+
+				noDrag: () => {
+					this.setDragEnabled(false);
+				},
+
+				noOutput: () => {
+					this.setVideoOutputEnabled(false);
 				}
 			};
 
@@ -292,6 +304,22 @@ export class CanvasRenderer {
 			type: 'setHidePorts',
 			nodeId: this.config.nodeId,
 			hidePorts
+		});
+	}
+
+	setDragEnabled(dragEnabled: boolean) {
+		self.postMessage({
+			type: 'setDragEnabled',
+			nodeId: this.config.nodeId,
+			dragEnabled
+		});
+	}
+
+	setVideoOutputEnabled(videoOutputEnabled: boolean) {
+		self.postMessage({
+			type: 'setVideoOutputEnabled',
+			nodeId: this.config.nodeId,
+			videoOutputEnabled
 		});
 	}
 
