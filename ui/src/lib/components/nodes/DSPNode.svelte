@@ -28,6 +28,7 @@
 			audioInletCount?: number;
 			audioOutletCount?: number;
 			title?: string;
+			executeCode?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -41,6 +42,13 @@
 	let inletValues = $state<unknown[]>([]);
 	let showEditor = $state(false);
 	let contentWidth = $state(100);
+	
+	// Watch for executeCode timestamp changes and re-run when it changes
+	$effect(() => {
+		if (data.executeCode) {
+			runDSP();
+		}
+	});
 
 	const code = $derived(data.code || '');
 	const messageInletCount = $derived(data.messageInletCount ?? 0);

@@ -283,9 +283,13 @@
 			// Merge only the fields that should be updated (primarily code and related config)
 			const updatedData = { ...node.data };
 			
+			// Track if code was updated to trigger re-execution
+			let codeUpdated = false;
+			
 			// Update code if provided
 			if (data.code !== undefined) {
 				updatedData.code = data.code;
+				codeUpdated = true;
 			}
 			
 			// Update title if provided
@@ -311,6 +315,11 @@
 			}
 			if (data.outletCount !== undefined) {
 				updatedData.outletCount = data.outletCount;
+			}
+			
+			// Add a flag to trigger code re-execution if code was updated
+			if (codeUpdated) {
+				updatedData.executeCode = Date.now();
 			}
 			
 			return { ...node, data: updatedData };

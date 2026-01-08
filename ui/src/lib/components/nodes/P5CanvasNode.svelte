@@ -20,6 +20,7 @@
 			inletCount?: number;
 			outletCount?: number;
 			hidePorts?: boolean;
+			executeCode?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -43,6 +44,13 @@
 	const code = $derived(data.code || '');
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 1);
+	
+	// Watch for executeCode timestamp changes and re-run when it changes
+	$effect(() => {
+		if (data.executeCode) {
+			updateSketch();
+		}
+	});
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);

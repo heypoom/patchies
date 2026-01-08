@@ -23,6 +23,7 @@
 			messageOutletCount?: number;
 			videoInletCount?: number;
 			videoOutletCount?: number;
+			executeCode?: number;
 		};
 	} = $props();
 
@@ -37,6 +38,13 @@
 	let isPaused = $state(false);
 	let editorReady = $state(false);
 	let errorMessage = $state<string | null>(null);
+	
+	// Watch for executeCode timestamp changes and re-run when it changes
+	$effect(() => {
+		if (data.executeCode) {
+			runHydra();
+		}
+	});
 
 	// Store event handler for cleanup
 	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
