@@ -49,6 +49,7 @@
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
 	const AUTOSAVE_INTERVAL = 2500;
+	const DEFAULT_NODE_SPACING = 200;
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -301,7 +302,7 @@
 			createdNodeIds.push(id);
 
 			// Use relative positioning if provided, otherwise stack them
-			const relativePos = objNode.position || { x: index * 200, y: 0 };
+			const relativePos = objNode.position || { x: index * DEFAULT_NODE_SPACING, y: 0 };
 			const position = {
 				x: basePosition.x + relativePos.x,
 				y: basePosition.y + relativePos.y
