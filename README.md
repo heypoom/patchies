@@ -360,6 +360,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Same as `canvas` but runs directly on the main thread instead of on the [rendering pipeline thread](#rendering-pipeline), and comes with some additional features:
 
   - Use `mouse` object with properties: `x`, `y`, `down`, `buttons` to get current mouse position and state.
+  - Use `onKeyDown(callback)` and `onKeyUp(callback)` to register keyboard event handlers. Events are trapped and won't leak to xyflow (e.g., pressing Delete won't delete the node).
   - Full DOM and browser API access (e.g. `document` and `window`)
   - Use `setCanvasSize(width, height)` to dynamically resize the canvas resolution (e.g., `setCanvasSize(500, 500)`).
   - Otherwise, the API remains the same as `canvas`: `noDrag()`, `noOutput()`, `setTitle(title)`, `send(message)`, `recv(callback)`, `fft()` can all be used in `canvas.dom`.
@@ -368,6 +369,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
   - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual.
   - Mouse interactivity: use `mouse.x`, `mouse.y`, `mouse.down` for interactive sketches.
+  - Keyboard interactivity: use `onKeyDown()` and `onKeyUp()` for keyboard-controlled widgets.
   - DOM access: use `document`, `window` and other browser APIs when needed.
 
 - Try out these fun and useful presets for inspirations on widgets and interactive controls:
@@ -375,6 +377,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `particle.canvas` adds a particle canvas that reacts to your mouse inputs.
   - `xy-pad.canvas` adds an X-Y pad that you can send `[x, y]` coordinates into to set the position of the crosshair. It also sends `[x, y]` coordinates to the message outlet when you drag on it.
   - `rgba.picker` and `hsla.picker` lets you pick colors and sends them as outputs: `[r, g, b, a]` and `[h, s, l, a]` respectively.
+  - `keyboard.example` demonstrates keyboard event handling with `onKeyDown()` and `onKeyUp()` callbacks.
   - `fft.canvas` preset takes in analysis output from `fft~` object and does a FFT plot, similar to `fft.p5` but even faster.
 
 - Performance trade-offs:
