@@ -8,6 +8,10 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { match, P } from 'ts-pattern';
 	import { createNode } from '@elemaudio/core';
+	import Loader from '@lucide/svelte/icons/loader';
+	import OctagonX from '@lucide/svelte/icons/octagon-x';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Play from '@lucide/svelte/icons/play';
 	import SkipBack from '@lucide/svelte/icons/skip-back';
 	import Upload from '@lucide/svelte/icons/upload';
 	import Video from '@lucide/svelte/icons/video';
@@ -339,10 +343,11 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={togglePause}
 						>
-							<Icon
-								icon={isPaused ? 'lucide:play' : 'lucide:pause'}
-								class="h-4 w-4 text-zinc-300"
-							/>
+							{#if isPaused}
+								<Play class="h-4 w-4 text-zinc-300" />
+							{:else}
+								<Pause class="h-4 w-4 text-zinc-300" />
+							{/if}
 						</button>
 						<button
 							title="Restart video"
@@ -385,13 +390,11 @@
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {defaultPreviewWidth}px; height: {defaultPreviewHeight}px"
 						>
-							<Icon
-								icon={errorMessage ? 'lucide:octagon-x' : 'lucide:loader'}
-								class={[
-									'h-8 w-8 text-zinc-400',
-									!errorMessage ? 'animate-spin' : 'text-red-400'
-								].join(' ')}
-							/>
+							{#if errorMessage}
+								<OctagonX class="h-8 w-8 text-red-400" />
+							{:else}
+								<Loader class="h-8 w-8 animate-spin text-zinc-400" />
+							{/if}
 
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
 								{#if errorMessage}

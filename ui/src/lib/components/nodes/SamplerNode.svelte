@@ -8,10 +8,12 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
+	import Circle from '@lucide/svelte/icons/circle';
 	import Mic from '@lucide/svelte/icons/mic';
 	import Play from '@lucide/svelte/icons/play';
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import Settings from '@lucide/svelte/icons/settings';
+	import Square from '@lucide/svelte/icons/square';
 	import X from '@lucide/svelte/icons/x';
 
 	let node: NodeProps & {
@@ -391,10 +393,11 @@
 							: ''}"
 						onclick={toggleRecording}
 					>
-						<Icon
-							icon={isRecording ? 'lucide:square' : 'lucide:circle'}
-							class="h-4 w-4 {isRecording ? 'text-red-500' : 'text-zinc-300'}"
-						/>
+						{#if isRecording}
+							<Square class="h-4 w-4 text-red-500" />
+						{:else}
+							<Circle class="h-4 w-4 text-zinc-300" />
+						{/if}
 					</button>
 
 					<!-- Play Button -->

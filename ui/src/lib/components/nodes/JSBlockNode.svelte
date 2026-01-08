@@ -346,8 +346,8 @@
 									title={isLongRunningTaskActive ? 'Stop' : 'Run'}
 									aria-disabled={isRunning}
 								>
-									<Icon
-										icon={playOrStopIcon}
+									<svelte:component 
+										this={playOrStopIcon}
 										class={isRunning ? 'animate-spin' : ''}
 										font-size="12px"
 									/>

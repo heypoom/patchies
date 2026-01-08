@@ -11,7 +11,11 @@
 	import { audioUrlCache } from '$lib/stores/audioCache';
 	import { omit } from 'lodash';
 	import { AudioService } from '$lib/audio/v2/AudioService';
+	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import Play from '@lucide/svelte/icons/play';
+	import Settings from '@lucide/svelte/icons/settings';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 
 	type TTSOptions = {
 		text: string;
@@ -223,10 +227,11 @@
 					onclick={() => (showAdvancedSettings = !showAdvancedSettings)}
 					title="Toggle Settings"
 				>
-					<Icon
-						icon={showAdvancedSettings ? 'lucide:chevron-up' : 'lucide:settings'}
-						class="h-4 w-4 text-zinc-300"
-					/>
+					{#if showAdvancedSettings}
+						<ChevronUp class="h-4 w-4 text-zinc-300" />
+					{:else}
+						<Settings class="h-4 w-4 text-zinc-300" />
+					{/if}
 				</button>
 
 				<!-- Generate Button -->
@@ -238,10 +243,11 @@
 					disabled={!!$audioUrlCache[audioCacheKey] || isLoading}
 					title={isLoading ? 'Generating...' : 'Generate Speech'}
 				>
-					<Icon
-						icon={isLoading ? 'lucide:loader-2' : 'lucide:sparkles'}
-						class={`h-4 w-4 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
-					/>
+					{#if isLoading}
+						<Loader2 class="h-4 w-4 animate-spin text-zinc-300" />
+					{:else}
+						<Sparkles class="h-4 w-4 text-zinc-300" />
+					{/if}
 				</button>
 
 				<!-- Play Button -->

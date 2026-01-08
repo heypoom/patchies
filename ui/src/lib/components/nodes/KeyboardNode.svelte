@@ -6,6 +6,10 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import Settings from '@lucide/svelte/icons/settings';
+import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import Keyboard from '@lucide/svelte/icons/keyboard';
+	import KeyboardOff from '@lucide/svelte/icons/keyboard-off';
+	import type { ComponentType } from 'svelte';
 	import X from '@lucide/svelte/icons/x';
 
 	let {
@@ -49,12 +53,12 @@
 		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});
 
-	const statusIcon = $derived.by(() => {
-		if (errorMessage) return 'lucide:alert-circle';
-		if (!isListening) return 'lucide:keyboard-off';
-		if (mode === 'all') return 'lucide:keyboard';
+	const StatusIcon = $derived.by<ComponentType>(() => {
+		if (errorMessage) return AlertCircle;
+		if (!isListening) return KeyboardOff;
+		if (mode === 'all') return Keyboard;
 
-		return 'lucide:keyboard';
+		return Keyboard;
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -252,8 +256,7 @@
 							{keybind || 'no keybind'}
 						</div>
 					{:else}
-						<Icon
-							icon={statusIcon}
+						<StatusIcon
 							class={`h-4 w-4 ${isListening ? 'text-green-400' : 'text-zinc-500'}`}
 						/>
 					{/if}
