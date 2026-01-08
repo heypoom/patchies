@@ -5,6 +5,7 @@
 		FilePlus2,
 		Link,
 		Search,
+		Sparkles,
 		Trash2,
 		Volume2
 	} from '@lucide/svelte/icons';
@@ -88,6 +89,9 @@
 	let showAiPrompt = $state(false);
 	let aiPromptPosition = $state.raw({ x: 0, y: 0 });
 	let aiEditingNodeId = $state<string | null>(null);
+
+	// Check if Gemini API key is set (for showing AI button)
+	let hasGeminiApiKey = $state(false);
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
@@ -210,12 +214,12 @@
 		// Handle CMD+I for AI object insertion/editing
 		else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
-			
+
 			// Respect the "Hide AI features" setting
 			if (!$isAiFeaturesVisible) {
 				return;
 			}
-			
+
 			// Check if Gemini API key is set, show helpful message if not
 			const hasApiKey = localStorage.getItem('gemini-api-key');
 			if (!hasApiKey) {
@@ -277,26 +281,26 @@
 
 	function handleAiObjectEdit(nodeId: string, data: any) {
 		// Update only specific fields from the AI result to preserve node structure
-		nodes = nodes.map(node => {
+		nodes = nodes.map((node) => {
 			if (node.id !== nodeId) return node;
-			
+
 			// Merge only the fields that should be updated (primarily code and related config)
 			const updatedData = { ...node.data };
-			
+
 			// Track if code was updated to trigger re-execution
 			let codeUpdated = false;
-			
+
 			// Update code if provided
 			if (data.code !== undefined) {
 				updatedData.code = data.code;
 				codeUpdated = true;
 			}
-			
+
 			// Update title if provided
 			if (data.title !== undefined) {
 				updatedData.title = data.title;
 			}
-			
+
 			// Update inlet/outlet counts if provided
 			if (data.messageInletCount !== undefined) {
 				updatedData.messageInletCount = data.messageInletCount;
@@ -316,12 +320,12 @@
 			if (data.outletCount !== undefined) {
 				updatedData.outletCount = data.outletCount;
 			}
-			
+
 			// Add a flag to trigger code re-execution if code was updated
 			if (codeUpdated) {
 				updatedData.executeCode = Date.now();
 			}
-			
+
 			return { ...node, data: updatedData };
 		});
 	}
@@ -333,6 +337,9 @@
 		audioService.start();
 
 		loadPatch();
+
+		// Check if Gemini API key is set
+		hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
 
 		// Check if the user wants to see the startup modal on launch
 		const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
@@ -616,6 +623,8 @@
 
 	function handleCommandPaletteCancel() {
 		showCommandPalette = false;
+		// Re-check if API key was just set
+		hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
 	}
 
 	// Track mouse position for palette positioning
@@ -959,6 +968,36 @@
 				}}><Search class="h-4 w-4 text-zinc-300" /></button
 			>
 
+			{#if $isAiFeaturesVisible && hasGeminiApiKey}
+				<button
+					title="AI Create/Edit Object (Cmd+I)"
+					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+
+						// Check if Gemini API key is set, show helpful message if not
+						const hasApiKey = localStorage.getItem('gemini-api-key');
+						if (!hasApiKey) {
+							const shouldSetKey = confirm(
+								'AI Object Insertion requires a Gemini API key. Would you like to set it now?'
+							);
+							if (shouldSetKey) {
+								triggerCommandPalette();
+							}
+						} else {
+							// If a single node is selected, edit it; otherwise create new
+							if (selectedNodeIds.length === 1) {
+								aiEditingNodeId = selectedNodeIds[0];
+							} else {
+								aiEditingNodeId = null;
+							}
+							triggerAiPrompt();
+						}
+					}}><Sparkles class="h-4 w-4 text-zinc-300" /></button
+				>
+			{/if}
+
 			<button
 				title="Share Link"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
@@ -1000,7 +1039,7 @@
 	<AiObjectPrompt
 		bind:open={showAiPrompt}
 		position={aiPromptPosition}
-		editingNode={aiEditingNodeId ? nodes.find(n => n.id === aiEditingNodeId) : null}
+		editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
 		onInsertObject={handleAiObjectInsert}
 		onEditObject={handleAiObjectEdit}
 	/>

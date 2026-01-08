@@ -25,7 +25,7 @@
 	const isEditMode = $derived(editingNode !== null);
 	const title = $derived(isEditMode ? 'AI Object Edit' : 'AI Object Insert');
 	const description = $derived(
-		isEditMode 
+		isEditMode
 			? `Editing: ${editingNode?.data?.name || editingNode?.data?.title || editingNode?.type || 'object'}`
 			: 'Describe the object you want to create'
 	);
@@ -171,7 +171,9 @@
 			<button
 				onclick={handleSubmit}
 				disabled={!promptText.trim() || isLoading}
-				class="rounded {isEditMode ? 'bg-amber-600 hover:bg-amber-700' : 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+				class="rounded {isEditMode
+					? 'bg-amber-600 hover:bg-amber-700'
+					: 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				{isLoading ? 'Resolving...' : buttonText}
 			</button>
