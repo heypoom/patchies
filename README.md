@@ -649,7 +649,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Use `Ctrl/Cmd + Enter` to re-evaluate the code.
 - Don't forget to connect the `dac~` object to hear the audio output.
 - Limitations
-  - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setCpm)` to automate the cpm value.
+  - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
 - Please consider supporting the development of TidalCycles and Strudel at [OpenCollective](https://opencollective.com/tidalcycles)!
 
 ### `chuck~`: creates a ChucK audio programming environment
