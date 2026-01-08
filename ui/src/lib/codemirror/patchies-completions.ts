@@ -194,6 +194,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	setAudioPortCount: ['dsp~'],
 	setVideoCount: ['hydra'],
 	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
+	setTitle: ['p5', 'hydra', 'canvas', 'canvas.dom', 'dsp~', 'elem~', 'tone~', 'sonic~'],
 	noDrag: ['p5', 'canvas', 'canvas.dom'],
 	noOutput: ['p5', 'canvas', 'canvas.dom'],
 	setCanvasSize: ['canvas.dom'],
