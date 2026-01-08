@@ -69,27 +69,6 @@ Use `Ctrl/Cmd + B` or the search icon button on the bottom right to open the **O
 
 See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control_, etc.), with searchable names and brief description. Drag a random object and see what you can do with it!
 
-### AI-Powered Object Insertion
-
-Press `Ctrl/Cmd + I` to open the **AI Object Insertion** prompt. Simply describe what you want to create in natural language, and the AI will generate the appropriate object with code for you!
-
-**Two Modes:**
-- **Insert Mode** (no object selected): Creates a new object at your cursor position
-- **Edit Mode** (object selected): Modifies the selected object's code based on your description
-
-**Insert Mode Examples:**
-- "give me a simple fat sine oscillator" → Creates a Tone.js synth with a fat sine wave
-- "rotating cube in p5" → Creates a P5.js sketch with a rotating 3D cube
-- "lowpass filter at 500hz" → Creates a Tone.js lowpass filter
-- "a slider from 0 to 1000" → Creates a slider with the specified range
-
-**Edit Mode Examples:**
-- Select a synth object, press Cmd/Ctrl+I, type "change it to a sawtooth wave"
-- Select a visual object, press Cmd/Ctrl+I, type "make it rotate faster"
-- Select any object, press Cmd/Ctrl+I, type "add more reverb"
-
-This feature uses Google Gemini AI to understand your prompt and generate the right object configuration. Make sure to set your Gemini API key in the command palette (`Cmd/Ctrl + K` → "Set Gemini API Key").
-
 ### Modifying Objects
 
 <img src="./docs/images/patchies-select-object.png" alt="Patchies.app selecting objects" width="700">
@@ -1305,6 +1284,18 @@ You can call the `fft()` function to get the audio analysis data in the supporte
   - Replace `fft.waveform()` with `fft({ format: 'float' }).a`, as P5's waveform returns a value between -1 and 1. Using `format: 'float'` gives you Float32Array.
   - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
   - Replace `fft.getCentroid()` with `fft().centroid`
+
+### Experimental: Insert and edit objects with AI
+
+> [!CAUTION]
+> API keys are currently stored on localStorage as `gemini-api-key` for Gemini. In addition, this feature is experimental and unstable, and it has a high chance of corrupting and destroying your code and patches without any way to restore it. Backup your node and patch before trying this out!
+
+Press `Ctrl/Cmd + I` to open the AI object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate the appropriate object with code for you.
+
+- **Insert Mode** (no object selected): creates a new object at your cursor position
+- **Edit Mode** (object selected): modifies the selected object's code based on your description
+
+This feature uses Google Gemini AI to understand your prompt and generate the right object configuration. Make sure to set your Gemini API key in the command palette (`Cmd/Ctrl + K` → "Set Gemini API Key").
 
 ## Hiding AI features
 
