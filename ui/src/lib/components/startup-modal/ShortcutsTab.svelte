@@ -57,7 +57,7 @@
 		},
 		{
 			keys: ['Ctrl', 'I'],
-			description: 'AI-powered object insertion/editing - create new objects or modify selected ones',
+			description: 'Insert or edit an object with AI',
 			category: 'keyboard'
 		},
 		{

@@ -1299,7 +1299,9 @@ This feature uses Google Gemini AI to understand your prompt and generate the ri
 
 ## Hiding AI features
 
-If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features". This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`.
+If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features".
+
+This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also hides the experimental `Cmd/Ctrl + I` AI object insertion shortcut.
 
 ## Rendering Pipeline
 
