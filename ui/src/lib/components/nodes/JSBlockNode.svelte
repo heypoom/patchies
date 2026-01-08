@@ -290,7 +290,7 @@
 				<div>
 					{#if !data.libraryName}
 						<button
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={() => {
 								updateNodeData(nodeId, { showConsole: !data.showConsole });
 								setTimeout(() => updateContentWidth(), 10);
@@ -302,7 +302,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -328,7 +328,7 @@
 				{#if data.showConsole && !data.libraryName}
 					<div
 						class={[
-							'max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3',
+							'min-w-[150px] max-w-[500px] rounded-md border bg-zinc-900 p-3',
 							borderColor,
 							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
@@ -344,7 +344,7 @@
 										title="Run again"
 										aria-label="Run again"
 									>
-										<RefreshCcw font-size="12px" />
+										<RefreshCcw size="14px" />
 									</button>
 								{/if}
 
@@ -360,7 +360,7 @@
 									<svelte:component
 										this={playOrStopIcon}
 										class={isRunning ? 'animate-spin' : ''}
-										font-size="12px"
+										size="14px"
 									/>
 								</button>
 
@@ -369,7 +369,7 @@
 									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Trash2 font-size="12px" />
+									<Trash2 size="14px" />
 								</button>
 							</div>
 						</div>
@@ -379,10 +379,10 @@
 							bind:this={consoleContainer}
 						>
 							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your code to see results.</div>
+								<div class="italic text-zinc-500">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line, index (index)}
-									<div class="mb-1 whitespace-pre-wrap text-zinc-100 select-text">{line}</div>
+									<div class="mb-1 select-text whitespace-pre-wrap text-zinc-100">{line}</div>
 								{/each}
 							{/if}
 						</div>
@@ -407,13 +407,13 @@
 						aria-label="Run code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<svelte:component this={playOrStopIcon} />
+							<svelte:component this={playOrStopIcon} size="16px" />
 						</div>
 					</button>
 
 					<div
 						class={[
-							'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
+							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
 							selected ? '' : 'group-hover:opacity-100'
 						]}
 					>

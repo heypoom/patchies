@@ -145,7 +145,7 @@
 
 				<div>
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={() => {
 							updateNodeData(nodeId, { showConsole: !data.showConsole });
 							setTimeout(() => updateContentWidth(), 10);
@@ -156,7 +156,7 @@
 					</button>
 
 					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -189,7 +189,7 @@
 										title="Run again"
 										aria-label="Run again"
 									>
-										<RefreshCcw font-size="12px" />
+										<RefreshCcw size="14px" />
 									</button>
 								{/if}
 
@@ -205,7 +205,7 @@
 									<svelte:component
 										this={playIcon}
 										class={isRunning ? 'animate-spin' : ''}
-										font-size="12px"
+										size="14px"
 									/>
 								</button>
 
@@ -214,7 +214,7 @@
 									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Trash2 font-size="12px" />
+									<Trash2 size="14px" />
 								</button>
 							</div>
 						</div>
@@ -223,7 +223,7 @@
 							class="nodrag h-32 max-w-[280px] cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
 						>
 							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your Python code to see results.</div>
+								<div class="italic text-zinc-500">Run your Python code to see results.</div>
 							{:else}
 								{#each consoleOutput as line}
 									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
@@ -244,7 +244,7 @@
 						aria-label="Run Python code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<svelte:component this={playIcon} />
+							<svelte:component this={playIcon} size="16px" />
 						</div>
 					</button>
 				{/if}
