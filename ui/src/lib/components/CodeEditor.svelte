@@ -22,6 +22,7 @@
 		onrun = () => {},
 		onchange = (code: string) => {},
 		fontSize = '12px',
+		maxWidth = '600px',
 		extraExtensions = [],
 		onready,
 		nodeType,
@@ -35,6 +36,7 @@
 		onchange?: (code: string) => void;
 		extraExtensions?: Extension[];
 		fontSize?: string;
+		maxWidth?: string;
 		onready?: () => void;
 		nodeType?: string;
 	} = $props();
@@ -89,7 +91,8 @@
 				EditorView.theme({
 					'&': {
 						fontSize,
-						fontFamily: 'Monaco, Menlo, Ubuntu Mono, Consolas, source-code-pro, monospace'
+						fontFamily: 'Monaco, Menlo, Ubuntu Mono, Consolas, source-code-pro, monospace',
+						maxWidth
 					},
 					'.cm-content': {
 						padding: '12px',

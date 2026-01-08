@@ -156,6 +156,7 @@
 								class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}
 								{placeholder}
 								nodeType="expr"
+								maxWidth="none"
 								extraExtensions={[
 									keymap.of([
 										{
