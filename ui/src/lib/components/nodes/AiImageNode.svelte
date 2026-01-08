@@ -154,7 +154,8 @@
 			{#if !hasImage || isLoading}
 				<div class="pointer-events-none absolute h-full w-full">
 					<div class="flex h-full items-center justify-center">
-						<svelte:component this={isLoading ? Loader : Image}
+						<svelte:component
+							this={isLoading ? Loader : Image}
 							class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
 						/>
 					</div>

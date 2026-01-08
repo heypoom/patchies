@@ -143,7 +143,7 @@
 		>
 			<!-- Header with close button -->
 			<div
-				class="flex items-center justify-between border-b border-zinc-800 px-4 pb-3 pt-10 sm:px-6 sm:pt-4"
+				class="flex items-center justify-between border-b border-zinc-800 px-4 pt-10 pb-3 sm:px-6 sm:pt-4"
 			>
 				<h2 id="modal-title" class="text-lg font-medium text-zinc-200">Browse Objects</h2>
 				<button
@@ -158,19 +158,17 @@
 			<!-- Search bar -->
 			<div class="border-b border-zinc-800 px-4 py-3 sm:px-6">
 				<div class="relative">
-					<Search
-						class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-					/>
+					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
 					<input
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search objects..."
-						class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-2 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
+						class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-2 pr-4 pl-10 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
 					/>
 					{#if searchQuery}
 						<button
 							onclick={() => (searchQuery = '')}
-							class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+							class="absolute top-1/2 right-3 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
 							aria-label="Clear search"
 						>
 							<X class="h-4 w-4" />

@@ -36,7 +36,7 @@
 <div class={['flex flex-col gap-1 px-1 font-mono text-xs']}>
 	<div
 		class={[
-			'absolute right-4 top-2 rounded-sm bg-zinc-900/80 px-1 py-0.5 font-mono text-[10px] lowercase',
+			'absolute top-2 right-4 rounded-sm bg-zinc-900/80 px-1 py-0.5 font-mono text-[10px] lowercase',
 			getStatusBadge()
 		]}
 	>
@@ -46,7 +46,7 @@
 	<!-- Error Display -->
 	{#if error}
 		<div
-			class="my-1 whitespace-pre rounded border border-red-500/20 bg-red-500/10 px-2 py-1 text-red-400"
+			class="my-1 rounded border border-red-500/20 bg-red-500/10 px-2 py-1 whitespace-pre text-red-400"
 		>
 			{error}
 		</div>
@@ -54,7 +54,7 @@
 
 	<!-- Effects/Logs Display -->
 	{#if logs.length > 0}
-		<div class="mb-2 mt-1 rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-400">
+		<div class="mt-1 mb-2 rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-400">
 			{#each logs as log}
 				<div>&gt; {log}</div>
 			{/each}

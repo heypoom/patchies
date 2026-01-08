@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { Code, Loader, Package, Pause, Play, RefreshCcw, Terminal, Trash2, X } from '@lucide/svelte/icons';
+	import {
+		Code,
+		Loader,
+		Package,
+		Pause,
+		Play,
+		RefreshCcw,
+		Terminal,
+		Trash2,
+		X
+	} from '@lucide/svelte/icons';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
@@ -270,7 +280,7 @@
 				<div>
 					{#if !data.libraryName}
 						<button
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={() => {
 								updateNodeData(nodeId, { showConsole: !data.showConsole });
 								setTimeout(() => updateContentWidth(), 10);
@@ -282,7 +292,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={toggleEditor}
 						title="Edit code"
 					>
@@ -308,7 +318,7 @@
 				{#if data.showConsole && !data.libraryName}
 					<div
 						class={[
-							'min-w-[150px] max-w-[500px] rounded-md border bg-zinc-900 p-3',
+							'max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3',
 							borderColor,
 							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
 						]}
@@ -337,7 +347,8 @@
 									title={isLongRunningTaskActive ? 'Stop' : 'Run'}
 									aria-disabled={isRunning}
 								>
-									<svelte:component this={playOrStopIcon}
+									<svelte:component
+										this={playOrStopIcon}
 										class={isRunning ? 'animate-spin' : ''}
 										font-size="12px"
 									/>
@@ -358,10 +369,10 @@
 							bind:this={consoleContainer}
 						>
 							{#if consoleOutput.length === 0}
-								<div class="italic text-zinc-500">Run your code to see results.</div>
+								<div class="text-zinc-500 italic">Run your code to see results.</div>
 							{:else}
 								{#each consoleOutput as line, index (index)}
-									<div class="mb-1 select-text whitespace-pre-wrap text-zinc-100">{line}</div>
+									<div class="mb-1 whitespace-pre-wrap text-zinc-100 select-text">{line}</div>
 								{/each}
 							{/if}
 						</div>
@@ -392,7 +403,7 @@
 
 					<div
 						class={[
-							'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
+							'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
 							selected ? '' : 'group-hover:opacity-100'
 						]}
 					>

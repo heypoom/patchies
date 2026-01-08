@@ -571,7 +571,7 @@
 
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
-							<div class="absolute left-0 top-full z-50 flex">
+							<div class="absolute top-full left-0 z-50 flex">
 								<div
 									class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
 								>
@@ -605,7 +605,7 @@
 									</div>
 								</div>
 
-								<div class="ml-3 mt-2 min-w-48 font-mono">
+								<div class="mt-2 ml-3 min-w-48 font-mono">
 									<div class="text-xs">
 										{selectedDescription}
 									</div>

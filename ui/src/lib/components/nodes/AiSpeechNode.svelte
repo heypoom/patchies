@@ -223,7 +223,8 @@
 					onclick={() => (showAdvancedSettings = !showAdvancedSettings)}
 					title="Toggle Settings"
 				>
-					<svelte:component this={showAdvancedSettings ? ChevronUp : Settings}
+					<svelte:component
+						this={showAdvancedSettings ? ChevronUp : Settings}
 						class="h-4 w-4 text-zinc-300"
 					/>
 				</button>
@@ -237,7 +238,8 @@
 					disabled={!!$audioUrlCache[audioCacheKey] || isLoading}
 					title={isLoading ? 'Generating...' : 'Generate Speech'}
 				>
-					<svelte:component this={isLoading ? Loader2 : Sparkles}
+					<svelte:component
+						this={isLoading ? Loader2 : Sparkles}
 						class={`h-4 w-4 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
 					/>
 				</button>
@@ -278,7 +280,7 @@
 
 				<!-- Advanced Settings Section -->
 				{#if showAdvancedSettings}
-					<div class="space-y-3 pb-6 pt-3">
+					<div class="space-y-3 pt-3 pb-6">
 						<!-- RVC Model Selection -->
 						<div class="nodrag">
 							<label class="mb-1 block text-[10px] font-medium text-zinc-400">models</label>

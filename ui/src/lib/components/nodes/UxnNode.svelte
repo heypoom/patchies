@@ -390,7 +390,7 @@
 				<div class="flex gap-1">
 					<button
 						title={isPaused ? 'Resume' : 'Pause'}
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={togglePause}
 					>
 						<svelte:component this={isPaused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
@@ -399,7 +399,7 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button
-								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={openFileDialog}
 								title="Load ROM file"
 							>
@@ -414,7 +414,7 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button
-								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={() => {
 									showEditor = !showEditor;
 									updateNodeData(nodeId, { showEditor });
@@ -433,7 +433,7 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button
-								class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={() => {
 									showConsole = !showConsole;
 									updateNodeData(nodeId, { showConsole });
@@ -492,7 +492,7 @@
 
 			{#if showConsole}
 				<div
-					class="max-h-32 w-full max-w-[512px] overflow-y-auto whitespace-pre-wrap break-words rounded bg-zinc-900 p-2 font-mono text-xs text-white"
+					class="max-h-32 w-full max-w-[512px] overflow-y-auto rounded bg-zinc-900 p-2 font-mono text-xs break-words whitespace-pre-wrap text-white"
 					style="word-wrap: break-word; overflow-wrap: break-word;"
 				>
 					{consoleOutput || '(no output)'}

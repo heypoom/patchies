@@ -197,8 +197,10 @@
 					onmousedown={(e) => handleMouseDown(e, i)}
 					onmouseover={() => handleMouseOver(i)}
 					onmouseup={handleMouseUp}
-					class="cursor-pointer select-none bg-transparent px-1 {selected
-						? (!canDragOut ? 'text-yellow-500' : '')
+					class="cursor-pointer bg-transparent px-1 select-none {selected
+						? !canDragOut
+							? 'text-yellow-500'
+							: ''
 						: highlighted
 							? getRegionClassNames(highlighted)
 							: u === 0

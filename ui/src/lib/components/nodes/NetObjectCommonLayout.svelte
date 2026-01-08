@@ -44,7 +44,8 @@
 					onclick={() => (showChannelInput = !showChannelInput)}
 					title="Edit Channel"
 				>
-					<svelte:component this={showChannelInput ? ChevronUp : Edit}
+					<svelte:component
+						this={showChannelInput ? ChevronUp : Edit}
 						class="h-4 w-4 text-zinc-300"
 					/>
 				</button>

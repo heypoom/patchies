@@ -126,13 +126,11 @@
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div></div>
 				<button
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
-					<svelte:component this={showTextInput ? ChevronUp : Edit}
-						class="h-4 w-4 text-zinc-300"
-					/>
+					<svelte:component this={showTextInput ? ChevronUp : Edit} class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
@@ -159,7 +157,7 @@
 						<button
 							onclick={sendMessage}
 							class={[
-								'send-message-button whitespace-pre rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+								'send-message-button rounded-lg border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
 								containerClass
 							]}
 						>

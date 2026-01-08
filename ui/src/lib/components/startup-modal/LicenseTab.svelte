@@ -82,7 +82,7 @@
 							</a>
 						</p>
 						{#if code.notes}
-							<p class="mt-2 italic text-zinc-500">{code.notes}</p>
+							<p class="mt-2 text-zinc-500 italic">{code.notes}</p>
 						{/if}
 					</div>
 				</div>

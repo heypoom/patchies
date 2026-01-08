@@ -144,7 +144,7 @@
 					{:else}
 						<button
 							title="Start screen capture"
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={startCapture}
 						>
 							<Monitor class="h-4 w-4 text-zinc-300" />
@@ -157,7 +157,7 @@
 				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'object-container-selected' : 'object-container'}`}
+					class={`rounded-lg border-1 ${selected ? 'object-container-selected' : 'object-container'}`}
 				>
 					<video
 						bind:this={videoElement}

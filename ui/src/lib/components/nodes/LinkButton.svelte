@@ -2,7 +2,6 @@
 	import { ChevronUp, Edit } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 
-
 	import hljs from 'highlight.js/lib/core';
 	import javascript from 'highlight.js/lib/languages/javascript';
 
@@ -48,13 +47,11 @@
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
 				<div></div>
 				<button
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Configure Link"
 				>
-					<svelte:component this={showTextInput ? ChevronUp : Edit}
-						class="h-4 w-4 text-zinc-300"
-					/>
+					<svelte:component this={showTextInput ? ChevronUp : Edit} class="h-4 w-4 text-zinc-300" />
 				</button>
 			</div>
 
@@ -111,7 +108,7 @@
 
 				<div
 					class={[
-						'pointer-events-none absolute ml-1 mt-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300',
+						'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300',
 						selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
 					]}
 				>

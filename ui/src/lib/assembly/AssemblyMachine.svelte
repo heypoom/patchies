@@ -383,7 +383,7 @@
 			<div class="flex">
 				<button
 					onclick={() => (showSettings = !showSettings)}
-					class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 					title="Machine settings"
 				>
 					<Settings class="h-4 w-4 text-zinc-300" />
@@ -391,7 +391,7 @@
 
 				<button
 					onclick={toggleMemoryViewer}
-					class="group-hover:not-disabled:opacity-100 rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
 					title="Toggle memory viewer"
 					disabled={machineState === null}
 				>
@@ -400,7 +400,7 @@
 
 				<button
 					onclick={resetMachine}
-					class="group-hover:not-disabled:opacity-100 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 group-hover:disabled:opacity-30 sm:opacity-0"
+					class="rounded p-1 transition-opacity group-hover:opacity-100 group-hover:not-disabled:opacity-100 hover:bg-zinc-700 group-hover:disabled:opacity-30 sm:opacity-0"
 					title="Reset machine"
 					disabled={machineState === null}
 				>
@@ -409,21 +409,20 @@
 
 				<button
 					onclick={stepMachine}
-					class="group-hover:not-disabled:opacity-100 group rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:opacity-100 group-hover:disabled:opacity-30 sm:opacity-0"
+					class="group rounded p-1 transition-opacity group-hover:opacity-100 group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
 					title={`Step ${machineConfig.stepBy} cycle${machineConfig.stepBy > 1 ? 's' : ''}`}
 					disabled={machineState?.status === 'Halted'}
 				>
-					<StepForward
-						class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
-					/>
+					<StepForward class="h-4 w-4 text-zinc-300 group-focus:text-blue-300" />
 				</button>
 
 				<button
 					onclick={togglePlayPause}
-					class="group rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+					class="group rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 					title={machineConfig.isRunning ? 'Pause machine' : 'Run machine'}
 				>
-					<svelte:component this={machineConfig.isRunning ? Pause : Play}
+					<svelte:component
+						this={machineConfig.isRunning ? Pause : Play}
 						class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
 					/>
 				</button>

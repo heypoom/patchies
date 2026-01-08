@@ -334,23 +334,21 @@
 					{#if isLoaded}
 						<button
 							title={isPaused ? 'Play video' : 'Pause video'}
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={togglePause}
 						>
-							<svelte:component this={isPaused ? Play : Pause}
-								class="h-4 w-4 text-zinc-300"
-							/>
+							<svelte:component this={isPaused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
 						</button>
 						<button
 							title="Restart video"
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={restartVideo}
 						>
 							<SkipBack class="h-4 w-4 text-zinc-300" />
 						</button>
 						<button
 							title="Change video"
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={openFileDialog}
 						>
 							<Upload class="h-4 w-4 text-zinc-300" />
@@ -363,7 +361,7 @@
 				<StandardHandle port="inlet" type="message" class={handleCommonClass} total={1} index={0} />
 
 				<div
-					class={`border-1 rounded-lg ${selected ? 'shadow-glow-md border-zinc-400 bg-zinc-800' : 'hover:shadow-glow-sm border-transparent'}`}
+					class={`rounded-lg border-1 ${selected ? 'shadow-glow-md border-zinc-400 bg-zinc-800' : 'hover:shadow-glow-sm border-transparent'}`}
 				>
 					{#if !errorMessage}
 						<video
@@ -378,11 +376,12 @@
 
 					{#if (hasFile && !isLoaded) || errorMessage}
 						<div
-							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
+							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {defaultPreviewWidth}px; height: {defaultPreviewHeight}px"
 						>
-							<svelte:component this={errorMessage ? OctagonX : Loader}
+							<svelte:component
+								this={errorMessage ? OctagonX : Loader}
 								class={[
 									'h-8 w-8 text-zinc-400',
 									!errorMessage ? 'animate-spin' : 'text-red-400'
@@ -401,7 +400,7 @@
 
 					{#if !hasFile}
 						<div
-							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg px-1 py-3
+							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
 							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
 							style="width: {defaultPreviewWidth}px; height: {defaultPreviewHeight}px"
 							ondragover={handleDragOver}

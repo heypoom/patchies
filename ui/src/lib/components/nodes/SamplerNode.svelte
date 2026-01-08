@@ -382,12 +382,13 @@
 					<!-- Record Button -->
 					<button
 						title={isRecording ? 'Stop Recording' : 'Start Recording'}
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0 {isRecording
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 {isRecording
 							? '!opacity-100'
 							: ''}"
 						onclick={toggleRecording}
 					>
-						<svelte:component this={isRecording ? Square : Circle}
+						<svelte:component
+							this={isRecording ? Square : Circle}
 							class="h-4 w-4 {isRecording ? 'text-red-500' : 'text-zinc-300'}"
 						/>
 					</button>
@@ -396,7 +397,7 @@
 					{#if hasRecording && !isRecording}
 						<button
 							title="Play Recording"
-							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={playRecording}
 						>
 							<Play class="h-4 w-4 text-zinc-300" />
@@ -404,7 +405,7 @@
 					{/if}
 
 					<button
-						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={() => (showSettings = !showSettings)}
 						title="Settings"
 					>
@@ -436,7 +437,7 @@
 
 				<div
 					class={[
-						'border-1 relative flex flex-col items-center justify-center overflow-hidden rounded-lg',
+						'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border-1',
 						containerClass
 					]}
 				>
