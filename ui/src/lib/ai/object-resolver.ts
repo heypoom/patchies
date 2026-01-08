@@ -72,15 +72,17 @@ AVAILABLE OBJECT TYPES AND FUNCTIONS:
 
 Audio Objects (use "tone~" type with custom code):
 - tone~: Tone.js audio synthesis and processing
-  Available functions: setTitle(), setPortCount(inlets, outlets), recv(callback), send(data), inputNode, outputNode
-  IMPORTANT: YOU MUST NEVER EVER use "toDestination()" in your generated tone~ code. This is because Patchies uses its own web audio system. Using toDestination WILL 100% CRASH THE PATCHER.
-  IMPORTANT: To output to destination, YOU MUST use "synth.connect(outputNode)" where outputNode is the output gain node.
-  IMPORTANT: To connect the audio inlet to a Tone.js node such as Tone.reverb, you MUST write "inputNode.connect(reverb.input.input)" where reverb is the Tone.js node. Mind the "input.input" part.
-  ALWAYS return the cleanup object: { cleanup: () => node.dispose() }. You MUST dispose each and every node you create.
+  - Available functions: setTitle(), setPortCount(inlets, outlets), recv(callback), send(data), inputNode, outputNode
+  - Tone.js usually outputs to destination with .toDestination(). However, we need to route all audio to the gain node of the tone object. This is so it can be patched with other audio objects.
+    - Bad: "synth.toDestination()" ❌
+    - Good: "synth.connect(outputNode)" where "outputNode" is the gain node of the tone~ object ✅
+    - Again, please do not emit "toDestination" in your generated code. This is extremely serious.
+  - IMPORTANT: To connect the audio inlet to a Tone.js node such as Tone.reverb, you MUST write "inputNode.connect(reverb.input.input)" where reverb is the Tone.js node. Mind the "input.input" part.
+  - ALWAYS return the cleanup object: { cleanup: () => node.dispose() }. You MUST dispose each and every node you create.
 - dsp~: Custom DSP audio processing with AudioWorklet
-  Available functions: setTitle(), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets), setKeepAlive(enabled), recv(callback), send(data), process(inputs, outputs)
-  Must implement process(inputs, outputs) function - called for each audio processing block. inputs and outputs are arrays of audio channels.
-  Example: function process(inputs, outputs) { outputs[0][0] = inputs[0][0]; } for passthrough
+  - Available functions: setTitle(), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets), setKeepAlive(enabled), recv(callback), send(data), process(inputs, outputs)
+  - Must implement process(inputs, outputs) function - called for each audio processing block. inputs and outputs are arrays of audio channels.
+  - Example: function process(inputs, outputs) { outputs[0][0] = inputs[0][0]; } for passthrough
 - elem~: Elementary Audio synthesis
 - sonic~: SuperSonic audio synthesis
 - chuck~: ChucK audio programming
