@@ -40,7 +40,7 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	const [defaultOutputWidth, defaultOutputHeight] = DEFAULT_OUTPUT_SIZE;
-	
+
 	let outputWidth = $state(defaultOutputWidth);
 	let outputHeight = $state(defaultOutputHeight);
 	let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
