@@ -12,7 +12,7 @@
 		onInsertObject: (type: string, data: any) => void;
 	} = $props();
 
-	let promptInput: HTMLInputElement | undefined = $state();
+	let promptInput: HTMLTextAreaElement | undefined = $state();
 	let promptText = $state('');
 	let isLoading = $state(false);
 	let errorMessage = $state<string | null>(null);
