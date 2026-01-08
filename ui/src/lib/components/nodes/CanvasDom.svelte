@@ -57,6 +57,12 @@
 		buttons: 0
 	});
 
+	// Keyboard state and user callbacks
+	let keyboardCallbacks = $state<{
+		onKeyDown?: (event: KeyboardEvent) => void;
+		onKeyUp?: (event: KeyboardEvent) => void;
+	}>({});
+
 	const setPortCount = (newInletCount = 1, newOutletCount = 0) => {
 		updateNodeData(nodeId, { inletCount: newInletCount, outletCount: newOutletCount });
 		updateNodeInternals(nodeId);
@@ -173,6 +179,44 @@
 		};
 	}
 
+	function setupKeyboardListeners() {
+		if (!canvas) return;
+
+		const onKeyDown = (e: KeyboardEvent) => {
+			// Call user-defined callback if provided
+			if (keyboardCallbacks.onKeyDown) {
+				keyboardCallbacks.onKeyDown(e);
+			}
+
+			// Always prevent Delete/Backspace from bubbling to xyflow
+			// to avoid deleting the node when the canvas is focused
+			if (e.key === 'Delete' || e.key === 'Backspace') {
+				e.stopPropagation();
+			}
+		};
+
+		const onKeyUp = (e: KeyboardEvent) => {
+			// Call user-defined callback if provided
+			if (keyboardCallbacks.onKeyUp) {
+				keyboardCallbacks.onKeyUp(e);
+			}
+
+			// Also trap Delete/Backspace on keyup
+			if (e.key === 'Delete' || e.key === 'Backspace') {
+				e.stopPropagation();
+			}
+		};
+
+		// Attach keyboard listeners to the canvas element
+		canvas.addEventListener('keydown', onKeyDown);
+		canvas.addEventListener('keyup', onKeyUp);
+
+		return () => {
+			canvas?.removeEventListener('keydown', onKeyDown);
+			canvas?.removeEventListener('keyup', onKeyUp);
+		};
+	}
+
 	function setupCanvas() {
 		if (!canvas) return;
 
@@ -217,6 +261,9 @@
 		dragEnabled = true;
 		videoOutputEnabled = true;
 
+		// Clear keyboard callbacks when code is re-run
+		keyboardCallbacks = {};
+
 		try {
 			// Clear any previous animation frame
 			if (animationFrameId !== null) {
@@ -252,6 +299,12 @@
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
 				setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
+				onKeyDown: (callback: (event: KeyboardEvent) => void) => {
+					keyboardCallbacks.onKeyDown = callback;
+				},
+				onKeyUp: (callback: (event: KeyboardEvent) => void) => {
+					keyboardCallbacks.onKeyUp = callback;
+				},
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					animationFrameId = requestAnimationFrame((time) => {
 						callback(time);
@@ -285,6 +338,7 @@
 		setupCanvas();
 
 		const cleanupMouse = setupMouseListeners();
+		const cleanupKeyboard = setupKeyboardListeners();
 
 		setTimeout(() => {
 			runCode();
@@ -292,6 +346,7 @@
 
 		return () => {
 			cleanupMouse?.();
+			cleanupKeyboard?.();
 		};
 	});
 
@@ -315,6 +370,7 @@
 	onrun={runCode}
 	bind:previewCanvas={canvas}
 	nodrag={!dragEnabled}
+	tabindex="0"
 	width={outputWidth}
 	height={outputHeight}
 	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}

@@ -11,6 +11,7 @@
 		showPauseButton = false,
 		previewCanvas = $bindable<HTMLCanvasElement>(),
 		nodrag = false,
+		tabindex,
 
 		width,
 		height,
@@ -30,6 +31,7 @@
 		showPauseButton?: boolean;
 		previewCanvas?: HTMLCanvasElement;
 		nodrag?: boolean;
+		tabindex?: string;
 
 		width?: string | number;
 		height?: string | number;
@@ -64,6 +66,7 @@
 					: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
 				nodrag ? 'nodrag cursor-default' : 'cursor-grab'
 			]}
+			{tabindex}
 			{width}
 			{height}
 			{style}
