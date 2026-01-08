@@ -309,7 +309,7 @@ export const CANVAS_PRESETS = {
 		data: {
 			code: XY_PAD_JS,
 			inletCount: 1,
-			outletCount: 2
+			outletCount: 1
 		}
 	}
 };
