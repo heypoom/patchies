@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useSvelteFlow } from '@xyflow/svelte';
-
-	import Icon from '@iconify/svelte';
+	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+	import Edit from '@lucide/svelte/icons/edit';
 
 	import hljs from 'highlight.js/lib/core';
 	import javascript from 'highlight.js/lib/languages/javascript';
@@ -37,10 +37,11 @@
 					onclick={() => (showTextInput = !showTextInput)}
 					title="Toggle Message Input"
 				>
-					<Icon
-						icon={showTextInput ? 'lucide:chevron-up' : 'lucide:edit'}
-						class="h-4 w-4 text-zinc-300"
-					/>
+					{#if showTextInput}
+						<ChevronUp class="h-4 w-4 text-zinc-300" />
+					{:else}
+						<Edit class="h-4 w-4 text-zinc-300" />
+					{/if}
 				</button>
 			</div>
 

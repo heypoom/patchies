@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Handle, Position, NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -9,6 +8,9 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { match, P } from 'ts-pattern';
 	import { createNode } from '@elemaudio/core';
+	import SkipBack from '@lucide/svelte/icons/skip-back';
+	import Upload from '@lucide/svelte/icons/upload';
+	import Video from '@lucide/svelte/icons/video';
 
 	let {
 		id: nodeId,
@@ -347,14 +349,14 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={restartVideo}
 						>
-							<Icon icon="lucide:skip-back" class="h-4 w-4 text-zinc-300" />
+							<SkipBack class="h-4 w-4 text-zinc-300"  />
 						</button>
 						<button
 							title="Change video"
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={openFileDialog}
 						>
-							<Icon icon="lucide:upload" class="h-4 w-4 text-zinc-300" />
+							<Upload class="h-4 w-4 text-zinc-300"  />
 						</button>
 					{/if}
 				</div>
@@ -414,7 +416,7 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
 						>
-							<Icon icon="lucide:video" class="h-8 w-8 text-zinc-400" />
+							<Video class="h-8 w-8 text-zinc-400"  />
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
 								<span class="text-zinc-300">double click</span> or
 								<span class="text-zinc-300">drop</span><br />

@@ -2,11 +2,12 @@
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioService } from '$lib/audio/v2/AudioService';
+	import Settings from '@lucide/svelte/icons/settings';
+	import X from '@lucide/svelte/icons/x';
 	let contentContainer: HTMLDivElement | null = null;
 
 	// Props
@@ -132,7 +133,7 @@
 						}}
 						title="Configure channels"
 					>
-						<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+						<Settings class="h-4 w-4 text-zinc-300"  />
 					</button>
 				</div>
 			</div>
@@ -214,7 +215,7 @@
 		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showChannelEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 

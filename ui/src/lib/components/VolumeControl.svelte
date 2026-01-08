@@ -2,8 +2,12 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 	import { Slider } from '$lib/components/ui/slider';
-	import Icon from '@iconify/svelte';
+	import Volume from '@lucide/svelte/icons/volume';
+	import Volume1 from '@lucide/svelte/icons/volume-1';
+	import Volume2 from '@lucide/svelte/icons/volume-2';
+	import VolumeX from '@lucide/svelte/icons/volume-x';
 	import { onMount } from 'svelte';
+	import type { ComponentType } from 'svelte';
 
 	const audioService = AudioService.getInstance();
 
@@ -44,13 +48,13 @@
 	}
 
 	// Determine which icon to show
-	const volumeIcon = $derived.by(() => {
-		if (isMuted) return 'lucide:volume-x';
-		if (volume === 0) return 'lucide:volume-x';
-		if (volume < 0.33) return 'lucide:volume';
-		if (volume < 0.66) return 'lucide:volume-1';
+	const VolumeIcon = $derived.by<ComponentType>(() => {
+		if (isMuted) return VolumeX;
+		if (volume === 0) return VolumeX;
+		if (volume < 0.33) return Volume;
+		if (volume < 0.66) return Volume1;
 
-		return 'lucide:volume-2';
+		return Volume2;
 	});
 
 	onMount(() => {
@@ -70,8 +74,7 @@
 				onmouseenter={() => (isHovered = true)}
 				onmouseleave={() => (isHovered = false)}
 			>
-				<Icon
-					icon={volumeIcon}
+				<VolumeIcon
 					class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
 				/>
 			</button>

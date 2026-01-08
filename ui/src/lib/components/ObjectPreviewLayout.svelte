@@ -1,8 +1,10 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
 	import { onMount, type Snippet } from 'svelte';
 	import * as Tooltip from './ui/tooltip';
 	import { derived } from 'svelte/store';
+	import Code from '@lucide/svelte/icons/code';
+	import Play from '@lucide/svelte/icons/play';
+	import X from '@lucide/svelte/icons/x';
 
 	let previewContainer: HTMLDivElement | null = null;
 
@@ -91,7 +93,7 @@
 						}}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300"  />
 					</button>
 				</div>
 			</div>
@@ -112,7 +114,7 @@
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								<button onclick={handleRun} class="rounded p-1 hover:bg-zinc-700">
-									<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+									<Play class="h-4 w-4 text-zinc-300"  />
 								</button>
 							</Tooltip.Trigger>
 							<Tooltip.Content>
@@ -122,7 +124,7 @@
 					{/if}
 
 					<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-						<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+						<X class="h-4 w-4 text-zinc-300"  />
 					</button>
 				</div>
 			{/if}

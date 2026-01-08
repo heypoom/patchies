@@ -29,7 +29,6 @@
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { serializePatch } from '$lib/save-load/serialize-patch';
 	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
-	import Icon from '@iconify/svelte';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
@@ -37,6 +36,13 @@
 	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 	import { AudioRegistry } from '$lib/registry/AudioRegistry';
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+	import CirclePlus from '@lucide/svelte/icons/circle-plus';
+	import Command from '@lucide/svelte/icons/command';
+	import FilePlus2 from '@lucide/svelte/icons/file-plus-2';
+	import Link from '@lucide/svelte/icons/link';
+	import Search from '@lucide/svelte/icons/search';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Volume2 from '@lucide/svelte/icons/volume-2';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -756,7 +762,7 @@
 			<div
 				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
 			>
-				<Icon icon="lucide:volume-2" class="h-4 w-4" />
+				<Volume2 class="h-4 w-4"  />
 				<span>Click anywhere to play sound</span>
 			</div>
 		</div>
@@ -827,7 +833,7 @@
 						if (ok) {
 							deleteSelectedElements();
 						}
-					}}><Icon icon="lucide:trash-2" class="h-4 w-4 text-red-400" /></button
+					}}><Trash2 class="h-4 w-4 text-red-400"  /></button
 				>
 			{/if}
 
@@ -839,7 +845,7 @@
 					e.stopPropagation();
 
 					insertObjectWithButton();
-				}}><Icon icon="lucide:circle-plus" class="h-4 w-4 text-zinc-300" /></button
+				}}><CirclePlus class="h-4 w-4 text-zinc-300"  /></button
 			>
 
 			<button
@@ -850,13 +856,13 @@
 					e.stopPropagation();
 
 					showObjectBrowser = true;
-				}}><Icon icon="lucide:search" class="h-4 w-4 text-zinc-300" /></button
+				}}><Search class="h-4 w-4 text-zinc-300"  /></button
 			>
 
 			<button
 				title="Share Link"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={createShareLink}><Icon icon="lucide:link" class="h-4 w-4 text-zinc-300" /></button
+				onclick={createShareLink}><Link class="h-4 w-4 text-zinc-300"  /></button
 			>
 
 			<button
@@ -867,7 +873,7 @@
 					e.stopPropagation();
 
 					triggerCommandPalette();
-				}}><Icon icon="lucide:command" class="h-4 w-4 text-zinc-300" /></button
+				}}><Command class="h-4 w-4 text-zinc-300"  /></button
 			>
 
 			<VolumeControl />
@@ -881,7 +887,7 @@
 
 					newPatch();
 				}}
-				><Icon icon="lucide:file-plus-2" class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
+				><FilePlus2 class="h-4 w-4 text-zinc-300 hover:text-red-400"  /></button
 			>
 
 			<StartupModal bind:open={showStartupModal} onLoadPatch={loadPatchById} />

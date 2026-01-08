@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
+	import Camera from '@lucide/svelte/icons/camera';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Play from '@lucide/svelte/icons/play';
+	import Square from '@lucide/svelte/icons/square';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -146,17 +149,18 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={togglePause}
 						>
-							<Icon
-								icon={isPaused ? 'lucide:play' : 'lucide:pause'}
-								class="h-4 w-4 text-zinc-300"
-							/>
+							{#if isPaused}
+								<Play class="h-4 w-4 text-zinc-300" />
+							{:else}
+								<Pause class="h-4 w-4 text-zinc-300" />
+							{/if}
 						</button>
 						<button
 							title="Stop webcam"
 							class="rounded p-1 opacity-100 transition-opacity hover:bg-zinc-700"
 							onclick={stopCapture}
 						>
-							<Icon icon="lucide:square" class="h-4 w-4 text-red-500" />
+							<Square class="h-4 w-4 text-red-500" />
 						</button>
 					{:else}
 						<button
@@ -164,7 +168,7 @@
 							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={startCapture}
 						>
-							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							<Play class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 				</div>
@@ -190,7 +194,7 @@
 					{#if !isCapturing}
 						<div class="flex h-32 w-48 items-center justify-center">
 							<div class="flex flex-col items-center gap-2">
-								<Icon icon="lucide:camera" class="h-8 w-8 text-zinc-400" />
+								<Camera class="h-8 w-8 text-zinc-400" />
 
 								{#if errorMessage}
 									<div class="text-xs text-red-400">{errorMessage}</div>

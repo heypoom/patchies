@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
+	import Image from '@lucide/svelte/icons/image';
+	import Loader from '@lucide/svelte/icons/loader';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { generateImageWithGemini } from '$lib/ai/google';
@@ -154,10 +155,11 @@
 			{#if !hasImage || isLoading}
 				<div class="pointer-events-none absolute h-full w-full">
 					<div class="flex h-full items-center justify-center">
-						<Icon
-							icon={isLoading ? 'lucide:loader' : 'lucide:image'}
-							class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
-						/>
+						{#if isLoading}
+							<Loader class="h-8 w-8 animate-spin text-zinc-300" />
+						{:else}
+							<Image class="h-8 w-8 text-zinc-300" />
+						{/if}
 					</div>
 				</div>
 			{/if}

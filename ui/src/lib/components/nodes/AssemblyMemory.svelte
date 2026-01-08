@@ -6,8 +6,11 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AssemblySystem } from '$lib/assembly/AssemblySystem';
-	import Icon from '@iconify/svelte';
 	import type { Action } from 'machine';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import Settings from '@lucide/svelte/icons/settings';
+	import Trash from '@lucide/svelte/icons/trash';
+	import X from '@lucide/svelte/icons/x';
 
 	let {
 		id: nodeId,
@@ -194,7 +197,7 @@
 					class={['rounded p-1 hover:bg-zinc-700', isBatch && 'text-green-400']}
 					title="Toggle batch edit mode"
 				>
-					<Icon icon="lucide:file-text" class="h-4 w-4" />
+					<FileText class="h-4 w-4"  />
 				</button>
 			</div>
 
@@ -204,7 +207,7 @@
 					class={['rounded p-1 text-red-400 hover:bg-zinc-700']}
 					title="Clear memory (!)"
 				>
-					<Icon icon="lucide:trash" class="h-4 w-4" />
+					<Trash class="h-4 w-4"  />
 				</button>
 
 				<button
@@ -212,7 +215,7 @@
 					class={['rounded p-1 hover:bg-zinc-700', showSettings && 'text-blue-400']}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4" />
+					<Settings class="h-4 w-4"  />
 				</button>
 			</div>
 		</div>
@@ -303,7 +306,7 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 

@@ -2,7 +2,6 @@
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -11,6 +10,9 @@
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { DspNode } from '$lib/audio/v2/nodes/DspNode';
+	import Code from '@lucide/svelte/icons/code';
+	import Play from '@lucide/svelte/icons/play';
+	import X from '@lucide/svelte/icons/x';
 
 	let contentContainer: HTMLDivElement | null = null;
 
@@ -244,7 +246,7 @@
 						}}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300"  />
 					</button>
 				</div>
 			</div>
@@ -350,7 +352,7 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						<button onclick={runDSP} class="rounded p-1 hover:bg-zinc-700">
-							<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+							<Play class="h-4 w-4 text-zinc-300"  />
 						</button>
 					</Tooltip.Trigger>
 					<Tooltip.Content>
@@ -359,7 +361,7 @@
 				</Tooltip.Root>
 
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 

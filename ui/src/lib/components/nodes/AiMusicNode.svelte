@@ -1,13 +1,13 @@
 <script lang="ts">
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { LiveMusicManager, type Prompt } from '$lib/music/LiveMusicManager';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import type { LiveMusicGenerationConfig, Scale } from '@google/genai';
 	import JSON5 from 'json5';
+	import X from '@lucide/svelte/icons/x';
 
 	let { id: nodeId }: { id: string } = $props();
 
@@ -225,7 +225,7 @@
 											class="rounded text-zinc-400 hover:bg-zinc-600 hover:text-zinc-200"
 											title="Remove prompt"
 										>
-											<Icon icon="lucide:x" class="h-3 w-3" />
+											<X class="h-3 w-3"  />
 										</button>
 									</div>
 

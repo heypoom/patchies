@@ -3,13 +3,17 @@
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';
 	import StandardHandle from '../StandardHandle.svelte';
-	import Icon from '@iconify/svelte';
 	import CodeEditor from '../CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import * as Tooltip from '../ui/tooltip';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import Code from '@lucide/svelte/icons/code';
+	import FolderOpen from '@lucide/svelte/icons/folder-open';
+	import Play from '@lucide/svelte/icons/play';
+	import Terminal from '@lucide/svelte/icons/terminal';
+	import X from '@lucide/svelte/icons/x';
 
 	let {
 		id: nodeId,
@@ -403,7 +407,7 @@
 								onclick={openFileDialog}
 								title="Load ROM file"
 							>
-								<Icon icon="lucide:folder-open" class="h-4 w-4 text-zinc-300" />
+								<FolderOpen class="h-4 w-4 text-zinc-300"  />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -422,7 +426,7 @@
 								}}
 								title="Edit code"
 							>
-								<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+								<Code class="h-4 w-4 text-zinc-300"  />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -440,7 +444,7 @@
 								}}
 								title="Toggle console"
 							>
-								<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+								<Terminal class="h-4 w-4 text-zinc-300"  />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -516,7 +520,7 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button onclick={assembleAndLoad} class="rounded p-1 hover:bg-zinc-700">
-								<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+								<Play class="h-4 w-4 text-zinc-300"  />
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -526,7 +530,7 @@
 				{/if}
 
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 

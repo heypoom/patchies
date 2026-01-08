@@ -1,5 +1,8 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import CircleDot from '@lucide/svelte/icons/circle-dot';
+	import Github from '@lucide/svelte/icons/github';
+	import Info from '@lucide/svelte/icons/info';
 	import { onMount } from 'svelte';
 
 	import demoImage from '$lib/images/startup-modal.webp';
@@ -99,7 +102,7 @@
 			<div class="rounded-lg bg-zinc-800/50 p-4">
 				<ul class="space-y-2 text-sm">
 					<li class="flex items-start gap-2">
-						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
+						<CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
 							>Insert an object with <kbd
 								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Enter</kbd
@@ -107,7 +110,7 @@
 						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
+						<CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
 							>Browse objects with <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
 								>Ctrl + B</kbd
@@ -115,11 +118,11 @@
 						>
 					</li>
 					<li class="flex items-start gap-2">
-						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
+						<CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span>Connect nodes by dragging between their handles</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
+						<CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
 							>Run code in code editor with <kbd
 								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd
@@ -127,7 +130,7 @@
 						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Icon icon="lucide:circle-dot" class="mt-0.5 h-4 w-4 text-orange-500" />
+						<CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
 						<span
 							>Open the command palette with <kbd
 								class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl + K</kbd
@@ -166,7 +169,7 @@
 					rel="noopener noreferrer"
 					class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
 				>
-					<Icon icon="lucide:github" class="h-4 w-4" />
+					<Github class="h-4 w-4" />
 					GitHub Repository
 				</a>
 				<a
@@ -175,7 +178,7 @@
 					rel="noopener noreferrer"
 					class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
 				>
-					<Icon icon="lucide:book-open" class="h-4 w-4" />
+					<BookOpen class="h-4 w-4" />
 					Documentation
 				</a>
 			</div>
@@ -184,7 +187,7 @@
 		<!-- Show on startup toggle -->
 		<div class="flex max-w-xs items-center justify-between gap-x-10 rounded-lg border p-3">
 			<div class="flex items-center gap-2">
-				<Icon icon="lucide:info" class="h-4 w-4 text-zinc-400" />
+				<Info class="h-4 w-4 text-zinc-400" />
 				<span class="text-sm text-zinc-300">show on startup?</span>
 			</div>
 

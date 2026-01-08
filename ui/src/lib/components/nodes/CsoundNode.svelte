@@ -6,7 +6,8 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import CommonExprLayout from './CommonExprLayout.svelte';
-	import Icon from '@iconify/svelte';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Play from '@lucide/svelte/icons/play';
 	import { match, P } from 'ts-pattern';
 	import type { CsoundNode } from '$lib/audio/v2/nodes/CsoundNode';
 
@@ -118,7 +119,11 @@
 						class="rounded p-1 hover:bg-zinc-700"
 						title={isPlaying ? 'Pause' : 'Play'}
 					>
-						<Icon icon={isPlaying ? 'lucide:pause' : 'lucide:play'} class="h-4 w-4" />
+						{#if isPlaying}
+							<Pause class="h-4 w-4" />
+						{:else}
+							<Play class="h-4 w-4" />
+						{/if}
 					</button>
 				</div>
 			</div>

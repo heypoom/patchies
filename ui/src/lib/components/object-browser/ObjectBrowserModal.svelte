@@ -1,11 +1,14 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
 	import {
 		getCategorizedObjects,
 		type CategoryGroup,
 		type ObjectItem
 	} from './get-categorized-objects';
 	import Fuse from 'fuse.js';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Search from '@lucide/svelte/icons/search';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import X from '@lucide/svelte/icons/x';
 
 	let {
 		open = $bindable(false),
@@ -151,7 +154,7 @@
 					class="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
 					aria-label="Close modal"
 				>
-					<Icon icon="lucide:x" class="h-5 w-5" />
+					<X class="h-5 w-5"  />
 				</button>
 			</div>
 
@@ -174,7 +177,7 @@
 							class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
 							aria-label="Clear search"
 						>
-							<Icon icon="lucide:x" class="h-4 w-4" />
+							<X class="h-4 w-4"  />
 						</button>
 					{/if}
 				</div>
@@ -185,7 +188,7 @@
 				{#if filteredCategories.length === 0}
 					<div class="flex h-full items-center justify-center text-zinc-500">
 						<div class="text-center">
-							<Icon icon="lucide:search-x" class="mx-auto mb-2 h-12 w-12" />
+							<SearchX class="mx-auto mb-2 h-12 w-12"  />
 							<p>No objects found</p>
 						</div>
 					</div>
@@ -202,14 +205,13 @@
 										{category.title}
 										<span class="text-zinc-600">({category.objects.length})</span>
 									</span>
-									<Icon
-										icon="lucide:chevron-down"
+									<ChevronDown
 										class="h-4 w-4 text-zinc-500 transition-transform {expandedCategories.has(
 											category.title
 										)
 											? ''
 											: '-rotate-90'}"
-									/>
+									 />
 								</button>
 
 								<!-- Category objects grid -->

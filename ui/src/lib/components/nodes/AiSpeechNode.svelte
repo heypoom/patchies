@@ -2,7 +2,6 @@
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
@@ -12,6 +11,7 @@
 	import { audioUrlCache } from '$lib/stores/audioCache';
 	import { omit } from 'lodash';
 	import { AudioService } from '$lib/audio/v2/AudioService';
+	import Play from '@lucide/svelte/icons/play';
 
 	type TTSOptions = {
 		text: string;
@@ -251,7 +251,7 @@
 						onclick={togglePlayback}
 						title="Play"
 					>
-						<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+						<Play class="h-4 w-4 text-zinc-300"  />
 					</button>
 				{/if}
 			</div>

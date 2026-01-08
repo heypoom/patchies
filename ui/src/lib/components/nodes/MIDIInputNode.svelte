@@ -2,12 +2,13 @@
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { MIDISystem, type MIDIInputConfig } from '$lib/canvas/MIDISystem';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { midiInputDevices } from '../../../stores/midi.store';
 	import { match, P } from 'ts-pattern';
+	import Settings from '@lucide/svelte/icons/settings';
+	import X from '@lucide/svelte/icons/x';
 
 	type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend';
 
@@ -156,7 +157,7 @@
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+					<Settings class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 
@@ -173,7 +174,7 @@
 						onclick={() => (showSettings = true)}
 						title="Select MIDI device"
 					>
-						<Icon icon="lucide:settings" class="mb-1 h-4 w-4" />
+						<Settings class="mb-1 h-4 w-4"  />
 
 						<div class="text-[10px]">
 							<span class="text-amber-400">Select device</span>
@@ -206,7 +207,7 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 

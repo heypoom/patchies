@@ -1,8 +1,9 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
 	import { onMount } from 'svelte';
 	import ExampleCard from './ExampleCard.svelte';
 	import type { ExampleCategory } from './types';
+	import FolderOpen from '@lucide/svelte/icons/folder-open';
+	import Loader2 from '@lucide/svelte/icons/loader-2';
 
 	let { onLoadPatch }: { onLoadPatch?: (patchId: string) => Promise<void> } = $props();
 
@@ -51,11 +52,11 @@
 <div class="space-y-6">
 	{#if isLoadingExamples}
 		<div class="flex items-center justify-center py-12">
-			<Icon icon="lucide:loader-2" class="h-8 w-8 animate-spin text-zinc-500" />
+			<Loader2 class="h-8 w-8 animate-spin text-zinc-500"  />
 		</div>
 	{:else if exampleCategories.length === 0}
 		<div class="py-12 text-center text-zinc-500">
-			<Icon icon="lucide:folder-open" class="mx-auto mb-3 h-12 w-12" />
+			<FolderOpen class="mx-auto mb-3 h-12 w-12"  />
 			<p>No example patches available</p>
 		</div>
 	{:else}

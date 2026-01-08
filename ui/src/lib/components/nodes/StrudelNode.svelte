@@ -2,11 +2,12 @@
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import Play from '@lucide/svelte/icons/play';
+	import Square from '@lucide/svelte/icons/square';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
@@ -113,7 +114,7 @@
 								onclick={stop}
 								title="Stop"
 							>
-								<Icon icon="lucide:square" class="h-4 w-4 text-zinc-300" />
+								<Square class="h-4 w-4 text-zinc-300"  />
 							</button>
 						{:else}
 							<button
@@ -121,7 +122,7 @@
 								onclick={evaluate}
 								title="Play"
 							>
-								<Icon icon="lucide:play" class="h-4 w-4 text-zinc-300" />
+								<Play class="h-4 w-4 text-zinc-300"  />
 							</button>
 						{/if}
 					{/if}

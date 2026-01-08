@@ -7,9 +7,14 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import CommonExprLayout from './CommonExprLayout.svelte';
-	import Icon from '@iconify/svelte';
 	import { keymap } from '@codemirror/view';
 	import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
+	import CirclePlus from '@lucide/svelte/icons/circle-plus';
+	import Delete from '@lucide/svelte/icons/delete';
+	import Replace from '@lucide/svelte/icons/replace';
+	import Settings from '@lucide/svelte/icons/settings';
+	import Trash from '@lucide/svelte/icons/trash';
+	import X from '@lucide/svelte/icons/x';
 
 	let {
 		id: nodeId,
@@ -148,7 +153,7 @@
 						title="Replace (Cmd+Enter)"
 						disabled={isReplaceDisabled}
 					>
-						<Icon icon="lucide:replace" class="h-4 w-4" />
+						<Replace class="h-4 w-4"  />
 					</button>
 
 					<!-- Add shred button -->
@@ -158,7 +163,7 @@
 						title="Add Shred (Cmd+\)"
 						disabled={!data.expr.trim()}
 					>
-						<Icon icon="lucide:circle-plus" class="h-4 w-4" />
+						<CirclePlus class="h-4 w-4"  />
 					</button>
 
 					<!-- Remove button -->
@@ -168,7 +173,7 @@
 						title="Remove (Cmd+Backspace)"
 						disabled={shreds.length === 0}
 					>
-						<Icon icon="lucide:delete" class="h-4 w-4" />
+						<Delete class="h-4 w-4"  />
 					</button>
 				</div>
 
@@ -177,7 +182,7 @@
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
 				>
-					<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+					<Settings class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 
@@ -208,11 +213,11 @@
 		<div class="relative">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={stopChuck} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:trash" class="h-4 w-4 text-zinc-300" />
+					<Trash class="h-4 w-4 text-zinc-300"  />
 				</button>
 
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 
@@ -243,7 +248,7 @@
 												class="ml-2 rounded p-1 hover:bg-zinc-700"
 												title="Remove shred"
 											>
-												<Icon icon="lucide:x" class="h-3 w-3 text-red-400" />
+												<X class="h-3 w-3 text-red-400"  />
 											</button>
 										</div>
 									</div>

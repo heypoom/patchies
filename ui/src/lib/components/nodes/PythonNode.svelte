@@ -1,13 +1,17 @@
 <script lang="ts">
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import Icon from '@iconify/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { PyodideConsoleOutputEvent, PyodideSendMessageEvent } from '$lib/eventbus/events';
+	import Code from '@lucide/svelte/icons/code';
+	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
+	import Terminal from '@lucide/svelte/icons/terminal';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import X from '@lucide/svelte/icons/x';
 
 	let {
 		id: nodeId,
@@ -152,7 +156,7 @@
 						}}
 						title="Console"
 					>
-						<Icon icon="lucide:terminal" class="h-4 w-4 text-zinc-300" />
+						<Terminal class="h-4 w-4 text-zinc-300"  />
 					</button>
 
 					<button
@@ -160,7 +164,7 @@
 						onclick={toggleEditor}
 						title="Edit code"
 					>
-						<Icon icon="lucide:code" class="h-4 w-4 text-zinc-300" />
+						<Code class="h-4 w-4 text-zinc-300"  />
 					</button>
 				</div>
 			</div>
@@ -183,7 +187,7 @@
 										title="Run again"
 										aria-label="Run again"
 									>
-										<Icon icon="lucide:refresh-ccw" font-size="12px" />
+										<RefreshCcw font-size="12px"  />
 									</button>
 								{/if}
 
@@ -204,7 +208,7 @@
 									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 									title="Clear console"
 								>
-									<Icon icon="lucide:trash-2" font-size="12px" />
+									<Trash2 font-size="12px"  />
 								</button>
 							</div>
 						</div>
@@ -250,7 +254,7 @@
 		<div class="absolute" style="left: {contentWidth + 10}px">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 

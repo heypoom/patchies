@@ -9,9 +9,10 @@
 	import { OrcaRenderer } from '$lib/orca/OrcaRenderer';
 	import { library } from '$lib/orca/library';
 	import { match, P } from 'ts-pattern';
+	import Settings from '@lucide/svelte/icons/settings';
+	import X from '@lucide/svelte/icons/x';
 
 	import StandardHandle from '../StandardHandle.svelte';
-	import Icon from '@iconify/svelte';
 	import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
 
 	let {
@@ -509,7 +510,7 @@
 						}}
 						title="Settings"
 					>
-						<Icon icon="lucide:settings" class="h-4 w-4 text-zinc-300" />
+						<Settings class="h-4 w-4 text-zinc-300"  />
 					</button>
 				</div>
 			</div>
@@ -544,7 +545,7 @@
 		<div class="absolute" style="left: {previewContainerWidth + 10}px;">
 			<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
 				<button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-					<Icon icon="lucide:x" class="h-4 w-4 text-zinc-300" />
+					<X class="h-4 w-4 text-zinc-300"  />
 				</button>
 			</div>
 
