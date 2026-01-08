@@ -181,7 +181,7 @@
 						<div
 							ondblclick={handleDoubleClick}
 							class={[
-								'expr-display max-w-[400px] cursor-pointer rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
+								'expr-display cursor-pointer rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
 								containerClass
 							]}
 							role="button"
@@ -190,9 +190,9 @@
 						>
 							<div class="expr-preview flex items-center gap-2 font-mono">
 								{#if expr}
-									<span>
+									<span class="flex max-w-[400px] overflow-hidden">
 										{#if displayPrefix}
-											<span class={['text-xs text-zinc-400']}>{displayPrefix}</span>
+											<span class="mr-2 text-xs text-zinc-400">{displayPrefix}</span>
 										{/if}
 
 										<code class="whitespace-pre text-xs">
