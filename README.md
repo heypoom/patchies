@@ -358,6 +358,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `canvas.dom`: creates a JavaScript canvas (main thread)
 
+<img src="./docs/images/patchies-canvas-dom-widgets.png" alt="Patchies.app canvas.dom widgets" width="700">
+
+> Try this patch out [in the app](https://patchies.app/?id=izs6hjxchit2zad)
+
 - Same as `canvas` but runs directly on the main thread instead of on the [rendering pipeline thread](#rendering-pipeline), and comes with some additional features:
 
   - Use `mouse` object with properties: `x`, `y`, `down`, `buttons` to get current mouse position and state.

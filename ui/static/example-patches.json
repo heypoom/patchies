@@ -134,6 +134,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "izs6hjxchit2zad",
+			"name": "Interactive Widget Playground",
+			"description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code.",
+			"category": "Interactive",
+			"author": "@heypoom"
+		},
+		{
 			"id": "c6adsknw8iix3m2",
 			"name": "Plotting Equations",
 			"description": "Uses expr node to create mathematical plots",
