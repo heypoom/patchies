@@ -243,6 +243,8 @@ These objects support video chaining and can be connected to create complex visu
 
   - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.
     - When `noDrag()` is enabled, you can still drag the "p5" title to move the whole object around.
+  - `noOutput()` hides the video output port (the orange outlet at the bottom). This is useful when creating interface widgets that don't need to be part of the video chain.
+  - `setTitle(title)` sets the title of the node. Use this to create custom, reusable widgets with meaningful names. Example: `setTitle('Color Picker')`.
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
 
 - You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
@@ -340,6 +342,9 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - You can call these special methods in your canvas code:
 
+  - `noDrag()` disables dragging the node. This allows you to add mouse or touch interactivity to your canvas without accidentally moving the node.
+  - `noOutput()` hides the video output port. Useful when creating interface widgets or tools that don't need to be part of the video processing chain.
+  - `setTitle(title)` sets the title of the node. Create custom, reusable widgets with meaningful names like `setTitle('Spectogram')`.
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
 
@@ -355,8 +360,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - Same as `canvas` but runs directly on the main thread instead of on the [rendering pipeline thread](#rendering-pipeline), and comes with some additional features:
 
   - Use `mouse` object with properties: `x`, `y`, `down`, `buttons` to get current mouse position and state.
-  - `noDrag()` to disable node dragging, so you can add mouse interactivity.
   - Full DOM and browser API access (e.g. `document` and `window`)
+  - Otherwise, the API remains the same as `canvas`: `noDrag()`, `noOutput()`, `setTitle(title)`, `send(message)`, `recv(callback)`, `fft()` can all be used in `canvas.dom`.
 
 - When to use `canvas.dom` instead of `canvas`:
 
