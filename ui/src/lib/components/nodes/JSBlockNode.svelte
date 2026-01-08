@@ -7,10 +7,15 @@
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import { match, P } from 'ts-pattern';
 	import Code from '@lucide/svelte/icons/code';
+	import Loader from '@lucide/svelte/icons/loader';
+	import Package from '@lucide/svelte/icons/package';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Play from '@lucide/svelte/icons/play';
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import Terminal from '@lucide/svelte/icons/terminal';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import X from '@lucide/svelte/icons/x';
+	import type { ComponentType } from 'svelte';
 
 	let contentContainer: HTMLDivElement | null = null;
 	let consoleContainer: HTMLDivElement | null = $state(null);
@@ -63,13 +68,13 @@
 		return 'border-zinc-600';
 	});
 
-	const playOrStopIcon = $derived.by(() => {
-		if (data.libraryName) return 'lucide:package';
+	const playOrStopIcon = $derived.by<ComponentType>(() => {
+		if (data.libraryName) return Package;
 
-		if (isRunning) return 'lucide:loader';
-		if (isLongRunningTaskActive) return 'lucide:pause';
+		if (isRunning) return Loader;
+		if (isLongRunningTaskActive) return Pause;
 
-		return 'lucide:play';
+		return Play;
 	});
 
 	const handleMessage: MessageCallbackFn = (message) => {
@@ -391,7 +396,7 @@
 						aria-label="Run code"
 					>
 						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-							<Icon icon={playOrStopIcon} />
+							<svelte:component this={playOrStopIcon} />
 						</div>
 					</button>
 

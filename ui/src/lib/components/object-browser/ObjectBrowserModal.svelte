@@ -161,8 +161,7 @@
 			<!-- Search bar -->
 			<div class="border-b border-zinc-800 px-4 py-3 sm:px-6">
 				<div class="relative">
-					<Icon
-						icon="lucide:search"
+					<Search
 						class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
 					/>
 					<input

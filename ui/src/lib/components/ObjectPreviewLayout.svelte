@@ -3,6 +3,7 @@
 	import * as Tooltip from './ui/tooltip';
 	import { derived } from 'svelte/store';
 	import Code from '@lucide/svelte/icons/code';
+	import Pause from '@lucide/svelte/icons/pause';
 	import Play from '@lucide/svelte/icons/play';
 	import X from '@lucide/svelte/icons/x';
 
@@ -81,7 +82,11 @@
 							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={handlePlaybackToggle}
 						>
-							<Icon icon={paused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
+							{#if paused}
+								<Play class="h-4 w-4 text-zinc-300" />
+							{:else}
+								<Pause class="h-4 w-4 text-zinc-300" />
+							{/if}
 						</button>
 					{/if}
 

@@ -12,6 +12,8 @@
 	import { memoryActions } from './memoryStore';
 	import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
 	import Binary from '@lucide/svelte/icons/binary';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Play from '@lucide/svelte/icons/play';
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import Settings from '@lucide/svelte/icons/settings';
 	import StepForward from '@lucide/svelte/icons/step-forward';
@@ -427,10 +429,11 @@
 					class="group rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 					title={machineConfig.isRunning ? 'Pause machine' : 'Run machine'}
 				>
-					<Icon
-						icon={machineConfig.isRunning ? 'lucide:pause' : 'lucide:play'}
-						class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
-					/>
+					{#if machineConfig.isRunning}
+						<Pause class="h-4 w-4 text-zinc-300 group-focus:text-blue-300" />
+					{:else}
+						<Play class="h-4 w-4 text-zinc-300 group-focus:text-blue-300" />
+					{/if}
 				</button>
 			</div>
 		</div>

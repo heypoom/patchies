@@ -11,6 +11,7 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import Code from '@lucide/svelte/icons/code';
 	import FolderOpen from '@lucide/svelte/icons/folder-open';
+	import Pause from '@lucide/svelte/icons/pause';
 	import Play from '@lucide/svelte/icons/play';
 	import Terminal from '@lucide/svelte/icons/terminal';
 	import X from '@lucide/svelte/icons/x';
@@ -397,7 +398,11 @@
 						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={togglePause}
 					>
-						<Icon icon={isPaused ? 'lucide:play' : 'lucide:pause'} class="h-4 w-4 text-zinc-300" />
+						{#if isPaused}
+							<Play class="h-4 w-4 text-zinc-300" />
+						{:else}
+							<Pause class="h-4 w-4 text-zinc-300" />
+						{/if}
 					</button>
 
 					<Tooltip.Root>

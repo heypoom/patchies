@@ -9,6 +9,8 @@
 	import { OrcaRenderer } from '$lib/orca/OrcaRenderer';
 	import { library } from '$lib/orca/library';
 	import { match, P } from 'ts-pattern';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Play from '@lucide/svelte/icons/play';
 	import Settings from '@lucide/svelte/icons/settings';
 	import X from '@lucide/svelte/icons/x';
 
@@ -499,7 +501,11 @@
 						class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 						onclick={togglePlay}
 					>
-						<Icon icon={isPlaying ? 'lucide:pause' : 'lucide:play'} class="h-4 w-4 text-zinc-300" />
+						{#if isPlaying}
+							<Pause class="h-4 w-4 text-zinc-300" />
+						{:else}
+							<Play class="h-4 w-4 text-zinc-300" />
+						{/if}
 					</button>
 
 					<button

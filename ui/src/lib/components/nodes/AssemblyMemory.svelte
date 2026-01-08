@@ -7,7 +7,9 @@
 	import { match, P } from 'ts-pattern';
 	import { AssemblySystem } from '$lib/assembly/AssemblySystem';
 	import type { Action } from 'machine';
+	import Binary from '@lucide/svelte/icons/binary';
 	import FileText from '@lucide/svelte/icons/file-text';
+	import Hash from '@lucide/svelte/icons/hash';
 	import Settings from '@lucide/svelte/icons/settings';
 	import Trash from '@lucide/svelte/icons/trash';
 	import X from '@lucide/svelte/icons/x';
@@ -189,7 +191,11 @@
 					class="rounded p-1 hover:bg-zinc-700"
 					title="Toggle format (hex/decimal)"
 				>
-					<Icon icon={format === 'hex' ? 'lucide:hash' : 'lucide:binary'} class="h-4 w-4" />
+					{#if format === 'hex'}
+						<Hash class="h-4 w-4" />
+					{:else}
+						<Binary class="h-4 w-4" />
+					{/if}
 				</button>
 
 				<button
