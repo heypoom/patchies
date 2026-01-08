@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { match, P } from 'ts-pattern';
 	import { AudioService } from '$lib/audio/v2/AudioService';
@@ -25,6 +25,7 @@
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let audioService = AudioService.getInstance();
 
@@ -52,11 +53,14 @@
 
 			if (!elemNode) return;
 
-			elemNode.onSetPortCount = (inletCount: number, outletCount: number) =>
+			elemNode.onSetPortCount = (inletCount: number, outletCount: number) => {
 				updateNodeData(nodeId, {
 					messageInletCount: inletCount,
 					messageOutletCount: outletCount
 				});
+
+				updateNodeInternals(nodeId);
+			};
 
 			elemNode.onSetTitle = (title: string) => {
 				updateNodeData(nodeId, { title });
