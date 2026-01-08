@@ -279,6 +279,64 @@
 		createNode(type, position, data);
 	}
 
+	function handleAiMultipleObjectsInsert(
+		objectNodes: Array<{ type: string; data: any; position?: { x: number; y: number } }>,
+		simplifiedEdges: Array<{
+			source: number;
+			target: number;
+			sourceHandle?: string;
+			targetHandle?: string;
+		}>
+	) {
+		// Get base position (center around mouse position)
+		const basePosition = screenToFlowPosition(lastMousePosition);
+
+		// Create nodes and track their IDs
+		const createdNodeIds: string[] = [];
+		const newNodes: Node[] = [];
+
+		objectNodes.forEach((objNode, index) => {
+			const id = `${objNode.type}-${nodeIdCounter++}`;
+			createdNodeIds.push(id);
+
+			// Use relative positioning if provided, otherwise stack them
+			const relativePos = objNode.position || { x: index * 200, y: 0 };
+			const position = {
+				x: basePosition.x + relativePos.x,
+				y: basePosition.y + relativePos.y
+			};
+
+			const newNode: Node = {
+				id,
+				type: objNode.type,
+				position,
+				data: objNode.data ?? getDefaultNodeData(objNode.type)
+			};
+
+			newNodes.push(newNode);
+		});
+
+		// Add all new nodes
+		nodes = [...nodes, ...newNodes];
+
+		// Create edges using the created node IDs
+		const newEdges: Edge[] = simplifiedEdges.map((edge, index) => {
+			const sourceId = createdNodeIds[edge.source];
+			const targetId = createdNodeIds[edge.target];
+
+			return {
+				id: `edge-${Date.now()}-${index}`,
+				source: sourceId,
+				target: targetId,
+				sourceHandle: edge.sourceHandle,
+				targetHandle: edge.targetHandle
+			};
+		});
+
+		// Add all new edges
+		edges = [...edges, ...newEdges];
+	}
+
 	function handleAiObjectEdit(nodeId: string, data: any) {
 		// Update only specific fields from the AI result to preserve node structure
 		nodes = nodes.map((node) => {
@@ -1041,6 +1099,7 @@
 		position={aiPromptPosition}
 		editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
 		onInsertObject={handleAiObjectInsert}
+		onInsertMultipleObjects={handleAiMultipleObjectsInsert}
 		onEditObject={handleAiObjectEdit}
 	/>
 </div>

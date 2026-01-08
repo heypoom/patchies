@@ -1,3 +1,81 @@
+export type SimplifiedEdge = {
+	source: number; // Index of source node in nodes array
+	target: number; // Index of target node in nodes array
+	sourceHandle?: string; // e.g., 'message-0', 'audio-0'
+	targetHandle?: string; // e.g., 'message-0', 'audio-0'
+};
+
+export type MultiObjectResult = {
+	nodes: Array<{
+		type: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
+		data: any;
+		position?: { x: number; y: number }; // Optional relative positioning
+	}>;
+	edges: SimplifiedEdge[];
+};
+
+/**
+ * Uses Gemini AI to resolve a natural language prompt to multiple connected objects
+ */
+export async function resolveMultipleObjectsFromPrompt(
+	prompt: string
+): Promise<MultiObjectResult | null> {
+	const apiKey = localStorage.getItem('gemini-api-key');
+
+	if (!apiKey) {
+		throw new Error('Gemini API key is not set. Please set it in the settings.');
+	}
+
+	const { GoogleGenAI } = await import('@google/genai');
+	const ai = new GoogleGenAI({ apiKey });
+
+	const systemPrompt = buildMultiObjectSystemPrompt();
+
+	const response = await ai.models.generateContent({
+		model: 'gemini-2.5-flash',
+		contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
+	});
+
+	const responseText = response.text?.trim();
+	if (!responseText) {
+		return null;
+	}
+
+	try {
+		// Extract JSON from response (handle markdown code blocks)
+		const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+		const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+
+		const result = JSON.parse(jsonText);
+
+		// Validate the result has required fields
+		if (!result.nodes || !Array.isArray(result.nodes)) {
+			throw new Error('Response missing required "nodes" array');
+		}
+
+		if (!result.edges || !Array.isArray(result.edges)) {
+			throw new Error('Response missing required "edges" array');
+		}
+
+		// Validate each node has a type
+		for (const node of result.nodes) {
+			if (!node.type) {
+				throw new Error('Node missing required "type" field');
+			}
+		}
+
+		return {
+			nodes: result.nodes,
+			edges: result.edges
+		};
+	} catch (error) {
+		console.error('Failed to parse AI response:', error);
+		console.log('Response text:', responseText);
+		throw new Error('Failed to parse AI response as JSON');
+	}
+}
+
 /**
  * Uses Gemini AI to resolve a natural language prompt to a single object configuration
  */
@@ -176,4 +254,152 @@ Response:
 }
 
 Now convert the user's prompt into a single object configuration. Respond with ONLY the JSON object.`;
+}
+
+function buildMultiObjectSystemPrompt(): string {
+	return `You are an AI assistant that helps users create connected objects in Patchies, a visual patching environment for creative coding.
+
+Your task is to convert a natural language prompt into MULTIPLE connected object configurations that best match the user's intent.
+
+IMPORTANT RULES:
+1. You MUST respond with ONLY a valid JSON object, nothing else
+2. The JSON must have a "nodes" array and an "edges" array
+3. Each node in the "nodes" array must have a "type" field and a "data" field
+4. Each node can optionally have a "position" field with relative x, y coordinates (for layout suggestions)
+5. Each edge in the "edges" array connects nodes by their index in the nodes array
+6. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
+7. Handle names follow patterns: "message-0", "message-1" for message ports, "audio-0", "audio-1" for audio ports
+8. Focus on creating FUNCTIONAL, CONNECTED systems of objects
+9. ALWAYS include appropriate helper functions for each object type (same as single object mode)
+
+EDGE STRUCTURE:
+- source: index of source node (0-based)
+- target: index of target node (0-based)
+- sourceHandle: output port identifier (optional, e.g., "message-0", "audio-0")
+- targetHandle: input port identifier (optional, e.g., "message-0", "audio-0")
+
+AVAILABLE OBJECT TYPES (same as single object mode):
+Audio Objects: tone~, dsp~, elem~, sonic~, chuck~
+Video/Visual Objects: hydra, glsl, p5, canvas, canvas.dom, swgl
+Control/UI Objects: slider, button, toggle, msg
+Code Objects: js, python, expr
+AI Objects: ai.txt, ai.img
+
+EXAMPLES:
+
+User: "a slider controlling an oscillator frequency"
+Response:
+{
+  "nodes": [
+    {
+      "type": "slider",
+      "data": {
+        "min": 100,
+        "max": 1000,
+        "defaultValue": 440,
+        "isFloat": true
+      },
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "type": "tone~",
+      "data": {
+        "code": "setPortCount(1)\\nsetTitle('osc~')\\n\\nconst osc = new Tone.Oscillator(440, 'sine').connect(outputNode).start()\\n\\nrecv(freq => {\\n  osc.frequency.value = freq\\n})\\n\\nreturn { cleanup: () => osc.dispose() }",
+        "messageInletCount": 1,
+        "title": "osc~"
+      },
+      "position": { "x": 200, "y": 0 }
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1,
+      "sourceHandle": "message-0",
+      "targetHandle": "message-0"
+    }
+  ]
+}
+
+User: "create a simple synth with ADSR envelope and LFO"
+Response:
+{
+  "nodes": [
+    {
+      "type": "slider",
+      "data": {
+        "min": 0.1,
+        "max": 10,
+        "defaultValue": 2,
+        "isFloat": true
+      },
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "type": "tone~",
+      "data": {
+        "code": "setPortCount(1)\\nsetTitle('lfo~')\\n\\nconst lfo = new Tone.LFO(2, 200, 600).connect(outputNode).start()\\n\\nrecv(rate => {\\n  lfo.frequency.value = rate\\n})\\n\\nreturn { cleanup: () => lfo.dispose() }",
+        "messageInletCount": 1,
+        "audioOutletCount": 1,
+        "title": "lfo~"
+      },
+      "position": { "x": 200, "y": 0 }
+    },
+    {
+      "type": "tone~",
+      "data": {
+        "code": "setPortCount(0)\\nsetTitle('synth~')\\n\\nconst synth = new Tone.Synth({\\n  oscillator: { type: 'sine' },\\n  envelope: {\\n    attack: 0.1,\\n    decay: 0.2,\\n    sustain: 0.5,\\n    release: 1\\n  }\\n})\\n\\ninputNode.connect(synth.frequency)\\nsynth.connect(outputNode)\\n\\nsynth.triggerAttackRelease('C4', '8n')\\n\\nreturn { cleanup: () => synth.dispose() }",
+        "audioInletCount": 1,
+        "audioOutletCount": 1,
+        "title": "synth~"
+      },
+      "position": { "x": 400, "y": 0 }
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1,
+      "sourceHandle": "message-0",
+      "targetHandle": "message-0"
+    },
+    {
+      "source": 1,
+      "target": 2,
+      "sourceHandle": "audio-0",
+      "targetHandle": "audio-0"
+    }
+  ]
+}
+
+User: "button that triggers a visual animation"
+Response:
+{
+  "nodes": [
+    {
+      "type": "button",
+      "data": {
+        "label": "Trigger"
+      },
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "type": "p5",
+      "data": {
+        "code": "let trigger = false\\n\\nfunction setup() {\\n  createCanvas(400, 400)\\n}\\n\\nfunction draw() {\\n  background(trigger ? 100 : 220)\\n  if (trigger) {\\n    fill(255, 0, 0)\\n    ellipse(width/2, height/2, 100 + sin(frameCount * 0.1) * 50)\\n  }\\n}\\n\\nrecv(() => {\\n  trigger = !trigger\\n})"
+      },
+      "position": { "x": 200, "y": 0 }
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1,
+      "sourceHandle": "message-0",
+      "targetHandle": "message-0"
+    }
+  ]
+}
+
+Now convert the user's prompt into multiple connected object configurations. Respond with ONLY the JSON object.`;
 }

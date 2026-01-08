@@ -1,6 +1,10 @@
 <script lang="ts">
-	import { Loader, Sparkles, Edit3 } from '@lucide/svelte/icons';
-	import { resolveObjectFromPrompt } from '$lib/ai/object-resolver';
+	import { Loader, Sparkles, Edit3, Network } from '@lucide/svelte/icons';
+	import {
+		resolveObjectFromPrompt,
+		resolveMultipleObjectsFromPrompt,
+		type SimplifiedEdge
+	} from '$lib/ai/object-resolver';
 	import type { Node } from '@xyflow/svelte';
 
 	let {
@@ -8,12 +12,17 @@
 		position,
 		editingNode = null,
 		onInsertObject,
+		onInsertMultipleObjects,
 		onEditObject
 	}: {
 		open?: boolean;
 		position: { x: number; y: number };
 		editingNode?: Node | null;
 		onInsertObject: (type: string, data: any) => void;
+		onInsertMultipleObjects?: (
+			nodes: Array<{ type: string; data: any; position?: { x: number; y: number } }>,
+			edges: SimplifiedEdge[]
+		) => void;
 		onEditObject?: (nodeId: string, data: any) => void;
 	} = $props();
 
@@ -21,17 +30,26 @@
 	let promptText = $state('');
 	let isLoading = $state(false);
 	let errorMessage = $state<string | null>(null);
+	let isMultiObjectMode = $state(false);
 
 	const isEditMode = $derived(editingNode !== null);
-	const title = $derived(isEditMode ? 'AI Object Edit' : 'AI Object Insert');
+	const title = $derived(
+		isEditMode ? 'AI Object Edit' : isMultiObjectMode ? 'AI Multi-Object Insert' : 'AI Object Insert'
+	);
 	const description = $derived(
 		isEditMode
 			? `Editing: ${editingNode?.data?.name || editingNode?.data?.title || editingNode?.type || 'object'}`
-			: 'Describe the object you want to create'
+			: isMultiObjectMode
+				? 'Describe connected objects to create'
+				: 'Describe the object you want to create'
 	);
 	const buttonText = $derived(isEditMode ? 'Update' : 'Insert');
 	const placeholderText = $derived(
-		isEditMode ? 'e.g., "make it go faster"' : 'e.g., "a bouncing ball"'
+		isEditMode
+			? 'e.g., "make it go faster"'
+			: isMultiObjectMode
+				? 'e.g., "slider controlling oscillator frequency"'
+				: 'e.g., "a bouncing ball"'
 	);
 
 	// Auto-focus input when opened
@@ -48,6 +66,7 @@
 		promptText = '';
 		errorMessage = null;
 		isLoading = false;
+		// Don't reset mode - keep user's preference
 	}
 
 	function handleClickOutside(event: MouseEvent) {
@@ -64,31 +83,46 @@
 		errorMessage = null;
 
 		try {
-			// For edit mode, enhance the prompt with context about the existing node
-			let enhancedPrompt = promptText;
-			if (isEditMode && editingNode) {
-				const nodeType = editingNode.type || 'unknown';
-				const existingCode = editingNode.data?.code;
-				if (existingCode) {
-					enhancedPrompt = `Modify this existing ${nodeType} object. Current code:\n${existingCode}\n\nUser request: ${promptText}`;
-				} else {
-					enhancedPrompt = `Modify this existing ${nodeType} object. User request: ${promptText}`;
-				}
-			}
+			if (isMultiObjectMode && !isEditMode) {
+				// Multi-object mode: create multiple connected objects
+				const result = await resolveMultipleObjectsFromPrompt(promptText);
 
-			const result = await resolveObjectFromPrompt(enhancedPrompt);
-
-			if (result) {
-				if (isEditMode && onEditObject) {
-					// In edit mode, only update the data
-					onEditObject(editingNode!.id, result.data);
+				if (result && result.nodes.length > 0) {
+					if (onInsertMultipleObjects) {
+						onInsertMultipleObjects(result.nodes, result.edges);
+					}
+					handleClose();
 				} else {
-					// In insert mode, create a new object
-					onInsertObject(result.type, result.data);
+					errorMessage = 'Could not resolve objects from prompt';
 				}
-				handleClose();
 			} else {
-				errorMessage = 'Could not resolve object from prompt';
+				// Single object mode: create or edit one object
+				// For edit mode, enhance the prompt with context about the existing node
+				let enhancedPrompt = promptText;
+				if (isEditMode && editingNode) {
+					const nodeType = editingNode.type || 'unknown';
+					const existingCode = editingNode.data?.code;
+					if (existingCode) {
+						enhancedPrompt = `Modify this existing ${nodeType} object. Current code:\n${existingCode}\n\nUser request: ${promptText}`;
+					} else {
+						enhancedPrompt = `Modify this existing ${nodeType} object. User request: ${promptText}`;
+					}
+				}
+
+				const result = await resolveObjectFromPrompt(enhancedPrompt);
+
+				if (result) {
+					if (isEditMode && onEditObject) {
+						// In edit mode, only update the data
+						onEditObject(editingNode!.id, result.data);
+					} else {
+						// In insert mode, create a new object
+						onInsertObject(result.type, result.data);
+					}
+					handleClose();
+				} else {
+					errorMessage = 'Could not resolve object from prompt';
+				}
 			}
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -124,6 +158,8 @@
 		<div class="flex items-center gap-2 border-b border-zinc-700 px-4 py-3">
 			{#if isEditMode}
 				<Edit3 class="h-5 w-5 text-amber-400" />
+			{:else if isMultiObjectMode}
+				<Network class="h-5 w-5 text-blue-400" />
 			{:else}
 				<Sparkles class="h-5 w-5 text-purple-400" />
 			{/if}
@@ -131,6 +167,19 @@
 				<div class="font-mono text-sm font-medium text-zinc-100">{title}</div>
 				<div class="text-xs text-zinc-400">{description}</div>
 			</div>
+			
+			<!-- Mode Toggle (only show when not in edit mode) -->
+			{#if !isEditMode}
+				<button
+					onclick={() => (isMultiObjectMode = !isMultiObjectMode)}
+					class="rounded px-2 py-1 text-xs font-medium transition-colors {isMultiObjectMode
+						? 'bg-blue-600 text-white'
+						: 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}"
+					title="Toggle between single and multiple object mode"
+				>
+					{isMultiObjectMode ? 'Multi' : 'Single'}
+				</button>
+			{/if}
 		</div>
 
 		<!-- Input Area -->
