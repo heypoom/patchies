@@ -51,6 +51,11 @@
 			category: 'keyboard'
 		},
 		{
+			keys: ['Ctrl', 'I'],
+			description: 'AI-powered object insertion - describe what you want to create',
+			category: 'keyboard'
+		},
+		{
 			keys: ['Ctrl', 'S'],
 			description: 'Manually save patch to browser storage',
 			category: 'keyboard'

@@ -69,6 +69,18 @@ Use `Ctrl/Cmd + B` or the search icon button on the bottom right to open the **O
 
 See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control_, etc.), with searchable names and brief description. Drag a random object and see what you can do with it!
 
+### AI-Powered Object Insertion
+
+Press `Ctrl/Cmd + I` to open the **AI Object Insertion** prompt. Simply describe what you want to create in natural language, and the AI will generate the appropriate object with code for you!
+
+**Examples:**
+- "give me a simple fat sine oscillator" → Creates a Tone.js synth with a fat sine wave
+- "rotating cube in p5" → Creates a P5.js sketch with a rotating 3D cube
+- "lowpass filter at 500hz" → Creates a Tone.js lowpass filter
+- "a slider from 0 to 1000" → Creates a slider with the specified range
+
+This feature uses Google Gemini AI to understand your prompt and generate the right object configuration. Make sure to set your Gemini API key in the command palette (`Cmd/Ctrl + K` → "Set Gemini API Key").
+
 ### Modifying Objects
 
 <img src="./docs/images/patchies-select-object.png" alt="Patchies.app selecting objects" width="700">
