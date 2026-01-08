@@ -650,6 +650,11 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Don't forget to connect the `dac~` object to hear the audio output.
 - Limitations
   - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
+- Messages
+  - `bang` or `run`: evaluates the code and starts playback
+  - string or `{type: 'set', code: '...'}`: sets the code in the editor
+- You can create multiple instances of `strudel` object, but only **one** will be playing at a time.
+  - You can use the `bang` or `run` messages to switch playback between multiple Strudel objects to orchestrate them.
 - Please consider supporting the development of TidalCycles and Strudel at [OpenCollective](https://opencollective.com/tidalcycles)!
 
 ### `chuck~`: creates a ChucK audio programming environment
