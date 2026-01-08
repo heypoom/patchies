@@ -215,7 +215,10 @@ export class HydraRenderer {
 				// setPortCount function for dynamic port management
 				setPortCount: (inletCount?: number, outletCount?: number) => {
 					this.setPortCount(inletCount, outletCount);
-				}
+				},
+
+				// setTitle function to update node title
+				setTitle: this.setTitle.bind(this)
 			};
 
 			const userFunction = new Function(
@@ -338,6 +341,14 @@ export class HydraRenderer {
 		for (let i = 0; i < inletCount; i++) {
 			this.sourceToParamIndexMap[i] = i;
 		}
+	}
+
+	setTitle(title: string) {
+		self.postMessage({
+			type: 'setTitle',
+			nodeId: this.config.nodeId,
+			title
+		});
 	}
 }
 

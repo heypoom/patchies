@@ -9,7 +9,7 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
-	import type { NodePortCountUpdateEvent } from '$lib/eventbus/events';
+	import type { NodePortCountUpdateEvent, NodeTitleUpdateEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -70,6 +70,12 @@
 		updateNodeInternals(nodeId);
 	}
 
+	function handleTitleUpdate(e: NodeTitleUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+
+		updateNodeData(nodeId, { title: e.title });
+	}
+
 	const code = $derived(data.code || '');
 
 	let messageInletCount = $derived(data.messageInletCount ?? 1);
@@ -109,6 +115,7 @@
 		const eventBus = glSystem.eventBus;
 
 		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
+		eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
@@ -131,11 +138,10 @@
 		glSystem.removeNode(nodeId);
 		glSystem.removePreviewContext(nodeId, previewBitmapContext);
 
-		// Clean up event listener
-		if (handlePortCountUpdate) {
-			const eventBus = glSystem.eventBus;
-			eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
-		}
+		// Clean up event listeners
+		const eventBus = glSystem.eventBus;
+		eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
+		eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
 	});
 
 	function updateHydra() {

@@ -296,6 +296,7 @@ These objects support video chaining and can be connected to create complex visu
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
+  - `setTitle(title)` sets the hydra object title
 - Try out these presets to get you started:
   - `pipe.hydra`: passes the image through without any changes
   - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
