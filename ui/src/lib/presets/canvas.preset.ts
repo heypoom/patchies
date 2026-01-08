@@ -174,9 +174,9 @@ function draw() {
 draw()`;
 
 const XY_PAD_JS = `noDrag()
+noOutput()
 setPortCount(1, 1)
 setTitle("xy.pad")
-setHidePorts(true)
 
 let padX = width / 2
 let padY = height / 2

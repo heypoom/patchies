@@ -289,8 +289,8 @@
 				port="outlet"
 				id={index}
 				title={`Outlet ${index}`}
-				total={outletCount + 1}
-				index={index + 1}
+				total={videoOutputEnabled ? outletCount + 1 : outletCount}
+				index={videoOutputEnabled ? index + 1 : index}
 				class={handleClass}
 			/>
 		{/each}
