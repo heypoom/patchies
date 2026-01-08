@@ -285,7 +285,7 @@ These objects support video chaining and can be connected to create complex visu
 
 <img src="./docs/images/patchies-glsl-sdf.png" alt="Patchies.app GLSL shader with SDF" width="700">
 
-> Try this patch out [in the app](https://patchies.app/?id=3k3qnwk022tfj7e). Shader is from @dtinth's talk, [the power of signed distance functions](https://dt.in.th/SDFTalk).
+> ✨ Try this patch out [in the app](https://patchies.app/?id=3k3qnwk022tfj7e). Shader is from @dtinth's talk, [the power of signed distance functions](https://dt.in.th/SDFTalk)!
 
 - GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
 - You can use video chaining by connecting any visual objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via `sampler2D` video inlets.
@@ -360,7 +360,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 <img src="./docs/images/patchies-canvas-dom-widgets.png" alt="Patchies.app canvas.dom widgets" width="700">
 
-> Try this patch out [in the app](https://patchies.app/?id=izs6hjxchit2zad)
+> ✨ Try this patch out [in the app](https://patchies.app/?id=izs6hjxchit2zad)!
 
 - Same as `canvas` but runs directly on the main thread instead of on the [rendering pipeline thread](#rendering-pipeline), and comes with some additional features:
 
@@ -495,7 +495,7 @@ See the following example:
 
 <img src="./docs/images/patchies-expr-plot.png" alt="Patchies.app expression plot" width="700">
 
-> Try this patch out [in the app](https://patchies.app/?id=c6adsknw8iix3m2)
+> ✨ Try this patch out [in the app](https://patchies.app/?id=c6adsknw8iix3m2)!
 
 - Evaluate mathematical expressions and formulas.
 - Use the `$1` to `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition, and sends a message with the result each time inlet one or two is updated.
@@ -739,7 +739,7 @@ These objects run on _audio rate_, which means they process audio signals in rea
 
 <img src="./docs/images/patchies-periodic-waves.png" alt="Patchies.app periodic wave oscillator" width="700">
 
-> Try this patch out [in the app](https://patchies.app/?id=ocj3v2xp790gq8u)
+> ✨ Try this patch out [in the app](https://patchies.app/?id=ocj3v2xp790gq8u)!
 
 The `osc~` oscillator object supports custom waveforms using [PeriodicWave](https://developer.mozilla.org/en-US/docs/Web/API/PeriodicWave) by sending `[real: Float32Array, imaginary: Float32Array]` to the type inlet. Both arrays must be Float32Array or TypedArray of the same length (minimum 2).
 
@@ -766,7 +766,7 @@ send([real, imag]);
 
 <img src="./docs/images/patchies-waveshaper-curve.png" alt="Patchies.app wave shaping distortion curve" width="700">
 
-> Try this patch out [in the app](https://patchies.app/?id=55oju82ir1ujko1)
+> ✨ Try this patch out [in the app](https://patchies.app/?id=55oju82ir1ujko1)!
 
 Similar to the periodic wave example above, you can also send a [wave shaping distortion curve](https://developer.mozilla.org/en-US/docs/Web/API/WaveShaperNode) to the `curve` inlet of the `waveshaper~`. It expects a single `Float32Array` describing the distortion curve.
 
@@ -1192,7 +1192,7 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 <img src="./docs/images/patchies-audio-reactive.png" alt="Patchies.app audio reactive" width="700">
 
-> Try this patch out [in the app](https://patchies.app/?id=sgov4pl7f9ku4h7)
+> ✨ Try this patch out [in the app](https://patchies.app/?id=sgov4pl7f9ku4h7)!
 
 The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch.
 
