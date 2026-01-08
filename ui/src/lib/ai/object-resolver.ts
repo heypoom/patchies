@@ -65,22 +65,41 @@ IMPORTANT RULES:
 2. The JSON must have a "type" field (the object type) and a "data" field (the object's configuration)
 3. You must resolve to exactly ONE object - do not suggest multiple objects
 4. Focus on the CODE SNIPPET within the object, not just the object type
+5. ALWAYS include appropriate helper functions for the object type:
+   - For interactive canvas.dom objects: Use noDrag() and noOutput() at the start if the user wants mouse/keyboard interaction
+   - For tone~ objects: Use setTitle() and setPortCount() at the start
+   - For dsp~ objects: Use setTitle(), setPortCount(), setAudioPortCount(), and implement process() function
+   - For hydra objects: Use setVideoCount() if multiple video inputs are needed
 
-AVAILABLE OBJECT TYPES:
+AVAILABLE OBJECT TYPES AND FUNCTIONS:
 
 Audio Objects (use "tone~" type with custom code):
 - tone~: Tone.js audio synthesis and processing
+  Available functions: setTitle(), setPortCount(inlets, outlets), recv(callback), send(data), inputNode, outputNode
   Example data: { code: "const synth = new Tone.Synth().toDestination();", messageInletCount: 1 }
-- dsp~: Custom DSP audio processing
+- dsp~: Custom DSP audio processing with AudioWorklet
+  Available functions: setTitle(), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets), setKeepAlive(enabled), recv(callback), send(data), process(inputs, outputs)
+  Must implement process() function for audio processing
 - elem~: Elementary Audio synthesis
 - sonic~: SuperSonic audio synthesis
 - chuck~: ChucK audio programming
 
 Video/Visual Objects:
 - hydra: Live coding video synthesis
-- glsl: GLSL fragment shaders
+  Available functions: setVideoCount(inlets, outlets), setHidePorts(hidden), fft() for audio reactivity
+  Use src(s0), src(s1), etc. for video inputs, out(o0) for output
+- glsl: GLSL fragment shaders (write in GLSL, not JS)
 - p5: P5.js creative coding
-- canvas: HTML5 Canvas 2D
+  Available functions: noDrag(), noOutput(), setHidePorts(hidden), fft() for audio analysis
+  Use P5.js API (setup(), draw(), createCanvas(), etc.)
+- canvas: HTML5 Canvas 2D (offscreen canvas)
+  Available functions: noDrag(), noOutput(), setHidePorts(hidden), fft()
+  Global variables: ctx (canvas context), width, height, mouse (x, y, down properties)
+- canvas.dom: Interactive HTML5 Canvas with mouse/keyboard
+  Available functions: noDrag(), noOutput(), setCanvasSize(w, h), setPortCount(inlets, outlets), setTitle(), recv(), send(), onKeyDown(callback), onKeyUp(callback), fft()
+  Global variables: ctx, width, height, mouse (x, y, down)
+  Use noDrag() to disable node dragging when canvas is interactive
+  Use noOutput() to hide video output port
 - swgl: SwissGL shaders
 
 Control/UI Objects:
@@ -91,6 +110,7 @@ Control/UI Objects:
 
 Code Objects:
 - js: JavaScript code execution
+  Available functions: send(), recv(), setPortCount(), setRunOnMount(enabled), fft(), esm(moduleName), console.log()
 - python: Python code with Pyodide
 - expr: Math expression evaluator
 
@@ -143,6 +163,17 @@ Response:
     "code": "setTitle('lowpass~')\\nsetPortCount(1)\\n\\nconst filter = new Tone.Filter(500, 'lowpass');\\ninputNode.connect(filter);\\nfilter.toDestination();\\n\\nrecv(m => {\\n  filter.frequency.value = m;\\n});",
     "messageInletCount": 1,
     "title": "lowpass~"
+  }
+}
+
+User: "interactive XY pad controller"
+Response:
+{
+  "type": "canvas.dom",
+  "data": {
+    "code": "noDrag()\\nnoOutput()\\nsetPortCount(0, 1)\\nsetTitle('xy.pad')\\n\\nlet padX = width / 2\\nlet padY = height / 2\\n\\nfunction draw() {\\n  ctx.fillStyle = '#18181b'\\n  ctx.fillRect(0, 0, width, height)\\n\\n  // Update position on drag\\n  if (mouse.down) {\\n    padX = mouse.x\\n    padY = mouse.y\\n    send([padX / width, padY / height])\\n  }\\n\\n  // Draw position indicator\\n  ctx.fillStyle = mouse.down ? '#4ade80' : '#71717a'\\n  ctx.beginPath()\\n  ctx.arc(padX, padY, 12, 0, Math.PI * 2)\\n  ctx.fill()\\n\\n  requestAnimationFrame(draw)\\n}\\n\\ndraw()",
+    "inletCount": 0,
+    "outletCount": 1
   }
 }
 
