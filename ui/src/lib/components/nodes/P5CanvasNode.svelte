@@ -44,10 +44,12 @@
 	const code = $derived(data.code || '');
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 1);
+	let previousExecuteCode = $state<number | undefined>(undefined);
 	
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
-		if (data.executeCode) {
+		if (data.executeCode && data.executeCode !== previousExecuteCode) {
+			previousExecuteCode = data.executeCode;
 			updateSketch();
 		}
 	});
