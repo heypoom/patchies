@@ -109,6 +109,25 @@ Click on the bottom handle (outlet) of an object, and drag it all the way to the
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
 
+### Create and edit patches with AI
+
+> [!CAUTION]
+> EXPERIMENTAL ALPHA FEATURE! This feature has a _very high_ chance of corrupting and destroying your code and patches without any way to restore it. Try it on an empty patch or backup your objects. In addition, API keys are stored on localStorage as `gemini-api-key` for Gemini - there is a very real risk of your API keys be stolen by malicious patchies.
+
+<img src="./docs/images/patchies-ai-hearts-demo.png" alt="Patchies.app AI hearts demo" width="700">
+
+> Try out [the above demo](https://patchies.app/?id=rza2o6eoa7338rh) which uses AI to create a starfield with hearts 💕
+
+Press `Ctrl/Cmd + I` to open the AI object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate or edit the appropriate objects with code for you.
+
+When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch between Single Insert and Multi Insert mode.
+
+- **Single Insert Mode** (no object selected): create a single object at your cursor position
+- **Multi Insert Mode** (no object selected): create multiple connected objects at your cursor position
+- **Edit Mode** (object selected): modifies the selected object's code based on your description
+
+This feature uses Google's Gemini Flash 3 Preview model to understand your prompt and generate the right object configuration. First, set your Gemini API key in the command palette with `Cmd/Ctrl + K` → `Set Gemini API Key`. Then, use `Ctrl/Cmd + I` or the sparkles button on the bottom right.
+
 ## Message Passing
 
 Each object can send message to other objects, and receive messages from other objects.
@@ -1157,7 +1176,7 @@ You can send messages to control Csound instruments:
 ### AI & Generation Objects
 
 > [!CAUTION]
-> API keys are currently stored on localStorage as `gemini-api-key` for Gemini (for `ai.txt`, `ai.img` and `ai.music`), and `celestiai-api-key` for `ai.tts`. This is currently super insecure.
+> API keys are stored on localStorage as `gemini-api-key` for Gemini (for `ai.txt`, `ai.img` and `ai.music`), and `celestiai-api-key` for `ai.tts`. This is super insecure.
 
 Be very cautious that Patchies allows any arbitrary code execution right now with no sandboxing whatsoever, and if you load anyone's patch with malicious code, they can **steal your API keys**. I recommend removing API keys after use before loading other people's patch.
 
@@ -1294,21 +1313,6 @@ You can call the `fft()` function to get the audio analysis data in the supporte
   - Replace `fft.waveform()` with `fft({ format: 'float' }).a`, as P5's waveform returns a value between -1 and 1. Using `format: 'float'` gives you Float32Array.
   - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
   - Replace `fft.getCentroid()` with `fft().centroid`
-
-### Experimental: Insert and edit objects with AI
-
-> [!CAUTION]
-> API keys are currently stored on localStorage as `gemini-api-key` for Gemini. In addition, this feature is experimental and unstable, and it has a _high_ chance of corrupting and destroying your code and patches without any way to restore it. Backup your node and patch before trying this out!
-
-Press `Ctrl/Cmd + I` to open the AI object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate the appropriate object with code for you.
-
-When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch between Single Insert and Multi Insert mode.
-
-- **Single Insert Mode** (no object selected): creates a new object at your cursor position
-- **Multi Insert Mode** (no object selected): creates multiple connected objects at your cursor position
-- **Edit Mode** (object selected): modifies the selected object's code based on your description
-
-This feature uses Google Gemini AI to understand your prompt and generate the right object configuration. Make sure to set your Gemini API key in the command palette (`Cmd/Ctrl + K` → "Set Gemini API Key").
 
 ## Hiding AI features
 
