@@ -152,8 +152,9 @@
 
 		// Map from displayed rect to actual framebuffer resolution (outputSize)
 		// fragCoord matches the actual FBO size, NOT iResolution (which includes pixelRatio)
+		// Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
 		const x = (screenX / rect.width) * outputWidth;
-		const y = (screenY / rect.height) * outputHeight;
+		const y = outputHeight - (screenY / rect.height) * outputHeight;
 
 		mouseState.x = x;
 		mouseState.y = y;
@@ -176,8 +177,9 @@
 
 		// Map from displayed rect to actual framebuffer resolution (outputSize)
 		// fragCoord matches the actual FBO size, NOT iResolution (which includes pixelRatio)
+		// Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
 		const x = (screenX / rect.width) * outputWidth;
-		const y = (screenY / rect.height) * outputHeight;
+		const y = outputHeight - (screenY / rect.height) * outputHeight;
 
 		isMouseDown = true;
 		mouseState.z = x;

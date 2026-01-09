@@ -95,7 +95,7 @@ export class GLSystem {
 				const uint8Array = new Uint8Array(buffer);
 				const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 
-				const bitmap = await createImageBitmap(imageData);
+				const bitmap = await createImageBitmap(imageData, { imageOrientation: 'flipY' });
 				context.transferFromImageBitmap(bitmap);
 			} catch (error) {
 				console.error('Failed to create ImageBitmap for preview:', error);
