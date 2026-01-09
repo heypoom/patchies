@@ -109,7 +109,7 @@ Click on the bottom handle (outlet) of an object, and drag it all the way to the
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
 
-### Create and edit patches with AI
+### Create and edit objects with AI
 
 > [!CAUTION]
 > EXPERIMENTAL ALPHA FEATURE! This feature has a _very high_ chance of corrupting and destroying your code and patches without any way to restore it. Try it on an empty patch or backup your objects. In addition, API keys are stored on localStorage as `gemini-api-key` for Gemini - there is a very real risk of your API keys be stolen by malicious patchies.
