@@ -298,6 +298,11 @@ IMPORTANT RULES:
    SIMPLE NODES (single port of each type): slider, button, toggle, msg, textbox
    - Will generate: "message-in", "message-out", "audio-in", "audio-out", "video-in", "video-out"
    - Example edges: sourceHandle: "message-out", targetHandle: "message-in"
+   
+   BACKGROUND OUTPUT (bg.out):
+   - Has one video inlet with explicit id="0": generates "video-in-0"
+   - To connect to bg.out: targetHandle: "video-in-0"
+   - Example: hydra → bg.out: sourceHandle: "video-out-0", targetHandle: "video-in-0"
 
    NODES WITH EXPLICIT LABEL IDS (e.g., sampler~, soundfile~):
    - sampler~: has explicit id="audio-in", id="message-in", id="audio-out"
