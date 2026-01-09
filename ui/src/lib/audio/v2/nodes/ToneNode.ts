@@ -44,7 +44,6 @@ export class ToneNode implements AudioNodeV2 {
 
 	private toneObjects: Map<string, unknown> = new Map();
 	private recvCallback: RecvCallback | null = null;
-	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 
 	// Dynamic port counts for UI
 	private messageInletCount = 0;
@@ -203,18 +202,6 @@ export class ToneNode implements AudioNodeV2 {
 				logger.error('Error during user cleanup:', error);
 			}
 		}
-
-		// Dispose all tracked Tone.js objects
-		this.createdNodes.forEach((node) => {
-			try {
-				if (node && typeof node.dispose === 'function') {
-					node.dispose();
-				}
-			} catch (error) {
-				logger.warn('Error disposing Tone.js object:', error);
-			}
-		});
-		this.createdNodes.clear();
 
 		// Stop and clear the transport more safely
 		try {
