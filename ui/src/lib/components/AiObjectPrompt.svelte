@@ -295,10 +295,8 @@
 						<Loader class="h-3 w-3 animate-spin" />
 						{#if isGeneratingConfig}
 							<div class="flex flex-col gap-1">
-								<span class="text-zinc-400">
-									Generating <span class="ml-[2px] font-mono text-zinc-300"
-										>{resolvedObjectType}</span
-									>...
+								<span class="overflow-hidden text-zinc-400">
+									Generating <span class="text-zinc-300">{resolvedObjectType}</span>...
 								</span>
 							</div>
 						{:else}
