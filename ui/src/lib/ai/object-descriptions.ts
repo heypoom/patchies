@@ -907,8 +907,8 @@ Example - FM Synth:
 }
 \`\`\``;
 
-		case 'soundfile~':
-			return `## soundfile~ Object Instructions
+	case 'soundfile~':
+		return `## soundfile~ Object Instructions
 
 Load and play audio files with transport controls.
 
@@ -916,9 +916,6 @@ CRITICAL RULES:
 1. No code needed - file loading object
 2. Connect to dac~ to hear audio
 3. Supports audio chaining as source
-4. HANDLE IDS (for connections):
-   - Message inlet: "message-in"
-   - Audio outlet: "audio-out-0"
 
 Messages:
 - string or {type: 'load', url: '...'}: load audio file
@@ -940,8 +937,8 @@ Example - Audio Player:
 }
 \`\`\``;
 
-		case 'sampler~':
-			return `## sampler~ Object Instructions
+	case 'sampler~':
+		return `## sampler~ Object Instructions
 
 Sample playback with triggering capabilities.
 
@@ -949,10 +946,6 @@ CRITICAL RULES:
 1. Load audio samples for triggered playback
 2. Great for drum machines and one-shots
 3. Connect to dac~ for audio output
-4. HANDLE IDS (for connections):
-   - Message inlet: "message-in-message-in"
-   - Audio inlet: "audio-in-audio-in"
-   - Audio outlet: "audio-out-audio-out"
 
 Messages:
 - string: load sample from URL

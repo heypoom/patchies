@@ -74,7 +74,17 @@ bun run test             # All tests
 
 **Handle colors**: video=orange, audio=blue, message=gray
 
-**Auto-generated IDs**: `port + type + id` (e.g., `video-in-0`)
+**Handle ID Generation** (StandardHandle.svelte:20-28):
+- If `type` AND `id` both provided: `${type}-${portDir}-${id}` (e.g., `audio-in-0`)
+- If only `type`: `${type}-${portDir}` (e.g., `message-in`, `video-out`)
+- If only `id`: `${portDir}-${id}` (e.g., `in-0`, `out-1`)
+- Otherwise: just `port` value
+
+**Common patterns**:
+- Simple single inlet/outlet: omit `id` → `message-in`, `audio-out`
+- Multiple indexed: `id={index}` → `in-0`, `out-1`
+- Labeled inputs: `id="audio-in"` → `audio-in-in`
+- Complex dynamic (GLSL uniforms): `id=\`${index}-${name}-${type}\`` → computed handle names
 
 **Auto-positioned**: Uses `getPortPosition()`, no manual styling needed
 
