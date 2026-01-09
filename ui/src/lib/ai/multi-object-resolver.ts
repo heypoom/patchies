@@ -228,8 +228,8 @@ IMPORTANT RULES:
 2. The JSON must have a "nodes" array and an "edges" array
 3. Each node in the "nodes" array must have a "type" field and a "data" field
 4. Each node SHOULD have a "position" field with relative x, y coordinates for good visual layout
-5. Position nodes in a left-to-right flow: sources on the left (x: 0), outputs on the right (x: 200+)
-6. Use vertical spacing (y: 0, y: 100, y: 200) when nodes connect to the same target
+5. Position nodes in a TOP-TO-BOTTOM flow (like PureData): sources on top (y: 0), outputs on bottom (y: 150+)
+6. Use horizontal spacing (x: 0, x: 250, x: 500) when nodes connect to the same target in parallel
 7. Each edge in the "edges" array connects nodes by their index in the nodes array
 8. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
 9. CRITICAL - Handle ID rules (these MUST be exact):
@@ -256,11 +256,19 @@ RESPONSE FORMAT:
     {
       "source": 0,
       "target": 1,
-      "sourceHandle": "message-out-0",
-      "targetHandle": "message-in-0"
+      "sourceHandle": "message-out",
+      "targetHandle": "message-in"
     }
   ]
 }
+
+LAYOUT EXAMPLE (top-to-bottom like PureData):
+- slider at top: { "position": { "x": 0, "y": 0 } }
+- tone~ below: { "position": { "x": 0, "y": 150 } }
+- If parallel inputs, use horizontal spacing:
+  - slider1: { "x": 0, "y": 0 }
+  - slider2: { "x": 250, "y": 0 }
+  - both connect to node below: { "x": 125, "y": 150 }
 
 OBJECT-SPECIFIC INSTRUCTIONS:
 
