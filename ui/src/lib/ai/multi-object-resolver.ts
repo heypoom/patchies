@@ -123,19 +123,13 @@ export async function resolveMultipleObjectsFromPrompt(
 	}
 
 	// Report router completion to UI
-	console.log(
-		'Router completed with object types:',
-		plan.objectTypes,
-		'callback exists:',
-		!!onRouterComplete
-	);
 	onRouterComplete?.(plan.objectTypes);
 
 	// Call 2: Generate full object configs (targeted)
-	console.log('Starting generator call for types:', plan.objectTypes);
 	const result = await generateMultiObjectConfig(ai, prompt, plan, signal);
-	console.log('Generator complete');
+
 	logger.flush();
+
 	return result;
 }
 
