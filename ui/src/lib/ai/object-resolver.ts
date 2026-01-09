@@ -68,7 +68,7 @@ IMPORTANT RULES:
    - For dsp~ audio objects: ALWAYS use setTitle(), setPortCount(), setAudioPortCount(), and must implement process(inputs, outputs) function for audio processing
    - For hydra video objects: Use setVideoCount(inlets, outlets) when multiple video inputs are needed (default is 1 inlet, 1 outlet)
 6. YOU MUST STRICTLY ABIDE BY THE BELOW INSTRUCTIONS IN AVAILABLE OBJECTS.
-  - Do not add toDestination() in the emitted Tone.js code snippet AT ALL. Use .connect(outputNode) instead.
+  - Do NOT add toDestination() in the emitted Tone.js code snippet. You MUST use connect(outputNode) instead.
 
 AVAILABLE OBJECT TYPES AND FUNCTIONS:
 
@@ -76,9 +76,9 @@ Audio Objects (use "tone~" type with custom code):
 - tone~: Tone.js audio synthesis and processing
   - Available functions: setTitle(), setPortCount(inlets, outlets), recv(callback), send(data), inputNode, outputNode
   - Tone.js usually outputs to destination with .toDestination(). However, we need to route all audio to the output gain node of the tone object. This is so it can be patched with other audio objects.
-    - The outputNode variable is a web audio GainNode that exists in the object's context.
+    - The outputNode variable is a special GainNode that exists in the object's context. It MUST be used in a tone~ generated code.
     - Bad: "new Tone.Reverb(...).toDestination()" ❌
-    - Good: "synth.connect(outputNode)". Yes, outputNode is already in scope for you to use.
+    - Good: "new Tone.Reverb(...).connect(outputNode)". Yes, outputNode is already in scope for you to use.
     - Again, please do not emit "toDestination" in your generated code. This is extremely serious.
   - IMPORTANT: To connect the audio inlet to a Tone.js node such as Tone.reverb, you MUST write "inputNode.connect(reverb.input.input)" where reverb is the Tone.js node. Mind the "input.input" part.
     - The inputNode variable is a web audio GainNode that exists in the object's context. Yes, it's already in scope.
