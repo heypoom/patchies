@@ -3,7 +3,7 @@ import { tick } from 'svelte';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 
-const DEFAULT_NODE_SPACING = 200;
+const DEFAULT_NODE_SPACING = 320; // Horizontal spacing between nodes
 
 export type SimplifiedEdgeInput = {
 	source: number;
@@ -18,6 +18,7 @@ export type MultiObjectInsertInput = {
 	basePosition: { x: number; y: number };
 	nodeIdCounter: number;
 	edgeIdCounter: number;
+	viewport?: { x: number; y: number; zoom: number };
 };
 
 export type MultiObjectInsertResult = {
@@ -31,6 +32,8 @@ export type MultiObjectInsertResult = {
  * Handles the insertion of multiple AI-generated objects with automatic edge connection.
  * - Pre-parses tone~ and GLSL code to extract port/uniform definitions
  * - Auto-fills missing targetHandle for GLSL connections
+ * - basePosition is already in flow coordinates (accounts for current zoom/pan via screenToFlowPosition)
+ * - viewport parameter is available for future optimization but basePosition handles positioning
  */
 export async function handleMultiObjectInsert(
 	input: MultiObjectInsertInput

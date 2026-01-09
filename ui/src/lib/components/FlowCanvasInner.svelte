@@ -95,7 +95,7 @@
 	let hasGeminiApiKey = $state(false);
 
 	// Get flow utilities for coordinate transformation
-	const { screenToFlowPosition, deleteElements, fitView } = useSvelteFlow();
+	const { screenToFlowPosition, deleteElements, fitView, getViewport } = useSvelteFlow();
 
 	// Track nodes and edges for message routing
 	let previousNodes = new Set<string>();
@@ -294,13 +294,17 @@
 		// Get base position (center around mouse position)
 		const basePosition = screenToFlowPosition(lastMousePosition);
 
+		// Get current viewport for context
+		const viewport = getViewport();
+
 		// Process the multi-object insertion
 		const result = await handleMultiObjectInsert({
 			objectNodes,
 			simplifiedEdges,
 			basePosition,
 			nodeIdCounter,
-			edgeIdCounter
+			edgeIdCounter,
+			viewport
 		});
 
 		// Update counters

@@ -345,8 +345,10 @@ IMPORTANT RULES:
 2. The JSON must have a "nodes" array and an "edges" array
 3. Each node in the "nodes" array must have a "type" field and a "data" field
 4. Each node SHOULD have a "position" field with relative x, y coordinates for good visual layout
-5. Position nodes in a TOP-TO-BOTTOM flow (like PureData): sources on top (y: 0), outputs on bottom (y: 150+)
-6. Use horizontal spacing (x: 0, x: 250, x: 500) when nodes connect to the same target in parallel
+5. Position nodes in a TOP-TO-BOTTOM flow (like PureData): sources on top (y: 0), outputs on bottom (y: 250+)
+6. Use GENEROUS horizontal spacing (x: 0, x: 350, x: 700, x: 1050) when nodes are placed side-by-side or in parallel
+7. Vertical steps should be AT LEAST 250-350 pixels between rows (not crowded!)
+8. Calculate spacing based on signal flow depth: sources at y=0, first processing stage y=300, next y=600, outputs y=900+
 7. Each edge in the "edges" array connects nodes by their index in the nodes array
 8. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
 9. CRITICAL - Handle ID Generation Rules:
@@ -438,6 +440,8 @@ IMPORTANT RULES:
 
 10. Focus on creating FUNCTIONAL, CONNECTED systems
 11. ALWAYS include appropriate code and helper functions for each object type
+12. CRITICAL for shader graphs: Space GLSL nodes generously (y: 0, y: 350, y: 700, y: 1050) with 350+ pixel gaps
+13. Multiple GLSL shaders in sequence should be horizontally offset: x: 0, x: 350, x: 700 to reduce visual clutter
 
 RESPONSE FORMAT:
 {
@@ -458,13 +462,14 @@ RESPONSE FORMAT:
   ]
 }
 
-LAYOUT EXAMPLE (top-to-bottom like PureData):
+LAYOUT EXAMPLE (top-to-bottom like PureData with generous spacing):
 - slider at top: { "position": { "x": 0, "y": 0 } }
-- tone~ below: { "position": { "x": 0, "y": 150 } }
-- If parallel inputs, use horizontal spacing:
+- tone~ below: { "position": { "x": 0, "y": 300 } } (300px gap minimum!)
+- If parallel inputs, use GENEROUS horizontal spacing:
   - slider1: { "x": 0, "y": 0 }
-  - slider2: { "x": 250, "y": 0 }
-  - both connect to node below: { "x": 125, "y": 150 }
+  - slider2: { "x": 350, "y": 0 } (350px apart minimum)
+  - button: { "x": 700, "y": 0 } (700px from slider1)
+  - all connect to processor below: { "x": 350, "y": 300 } (centered, 300px down)
 
 OBJECT-SPECIFIC INSTRUCTIONS:
 
