@@ -252,10 +252,11 @@ IMPORTANT RULES:
 
    NODES WITH EXPLICIT LABEL IDS (e.g., sampler~, soundfile~):
    - sampler~: has explicit id="audio-in", id="message-in", id="audio-out"
-     * These generate: "audio-in-in", "message-in-in", "audio-out-out" (DOUBLE suffix!)
-     * When connecting TO sampler~: targetHandle: "message-in-in" (NOT "message-in")
-     * Example: orca → sampler~: sourceHandle: "message-out", targetHandle: "message-in-in"
-   - soundfile~: has id="0" on audio outlet
+     * Pattern: ${type}-${direction}-${id}
+     * These generate: "audio-in-audio-in", "message-in-message-in", "audio-out-audio-out"
+     * When connecting TO sampler~: targetHandle: "message-in-message-in" (NOT "message-in")
+     * Example: button → sampler~: sourceHandle: "message-out", targetHandle: "message-in-message-in"
+   - soundfile~: has id="0" on audio outlet only
      * Generates: "message-in" (no explicit id), "audio-out-0" (explicit id)
 
    NUMBERED/INDEXED NODES (multiple ports): ObjectNode (audio objects), Hydra, HydraCanvas

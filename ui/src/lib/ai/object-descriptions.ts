@@ -1033,8 +1033,8 @@ CRITICAL RULES:
 3. Supports audio chaining as source
 
 HANDLE IDS (Auto-generated - CRITICAL):
-- Message inlet: "message-in" (no explicit id, so generates "message-in")
-- Audio outlet: "audio-out-0" (id="0", so generates "audio-out-0")
+- Message inlet: "message-in" (no explicit id, type + direction only)
+- Audio outlet: "audio-out-0" (id="0", generates type + direction + id)
 - LIMITATION: Single audio outlet only - cannot split to multiple receivers
 
 Messages:
