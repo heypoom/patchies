@@ -18,7 +18,7 @@
 		type IsValidConnection,
 		useOnSelectionChange
 	} from '@xyflow/svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import CommandPalette from './CommandPalette.svelte';
 	import StartupModal from './startup-modal/StartupModal.svelte';
 	import VolumeControl from './VolumeControl.svelte';
@@ -281,7 +281,7 @@
 		createNode(type, position, data);
 	}
 
-	function handleAiMultipleObjectsInsert(
+	async function handleAiMultipleObjectsInsert(
 		objectNodes: Array<{ type: string; data: any; position?: { x: number; y: number } }>,
 		simplifiedEdges: Array<{
 			source: number;
@@ -324,8 +324,11 @@
 		console.log('[AI Multi-Object] Created node IDs:', createdNodeIds);
 		console.log('[AI Multi-Object] Created nodes:', newNodes);
 
-		// Add all new nodes
+		// Add all new nodes first
 		nodes = [...nodes, ...newNodes];
+
+		// Wait for DOM to update and XYFlow to process the new nodes
+		await tick();
 
 		// Create edges using the created node IDs, with validation
 		const newEdges: Edge[] = simplifiedEdges
@@ -359,11 +362,14 @@
 		console.log('[AI Multi-Object] Created edges:', newEdges);
 		console.log('[AI Multi-Object] Total edges before:', edges.length);
 
-		// Add all new edges
+		// Add all new edges after nodes are rendered
 		edges = [...edges, ...newEdges];
 
 		console.log('[AI Multi-Object] Total edges after:', edges.length);
 		console.log('[AI Multi-Object] All edges:', edges);
+
+		// Wait one more tick to ensure edges are rendered
+		await tick();
 	}
 
 	function handleAiObjectEdit(nodeId: string, data: any) {

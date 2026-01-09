@@ -269,16 +269,25 @@ IMPORTANT RULES:
 1. You MUST respond with ONLY a valid JSON object, nothing else
 2. The JSON must have a "nodes" array and an "edges" array
 3. Each node in the "nodes" array must have a "type" field and a "data" field
-4. Each node can optionally have a "position" field with relative x, y coordinates (for layout suggestions)
-5. Each edge in the "edges" array connects nodes by their index in the nodes array
-6. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
-7. Handle names MUST follow the pattern: "{type}-{direction}-{index}" where:
+4. Each node SHOULD have a "position" field with relative x, y coordinates for good visual layout
+5. Position nodes in a left-to-right flow: sources on the left (x: 0), outputs on the right (x: 200+)
+6. Use vertical spacing (y-axis) to avoid overlapping nodes when multiple connections exist
+7. Each edge in the "edges" array connects nodes by their index in the nodes array
+8. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
+9. Handle names MUST follow the pattern: "{type}-{direction}-{index}" where:
    - type is "message", "audio", or "video"
    - direction is "out" for source/outlet or "in" for target/inlet
    - index is the port number (0, 1, 2, ...)
    Examples: "message-out-0" (first message output), "message-in-0" (first message input), "audio-out-0", "audio-in-0"
-8. Focus on creating FUNCTIONAL, CONNECTED systems of objects
-9. ALWAYS include appropriate helper functions for each object type (same as single object mode)
+10. Focus on creating FUNCTIONAL, CONNECTED systems of objects
+11. ALWAYS include appropriate helper functions for each object type (same as single object mode)
+
+LAYOUT GUIDELINES:
+- Position nodes left-to-right following the signal flow
+- Space nodes horizontally by ~200-250 pixels
+- Use vertical spacing (y: 0, y: 100, y: 200) when nodes connect to the same target
+- Keep control objects (sliders, buttons) on the left
+- Keep processing/output objects on the right
 
 EDGE STRUCTURE:
 - source: index of source node (0-based)
