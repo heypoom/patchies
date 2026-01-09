@@ -296,8 +296,10 @@ These objects support video chaining and can be connected to create complex visu
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
 - **Mouse Interaction**: If your shader uses the `iMouse` uniform (vec4), mouse interaction is automatically enabled:
-  - `iMouse.xy`: current mouse position
-  - `iMouse.zw`: click position (positive when mouse button is up, negative when held down)
+  - `iMouse.xy`: current mouse position or last click position
+  - `iMouse.zw`: drag start position (positive when mouse down, negative when mouse up)
+    - When dragging (mouse down): `iMouse.zw > 0` contains ongoing drag start position
+    - When released (mouse up): `iMouse.zw < 0` (use `abs()` to get last drag start position)
   - When `iMouse` is detected in your code, the node becomes interactive (drag is disabled to allow mouse input)
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
 - Try these presets for GLSL to get you started:

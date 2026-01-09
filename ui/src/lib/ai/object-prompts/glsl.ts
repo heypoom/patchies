@@ -23,9 +23,11 @@ HANDLE IDS (Auto-generated - VERY DYNAMIC):
 Built-in uniforms (Shadertoy-compatible):
 - iResolution: vec3 (viewport resolution, z is pixel aspect ratio)
 - iTime: float (shader playback time in seconds)
-- iMouse: vec4 (mouse interaction - xy: current position, zw: click position)
-  * When mouse is up: zw = last click position (positive values)
-  * When mouse is down: zw = click position (negative values)
+- iMouse: vec4 (mouse interaction)
+  * xy: current mouse position or last click position
+  * zw: drag start position (positive when mouse down, negative when mouse up)
+  * When mouse is down (dragging): zw > 0 (ongoing drag start position)
+  * When mouse is up (released): zw < 0 (use abs() to get last drag start position)
   * Using iMouse in your shader enables mouse interaction automatically
 - iFrame: int (shader playback frame)
 

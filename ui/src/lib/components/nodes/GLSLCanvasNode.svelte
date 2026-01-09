@@ -59,7 +59,8 @@
 	});
 
 	// Mouse state for Shadertoy iMouse uniform
-	let mouseState = $state({ x: 0, y: 0, z: 0, w: 0 });
+	// Initialize zw to -1 to indicate "no click yet" (matches Shadertoy behavior)
+	let mouseState = $state({ x: 0, y: 0, z: -1, w: -1 });
 	let isMouseDown = $state(false);
 
 	// Watch for executeCode timestamp changes and re-run when it changes
@@ -157,9 +158,9 @@
 		mouseState.x = x;
 		mouseState.y = y;
 
-		// Send negative values when mouse is down, positive when up
-		const z = isMouseDown ? -Math.abs(mouseState.z) : Math.abs(mouseState.z);
-		const w = isMouseDown ? -Math.abs(mouseState.w) : Math.abs(mouseState.w);
+		// Shadertoy spec: positive zw when mouse down (ongoing drag), negative when up (released)
+		const z = isMouseDown ? Math.abs(mouseState.z) : -Math.abs(mouseState.z);
+		const w = isMouseDown ? Math.abs(mouseState.w) : -Math.abs(mouseState.w);
 
 		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, z, w);
 	}
@@ -184,8 +185,8 @@
 		mouseState.x = x;
 		mouseState.y = y;
 
-		// Send negative values since mouse is now down
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, -mouseState.z, -mouseState.w);
+		// Send positive values since mouse is now down (ongoing drag)
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
 	}
 
 	function handleCanvasMouseUp() {
@@ -193,8 +194,8 @@
 
 		isMouseDown = false;
 
-		// Send positive values since mouse is now up
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, Math.abs(mouseState.z), Math.abs(mouseState.w));
+		// Send negative values since mouse is now up (released)
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, -Math.abs(mouseState.z), -Math.abs(mouseState.w));
 	}
 
 	// Attach mouse event listeners when canvas is available and iMouse is used
@@ -225,6 +226,9 @@
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 			glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 		}
+
+		// Initialize mouse data with "no click yet" state
+		glSystem.setMouseData(nodeId, 0, 0, -1, -1);
 
 		updateShader();
 
