@@ -41,6 +41,7 @@
 
 	let editorElement: HTMLDivElement;
 	let editorView: EditorView | null = null;
+	let isInternalUpdate = false; // Flag to prevent loops when user types
 
 	onMount(async () => {
 		if (editorElement) {
@@ -123,12 +124,19 @@
 					if (update.docChanged) {
 						const updatedValue = update.state.doc.toString();
 
+						// Set flag to prevent the $effect from triggering on user input
+						isInternalUpdate = true;
+
 						if (onchange) {
 							onchange(updatedValue);
-							return;
+						} else {
+							value = updatedValue;
 						}
 
-						value = updatedValue;
+						// Reset flag after microtask to allow external updates
+						queueMicrotask(() => {
+							isInternalUpdate = false;
+						});
 					}
 				}),
 				autocompletion(),
@@ -154,7 +162,7 @@
 			}
 
 			const state = EditorState.create({
-				doc: value,
+				doc: value ?? '',
 				extensions
 			});
 
@@ -174,13 +182,26 @@
 	});
 
 	// Update editor when value prop changes externally
+	// We need to read 'value' at the start to make it a tracked dependency
 	$effect(() => {
-		if (editorView && editorView.state.doc.toString() !== value) {
+		const newValue = value ?? '';
+
+		// Only update if editor is mounted
+		if (!editorView) return;
+
+		// Skip update if the change came from the editor itself (user typing)
+		// This prevents unnecessary XYFlow updates on every keystroke
+		if (isInternalUpdate) return;
+
+		const currentDoc = editorView.state.doc.toString();
+
+		// Only dispatch if the values are actually different
+		if (currentDoc !== newValue) {
 			editorView.dispatch({
 				changes: {
 					from: 0,
 					to: editorView.state.doc.length,
-					insert: value
+					insert: newValue
 				}
 			});
 		}

@@ -373,49 +373,30 @@
 	}
 
 	function handleAiObjectEdit(nodeId: string, data: any) {
-		// Update only specific fields from the AI result to preserve node structure
 		nodes = nodes.map((node) => {
 			if (node.id !== nodeId) return node;
 
-			// Merge only the fields that should be updated (primarily code and related config)
+			// Define fields that should NOT be overwritten (internal state)
+			// Note: node.data should only contain user data, not node.id (that's at node.id)
+			const preservedFields = new Set([
+				'name', // Internal node name, different from user-facing title
+				'executeCode', // Internal execution trigger flag (timestamp)
+				'initialized' // Internal initialization state
+			]);
+
+			// Start with existing data
 			const updatedData = { ...node.data };
 
-			// Track if code was updated to trigger re-execution
-			let codeUpdated = false;
-
-			// Update code if provided
-			if (data.code !== undefined) {
-				updatedData.code = data.code;
-				codeUpdated = true;
+			// Merge all fields from AI response except preserved ones
+			// Also skip any fields starting with __ (internal convention)
+			for (const [key, value] of Object.entries(data)) {
+				if (!preservedFields.has(key) && !key.startsWith('__')) {
+					updatedData[key] = value;
+				}
 			}
 
-			// Update title if provided
-			if (data.title !== undefined) {
-				updatedData.title = data.title;
-			}
-
-			// Update inlet/outlet counts if provided
-			if (data.messageInletCount !== undefined) {
-				updatedData.messageInletCount = data.messageInletCount;
-			}
-			if (data.messageOutletCount !== undefined) {
-				updatedData.messageOutletCount = data.messageOutletCount;
-			}
-			if (data.audioInletCount !== undefined) {
-				updatedData.audioInletCount = data.audioInletCount;
-			}
-			if (data.audioOutletCount !== undefined) {
-				updatedData.audioOutletCount = data.audioOutletCount;
-			}
-			if (data.inletCount !== undefined) {
-				updatedData.inletCount = data.inletCount;
-			}
-			if (data.outletCount !== undefined) {
-				updatedData.outletCount = data.outletCount;
-			}
-
-			// Add a flag to trigger code re-execution if code was updated
-			if (codeUpdated) {
+			// Add execution trigger if code was updated
+			if (data.code !== undefined && data.code !== node.data.code) {
 				updatedData.executeCode = Date.now();
 			}
 

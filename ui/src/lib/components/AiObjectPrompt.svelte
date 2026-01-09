@@ -63,6 +63,9 @@
 	});
 
 	function handleClose() {
+		// Prevent closing while AI is generating
+		if (isLoading) return;
+
 		open = false;
 		promptText = '';
 		errorMessage = null;
@@ -71,6 +74,9 @@
 	}
 
 	function handleClickOutside(event: MouseEvent) {
+		// Prevent closing while AI is generating
+		if (isLoading) return;
+
 		const target = event.target as HTMLElement;
 		if (!target.closest('.ai-prompt-dialog')) {
 			handleClose();
@@ -92,9 +98,12 @@
 					if (onInsertMultipleObjects) {
 						onInsertMultipleObjects(result.nodes, result.edges);
 					}
+					// Reset loading state before closing so handleClose() doesn't block
+					isLoading = false;
 					handleClose();
 				} else {
 					errorMessage = 'Could not resolve objects from prompt';
+					isLoading = false;
 				}
 			} else {
 				// Single object mode: use two-stage routing pattern
@@ -103,9 +112,10 @@
 				if (isEditMode && editingNode) {
 					// Edit mode: Use single-call editObjectFromPrompt (more efficient)
 					const nodeType = editingNode.type || 'unknown';
-					const existingCode =
-						typeof editingNode.data?.code === 'string' ? editingNode.data.code : undefined;
-					result = await editObjectFromPrompt(promptText, nodeType, existingCode);
+					// Pass all node data - JSON.stringify will handle serialization,
+					// non-serializable objects become [object Object] which is fine
+					const existingData = editingNode.data || {};
+					result = await editObjectFromPrompt(promptText, nodeType, existingData);
 				} else {
 					// Insert mode: Use two-call resolveObjectFromPrompt (routing + generation)
 					result = await resolveObjectFromPrompt(promptText);
@@ -119,14 +129,16 @@
 						// In insert mode, create a new object
 						onInsertObject(result.type, result.data);
 					}
+					// Reset loading state before closing so handleClose() doesn't block
+					isLoading = false;
 					handleClose();
 				} else {
 					errorMessage = 'Could not resolve object from prompt';
+					isLoading = false;
 				}
 			}
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		} finally {
 			isLoading = false;
 		}
 	}
@@ -137,7 +149,10 @@
 			handleSubmit();
 		} else if (event.key === 'Escape') {
 			event.preventDefault();
-			handleClose();
+			// Prevent closing while AI is generating
+			if (!isLoading) {
+				handleClose();
+			}
 		}
 	}
 
@@ -151,7 +166,11 @@
 
 {#if open}
 	<div
-		class="ai-prompt-dialog absolute z-50 w-96 rounded-lg border border-zinc-600 bg-zinc-900/95 shadow-2xl backdrop-blur-xl"
+		class="ai-prompt-dialog absolute z-50 w-96 rounded-lg border {isLoading
+			? 'border-purple-500'
+			: 'border-zinc-600'} bg-zinc-900/95 shadow-2xl backdrop-blur-xl {isLoading
+			? 'ring-2 ring-purple-500/50'
+			: ''}"
 		style="left: {position.x}px; top: {position.y}px;"
 	>
 		<!-- Header -->
@@ -197,7 +216,8 @@
 				bind:value={promptText}
 				onkeydown={handleKeydown}
 				placeholder={placeholderText}
-				class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+				disabled={isLoading}
+				class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
 				rows="3"
 			></textarea>
 
