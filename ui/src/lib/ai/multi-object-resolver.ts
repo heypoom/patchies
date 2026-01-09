@@ -264,6 +264,10 @@ IMPORTANT RULES:
    - OR: "audio-in-0", "message-in-1", "video-out-0" (type-specific)
    - For ObjectNode with multiple inlets/outlets, handles are indexed: "in-0", "in-1", etc.
    - For Hydra with 2 video inlets + 1 message inlet: "video-in-0", "video-in-1", "message-in-2"
+   - The "object" type creates audio/control objects dynamically:
+     * object type: gain~, osc~, delay~, filter~, etc. (from expression string)
+     * Auto-generates handles based on object type (e.g., gain~ has "audio-in-0", "audio-out-0")
+     * Consult HANDLE_IDS.md for specific audio object patterns
    
    SPECIAL DYNAMIC NODES: GLSLCanvasNode, P5Node, HydraNode
    - GLSL shader uniforms generate: "video-in-{index}-{uniformName}-{type}"

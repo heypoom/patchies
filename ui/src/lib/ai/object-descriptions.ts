@@ -1131,6 +1131,64 @@ Example - Instructions:
 }
 \`\`\``;
 
+		case 'object':
+			return `## object: Textual Audio & Control Objects
+
+Meta-object system for creating text-based audio processing, synthesis, and control objects.
+Simply type the object name you want to create (e.g., "gain~", "osc~", "delay~").
+
+AVAILABLE OBJECT TYPES:
+
+**Audio Processing:** gain~, pan~, delay~, compressor~, waveshaper~, split~, merge~, meter~
+**Filters:** lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
+**Synthesis:** osc~, sig~, noise~
+**Utilities:** convolver~, fft~
+**Control:** mtof, loadbang, metro, delay (control rate), adsr
+
+HANDLE IDS (Auto-generated - VARIES BY OBJECT):
+- Inlets: indexed by type and position (audio-in-0, message-in-0, etc.)
+- Outlets: indexed by type and position (audio-out-0, message-out-0, etc.)
+- Consult HANDLE_IDS.md for specific object patterns
+
+CRITICAL RULES:
+1. Type object name as expression (e.g., "gain~ 1.0" for gain with value 1.0)
+2. Audio objects (~) operate at audio rate, control objects operate at message rate
+3. Connect inlets/outlets by type: audio to audio, message to message
+4. Most objects correspond to Web Audio API nodes
+
+EXAMPLE - Gain Control:
+\`\`\`json
+{
+  "type": "object",
+  "data": {
+    "expr": "gain~ 0.5",
+    "params": [0.5]
+  }
+}
+\`\`\`
+
+EXAMPLE - Filter:
+\`\`\`json
+{
+  "type": "object",
+  "data": {
+    "expr": "lowpass~ 1000",
+    "params": [1000]
+  }
+}
+\`\`\`
+
+EXAMPLE - Oscillator:
+\`\`\`json
+{
+  "type": "object",
+  "data": {
+    "expr": "osc~ 440",
+    "params": [440]
+  }
+}
+\`\`\``;
+
 		default:
 			// Generic fallback for objects not explicitly handled
 			return `## ${objectType} Object
