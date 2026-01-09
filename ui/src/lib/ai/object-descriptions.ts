@@ -19,6 +19,12 @@ CRITICAL RULES FOR TONE.JS:
 3. To connect audio inlet: inputNode.connect(node.input.input) (mind the double .input)
 4. ALWAYS return cleanup object: { cleanup: () => node.dispose() }
 
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (for receiving control messages)
+- Audio inlet: "audio-in" (if using inputNode)
+- Audio outlet: "audio-out" (to send to next audio node like dac~)
+- Multiple message inlets: "message-in-0", "message-in-1", etc. (only if setPortCount(n) > 1)
+
 Available in context:
 - Tone: the Tone.js library
 - inputNode: GainNode for receiving audio input
@@ -56,6 +62,12 @@ CRITICAL RULES:
 2. ALWAYS call setTitle(), setPortCount(), setAudioPortCount() at start
 3. Access audio buffers via inputs[inputIndex][channelIndex] and outputs[outputIndex][channelIndex]
 
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (for control messages)
+- Audio inlets: "audio-in-0", "audio-in-1" (indexed by setAudioPortCount)
+- Audio outlets: "audio-out-0", "audio-out-1" (indexed by setAudioPortCount)
+- Multiple message inlets: "message-in-0", "message-in-1" (indexed by setPortCount)
+
 Available in context:
 - counter: increments every process() call
 - sampleRate: audio sample rate (e.g. 48000)
@@ -86,6 +98,10 @@ Available functions:
 - setTitle(name): set node title
 - send(data), recv(callback): message passing
 - fft(): audio analysis (connect fft~ object)
+
+HANDLE IDS (Auto-generated):
+- Video outlet: "video-out" (for rendering the p5 sketch)
+- Message inlet: "message-in" (for receiving control messages)
 
 Example - Rotating Cube:
 \`\`\`json
@@ -128,6 +144,18 @@ CRITICAL RULES:
 2. Write GLSL code, NOT JavaScript
 3. Shaders are Shadertoy-compatible
 4. Define custom uniforms for dynamic control
+
+HANDLE IDS (Auto-generated - VERY DYNAMIC):
+- Output outlet: "video-out" (always present for shader output)
+- Uniform inlets depend on your shader code and are auto-generated:
+  * "video-in-{index}-{uniformName}-sampler2D" for texture inputs
+  * "message-in-{index}-{uniformName}-float" for float inputs
+  * "message-in-{index}-{uniformName}-vec3" for vec3 inputs
+  * DO NOT try to connect to specific uniform handle IDs in edges
+  * Instead, use GLSL uniform names and let the framework match them
+- Examples of uniform declarations that create handles:
+  * "uniform float iMix" → creates handle for iMix parameter
+  * "uniform sampler2D iChannel0" → creates handle for video input
 
 Built-in uniforms:
 - iResolution: vec3 (viewport resolution, z is pixel aspect ratio)
@@ -199,6 +227,11 @@ Available:
 - onKeyDown(callback), onKeyUp(callback)
 - fft(): instant audio analysis
 
+HANDLE IDS (Auto-generated):
+- Message outlet: "message-out" (for sending control data)
+- Message inlet: "message-in" (for receiving control messages)
+- Note: noOutput() removes the video-out handle
+
 Example - XY Pad:
 \`\`\`json
 {
@@ -220,6 +253,10 @@ Configuration:
 - defaultValue: initial value
 - isFloat: true for floating point, false for integers
 - isVertical: true for vertical orientation
+
+HANDLE IDS (Auto-generated):
+- Message outlet: "message-out" (sends current slider value)
+- Message inlet: "message-in" (receives external value to set slider)
 
 Example - Float Slider 0 to 1:
 \`\`\`json
@@ -247,6 +284,12 @@ Available functions:
 - fft(): audio analysis
 - esm(moduleName): import NPM packages
 - setInterval, requestAnimationFrame (auto-cleanup)
+
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (controlled by setPortCount)
+- Message outlet: "message-out" (controlled by setPortCount)
+- setPortCount(inlets, outlets) controls handle count
+- LIMITATION: Cannot have mixed inlet types (all message or all message)
 
 Example - Random Number Generator:
 \`\`\`json
@@ -282,6 +325,12 @@ Multi-line support:
 - Last expression is the output
 - Define variables: a = $1 * 2; b = $2 + 3; a + b
 - Define functions: add(a, b) = a + b; add($1, $2)
+
+HANDLE IDS (Auto-generated):
+- Message inlets: "message-in-0", "message-in-1", ... (multiple indexed)
+- Message outlet: "message-out" (single)
+- Each $N variable creates indexed inlet: "message-in-0" for $1, "message-in-1" for $2
+- LIMITATION: Single outlet only, multiple inputs
 
 Example - Simple Addition:
 \`\`\`json
@@ -414,6 +463,12 @@ Example - FM Synthesis (requires audio input):
 }
 \`\`\`
 
+HANDLE IDS (Auto-generated):
+- Audio inlet: "audio-in" (single)
+- Audio outlet: "audio-out" (single)
+- Message inlets: "message-in-0", "message-in-1", ... (for $1, $2, $3, etc.)
+- LIMITATION: Single audio I/O, multiple message inlets
+
 WARNING: Always use compressor~ after expr~ to prevent dangerous audio spikes!`;
 
 		case 'button':
@@ -429,6 +484,10 @@ CRITICAL RULES:
 Messages:
 - Receives: any message (triggers flash and outputs bang)
 - Outputs: {type: 'bang'}
+
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (any message triggers flash and outputs bang)
+- Message outlet: "message-out" (sends {type: "bang"} when clicked or triggered)
 
 Example - Simple Button:
 \`\`\`json
@@ -452,6 +511,10 @@ Messages:
 - Receives: boolean (sets toggle state)
 - Receives: bang (toggles state)
 - Outputs: boolean (true/false)
+
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (boolean or bang to toggle)
+- Message outlet: "message-out" (sends boolean true/false)
 
 Example - Toggle Switch:
 \`\`\`json
@@ -485,6 +548,10 @@ Message Format Rules:
 - 0.5 → 0.5 (number)
 - {x: 1, y: 2} → {x: 1, y: 2} (object)
 - [1, 2, 3] → [1, 2, 3] (array)
+
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (bang or any message triggers output)
+- Message outlet: "message-out" (sends the configured message)
 
 Example - Bang Message:
 \`\`\`json
@@ -541,6 +608,11 @@ Messages:
 - Receives: string (sets text content)
 - Outputs: string (current text)
 
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (receives text to set content)
+- Message outlet: "message-out" (sends current text on bang)
+- LIMITATION: Single I/O ports
+
 Example - Text Input:
 \`\`\`json
 {
@@ -572,6 +644,10 @@ Available in context:
 - send(message), recv(callback): message passing
 - fft(): audio analysis (high delay on worker)
 
+HANDLE IDS (Auto-generated):
+- Video outlet: "video-out" (for rendering the canvas)
+- Message inlet: "message-in" (for receiving control messages)
+
 Example - Animated Circle:
 \`\`\`json
 {
@@ -596,6 +672,13 @@ CRITICAL RULES:
 Available functions:
 - recv(callback): limited support, works with setcpm
 - Standard Strudel pattern functions
+
+
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (single)
+- Audio outlet: "audio-out" (single)
+- Message outlet: "message-out" (single)
+- LIMITATION: Single audio outlet, cannot split to multiple nodes
 
 Messages:
 - bang or run: evaluates code and starts playback
@@ -648,6 +731,11 @@ Available:
 - recv(callback): receive messages from inlets
 - setPortCount(inlets, outlets): set message ports
 
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (single)
+- Message outlet: "message-out" (single)
+- LIMITATION: Single inlet/outlet only
+
 Example - Simple Calculation:
 \`\`\`json
 {
@@ -696,6 +784,11 @@ Example - Animated Mesh:
 }
 \`\`\`
 
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in-0" (single, indexed)
+- Video outlet: "video-out-0" (single, indexed)
+- LIMITATION: Single I/O ports
+
 Example - Color Wave:
 \`\`\`json
 {
@@ -730,6 +823,12 @@ Messages:
 - {type: 'load', url: string}: load ROM from URL
 - Outputs: console strings
 
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in-0" (receives ROM data)
+- Video outlet: "video-out-0" (indexed, canvas output)
+- Message outlet: "message-out-0" (console output)
+- LIMITATION: Specialized I/O for ROM loading
+
 Example - Hello World:
 \`\`\`json
 {
@@ -759,6 +858,11 @@ Available instructions:
 - Control: JMP, JZ, JNZ, CALL, RET, HALT
 - I/O: IN, OUT, PEEK, POKE
 - Memory: LOAD, STORE
+
+HANDLE IDS (Auto-generated):
+- LIMITATION: No handles for assembly programs
+- Assembly nodes don't have traditional I/O ports
+- Configure internally via stack/memory operations
 
 Example - Simple Counter:
 \`\`\`json
@@ -847,6 +951,11 @@ Available:
 - Multiple concurrent shreds
 - Real-time synthesis
 
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (single)
+- Audio outlet: "audio-out" (single)
+- LIMITATION: Single audio outlet only
+
 Example - Sine Wave:
 \`\`\`json
 {
@@ -887,6 +996,12 @@ Messages:
 - {type: 'readScore', value: 'i1 0 1'}: send score
 - {type: 'eval', code: '...'}: evaluate code
 
+HANDLE IDS (Auto-generated):
+- Audio inlet: "audio-in-0" (indexed)
+- Message inlet: "message-in-1" (indexed)
+- Audio outlet: "audio-out-0" (single)
+- LIMITATION: Multiple inlets but single audio outlet
+
 Example - Simple Sine:
 \`\`\`json
 {
@@ -907,8 +1022,8 @@ Example - FM Synth:
 }
 \`\`\``;
 
-	case 'soundfile~':
-		return `## soundfile~ Object Instructions
+		case 'soundfile~':
+			return `## soundfile~ Object Instructions
 
 Load and play audio files with transport controls.
 
@@ -916,6 +1031,12 @@ CRITICAL RULES:
 1. No code needed - file loading object
 2. Connect to dac~ to hear audio
 3. Supports audio chaining as source
+
+
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (single)
+- Audio outlet: "audio-out" (single)
+- LIMITATION: Single audio outlet only - cannot split to multiple receivers
 
 Messages:
 - string or {type: 'load', url: '...'}: load audio file
@@ -937,8 +1058,8 @@ Example - Audio Player:
 }
 \`\`\``;
 
-	case 'sampler~':
-		return `## sampler~ Object Instructions
+		case 'sampler~':
+			return `## sampler~ Object Instructions
 
 Sample playback with triggering capabilities.
 
@@ -975,6 +1096,14 @@ CRITICAL RULES:
 
 Messages:
 - string: set markdown content
+
+HANDLE IDS (Auto-generated):
+- Message inlet: "message-in" (receives markdown string)
+- LIMITATION: Display only, no outlets
+
+HANDLE IDS (Auto-generated):
+- LIMITATION: Display only, no inlets or outlets
+- Configure via node data only
 
 Example - Documentation:
 \`\`\`json
