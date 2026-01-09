@@ -306,7 +306,7 @@
 				{:else if isEditMode}
 					Enter to update • Esc to cancel
 				{:else}
-					Enter to insert • Esc to cancel
+					Enter to insert • Ctrl+I to {isMultiObjectMode ? 'single' : 'multi'} • Esc to cancel
 				{/if}
 			</div>
 
