@@ -46,6 +46,10 @@
 	let outletCount = $derived(data.outletCount ?? 1);
 	let previousExecuteCode = $state<number | undefined>(undefined);
 
+	// Local state for pre-parsed canvas dimensions (not persisted)
+	let preloadCanvasWidth = $state<number | undefined>(0);
+	let preloadCanvasHeight = $state<number | undefined>(0);
+
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
 		if (data.executeCode && data.executeCode !== previousExecuteCode) {
@@ -58,6 +62,18 @@
 		messageContext = new MessageContext(nodeId);
 		p5Manager = new P5Manager(nodeId, containerElement, viewport);
 		glSystem.upsertNode(nodeId, 'img', {});
+
+		// Pre-parse createCanvas() dimensions before P5.js loads
+		// This prevents layout shift by setting correct size immediately
+		if (code) {
+			const canvasMatch = code.match(/createCanvas\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+
+			if (canvasMatch) {
+				preloadCanvasWidth = parseInt(canvasMatch[1], 10);
+				preloadCanvasHeight = parseInt(canvasMatch[2], 10);
+			}
+		}
+
 		updateSketch();
 		measureWidth(1000);
 	});
@@ -105,6 +121,13 @@
 				});
 
 				measureWidth(100);
+
+				// Clear pre-parsed canvas dimensions after P5.js has loaded
+				// This allows createCanvas() to dynamically resize on subsequent code changes
+				setTimeout(() => {
+					preloadCanvasWidth = undefined;
+					preloadCanvasHeight = undefined;
+				}, 150);
 
 				errorMessage = null;
 			} catch (error) {
@@ -175,6 +198,9 @@
 						? 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]'
 						: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md'
 				]}
+				style={preloadCanvasWidth && preloadCanvasHeight
+					? `min-width: ${preloadCanvasWidth}px; min-height: ${preloadCanvasHeight}px;`
+					: ''}
 			></div>
 		</div>
 	{/snippet}
