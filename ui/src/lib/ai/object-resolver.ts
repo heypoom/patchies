@@ -37,7 +37,7 @@ export async function resolveObjectFromPrompt(prompt: string): Promise<{
 export async function editObjectFromPrompt(
 	prompt: string,
 	objectType: string,
-	existingCode?: string
+	existingData?: Record<string, unknown>
 ): Promise<{
 	type: string;
 
@@ -53,10 +53,12 @@ export async function editObjectFromPrompt(
 	const { GoogleGenAI } = await import('@google/genai');
 	const ai = new GoogleGenAI({ apiKey });
 
-	// Enhance prompt with existing code context if provided
+	// Enhance prompt with existing data context if provided
 	let enhancedPrompt = prompt;
-	if (existingCode) {
-		enhancedPrompt = `Modify this existing ${objectType} object. Current code:\n${existingCode}\n\nUser request: ${prompt}`;
+	if (existingData && Object.keys(existingData).length > 0) {
+		// Stringify the data - non-serializable objects will become [object Object] which is fine
+		const dataString = JSON.stringify(existingData, null, 2);
+		enhancedPrompt = `Modify this existing ${objectType} object. Current data:\n${dataString}\n\nUser request: ${prompt}`;
 	} else {
 		enhancedPrompt = `Modify this existing ${objectType} object. User request: ${prompt}`;
 	}
@@ -371,6 +373,68 @@ Example - Video Mixer:
 }
 \`\`\``;
 
+		case 'glsl':
+			return `## glsl Object Instructions
+
+GLSL fragment shader for visual effects. Uses Shadertoy-compatible format.
+
+CRITICAL RULES:
+1. MUST use mainImage function signature: void mainImage(out vec4 fragColor, in vec2 fragCoord)
+2. Write GLSL code, NOT JavaScript
+3. Shaders are Shadertoy-compatible
+4. Define custom uniforms for dynamic control
+
+Built-in uniforms:
+- iResolution: vec3 (viewport resolution, z is pixel aspect ratio)
+- iTime: float (shader playback time in seconds)
+- iMouse: vec4 (mouse pixel coords, xy=current, zw=click)
+- iFrame: int (shader playback frame)
+
+Custom uniforms:
+- uniform float iMix: creates a float inlet
+- uniform vec2 iFoo: creates a vec2 inlet
+- uniform sampler2D iChannel0: creates a video inlet (orange)
+
+Example - Solid Red:
+\`\`\`json
+{
+  "type": "glsl",
+  "data": {
+    "code": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\\n  fragColor = vec4(1.0, 0.0, 0.0, 1.0);\\n}"
+  }
+}
+\`\`\`
+
+Example - Animated Colors:
+\`\`\`json
+{
+  "type": "glsl",
+  "data": {
+    "code": "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\\n  vec2 uv = fragCoord / iResolution.xy;\\n  vec3 color = vec3(0.0);\\n  float time = iTime * 0.5;\\n  \\n  color.r = sin(uv.x * 10.0 + time) * 0.5 + 0.5;\\n  color.g = sin(uv.y * 10.0 + time * 1.2) * 0.5 + 0.5;\\n  color.b = sin((uv.x + uv.y) * 5.0 + time * 0.8) * 0.5 + 0.5;\\n  \\n  float brightness = sin(time * 2.0) * 0.2 + 0.8;\\n  color *= brightness;\\n  fragColor = vec4(color, 1.0);\\n}"
+  }
+}
+\`\`\`
+
+Example - With Custom Uniform:
+\`\`\`json
+{
+  "type": "glsl",
+  "data": {
+    "code": "uniform float iMix;\\n\\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\\n  vec2 uv = fragCoord / iResolution.xy;\\n  vec3 color = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), iMix);\\n  fragColor = vec4(color * uv.x, 1.0);\\n}"
+  }
+}
+\`\`\`
+
+Example - With Video Input:
+\`\`\`json
+{
+  "type": "glsl",
+  "data": {
+    "code": "uniform sampler2D iChannel0;\\n\\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\\n  vec2 uv = fragCoord / iResolution.xy;\\n  vec3 tex = texture(iChannel0, uv).rgb;\\n  fragColor = vec4(tex * 1.2, 1.0);\\n}"
+  }
+}
+\`\`\``;
+
 		case 'canvas.dom':
 			return `## canvas.dom Object Instructions
 
@@ -448,6 +512,164 @@ Example - Random Number Generator:
   }
 }
 \`\`\``;
+
+		case 'expr':
+			return `## expr Object Instructions
+
+Mathematical expression evaluator at control rate. Perfect for parameter mapping and control signals.
+
+CRITICAL RULES:
+1. Use $1, $2, ... $9 to create dynamic inlets
+2. Each $N variable creates an inlet automatically
+3. Result is sent as message when any inlet receives a value
+4. Uses expr-eval library - supports full mathematical expression syntax
+
+Available operators and functions:
+- Arithmetic: +, -, *, /, ^, %
+- Trigonometry: sin(), cos(), tan(), asin(), acos(), atan(), atan2()
+- Math: sqrt(), abs(), ceil(), floor(), round(), log(), exp(), min(), max()
+- Logic: ==, !=, <, >, <=, >=, and, or, not
+- Conditionals: condition ? true_val : false_val
+- Constants: PI, E
+
+Multi-line support:
+- Use semicolons to separate statements
+- Last expression is the output
+- Define variables: a = $1 * 2; b = $2 + 3; a + b
+- Define functions: add(a, b) = a + b; add($1, $2)
+
+Example - Simple Addition:
+\`\`\`json
+{
+  "type": "expr",
+  "data": {
+    "expr": "$1 + $2"
+  }
+}
+\`\`\`
+
+Example - Scale and Offset:
+\`\`\`json
+{
+  "type": "expr",
+  "data": {
+    "expr": "$1 * 100 + 50"
+  }
+}
+\`\`\`
+
+Example - Sine Wave Mapping:
+\`\`\`json
+{
+  "type": "expr",
+  "data": {
+    "expr": "sin($1 * PI * 2) * 0.5 + 0.5"
+  }
+}
+\`\`\`
+
+Example - Multi-line with Variables:
+\`\`\`json
+{
+  "type": "expr",
+  "data": {
+    "expr": "scaled = $1 * 10;\\noffset = $2;\\nscaled + offset"
+  }
+}
+\`\`\``;
+
+		case 'expr~':
+			return `## expr~ Object Instructions
+
+Audio-rate mathematical expression evaluator. Process audio signals with math expressions!
+
+CRITICAL RULES:
+1. Runs at AUDIO RATE (48kHz) - processes every audio sample
+2. Use $1-$9 for control-rate inlets (receives messages)
+3. Always needs audio input - use sig~ for constant signals
+4. MUST connect to compressor~ or limiter~ - can create LOUD spikes!
+
+Available variables:
+- s: current sample value (-1 to 1)
+- i: current sample index in buffer (0 to bufferSize)
+- t: current time in seconds (float)
+- channel: current channel index (0 or 1 for stereo)
+- bufferSize: audio buffer size (usually 128)
+- samples: array of all samples in current channel
+- input: first input audio signal
+- inputs: array of all connected input audio signals
+- $1 to $9: control-rate inlet values
+
+Available functions (same as expr):
+- Arithmetic: +, -, *, /, ^, %
+- Trigonometry: sin(), cos(), tan(), etc.
+- Math: sqrt(), abs(), ceil(), floor(), round(), log(), exp()
+- Logic: ==, !=, <, >, <=, >=, and, or, not
+- Conditionals: condition ? true_val : false_val
+- Constants: PI, E
+- random(): white noise
+
+Example - Pass Through:
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "s"
+  }
+}
+\`\`\`
+
+Example - Sine Wave Oscillator:
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "sin(t * $1 * PI * 2)"
+  }
+}
+\`\`\`
+
+Example - Gain Control:
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "s * $1"
+  }
+}
+\`\`\`
+
+Example - Distortion (squaring):
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "s ^ 2"
+  }
+}
+\`\`\`
+
+Example - White Noise:
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "random()"
+  }
+}
+\`\`\`
+
+Example - FM Synthesis (requires audio input):
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "sin(t * 440 * PI * 2 + s * $1)"
+  }
+}
+\`\`\`
+
+WARNING: Always use compressor~ after expr~ to prevent dangerous audio spikes!`;
 
 		default:
 			// Generic fallback for objects not explicitly handled

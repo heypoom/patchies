@@ -69,9 +69,10 @@
 			if (isEditMode && editingNode) {
 				// Edit mode: Use single-call editObjectFromPrompt (more efficient)
 				const nodeType = editingNode.type || 'unknown';
-				const existingCode =
-					typeof editingNode.data?.code === 'string' ? editingNode.data.code : undefined;
-				result = await editObjectFromPrompt(promptText, nodeType, existingCode);
+				// Pass all node data - JSON.stringify will handle serialization,
+				// non-serializable objects become [object Object] which is fine
+				const existingData = editingNode.data || {};
+				result = await editObjectFromPrompt(promptText, nodeType, existingData);
 			} else {
 				// Insert mode: Use two-call resolveObjectFromPrompt (routing + generation)
 				result = await resolveObjectFromPrompt(promptText);
