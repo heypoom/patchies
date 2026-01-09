@@ -58,7 +58,7 @@ async function generateObjectConfig(
 	const systemPrompt = buildGeneratorPrompt(objectType);
 
 	const response = await ai.models.generateContent({
-		model: 'gemini-2.5-flash',
+		model: 'gemini-3-flash-preview',
 		contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
 	});
 

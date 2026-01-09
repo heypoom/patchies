@@ -123,7 +123,7 @@ async function routeToMultiObjectPlan(
 	const routerPrompt = buildMultiObjectRouterPrompt();
 
 	const response = await ai.models.generateContent({
-		model: 'gemini-2.5-flash',
+		model: 'gemini-3-flash-preview',
 		contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
 	});
 
@@ -171,7 +171,7 @@ async function generateMultiObjectConfig(
 	const systemPrompt = buildMultiObjectGeneratorPrompt(plan.objectTypes, plan.structure);
 
 	const response = await ai.models.generateContent({
-		model: 'gemini-2.5-flash',
+		model: 'gemini-3-flash-preview',
 		contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
 	});
 
