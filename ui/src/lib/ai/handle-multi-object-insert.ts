@@ -30,7 +30,8 @@ export type MultiObjectInsertResult = {
 
 /**
  * Handles the insertion of multiple AI-generated objects with automatic edge connection.
- * - Pre-parses tone~ and GLSL code to extract port/uniform definitions
+ * - Pre-parses code with setPortCount() calls (p5, js, canvas, canvas.dom, tone~, dsp~, elem~, sonic~, hydra)
+ * - Pre-parses GLSL code to extract uniform definitions
  * - Auto-fills missing targetHandle for GLSL connections
  * - basePosition is already in flow coordinates (accounts for current zoom/pan via screenToFlowPosition)
  * - viewport parameter is available for future optimization but basePosition handles positioning
@@ -56,22 +57,40 @@ export async function handleMultiObjectInsert(
 			y: basePosition.y + relativePos.y
 		};
 
-		// Pre-parse tone~ code to extract setPortCount() calls
+		// Pre-parse code to extract setPortCount() calls for nodes that support it
 		// This ensures message inlet/outlet handles exist when edges are created
 		let nodeData = objNode.data ?? getDefaultNodeData(objNode.type);
 
-		if (objNode.type === 'tone~' && nodeData.code) {
+		// Node types that use messageInletCount/messageOutletCount (audio nodes + hydra)
+		const usesMessagePorts = ['tone~', 'dsp~', 'elem~', 'sonic~', 'hydra'];
+
+		// Node types that use inletCount/outletCount (canvas/JS nodes)
+		const usesRegularPorts = ['p5', 'js', 'canvas', 'canvas.dom'];
+
+		const useDynamicMessagingPorts =
+			usesMessagePorts.includes(objNode.type) || usesRegularPorts.includes(objNode.type);
+
+		if (useDynamicMessagingPorts && nodeData.code) {
 			const portCountMatch = nodeData.code.match(/setPortCount\((\d+)(?:,\s*(\d+))?\)/);
 
 			if (portCountMatch) {
 				const inletCount = parseInt(portCountMatch[1] || '0', 10);
 				const outletCount = parseInt(portCountMatch[2] || '0', 10);
 
-				nodeData = {
-					...nodeData,
-					messageInletCount: inletCount,
-					messageOutletCount: outletCount
-				};
+				if (usesMessagePorts.includes(objNode.type)) {
+					nodeData = {
+						...nodeData,
+						messageInletCount: inletCount,
+						messageOutletCount: outletCount
+					};
+				} else {
+					// usesRegularPorts
+					nodeData = {
+						...nodeData,
+						inletCount,
+						outletCount
+					};
+				}
 			}
 		}
 

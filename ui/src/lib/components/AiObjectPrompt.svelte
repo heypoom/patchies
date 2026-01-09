@@ -35,6 +35,9 @@
 	let resolvedObjectType = $state<string | null>(null);
 	let isGeneratingConfig = $state(false);
 	let abortController: AbortController | null = $state(null);
+	let isDragging = $state(false);
+	let dragOffset = $state({ x: 0, y: 0 });
+	let dialogPosition = $state({ x: position.x, y: position.y });
 
 	const isEditMode = $derived(editingNode !== null);
 	const title = $derived(
@@ -60,9 +63,10 @@
 				: 'e.g., "a bouncing ball"'
 	);
 
-	// Auto-focus input when opened
+	// Auto-focus input when opened and reset position
 	$effect(() => {
 		if (open) {
+			dialogPosition = { x: position.x, y: position.y };
 			setTimeout(() => {
 				promptInput?.focus();
 			}, 0);
@@ -93,13 +97,39 @@
 	}
 
 	function handleClickOutside(event: MouseEvent) {
-		// Prevent closing while AI is generating
-		if (isLoading) return;
+		// Prevent closing while AI is generating or dragging
+		if (isLoading || isDragging) return;
 
 		const target = event.target as HTMLElement;
 		if (!target.closest('.ai-prompt-dialog')) {
 			handleClose();
 		}
+	}
+
+	function handleHeaderMouseDown(event: MouseEvent) {
+		// Only start drag on left click and not on buttons
+		if (event.button !== 0) return;
+		const target = event.target as HTMLElement;
+		if (target.closest('button')) return;
+
+		isDragging = true;
+		dragOffset = {
+			x: event.clientX - dialogPosition.x,
+			y: event.clientY - dialogPosition.y
+		};
+		event.preventDefault();
+	}
+
+	function handleMouseMove(event: MouseEvent) {
+		if (!isDragging) return;
+		dialogPosition = {
+			x: event.clientX - dragOffset.x,
+			y: event.clientY - dragOffset.y
+		};
+	}
+
+	function handleMouseUp() {
+		isDragging = false;
 	}
 
 	async function handleSubmit() {
@@ -206,7 +236,13 @@
 	$effect(() => {
 		if (open) {
 			document.addEventListener('click', handleClickOutside);
-			return () => document.removeEventListener('click', handleClickOutside);
+			document.addEventListener('mousemove', handleMouseMove);
+			document.addEventListener('mouseup', handleMouseUp);
+			return () => {
+				document.removeEventListener('click', handleClickOutside);
+				document.removeEventListener('mousemove', handleMouseMove);
+				document.removeEventListener('mouseup', handleMouseUp);
+			};
 		}
 	});
 </script>
@@ -225,11 +261,18 @@
 				: isMultiObjectMode
 					? 'ring-2 ring-blue-500/50'
 					: 'ring-2 ring-purple-500/50'
-			: ''}"
-		style="left: {position.x}px; top: {position.y}px;"
+			: ''} {isDragging ? 'cursor-grabbing' : ''}"
+		style="left: {dialogPosition.x}px; top: {dialogPosition.y}px;"
 	>
 		<!-- Header -->
-		<div class="flex items-center gap-2 border-b border-zinc-700 px-4 py-3">
+		<div
+			class="flex items-center gap-2 border-b border-zinc-700 px-4 py-3 {isDragging
+				? 'cursor-grabbing'
+				: 'cursor-grab'}"
+			onmousedown={handleHeaderMouseDown}
+			role="button"
+			tabindex="-1"
+		>
 			{#if isEditMode}
 				<Edit3 class="h-5 w-5 text-amber-400" />
 			{:else if isMultiObjectMode}
