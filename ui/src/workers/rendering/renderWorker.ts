@@ -22,6 +22,9 @@ self.onmessage = (event) => {
 		.with('setUniformData', () =>
 			fboRenderer.setUniformData(data.nodeId, data.uniformName, data.uniformValue)
 		)
+		.with('setMouseData', () =>
+			fboRenderer.setMouseData(data.nodeId, data.x, data.y, data.z, data.w)
+		)
 		.with('setPreviewSize', () => fboRenderer.setPreviewSize(data.width, data.height))
 		.with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
 		.with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))

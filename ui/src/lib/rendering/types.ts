@@ -41,6 +41,8 @@ export interface RenderParams {
 	iFrame: number;
 	mouseX: number;
 	mouseY: number;
+	mouseZ: number;
+	mouseW: number;
 	userParams: UserParam[];
 }
 

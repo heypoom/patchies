@@ -224,6 +224,16 @@ export class GLSystem {
 		});
 	}
 
+	setMouseData(nodeId: string, x: number, y: number, z: number, w: number) {
+		this.send('setMouseData', {
+			nodeId,
+			x,
+			y,
+			z,
+			w
+		});
+	}
+
 	removeNode(nodeId: string) {
 		const node = this.nodes.find((n) => n.id === nodeId);
 		if (!node) return;

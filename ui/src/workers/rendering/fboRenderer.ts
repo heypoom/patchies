@@ -59,6 +59,9 @@ export class FBORenderer {
 	/** Mapping of nodeID to pause state */
 	public nodePausedMap: Map<string, boolean> = new Map();
 
+	/** Mapping of nodeID to mouse state (iMouse vec4: xy = current, zw = click) */
+	public mouseDataByNode: Map<string, [number, number, number, number]> = new Map();
+
 	public hydraByNode = new Map<string, HydraRenderer | null>();
 	public canvasByNode = new Map<string, CanvasRenderer | null>();
 	private swglByNode = new Map<string, SwissGLContext>();
@@ -422,6 +425,11 @@ export class FBORenderer {
 		return this.nodePausedMap.get(nodeId) ?? false;
 	}
 
+	/** Set mouse data for a node (Shadertoy iMouse format) */
+	setMouseData(nodeId: string, x: number, y: number, z: number, w: number) {
+		this.mouseDataByNode.set(nodeId, [x, y, z, w]);
+	}
+
 	/** Get list of nodes with preview enabled */
 	getEnabledPreviews(): string[] {
 		return Object.keys(this.previewState).filter((nodeId) => this.previewState[nodeId]);
@@ -523,13 +531,18 @@ export class FBORenderer {
 			userUniformParams = textureArray;
 		}
 
+		// Get mouse data for this node (defaults to [0, 0, 0, 0])
+		const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
+
 		// Render to FBO
 		fboNode.framebuffer.use(() => {
 			fboNode.render({
 				lastTime: this.lastTime,
 				iFrame: this.frameCount,
-				mouseX: 0,
-				mouseY: 0,
+				mouseX: mouseData[0],
+				mouseY: mouseData[1],
+				mouseZ: mouseData[2],
+				mouseW: mouseData[3],
 				userParams: userUniformParams as UserParam[]
 			});
 		});

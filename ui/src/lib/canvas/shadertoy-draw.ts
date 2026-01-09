@@ -26,6 +26,8 @@ type P = {
 	iFrame: number;
 	mouseX: number;
 	mouseY: number;
+	mouseZ: number;
+	mouseW: number;
 	userParams: any[];
 };
 
@@ -94,7 +96,7 @@ export function createShaderToyDrawCommand({
 			iTime: ({ time }) => time,
 			iTimeDelta: ({ time }, props: P) => time - props.lastTime,
 			iFrame: (_, props: P) => props.iFrame,
-			iMouse: (_, props: P) => [props.mouseX, props.mouseY, 0, 0],
+			iMouse: (_, props: P) => [props.mouseX, props.mouseY, props.mouseZ, props.mouseW],
 			iDate: () => getDate(),
 			...userUniformInputs
 		}

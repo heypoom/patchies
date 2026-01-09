@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals, useViewport } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -26,15 +26,19 @@
 		selected: boolean;
 	} = $props();
 
-	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
+	const { updateNodeData, getEdges, deleteElements, screenToFlowPosition } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
-
-	let width = $state(200);
-	let height = $state(150);
+	const viewport = useViewport();
 
 	let glSystem = GLSystem.getInstance();
-	width = glSystem.previewSize[0];
-	height = glSystem.previewSize[1];
+
+	// Preview canvas display size
+	let width = $state(glSystem.previewSize[0]);
+	let height = $state(glSystem.previewSize[1]);
+
+	// Actual rendering resolution (for mouse coordinates)
+	let outputWidth = $state(glSystem.outputSize[0]);
+	let outputHeight = $state(glSystem.outputSize[1]);
 
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
@@ -45,6 +49,13 @@
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
+
+	// Detect if shader uses iMouse uniform
+	const usesMouseUniform = $derived(code.includes('iMouse'));
+
+	// Mouse state for Shadertoy iMouse uniform
+	let mouseState = $state({ x: 0, y: 0, z: 0, w: 0 });
+	let isMouseDown = $state(false);
 
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
@@ -124,6 +135,108 @@
 		glSystem.toggleNodePause(nodeId);
 	}
 
+	function handleCanvasMouseMove(event: MouseEvent) {
+		if (!previewCanvas || !usesMouseUniform) return;
+
+		const rect = previewCanvas.getBoundingClientRect();
+
+		// Get position relative to canvas in screen pixels
+		const screenX = event.clientX - rect.left;
+		const screenY = event.clientY - rect.top;
+
+		// Map from displayed rect to actual framebuffer resolution (outputSize)
+		// fragCoord matches the actual FBO size, NOT iResolution (which includes pixelRatio)
+		const x = (screenX / rect.width) * outputWidth;
+		const y = (screenY / rect.height) * outputHeight;
+
+		// Only log occasionally to avoid spam
+		if (Math.random() < 0.05) {
+			const pixelRatio = window.devicePixelRatio || 1;
+			console.log('[Mouse] move', {
+				screenPos: `${screenX.toFixed(0)}, ${screenY.toFixed(0)}`,
+				rectSize: `${rect.width.toFixed(0)} × ${rect.height.toFixed(0)}`,
+				outputSize: `${outputWidth} × ${outputHeight}`,
+				fragCoordRange: `0-${outputWidth} × 0-${outputHeight}`,
+				iResolution: `${(outputWidth * pixelRatio).toFixed(0)} × ${(outputHeight * pixelRatio).toFixed(0)}`,
+				mouseXY: `${x.toFixed(1)}, ${y.toFixed(1)}`
+			});
+		}
+
+		mouseState.x = x;
+		mouseState.y = y;
+
+		// If mouse is down, update click position with negative values
+		if (isMouseDown) {
+			mouseState.z = -mouseState.z;
+			mouseState.w = -mouseState.w;
+		}
+
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
+	}
+
+	function handleCanvasMouseDown(event: MouseEvent) {
+		if (!previewCanvas || !usesMouseUniform) return;
+
+		const rect = previewCanvas.getBoundingClientRect();
+
+		// Get position relative to canvas in screen pixels
+		const screenX = event.clientX - rect.left;
+		const screenY = event.clientY - rect.top;
+
+		// Map from displayed rect to actual framebuffer resolution (outputSize)
+		// fragCoord matches the actual FBO size, NOT iResolution (which includes pixelRatio)
+		const x = (screenX / rect.width) * outputWidth;
+		const y = (screenY / rect.height) * outputHeight;
+
+		const pixelRatio = window.devicePixelRatio || 1;
+		console.log('[Mouse] click', {
+			screenPos: `${screenX.toFixed(0)}, ${screenY.toFixed(0)}`,
+			rectSize: `${rect.width.toFixed(0)} × ${rect.height.toFixed(0)}`,
+			outputSize: `${outputWidth} × ${outputHeight}`,
+			fragCoordRange: `0-${outputWidth} × 0-${outputHeight}`,
+			iResolution: `${(outputWidth * pixelRatio).toFixed(0)} × ${(outputHeight * pixelRatio).toFixed(0)}`,
+			mouseXY: `${x.toFixed(1)}, ${y.toFixed(1)}`
+		});
+
+		isMouseDown = true;
+		mouseState.z = x;
+		mouseState.w = y;
+		mouseState.x = x;
+		mouseState.y = y;
+
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
+	}
+
+	function handleCanvasMouseUp() {
+		if (!usesMouseUniform) return;
+
+		isMouseDown = false;
+
+		// Reset to positive values when mouse is up
+		if (mouseState.z < 0) mouseState.z = -mouseState.z;
+		if (mouseState.w < 0) mouseState.w = -mouseState.w;
+
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
+	}
+
+	// Attach mouse event listeners when canvas is available and iMouse is used
+	$effect(() => {
+		if (!previewCanvas || !usesMouseUniform) return;
+
+		previewCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+		previewCanvas.addEventListener('mousedown', handleCanvasMouseDown);
+		previewCanvas.addEventListener('mouseup', handleCanvasMouseUp);
+		previewCanvas.addEventListener('mouseleave', handleCanvasMouseUp);
+
+		return () => {
+			if (!previewCanvas) return;
+			previewCanvas.removeEventListener('mousemove', handleCanvasMouseMove);
+			previewCanvas.removeEventListener('mousedown', handleCanvasMouseDown);
+			previewCanvas.removeEventListener('mouseup', handleCanvasMouseUp);
+			previewCanvas.removeEventListener('mouseleave', handleCanvasMouseUp);
+		};
+	});
+
 	onMount(() => {
 		glSystem = GLSystem.getInstance();
 
@@ -156,6 +269,7 @@
 	onPlaybackToggle={togglePause}
 	paused={isPaused}
 	showPauseButton={true}
+	nodrag={usesMouseUniform}
 	bind:previewCanvas
 	{width}
 	{height}
