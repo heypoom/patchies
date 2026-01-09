@@ -99,7 +99,11 @@ Click on the bottom handle (outlet) of an object, and drag it all the way to the
 
 - Top handle are called inlets. Bottom handle are called outlets.
 - You can connect multiple outlets to a single inlet, and vice-versa.
-- The type of the inlet and outlet must match. You cannot connect a visual or audio outlet to a message inlet, for example.
+- Connection rules:
+  - Audio inlets must connect to audio outlets (for synthesis chains).
+  - Audio outlets can connect to message inlets (for parameter automation).
+  - Video connections stay within video/GL chains.
+  - Message connections are flexible.
 
 ### Sharing Links
 

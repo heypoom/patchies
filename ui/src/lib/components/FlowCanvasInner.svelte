@@ -679,7 +679,7 @@
 	const isValidConnection: IsValidConnection = (connection) => {
 		// Allow connecting `fft~` analysis result to anything except audio inlets.
 		if (connection.sourceHandle?.startsWith(ANALYSIS_KEY)) {
-			return !connection.targetHandle?.startsWith('audio');
+			return !connection.targetHandle?.startsWith('audio-in');
 		}
 
 		if (
@@ -693,17 +693,14 @@
 			);
 		}
 
-		// Audio connections must connect audio to audio
-		if (
-			connection.sourceHandle?.startsWith('audio') ||
-			connection.targetHandle?.startsWith('audio')
-		) {
-			return !!(
-				connection.sourceHandle?.startsWith('audio') && connection.targetHandle?.startsWith('audio')
-			);
+		// Audio inlets must come from audio sources (for audio synthesis chains)
+		// But audio outlets can connect to message inlets (for parameter automation)
+		if (connection.targetHandle?.startsWith('audio-in')) {
+			return !!connection.sourceHandle?.startsWith('audio');
 		}
 
-		// Allow connections between any nodes (message connections)
+		// Audio outlets can connect to non-audio targets (message inlets for automation)
+		// Message connections are always allowed
 		return true;
 	};
 
