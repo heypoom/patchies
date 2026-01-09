@@ -157,6 +157,14 @@
 			if (!isLoading) {
 				handleClose();
 			}
+		} else if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
+			// CMD+I (or Ctrl+I on Windows/Linux) toggles between single and multi mode
+			// Only works in insert mode (not edit mode)
+			if (!isEditMode) {
+				event.preventDefault();
+
+				isMultiObjectMode = !isMultiObjectMode;
+			}
 		}
 	}
 
