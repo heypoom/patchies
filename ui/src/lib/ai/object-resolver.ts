@@ -87,8 +87,16 @@ Audio Objects (use "tone~" type with custom code):
   - Available functions: setTitle(), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets), setKeepAlive(enabled), recv(callback), send(data), process(inputs, outputs)
   - Must implement process(inputs, outputs) function - called for each audio processing block. inputs and outputs are arrays of audio channels.
   - Example: function process(inputs, outputs) { outputs[0][0] = inputs[0][0]; } for passthrough
-- elem~: Elementary Audio synthesis
-- sonic~: SuperSonic audio synthesis
+- elem~: Elementary Audio synthesis - functional reactive audio using Elementary Audio library
+  - Uses declarative audio graph composition with el.* functions and core.render()
+  - Example patterns: el.cycle(440), el.sample(), el.convolve(), el.lowpass()
+  - Good for: DSP-style signal processing, sample playback, effects chains
+  - Example: "const [rate, setRate] = core.createRef('const', {value: 440}, []); recv(f => setRate({value: f})); core.render(el.cycle(rate), el.cycle(rate))"
+- sonic~: SuperSonic audio synthesis - sample-based synthesis and playback
+  - Built on SuperCollider-inspired patterns for sample triggering and manipulation
+  - Uses sonic.loadSynthDef() to load synth definitions, sonic.send() for OSC messages
+  - Good for: drum machines, sample sequencers, granular synthesis
+  - Example: "await sonic.loadSynthDef('sonic-pi-prophet'); recv(msg => { sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', msg) })"
 - chuck~: ChucK audio programming
 
 Video/Visual Objects:
