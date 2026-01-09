@@ -123,11 +123,12 @@ AVAILABLE OBJECT TYPES:
 ${OBJECT_TYPE_LIST}
 
 EXAMPLES:
-- "polyphonic synth" → tone~
 - "rotating cube" → p5
 - "slider from 0 to 1000" → slider
-- "lowpass filter" → tone~
+- "audio output" -> object
+- "lowpass filter" → object
 - "XY pad controller" → canvas.dom
+- "polyphonic synth" → tone~
 - "fragment shader" → glsl
 - "play audio file" → soundfile~
 - "python script" → python
