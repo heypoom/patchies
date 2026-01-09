@@ -293,6 +293,9 @@
 		// Get base position (center around mouse position)
 		const basePosition = screenToFlowPosition(lastMousePosition);
 
+		// Import shader parser for GLSL nodes
+		const { shaderCodeToUniformDefs } = await import('$lib/canvas/shader-code-to-uniform-def');
+
 		// Create nodes and track their IDs
 		const createdNodeIds: string[] = [];
 		const newNodes: Node[] = [];
@@ -327,6 +330,16 @@
 				}
 			}
 
+			// Pre-parse GLSL code to extract uniform definitions
+			// This ensures GLSL inlet handles exist when edges are created
+			if (objNode.type === 'glsl' && nodeData.code) {
+				const uniformDefs = shaderCodeToUniformDefs(nodeData.code);
+				nodeData = {
+					...nodeData,
+					glUniformDefs: uniformDefs
+				};
+			}
+
 			const newNode: Node = {
 				id,
 				type: objNode.type,
@@ -343,7 +356,7 @@
 		// Wait for DOM to update and XYFlow to process the new nodes
 		await tick();
 
-		// Create edges using the created node IDs, with validation
+		// Create edges using the created node IDs, with validation and auto-filling targetHandle
 		const newEdges: Edge[] = simplifiedEdges
 			.filter((edge) => {
 				// Validate edge indices are within bounds
@@ -359,16 +372,43 @@
 
 				return true;
 			})
-			.map((edge) => {
+			.map((edge, edgeIndex) => {
 				const sourceId = createdNodeIds[edge.source];
 				const targetId = createdNodeIds[edge.target];
+				const targetNode = newNodes.find((n) => n.id === targetId);
+
+				let targetHandle = edge.targetHandle;
+
+				// Auto-fill missing targetHandle for GLSL nodes
+				if (
+					!targetHandle &&
+					targetNode?.type === 'glsl' &&
+					targetNode.data?.glUniformDefs &&
+					Array.isArray(targetNode.data.glUniformDefs)
+				) {
+					const uniformDefs = targetNode.data.glUniformDefs as Array<{
+						name: string;
+						type: string;
+					}>;
+
+					// Match by connection order: first edge -> first uniform, second -> second, etc.
+					// Filter edges targeting the same node to find which uniform this should connect to
+					const edgesToThisTarget = simplifiedEdges.filter((e) => e.target === edge.target);
+					const indexInTarget = edgesToThisTarget.indexOf(edge);
+
+					if (indexInTarget >= 0 && indexInTarget < uniformDefs.length) {
+						const uniformDef = uniformDefs[indexInTarget];
+						const handleType = uniformDef.type === 'sampler2D' ? 'video' : 'message';
+						targetHandle = `${handleType}-in-${indexInTarget}-${uniformDef.name}-${uniformDef.type}`;
+					}
+				}
 
 				return {
 					id: `edge-${edgeIdCounter++}`,
 					source: sourceId,
 					target: targetId,
 					sourceHandle: edge.sourceHandle,
-					targetHandle: edge.targetHandle
+					targetHandle
 				};
 			});
 
