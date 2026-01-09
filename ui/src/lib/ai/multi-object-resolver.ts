@@ -19,6 +19,47 @@
 
 import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
 
+// Consolidated logging for AI Multi-Object debugging
+class MultiObjectLogger {
+	private logs: string[] = [];
+
+	log(message: string, data?: unknown) {
+		if (data !== undefined) {
+			this.logs.push(`${message}: ${JSON.stringify(data, null, 2)}`);
+		} else {
+			this.logs.push(message);
+		}
+	}
+
+	flush() {
+		if (this.logs.length === 0) return;
+
+		const consolidated = `
+╔════════════════════════════════════════════════════════════════╗
+║           [AI Multi-Object] Consolidated Debug Log             ║
+╚════════════════════════════════════════════════════════════════╝
+
+${this.logs.join('\n\n')}
+
+════════════════════════════════════════════════════════════════
+`;
+		console.log(consolidated);
+		this.logs = [];
+	}
+
+	error(message: string, error?: unknown) {
+		if (error) {
+			this.logs.push(
+				`❌ ${message}: ${error instanceof Error ? error.message : JSON.stringify(error)}`
+			);
+		} else {
+			this.logs.push(`❌ ${message}`);
+		}
+	}
+}
+
+const logger = new MultiObjectLogger();
+
 export type SimplifiedEdge = {
 	source: number; // Index of source node in nodes array
 	target: number; // Index of target node in nodes array
@@ -54,14 +95,20 @@ export async function resolveMultipleObjectsFromPrompt(
 	const { GoogleGenAI } = await import('@google/genai');
 	const ai = new GoogleGenAI({ apiKey });
 
+	logger.log('📝 Starting multi-object resolution');
+	logger.log('User prompt', prompt);
+
 	// Call 1: Route to object types and structure (lightweight)
 	const plan = await routeToMultiObjectPlan(ai, prompt);
 	if (!plan) {
+		logger.log('⚠️ Router returned no plan');
+		logger.flush();
 		return null;
 	}
 
 	// Call 2: Generate full object configs (targeted)
 	const result = await generateMultiObjectConfig(ai, prompt, plan);
+	logger.flush();
 	return result;
 }
 
@@ -82,6 +129,7 @@ async function routeToMultiObjectPlan(
 
 	const responseText = response.text?.trim();
 	if (!responseText) {
+		logger.log('⚠️ Router response is empty');
 		return null;
 	}
 
@@ -100,13 +148,13 @@ async function routeToMultiObjectPlan(
 			throw new Error('Response missing required "structure" field');
 		}
 
-		console.log('[AI Multi-Object Router] Object types:', result.objectTypes);
-		console.log('[AI Multi-Object Router] Structure:', result.structure);
+		logger.log('✅ [Router] Object types', result.objectTypes);
+		logger.log('✅ [Router] Connection structure', result.structure);
 
 		return result;
 	} catch (error) {
-		console.error('Failed to parse routing response:', error);
-		console.log('Response text:', responseText);
+		logger.error('[Router] Failed to parse response', error);
+		logger.log('Raw response text', responseText);
 		throw new Error('Failed to parse routing response as JSON');
 	}
 }
@@ -129,6 +177,7 @@ async function generateMultiObjectConfig(
 
 	const responseText = response.text?.trim();
 	if (!responseText) {
+		logger.log('⚠️ Generator response is empty');
 		return null;
 	}
 
@@ -155,17 +204,17 @@ async function generateMultiObjectConfig(
 			}
 		}
 
-		console.log('[AI Multi-Object Generator] Parsed result:', result);
-		console.log('[AI Multi-Object Generator] Nodes count:', result.nodes.length);
-		console.log('[AI Multi-Object Generator] Edges count:', result.edges.length);
+		logger.log('✅ [Generator] Successfully parsed result');
+		logger.log('✅ [Generator] Nodes created', result.nodes);
+		logger.log('✅ [Generator] Edges created', result.edges);
 
 		return {
 			nodes: result.nodes,
 			edges: result.edges
 		};
 	} catch (error) {
-		console.error('Failed to parse generation response:', error);
-		console.log('Response text:', responseText);
+		logger.error('[Generator] Failed to parse response', error);
+		logger.log('Raw response text', responseText);
 		throw new Error('Failed to parse generation response as JSON');
 	}
 }

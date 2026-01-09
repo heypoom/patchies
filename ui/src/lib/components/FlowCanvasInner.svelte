@@ -290,9 +290,6 @@
 			targetHandle?: string;
 		}>
 	) {
-		console.log('[AI Multi-Object] Received nodes:', objectNodes);
-		console.log('[AI Multi-Object] Received edges:', simplifiedEdges);
-
 		// Get base position (center around mouse position)
 		const basePosition = screenToFlowPosition(lastMousePosition);
 
@@ -320,9 +317,6 @@
 
 			newNodes.push(newNode);
 		});
-
-		console.log('[AI Multi-Object] Created node IDs:', createdNodeIds);
-		console.log('[AI Multi-Object] Created nodes:', newNodes);
 
 		// Add all new nodes first
 		nodes = [...nodes, ...newNodes];
@@ -359,14 +353,8 @@
 				};
 			});
 
-		console.log('[AI Multi-Object] Created edges:', newEdges);
-		console.log('[AI Multi-Object] Total edges before:', edges.length);
-
 		// Add all new edges after nodes are rendered
 		edges = [...edges, ...newEdges];
-
-		console.log('[AI Multi-Object] Total edges after:', edges.length);
-		console.log('[AI Multi-Object] All edges:', edges);
 
 		// Wait one more tick to ensure edges are rendered
 		await tick();
