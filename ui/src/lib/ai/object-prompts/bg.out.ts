@@ -34,4 +34,30 @@ EXAMPLE - Hydra to Background:
     }
   ]
 }
+\`\`\`
+
+EXAMPLE - GLSL to Background:
+\`\`\`json
+{
+  "nodes": [
+    {
+      "type": "glsl",
+      "data": { "code": "void mainImage(out vec4 fragColor, in vec2 fragCoord) { fragColor = vec4(1.0, 0.0, 0.0, 1.0); }" },
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "type": "bg.out",
+      "data": {},
+      "position": { "x": 0, "y": 200 }
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1,
+      "sourceHandle": "video-out-out",
+      "targetHandle": "video-in-0"
+    }
+  ]
+}
 \`\`\``;

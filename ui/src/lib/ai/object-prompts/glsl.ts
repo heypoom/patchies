@@ -9,7 +9,7 @@ CRITICAL RULES:
 4. Define custom uniforms for dynamic control
 
 HANDLE IDS (Auto-generated - VERY DYNAMIC):
-- Output outlet: "video-out" (always present for shader output)
+- Output outlet: "video-out-out" (type="video" + id="out" → pattern: type-direction-id)
 - Uniform inlets depend on your shader code and are auto-generated:
   * "video-in-{index}-{uniformName}-sampler2D" for texture inputs
   * "message-in-{index}-{uniformName}-float" for float inputs

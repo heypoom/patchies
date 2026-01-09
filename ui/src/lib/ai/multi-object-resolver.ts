@@ -11,6 +11,7 @@
  * - Simple nodes (slider, button, toggle, msg, orca): "message-in", "message-out"
  * - Audio objects (dac~, tone~, sampler~): indexed like "audio-in-0", "message-in-1"
  * - Multi-outlet nodes (Hydra with setVideoCount(2,1)): "video-out-0", "video-out-1"
+ * - GLSL nodes: "video-out-out" (type="video" with id="out" → type-portDir-id pattern)
  * - IMPORTANT: Some nodes have SINGLE outlets despite multiple uses:
  *   * orca has only ONE message outlet (can't split to multiple samplers)
  *   * To trigger multiple samplers from orca, use separate orca instances
@@ -362,8 +363,11 @@ IMPORTANT RULES:
      * All sounds will be mixed and output to speakers
    
    SPECIAL DYNAMIC NODES: GLSLCanvasNode, P5Node, HydraNode
-   - GLSL shader uniforms generate: "video-in-{index}-{uniformName}-{type}"
-   - Do NOT specify these in edges; let the node handle it
+   - GLSL nodes (type: "glsl"):
+     * Video outlet generates: "video-out-out" (type="video" with id="out")
+     * When connecting FROM glsl to another node: sourceHandle: "video-out-out"
+     * Shader uniforms (inlets) generate: "video-in-{index}-{uniformName}-{type}"
+   - Do NOT specify uniform handles in edges; let the node handle it
    - If connecting to GLSL uniforms, omit targetHandle to let framework match
 
    NODES WITH SINGLE OUTLETS (IMPORTANT for multi-sampler patterns):
