@@ -35,7 +35,11 @@
 
 	const isEditMode = $derived(editingNode !== null);
 	const title = $derived(
-		isEditMode ? 'AI Object Edit' : isMultiObjectMode ? 'AI Multi-Object Insert' : 'AI Object Insert'
+		isEditMode
+			? 'AI Object Edit'
+			: isMultiObjectMode
+				? 'AI Multi-Object Insert'
+				: 'AI Object Insert'
 	);
 	const description = $derived(
 		isEditMode
@@ -186,7 +190,7 @@
 				<div class="font-mono text-sm font-medium text-zinc-100">{title}</div>
 				<div class="text-xs text-zinc-400">{description}</div>
 			</div>
-			
+
 			<!-- Mode Toggle (only show when not in edit mode) -->
 			{#if !isEditMode}
 				<button
@@ -217,7 +221,9 @@
 				onkeydown={handleKeydown}
 				placeholder={placeholderText}
 				disabled={isLoading}
-				class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+				class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {isEditMode
+					? 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
+					: 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500'} disabled:cursor-not-allowed disabled:opacity-60"
 				rows="3"
 			></textarea>
 
@@ -248,7 +254,9 @@
 				disabled={!promptText.trim() || isLoading}
 				class="rounded {isEditMode
 					? 'bg-amber-600 hover:bg-amber-700'
-					: 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+					: isMultiObjectMode
+						? 'bg-blue-600 hover:bg-blue-700'
+						: 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				{isLoading ? 'Resolving...' : buttonText}
 			</button>
