@@ -339,10 +339,10 @@ IMPORTANT RULES:
 2. The JSON must have a "nodes" array and an "edges" array
 3. Each node in the "nodes" array must have a "type" field and a "data" field
 4. Each node SHOULD have a "position" field with relative x, y coordinates for good visual layout
-5. Position nodes in a TOP-TO-BOTTOM flow (like PureData): sources on top (y: 0), outputs on bottom (y: 250+)
-6. Use GENEROUS horizontal spacing (x: 0, x: 350, x: 700, x: 1050) when nodes are placed side-by-side or in parallel
-7. Vertical steps should be AT LEAST 250-350 pixels between rows (not crowded!)
-8. Calculate spacing based on signal flow depth: sources at y=0, first processing stage y=300, next y=600, outputs y=900+
+5. Position nodes in a TOP-TO-BOTTOM flow (like PureData): sources on top (y: 0), outputs at the bottom (y: 160+)
+6. Use plenty of horizontal spacing (x: 0, x: 350, x: 700, x: 1050) for side-by-side or parallel nodes, so they don't overlap.
+7. Vertical steps should be at least 160-200 pixels between rows for a more compact layout
+8. Calculate spacing based on signal flow depth: sources at y=0, first processing stage y=180, next y=360, outputs y=540+
 7. Each edge in the "edges" array connects nodes by their index in the nodes array
 8. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
 9. CRITICAL - Handle ID Generation Rules:
