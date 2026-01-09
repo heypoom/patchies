@@ -50,8 +50,13 @@
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
 
-	// Detect if shader uses iMouse uniform
-	const usesMouseUniform = $derived(code.includes('iMouse'));
+	// Detect if shader uses iMouse uniform (ignore comments)
+	const usesMouseUniform = $derived.by(() => {
+		// Remove single-line comments
+		const codeWithoutComments = code.replace(/\/\/.*$/gm, '');
+
+		return codeWithoutComments.includes('iMouse');
+	});
 
 	// Mouse state for Shadertoy iMouse uniform
 	let mouseState = $state({ x: 0, y: 0, z: 0, w: 0 });
