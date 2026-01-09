@@ -1,3 +1,5 @@
+import { messagingInstructions } from './shared-messaging';
+
 export const strudelPrompt = `## strudel Object Instructions
 
 Strudel live music coding based on TidalCycles.
@@ -9,11 +11,11 @@ Strudel live music coding based on TidalCycles.
 4. Use Ctrl/Cmd+Enter in editor to re-evaluate
 
 **Available Methods:**
-- setPortCount(inlets, outlets) - Configure message ports
 - setTitle(name) - Set node title
-- recv(callback), send(data, {to: outletIndex}?) - Message I/O
 - Standard Strudel: sound(), note(), setcpm(), cpm() for tempo
 - All chainable Strudel pattern functions
+
+${messagingInstructions}
 
 **Handle IDs:**
 - Audio outlet: "audio-out"

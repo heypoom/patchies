@@ -1,4 +1,5 @@
 import { fftInstructions } from './shared-fft';
+import { messagingInstructions } from './shared-messaging';
 
 export const hydraPrompt = `## hydra Object Instructions
 
@@ -6,13 +7,12 @@ Live coding video synthesis with chainable Hydra functions.
 
 **Available Methods:**
 - setVideoCount(inlets, outlets) - Configure video ports (default 1, 1)
-- setPortCount(inlets, outlets) - Configure message ports
 - setTitle(name) - Set node title
 - src(s0), src(s1), etc. - Access video inputs from setVideoCount
 - out(o0), out(o1), etc. - Set outputs from setVideoCount
-- Standard Hydra: .blend(), .add(), .mult(), .diff(), .kaleidoscope(), etc.
-- send(data, {to: outletIndex}?) - Send message
-- recv(callback) - Inlet callback
+- Standard Hydra: .blend(), .add(), .mult(), .diff(), .kaleid(), etc.
+
+${messagingInstructions}
 
 ${fftInstructions}
 
@@ -35,7 +35,7 @@ Example - Audio-reactive:
 {
   "type": "hydra",
   "data": {
-    "code": "src(s0).scale(() => 1 + fft().a[10] * 0.5).kaleidoscope().out(o0)"
+    "code": "src(s0).scale(() => 1 + fft().a[10] * 0.5).kaleid().out(o0)"
   }
 }
 \`\`\``;

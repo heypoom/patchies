@@ -1,4 +1,5 @@
 import { fftInstructions } from './shared-fft';
+import { messagingInstructions } from './shared-messaging';
 
 export const canvasPrompt = `## canvas Object Instructions
 
@@ -9,12 +10,11 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 **Available Methods:**
 - ctx: 2D canvas context (ctx.fillRect, ctx.arc, etc.)
 - width, height: canvas dimensions
-- send(data, {to: outletIndex}?) - Send message
-- recv(callback) - Inlet callback (receives (data, meta))
-- setPortCount(inlets, outlets) - Configure message ports
 - noDrag(), noOutput(), setTitle(title) - Node config
 - setCanvasSize(w, h) - Resize canvas
 - requestAnimationFrame(cb) - Schedule draw callback
+
+${messagingInstructions}
 
 ${fftInstructions}
 

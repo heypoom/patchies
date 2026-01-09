@@ -1,18 +1,18 @@
 import { fftInstructions } from './shared-fft';
+import { messagingInstructions } from './shared-messaging';
 
 export const jsPrompt = `## js Object Instructions
 
 JavaScript execution block for general-purpose logic and utilities.
 
 **Available Methods:**
-- send(data, {to: outletIndex}?) - Send message to outlet(s)
-- recv(callback) - Register callback for inlet messages (callback receives (data, meta))
-- setPortCount(inlets, outlets) - Configure message ports
 - setTitle(name) - Set node display title
 - setRunOnMount(enabled) - Auto-run code on patch load
 - esm(moduleName) - Load NPM packages: await esm("lodash")
 - console.log() - Log to virtual console
 - setInterval(cb, ms), requestAnimationFrame(cb), delay(ms) - Timing (auto-cleanup)
+
+${messagingInstructions}
 
 ${fftInstructions}
 

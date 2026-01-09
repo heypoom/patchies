@@ -1,14 +1,16 @@
+import { messagingInstructions } from './shared-messaging';
+
 export const sonicPrompt = `## sonic~ Object Instructions
 
 SuperCollider synthesis via SuperSonic AudioWorklet.
 
 **Available Methods:**
-- setPortCount(inlets, outlets) - Configure message ports
 - setTitle(name) - Set node title
-- recv(callback), send(data, {to: outletIndex}?) - Message I/O
 - sonic: SuperSonic instance for synth control
 - SuperSonic: Static methods (e.g., SuperSonic.osc.encode())
 - on(event, callback) - Subscribe to SuperSonic events
+
+${messagingInstructions}
 
 **Context:**
 - By default, Prophet synth is loaded

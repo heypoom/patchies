@@ -1,4 +1,5 @@
 import { fftInstructions } from './shared-fft';
+import { messagingInstructions } from './shared-messaging';
 
 export const p5Prompt = `## p5 Object Instructions
 
@@ -6,13 +7,12 @@ P5.js creative coding environment with setup() and draw() functions.
 
 **Available Methods:**
 - Standard P5.js: createCanvas(), background(), fill(), rect(), circle(), etc.
-- send(data, {to: outletIndex}?) - Send message to outlet(s)
-- recv(callback) - Register inlet callback (receives (data, meta))
-- setPortCount(inlets, outlets) - Configure message ports
 - noDrag() - Disable node dragging for interactive sketches
 - noOutput() - Hide video output port
 - setTitle(name) - Set node display title
 - esm(moduleName) - Load NPM packages: await esm("three")
+
+${messagingInstructions}
 
 ${fftInstructions}
 

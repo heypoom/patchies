@@ -1,4 +1,5 @@
 import { fftInstructions } from './shared-fft';
+import { messagingInstructions } from './shared-messaging';
 
 export const canvasDomPrompt = `## canvas.dom Object Instructions
 
@@ -7,12 +8,12 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 **Available Methods:**
 - ctx: 2D canvas context
 - width, height, mouse: {x, y, down, buttons}
-- send(data, {to: outletIndex}?) - Send message
-- recv(callback) - Inlet callback (receives (data, meta))
 - noDrag(), noOutput(), setTitle(title) - Node config
 - setCanvasSize(w, h) - Resize canvas
 - onKeyDown(cb), onKeyUp(cb) - Keyboard events
 - requestAnimationFrame(cb) - Schedule draw
+
+${messagingInstructions}
 
 ${fftInstructions}
 

@@ -1,3 +1,5 @@
+import { messagingInstructions } from './shared-messaging';
+
 export const elemPrompt = `## elem~ Object Instructions
 
 Elementary Audio declarative DSP synthesis and processing.
@@ -8,9 +10,9 @@ Elementary Audio declarative DSP synthesis and processing.
 3. Render graph to outputNode: core.render(graph, outputNode)
 
 **Available Methods:**
-- setPortCount(inlets, outlets) - Configure message ports
 - setTitle(name) - Set node title
-- recv(callback), send(data, {to: outletIndex}?) - Message I/O
+
+${messagingInstructions}
 
 **Context:**
 - el: Elementary library (el.sine, el.square, el.delay, el.mix, etc.)
