@@ -300,7 +300,7 @@
 								</span>
 							</div>
 						{:else}
-							<span>Routing...</span>
+							<span>{isEditMode ? 'Editing...' : 'Routing...'}</span>
 						{/if}
 					</div>
 				{:else if isEditMode}
