@@ -20,10 +20,13 @@ HANDLE IDS (Auto-generated - VERY DYNAMIC):
   * "uniform float iMix" → creates handle for iMix parameter
   * "uniform sampler2D iChannel0" → creates handle for video input
 
-Built-in uniforms:
+Built-in uniforms (Shadertoy-compatible):
 - iResolution: vec3 (viewport resolution, z is pixel aspect ratio)
 - iTime: float (shader playback time in seconds)
-- iMouse: vec4 (mouse pixel coords, xy=current, zw=click)
+- iMouse: vec4 (mouse interaction - xy: current position, zw: click position)
+  * When mouse is up: zw = last click position (positive values)
+  * When mouse is down: zw = click position (negative values)
+  * Using iMouse in your shader enables mouse interaction automatically
 - iFrame: int (shader playback frame)
 
 Custom uniforms:

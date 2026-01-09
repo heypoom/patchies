@@ -295,6 +295,10 @@ These objects support video chaining and can be connected to create complex visu
   - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create an orange video inlet for you to connect video sources to.
 - See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
 - All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
+- **Mouse Interaction**: If your shader uses the `iMouse` uniform (vec4), mouse interaction is automatically enabled:
+  - `iMouse.xy`: current mouse position
+  - `iMouse.zw`: click position (positive when mouse button is up, negative when held down)
+  - When `iMouse` is detected in your code, the node becomes interactive (drag is disabled to allow mouse input)
 - I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
 - Try these presets for GLSL to get you started:
   - `red.gl`: solid red color
