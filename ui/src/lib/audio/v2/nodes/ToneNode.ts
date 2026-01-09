@@ -42,7 +42,7 @@ export class ToneNode implements AudioNodeV2 {
 	private audioContext: AudioContext;
 	private messageContext: MessageContext;
 
-	private toneObjects: Map<string, unknown> = new Map();
+	private cleanupFn: (() => void) | null = null;
 	private recvCallback: RecvCallback | null = null;
 
 	// Dynamic port counts for UI
@@ -164,7 +164,7 @@ export class ToneNode implements AudioNodeV2 {
 			const result = codeFunction(Tone, setPortCount, setTitle, recv, send, outputNode, inputNode);
 
 			if (result && typeof result.cleanup === 'function') {
-				this.toneObjects.set('cleanup', result.cleanup);
+				this.cleanupFn = result.cleanup;
 			}
 		} catch (error) {
 			logger.error('Failed to execute Tone.js code:', error);
@@ -194,10 +194,9 @@ export class ToneNode implements AudioNodeV2 {
 		const Tone = await this.ensureTone();
 
 		// Call any user-provided cleanup function first
-		const cleanupFn = this.toneObjects.get('cleanup');
-		if (cleanupFn && typeof cleanupFn === 'function') {
+		if (this.cleanupFn) {
 			try {
-				cleanupFn();
+				this.cleanupFn();
 			} catch (error) {
 				logger.error('Error during user cleanup:', error);
 			}
@@ -221,7 +220,7 @@ export class ToneNode implements AudioNodeV2 {
 			// ignore
 		}
 
-		this.toneObjects.clear();
+		this.cleanupFn = null;
 	}
 
 	destroy(): void {
