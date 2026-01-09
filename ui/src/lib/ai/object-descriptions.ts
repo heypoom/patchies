@@ -1067,6 +1067,13 @@ CRITICAL RULES:
 2. Great for drum machines and one-shots
 3. Connect to dac~ for audio output
 
+HANDLE IDS (Auto-generated - CRITICAL FOR CONNECTIONS):
+- Audio inlet: "audio-in-audio-in" (type + direction + id)
+- Message inlet: "message-in-message-in" (type + direction + id)
+- Audio outlet: "audio-out-audio-out" (type + direction + id)
+- Pattern: "{type}-{direction}-{id}"
+- LIMITATION: Single outlets only - cannot split to multiple nodes
+
 Messages:
 - string: load sample from URL
 - bang: trigger sample playback

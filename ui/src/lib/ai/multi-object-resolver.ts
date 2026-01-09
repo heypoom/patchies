@@ -252,7 +252,7 @@ IMPORTANT RULES:
 
    NODES WITH EXPLICIT LABEL IDS (e.g., sampler~, soundfile~):
    - sampler~: has explicit id="audio-in", id="message-in", id="audio-out"
-     * Pattern: ${type}-${direction}-${id}
+     * Pattern: "{type}-{direction}-{id}"
      * These generate: "audio-in-audio-in", "message-in-message-in", "audio-out-audio-out"
      * When connecting TO sampler~: targetHandle: "message-in-message-in" (NOT "message-in")
      * Example: button → sampler~: sourceHandle: "message-out", targetHandle: "message-in-message-in"
