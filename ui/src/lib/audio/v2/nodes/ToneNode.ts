@@ -42,9 +42,8 @@ export class ToneNode implements AudioNodeV2 {
 	private audioContext: AudioContext;
 	private messageContext: MessageContext;
 
-	private toneObjects: Map<string, unknown> = new Map();
+	private cleanupFn: (() => void) | null = null;
 	private recvCallback: RecvCallback | null = null;
-	private createdNodes: Set<{ dispose?: () => void }> = new Set();
 
 	// Dynamic port counts for UI
 	private messageInletCount = 0;
@@ -165,7 +164,7 @@ export class ToneNode implements AudioNodeV2 {
 			const result = codeFunction(Tone, setPortCount, setTitle, recv, send, outputNode, inputNode);
 
 			if (result && typeof result.cleanup === 'function') {
-				this.toneObjects.set('cleanup', result.cleanup);
+				this.cleanupFn = result.cleanup;
 			}
 		} catch (error) {
 			logger.error('Failed to execute Tone.js code:', error);
@@ -195,26 +194,13 @@ export class ToneNode implements AudioNodeV2 {
 		const Tone = await this.ensureTone();
 
 		// Call any user-provided cleanup function first
-		const cleanupFn = this.toneObjects.get('cleanup');
-		if (cleanupFn && typeof cleanupFn === 'function') {
+		if (this.cleanupFn) {
 			try {
-				cleanupFn();
+				this.cleanupFn();
 			} catch (error) {
 				logger.error('Error during user cleanup:', error);
 			}
 		}
-
-		// Dispose all tracked Tone.js objects
-		this.createdNodes.forEach((node) => {
-			try {
-				if (node && typeof node.dispose === 'function') {
-					node.dispose();
-				}
-			} catch (error) {
-				logger.warn('Error disposing Tone.js object:', error);
-			}
-		});
-		this.createdNodes.clear();
 
 		// Stop and clear the transport more safely
 		try {
@@ -234,7 +220,7 @@ export class ToneNode implements AudioNodeV2 {
 			// ignore
 		}
 
-		this.toneObjects.clear();
+		this.cleanupFn = null;
 	}
 
 	destroy(): void {

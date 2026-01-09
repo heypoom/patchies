@@ -2,6 +2,7 @@
 	import { Loader, Sparkles, Edit3, Network } from '@lucide/svelte/icons';
 	import {
 		resolveObjectFromPrompt,
+		editObjectFromPrompt,
 		resolveMultipleObjectsFromPrompt,
 		type SimplifiedEdge
 	} from '$lib/ai/object-resolver';
@@ -96,20 +97,19 @@
 					errorMessage = 'Could not resolve objects from prompt';
 				}
 			} else {
-				// Single object mode: create or edit one object
-				// For edit mode, enhance the prompt with context about the existing node
-				let enhancedPrompt = promptText;
-				if (isEditMode && editingNode) {
-					const nodeType = editingNode.type || 'unknown';
-					const existingCode = editingNode.data?.code;
-					if (existingCode) {
-						enhancedPrompt = `Modify this existing ${nodeType} object. Current code:\n${existingCode}\n\nUser request: ${promptText}`;
-					} else {
-						enhancedPrompt = `Modify this existing ${nodeType} object. User request: ${promptText}`;
-					}
-				}
+				// Single object mode: use two-stage routing pattern
+				let result;
 
-				const result = await resolveObjectFromPrompt(enhancedPrompt);
+				if (isEditMode && editingNode) {
+					// Edit mode: Use single-call editObjectFromPrompt (more efficient)
+					const nodeType = editingNode.type || 'unknown';
+					const existingCode =
+						typeof editingNode.data?.code === 'string' ? editingNode.data.code : undefined;
+					result = await editObjectFromPrompt(promptText, nodeType, existingCode);
+				} else {
+					// Insert mode: Use two-call resolveObjectFromPrompt (routing + generation)
+					result = await resolveObjectFromPrompt(promptText);
+				}
 
 				if (result) {
 					if (isEditMode && onEditObject) {
