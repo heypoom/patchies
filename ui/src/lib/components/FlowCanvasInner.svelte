@@ -110,7 +110,11 @@
 	let isNodeListVisible = $state(false);
 
 	// Clipboard for copy-paste functionality
-	let copiedNodeData: { type: string; data: any } | null = null;
+	let copiedNodeData: Array<{
+		type: string;
+		data: any;
+		relativePosition: { x: number; y: number };
+	}> | null = null;
 
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
@@ -190,7 +194,7 @@
 			hasNodeSelected
 		) {
 			event.preventDefault();
-			copySelectedNode();
+			copySelectedNodes();
 		}
 		// Handle CTRL+V for paste
 		else if (event.key.toLowerCase() === 'v' && (event.metaKey || event.ctrlKey) && !isTyping) {
@@ -712,26 +716,47 @@
 		return lastNodeId + 1;
 	}
 
-	// Copy selected node to clipboard
-	function copySelectedNode() {
-		if (selectedNodeIds.length !== 1) return;
+	// Copy selected nodes to clipboard
+	function copySelectedNodes() {
+		if (selectedNodeIds.length === 0) return;
 
-		const selectedNode = nodes.find((node) => node.id === selectedNodeIds[0]);
-		if (!selectedNode || !selectedNode.type) return;
+		const selectedNodes = nodes.filter((node) => selectedNodeIds.includes(node.id) && node.type);
+		if (selectedNodes.length === 0) return;
 
-		// Deep copy the node data to avoid reference issues
-		copiedNodeData = {
-			type: selectedNode.type,
-			data: { ...selectedNode.data }
-		};
+		// Calculate the center point of all selected nodes
+		const centerX =
+			selectedNodes.reduce((sum, node) => sum + node.position.x, 0) / selectedNodes.length;
+
+		const centerY =
+			selectedNodes.reduce((sum, node) => sum + node.position.y, 0) / selectedNodes.length;
+
+		// Store nodes with their relative positions from the center
+		copiedNodeData = selectedNodes.map((node) => ({
+			type: node.type!,
+			data: { ...node.data },
+			relativePosition: {
+				x: node.position.x - centerX,
+				y: node.position.y - centerY
+			}
+		}));
 	}
 
-	// Paste copied node at current mouse position
+	// Paste copied nodes at current mouse position
 	function pasteNode() {
-		if (!copiedNodeData) return;
+		if (!copiedNodeData || copiedNodeData.length === 0) return;
 
-		const position = screenToFlowPosition(lastMousePosition);
-		createNode(copiedNodeData.type, position, copiedNodeData.data);
+		// Get the paste position (where the center of the copied nodes will be placed)
+		const pastePosition = screenToFlowPosition(lastMousePosition);
+
+		// Create all nodes with their relative positions preserved
+		for (const nodeData of copiedNodeData) {
+			const position = {
+				x: pastePosition.x + nodeData.relativePosition.x,
+				y: pastePosition.y + nodeData.relativePosition.y
+			};
+
+			createNode(nodeData.type, position, nodeData.data);
+		}
 	}
 
 	function restorePatchFromSave(save: PatchSaveFormat) {

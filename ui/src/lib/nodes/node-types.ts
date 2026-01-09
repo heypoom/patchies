@@ -51,7 +51,8 @@ import KeyboardNode from '$lib/components/nodes/KeyboardNode.svelte';
 import OrcaNode from '$lib/components/nodes/OrcaNode.svelte';
 import UxnNode from '$lib/components/nodes/UxnNode.svelte';
 
-export const nodeTypes = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const nodeTypes: Record<string, any> = {
 	object: ObjectNode,
 	button: ButtonNode,
 	toggle: ToggleButtonNode,
