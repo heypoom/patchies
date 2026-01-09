@@ -18,7 +18,7 @@
 		type IsValidConnection,
 		useOnSelectionChange
 	} from '@xyflow/svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import CommandPalette from './CommandPalette.svelte';
 	import StartupModal from './startup-modal/StartupModal.svelte';
 	import VolumeControl from './VolumeControl.svelte';
@@ -49,6 +49,7 @@
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
 	const AUTOSAVE_INTERVAL = 2500;
+	const DEFAULT_NODE_SPACING = 200;
 
 	const visibleNodeTypes = $derived.by(() => {
 		return Object.fromEntries(
@@ -69,6 +70,7 @@
 	let edges = $state.raw<Edge[]>([]);
 
 	let nodeIdCounter = 0;
+	let edgeIdCounter = 0;
 	let messageSystem = MessageSystem.getInstance();
 	let glSystem = GLSystem.getInstance();
 	let audioService = AudioService.getInstance();
@@ -277,6 +279,97 @@
 	function handleAiObjectInsert(type: string, data: any) {
 		const position = screenToFlowPosition(lastMousePosition);
 		createNode(type, position, data);
+	}
+
+	async function handleAiMultipleObjectsInsert(
+		objectNodes: Array<{ type: string; data: any; position?: { x: number; y: number } }>,
+		simplifiedEdges: Array<{
+			source: number;
+			target: number;
+			sourceHandle?: string;
+			targetHandle?: string;
+		}>
+	) {
+		console.log('[AI Multi-Object] Received nodes:', objectNodes);
+		console.log('[AI Multi-Object] Received edges:', simplifiedEdges);
+
+		// Get base position (center around mouse position)
+		const basePosition = screenToFlowPosition(lastMousePosition);
+
+		// Create nodes and track their IDs
+		const createdNodeIds: string[] = [];
+		const newNodes: Node[] = [];
+
+		objectNodes.forEach((objNode, index) => {
+			const id = `${objNode.type}-${nodeIdCounter++}`;
+			createdNodeIds.push(id);
+
+			// Use relative positioning if provided, otherwise stack them
+			const relativePos = objNode.position || { x: index * DEFAULT_NODE_SPACING, y: 0 };
+			const position = {
+				x: basePosition.x + relativePos.x,
+				y: basePosition.y + relativePos.y
+			};
+
+			const newNode: Node = {
+				id,
+				type: objNode.type,
+				position,
+				data: objNode.data ?? getDefaultNodeData(objNode.type)
+			};
+
+			newNodes.push(newNode);
+		});
+
+		console.log('[AI Multi-Object] Created node IDs:', createdNodeIds);
+		console.log('[AI Multi-Object] Created nodes:', newNodes);
+
+		// Add all new nodes first
+		nodes = [...nodes, ...newNodes];
+
+		// Wait for DOM to update and XYFlow to process the new nodes
+		await tick();
+
+		// Create edges using the created node IDs, with validation
+		const newEdges: Edge[] = simplifiedEdges
+			.filter((edge) => {
+				// Validate edge indices are within bounds
+				const validSource = edge.source >= 0 && edge.source < createdNodeIds.length;
+				const validTarget = edge.target >= 0 && edge.target < createdNodeIds.length;
+				
+				if (!validSource || !validTarget) {
+					console.warn(
+						`Invalid edge indices: source=${edge.source}, target=${edge.target}, max=${createdNodeIds.length - 1}`
+					);
+					return false;
+				}
+				
+				return true;
+			})
+			.map((edge) => {
+				const sourceId = createdNodeIds[edge.source];
+				const targetId = createdNodeIds[edge.target];
+
+				return {
+					id: `edge-${edgeIdCounter++}`,
+					source: sourceId,
+					target: targetId,
+					sourceHandle: edge.sourceHandle,
+					targetHandle: edge.targetHandle
+				};
+			});
+
+		console.log('[AI Multi-Object] Created edges:', newEdges);
+		console.log('[AI Multi-Object] Total edges before:', edges.length);
+
+		// Add all new edges after nodes are rendered
+		edges = [...edges, ...newEdges];
+
+		console.log('[AI Multi-Object] Total edges after:', edges.length);
+		console.log('[AI Multi-Object] All edges:', edges);
+
+		// Wait one more tick to ensure edges are rendered
+		await tick();
 	}
 
 	function handleAiObjectEdit(nodeId: string, data: any) {
@@ -1022,6 +1115,7 @@
 		position={aiPromptPosition}
 		editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
 		onInsertObject={handleAiObjectInsert}
+		onInsertMultipleObjects={handleAiMultipleObjectsInsert}
 		onEditObject={handleAiObjectEdit}
 	/>
 </div>
