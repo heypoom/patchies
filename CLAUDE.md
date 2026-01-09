@@ -2,6 +2,13 @@
 
 **Patchies**: Visual programming environment for audio-visual patches. Connect nodes (P5.js, Hydra, Strudel, GLSL, JavaScript) to build creative projects with real-time collaboration and message passing.
 
+## Workflow Rules
+
+- **CRITICAL**: Never start dev server manually. User will start if needed.
+- **CRITICAL**: Never git commit or push for the user unless explicitly asked to do so. Wait for user review.
+- Before implementing: update relevant spec files in `docs/design-docs/specs/`
+- If asked explicitly to commit, write clear, short and concise commit messages.
+
 ## Core Stack
 
 - **SvelteKit 5** + TypeScript
@@ -42,14 +49,6 @@ bun run test             # All tests
 - Svelte 5: `$state`, `$props`, `$effect`, `$derived` (no `on:click`, use `onclick`)
 - Prefer editing existing files
 
-## Workflow Rules
-
-- **CRITICAL**: Never start dev server manually. User will start if needed.
-- Before implementing: update relevant spec files in `docs/design-docs/specs/`
-- Never auto-commit/push. Wait for user review.
-- Always run `bun run check` before committing
-- Use concise, clear commit messages
-
 ## Styling
 
 - Tailwind classes only (no custom CSS)
@@ -75,12 +74,14 @@ bun run test             # All tests
 **Handle colors**: video=orange, audio=blue, message=gray
 
 **Handle ID Generation** (StandardHandle.svelte:20-28):
+
 - If `type` AND `id` both provided: `${type}-${portDir}-${id}` (e.g., `audio-in-0`)
 - If only `type`: `${type}-${portDir}` (e.g., `message-in`, `video-out`)
 - If only `id`: `${portDir}-${id}` (e.g., `in-0`, `out-1`)
 - Otherwise: just `port` value
 
 **Common patterns**:
+
 - Simple single inlet/outlet: omit `id` → `message-in`, `audio-out`
 - Multiple indexed: `id={index}` → `in-0`, `out-1`
 - Labeled inputs: `id="audio-in"` → `audio-in-in`
