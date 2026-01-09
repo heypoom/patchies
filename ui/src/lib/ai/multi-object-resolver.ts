@@ -250,6 +250,14 @@ IMPORTANT RULES:
    - Will generate: "message-in", "message-out", "audio-in", "audio-out", "video-in", "video-out"
    - Example edges: sourceHandle: "message-out", targetHandle: "message-in"
 
+   NODES WITH EXPLICIT LABEL IDS (e.g., sampler~, soundfile~):
+   - sampler~: has explicit id="audio-in", id="message-in", id="audio-out"
+     * These generate: "audio-in-in", "message-in-in", "audio-out-out" (DOUBLE suffix!)
+     * When connecting TO sampler~: targetHandle: "message-in-in" (NOT "message-in")
+     * Example: orca → sampler~: sourceHandle: "message-out", targetHandle: "message-in-in"
+   - soundfile~: has id="0" on audio outlet
+     * Generates: "message-in" (no explicit id), "audio-out-0" (explicit id)
+
    NUMBERED/INDEXED NODES (multiple ports): ObjectNode (audio objects), Hydra, HydraCanvas
    - Will generate: "in-0", "in-1", "out-0", "out-1" (numeric indices)
    - OR: "audio-in-0", "message-in-1", "video-out-0" (type-specific)

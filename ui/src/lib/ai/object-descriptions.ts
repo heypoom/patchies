@@ -1032,10 +1032,9 @@ CRITICAL RULES:
 2. Connect to dac~ to hear audio
 3. Supports audio chaining as source
 
-
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (single)
-- Audio outlet: "audio-out" (single)
+HANDLE IDS (Auto-generated - CRITICAL):
+- Message inlet: "message-in" (no explicit id, so generates "message-in")
+- Audio outlet: "audio-out-0" (id="0", so generates "audio-out-0")
 - LIMITATION: Single audio outlet only - cannot split to multiple receivers
 
 Messages:
