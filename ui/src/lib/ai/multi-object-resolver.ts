@@ -232,11 +232,14 @@ IMPORTANT RULES:
 6. Use vertical spacing (y: 0, y: 100, y: 200) when nodes connect to the same target
 7. Each edge in the "edges" array connects nodes by their index in the nodes array
 8. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
-9. Handle names follow the pattern: "{type}-{direction}-{index}" where:
-   - type is "message", "audio", or "video"
-   - direction is "out" for source/outlet or "in" for target/inlet
-   - index is the port number (0, 1, 2, ...)
-   Examples: "message-out-0", "message-in-0", "audio-out-0", "audio-in-0"
+9. CRITICAL - Handle ID rules (these MUST be exact):
+   - If node has ONLY ONE port of that type: use "{type}-{direction}" (e.g., "message-out", "audio-in")
+   - If node has MULTIPLE ports of same type: use "{type}-{direction}-{index}" (e.g., "message-out-0", "audio-in-1")
+   - Most simple nodes (slider, button, toggle, msg) have single ports, so use: "message-out", "message-in"
+   - Direction: "out" for outlets/sources, "in" for inlets/targets
+   - Examples:
+     * slider → tone~: sourceHandle: "message-out", targetHandle: "message-in"
+     * tone~ (with 2 audio ins) → dac~: sourceHandle: "audio-out", targetHandle: "audio-in-0"
 10. Focus on creating FUNCTIONAL, CONNECTED systems
 11. ALWAYS include appropriate code and helper functions for each object type
 
