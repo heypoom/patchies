@@ -671,6 +671,586 @@ Example - FM Synthesis (requires audio input):
 
 WARNING: Always use compressor~ after expr~ to prevent dangerous audio spikes!`;
 
+		case 'button':
+			return `## button Object Instructions
+
+Simple button that sends a bang message when clicked.
+
+CRITICAL RULES:
+1. No code needed - configuration only
+2. Outputs {type: 'bang'} when clicked
+3. Flashes when receiving any message input
+
+Messages:
+- Receives: any message (triggers flash and outputs bang)
+- Outputs: {type: 'bang'}
+
+Example - Simple Button:
+\`\`\`json
+{
+  "type": "button",
+  "data": {}
+}
+\`\`\``;
+
+		case 'toggle':
+			return `## toggle Object Instructions
+
+Boolean toggle switch for on/off control.
+
+CRITICAL RULES:
+1. No code needed - configuration only
+2. Outputs true/false boolean values
+3. Visual state changes on click
+
+Messages:
+- Receives: boolean (sets toggle state)
+- Receives: bang (toggles state)
+- Outputs: boolean (true/false)
+
+Example - Toggle Switch:
+\`\`\`json
+{
+  "type": "toggle",
+  "data": {
+    "value": false
+  }
+}
+\`\`\``;
+
+		case 'msg':
+			return `## msg Object Instructions
+
+Message object that stores and sends predefined messages.
+
+CRITICAL RULES:
+1. Message format is VERY specific - follow these rules exactly
+2. Bare strings (e.g. "start") become objects: {type: 'start'}
+3. Quoted strings (e.g. "'hello'") become JS strings: "hello"
+4. Numbers (e.g. 100) become numbers: 100
+5. JSON objects are sent as-is, supports JSON5 syntax
+
+Message Format Rules:
+- bang → {type: 'bang'}
+- start → {type: 'start'}
+- play → {type: 'play'}
+- 'hello world' → "hello world" (string)
+- "hello world" → "hello world" (string)
+- 100 → 100 (number)
+- 0.5 → 0.5 (number)
+- {x: 1, y: 2} → {x: 1, y: 2} (object)
+- [1, 2, 3] → [1, 2, 3] (array)
+
+Example - Bang Message:
+\`\`\`json
+{
+  "type": "msg",
+  "data": {
+    "message": "bang"
+  }
+}
+\`\`\`
+
+Example - String Message:
+\`\`\`json
+{
+  "type": "msg",
+  "data": {
+    "message": "'hello world'"
+  }
+}
+\`\`\`
+
+Example - Number Message:
+\`\`\`json
+{
+  "type": "msg",
+  "data": {
+    "message": "440"
+  }
+}
+\`\`\`
+
+Example - Object Message:
+\`\`\`json
+{
+  "type": "msg",
+  "data": {
+    "message": "{type: 'loop', value: false}"
+  }
+}
+\`\`\``;
+
+		case 'textbox':
+			return `## textbox Object Instructions
+
+Multi-line text input for user text entry.
+
+CRITICAL RULES:
+1. No code needed - configuration only
+2. Outputs current text on bang
+3. Accepts string input to set text
+
+Messages:
+- Receives: bang (outputs current text)
+- Receives: string (sets text content)
+- Outputs: string (current text)
+
+Example - Text Input:
+\`\`\`json
+{
+  "type": "textbox",
+  "data": {
+    "text": "Enter your text here..."
+  }
+}
+\`\`\``;
+
+		case 'canvas':
+			return `## canvas Object Instructions
+
+Offscreen HTML5 Canvas running on rendering pipeline (web worker). Use for high-performance video chaining.
+
+CRITICAL RULES:
+1. Runs on web worker thread (OffscreenCanvas) - NO DOM access
+2. Fast video chaining - can chain with glsl/hydra without lag
+3. Use canvas.dom instead if you need mouse/keyboard/DOM
+4. FFT has high delay due to worker message passing
+
+Available in context:
+- ctx: 2D rendering context
+- width, height: canvas dimensions
+- noDrag(): disable node dragging
+- noOutput(): hide video output port
+- setTitle(title): set node title
+- setCanvasSize(w, h): resize canvas
+- send(message), recv(callback): message passing
+- fft(): audio analysis (high delay on worker)
+
+Example - Animated Circle:
+\`\`\`json
+{
+  "type": "canvas",
+  "data": {
+    "code": "let angle = 0;\\n\\nfunction draw() {\\n  ctx.fillStyle = '#18181b';\\n  ctx.fillRect(0, 0, width, height);\\n\\n  const x = width / 2 + Math.cos(angle) * 100;\\n  const y = height / 2 + Math.sin(angle) * 100;\\n\\n  ctx.fillStyle = '#4ade80';\\n  ctx.beginPath();\\n  ctx.arc(x, y, 20, 0, Math.PI * 2);\\n  ctx.fill();\\n\\n  angle += 0.05;\\n  requestAnimationFrame(draw);\\n}\\n\\ndraw();"
+  }
+}
+\`\`\``;
+
+		case 'strudel':
+			return `## strudel Object Instructions
+
+Strudel live coding environment based on TidalCycles for expressive music patterns.
+
+CRITICAL RULES:
+1. Use Strudel pattern syntax (mini-notation)
+2. MUST connect to dac~ to hear audio
+3. Use Ctrl/Cmd + Enter in editor to re-evaluate
+4. Only ONE strudel can play at a time
+
+Available functions:
+- recv(callback): limited support, works with setcpm
+- Standard Strudel pattern functions
+
+Messages:
+- bang or run: evaluates code and starts playback
+- string or {type: 'set', code: '...'}: sets code
+
+Example - Simple Drum Pattern:
+\`\`\`json
+{
+  "type": "strudel",
+  "data": {
+    "code": "sound(\\"bd sd, hh*4\\").cpm(120)"
+  }
+}
+\`\`\`
+
+Example - Melodic Pattern:
+\`\`\`json
+{
+  "type": "strudel",
+  "data": {
+    "code": "note(\\"<c3 eb3 g3 bb3>\\").s('sawtooth').lpf(800).cpm(90)"
+  }
+}
+\`\`\`
+
+Example - Complex Pattern:
+\`\`\`json
+{
+  "type": "strudel",
+  "data": {
+    "code": "stack(\\n  sound(\\"bd sd\\").bank('RolandTR808'),\\n  note(\\"c2 [eb2 g2] <f2 bb2>\\").s('sawtooth')\\n).cpm(120)"
+  }
+}
+\`\`\``;
+
+		case 'python':
+			return `## python Object Instructions
+
+Python code execution using Pyodide in the browser.
+
+CRITICAL RULES:
+1. Full Python 3 standard library available
+2. Great for data processing and numerical computation
+3. Use print() for output
+4. Runs in browser via Pyodide
+
+Available:
+- Full Python standard library
+- send(data): send messages to outlets
+- recv(callback): receive messages from inlets
+- setPortCount(inlets, outlets): set message ports
+
+Example - Simple Calculation:
+\`\`\`json
+{
+  "type": "python",
+  "data": {
+    "code": "import math\\n\\nresult = math.sqrt(16)\\nprint(f\\"Result: {result}\\")"
+  }
+}
+\`\`\`
+
+Example - Data Processing:
+\`\`\`json
+{
+  "type": "python",
+  "data": {
+    "code": "def fibonacci(n):\\n    a, b = 0, 1\\n    result = []\\n    for _ in range(n):\\n        result.append(a)\\n        a, b = b, a + b\\n    return result\\n\\nfib = fibonacci(10)\\nprint(fib)"
+  }
+}
+\`\`\``;
+
+		case 'swgl':
+			return `## swgl Object Instructions
+
+SwissGL shader - WebGL2 wrapper for creating shaders in very few lines of code.
+
+CRITICAL RULES:
+1. Must implement render() function
+2. Uses SwissGL API (different from GLSL)
+3. Supports Mesh, VP (vertex position), FP (fragment)
+4. Much more concise than raw GLSL
+
+Available:
+- glsl(): main SwissGL function
+- render({ t }): render function with time parameter
+- Mesh: [width, height] for mesh generation
+- VP: vertex position string
+- FP: fragment color string
+
+Example - Animated Mesh:
+\`\`\`json
+{
+  "type": "swgl",
+  "data": {
+    "code": "function render({ t }) {\\n  glsl({\\n    t,\\n    Mesh: [10, 10],\\n    VP: \`XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1\`,\\n    FP: \`UV,0.5,1\`,\\n  });\\n}"
+  }
+}
+\`\`\`
+
+Example - Color Wave:
+\`\`\`json
+{
+  "type": "swgl",
+  "data": {
+    "code": "function render({ t }) {\\n  glsl({\\n    t,\\n    FP: \`vec3(sin(t+XY.x*5.0), cos(t+XY.y*3.0), 0.5),1\`,\\n  });\\n}"
+  }
+}
+\`\`\``;
+
+		case 'uxn':
+			return `## uxn Object Instructions
+
+Uxn virtual machine for running programs written in Uxntal assembly.
+
+CRITICAL RULES:
+1. Conforms to Varvara device specifications
+2. Write Uxntal assembly code
+3. Press Shift+Enter to assemble and load
+4. Canvas captures keyboard/mouse input (click to focus)
+
+Available:
+- Full Uxntal instruction set
+- Console output sent as messages
+- Video output supports chaining
+- Load ROM: drop .rom file or use Load ROM button
+
+Messages:
+- string (URL): load ROM from URL
+- Uint8Array: load ROM from binary
+- File: load ROM from file
+- {type: 'load', url: string}: load ROM from URL
+- Outputs: console strings
+
+Example - Hello World:
+\`\`\`json
+{
+  "type": "uxn",
+  "data": {
+    "code": "|10 @Console &vector $2 &read $1 &pad $5 &write $1\\n\\n|100\\n  ;hello-txt\\n  &loop\\n    LDAk .Console/write DEO\\n    INC2 LDAk ,&loop JCN\\n  POP2\\n  BRK\\n\\n@hello-txt \\"Hello 20 \\"World! 00"
+  }
+}
+\`\`\``;
+
+		case 'asm':
+			return `## asm Object Instructions
+
+Virtual stack machine assembly interpreter inspired by TIS-100 and Shenzhen I/O.
+
+CRITICAL RULES:
+1. Stack-based assembly language
+2. Over 50 assembly instructions
+3. Line-by-line instruction highlighting
+4. External memory cells via asm.mem
+
+Available instructions:
+- Stack: PUSH, POP, DUP, SWAP, OVER, ROT
+- Arithmetic: ADD, SUB, MUL, DIV, MOD, NEG
+- Comparison: EQ, NEQ, LT, GT, LTE, GTE
+- Logic: AND, OR, NOT, XOR
+- Control: JMP, JZ, JNZ, CALL, RET, HALT
+- I/O: IN, OUT, PEEK, POKE
+- Memory: LOAD, STORE
+
+Example - Simple Counter:
+\`\`\`json
+{
+  "type": "asm",
+  "data": {
+    "code": "PUSH 0\\nLOOP:\\nDUP\\nOUT 0\\nPUSH 1\\nADD\\nJMP LOOP"
+  }
+}
+\`\`\`
+
+Example - Fibonacci:
+\`\`\`json
+{
+  "type": "asm",
+  "data": {
+    "code": "PUSH 0\\nPUSH 1\\nLOOP:\\nDUP\\nOUT 0\\nSWAP\\nOVER\\nADD\\nJMP LOOP"
+  }
+}
+\`\`\``;
+
+		case 'orca':
+			return `## orca Object Instructions
+
+Orca esoteric programming language - every character is an operation running sequentially each frame.
+
+CRITICAL RULES:
+1. Grid-based visual programming
+2. 26 letter operators (A-Z) for operations
+3. Output-agnostic MIDI (noteOn, noteOff, controlChange)
+4. Connect to midi.out or tone~ synth presets
+
+Key operators:
+- A-Z: Math, logic, movement operations
+- :: MIDI note (channel, octave, note, velocity, length)
+- %: Monophonic MIDI
+- !: MIDI Control Change
+- U: Euclidean rhythm generator (great for drums!)
+- V: Variables
+- R: Random values
+- *: Bang operator
+- #: Comment (halts line)
+
+Controls:
+- Click canvas to edit
+- Space: play/pause
+- Enter: advance one frame
+- Arrow keys: navigate
+- Type to edit grid
+
+Example - Simple Melody:
+\`\`\`json
+{
+  "type": "orca",
+  "data": {
+    "grid": "D8.......\\n:03C....."
+  }
+}
+\`\`\`
+
+Example - Euclidean Drums:
+\`\`\`json
+{
+  "type": "orca",
+  "data": {
+    "grid": "U8.4....\\n*:01C.4."
+  }
+}
+\`\`\``;
+
+		case 'chuck~':
+			return `## chuck~ Object Instructions
+
+ChucK audio programming language for real-time sound synthesis.
+
+CRITICAL RULES:
+1. Write ChucK code for algorithmic composition
+2. Use Ctrl/Cmd + Enter to replace most recent shred
+3. Use Ctrl/Cmd + \\ to add new shred
+4. Use Ctrl/Cmd + Backspace to remove shred
+5. MUST connect to dac~ for audio output
+
+Available:
+- Full ChucK language
+- Runs via WebChucK in browser
+- Multiple concurrent shreds
+- Real-time synthesis
+
+Example - Sine Wave:
+\`\`\`json
+{
+  "type": "chuck~",
+  "data": {
+    "code": "SinOsc s => dac;\\n440 => s.freq;\\n0.5 => s.gain;\\nwhile(true) { 1::second => now; }"
+  }
+}
+\`\`\`
+
+Example - FM Synth:
+\`\`\`json
+{
+  "type": "chuck~",
+  "data": {
+    "code": "SinOsc mod => SinOsc car => dac;\\n2 => mod.sync;\\n200 => mod.freq;\\n440 => car.freq;\\nwhile(true) {\\n  Math.random2f(100,500) => mod.freq;\\n  200::ms => now;\\n}"
+  }
+}
+\`\`\``;
+
+		case 'csound~':
+			return `## csound~ Object Instructions
+
+Csound sound and music computing system.
+
+CRITICAL RULES:
+1. Write Csound orchestra and score code
+2. WARNING: Only ONE csound~ per patch (known bug)
+3. MUST connect to dac~ for audio output
+4. Use instr/endin blocks for instruments
+
+Messages:
+- bang: resume or re-eval code
+- play/pause/stop/reset: playback control
+- {type: 'setChannel', channel: 'name', value: number}: set control channel
+- {type: 'noteOn', note: 60, velocity: 127}: MIDI note on
+- {type: 'noteOff', note: 60}: MIDI note off
+- {type: 'readScore', value: 'i1 0 1'}: send score
+- {type: 'eval', code: '...'}: evaluate code
+
+Example - Simple Sine:
+\`\`\`json
+{
+  "type": "csound~",
+  "data": {
+    "code": "instr 1\\n  asig oscili 0.5, 440\\n  out asig\\nendin\\nschedule(1, 0, 10)"
+  }
+}
+\`\`\`
+
+Example - FM Synth:
+\`\`\`json
+{
+  "type": "csound~",
+  "data": {
+    "code": "instr 1\\n  ifreq = p4\\n  amod oscili 200, ifreq*2\\n  acar oscili 0.5, ifreq + amod\\n  out acar\\nendin\\nschedule(1, 0, 2, 440)"
+  }
+}
+\`\`\``;
+
+		case 'soundfile~':
+			return `## soundfile~ Object Instructions
+
+Load and play audio files with transport controls.
+
+CRITICAL RULES:
+1. No code needed - file loading object
+2. Connect to dac~ to hear audio
+3. Supports audio chaining as source
+
+Messages:
+- string or {type: 'load', url: '...'}: load audio file
+- bang: restart playback
+- play: start playback
+- pause: pause playback
+- stop: stop playback
+- {type: 'loop', value: boolean}: set looping
+- read: read file (used with convolver~)
+
+Example - Audio Player:
+\`\`\`json
+{
+  "type": "soundfile~",
+  "data": {
+    "url": "https://example.com/audio.mp3",
+    "loop": true
+  }
+}
+\`\`\``;
+
+		case 'sampler~':
+			return `## sampler~ Object Instructions
+
+Sample playback with triggering capabilities.
+
+CRITICAL RULES:
+1. Load audio samples for triggered playback
+2. Great for drum machines and one-shots
+3. Connect to dac~ for audio output
+
+Messages:
+- string: load sample from URL
+- bang: trigger sample playback
+- number: set playback rate/pitch
+- {type: 'load', url: '...'}: load sample
+
+Example - Drum Sample:
+\`\`\`json
+{
+  "type": "sampler~",
+  "data": {
+    "url": "https://example.com/kick.wav"
+  }
+}
+\`\`\``;
+
+		case 'markdown':
+			return `## markdown Object Instructions
+
+Markdown text renderer for documentation and formatted content.
+
+CRITICAL RULES:
+1. No code needed - markdown content only
+2. Supports full Markdown syntax
+3. Great for patch documentation
+
+Messages:
+- string: set markdown content
+
+Example - Documentation:
+\`\`\`json
+{
+  "type": "markdown",
+  "data": {
+    "content": "# My Patch\\n\\nThis patch does **amazing** things:\\n\\n- Feature 1\\n- Feature 2\\n- Feature 3"
+  }
+}
+\`\`\`
+
+Example - Instructions:
+\`\`\`json
+{
+  "type": "markdown",
+  "data": {
+    "content": "## How to use\\n\\n1. Connect the slider to the frequency inlet\\n2. Press the button to start\\n3. Adjust parameters to taste"
+  }
+}
+\`\`\``;
+
 		default:
 			// Generic fallback for objects not explicitly handled
 			return `## ${objectType} Object
