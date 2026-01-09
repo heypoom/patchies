@@ -756,7 +756,10 @@ export class FBORenderer {
 		const texture = this.externalTexturesByNode.get(nodeId);
 
 		// Either update the existing texture or create a new one.
-		const nextTexture = texture ? texture(bitmap) : this.regl.texture(bitmap);
+		// @ts-expect-error -- regl type is wrong
+		const nextTexture = texture
+			? texture(bitmap)
+			: this.regl.texture({ data: bitmap, flipY: true });
 
 		this.externalTexturesByNode.set(nodeId, nextTexture);
 	}
