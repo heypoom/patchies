@@ -83,14 +83,24 @@ export type MultiObjectResult = {
  * Uses a two-call approach:
  * 1. Router call: Determines which object types to use and how they connect (lightweight)
  * 2. Generator call: Generates the full object configurations (targeted)
+ *
+ * Accepts optional callback to report progress between calls for better UX.
+ * Supports cancellation via AbortSignal.
  */
 export async function resolveMultipleObjectsFromPrompt(
-	prompt: string
+	prompt: string,
+	onRouterComplete?: (objectTypes: string[]) => void,
+	signal?: AbortSignal
 ): Promise<MultiObjectResult | null> {
 	const apiKey = localStorage.getItem('gemini-api-key');
 
 	if (!apiKey) {
 		throw new Error('Gemini API key is not set. Please set it in the settings.');
+	}
+
+	// Check for cancellation before starting
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
 	}
 
 	const { GoogleGenAI } = await import('@google/genai');
@@ -100,15 +110,31 @@ export async function resolveMultipleObjectsFromPrompt(
 	logger.log('User prompt', prompt);
 
 	// Call 1: Route to object types and structure (lightweight)
-	const plan = await routeToMultiObjectPlan(ai, prompt);
+	const plan = await routeToMultiObjectPlan(ai, prompt, signal);
 	if (!plan) {
 		logger.log('⚠️ Router returned no plan');
 		logger.flush();
 		return null;
 	}
 
+	// Check for cancellation after first call
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
+
+	// Report router completion to UI
+	console.log(
+		'Router completed with object types:',
+		plan.objectTypes,
+		'callback exists:',
+		!!onRouterComplete
+	);
+	onRouterComplete?.(plan.objectTypes);
+
 	// Call 2: Generate full object configs (targeted)
-	const result = await generateMultiObjectConfig(ai, prompt, plan);
+	console.log('Starting generator call for types:', plan.objectTypes);
+	const result = await generateMultiObjectConfig(ai, prompt, plan, signal);
+	console.log('Generator complete');
 	logger.flush();
 	return result;
 }
@@ -119,14 +145,25 @@ export async function resolveMultipleObjectsFromPrompt(
  */
 async function routeToMultiObjectPlan(
 	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
-	prompt: string
+	prompt: string,
+	signal?: AbortSignal
 ): Promise<{ objectTypes: string[]; structure: string } | null> {
+	// Check for cancellation before starting
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
+
 	const routerPrompt = buildMultiObjectRouterPrompt();
 
 	const response = await ai.models.generateContent({
 		model: 'gemini-3-flash-preview',
 		contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
 	});
+
+	// Check for cancellation after request
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
 
 	const responseText = response.text?.trim();
 	if (!responseText) {
@@ -167,14 +204,25 @@ async function routeToMultiObjectPlan(
 async function generateMultiObjectConfig(
 	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
 	prompt: string,
-	plan: { objectTypes: string[]; structure: string }
+	plan: { objectTypes: string[]; structure: string },
+	signal?: AbortSignal
 ): Promise<MultiObjectResult | null> {
+	// Check for cancellation before starting
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
+
 	const systemPrompt = buildMultiObjectGeneratorPrompt(plan.objectTypes, plan.structure);
 
 	const response = await ai.models.generateContent({
 		model: 'gemini-3-flash-preview',
 		contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
 	});
+
+	// Check for cancellation after request
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
 
 	const responseText = response.text?.trim();
 	if (!responseText) {

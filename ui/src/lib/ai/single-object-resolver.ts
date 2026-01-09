@@ -4,6 +4,7 @@
  * 2. Generator call: Generates the full object configuration (targeted)
  */
 
+import { logger } from '$lib/utils/logger';
 import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
 
 /**
@@ -11,8 +12,15 @@ import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descri
  * Uses a two-call approach:
  * 1. Router call: Determines which object type to use (lightweight)
  * 2. Generator call: Generates the full object configuration (targeted)
+ *
+ * Accepts optional callback to report progress between calls for better UX.
+ * Supports cancellation via AbortSignal.
  */
-export async function resolveObjectFromPrompt(prompt: string): Promise<{
+export async function resolveObjectFromPrompt(
+	prompt: string,
+	onRouterComplete?: (objectType: string) => void,
+	signal?: AbortSignal
+): Promise<{
 	type: string;
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
@@ -24,17 +32,32 @@ export async function resolveObjectFromPrompt(prompt: string): Promise<{
 		throw new Error('Gemini API key is not set. Please set it in the settings.');
 	}
 
+	// Check for cancellation before starting
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
+
 	const { GoogleGenAI } = await import('@google/genai');
 	const ai = new GoogleGenAI({ apiKey });
 
 	// Call 1: Route to object type (lightweight)
-	const objectType = await routeToObjectType(ai, prompt);
+	const objectType = await routeToObjectType(ai, prompt, signal);
 	if (!objectType) {
 		return null;
 	}
 
+	// Check for cancellation after first call
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
+
+	// Report router completion to UI
+	onRouterComplete?.(objectType);
+
 	// Call 2: Generate object config (targeted)
-	const config = await generateObjectConfig(ai, prompt, objectType);
+
+	const config = await generateObjectConfig(ai, prompt, objectType, signal);
+
 	return config;
 }
 
@@ -44,14 +67,25 @@ export async function resolveObjectFromPrompt(prompt: string): Promise<{
  */
 async function routeToObjectType(
 	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
-	prompt: string
+	prompt: string,
+	signal?: AbortSignal
 ): Promise<string | null> {
+	// Check for cancellation before starting
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
+
 	const routerPrompt = buildRouterPrompt();
 
 	const response = await ai.models.generateContent({
 		model: 'gemini-3-flash-preview',
 		contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
 	});
+
+	// Check for cancellation after request
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
 
 	const responseText = response.text?.trim();
 	if (!responseText) {
@@ -69,18 +103,29 @@ async function routeToObjectType(
 async function generateObjectConfig(
 	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
 	prompt: string,
-	objectType: string
+	objectType: string,
+	signal?: AbortSignal
 ): Promise<{
 	type: string;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
 	data: any;
 } | null> {
+	// Check for cancellation before starting
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
+
 	const systemPrompt = buildGeneratorPrompt(objectType);
 
 	const response = await ai.models.generateContent({
 		model: 'gemini-3-flash-preview',
 		contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
 	});
+
+	// Check for cancellation after request
+	if (signal?.aborted) {
+		throw new Error('Request cancelled');
+	}
 
 	const responseText = response.text?.trim();
 	if (!responseText) {
@@ -104,8 +149,7 @@ async function generateObjectConfig(
 			data: result.data || {}
 		};
 	} catch (error) {
-		console.error('Failed to parse AI response:', error);
-		console.log('Response text:', responseText);
+		logger.error('Failed to parse AI response:', error);
 		throw new Error('Failed to parse AI response as JSON');
 	}
 }

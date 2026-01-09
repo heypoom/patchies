@@ -32,6 +32,9 @@
 	let isLoading = $state(false);
 	let errorMessage = $state<string | null>(null);
 	let isMultiObjectMode = $state(false);
+	let resolvedObjectType = $state<string | null>(null);
+	let isGeneratingConfig = $state(false);
+	let abortController: AbortController | null = $state(null);
 
 	const isEditMode = $derived(editingNode !== null);
 	const title = $derived(
@@ -74,7 +77,19 @@
 		promptText = '';
 		errorMessage = null;
 		isLoading = false;
+		resolvedObjectType = null;
+		isGeneratingConfig = false;
+		abortController = null;
 		// Don't reset mode - keep user's preference
+	}
+
+	function handleCancel() {
+		if (abortController) {
+			abortController.abort();
+			abortController = null;
+		}
+		isLoading = false;
+		errorMessage = 'Request cancelled';
 	}
 
 	function handleClickOutside(event: MouseEvent) {
@@ -92,11 +107,23 @@
 
 		isLoading = true;
 		errorMessage = null;
+		resolvedObjectType = null;
+		isGeneratingConfig = false;
+		abortController = new AbortController();
 
 		try {
 			if (isMultiObjectMode && !isEditMode) {
 				// Multi-object mode: create multiple connected objects
-				const result = await resolveMultipleObjectsFromPrompt(promptText);
+				const result = await resolveMultipleObjectsFromPrompt(
+					promptText,
+					(objectTypes) => {
+						// Deduplicate object types while preserving order
+						const uniqueTypes = Array.from(new Set(objectTypes));
+						resolvedObjectType = uniqueTypes.join(', ');
+						isGeneratingConfig = true;
+					},
+					abortController.signal
+				);
 
 				if (result && result.nodes.length > 0) {
 					if (onInsertMultipleObjects) {
@@ -122,7 +149,15 @@
 					result = await editObjectFromPrompt(promptText, nodeType, existingData);
 				} else {
 					// Insert mode: Use two-call resolveObjectFromPrompt (routing + generation)
-					result = await resolveObjectFromPrompt(promptText);
+					// Pass callback to show object type after router completes
+					result = await resolveObjectFromPrompt(
+						promptText,
+						(objectType) => {
+							resolvedObjectType = objectType;
+							isGeneratingConfig = true;
+						},
+						abortController.signal
+					);
 				}
 
 				if (result) {
@@ -256,10 +291,20 @@
 		<div class="flex items-center justify-between border-t border-zinc-700 px-4 py-3">
 			<div class="text-xs text-zinc-500">
 				{#if isLoading}
-					<span class="flex items-center gap-2">
+					<div class="flex items-center gap-2">
 						<Loader class="h-3 w-3 animate-spin" />
-						Resolving...
-					</span>
+						{#if isGeneratingConfig}
+							<div class="flex flex-col gap-1">
+								<span class="text-zinc-400">
+									Generating <span class="ml-[2px] font-mono text-zinc-300"
+										>{resolvedObjectType}</span
+									>...
+								</span>
+							</div>
+						{:else}
+							<span>Routing...</span>
+						{/if}
+					</div>
 				{:else if isEditMode}
 					Enter to update • Esc to cancel
 				{:else}
@@ -267,17 +312,27 @@
 				{/if}
 			</div>
 
-			<button
-				onclick={handleSubmit}
-				disabled={!promptText.trim() || isLoading}
-				class="rounded {isEditMode
-					? 'bg-amber-600 hover:bg-amber-700'
-					: isMultiObjectMode
-						? 'bg-blue-600 hover:bg-blue-700'
-						: 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-			>
-				{isLoading ? 'Resolving...' : buttonText}
-			</button>
+			<div class="flex gap-2">
+				{#if isLoading}
+					<button
+						onclick={handleCancel}
+						class="rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+					>
+						Cancel
+					</button>
+				{/if}
+				<button
+					onclick={handleSubmit}
+					disabled={!promptText.trim() || isLoading}
+					class="rounded {isEditMode
+						? 'bg-amber-600 hover:bg-amber-700'
+						: isMultiObjectMode
+							? 'bg-blue-600 hover:bg-blue-700'
+							: 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{isLoading ? 'Resolving...' : buttonText}
+				</button>
+			</div>
 		</div>
 	</div>
 {/if}
