@@ -65,12 +65,6 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - netsend: Network message sender (WebRTC)
 - netrecv: Network message receiver (WebRTC)
 
-## AI & Generation Objects
-- ai.txt: AI text generation
-- ai.img: AI image generation
-- ai.music: AI music generation
-- ai.tts: AI text-to-speech
-
 ## Documentation & Content
 - markdown: Markdown renderer
 - iframe: Embed web content
