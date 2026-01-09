@@ -1135,7 +1135,17 @@ Example - Instructions:
 			return `## object: Textual Audio & Control Objects
 
 Meta-object system for creating text-based audio processing, synthesis, and control objects.
-Simply type the object name you want to create (e.g., "gain~", "osc~", "delay~").
+Type the object name and parameters in the expression field (e.g., "gain~ 0.5", "osc~ 440").
+
+DATA STRUCTURE:
+{
+  "type": "object",
+  "data": {
+    "expr": "objectName param1 param2",  // Expression defining the object and initial parameters
+    "name": "objectName",                 // Extracted object name (e.g., "gain~")
+    "params": [value1, value2, ...]      // Array of parameter values
+  }
+}
 
 AVAILABLE OBJECT TYPES:
 
@@ -1145,49 +1155,64 @@ AVAILABLE OBJECT TYPES:
 **Utilities:** convolver~, fft~
 **Control:** mtof, loadbang, metro, delay (control rate), adsr
 
-HANDLE IDS (Auto-generated - VARIES BY OBJECT):
-- Inlets: indexed by type and position (audio-in-0, message-in-0, etc.)
-- Outlets: indexed by type and position (audio-out-0, message-out-0, etc.)
-- Consult HANDLE_IDS.md for specific object patterns
+HANDLE IDS (Auto-generated - INDEXED BY INLET/OUTLET TYPE):
+- Pattern: "{type}-{direction}-{index}"
+- Audio inlet: "audio-in-0", "audio-in-1", ... (indexed by inlet count)
+- Message inlet: "message-in-0", "message-in-1", ... (indexed by inlet count)
+- Audio outlet: "audio-out-0", "audio-out-1", ... (indexed by outlet count)
+- Message outlet: "message-out-0", "message-out-1", ... (indexed by outlet count)
+- Example: gain~ has inlets [message], outlets [audio]
+  * Message inlet: "message-in-0"
+  * Audio outlet: "audio-out-0"
+- Example: osc~ has inlets [message (frequency)], outlets [audio]
+  * Message inlet: "message-in-0"
+  * Audio outlet: "audio-out-0"
 
 CRITICAL RULES:
-1. Type object name as expression (e.g., "gain~ 1.0" for gain with value 1.0)
-2. Audio objects (~) operate at audio rate, control objects operate at message rate
-3. Connect inlets/outlets by type: audio to audio, message to message
+1. Audio objects (~) operate at audio rate, control objects at message rate
+2. Connect by type: audio ports to audio ports, message ports to message ports
+3. Parameters are space-separated in the expression (e.g., "gain~ 0.5" means params=[0.5])
 4. Most objects correspond to Web Audio API nodes
+5. Use dynamic param arrays for multi-parameter objects
 
-EXAMPLE - Gain Control:
+EXAMPLE - Gain Control (single message inlet, single audio outlet):
 \`\`\`json
 {
   "type": "object",
   "data": {
     "expr": "gain~ 0.5",
+    "name": "gain~",
     "params": [0.5]
   }
 }
 \`\`\`
+Connections: message-in-0 receives gain value, audio-out-0 outputs amplified signal
 
-EXAMPLE - Filter:
+EXAMPLE - Lowpass Filter (two message inlets, audio outlet):
 \`\`\`json
 {
   "type": "object",
   "data": {
-    "expr": "lowpass~ 1000",
-    "params": [1000]
+    "expr": "lowpass~ 1000 1",
+    "name": "lowpass~",
+    "params": [1000, 1]
   }
 }
 \`\`\`
+Connections: message-in-0 for cutoff, message-in-1 for Q, audio-in-0 for audio input, audio-out-0 for output
 
-EXAMPLE - Oscillator:
+EXAMPLE - Oscillator (one message inlet, one audio outlet):
 \`\`\`json
 {
   "type": "object",
   "data": {
     "expr": "osc~ 440",
+    "name": "osc~",
     "params": [440]
   }
 }
-\`\`\``;
+\`\`\`
+Connections: message-in-0 receives frequency, audio-out-0 outputs oscillator signal`;
 
 		default:
 			// Generic fallback for objects not explicitly handled
