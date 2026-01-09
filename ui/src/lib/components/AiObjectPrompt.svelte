@@ -201,7 +201,7 @@
 							isMultiObjectMode = !isMultiObjectMode;
 						}
 					}}
-					class="rounded px-2 py-1 text-xs font-medium transition-colors {isMultiObjectMode
+					class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {isMultiObjectMode
 						? 'bg-blue-600 text-white'
 						: 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}"
 					title="Toggle between single and multiple object mode"
