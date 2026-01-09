@@ -296,7 +296,7 @@
 						{#if isGeneratingConfig}
 							<div class="flex flex-col gap-1">
 								<span class="overflow-hidden text-zinc-400">
-									Generating <span class="text-zinc-300">{resolvedObjectType}</span>...
+									Cooking <span class="text-zinc-300">{resolvedObjectType}</span>...
 								</span>
 							</div>
 						{:else}
