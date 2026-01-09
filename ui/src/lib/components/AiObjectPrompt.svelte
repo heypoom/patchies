@@ -171,9 +171,17 @@
 {#if open}
 	<div
 		class="ai-prompt-dialog absolute z-50 w-96 rounded-lg border {isLoading
-			? 'border-purple-500'
+			? isEditMode
+				? 'border-amber-500'
+				: isMultiObjectMode
+					? 'border-blue-500'
+					: 'border-purple-500'
 			: 'border-zinc-600'} bg-zinc-900/95 shadow-2xl backdrop-blur-xl {isLoading
-			? 'ring-2 ring-purple-500/50'
+			? isEditMode
+				? 'ring-2 ring-amber-500/50'
+				: isMultiObjectMode
+					? 'ring-2 ring-blue-500/50'
+					: 'ring-2 ring-purple-500/50'
 			: ''}"
 		style="left: {position.x}px; top: {position.y}px;"
 	>
@@ -223,7 +231,9 @@
 				disabled={isLoading}
 				class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {isEditMode
 					? 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
-					: 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500'} disabled:cursor-not-allowed disabled:opacity-60"
+					: isMultiObjectMode
+						? 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+						: 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500'} disabled:cursor-not-allowed disabled:opacity-60"
 				rows="3"
 			></textarea>
 
