@@ -8,6 +8,12 @@ CRITICAL RULES:
 3. Shaders are Shadertoy-compatible
 4. Define custom uniforms for dynamic control
 
+**FFT Audio Analysis (GLSL-specific):**
+- Create sampler2D uniform and connect fft~ object's purple "analyzer" outlet
+- Use "waveTexture" uniform name for waveform (time-domain)
+- Any other sampler2D name gets frequency spectrum
+- Example: uniform sampler2D fftData; (frequency) or uniform sampler2D waveTexture; (waveform)
+
 HANDLE IDS (Auto-generated - VERY DYNAMIC):
 - Output outlet: "video-out-out" (type="video" + id="out" → pattern: type-direction-id)
 - Uniform inlets depend on your shader code and are auto-generated:

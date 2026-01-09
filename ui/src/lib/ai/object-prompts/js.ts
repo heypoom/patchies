@@ -1,3 +1,5 @@
+import { fftInstructions } from './shared-fft';
+
 export const jsPrompt = `## js Object Instructions
 
 JavaScript execution block for general-purpose logic and utilities.
@@ -8,10 +10,11 @@ JavaScript execution block for general-purpose logic and utilities.
 - setPortCount(inlets, outlets) - Configure message ports
 - setTitle(name) - Set node display title
 - setRunOnMount(enabled) - Auto-run code on patch load
-- fft() - Get FFT frequency analysis data
 - esm(moduleName) - Load NPM packages: await esm("lodash")
 - console.log() - Log to virtual console
 - setInterval(cb, ms), requestAnimationFrame(cb), delay(ms) - Timing (auto-cleanup)
+
+${fftInstructions}
 
 **Patcher Libraries - Share code across js/p5/sonic~/elem~ objects:**
 - Add \`// @lib myModule\` at top, export constants/functions/classes

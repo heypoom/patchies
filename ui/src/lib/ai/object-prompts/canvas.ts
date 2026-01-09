@@ -1,3 +1,5 @@
+import { fftInstructions } from './shared-fft';
+
 export const canvasPrompt = `## canvas Object Instructions
 
 Offscreen Canvas on web worker thread for high-performance video chaining. NO DOM access.
@@ -12,8 +14,9 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 - setPortCount(inlets, outlets) - Configure message ports
 - noDrag(), noOutput(), setTitle(title) - Node config
 - setCanvasSize(w, h) - Resize canvas
-- fft() - Audio analysis (high worker latency)
 - requestAnimationFrame(cb) - Schedule draw callback
+
+${fftInstructions}
 
 **Handle IDs:**
 - Video outlet: "video-out"

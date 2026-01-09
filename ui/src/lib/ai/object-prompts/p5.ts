@@ -1,3 +1,5 @@
+import { fftInstructions } from './shared-fft';
+
 export const p5Prompt = `## p5 Object Instructions
 
 P5.js creative coding environment with setup() and draw() functions.
@@ -10,8 +12,9 @@ P5.js creative coding environment with setup() and draw() functions.
 - noDrag() - Disable node dragging for interactive sketches
 - noOutput() - Hide video output port
 - setTitle(name) - Set node display title
-- fft() - Get FFT frequency analysis
 - esm(moduleName) - Load NPM packages: await esm("three")
+
+${fftInstructions}
 
 **Patcher Libraries:**
 - Add \`// @lib geometry\` at top, export functions

@@ -1,3 +1,5 @@
+import { fftInstructions } from './shared-fft';
+
 export const canvasDomPrompt = `## canvas.dom Object Instructions
 
 Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
@@ -10,8 +12,9 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - noDrag(), noOutput(), setTitle(title) - Node config
 - setCanvasSize(w, h) - Resize canvas
 - onKeyDown(cb), onKeyUp(cb) - Keyboard events
-- fft() - Fast audio analysis (main thread)
 - requestAnimationFrame(cb) - Schedule draw
+
+${fftInstructions}
 
 **Handle IDs:**
 - Video outlet: "video-out" (hidden with noOutput())
