@@ -1294,11 +1294,14 @@ You can call the `fft()` function to get the audio analysis data in the supporte
 ### Experimental: Insert and edit objects with AI
 
 > [!CAUTION]
-> API keys are currently stored on localStorage as `gemini-api-key` for Gemini. In addition, this feature is experimental and unstable, and it has a high chance of corrupting and destroying your code and patches without any way to restore it. Backup your node and patch before trying this out!
+> API keys are currently stored on localStorage as `gemini-api-key` for Gemini. In addition, this feature is experimental and unstable, and it has a _high_ chance of corrupting and destroying your code and patches without any way to restore it. Backup your node and patch before trying this out!
 
 Press `Ctrl/Cmd + I` to open the AI object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate the appropriate object with code for you.
 
-- **Insert Mode** (no object selected): creates a new object at your cursor position
+When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch between Single Insert and Multi Insert mode.
+
+- **Single Insert Mode** (no object selected): creates a new object at your cursor position
+- **Multi Insert Mode** (no object selected): creates multiple connected objects at your cursor position
 - **Edit Mode** (object selected): modifies the selected object's code based on your description
 
 This feature uses Google Gemini AI to understand your prompt and generate the right object configuration. Make sure to set your Gemini API key in the command palette (`Cmd/Ctrl + K` → "Set Gemini API Key").
