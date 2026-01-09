@@ -149,19 +149,6 @@
 		const x = (screenX / rect.width) * outputWidth;
 		const y = (screenY / rect.height) * outputHeight;
 
-		// Only log occasionally to avoid spam
-		if (Math.random() < 0.05) {
-			const pixelRatio = window.devicePixelRatio || 1;
-			console.log('[Mouse] move', {
-				screenPos: `${screenX.toFixed(0)}, ${screenY.toFixed(0)}`,
-				rectSize: `${rect.width.toFixed(0)} × ${rect.height.toFixed(0)}`,
-				outputSize: `${outputWidth} × ${outputHeight}`,
-				fragCoordRange: `0-${outputWidth} × 0-${outputHeight}`,
-				iResolution: `${(outputWidth * pixelRatio).toFixed(0)} × ${(outputHeight * pixelRatio).toFixed(0)}`,
-				mouseXY: `${x.toFixed(1)}, ${y.toFixed(1)}`
-			});
-		}
-
 		mouseState.x = x;
 		mouseState.y = y;
 
@@ -187,16 +174,6 @@
 		// fragCoord matches the actual FBO size, NOT iResolution (which includes pixelRatio)
 		const x = (screenX / rect.width) * outputWidth;
 		const y = (screenY / rect.height) * outputHeight;
-
-		const pixelRatio = window.devicePixelRatio || 1;
-		console.log('[Mouse] click', {
-			screenPos: `${screenX.toFixed(0)}, ${screenY.toFixed(0)}`,
-			rectSize: `${rect.width.toFixed(0)} × ${rect.height.toFixed(0)}`,
-			outputSize: `${outputWidth} × ${outputHeight}`,
-			fragCoordRange: `0-${outputWidth} × 0-${outputHeight}`,
-			iResolution: `${(outputWidth * pixelRatio).toFixed(0)} × ${(outputHeight * pixelRatio).toFixed(0)}`,
-			mouseXY: `${x.toFixed(1)}, ${y.toFixed(1)}`
-		});
 
 		isMouseDown = true;
 		mouseState.z = x;
