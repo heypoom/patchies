@@ -157,13 +157,11 @@
 		mouseState.x = x;
 		mouseState.y = y;
 
-		// If mouse is down, update click position with negative values
-		if (isMouseDown) {
-			mouseState.z = -mouseState.z;
-			mouseState.w = -mouseState.w;
-		}
+		// Send negative values when mouse is down, positive when up
+		const z = isMouseDown ? -Math.abs(mouseState.z) : Math.abs(mouseState.z);
+		const w = isMouseDown ? -Math.abs(mouseState.w) : Math.abs(mouseState.w);
 
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, z, w);
 	}
 
 	function handleCanvasMouseDown(event: MouseEvent) {
@@ -186,7 +184,8 @@
 		mouseState.x = x;
 		mouseState.y = y;
 
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
+		// Send negative values since mouse is now down
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, -mouseState.z, -mouseState.w);
 	}
 
 	function handleCanvasMouseUp() {
@@ -194,11 +193,8 @@
 
 		isMouseDown = false;
 
-		// Reset to positive values when mouse is up
-		if (mouseState.z < 0) mouseState.z = -mouseState.z;
-		if (mouseState.w < 0) mouseState.w = -mouseState.w;
-
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
+		// Send positive values since mouse is now up
+		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, Math.abs(mouseState.z), Math.abs(mouseState.w));
 	}
 
 	// Attach mouse event listeners when canvas is available and iMouse is used
