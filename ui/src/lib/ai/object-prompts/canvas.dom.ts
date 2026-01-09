@@ -1,32 +1,28 @@
 export const canvasDomPrompt = `## canvas.dom Object Instructions
 
-Interactive HTML5 Canvas on main thread. Use for mouse/keyboard input and instant FFT reactivity.
+Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 
-CRITICAL RULES:
-1. ALWAYS call noDrag() at start if capturing mouse events
-2. ALWAYS call noOutput() if no video output needed
-3. Use requestAnimationFrame for draw loop
+**Available Methods:**
+- ctx: 2D canvas context
+- width, height, mouse: {x, y, down, buttons}
+- send(data, {to: outletIndex}?) - Send message
+- recv(callback) - Inlet callback (receives (data, meta))
+- noDrag(), noOutput(), setTitle(title) - Node config
+- setCanvasSize(w, h) - Resize canvas
+- onKeyDown(cb), onKeyUp(cb) - Keyboard events
+- fft() - Fast audio analysis (main thread)
+- requestAnimationFrame(cb) - Schedule draw
 
-Available:
-- ctx: canvas 2D context
-- width, height: canvas dimensions
-- mouse: {x, y, down, buttons}
-- noDrag(), noOutput(), setTitle(), setCanvasSize(w, h)
-- setPortCount(inlets, outlets), send(), recv()
-- onKeyDown(callback), onKeyUp(callback)
-- fft(): instant audio analysis
+**Handle IDs:**
+- Video outlet: "video-out" (hidden with noOutput())
+- Message inlet/outlet: "message-in", "message-out"
 
-HANDLE IDS (Auto-generated):
-- Message outlet: "message-out" (for sending control data)
-- Message inlet: "message-in" (for receiving control messages)
-- Note: noOutput() removes the video-out handle
-
-Example - XY Pad:
+Example - XY pad:
 \`\`\`json
 {
   "type": "canvas.dom",
   "data": {
-    "code": "noDrag()\\nnoOutput()\\nsetPortCount(0, 1)\\nsetTitle('xy.pad')\\n\\nlet padX = width / 2\\nlet padY = height / 2\\n\\nfunction draw() {\\n  ctx.fillStyle = '#18181b'\\n  ctx.fillRect(0, 0, width, height)\\n\\n  if (mouse.down) {\\n    padX = mouse.x\\n    padY = mouse.y\\n    send([padX / width, padY / height])\\n  }\\n\\n  ctx.fillStyle = mouse.down ? '#4ade80' : '#71717a'\\n  ctx.beginPath()\\n  ctx.arc(padX, padY, 12, 0, Math.PI * 2)\\n  ctx.fill()\\n\\n  requestAnimationFrame(draw)\\n}\\n\\ndraw()"
+    "code": "noDrag(); noOutput(); function draw() { ctx.fillStyle = '#18181b'; ctx.fillRect(0,0,width,height); ctx.fillStyle = mouse.down ? '#4ade80' : '#71717a'; ctx.arc(mouse.x, mouse.y, 12, 0, Math.PI*2); ctx.fill(); if (mouse.down) send([mouse.x/width, mouse.y/height]); requestAnimationFrame(draw); } draw();"
   }
 }
 \`\`\``;

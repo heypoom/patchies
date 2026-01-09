@@ -1,31 +1,31 @@
 export const dspPrompt = `## dsp~ Object Instructions
 
-CRITICAL RULES:
-1. MUST implement process(inputs, outputs) function
-2. ALWAYS call setTitle(), setPortCount(), setAudioPortCount() at start
-3. Access audio buffers via inputs[inputIndex][channelIndex] and outputs[outputIndex][channelIndex]
+Low-level DSP audio processing. MUST implement process(inputs, outputs) function.
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (for control messages)
-- Audio inlets: "audio-in-0", "audio-in-1" (indexed by setAudioPortCount)
-- Audio outlets: "audio-out-0", "audio-out-1" (indexed by setAudioPortCount)
-- Multiple message inlets: "message-in-0", "message-in-1" (indexed by setPortCount)
+**CRITICAL RULES:**
+1. Implement process(inputs, outputs) - called per audio buffer
+2. Call setTitle(), setPortCount(), setAudioPortCount() at start
+3. Access buffers: inputs[inlet][channel], outputs[outlet][channel]
 
-Available in context:
-- counter: increments every process() call
-- sampleRate: audio sample rate (e.g. 48000)
-- currentFrame: current frame number
-- currentTime: current time in seconds
-- $1-$9: dynamic value inlets
+**Available Methods:**
 - setTitle(name), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets)
-- setKeepAlive(enabled), recv(callback), send(data)
+- recv(callback), send(data, {to: outletIndex}?) - Message I/O
+- setKeepAlive(enabled) - Keep running when unconnected
 
-Example - White Noise:
+**Context Variables (in process):**
+- counter, sampleRate, currentFrame, currentTime
+- $1-$9: dynamic numeric inlets
+
+**Handle IDs:**
+- Audio: "audio-in-0"..."audio-in-n", "audio-out-0"..."audio-out-m"
+- Message: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
+
+Example - White noise:
 \`\`\`json
 {
   "type": "dsp~",
   "data": {
-    "code": "setTitle('noise~')\\n\\nfunction process(inputs, outputs) {\\n  outputs[0].forEach(channel => {\\n    for (let i = 0; i < channel.length; i++) {\\n      channel[i] = Math.random() * 2 - 1;\\n    }\\n  });\\n}"
+    "code": "setTitle('noise~'); setAudioPortCount(0, 1); function process(inputs, outputs) { outputs[0].forEach(ch => { for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1; }); }"
   }
 }
 \`\`\``;

@@ -294,7 +294,7 @@
 					<div class="flex items-center gap-2">
 						<Loader class="h-3 w-3 animate-spin" />
 						{#if isGeneratingConfig}
-							<div class="flex flex-col gap-1">
+							<div class="mr-[2px] flex flex-col gap-1">
 								<span class="overflow-hidden text-zinc-400">
 									Cooking <span class="text-zinc-300">{resolvedObjectType}</span>...
 								</span>

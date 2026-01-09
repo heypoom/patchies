@@ -1,28 +1,32 @@
 export const jsPrompt = `## js Object Instructions
 
-JavaScript code execution block.
+JavaScript execution block for general-purpose logic and utilities.
 
-Available functions:
-- send(data), recv(callback): message passing
-- setPortCount(inlets, outlets): set message port counts
-- setRunOnMount(enabled): auto-run on load
-- console.log(): logging
-- fft(): audio analysis
-- esm(moduleName): import NPM packages
-- setInterval, requestAnimationFrame (auto-cleanup)
+**Available Methods:**
+- send(data, {to: outletIndex}?) - Send message to outlet(s)
+- recv(callback) - Register callback for inlet messages (callback receives (data, meta))
+- setPortCount(inlets, outlets) - Configure message ports
+- setTitle(name) - Set node display title
+- setRunOnMount(enabled) - Auto-run code on patch load
+- fft() - Get FFT frequency analysis data
+- esm(moduleName) - Load NPM packages: await esm("lodash")
+- console.log() - Log to virtual console
+- setInterval(cb, ms), requestAnimationFrame(cb), delay(ms) - Timing (auto-cleanup)
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (controlled by setPortCount)
-- Message outlet: "message-out" (controlled by setPortCount)
-- setPortCount(inlets, outlets) controls handle count
-- LIMITATION: Cannot have mixed inlet types (all message or all message)
+**Patcher Libraries - Share code across js/p5/sonic~/elem~ objects:**
+- Add \`// @lib myModule\` at top, export constants/functions/classes
+- Import elsewhere with: import { func } from 'myModule'
+- See README "Sharing JavaScript across multiple js blocks"
 
-Example - Random Number Generator:
+**Handle IDs (Auto-generated):**
+- setPortCount(n, m) creates: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
+
+Example:
 \`\`\`json
 {
   "type": "js",
   "data": {
-    "code": "setRunOnMount(true)\\nsetPortCount(0, 1)\\n\\nsetInterval(() => {\\n  send(Math.random());\\n}, 1000);"
+    "code": "setPortCount(1, 1)\\nrecv(data => send(data * 2, {to: 0}));"
   }
 }
 \`\`\``;

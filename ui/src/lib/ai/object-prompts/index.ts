@@ -32,6 +32,8 @@ import { textboxPrompt } from './textbox';
 import { togglePrompt } from './toggle';
 import { tonePrompt } from './tone~';
 import { uxnPrompt } from './uxn';
+import { sonicPrompt } from './sonic~';
+import { elemPrompt } from './elem~';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -64,7 +66,9 @@ export const objectPrompts: Record<string, string> = {
 	'sampler~': samplerPrompt,
 	markdown: markdownPrompt,
 	object: objectPrompt,
-	'bg.out': bgOutPrompt
+	'bg.out': bgOutPrompt,
+	'sonic~': sonicPrompt,
+	'elem~': elemPrompt
 };
 
 /**

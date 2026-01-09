@@ -1,33 +1,30 @@
 export const canvasPrompt = `## canvas Object Instructions
 
-Offscreen HTML5 Canvas running on rendering pipeline (web worker). Use for high-performance video chaining.
+Offscreen Canvas on web worker thread for high-performance video chaining. NO DOM access.
 
-CRITICAL RULES:
-1. Runs on web worker thread (OffscreenCanvas) - NO DOM access
-2. Fast video chaining - can chain with glsl/hydra without lag
-3. Use canvas.dom instead if you need mouse/keyboard/DOM
-4. FFT has high delay due to worker message passing
+**CRITICAL:** Use canvas.dom if you need mouse/keyboard/DOM interaction.
 
-Available in context:
-- ctx: 2D rendering context
+**Available Methods:**
+- ctx: 2D canvas context (ctx.fillRect, ctx.arc, etc.)
 - width, height: canvas dimensions
-- noDrag(): disable node dragging
-- noOutput(): hide video output port
-- setTitle(title): set node title
-- setCanvasSize(w, h): resize canvas
-- send(message), recv(callback): message passing
-- fft(): audio analysis (high delay on worker)
+- send(data, {to: outletIndex}?) - Send message
+- recv(callback) - Inlet callback (receives (data, meta))
+- setPortCount(inlets, outlets) - Configure message ports
+- noDrag(), noOutput(), setTitle(title) - Node config
+- setCanvasSize(w, h) - Resize canvas
+- fft() - Audio analysis (high worker latency)
+- requestAnimationFrame(cb) - Schedule draw callback
 
-HANDLE IDS (Auto-generated):
-- Video outlet: "video-out" (for rendering the canvas)
-- Message inlet: "message-in" (for receiving control messages)
+**Handle IDs:**
+- Video outlet: "video-out"
+- Message ports: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
 
-Example - Animated Circle:
+Example - Animated circle:
 \`\`\`json
 {
   "type": "canvas",
   "data": {
-    "code": "let angle = 0;\\n\\nfunction draw() {\\n  ctx.fillStyle = '#18181b';\\n  ctx.fillRect(0, 0, width, height);\\n\\n  const x = width / 2 + Math.cos(angle) * 100;\\n  const y = height / 2 + Math.sin(angle) * 100;\\n\\n  ctx.fillStyle = '#4ade80';\\n  ctx.beginPath();\\n  ctx.arc(x, y, 20, 0, Math.PI * 2);\\n  ctx.fill();\\n\\n  angle += 0.05;\\n  requestAnimationFrame(draw);\\n}\\n\\ndraw();"
+    "code": "let a = 0; function draw() { ctx.fillStyle = '#18181b'; ctx.fillRect(0,0,width,height); ctx.fillStyle = '#4ade80'; ctx.arc(width/2, height/2, 50, 0, Math.PI*2); ctx.fill(); a += 0.05; requestAnimationFrame(draw); } draw();"
   }
 }
 \`\`\``;

@@ -1,29 +1,25 @@
 export const strudelPrompt = `## strudel Object Instructions
 
-Strudel live coding environment based on TidalCycles for expressive music patterns.
+Strudel live music coding based on TidalCycles.
 
-CRITICAL RULES:
-1. Use Strudel pattern syntax (mini-notation)
+**CRITICAL RULES:**
+1. Use Strudel mini-notation: sound("bd sd, hh*4"), note("<c3 eb3 g3>")
 2. MUST connect to dac~ to hear audio
-3. Use Ctrl/Cmd + Enter in editor to re-evaluate
-4. Only ONE strudel can play at a time
+3. Only ONE strudel plays at a time
+4. Use Ctrl/Cmd+Enter in editor to re-evaluate
 
-Available functions:
-- recv(callback): limited support, works with setcpm
-- Standard Strudel pattern functions
+**Available Methods:**
+- setPortCount(inlets, outlets) - Configure message ports
+- setTitle(name) - Set node title
+- recv(callback), send(data, {to: outletIndex}?) - Message I/O
+- Standard Strudel: sound(), note(), setcpm(), cpm() for tempo
+- All chainable Strudel pattern functions
 
+**Handle IDs:**
+- Audio outlet: "audio-out"
+- Message ports: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (single)
-- Audio outlet: "audio-out" (single)
-- Message outlet: "message-out" (single)
-- LIMITATION: Single audio outlet, cannot split to multiple nodes
-
-Messages:
-- bang or run: evaluates code and starts playback
-- string or {type: 'set', code: '...'}: sets code
-
-Example - Simple Drum Pattern:
+Example - Drum pattern:
 \`\`\`json
 {
   "type": "strudel",
@@ -33,22 +29,12 @@ Example - Simple Drum Pattern:
 }
 \`\`\`
 
-Example - Melodic Pattern:
+Example - With tempo control:
 \`\`\`json
 {
   "type": "strudel",
   "data": {
-    "code": "note(\\"<c3 eb3 g3 bb3>\\").s('sawtooth').lpf(800).cpm(90)"
-  }
-}
-\`\`\`
-
-Example - Complex Pattern:
-\`\`\`json
-{
-  "type": "strudel",
-  "data": {
-    "code": "stack(\\n  sound(\\"bd sd\\").bank('RolandTR808'),\\n  note(\\"c2 [eb2 g2] <f2 bb2>\\").s('sawtooth')\\n).cpm(120)"
+    "code": "setPortCount(1); let tempo = 120; recv(t => { if (typeof t === 'number') tempo = t; }); sound(\\"bd sd\\").cpm(() => tempo)"
   }
 }
 \`\`\``;

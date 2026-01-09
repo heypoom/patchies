@@ -1,24 +1,32 @@
 export const p5Prompt = `## p5 Object Instructions
 
-P5.js creative coding environment. Write standard P5.js code with setup() and draw().
+P5.js creative coding environment with setup() and draw() functions.
 
-Available functions:
-- noDrag(): disable node dragging (use for interactive sketches)
-- noOutput(): hide video output port
-- setTitle(name): set node title
-- send(data), recv(callback): message passing
-- fft(): audio analysis (connect fft~ object)
+**Available Methods:**
+- Standard P5.js: createCanvas(), background(), fill(), rect(), circle(), etc.
+- send(data, {to: outletIndex}?) - Send message to outlet(s)
+- recv(callback) - Register inlet callback (receives (data, meta))
+- setPortCount(inlets, outlets) - Configure message ports
+- noDrag() - Disable node dragging for interactive sketches
+- noOutput() - Hide video output port
+- setTitle(name) - Set node display title
+- fft() - Get FFT frequency analysis
+- esm(moduleName) - Load NPM packages: await esm("three")
 
-HANDLE IDS (Auto-generated):
-- Video outlet: "video-out" (for rendering the p5 sketch)
-- Message inlet: "message-in" (for receiving control messages)
+**Patcher Libraries:**
+- Add \`// @lib geometry\` at top, export functions
+- Import elsewhere: import { createCircle } from 'geometry'
 
-Example - Rotating Cube:
+**Handle IDs:**
+- Video outlet: "video-out"
+- Message ports via setPortCount: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
+
+Example:
 \`\`\`json
 {
   "type": "p5",
   "data": {
-    "code": "function setup() {\\n  createCanvas(400, 400, WEBGL);\\n}\\n\\nfunction draw() {\\n  background(220);\\n  rotateX(frameCount * 0.01);\\n  rotateY(frameCount * 0.01);\\n  box(100);\\n}"
+    "code": "function setup() { createCanvas(400, 400); }\\nfunction draw() { background(220); circle(200, 200, 50); }"
   }
 }
 \`\`\``;
