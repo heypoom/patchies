@@ -13,7 +13,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Audio I/O: dac~ (speakers), adc~ (microphone)
   * Processing: gain~, pan~, delay~, compressor~, waveshaper~, split~, merge~, convolver~
   * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
-  * Synthesis: osc~ (oscillator), sig~ (signal), noise~
+  * Synthesis: osc~ (oscillator), sig~ (signal)
   * Control: mtof, loadbang, metro, adsr
   * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "dac~" } })
 

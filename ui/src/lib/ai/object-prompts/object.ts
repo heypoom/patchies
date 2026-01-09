@@ -17,7 +17,7 @@ AVAILABLE OBJECT TYPES:
 
 **Audio Processing:** gain~, pan~, delay~, compressor~, waveshaper~, split~, merge~, meter~
 **Filters:** lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
-**Synthesis:** osc~, sig~, noise~
+**Synthesis:** osc~, sig~
 **Utilities:** convolver~, fft~
 **Control:** mtof, loadbang, metro, delay (control rate), adsr
 
