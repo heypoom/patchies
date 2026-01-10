@@ -48,6 +48,11 @@
 	// Construct the fully qualified handle identifier (nodeId + handleId)
 	const qualifiedHandleId = $derived(`${nodeId}/${handleId}`);
 
+	// Determine if this handle is the source of the current connection
+	const isSourceHandle = $derived(
+		$isConnecting && $connectingFromHandleId === qualifiedHandleId
+	);
+
 	// Determine if this AudioParam inlet should highlight as "audio-compatible"
 	// when dragging from an audio outlet (e.g. gain~ audio-out)
 	const shouldShowAsAudioCompatible = $derived.by(() => {
@@ -125,8 +130,9 @@
 
 		const connectionModeClass = $isConnectionMode ? 'connection-mode-active' : '';
 		const dimClass = shouldDim ? 'handle-dimmed' : '';
+		const sourceHighlightClass = isSourceHandle ? 'handle-source' : '';
 
-		return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${className}`;
+		return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${sourceHighlightClass} ${className}`;
 	});
 </script>
 
@@ -181,5 +187,21 @@
 		filter: grayscale(0.7) brightness(0.6) !important;
 		pointer-events: none !important;
 		cursor: not-allowed !important;
+	}
+
+	/* Highlight the source handle during connection */
+	:global(.svelte-flow__handle.handle-source) {
+		animation: source-pulse 1.2s ease-in-out infinite;
+		box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.7) !important;
+	}
+
+	@keyframes source-pulse {
+		0%,
+		100% {
+			box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.7);
+		}
+		50% {
+			box-shadow: 0 0 16px 5px rgba(255, 255, 255, 0.95);
+		}
 	}
 </style>
