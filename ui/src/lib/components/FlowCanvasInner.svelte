@@ -27,7 +27,7 @@
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
-	import { isAiFeaturesVisible, isBottomBarVisible, isConnectionMode as isConnectionModeStore } from '../../stores/ui.store';
+	import { isAiFeaturesVisible, isBottomBarVisible, isConnectionMode as isConnectionModeStore, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
 	import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -982,6 +982,16 @@
 			snapGrid={[5, 5]}
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
+			onconnectstart={(event) => {
+				console.log('Connection started:', event);
+				isConnecting.set(true);
+				connectingFromHandleId.set(event.handleId || null);
+			}}
+			onconnectend={() => {
+				console.log('Connection ended');
+				isConnecting.set(false);
+				connectingFromHandleId.set(null);
+			}}
 		>
 			<BackgroundPattern />
 

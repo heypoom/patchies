@@ -3,7 +3,7 @@
 	import { getPortPosition } from '$lib/utils/node-utils';
 	import { match, P } from 'ts-pattern';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
-	import { isConnectionMode } from '../../stores/ui.store';
+	import { isConnectionMode, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
 
 	interface Props {
 		port: 'inlet' | 'outlet';
@@ -42,6 +42,19 @@
 	// Calculate position using getPortPosition
 	const positionStyle = $derived(`left: ${getPortPosition(total, index)}`);
 
+	// Determine if this handle should be dimmed
+	const shouldDim = $derived.by(() => {
+		// Only dim when actively connecting
+		if (!$isConnecting) return false;
+		
+		// Dim outlet handles (source) when connecting, except the one being used
+		if (port === 'outlet' && $connectingFromHandleId !== handleId) {
+			return true;
+		}
+		
+		return false;
+	});
+
 	// Determine handle color based on type using ts-pattern
 	const handleClass = $derived.by(() => {
 		const colorClass = match(type)
@@ -53,8 +66,9 @@
 			.exhaustive();
 
 		const connectionModeClass = $isConnectionMode ? 'connection-mode-active' : '';
+		const dimClass = shouldDim ? 'handle-dimmed' : '';
 
-		return `!absolute z-1 ${colorClass} ${connectionModeClass} ${className}`;
+		return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${className}`;
 	});
 </script>
 
@@ -73,11 +87,12 @@
 		min-height: 6px;
 		width: 7px;
 		height: 7px;
-		will-change: width, height;
+		will-change: width, height, opacity, filter;
 		transition:
 			width 0.2s ease-in,
 			height 0.2s ease-in,
-			opacity 0.2s ease-in;
+			opacity 0.2s ease-in,
+			filter 0.2s ease-in;
 	}
 
 	:global(.svelte-flow__handle):hover {
@@ -108,35 +123,11 @@
 		box-shadow: 0 0 12px rgba(255, 255, 255, 0.6) !important;
 	}
 
-	/* When connecting from a source handle, dim all other source handles */
-	:global(.svelte-flow.connecting .svelte-flow__handle-bottom.connection-mode-active) {
-		opacity: 0.3 !important;
+	/* Dim handles when in connecting state - JavaScript-controlled via handle-dimmed class */
+	:global(.svelte-flow__handle.handle-dimmed) {
+		opacity: 0.25 !important;
+		filter: grayscale(0.7) brightness(0.6) !important;
 		pointer-events: none !important;
-		filter: grayscale(0.5) !important;
-	}
-
-	/* When connecting from a source handle, keep target handles visible */
-	:global(.svelte-flow.connecting .svelte-flow__handle-top.connection-mode-active) {
-		opacity: 1 !important;
-		pointer-events: auto !important;
-		filter: none !important;
-	}
-
-	/* The active source handle being used for connection should stay visible */
-	:global(.svelte-flow.connecting .svelte-flow__handle-bottom.connecting) {
-		opacity: 1 !important;
-		pointer-events: auto !important;
-		filter: none !important;
-	}
-
-	/* Alternative: also dim by position if connecting class is on parent */
-	:global(.svelte-flow.connecting) :global(.svelte-flow__handle.svelte-flow__handle-bottom.connection-mode-active) {
-		opacity: 0.3 !important;
-		filter: grayscale(0.5) !important;
-	}
-
-	:global(.svelte-flow.connecting) :global(.svelte-flow__handle.svelte-flow__handle-bottom.connecting) {
-		opacity: 1 !important;
-		filter: none !important;
+		cursor: not-allowed !important;
 	}
 </style>
