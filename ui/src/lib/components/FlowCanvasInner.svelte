@@ -1,9 +1,8 @@
 <script lang="ts">
 	import {
 		CirclePlus,
-		ClipboardPaste,
+		Clipboard,
 		Command,
-		Copy,
 		FilePlus2,
 		Link,
 		Search,
@@ -26,6 +25,7 @@
 	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
+	import CopyPasteModal from './CopyPasteModal.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
@@ -87,6 +87,9 @@
 
 	// Object browser modal state
 	let showObjectBrowser = $state(false);
+
+	// Copy/Paste modal state
+	let showCopyPasteModal = $state(false);
 
 	// AI object prompt state
 	let showAiPrompt = $state(false);
@@ -996,27 +999,15 @@
 				>
 			{/if}
 
-			{#if selectedNodeIds.length > 0}
+			{#if selectedNodeIds.length > 0 || (copiedNodeData && copiedNodeData.length > 0)}
 				<button
-					title="Copy (Ctrl+C)"
+					title="Copy / Paste"
 					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 					onclick={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
-						copySelectedNodes();
-					}}><Copy class="h-4 w-4 text-zinc-300" /></button
-				>
-			{/if}
-
-			{#if copiedNodeData && copiedNodeData.length > 0}
-				<button
-					title="Paste (Ctrl+V)"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						pasteNode();
-					}}><ClipboardPaste class="h-4 w-4 text-zinc-300" /></button
+						showCopyPasteModal = true;
+					}}><Clipboard class="h-4 w-4 text-zinc-300" /></button
 				>
 			{/if}
 
@@ -1108,6 +1099,15 @@
 
 	<!-- Object Browser Modal -->
 	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+
+	<!-- Copy/Paste Modal -->
+	<CopyPasteModal
+		bind:open={showCopyPasteModal}
+		canCopy={selectedNodeIds.length > 0}
+		canPaste={!!(copiedNodeData && copiedNodeData.length > 0)}
+		onCopy={copySelectedNodes}
+		onPaste={pasteNode}
+	/>
 
 	<!-- AI Object Prompt Dialog -->
 	<AiObjectPrompt
