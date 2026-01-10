@@ -105,15 +105,15 @@ Click on the bottom handle (outlet) of an object, and drag it all the way to the
 
 On mobile devices or when dragging is difficult, you can use the **Connect** button (cable icon) in the bottom toolbar:
 
-1. Click the **Connect** button - blue banner appears prompting you to select a source node
-2. Click on the **source node** on the canvas - yellow banner appears with a "Select" button
-3. Click the **Select** button to confirm - if the source has multiple outlets, a modal will appear to choose which outlet
-4. After confirming the outlet (if needed), green banner appears prompting you to select a destination node
-5. Click on the **destination node** on the canvas - yellow banner appears with a "Select" button
-6. Click the **Select** button to confirm - if the destination has multiple inlets, a modal will appear to choose which inlet
-7. The connection will be created between the selected outlet and inlet
+1. Click the **Connect** button - handles become much larger and easier to tap
+2. A blue banner appears with instruction: "Tap on two handles to connect them"
+3. Tap on a **source handle** (outlet at the bottom of a node)
+4. Tap on a **destination handle** (inlet at the top of another node)
+5. The connection will be created between the two handles
 
-To cancel connection mode at any time, click the Connect button again or the × in the instruction banner.
+To cancel connection mode at any time, click the Connect button again or the × in the banner.
+
+**Note**: In connection mode, handles grow from 7px to 24px (32px on hover) making them much easier to tap on touch devices.
 
 ### Sharing Links
 
