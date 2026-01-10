@@ -145,7 +145,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			frame: 0
 		}))
 		.with('uxn', () => ({
-			rom: undefined,
 			code: '',
 			showConsole: false,
 			showEditor: false,

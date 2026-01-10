@@ -74,8 +74,25 @@
 
 	const handleMessage: MessageCallbackFn = async (message) => {
 		match(message)
-			.with(P.string, (url) => loadFromUrl(url))
+			.with(P.string, async (input) => {
+				// Check if input is a URL
+				if (input.startsWith('http://') || input.startsWith('https://')) {
+					await loadFromUrl(input);
+				} else {
+					// Treat as Uxntal code to assemble
+					await assembleAndLoadCode(input);
+				}
+			})
+			.with({ type: 'bang' }, async () => {
+				// On BANG: prioritize code, fallback to URL
+				if (code && !data.url) {
+					await assembleAndLoadCode(code);
+				} else if (!code && data.url) {
+					await loadFromUrl(data.url);
+				}
+			})
 			.with({ type: 'load', url: P.string }, ({ url }) => loadFromUrl(url))
+			.with({ type: 'load', code: P.string }, ({ code }) => assembleAndLoadCode(code))
 			.with(P.instanceOf(Uint8Array), (rom) => loadROM(rom))
 			.with(P.instanceOf(File), async (file) => {
 				const arrayBuffer = await file.arrayBuffer();
@@ -106,10 +123,14 @@
 				emulator = new UxnEmulator(options);
 				await emulator.init(options);
 
-				// Load ROM if provided
+				// Load ROM based on priority: ROM > Code > URL
 				if (data.rom) {
 					emulator.load(data.rom);
-				} else if (data.url) {
+				} else if (data.code && !data.url) {
+					// If code exists and no URL/ROM, assemble and load the code
+					await assembleAndLoadCode(data.code);
+				} else if (data.url && !data.code) {
+					// If URL exists and no Code/ROM, load from URL
 					await loadFromUrl(data.url);
 				}
 
@@ -300,8 +321,10 @@
 	function loadROM(rom: Uint8Array, url?: string, fileName?: string) {
 		if (emulator) {
 			emulator.load(rom);
+
 			const name = fileName || (url ? url.split('/').pop() || 'rom.rom' : 'rom.rom');
 			updateNodeData(nodeId, { rom, url, fileName: name });
+
 			errorMessage = null;
 		}
 	}
@@ -329,6 +352,33 @@
 		fileInputRef?.click();
 	}
 
+	async function assembleAndLoadCode(codeToAssemble: string) {
+		if (!emulator) return;
+
+		try {
+			// Clear previous errors and console output
+			errorMessage = null;
+			consoleOutput = '';
+			updateNodeData(nodeId, { consoleOutput: '', errorMessage: null });
+
+			// Lazy-load uxn.wasm/util module
+			const { asm } = await import('uxn.wasm/util');
+
+			// Assemble the code
+			const rom = asm(codeToAssemble);
+
+			// Load the assembled ROM
+			loadROM(rom, undefined, 'assembled.rom');
+			updateNodeData(nodeId, { code: codeToAssemble, rom, fileName: 'assembled.rom' });
+
+			measureContainerWidth();
+		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			errorMessage = errorMsg;
+			updateNodeData(nodeId, { errorMessage: errorMsg });
+		}
+	}
+
 	async function uploadBitmap() {
 		if (!canvas || !emulator || isPaused) return;
 
@@ -352,30 +402,7 @@
 	}
 
 	async function assembleAndLoad() {
-		if (!emulator) return;
-
-		try {
-			// Clear previous errors and console output
-			errorMessage = null;
-			consoleOutput = '';
-			updateNodeData(nodeId, { consoleOutput: '', errorMessage: null });
-
-			// Lazy-load uxn.wasm/util module
-			const { asm } = await import('uxn.wasm/util');
-
-			// Assemble the code
-			const rom = asm(code);
-
-			// Load the assembled ROM
-			loadROM(rom, undefined, 'assembled.rom');
-			updateNodeData(nodeId, { code, rom, fileName: 'assembled.rom' });
-
-			measureContainerWidth();
-		} catch (error) {
-			const errorMsg = error instanceof Error ? error.message : String(error);
-			errorMessage = errorMsg;
-			updateNodeData(nodeId, { errorMessage: errorMsg });
-		}
+		await assembleAndLoadCode(code);
 	}
 </script>
 

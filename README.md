@@ -550,24 +550,36 @@ See the following example:
 
 - [Uxn](https://100r.co/site/uxn.html) is a virtual machine for running small programs written in [Uxntal](https://wiki.xxiivv.com/site/uxntal.html), an assembly language for the Uxn stack machine. Conforms with the [Varvara](https://wiki.xxiivv.com/site/varvara.html) device specifications.
 - Run classic Uxn programs like [Orca](https://100r.co/site/orca.html) and [Left](https://100r.co/site/left.html). Run games like [Oquonie](https://hundredrabbits.itch.io/oquonie) and [Donsol](https://hundredrabbits.itch.io/donsol).
-- Write and assemble your own Uxntal programs directly in the editor.
 - Supports video chaining - connect the video outlet to other visual objects (e.g. `hydra` and `glsl`) to process the Uxn screen output.
 - Console output is automatically sent as messages through the message outlet, allowing you to process program output with other objects.
 - Load ROM files by dropping a `.rom` file, or use the Load ROM button (folder icon)
-- "Edit Code" button (code icon) opens the Uxntal assembly code editor.
-  - Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
-  - Assembler errors are displayed below the node.
 - "Console" button (terminal icon) shows program output
   - Console output is automatically sent as string messages through the message outlet.
 - "Pause" button pauses and resumes program execution.
 - The canvas captures keyboard and mouse input for Uxn programs. Click on the canvas to focus it.
-- Messages
 
-  - `string` (URL): Load ROM from URL
+<img src="./docs/images/patchies-uxn-compudanzas.png" alt="Patchies.app Uxn demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=y0de2zp42sgynsn)! Code is by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html). If you like their tutorial, please go [support](https://compudanzas.net/support.html) them!
+
+- Write and assemble your own Uxntal programs directly in the editor!
+  - "Edit Code" button opens the Uxntal assembly code editor.
+  - Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
+  - Assembler errors are displayed below the node.
+
+- Messages
+  - `string`
+    - If starts with `http://` or `https://`, loads ROM from URL.
+    - Otherwise, it treats the string as Uxntal code to assemble and load.
+  - `bang`: Re-assembles and loads code if available, or reloads ROM from URL if available.
   - `Uint8Array`: Load ROM from raw binary data
   - `File`: Load ROM from file object
   - `{type: 'load', url: string}`: Load ROM from URL
   - Outputs string messages from console device
+
+- Auto-loading behavior:
+  - On object mount, if code is provided (and no URL/ROM), the code is assembled and loaded automatically.
+  - On object mount, if URL is provided (and no code/ROM), the ROM is loaded from the URL automatically.
 
 - See the [Uxn documentation](https://wiki.xxiivv.com/site/uxn.html) and [Uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html) to learn how to write Uxn programs.
 - Check out [100r.co](https://100r.co) for Uxn design principles.
@@ -1337,6 +1349,8 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 
 - `p5`, `canvas.dom` and `bchrn` runs on the main thread.
 - If these objects are connected to video outlets, at each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
-  - This is slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
+  - Try connecting `canvas.dom` to `bg.out`, your FPS will drop around 10FPS - 20FPS. Use "CMD+K > Toggle FPS Monitor" to verify.
+  - Try connecting `canvas` to `bg.out`, your FPS will not drop at all.
+  - The copying of the pixels from CPU to GPU is way slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
   - If you don't connect its video outlet to another video object, we don't perform the bitmap copy so the performance overhead is minimal.
 - Use these only when you need instant FFT reactivity, mouse interactivity, or DOM access.
