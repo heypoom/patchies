@@ -27,7 +27,7 @@
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
-	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
+	import { isAiFeaturesVisible, isBottomBarVisible, isConnectionMode as isConnectionModeStore } from '../../stores/ui.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
 	import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -894,6 +894,7 @@
 	// Mobile connection mode functions
 	function startConnectionMode() {
 		isConnectionMode = true;
+		isConnectionModeStore.set(true);
 		connectionSourceNode = null;
 		connectionDestinationNode = null;
 		sourceNodeConfirmed = false;
@@ -906,6 +907,7 @@
 
 	function cancelConnectionMode() {
 		isConnectionMode = false;
+		isConnectionModeStore.set(false);
 		connectionSourceNode = null;
 		connectionDestinationNode = null;
 		sourceNodeConfirmed = false;

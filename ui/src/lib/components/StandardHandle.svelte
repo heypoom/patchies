@@ -3,6 +3,7 @@
 	import { getPortPosition } from '$lib/utils/node-utils';
 	import { match, P } from 'ts-pattern';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+	import { isConnectionMode } from '../../stores/ui.store';
 
 	interface Props {
 		port: 'inlet' | 'outlet';
@@ -51,7 +52,9 @@
 			.with(P.nullish, () => '!bg-gray-500 hover:!bg-gray-400')
 			.exhaustive();
 
-		return `!absolute z-1 ${colorClass} ${className}`;
+		const connectionModeClass = $isConnectionMode ? 'connection-mode-active' : '';
+
+		return `!absolute z-1 ${colorClass} ${connectionModeClass} ${className}`;
 	});
 </script>
 
@@ -81,5 +84,26 @@
 		min-height: 10px;
 		width: 11px;
 		height: 11px;
+	}
+
+	/* Make handles REALLY BIG and touch-friendly in connection mode */
+	:global(.svelte-flow__handle.connection-mode-active) {
+		min-width: 20px !important;
+		min-height: 20px !important;
+		width: 24px !important;
+		height: 24px !important;
+		z-index: 100 !important;
+		cursor: pointer !important;
+		border: 2px solid rgba(255, 255, 255, 0.3) !important;
+		box-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+	}
+
+	:global(.svelte-flow__handle.connection-mode-active):hover {
+		min-width: 28px !important;
+		min-height: 28px !important;
+		width: 32px !important;
+		height: 32px !important;
+		border: 3px solid rgba(255, 255, 255, 0.5) !important;
+		box-shadow: 0 0 12px rgba(255, 255, 255, 0.6) !important;
 	}
 </style>
