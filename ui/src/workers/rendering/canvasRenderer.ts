@@ -76,6 +76,7 @@ export class CanvasRenderer {
 
 		this.ensureDrawCommand();
 
+		// Use flipY to match standard screen coordinates (Y-down, origin top-left)
 		// @ts-expect-error -- regl type is wrong
 		this.canvasTexture?.({ data: this.offscreenCanvas, flipY: true });
 		this.drawCommand?.();
@@ -84,6 +85,7 @@ export class CanvasRenderer {
 	ensureDrawCommand() {
 		if (this.drawCommand || !this.ctx) return;
 
+		// Use flipY to match standard screen coordinates (Y-down, origin top-left)
 		// @ts-expect-error -- regl type is wrong
 		this.canvasTexture = this.renderer.regl.texture({
 			data: this.offscreenCanvas,
@@ -106,7 +108,8 @@ export class CanvasRenderer {
 				uniform sampler2D canvasTexture;
 
 				void main() {
-					gl_FragColor = texture2D(canvasTexture, vec2(uv.x, 1.0 - uv.y));
+					// Texture is already flipped via flipY:true, so use uv directly
+					gl_FragColor = texture2D(canvasTexture, uv);
 				}
 			`,
 			attributes: {

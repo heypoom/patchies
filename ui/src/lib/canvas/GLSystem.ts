@@ -95,6 +95,7 @@ export class GLSystem {
 				const uint8Array = new Uint8Array(buffer);
 				const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
 
+				// Apply flipY to match standard screen coordinates (Y-down, origin top-left)
 				const bitmap = await createImageBitmap(imageData, { imageOrientation: 'flipY' });
 				context.transferFromImageBitmap(bitmap);
 			} catch (error) {
@@ -335,7 +336,8 @@ export class GLSystem {
 	}
 
 	async setBitmapSource(nodeId: string, source: ImageBitmapSource) {
-		this.setBitmap(nodeId, await createImageBitmap(source));
+		// Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
+		this.setBitmap(nodeId, await createImageBitmap(source, { imageOrientation: 'flipY' }));
 	}
 
 	setBitmap(nodeId: string, bitmap: ImageBitmap) {

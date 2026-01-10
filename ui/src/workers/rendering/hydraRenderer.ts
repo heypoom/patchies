@@ -132,15 +132,16 @@ export class HydraRenderer {
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
 
+		// Flip Y coordinates to match standard screen coordinates (Y-down, origin top-left)
 		gl.blitFramebuffer(
 			0,
 			0,
 			hydraWidth,
 			hydraHeight,
 			0,
-			0,
+			outputHeight, // Flip destination Y
 			outputWidth,
-			outputHeight,
+			0,
 			gl.COLOR_BUFFER_BIT,
 			gl.LINEAR
 		);
