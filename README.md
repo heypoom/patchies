@@ -1175,6 +1175,7 @@ You can send messages to control Csound instruments:
 - `{type: 'eval', code: 'instr 1 ... endin'}`: Evaluate Csound code
 - `number`: Set control channel for the inlet index
 - `string`: Send input messages (or set option if starts with `-`)
+- If you'd like to support Csound's development, check out their [contribution page](https://csound.com/contribute.html)!
 
 ### MIDI & Network Objects
 

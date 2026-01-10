@@ -93,6 +93,16 @@ Creator of Hydra, the live-codeable video synthesizer that brings shader program
 
 ---
 
+### Csound
+
+**Projects:** Csound
+
+Powerful audio programming language with decades of development for sound synthesis and music creation.
+
+**Support:** [Contribute to Csound](https://csound.com/contribute.html)
+
+---
+
 ## Educators & Tutorial Creators
 
 ### Compudanzas

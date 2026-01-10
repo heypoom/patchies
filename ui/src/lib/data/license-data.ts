@@ -587,5 +587,13 @@ export const supportLinks: SupportLink[] = [
 		url: 'https://opencollective.com/core-js',
 		type: 'opencollective',
 		projects: ['core-js']
+	},
+	{
+		name: 'Csound',
+		description: 'Powerful audio programming language with decades of development',
+		category: 'library',
+		url: 'https://csound.com/contribute.html',
+		type: 'website',
+		projects: ['Csound']
 	}
 ];
