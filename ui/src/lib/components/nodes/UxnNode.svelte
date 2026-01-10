@@ -443,6 +443,24 @@
 							<button
 								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 								onclick={() => {
+									showConsole = !showConsole;
+									updateNodeData(nodeId, { showConsole });
+								}}
+								title="Toggle console"
+							>
+								<Terminal class="h-4 w-4 text-zinc-300" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Console</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+								onclick={() => {
 									showEditor = !showEditor;
 									updateNodeData(nodeId, { showEditor });
 									measureContainerWidth();
@@ -454,24 +472,6 @@
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>Edit Code</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-								onclick={() => {
-									showConsole = !showConsole;
-									updateNodeData(nodeId, { showConsole });
-								}}
-								title="Toggle console"
-							>
-								<Terminal class="h-4 w-4 text-zinc-300" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Console</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</div>
