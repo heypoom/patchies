@@ -2,6 +2,7 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
+	import { isConnectionMode } from '../../../stores/ui.store';
 
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
 
@@ -32,7 +33,16 @@
 	const borderColor = $derived(selected ? '!border-zinc-400' : '!border-zinc-600');
 
 	const handleClass = $derived.by(() => {
-		return `${selected ? '!bg-gray-400' : '!bg-zinc-900 !border-zinc-600'}`;
+		// makes handle obvious in connection mode.
+		if (!selected && $isConnectionMode) {
+			return ''
+		}
+
+		if (selected) {
+			return '!bg-gray-400'
+		}
+
+		return '!bg-zinc-900 !border-zinc-600';
 	});
 </script>
 
