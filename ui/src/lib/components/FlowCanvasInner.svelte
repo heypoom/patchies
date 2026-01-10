@@ -32,9 +32,10 @@
 	import {
 		isAiFeaturesVisible,
 		isBottomBarVisible,
-		isConnectionMode as isConnectionModeStore,
 		isConnecting,
-		connectingFromHandleId
+		connectingFromHandleId,
+		isConnectionMode
+
 	} from '../../stores/ui.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
@@ -121,8 +122,6 @@
 	let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
 
 	// Mobile connection mode state - simplified to just toggle connection mode
-	let isConnectionMode = $state(false);
-
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
 		selectedEdgeIds = edges.map((edge) => edge.id);
@@ -878,17 +877,6 @@
 			showAudioHint = false;
 		}
 	}
-
-	// Mobile connection mode functions - simplified
-	function startConnectionMode() {
-		isConnectionMode = true;
-		isConnectionModeStore.set(true);
-	}
-
-	function cancelConnectionMode() {
-		isConnectionMode = false;
-		isConnectionModeStore.set(false);
-	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -939,7 +927,7 @@
 	{/if}
 
 	<!-- Connection Mode Indicator -->
-	{#if isConnectionMode}
+	{#if $isConnectionMode}
 		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div
 				class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
@@ -1117,16 +1105,16 @@
 			<!-- You can't connect a single node to itself -->
 			{#if nodes.length >= 2}
 				<button
-					title={isConnectionMode ? 'Exit Connect Mode' : 'Connect Objects'}
-					class={`cursor-pointer rounded p-1 ${isConnectionMode ? 'bg-blue-600/70 hover:bg-blue-800/70' : 'bg-zinc-900/70 hover:bg-zinc-700'}`}
+					title={$isConnectionMode ? 'Exit Connect Mode' : 'Connect Objects'}
+					class={`cursor-pointer rounded p-1 ${$isConnectionMode ? 'bg-blue-600/70 hover:bg-blue-800/70' : 'bg-zinc-900/70 hover:bg-zinc-700'}`}
 					onclick={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
 
-						if (isConnectionMode) {
-							cancelConnectionMode();
+						if ($isConnectionMode) {
+							isConnectionMode.set(false)
 						} else {
-							startConnectionMode();
+							isConnectionMode.set(true)
 						}
 					}}><Cable class="h-4 w-4 text-zinc-300" /></button
 				>
