@@ -1,7 +1,9 @@
 <script lang="ts">
 	import {
 		CirclePlus,
+		ClipboardPaste,
 		Command,
+		Copy,
 		FilePlus2,
 		Link,
 		Search,
@@ -991,6 +993,30 @@
 							deleteSelectedElements();
 						}
 					}}><Trash2 class="h-4 w-4 text-red-400" /></button
+				>
+			{/if}
+
+			{#if selectedNodeIds.length > 0}
+				<button
+					title="Copy (Ctrl+C)"
+					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						copySelectedNodes();
+					}}><Copy class="h-4 w-4 text-zinc-300" /></button
+				>
+			{/if}
+
+			{#if copiedNodeData && copiedNodeData.length > 0}
+				<button
+					title="Paste (Ctrl+V)"
+					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						pasteNode();
+					}}><ClipboardPaste class="h-4 w-4 text-zinc-300" /></button
 				>
 			{/if}
 
