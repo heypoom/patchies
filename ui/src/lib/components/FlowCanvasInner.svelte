@@ -125,7 +125,6 @@
 	// Mobile connection mode state
 	let isConnectionMode = $state(false);
 	let connectionSourceNode = $state<string | null>(null);
-	let showDestinationMenu = $state(false);
 	let showHandleSelection = $state(false);
 	let selectedDestinationNode = $state<string | null>(null);
 	let availableSourceHandles = $state<Array<{ id: string; label: string; type: string }>>([]);
@@ -893,7 +892,6 @@
 	function startConnectionMode() {
 		isConnectionMode = true;
 		connectionSourceNode = null;
-		showDestinationMenu = false;
 		showHandleSelection = false;
 		selectedDestinationNode = null;
 		selectedSourceHandle = null;
@@ -903,7 +901,6 @@
 	function cancelConnectionMode() {
 		isConnectionMode = false;
 		connectionSourceNode = null;
-		showDestinationMenu = false;
 		showHandleSelection = false;
 		selectedDestinationNode = null;
 		selectedSourceHandle = null;
@@ -976,10 +973,10 @@
 		if (!connectionSourceNode) {
 			// First click - select source node
 			connectionSourceNode = nodeId;
-			showDestinationMenu = true;
+			// Don't show destination menu - let user click on canvas instead
 		} else {
-			// Second click would be handled by the destination menu
-			// So this shouldn't normally be reached
+			// Second click - select destination node
+			selectDestinationNode(nodeId);
 		}
 	}
 
@@ -1008,7 +1005,6 @@
 			selectedDestinationNode = destinationNodeId;
 			availableSourceHandles = sourceHandles;
 			availableTargetHandles = targetHandles;
-			showDestinationMenu = false;
 			showHandleSelection = true;
 
 			// Pre-select first handles as default
@@ -1106,9 +1102,31 @@
 				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
 			>
 				<Cable class="h-4 w-4" />
-				<span>Click on a node to start connecting</span>
+				<span>Click on a node to select source</span>
 				<button
 					class="ml-2 text-blue-300 hover:text-blue-100"
+					onclick={cancelConnectionMode}
+					title="Cancel"
+				>
+					×
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Connection Mode - Source Selected Indicator -->
+	{#if isConnectionMode && connectionSourceNode && !showHandleSelection}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-2 rounded-lg border border-green-600 bg-green-900/80 px-4 py-2 text-sm text-green-200 backdrop-blur-sm"
+			>
+				<Cable class="h-4 w-4" />
+				<span
+					>Source: {nodes.find((n) => n.id === connectionSourceNode)?.type || 'selected'} → Click
+					destination node</span
+				>
+				<button
+					class="ml-2 text-green-300 hover:text-green-100"
 					onclick={cancelConnectionMode}
 					title="Cancel"
 				>
@@ -1305,63 +1323,6 @@
 		onInsertMultipleObjects={handleAiMultipleObjectsInsert}
 		onEditObject={handleAiObjectEdit}
 	/>
-
-	<!-- Mobile Connection Mode: Destination Node Selection Menu -->
-	{#if showDestinationMenu && connectionSourceNode}
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-			onclick={cancelConnectionMode}
-		>
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
-				class="max-h-[80vh] w-full max-w-md overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl"
-				onclick={(e) => e.stopPropagation()}
-			>
-				<div class="border-b border-zinc-700 p-4">
-					<h2 class="text-lg font-semibold text-zinc-200">Connect To</h2>
-					<p class="mt-1 text-sm text-zinc-400">
-						Select a node to connect from {nodes.find((n) => n.id === connectionSourceNode)?.type ??
-							'selected node'}
-					</p>
-				</div>
-
-				<div class="max-h-[60vh] overflow-y-auto p-2">
-					{#each nodes.filter((n) => n.id !== connectionSourceNode) as node (node.id)}
-						<button
-							class="mb-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-left transition-colors hover:bg-zinc-700"
-							onclick={() => selectDestinationNode(node.id)}
-						>
-							<div class="font-medium text-zinc-200">{node.type}</div>
-							{#if node.data?.name || node.data?.expr}
-								<div class="mt-1 text-xs text-zinc-400">
-									{node.data.name || node.data.expr}
-								</div>
-							{/if}
-							<div class="mt-1 text-xs text-zinc-500">ID: {node.id}</div>
-						</button>
-					{/each}
-
-					{#if nodes.length <= 1}
-						<div class="px-4 py-8 text-center text-sm text-zinc-500">
-							No other nodes available to connect to
-						</div>
-					{/if}
-				</div>
-
-				<div class="border-t border-zinc-700 p-4">
-					<button
-						class="w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700"
-						onclick={cancelConnectionMode}
-					>
-						Cancel
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
 
 	<!-- Mobile Connection Mode: Handle Selection Modal -->
 	{#if showHandleSelection && connectionSourceNode && selectedDestinationNode}
