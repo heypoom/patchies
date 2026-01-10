@@ -1118,7 +1118,7 @@
 			{#if nodes.length >= 2}
 				<button
 					title={isConnectionMode ? 'Cancel Connection' : 'Connect Nodes'}
-					class={`cursor-pointer rounded p-1 hover:bg-zinc-700 ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
+					class={`cursor-pointer rounded p-1 ${isConnectionMode ? 'bg-blue-600/70 hover:bg-blue-800/70' : 'bg-zinc-900/70 hover:bg-zinc-700'}`}
 					onclick={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
