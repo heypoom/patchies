@@ -266,7 +266,7 @@
 			<div class="rounded-lg bg-zinc-900/50 p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Thai Pangsakulyanont (@dtinth)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
-					A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement.
+					A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API and JavaScript expertise, tips on using AI agents effectively, and most importantly, words of encouragement.
 				</p>
 				<p class="mt-2 text-xs text-zinc-400">
 					Communities: Creatorsgarten, showdown.space, Bemusic
