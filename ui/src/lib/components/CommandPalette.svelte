@@ -4,7 +4,10 @@
 	import {
 		isAiFeaturesVisible,
 		isBottomBarVisible,
-		isFpsMonitorVisible
+		isFpsMonitorVisible,
+		isConnectionMode,
+		isConnecting,
+		connectingFromHandleId
 	} from '../../stores/ui.store';
 	import type { Node, Edge } from '@xyflow/svelte';
 	import { IpcSystem } from '$lib/canvas/IpcSystem';
@@ -67,7 +70,7 @@
 		},
 		{
 			id: 'enter-fullscreen',
-			name: 'Enter fullscreen',
+			name: 'Enter Fullscreen',
 			description: 'Enter fullscreen mode in the main window.'
 		},
 		{ id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
@@ -110,6 +113,11 @@
 			id: 'toggle-vim-mode',
 			name: 'Toggle Vim Mode',
 			description: 'Enable or disable Vim keybindings in code editors'
+		},
+		{
+			id: 'toggle-connect-mode',
+			name: 'Toggle Connect Mode',
+			description: 'Enter or exit tap-to-connect mode for connecting objects'
 		}
 	];
 
@@ -302,6 +310,18 @@
 
 				onCancel();
 				window.location.reload();
+			})
+			.with('toggle-connect-mode', () => {
+				if ($isConnectionMode) {
+					// Exit connection mode - clear all connection state
+					isConnectionMode.set(false);
+					isConnecting.set(false);
+					connectingFromHandleId.set(null);
+				} else {
+					// Enter connection mode
+					isConnectionMode.set(true);
+				}
+				onCancel();
 			})
 			.otherwise(() => {
 				console.warn(`Unknown command: ${commandId}`);
