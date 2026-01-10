@@ -104,23 +104,17 @@
 
 	/* Make handles REALLY BIG and touch-friendly in connection mode */
 	:global(.svelte-flow__handle.connection-mode-active) {
-		min-width: 20px !important;
-		min-height: 20px !important;
-		width: 24px !important;
-		height: 24px !important;
+		min-width: 12px !important;
+		min-height: 12px !important;
+		width: 14px !important;
+		height: 14px !important;
 		z-index: 100 !important;
 		cursor: pointer !important;
-		border: 2px solid rgba(255, 255, 255, 0.3) !important;
-		box-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+		box-shadow: 0 0 8px rgba(255, 255, 255, 0.2) !important;
 	}
 
-	:global(.svelte-flow__handle.connection-mode-active):hover {
-		min-width: 28px !important;
-		min-height: 28px !important;
-		width: 32px !important;
-		height: 32px !important;
-		border: 3px solid rgba(255, 255, 255, 0.5) !important;
-		box-shadow: 0 0 12px rgba(255, 255, 255, 0.6) !important;
+	:global(.svelte-flow__handle.connection-mode-active.connecting) {
+		background: red !important;
 	}
 
 	/* Dim handles when in connecting state - JavaScript-controlled via handle-dimmed class */

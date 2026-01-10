@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {
 		CirclePlus,
-		Clipboard,
 		Command,
 		Copy,
 		FilePlus2,
@@ -10,7 +9,8 @@
 		Sparkles,
 		Trash2,
 		Volume2,
-		Cable
+		Cable,
+		ClipboardPaste
 	} from '@lucide/svelte/icons';
 	import {
 		SvelteFlow,
@@ -27,7 +27,6 @@
 	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
-	import CopyPasteModal from './CopyPasteModal.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible, isConnectionMode as isConnectionModeStore, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
@@ -54,20 +53,6 @@
 
 	const AUTOSAVE_INTERVAL = 2500;
 
-	const visibleNodeTypes = $derived.by(() => {
-		return Object.fromEntries(
-			Object.entries(nodeTypes).filter(([key]) => {
-				// If the user dislikes AI features, filter them out.
-				if (key.startsWith('ai.') && !$isAiFeaturesVisible) return false;
-
-				// Hide asm.value from node palette - only created via drag-and-drop
-				if (key === 'asm.value') return false;
-
-				return true;
-			})
-		);
-	});
-
 	// Initial nodes and edges
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
@@ -90,9 +75,6 @@
 	// Object browser modal state
 	let showObjectBrowser = $state(false);
 
-	// Copy/Paste modal state
-	let showCopyPasteModal = $state(false);
-
 	// AI object prompt state
 	let showAiPrompt = $state(false);
 	let aiPromptPosition = $state.raw({ x: 0, y: 0 });
@@ -112,9 +94,6 @@
 
 	let selectedNodeIds = $state.raw<string[]>([]);
 	let selectedEdgeIds = $state.raw<string[]>([]);
-
-	// Node list visibility state
-	let isNodeListVisible = $state(false);
 
 	// Clipboard for copy-paste functionality
 	let copiedNodeData = $state<Array<{
@@ -748,12 +727,20 @@
 		}));
 	}
 
-	// Paste copied nodes at current mouse position
-	function pasteNode() {
+	// Paste copied nodes at current mouse position or center of screen
+	function pasteNode(source: 'keyboard' | 'button' = 'keyboard') {
 		if (!copiedNodeData || copiedNodeData.length === 0) return;
 
 		// Get the paste position (where the center of the copied nodes will be placed)
-		const pastePosition = screenToFlowPosition(lastMousePosition);
+		const pastePosition = match(source)
+			.with('keyboard', () => screenToFlowPosition(lastMousePosition))
+			.with('button', () => {
+				const centerX = window.innerWidth / 2;
+				const centerY = window.innerHeight / 2;
+
+				return screenToFlowPosition({ x: centerX, y: centerY });
+			})
+			.exhaustive();
 
 		// Create all nodes with their relative positions preserved
 		for (const nodeData of copiedNodeData) {
@@ -988,13 +975,13 @@
 			snapGrid={[5, 5]}
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
-			onconnectstart={(event) => {
-				console.log('Connection started:', event);
+			onconnectstart={(event, params) => {
+				console.log('Connection started:', event, params);
+
 				isConnecting.set(true);
-				connectingFromHandleId.set(event.handleId || null);
+				connectingFromHandleId.set(params.handleId || null);
 			}}
 			onconnectend={() => {
-				console.log('Connection ended');
 				isConnecting.set(false);
 				connectingFromHandleId.set(null);
 			}}
@@ -1066,18 +1053,23 @@
 				}}><Search class="h-4 w-4 text-zinc-300" /></button
 			>
 
-			{#if selectedNodeIds.length > 0 || (copiedNodeData && copiedNodeData.length > 0)}
+			{#if selectedNodeIds.length > 0 || (selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0)}
 				<button
 					title="Copy / Paste"
 					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
 					onclick={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
-						showCopyPasteModal = true;
+
+						if (selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0) {
+							pasteNode('button')
+						} else if (selectedNodeIds && (!copiedNodeData || copiedNodeData.length === 0)) {
+							copySelectedNodes()
+						}
 					}}
 				>
-					{#if copiedNodeData && copiedNodeData.length > 0}
-						<Clipboard class="h-4 w-4 text-zinc-300" />
+					{#if selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0}
+						<ClipboardPaste class="h-4 w-4 text-zinc-300" />
 					{:else}
 						<Copy class="h-4 w-4 text-zinc-300" />
 					{/if}
@@ -1086,7 +1078,7 @@
       
 			<button
 				title={isConnectionMode ? 'Cancel Connection' : 'Connect Nodes'}
-				class={`cursor-pointer rounded p-1 hover:bg-zinc-700 ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
+				class={`cursor-pointer rounded p-1 hover:bg-zinc-700 [@media(hover:hover)]:hidden ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
@@ -1165,15 +1157,6 @@
 
 	<!-- Object Browser Modal -->
 	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
-
-	<!-- Copy/Paste Modal -->
-	<CopyPasteModal
-		bind:open={showCopyPasteModal}
-		canCopy={selectedNodeIds.length > 0}
-		canPaste={!!(copiedNodeData && copiedNodeData.length > 0)}
-		onCopy={copySelectedNodes}
-		onPaste={pasteNode}
-	/>
 
 	<!-- AI Object Prompt Dialog -->
 	<AiObjectPrompt
