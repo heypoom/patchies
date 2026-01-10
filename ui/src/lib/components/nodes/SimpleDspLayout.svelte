@@ -122,7 +122,7 @@
 						total={1 + messageInletCount}
 						index={0}
 						class="top-0"
-						nodeId={nodeId}
+						{nodeId}
 					/>
 
 					<!-- Message inlets (only show if messageInletCount > 0) -->
@@ -136,7 +136,7 @@
 								total={1 + messageInletCount}
 								index={1 + index}
 								class="top-0"
-								nodeId={nodeId}
+								{nodeId}
 							/>
 						{/each}
 					{/if}
@@ -166,7 +166,7 @@
 						total={1 + messageOutletCount}
 						index={0}
 						class="bottom-0"
-						nodeId={nodeId}
+						{nodeId}
 					/>
 
 					<!-- Message outlets (only show if messageOutletCount > 0) -->
@@ -180,7 +180,7 @@
 								total={1 + messageOutletCount}
 								index={1 + index}
 								class="bottom-0"
-								nodeId={nodeId}
+								{nodeId}
 							/>
 						{/each}
 					{/if}

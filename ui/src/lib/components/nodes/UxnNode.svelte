@@ -480,7 +480,15 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" id={0} title="ROM input" total={1} index={0} nodeId={nodeId} />
+				<StandardHandle
+					port="inlet"
+					type="message"
+					id={0}
+					title="ROM input"
+					total={1}
+					index={0}
+					{nodeId}
+				/>
 				<div bind:this={previewContainer}>
 					<canvas
 						bind:this={canvas}
@@ -502,7 +510,7 @@
 					title="Video output"
 					total={2}
 					index={0}
-					nodeId={nodeId}
+					{nodeId}
 				/>
 				<StandardHandle
 					port="outlet"
@@ -511,7 +519,7 @@
 					title="Console output"
 					total={2}
 					index={1}
-					nodeId={nodeId}
+					{nodeId}
 				/>
 			</div>
 

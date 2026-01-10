@@ -38,12 +38,14 @@
 	<!-- Header -->
 	<div>
 		<h1 id="modal-title" class="text-3xl font-bold text-zinc-100">Thanks 🥰</h1>
-		<p class="mt-1 text-lg text-zinc-400">Patchies is built upon amazing open source projects and the generosity of many people</p>
+		<p class="mt-1 text-lg text-zinc-400">
+			Patchies is built upon amazing open source projects and the generosity of many people
+		</p>
 	</div>
 
 	<!-- Project License -->
 	<div class="rounded-lg bg-zinc-800/50 p-4">
-		<p class="text-zinc-300 text-sm">
+		<p class="text-sm text-zinc-300">
 			{projectLicense.description}
 		</p>
 		<div class="mt-3 space-y-2 text-sm text-zinc-400">
@@ -73,7 +75,8 @@
 			<h2 class="text-lg font-semibold text-zinc-200">Support Open Source Creators</h2>
 		</div>
 		<p class="mb-4 text-sm text-zinc-300">
-			If you enjoy using Patchies, please consider supporting the creators behind open source tools and libraries who made it possible 🩷
+			If you enjoy using Patchies, please consider supporting the creators behind open source tools
+			and libraries who made it possible 🩷
 		</p>
 
 		<!-- Library Creators -->
@@ -237,7 +240,8 @@
 			<h2 class="text-lg font-semibold text-zinc-200">Special Thanks</h2>
 		</div>
 		<p class="mb-4 text-sm text-zinc-300">
-			These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement. I can't thank them enough 🧡
+			These amazing people helped bring Patchies to life through their direct support, feedback, and
+			encouragement. I can't thank them enough 🧡
 		</p>
 
 		<div class="space-y-4">
@@ -245,10 +249,13 @@
 			<div class="rounded-lg bg-zinc-900/50 p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Kijjasak "Kijjaz" Triyanond (@kijjaz)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
-					A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, organized fun workshops with us, and taught me FM/AM synthesis and sound design.
+					A great senior and friend who dedicated thousands of hours to play testing Patchies.
+					Kijjaz created many test patches, gave countless inspirations and feedback, organized fun
+					workshops with us, and taught me FM/AM synthesis and sound design.
 				</p>
 				<p class="mt-2 text-xs text-zinc-400">
-					Communities: CU, CU BAND, Monotone Group, Pollen Sound • Indie perfumer at @vibrationperfum
+					Communities: CU, CU BAND, Monotone Group, Pollen Sound • Indie perfumer at
+					@vibrationperfum
 				</p>
 				<a
 					href="https://www.instagram.com/kijjaz"
@@ -265,7 +272,9 @@
 			<div class="rounded-lg bg-zinc-900/50 p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Thai Pangsakulyanont (@dtinth)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
-					A great senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API and JavaScript expertise, tips on using AI agents effectively, and most importantly, words of encouragement.
+					A great senior and friend who gave invaluable advice throughout Patchies' development.
+					Thai provided coding guidance, Web Audio API and JavaScript expertise, tips on using AI
+					agents effectively, and most importantly, words of encouragement.
 				</p>
 				<p class="mt-2 text-xs text-zinc-400">
 					Communities: Creatorsgarten, showdown.space, Bemusic
@@ -314,7 +323,9 @@
 			<div class="rounded-lg bg-zinc-900/50 p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Thanapat "Ryan" Ogaslert (@crsrcrsrrr)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
-					Creator of SYNAP [home/lab], works at College of Music, Mahidol University. Ryan encouraged me through making Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I got to show it to the world for the first time.
+					Creator of SYNAP [home/lab], works at College of Music, Mahidol University. Ryan
+					encouraged me through making Patchies and inspired me to give my first talk about Patchies
+					at SYNAP [home/lab], where I got to show it to the world for the first time.
 				</p>
 				<p class="mt-2 text-xs text-zinc-400">
 					SYNAP [home/lab]: Monday music experiments and performances
@@ -343,9 +354,13 @@
 
 			<!-- Pub -->
 			<div class="rounded-lg bg-zinc-900/50 p-3">
-				<h3 class="text-sm font-semibold text-zinc-100">Chayapatr "Pub" Archiwaranguprok (@chayapatr)</h3>
+				<h3 class="text-sm font-semibold text-zinc-100">
+					Chayapatr "Pub" Archiwaranguprok (@chayapatr)
+				</h3>
 				<p class="mt-1 text-xs text-zinc-300">
-					My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten.
+					My long-time friend and my closest friend. Pub gave me lots of inspirations during the
+					first days of Patchies, when I was just playing around with ideas. He organized countless
+					events in our collective, Creatorsgarten.
 				</p>
 				<p class="mt-2 text-xs text-zinc-400">
 					<a

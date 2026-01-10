@@ -74,7 +74,7 @@
 			}
 		}
 
-		updateSketch({onMount: true});
+		updateSketch({ onMount: true });
 		measureWidth(1000);
 	});
 
@@ -104,7 +104,7 @@
 		}
 	}
 
-	function updateSketch({onMount = false}: {onMount?: boolean} = {}) {
+	function updateSketch({ onMount = false }: { onMount?: boolean } = {}) {
 		// re-enable drag on update. nodrag() must be called on setup().
 		enableDrag = true;
 		videoOutputEnabled = true;
@@ -158,8 +158,6 @@
 		}, timeout);
 	}
 
-
-
 	const handleClass = $derived.by(() => {
 		if (!data.hidePorts) return '';
 
@@ -185,7 +183,7 @@
 				total={inletCount}
 				{index}
 				class={handleClass}
-				nodeId={nodeId}
+				{nodeId}
 			/>
 		{/each}
 	{/snippet}
@@ -218,7 +216,7 @@
 				total={outletCount + 1}
 				index={0}
 				class={handleClass}
-				nodeId={nodeId}
+				{nodeId}
 			/>
 		{/if}
 
@@ -230,7 +228,7 @@
 				total={videoOutputEnabled ? outletCount + 1 : outletCount}
 				index={videoOutputEnabled ? index + 1 : index}
 				class={handleClass}
-				nodeId={nodeId}
+				{nodeId}
 			/>
 		{/each}
 	{/snippet}

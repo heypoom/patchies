@@ -146,10 +146,18 @@
 			total={2}
 			index={0}
 			class=""
-			nodeId={nodeId}
+			{nodeId}
 		/>
 
-		<StandardHandle port="inlet" type="message" id="1" title="Message input" total={2} index={1} nodeId={nodeId} />
+		<StandardHandle
+			port="inlet"
+			type="message"
+			id="1"
+			title="Message input"
+			total={2}
+			index={1}
+			{nodeId}
+		/>
 	{/snippet}
 
 	{#snippet preview()}
@@ -184,7 +192,7 @@
 			total={2}
 			index={0}
 			class=""
-			nodeId={nodeId}
+			{nodeId}
 		/>
 
 		<StandardHandle
@@ -194,7 +202,7 @@
 			title="Message output"
 			total={2}
 			index={1}
-			nodeId={nodeId}
+			{nodeId}
 		/>
 	{/snippet}
 

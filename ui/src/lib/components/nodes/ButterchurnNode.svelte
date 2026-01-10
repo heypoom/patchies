@@ -115,13 +115,27 @@
 	{selected}
 >
 	{#snippet topHandle()}
-		<StandardHandle port="inlet" type="audio" id="0" title="Audio input" total={1} index={0} 
-				nodeId={nodeId}/>
+		<StandardHandle
+			port="inlet"
+			type="audio"
+			id="0"
+			title="Audio input"
+			total={1}
+			index={0}
+			{nodeId}
+		/>
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle port="outlet" type="video" id="0" title="Video output" total={1} index={0} 
-				nodeId={nodeId}/>
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="0"
+			title="Video output"
+			total={1}
+			index={0}
+			{nodeId}
+		/>
 	{/snippet}
 
 	{#snippet codeEditor()}

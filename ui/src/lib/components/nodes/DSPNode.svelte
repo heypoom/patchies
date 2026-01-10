@@ -272,7 +272,7 @@
 							total={audioInletCount + valueInletCount + messageInletCount}
 							{index}
 							class="top-0"
-							nodeId={nodeId}
+							{nodeId}
 						/>
 					{/each}
 
@@ -287,7 +287,7 @@
 								total={audioInletCount + valueInletCount + messageInletCount}
 								index={audioInletCount + index}
 								class="top-0"
-								nodeId={nodeId}
+								{nodeId}
 							/>
 						{/each}
 					{/if}
@@ -303,8 +303,8 @@
 								total={audioInletCount + valueInletCount + messageInletCount}
 								index={audioInletCount + valueInletCount + index}
 								class="top-0"
-							
-				nodeId={nodeId}/>
+								{nodeId}
+							/>
 						{/each}
 					{/if}
 				</div>
@@ -336,7 +336,7 @@
 							total={audioOutletCount + messageOutletCount}
 							{index}
 							class="bottom-0"
-							nodeId={nodeId}
+							{nodeId}
 						/>
 					{/each}
 
@@ -350,7 +350,7 @@
 								title={`Message Outlet ${index + 1}`}
 								total={audioOutletCount + messageOutletCount}
 								index={audioOutletCount + index}
-								nodeId={nodeId}
+								{nodeId}
 							/>
 						{/each}
 					{/if}

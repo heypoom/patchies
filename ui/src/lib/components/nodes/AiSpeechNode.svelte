@@ -258,8 +258,7 @@
 		</div>
 
 		<div class="relative">
-			<StandardHandle port="inlet" type="message" total={1} index={0} 
-				nodeId={nodeId}/>
+			<StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
 
 			<div>
 				<!-- Main Text Input -->
@@ -451,8 +450,8 @@
 				total={1}
 				index={0}
 				class="absolute !bottom-[2px]"
-			
-				nodeId={nodeId}/>
+				{nodeId}
+			/>
 		</div>
 	</div>
 </div>

@@ -359,7 +359,14 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" class={handleCommonClass} total={1} index={0} nodeId={nodeId} />
+				<StandardHandle
+					port="inlet"
+					type="message"
+					class={handleCommonClass}
+					total={1}
+					index={0}
+					{nodeId}
+				/>
 
 				<div
 					class={`rounded-lg border-1 ${selected ? 'shadow-glow-md border-zinc-400 bg-zinc-800' : 'hover:shadow-glow-sm border-transparent'}`}
@@ -433,7 +440,7 @@
 					total={2}
 					index={0}
 					class={handleCommonClass}
-					nodeId={nodeId}
+					{nodeId}
 				/>
 
 				<StandardHandle
@@ -443,7 +450,7 @@
 					total={2}
 					index={1}
 					class={handleCommonClass}
-					nodeId={nodeId}
+					{nodeId}
 				/>
 			</div>
 		</div>

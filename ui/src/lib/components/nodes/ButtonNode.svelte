@@ -35,11 +35,11 @@
 	const handleClass = $derived.by(() => {
 		// makes handle obvious in connection mode.
 		if (!selected && $isConnectionMode) {
-			return ''
+			return '';
 		}
 
 		if (selected) {
-			return '!bg-gray-400'
+			return '!bg-gray-400';
 		}
 
 		return '!bg-zinc-900 !border-zinc-600';
@@ -50,8 +50,14 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} 
-				nodeId={nodeId}/>
+				<StandardHandle
+					port="inlet"
+					type="message"
+					total={1}
+					index={0}
+					class={handleClass}
+					{nodeId}
+				/>
 
 				<button
 					onclick={() => messageContext.send({ type: 'bang' })}
@@ -70,8 +76,8 @@
 					total={1}
 					index={0}
 					class={`absolute !bottom-1.5 ${handleClass}`}
-				
-				nodeId={nodeId}/>
+					{nodeId}
+				/>
 			</div>
 		</div>
 	</div>

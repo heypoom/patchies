@@ -126,16 +126,22 @@
 		title="Control Input (code, bang, stop)"
 		total={1}
 		index={0}
-	
-				nodeId={nodeId}/>
+		{nodeId}
+	/>
 {/snippet}
 
 {#snippet chuckOutlets()}
-	<StandardHandle port="outlet" type="audio" title="Audio Output" total={2} index={0} 
-				nodeId={nodeId}/>
+	<StandardHandle port="outlet" type="audio" title="Audio Output" total={2} index={0} {nodeId} />
 
-	<StandardHandle port="outlet" type="message" title="Message Output" total={2} index={1} id={0} 
-				nodeId={nodeId}/>
+	<StandardHandle
+		port="outlet"
+		type="message"
+		title="Message Output"
+		total={2}
+		index={1}
+		id={0}
+		{nodeId}
+	/>
 {/snippet}
 
 <div class="relative flex gap-x-3">

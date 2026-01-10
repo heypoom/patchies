@@ -389,8 +389,8 @@
 				total={inletCount}
 				{index}
 				class={handleClass}
-			
-				nodeId={nodeId}/>
+				{nodeId}
+			/>
 		{/each}
 	{/snippet}
 
@@ -404,8 +404,8 @@
 				total={outletCount + 1}
 				index={0}
 				class={handleClass}
-			
-				nodeId={nodeId}/>
+				{nodeId}
+			/>
 		{/if}
 
 		{#each Array.from({ length: outletCount }) as _, index}
@@ -416,8 +416,8 @@
 				total={videoOutputEnabled ? outletCount + 1 : outletCount}
 				index={videoOutputEnabled ? index + 1 : index}
 				class={handleClass}
-			
-				nodeId={nodeId}/>
+				{nodeId}
+			/>
 		{/each}
 	{/snippet}
 

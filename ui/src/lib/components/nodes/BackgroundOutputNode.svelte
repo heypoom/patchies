@@ -36,8 +36,15 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="video" id="0" title="Video output" total={1} index={0} 
-				nodeId={nodeId}/>
+				<StandardHandle
+					port="inlet"
+					type="video"
+					id="0"
+					title="Video output"
+					total={1}
+					index={0}
+					{nodeId}
+				/>
 
 				<div
 					class={[

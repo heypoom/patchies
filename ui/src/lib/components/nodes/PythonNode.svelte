@@ -167,7 +167,7 @@
 
 			<div class="relative">
 				<div>
-					<StandardHandle port="inlet" type="message" title="Input" total={1} index={0} nodeId={nodeId} />
+					<StandardHandle port="inlet" type="message" title="Input" total={1} index={0} {nodeId} />
 				</div>
 
 				{#if data.showConsole}
@@ -250,7 +250,14 @@
 				{/if}
 
 				<div>
-					<StandardHandle port="outlet" type="message" title="Output" total={1} index={0} nodeId={nodeId} />
+					<StandardHandle
+						port="outlet"
+						type="message"
+						title="Output"
+						total={1}
+						index={0}
+						{nodeId}
+					/>
 				</div>
 			</div>
 		</div>

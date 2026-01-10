@@ -102,8 +102,7 @@
 
 <ObjectPreviewLayout title="ai.txt" onrun={generateText} {editorReady}>
 	{#snippet topHandle()}
-		<StandardHandle port="inlet" type="message" total={2} index={0} 
-				nodeId={nodeId}/>
+		<StandardHandle port="inlet" type="message" total={2} index={0} {nodeId} />
 		<StandardHandle
 			port="inlet"
 			type="video"
@@ -111,8 +110,8 @@
 			title="Video input (optional)"
 			total={2}
 			index={1}
-		
-				nodeId={nodeId}/>
+			{nodeId}
+		/>
 	{/snippet}
 
 	{#snippet preview()}
@@ -159,8 +158,7 @@
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle port="outlet" type="message" total={1} index={0} 
-				nodeId={nodeId}/>
+		<StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
 	{/snippet}
 
 	{#snippet codeEditor()}

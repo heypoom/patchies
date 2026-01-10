@@ -3,7 +3,7 @@ import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 import { handleToPortIndex } from './get-edge-types';
 
-const audioRegistry = AudioRegistry.getInstance()
+const audioRegistry = AudioRegistry.getInstance();
 
 /**
  * Checks if a target inlet is an AudioParam by looking up the audio node metadata.
@@ -56,7 +56,7 @@ export function isValidConnectionBetweenHandles(
 
 	// Audio params can accept both audio signals (e.g. gain~ out) and message connections (e.g. numbers)
 	if (options?.isTargetAudioParam) {
-		return sourceHandle.startsWith('audio') || sourceHandle.startsWith('message')
+		return sourceHandle.startsWith('audio') || sourceHandle.startsWith('message');
 	}
 
 	// Video connections must be video-to-video only
@@ -76,7 +76,7 @@ export function isValidConnectionBetweenHandles(
 
 	// Message-to-message connections are allowed
 	if (sourceHandle.startsWith('message') && targetHandle.startsWith('message')) {
-		return true
+		return true;
 	}
 
 	return false;
@@ -101,13 +101,9 @@ export function canAcceptConnection(
 	options?: ConnectionValidationOptions
 ): boolean {
 	// Extract just the handle type from qualified IDs (remove nodeId/ prefix if present)
-	const sourceHandle = sourceHandleId.includes('/')
-		? sourceHandleId.split('/')[1]
-		: sourceHandleId;
+	const sourceHandle = sourceHandleId.includes('/') ? sourceHandleId.split('/')[1] : sourceHandleId;
 
-	const targetHandle = targetHandleId.includes('/')
-		? targetHandleId.split('/')[1]
-		: targetHandleId;
+	const targetHandle = targetHandleId.includes('/') ? targetHandleId.split('/')[1] : targetHandleId;
 
 	// If connecting from an outlet, the target must be an inlet
 	if (sourcePort === 'outlet' && targetPort !== 'inlet') {

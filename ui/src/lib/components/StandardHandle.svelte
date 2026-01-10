@@ -18,7 +18,17 @@
 		isAudioParam?: boolean;
 	}
 
-	let { port, type, id, title, total, index, class: className = '', nodeId, isAudioParam = false }: Props = $props();
+	let {
+		port,
+		type,
+		id,
+		title,
+		total,
+		index,
+		class: className = '',
+		nodeId,
+		isAudioParam = false
+	}: Props = $props();
 
 	// Construct the handle ID based on the specification
 	const handleId = $derived.by(() => {
@@ -49,9 +59,7 @@
 	const qualifiedHandleId = $derived(`${nodeId}/${handleId}`);
 
 	// Determine if this handle is the source of the current connection
-	const isSourceHandle = $derived(
-		$isConnecting && $connectingFromHandleId === qualifiedHandleId
-	);
+	const isSourceHandle = $derived($isConnecting && $connectingFromHandleId === qualifiedHandleId);
 
 	// Determine if this AudioParam inlet should highlight as "audio-compatible"
 	// when dragging from an audio outlet (e.g. gain~ audio-out)

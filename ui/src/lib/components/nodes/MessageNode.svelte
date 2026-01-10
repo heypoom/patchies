@@ -135,7 +135,7 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} nodeId={nodeId} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
 
 				<div class="relative">
 					{#if showTextInput}
@@ -174,7 +174,7 @@
 					{/if}
 				</div>
 
-				<StandardHandle port="outlet" type="message" total={1} index={0} nodeId={nodeId} />
+				<StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
 			</div>
 		</div>
 	</div>

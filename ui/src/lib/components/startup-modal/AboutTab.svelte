@@ -144,7 +144,10 @@
 					<a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
 						>demos tab</a
 					>
-					to get some inspirations! Patchies is open source and built upon many <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('thanks')}>amazing creative coding libraries</a>
+					to get some inspirations! Patchies is open source and built upon many
+					<a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('thanks')}
+						>amazing creative coding libraries</a
+					>
 				</p>
 			</div>
 		</div>

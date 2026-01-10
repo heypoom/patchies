@@ -112,8 +112,8 @@
 		total={totalInlets}
 		index={0}
 		class="top-0"
-	
-				nodeId={nodeId}/>
+		{nodeId}
+	/>
 
 	<!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
 	{#if inletCount > 0}
@@ -126,8 +126,8 @@
 				total={totalInlets}
 				index={index + 1}
 				class="top-0"
-			
-				nodeId={nodeId}/>
+				{nodeId}
+			/>
 		{/each}
 	{/if}
 {/snippet}
@@ -141,8 +141,8 @@
 		title="Audio Output"
 		total={1}
 		index={0}
-	
-				nodeId={nodeId}/>
+		{nodeId}
+	/>
 {/snippet}
 
 <CommonExprLayout

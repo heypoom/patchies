@@ -103,15 +103,14 @@
 			total={inletCount}
 			{index}
 			class="top-0"
-		
-				nodeId={nodeId}/>
+			{nodeId}
+		/>
 	{/each}
 {/snippet}
 
 {#snippet exprOutlets()}
 	<!-- Single outlet -->
-	<StandardHandle port="outlet" type="message" title="Result" total={1} index={0} 
-				nodeId={nodeId}/>
+	<StandardHandle port="outlet" type="message" title="Result" total={1} index={0} {nodeId} />
 {/snippet}
 
 <CommonExprLayout

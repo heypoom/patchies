@@ -189,8 +189,7 @@
 		</div>
 
 		<div class="relative">
-			<StandardHandle port="inlet" type="message" total={1} index={0} 
-				nodeId={nodeId}/>
+			<StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
 
 			<div class="w-80 rounded-lg border border-zinc-600 bg-zinc-900 p-4">
 				<!-- Add Prompt Section -->
@@ -276,8 +275,8 @@
 				title="Audio Outlet"
 				total={1}
 				index={0}
-			
-				nodeId={nodeId}/>
+				{nodeId}
+			/>
 		</div>
 	</div>
 </div>

@@ -224,7 +224,7 @@ export class P5Manager {
 		// The component are being mounted and the playing state is PAUSED,
 		// so we must noLoop() the sketch on mount.
 		if (config.pauseOnMount) {
-			this.p5.noLoop()
+			this.p5.noLoop();
 		}
 	}
 

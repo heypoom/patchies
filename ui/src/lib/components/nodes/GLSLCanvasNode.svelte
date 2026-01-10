@@ -197,7 +197,13 @@
 		isMouseDown = false;
 
 		// Send negative values since mouse is now up (released)
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, -Math.abs(mouseState.z), -Math.abs(mouseState.w));
+		glSystem.setMouseData(
+			nodeId,
+			mouseState.x,
+			mouseState.y,
+			-Math.abs(mouseState.z),
+			-Math.abs(mouseState.w)
+		);
 	}
 
 	// Attach mouse event listeners when canvas is available and iMouse is used
@@ -269,14 +275,21 @@
 				title={`${def.name} (${def.type})`}
 				total={data.glUniformDefs.length}
 				index={defIndex}
-			
-				nodeId={nodeId}/>
+				{nodeId}
+			/>
 		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle port="outlet" type="video" id="out" title="Video output" total={1} index={0} 
-				nodeId={nodeId}/>
+		<StandardHandle
+			port="outlet"
+			type="video"
+			id="out"
+			title="Video output"
+			total={1}
+			index={0}
+			{nodeId}
+		/>
 	{/snippet}
 
 	{#snippet codeEditor()}
