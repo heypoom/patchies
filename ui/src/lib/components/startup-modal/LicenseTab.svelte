@@ -1,9 +1,37 @@
 <script lang="ts">
-	import { FileText } from '@lucide/svelte/icons';
+	import { FileText, Heart, ExternalLink } from '@lucide/svelte/icons';
 	import type { Tab } from './types';
-	import { projectLicense, dependenciesSection, portedCode } from '$lib/data/license-data';
+	import {
+		projectLicense,
+		dependenciesSection,
+		portedCode,
+		supportLinks
+	} from '$lib/data/license-data';
 
 	let { setTab }: { setTab: (tab: Tab) => void } = $props();
+
+	const getSupportTypeLabel = (type: string) => {
+		switch (type) {
+			case 'patreon':
+				return 'Patreon';
+			case 'opencollective':
+				return 'OpenCollective';
+			case 'github':
+				return 'GitHub Sponsors';
+			case 'donate':
+				return 'Donate';
+			case 'purchase':
+				return 'Purchase';
+			case 'website':
+				return 'Website';
+			default:
+				return 'Support';
+		}
+	};
+
+	const libraryCreators = supportLinks.filter((s) => s.category === 'library');
+	const educators = supportLinks.filter((s) => s.category === 'educator');
+	const toolMaintainers = supportLinks.filter((s) => s.category === 'tool');
 </script>
 
 <div class="space-y-4">
@@ -36,6 +64,119 @@
 				<FileText class="h-4 w-4" />
 				{projectLicense.fullLicenseText}
 			</a>
+		</div>
+	</div>
+
+	<!-- Support Open Source Creators -->
+	<div class="rounded-lg bg-zinc-800/50 p-4">
+		<div class="mb-3 flex items-center gap-2">
+			<Heart class="h-5 w-5 text-red-400" />
+			<h2 class="text-lg font-semibold text-zinc-200">Support Open Source Creators</h2>
+		</div>
+		<p class="mb-4 text-sm text-zinc-300">
+			If you enjoy using Patchies, please consider supporting the creators who made it possible:
+		</p>
+
+		<!-- Library Creators -->
+		<div class="mb-4">
+			<h3 class="mb-2 text-sm font-semibold text-zinc-300">Library & Tool Creators</h3>
+			<div class="space-y-2">
+				{#each libraryCreators as creator}
+					<div class="rounded-lg bg-zinc-900/50 p-3">
+						<div class="flex items-start justify-between">
+							<div class="flex-1">
+								<div class="flex items-center gap-2">
+									<h4 class="text-sm font-semibold text-zinc-100">{creator.name}</h4>
+									<a
+										href={creator.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="flex items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
+									>
+										{getSupportTypeLabel(creator.type)}
+										<ExternalLink class="h-3 w-3" />
+									</a>
+								</div>
+								<p class="mt-1 text-xs text-zinc-400">{creator.description}</p>
+								{#if creator.projects}
+									<p class="mt-1 text-xs text-zinc-500">
+										Projects: {creator.projects.join(', ')}
+									</p>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<!-- Educators -->
+		<div>
+			<h3 class="mb-2 text-sm font-semibold text-zinc-300">Educators & Tutorial Creators</h3>
+			<div class="space-y-2">
+				{#each educators as educator}
+					<div class="rounded-lg bg-zinc-900/50 p-3">
+						<div class="flex items-start justify-between">
+							<div class="flex-1">
+								<div class="flex items-center gap-2">
+									<h4 class="text-sm font-semibold text-zinc-100">{educator.name}</h4>
+									<a
+										href={educator.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="flex items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
+									>
+										{getSupportTypeLabel(educator.type)}
+										<ExternalLink class="h-3 w-3" />
+									</a>
+								</div>
+								<p class="mt-1 text-xs text-zinc-400">{educator.description}</p>
+								{#if educator.projects}
+									<p class="mt-1 text-xs text-zinc-500">
+										Resources: {educator.projects.join(', ')}
+									</p>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<!-- Tool Maintainers -->
+		<div class="mt-4">
+			<h3 class="mb-2 text-sm font-semibold text-zinc-300">Tool & Dependency Maintainers</h3>
+			<p class="mb-2 text-xs text-zinc-400">
+				These maintainers create and maintain essential development tools and libraries:
+			</p>
+			<div class="space-y-2">
+				{#each toolMaintainers as tool}
+					<div class="rounded-lg bg-zinc-900/50 p-3">
+						<div class="flex items-start justify-between">
+							<div class="flex-1">
+								<div class="flex items-center gap-2">
+									<h4 class="text-sm font-semibold text-zinc-100">{tool.name}</h4>
+									<a
+										href={tool.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="flex items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
+									>
+										{getSupportTypeLabel(tool.type)}
+										<ExternalLink class="h-3 w-3" />
+									</a>
+								</div>
+								<p class="mt-1 text-xs text-zinc-400">{tool.description}</p>
+								{#if tool.projects}
+									<p class="mt-1 text-xs text-zinc-500">
+										Projects: {tool.projects.join(', ')}
+									</p>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
 		</div>
 	</div>
 

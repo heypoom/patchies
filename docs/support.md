@@ -1,0 +1,244 @@
+# Supporting Open Source Creators
+
+Patchies is built upon the incredible work of open source library creators and educators who have generously shared their knowledge and tools with the world. If you find value in Patchies, please consider supporting the people who made it possible.
+
+## Why Support?
+
+These creators dedicate countless hours to building and maintaining the tools we use every day. Your support helps them:
+
+- Continue developing and maintaining their projects
+- Create educational content and tutorials
+- Build vibrant creative coding communities
+- Keep these tools free and accessible for everyone
+
+## Library & Tool Creators
+
+### Hundred Rabbits
+
+**Projects:** Orca, Uxn, Uxntal
+
+Devine Lu Linvega and Rekka Bellum create minimalist software and tools for creative expression, living sustainably on a sailboat.
+
+**Support:** [Patreon](https://www.patreon.com/hundredrabbits)
+
+---
+
+### Sam Aaron
+
+**Projects:** Sonic Pi, SuperSonic
+
+Creator of Sonic Pi and SuperSonic, bringing live coding music to everyone from beginners to professionals.
+
+**Support:** [Patreon](https://www.patreon.com/samaaron)
+
+---
+
+### TidalCycles & Strudel
+
+**Projects:** Strudel, TidalCycles, Superdough
+
+A vibrant community building live coding music tools, led by Felix Roos, Alex McLean, and many contributors.
+
+**Support:** [OpenCollective](https://opencollective.com/tidalcycles)
+
+---
+
+### Processing Foundation
+
+**Projects:** p5.js, Processing
+
+Non-profit organization supporting creative coding education and software development for artists and designers.
+
+**Support:** [Donate](https://processingfoundation.org/donate)
+
+---
+
+### Marijn Haverbeke
+
+**Projects:** CodeMirror, ProseMirror
+
+Creator and maintainer of CodeMirror, the powerful code editor used in countless web applications.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/marijnh)
+
+---
+
+### Nick Thompson
+
+**Projects:** Elementary Audio
+
+Building Elementary Audio, a JavaScript library for digital audio signal processing.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/nick-thompson)
+
+---
+
+### Yotam Mann
+
+**Projects:** Tone.js
+
+Creator of Tone.js, the framework for creating interactive music in the browser.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/tambien)
+
+---
+
+### Olivia Jack
+
+**Projects:** Hydra
+
+Creator of Hydra, the live-codeable video synthesizer that brings shader programming to everyone.
+
+**Website:** [ojack.xyz](https://ojack.xyz/)
+
+---
+
+## Educators & Tutorial Creators
+
+### Compudanzas
+
+**Resources:** Uxn programming tutorials
+
+Creating comprehensive, beginner-friendly guides for Uxn programming and permacomputing.
+
+**Support:** [Purchase their ebook](https://compudanzas.itch.io/introduction-to-uxn-programming) ($8)
+
+---
+
+### Daniel Shiffman
+
+**Resources:** The Nature of Code, The Coding Train
+
+Beloved educator creating accessible programming tutorials and the comprehensive Nature of Code book.
+
+**Support:** [Purchase Nature of Code](https://natureofcode.com/) or donate to the Processing Foundation
+
+---
+
+### Patt Vira
+
+**Resources:** P5.js tutorials, SPARK program
+
+Creative coding educator making programming accessible to all creative people through beautiful tutorials and the SPARK program.
+
+**Learn more:** [SPARK program](https://www.pattvira.com/spark)
+
+---
+
+## Tool & Dependency Maintainers
+
+These individuals maintain essential development tools and libraries that power Patchies:
+
+### Sindre Sorhus
+
+**Projects:** globals, escape-string-regexp, find-up, p-limit, many utilities
+
+Prolific open source contributor maintaining hundreds of npm packages used across the JavaScript ecosystem.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/sindresorhus)
+
+---
+
+### Feross Aboukhadijeh
+
+**Projects:** simple-peer, buffer, base64-js, unmute-ios-audio
+
+Creator of WebTorrent and many popular web libraries for peer-to-peer communication and browser compatibility.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/feross)
+
+---
+
+### Andrey Sitnik
+
+**Projects:** PostCSS, nanostores, @nanostores/persistent
+
+Creator of PostCSS, Autoprefixer, and Nano Stores - essential tools for modern web development.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/ai)
+
+---
+
+### Anthony Fu
+
+**Projects:** Vitest, strip-literal, error-stack-parser-es
+
+Core team member of Vite, Vue, and Nuxt, building the future of JavaScript tooling.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/antfu)
+
+---
+
+### Karolis Narkevicius
+
+**Projects:** @thi.ng/malloc, @thi.ng/api, thi.ng ecosystem
+
+Creator of the thi.ng umbrella libraries - a comprehensive collection of functional programming and creative coding tools.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/postspectacular) | [Patreon](https://patreon.com/thing_umbrella)
+
+---
+
+### ESLint
+
+**Projects:** ESLint, eslint-config-prettier
+
+Pluggable JavaScript linter helping developers find and fix problems in their code.
+
+**Support:** [Donate](https://eslint.org/donate)
+
+---
+
+### Vitest
+
+**Projects:** Vitest, vitest-browser-svelte
+
+Fast unit test framework powered by Vite - making testing delightful.
+
+**Support:** [OpenCollective](https://opencollective.com/vitest)
+
+---
+
+### PostCSS
+
+**Projects:** PostCSS, postcss-safe-parser
+
+Tool for transforming CSS with JavaScript - the foundation of modern CSS processing.
+
+**Support:** [OpenCollective](https://opencollective.com/postcss/)
+
+---
+
+### core-js
+
+**Projects:** core-js
+
+Modular standard library for JavaScript, providing polyfills for ECMAScript features.
+
+**Support:** [OpenCollective](https://opencollective.com/core-js)
+
+---
+
+## How to Support
+
+Different creators have different support options:
+
+- **Patreon**: Monthly recurring support with exclusive updates and content
+- **GitHub Sponsors**: One-time or monthly support directly through GitHub
+- **OpenCollective**: Transparent community funding for open source projects
+- **Direct Donations**: Support through foundation websites
+- **Purchase Content**: Buy books, ebooks, or courses to support educational creators
+- **Spread the Word**: Share their work and tutorials with others
+
+## Contributing to Patchies
+
+If you'd like to contribute to Patchies itself, check out our [GitHub repository](https://github.com/heypoom/patchies). We welcome:
+
+- Bug reports and feature requests
+- Code contributions and pull requests
+- Documentation improvements
+- Community support and sharing your patches
+
+---
+
+**Thank you** to all the creators who make the creative coding community vibrant, innovative, and accessible. Your generosity enables projects like Patchies to exist. 💜
