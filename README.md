@@ -57,7 +57,7 @@ If you enjoy using Patchies, please consider [supporting the open source creator
 
 It would really, _really_ mean the world to me if more people support open source tools and libraries, especially as a result of playing and having fun with them in Patchies 🙏🏻
 
-Special thanks to [the amazing people](docs/support.md#special-thanks) who helped bring Patchies to life through their support, feedback, and encouragement.
+Special thanks to [the amazing people](docs/support.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
 
 ## Creating Objects
 

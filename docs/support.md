@@ -1,48 +1,15 @@
 # Supporting Open Source Creators
 
-Patchies is built upon the incredible work of open source library creators and educators who have generously shared their knowledge and tools with the world. If you find value in Patchies, please consider supporting the people who made it possible.
+Patchies is built upon the incredible work of open source library creators and educators who have generously shared their knowledge and tools with the world. If you're having fun building things with Patchies, please consider supporting the people who made it possible.
 
 ## Why Support?
 
-These creators dedicate countless hours to building and maintaining the tools we use every day. Your support helps them:
+These creators dedicate countless hours of their personal time to building and maintaining the tools we use every day. Your support helps them to:
 
 - Continue developing and maintaining their projects
 - Create educational content and tutorials
 - Build vibrant creative coding communities
 - Keep these tools free and accessible for everyone
-
-## Special Thanks
-
-These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement:
-
-### Kijjasak "Kijjaz" Triyanond
-
-A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, and taught me FM/AM synthesis and sound design. His expertise and generous sharing of knowledge has been invaluable to this project.
-
-**Communities:** CU, CU BAND, Monotone Group, Pollen Sound
-**Projects:** Indie perfumer at @vibrationperfum
-**Connect:** [Instagram @kijjaz](https://www.instagram.com/kijjaz)
-
----
-
-### Thai Pangsakulyanont
-
-A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement. His support and encouragement to release Patchies was instrumental in making this project a reality.
-
-**Website:** [dt.in.th](https://dt.in.th)
-**GitHub:** [@dtinth](https://github.com/dtinth)
-
----
-
-### Thanapat Ryan Ogaslert
-
-Writer at SYNAP [home/lab], works at College of Music, Mahidol University, and Laboratory Technician at SquareDots. Ryan encouraged me throughout the development of Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I first got to show it to the world and received lots of love from the community.
-
-**SYNAP [home/lab]:** Monday music experiments and performances
-**Instagram:** [@crsrcrsrrr](https://www.instagram.com/crsrcrsrrr)
-**SYNAP Instagram:** [@synap.home.lab](https://www.instagram.com/synap.home.lab)
-
----
 
 ## Library & Tool Creators
 
@@ -273,6 +240,49 @@ Different creators have different support options:
 - **Purchase Content**: Buy books, ebooks, or courses to support educational creators
 - **Spread the Word**: Share their work and tutorials with others
 
+## Special Thanks
+
+These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement:
+
+### Kijjasak "Kijjaz" Triyanond
+
+A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, and taught me FM/AM synthesis and sound design. His expertise and generous sharing of knowledge has been invaluable to this project.
+
+**Communities:** CU, CU BAND, Monotone Group, Pollen Sound
+**Projects:** Indie perfumer at @vibrationperfum
+**Connect:** [Instagram @kijjaz](https://www.instagram.com/kijjaz)
+
+---
+
+### Thai Pangsakulyanont
+
+A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement. His support and encouragement to release Patchies was instrumental in making this project a reality.
+
+**Website:** [dt.in.th](https://dt.in.th)
+**GitHub:** [@dtinth](https://github.com/dtinth)
+**Instagram:** [@dtinth](https://www.instagram.com/dtinth)
+**Communities:** [Creatorsgarten](https://creatorsgarten.org), [showdown.space](https://github.com/showdownspace), [Bemusic](https://github.com/bemusic)
+
+---
+
+### Thanapat Ryan Ogaslert
+
+Writer at SYNAP [home/lab], works at College of Music, Mahidol University, and Laboratory Technician at SquareDots. Ryan encouraged me throughout the development of Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I first got to show it to the world and received lots of love from the community.
+
+**SYNAP [home/lab]:** Monday music experiments and performances
+**Instagram:** [@crsrcrsrrr](https://www.instagram.com/crsrcrsrrr)
+**SYNAP Instagram:** [@synap.home.lab](https://www.instagram.com/synap.home.lab)
+
+---
+
+### Chayapatr Archiwaranguprok (Pub)
+
+My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten, and patiently received my endless stream of demos and progress updates throughout the development journey.
+
+**Communities:** [Creatorsgarten](https://creatorsgarten.org)
+
+---
+
 ## Contributing to Patchies
 
 If you'd like to contribute to Patchies itself, check out our [GitHub repository](https://github.com/heypoom/patchies). We welcome:
@@ -282,6 +292,8 @@ If you'd like to contribute to Patchies itself, check out our [GitHub repository
 - Documentation improvements
 - Community support and sharing your patches
 
+If you'd like to support Poom (creator of Patchies), I would love it if you can send me stories and short videos about how you use Patchies to my [Instagram](https://instagram.com/phoomparin) or my email at [poom@poom.dev](mailto:poom@poom.dev). It'd really, _really_ made my day and give me motivation to continue building this happy little tool.
+
 ---
 
-**Thank you** to all the creators who make the creative coding community vibrant, innovative, and accessible. Your generosity enables projects like Patchies to exist. 💜
+**Thank you** to all the creators who make the creative coding community vibrant, innovative, and accessible. Your generosity enables projects like Patchies to exist. I wish you a happy day 💜

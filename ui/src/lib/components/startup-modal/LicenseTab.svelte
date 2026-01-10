@@ -217,7 +217,10 @@
 				<p class="mt-1 text-xs text-zinc-300">
 					A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement.
 				</p>
-				<div class="mt-2 flex gap-3">
+				<p class="mt-2 text-xs text-zinc-400">
+					Communities: Creatorsgarten, showdown.space, Bemusic
+				</p>
+				<div class="mt-2 flex flex-wrap gap-2">
 					<a
 						href="https://dt.in.th"
 						target="_blank"
@@ -233,7 +236,25 @@
 						rel="noopener noreferrer"
 						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
 					>
-						@dtinth
+						GitHub
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://www.instagram.com/dtinth"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						Instagram
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://creatorsgarten.org"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						Creatorsgarten
 						<ExternalLink class="h-3 w-3" />
 					</a>
 				</div>
@@ -268,6 +289,17 @@
 						<ExternalLink class="h-3 w-3" />
 					</a>
 				</div>
+			</div>
+
+			<!-- Pub -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Chayapatr Archiwaranguprok (Pub)</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					My long-time friend and definitely my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten, and patiently received my endless stream of demos and progress updates.
+				</p>
+				<p class="mt-2 text-xs text-zinc-400">
+					Communities: Creatorsgarten
+				</p>
 			</div>
 		</div>
 	</div>

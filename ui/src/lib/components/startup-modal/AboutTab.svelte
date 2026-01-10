@@ -140,15 +140,11 @@
 			<!-- License Link -->
 			<div>
 				<p class="text-sm text-zinc-300">
-					Check out the
+					New to Patchies? Check out the
 					<a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
-						>examples</a
+						>demos tab</a
 					>
-					to get some inspirations! Patchies is open source and built upon amazing creative coding libraries,
-					see
-					<a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('license')}
-						>licenses & attributions</a
-					>.
+					to get some inspirations! Patchies is open source and built upon many <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('thanks')}>amazing creative coding libraries</a>
 				</p>
 			</div>
 		</div>
