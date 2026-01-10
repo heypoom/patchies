@@ -280,6 +280,7 @@ A great senior and friend who gave invaluable advice throughout Patchies' develo
 
 **Website:** [dt.in.th](https://dt.in.th)
 **GitHub:** [@dtinth](https://github.com/dtinth)
+**YouTube:** [@dtinth](https://youtube.com/@dtinth)
 **Communities:** [Creatorsgarten](https://creatorsgarten.org), [showdown.space](https://github.com/showdownspace), [Bemusic](https://github.com/bemusic)
 
 ### Thanapat "Ryan" Ogaslert
