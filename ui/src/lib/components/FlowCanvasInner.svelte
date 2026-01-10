@@ -1256,7 +1256,7 @@
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
 			onnodeclick={({ node }) => {
-				if (isConnectionMode && connectionSourceNode === null) {
+				if (isConnectionMode) {
 					handleNodeClickForConnection(node.id);
 				}
 			}}
