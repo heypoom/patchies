@@ -112,11 +112,11 @@
 	let isNodeListVisible = $state(false);
 
 	// Clipboard for copy-paste functionality
-	let copiedNodeData: Array<{
+	let copiedNodeData = $state<Array<{
 		type: string;
 		data: any;
 		relativePosition: { x: number; y: number };
-	}> | null = null;
+	}> | null>(null);
 
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
