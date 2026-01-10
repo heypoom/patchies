@@ -43,11 +43,10 @@
 
 	<!-- Project License -->
 	<div class="rounded-lg bg-zinc-800/50 p-4">
-		<p class="text-zinc-300">
+		<p class="text-zinc-300 text-sm">
 			{projectLicense.description}
 		</p>
 		<div class="mt-3 space-y-2 text-sm text-zinc-400">
-			<p class="font-semibold text-zinc-300">What this means:</p>
 			<ul class="ml-4 list-disc space-y-1">
 				{#each projectLicense.whatItMeans as point}
 					<li>{point}</li>
@@ -74,7 +73,7 @@
 			<h2 class="text-lg font-semibold text-zinc-200">Support Open Source Creators</h2>
 		</div>
 		<p class="mb-4 text-sm text-zinc-300">
-			If you enjoy using Patchies, please consider supporting the creators who made it possible:
+			If you enjoy using Patchies, please consider supporting the creators behind open source tools and libraries who made it possible 🩷
 		</p>
 
 		<!-- Library Creators -->
@@ -184,7 +183,7 @@
 	<div class="rounded-lg bg-zinc-800/50 p-4">
 		<h2 class="mb-3 text-lg font-semibold text-zinc-200">Ported & Adapted Code</h2>
 		<p class="mb-4 text-sm text-zinc-300">
-			Patchies includes code ported from other open source projects:
+			Patchies includes code ported from other open source projects 💙
 		</p>
 
 		<div class="space-y-4">
@@ -238,7 +237,7 @@
 			<h2 class="text-lg font-semibold text-zinc-200">Special Thanks</h2>
 		</div>
 		<p class="mb-4 text-sm text-zinc-300">
-			These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement. I can't thank them enough.
+			These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement. I can't thank them enough 🧡
 		</p>
 
 		<div class="space-y-4">
@@ -288,15 +287,6 @@
 						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
 					>
 						GitHub
-						<ExternalLink class="h-3 w-3" />
-					</a>
-					<a
-						href="https://www.instagram.com/dtinth"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-					>
-						Instagram
 						<ExternalLink class="h-3 w-3" />
 					</a>
 					<a

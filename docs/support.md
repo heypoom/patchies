@@ -25,16 +25,6 @@ Creator of Sonic Pi and SuperSonic, bringing live coding music to everyone from 
 
 ---
 
-### Hundred Rabbits
-
-**Projects:** Orca, Uxn, Uxntal
-
-Devine Lu Linvega and Rekka Bellum create minimalist software and tools for creative expression, living sustainably on a sailboat.
-
-**Support:** [Patreon](https://www.patreon.com/hundredrabbits)
-
----
-
 ### Strudel & TidalCycles
 
 **Projects:** Strudel, TidalCycles, Superdough
@@ -42,6 +32,16 @@ Devine Lu Linvega and Rekka Bellum create minimalist software and tools for crea
 A vibrant community building live coding music tools, led by Felix Roos, Alex McLean, and many contributors.
 
 **Support:** [OpenCollective](https://opencollective.com/tidalcycles)
+
+---
+
+### Hundred Rabbits
+
+**Projects:** Orca, Uxn, Uxntal
+
+Devine Lu Linvega and Rekka Bellum create minimalist software and tools for creative expression, living sustainably on a sailboat.
+
+**Support:** [Patreon](https://www.patreon.com/hundredrabbits)
 
 ---
 
@@ -282,7 +282,6 @@ A long time senior and friend who gave invaluable advice throughout Patchies' de
 
 **Website:** [dt.in.th](https://dt.in.th)
 **GitHub:** [@dtinth](https://github.com/dtinth)
-**Instagram:** [@dtinth](https://www.instagram.com/dtinth)
 **Communities:** [Creatorsgarten](https://creatorsgarten.org), [showdown.space](https://github.com/showdownspace), [Bemusic](https://github.com/bemusic)
 
 ---

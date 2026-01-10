@@ -32,7 +32,7 @@ export interface PortedCode {
 
 export const projectLicense: LicenseSection = {
 	title: 'Project License',
-	description: 'Patchies is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).',
+	description: 'Patchies is licensed under the GNU Affero General Public License v3.0:',
 	license: 'GNU Affero General Public License v3.0 (AGPL-3.0)',
 	whatItMeans: [
 		'✅ Free to use, modify, and distribute',
@@ -437,20 +437,20 @@ export const supportLinks: SupportLink[] = [
 		projects: ['Sonic Pi', 'SuperSonic', 'Tau5']
 	},
 	{
-		name: 'Hundred Rabbits',
-		description: 'Creators of Orca and Uxn virtual machine',
-		category: 'library',
-		url: 'https://www.patreon.com/hundredrabbits',
-		type: 'patreon',
-		projects: ['Orca', 'Uxn', 'Thousand Rooms', 'Oquonie']
-	},
-	{
 		name: 'Strudel & TidalCycles',
 		description: 'Live coding music community and tools',
 		category: 'library',
 		url: 'https://opencollective.com/tidalcycles',
 		type: 'opencollective',
 		projects: ['Strudel', 'TidalCycles', 'Superdough']
+	},
+	{
+		name: 'Hundred Rabbits',
+		description: 'Creators of Orca and Uxn virtual machine',
+		category: 'library',
+		url: 'https://www.patreon.com/hundredrabbits',
+		type: 'patreon',
+		projects: ['Orca', 'Uxn', 'Thousand Rooms', 'Oquonie']
 	},
 	{
 		name: 'Processing Foundation',
