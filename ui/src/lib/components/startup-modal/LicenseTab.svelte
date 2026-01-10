@@ -180,133 +180,6 @@
 		</div>
 	</div>
 
-	<!-- Special Thanks -->
-	<div class="rounded-lg bg-zinc-800/50 p-4">
-		<div class="mb-3 flex items-center gap-2">
-			<Heart class="h-5 w-5 text-pink-400" />
-			<h2 class="text-lg font-semibold text-zinc-200">Special Thanks</h2>
-		</div>
-		<p class="mb-4 text-sm text-zinc-300">
-			These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement:
-		</p>
-
-		<div class="space-y-4">
-			<!-- Kijjaz -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
-				<h3 class="text-sm font-semibold text-zinc-100">Kijjasak "Kijjaz" Triyanond</h3>
-				<p class="mt-1 text-xs text-zinc-300">
-					A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, and taught me FM/AM synthesis and sound design.
-				</p>
-				<p class="mt-2 text-xs text-zinc-400">
-					Communities: CU, CU BAND, Monotone Group, Pollen Sound • Indie perfumer at @vibrationperfum
-				</p>
-				<a
-					href="https://www.instagram.com/kijjaz"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="mt-2 inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-				>
-					Instagram @kijjaz
-					<ExternalLink class="h-3 w-3" />
-				</a>
-			</div>
-
-			<!-- dtinth -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
-				<h3 class="text-sm font-semibold text-zinc-100">Thai Pangsakulyanont</h3>
-				<p class="mt-1 text-xs text-zinc-300">
-					A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement.
-				</p>
-				<p class="mt-2 text-xs text-zinc-400">
-					Communities: Creatorsgarten, showdown.space, Bemusic
-				</p>
-				<div class="mt-2 flex flex-wrap gap-2">
-					<a
-						href="https://dt.in.th"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-					>
-						dt.in.th
-						<ExternalLink class="h-3 w-3" />
-					</a>
-					<a
-						href="https://github.com/dtinth"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-					>
-						GitHub
-						<ExternalLink class="h-3 w-3" />
-					</a>
-					<a
-						href="https://www.instagram.com/dtinth"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-					>
-						Instagram
-						<ExternalLink class="h-3 w-3" />
-					</a>
-					<a
-						href="https://creatorsgarten.org"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-					>
-						Creatorsgarten
-						<ExternalLink class="h-3 w-3" />
-					</a>
-				</div>
-			</div>
-
-			<!-- Ryan -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
-				<h3 class="text-sm font-semibold text-zinc-100">Thanapat Ryan Ogaslert</h3>
-				<p class="mt-1 text-xs text-zinc-300">
-					Writer at SYNAP [home/lab], works at College of Music, Mahidol University, and Laboratory Technician at SquareDots. Ryan encouraged me throughout the development of Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I first got to show it to the world and received lots of love.
-				</p>
-				<p class="mt-2 text-xs text-zinc-400">
-					SYNAP [home/lab]: Monday music experiments and performances
-				</p>
-				<div class="mt-2 flex gap-3">
-					<a
-						href="https://www.instagram.com/crsrcrsrrr"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-					>
-						@crsrcrsrrr
-						<ExternalLink class="h-3 w-3" />
-					</a>
-					<a
-						href="https://www.instagram.com/synap.home.lab"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
-					>
-						@synap.home.lab
-						<ExternalLink class="h-3 w-3" />
-					</a>
-				</div>
-			</div>
-
-			<!-- Pub -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
-				<h3 class="text-sm font-semibold text-zinc-100">Chayapatr Archiwaranguprok (Pub)</h3>
-				<p class="mt-1 text-xs text-zinc-300">
-					My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten, and patiently received my endless stream of demos and progress updates.
-				</p>
-				<p class="mt-2 text-xs text-zinc-400">
-					Website: <a href="https://from.pub" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">from.pub</a><br />
-					Communities:
-					<a href="https://www.media.mit.edu/people/pub" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">MIT Media Lab</a>,
-					<a href="https://creatorsgarten.org" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">Creatorsgarten</a>
-				</p>
-			</div>
-		</div>
-	</div>
-
 	<!-- Ported/Adapted Code -->
 	<div class="rounded-lg bg-zinc-800/50 p-4">
 		<h2 class="mb-3 text-lg font-semibold text-zinc-200">Ported & Adapted Code</h2>
@@ -355,6 +228,156 @@
 					</div>
 				</div>
 			{/each}
+		</div>
+	</div>
+
+	<!-- Special Thanks -->
+	<div class="rounded-lg bg-zinc-800/50 p-4">
+		<div class="mb-3 flex items-center gap-2">
+			<Heart class="h-5 w-5 text-pink-400" />
+			<h2 class="text-lg font-semibold text-zinc-200">Special Thanks</h2>
+		</div>
+		<p class="mb-4 text-sm text-zinc-300">
+			These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement. I can't thank them enough.
+		</p>
+
+		<div class="space-y-4">
+			<!-- Kijjaz -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Kijjasak "Kijjaz" Triyanond (@kijjaz)</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, organized fun workshops with us, and taught me FM/AM synthesis and sound design.
+				</p>
+				<p class="mt-2 text-xs text-zinc-400">
+					Communities: CU, CU BAND, Monotone Group, Pollen Sound • Indie perfumer at @vibrationperfum
+				</p>
+				<a
+					href="https://www.instagram.com/kijjaz"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="mt-2 inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+				>
+					Instagram @kijjaz
+					<ExternalLink class="h-3 w-3" />
+				</a>
+			</div>
+
+			<!-- dtinth -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Thai Pangsakulyanont (@dtinth)</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement.
+				</p>
+				<p class="mt-2 text-xs text-zinc-400">
+					Communities: Creatorsgarten, showdown.space, Bemusic
+				</p>
+				<div class="mt-2 flex flex-wrap gap-2">
+					<a
+						href="https://dt.in.th"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						dt.in.th
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://github.com/dtinth"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						GitHub
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://www.instagram.com/dtinth"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						Instagram
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://creatorsgarten.org"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						Creatorsgarten
+						<ExternalLink class="h-3 w-3" />
+					</a>
+				</div>
+			</div>
+
+			<!-- Ryan -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Thanapat "Ryan" Ogaslert (@crsrcrsrrr)</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					Creator of SYNAP [home/lab], works at College of Music, Mahidol University. Ryan encouraged me through making Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I got to show it to the world for the first time.
+				</p>
+				<p class="mt-2 text-xs text-zinc-400">
+					SYNAP [home/lab]: Monday music experiments and performances
+				</p>
+				<div class="mt-2 flex gap-3">
+					<a
+						href="https://www.instagram.com/crsrcrsrrr"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						@crsrcrsrrr
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://www.instagram.com/synap.home.lab"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						@synap.home.lab
+						<ExternalLink class="h-3 w-3" />
+					</a>
+				</div>
+			</div>
+
+			<!-- Pub -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Chayapatr "Pub" Archiwaranguprok (chayapatr)</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten.
+				</p>
+				<p class="mt-2 text-xs text-zinc-400">
+					<a
+						href="https://from.pub"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						from.pub
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://www.media.mit.edu/people/pub"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						MIT Media Lab
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://creatorsgarten.org"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						Creatorsgarten
+						<ExternalLink class="h-3 w-3" />
+					</a>
+				</p>
+			</div>
 		</div>
 	</div>
 

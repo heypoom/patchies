@@ -429,23 +429,23 @@ export interface SupportLink {
 
 export const supportLinks: SupportLink[] = [
 	{
-		name: 'Hundred Rabbits',
-		description: 'Creators of Orca and Uxn virtual machine',
-		category: 'library',
-		url: 'https://www.patreon.com/hundredrabbits',
-		type: 'patreon',
-		projects: ['Orca', 'Uxn', 'Uxntal']
-	},
-	{
 		name: 'Sam Aaron',
 		description: 'Creator of Sonic Pi and SuperSonic',
 		category: 'library',
 		url: 'https://www.patreon.com/samaaron',
 		type: 'patreon',
-		projects: ['Sonic Pi', 'SuperSonic']
+		projects: ['Sonic Pi', 'SuperSonic', 'Tau5']
 	},
 	{
-		name: 'TidalCycles & Strudel',
+		name: 'Hundred Rabbits',
+		description: 'Creators of Orca and Uxn virtual machine',
+		category: 'library',
+		url: 'https://www.patreon.com/hundredrabbits',
+		type: 'patreon',
+		projects: ['Orca', 'Uxn', 'Thousand Rooms', 'Oquonie']
+	},
+	{
+		name: 'Strudel & TidalCycles',
 		description: 'Live coding music community and tools',
 		category: 'library',
 		url: 'https://opencollective.com/tidalcycles',

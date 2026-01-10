@@ -1112,7 +1112,7 @@ sonic.send(
 
 See the [SuperSonic documentation](https://github.com/samaaron/supersonic) and [scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html) for more details.
 
-- Please consider supporting [Sam Aaron on Patreon](https://www.patreon.com/samaaron), the creator of Sonic Pi and SuperSonic!
+Please consider supporting [Sam Aaron on Patreon](https://www.patreon.com/samaaron), the creator of Sonic Pi and SuperSonic!
 
 ### `elem~`: Elementary Audio synthesis and processing
 

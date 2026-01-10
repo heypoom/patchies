@@ -13,16 +13,6 @@ These creators dedicate countless hours of their personal time to building and m
 
 ## Library & Tool Creators
 
-### Hundred Rabbits
-
-**Projects:** Orca, Uxn, Uxntal
-
-Devine Lu Linvega and Rekka Bellum create minimalist software and tools for creative expression, living sustainably on a sailboat.
-
-**Support:** [Patreon](https://www.patreon.com/hundredrabbits)
-
----
-
 ### Sam Aaron
 
 **Projects:** Sonic Pi, SuperSonic
@@ -33,7 +23,17 @@ Creator of Sonic Pi and SuperSonic, bringing live coding music to everyone from 
 
 ---
 
-### TidalCycles & Strudel
+### Hundred Rabbits
+
+**Projects:** Orca, Uxn, Uxntal
+
+Devine Lu Linvega and Rekka Bellum create minimalist software and tools for creative expression, living sustainably on a sailboat.
+
+**Support:** [Patreon](https://www.patreon.com/hundredrabbits)
+
+---
+
+### Strudel & TidalCycles
 
 **Projects:** Strudel, TidalCycles, Superdough
 
@@ -246,7 +246,7 @@ These amazing people helped bring Patchies to life through their direct support,
 
 ### Kijjasak "Kijjaz" Triyanond
 
-A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, and taught me FM/AM synthesis and sound design. His expertise and generous sharing of knowledge has been invaluable to this project.
+A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, organized fun workshops with us, and taught me FM/AM synthesis and sound design. His expertise and generous sharing of knowledge has been invaluable to this project.
 
 **Communities:** CU, CU BAND, Monotone Group, Pollen Sound
 **Projects:** Indie perfumer at @vibrationperfum
@@ -265,9 +265,9 @@ A long time senior and friend who gave invaluable advice throughout Patchies' de
 
 ---
 
-### Thanapat Ryan Ogaslert
+### Thanapat "Ryan" Ogaslert
 
-Writer at SYNAP [home/lab], works at College of Music, Mahidol University, and Laboratory Technician at SquareDots. Ryan encouraged me throughout the development of Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I first got to show it to the world and received lots of love from the community.
+Creator of SYNAP [home/lab], works at College of Music, Mahidol University. Ryan encouraged me through making Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I got to show it to the world for the first time.
 
 **SYNAP [home/lab]:** Monday music experiments and performances
 **Instagram:** [@crsrcrsrrr](https://www.instagram.com/crsrcrsrrr)
