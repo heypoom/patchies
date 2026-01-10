@@ -129,8 +129,8 @@
 
 				<button
 					class={[
-						'z-4 rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0',
-						node.data.vertical && 'absolute top-[30px] right-[25px]'
+						'z-4 rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0',
+						node.data.vertical && 'absolute right-[25px] top-[30px]'
 					]}
 					onclick={() => (showSettings = !showSettings)}
 					title="Settings"
@@ -146,12 +146,13 @@
 					total={1}
 					index={0}
 					class={`!-top-2 ${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+					nodeId={node.id}
 				/>
 
 				<div
 					class={[
 						'flex w-full flex-col items-center justify-center gap-1 py-1',
-						node.data.vertical ? '' : 'max-w-[130px] min-w-[100px]'
+						node.data.vertical ? '' : 'min-w-[100px] max-w-[130px]'
 					]}
 				>
 					<div
@@ -190,7 +191,7 @@
 					{/if}
 				</div>
 
-				<StandardHandle port="outlet" type="message" total={1} index={0} />
+				<StandardHandle port="outlet" type="message" total={1} index={0} nodeId={node.id} />
 			</div>
 		</div>
 	</div>

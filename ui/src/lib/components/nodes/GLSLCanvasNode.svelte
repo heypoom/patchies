@@ -269,12 +269,14 @@
 				title={`${def.name} (${def.type})`}
 				total={data.glUniformDefs.length}
 				index={defIndex}
-			/>
+			
+				nodeId={nodeId}/>
 		{/each}
 	{/snippet}
 
 	{#snippet bottomHandle()}
-		<StandardHandle port="outlet" type="video" id="out" title="Video output" total={1} index={0} />
+		<StandardHandle port="outlet" type="video" id="out" title="Video output" total={1} index={0} 
+				nodeId={nodeId}/>
 	{/snippet}
 
 	{#snippet codeEditor()}

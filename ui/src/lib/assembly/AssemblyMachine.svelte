@@ -449,7 +449,8 @@
 					title={`Inlet ${index}`}
 					total={inletCount}
 					{index}
-				/>
+				
+				nodeId={nodeId}/>
 			{/each}
 
 			<div class="flex flex-col gap-2">
@@ -484,7 +485,8 @@
 					title={`Outlet ${index}`}
 					total={outletCount}
 					{index}
-				/>
+				
+				nodeId={nodeId}/>
 			{/each}
 		</div>
 	</div>

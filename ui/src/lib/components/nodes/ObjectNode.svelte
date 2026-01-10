@@ -552,11 +552,12 @@
 							total={inlets.length}
 							{index}
 							class="top-0"
+							nodeId={nodeId}
 						/>
 					{/each}
 				{:else}
 					<!-- Fallback generic inlet for objects without definitions -->
-					<StandardHandle port="inlet" type="message" total={1} index={0} />
+					<StandardHandle port="inlet" type="message" total={1} index={0} nodeId={nodeId} />
 				{/if}
 
 				<div class="relative">
@@ -682,6 +683,7 @@
 							total={outlets.length}
 							{index}
 							class="bottom-0"
+							nodeId={nodeId}
 						/>
 					{/each}
 				{/if}

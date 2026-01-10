@@ -3,6 +3,7 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 
 	let {
+		nodeId,
 		peerCount,
 		showChannelInput = $bindable(),
 		channel,
@@ -15,6 +16,7 @@
 		onChannelInput,
 		onChannelKeydown
 	}: {
+		nodeId: string;
 		peerCount: number;
 		showChannelInput: boolean;
 		channel: string;
@@ -52,7 +54,7 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
 
 				<div class="relative">
 					{#if showChannelInput}
@@ -85,7 +87,7 @@
 				</div>
 
 				{#if hasOutlet}
-					<StandardHandle port="outlet" type="message" total={1} index={0} />
+					<StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
 				{/if}
 			</div>
 		</div>

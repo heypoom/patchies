@@ -99,7 +99,8 @@
 	{/if}
 
 	<div class="group">
-		<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
+		<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} 
+				nodeId={nodeId}/>
 
 		<div
 			bind:this={overtypeElement}
@@ -107,7 +108,8 @@
 			class="nodrag overtype-editor rounded-lg bg-zinc-900/70 backdrop-blur-xl"
 		></div>
 
-		<StandardHandle port="outlet" type="message" total={1} index={0} class={handleClass} />
+		<StandardHandle port="outlet" type="message" total={1} index={0} class={handleClass} 
+				nodeId={nodeId}/>
 	</div>
 </div>
 

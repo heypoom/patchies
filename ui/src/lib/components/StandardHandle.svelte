@@ -13,9 +13,10 @@
 		total: number;
 		index: number;
 		class?: string;
+		nodeId: string;
 	}
 
-	let { port, type, id, title, total, index, class: className = '' }: Props = $props();
+	let { port, type, id, title, total, index, class: className = '', nodeId }: Props = $props();
 
 	// Construct the handle ID based on the specification
 	const handleId = $derived.by(() => {
@@ -42,24 +43,28 @@
 	// Calculate position using getPortPosition
 	const positionStyle = $derived(`left: ${getPortPosition(total, index)}`);
 
+	// Construct the fully qualified handle identifier (nodeId + handleId)
+	const qualifiedHandleId = $derived(`${nodeId}/${handleId}`);
+
 	// Determine if this handle should be dimmed
 	const shouldDim = $derived.by(() => {
 		// Only dim when actively connecting
 		if (!$isConnecting || !$connectingFromHandleId) return false;
 
-		// Determine if the connecting handle is an inlet or outlet
+		// Don't dim the handle that initiated the connection (compare fully qualified IDs)
+		if ($connectingFromHandleId === qualifiedHandleId) return false;
+
+		// Determine if the connecting handle is an inlet or outlet by checking for -in or -out
+		// Handle patterns: "audio-out", "audio-out-0", "message-in", "out-0", "in-1", etc.
 		const connectingIsOutlet = $connectingFromHandleId.includes('-out');
 		const connectingIsInlet = $connectingFromHandleId.includes('-in');
 
-		// Don't dim the handle that initiated the connection
-		if ($connectingFromHandleId === handleId) return false;
-
-		// If connecting from an outlet, dim other outlets (user should select an inlet)
+		// If connecting from an outlet, dim ALL outlets (user should select an inlet)
 		if (connectingIsOutlet && port === 'outlet') {
 			return true;
 		}
 
-		// If connecting from an inlet, dim other inlets (user should select an outlet)
+		// If connecting from an inlet, dim ALL inlets (user should select an outlet)
 		if (connectingIsInlet && port === 'inlet') {
 			return true;
 		}
@@ -69,13 +74,22 @@
 
 	// Determine handle color based on type using ts-pattern
 	const handleClass = $derived.by(() => {
-		const colorClass = match(type)
-			.with('video', () => '!bg-orange-500 hover:!bg-orange-400')
-			.with('audio', () => '!bg-blue-500 hover:!bg-blue-400')
-			.with('message', () => '!bg-gray-500 hover:!bg-gray-400')
-			.with(ANALYSIS_KEY, () => '!bg-purple-500 hover:!bg-purple-400')
-			.with(P.nullish, () => '!bg-gray-500 hover:!bg-gray-400')
-			.exhaustive();
+		// Don't apply hover colors when dimmed
+		const colorClass = shouldDim
+			? match(type)
+					.with('video', () => '!bg-orange-500')
+					.with('audio', () => '!bg-blue-500')
+					.with('message', () => '!bg-gray-500')
+					.with(ANALYSIS_KEY, () => '!bg-purple-500')
+					.with(P.nullish, () => '!bg-gray-500')
+					.exhaustive()
+			: match(type)
+					.with('video', () => '!bg-orange-500 hover:!bg-orange-400')
+					.with('audio', () => '!bg-blue-500 hover:!bg-blue-400')
+					.with('message', () => '!bg-gray-500 hover:!bg-gray-400')
+					.with(ANALYSIS_KEY, () => '!bg-purple-500 hover:!bg-purple-400')
+					.with(P.nullish, () => '!bg-gray-500 hover:!bg-gray-400')
+					.exhaustive();
 
 		const connectionModeClass = $isConnectionMode ? 'connection-mode-active' : '';
 		const dimClass = shouldDim ? 'handle-dimmed' : '';

@@ -190,7 +190,8 @@
 					index={0}
 					title="Control messages"
 					class={`!-top-2 ${selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
-				/>
+				
+				nodeId={nodeId}/>
 
 				<div
 					class={[
@@ -238,7 +239,8 @@
 				</div>
 
 				<!-- Outlet -->
-				<StandardHandle port="outlet" type="message" total={1} index={0} title="Current value" />
+				<StandardHandle port="outlet" type="message" total={1} index={0} title="Current value" 
+				nodeId={nodeId}/>
 			</div>
 		</div>
 	</div>

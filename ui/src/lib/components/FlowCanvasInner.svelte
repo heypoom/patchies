@@ -1000,7 +1000,11 @@
 			{isValidConnection}
 			onconnectstart={(event, params) => {
 				isConnecting.set(true);
-				connectingFromHandleId.set(params.handleId || null);
+				// Construct fully qualified handle identifier (nodeId/handleId)
+				const qualifiedHandleId = params.nodeId && params.handleId
+					? `${params.nodeId}/${params.handleId}`
+					: params.handleId || null;
+				connectingFromHandleId.set(qualifiedHandleId);
 			}}
 			onconnectend={() => {
 				isConnecting.set(false);
@@ -1008,7 +1012,11 @@
 			}}
 			onclickconnectstart={(event, params) => {
 				isConnecting.set(true);
-				connectingFromHandleId.set(params.handleId || null);
+				// Construct fully qualified handle identifier (nodeId/handleId)
+				const qualifiedHandleId = params.nodeId && params.handleId
+					? `${params.nodeId}/${params.handleId}`
+					: params.handleId || null;
+				connectingFromHandleId.set(qualifiedHandleId);
 			}}
 			onclickconnectend={(event, connectionState) => {
 				isConnecting.set(false);
@@ -1126,7 +1134,7 @@
 				}}><Cable class="h-4 w-4 text-zinc-300" /></button
 			>
 
-			{#if $isAiFeaturesVisible}
+			{#if $isAiFeaturesVisible && hasGeminiApiKey}
 				<button
 					title="AI Create/Edit Object (Cmd+I)"
 					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
@@ -1136,22 +1144,28 @@
 
 						// Check if Gemini API key is set, show helpful message if not
 						const hasApiKey = localStorage.getItem('gemini-api-key');
+
 						if (!hasApiKey) {
 							const shouldSetKey = confirm(
 								'AI Object Insertion requires a Gemini API key. Would you like to set it now?'
 							);
+
 							if (shouldSetKey) {
 								triggerCommandPalette();
 							}
-						} else {
-							// If a single node is selected, edit it; otherwise create new
-							if (selectedNodeIds.length === 1) {
-								aiEditingNodeId = selectedNodeIds[0];
-							} else {
-								aiEditingNodeId = null;
-							}
-							triggerAiPrompt();
+
+							return
 						}
+
+						// If a single node is selected, edit it,
+						// otherwise create new ones
+						if (selectedNodeIds.length === 1) {
+							aiEditingNodeId = selectedNodeIds[0];
+						} else {
+							aiEditingNodeId = null;
+						}
+
+						triggerAiPrompt();
 					}}><Sparkles class="h-4 w-4 text-zinc-300" /></button
 				>
 			{/if}

@@ -227,7 +227,8 @@
 					total={1}
 					index={0}
 					title="Message inlet"
-				/>
+				
+				nodeId={nodeId}/>
 
 				<div
 					class={[
@@ -294,7 +295,8 @@
 					total={1}
 					index={0}
 					title="Message outlet"
-				/>
+				
+				nodeId={nodeId}/>
 			</div>
 		</div>
 	</div>

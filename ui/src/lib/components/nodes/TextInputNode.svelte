@@ -70,7 +70,7 @@
 		</div>
 
 		<div class="relative">
-			<StandardHandle port="inlet" type="message" total={1} index={0} />
+			<StandardHandle port="inlet" type="message" total={1} index={0} nodeId={nodeId} />
 
 			<div>
 				<!-- Text Input -->
@@ -90,7 +90,7 @@
 				></textarea>
 			</div>
 
-			<StandardHandle port="outlet" type="message" total={1} index={0} class="!bottom-0.5" />
+			<StandardHandle port="outlet" type="message" total={1} index={0} class="!bottom-0.5" nodeId={nodeId} />
 		</div>
 	</div>
 </div>

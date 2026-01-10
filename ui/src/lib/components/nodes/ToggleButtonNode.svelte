@@ -75,7 +75,14 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
+				<StandardHandle
+					port="inlet"
+					type="message"
+					total={1}
+					index={0}
+					class={handleClass}
+					nodeId={node.id}
+				/>
 
 				<button onclick={toggleValue} class={buttonClass} aria-label="toggle button"> </button>
 
@@ -85,6 +92,7 @@
 					total={1}
 					index={0}
 					class={`absolute !bottom-1.5 ${handleClass}`}
+					nodeId={node.id}
 				/>
 			</div>
 		</div>

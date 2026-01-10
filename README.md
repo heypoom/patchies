@@ -129,29 +129,6 @@ If you enjoy using Patchies, please consider [supporting the open source creator
 
 Special thanks to [the amazing people](SUPPORT.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
 
-## Experimental features
-
-> [!CAUTION]
-> These feature has a _very high_ chance of corrupting and destroying your code and patches without any way to restore it. Try it on an empty patch or backup your objects.
-
-### Create and edit objects with AI
-
-<img src="./docs/images/patchies-ai-hearts-demo.png" alt="Patchies.app AI hearts demo" width="700">
-
-> Try out [the above demo](https://patchies.app/?id=rza2o6eoa7338rh) which uses AI to create a starfield with hearts 💕
-
-Press `Ctrl/Cmd + I` to open the AI object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate or edit the appropriate objects with code for you.
-
-When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch between Single Insert and Multi Insert mode.
-
-- **Single Insert Mode** (no object selected): create a single object at your cursor position
-- **Multi Insert Mode** (no object selected): create multiple connected objects at your cursor position
-- **Edit Mode** (object selected): modifies the selected object's code based on your description
-
-This feature uses Google's Gemini Flash 3 Preview model to understand your prompt and generate the right object configuration. First, set your Gemini API key in the command palette with `Cmd/Ctrl + K` → `Set Gemini API Key`. Then, use `Ctrl/Cmd + I` or the sparkles button on the bottom right.
-
-Please create a separate API key that has strict budget limits. API keys are stored on localStorage as `gemini-api-key`, and therefore there is a very real risk of your API keys being _stolen_ by malicious patches you open.
-
 ## Message Passing
 
 Each object can send message to other objects, and receive messages from other objects.
@@ -260,16 +237,41 @@ If you don't have an idea where to start, why not build your own drum machine? [
 
 If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
-- You can use these objects as audio sources: `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, `sonic~`, as well as the web audio objects (e.g. `osc~`, `sig~`, `mic~`)
+- Use these objects as audio sources: `osc~`, `sig~`, `mic~`, `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, `sonic~`
 
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
   - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
 
-- You can use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`, `elem~`, `sonic~`.
+- Use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`, `elem~`, `sonic~`.
+
+- Use `dac~` to output audio to your speakers.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
-- You can use `dac~` to output audio to your speakers.
+## Experimental features
+
+> [!CAUTION]
+> These features are experimental, and thus has a _very high_ chance of corrupting and destroying your code and patches without any way to restore it. Try it on an empty patch or backup your objects.
+
+### Create and edit objects with AI
+
+<img src="./docs/images/patchies-ai-hearts-demo.png" alt="Patchies.app AI hearts demo" width="700">
+
+> Try out [the above patch](https://patchies.app/?id=rza2o6eoa7338rh) in which the AI generates a shader graph of starfield with hearts 💕
+
+Press `Ctrl/Cmd + I` to open the object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate or edit the appropriate objects with code for you.
+
+When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch between Single Insert and Multi Insert mode.
+
+- **Single Insert Mode** (no object selected): create a single object at your cursor position
+- **Multi Insert Mode** (no object selected): create multiple connected objects at your cursor position
+- **Edit Mode** (object selected): modifies the selected object's code based on your description
+
+> Don't like AI? Press `Ctrl/Cmd + K` then select `Toggle AI Features`. This permanently turns all AI-based nodes and all AI generation features off.
+
+This feature uses the `gemini-3-flash-preview` model to understand your prompt and generate the object configuration. First, set your Gemini API key in the command palette with `Cmd/Ctrl + K` → `Set Gemini API Key`. Then, use `Ctrl/Cmd + I` or the sparkles button on the bottom right.
+
+Please create a separate API key that has strict budget limits. API keys are stored on localStorage as `gemini-api-key`, and therefore there is a real risk of your API keys being _stolen_ by malicious patches you open.
 
 ## List of objects
 

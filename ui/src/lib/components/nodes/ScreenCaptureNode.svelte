@@ -154,7 +154,7 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} nodeId={nodeId} />
 
 				<div
 					class={`rounded-lg border-1 ${selected ? 'object-container-selected' : 'object-container'}`}
@@ -187,6 +187,7 @@
 					total={1}
 					index={0}
 					class={handleCommonClass}
+					nodeId={nodeId}
 				/>
 			</div>
 		</div>

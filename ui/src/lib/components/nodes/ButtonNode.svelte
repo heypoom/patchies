@@ -40,7 +40,8 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} 
+				nodeId={nodeId}/>
 
 				<button
 					onclick={() => messageContext.send({ type: 'bang' })}
@@ -59,7 +60,8 @@
 					total={1}
 					index={0}
 					class={`absolute !bottom-1.5 ${handleClass}`}
-				/>
+				
+				nodeId={nodeId}/>
 			</div>
 		</div>
 	</div>

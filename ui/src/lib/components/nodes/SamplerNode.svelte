@@ -423,6 +423,7 @@
 					total={2}
 					index={0}
 					title="Audio input"
+					nodeId={node.id}
 				/>
 
 				<!-- Message Input Handle -->
@@ -433,6 +434,7 @@
 					total={2}
 					index={1}
 					title="Message input"
+					nodeId={node.id}
 				/>
 
 				<div
@@ -472,6 +474,7 @@
 					total={1}
 					index={0}
 					title="Audio output"
+					nodeId={node.id}
 				/>
 			</div>
 		</div>

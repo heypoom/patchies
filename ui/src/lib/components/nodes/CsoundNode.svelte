@@ -95,13 +95,16 @@
 </script>
 
 {#snippet csoundInlets()}
-	<StandardHandle port="inlet" type="audio" title="Audio Input" total={2} index={0} />
+	<StandardHandle port="inlet" type="audio" title="Audio Input" total={2} index={0} 
+				nodeId={nodeId}/>
 
-	<StandardHandle port="inlet" type="message" title="Message Input" id={0} total={2} index={1} />
+	<StandardHandle port="inlet" type="message" title="Message Input" id={0} total={2} index={1} 
+				nodeId={nodeId}/>
 {/snippet}
 
 {#snippet csoundOutlets()}
-	<StandardHandle port="outlet" type="audio" title="Audio Output" total={1} index={0} />
+	<StandardHandle port="outlet" type="audio" title="Audio Output" total={1} index={0} 
+				nodeId={nodeId}/>
 {/snippet}
 
 <div class="relative flex gap-x-3">

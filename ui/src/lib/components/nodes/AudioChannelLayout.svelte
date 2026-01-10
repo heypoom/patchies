@@ -150,7 +150,8 @@
 								total={channels}
 								{index}
 								class="top-0"
-							/>
+							
+				nodeId={nodeId}/>
 						{/each}
 					</div>
 				{:else}
@@ -163,7 +164,8 @@
 							total={1}
 							index={0}
 							class="top-0"
-						/>
+						
+				nodeId={nodeId}/>
 					</div>
 				{/if}
 
@@ -188,7 +190,8 @@
 							total={1}
 							index={0}
 							class="bottom-0"
-						/>
+						
+				nodeId={nodeId}/>
 					</div>
 				{:else}
 					<!-- Channel outputs for splitter -->
@@ -202,7 +205,8 @@
 								total={channels}
 								{index}
 								class="bottom-0"
-							/>
+							
+				nodeId={nodeId}/>
 						{/each}
 					</div>
 				{/if}

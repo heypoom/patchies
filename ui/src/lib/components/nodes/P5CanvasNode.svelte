@@ -185,6 +185,7 @@
 				total={inletCount}
 				{index}
 				class={handleClass}
+				nodeId={nodeId}
 			/>
 		{/each}
 	{/snippet}
@@ -217,6 +218,7 @@
 				total={outletCount + 1}
 				index={0}
 				class={handleClass}
+				nodeId={nodeId}
 			/>
 		{/if}
 
@@ -228,6 +230,7 @@
 				total={videoOutputEnabled ? outletCount + 1 : outletCount}
 				index={videoOutputEnabled ? index + 1 : index}
 				class={handleClass}
+				nodeId={nodeId}
 			/>
 		{/each}
 	{/snippet}

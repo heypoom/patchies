@@ -187,7 +187,8 @@
 				title={`Video Inlet ${index}`}
 				total={messageInletCount + videoInletCount}
 				{index}
-			/>
+			
+				nodeId={nodeId}/>
 		{/each}
 
 		{#each Array.from({ length: messageInletCount }) as _, index (index)}
@@ -198,7 +199,8 @@
 				title={`Message Inlet ${index}`}
 				total={messageInletCount + videoInletCount}
 				index={index + videoInletCount}
-			/>
+			
+				nodeId={nodeId}/>
 		{/each}
 	{/snippet}
 
@@ -211,7 +213,8 @@
 				title={`Video Outlet ${index}`}
 				total={messageOutletCount + videoOutletCount}
 				{index}
-			/>
+			
+				nodeId={nodeId}/>
 		{/each}
 
 		{#each Array.from({ length: messageOutletCount }) as _, index (index)}
@@ -222,7 +225,8 @@
 				title={`Outlet ${index}`}
 				total={messageOutletCount + videoOutletCount}
 				index={index + videoOutletCount}
-			/>
+			
+				nodeId={nodeId}/>
 		{/each}
 	{/snippet}
 

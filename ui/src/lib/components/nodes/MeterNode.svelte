@@ -192,6 +192,7 @@
 			index={0}
 			title="Audio input"
 			class={`${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+			nodeId={node.id}
 		/>
 
 		<canvas
@@ -207,6 +208,7 @@
 			index={0}
 			title="Level output"
 			class={`${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+			nodeId={node.id}
 		/>
 	</div>
 </div>

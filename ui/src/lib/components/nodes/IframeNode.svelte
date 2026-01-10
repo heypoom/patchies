@@ -106,7 +106,14 @@
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleCommonClass} />
+				<StandardHandle
+					port="inlet"
+					type="message"
+					total={1}
+					index={0}
+					class={handleCommonClass}
+					nodeId={node.id}
+				/>
 
 				<div class="flex flex-col gap-2">
 					{#if hasUrl}
@@ -123,7 +130,7 @@
 
 							<button
 								title="Change URL"
-								class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+								class="absolute -right-2 -top-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 								onclick={toggleUrlInput}
 							>
 								<Edit class="h-3 w-3 text-zinc-300" />
@@ -131,7 +138,7 @@
 						</div>
 					{:else}
 						<div
-							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 border-dashed border-zinc-600 bg-zinc-900 px-1 py-3"
+							class="border-1 flex flex-col items-center justify-center gap-2 rounded-lg border-dashed border-zinc-600 bg-zinc-900 px-1 py-3"
 							style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
 								DEFAULT_HEIGHT}px"
 							ondblclick={toggleUrlInput}
@@ -150,7 +157,7 @@
 
 					{#if showUrlInput}
 						<div
-							class="absolute top-0 left-0 z-20 flex w-full items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 p-2 shadow-lg"
+							class="absolute left-0 top-0 z-20 flex w-full items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 p-2 shadow-lg"
 						>
 							<input
 								bind:this={urlInputRef}

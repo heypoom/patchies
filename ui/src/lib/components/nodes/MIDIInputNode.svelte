@@ -161,7 +161,7 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} nodeId={nodeId} />
 
 				{#if !deviceId}
 					<button
@@ -197,7 +197,7 @@
 					</button>
 				{/if}
 
-				<StandardHandle port="outlet" type="message" total={1} index={0} />
+				<StandardHandle port="outlet" type="message" total={1} index={0} nodeId={nodeId} />
 			</div>
 		</div>
 	</div>

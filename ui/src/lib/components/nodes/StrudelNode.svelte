@@ -136,6 +136,7 @@
 					total={1}
 					index={0}
 					class="nodrag !-top-2"
+					nodeId={nodeId}
 				/>
 
 				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
@@ -154,9 +155,9 @@
 					</div>
 				</div>
 
-				<StandardHandle port="outlet" type="audio" total={2} index={0} class="!-bottom-2" />
+				<StandardHandle port="outlet" type="audio" total={2} index={0} class="!-bottom-2" nodeId={nodeId} />
 
-				<StandardHandle port="outlet" type="message" total={2} index={1} class="!-bottom-2" />
+				<StandardHandle port="outlet" type="message" total={2} index={1} class="!-bottom-2" nodeId={nodeId} />
 
 				<!-- Error display -->
 				{#if errorMessage}

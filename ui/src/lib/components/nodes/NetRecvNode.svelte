@@ -105,6 +105,7 @@
 </script>
 
 <NetObjectCommonLayout
+	{nodeId}
 	bind:showChannelInput
 	{peerCount}
 	{channel}

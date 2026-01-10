@@ -321,7 +321,8 @@
 							total={inletCount}
 							{index}
 							class="top-0"
-						/>
+						
+				nodeId={nodeId}/>
 					{/each}
 				</div>
 
@@ -436,7 +437,8 @@
 							total={outletCount}
 							{index}
 							class="bottom-0"
-						/>
+						
+				nodeId={nodeId}/>
 					{/each}
 				</div>
 			</div>

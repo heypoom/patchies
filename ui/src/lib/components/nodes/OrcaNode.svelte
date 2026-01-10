@@ -515,7 +515,7 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" title="Control Input" total={1} index={0} />
+				<StandardHandle port="inlet" type="message" title="Control Input" total={1} index={0} nodeId={nodeId} />
 				<div class="relative" bind:this={containerElement}>
 					<canvas
 						bind:this={canvas}
@@ -534,7 +534,7 @@
 						].join(' ')}
 					></canvas>
 				</div>
-				<StandardHandle port="outlet" type="message" title="MIDI Output" total={1} index={0} />
+				<StandardHandle port="outlet" type="message" title="MIDI Output" total={1} index={0} nodeId={nodeId} />
 			</div>
 		</div>
 	</div>

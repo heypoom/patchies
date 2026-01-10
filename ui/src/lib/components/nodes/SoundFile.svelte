@@ -205,7 +205,7 @@
 					<div class="flex gap-1">
 						<button
 							title="Play"
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={playFile}
 						>
 							<Play class="h-4 w-4 text-zinc-300" />
@@ -213,7 +213,7 @@
 
 						<button
 							title="Stop"
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							class="rounded p-1 transition-opacity hover:bg-zinc-700 group-hover:opacity-100 sm:opacity-0"
 							onclick={stopFile}
 						>
 							<Square class="h-4 w-4 text-zinc-300" />
@@ -223,11 +223,11 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} nodeId={node.id} />
 
 				<div
 					class={[
-						'flex flex-col items-center justify-center gap-3 rounded-lg border-1',
+						'border-1 flex flex-col items-center justify-center gap-3 rounded-lg',
 						containerClass
 					]}
 					ondragover={handleDragOver}
@@ -273,6 +273,7 @@
 					title="Audio output"
 					total={1}
 					index={0}
+					nodeId={node.id}
 				/>
 			</div>
 		</div>

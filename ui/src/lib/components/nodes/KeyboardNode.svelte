@@ -233,7 +233,8 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} />
+				<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} 
+				nodeId={nodeId}/>
 
 				<button
 					class={[
@@ -258,7 +259,8 @@
 					{/if}
 				</button>
 
-				<StandardHandle port="outlet" type="message" total={1} index={0} />
+				<StandardHandle port="outlet" type="message" total={1} index={0} 
+				nodeId={nodeId}/>
 			</div>
 		</div>
 	</div>
