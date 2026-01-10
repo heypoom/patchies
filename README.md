@@ -267,7 +267,7 @@ These objects support video chaining and can be connected to create complex visu
 
 <img src="./docs/images/patt-compressed.webp" alt="Patt Vira's P5 Sketches" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=9r2t5vizvv6xyou). The sketches are [Patt Vira](https://pattvira.com)'s [DESSINS Géométriques](https://www.pattvira.com/coding-tutorials/v/dessins-geometriques) and [Interactive Truchet Tiles](https://www.pattvira.com/coding-tutorials/v/interactive-truchet-tiles) tutorials. Her [YouTube tutorials](https://www.youtube.com/@pattvira) are helpful for getting familiar with P5 and for daily inspirations. Check out her [SPARK program](https://www.pattvira.com/spark) for creative coding courses!
+> ✨ Try this patch out [in the app](https://patchies.app/?id=9r2t5vizvv6xyou). The sketches are [Patt Vira](https://pattvira.com)'s [DESSINS Géométriques](https://www.pattvira.com/coding-tutorials/v/dessins-geometriques) and [Interactive Truchet Tiles](https://www.pattvira.com/coding-tutorials/v/interactive-truchet-tiles) tutorials. Her [YouTube tutorials](https://www.youtube.com/@pattvira) are helpful for getting familiar with P5 and for daily inspirations.
 
 - P5.js is a JavaScript library for creative coding. It provides a simple way to create graphics and animations, but you can do very complex things with it.
 - Read the [P5.js documentation](https://p5js.org/reference) to see how P5 works.

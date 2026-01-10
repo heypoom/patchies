@@ -493,6 +493,14 @@ export const supportLinks: SupportLink[] = [
 		projects: ['Hydra']
 	},
 	{
+		name: 'Patt Vira',
+		description: 'Creative coding educator and P5.js tutorial creator',
+		category: 'educator',
+		url: 'https://www.pattvira.com',
+		type: 'website',
+		projects: ['P5.js tutorials', 'SPARK program']
+	},
+	{
 		name: 'Compudanzas',
 		description: 'Educational resources for Uxn programming',
 		category: 'educator',
@@ -507,14 +515,6 @@ export const supportLinks: SupportLink[] = [
 		url: 'https://natureofcode.com/',
 		type: 'purchase',
 		projects: ['Nature of Code', 'The Coding Train']
-	},
-	{
-		name: 'Patt Vira',
-		description: 'Creative coding educator and P5.js tutorial creator',
-		category: 'educator',
-		url: 'https://www.pattvira.com/spark',
-		type: 'website',
-		projects: ['P5.js tutorials', 'SPARK program']
 	},
 	{
 		name: 'Sindre Sorhus',

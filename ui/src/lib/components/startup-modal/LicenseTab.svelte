@@ -295,10 +295,13 @@
 			<div class="rounded-lg bg-zinc-900/50 p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Chayapatr Archiwaranguprok (Pub)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
-					My long-time friend and definitely my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten, and patiently received my endless stream of demos and progress updates.
+					My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten, and patiently received my endless stream of demos and progress updates.
 				</p>
 				<p class="mt-2 text-xs text-zinc-400">
-					Communities: Creatorsgarten
+					Website: <a href="https://from.pub" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">from.pub</a><br />
+					Communities:
+					<a href="https://www.media.mit.edu/people/pub" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">MIT Media Lab</a>,
+					<a href="https://creatorsgarten.org" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">Creatorsgarten</a>
 				</p>
 			</div>
 		</div>

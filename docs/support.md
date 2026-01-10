@@ -105,6 +105,16 @@ Powerful audio programming language with decades of development for sound synthe
 
 ## Educators & Tutorial Creators
 
+### Patt Vira
+
+**Resources:** P5.js tutorials, SPARK program
+
+Creative coding educator making programming accessible to all creative people through beautiful tutorials and the SPARK program.
+
+**Support:** [Check out her website](https://www.pattvira.com)
+
+---
+
 ### Compudanzas
 
 **Resources:** Uxn programming tutorials
@@ -122,16 +132,6 @@ Creating comprehensive, beginner-friendly guides for Uxn programming and permaco
 Beloved educator creating accessible programming tutorials and the comprehensive Nature of Code book.
 
 **Support:** [Purchase Nature of Code](https://natureofcode.com/) or donate to the Processing Foundation
-
----
-
-### Patt Vira
-
-**Resources:** P5.js tutorials, SPARK program
-
-Creative coding educator making programming accessible to all creative people through beautiful tutorials and the SPARK program.
-
-**Learn more:** [SPARK program](https://www.pattvira.com/spark)
 
 ---
 
@@ -279,7 +279,8 @@ Writer at SYNAP [home/lab], works at College of Music, Mahidol University, and L
 
 My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten, and patiently received my endless stream of demos and progress updates throughout the development journey.
 
-**Communities:** [Creatorsgarten](https://creatorsgarten.org)
+**Website:** [from.pub](https://from.pub)
+**Communities:** [MIT Media Lab](https://www.media.mit.edu/people/pub), [Creatorsgarten](https://creatorsgarten.org)
 
 ---
 
