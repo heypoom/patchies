@@ -6,6 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { isConnectionMode } from '../../../stores/ui.store';
 
 	let node: {
 		id: string;
@@ -119,6 +120,14 @@
 			'h-1 w-full cursor-pointer appearance-none rounded-lg [&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500 [&::-moz-range-thumb:hover]:bg-zinc-100 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300 [&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-zinc-300 [&::-webkit-slider-track]:h-1 [&::-webkit-slider-track]:rounded-lg'
 		];
 	});
+
+	const handleInletClass = $derived.by(() => {
+		if (node.selected || $isConnectionMode) {
+			return ''
+		}
+
+		return 'opacity-30 group-hover:opacity-100 sm:opacity-0'
+	})
 </script>
 
 <div class="relative flex gap-x-3">
@@ -145,7 +154,7 @@
 					type="message"
 					total={1}
 					index={0}
-					class={`!-top-2 ${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+					class={`!-top-2 ${handleInletClass}`}
 					nodeId={node.id}
 				/>
 
