@@ -45,13 +45,25 @@
 	// Determine if this handle should be dimmed
 	const shouldDim = $derived.by(() => {
 		// Only dim when actively connecting
-		if (!$isConnecting) return false;
-		
-		// Dim outlet handles (source) when connecting, except the one being used
-		if (port === 'outlet' && $connectingFromHandleId !== handleId) {
+		if (!$isConnecting || !$connectingFromHandleId) return false;
+
+		// Determine if the connecting handle is an inlet or outlet
+		const connectingIsOutlet = $connectingFromHandleId.includes('-out');
+		const connectingIsInlet = $connectingFromHandleId.includes('-in');
+
+		// Don't dim the handle that initiated the connection
+		if ($connectingFromHandleId === handleId) return false;
+
+		// If connecting from an outlet, dim other outlets (user should select an inlet)
+		if (connectingIsOutlet && port === 'outlet') {
 			return true;
 		}
-		
+
+		// If connecting from an inlet, dim other inlets (user should select an outlet)
+		if (connectingIsInlet && port === 'inlet') {
+			return true;
+		}
+
 		return false;
 	});
 

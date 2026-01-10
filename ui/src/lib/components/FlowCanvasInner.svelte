@@ -51,6 +51,8 @@
 	import { AudioRegistry } from '$lib/registry/AudioRegistry';
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 	import { Toaster } from '$lib/components/ui/sonner';
+
+	// @ts-expect-error -- no typedefs
 	import { toast } from 'svelte-sonner';
 
 	const AUTOSAVE_INTERVAL = 2500;
@@ -808,8 +810,6 @@
 			if (result.success) {
 				const { data } = result;
 				restorePatchFromSave(data);
-
-				console.log(`Successfully loaded patch "${data.name}" from URL:`, url);
 			} else {
 				urlLoadError = result.error;
 				console.error('Failed to load patch from URL:', result.error);
@@ -823,15 +823,22 @@
 	}
 
 	async function createShareLink() {
+		toast.loading('Creating shareable link...');
+
 		const id = await createShareablePatch(null, nodes, edges);
-		if (id === null) return;
+		if (id === null) {
+			toast.error('Failed to create shareable link');
+			return;
+		}
 
 		const url = `${appHostUrl}/?id=${id}`;
 
 		try {
 			await navigator.clipboard.writeText(url);
-			alert(`Shareable link copied to clipboard: ${url}`);
-		} catch {}
+			toast.success('Shareable link copied to clipboard');
+		} catch {
+			toast.error('Failed to copy link to clipboard');
+		}
 	}
 
 	function insertObjectWithButton() {
@@ -939,16 +946,26 @@
 		</div>
 	{/if}
 
-	<!-- Connection Mode Indicator - Simplified -->
+	<!-- Connection Mode Indicator -->
 	{#if isConnectionMode}
 		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
-				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
+				class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
+					$isConnecting
+						? 'border-green-600 bg-green-900/80 text-green-200'
+						: 'border-blue-600 bg-blue-900/80 text-blue-200'
+				}`}
 			>
 				<Cable class="h-4 w-4" />
-				<span>Tap on two handles to connect them</span>
+				<span>
+					{#if $isConnecting}
+						Tap or drag to another handle to connect
+					{:else}
+						Tap on a handle to start the connection
+					{/if}
+				</span>
 				<button
-					class="ml-2 text-blue-300 hover:text-blue-100"
+					class={`ml-2 hover:text-blue-100 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
 					onclick={cancelConnectionMode}
 					title="Cancel"
 				>
@@ -982,14 +999,26 @@
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
 			onconnectstart={(event, params) => {
-				console.log('Connection started:', event, params);
-
 				isConnecting.set(true);
 				connectingFromHandleId.set(params.handleId || null);
 			}}
 			onconnectend={() => {
 				isConnecting.set(false);
 				connectingFromHandleId.set(null);
+			}}
+			onclickconnectstart={(event, params) => {
+				isConnecting.set(true);
+				connectingFromHandleId.set(params.handleId || null);
+			}}
+			onclickconnectend={(event, connectionState) => {
+				isConnecting.set(false);
+				connectingFromHandleId.set(null);
+
+				// Show success toast if connection was successfully made
+				// connectionState will have connection details if successful
+				if (connectionState?.isValid) {
+					toast.success('Objects connected by tap.');
+				}
 			}}
 		>
 			<BackgroundPattern />
