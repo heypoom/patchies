@@ -47,16 +47,6 @@ Playing around with demos first is a nice way to get inspirations and see what P
 - Use the scroll wheel to zoom the canvas.
 - You can always go back to this dialog by clicking on the "Help" button on the bottom right.
 
-## Supporting Open Source
-
-<img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
-
-Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](LICENSES.md) for detailed information about all third-party libraries used.
-
-If you enjoy using Patchies, please consider [supporting the open source creators](SUPPORT.md) who made it possible. You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
-
-Special thanks to [the amazing people](SUPPORT.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
-
 ## Creating Objects
 
 <img src="./docs/images/patchies-insert-object-with-enter.png" alt="Patchies.app orca node" width="700">
@@ -115,10 +105,22 @@ Click on the bottom handle (outlet) of an object, and drag it all the way to the
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
 
-### Create and edit objects with AI
+## Supporting Open Source
+
+<img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
+
+Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](LICENSES.md) for detailed information about all third-party libraries used.
+
+If you enjoy using Patchies, please consider [supporting the open source creators](SUPPORT.md) who made it possible. You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
+
+Special thanks to [the amazing people](SUPPORT.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
+
+## Experimental features
 
 > [!CAUTION]
-> EXPERIMENTAL ALPHA FEATURE! This feature has a _very high_ chance of corrupting and destroying your code and patches without any way to restore it. Try it on an empty patch or backup your objects. In addition, API keys are stored on localStorage as `gemini-api-key` for Gemini - there is a very real risk of your API keys be stolen by malicious patchies.
+> These feature has a _very high_ chance of corrupting and destroying your code and patches without any way to restore it. Try it on an empty patch or backup your objects.
+
+### Create and edit objects with AI
 
 <img src="./docs/images/patchies-ai-hearts-demo.png" alt="Patchies.app AI hearts demo" width="700">
 
@@ -133,6 +135,8 @@ When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch bet
 - **Edit Mode** (object selected): modifies the selected object's code based on your description
 
 This feature uses Google's Gemini Flash 3 Preview model to understand your prompt and generate the right object configuration. First, set your Gemini API key in the command palette with `Cmd/Ctrl + K` → `Set Gemini API Key`. Then, use `Ctrl/Cmd + I` or the sparkles button on the bottom right.
+
+Please create a separate API key that has strict budget limits. API keys are stored on localStorage as `gemini-api-key`, and therefore there is a very real risk of your API keys being _stolen_ by malicious patches you open.
 
 ## Message Passing
 
