@@ -147,7 +147,8 @@
 				}
 			});
 
-			const source = await createImageBitmap(img);
+			// Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
+			const source = await createImageBitmap(img, { imageOrientation: 'flipY' });
 			glSystem.setBitmap(node.id, source);
 			hasImage = true;
 
