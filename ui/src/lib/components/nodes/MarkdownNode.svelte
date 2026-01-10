@@ -9,6 +9,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { isConnectionMode } from '../../../stores/ui.store';
 
 	let props: {
 		id: string;
@@ -29,11 +30,17 @@
 
 	const { updateNodeData } = useSvelteFlow();
 
-	const handleClass = $derived(
-		props.selected
-			? 'z-1 transition-opacity'
-			: 'z-1 sm:opacity-0 opacity-30 group-hover:opacity-100 transition-opacity'
-	);
+	const handleClass = $derived.by(() => {
+		if (!props.selected && $isConnectionMode) {
+			return ''
+		}
+
+		if (props.selected) {
+			return 'z-1 transition-opacity';
+		}
+
+		return 'z-1 sm:opacity-0 opacity-30 group-hover:opacity-100 transition-opacity';
+	});
 
 	function handleMarkdownChange(markdown: string) {
 		updateNodeData(props.id, { markdown });
