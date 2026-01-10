@@ -112,17 +112,31 @@
 	:global(.svelte-flow.connecting .svelte-flow__handle-bottom.connection-mode-active) {
 		opacity: 0.3 !important;
 		pointer-events: none !important;
+		filter: grayscale(0.5) !important;
 	}
 
 	/* When connecting from a source handle, keep target handles visible */
 	:global(.svelte-flow.connecting .svelte-flow__handle-top.connection-mode-active) {
 		opacity: 1 !important;
 		pointer-events: auto !important;
+		filter: none !important;
 	}
 
 	/* The active source handle being used for connection should stay visible */
 	:global(.svelte-flow.connecting .svelte-flow__handle-bottom.connecting) {
 		opacity: 1 !important;
 		pointer-events: auto !important;
+		filter: none !important;
+	}
+
+	/* Alternative: also dim by position if connecting class is on parent */
+	:global(.svelte-flow.connecting) :global(.svelte-flow__handle.svelte-flow__handle-bottom.connection-mode-active) {
+		opacity: 0.3 !important;
+		filter: grayscale(0.5) !important;
+	}
+
+	:global(.svelte-flow.connecting) :global(.svelte-flow__handle.svelte-flow__handle-bottom.connecting) {
+		opacity: 1 !important;
+		filter: none !important;
 	}
 </style>
