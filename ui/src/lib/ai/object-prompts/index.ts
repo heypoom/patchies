@@ -34,6 +34,7 @@ import { tonePrompt } from './tone~';
 import { uxnPrompt } from './uxn';
 import { sonicPrompt } from './sonic~';
 import { elemPrompt } from './elem~';
+import { labelPrompt } from './label';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -68,7 +69,8 @@ export const objectPrompts: Record<string, string> = {
 	object: objectPrompt,
 	'bg.out': bgOutPrompt,
 	'sonic~': sonicPrompt,
-	'elem~': elemPrompt
+	'elem~': elemPrompt,
+	label: labelPrompt
 };
 
 /**
