@@ -188,7 +188,7 @@
 		// Handle CTRL+V for paste
 		else if (event.key.toLowerCase() === 'v' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
-			pasteNode();
+			pasteNode('keyboard');
 		}
 		// Handle CMD+K for command palette
 		else if (
