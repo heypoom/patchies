@@ -101,6 +101,18 @@ Click on the bottom handle (outlet) of an object, and drag it all the way to the
   - Video connections stay within video/GL chains.
   - Message connections are flexible.
 
+#### Mobile/Touch Connection Mode
+
+On mobile devices or when dragging is difficult, you can use the **Connect** button (cable icon) in the bottom toolbar:
+
+1. Click the **Connect** button - it will turn blue to indicate connection mode is active
+2. Click on the **source node** you want to connect from
+3. A menu will appear showing all available **destination nodes**
+4. Click on the destination node to create the connection
+5. The connection will be automatically created between the two nodes
+
+To cancel connection mode, click the Connect button again or the × in the instruction banner.
+
 ### Sharing Links
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.

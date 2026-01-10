@@ -925,63 +925,18 @@
 			return;
 		}
 
-		// Get available handles
-		const sourceHandles = getNodeHandles(sourceNode, 'source');
-		const targetHandles = getNodeHandles(destinationNode, 'target');
-
-		// If either node has no handles, can't connect
-		if (sourceHandles.length === 0 || targetHandles.length === 0) {
-			alert('Cannot connect: One or both nodes have no compatible handles');
-			cancelConnectionMode();
-			return;
-		}
-
-		// For now, use the first available handles
-		// In a more advanced version, we could show a handle selection UI
-		const sourceHandle = sourceHandles[0];
-		const targetHandle = targetHandles[0];
-
-		// Create the edge
+		// Simple approach: Try to create a basic connection using default handles
+		// The isValidConnection function will validate if this is allowed
 		const newEdge = {
 			id: `e${connectionSourceNode}-${destinationNodeId}-${edgeIdCounter++}`,
 			source: connectionSourceNode,
 			target: destinationNodeId,
-			sourceHandle: sourceHandle,
-			targetHandle: targetHandle
+			sourceHandle: undefined, // Let XYFlow auto-connect
+			targetHandle: undefined // Let XYFlow auto-connect
 		};
 
 		edges = [...edges, newEdge];
 		cancelConnectionMode();
-	}
-
-	// Helper function to get handles from a node
-	// This is a simplified version - in reality we'd need to inspect the node's type
-	// and its data to determine available handles
-	function getNodeHandles(node: Node, type: 'source' | 'target'): string[] {
-		// For now, return generic handles based on node type
-		// This would need to be expanded based on actual node implementations
-		const handles: string[] = [];
-
-		// Most nodes have message handles
-		handles.push(type === 'source' ? 'message-out' : 'message-in');
-
-		// Audio nodes have audio handles
-		if (node.type?.includes('~') || node.type === 'dac~' || node.type === 'adc~') {
-			handles.push(type === 'source' ? 'audio-out' : 'audio-in');
-		}
-
-		// Video nodes have video handles
-		if (
-			node.type === 'p5' ||
-			node.type === 'hydra' ||
-			node.type === 'glsl' ||
-			node.type === 'video' ||
-			node.type === 'webcam'
-		) {
-			handles.push(type === 'source' ? 'video-out' : 'video-in');
-		}
-
-		return handles;
 	}
 </script>
 
