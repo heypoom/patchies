@@ -342,8 +342,10 @@
 									Cooking <span class="text-zinc-300">{resolvedObjectType}</span>...
 								</span>
 							</div>
+						{:else if !isEditMode}
+							<span>Routing...</span>
 						{:else}
-							<span>{isEditMode ? 'Editing...' : 'Routing...'}</span>
+							<span>Editing...</span>
 						{/if}
 					</div>
 				{:else if isEditMode}
@@ -361,18 +363,19 @@
 					>
 						Cancel
 					</button>
+				{:else}
+					<button
+						onclick={handleSubmit}
+						disabled={!promptText.trim() || isLoading}
+						class="rounded {isEditMode
+							? 'bg-amber-600 hover:bg-amber-700'
+							: isMultiObjectMode
+								? 'bg-blue-600 hover:bg-blue-700'
+								: 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{buttonText}
+					</button>
 				{/if}
-				<button
-					onclick={handleSubmit}
-					disabled={!promptText.trim() || isLoading}
-					class="rounded {isEditMode
-						? 'bg-amber-600 hover:bg-amber-700'
-						: isMultiObjectMode
-							? 'bg-blue-600 hover:bg-blue-700'
-							: 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					{isLoading ? 'Resolving...' : buttonText}
-				</button>
 			</div>
 		</div>
 	</div>

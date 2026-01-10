@@ -24,9 +24,6 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - canvas: HTML5 Canvas 2D (offscreen, for video chaining)
 - canvas.dom: Interactive HTML5 Canvas with mouse/keyboard input
 - swgl: SwissGL shaders for WebGL2
-- img: Display images from URLs or local files
-- video: Display and play videos
-- bchrn: Winamp Milkdrop visualizer (Butterchurn)
 - bg.out: Background output (final video output)
 
 ## Audio & Music Objects
