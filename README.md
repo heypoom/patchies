@@ -51,11 +51,11 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 <img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
 
-Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
+Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](LICENSES.md) for detailed information about all third-party libraries used.
 
-If you enjoy using Patchies, please consider [supporting the open source creators](docs/support.md) who made it possible. You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
+If you enjoy using Patchies, please consider [supporting the open source creators](SUPPORT.md) who made it possible. You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
 
-Special thanks to [the amazing people](docs/support.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
+Special thanks to [the amazing people](SUPPORT.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
 
 ## Creating Objects
 

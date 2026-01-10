@@ -2,16 +2,18 @@
 
 Patchies is built upon many amazing open source projects. This document provides comprehensive license information and attributions for all third-party libraries and components used in Patchies.
 
+Check out [SUPPORT.md](./SUPPORT.md) for donation links and sponsorship resources for these amazing open-source projects.
+
 ## Project License
 
-**Patchies** is licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](../LICENSE).
+**Patchies** is licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](./LICENSE).
 
 This means:
 
 - You are free to use, modify, and distribute this software
 - If you modify the code, you must share your changes under the same license
 - If you run this software on a server and provide services to users, you must make the source code available to those users
-- See the [AGPL-3.0 full text](../LICENSE) for complete terms
+- See the [AGPL-3.0 full text](./LICENSE) for complete terms
 
 ## Complete License List
 
