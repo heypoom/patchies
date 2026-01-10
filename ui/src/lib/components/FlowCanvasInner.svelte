@@ -7,7 +7,8 @@
 		Search,
 		Sparkles,
 		Trash2,
-		Volume2
+		Volume2,
+		Cable
 	} from '@lucide/svelte/icons';
 	import {
 		SvelteFlow,
@@ -120,6 +121,11 @@
 	let urlLoadError = $state<string | null>(null);
 	let showAudioHint = $state(audioService.getAudioContext().state === 'suspended');
 	let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
+
+	// Mobile connection mode state
+	let isConnectionMode = $state(false);
+	let connectionSourceNode = $state<string | null>(null);
+	let showDestinationMenu = $state(false);
 
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
@@ -876,6 +882,107 @@
 			showAudioHint = false;
 		}
 	}
+
+	// Mobile connection mode functions
+	function startConnectionMode() {
+		isConnectionMode = true;
+		connectionSourceNode = null;
+		showDestinationMenu = false;
+	}
+
+	function cancelConnectionMode() {
+		isConnectionMode = false;
+		connectionSourceNode = null;
+		showDestinationMenu = false;
+	}
+
+	function handleNodeClickForConnection(nodeId: string) {
+		if (!isConnectionMode) return;
+
+		if (!connectionSourceNode) {
+			// First click - select source node
+			connectionSourceNode = nodeId;
+			showDestinationMenu = true;
+		} else {
+			// Second click would be handled by the destination menu
+			// So this shouldn't normally be reached
+		}
+	}
+
+	function selectDestinationNode(destinationNodeId: string) {
+		if (!connectionSourceNode || connectionSourceNode === destinationNodeId) {
+			// Can't connect a node to itself
+			cancelConnectionMode();
+			return;
+		}
+
+		// Get the source and destination nodes
+		const sourceNode = nodes.find((n) => n.id === connectionSourceNode);
+		const destinationNode = nodes.find((n) => n.id === destinationNodeId);
+
+		if (!sourceNode || !destinationNode) {
+			cancelConnectionMode();
+			return;
+		}
+
+		// Get available handles
+		const sourceHandles = getNodeHandles(sourceNode, 'source');
+		const targetHandles = getNodeHandles(destinationNode, 'target');
+
+		// If either node has no handles, can't connect
+		if (sourceHandles.length === 0 || targetHandles.length === 0) {
+			alert('Cannot connect: One or both nodes have no compatible handles');
+			cancelConnectionMode();
+			return;
+		}
+
+		// For now, use the first available handles
+		// In a more advanced version, we could show a handle selection UI
+		const sourceHandle = sourceHandles[0];
+		const targetHandle = targetHandles[0];
+
+		// Create the edge
+		const newEdge = {
+			id: `e${connectionSourceNode}-${destinationNodeId}-${edgeIdCounter++}`,
+			source: connectionSourceNode,
+			target: destinationNodeId,
+			sourceHandle: sourceHandle,
+			targetHandle: targetHandle
+		};
+
+		edges = [...edges, newEdge];
+		cancelConnectionMode();
+	}
+
+	// Helper function to get handles from a node
+	// This is a simplified version - in reality we'd need to inspect the node's type
+	// and its data to determine available handles
+	function getNodeHandles(node: Node, type: 'source' | 'target'): string[] {
+		// For now, return generic handles based on node type
+		// This would need to be expanded based on actual node implementations
+		const handles: string[] = [];
+
+		// Most nodes have message handles
+		handles.push(type === 'source' ? 'message-out' : 'message-in');
+
+		// Audio nodes have audio handles
+		if (node.type?.includes('~') || node.type === 'dac~' || node.type === 'adc~') {
+			handles.push(type === 'source' ? 'audio-out' : 'audio-in');
+		}
+
+		// Video nodes have video handles
+		if (
+			node.type === 'p5' ||
+			node.type === 'hydra' ||
+			node.type === 'glsl' ||
+			node.type === 'video' ||
+			node.type === 'webcam'
+		) {
+			handles.push(type === 'source' ? 'video-out' : 'video-in');
+		}
+
+		return handles;
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -925,6 +1032,25 @@
 		</div>
 	{/if}
 
+	<!-- Connection Mode Indicator -->
+	{#if isConnectionMode && !connectionSourceNode}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
+			>
+				<Cable class="h-4 w-4" />
+				<span>Click on a node to start connecting</span>
+				<button
+					class="ml-2 text-blue-300 hover:text-blue-100"
+					onclick={cancelConnectionMode}
+					title="Cancel"
+				>
+					×
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Main flow area -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -948,6 +1074,11 @@
 			snapGrid={[5, 5]}
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
+			onnodeclick={({ node }) => {
+				if (isConnectionMode && connectionSourceNode === null) {
+					handleNodeClickForConnection(node.id);
+				}
+			}}
 		>
 			<BackgroundPattern />
 
@@ -1014,6 +1145,21 @@
 
 					showObjectBrowser = true;
 				}}><Search class="h-4 w-4 text-zinc-300" /></button
+			>
+
+			<button
+				title={isConnectionMode ? 'Cancel Connection' : 'Connect Nodes'}
+				class={`cursor-pointer rounded p-1 hover:bg-zinc-700 ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+
+					if (isConnectionMode) {
+						cancelConnectionMode();
+					} else {
+						startConnectionMode();
+					}
+				}}><Cable class="h-4 w-4 text-zinc-300" /></button
 			>
 
 			{#if $isAiFeaturesVisible && hasGeminiApiKey}
@@ -1092,6 +1238,63 @@
 		onInsertMultipleObjects={handleAiMultipleObjectsInsert}
 		onEditObject={handleAiObjectEdit}
 	/>
+
+	<!-- Mobile Connection Mode: Destination Node Selection Menu -->
+	{#if showDestinationMenu && connectionSourceNode}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+			onclick={cancelConnectionMode}
+		>
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="max-h-[80vh] w-full max-w-md overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<div class="border-b border-zinc-700 p-4">
+					<h2 class="text-lg font-semibold text-zinc-200">Connect To</h2>
+					<p class="mt-1 text-sm text-zinc-400">
+						Select a node to connect from {nodes.find((n) => n.id === connectionSourceNode)?.type ??
+							'selected node'}
+					</p>
+				</div>
+
+				<div class="max-h-[60vh] overflow-y-auto p-2">
+					{#each nodes.filter((n) => n.id !== connectionSourceNode) as node (node.id)}
+						<button
+							class="mb-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-left transition-colors hover:bg-zinc-700"
+							onclick={() => selectDestinationNode(node.id)}
+						>
+							<div class="font-medium text-zinc-200">{node.type}</div>
+							{#if node.data?.name || node.data?.expr}
+								<div class="mt-1 text-xs text-zinc-400">
+									{node.data.name || node.data.expr}
+								</div>
+							{/if}
+							<div class="mt-1 text-xs text-zinc-500">ID: {node.id}</div>
+						</button>
+					{/each}
+
+					{#if nodes.length <= 1}
+						<div class="px-4 py-8 text-center text-sm text-zinc-500">
+							No other nodes available to connect to
+						</div>
+					{/if}
+				</div>
+
+				<div class="border-t border-zinc-700 p-4">
+					<button
+						class="w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700"
+						onclick={cancelConnectionMode}
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
