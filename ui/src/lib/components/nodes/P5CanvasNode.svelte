@@ -21,6 +21,7 @@
 			outletCount?: number;
 			hidePorts?: boolean;
 			executeCode?: number;
+			paused?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -37,7 +38,6 @@
 	let enableDrag = $state(true);
 	let videoOutputEnabled = $state(true);
 	let errorMessage = $state<string | null>(null);
-	let paused = $state(false);
 	let editorReady = $state(false);
 
 	let previewContainerWidth = $state(0);
@@ -74,7 +74,7 @@
 			}
 		}
 
-		updateSketch();
+		updateSketch({onMount: true});
 		measureWidth(1000);
 	});
 
@@ -89,11 +89,25 @@
 		updateNodeInternals(nodeId);
 	};
 
-	function updateSketch() {
+	function togglePlayback() {
+		const p5 = p5Manager?.p5;
+		if (!p5) return;
+
+		if (data.paused) {
+			// Unpause the sketch by restarting the animation loop
+			p5.loop();
+			updateNodeData(nodeId, { paused: false });
+		} else {
+			// Pause the sketch by stopping the animation loop
+			p5.noLoop();
+			updateNodeData(nodeId, { paused: true });
+		}
+	}
+
+	function updateSketch({onMount = false}: {onMount?: boolean} = {}) {
 		// re-enable drag on update. nodrag() must be called on setup().
 		enableDrag = true;
 		videoOutputEnabled = true;
-		paused = false;
 
 		setPortCount(1, 1);
 
@@ -117,7 +131,8 @@
 					},
 					setHidePorts: (hide: boolean) => {
 						updateNodeData(nodeId, { hidePorts: hide });
-					}
+					},
+					pauseOnMount: onMount && !!data.paused
 				});
 
 				measureWidth(100);
@@ -143,20 +158,7 @@
 		}, timeout);
 	}
 
-	function togglePlayback() {
-		const p5 = p5Manager?.p5;
-		if (!p5) return;
 
-		const isLooping = p5?.isLooping();
-
-		if (paused) {
-			p5?.loop();
-		} else {
-			p5?.noLoop();
-		}
-
-		paused = isLooping;
-	}
 
 	const handleClass = $derived.by(() => {
 		if (!data.hidePorts) return '';
@@ -170,7 +172,7 @@
 	onrun={updateSketch}
 	previewWidth={previewContainerWidth}
 	showPauseButton
-	{paused}
+	paused={data.paused}
 	onPlaybackToggle={togglePlayback}
 	{editorReady}
 >

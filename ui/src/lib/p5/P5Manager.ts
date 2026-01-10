@@ -10,6 +10,12 @@ interface P5SketchConfig {
 	messageContext?: UserFnRunContext;
 
 	setHidePorts?: (hide: boolean) => void;
+
+	/**
+	 * The P5CanvasNode component is being mounted and the playing state is PAUSED,
+	 * so we must noLoop() the sketch on mount.
+	 **/
+	pauseOnMount?: boolean;
 }
 
 export class P5Manager {
@@ -52,12 +58,17 @@ export class P5Manager {
 
 		const delimiter = '// [!!PATCHIES_DELETE!!]';
 
-		// HACK: prevent rollup from tree-shaking unused functions
+		// HACK: prevent rollup from tree-shaking unused functions.
+		// We'll delete everything after the delimiter, so these functions will not actually be called at runtime.
+		// It's just to trick and bamboozle rollup into thinking that these functions are used.
 		const codeWithTemplate = `
 			${config.code}
 
 			${delimiter}
-			setup(); draw(); preload(); mousePressed(); mouseReleased(); mouseClicked(); mouseMoved(); mouseDragged(); mouseWheel(); doubleClicked(); keyPressed(); keyReleased(); keyTyped(); touchStarted(); touchMoved(); touchEnded(); windowResized(); deviceMoved(); deviceTurned(); deviceShaken();
+
+			setup(); draw(); preload(); mousePressed(); mouseReleased(); mouseClicked(); mouseMoved(); mouseDragged();
+			mouseWheel(); doubleClicked(); keyPressed(); keyReleased(); keyTyped(); touchStarted(); touchMoved();
+			touchEnded(); windowResized(); deviceMoved(); deviceTurned(); deviceShaken();
 		`;
 
 		let processedCode = await this.jsRunner.preprocessCode(codeWithTemplate, {
@@ -101,6 +112,7 @@ export class P5Manager {
 				}
 			};
 
+			// @ts-expect-error -- compatibility layer for P5.js version 1
 			p.preload = function () {
 				userCode?.preload?.call(p);
 			};
@@ -115,10 +127,17 @@ export class P5Manager {
 					const originalPmouseX = p.pmouseX;
 					const originalPmouseY = p.pmouseY;
 
-					// Adjust for zoom
+					// !! Adjust for zoom
+					// @ts-expect-error -- we are hacking the p5 instance here
 					p.mouseX = originalMouseX / zoom;
+
+					// @ts-expect-error -- we are hacking the p5 instance here
 					p.mouseY = originalMouseY / zoom;
+
+					// @ts-expect-error -- we are hacking the p5 instance here
 					p.pmouseX = originalPmouseX / zoom;
+
+					// @ts-expect-error -- we are hacking the p5 instance here
 					p.pmouseY = originalPmouseY / zoom;
 				}
 			};
@@ -201,6 +220,12 @@ export class P5Manager {
 		};
 
 		this.p5 = new P5(sketch, this.container);
+
+		// The component are being mounted and the playing state is PAUSED,
+		// so we must noLoop() the sketch on mount.
+		if (config.pauseOnMount) {
+			this.p5.noLoop()
+		}
 	}
 
 	private executeUserCode(sketch: Sketch, config: P5SketchConfig, P5Constructor: unknown) {
