@@ -553,6 +553,7 @@
 							{index}
 							class="top-0"
 							nodeId={nodeId}
+							isAudioParam={inlet.isAudioParam}
 						/>
 					{/each}
 				{:else}

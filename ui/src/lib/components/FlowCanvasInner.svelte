@@ -50,7 +50,10 @@
 	import { AudioRegistry } from '$lib/registry/AudioRegistry';
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 	import { Toaster } from '$lib/components/ui/sonner';
-	import { isValidConnectionBetweenHandles } from '$lib/utils/connection-validation';
+	import {
+		isAudioParamInlet,
+		isValidConnectionBetweenHandles,
+	} from '$lib/utils/connection-validation';
 
 	// @ts-expect-error -- no typedefs
 	import { toast } from 'svelte-sonner';
@@ -88,7 +91,7 @@
 	let hasGeminiApiKey = $state(false);
 
 	// Get flow utilities for coordinate transformation
-	const { screenToFlowPosition, deleteElements, fitView, getViewport } = useSvelteFlow();
+	const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
 
 	// Track nodes and edges for message routing
 	let previousNodes = new Set<string>();
@@ -670,7 +673,14 @@
 	}
 
 	const isValidConnection: IsValidConnection = (connection) => {
-		return isValidConnectionBetweenHandles(connection.sourceHandle, connection.targetHandle);
+		const targetNode = getNode(connection.target);
+
+		const objectName =
+			targetNode?.type === 'object' ? (targetNode.data?.name as string) : undefined;
+
+		return isValidConnectionBetweenHandles(connection.sourceHandle, connection.targetHandle, {
+			isTargetAudioParam: isAudioParamInlet(objectName, connection.targetHandle)
+		});
 	};
 
 	function getNodeIdCounterFromSave(nodes: Node[]): number {

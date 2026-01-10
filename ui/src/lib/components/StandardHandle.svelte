@@ -15,9 +15,10 @@
 		index: number;
 		class?: string;
 		nodeId: string;
+		isAudioParam?: boolean;
 	}
 
-	let { port, type, id, title, total, index, class: className = '', nodeId }: Props = $props();
+	let { port, type, id, title, total, index, class: className = '', nodeId, isAudioParam = false }: Props = $props();
 
 	// Construct the handle ID based on the specification
 	const handleId = $derived.by(() => {
@@ -79,7 +80,8 @@
 			$connectingFromHandleId,
 			qualifiedHandleId,
 			sourcePort,
-			port
+			port,
+			{ isTargetAudioParam: isAudioParam }
 		);
 
 		if (!wouldBeValidConnection) {
