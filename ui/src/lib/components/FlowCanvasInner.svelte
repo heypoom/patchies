@@ -1,7 +1,9 @@
 <script lang="ts">
 	import {
 		CirclePlus,
+		Clipboard,
 		Command,
+		Copy,
 		FilePlus2,
 		Link,
 		Search,
@@ -25,6 +27,7 @@
 	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
+	import CopyPasteModal from './CopyPasteModal.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
 	import { isAiFeaturesVisible, isBottomBarVisible, isConnectionMode as isConnectionModeStore, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
@@ -87,6 +90,9 @@
 	// Object browser modal state
 	let showObjectBrowser = $state(false);
 
+	// Copy/Paste modal state
+	let showCopyPasteModal = $state(false);
+
 	// AI object prompt state
 	let showAiPrompt = $state(false);
 	let aiPromptPosition = $state.raw({ x: 0, y: 0 });
@@ -111,11 +117,11 @@
 	let isNodeListVisible = $state(false);
 
 	// Clipboard for copy-paste functionality
-	let copiedNodeData: Array<{
+	let copiedNodeData = $state<Array<{
 		type: string;
 		data: any;
 		relativePosition: { x: number; y: number };
-	}> | null = null;
+	}> | null>(null);
 
 	let isLoadingFromUrl = $state(false);
 	let urlLoadError = $state<string | null>(null);
@@ -1060,6 +1066,24 @@
 				}}><Search class="h-4 w-4 text-zinc-300" /></button
 			>
 
+			{#if selectedNodeIds.length > 0 || (copiedNodeData && copiedNodeData.length > 0)}
+				<button
+					title="Copy / Paste"
+					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						showCopyPasteModal = true;
+					}}
+				>
+					{#if copiedNodeData && copiedNodeData.length > 0}
+						<Clipboard class="h-4 w-4 text-zinc-300" />
+					{:else}
+						<Copy class="h-4 w-4 text-zinc-300" />
+					{/if}
+				</button>
+			{/if}
+      
 			<button
 				title={isConnectionMode ? 'Cancel Connection' : 'Connect Nodes'}
 				class={`cursor-pointer rounded p-1 hover:bg-zinc-700 ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
@@ -1075,7 +1099,7 @@
 				}}><Cable class="h-4 w-4 text-zinc-300" /></button
 			>
 
-			{#if $isAiFeaturesVisible && hasGeminiApiKey}
+			{#if $isAiFeaturesVisible}
 				<button
 					title="AI Create/Edit Object (Cmd+I)"
 					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
@@ -1141,6 +1165,15 @@
 
 	<!-- Object Browser Modal -->
 	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+
+	<!-- Copy/Paste Modal -->
+	<CopyPasteModal
+		bind:open={showCopyPasteModal}
+		canCopy={selectedNodeIds.length > 0}
+		canPaste={!!(copiedNodeData && copiedNodeData.length > 0)}
+		onCopy={copySelectedNodes}
+		onPaste={pasteNode}
+	/>
 
 	<!-- AI Object Prompt Dialog -->
 	<AiObjectPrompt
