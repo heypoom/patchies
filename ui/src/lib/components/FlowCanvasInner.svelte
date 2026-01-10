@@ -48,7 +48,8 @@
 	import { match } from 'ts-pattern';
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { serializePatch } from '$lib/save-load/serialize-patch';
-	import { appHostUrl, createShareablePatch, getSharedPatchData } from '$lib/api/pb';
+	import { getSharedPatchData } from '$lib/api/pb';
+	import { createAndCopyShareLink } from '$lib/save-load/share';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
@@ -819,25 +820,6 @@
 		}
 	}
 
-	async function createShareLink() {
-		toast.loading('Creating shareable link...');
-
-		const id = await createShareablePatch(null, nodes, edges);
-		if (id === null) {
-			toast.error('Failed to create shareable link');
-			return;
-		}
-
-		const url = `${appHostUrl}/?id=${id}`;
-
-		try {
-			await navigator.clipboard.writeText(url);
-			toast.success('Shareable link copied to clipboard');
-		} catch {
-			toast.error('Failed to copy link to clipboard');
-		}
-	}
-
 	function insertObjectWithButton() {
 		const position = screenToFlowPosition({
 			x: Math.max(0, window.innerWidth / 2 - 200),
@@ -1171,9 +1153,9 @@
 			{/if}
 
 			<button
-				title="Share Link"
+				title="Share Patch Link"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={createShareLink}><Link class="h-4 w-4 text-zinc-300" /></button
+				onclick={() => createAndCopyShareLink(nodes, edges)}><Link class="h-4 w-4 text-zinc-300" /></button
 			>
 
 			<button

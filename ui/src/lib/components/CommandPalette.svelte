@@ -15,8 +15,8 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
-	import { appHostUrl, createShareablePatch } from '$lib/api/pb';
-	import { deleteSearchParam } from '$lib/utils/search-params';
+import { createAndCopyShareLink } from '$lib/save-load/share';
+import { deleteSearchParam } from '$lib/utils/search-params';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -61,7 +61,7 @@
 	const commands = [
 		{
 			id: 'share-patch',
-			name: 'Share Patch',
+			name: 'Share Patch Link',
 			description: 'Get a shareable link for your patch.'
 		},
 		{
@@ -287,17 +287,8 @@
 				onCancel();
 			})
 			.with('share-patch', async () => {
-				const id = await createShareablePatch(patchName, nodes, edges);
-				if (id === null) return;
-
-				const url = `${appHostUrl}/?id=${id}`;
-
-				try {
-					await navigator.clipboard.writeText(url);
-					alert(`Shareable link copied to clipboard: ${url}`);
-				} catch {}
-
 				onCancel();
+				await createAndCopyShareLink(nodes, edges);
 			})
 			.with('new-patch', async () => {
 				const ok = confirm(
