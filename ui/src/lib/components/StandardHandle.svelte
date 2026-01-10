@@ -76,7 +76,8 @@
 		will-change: width, height;
 		transition:
 			width 0.2s ease-in,
-			height 0.2s ease-in;
+			height 0.2s ease-in,
+			opacity 0.2s ease-in;
 	}
 
 	:global(.svelte-flow__handle):hover {
@@ -105,5 +106,23 @@
 		height: 32px !important;
 		border: 3px solid rgba(255, 255, 255, 0.5) !important;
 		box-shadow: 0 0 12px rgba(255, 255, 255, 0.6) !important;
+	}
+
+	/* When connecting from a source handle, dim all other source handles */
+	:global(.svelte-flow.connecting .svelte-flow__handle-bottom.connection-mode-active) {
+		opacity: 0.3 !important;
+		pointer-events: none !important;
+	}
+
+	/* When connecting from a source handle, keep target handles visible */
+	:global(.svelte-flow.connecting .svelte-flow__handle-top.connection-mode-active) {
+		opacity: 1 !important;
+		pointer-events: auto !important;
+	}
+
+	/* The active source handle being used for connection should stay visible */
+	:global(.svelte-flow.connecting .svelte-flow__handle-bottom.connecting) {
+		opacity: 1 !important;
+		pointer-events: auto !important;
 	}
 </style>
