@@ -50,6 +50,8 @@
 	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 	import { AudioRegistry } from '$lib/registry/AudioRegistry';
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+	import { Toaster } from '$lib/components/ui/sonner';
+	import { toast } from 'svelte-sonner';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -725,10 +727,12 @@
 				y: node.position.y - centerY
 			}
 		}));
+
+		toast.success(`Copied ${selectedNodes.length} node${selectedNodes.length === 1 ? '' : 's'}`);
 	}
 
 	// Paste copied nodes at current mouse position or center of screen
-	function pasteNode(source: 'keyboard' | 'button' = 'keyboard') {
+	function pasteNode(source: 'keyboard' | 'button') {
 		if (!copiedNodeData || copiedNodeData.length === 0) return;
 
 		// Get the paste position (where the center of the copied nodes will be placed)
@@ -751,6 +755,8 @@
 
 			createNode(nodeData.type, position, nodeData.data);
 		}
+
+		toast.success(`Pasted ${copiedNodeData.length} node${copiedNodeData.length === 1 ? '' : 's'}`);
 	}
 
 	function restorePatchFromSave(save: PatchSaveFormat) {
@@ -1167,6 +1173,9 @@
 		onInsertMultipleObjects={handleAiMultipleObjectsInsert}
 		onEditObject={handleAiObjectEdit}
 	/>
+
+	<!-- Toast Notifications -->
+	<Toaster position="top-center" />
 </div>
 
 <style>
