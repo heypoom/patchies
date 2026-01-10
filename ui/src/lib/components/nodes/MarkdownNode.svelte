@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onDestroy, onMount } from 'svelte';
+
+	// @ts-expect-error -- no typedef
 	import OverType from 'overtype';
+
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -99,8 +102,14 @@
 	{/if}
 
 	<div class="group">
-		<StandardHandle port="inlet" type="message" total={1} index={0} class={handleClass} 
-				nodeId={nodeId}/>
+		<StandardHandle
+			port="inlet"
+			type="message"
+			total={1}
+			index={0}
+			class={handleClass}
+			nodeId={props.id}
+		/>
 
 		<div
 			bind:this={overtypeElement}
@@ -108,8 +117,14 @@
 			class="nodrag overtype-editor rounded-lg bg-zinc-900/70 backdrop-blur-xl"
 		></div>
 
-		<StandardHandle port="outlet" type="message" total={1} index={0} class={handleClass} 
-				nodeId={nodeId}/>
+		<StandardHandle
+			port="outlet"
+			type="message"
+			total={1}
+			index={0}
+			class={handleClass}
+			nodeId={props.id}
+		/>
 	</div>
 </div>
 
