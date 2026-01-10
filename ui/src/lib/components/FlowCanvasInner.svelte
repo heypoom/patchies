@@ -1105,20 +1105,24 @@
 				</button>
 			{/if}
       
-			<button
-				title={isConnectionMode ? 'Cancel Connection' : 'Connect Nodes'}
-				class={`cursor-pointer rounded p-1 hover:bg-zinc-700 ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
+			<!-- Only show connection button if there are at least 2 nodes -->
+			<!-- You can't connect a single node to itself -->
+			{#if nodes.length >= 2}
+				<button
+					title={isConnectionMode ? 'Cancel Connection' : 'Connect Nodes'}
+					class={`cursor-pointer rounded p-1 hover:bg-zinc-700 ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
 
-					if (isConnectionMode) {
-						cancelConnectionMode();
-					} else {
-						startConnectionMode();
-					}
-				}}><Cable class="h-4 w-4 text-zinc-300" /></button
-			>
+						if (isConnectionMode) {
+							cancelConnectionMode();
+						} else {
+							startConnectionMode();
+						}
+					}}><Cable class="h-4 w-4 text-zinc-300" /></button
+				>
+			{/if}
 
 			{#if $isAiFeaturesVisible && hasGeminiApiKey}
 				<button
