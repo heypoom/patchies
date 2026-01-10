@@ -11,6 +11,39 @@ These creators dedicate countless hours to building and maintaining the tools we
 - Build vibrant creative coding communities
 - Keep these tools free and accessible for everyone
 
+## Special Thanks
+
+These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement:
+
+### Kijjasak "Kijjaz" Triyanond
+
+A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, and taught me FM/AM synthesis and sound design. His expertise and generous sharing of knowledge has been invaluable to this project.
+
+**Communities:** CU, CU BAND, Monotone Group, Pollen Sound
+**Projects:** Indie perfumer at @vibrationperfum
+**Connect:** [Instagram @kijjaz](https://www.instagram.com/kijjaz)
+
+---
+
+### Thai Pangsakulyanont
+
+A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement. His support and encouragement to release Patchies was instrumental in making this project a reality.
+
+**Website:** [dt.in.th](https://dt.in.th)
+**GitHub:** [@dtinth](https://github.com/dtinth)
+
+---
+
+### Thanapat Ryan Ogaslert
+
+Writer at SYNAP [home/lab], works at College of Music, Mahidol University, and Laboratory Technician at SquareDots. Ryan encouraged me throughout the development of Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I first got to show it to the world and received lots of love from the community.
+
+**SYNAP [home/lab]:** Monday music experiments and performances
+**Instagram:** [@crsrcrsrrr](https://www.instagram.com/crsrcrsrrr)
+**SYNAP Instagram:** [@synap.home.lab](https://www.instagram.com/synap.home.lab)
+
+---
+
 ## Library & Tool Creators
 
 ### Hundred Rabbits

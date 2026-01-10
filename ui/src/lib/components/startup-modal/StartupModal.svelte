@@ -21,7 +21,7 @@
 		open = true;
 	}
 
-	const tabs: Tab[] = ['about', 'demos', 'shortcuts', 'license'];
+	const tabs: Tab[] = ['about', 'demos', 'shortcuts', 'thanks'];
 </script>
 
 <!-- Help button trigger -->
@@ -95,7 +95,7 @@
 					<AboutTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'demos'}
 					<ExamplesTab {onLoadPatch} />
-				{:else if activeTab === 'license'}
+				{:else if activeTab === 'thanks'}
 					<LicenseTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'shortcuts'}
 					<ShortcutsTab />

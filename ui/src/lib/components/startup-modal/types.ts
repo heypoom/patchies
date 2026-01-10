@@ -12,4 +12,4 @@ export interface ExampleCategory {
 	patches: ExamplePatch[];
 }
 
-export type Tab = 'about' | 'demos' | 'shortcuts' | 'license';
+export type Tab = 'about' | 'demos' | 'shortcuts' | 'thanks';

@@ -35,25 +35,31 @@ This lets you visually see the program's core composition and its in-between res
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
-## License and Attribution
-
-Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
-
-If you enjoy using Patchies, please consider [supporting the open source creators](docs/support.md) who made it possible.
-
 ## Getting Started
-
-- Go to [patchies.app](https://patchies.app).
-- Use the mouse to pan the canvas.
-- Use the scroll wheel to zoom the canvas.
-
-### Try out some examples
 
 <img src="./docs/images/patchies-demo-modal.png" alt="Patchies.app demo modal" width="700">
 
-Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand. Go to "Help" (the button with the question mark on the bottom right) then "demos" to view the list of demos you can play with!
+Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand.
 
-### Creating Objects
+- Go to [patchies.app](https://patchies.app)
+- Click on the "demos" tab to view the list of demos you can play with
+- Use the mouse to pan the canvas.
+- Use the scroll wheel to zoom the canvas.
+- You can always go back to this dialog by clicking on the "Help" button on the bottom right.
+
+## Supporting Open Source
+
+<img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
+
+Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
+
+If you enjoy using Patchies, please consider [supporting the open source creators](docs/support.md) who made it possible. You can view the list of creators to sponsor by going to the "thanks" tab in the help dialog.
+
+It would really, _really_ mean the world to me if more people support open source tools and libraries, especially as a result of playing and having fun with them in Patchies 🙏🏻
+
+Special thanks to [the amazing people](docs/support.md#special-thanks) who helped bring Patchies to life through their support, feedback, and encouragement.
+
+## Creating Objects
 
 <img src="./docs/images/patchies-insert-object-with-enter.png" alt="Patchies.app orca node" width="700">
 

@@ -37,8 +37,8 @@
 <div class="space-y-4">
 	<!-- Header -->
 	<div>
-		<h1 id="modal-title" class="text-3xl font-bold text-zinc-100">Licenses & Attributions</h1>
-		<p class="mt-1 text-lg text-zinc-400">Patchies is built upon amazing open source projects</p>
+		<h1 id="modal-title" class="text-3xl font-bold text-zinc-100">Thanks 🥰</h1>
+		<p class="mt-1 text-lg text-zinc-400">Patchies is built upon amazing open source projects and the generosity of many people</p>
 	</div>
 
 	<!-- Project License -->
@@ -176,6 +176,98 @@
 						</div>
 					</div>
 				{/each}
+			</div>
+		</div>
+	</div>
+
+	<!-- Special Thanks -->
+	<div class="rounded-lg bg-zinc-800/50 p-4">
+		<div class="mb-3 flex items-center gap-2">
+			<Heart class="h-5 w-5 text-pink-400" />
+			<h2 class="text-lg font-semibold text-zinc-200">Special Thanks</h2>
+		</div>
+		<p class="mb-4 text-sm text-zinc-300">
+			These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement:
+		</p>
+
+		<div class="space-y-4">
+			<!-- Kijjaz -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Kijjasak "Kijjaz" Triyanond</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, and taught me FM/AM synthesis and sound design.
+				</p>
+				<p class="mt-2 text-xs text-zinc-400">
+					Communities: CU, CU BAND, Monotone Group, Pollen Sound • Indie perfumer at @vibrationperfum
+				</p>
+				<a
+					href="https://www.instagram.com/kijjaz"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="mt-2 inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+				>
+					Instagram @kijjaz
+					<ExternalLink class="h-3 w-3" />
+				</a>
+			</div>
+
+			<!-- dtinth -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Thai Pangsakulyanont</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API expertise, tips on using AI effectively, and most importantly, words of encouragement.
+				</p>
+				<div class="mt-2 flex gap-3">
+					<a
+						href="https://dt.in.th"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						dt.in.th
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://github.com/dtinth"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						@dtinth
+						<ExternalLink class="h-3 w-3" />
+					</a>
+				</div>
+			</div>
+
+			<!-- Ryan -->
+			<div class="rounded-lg bg-zinc-900/50 p-3">
+				<h3 class="text-sm font-semibold text-zinc-100">Thanapat Ryan Ogaslert</h3>
+				<p class="mt-1 text-xs text-zinc-300">
+					Writer at SYNAP [home/lab], works at College of Music, Mahidol University, and Laboratory Technician at SquareDots. Ryan encouraged me throughout the development of Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I first got to show it to the world and received lots of love.
+				</p>
+				<p class="mt-2 text-xs text-zinc-400">
+					SYNAP [home/lab]: Monday music experiments and performances
+				</p>
+				<div class="mt-2 flex gap-3">
+					<a
+						href="https://www.instagram.com/crsrcrsrrr"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						@crsrcrsrrr
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
+						href="https://www.instagram.com/synap.home.lab"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						@synap.home.lab
+						<ExternalLink class="h-3 w-3" />
+					</a>
+				</div>
 			</div>
 		</div>
 	</div>
