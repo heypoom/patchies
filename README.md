@@ -560,7 +560,7 @@ See the following example:
 
 <img src="./docs/images/patchies-uxn-compudanzas.png" alt="Patchies.app Uxn demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=y0de2zp42sgynsn)! Code is by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html). If you like their tutorial, please go [support](https://compudanzas.net/support.html) them!
+> ✨ Try this patch out [in the app](https://patchies.app/?id=z7rtmujmtvbv0e0)! Code is by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html). If you like their tutorial, please go [support](https://compudanzas.net/support.html) them!
 
 - Write and assemble your own Uxntal programs directly in the editor!
   - "Edit Code" button opens the Uxntal assembly code editor.

@@ -123,19 +123,21 @@
 				emulator = new UxnEmulator(options);
 				await emulator.init(options);
 
-				// Load ROM based on priority: ROM > Code > URL
-				if (data.rom) {
-					emulator.load(data.rom);
-				} else if (data.code && !data.url) {
-					// If code exists and no URL/ROM, assemble and load the code
+				// Load ROM based on priority: CODE > URL > ROM
+				if (data.code && !data.url) {
+					// If code exists and no URL, assemble and load the code
 					await assembleAndLoadCode(data.code);
 				} else if (data.url && !data.code) {
-					// If URL exists and no Code/ROM, load from URL
+					// If URL exists and no Code, load from URL
 					await loadFromUrl(data.url);
+				} else if (data.rom) {
+					// Load the ROM directly
+					emulator.load(data.rom);
 				}
 
 				// Set up event handlers
 				const cleanup = setupEventHandlers();
+
 				if (cleanup) {
 					cleanupEventHandlers = cleanup;
 				}
