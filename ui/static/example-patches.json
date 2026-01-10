@@ -160,6 +160,13 @@
 			"description": "Example assembly patch demonstrating the virtual stack machine with color-coded memory visualization",
 			"category": "Programming",
 			"author": "@heypoom"
+		},
+		{
+			"id": "y0de2zp42sgynsn",
+			"name": "Uxn Pong Game",
+			"description": "Pong game written in Uxntal assembly, code from @compudanzas' Uxn tutorial",
+			"category": "Programming",
+			"author": "@compudanzas"
 		}
 	]
 }
