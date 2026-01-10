@@ -125,8 +125,11 @@
 	// Mobile connection mode state
 	let isConnectionMode = $state(false);
 	let connectionSourceNode = $state<string | null>(null);
-	let showHandleSelection = $state(false);
-	let selectedDestinationNode = $state<string | null>(null);
+	let connectionDestinationNode = $state<string | null>(null);
+	let sourceNodeConfirmed = $state(false);
+	let destinationNodeConfirmed = $state(false);
+	let showSourceOutletSelection = $state(false);
+	let showDestinationInletSelection = $state(false);
 	let availableSourceHandles = $state<Array<{ id: string; label: string; type: string }>>([]);
 	let availableTargetHandles = $state<Array<{ id: string; label: string; type: string }>>([]);
 	let selectedSourceHandle = $state<string | null>(null);
@@ -892,8 +895,11 @@
 	function startConnectionMode() {
 		isConnectionMode = true;
 		connectionSourceNode = null;
-		showHandleSelection = false;
-		selectedDestinationNode = null;
+		connectionDestinationNode = null;
+		sourceNodeConfirmed = false;
+		destinationNodeConfirmed = false;
+		showSourceOutletSelection = false;
+		showDestinationInletSelection = false;
 		selectedSourceHandle = null;
 		selectedTargetHandle = null;
 	}
@@ -901,8 +907,11 @@
 	function cancelConnectionMode() {
 		isConnectionMode = false;
 		connectionSourceNode = null;
-		showHandleSelection = false;
-		selectedDestinationNode = null;
+		connectionDestinationNode = null;
+		sourceNodeConfirmed = false;
+		destinationNodeConfirmed = false;
+		showSourceOutletSelection = false;
+		showDestinationInletSelection = false;
 		selectedSourceHandle = null;
 		selectedTargetHandle = null;
 	}
@@ -970,52 +979,94 @@
 	function handleNodeClickForConnection(nodeId: string) {
 		if (!isConnectionMode) return;
 
-		if (!connectionSourceNode) {
-			// First click - select source node
+		if (!sourceNodeConfirmed) {
+			// Select source node (pending confirmation)
 			connectionSourceNode = nodeId;
-			// Don't show destination menu - let user click on canvas instead
-		} else {
-			// Second click - select destination node
-			selectDestinationNode(nodeId);
+		} else if (!destinationNodeConfirmed) {
+			// Select destination node (pending confirmation)
+			connectionDestinationNode = nodeId;
 		}
 	}
 
-	async function selectDestinationNode(destinationNodeId: string) {
-		if (!connectionSourceNode || connectionSourceNode === destinationNodeId) {
-			// Can't connect a node to itself
-			cancelConnectionMode();
-			return;
-		}
+	async function confirmSourceNode() {
+		if (!connectionSourceNode) return;
 
-		// Get the source and destination nodes
 		const sourceNode = nodes.find((n) => n.id === connectionSourceNode);
-		const destinationNode = nodes.find((n) => n.id === destinationNodeId);
-
-		if (!sourceNode || !destinationNode) {
+		if (!sourceNode) {
 			cancelConnectionMode();
 			return;
 		}
 
-		// Get available handles for both nodes
+		// Get available source handles
 		const sourceHandles = await getNodeHandles(sourceNode, 'source');
-		const targetHandles = await getNodeHandles(destinationNode, 'target');
+		availableSourceHandles = sourceHandles;
 
-		// If either node has multiple handles, show selection UI
-		if (sourceHandles.length > 1 || targetHandles.length > 1) {
-			selectedDestinationNode = destinationNodeId;
-			availableSourceHandles = sourceHandles;
-			availableTargetHandles = targetHandles;
-			showHandleSelection = true;
-
-			// Pre-select first handles as default
+		// If multiple outlets, show selection modal
+		if (sourceHandles.length > 1) {
 			selectedSourceHandle = sourceHandles[0]?.id || null;
-			selectedTargetHandle = targetHandles[0]?.id || null;
+			showSourceOutletSelection = true;
 		} else {
-			// Only one handle option - create connection directly
-			const sourceHandle = sourceHandles[0]?.id;
-			const targetHandle = targetHandles[0]?.id;
-			createConnection(connectionSourceNode, destinationNodeId, sourceHandle, targetHandle);
+			// Single outlet - auto-select and confirm
+			selectedSourceHandle = sourceHandles[0]?.id || null;
+			sourceNodeConfirmed = true;
 		}
+	}
+
+	function confirmSourceOutlet() {
+		showSourceOutletSelection = false;
+		sourceNodeConfirmed = true;
+	}
+
+	async function confirmDestinationNode() {
+		if (!connectionDestinationNode || !connectionSourceNode) return;
+
+		// Can't connect a node to itself
+		if (connectionDestinationNode === connectionSourceNode) {
+			cancelConnectionMode();
+			return;
+		}
+
+		const destinationNode = nodes.find((n) => n.id === connectionDestinationNode);
+		if (!destinationNode) {
+			cancelConnectionMode();
+			return;
+		}
+
+		// Get available target handles
+		const targetHandles = await getNodeHandles(destinationNode, 'target');
+		availableTargetHandles = targetHandles;
+
+		// If multiple inlets, show selection modal
+		if (targetHandles.length > 1) {
+			selectedTargetHandle = targetHandles[0]?.id || null;
+			showDestinationInletSelection = true;
+		} else {
+			// Single inlet - auto-select and create connection
+			selectedTargetHandle = targetHandles[0]?.id || null;
+			createConnection(
+				connectionSourceNode,
+				connectionDestinationNode,
+				selectedSourceHandle || undefined,
+				targetHandles[0]?.id
+			);
+		}
+	}
+
+	function confirmDestinationInlet() {
+		showDestinationInletSelection = false;
+		if (!connectionSourceNode || !connectionDestinationNode) return;
+
+		createConnection(
+			connectionSourceNode,
+			connectionDestinationNode,
+			selectedSourceHandle || undefined,
+			selectedTargetHandle || undefined
+		);
+	}
+
+	async function selectDestinationNode(destinationNodeId: string) {
+		// This function is no longer used in the new flow
+		// Kept for compatibility but will be refactored
 	}
 
 	function createConnection(
@@ -1034,17 +1085,6 @@
 
 		edges = [...edges, newEdge];
 		cancelConnectionMode();
-	}
-
-	function confirmHandleSelection() {
-		if (!connectionSourceNode || !selectedDestinationNode) return;
-
-		createConnection(
-			connectionSourceNode,
-			selectedDestinationNode,
-			selectedSourceHandle || undefined,
-			selectedTargetHandle || undefined
-		);
 	}
 </script>
 
@@ -1114,19 +1154,75 @@
 		</div>
 	{/if}
 
-	<!-- Connection Mode - Source Selected Indicator -->
-	{#if isConnectionMode && connectionSourceNode && !showHandleSelection}
+	<!-- Connection Mode - Source Node Selected (Pending Confirmation) -->
+	{#if isConnectionMode && connectionSourceNode && !sourceNodeConfirmed}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-3 rounded-lg border border-yellow-600 bg-yellow-900/80 px-4 py-2 text-sm text-yellow-200 backdrop-blur-sm"
+			>
+				<Cable class="h-4 w-4" />
+				<span
+					>Source selected: {nodes.find((n) => n.id === connectionSourceNode)?.type ||
+						'node'}</span
+				>
+				<button
+					class="rounded bg-yellow-700 px-3 py-1 text-xs font-medium text-yellow-100 hover:bg-yellow-600"
+					onclick={confirmSourceNode}
+				>
+					Select
+				</button>
+				<button
+					class="text-yellow-300 hover:text-yellow-100"
+					onclick={cancelConnectionMode}
+					title="Cancel"
+				>
+					×
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Connection Mode - Source Confirmed, Select Destination -->
+	{#if isConnectionMode && sourceNodeConfirmed && !connectionDestinationNode}
 		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
 			<div
 				class="flex items-center gap-2 rounded-lg border border-green-600 bg-green-900/80 px-4 py-2 text-sm text-green-200 backdrop-blur-sm"
 			>
 				<Cable class="h-4 w-4" />
 				<span
-					>Source: {nodes.find((n) => n.id === connectionSourceNode)?.type || 'selected'} → Click
-					destination node</span
+					>Source: {nodes.find((n) => n.id === connectionSourceNode)?.type || 'selected'} →
+					Click destination node</span
 				>
 				<button
 					class="ml-2 text-green-300 hover:text-green-100"
+					onclick={cancelConnectionMode}
+					title="Cancel"
+				>
+					×
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Connection Mode - Destination Node Selected (Pending Confirmation) -->
+	{#if isConnectionMode && connectionDestinationNode && !destinationNodeConfirmed}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-3 rounded-lg border border-yellow-600 bg-yellow-900/80 px-4 py-2 text-sm text-yellow-200 backdrop-blur-sm"
+			>
+				<Cable class="h-4 w-4" />
+				<span
+					>Destination selected: {nodes.find((n) => n.id === connectionDestinationNode)?.type ||
+						'node'}</span
+				>
+				<button
+					class="rounded bg-yellow-700 px-3 py-1 text-xs font-medium text-yellow-100 hover:bg-yellow-600"
+					onclick={confirmDestinationNode}
+				>
+					Select
+				</button>
+				<button
+					class="text-yellow-300 hover:text-yellow-100"
 					onclick={cancelConnectionMode}
 					title="Cancel"
 				>
@@ -1324,8 +1420,8 @@
 		onEditObject={handleAiObjectEdit}
 	/>
 
-	<!-- Mobile Connection Mode: Handle Selection Modal -->
-	{#if showHandleSelection && connectionSourceNode && selectedDestinationNode}
+	<!-- Mobile Connection Mode: Source Outlet Selection Modal -->
+	{#if showSourceOutletSelection && connectionSourceNode}
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
@@ -1339,88 +1435,45 @@
 				onclick={(e) => e.stopPropagation()}
 			>
 				<div class="border-b border-zinc-700 p-4">
-					<h2 class="text-lg font-semibold text-zinc-200">Select Handles</h2>
+					<h2 class="text-lg font-semibold text-zinc-200">Select Outlet</h2>
 					<p class="mt-1 text-sm text-zinc-400">
-						Choose which outlet and inlet to connect
+						Choose which outlet to connect from {nodes.find((n) => n.id === connectionSourceNode)
+							?.type || 'source'}
 					</p>
 				</div>
 
 				<div class="max-h-[60vh] overflow-y-auto p-4">
-					<!-- Source handle selection -->
-					<div class="mb-6">
-						<label class="mb-2 block text-sm font-medium text-zinc-300">
-							From: {nodes.find((n) => n.id === connectionSourceNode)?.type}
-						</label>
-						{#if availableSourceHandles.length > 0}
-							<div class="space-y-1">
-								{#each availableSourceHandles as handle (handle.id)}
-									<button
-										class={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
-											selectedSourceHandle === handle.id
-												? 'border-blue-500 bg-blue-900/30 text-blue-200'
-												: 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-										}`}
-										onclick={() => (selectedSourceHandle = handle.id)}
-									>
-										<div class="flex items-center justify-between">
-											<span class="font-medium">{handle.label}</span>
-											<span
-												class={`text-xs ${
-													handle.type === 'audio'
-														? 'text-blue-400'
-														: handle.type === 'video'
-															? 'text-orange-400'
-															: 'text-gray-400'
-												}`}
-											>
-												{handle.type}
-											</span>
-										</div>
-									</button>
-								{/each}
-							</div>
-						{:else}
-							<div class="text-sm text-zinc-500">No outlets available</div>
-						{/if}
-					</div>
-
-					<!-- Target handle selection -->
-					<div>
-						<label class="mb-2 block text-sm font-medium text-zinc-300">
-							To: {nodes.find((n) => n.id === selectedDestinationNode)?.type}
-						</label>
-						{#if availableTargetHandles.length > 0}
-							<div class="space-y-1">
-								{#each availableTargetHandles as handle (handle.id)}
-									<button
-										class={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
-											selectedTargetHandle === handle.id
-												? 'border-blue-500 bg-blue-900/30 text-blue-200'
-												: 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-										}`}
-										onclick={() => (selectedTargetHandle = handle.id)}
-									>
-										<div class="flex items-center justify-between">
-											<span class="font-medium">{handle.label}</span>
-											<span
-												class={`text-xs ${
-													handle.type === 'audio'
-														? 'text-blue-400'
-														: handle.type === 'video'
-															? 'text-orange-400'
-															: 'text-gray-400'
-												}`}
-											>
-												{handle.type}
-											</span>
-										</div>
-									</button>
-								{/each}
-							</div>
-						{:else}
-							<div class="text-sm text-zinc-500">No inlets available</div>
-						{/if}
-					</div>
+					{#if availableSourceHandles.length > 0}
+						<div class="space-y-1">
+							{#each availableSourceHandles as handle (handle.id)}
+								<button
+									class={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
+										selectedSourceHandle === handle.id
+											? 'border-blue-500 bg-blue-900/30 text-blue-200'
+											: 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+									}`}
+									onclick={() => (selectedSourceHandle = handle.id)}
+								>
+									<div class="flex items-center justify-between">
+										<span class="font-medium">{handle.label}</span>
+										<span
+											class={`text-xs ${
+												handle.type === 'audio'
+													? 'text-blue-400'
+													: handle.type === 'video'
+														? 'text-orange-400'
+														: 'text-gray-400'
+											}`}
+										>
+											{handle.type}
+										</span>
+									</div>
+								</button>
+							{/each}
+						</div>
+					{:else}
+						<div class="text-sm text-zinc-500">No outlets available</div>
+					{/if}
 				</div>
 
 				<div class="border-t border-zinc-700 p-4">
@@ -1433,8 +1486,85 @@
 						</button>
 						<button
 							class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-							onclick={confirmHandleSelection}
-							disabled={!selectedSourceHandle || !selectedTargetHandle}
+							onclick={confirmSourceOutlet}
+							disabled={!selectedSourceHandle}
+						>
+							Confirm
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Mobile Connection Mode: Destination Inlet Selection Modal -->
+	{#if showDestinationInletSelection && connectionDestinationNode}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+			onclick={cancelConnectionMode}
+		>
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="max-h-[80vh] w-full max-w-md overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl"
+				onclick={(e) => e.stopPropagation()}
+			>
+				<div class="border-b border-zinc-700 p-4">
+					<h2 class="text-lg font-semibold text-zinc-200">Select Inlet</h2>
+					<p class="mt-1 text-sm text-zinc-400">
+						Choose which inlet to connect to {nodes.find((n) => n.id === connectionDestinationNode)
+							?.type || 'destination'}
+					</p>
+				</div>
+
+				<div class="max-h-[60vh] overflow-y-auto p-4">
+					{#if availableTargetHandles.length > 0}
+						<div class="space-y-1">
+							{#each availableTargetHandles as handle (handle.id)}
+								<button
+									class={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
+										selectedTargetHandle === handle.id
+											? 'border-blue-500 bg-blue-900/30 text-blue-200'
+											: 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+									}`}
+									onclick={() => (selectedTargetHandle = handle.id)}
+								>
+									<div class="flex items-center justify-between">
+										<span class="font-medium">{handle.label}</span>
+										<span
+											class={`text-xs ${
+												handle.type === 'audio'
+													? 'text-blue-400'
+													: handle.type === 'video'
+														? 'text-orange-400'
+														: 'text-gray-400'
+											}`}
+										>
+											{handle.type}
+										</span>
+									</div>
+								</button>
+							{/each}
+						</div>
+					{:else}
+						<div class="text-sm text-zinc-500">No inlets available</div>
+					{/if}
+				</div>
+
+				<div class="border-t border-zinc-700 p-4">
+					<div class="flex gap-2">
+						<button
+							class="flex-1 rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700"
+							onclick={cancelConnectionMode}
+						>
+							Cancel
+						</button>
+						<button
+							class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+							onclick={confirmDestinationInlet}
+							disabled={!selectedTargetHandle}
 						>
 							Connect
 						</button>
