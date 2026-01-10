@@ -359,7 +359,7 @@
 				{#if isLoading}
 					<button
 						onclick={handleCancel}
-						class="rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+						class="rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white cursor-pointer"
 					>
 						Cancel
 					</button>
@@ -367,7 +367,7 @@
 					<button
 						onclick={handleSubmit}
 						disabled={!promptText.trim() || isLoading}
-						class="rounded {isEditMode
+						class="cursor-pointer rounded {isEditMode
 							? 'bg-amber-600 hover:bg-amber-700'
 							: isMultiObjectMode
 								? 'bg-blue-600 hover:bg-blue-700'
