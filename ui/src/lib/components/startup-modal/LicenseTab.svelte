@@ -334,7 +334,7 @@
 
 			<!-- Pub -->
 			<div class="rounded-lg bg-zinc-900/50 p-3">
-				<h3 class="text-sm font-semibold text-zinc-100">Chayapatr "Pub" Archiwaranguprok (chayapatr)</h3>
+				<h3 class="text-sm font-semibold text-zinc-100">Chayapatr "Pub" Archiwaranguprok (@chayapatr)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
 					My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten.
 				</p>
