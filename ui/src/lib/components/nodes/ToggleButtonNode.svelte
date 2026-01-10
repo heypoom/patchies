@@ -81,7 +81,7 @@
 					total={1}
 					index={0}
 					class={handleClass}
-					nodeId={node.id}
+					nodeId={nodeId}
 				/>
 
 				<button onclick={toggleValue} class={buttonClass} aria-label="toggle button"> </button>
@@ -92,7 +92,7 @@
 					total={1}
 					index={0}
 					class={`absolute !bottom-1.5 ${handleClass}`}
-					nodeId={node.id}
+					nodeId={nodeId}
 				/>
 			</div>
 		</div>
