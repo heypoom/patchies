@@ -139,12 +139,14 @@ Verified orientation across all node chains:
 
 ### Documentation
 - Add diagram showing Y-axis orientation through the pipeline
-- Document the ImageBitmap vs Canvas flipY difference in code comments
+- ✓ Document the ImageBitmap vs Canvas flipY difference in code comments (DONE)
 - Create developer guide for adding new node types
 
-### API Consistency
-- Consider unifying `setBitmap` and `setBitmapSource` into a single method
-- Type system doesn't distinguish flip requirements - could use branded types
+### API Hardening (DONE ✓)
+- ✓ Renamed internal method to `setPreflippedBitmap()` to make contract explicit
+- ✓ Kept `setBitmap()` as deprecated alias for backward compatibility
+- ✓ Added comprehensive JSDoc explaining the pre-flip requirement
+- Future: Type system could use branded types to enforce flip at compile time
 
 ### Future Refactoring
 - Abstract flip logic into a utility function
@@ -157,6 +159,9 @@ Verified orientation across all node chains:
 - ✓ Fix all node types to use consistent Y-orientation
 - ✓ Optimize canvas.dom performance with non-blocking bitmap creation
 - ✓ Add comments explaining flip behavior in critical locations
+- ✓ Fix ScreenCaptureNode and VideoNode missing flipY (found in code review)
+- ✓ Add explicit API with setPreflippedBitmap() to prevent future violations
+- ✓ Document pre-flip contract in JSDoc comments
 
 ### Short-term
 - [ ] Add visual regression tests for Y-orientation
@@ -171,7 +176,7 @@ Verified orientation across all node chains:
 ## Files Modified
 
 **Core rendering**:
-- `ui/src/workers/rendering/fboRenderer.ts` - Remove flipY from setBitmap (ImageBitmap)
+- `ui/src/workers/rendering/fboRenderer.ts` - Remove flipY from setBitmap (ImageBitmap), add contract docs
 - `ui/src/workers/rendering/canvasRenderer.ts` - Apply flipY to OffscreenCanvas
 - `ui/src/workers/rendering/hydraRenderer.ts` - Flip via blitFramebuffer coordinates
 
@@ -179,9 +184,11 @@ Verified orientation across all node chains:
 - `ui/src/lib/components/nodes/ImageNode.svelte` - Pre-flip bitmap
 - `ui/src/lib/components/nodes/CanvasDom.svelte` - Uses setBitmapSource
 - `ui/src/lib/components/nodes/AiImageNode.svelte` - Pre-flip bitmap
+- `ui/src/lib/components/nodes/ScreenCaptureNode.svelte` - Fixed missing flipY
+- `ui/src/lib/components/nodes/VideoNode.svelte` - Fixed missing flipY
 
 **System layer**:
-- `ui/src/lib/canvas/GLSystem.ts` - Non-blocking setBitmapSource, preview flipY
+- `ui/src/lib/canvas/GLSystem.ts` - Non-blocking setBitmapSource, preview flipY, added setPreflippedBitmap()
 
 ## Lessons Learned
 
@@ -194,6 +201,8 @@ Verified orientation across all node chains:
 4. **Test Observable Behavior**: The arrow test pattern was more effective than inspecting individual transformations
 
 5. **Incremental is OK**: We tried several approaches before finding the right one - that's normal and valuable
+
+6. **Code Review Catches Contract Violations**: Post-implementation review found two nodes (ScreenCapture, Video) missing the flipY requirement - explicit API naming prevents this
 
 ## Conclusion
 

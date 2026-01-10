@@ -751,12 +751,27 @@ export class FBORenderer {
 		this.offscreenCanvas.height = height;
 	}
 
-	/** Sets a persistent bitmap image. */
+	/**
+	 * Sets a persistent pre-flipped bitmap image for a node.
+	 *
+	 * IMPORTANT CONTRACT: The bitmap MUST be pre-flipped with imageOrientation: 'flipY'
+	 * to match the pipeline's standard screen coordinates (Y-down, top-left origin).
+	 *
+	 * This is because regl's flipY option does NOT work with ImageBitmap - it only works
+	 * with HTMLCanvasElement/HTMLImageElement. The flip must happen during bitmap creation.
+	 *
+	 * Call sites should use:
+	 *   - createImageBitmap(source, { imageOrientation: 'flipY' })
+	 *   - OR route through GLSystem.setBitmapSource() which handles flipping
+	 *
+	 * @param nodeId - The node ID to set the bitmap for
+	 * @param bitmap - Pre-flipped ImageBitmap
+	 */
 	setBitmap(nodeId: string, bitmap: ImageBitmap) {
 		const texture = this.externalTexturesByNode.get(nodeId);
 
 		// Either update the existing texture or create a new one.
-		// ImageBitmap should already be flipped before being sent here
+		// Do NOT use flipY here - ImageBitmap ignores it, and bitmap should already be flipped
 		// @ts-expect-error -- regl types are imprecise for ImageBitmap
 		const nextTexture = texture ? texture({ data: bitmap }) : this.regl.texture({ data: bitmap });
 

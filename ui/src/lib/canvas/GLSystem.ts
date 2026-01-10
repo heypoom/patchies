@@ -339,11 +339,22 @@ export class GLSystem {
 		// Create flipped bitmap asynchronously without blocking
 		// createImageBitmap is GPU-accelerated and returns quickly
 		createImageBitmap(source, { imageOrientation: 'flipY' }).then((bitmap) => {
-			this.setBitmap(nodeId, bitmap);
+			this.setPreflippedBitmap(nodeId, bitmap);
 		});
 	}
 
-	setBitmap(nodeId: string, bitmap: ImageBitmap) {
+	/**
+	 * Set a pre-flipped ImageBitmap for a node.
+	 *
+	 * IMPORTANT: The bitmap MUST be created with { imageOrientation: 'flipY' }
+	 * to match the pipeline's standard screen coordinates (Y-down, top-left origin).
+	 *
+	 * If you have a non-flipped source, use setBitmapSource() instead.
+	 *
+	 * @param nodeId - The node ID to set the bitmap for
+	 * @param bitmap - Pre-flipped ImageBitmap (created with imageOrientation: 'flipY')
+	 */
+	setPreflippedBitmap(nodeId: string, bitmap: ImageBitmap) {
 		this.renderWorker.postMessage(
 			{
 				type: 'setBitmap',
@@ -352,6 +363,14 @@ export class GLSystem {
 			},
 			{ transfer: [bitmap] }
 		);
+	}
+
+	/**
+	 * @deprecated Use setPreflippedBitmap() instead to make flip requirement explicit.
+	 * This alias exists for backward compatibility.
+	 */
+	setBitmap(nodeId: string, bitmap: ImageBitmap) {
+		this.setPreflippedBitmap(nodeId, bitmap);
 	}
 
 	removeBitmap(nodeId: string) {

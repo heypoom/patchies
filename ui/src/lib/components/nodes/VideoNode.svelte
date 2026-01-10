@@ -268,7 +268,8 @@
 				if (resizerCtx) {
 					resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
 
-					const bitmap = await createImageBitmap(resizerCanvas);
+					// Create flipped ImageBitmap to match pipeline orientation
+					const bitmap = await createImageBitmap(resizerCanvas, { imageOrientation: 'flipY' });
 					await glSystem.setBitmap(nodeId, bitmap);
 				}
 			} else {

@@ -94,8 +94,8 @@
 					// Draw scaled video frame to offscreen canvas
 					resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
 
-					// Create ImageBitmap from the scaled canvas and upload
-					const bitmap = await createImageBitmap(resizerCanvas);
+					// Create flipped ImageBitmap from the scaled canvas and upload
+					const bitmap = await createImageBitmap(resizerCanvas, { imageOrientation: 'flipY' });
 					await glSystem.setBitmap(nodeId, bitmap);
 				}
 			} else {
