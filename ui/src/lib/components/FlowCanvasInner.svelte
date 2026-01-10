@@ -46,11 +46,11 @@
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
-	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 	import { AudioRegistry } from '$lib/registry/AudioRegistry';
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 	import { Toaster } from '$lib/components/ui/sonner';
+	import { isValidConnectionBetweenHandles } from '$lib/utils/connection-validation';
 
 	// @ts-expect-error -- no typedefs
 	import { toast } from 'svelte-sonner';
@@ -670,31 +670,7 @@
 	}
 
 	const isValidConnection: IsValidConnection = (connection) => {
-		// Allow connecting `fft~` analysis result to anything except audio inlets.
-		if (connection.sourceHandle?.startsWith(ANALYSIS_KEY)) {
-			return !connection.targetHandle?.startsWith('audio-in');
-		}
-
-		if (
-			connection.sourceHandle?.startsWith('video') ||
-			connection.targetHandle?.startsWith('video')
-		) {
-			return !!(
-				(connection.sourceHandle?.startsWith('video') ||
-					connection.sourceHandle?.startsWith('gl')) &&
-				(connection.targetHandle?.startsWith('video') || connection.targetHandle?.startsWith('gl'))
-			);
-		}
-
-		// Audio inlets must come from audio sources (for audio synthesis chains)
-		// But audio outlets can connect to message inlets (for parameter automation)
-		if (connection.targetHandle?.startsWith('audio-in')) {
-			return !!connection.sourceHandle?.startsWith('audio');
-		}
-
-		// Audio outlets can connect to non-audio targets (message inlets for automation)
-		// Message connections are always allowed
-		return true;
+		return isValidConnectionBetweenHandles(connection.sourceHandle, connection.targetHandle);
 	};
 
 	function getNodeIdCounterFromSave(nodes: Node[]): number {

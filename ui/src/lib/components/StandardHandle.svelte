@@ -4,6 +4,7 @@
 	import { match, P } from 'ts-pattern';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 	import { isConnectionMode, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
+	import { canAcceptConnection } from '$lib/utils/connection-validation';
 
 	interface Props {
 		port: 'inlet' | 'outlet';
@@ -59,6 +60,9 @@
 		const connectingIsOutlet = $connectingFromHandleId.includes('-out');
 		const connectingIsInlet = $connectingFromHandleId.includes('-in');
 
+		// Determine the source port type (what initiated the connection)
+		const sourcePort: 'inlet' | 'outlet' = connectingIsOutlet ? 'outlet' : 'inlet';
+
 		// If connecting from an outlet, dim ALL outlets (user should select an inlet)
 		if (connectingIsOutlet && port === 'outlet') {
 			return true;
@@ -66,6 +70,19 @@
 
 		// If connecting from an inlet, dim ALL inlets (user should select an outlet)
 		if (connectingIsInlet && port === 'inlet') {
+			return true;
+		}
+
+		// Check if this handle can accept a connection from the source based on validation rules
+		// If the connection would be invalid, dim this handle
+		const wouldBeValidConnection = canAcceptConnection(
+			$connectingFromHandleId,
+			qualifiedHandleId,
+			sourcePort,
+			port
+		);
+
+		if (!wouldBeValidConnection) {
 			return true;
 		}
 
