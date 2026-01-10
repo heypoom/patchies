@@ -48,6 +48,16 @@
 	// Construct the fully qualified handle identifier (nodeId + handleId)
 	const qualifiedHandleId = $derived(`${nodeId}/${handleId}`);
 
+	// Determine if this AudioParam inlet should highlight as "audio-compatible"
+	// when dragging from an audio outlet (e.g. gain~ audio-out)
+	const shouldShowAsAudioCompatible = $derived.by(() => {
+		if (!$isConnecting || !$connectingFromHandleId) return false;
+		if (!isAudioParam || port !== 'inlet') return false;
+
+		// Check if dragging from an audio outlet
+		return $connectingFromHandleId.includes('audio-out');
+	});
+
 	// Determine if this handle should be dimmed
 	const shouldDim = $derived.by(() => {
 		// Only dim when actively connecting
@@ -93,16 +103,19 @@
 
 	// Determine handle color based on type using ts-pattern
 	const handleClass = $derived.by(() => {
+		// Override color to blue when AudioParam inlet is compatible with audio source being dragged
+		const effectiveType = shouldShowAsAudioCompatible ? 'audio' : type;
+
 		// Don't apply hover colors when dimmed
 		const colorClass = shouldDim
-			? match(type)
+			? match(effectiveType)
 					.with('video', () => '!bg-orange-500')
 					.with('audio', () => '!bg-blue-500')
 					.with('message', () => '!bg-gray-500')
 					.with(ANALYSIS_KEY, () => '!bg-purple-500')
 					.with(P.nullish, () => '!bg-gray-500')
 					.exhaustive()
-			: match(type)
+			: match(effectiveType)
 					.with('video', () => '!bg-orange-500 hover:!bg-orange-400')
 					.with('audio', () => '!bg-blue-500 hover:!bg-blue-400')
 					.with('message', () => '!bg-gray-500 hover:!bg-gray-400')
