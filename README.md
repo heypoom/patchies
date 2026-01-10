@@ -35,23 +35,29 @@ This lets you visually see the program's core composition and its in-between res
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
-## License and Attribution
-
-Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
-
 ## Getting Started
-
-- Go to [patchies.app](https://patchies.app).
-- Use the mouse to pan the canvas.
-- Use the scroll wheel to zoom the canvas.
-
-### Try out some examples
 
 <img src="./docs/images/patchies-demo-modal.png" alt="Patchies.app demo modal" width="700">
 
-Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand. Go to "Help" (the button with the question mark on the bottom right) then "demos" to view the list of demos you can play with!
+Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand.
 
-### Creating Objects
+- Go to [patchies.app](https://patchies.app)
+- Click on the "demos" tab to view the list of demos you can play with
+- Use the mouse to pan the canvas.
+- Use the scroll wheel to zoom the canvas.
+- You can always go back to this dialog by clicking on the "Help" button on the bottom right.
+
+## Supporting Open Source
+
+<img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
+
+Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](docs/licenses.md) for detailed information about all third-party libraries used.
+
+If you enjoy using Patchies, please consider [supporting the open source creators](docs/support.md) who made it possible. You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
+
+Special thanks to [the amazing people](docs/support.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
+
+## Creating Objects
 
 <img src="./docs/images/patchies-insert-object-with-enter.png" alt="Patchies.app orca node" width="700">
 
@@ -287,7 +293,8 @@ These objects support video chaining and can be connected to create complex visu
   ```
 
 - You can import shared JavaScript libraries across multiple `p5` objects, see [sharing JavaScript across multiple `js` blocks](#sharing-javascript-across-multiple-js-blocks).
-  - Try out this [Matter.js example](https://patchies.app/?id=08wca4jzuz5wpng) from Daniel Shiffman's [The Nature of Code](https://natureofcode.com) that creates a simple physics simulation. In this example, the code for the Boundary and Box class is separated into shared library objects.
+  - Try out this [Matter.js example](https://patchies.app/?id=08wca4jzuz5wpng) from Daniel Shiffman's [The Nature of Code](https://natureofcode.com) that creates a simple physics simulation. In this example, the code for the Boundary and Box class is separated into shared library objects. You can [purchase the book](https://natureofcode.com/) to support Daniel's amazing educational work!
+- Please consider supporting the [Processing Foundation](https://processingfoundation.org/donate) who maintains p5.js!
 
 ### `hydra`: creates a Hydra video synthesizer
 
@@ -307,6 +314,7 @@ These objects support video chaining and can be connected to create complex visu
   - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
   - `filet-mignon.hydra`: example Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl). Licensed under CC BY-NC-SA 4.0.
 - Try out [this demo](https://patchies.app/?id=qbnonbgwyvzov2c) which uses P5.js with Hydra to create a random walk shader
+- Check out [Olivia Jack's website](https://ojack.xyz/) to learn more about her work!
 
 ### `glsl`: creates a GLSL fragment shader
 
@@ -587,6 +595,7 @@ See the following example:
 - See the [Uxn documentation](https://wiki.xxiivv.com/site/uxn.html) and [Uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html) to learn how to write Uxn programs.
 - Check out [100r.co](https://100r.co) for Uxn design principles.
 - See [Awesome Uxn](https://github.com/hundredrabbits/awesome-uxn) for cool resources and projects from the Uxn community.
+- Please consider supporting [Hundred Rabbits on Patreon](https://www.patreon.com/hundredrabbits) for their amazing work on Uxn and Orca!
 
 ### `asm`: virtual stack machine assembly interpreter
 
@@ -694,6 +703,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - `>` increases tempo
   - `<` decreases tempo
 - **Attribution**: Based on the original Orca by Hundred Rabbits, licensed under [MIT License](https://github.com/hundredrabbits/Orca/blob/main/LICENSE.md).
+- Please consider supporting [Hundred Rabbits on Patreon](https://www.patreon.com/hundredrabbits) for their amazing work on Orca and Uxn!
 
 ### `strudel`: Strudel music environment
 
@@ -1028,6 +1038,8 @@ return {
 };
 ```
 
+- Please consider supporting [Yotam Mann on GitHub Sponsors](https://github.com/sponsors/tambien), the creator of Tone.js!
+
 ### `sonic~`: SuperCollider synthesis engine
 
 The `sonic~` object integrates [SuperSonic](https://sonic-pi.net/supersonic/demo.html), which brings SuperCollider's powerful `scsynth` audio engine to the browser via AudioWorklet.
@@ -1098,6 +1110,8 @@ sonic.send(
 
 See the [SuperSonic documentation](https://github.com/samaaron/supersonic) and [scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html) for more details.
 
+Please consider supporting [Sam Aaron on Patreon](https://www.patreon.com/samaaron), the creator of Sonic Pi and SuperSonic!
+
 ### `elem~`: Elementary Audio synthesis and processing
 
 The `elem~` object lets you use the [Elementary Audio](https://www.elementary.audio) library, a declarative digital audio signal processing.
@@ -1141,6 +1155,8 @@ recv((freq) => setRate({ value: freq }));
 core.render(el.phasor(rate), el.phasor(rate));
 ```
 
+- Please consider supporting [Nick Thompson on GitHub Sponsors](https://github.com/sponsors/nick-thompson), the creator of Elementary Audio!
+
 ### `csound~`: Sound and music computing
 
 The `csound~` object allows you to use [Csound](https://csound.com) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
@@ -1163,6 +1179,7 @@ You can send messages to control Csound instruments:
 - `{type: 'eval', code: 'instr 1 ... endin'}`: Evaluate Csound code
 - `number`: Set control channel for the inlet index
 - `string`: Send input messages (or set option if starts with `-`)
+- If you'd like to support Csound's development, check out their [contribution page](https://csound.com/contribute.html)!
 
 ### MIDI & Network Objects
 

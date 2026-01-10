@@ -32,7 +32,7 @@ export interface PortedCode {
 
 export const projectLicense: LicenseSection = {
 	title: 'Project License',
-	description: 'Patchies is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).',
+	description: 'Patchies is licensed under the GNU Affero General Public License v3.0:',
 	license: 'GNU Affero General Public License v3.0 (AGPL-3.0)',
 	whatItMeans: [
 		'✅ Free to use, modify, and distribute',
@@ -415,5 +415,201 @@ export const portedCode: PortedCode[] = [
 		license: 'AGPL-3.0',
 		notes:
 			'Package patch (superdough@1.2.3.patch) adds window globals for audio node integration: exposes destination gain node and audio node chains for connectivity with other Patchies audio objects.'
+	}
+];
+
+export interface SupportLink {
+	name: string;
+	description: string;
+	category: 'library' | 'educator' | 'tool';
+	url: string;
+	type: 'patreon' | 'opencollective' | 'github' | 'donate' | 'purchase' | 'website';
+	projects?: string[];
+}
+
+export const supportLinks: SupportLink[] = [
+	{
+		name: 'Sam Aaron',
+		description: 'Creator of Sonic Pi and SuperSonic',
+		category: 'library',
+		url: 'https://www.patreon.com/samaaron',
+		type: 'patreon',
+		projects: ['Sonic Pi', 'SuperSonic', 'Tau5']
+	},
+	{
+		name: 'Strudel & TidalCycles',
+		description: 'Live coding music community and tools',
+		category: 'library',
+		url: 'https://opencollective.com/tidalcycles',
+		type: 'opencollective',
+		projects: ['Strudel', 'TidalCycles', 'Superdough']
+	},
+	{
+		name: 'Hundred Rabbits',
+		description: 'Creators of Orca and Uxn virtual machine',
+		category: 'library',
+		url: 'https://www.patreon.com/hundredrabbits',
+		type: 'patreon',
+		projects: ['Orca', 'Uxn', 'Thousand Rooms', 'Oquonie']
+	},
+	{
+		name: 'Processing Foundation',
+		description: 'Non-profit behind Processing and p5.js',
+		category: 'library',
+		url: 'https://processingfoundation.org/donate',
+		type: 'donate',
+		projects: ['p5.js', 'Processing']
+	},
+	{
+		name: 'Marijn Haverbeke',
+		description: 'Creator and maintainer of CodeMirror',
+		category: 'library',
+		url: 'https://github.com/sponsors/marijnh',
+		type: 'github',
+		projects: ['CodeMirror', 'ProseMirror']
+	},
+	{
+		name: 'Nick Thompson',
+		description: 'Creator of Elementary Audio',
+		category: 'library',
+		url: 'https://github.com/sponsors/nick-thompson',
+		type: 'github',
+		projects: ['Elementary Audio']
+	},
+	{
+		name: 'Yotam Mann',
+		description: 'Creator of Tone.js',
+		category: 'library',
+		url: 'https://github.com/sponsors/tambien',
+		type: 'github',
+		projects: ['Tone.js']
+	},
+	{
+		name: 'Olivia Jack',
+		description: 'Creator of Hydra video synthesizer',
+		category: 'library',
+		url: 'https://ojack.xyz/',
+		type: 'website',
+		projects: ['Hydra']
+	},
+	{
+		name: 'Patt Vira',
+		description: 'Creative coding educator and P5.js tutorial creator',
+		category: 'educator',
+		url: 'https://www.pattvira.com',
+		type: 'website',
+		projects: ['P5.js tutorials', 'SPARK program']
+	},
+	{
+		name: 'Compudanzas',
+		description: 'Educational resources for Uxn programming',
+		category: 'educator',
+		url: 'https://compudanzas.itch.io/introduction-to-uxn-programming',
+		type: 'purchase',
+		projects: ['Uxn tutorials']
+	},
+	{
+		name: 'Daniel Shiffman',
+		description: 'Creator of The Coding Train and Nature of Code',
+		category: 'educator',
+		url: 'https://natureofcode.com/',
+		type: 'purchase',
+		projects: ['Nature of Code', 'The Coding Train']
+	},
+	{
+		name: 'Sindre Sorhus',
+		description: 'Prolific open source contributor and maintainer',
+		category: 'tool',
+		url: 'https://github.com/sponsors/sindresorhus',
+		type: 'github',
+		projects: ['globals', 'escape-string-regexp', 'find-up', 'p-limit', 'many utilities']
+	},
+	{
+		name: 'Feross Aboukhadijeh',
+		description: 'Creator of WebTorrent and many popular web libraries',
+		category: 'tool',
+		url: 'https://github.com/sponsors/feross',
+		type: 'github',
+		projects: ['simple-peer', 'buffer', 'base64-js', 'unmute-ios-audio']
+	},
+	{
+		name: 'Andrey Sitnik',
+		description: 'Creator of PostCSS, Autoprefixer, and Nano Stores',
+		category: 'tool',
+		url: 'https://github.com/sponsors/ai',
+		type: 'github',
+		projects: ['PostCSS', 'nanostores', '@nanostores/persistent']
+	},
+	{
+		name: 'Anthony Fu',
+		description: 'Core team member of Vite, Vue, and Nuxt',
+		category: 'tool',
+		url: 'https://github.com/sponsors/antfu',
+		type: 'github',
+		projects: ['Vitest', 'strip-literal', 'error-stack-parser-es']
+	},
+	{
+		name: 'Karolis Narkevicius',
+		description: 'Creator of thi.ng umbrella libraries for creative coding',
+		category: 'tool',
+		url: 'https://github.com/sponsors/postspectacular',
+		type: 'github',
+		projects: ['@thi.ng/malloc', '@thi.ng/api', 'thi.ng ecosystem']
+	},
+	{
+		name: 'ESLint',
+		description: 'Pluggable JavaScript linter',
+		category: 'tool',
+		url: 'https://eslint.org/donate',
+		type: 'donate',
+		projects: ['ESLint', 'eslint-config-prettier']
+	},
+	{
+		name: 'Vitest',
+		description: 'Fast unit test framework powered by Vite',
+		category: 'tool',
+		url: 'https://opencollective.com/vitest',
+		type: 'opencollective',
+		projects: ['Vitest', 'vitest-browser-svelte']
+	},
+	{
+		name: 'PostCSS',
+		description: 'Tool for transforming CSS with JavaScript',
+		category: 'tool',
+		url: 'https://opencollective.com/postcss/',
+		type: 'opencollective',
+		projects: ['PostCSS', 'postcss-safe-parser']
+	},
+	{
+		name: 'core-js',
+		description: 'Modular standard library for JavaScript',
+		category: 'tool',
+		url: 'https://opencollective.com/core-js',
+		type: 'opencollective',
+		projects: ['core-js']
+	},
+	{
+		name: 'Csound',
+		description: 'Powerful audio programming language with decades of development',
+		category: 'library',
+		url: 'https://csound.com/contribute.html',
+		type: 'website',
+		projects: ['Csound']
+	},
+	{
+		name: 'Svelte',
+		description: 'JavaScript framework for building user interfaces',
+		category: 'library',
+		url: 'https://github.com/sponsors/sveltejs',
+		type: 'github',
+		projects: ['Svelte', 'SvelteKit']
+	},
+	{
+		name: 'XYFlow',
+		description: 'Libraries for building node-based UIs with React and Svelte',
+		category: 'library',
+		url: 'https://github.com/sponsors/xyflow',
+		type: 'github',
+		projects: ['React Flow', 'Svelte Flow']
 	}
 ];
