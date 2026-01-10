@@ -25,9 +25,10 @@
 		edges: Edge[];
 		setNodes: (nodes: Node[]) => void;
 		setEdges: (edges: Edge[]) => void;
+		onShowAiPrompt?: () => void;
 	}
 
-	let { position, onCancel, nodes, edges, setNodes, setEdges }: Props = $props();
+	let { position, onCancel, nodes, edges, setNodes, setEdges, onShowAiPrompt }: Props = $props();
 
 	// Component state
 	let searchQuery = $state('');
@@ -73,12 +74,28 @@
 			name: 'Enter Fullscreen',
 			description: 'Enter fullscreen mode in the main window.'
 		},
+		{
+			id: 'toggle-connect-mode',
+			name: 'Toggle Connect Mode',
+			description: 'Enter or exit tap-to-connect mode for connecting objects'
+		},
+		{
+			id: 'ai-insert-object',
+			name: 'Insert or Edit Object with AI',
+			description: 'Use AI to create objects with natural language',
+			requiresAi: true
+		},
 		{ id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
 		{ id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
 		{ id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
 		{ id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
 		{ id: 'rename-patch', name: 'Rename Patch', description: 'Rename saved patch' },
 		{ id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' },
+		{
+			id: 'open-output-screen',
+			name: 'Open Output Screen',
+			description: 'Open a secondary output screen for live performances.'
+		},
 		{
 			id: 'set-gemini-api-key',
 			name: 'Set Gemini API Key',
@@ -105,25 +122,17 @@
 			description: 'Show or hide AI-related objects and features'
 		},
 		{
-			id: 'open-output-screen',
-			name: 'Open Output Screen',
-			description: 'Open a secondary output screen for live performances.'
-		},
-		{
 			id: 'toggle-vim-mode',
 			name: 'Toggle Vim Mode',
 			description: 'Enable or disable Vim keybindings in code editors'
 		},
-		{
-			id: 'toggle-connect-mode',
-			name: 'Toggle Connect Mode',
-			description: 'Enter or exit tap-to-connect mode for connecting objects'
-		}
 	];
 
 	// Filtered items based on current stage
 	const filteredCommands = $derived.by(() => {
-		return commands.filter((cmd) => cmd.name.toLowerCase().includes(searchQuery.toLowerCase()));
+		return commands
+			.filter((cmd) => !cmd.requiresAi || $isAiFeaturesVisible)
+			.filter((cmd) => cmd.name.toLowerCase().includes(searchQuery.toLowerCase()));
 	});
 
 	const filteredPatches = $derived.by(() => {
@@ -322,6 +331,10 @@
 					isConnectionMode.set(true);
 				}
 				onCancel();
+			})
+			.with('ai-insert-object', () => {
+				onCancel();
+				onShowAiPrompt?.();
 			})
 			.otherwise(() => {
 				console.warn(`Unknown command: ${commandId}`);
