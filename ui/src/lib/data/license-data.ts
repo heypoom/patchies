@@ -595,5 +595,21 @@ export const supportLinks: SupportLink[] = [
 		url: 'https://csound.com/contribute.html',
 		type: 'website',
 		projects: ['Csound']
+	},
+	{
+		name: 'Svelte',
+		description: 'JavaScript framework for building user interfaces',
+		category: 'library',
+		url: 'https://github.com/sponsors/sveltejs',
+		type: 'github',
+		projects: ['Svelte', 'SvelteKit']
+	},
+	{
+		name: 'XYFlow',
+		description: 'Libraries for building node-based UIs with React and Svelte',
+		category: 'library',
+		url: 'https://github.com/sponsors/xyflow',
+		type: 'github',
+		projects: ['React Flow', 'Svelte Flow']
 	}
 ];
