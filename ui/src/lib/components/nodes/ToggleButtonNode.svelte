@@ -4,6 +4,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { match, P } from 'ts-pattern';
+	import { isConnectionMode } from '../../../stores/ui.store';
 
 	let { id: nodeId, selected, data }: { id: string; selected: boolean; data: any } = $props();
 
@@ -54,7 +55,16 @@
 	const borderColor = $derived(selected ? '!border-zinc-400' : '!border-zinc-600');
 
 	const handleClass = $derived.by(() => {
-		return `${selected ? '!bg-gray-400' : '!bg-zinc-900 !border-zinc-600'}`;
+		// makes handle obvious in connection mode.
+		if (!selected && $isConnectionMode) {
+			return '';
+		}
+
+		if (selected) {
+			return '!bg-gray-400';
+		}
+
+		return '!bg-zinc-900 !border-zinc-600';
 	});
 
 	const buttonClass = $derived.by(() => {
