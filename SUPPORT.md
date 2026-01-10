@@ -276,7 +276,7 @@ A great senior and friend who dedicated thousands of hours to play testing Patch
 
 ### Thai Pangsakulyanont
 
-A long time senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API and JavaScript expertise, tips on using AI agents effectively, and most importantly, words of encouragement. His support and encouragement to release Patchies was instrumental in making this project a reality.
+A great senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API and JavaScript expertise, tips on using AI agents effectively, and most importantly, words of encouragement. His support and encouragement to release Patchies was instrumental in making this project a reality.
 
 **Website:** [dt.in.th](https://dt.in.th)
 **GitHub:** [@dtinth](https://github.com/dtinth)
