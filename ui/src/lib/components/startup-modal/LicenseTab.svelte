@@ -290,6 +290,15 @@
 						<ExternalLink class="h-3 w-3" />
 					</a>
 					<a
+						href="https://youtube.com/@dtinth"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline"
+					>
+						YouTube
+						<ExternalLink class="h-3 w-3" />
+					</a>
+					<a
 						href="https://creatorsgarten.org"
 						target="_blank"
 						rel="noopener noreferrer"
