@@ -335,9 +335,12 @@ export class GLSystem {
 		this.send('setOutputSize', { width, height });
 	}
 
-	async setBitmapSource(nodeId: string, source: ImageBitmapSource) {
-		// Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
-		this.setBitmap(nodeId, await createImageBitmap(source, { imageOrientation: 'flipY' }));
+	setBitmapSource(nodeId: string, source: ImageBitmapSource) {
+		// Create flipped bitmap asynchronously without blocking
+		// createImageBitmap is GPU-accelerated and returns quickly
+		createImageBitmap(source, { imageOrientation: 'flipY' }).then((bitmap) => {
+			this.setBitmap(nodeId, bitmap);
+		});
 	}
 
 	setBitmap(nodeId: string, bitmap: ImageBitmap) {
