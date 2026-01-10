@@ -3,6 +3,7 @@
 		CirclePlus,
 		Clipboard,
 		Command,
+		Copy,
 		FilePlus2,
 		Link,
 		Search,
@@ -999,18 +1000,6 @@
 				>
 			{/if}
 
-			{#if selectedNodeIds.length > 0 || (copiedNodeData && copiedNodeData.length > 0)}
-				<button
-					title="Copy / Paste"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						showCopyPasteModal = true;
-					}}><Clipboard class="h-4 w-4 text-zinc-300" /></button
-				>
-			{/if}
-
 			<button
 				title="Quick Insert Object (Enter)"
 				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
@@ -1032,6 +1021,24 @@
 					showObjectBrowser = true;
 				}}><Search class="h-4 w-4 text-zinc-300" /></button
 			>
+
+			{#if selectedNodeIds.length > 0 || (copiedNodeData && copiedNodeData.length > 0)}
+				<button
+					title="Copy / Paste"
+					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						showCopyPasteModal = true;
+					}}
+				>
+					{#if copiedNodeData && copiedNodeData.length > 0}
+						<Clipboard class="h-4 w-4 text-zinc-300" />
+					{:else}
+						<Copy class="h-4 w-4 text-zinc-300" />
+					{/if}
+				</button>
+			{/if}
 
 			{#if $isAiFeaturesVisible && hasGeminiApiKey}
 				<button
