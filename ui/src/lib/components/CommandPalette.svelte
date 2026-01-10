@@ -97,6 +97,21 @@
 			description: 'Open a secondary output screen for live performances.'
 		},
 		{
+			id: 'toggle-ai-features',
+			name: 'Toggle AI Features',
+			description: 'Show or hide AI-related objects and features'
+		},
+		{
+			id: 'toggle-vim-mode',
+			name: 'Toggle Vim Mode',
+			description: 'Enable or disable Vim keybindings in code editors'
+		},
+		{
+			id: 'toggle-fps-monitor',
+			name: 'Toggle FPS Monitor',
+			description: 'Show or hide the FPS monitor'
+		},
+		{
 			id: 'set-gemini-api-key',
 			name: 'Set Gemini API Key',
 			description: 'Configure Google Gemini API key'
@@ -110,21 +125,6 @@
 			id: 'toggle-bottom-bar',
 			name: 'Toggle Bottom Bar',
 			description: 'Show or hide the bottom toolbar'
-		},
-		{
-			id: 'toggle-fps-monitor',
-			name: 'Toggle FPS Monitor',
-			description: 'Show or hide the FPS monitor'
-		},
-		{
-			id: 'toggle-ai-features',
-			name: 'Toggle AI Features',
-			description: 'Show or hide AI-related objects and features'
-		},
-		{
-			id: 'toggle-vim-mode',
-			name: 'Toggle Vim Mode',
-			description: 'Enable or disable Vim keybindings in code editors'
 		},
 	];
 
@@ -516,7 +516,8 @@
 		}
 	}
 
-	function handleItemClick(index: number) {
+	function handleItemClick(index: number, event?: MouseEvent) {
+		event?.stopPropagation();
 		selectedIndex = index;
 		handleSelect();
 	}
@@ -647,8 +648,8 @@
 				<div
 					class="cursor-pointer px-3 py-2 {index === selectedIndex
 						? 'bg-zinc-600/50'
-						: 'hover:bg-zinc-750'}"
-					onclick={() => handleItemClick(index)}
+						: 'hover:bg-zinc-700'}"
+					onclick={(e) => handleItemClick(index, e)}
 					onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
 					role="button"
 					tabindex="-1"
@@ -672,8 +673,8 @@
 					<div
 						class="cursor-pointer px-3 py-2 {index === selectedIndex
 							? 'bg-zinc-600/50'
-							: 'hover:bg-zinc-750'}"
-						onclick={() => handleItemClick(index)}
+							: 'hover:bg-zinc-700'}"
+						onclick={(e) => handleItemClick(index, e)}
 						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
 						role="button"
 						tabindex="-1"
@@ -691,7 +692,7 @@
 						class="cursor-pointer px-3 py-2 {index === selectedIndex
 							? 'bg-red-800'
 							: 'hover:bg-red-900/50'}"
-						onclick={() => handleItemClick(index)}
+						onclick={(e) => handleItemClick(index, e)}
 						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
 						role="button"
 						tabindex="-1"
@@ -709,7 +710,7 @@
 						class="cursor-pointer px-3 py-2 {index === selectedIndex
 							? 'bg-blue-800'
 							: 'hover:bg-blue-900/50'}"
-						onclick={() => handleItemClick(index)}
+						onclick={(e) => handleItemClick(index, e)}
 						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
 						role="button"
 						tabindex="-1"
