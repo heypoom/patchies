@@ -3,6 +3,7 @@
 	import { getPortPosition } from '$lib/utils/node-utils';
 	import { match, P } from 'ts-pattern';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+	import { isConnectionMode, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
 
 	interface Props {
 		port: 'inlet' | 'outlet';
@@ -41,6 +42,19 @@
 	// Calculate position using getPortPosition
 	const positionStyle = $derived(`left: ${getPortPosition(total, index)}`);
 
+	// Determine if this handle should be dimmed
+	const shouldDim = $derived.by(() => {
+		// Only dim when actively connecting
+		if (!$isConnecting) return false;
+		
+		// Dim outlet handles (source) when connecting, except the one being used
+		if (port === 'outlet' && $connectingFromHandleId !== handleId) {
+			return true;
+		}
+		
+		return false;
+	});
+
 	// Determine handle color based on type using ts-pattern
 	const handleClass = $derived.by(() => {
 		const colorClass = match(type)
@@ -51,7 +65,10 @@
 			.with(P.nullish, () => '!bg-gray-500 hover:!bg-gray-400')
 			.exhaustive();
 
-		return `!absolute z-1 ${colorClass} ${className}`;
+		const connectionModeClass = $isConnectionMode ? 'connection-mode-active' : '';
+		const dimClass = shouldDim ? 'handle-dimmed' : '';
+
+		return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${className}`;
 	});
 </script>
 
@@ -70,10 +87,12 @@
 		min-height: 6px;
 		width: 7px;
 		height: 7px;
-		will-change: width, height;
+		will-change: width, height, opacity, filter;
 		transition:
 			width 0.2s ease-in,
-			height 0.2s ease-in;
+			height 0.2s ease-in,
+			opacity 0.2s ease-in,
+			filter 0.2s ease-in;
 	}
 
 	:global(.svelte-flow__handle):hover {
@@ -81,5 +100,34 @@
 		min-height: 10px;
 		width: 11px;
 		height: 11px;
+	}
+
+	/* Make handles REALLY BIG and touch-friendly in connection mode */
+	:global(.svelte-flow__handle.connection-mode-active) {
+		min-width: 20px !important;
+		min-height: 20px !important;
+		width: 24px !important;
+		height: 24px !important;
+		z-index: 100 !important;
+		cursor: pointer !important;
+		border: 2px solid rgba(255, 255, 255, 0.3) !important;
+		box-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+	}
+
+	:global(.svelte-flow__handle.connection-mode-active):hover {
+		min-width: 28px !important;
+		min-height: 28px !important;
+		width: 32px !important;
+		height: 32px !important;
+		border: 3px solid rgba(255, 255, 255, 0.5) !important;
+		box-shadow: 0 0 12px rgba(255, 255, 255, 0.6) !important;
+	}
+
+	/* Dim handles when in connecting state - JavaScript-controlled via handle-dimmed class */
+	:global(.svelte-flow__handle.handle-dimmed) {
+		opacity: 0.25 !important;
+		filter: grayscale(0.7) brightness(0.6) !important;
+		pointer-events: none !important;
+		cursor: not-allowed !important;
 	}
 </style>

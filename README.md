@@ -101,6 +101,20 @@ Click on the bottom handle (outlet) of an object, and drag it all the way to the
   - Video connections stay within video/GL chains.
   - Message connections are flexible.
 
+#### Mobile/Touch Connection Mode
+
+On mobile devices or when dragging is difficult, you can use the **Connect** button (cable icon) in the bottom toolbar:
+
+1. Click the **Connect** button - handles become much larger and easier to tap
+2. A blue banner appears with instruction: "Tap on two handles to connect them"
+3. Tap on a **source handle** (outlet at the bottom of a node)
+4. Tap on a **destination handle** (inlet at the top of another node)
+5. The connection will be created between the two handles
+
+To cancel connection mode at any time, click the Connect button again or the × in the banner.
+
+**Note**: In connection mode, handles grow from 7px to 24px (32px on hover) making them much easier to tap on touch devices.
+
 ### Sharing Links
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.

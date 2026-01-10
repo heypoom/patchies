@@ -7,7 +7,8 @@
 		Search,
 		Sparkles,
 		Trash2,
-		Volume2
+		Volume2,
+		Cable
 	} from '@lucide/svelte/icons';
 	import {
 		SvelteFlow,
@@ -26,7 +27,7 @@
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
-	import { isAiFeaturesVisible, isBottomBarVisible } from '../../stores/ui.store';
+	import { isAiFeaturesVisible, isBottomBarVisible, isConnectionMode as isConnectionModeStore, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
 	import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -120,6 +121,9 @@
 	let urlLoadError = $state<string | null>(null);
 	let showAudioHint = $state(audioService.getAudioContext().state === 'suspended');
 	let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
+
+	// Mobile connection mode state - simplified to just toggle connection mode
+	let isConnectionMode = $state(false);
 
 	useOnSelectionChange(({ nodes, edges }) => {
 		selectedNodeIds = nodes.map((node) => node.id);
@@ -876,6 +880,17 @@
 			showAudioHint = false;
 		}
 	}
+
+	// Mobile connection mode functions - simplified
+	function startConnectionMode() {
+		isConnectionMode = true;
+		isConnectionModeStore.set(true);
+	}
+
+	function cancelConnectionMode() {
+		isConnectionMode = false;
+		isConnectionModeStore.set(false);
+	}
 </script>
 
 <div class="flow-container flex h-screen w-full flex-col">
@@ -925,6 +940,25 @@
 		</div>
 	{/if}
 
+	<!-- Connection Mode Indicator - Simplified -->
+	{#if isConnectionMode}
+		<div class="absolute left-1/2 top-4 z-50 -translate-x-1/2 transform">
+			<div
+				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
+			>
+				<Cable class="h-4 w-4" />
+				<span>Tap on two handles to connect them</span>
+				<button
+					class="ml-2 text-blue-300 hover:text-blue-100"
+					onclick={cancelConnectionMode}
+					title="Cancel"
+				>
+					×
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Main flow area -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -948,6 +982,16 @@
 			snapGrid={[5, 5]}
 			proOptions={{ hideAttribution: true }}
 			{isValidConnection}
+			onconnectstart={(event) => {
+				console.log('Connection started:', event);
+				isConnecting.set(true);
+				connectingFromHandleId.set(event.handleId || null);
+			}}
+			onconnectend={() => {
+				console.log('Connection ended');
+				isConnecting.set(false);
+				connectingFromHandleId.set(null);
+			}}
 		>
 			<BackgroundPattern />
 
@@ -1014,6 +1058,21 @@
 
 					showObjectBrowser = true;
 				}}><Search class="h-4 w-4 text-zinc-300" /></button
+			>
+
+			<button
+				title={isConnectionMode ? 'Cancel Connection' : 'Connect Nodes'}
+				class={`cursor-pointer rounded p-1 hover:bg-zinc-700 ${isConnectionMode ? 'bg-blue-600/70' : 'bg-zinc-900/70'}`}
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+
+					if (isConnectionMode) {
+						cancelConnectionMode();
+					} else {
+						startConnectionMode();
+					}
+				}}><Cable class="h-4 w-4 text-zinc-300" /></button
 			>
 
 			{#if $isAiFeaturesVisible && hasGeminiApiKey}
