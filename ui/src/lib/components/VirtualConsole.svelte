@@ -7,6 +7,7 @@
 	import { Copy, Loader, Pause, Play, RefreshCcw, Trash2 } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
 	import { VList } from 'virtua/svelte';
+	import { GripVertical, GripHorizontal, Grip } from '@lucide/svelte/icons';
 
 	let {
 		nodeId,
@@ -445,41 +446,35 @@
 
 		<!-- Vertical resize handle -->
 		<button
-			class="nodrag nopan absolute right-0 bottom-0 left-0 h-2 cursor-ns-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
+			class="nodrag nopan absolute right-0 bottom-0 left-0 flex h-3 cursor-ns-resize items-center justify-center border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
 			onmousedown={startResize}
 			ontouchstart={startTouchResize}
 			type="button"
 			aria-label="Resize console vertically"
 		>
-			<div
-				class="absolute top-1/2 left-1/2 h-0.5 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
-			></div>
+			<GripHorizontal size="16px" class="text-zinc-500 hover:text-zinc-400" />
 		</button>
 
-		<!-- Horizontal resize handle (left edge) -->
+		<!-- Horizontal resize handle (right edge) -->
 		<button
-			class="nodrag nopan absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
+			class="nodrag nopan absolute top-0 right-0 bottom-0 flex w-3 cursor-ew-resize items-center justify-center border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
 			onmousedown={startHorizontalResize}
 			ontouchstart={startTouchHorizontalResize}
 			type="button"
 			aria-label="Resize console horizontally"
 		>
-			<div
-				class="absolute top-1/2 left-1/2 h-8 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
-			></div>
+			<GripVertical size="16px" class="text-zinc-500 hover:text-zinc-400" />
 		</button>
 
 		<!-- Corner resize handle (bottom-right) -->
 		<button
-			class="nodrag nopan absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
+			class="nodrag nopan absolute right-0 bottom-0 flex h-4 w-4 cursor-nwse-resize items-center justify-center border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
 			onmousedown={startCornerResize}
 			ontouchstart={startTouchCornerResize}
 			type="button"
 			aria-label="Resize console both vertically and horizontally"
 		>
-			<div
-				class="absolute top-1/2 left-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
-			></div>
+			<Grip size="14px" class="text-zinc-500 hover:text-zinc-400" />
 		</button>
 	</div>
 </div>
