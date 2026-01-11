@@ -13,6 +13,7 @@
 	import { handleCodeError } from '$lib/js-runner/handleCodeError';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+	import { parseCanvasDimensions } from '$lib/p5/component-helpers';
 
 	let consoleRef: VirtualConsole | null = $state(null);
 
@@ -56,8 +57,43 @@
 	let previousExecuteCode = $state<number | undefined>(undefined);
 
 	// Local state for pre-parsed canvas dimensions (not persisted)
+	// These prevent layout shift by setting min-width/height before P5.js loads
 	let preloadCanvasWidth = $state<number | undefined>(0);
 	let preloadCanvasHeight = $state<number | undefined>(0);
+	let clearDimensionsTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	function setCanvasDimensionsFromCode() {
+		const dimensions = parseCanvasDimensions(code);
+		if (dimensions) {
+			preloadCanvasWidth = dimensions.width;
+			preloadCanvasHeight = dimensions.height;
+		}
+	}
+
+	function clearCanvasDimensions() {
+		preloadCanvasWidth = undefined;
+		preloadCanvasHeight = undefined;
+	}
+
+	function cancelScheduledDimensionsClear() {
+		if (clearDimensionsTimeout) {
+			clearTimeout(clearDimensionsTimeout);
+
+			clearDimensionsTimeout = null;
+		}
+	}
+
+	function scheduleDimensionsClear() {
+		cancelScheduledDimensionsClear();
+
+		clearDimensionsTimeout = setTimeout(() => {
+			if (!errorMessage) {
+				clearCanvasDimensions();
+			}
+
+			clearDimensionsTimeout = null;
+		}, 150);
+	}
 
 	// Create custom console for routing output to VirtualConsole
 	const customConsole = createCustomConsole(nodeId);
@@ -95,12 +131,7 @@
 		// Pre-parse createCanvas() dimensions before P5.js loads
 		// This prevents layout shift by setting correct size immediately
 		if (code) {
-			const canvasMatch = code.match(/createCanvas\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
-
-			if (canvasMatch) {
-				preloadCanvasWidth = parseInt(canvasMatch[1], 10);
-				preloadCanvasHeight = parseInt(canvasMatch[2], 10);
-			}
+			setCanvasDimensionsFromCode();
 		}
 
 		updateSketch({ onMount: true });
@@ -140,13 +171,20 @@
 
 	// Handle runtime errors (from draw(), setup(), etc.)
 	function handleRuntimeError(error: Error) {
+		cancelScheduledDimensionsClear();
+		errorMessage = error.message;
 		handleCodeError(error, code, nodeId, customConsole, P5_WRAPPER_OFFSET);
+		setCanvasDimensionsFromCode();
 	}
 
 	async function updateSketch({ onMount = false }: { onMount?: boolean } = {}) {
 		// re-enable drag on update. nodrag() must be called on setup().
 		enableDrag = true;
 		videoOutputEnabled = true;
+
+		// Clear previous error state at the start of each run
+		// If an error occurs during updateCode, it will be set again
+		errorMessage = null;
 
 		// Clear previous console output and error highlighting
 		consoleRef?.clearConsole();
@@ -182,17 +220,15 @@
 
 				measureWidth(100);
 
-				// Clear pre-parsed canvas dimensions after P5.js has loaded
-				// This allows createCanvas() to dynamically resize on subsequent code changes
-				setTimeout(() => {
-					preloadCanvasWidth = undefined;
-					preloadCanvasHeight = undefined;
-				}, 150);
-
-				errorMessage = null;
+				// Schedule dimension cleanup only if no error occurred during updateCode
+				if (!errorMessage) {
+					scheduleDimensionsClear();
+				}
 			} catch (error) {
-				handleCodeError(error, code, nodeId, customConsole);
+				cancelScheduledDimensionsClear();
 				errorMessage = error instanceof Error ? error.message : String(error);
+				handleCodeError(error, code, nodeId, customConsole);
+				setCanvasDimensionsFromCode();
 			}
 		}
 	}
@@ -245,9 +281,11 @@
 				class={[
 					'rounded-md border bg-transparent',
 					enableDrag ? 'cursor-grab' : 'nodrag cursor-default',
-					selected
-						? 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]'
-						: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md'
+					errorMessage
+						? 'border-red-500 [&>canvas]:rounded-[7px]'
+						: selected
+							? 'shadow-glow-md border-zinc-200 [&>canvas]:rounded-[7px]'
+							: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md'
 				]}
 				style={preloadCanvasWidth && preloadCanvasHeight
 					? `min-width: ${preloadCanvasWidth}px; min-height: ${preloadCanvasHeight}px;`
