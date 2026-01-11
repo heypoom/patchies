@@ -84,6 +84,22 @@ export class GLSystem {
 			}
 		}
 
+		// Handle shader compilation errors
+		if (data.type === 'shaderError') {
+			const { logger } = await import('$lib/utils/logger');
+
+			if (data.errorLine !== undefined && typeof data.errorLine === 'number') {
+				logger.nodeError(
+					data.nodeId,
+					{ errorLine: data.errorLine },
+					'Shader compilation failed:',
+					data.error
+				);
+			} else {
+				logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
+			}
+		}
+
 		// Handle preview frames
 		if (data.type === 'previewFrame' && data.buffer) {
 			const { nodeId, buffer, width, height } = data;
@@ -204,7 +220,12 @@ export class GLSystem {
 		this.renderWorker.postMessage({ type, ...data });
 	}
 
-	upsertNode(id: string, type: RenderNode['type'], data: Record<string, unknown>): boolean {
+	upsertNode(
+		id: string,
+		type: RenderNode['type'],
+		data: Record<string, unknown>,
+		options?: { force?: boolean }
+	): boolean {
 		const nodeIndex = this.nodes.findIndex((node) => node.id === id);
 
 		if (nodeIndex === -1) {
@@ -214,7 +235,7 @@ export class GLSystem {
 			this.nodes[nodeIndex] = { ...node, type, data };
 		}
 
-		return this.updateRenderGraph();
+		return this.updateRenderGraph(options?.force ?? false);
 	}
 
 	setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
@@ -279,11 +300,11 @@ export class GLSystem {
 		this.setOutputEnabled(hasOutputNode);
 	}
 
-	private updateRenderGraph() {
-		if (!this.hasFlowGraphChanged(this.nodes, this.edges)) return false;
+	private updateRenderGraph(force = false) {
+		if (!force && !this.hasFlowGraphChanged(this.nodes, this.edges)) return false;
 
 		const graph = buildRenderGraph(this.nodes, this.edges);
-		if (!this.hasHashChanged('graph', graph)) return false;
+		if (!force && !this.hasHashChanged('graph', graph)) return false;
 
 		this.send('buildRenderGraph', { graph });
 		this.renderGraph = graph;
