@@ -1,5 +1,6 @@
 import type { Edge } from '@xyflow/svelte';
 import type { SendMessageOptions } from './MessageContext';
+import { logger } from '$lib/utils/logger';
 
 export interface Message<T = unknown> {
 	data: T;
@@ -42,8 +43,9 @@ export class MessageQueue {
 			try {
 				callback(message['data'], message);
 			} catch (error) {
-				console.error(`Error in message callback for node ${this.nodeId}:`, error);
-				// TODO: Show visual error indicator on the node
+				// Route error to node's VirtualConsole
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				logger.ofNode(this.nodeId).error(`Error in recv(): ${errorMessage}`);
 			}
 		});
 	}
