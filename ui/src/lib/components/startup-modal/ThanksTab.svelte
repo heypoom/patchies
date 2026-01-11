@@ -26,9 +26,9 @@
 	const toolMaintainers = supportLinks.filter((s) => s.category === 'tool');
 </script>
 
-<div class="space-y-2 sm:space-y-4">
+<div class="sm:space-y-4">
 	<!-- Header -->
-	<div>
+	<div class="-mx-4 px-6 py-2 sm:mx-0 sm:px-0 sm:py-0">
 		<h1 id="modal-title" class="text-xl font-bold text-zinc-100 sm:text-2xl">Thanks 🥰</h1>
 
 		<p class="mt-1 text-xs text-zinc-400 sm:text-sm">
@@ -37,7 +37,7 @@
 	</div>
 
 	<!-- Project License -->
-	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+	<div class="-mx-4 bg-zinc-900/50 px-6 py-3 sm:mx-0 sm:rounded-lg sm:bg-zinc-800/50 sm:p-4">
 		<p class="text-xs text-zinc-300 sm:text-sm">
 			{projectLicense.description}
 		</p>
@@ -63,7 +63,7 @@
 	</div>
 
 	<!-- Support Open Source Creators -->
-	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+	<div class="-mx-4 px-6 py-3 sm:mx-0 sm:rounded-lg sm:bg-zinc-800/50 sm:p-4">
 		<div class="mb-3 flex items-center gap-2">
 			<Heart class="h-4 w-4 text-red-400 sm:h-5 sm:w-5" />
 			<h2 class="text-base font-semibold text-zinc-200 sm:text-lg">Support Open Source Creators</h2>
@@ -78,7 +78,7 @@
 			<h3 class="mb-2 text-xs font-semibold text-zinc-300 sm:text-sm">Library & Tool Creators</h3>
 			<div class="space-y-2">
 				{#each libraryCreators as creator}
-					<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+					<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
@@ -113,7 +113,7 @@
 			</h3>
 			<div class="space-y-2">
 				{#each educators as educator}
-					<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+					<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
@@ -151,7 +151,7 @@
 			</p>
 			<div class="space-y-2">
 				{#each toolMaintainers as tool}
-					<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+					<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
@@ -181,7 +181,7 @@
 	</div>
 
 	<!-- Ported/Adapted Code -->
-	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+	<div class="-mx-4 bg-zinc-900/50 px-6 py-3 sm:mx-0 sm:rounded-lg sm:bg-zinc-800/50 sm:p-4">
 		<h2 class="mb-3 text-base font-semibold text-zinc-200 sm:text-lg">Ported & Adapted Code</h2>
 		<p class="mb-4 text-xs text-zinc-300 sm:text-sm">
 			Patchies includes code ported from other open source projects 💙
@@ -189,7 +189,7 @@
 
 		<div class="space-y-4">
 			{#each portedCode as code}
-				<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+				<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 					<div class="mb-2 flex items-start justify-between">
 						<div>
 							<h3 class="text-sm font-semibold text-zinc-100">{code.name}</h3>
@@ -232,7 +232,7 @@
 	</div>
 
 	<!-- Special Thanks -->
-	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+	<div class="-mx-4 px-6 py-3 sm:mx-0 sm:rounded-lg sm:bg-zinc-800/50 sm:p-4">
 		<div class="mb-3 flex items-center gap-2">
 			<Heart class="h-4 w-4 text-pink-400 sm:h-5 sm:w-5" />
 			<h2 class="text-base font-semibold text-zinc-200 sm:text-lg">Special Thanks</h2>
@@ -244,7 +244,7 @@
 
 		<div class="space-y-4">
 			<!-- Kijjaz -->
-			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+			<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Kijjasak "Kijjaz" Triyanond (@kijjaz)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
 					A great senior and friend who dedicated thousands of hours to play testing Patchies.
@@ -267,7 +267,7 @@
 			</div>
 
 			<!-- dtinth -->
-			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+			<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Thai Pangsakulyanont (@dtinth)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
 					A great senior and friend who gave invaluable advice throughout Patchies' development.
@@ -318,7 +318,7 @@
 			</div>
 
 			<!-- Ryan -->
-			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+			<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Thanapat "Ryan" Ogaslert (@crsrcrsrrr)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
 					Creator of SYNAP [home/lab], works at College of Music, Mahidol University. Ryan
@@ -351,7 +351,7 @@
 			</div>
 
 			<!-- Pub -->
-			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
+			<div class="rounded-lg py-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">
 					Chayapatr "Pub" Archiwaranguprok (@chayapatr)
 				</h3>
@@ -394,7 +394,7 @@
 	</div>
 
 	<!-- All Dependencies -->
-	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+	<div class="-mx-4 bg-zinc-900/50 px-6 py-3 sm:mx-0 sm:rounded-lg sm:bg-zinc-800/50 sm:p-4">
 		<h2 class="mb-3 text-base font-semibold text-zinc-200 sm:text-lg">
 			{dependenciesSection.title}
 		</h2>
