@@ -288,7 +288,6 @@
 	onPlaybackToggle={togglePause}
 	paused={isPaused}
 	showPauseButton={true}
-	showConsoleButton={true}
 	nodrag={usesMouseUniform}
 	bind:previewCanvas
 	{width}

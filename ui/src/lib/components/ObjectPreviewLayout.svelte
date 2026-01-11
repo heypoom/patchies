@@ -105,16 +105,6 @@
 						</button>
 					{/if}
 
-					{#if showConsoleButton}
-						<button
-							title="Toggle console"
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-							onclick={handleConsoleToggle}
-						>
-							<Terminal class="h-4 w-4 text-zinc-300" />
-						</button>
-					{/if}
-
 					<button
 						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 						onclick={() => {
@@ -153,6 +143,16 @@
 						</Tooltip.Root>
 					{/if}
 
+					{#if consoleSnippet}
+						<button
+							title="Toggle console"
+							class="rounded p-1 hover:bg-zinc-700"
+							onclick={handleConsoleToggle}
+						>
+							<Terminal class="h-4 w-4 text-zinc-300" />
+						</button>
+					{/if}
+
 					<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
 						<X class="h-4 w-4 text-zinc-300" />
 					</button>
@@ -165,7 +165,7 @@
 				</div>
 			</div>
 
-			{#if showConsoleButton && consoleSnippet}
+			{#if consoleSnippet}
 				{@render consoleSnippet()}
 			{/if}
 		</div>
