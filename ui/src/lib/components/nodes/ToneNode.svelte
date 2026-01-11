@@ -7,7 +7,6 @@
 	import SimpleDspLayout from './SimpleDspLayout.svelte';
 	import type { ToneNode } from '$lib/audio/v2/nodes/ToneNode';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
-	import { logger } from '$lib/utils/logger';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
@@ -38,9 +37,6 @@
 	let previousExecuteCode = $state<number | undefined>(undefined);
 	let consoleRef: VirtualConsole | null = $state(null);
 	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
-
-	// Create node-scoped logger
-	const nodeLogger = logger.ofNode(nodeId);
 
 	// Listen for console output events to capture lineErrors
 	function handleConsoleOutput(event: ConsoleOutputEvent) {

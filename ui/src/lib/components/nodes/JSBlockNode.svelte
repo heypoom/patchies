@@ -9,6 +9,7 @@
 	import { match, P } from 'ts-pattern';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 	import { logger } from '$lib/utils/logger';
+	import { createCustomConsole } from '$lib/utils/createCustomConsole';
 	import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
@@ -55,8 +56,8 @@
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
 
-	// Create node-scoped logger
-	const nodeLogger = logger.ofNode(nodeId);
+	// Create custom console for routing output to VirtualConsole
+	const customConsole = createCustomConsole(nodeId);
 
 	// Track error line numbers for code highlighting
 	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
@@ -112,7 +113,7 @@
 					stopLongRunningTasks();
 				});
 		} catch (error) {
-			nodeLogger.error(error instanceof Error ? error.message : String(error));
+			customConsole.error(error instanceof Error ? error.message : String(error));
 		}
 	};
 
@@ -188,15 +189,6 @@
 		consoleRef?.clearConsole();
 		lineErrors = undefined;
 
-		// Create a custom console that routes to logger
-		const customConsole = {
-			log: (...args: unknown[]) => nodeLogger.log(...args),
-			error: (...args: unknown[]) => nodeLogger.error(...args),
-			warn: (...args: unknown[]) => nodeLogger.warn(...args),
-			debug: (...args: unknown[]) => nodeLogger.debug(...args),
-			info: (...args: unknown[]) => nodeLogger.info(...args)
-		};
-
 		const setPortCount = (inletCount = 1, outletCount = 1) => {
 			updateNodeData(nodeId, { inletCount, outletCount });
 			updateNodeInternals(nodeId);
@@ -234,7 +226,7 @@
 				logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
 			} else {
 				// Fallback to regular error logging
-				nodeLogger.error(error instanceof Error ? error.message : String(error));
+				customConsole.error(error instanceof Error ? error.message : String(error));
 			}
 		} finally {
 			isRunning = false;

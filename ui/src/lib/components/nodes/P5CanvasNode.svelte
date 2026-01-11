@@ -10,6 +10,7 @@
 	import { shouldShowHandles } from '../../../stores/ui.store';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 	import { logger } from '$lib/utils/logger';
+	import { createCustomConsole } from '$lib/utils/createCustomConsole';
 	import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
@@ -59,8 +60,8 @@
 	let preloadCanvasWidth = $state<number | undefined>(0);
 	let preloadCanvasHeight = $state<number | undefined>(0);
 
-	// Create node-scoped logger
-	const nodeLogger = logger.ofNode(nodeId);
+	// Create custom console for routing output to VirtualConsole
+	const customConsole = createCustomConsole(nodeId);
 
 	// Track error line numbers for code highlighting
 	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
@@ -134,15 +135,6 @@
 		}
 	}
 
-	// Create a custom console that routes to logger
-	const customConsole = {
-		log: (...args: unknown[]) => nodeLogger.log(...args),
-		error: (...args: unknown[]) => nodeLogger.error(...args),
-		warn: (...args: unknown[]) => nodeLogger.warn(...args),
-		debug: (...args: unknown[]) => nodeLogger.debug(...args),
-		info: (...args: unknown[]) => nodeLogger.info(...args)
-	};
-
 	// P5Manager wraps user code in executeUserCode's codeWithWrapper template.
 	// Empirically determined offset that works on both Chrome and Firefox.
 	const P5_WRAPPER_OFFSET = 6;
@@ -154,7 +146,7 @@
 		if (errorInfo) {
 			logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
 		} else {
-			nodeLogger.error(error.message);
+			customConsole.error(error.message);
 		}
 	}
 
@@ -214,7 +206,7 @@
 					logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
 				} else {
 					// Fallback to regular error logging
-					nodeLogger.error(error instanceof Error ? error.message : String(error));
+					customConsole.error(error instanceof Error ? error.message : String(error));
 				}
 
 				errorMessage = error instanceof Error ? error.message : String(error);
