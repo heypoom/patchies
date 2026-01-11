@@ -50,15 +50,15 @@
 	let resizeStartY = $state(0);
 	let resizeStartHeight = $state(0);
 	const MIN_HEIGHT = 100;
-	const MAX_HEIGHT = 600;
+	const MAX_HEIGHT = 1000;
 
 	// Resize state - horizontal
 	let consoleWidth = $state<number | null>(null); // null = auto-size, number = fixed width
 	let isHorizontalResizing = $state(false);
 	let resizeStartX = $state(0);
 	let resizeStartWidth = $state(0);
-	const MIN_WIDTH = 280;
-	const MAX_WIDTH = 2000;
+	const MIN_WIDTH = 300;
+	const MAX_WIDTH = 1000;
 
 	const MAX_MESSAGES = 1000; // Limit stored messages to prevent unbounded growth
 
