@@ -89,7 +89,7 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 ### Connecting Objects
 
-<img src="./docs/images/dragdemo.mp4" alt="Patchies.app connecting objects" width="700">
+<video src="./docs/images/dragdemo.mp4" alt="Patchies.app connecting objects" width="700" controls></video>
 
 Click on the bottom handle (outlet) of an object, and drag it all the way to the another object's top handle (inlet).
 
