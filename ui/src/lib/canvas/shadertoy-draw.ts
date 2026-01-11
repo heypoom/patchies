@@ -49,7 +49,7 @@ export function createShaderToyDrawCommand({
 	width: number;
 	height: number;
 	framebuffer: regl.Framebuffer2D | null;
-	onError?: (error: Error & { errorLine?: number }) => void;
+	onError?: (error: Error & { errorLines?: number[] }) => void;
 }): regl.DrawCommand | null {
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `#version 300 es
@@ -89,8 +89,8 @@ export function createShaderToyDrawCommand({
 	if (!fragmentValidation.valid) {
 		const error = new Error(
 			fragmentValidation.error || 'Fragment shader compilation failed'
-		) as Error & { errorLine?: number };
-		error.errorLine = fragmentValidation.errorLine;
+		) as Error & { errorLines?: number[] };
+		error.errorLines = fragmentValidation.errorLines;
 		onError?.(error);
 		return null;
 	}

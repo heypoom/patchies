@@ -52,7 +52,7 @@
 	let isPaused = $state(false);
 	let editorReady = $state(false);
 	let consoleRef: any = $state(null);
-	let errorLineNum: number | undefined = $state(undefined);
+	let errorLines: number[] | undefined = $state(undefined);
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
@@ -131,7 +131,7 @@
 		consoleRef?.clearConsole();
 
 		// Clear error line highlighting on re-run
-		errorLineNum = undefined;
+		errorLines = undefined;
 
 		// Construct uniform definitions from the shader code.
 		const nextData = {
@@ -242,7 +242,7 @@
 		const handleConsoleOutput = (event: ConsoleOutputEvent) => {
 			if (event.nodeId !== nodeId || event.messageType !== 'error') return;
 
-			errorLineNum = event.errorLine;
+			errorLines = event.errorLines;
 
 			// Auto-open console when there's an error
 			if (!data.showConsole) {
@@ -299,7 +299,7 @@
 	{height}
 	{selected}
 	{editorReady}
-	hasError={errorLineNum !== undefined}
+	hasError={errorLines !== undefined && errorLines.length > 0}
 >
 	{#snippet topHandle()}
 		{#each data.glUniformDefs as def, defIndex}
@@ -338,7 +338,7 @@
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateShader}
 			onready={() => (editorReady = true)}
-			errorLine={errorLineNum}
+			{errorLines}
 		/>
 	{/snippet}
 

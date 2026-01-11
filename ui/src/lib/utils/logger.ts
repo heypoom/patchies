@@ -192,12 +192,12 @@ export class Logger {
 	 * Log an error associated with a specific node.
 	 */
 	nodeError(nodeId: string, ...args: unknown[]): void;
-	nodeError(nodeId: string, options: { errorLine?: number }, ...args: unknown[]): void;
+	nodeError(nodeId: string, options: { errorLines?: number[] }, ...args: unknown[]): void;
 	nodeError(nodeId: string, ...args: unknown[]): void {
 		// Check if second argument is options object
 		const hasOptions =
-			args.length > 0 && typeof args[0] === 'object' && args[0] !== null && 'errorLine' in args[0];
-		const options = hasOptions ? (args[0] as { errorLine?: number }) : undefined;
+			args.length > 0 && typeof args[0] === 'object' && args[0] !== null && 'errorLines' in args[0];
+		const options = hasOptions ? (args[0] as { errorLines?: number[] }) : undefined;
 		const logArgs = hasOptions ? args.slice(1) : args;
 
 		this.addNodeLog(nodeId, 'error', logArgs, options);
@@ -210,7 +210,7 @@ export class Logger {
 		nodeId: string,
 		level: LogLevel,
 		args: unknown[],
-		options?: { errorLine?: number }
+		options?: { errorLines?: number[] }
 	): void {
 		const entry: LogEntry = {
 			level,
@@ -236,7 +236,7 @@ export class Logger {
 					messageType: level,
 					timestamp: entry.timestamp.getTime(),
 					args,
-					errorLine: options?.errorLine
+					errorLines: options?.errorLines
 				});
 			}
 		});

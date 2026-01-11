@@ -17,7 +17,7 @@ export interface ConsoleOutputEvent {
 	messageType: 'log' | 'warn' | 'error' | 'debug';
 	timestamp: number;
 	args: unknown[]; // Raw arguments for rich rendering
-	errorLine?: number; // Source code line number for errors (if available)
+	errorLines?: number[]; // Source code line numbers for errors (if available)
 }
 
 export interface PyodideConsoleOutputEvent {

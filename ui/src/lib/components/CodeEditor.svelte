@@ -11,8 +11,8 @@
 	import { indentMore } from '@codemirror/commands';
 	import { search, searchKeymap } from '@codemirror/search';
 
-	// Effect to set the error line
-	const setErrorLineEffect = StateEffect.define<number | null>();
+	// Effect to set error lines (supports multiple lines)
+	const setErrorLinesEffect = StateEffect.define<number[] | null>();
 
 	// StateField to manage error line decorations
 	const errorLineField = StateField.define<DecorationSet>({
@@ -22,13 +22,15 @@
 		update(decorations, tr) {
 			decorations = decorations.map(tr.changes);
 			for (let effect of tr.effects) {
-				if (effect.is(setErrorLineEffect)) {
-					if (effect.value === null) {
+				if (effect.is(setErrorLinesEffect)) {
+					if (effect.value === null || effect.value.length === 0) {
 						decorations = Decoration.none;
 					} else {
-						const line = tr.state.doc.line(effect.value);
 						const decoration = Decoration.line({ class: 'cm-errorLine' });
-						decorations = Decoration.set([decoration.range(line.from)]);
+						const ranges = effect.value
+							.filter((lineNum) => lineNum > 0 && lineNum <= tr.state.doc.lines)
+							.map((lineNum) => decoration.range(tr.state.doc.line(lineNum).from));
+						decorations = Decoration.set(ranges, true);
 					}
 				}
 			}
@@ -52,7 +54,7 @@
 		extraExtensions = [],
 		onready,
 		nodeType,
-		errorLine,
+		errorLines,
 		...restProps
 	}: {
 		value?: string;
@@ -65,7 +67,7 @@
 		fontSize?: string;
 		onready?: () => void;
 		nodeType?: string;
-		errorLine?: number;
+		errorLines?: number[];
 	} = $props();
 
 	let editorElement: HTMLDivElement;
@@ -257,23 +259,27 @@
 		});
 	});
 
-	// Highlight error line when errorLine prop or editorView changes
+	// Highlight error lines when errorLines prop or editorView changes
 	$effect(() => {
-		// React to both errorLine and editorView changes
+		// React to both errorLines and editorView changes
 		if (!editorView) return;
 
-		// Validate error line is within document bounds
+		// Validate error lines are within document bounds
 		const lineCount = editorView.state.doc.lines;
 
-		const validErrorLine = errorLine && errorLine > 0 && errorLine <= lineCount ? errorLine : null;
+		const validErrorLines =
+			errorLines && errorLines.length > 0
+				? errorLines.filter((line) => line > 0 && line <= lineCount)
+				: null;
 
-		// Dispatch effect to set or clear error line
+		// Dispatch effect to set or clear error lines
 		editorView.dispatch({
 			effects: [
-				setErrorLineEffect.of(validErrorLine),
-				...(validErrorLine
+				setErrorLinesEffect.of(validErrorLines),
+				// Scroll to first error line if there are any
+				...(validErrorLines && validErrorLines.length > 0
 					? [
-							EditorView.scrollIntoView(editorView.state.doc.line(validErrorLine).from, {
+							EditorView.scrollIntoView(editorView.state.doc.line(validErrorLines[0]).from, {
 								y: 'center'
 							})
 						]

@@ -7,7 +7,7 @@ export function validateShader(
 	shaderSource: string,
 	shaderType: number,
 	preambleLines: number = 0
-): { valid: boolean; error?: string; errorLine?: number } {
+): { valid: boolean; error?: string; errorLines?: number[] } {
 	const shader = gl.createShader(shaderType);
 
 	if (!shader) {
@@ -22,14 +22,23 @@ export function validateShader(
 		const errorLog = gl.getShaderInfoLog(shader);
 		gl.deleteShader(shader);
 
-		// Extract line number from error log
-		const lineMatch = (errorLog || '').match(/ERROR: \d+:(\d+):/);
-		const compiledLineNum = lineMatch ? parseInt(lineMatch[1], 10) : undefined;
+		// Extract all line numbers from error log using global regex
+		const lineMatches = (errorLog || '').matchAll(/ERROR: \d+:(\d+):/g);
+		const errorLinesSet = new Set<number>();
 
-		// Map compiled shader line number back to user source line number
-		const userSourceLine = compiledLineNum ? compiledLineNum - preambleLines : undefined;
+		for (const match of lineMatches) {
+			const compiledLineNum = parseInt(match[1], 10);
+			// Map compiled shader line number back to user source line number
+			const userSourceLine = compiledLineNum - preambleLines;
+			if (userSourceLine > 0) {
+				errorLinesSet.add(userSourceLine);
+			}
+		}
 
-		return { valid: false, error: errorLog ?? '', errorLine: userSourceLine };
+		const errorLines =
+			errorLinesSet.size > 0 ? Array.from(errorLinesSet).sort((a, b) => a - b) : undefined;
+
+		return { valid: false, error: errorLog ?? '', errorLines };
 	}
 
 	gl.deleteShader(shader);
