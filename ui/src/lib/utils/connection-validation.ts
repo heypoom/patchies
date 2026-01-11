@@ -54,28 +54,53 @@ export function isValidConnectionBetweenHandles(
 ): boolean {
 	if (!sourceHandle || !targetHandle) return false;
 
+	// Normalize handles: treat untyped handles (in-0, out-1, in, out) as message handles
+	// This handles dynamic nodes like p5, canvas.dom, js, etc. that don't specify type
+	const normalizeHandle = (handle: string): string => {
+		// If handle starts with a known type, keep it as-is
+		if (handle.startsWith('video-') || handle.startsWith('audio-') || handle.startsWith('message-') || handle.startsWith(ANALYSIS_KEY)) {
+			return handle;
+		}
+
+		// Default: treat untyped handles (in-X, out-X, in, out, etc.) as message handles
+		return `message-${handle}`;
+	};
+
+	const normalizedSource = normalizeHandle(sourceHandle);
+	const normalizedTarget = normalizeHandle(targetHandle);
+
+	// Pre-compute handle type checks
+	const isSourceAudio = normalizedSource.startsWith('audio');
+	const isSourceVideo = normalizedSource.startsWith('video');
+	const isSourceMessage = normalizedSource.startsWith('message');
+	const isSourceAnalysis = normalizedSource.startsWith(ANALYSIS_KEY);
+
+	const isTargetVideo = normalizedTarget.startsWith('video');
+	const isTargetMessage = normalizedTarget.startsWith('message');
+	const isTargetAudioInlet = normalizedTarget.startsWith('audio-in');
+
 	// Audio params can accept both audio signals (e.g. gain~ out) and message connections (e.g. numbers)
 	if (options?.isTargetAudioParam) {
-		return sourceHandle.startsWith('audio') || sourceHandle.startsWith('message');
+		return isSourceAudio || isSourceMessage;
 	}
 
 	// Video connections must be video-to-video only
-	if (sourceHandle.startsWith('video') || targetHandle.startsWith('video')) {
-		return sourceHandle.startsWith('video') && targetHandle.startsWith('video');
+	if (isSourceVideo || isTargetVideo) {
+		return isSourceVideo && isTargetVideo;
 	}
 
-	// Allow connecting `fft~` analysis result to anything except audio inlets.
-	if (sourceHandle.startsWith(ANALYSIS_KEY)) {
-		return !targetHandle.startsWith('audio-in');
+	// Allow connecting `fft~` analysis result to anything except audio inlets
+	if (isSourceAnalysis) {
+		return !isTargetAudioInlet;
 	}
 
 	// Target audio inlets (e.g. dac~) must be connected to audio outputs/sources
-	if (targetHandle.startsWith('audio-in')) {
-		return sourceHandle.startsWith('audio');
+	if (isTargetAudioInlet) {
+		return isSourceAudio;
 	}
 
 	// Message-to-message connections are allowed
-	if (sourceHandle.startsWith('message') && targetHandle.startsWith('message')) {
+	if (isSourceMessage && isTargetMessage) {
 		return true;
 	}
 
