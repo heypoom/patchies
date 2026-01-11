@@ -288,7 +288,7 @@ When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch bet
 - **Multi Insert Mode** (no object selected): create multiple connected objects at your cursor position
 - **Edit Mode** (object selected): modifies the selected object's code based on your description
 
-> AI is 100% optional and opt-in with Patchies. Dislike AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
+> AI is 100% optional and _opt-in_ with Patchies. Dislike AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
 
 Here's how to set it up:
 
@@ -1395,11 +1395,13 @@ You can call the `fft()` function to get the audio analysis data in the supporte
   - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
   - Replace `fft.getCentroid()` with `fft().centroid`
 
-## Hiding AI features
+## Disabling AI features
 
-If you dislike AI features (e.g. text generation, image generation, speech synthesis and music generation), you can hide them by activating the command palette with `CMD + K`, then search for "Toggle AI Features".
+AI is 100% optional and _opt-in_ with Patchies.
 
-This will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also hides the experimental `Cmd/Ctrl + I` AI object insertion shortcut.
+Don't want AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
+
+In particular, this will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also disables the experimental `Cmd/Ctrl + I` AI object insertion shortcut.
 
 ## Rendering Pipeline
 
