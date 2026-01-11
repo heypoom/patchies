@@ -118,6 +118,8 @@ To use this feature:
 
 ### Connection Rules
 
+<img src="./docs/images/connection-guide.webp" alt="Connection Rules" width="700">
+
 These rules define what handles can be connected together.
 
 - You can connect multiple outlets to a single inlet and vice-versa.
