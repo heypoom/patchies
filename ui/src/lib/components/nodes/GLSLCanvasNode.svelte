@@ -243,6 +243,11 @@
 			if (event.nodeId !== nodeId || event.messageType !== 'error') return;
 
 			errorLineNum = event.errorLine;
+
+			// Auto-open console when there's an error
+			if (!data.showConsole) {
+				updateNodeData(nodeId, { showConsole: true });
+			}
 		};
 
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
