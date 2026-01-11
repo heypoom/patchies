@@ -16,6 +16,24 @@ interface P5SketchConfig {
 	 * so we must noLoop() the sketch on mount.
 	 **/
 	pauseOnMount?: boolean;
+
+	/**
+	 * Custom console for redirecting console.* calls to VirtualConsole.
+	 * If not provided, uses the global console.
+	 */
+	customConsole?: {
+		log: (...args: unknown[]) => void;
+		error: (...args: unknown[]) => void;
+		warn: (...args: unknown[]) => void;
+		debug: (...args: unknown[]) => void;
+		info: (...args: unknown[]) => void;
+	};
+
+	/**
+	 * Callback for runtime errors in draw(), setup(), etc.
+	 * Used for error line highlighting.
+	 */
+	onRuntimeError?: (error: Error) => void;
 }
 
 export class P5Manager {
@@ -81,142 +99,174 @@ export class P5Manager {
 		}
 
 		const sketch = async (p: Sketch) => {
-			const sketchConfig: P5SketchConfig = {
-				...config,
-				code: processedCode ?? config.code
-			};
+			const onRuntimeError = config.onRuntimeError;
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const userCode = (await this.executeUserCode(p, sketchConfig, P5)) as any;
+			try {
+				const sketchConfig: P5SketchConfig = {
+					...config,
+					code: processedCode ?? config.code
+				};
 
-			await userCode?.preload?.call(p);
-			await userCode?.setup?.call(p);
-
-			const sendBitmap = this.sendBitmap.bind(this);
-
-			p.setup = function () {
-				userCode?.setup?.call(p);
-			};
-
-			p.draw = function () {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				let userCode: any;
 				try {
-					userCode?.draw?.call(p);
-					sendBitmap();
+					userCode = await this.executeUserCode(p, sketchConfig, P5);
+				} catch (error) {
+					// Catch syntax errors during code compilation
+					if (error instanceof Error) {
+						onRuntimeError?.(error);
+					}
+					return;
+				}
+
+				try {
+					await userCode?.preload?.call(p);
+					await userCode?.setup?.call(p);
 				} catch (error) {
 					if (error instanceof Error) {
-						p.background(220, 100, 100);
-						p.fill(255);
+						onRuntimeError?.(error);
 					}
-
-					throw error;
+					return;
 				}
-			};
 
-			// @ts-expect-error -- compatibility layer for P5.js version 1
-			p.preload = function () {
-				userCode?.preload?.call(p);
-			};
+				const sendBitmap = this.sendBitmap.bind(this);
 
-			// Helper to adjust mouse coordinates for zoom
-			const adjustMouseForZoom = () => {
-				if (this.viewport) {
-					const zoom = this.viewport.current.zoom;
-					// Store original values
-					const originalMouseX = p.mouseX;
-					const originalMouseY = p.mouseY;
-					const originalPmouseX = p.pmouseX;
-					const originalPmouseY = p.pmouseY;
+				p.setup = function () {
+					try {
+						userCode?.setup?.call(p);
+					} catch (error) {
+						if (error instanceof Error) {
+							onRuntimeError?.(error);
+						}
+					}
+				};
 
-					// !! Adjust for zoom
-					// @ts-expect-error -- we are hacking the p5 instance here
-					p.mouseX = originalMouseX / zoom;
+				p.draw = function () {
+					try {
+						userCode?.draw?.call(p);
+						sendBitmap();
+					} catch (error) {
+						if (error instanceof Error) {
+							p.background(220, 100, 100);
+							p.fill(255);
+							onRuntimeError?.(error);
+						}
+						// Stop the loop to prevent error spam
+						p.noLoop();
+					}
+				};
 
-					// @ts-expect-error -- we are hacking the p5 instance here
-					p.mouseY = originalMouseY / zoom;
+				// @ts-expect-error -- compatibility layer for P5.js version 1
+				p.preload = function () {
+					userCode?.preload?.call(p);
+				};
 
-					// @ts-expect-error -- we are hacking the p5 instance here
-					p.pmouseX = originalPmouseX / zoom;
+				// Helper to adjust mouse coordinates for zoom
+				const adjustMouseForZoom = () => {
+					if (this.viewport) {
+						const zoom = this.viewport.current.zoom;
+						// Store original values
+						const originalMouseX = p.mouseX;
+						const originalMouseY = p.mouseY;
+						const originalPmouseX = p.pmouseX;
+						const originalPmouseY = p.pmouseY;
 
-					// @ts-expect-error -- we are hacking the p5 instance here
-					p.pmouseY = originalPmouseY / zoom;
+						// !! Adjust for zoom
+						// @ts-expect-error -- we are hacking the p5 instance here
+						p.mouseX = originalMouseX / zoom;
+
+						// @ts-expect-error -- we are hacking the p5 instance here
+						p.mouseY = originalMouseY / zoom;
+
+						// @ts-expect-error -- we are hacking the p5 instance here
+						p.pmouseX = originalPmouseX / zoom;
+
+						// @ts-expect-error -- we are hacking the p5 instance here
+						p.pmouseY = originalPmouseY / zoom;
+					}
+				};
+
+				p.mousePressed = function (event: MouseEvent) {
+					adjustMouseForZoom();
+					userCode?.mousePressed?.call(p, event);
+				};
+
+				p.mouseReleased = function (event: MouseEvent) {
+					adjustMouseForZoom();
+					userCode?.mouseReleased?.call(p, event);
+				};
+
+				p.mouseClicked = function (event: MouseEvent) {
+					adjustMouseForZoom();
+					userCode?.mouseClicked?.call(p, event);
+				};
+
+				p.mouseMoved = function (event: MouseEvent) {
+					adjustMouseForZoom();
+					userCode?.mouseMoved?.call(p, event);
+				};
+
+				p.mouseDragged = function (event: MouseEvent) {
+					adjustMouseForZoom();
+					userCode?.mouseDragged?.call(p, event);
+				};
+
+				p.mouseWheel = function (event: WheelEvent) {
+					userCode?.mouseWheel?.call(p, event);
+				};
+
+				p.doubleClicked = function (event: MouseEvent) {
+					userCode?.doubleClicked?.call(p, event);
+				};
+
+				p.keyPressed = function (event: KeyboardEvent) {
+					userCode?.keyPressed?.call(p, event);
+				};
+
+				p.keyReleased = function (event: KeyboardEvent) {
+					userCode?.keyReleased?.call(p, event);
+				};
+
+				p.keyTyped = function (event: KeyboardEvent) {
+					userCode?.keyTyped?.call(p, event);
+				};
+
+				// @ts-expect-error -- not typed
+				p.touchStarted = function (event: TouchEvent) {
+					userCode?.touchStarted?.call(p, event);
+				};
+
+				// @ts-expect-error -- not typed
+				p.touchMoved = function (event: TouchEvent) {
+					userCode?.touchMoved?.call(p, event);
+				};
+
+				// @ts-expect-error -- not typed
+				p.touchEnded = function (event: TouchEvent) {
+					userCode?.touchEnded?.call(p, event);
+				};
+
+				p.windowResized = function () {
+					userCode?.windowResized?.call(p);
+				};
+
+				p.deviceMoved = function () {
+					userCode?.deviceMoved?.call(p);
+				};
+
+				p.deviceTurned = function () {
+					userCode?.deviceTurned?.call(p);
+				};
+
+				p.deviceShaken = function () {
+					userCode?.deviceShaken?.call(p);
+				};
+			} catch (error) {
+				// Catch any P5.js internal errors (e.g., renderer not ready)
+				if (error instanceof Error) {
+					onRuntimeError?.(error);
 				}
-			};
-
-			p.mousePressed = function (event: MouseEvent) {
-				adjustMouseForZoom();
-				userCode?.mousePressed?.call(p, event);
-			};
-
-			p.mouseReleased = function (event: MouseEvent) {
-				adjustMouseForZoom();
-				userCode?.mouseReleased?.call(p, event);
-			};
-
-			p.mouseClicked = function (event: MouseEvent) {
-				adjustMouseForZoom();
-				userCode?.mouseClicked?.call(p, event);
-			};
-
-			p.mouseMoved = function (event: MouseEvent) {
-				adjustMouseForZoom();
-				userCode?.mouseMoved?.call(p, event);
-			};
-
-			p.mouseDragged = function (event: MouseEvent) {
-				adjustMouseForZoom();
-				userCode?.mouseDragged?.call(p, event);
-			};
-
-			p.mouseWheel = function (event: WheelEvent) {
-				userCode?.mouseWheel?.call(p, event);
-			};
-
-			p.doubleClicked = function (event: MouseEvent) {
-				userCode?.doubleClicked?.call(p, event);
-			};
-
-			p.keyPressed = function (event: KeyboardEvent) {
-				userCode?.keyPressed?.call(p, event);
-			};
-
-			p.keyReleased = function (event: KeyboardEvent) {
-				userCode?.keyReleased?.call(p, event);
-			};
-
-			p.keyTyped = function (event: KeyboardEvent) {
-				userCode?.keyTyped?.call(p, event);
-			};
-
-			// @ts-expect-error -- not typed
-			p.touchStarted = function (event: TouchEvent) {
-				userCode?.touchStarted?.call(p, event);
-			};
-
-			// @ts-expect-error -- not typed
-			p.touchMoved = function (event: TouchEvent) {
-				userCode?.touchMoved?.call(p, event);
-			};
-
-			// @ts-expect-error -- not typed
-			p.touchEnded = function (event: TouchEvent) {
-				userCode?.touchEnded?.call(p, event);
-			};
-
-			p.windowResized = function () {
-				userCode?.windowResized?.call(p);
-			};
-
-			p.deviceMoved = function () {
-				userCode?.deviceMoved?.call(p);
-			};
-
-			p.deviceTurned = function () {
-				userCode?.deviceTurned?.call(p);
-			};
-
-			p.deviceShaken = function () {
-				userCode?.deviceShaken?.call(p);
-			};
+			}
 		};
 
 		this.p5 = new P5(sketch, this.container);
@@ -252,7 +302,7 @@ export class P5Manager {
 
 		// Execute using JSRunner with P5-specific extra context
 		return this.jsRunner.executeJavaScript(this.nodeId, codeWithWrapper, {
-			customConsole: console,
+			customConsole: config.customConsole ?? console,
 			setPortCount: config.messageContext?.setPortCount,
 			setTitle: config.messageContext?.setTitle,
 			extraContext: {

@@ -8,6 +8,13 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
 	import { shouldShowHandles } from '../../../stores/ui.store';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { logger } from '$lib/utils/logger';
+	import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+
+	let consoleRef: VirtualConsole | null = $state(null);
 
 	let {
 		id: nodeId,
@@ -23,6 +30,7 @@
 			hidePorts?: boolean;
 			executeCode?: number;
 			paused?: boolean;
+			showConsole?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -51,6 +59,23 @@
 	let preloadCanvasWidth = $state<number | undefined>(0);
 	let preloadCanvasHeight = $state<number | undefined>(0);
 
+	// Create node-scoped logger
+	const nodeLogger = logger.ofNode(nodeId);
+
+	// Track error line numbers for code highlighting
+	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+	const eventBus = PatchiesEventBus.getInstance();
+
+	// Listen for console output events to capture lineErrors
+	function handleConsoleOutput(event: ConsoleOutputEvent) {
+		if (event.nodeId !== nodeId) return;
+
+		// If this error has lineErrors, update state for code highlighting
+		if (event.messageType === 'error' && event.lineErrors) {
+			lineErrors = event.lineErrors;
+		}
+	}
+
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
 		if (data.executeCode && data.executeCode !== previousExecuteCode) {
@@ -63,6 +88,9 @@
 		messageContext = new MessageContext(nodeId);
 		p5Manager = new P5Manager(nodeId, containerElement, viewport);
 		glSystem.upsertNode(nodeId, 'img', {});
+
+		// Listen for console output events to capture lineErrors
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
 		// Pre-parse createCanvas() dimensions before P5.js loads
 		// This prevents layout shift by setting correct size immediately
@@ -83,6 +111,7 @@
 		p5Manager?.destroy();
 		glSystem.removeNode(nodeId);
 		messageContext?.destroy();
+		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 	});
 
 	const setPortCount = (inletCount = 1, outletCount = 1) => {
@@ -105,16 +134,44 @@
 		}
 	}
 
-	function updateSketch({ onMount = false }: { onMount?: boolean } = {}) {
+	// Create a custom console that routes to logger
+	const customConsole = {
+		log: (...args: unknown[]) => nodeLogger.log(...args),
+		error: (...args: unknown[]) => nodeLogger.error(...args),
+		warn: (...args: unknown[]) => nodeLogger.warn(...args),
+		debug: (...args: unknown[]) => nodeLogger.debug(...args),
+		info: (...args: unknown[]) => nodeLogger.info(...args)
+	};
+
+	// P5Manager wraps user code in executeUserCode's codeWithWrapper template.
+	// Empirically determined offset that works on both Chrome and Firefox.
+	const P5_WRAPPER_OFFSET = 6;
+
+	// Handle runtime errors (from draw(), setup(), etc.)
+	function handleRuntimeError(error: Error) {
+		const errorInfo = parseJSError(error, countLines(code), P5_WRAPPER_OFFSET);
+
+		if (errorInfo) {
+			logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
+		} else {
+			nodeLogger.error(error.message);
+		}
+	}
+
+	async function updateSketch({ onMount = false }: { onMount?: boolean } = {}) {
 		// re-enable drag on update. nodrag() must be called on setup().
 		enableDrag = true;
 		videoOutputEnabled = true;
+
+		// Clear previous console output and error highlighting
+		consoleRef?.clearConsole();
+		lineErrors = undefined;
 
 		setPortCount(1, 1);
 
 		if (p5Manager && messageContext) {
 			try {
-				p5Manager.updateCode({
+				await p5Manager.updateCode({
 					code,
 					messageContext: {
 						...messageContext.getContext(),
@@ -133,7 +190,9 @@
 					setHidePorts: (hide: boolean) => {
 						updateNodeData(nodeId, { hidePorts: hide });
 					},
-					pauseOnMount: onMount && !!data.paused
+					pauseOnMount: onMount && !!data.paused,
+					customConsole,
+					onRuntimeError: handleRuntimeError
 				});
 
 				measureWidth(100);
@@ -147,7 +206,17 @@
 
 				errorMessage = null;
 			} catch (error) {
-				// Capture compilation/setup errors
+				// Try to parse error for line information
+				const errorInfo = parseJSError(error, countLines(code));
+
+				if (errorInfo) {
+					// Log error with line information for highlighting
+					logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
+				} else {
+					// Fallback to regular error logging
+					nodeLogger.error(error instanceof Error ? error.message : String(error));
+				}
+
 				errorMessage = error instanceof Error ? error.message : String(error);
 			}
 		}
@@ -172,6 +241,7 @@
 
 <ObjectPreviewLayout
 	title={data.title ?? 'p5'}
+	{nodeId}
 	onrun={updateSketch}
 	previewWidth={previewContainerWidth}
 	showPauseButton
@@ -250,6 +320,13 @@
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateSketch}
 			onready={() => (editorReady = true)}
+			{lineErrors}
 		/>
+	{/snippet}
+
+	{#snippet console()}
+		<div class="mt-3">
+			<VirtualConsole bind:this={consoleRef} {nodeId} onrun={updateSketch} />
+		</div>
 	{/snippet}
 </ObjectPreviewLayout>

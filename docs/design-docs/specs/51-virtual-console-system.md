@@ -553,15 +553,17 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 
 ### Migrate Existing Consoles
 
-- [ ] Update `JSBlockNode.svelte` to use `VirtualConsole`
-- [ ] Update `JSRunner.ts` to use `logger`
+- [x] Update `JSBlockNode.svelte` to use `VirtualConsole`
+- [x] Update `JSRunner.ts` to use `logger`
+- [x] Add JS syntax error line highlighting with `parseJSError()` utility
 - [ ] Update `PythonNode.svelte` to use `VirtualConsole`
 - [ ] Migrate `PyodideSystem` to use `logger` (deprecate custom event)
 
 ### Add Consoles to Visual Nodes
 
-- [ ] Add console to `P5CanvasNode.svelte`
-- [ ] Update `P5Manager.ts` to log errors via `logger`
+- [x] Add console to `P5CanvasNode.svelte`
+- [x] Update `P5Manager.ts` to log errors via `logger`
+- [x] Add P5 syntax error line highlighting (reuses `parseJSError()` utility)
 - [x] Add console to `GLSLCanvasNode.svelte`
 - [x] Update `GLSystem.ts` to log shader errors via `logger`
 - [ ] Add console to `HydraNode.svelte`

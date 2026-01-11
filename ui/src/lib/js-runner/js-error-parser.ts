@@ -44,9 +44,14 @@ const WRAPPER_PREAMBLE_LINES = 6;
  *
  * @param error The error object (Error, SyntaxError, etc.)
  * @param codeLineCount Total number of lines in the user's code (for validation)
+ * @param additionalOffset Extra lines to subtract (e.g., P5Manager adds 4 wrapper lines)
  * @returns Parsed error info with line numbers, or null if no line info found
  */
-export function parseJSError(error: unknown, codeLineCount?: number): JSErrorInfo | null {
+export function parseJSError(
+	error: unknown,
+	codeLineCount?: number,
+	additionalOffset: number = 0
+): JSErrorInfo | null {
 	if (!(error instanceof Error)) {
 		return null;
 	}
@@ -117,8 +122,8 @@ export function parseJSError(error: unknown, codeLineCount?: number): JSErrorInf
 		return null;
 	}
 
-	// Adjust for wrapper code offset
-	const adjustedLine = lineNumber - WRAPPER_PREAMBLE_LINES;
+	// Adjust for wrapper code offset (JSRunner preamble + any additional offset)
+	const adjustedLine = lineNumber - WRAPPER_PREAMBLE_LINES - additionalOffset;
 
 	// Validate and clamp line number to user code bounds
 	if (adjustedLine < 1) {
