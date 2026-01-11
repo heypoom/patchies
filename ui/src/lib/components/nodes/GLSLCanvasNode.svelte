@@ -10,6 +10,9 @@
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -22,6 +25,7 @@
 			code: string;
 			glUniformDefs: GLUniformDef[];
 			executeCode?: number;
+			showConsole?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -30,6 +34,7 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 	const viewport = useViewport();
 
+	let eventBus = PatchiesEventBus.getInstance();
 	let glSystem = GLSystem.getInstance();
 
 	// Preview canvas display size
@@ -46,6 +51,8 @@
 
 	let isPaused = $state(false);
 	let editorReady = $state(false);
+	let consoleRef: any = $state(null);
+	let errorLineNum: number | undefined = $state(undefined);
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
@@ -120,6 +127,12 @@
 	}
 
 	function updateShader() {
+		// Clear console on re-run
+		consoleRef?.clearConsole();
+
+		// Clear error line highlighting on re-run
+		errorLineNum = undefined;
+
 		// Construct uniform definitions from the shader code.
 		const nextData = {
 			...data,
@@ -130,7 +143,7 @@
 		removeInvalidEdges(nextData.glUniformDefs);
 
 		updateNodeData(nodeId, nextData);
-		glSystem.upsertNode(nodeId, 'glsl', nextData);
+		glSystem.upsertNode(nodeId, 'glsl', nextData, { force: true }); // force rebuild even if code hasn't changed
 
 		// inform XYFlow that the handle has changed
 		updateNodeInternals();
@@ -224,6 +237,26 @@
 		};
 	});
 
+	// Listen for shader compilation errors and extract line numbers
+	$effect(() => {
+		const handleConsoleOutput = (event: ConsoleOutputEvent) => {
+			if (event.nodeId !== nodeId || event.messageType !== 'error') return;
+
+			errorLineNum = event.errorLine;
+
+			// Auto-open console when there's an error
+			if (!data.showConsole) {
+				updateNodeData(nodeId, { showConsole: true });
+			}
+		};
+
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+
+		return () => {
+			eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+		};
+	});
+
 	onMount(() => {
 		glSystem = GLSystem.getInstance();
 
@@ -255,6 +288,7 @@
 
 <CanvasPreviewLayout
 	title={data.title ?? 'glsl'}
+	{nodeId}
 	onrun={updateShader}
 	onPlaybackToggle={togglePause}
 	paused={isPaused}
@@ -265,6 +299,7 @@
 	{height}
 	{selected}
 	{editorReady}
+	hasError={errorLineNum !== undefined}
 >
 	{#snippet topHandle()}
 		{#each data.glUniformDefs as def, defIndex}
@@ -303,6 +338,19 @@
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateShader}
 			onready={() => (editorReady = true)}
+			errorLine={errorLineNum}
 		/>
+	{/snippet}
+
+	{#snippet console()}
+		<!-- Always render VirtualConsole so it receives events even when hidden -->
+		<div class="mt-3 w-full" class:hidden={!data.showConsole}>
+			<VirtualConsole
+				bind:this={consoleRef}
+				{nodeId}
+				placeholder="Shader compilation errors will appear here."
+				maxHeight="200px"
+			/>
+		</div>
 	{/snippet}
 </CanvasPreviewLayout>

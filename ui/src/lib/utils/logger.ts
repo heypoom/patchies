@@ -191,14 +191,27 @@ export class Logger {
 	/**
 	 * Log an error associated with a specific node.
 	 */
+	nodeError(nodeId: string, ...args: unknown[]): void;
+	nodeError(nodeId: string, options: { errorLine?: number }, ...args: unknown[]): void;
 	nodeError(nodeId: string, ...args: unknown[]): void {
-		this.addNodeLog(nodeId, 'error', args);
+		// Check if second argument is options object
+		const hasOptions =
+			args.length > 0 && typeof args[0] === 'object' && args[0] !== null && 'errorLine' in args[0];
+		const options = hasOptions ? (args[0] as { errorLine?: number }) : undefined;
+		const logArgs = hasOptions ? args.slice(1) : args;
+
+		this.addNodeLog(nodeId, 'error', logArgs, options);
 	}
 
 	/**
 	 * Add a node-scoped log entry and emit event for reactive UI.
 	 */
-	private addNodeLog(nodeId: string, level: LogLevel, args: unknown[]): void {
+	private addNodeLog(
+		nodeId: string,
+		level: LogLevel,
+		args: unknown[],
+		options?: { errorLine?: number }
+	): void {
 		const entry: LogEntry = {
 			level,
 			message: args.map((arg) => String(arg)).join(' '), // For backward compat
@@ -222,7 +235,8 @@ export class Logger {
 					nodeId,
 					messageType: level,
 					timestamp: entry.timestamp.getTime(),
-					args
+					args,
+					errorLine: options?.errorLine
 				});
 			}
 		});

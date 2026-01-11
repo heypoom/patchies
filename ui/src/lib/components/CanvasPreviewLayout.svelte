@@ -4,11 +4,14 @@
 
 	let {
 		title,
+		nodeId,
 		selected = false,
+		hasError = false,
 		onrun,
 		onPlaybackToggle,
 		paused = false,
 		showPauseButton = false,
+		showConsoleButton = false,
 		previewCanvas = $bindable<HTMLCanvasElement>(),
 		nodrag = false,
 		tabindex,
@@ -21,14 +24,18 @@
 		bottomHandle,
 
 		codeEditor,
+		console: consoleSnippet,
 		editorReady
 	}: {
 		title: string;
+		nodeId?: string;
 		selected?: boolean;
+		hasError?: boolean;
 		onrun?: () => void;
 		onPlaybackToggle?: () => void;
 		paused?: boolean;
 		showPauseButton?: boolean;
+		showConsoleButton?: boolean;
 		previewCanvas?: HTMLCanvasElement;
 		nodrag?: boolean;
 		tabindex?: string | number;
@@ -41,34 +48,40 @@
 		bottomHandle?: Snippet;
 
 		codeEditor: Snippet;
+		console?: Snippet;
 		editorReady?: boolean;
 	} = $props();
 </script>
 
 <ObjectPreviewLayout
 	{title}
+	{nodeId}
 	{onrun}
 	{onPlaybackToggle}
 	{paused}
 	{showPauseButton}
+	{showConsoleButton}
 	{topHandle}
 	{bottomHandle}
 	{codeEditor}
 	{editorReady}
+	console={consoleSnippet}
 >
 	{#snippet preview()}
 		<canvas
 			bind:this={previewCanvas}
 			class={[
 				'rounded-md border',
-				selected
-					? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
-					: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
+				hasError
+					? 'border-red-500/70'
+					: selected
+						? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
+						: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
 				nodrag ? 'nodrag cursor-default' : 'cursor-grab'
 			]}
-			{tabindex}
-			{width}
-			{height}
+			tabindex={typeof tabindex === 'number' ? tabindex : undefined}
+			width={typeof width === 'number' ? width : undefined}
+			height={typeof height === 'number' ? height : undefined}
 			{style}
 		></canvas>
 	{/snippet}
