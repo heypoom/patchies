@@ -262,6 +262,8 @@ Different creators have different support options:
 - **Purchase Content**: Buy books, ebooks, or courses to support educational creators
 - **Spread the Word**: Share their work and tutorials with others
 
+If you'd like to support Poom (creator of Patchies), I would love it if you can send me stories and short videos about how you use Patchies to my [Instagram](https://instagram.com/phoomparin) or my email at [poom@poom.dev](mailto:poom@poom.dev). It'd _really_ made my day and give me tons of motivation to continue building this happy little tool 🧡
+
 ## Special Thanks
 
 These amazing people helped bring Patchies to life through their direct support, feedback, and encouragement:
@@ -306,8 +308,6 @@ If you'd like to contribute to Patchies itself, check out our [GitHub repository
 - Code contributions and pull requests
 - Documentation improvements
 - Community support and sharing your patches
-
-If you'd like to support Poom (creator of Patchies), I would love it if you can send me stories and short videos about how you use Patchies to my [Instagram](https://instagram.com/phoomparin) or my email at [poom@poom.dev](mailto:poom@poom.dev). It'd really, _really_ made my day and give me motivation to continue building this happy little tool.
 
 ---
 
