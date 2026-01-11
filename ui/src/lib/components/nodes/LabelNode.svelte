@@ -21,9 +21,7 @@
 	let showTextInput = $state(false);
 	let msgText = $derived(data.message || '');
 
-	const containerClass = $derived(
-		selected ? 'object-container-selected' : 'object-container-light'
-	);
+	const containerClass = $derived(selected ? 'object-container-selected !shadow-none' : '');
 </script>
 
 <div class="relative">
@@ -45,7 +43,7 @@
 					{#if showTextInput}
 						<div
 							class={[
-								'nodrag w-full min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
+								'nodrag w-full min-w-[40px] resize-none border font-mono text-zinc-200',
 								containerClass
 							]}
 						>
@@ -53,7 +51,7 @@
 								value={msgText}
 								onchange={(value) => updateNodeData(nodeId, { message: value })}
 								language="plain"
-								class="message-node-code-editor rounded-lg border !border-transparent focus:outline-none"
+								class="message-node-code-editor !border-transparent focus:outline-none"
 							/>
 						</div>
 					{:else}
@@ -65,7 +63,7 @@
 								showTextInput = true;
 							}}
 							class={[
-								'send-message-button rounded-lg border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+								'send-message-button border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
 								containerClass
 							]}
 						>
@@ -80,7 +78,7 @@
 
 <style>
 	:global(.message-node-code-editor .cm-content) {
-		padding: 6px 8px 7px 4px !important;
+		padding: 7px 9px 8px 4px !important;
 	}
 
 	.send-message-button {
