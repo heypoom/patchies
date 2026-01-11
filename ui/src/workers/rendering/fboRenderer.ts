@@ -257,14 +257,14 @@ export class FBORenderer {
 			gl: this.gl!,
 			code: node.data.code,
 			uniformDefs: node.data.glUniformDefs ?? [],
-			onError: (error: Error & { errorLines?: number[] }) => {
+			onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
 				// Send error message back to main thread
 				self.postMessage({
 					type: 'shaderError',
 					nodeId: node.id,
 					error: error.message,
 					stack: error.stack,
-					errorLines: error.errorLines
+					lineErrors: error.lineErrors
 				});
 			}
 		});

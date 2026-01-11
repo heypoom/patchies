@@ -88,14 +88,10 @@ export class GLSystem {
 		if (data.type === 'shaderError') {
 			const { logger } = await import('$lib/utils/logger');
 
-			if (
-				data.errorLines !== undefined &&
-				Array.isArray(data.errorLines) &&
-				data.errorLines.length > 0
-			) {
+			if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
 				logger.nodeError(
 					data.nodeId,
-					{ errorLines: data.errorLines },
+					{ lineErrors: data.lineErrors },
 					'Shader compilation failed:',
 					data.error
 				);

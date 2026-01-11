@@ -1,6 +1,6 @@
 import regl from 'regl';
 import type { GLUniformDef } from '../../types/uniform-config';
-import { validateShader } from './shader-validator';
+import { validateShader, type LineErrors } from './shader-validator';
 
 // Render a simple quad for a vertex shader.
 const VERTEX_SHADER = `#version 300 es
@@ -49,7 +49,7 @@ export function createShaderToyDrawCommand({
 	width: number;
 	height: number;
 	framebuffer: regl.Framebuffer2D | null;
-	onError?: (error: Error & { errorLines?: number[] }) => void;
+	onError?: (error: Error & { lineErrors?: LineErrors }) => void;
 }): regl.DrawCommand | null {
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `#version 300 es
@@ -89,8 +89,8 @@ export function createShaderToyDrawCommand({
 	if (!fragmentValidation.valid) {
 		const error = new Error(
 			fragmentValidation.error || 'Fragment shader compilation failed'
-		) as Error & { errorLines?: number[] };
-		error.errorLines = fragmentValidation.errorLines;
+		) as Error & { lineErrors?: LineErrors };
+		error.lineErrors = fragmentValidation.lineErrors;
 		onError?.(error);
 		return null;
 	}

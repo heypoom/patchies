@@ -3,7 +3,14 @@
 	import { EditorView, minimalSetup } from 'codemirror';
 	import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
-	import { keymap, drawSelection, Decoration, type DecorationSet } from '@codemirror/view';
+	import {
+		keymap,
+		drawSelection,
+		Decoration,
+		type DecorationSet,
+		hoverTooltip,
+		type Tooltip
+	} from '@codemirror/view';
 	import { StateField, StateEffect } from '@codemirror/state';
 	import { useVimInEditor } from '../../stores/editor.store';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
@@ -13,6 +20,24 @@
 
 	// Effect to set error lines (supports multiple lines)
 	const setErrorLinesEffect = StateEffect.define<number[] | null>();
+
+	// Effect to set line errors with messages
+	const setLineErrorsEffect = StateEffect.define<Record<number, string[]> | null>();
+
+	// StateField to store line errors for tooltip lookup
+	const lineErrorsField = StateField.define<Record<number, string[]>>({
+		create() {
+			return {};
+		},
+		update(errors, tr) {
+			for (let effect of tr.effects) {
+				if (effect.is(setLineErrorsEffect)) {
+					return effect.value ?? {};
+				}
+			}
+			return errors;
+		}
+	});
 
 	// StateField to manage error line decorations
 	const errorLineField = StateField.define<DecorationSet>({
@@ -39,6 +64,40 @@
 		provide: (f) => EditorView.decorations.from(f)
 	});
 
+	// Create hover tooltip for error lines
+	const errorTooltip = hoverTooltip(
+		(view, pos) => {
+			// Get the line at this position
+			const line = view.state.doc.lineAt(pos);
+			const lineNum = line.number;
+
+			// Check if this line has errors
+			const lineErrors = view.state.field(lineErrorsField);
+			const errors = lineErrors[lineNum];
+
+			if (!errors || errors.length === 0) return null;
+
+			return {
+				pos: line.from,
+				above: true,
+				create() {
+					const dom = document.createElement('div');
+					dom.className = 'cm-error-tooltip';
+
+					errors.forEach((msg) => {
+						const msgEl = document.createElement('div');
+						msgEl.className = 'cm-error-tooltip-message';
+						msgEl.textContent = msg;
+						dom.appendChild(msgEl);
+					});
+
+					return { dom };
+				}
+			} satisfies Tooltip;
+		},
+		{ hoverTime: 100 }
+	);
+
 	let languageComp = new Compartment();
 
 	type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'markdown' | 'plain' | 'assembly';
@@ -54,7 +113,7 @@
 		extraExtensions = [],
 		onready,
 		nodeType,
-		errorLines,
+		lineErrors,
 		...restProps
 	}: {
 		value?: string;
@@ -67,7 +126,7 @@
 		fontSize?: string;
 		onready?: () => void;
 		nodeType?: string;
-		errorLines?: number[];
+		lineErrors?: Record<number, string[]>;
 	} = $props();
 
 	let editorElement: HTMLDivElement;
@@ -111,8 +170,10 @@
 
 				languageComp.of(languageExtension),
 
-				// Error line highlighting
+				// Error line highlighting with hover tooltips
 				errorLineField,
+				lineErrorsField,
+				errorTooltip,
 
 				// Prevent wheel events from bubbling to XYFlow
 				EditorView.domEventHandlers({
@@ -157,8 +218,27 @@
 						backgroundColor: 'rgba(239, 68, 68, 0.15)',
 						borderLeft: '3px solid rgb(239 68 68)'
 					},
-					'.cm-errorLineGutter': {
-						backgroundColor: 'rgba(239, 68, 68, 0.2)'
+					'.cm-error-tooltip': {
+						backgroundColor: 'rgb(39 39 42)',
+						border: '1px solid rgb(239 68 68)',
+						borderRadius: '4px',
+						padding: '6px 10px',
+						maxWidth: '400px',
+						fontSize: '11px',
+						fontFamily: 'Monaco, Menlo, Ubuntu Mono, Consolas, monospace',
+						boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)'
+					},
+					'.cm-error-tooltip-message': {
+						color: 'rgb(252 165 165)',
+						padding: '2px 0',
+						lineHeight: '1.4',
+						whiteSpace: 'pre-wrap',
+						wordBreak: 'break-word'
+					},
+					'.cm-error-tooltip-message + .cm-error-tooltip-message': {
+						borderTop: '1px solid rgb(63 63 70)',
+						marginTop: '4px',
+						paddingTop: '6px'
 					}
 				}),
 				EditorView.updateListener.of((update) => {
@@ -259,23 +339,36 @@
 		});
 	});
 
-	// Highlight error lines when errorLines prop or editorView changes
+	// Highlight error lines when lineErrors prop or editorView changes
 	$effect(() => {
-		// React to both errorLines and editorView changes
 		if (!editorView) return;
 
-		// Validate error lines are within document bounds
 		const lineCount = editorView.state.doc.lines;
 
-		const validErrorLines =
-			errorLines && errorLines.length > 0
-				? errorLines.filter((line) => line > 0 && line <= lineCount)
+		// Filter lineErrors to only include valid line numbers
+		const validLineErrors =
+			lineErrors && Object.keys(lineErrors).length > 0
+				? Object.fromEntries(
+						Object.entries(lineErrors).filter(([lineStr]) => {
+							const line = parseInt(lineStr, 10);
+							return line > 0 && line <= lineCount;
+						})
+					)
 				: null;
+
+		// Derive error lines from lineErrors
+		const validErrorLines = validLineErrors
+			? Object.keys(validLineErrors)
+					.map(Number)
+					.sort((a, b) => a - b)
+			: null;
 
 		// Dispatch effect to set or clear error lines
 		editorView.dispatch({
 			effects: [
 				setErrorLinesEffect.of(validErrorLines),
+				setLineErrorsEffect.of(validLineErrors),
+
 				// Scroll to first error line if there are any
 				...(validErrorLines && validErrorLines.length > 0
 					? [

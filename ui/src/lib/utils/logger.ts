@@ -192,12 +192,16 @@ export class Logger {
 	 * Log an error associated with a specific node.
 	 */
 	nodeError(nodeId: string, ...args: unknown[]): void;
-	nodeError(nodeId: string, options: { errorLines?: number[] }, ...args: unknown[]): void;
+	nodeError(
+		nodeId: string,
+		options: { lineErrors?: Record<number, string[]> },
+		...args: unknown[]
+	): void;
 	nodeError(nodeId: string, ...args: unknown[]): void {
 		// Check if second argument is options object
 		const hasOptions =
-			args.length > 0 && typeof args[0] === 'object' && args[0] !== null && 'errorLines' in args[0];
-		const options = hasOptions ? (args[0] as { errorLines?: number[] }) : undefined;
+			args.length > 0 && typeof args[0] === 'object' && args[0] !== null && 'lineErrors' in args[0];
+		const options = hasOptions ? (args[0] as { lineErrors?: Record<number, string[]> }) : undefined;
 		const logArgs = hasOptions ? args.slice(1) : args;
 
 		this.addNodeLog(nodeId, 'error', logArgs, options);
@@ -210,7 +214,7 @@ export class Logger {
 		nodeId: string,
 		level: LogLevel,
 		args: unknown[],
-		options?: { errorLines?: number[] }
+		options?: { lineErrors?: Record<number, string[]> }
 	): void {
 		const entry: LogEntry = {
 			level,
@@ -236,7 +240,7 @@ export class Logger {
 					messageType: level,
 					timestamp: entry.timestamp.getTime(),
 					args,
-					errorLines: options?.errorLines
+					lineErrors: options?.lineErrors
 				});
 			}
 		});

@@ -30,9 +30,8 @@
 		selected: boolean;
 	} = $props();
 
-	const { updateNodeData, getEdges, deleteElements, screenToFlowPosition } = useSvelteFlow();
+	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
-	const viewport = useViewport();
 
 	let eventBus = PatchiesEventBus.getInstance();
 	let glSystem = GLSystem.getInstance();
@@ -52,9 +51,16 @@
 	let isPaused = $state(false);
 	let editorReady = $state(false);
 	let consoleRef: any = $state(null);
-	let errorLines: number[] | undefined = $state(undefined);
+	let lineErrors: Record<number, string[]> | undefined = $state(undefined);
 
 	const code = $derived(data.code || '');
+	const errorLines = $derived(
+		lineErrors
+			? Object.keys(lineErrors)
+					.map(Number)
+					.sort((a, b) => a - b)
+			: undefined
+	);
 	let previousExecuteCode = $state<number | undefined>(undefined);
 
 	// Detect if shader uses iMouse uniform (ignore comments)
@@ -131,7 +137,7 @@
 		consoleRef?.clearConsole();
 
 		// Clear error line highlighting on re-run
-		errorLines = undefined;
+		lineErrors = undefined;
 
 		// Construct uniform definitions from the shader code.
 		const nextData = {
@@ -242,12 +248,7 @@
 		const handleConsoleOutput = (event: ConsoleOutputEvent) => {
 			if (event.nodeId !== nodeId || event.messageType !== 'error') return;
 
-			errorLines = event.errorLines;
-
-			// Auto-open console when there's an error
-			if (!data.showConsole) {
-				updateNodeData(nodeId, { showConsole: true });
-			}
+			lineErrors = event.lineErrors;
 		};
 
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
@@ -338,18 +339,20 @@
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateShader}
 			onready={() => (editorReady = true)}
-			{errorLines}
+			{lineErrors}
 		/>
 	{/snippet}
 
 	{#snippet console()}
 		<!-- Always render VirtualConsole so it receives events even when hidden -->
+		<!-- We already have in-gutter errors, so we don't auto-show the console on new errors -->
 		<div class="mt-3 w-full" class:hidden={!data.showConsole}>
 			<VirtualConsole
 				bind:this={consoleRef}
 				{nodeId}
 				placeholder="Shader compilation errors will appear here."
 				maxHeight="200px"
+				shouldAutoShowConsoleOnError={false}
 			/>
 		</div>
 	{/snippet}

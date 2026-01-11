@@ -1,3 +1,13 @@
+/** Error messages grouped by line number */
+export type LineErrors = Record<number, string[]>;
+
+export interface ShaderValidationResult {
+	valid: boolean;
+	error?: string;
+	/** Error messages grouped by line number */
+	lineErrors?: LineErrors;
+}
+
 /**
  * Validate a shader by attempting to compile it with WebGL2.
  * This allows us to capture shader errors before passing to regl.
@@ -7,7 +17,7 @@ export function validateShader(
 	shaderSource: string,
 	shaderType: number,
 	preambleLines: number = 0
-): { valid: boolean; error?: string; errorLines?: number[] } {
+): ShaderValidationResult {
 	const shader = gl.createShader(shaderType);
 
 	if (!shader) {
@@ -22,23 +32,32 @@ export function validateShader(
 		const errorLog = gl.getShaderInfoLog(shader);
 		gl.deleteShader(shader);
 
-		// Extract all line numbers from error log using global regex
-		const lineMatches = (errorLog || '').matchAll(/ERROR: \d+:(\d+):/g);
-		const errorLinesSet = new Set<number>();
+		// Parse error messages grouped by line number
+		// Format: ERROR: 0:22: 'color' : undeclared identifier
+		const lineErrors: LineErrors = {};
+		const errorRegex = /ERROR: \d+:(\d+): (.+)/g;
 
-		for (const match of lineMatches) {
+		let match;
+		while ((match = errorRegex.exec(errorLog || '')) !== null) {
 			const compiledLineNum = parseInt(match[1], 10);
+			const errorMessage = match[2].trim();
+
 			// Map compiled shader line number back to user source line number
 			const userSourceLine = compiledLineNum - preambleLines;
+
 			if (userSourceLine > 0) {
-				errorLinesSet.add(userSourceLine);
+				if (!lineErrors[userSourceLine]) {
+					lineErrors[userSourceLine] = [];
+				}
+				lineErrors[userSourceLine].push(errorMessage);
 			}
 		}
 
-		const errorLines =
-			errorLinesSet.size > 0 ? Array.from(errorLinesSet).sort((a, b) => a - b) : undefined;
-
-		return { valid: false, error: errorLog ?? '', errorLines };
+		return {
+			valid: false,
+			error: errorLog ?? '',
+			lineErrors: Object.keys(lineErrors).length > 0 ? lineErrors : undefined
+		};
 	}
 
 	gl.deleteShader(shader);

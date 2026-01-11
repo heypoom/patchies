@@ -22,7 +22,8 @@
 		isLongRunningTaskActive = false,
 		playOrStopIcon,
 		runOrStop,
-		onResize
+		onResize,
+		shouldAutoShowConsoleOnError = true
 	}: {
 		nodeId: string;
 		maxHeight?: string;
@@ -37,6 +38,7 @@
 		playOrStopIcon?: any;
 		runOrStop?: () => void;
 		onResize?: () => void;
+		shouldAutoShowConsoleOnError?: boolean;
 	} = $props();
 
 	let messages = $state<Array<{ type: string; timestamp: number; args: unknown[] }>>([]);
@@ -84,7 +86,10 @@
 		}
 
 		// Auto-show console on first error or warning
-		if (event.messageType === 'error' || event.messageType === 'warn') {
+		if (
+			shouldAutoShowConsoleOnError &&
+			(event.messageType === 'error' || event.messageType === 'warn')
+		) {
 			updateNodeData(nodeId, { showConsole: true });
 		}
 

@@ -4,11 +4,11 @@
 
 ## Objective
 
-Enable CodeMirror to highlight multiple error lines from GLSL shader compilation failures, instead of only the first error line.
+Enable CodeMirror to highlight multiple error lines from GLSL shader compilation failures with hover tooltips showing error messages.
 
 ## Data Flow
 
-The error line information flows through 6 files:
+The `lineErrors` data flows through these files:
 
 ```
 shader-validator.ts → shadertoy-draw.ts → fboRenderer.ts (worker)
@@ -24,14 +24,14 @@ shader-validator.ts → shadertoy-draw.ts → fboRenderer.ts (worker)
 
 | File | Role | Key Change |
 |------|------|------------|
-| `src/lib/canvas/shader-validator.ts` | Extracts line numbers from GL error log | Changed from single regex match to `matchAll()` with Set deduplication |
-| `src/lib/canvas/shadertoy-draw.ts` | Creates shader draw command, calls validator | Changed `errorLine?: number` to `errorLines?: number[]` in callback type |
-| `src/workers/rendering/fboRenderer.ts` | Runs in Web Worker, posts errors to main thread | Changed `postMessage` payload from `errorLine` to `errorLines` |
-| `src/lib/canvas/GLSystem.ts` | Handles worker messages on main thread | Changed condition check and logger call to use `errorLines` array |
-| `src/lib/utils/logger.ts` | Emits events to eventbus | Changed `nodeError` overload and `addNodeLog` to accept `errorLines: number[]` |
-| `src/lib/eventbus/events.ts` | Type definitions for events | Changed `ConsoleOutputEvent.errorLine` to `errorLines: number[]` |
-| `src/lib/components/nodes/GLSLCanvasNode.svelte` | GLSL node component | Changed state from `errorLineNum` to `errorLines`, passes array to CodeEditor |
-| `src/lib/components/CodeEditor.svelte` | CodeMirror wrapper | Updated StateEffect to accept array, creates multiple line decorations |
+| `src/lib/canvas/shader-validator.ts` | Extracts line numbers & messages from GL error log | Returns `lineErrors: Record<number, string[]>` |
+| `src/lib/canvas/shadertoy-draw.ts` | Creates shader draw command, calls validator | Passes `lineErrors` in error callback |
+| `src/workers/rendering/fboRenderer.ts` | Runs in Web Worker, posts errors to main thread | Posts `lineErrors` via `postMessage` |
+| `src/lib/canvas/GLSystem.ts` | Handles worker messages on main thread | Passes `lineErrors` to logger |
+| `src/lib/utils/logger.ts` | Emits events to eventbus | Accepts and dispatches `lineErrors` in event |
+| `src/lib/eventbus/events.ts` | Type definitions for events | Added `lineErrors?: Record<number, string[]>` to `ConsoleOutputEvent` |
+| `src/lib/components/nodes/GLSLCanvasNode.svelte` | GLSL node component | Derives `errorLines` from `lineErrors`, passes to CodeEditor |
+| `src/lib/components/CodeEditor.svelte` | CodeMirror wrapper | Derives error lines from `lineErrors`, line highlighting + hover tooltips |
 
 ## Error Log Format
 
@@ -42,7 +42,10 @@ ERROR: 0:22: 'r' :  field selection requires structure...
 ERROR: 0:23: 'color' : undeclared identifier
 ```
 
-The regex `/ERROR: \d+:(\d+):/g` captures the line number (second number after `ERROR:`).
+The regex `/ERROR: \d+:(\d+): (.+)/g` captures:
+
+- Group 1: Line number (second number after `ERROR:`)
+- Group 2: Error message text
 
 ## Preamble Line Offset
 
@@ -51,9 +54,23 @@ The compiled shader includes a preamble (uniforms, precision, etc.) that the use
 ## CodeMirror Integration
 
 CodeMirror uses a `StateField` with `StateEffect` pattern:
-- `setErrorLinesEffect`: Carries `number[] | null`
+
+### Line Highlighting
+
+- `setErrorLinesEffect`: Carries `number[] | null` (derived from `lineErrors` keys)
 - `errorLineField`: Creates `Decoration.line({ class: 'cm-errorLine' })` for each line
 - Decorations are created with `Decoration.set(ranges, true)` where `true` enables sorting
+
+### Hover Tooltips
+
+- `setLineErrorsEffect`: Carries `Record<number, string[]> | null`
+- `lineErrorsField`: Stores error messages for tooltip lookup
+- `errorTooltip`: Uses CodeMirror's `hoverTooltip` for rich tooltip UI
+- Shows all error messages for the hovered line
+- Styled with dark background, red border, and light red text
+- Multiple messages separated by horizontal lines
+
+Note: Only `lineErrors` flows through the pipeline. Error line numbers are derived where needed via `Object.keys(lineErrors).map(Number)`. Gutter markers were considered but removed since hover tooltips on highlighted lines provide sufficient feedback without UI clutter.
 
 The editor scrolls to the **first** error line when errors are set.
 
@@ -67,5 +84,4 @@ The editor scrolls to the **first** error line when errors are set.
 ## Future Considerations
 
 - Could add error severity levels (warning vs error) with different highlight colors
-- Could show inline error messages in CodeMirror gutters
 - Could add "jump to next/previous error" keyboard shortcuts
