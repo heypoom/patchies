@@ -127,6 +127,7 @@
 		if (!selected && $shouldShowHandles) {
 			return 'z-1';
 		}
+
 		return `z-1 ${selected ? '' : 'opacity-40'}`;
 	});
 </script>

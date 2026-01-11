@@ -79,10 +79,27 @@
 		// Don't dim the handle that initiated the connection (compare fully qualified IDs)
 		if ($connectingFromHandleId === qualifiedHandleId) return false;
 
-		// Determine if the connecting handle is an inlet or outlet by checking for -in or -out
-		// Handle patterns: "audio-out", "audio-out-0", "message-in", "out-0", "in-1", etc.
-		const connectingIsOutlet = $connectingFromHandleId.includes('-out');
-		const connectingIsInlet = $connectingFromHandleId.includes('-in');
+		// Determine if the connecting handle is an inlet or outlet
+		// Handle patterns:
+		//   - Typed: "audio-out", "audio-out-0", "message-in", "message-in-1"
+		//   - Untyped: "out-0", "in-1", "out", "in"
+		//   - Fallback: "outlet", "inlet"
+		// Extract just the handle ID (remove nodeId/ prefix if present)
+		const connectingHandleId = $connectingFromHandleId.split('/')[1] || $connectingFromHandleId;
+
+		// Check for outlet: typed (-out), untyped (starts with out-), or exact match
+		const connectingIsOutlet =
+			connectingHandleId.includes('-out') ||
+			connectingHandleId.startsWith('out-') ||
+			connectingHandleId === 'out' ||
+			connectingHandleId === 'outlet';
+
+		// Check for inlet: typed (-in), untyped (starts with in-), or exact match
+		const connectingIsInlet =
+			connectingHandleId.includes('-in') ||
+			connectingHandleId.startsWith('in-') ||
+			connectingHandleId === 'in' ||
+			connectingHandleId === 'inlet';
 
 		// Determine the source port type (what initiated the connection)
 		const sourcePort: 'inlet' | 'outlet' = connectingIsOutlet ? 'outlet' : 'inlet';
