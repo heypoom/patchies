@@ -1,17 +1,21 @@
 <script lang="ts">
-	import { Code, Pause, Play, X } from '@lucide/svelte/icons';
+	import { Code, Pause, Play, X, Terminal } from '@lucide/svelte/icons';
 	import { onMount, type Snippet } from 'svelte';
 	import * as Tooltip from './ui/tooltip';
 	import { derived } from 'svelte/store';
+	import { useSvelteFlow } from '@xyflow/svelte';
 
 	let previewContainer: HTMLDivElement | null = null;
+	const { getNode, updateNodeData } = useSvelteFlow();
 
 	let {
 		title,
+		nodeId,
 		onrun,
 		onPlaybackToggle,
 		paused = false,
 		showPauseButton = false,
+		showConsoleButton = false,
 
 		topHandle,
 		bottomHandle,
@@ -21,10 +25,12 @@
 		editorReady
 	}: {
 		title: string;
+		nodeId?: string;
 		onrun?: () => void;
 		onPlaybackToggle?: () => void;
 		paused?: boolean;
 		showPauseButton?: boolean;
+		showConsoleButton?: boolean;
 
 		topHandle?: Snippet;
 		bottomHandle?: Snippet;
@@ -55,6 +61,16 @@
 		measureContainerWidth();
 	}
 
+	function handleConsoleToggle() {
+		if (nodeId) {
+			const node = getNode(nodeId);
+			if (node) {
+				const newShowConsole = !node.data.showConsole;
+				updateNodeData(nodeId, { ...node.data, showConsole: newShowConsole });
+			}
+		}
+	}
+
 	onMount(() => {
 		measureContainerWidth();
 	});
@@ -79,7 +95,21 @@
 							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
 							onclick={handlePlaybackToggle}
 						>
-							<svelte:component this={paused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
+							{#if paused}
+								<Play class="h-4 w-4 text-zinc-300" />
+							{:else}
+								<Pause class="h-4 w-4 text-zinc-300" />
+							{/if}
+						</button>
+					{/if}
+
+					{#if showConsoleButton}
+						<button
+							title="Toggle console"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							onclick={handleConsoleToggle}
+						>
+							<Terminal class="h-4 w-4 text-zinc-300" />
 						</button>
 					{/if}
 

@@ -84,6 +84,12 @@ export class GLSystem {
 			}
 		}
 
+		// Handle shader compilation errors
+		if (data.type === 'shaderError') {
+			const { logger } = await import('$lib/utils/logger');
+			logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
+		}
+
 		// Handle preview frames
 		if (data.type === 'previewFrame' && data.buffer) {
 			const { nodeId, buffer, width, height } = data;

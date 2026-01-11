@@ -72,19 +72,17 @@
 
 <div class={['flex items-start gap-1.5 px-2 py-1 select-text', style.text, style.bg].join(' ')}>
 	{#if style.icon}
-		<svelte:component
-			this={style.icon}
-			class={['mt-0.5 flex-shrink-0', style.iconColor].join(' ')}
-			size={14}
-		/>
+		{@const IconComponent = style.icon}
+		<IconComponent class={['mt-0.5 flex-shrink-0', style.iconColor].join(' ')} size={14} />
 	{/if}
-	<div class="console-content mt-[1px] flex-1">
-		<div class="flex flex-wrap items-start gap-x-2">
+
+	<div class="console-content mt-[1px] min-w-0 flex-1">
+		<div class="flex flex-col items-start gap-x-2">
 			{#each msg.args as arg, i}
 				{#if isInspectable(arg)}
 					<ObjectInspector data={arg} />
 				{:else}
-					<span>{formatArg(arg)}</span>
+					<span class="break-words whitespace-pre-wrap">{formatArg(arg)}</span>
 				{/if}
 			{/each}
 		</div>

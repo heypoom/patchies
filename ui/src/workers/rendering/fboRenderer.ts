@@ -254,12 +254,22 @@ export class FBORenderer {
 			height,
 			framebuffer,
 			regl: this.regl,
+			gl: this.gl!,
 			code: node.data.code,
-			uniformDefs: node.data.glUniformDefs ?? []
+			uniformDefs: node.data.glUniformDefs ?? [],
+			onError: (error: Error) => {
+				// Send error message back to main thread
+				self.postMessage({
+					type: 'shaderError',
+					nodeId: node.id,
+					error: error.message,
+					stack: error.stack
+				});
+			}
 		});
 
 		return {
-			render: (params) => renderCommand(params),
+			render: (params) => renderCommand?.(params),
 			cleanup: () => {}
 		};
 	}

@@ -1,5 +1,6 @@
 import regl from 'regl';
 import type { GLUniformDef } from '../../types/uniform-config';
+import { validateShader } from './shader-validator';
 
 // Render a simple quad for a vertex shader.
 const VERTEX_SHADER = `#version 300 es
@@ -28,24 +29,28 @@ type P = {
 	mouseY: number;
 	mouseZ: number;
 	mouseW: number;
-	userParams: any[];
+	userParams: unknown[];
 };
 
 export function createShaderToyDrawCommand({
 	code,
 	regl,
+	gl,
 	width,
 	height,
 	framebuffer,
-	uniformDefs
+	uniformDefs,
+	onError
 }: {
 	code: string;
 	uniformDefs: GLUniformDef[];
 	regl: regl.Regl;
+	gl: WebGL2RenderingContext;
 	width: number;
 	height: number;
 	framebuffer: regl.Framebuffer2D | null;
-}): regl.DrawCommand {
+	onError?: (error: Error) => void;
+}): regl.DrawCommand | null {
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `#version 300 es
     precision highp float;
@@ -68,39 +73,61 @@ export function createShaderToyDrawCommand({
     }
   `;
 
+	// Validate both shaders before passing to regl
+	const vertexValidation = validateShader(gl, VERTEX_SHADER, gl.VERTEX_SHADER);
+	if (!vertexValidation.valid) {
+		const error = new Error(vertexValidation.error || 'Vertex shader compilation failed');
+		onError?.(error);
+		return null;
+	}
+
+	const fragmentValidation = validateShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
+	if (!fragmentValidation.valid) {
+		const error = new Error(fragmentValidation.error || 'Fragment shader compilation failed');
+		onError?.(error);
+		return null;
+	}
+
 	const userUniformInputs: UserUniformInputs = {};
 
 	uniformDefs.forEach((def, paramIndex) => {
 		userUniformInputs[def.name] = (_, props) => props.userParams[paramIndex];
 	});
 
-	return regl({
-		frag: fragmentShader,
-		vert: VERTEX_SHADER,
-		framebuffer,
+	try {
+		return regl({
+			frag: fragmentShader,
+			vert: VERTEX_SHADER,
+			framebuffer,
 
-		attributes: {
-			position: regl.buffer([
-				[-1, -1],
-				[1, -1],
-				[-1, 1],
-				[1, 1]
-			])
-		},
+			attributes: {
+				position: regl.buffer([
+					[-1, -1],
+					[1, -1],
+					[-1, 1],
+					[1, 1]
+				])
+			},
 
-		primitive: 'triangle strip',
-		count: 4,
+			primitive: 'triangle strip',
+			count: 4,
 
-		uniforms: {
-			iResolution: ({ pixelRatio }) => [width * pixelRatio, height * pixelRatio, 1.0],
-			iTime: ({ time }) => time,
-			iTimeDelta: ({ time }, props: P) => time - props.lastTime,
-			iFrame: (_, props: P) => props.iFrame,
-			iMouse: (_, props: P) => [props.mouseX, props.mouseY, props.mouseZ, props.mouseW],
-			iDate: () => getDate(),
-			...userUniformInputs
-		}
-	});
+			uniforms: {
+				iResolution: ({ pixelRatio }) => [width * pixelRatio, height * pixelRatio, 1.0],
+				iTime: ({ time }) => time,
+				iTimeDelta: ({ time }, props: P) => time - props.lastTime,
+				iFrame: (_, props: P) => props.iFrame,
+				iMouse: (_, props: P) => [props.mouseX, props.mouseY, props.mouseZ, props.mouseW],
+				iDate: () => getDate(),
+				...userUniformInputs
+			}
+		});
+	} catch (error) {
+		const err = error instanceof Error ? error : new Error(String(error));
+		onError?.(err);
+
+		return null;
+	}
 }
 
 const getDate = () => {

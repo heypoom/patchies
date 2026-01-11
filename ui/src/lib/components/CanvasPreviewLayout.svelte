@@ -4,11 +4,13 @@
 
 	let {
 		title,
+		nodeId,
 		selected = false,
 		onrun,
 		onPlaybackToggle,
 		paused = false,
 		showPauseButton = false,
+		showConsoleButton = false,
 		previewCanvas = $bindable<HTMLCanvasElement>(),
 		nodrag = false,
 		tabindex,
@@ -24,11 +26,13 @@
 		editorReady
 	}: {
 		title: string;
+		nodeId?: string;
 		selected?: boolean;
 		onrun?: () => void;
 		onPlaybackToggle?: () => void;
 		paused?: boolean;
 		showPauseButton?: boolean;
+		showConsoleButton?: boolean;
 		previewCanvas?: HTMLCanvasElement;
 		nodrag?: boolean;
 		tabindex?: string | number;
@@ -47,10 +51,12 @@
 
 <ObjectPreviewLayout
 	{title}
+	{nodeId}
 	{onrun}
 	{onPlaybackToggle}
 	{paused}
 	{showPauseButton}
+	{showConsoleButton}
 	{topHandle}
 	{bottomHandle}
 	{codeEditor}
@@ -66,9 +72,9 @@
 					: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
 				nodrag ? 'nodrag cursor-default' : 'cursor-grab'
 			]}
-			{tabindex}
-			{width}
-			{height}
+			tabindex={typeof tabindex === 'number' ? tabindex : undefined}
+			width={typeof width === 'number' ? width : undefined}
+			height={typeof height === 'number' ? height : undefined}
 			{style}
 		></canvas>
 	{/snippet}

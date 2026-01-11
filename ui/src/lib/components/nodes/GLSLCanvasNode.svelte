@@ -10,6 +10,7 @@
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 
 	let {
 		id: nodeId,
@@ -46,6 +47,7 @@
 
 	let isPaused = $state(false);
 	let editorReady = $state(false);
+	let consoleRef: any = $state(null);
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
@@ -120,6 +122,9 @@
 	}
 
 	function updateShader() {
+		// Clear console on re-run
+		consoleRef?.clearConsole();
+
 		// Construct uniform definitions from the shader code.
 		const nextData = {
 			...data,
@@ -255,10 +260,12 @@
 
 <CanvasPreviewLayout
 	title={data.title ?? 'glsl'}
+	{nodeId}
 	onrun={updateShader}
 	onPlaybackToggle={togglePause}
 	paused={isPaused}
 	showPauseButton={true}
+	showConsoleButton={true}
 	nodrag={usesMouseUniform}
 	bind:previewCanvas
 	{width}
@@ -306,3 +313,14 @@
 		/>
 	{/snippet}
 </CanvasPreviewLayout>
+
+{#if data.showConsole}
+	<div class="mt-3">
+		<VirtualConsole
+			bind:this={consoleRef}
+			{nodeId}
+			placeholder="Shader compilation errors will appear here."
+			maxHeight="200px"
+		/>
+	</div>
+{/if}
