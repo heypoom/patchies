@@ -292,12 +292,6 @@ export const dependencies: ProjectLicense[] = [
 		url: 'https://npmjs.com/package/lezer-glsl'
 	},
 	{ name: 'lodash', version: '^4.17.21', license: 'MIT', url: 'https://npmjs.com/package/lodash' },
-	{
-		name: 'machine',
-		version: './src/assets/vasm',
-		license: 'MIT',
-		url: 'https://npmjs.com/package/machine'
-	},
 	{ name: 'marked', version: '^16.1.2', license: 'MIT', url: 'https://npmjs.com/package/marked' },
 	{
 		name: 'matter-js',
