@@ -97,7 +97,9 @@ https://github.com/user-attachments/assets/79b5080d-30d6-448e-84d8-abeaf46b936f
 - When connecting, the starting handle will highlight to show where you're connecting from.
 - When connecting, all [invalid connection targets](#connection-rules) will be dimmed.
 
-### Easy Connect Button
+### Easy Connect
+
+[mobile-drag-demo.webm](https://github.com/user-attachments/assets/aa1f77b0-9643-49fa-86f9-18f97425aa20)
 
 We have an "easy connect" button that makes all the handles big and easy to touch, for these use-cases:
 
