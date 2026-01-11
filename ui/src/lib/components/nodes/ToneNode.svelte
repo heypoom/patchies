@@ -6,6 +6,10 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import SimpleDspLayout from './SimpleDspLayout.svelte';
 	import type { ToneNode } from '$lib/audio/v2/nodes/ToneNode';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { logger } from '$lib/utils/logger';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let {
@@ -20,6 +24,7 @@
 			messageOutletCount?: number;
 			title?: string;
 			executeCode?: number;
+			showConsole?: boolean;
 		};
 		selected: boolean;
 	} = $props();
@@ -29,7 +34,22 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 
 	let audioService = AudioService.getInstance();
+	let eventBus = PatchiesEventBus.getInstance();
 	let previousExecuteCode = $state<number | undefined>(undefined);
+	let consoleRef: VirtualConsole | null = $state(null);
+	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+
+	// Create node-scoped logger
+	const nodeLogger = logger.ofNode(nodeId);
+
+	// Listen for console output events to capture lineErrors
+	function handleConsoleOutput(event: ConsoleOutputEvent) {
+		if (event.nodeId !== nodeId) return;
+
+		if (event.messageType === 'error' && event.lineErrors) {
+			lineErrors = event.lineErrors;
+		}
+	}
 
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
@@ -79,12 +99,21 @@
 	}
 
 	function runTone() {
+		// Clear previous console output and error highlighting
+		consoleRef?.clearConsole();
+		lineErrors = undefined;
+
 		updateAudioCode(data.code);
+	}
+
+	function handleToggleConsole() {
+		updateNodeData(nodeId, { showConsole: !data.showConsole });
 	}
 
 	onMount(() => {
 		audioService.createNode(nodeId, 'tone~', [null, data.code]);
 		handleCodeChange(data.code);
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 	});
 
 	onDestroy(() => {
@@ -93,6 +122,8 @@
 		if (node) {
 			audioService.removeNode(node);
 		}
+
+		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 	});
 </script>
 
@@ -105,4 +136,16 @@
 	onCodeChange={handleCodeChange}
 	onRun={runTone}
 	{handleMessage}
-/>
+	showConsole={data.showConsole}
+	onToggleConsole={handleToggleConsole}
+	{lineErrors}
+>
+	{#snippet console()}
+		<VirtualConsole
+			bind:this={consoleRef}
+			{nodeId}
+			onrun={runTone}
+			placeholder="Tone.js errors will appear here."
+		/>
+	{/snippet}
+</SimpleDspLayout>

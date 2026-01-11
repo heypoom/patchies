@@ -52,9 +52,13 @@ export class ToneNode implements AudioNodeV2 {
 	public onSetPortCount: OnSetPortCount = () => {};
 	public onSetTitle: OnSetTitle = () => {};
 
+	// Node-scoped logger for routing console output to VirtualConsole
+	private nodeLogger;
+
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioContext = audioContext;
+		this.nodeLogger = logger.ofNode(nodeId);
 
 		// Create gain nodes immediately for connections
 		this.audioNode = audioContext.createGain();
@@ -145,6 +149,15 @@ export class ToneNode implements AudioNodeV2 {
 			// Create inputNode that receives incoming audio
 			const inputNode = this.inputNode;
 
+			// Create custom console that routes to VirtualConsole
+			const customConsole = {
+				log: (...args: unknown[]) => this.nodeLogger.log(...args),
+				error: (...args: unknown[]) => this.nodeLogger.error(...args),
+				warn: (...args: unknown[]) => this.nodeLogger.warn(...args),
+				debug: (...args: unknown[]) => this.nodeLogger.debug(...args),
+				info: (...args: unknown[]) => this.nodeLogger.info(...args)
+			};
+
 			// Execute the Tone.js code with our context
 			const codeFunction = new Function(
 				'Tone',
@@ -154,6 +167,7 @@ export class ToneNode implements AudioNodeV2 {
 				'send',
 				'outputNode',
 				'inputNode',
+				'console',
 				`
 
 				${code}
@@ -161,13 +175,23 @@ export class ToneNode implements AudioNodeV2 {
 			);
 
 			// Execute the code and store any returned cleanup function
-			const result = codeFunction(Tone, setPortCount, setTitle, recv, send, outputNode, inputNode);
+			const result = codeFunction(
+				Tone,
+				setPortCount,
+				setTitle,
+				recv,
+				send,
+				outputNode,
+				inputNode,
+				customConsole
+			);
 
 			if (result && typeof result.cleanup === 'function') {
 				this.cleanupFn = result.cleanup;
 			}
 		} catch (error) {
-			logger.error('Failed to execute Tone.js code:', error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.nodeLogger.error(errorMessage);
 		}
 	}
 
@@ -186,7 +210,8 @@ export class ToneNode implements AudioNodeV2 {
 				this.recvCallback(data.message, data.meta);
 			}
 		} catch (error) {
-			logger.error('Error in Tone recv callback:', error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.nodeLogger.error(`Error in recv(): ${errorMessage}`);
 		}
 	}
 
@@ -198,7 +223,8 @@ export class ToneNode implements AudioNodeV2 {
 			try {
 				this.cleanupFn();
 			} catch (error) {
-				logger.error('Error during user cleanup:', error);
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.nodeLogger.error(`Error during cleanup: ${errorMessage}`);
 			}
 		}
 

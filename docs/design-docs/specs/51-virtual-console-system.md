@@ -573,9 +573,9 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 
 ### Add Consoles to Audio Nodes
 
-- [ ] Add console to `SimpleDspLayout.svelte` (shared by dsp~, tone~, elem~, sonic~)
+- [x] Add console to `SimpleDspLayout.svelte` (shared by dsp~, tone~, elem~, sonic~)
 - [ ] Update `DspNode.ts` to use `logger`
-- [ ] Update `ToneNode.ts` to use `logger`
+- [x] Update `ToneNode.ts` to use `logger`
 - [ ] Update `ElementaryNode.ts` to use `logger`
 - [ ] Update `SonicNode.ts` to use `logger`
 

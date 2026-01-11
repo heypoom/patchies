@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Code, Play, X } from '@lucide/svelte/icons';
+	import { Code, Play, Terminal, X } from '@lucide/svelte/icons';
 	import { useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, type Snippet } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -17,7 +17,11 @@
 		onCodeChange,
 		onRun,
 		handleMessage,
-		actionButtons
+		actionButtons,
+		console: consoleSnippet,
+		showConsole = false,
+		onToggleConsole,
+		lineErrors
 	}: {
 		nodeId: string;
 		nodeName: string;
@@ -32,7 +36,11 @@
 		onCodeChange: (code: string) => void;
 		onRun: () => void;
 		handleMessage: MessageCallbackFn;
-		actionButtons?: any;
+		actionButtons?: Snippet;
+		console?: Snippet;
+		showConsole?: boolean;
+		onToggleConsole?: () => void;
+		lineErrors?: Record<number, string[]>;
 	} = $props();
 
 	let contentContainer: HTMLDivElement | null = null;
@@ -204,6 +212,16 @@
 					</Tooltip.Content>
 				</Tooltip.Root>
 
+				{#if consoleSnippet}
+					<button
+						title="Toggle console"
+						class="rounded p-1 hover:bg-zinc-700"
+						onclick={onToggleConsole}
+					>
+						<Terminal class="h-4 w-4 text-zinc-300" />
+					</button>
+				{/if}
+
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
 					<X class="h-4 w-4 text-zinc-300" />
 				</button>
@@ -217,8 +235,15 @@
 					{nodeType}
 					class="nodrag h-64 w-full resize-none"
 					onrun={onRun}
+					{lineErrors}
 				/>
 			</div>
+
+			{#if consoleSnippet}
+				<div class="mt-3 w-full" class:hidden={!showConsole}>
+					{@render consoleSnippet()}
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
