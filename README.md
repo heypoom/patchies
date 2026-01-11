@@ -142,6 +142,8 @@ Here are some examples to get you started:
 
 <img src="./docs/images/basic-examples.webp" alt="Patchies.app basic example" width="700">
 
+> ✨ Try this patch out [in the app](https://patchies.app/?id=9c5ytrchpoazlez)!
+
 - Create two `button` objects, and connect the outlet of one to the inlet of another.
   - When you click on the first button, it will send a `bang` message to the second button, which will flash.
   - In JavaScript, you will receive this as an object: `{type: 'bang'}`
