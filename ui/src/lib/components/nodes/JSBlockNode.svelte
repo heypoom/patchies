@@ -118,6 +118,19 @@
 		}
 
 		updateContentWidth();
+
+		// Watch for any size changes to the content container
+		const resizeObserver = new ResizeObserver(() => {
+			updateContentWidth();
+		});
+
+		if (contentContainer) {
+			resizeObserver.observe(contentContainer);
+		}
+
+		return () => {
+			resizeObserver.disconnect();
+		};
 	});
 
 	onDestroy(() => {
@@ -293,6 +306,7 @@
 						{isLongRunningTaskActive}
 						{playOrStopIcon}
 						{runOrStop}
+						onResize={updateContentWidth}
 					/>
 				{:else}
 					<button

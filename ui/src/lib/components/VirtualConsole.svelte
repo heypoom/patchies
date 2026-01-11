@@ -19,7 +19,8 @@
 		isRunning = false,
 		isLongRunningTaskActive = false,
 		playOrStopIcon,
-		runOrStop
+		runOrStop,
+		onResize
 	}: {
 		nodeId: string;
 		maxHeight?: string;
@@ -33,6 +34,7 @@
 		isLongRunningTaskActive?: boolean;
 		playOrStopIcon?: any;
 		runOrStop?: () => void;
+		onResize?: () => void;
 	} = $props();
 
 	let messages = $state<Array<{ type: string; timestamp: number; args: unknown[] }>>([]);
@@ -120,10 +122,24 @@
 		const deltaY = e.clientY - resizeStartY;
 		const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
 		consoleHeight = newHeight;
+		onResize?.();
 	}
 
 	function stopResize() {
 		isResizing = false;
+	}
+
+	function handleRun() {
+		clearConsole();
+		onrun?.();
+	}
+
+	function handleRunOrStop() {
+		// Only clear console when running (not when stopping)
+		if (!isLongRunningTaskActive) {
+			clearConsole();
+		}
+		runOrStop?.();
 	}
 
 	onMount(() => {
@@ -157,7 +173,7 @@
 		<div class="flex gap-1">
 			{#if (isRunning || isLongRunningTaskActive) && onrun}
 				<button
-					onclick={onrun}
+					onclick={handleRun}
 					class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
 					title="Run again"
 					aria-label="Run again"
@@ -168,7 +184,7 @@
 
 			{#if runOrStop && playOrStopIcon}
 				<button
-					onclick={runOrStop}
+					onclick={handleRunOrStop}
 					class={[
 						'rounded p-1 text-zinc-300 hover:bg-zinc-700',
 						isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
@@ -206,7 +222,8 @@
 	<div class="relative">
 		<div
 			bind:this={consoleContainer}
-			role="log"
+			role="textbox"
+			aria-readonly="true"
 			aria-label="Console output"
 			tabindex="0"
 			class="nodrag nopan nowheel cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 font-mono text-xs select-text"
@@ -242,16 +259,15 @@
 		</div>
 
 		<!-- Resize handle -->
-		<div
-			class="nodrag nopan absolute right-0 bottom-0 left-0 h-2 cursor-ns-resize transition-colors hover:bg-zinc-600/30"
+		<button
+			class="nodrag nopan absolute right-0 bottom-0 left-0 h-2 cursor-ns-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
 			onmousedown={startResize}
-			role="separator"
+			type="button"
 			aria-label="Resize console"
-			aria-orientation="horizontal"
 		>
 			<div
 				class="absolute top-1/2 left-1/2 h-0.5 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
 			></div>
-		</div>
+		</button>
 	</div>
 </div>
