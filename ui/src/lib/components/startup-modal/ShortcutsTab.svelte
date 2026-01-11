@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { Info, Keyboard, MousePointer } from '@lucide/svelte/icons';
 
+	import { isAiFeaturesVisible } from '../../../stores/ui.store';
+
 	interface Shortcut {
 		keys: string[];
 		description: string;
 		category: 'mouse' | 'keyboard';
+		requiresAi?: boolean;
 	}
 
 	const shortcuts: Shortcut[] = [
@@ -58,7 +61,8 @@
 		{
 			keys: ['Ctrl', 'I'],
 			description: 'Insert or edit an object with AI',
-			category: 'keyboard'
+			category: 'keyboard',
+			requiresAi: true
 		},
 		{
 			keys: ['Ctrl', 'S'],
@@ -87,8 +91,13 @@
 		}
 	];
 
-	const mouseShortcuts = shortcuts.filter((s) => s.category === 'mouse');
-	const keyboardShortcuts = shortcuts.filter((s) => s.category === 'keyboard');
+	const mouseShortcuts = $derived(
+		shortcuts.filter((s) => s.category === 'mouse' && (!s.requiresAi || $isAiFeaturesVisible))
+	);
+
+	const keyboardShortcuts = $derived(
+		shortcuts.filter((s) => s.category === 'keyboard' && (!s.requiresAi || $isAiFeaturesVisible))
+	);
 </script>
 
 <div class="space-y-6">
