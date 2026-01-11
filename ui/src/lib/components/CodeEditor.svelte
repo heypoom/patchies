@@ -3,12 +3,39 @@
 	import { EditorView, minimalSetup } from 'codemirror';
 	import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
 	import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
-	import { keymap, drawSelection } from '@codemirror/view';
+	import { keymap, drawSelection, Decoration, type DecorationSet } from '@codemirror/view';
+	import { StateField, StateEffect } from '@codemirror/state';
 	import { useVimInEditor } from '../../stores/editor.store';
 	import { loadLanguageExtension } from '$lib/codemirror/language';
 	import { autocompletion, acceptCompletion, completionStatus } from '@codemirror/autocomplete';
 	import { indentMore } from '@codemirror/commands';
 	import { search, searchKeymap } from '@codemirror/search';
+
+	// Effect to set the error line
+	const setErrorLineEffect = StateEffect.define<number | null>();
+
+	// StateField to manage error line decorations
+	const errorLineField = StateField.define<DecorationSet>({
+		create() {
+			return Decoration.none;
+		},
+		update(decorations, tr) {
+			decorations = decorations.map(tr.changes);
+			for (let effect of tr.effects) {
+				if (effect.is(setErrorLineEffect)) {
+					if (effect.value === null) {
+						decorations = Decoration.none;
+					} else {
+						const line = tr.state.doc.line(effect.value);
+						const decoration = Decoration.line({ class: 'cm-errorLine' });
+						decorations = Decoration.set([decoration.range(line.from)]);
+					}
+				}
+			}
+			return decorations;
+		},
+		provide: (f) => EditorView.decorations.from(f)
+	});
 
 	let languageComp = new Compartment();
 
@@ -25,6 +52,7 @@
 		extraExtensions = [],
 		onready,
 		nodeType,
+		errorLine,
 		...restProps
 	}: {
 		value?: string;
@@ -37,6 +65,7 @@
 		fontSize?: string;
 		onready?: () => void;
 		nodeType?: string;
+		errorLine?: number;
 	} = $props();
 
 	let editorElement: HTMLDivElement;
@@ -80,6 +109,9 @@
 
 				languageComp.of(languageExtension),
 
+				// Error line highlighting
+				errorLineField,
+
 				// Prevent wheel events from bubbling to XYFlow
 				EditorView.domEventHandlers({
 					wheel: (event) => {
@@ -118,6 +150,13 @@
 					},
 					'.cm-selectionBackground': {
 						backgroundColor: 'rgba(59, 130, 246, 0.3)'
+					},
+					'.cm-errorLine': {
+						backgroundColor: 'rgba(239, 68, 68, 0.15)',
+						borderLeft: '3px solid rgb(239 68 68)'
+					},
+					'.cm-errorLineGutter': {
+						backgroundColor: 'rgba(239, 68, 68, 0.2)'
 					}
 				}),
 				EditorView.updateListener.of((update) => {
@@ -215,6 +254,22 @@
 					effects: languageComp.reconfigure(languageExtension)
 				});
 			}
+		});
+	});
+
+	// Highlight error line when errorLine prop changes
+	$effect(() => {
+		if (!editorView) return;
+
+		// Dispatch effect to set or clear error line
+		const line = errorLine || null;
+		editorView.dispatch({
+			effects: [
+				setErrorLineEffect.of(line),
+				...(errorLine
+					? [EditorView.scrollIntoView(editorView.state.doc.line(errorLine).from, { y: 'center' })]
+					: [])
+			]
 		});
 	});
 </script>

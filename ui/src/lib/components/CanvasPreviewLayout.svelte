@@ -23,6 +23,7 @@
 		bottomHandle,
 
 		codeEditor,
+		console: consoleSnippet,
 		editorReady
 	}: {
 		title: string;
@@ -45,6 +46,7 @@
 		bottomHandle?: Snippet;
 
 		codeEditor: Snippet;
+		console?: Snippet;
 		editorReady?: boolean;
 	} = $props();
 </script>
@@ -61,6 +63,7 @@
 	{bottomHandle}
 	{codeEditor}
 	{editorReady}
+	console={consoleSnippet}
 >
 	{#snippet preview()}
 		<canvas

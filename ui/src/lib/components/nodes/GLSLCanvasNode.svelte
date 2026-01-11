@@ -11,6 +11,8 @@
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -49,6 +51,7 @@
 	let isPaused = $state(false);
 	let editorReady = $state(false);
 	let consoleRef: any = $state(null);
+	let errorLineNum: number | undefined = $state(undefined);
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
@@ -230,6 +233,29 @@
 		};
 	});
 
+	// Listen for shader compilation errors and extract line numbers
+	$effect(() => {
+		const eventBus = PatchiesEventBus.getInstance();
+
+		const handleConsoleOutput = (event: ConsoleOutputEvent) => {
+			if (event.nodeId !== nodeId || event.messageType !== 'error') return;
+
+			// Extract line number from error message
+			// Format: "ERROR: 0:LINE_NUM: message" or similar
+			const errorMessage = String(event.args[0] || event.args[1] || '');
+			const lineMatch = errorMessage.match(/ERROR: \d+:(\d+):/);
+			const lineNum = lineMatch ? parseInt(lineMatch[1], 10) : undefined;
+
+			errorLineNum = lineNum;
+		};
+
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+
+		return () => {
+			eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+		};
+	});
+
 	onMount(() => {
 		glSystem = GLSystem.getInstance();
 
@@ -311,17 +337,20 @@
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateShader}
 			onready={() => (editorReady = true)}
+			errorLine={errorLineNum}
 		/>
 	{/snippet}
-</CanvasPreviewLayout>
 
-{#if data.showConsole}
-	<div class="mt-3">
-		<VirtualConsole
-			bind:this={consoleRef}
-			{nodeId}
-			placeholder="Shader compilation errors will appear here."
-			maxHeight="200px"
-		/>
-	</div>
-{/if}
+	{#snippet console()}
+		{#if data.showConsole}
+			<div class="mt-3">
+				<VirtualConsole
+					bind:this={consoleRef}
+					{nodeId}
+					placeholder="Shader compilation errors will appear here."
+					maxHeight="200px"
+				/>
+			</div>
+		{/if}
+	{/snippet}
+</CanvasPreviewLayout>

@@ -22,6 +22,7 @@
 		preview,
 		previewWidth,
 		codeEditor,
+		console: consoleSnippet,
 		editorReady
 	}: {
 		title: string;
@@ -36,6 +37,7 @@
 		bottomHandle?: Snippet;
 		preview?: Snippet;
 		codeEditor: Snippet;
+		console?: Snippet;
 		editorReady?: boolean;
 
 		previewWidth?: number;
@@ -158,8 +160,14 @@
 			{/if}
 
 			<div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-				{@render codeEditor()}
+				<div class="flex flex-col">
+					{@render codeEditor()}
+				</div>
 			</div>
+
+			{#if showConsoleButton && consoleSnippet}
+				{@render consoleSnippet()}
+			{/if}
 		</div>
 	{/if}
 </div>
