@@ -6,6 +6,8 @@ export interface LogEntry {
 	message: string;
 	timestamp: Date;
 	data?: unknown;
+	nodeId?: string; // Associate logs with specific nodes
+	args?: unknown[]; // Support multiple arguments for rich rendering
 }
 
 /**
@@ -15,15 +17,30 @@ export interface LogEntry {
  * logger.log('Starting process');
  * logger.warn('Potential issue detected');
  * logger.error('Operation failed', error);
+ *
+ * // Node-scoped logging
+ * logger.nodeLog('node-123', 'P5 sketch loaded');
+ * logger.nodeError('node-456', 'GLSL compilation failed');
  * ```
  */
 export class Logger {
 	private static instance: Logger | null = null;
 	private logs: LogEntry[] = [];
 	private maxLogs = 1000; // Keep last 1000 logs in memory
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private eventBus: any = null; // Lazy-loaded to avoid circular dependencies
 
 	private constructor() {
 		// Private constructor for singleton
+	}
+
+	private async getEventBus() {
+		if (!this.eventBus) {
+			// Lazy-load event bus to avoid circular dependency
+			const { PatchiesEventBus } = await import('$lib/eventbus/PatchiesEventBus');
+			this.eventBus = PatchiesEventBus.getInstance();
+		}
+		return this.eventBus;
 	}
 
 	/**
@@ -113,6 +130,117 @@ export class Logger {
 		if (this.logs.length > this.maxLogs) {
 			this.logs = this.logs.slice(-this.maxLogs);
 		}
+	}
+
+	/**
+	 * Log a message associated with a specific node.
+	 */
+	nodeLog(nodeId: string, ...args: unknown[]): void {
+		this.addNodeLog(nodeId, 'log', args);
+	}
+
+	/**
+	 * Log a warning associated with a specific node.
+	 */
+	nodeWarn(nodeId: string, ...args: unknown[]): void {
+		this.addNodeLog(nodeId, 'warn', args);
+	}
+
+	/**
+	 * Log an error associated with a specific node.
+	 */
+	nodeError(nodeId: string, ...args: unknown[]): void {
+		this.addNodeLog(nodeId, 'error', args);
+	}
+
+	/**
+	 * Log a debug message associated with a specific node.
+	 */
+	nodeDebug(nodeId: string, ...args: unknown[]): void {
+		this.addNodeLog(nodeId, 'debug', args);
+	}
+
+	/**
+	 * Add a node-scoped log entry and emit event for reactive UI.
+	 */
+	private addNodeLog(nodeId: string, level: LogLevel, args: unknown[]): void {
+		const entry: LogEntry = {
+			level,
+			message: args.map((arg) => String(arg)).join(' '), // For backward compat
+			timestamp: new Date(),
+			nodeId,
+			args // Keep raw args for rich rendering
+		};
+
+		this.logs.push(entry);
+
+		if (this.logs.length > this.maxLogs) {
+			this.logs.shift();
+		}
+
+		// Emit event for reactive UI (async, non-blocking)
+		this.getEventBus().then((eventBus) => {
+			if (eventBus) {
+				eventBus.dispatch({
+					type: 'consoleOutput',
+					nodeId,
+					messageType: level,
+					timestamp: entry.timestamp.getTime(),
+					args
+				});
+			}
+		});
+
+		// Still log to DevTools for debugging
+		console[level](`[${nodeId}]`, ...args);
+	}
+
+	/**
+	 * Get logs for a specific node.
+	 */
+	getNodeLogs(nodeId: string): LogEntry[] {
+		return this.logs.filter((log) => log.nodeId === nodeId);
+	}
+
+	/**
+	 * Clear logs for a specific node.
+	 */
+	clearNodeLogs(nodeId: string): void {
+		this.logs = this.logs.filter((log) => log.nodeId !== nodeId);
+	}
+
+	/**
+	 * Get a node-scoped logger instance.
+	 * Usage: logger.ofNode(nodeId).log('message')
+	 */
+	ofNode(nodeId: string): NodeLogger {
+		return new NodeLogger(nodeId, this);
+	}
+}
+
+/**
+ * Node-scoped logger that automatically includes nodeId in all log calls.
+ */
+class NodeLogger {
+	constructor(
+		private nodeId: string,
+		private logger: Logger
+	) {}
+
+	log(...args: unknown[]): void {
+		this.logger.nodeLog(this.nodeId, ...args);
+	}
+
+	warn(...args: unknown[]): void {
+		this.logger.nodeWarn(this.nodeId, ...args);
+	}
+
+	error(...args: unknown[]): void {
+		this.logger.nodeError(this.nodeId, ...args);
+	}
+
+	debug(...args: unknown[]): void {
+		this.logger.nodeDebug(this.nodeId, ...args);
 	}
 }
 

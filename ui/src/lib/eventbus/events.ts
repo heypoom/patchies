@@ -1,6 +1,7 @@
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 
 export type PatchiesEvent =
+	| ConsoleOutputEvent
 	| GLPreviewFrameCapturedEvent
 	| PyodideConsoleOutputEvent
 	| PyodideSendMessageEvent
@@ -9,6 +10,14 @@ export type PatchiesEvent =
 	| NodeHidePortsUpdateEvent
 	| NodeDragEnabledUpdateEvent
 	| NodeVideoOutputEnabledUpdateEvent;
+
+export interface ConsoleOutputEvent {
+	type: 'consoleOutput';
+	nodeId: string;
+	messageType: 'log' | 'warn' | 'error' | 'debug';
+	timestamp: number;
+	args: unknown[]; // Raw arguments for rich rendering
+}
 
 export interface PyodideConsoleOutputEvent {
 	type: 'pyodideConsoleOutput';

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Code, Loader, Play, RefreshCcw, Terminal, Trash2, X } from '@lucide/svelte/icons';
+	import { Code, Loader, Play, Terminal, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -8,6 +8,8 @@
 	import { PyodideSystem } from '$lib/python/PyodideSystem';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { PyodideConsoleOutputEvent, PyodideSendMessageEvent } from '$lib/eventbus/events';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { logger } from '$lib/utils/logger';
 
 	let {
 		id: nodeId,
@@ -30,9 +32,11 @@
 	let isInitialized = $state(false);
 	let isRunning = $state(false);
 	let showEditor = $state(false);
-	let consoleOutput = $state<string[]>([]);
+	let consoleRef: VirtualConsole | null = $state(null);
 	let contentContainer: HTMLDivElement | null = null;
 	let contentWidth = $state(100);
+
+	const nodeLogger = logger.ofNode(nodeId);
 
 	const code = $derived(data.code || '');
 
@@ -47,15 +51,15 @@
 	function handlePyodideConsoleOutput(event: PyodideConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
 
-		const prefix = event.output === 'stderr' ? 'ERROR: ' : '';
-
 		const hasNoReturnValue = event.finished && event.message === null;
 
-		if (!hasNoReturnValue) {
-			consoleOutput = [...consoleOutput, `${prefix}${event.message}`];
+		if (!hasNoReturnValue && event.message) {
+			if (event.output === 'stderr') {
+				nodeLogger.error(event.message);
+			} else {
+				nodeLogger.log(event.message);
+			}
 		}
-
-		updateContentWidth();
 
 		// Mark that the run has completed.
 		if (event.finished) {
@@ -82,10 +86,9 @@
 
 			isInitialized = true;
 		} catch (error) {
-			consoleOutput = [
-				...consoleOutput,
-				`ERROR: failed to setup Python: ${error instanceof Error ? error.message : String(error)}`
-			];
+			nodeLogger.error(
+				`Failed to setup Python: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 
 		updateContentWidth();
@@ -106,16 +109,13 @@
 
 		isRunning = true;
 
-		// Clear previous output
-		consoleOutput = [];
+		// Clear previous console output
+		consoleRef?.clearConsole();
 
 		try {
 			await pyodideSystem.executeCode(nodeId, code);
 		} catch (error) {
-			consoleOutput = [
-				...consoleOutput,
-				`ERROR: ${error instanceof Error ? error.message : String(error)}`
-			];
+			nodeLogger.error(error instanceof Error ? error.message : String(error));
 
 			isRunning = false;
 		}
@@ -128,10 +128,6 @@
 
 	function toggleEditor() {
 		showEditor = !showEditor;
-	}
-
-	function clearConsole() {
-		consoleOutput = [];
 	}
 </script>
 
@@ -171,66 +167,16 @@
 				</div>
 
 				{#if data.showConsole}
-					<div
-						class={[
-							'min-w-[150px] rounded-md border bg-zinc-900 p-3',
-							borderColor,
-							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
-						]}
-					>
-						<div class="mb-2 flex min-w-[280px] items-center justify-between">
-							<span class="font-mono text-[11px] text-zinc-400">console</span>
-
-							<div class="flex gap-1">
-								{#if isRunning}
-									<button
-										onclick={executeCode}
-										class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
-										title="Run again"
-										aria-label="Run again"
-									>
-										<RefreshCcw size="14px" />
-									</button>
-								{/if}
-
-								<button
-									onclick={executeCode}
-									class={[
-										'rounded p-1 text-zinc-300 hover:bg-zinc-700',
-										isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
-									]}
-									title="Run"
-									aria-disabled={isRunning}
-								>
-									<svelte:component
-										this={playIcon}
-										class={isRunning ? 'animate-spin' : ''}
-										size="14px"
-									/>
-								</button>
-
-								<button
-									onclick={clearConsole}
-									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
-									title="Clear console"
-								>
-									<Trash2 size="14px" />
-								</button>
-							</div>
-						</div>
-
-						<div
-							class="nodrag h-32 max-w-[280px] cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
-						>
-							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your Python code to see results.</div>
-							{:else}
-								{#each consoleOutput as line}
-									<div class="mb-1 whitespace-pre-wrap text-zinc-100">{line}</div>
-								{/each}
-							{/if}
-						</div>
-					</div>
+					<VirtualConsole
+						bind:this={consoleRef}
+						{nodeId}
+						{borderColor}
+						{selected}
+						onrun={executeCode}
+						{isRunning}
+						playOrStopIcon={playIcon}
+						runOrStop={executeCode}
+					/>
 				{:else}
 					<button
 						class={[

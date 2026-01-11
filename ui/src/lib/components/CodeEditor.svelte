@@ -221,7 +221,7 @@
 
 <div
 	bind:this={editorElement}
-	class={['code-editor-container outline-none', className]}
+	class={['code-editor-container nodrag nopan nowheel outline-none', className]}
 	{...restProps}
 ></div>
 

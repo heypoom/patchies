@@ -191,7 +191,9 @@
 			target instanceof HTMLTextAreaElement ||
 			target.closest('.cm-editor') ||
 			target.closest('.cm-content') ||
-			target.contentEditable === 'true';
+			target.contentEditable === 'true' ||
+			// Allow text selection in virtual console
+			target.closest('[role="log"]');
 
 		const hasNodeSelected = selectedNodeIds.length > 0;
 

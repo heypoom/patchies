@@ -1,15 +1,5 @@
 <script lang="ts">
-	import {
-		Code,
-		Loader,
-		Package,
-		Pause,
-		Play,
-		RefreshCcw,
-		Terminal,
-		Trash2,
-		X
-	} from '@lucide/svelte/icons';
+	import { Code, Loader, Package, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
@@ -17,9 +7,11 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import { match, P } from 'ts-pattern';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { logger } from '$lib/utils/logger';
 
 	let contentContainer: HTMLDivElement | null = null;
-	let consoleContainer: HTMLDivElement | null = $state(null);
+	let consoleRef: VirtualConsole | null = $state(null);
 
 	// Get node data from XY Flow - nodes receive their data as props
 	let {
@@ -55,11 +47,13 @@
 	let outletCount = $derived(data.outletCount ?? 1);
 
 	let showEditor = $state(false);
-	let consoleOutput = $state<string[]>([]);
 	let contentWidth = $state(100);
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
+
+	// Create node-scoped logger
+	const nodeLogger = logger.ofNode(nodeId);
 
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
@@ -101,10 +95,7 @@
 					stopLongRunningTasks();
 				});
 		} catch (error) {
-			consoleOutput = [
-				...consoleOutput,
-				`ERROR: ${error instanceof Error ? error.message : String(error)}`
-			];
+			nodeLogger.error(error instanceof Error ? error.message : String(error));
 		}
 	};
 
@@ -153,50 +144,20 @@
 		clearMessageHandler();
 	}
 
-	// Keep the console scrolled to the bottom and update width
-	function syncConsoleUi() {
-		setTimeout(() => {
-			updateContentWidth();
-
-			consoleContainer?.scrollTo({
-				left: 0,
-				top: consoleContainer.scrollHeight,
-				behavior: 'instant'
-			});
-		}, 50);
-	}
-
 	async function executeCode() {
 		isRunning = true;
 		isMessageCallbackActive = false;
 		isTimerCallbackActive = false;
 
-		// Clear previous output
-		consoleOutput = [];
+		// Clear previous console output
+		consoleRef?.clearConsole();
 
-		// Create a custom console that captures output
+		// Create a custom console that routes to logger
 		const customConsole = {
-			log: (...args: any[]) => {
-				const message = args
-					.map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
-					.join(' ');
-
-				consoleOutput = [...consoleOutput, message];
-
-				syncConsoleUi();
-			},
-			error: (...args: any[]) => {
-				const message = args.map((arg) => String(arg)).join(' ');
-				consoleOutput = [...consoleOutput, `ERROR: ${message}`];
-
-				syncConsoleUi();
-			},
-			warn: (...args: any[]) => {
-				const message = args.map((arg) => String(arg)).join(' ');
-				consoleOutput = [...consoleOutput, `WARN: ${message}`];
-
-				syncConsoleUi();
-			}
+			log: (...args: unknown[]) => nodeLogger.log(...args),
+			error: (...args: unknown[]) => nodeLogger.error(...args),
+			warn: (...args: unknown[]) => nodeLogger.warn(...args),
+			debug: (...args: unknown[]) => nodeLogger.debug(...args)
 		};
 
 		const setPortCount = (inletCount = 1, outletCount = 1) => {
@@ -228,10 +189,7 @@
 				setTitle
 			});
 		} catch (error) {
-			consoleOutput = [
-				...consoleOutput,
-				`ERROR: ${error instanceof Error ? error.message : String(error)}`
-			];
+			nodeLogger.error(error instanceof Error ? error.message : String(error));
 		} finally {
 			isRunning = false;
 		}
@@ -245,10 +203,6 @@
 
 	function toggleEditor() {
 		showEditor = !showEditor;
-	}
-
-	function clearConsole() {
-		consoleOutput = [];
 	}
 
 	function runOrStop() {
@@ -329,67 +283,17 @@
 				</div>
 
 				{#if data.showConsole && !data.libraryName}
-					<div
-						class={[
-							'max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3',
-							borderColor,
-							selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
-						]}
-					>
-						<div class="mb-2 flex min-w-[280px] items-center justify-between">
-							<span class="font-mono text-[11px] text-zinc-400">console</span>
-
-							<div class="flex gap-1">
-								{#if isRunning || isLongRunningTaskActive}
-									<button
-										onclick={executeCode}
-										class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
-										title="Run again"
-										aria-label="Run again"
-									>
-										<RefreshCcw size="14px" />
-									</button>
-								{/if}
-
-								<button
-									onclick={runOrStop}
-									class={[
-										'rounded p-1 text-zinc-300 hover:bg-zinc-700',
-										isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
-									]}
-									title={isLongRunningTaskActive ? 'Stop' : 'Run'}
-									aria-disabled={isRunning}
-								>
-									<svelte:component
-										this={playOrStopIcon}
-										class={isRunning ? 'animate-spin' : ''}
-										size="14px"
-									/>
-								</button>
-
-								<button
-									onclick={clearConsole}
-									class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
-									title="Clear console"
-								>
-									<Trash2 size="14px" />
-								</button>
-							</div>
-						</div>
-
-						<div
-							class="nodrag h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs"
-							bind:this={consoleContainer}
-						>
-							{#if consoleOutput.length === 0}
-								<div class="text-zinc-500 italic">Run your code to see results.</div>
-							{:else}
-								{#each consoleOutput as line, index (index)}
-									<div class="mb-1 whitespace-pre-wrap text-zinc-100 select-text">{line}</div>
-								{/each}
-							{/if}
-						</div>
-					</div>
+					<VirtualConsole
+						bind:this={consoleRef}
+						{nodeId}
+						{borderColor}
+						{selected}
+						onrun={executeCode}
+						{isRunning}
+						{isLongRunningTaskActive}
+						{playOrStopIcon}
+						{runOrStop}
+					/>
 				{:else}
 					<button
 						class={[
