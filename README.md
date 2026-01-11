@@ -140,7 +140,7 @@ In this example, two `slider` objects sends out their value to a `expr $1 + $2` 
 
 Here are some examples to get you started:
 
-<img src="./docs/images/patchies-basic-examples.png" alt="Patchies.app basic example" width="700">
+<img src="./docs/images/basic-examples.webp" alt="Patchies.app basic example" width="700">
 
 - Create two `button` objects, and connect the outlet of one to the inlet of another.
   - When you click on the first button, it will send a `bang` message to the second button, which will flash.
