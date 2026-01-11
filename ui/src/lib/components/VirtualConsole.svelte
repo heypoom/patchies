@@ -385,17 +385,21 @@
 
 			<button
 				onclick={copyOutput}
-				class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
+				class="rounded p-1 text-zinc-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
 				title="Copy output"
 				aria-label="Copy output"
+				disabled={messages.length === 0}
+				aria-disabled={messages.length === 0}
 			>
 				<Copy size="14px" />
 			</button>
 
 			<button
 				onclick={clearConsole}
-				class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
+				class="rounded p-1 text-zinc-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
 				title="Clear console"
+				disabled={messages.length === 0}
+				aria-disabled={messages.length === 0}
 			>
 				<Trash2 size="14px" />
 			</button>
