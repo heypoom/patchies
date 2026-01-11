@@ -1,6 +1,8 @@
 import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
+import { createCustomConsole } from '$lib/utils/createCustomConsole';
+import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -9,6 +11,10 @@ import type WebRenderer from '@elemaudio/web-renderer';
 type RecvCallback = (message: unknown, meta: unknown) => void;
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
 type OnSetTitle = (title: string) => void;
+
+// ElementaryNode uses JSRunner which has WRAPPER_PREAMBLE_LINES=6.
+// Empirically determined offset to correct line number reporting.
+const ELEM_WRAPPER_OFFSET = 2;
 
 /**
  * ElementaryNode implements the elem~ audio node.
@@ -57,9 +63,13 @@ export class ElementaryNode implements AudioNodeV2 {
 	public onSetPortCount: OnSetPortCount = () => {};
 	public onSetTitle: OnSetTitle = () => {};
 
+	// Custom console for routing output to VirtualConsole
+	private customConsole;
+
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioContext = audioContext;
+		this.customConsole = createCustomConsole(nodeId);
 
 		// Create gain nodes immediately for connections
 		this.audioNode = audioContext.createGain();
@@ -178,6 +188,7 @@ export class ElementaryNode implements AudioNodeV2 {
 			}
 
 			await this.jsRunner.executeJavaScript(this.nodeId, processedCode, {
+				customConsole: this.customConsole,
 				setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
 					this.messageInletCount = Math.max(0, inletCount);
 					this.messageOutletCount = Math.max(0, outletCount);
@@ -197,7 +208,14 @@ export class ElementaryNode implements AudioNodeV2 {
 				}
 			});
 		} catch (error) {
-			logger.error('Failed to execute elem~ code:', error);
+			const errorInfo = parseJSError(error, countLines(code), ELEM_WRAPPER_OFFSET);
+
+			if (errorInfo) {
+				logger.nodeError(this.nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
+			} else {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.customConsole.error(errorMessage);
+			}
 		}
 	}
 
@@ -217,7 +235,8 @@ export class ElementaryNode implements AudioNodeV2 {
 				this.recvCallback(data.message, data.meta);
 			}
 		} catch (error) {
-			logger.error('error in elem~ recv callback:', error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.customConsole.error(`Error in recv(): ${errorMessage}`);
 		}
 	}
 
