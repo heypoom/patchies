@@ -7,7 +7,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
+		"prepare": "cd .. && husky || true",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
@@ -43,6 +43,8 @@
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
 		"globals": "^16.0.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.7",
 		"playwright": "^1.53.0",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
@@ -137,5 +139,8 @@
 	"patchedDependencies": {
 		"superdough@1.2.3": "patches/superdough@1.2.3.patch"
 	},
-	"packageManager": "bun@1.2.0"
+	"packageManager": "bun@1.2.0",
+	"lint-staged": {
+		"*.{js,ts,svelte,json,md,css}": "prettier --write"
+	}
 }
