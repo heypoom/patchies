@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isValidConnectionBetweenHandles, canAcceptConnection, isAudioParamInlet } from './connection-validation';
+import {
+	isValidConnectionBetweenHandles,
+	canAcceptConnection,
+	isAudioParamInlet
+} from './connection-validation';
 
 describe('isValidConnectionBetweenHandles', () => {
 	it('allows message-to-message connections', () => {
@@ -17,9 +21,15 @@ describe('isValidConnectionBetweenHandles', () => {
 	});
 
 	it('allows both audio and message to AudioParam inlets', () => {
-		expect(isValidConnectionBetweenHandles('audio-out', 'audio-in', { isTargetAudioParam: true })).toBe(true);
-		expect(isValidConnectionBetweenHandles('message-out', 'audio-in', { isTargetAudioParam: true })).toBe(true);
-		expect(isValidConnectionBetweenHandles('video-out', 'audio-in', { isTargetAudioParam: true })).toBe(false);
+		expect(
+			isValidConnectionBetweenHandles('audio-out', 'audio-in', { isTargetAudioParam: true })
+		).toBe(true);
+		expect(
+			isValidConnectionBetweenHandles('message-out', 'audio-in', { isTargetAudioParam: true })
+		).toBe(true);
+		expect(
+			isValidConnectionBetweenHandles('video-out', 'audio-in', { isTargetAudioParam: true })
+		).toBe(false);
 	});
 
 	it('normalizes untyped handles as message handles', () => {
@@ -46,16 +56,24 @@ describe('canAcceptConnection', () => {
 	});
 
 	it('extracts handles from qualified IDs', () => {
-		expect(canAcceptConnection('node-123/message-out', 'node-456/message-in', 'outlet', 'inlet')).toBe(true);
-		expect(canAcceptConnection('node-123/audio-out', 'node-456/audio-in', 'outlet', 'inlet')).toBe(true);
+		expect(
+			canAcceptConnection('node-123/message-out', 'node-456/message-in', 'outlet', 'inlet')
+		).toBe(true);
+		expect(canAcceptConnection('node-123/audio-out', 'node-456/audio-in', 'outlet', 'inlet')).toBe(
+			true
+		);
 	});
 
 	it('respects isTargetAudioParam option', () => {
 		expect(
-			canAcceptConnection('message-out', 'audio-in', 'outlet', 'inlet', { isTargetAudioParam: true })
+			canAcceptConnection('message-out', 'audio-in', 'outlet', 'inlet', {
+				isTargetAudioParam: true
+			})
 		).toBe(true);
 		expect(
-			canAcceptConnection('message-out', 'audio-in', 'outlet', 'inlet', { isTargetAudioParam: false })
+			canAcceptConnection('message-out', 'audio-in', 'outlet', 'inlet', {
+				isTargetAudioParam: false
+			})
 		).toBe(false);
 	});
 });

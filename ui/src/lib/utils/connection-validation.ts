@@ -58,7 +58,12 @@ export function isValidConnectionBetweenHandles(
 	// This handles dynamic nodes like p5, canvas.dom, js, etc. that don't specify type
 	const normalizeHandle = (handle: string): string => {
 		// If handle starts with a known type, keep it as-is
-		if (handle.startsWith('video-') || handle.startsWith('audio-') || handle.startsWith('message-') || handle.startsWith(ANALYSIS_KEY)) {
+		if (
+			handle.startsWith('video-') ||
+			handle.startsWith('audio-') ||
+			handle.startsWith('message-') ||
+			handle.startsWith(ANALYSIS_KEY)
+		) {
 			return handle;
 		}
 

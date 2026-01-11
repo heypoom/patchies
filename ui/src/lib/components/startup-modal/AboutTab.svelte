@@ -36,8 +36,7 @@
 		<!-- Description -->
 		<div class="space-y-4 text-zinc-300">
 			<p>
-				Patchies is a patcher for things that runs on the web. Patch
-				together <a
+				Patchies is a patcher for things that runs on the web. Patch together <a
 					class="text-orange-300"
 					href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
 					target="_blank">audio</a

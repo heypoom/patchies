@@ -32,7 +32,7 @@
 
 	const handleClass = $derived.by(() => {
 		if (!props.selected && $shouldShowHandles) {
-			return ''
+			return '';
 		}
 
 		if (props.selected) {

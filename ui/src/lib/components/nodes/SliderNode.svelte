@@ -123,11 +123,11 @@
 
 	const handleInletClass = $derived.by(() => {
 		if (node.selected || $shouldShowHandles) {
-			return ''
+			return '';
 		}
 
-		return 'opacity-30 group-hover:opacity-100 sm:opacity-0'
-	})
+		return 'opacity-30 group-hover:opacity-100 sm:opacity-0';
+	});
 </script>
 
 <div class="relative flex gap-x-3">

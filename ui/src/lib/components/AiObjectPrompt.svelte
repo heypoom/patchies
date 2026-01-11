@@ -359,7 +359,7 @@
 				{#if isLoading}
 					<button
 						onclick={handleCancel}
-						class="rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white cursor-pointer"
+						class="cursor-pointer rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
 					>
 						Cancel
 					</button>

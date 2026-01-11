@@ -15,8 +15,8 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
-import { createAndCopyShareLink } from '$lib/save-load/share';
-import { deleteSearchParam } from '$lib/utils/search-params';
+	import { createAndCopyShareLink } from '$lib/save-load/share';
+	import { deleteSearchParam } from '$lib/utils/search-params';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -125,7 +125,7 @@ import { deleteSearchParam } from '$lib/utils/search-params';
 			id: 'toggle-bottom-bar',
 			name: 'Toggle Bottom Bar',
 			description: 'Show or hide the bottom toolbar'
-		},
+		}
 	];
 
 	// Filtered items based on current stage
