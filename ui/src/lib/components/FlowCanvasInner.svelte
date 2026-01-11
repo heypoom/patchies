@@ -1290,6 +1290,23 @@
 					⚠️ Create a separate API key with strict budget limits. Keys are stored in browser
 					localStorage.
 				</p>
+
+				<p class="text-xs text-zinc-500">
+					Don't want to use AI features?
+					<button
+						onclick={() => {
+							$isAiFeaturesVisible = false;
+							showMissingApiKeyDialog = false;
+
+							toast.success(
+								'All AI features hidden. Use "Ctrl+K > Toggle AI Features" to show them again.'
+							);
+						}}
+						class="text-blue-400 underline hover:text-blue-300"
+					>
+						Hide all AI features
+					</button>
+				</p>
 			</div>
 			<Dialog.Footer class="flex gap-2">
 				<button
