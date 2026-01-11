@@ -1,6 +1,7 @@
 import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
+import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 
@@ -8,6 +9,12 @@ type RecvCallback = (message: unknown, meta: unknown) => void;
 
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
 type OnSetTitle = (title: string) => void;
+
+// Parse error to extract line information for editor highlighting
+// ToneNode uses new Function() directly (not JSRunner), so we need to counteract
+// parseJSError's default WRAPPER_PREAMBLE_LINES=6 subtraction.
+// Empirically determined offset that works on both Chrome and Firefox.
+const TONE_WRAPPER_OFFSET = -2;
 
 /**
  * ToneNode implements the tone~ audio node.
@@ -190,8 +197,14 @@ export class ToneNode implements AudioNodeV2 {
 				this.cleanupFn = result.cleanup;
 			}
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			this.nodeLogger.error(errorMessage);
+			const errorInfo = parseJSError(error, countLines(code), TONE_WRAPPER_OFFSET);
+
+			if (errorInfo) {
+				logger.nodeError(this.nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
+			} else {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.nodeLogger.error(errorMessage);
+			}
 		}
 	}
 
