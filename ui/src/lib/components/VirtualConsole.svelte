@@ -421,6 +421,7 @@
 					if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
 						e.stopPropagation();
 					}
+
 					if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
 						e.stopPropagation();
 					}
@@ -452,7 +453,7 @@
 			type="button"
 			aria-label="Resize console vertically"
 		>
-			<GripHorizontal size="10px" class="text-zinc-500 hover:text-zinc-400" />
+			<div class="h-0.5 w-8 rounded-full bg-zinc-600"></div>
 		</button>
 
 		<!-- Horizontal resize handle (right edge) -->
