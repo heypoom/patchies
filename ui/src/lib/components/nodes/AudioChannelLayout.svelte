@@ -76,6 +76,7 @@
 
 	function updateContentWidth() {
 		if (!contentContainer) return;
+
 		contentWidth = contentContainer.offsetWidth;
 	}
 

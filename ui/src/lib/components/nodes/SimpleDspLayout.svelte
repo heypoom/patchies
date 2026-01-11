@@ -64,6 +64,7 @@
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+
 		updateContentWidth();
 	});
 

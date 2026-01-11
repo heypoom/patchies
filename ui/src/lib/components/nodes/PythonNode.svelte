@@ -73,7 +73,7 @@
 		messageContext.send(event.data, event.options);
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 
 		// Listen for pyodide console output events
@@ -82,9 +82,9 @@
 
 		// Initialize pyodide instance
 		try {
-			await pyodideSystem.create(nodeId);
-
-			isInitialized = true;
+			pyodideSystem.create(nodeId).then(() => {
+				isInitialized = true;
+			});
 		} catch (error) {
 			nodeLogger.error(
 				`Failed to setup Python: ${error instanceof Error ? error.message : String(error)}`
@@ -92,6 +92,19 @@
 		}
 
 		updateContentWidth();
+
+		// Watch for any size changes to the content container
+		const resizeObserver = new ResizeObserver(() => {
+			updateContentWidth();
+		});
+
+		if (contentContainer) {
+			resizeObserver.observe(contentContainer);
+		}
+
+		return () => {
+			resizeObserver.disconnect();
+		};
 	});
 
 	onDestroy(async () => {
