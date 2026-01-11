@@ -288,7 +288,7 @@ When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch bet
 - **Multi Insert Mode** (no object selected): create multiple connected objects at your cursor position
 - **Edit Mode** (object selected): modifies the selected object's code based on your description
 
-> Don't like AI? Press `Ctrl/Cmd + K` then select `Toggle AI Features`. This permanently turns all AI-based nodes and all AI generation features off.
+> AI is 100% optional and opt-in with Patchies. Dislike like AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
 
 Here's how to set it up:
 
