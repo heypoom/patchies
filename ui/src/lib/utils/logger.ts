@@ -27,8 +27,13 @@ export class Logger {
 	private static instance: Logger | null = null;
 	private logs: LogEntry[] = [];
 	private maxLogs = 1000; // Keep last 1000 logs in memory
+
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private eventBus: any = null; // Lazy-loaded to avoid circular dependencies
+
+	// Whether to send internal and node logs to DevTools or not.
+	private sendInternalLogsToDevTools = true;
+	private sendNodeLogsToDevTools = false;
 
 	private constructor() {
 		// Private constructor for singleton
@@ -55,47 +60,70 @@ export class Logger {
 	}
 
 	/**
-	 * Log a general informational message.
+	 * Log a debug message internally.
 	 */
-	log(message: string, data?: unknown): void {
-		this.addLog('log', message, data);
-		console.log(message, data !== undefined ? data : '');
+	debug(...args: unknown[]): void {
+		this.addInternalLog('debug', args);
+
+		if (this.sendInternalLogsToDevTools) {
+			console.debug(...args);
+		}
 	}
 
 	/**
-	 * Log a warning message.
+	 * Log an info message internally.
 	 */
-	warn(message: string, data?: unknown): void {
-		this.addLog('warn', message, data);
-		console.warn(message, data !== undefined ? data : '');
+	info(...args: unknown[]): void {
+		this.addInternalLog('info', args);
+
+		if (this.sendInternalLogsToDevTools) {
+			console.info(...args);
+		}
 	}
 
 	/**
-	 * Log an error message.
+	 * Log a general message internally.
 	 */
-	error(message: string, data?: unknown): void {
-		this.addLog('error', message, data);
-		console.error(message, data !== undefined ? data : '');
+	log(...args: unknown[]): void {
+		this.addInternalLog('log', args);
+
+		if (this.sendInternalLogsToDevTools) {
+			console.log(...args);
+		}
 	}
 
 	/**
-	 * Log a debug message (only in development).
+	 * Log a warning message internally.
 	 */
-	debug(message: string, data?: unknown): void {
-		this.addLog('debug', message, data);
-		console.debug(message, data !== undefined ? data : '');
+	warn(...args: unknown[]): void {
+		this.addInternalLog('warn', args);
+
+		if (this.sendInternalLogsToDevTools) {
+			console.warn(...args);
+		}
+	}
+
+	/**
+	 * Log an error message internally.
+	 */
+	error(...args: unknown[]): void {
+		this.addInternalLog('error', args);
+
+		if (this.sendInternalLogsToDevTools) {
+			console.error(...args);
+		}
 	}
 
 	/**
 	 * Add a log entry to the internal log history.
 	 * Keeps only the most recent maxLogs entries.
 	 */
-	private addLog(level: LogLevel, message: string, data?: unknown): void {
+	private addInternalLog(level: LogLevel, args: unknown[]): void {
 		const entry: LogEntry = {
 			level,
-			message,
+			message: args.map((arg) => String(arg)).join(' '),
 			timestamp: new Date(),
-			data
+			args
 		};
 
 		this.logs.push(entry);
@@ -133,6 +161,20 @@ export class Logger {
 	}
 
 	/**
+	 * Log a debug message associated with a specific node.
+	 */
+	nodeDebug(nodeId: string, ...args: unknown[]): void {
+		this.addNodeLog(nodeId, 'debug', args);
+	}
+
+	/**
+	 * Log an info message associated with a specific node.
+	 */
+	nodeInfo(nodeId: string, ...args: unknown[]): void {
+		this.addNodeLog(nodeId, 'info', args);
+	}
+
+	/**
 	 * Log a message associated with a specific node.
 	 */
 	nodeLog(nodeId: string, ...args: unknown[]): void {
@@ -154,20 +196,6 @@ export class Logger {
 	}
 
 	/**
-	 * Log a debug message associated with a specific node.
-	 */
-	nodeDebug(nodeId: string, ...args: unknown[]): void {
-		this.addNodeLog(nodeId, 'debug', args);
-	}
-
-	/**
-	 * Log an info message associated with a specific node.
-	 */
-	nodeInfo(nodeId: string, ...args: unknown[]): void {
-		this.addNodeLog(nodeId, 'info', args);
-	}
-
-	/**
 	 * Add a node-scoped log entry and emit event for reactive UI.
 	 */
 	private addNodeLog(nodeId: string, level: LogLevel, args: unknown[]): void {
@@ -181,6 +209,7 @@ export class Logger {
 
 		this.logs.push(entry);
 
+		// Keep only the most recent logs
 		if (this.logs.length > this.maxLogs) {
 			this.logs.shift();
 		}
@@ -199,7 +228,9 @@ export class Logger {
 		});
 
 		// Still log to DevTools for debugging
-		console[level](`[${nodeId}]`, ...args);
+		if (this.sendNodeLogsToDevTools) {
+			console[level](`[${nodeId}]`, ...args);
+		}
 	}
 
 	/**
