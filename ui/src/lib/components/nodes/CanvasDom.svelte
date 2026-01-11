@@ -9,8 +9,9 @@
 	import { match, P } from 'ts-pattern';
 	import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 	import { GLSystem } from '$lib/canvas/GLSystem';
-	import { logger } from '$lib/utils/logger';
 	import { shouldShowHandles } from '../../../stores/ui.store';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { createCustomConsole } from '$lib/utils/createCustomConsole';
 
 	let {
 		id: nodeId,
@@ -25,9 +26,15 @@
 			outletCount?: number;
 			hidePorts?: boolean;
 			executeCode?: number;
+			showConsole?: boolean;
 		};
 		selected?: boolean;
 	} = $props();
+
+	let consoleRef: VirtualConsole | null = $state(null);
+
+	// Create custom console for routing output to VirtualConsole
+	const customConsole = createCustomConsole(nodeId);
 
 	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
@@ -260,6 +267,9 @@
 	function runCode() {
 		if (!canvas || !ctx) return;
 
+		// Clear console on re-run
+		consoleRef?.clearConsole();
+
 		// Reset drag state and video output state
 		dragEnabled = true;
 		videoOutputEnabled = true;
@@ -289,6 +299,7 @@
 				height: outputHeight,
 				mouse,
 				setPortCount,
+				console: customConsole,
 				...context,
 				recv: context.onMessage, // Alias for consistency with worker canvas
 				// Override context defaults with custom implementations (must be after ...context)
@@ -328,7 +339,7 @@
 
 			userFunction(...Object.values(userGlobals));
 		} catch (error) {
-			logger.error(`[canvas.dom] user code error:`, error);
+			customConsole.error(`[canvas.dom] user code error:`, error);
 		}
 	}
 
@@ -376,6 +387,7 @@
 
 <CanvasPreviewLayout
 	title={data.title ?? 'canvas.dom'}
+	{nodeId}
 	onrun={runCode}
 	bind:previewCanvas={canvas}
 	nodrag={!dragEnabled}
@@ -440,5 +452,17 @@
 			}}
 			onready={() => (editorReady = true)}
 		/>
+	{/snippet}
+
+	{#snippet console()}
+		<!-- Always render VirtualConsole so it receives events even when hidden -->
+		<div class="mt-3 w-full" class:hidden={!data.showConsole}>
+			<VirtualConsole
+				bind:this={consoleRef}
+				{nodeId}
+				placeholder="Canvas errors will appear here."
+				maxHeight="200px"
+			/>
+		</div>
 	{/snippet}
 </CanvasPreviewLayout>

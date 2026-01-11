@@ -100,6 +100,22 @@ export class GLSystem {
 			}
 		}
 
+		// Handle console output from canvas renderer
+		if (data.type === 'consoleOutput') {
+			const { logger } = await import('$lib/utils/logger');
+			const nodeLogger = logger.ofNode(data.nodeId);
+
+			// Route to the appropriate log level
+			const args = data.args ?? [data.message];
+			if (data.level === 'error') {
+				nodeLogger.error(...args);
+			} else if (data.level === 'warn') {
+				nodeLogger.warn(...args);
+			} else {
+				nodeLogger.log(...args);
+			}
+		}
+
 		// Handle preview frames
 		if (data.type === 'previewFrame' && data.buffer) {
 			const { nodeId, buffer, width, height } = data;

@@ -18,6 +18,7 @@
 		NodeVideoOutputEnabledUpdateEvent
 	} from '$lib/eventbus/events';
 	import { logger } from '$lib/utils/logger';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 
 	let {
 		id: nodeId,
@@ -32,9 +33,12 @@
 			outletCount?: number;
 			hidePorts?: boolean;
 			executeCode?: number;
+			showConsole?: boolean;
 		};
 		selected?: boolean;
 	} = $props();
+
+	let consoleRef: VirtualConsole | null = $state(null);
 
 	let glSystem = GLSystem.getInstance();
 	let audioAnalysisSystem: AudioAnalysisSystem;
@@ -177,9 +181,12 @@
 	});
 
 	function updateCanvas() {
+		// Clear console on re-run
+		consoleRef?.clearConsole();
+
 		try {
-			messageContext.clearTimers();
-			audioAnalysisSystem.disableFFT(nodeId);
+			messageContext?.clearTimers();
+			audioAnalysisSystem?.disableFFT(nodeId);
 			const isUpdated = glSystem.upsertNode(nodeId, 'canvas', { code: data.code });
 
 			// If the code hasn't changed, the code will not be re-run.
@@ -193,6 +200,7 @@
 
 <CanvasPreviewLayout
 	title={data.title ?? 'canvas'}
+	{nodeId}
 	onrun={updateCanvas}
 	bind:previewCanvas
 	nodrag={!dragEnabled}
@@ -256,5 +264,17 @@
 			}}
 			onready={() => (editorReady = true)}
 		/>
+	{/snippet}
+
+	{#snippet console()}
+		<!-- Always render VirtualConsole so it receives events even when hidden -->
+		<div class="mt-3 w-full" class:hidden={!data.showConsole}>
+			<VirtualConsole
+				bind:this={consoleRef}
+				{nodeId}
+				placeholder="Canvas errors will appear here."
+				maxHeight="200px"
+			/>
+		</div>
 	{/snippet}
 </CanvasPreviewLayout>

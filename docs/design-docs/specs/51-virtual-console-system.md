@@ -643,8 +643,8 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 - [x] Update `GLSystem.ts` to log shader errors via `logger`
 - [ ] Add console to `HydraNode.svelte`
 - [ ] Add console to `SwissGLNode.svelte`
-- [ ] Add console to `JSCanvasNode.svelte`
-- [ ] Add console to `CanvasDom.svelte`
+- [x] Add console to `JSCanvasNode.svelte`
+- [x] Add console to `CanvasDom.svelte`
 
 ### Add Consoles to Audio Nodes
 

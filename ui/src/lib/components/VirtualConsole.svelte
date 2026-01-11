@@ -74,7 +74,8 @@
 	// Resize state - corner (both vertical and horizontal)
 	let isCornerResizing = $state(false);
 
-	const MAX_MESSAGES = 1000; // Limit stored messages to prevent unbounded growth
+	// Limit stored messages to prevent unbounded growth
+	const MAX_MESSAGES = 200;
 
 	function handleConsoleOutput(event: ConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;

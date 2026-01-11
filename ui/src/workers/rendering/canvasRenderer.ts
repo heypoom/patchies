@@ -168,6 +168,7 @@ export class CanvasRenderer {
 
 				cancelAnimationFrame: (id: number) => {
 					cancelAnimationFrame(id);
+
 					if (this.animationId === id) {
 						this.animationId = null;
 					}
@@ -198,11 +199,7 @@ export class CanvasRenderer {
 
 			// Use JSRunner's executeJavaScript method with full module support
 			await this.renderer.jsRunner.executeJavaScript(this.config.nodeId, processedCode, {
-				customConsole: {
-					log: (...args) => console.log(`[canvas ${this.config.nodeId}]`, ...args),
-					error: (...args) => console.error(`[canvas ${this.config.nodeId}]`, ...args),
-					warn: (...args) => console.warn(`[canvas ${this.config.nodeId}]`, ...args)
-				},
+				customConsole: this.createCustomConsole(),
 				setPortCount: (inletCount?: number, outletCount?: number) => {
 					this.setPortCount(inletCount, outletCount);
 				},
@@ -328,5 +325,23 @@ export class CanvasRenderer {
 
 	handleMessage(message: Message) {
 		this.onMessage?.(message.data, message);
+	}
+
+	/**
+	 * Creates a custom console object that routes output to VirtualConsole via the main thread.
+	 */
+	createCustomConsole() {
+		const { nodeId } = this.config;
+
+		const sendLog = (level: 'log' | 'warn' | 'error', args: unknown[]) =>
+			self.postMessage({ type: 'consoleOutput', nodeId, level, args });
+
+		return {
+			log: (...args: unknown[]) => sendLog('log', args),
+			warn: (...args: unknown[]) => sendLog('warn', args),
+			error: (...args: unknown[]) => sendLog('error', args),
+			info: (...args: unknown[]) => sendLog('log', args),
+			debug: (...args: unknown[]) => sendLog('log', args)
+		};
 	}
 }
