@@ -7,6 +7,7 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
+	import { shouldShowHandles } from '../../../stores/ui.store';
 
 	let {
 		id: nodeId,
@@ -160,6 +161,10 @@
 
 	const handleClass = $derived.by(() => {
 		if (!data.hidePorts) return '';
+
+		if (!selected && $shouldShowHandles) {
+			return 'z-1 transition-opacity';
+		}
 
 		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});

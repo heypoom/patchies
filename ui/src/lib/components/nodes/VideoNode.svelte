@@ -9,6 +9,7 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { match, P } from 'ts-pattern';
 	import { createNode } from '@elemaudio/core';
+	import { shouldShowHandles } from '../../../stores/ui.store';
 
 	let {
 		id: nodeId,
@@ -314,6 +315,10 @@
 	});
 
 	const handleCommonClass = $derived.by(() => {
+		if (!selected && $shouldShowHandles) {
+			return 'z-1 transition-opacity';
+		}
+
 		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});
 </script>

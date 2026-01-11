@@ -6,6 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { shouldShowHandles } from '../../../stores/ui.store';
 
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
 
@@ -123,6 +124,9 @@
 	});
 
 	const handleCommonClass = $derived.by(() => {
+		if (!selected && $shouldShowHandles) {
+			return 'z-1';
+		}
 		return `z-1 ${selected ? '' : 'opacity-40'}`;
 	});
 </script>

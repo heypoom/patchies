@@ -6,6 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { shouldShowHandles } from '../../../stores/ui.store';
 
 	let node: {
 		id: string;
@@ -90,6 +91,10 @@
 	});
 
 	const handleCommonClass = $derived.by(() => {
+		if (!node.selected && $shouldShowHandles) {
+			return 'z-1 transition-opacity';
+		}
+
 		return `z-1 transition-opacity ${node.selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});
 </script>

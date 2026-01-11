@@ -9,6 +9,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
+	import { shouldShowHandles } from '../../../stores/ui.store';
 	import type {
 		NodePortCountUpdateEvent,
 		NodeTitleUpdateEvent,
@@ -165,7 +166,12 @@
 	});
 
 	const handleClass = $derived.by(() => {
+		// only apply the custom handles if setHidePorts(true) is set
 		if (!data.hidePorts) return '';
+
+		if (!selected && $shouldShowHandles) {
+			return 'z-1 transition-opacity';
+		}
 
 		return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
 	});

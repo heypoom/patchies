@@ -8,6 +8,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+	import { shouldShowHandles } from '../../../stores/ui.store';
 
 	let {
 		id: nodeId,
@@ -122,6 +123,10 @@
 	});
 
 	const handleCommonClass = $derived.by(() => {
+		if (!selected && $shouldShowHandles) {
+			return 'z-1';
+		}
+
 		return `z-1 ${selected ? '' : 'opacity-40'}`;
 	});
 

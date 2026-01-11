@@ -9,7 +9,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { isConnectionMode, isConnecting } from '../../../stores/ui.store';
+	import { shouldShowHandles } from '../../../stores/ui.store';
 
 	let props: {
 		id: string;
@@ -31,7 +31,7 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	const handleClass = $derived.by(() => {
-		if (!props.selected && ($isConnectionMode || $isConnecting)) {
+		if (!props.selected && $shouldShowHandles) {
 			return ''
 		}
 
