@@ -270,33 +270,33 @@ These amazing people helped bring Patchies to life through their direct support,
 
 A great senior and friend who dedicated thousands of hours to play testing Patchies. Kijjaz created many test patches, gave countless inspirations and feedback, organized fun workshops with us, and taught me FM/AM synthesis and sound design. His expertise and generous sharing of knowledge has been invaluable to this project.
 
-**Communities:** CU, CU BAND, Monotone Group, Pollen Sound
-**Projects:** Indie perfumer at @vibrationperfum
-**Connect:** [Instagram @kijjaz](https://www.instagram.com/kijjaz)
+- **Communities:** CU, CU BAND, Monotone Group, Pollen Sound
+- **Projects:** Indie perfumer at @vibrationperfum
+- **Connect:** [Instagram @kijjaz](https://www.instagram.com/kijjaz)
 
 ### Thai Pangsakulyanont
 
 A great senior and friend who gave invaluable advice throughout Patchies' development. Thai provided coding guidance, Web Audio API and JavaScript expertise, tips on using AI agents effectively, and most importantly, words of encouragement. His support and encouragement to release Patchies was instrumental in making this project a reality.
 
-**Website:** [dt.in.th](https://dt.in.th)
-**GitHub:** [@dtinth](https://github.com/dtinth)
-**YouTube:** [@dtinth](https://youtube.com/@dtinth)
-**Communities:** [Creatorsgarten](https://creatorsgarten.org), [showdown.space](https://github.com/showdownspace), [Bemusic](https://github.com/bemusic)
+- **Website:** [dt.in.th](https://dt.in.th)
+- **GitHub:** [@dtinth](https://github.com/dtinth)
+- **YouTube:** [@dtinth](https://youtube.com/@dtinth)
+- **Communities:** [Creatorsgarten](https://creatorsgarten.org), [showdown.space](https://github.com/showdownspace), [Bemusic](https://github.com/bemusic)
 
 ### Thanapat "Ryan" Ogaslert
 
 Creator of SYNAP [home/lab], works at College of Music, Mahidol University. Ryan encouraged me through making Patchies and inspired me to give my first talk about Patchies at SYNAP [home/lab], where I got to show it to the world for the first time.
 
-**SYNAP [home/lab]:** Monday music experiments and performances
-**Instagram:** [@crsrcrsrrr](https://www.instagram.com/crsrcrsrrr)
-**SYNAP Instagram:** [@synap.home.lab](https://www.instagram.com/synap.home.lab)
+- **SYNAP [home/lab]:** Monday music experiments and performances
+- **Instagram:** [@crsrcrsrrr](https://www.instagram.com/crsrcrsrrr)
+- **SYNAP Instagram:** [@synap.home.lab](https://www.instagram.com/synap.home.lab)
 
 ### Chayapatr Archiwaranguprok (Pub)
 
 My long-time friend and my closest friend. Pub gave me lots of inspirations during the first days of Patchies, when I was just playing around with ideas. He organized countless events in our collective, Creatorsgarten, and patiently received my endless stream of demos and progress updates throughout the development journey.
 
-**Website:** [from.pub](https://from.pub)
-**Communities:** [MIT Media Lab](https://www.media.mit.edu/people/pub), [Creatorsgarten](https://creatorsgarten.org)
+- **Website:** [from.pub](https://from.pub)
+- **Communities:** [MIT Media Lab](https://www.media.mit.edu/people/pub), [Creatorsgarten](https://creatorsgarten.org)
 
 ## Contributing to Patchies
 
