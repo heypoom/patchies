@@ -9,6 +9,9 @@
 	import { match, P } from 'ts-pattern';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 	import { logger } from '$lib/utils/logger';
+	import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
 	let contentContainer: HTMLDivElement | null = null;
 	let consoleRef: VirtualConsole | null = $state(null);
@@ -54,6 +57,20 @@
 
 	// Create node-scoped logger
 	const nodeLogger = logger.ofNode(nodeId);
+
+	// Track error line numbers for code highlighting
+	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+	const eventBus = PatchiesEventBus.getInstance();
+
+	// Listen for console output events to capture lineErrors
+	function handleConsoleOutput(event: ConsoleOutputEvent) {
+		if (event.nodeId !== nodeId) return;
+
+		// If this error has lineErrors, update state for code highlighting
+		if (event.messageType === 'error' && event.lineErrors) {
+			lineErrors = event.lineErrors;
+		}
+	}
 
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
@@ -112,6 +129,9 @@
 		};
 		messageContext.queue.addCallback(handleMessage);
 
+		// Listen for console output events to capture lineErrors
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+
 		// libraries should be run on mount to register themselves
 		if (data.runOnMount || data.libraryName) {
 			executeCode();
@@ -136,6 +156,8 @@
 	onDestroy(() => {
 		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.queue.removeCallback(handleMessage);
+
+		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 
 		jsRunner.destroy(nodeId);
 	});
@@ -162,8 +184,9 @@
 		isMessageCallbackActive = false;
 		isTimerCallbackActive = false;
 
-		// Clear previous console output
+		// Clear previous console output and error highlighting
 		consoleRef?.clearConsole();
+		lineErrors = undefined;
 
 		// Create a custom console that routes to logger
 		const customConsole = {
@@ -203,7 +226,16 @@
 				setTitle
 			});
 		} catch (error) {
-			nodeLogger.error(error instanceof Error ? error.message : String(error));
+			// Try to parse error for line information
+			const errorInfo = parseJSError(error, countLines(code));
+
+			if (errorInfo) {
+				// Log error with line information for highlighting
+				logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
+			} else {
+				// Fallback to regular error logging
+				nodeLogger.error(error instanceof Error ? error.message : String(error));
+			}
 		} finally {
 			isRunning = false;
 		}
@@ -389,6 +421,7 @@
 					placeholder="Write your JavaScript code here..."
 					class="nodrag h-64 w-full resize-none"
 					onrun={executeCode}
+					{lineErrors}
 				/>
 			</div>
 		</div>
