@@ -1,4 +1,4 @@
-export type LogLevel = 'debug' | 'log' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'log' | 'info' | 'warn' | 'error';
 
 /** Log entry structure for UI integration. */
 export interface LogEntry {
@@ -161,6 +161,13 @@ export class Logger {
 	}
 
 	/**
+	 * Log an info message associated with a specific node.
+	 */
+	nodeInfo(nodeId: string, ...args: unknown[]): void {
+		this.addNodeLog(nodeId, 'info', args);
+	}
+
+	/**
 	 * Add a node-scoped log entry and emit event for reactive UI.
 	 */
 	private addNodeLog(nodeId: string, level: LogLevel, args: unknown[]): void {
@@ -241,6 +248,10 @@ class NodeLogger {
 
 	debug(...args: unknown[]): void {
 		this.logger.nodeDebug(this.nodeId, ...args);
+	}
+
+	info(...args: unknown[]): void {
+		this.logger.nodeInfo(this.nodeId, ...args);
 	}
 }
 

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { CircleAlert, Info, TriangleAlert } from '@lucide/svelte/icons';
 
+	import ObjectInspector from './ObjectInspector.svelte';
+
 	let {
 		msg
 	}: {
@@ -36,6 +38,12 @@
 
 	const style = $derived(typeStyles[msg.type as keyof typeof typeStyles] || typeStyles.log);
 
+	function isInspectable(arg: unknown): boolean {
+		if (arg === null || arg === undefined) return false;
+		const type = typeof arg;
+		return type === 'object' || type === 'function';
+	}
+
 	function formatArg(arg: unknown): string {
 		if (arg === null) return 'null';
 		if (arg === undefined) return 'undefined';
@@ -44,8 +52,10 @@
 
 		if (type === 'string') return String(arg);
 		if (type === 'number' || type === 'boolean') return String(arg);
+		if (type === 'function') return arg.toString();
 
-		// For objects and arrays, use JSON.stringify with pretty printing
+		// For objects and arrays, this shouldn't be called (we use inspector)
+		// But as fallback, use JSON.stringify
 		try {
 			return JSON.stringify(arg, null, 2);
 		} catch {
@@ -54,13 +64,7 @@
 	}
 </script>
 
-<div
-	class={[
-		'flex items-start gap-1.5 px-2 py-1 whitespace-pre-wrap select-text',
-		style.text,
-		style.bg
-	].join(' ')}
->
+<div class={['flex items-start gap-1.5 px-2 py-1 select-text', style.text, style.bg].join(' ')}>
 	{#if msg.type === 'error' || msg.type === 'warn' || msg.type === 'debug'}
 		<svelte:component
 			this={style.icon}
@@ -68,7 +72,15 @@
 			size={14}
 		/>
 	{/if}
-	<div class="flex-1">
-		{#each msg.args as arg, i}{#if i > 0}{/if}<span>{formatArg(arg)}</span>{/each}
+	<div class="console-content flex-1">
+		<div class="flex flex-wrap items-start gap-x-2">
+			{#each msg.args as arg, i}
+				{#if isInspectable(arg)}
+					<ObjectInspector data={arg} />
+				{:else}
+					<span>{formatArg(arg)}</span>
+				{/if}
+			{/each}
+		</div>
 	</div>
 </div>

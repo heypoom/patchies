@@ -170,7 +170,8 @@
 			log: (...args: unknown[]) => nodeLogger.log(...args),
 			error: (...args: unknown[]) => nodeLogger.error(...args),
 			warn: (...args: unknown[]) => nodeLogger.warn(...args),
-			debug: (...args: unknown[]) => nodeLogger.debug(...args)
+			debug: (...args: unknown[]) => nodeLogger.debug(...args),
+			info: (...args: unknown[]) => nodeLogger.info(...args)
 		};
 
 		const setPortCount = (inletCount = 1, outletCount = 1) => {
