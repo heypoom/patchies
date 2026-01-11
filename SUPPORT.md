@@ -55,16 +55,6 @@ Non-profit organization supporting creative coding education and software develo
 
 ---
 
-### Svelte
-
-**Projects:** Svelte, SvelteKit
-
-A JavaScript framework for building user interfaces with a focus on developer experience and performance.
-
-**Support:** [GitHub Sponsors](https://github.com/sponsors/sveltejs)
-
----
-
 ### XYFlow
 
 **Projects:** React Flow, Svelte Flow
@@ -72,6 +62,16 @@ A JavaScript framework for building user interfaces with a focus on developer ex
 Powerful open source libraries for building node-based UIs with React or Svelte, used by companies like Stripe and LinkedIn.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/xyflow)
+
+---
+
+### Svelte
+
+**Projects:** Svelte, SvelteKit
+
+A JavaScript framework for building user interfaces with a focus on developer experience and performance.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/sveltejs)
 
 ---
 

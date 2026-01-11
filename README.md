@@ -91,8 +91,9 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 https://github.com/user-attachments/assets/79b5080d-30d6-448e-84d8-abeaf46b936f
 
-Click on the bottom handle (outlet) of an object, and drag it all the way to the another object's top handle (inlet).
+Click and drag on an object's handle all the way to the other object's handle to connect them together.
 
+- You can also click on two handles consecutively to connect them together.
 - Top handle are called inlets. Bottom handle are called outlets.
 - You can connect multiple outlets to a single inlet, and vice-versa.
 - Video outlets (orange) can connect to video inlets
@@ -584,11 +585,13 @@ See the following example:
 > ✨ Try this patch out [in the app](https://patchies.app/?id=z7rtmujmtvbv0e0)! Code is by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html). If you like their tutorial, please go [support](https://compudanzas.net/support.html) them!
 
 - Write and assemble your own Uxntal programs directly in the editor!
+
   - "Edit Code" button opens the Uxntal assembly code editor.
   - Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
   - Assembler errors are displayed below the node.
 
 - Messages
+
   - `string`
     - If starts with `http://` or `https://`, loads ROM from URL.
     - Otherwise, it treats the string as Uxntal code to assemble and load.
@@ -599,6 +602,7 @@ See the following example:
   - Outputs string messages from console device
 
 - Auto-loading behavior:
+
   - On object mount, if code is provided (and no URL/ROM), the code is assembled and loaded automatically.
   - On object mount, if URL is provided (and no code/ROM), the ROM is loaded from the URL automatically.
 
