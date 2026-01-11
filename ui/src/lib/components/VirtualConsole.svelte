@@ -40,6 +40,14 @@
 	let eventBus = PatchiesEventBus.getInstance();
 	const { updateNodeData } = useSvelteFlow();
 
+	// Resize state
+	let consoleHeight = $state(128); // Default height in pixels (h-32 = 128px)
+	let isResizing = $state(false);
+	let resizeStartY = $state(0);
+	let resizeStartHeight = $state(0);
+	const MIN_HEIGHT = 100;
+	const MAX_HEIGHT = 600;
+
 	function handleConsoleOutput(event: ConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
 
@@ -99,12 +107,39 @@
 		});
 	}
 
+	function startResize(e: MouseEvent) {
+		isResizing = true;
+		resizeStartY = e.clientY;
+		resizeStartHeight = consoleHeight;
+		e.preventDefault();
+		e.stopPropagation();
+	}
+
+	function handleResize(e: MouseEvent) {
+		if (!isResizing) return;
+		const deltaY = e.clientY - resizeStartY;
+		const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
+		consoleHeight = newHeight;
+	}
+
+	function stopResize() {
+		isResizing = false;
+	}
+
 	onMount(() => {
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+
+		// Add global resize handlers
+		window.addEventListener('mousemove', handleResize);
+		window.addEventListener('mouseup', stopResize);
 	});
 
 	onDestroy(() => {
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+
+		// Remove global resize handlers
+		window.removeEventListener('mousemove', handleResize);
+		window.removeEventListener('mouseup', stopResize);
 	});
 </script>
 
@@ -168,40 +203,55 @@
 		</div>
 	</div>
 
-	<div
-		bind:this={consoleContainer}
-		role="log"
-		aria-label="Console output"
-		tabindex="0"
-		class="nodrag nopan nowheel h-32 cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 font-mono text-xs select-text"
-		style="min-height: {minHeight}; max-height: {maxHeight};"
-		oncopy={(e) => e.stopPropagation()}
-		oncut={(e) => e.stopPropagation()}
-		onkeydown={(e) => {
-			// Stop keyboard events from bubbling to XYFlow
-			// This prevents Ctrl/Cmd+C from triggering node copy
-			if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+	<div class="relative">
+		<div
+			bind:this={consoleContainer}
+			role="log"
+			aria-label="Console output"
+			tabindex="0"
+			class="nodrag nopan nowheel cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 font-mono text-xs select-text"
+			style="height: {consoleHeight}px;"
+			oncopy={(e) => e.stopPropagation()}
+			oncut={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				// Stop keyboard events from bubbling to XYFlow
+				// This prevents Ctrl/Cmd+C from triggering node copy
+				if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+					e.stopPropagation();
+				}
+				if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
+					e.stopPropagation();
+				}
+			}}
+			onfocus={(e) => {
+				// When console gets focus, it means user is interacting with it
 				e.stopPropagation();
-			}
-			if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
+			}}
+			onmousedown={(e) => {
+				// Prevent XYFlow from treating this as a node interaction
 				e.stopPropagation();
-			}
-		}}
-		onfocus={(e) => {
-			// When console gets focus, it means user is interacting with it
-			e.stopPropagation();
-		}}
-		onmousedown={(e) => {
-			// Prevent XYFlow from treating this as a node interaction
-			e.stopPropagation();
-		}}
-	>
-		{#if messages.length === 0}
-			<div class="p-2 text-zinc-500 italic">{placeholder}</div>
-		{:else}
-			{#each messages as msg}
-				<ConsoleMessageLine {msg} />
-			{/each}
-		{/if}
+			}}
+		>
+			{#if messages.length === 0}
+				<div class="p-2 text-zinc-500 italic">{placeholder}</div>
+			{:else}
+				{#each messages as msg}
+					<ConsoleMessageLine {msg} />
+				{/each}
+			{/if}
+		</div>
+
+		<!-- Resize handle -->
+		<div
+			class="nodrag nopan absolute right-0 bottom-0 left-0 h-2 cursor-ns-resize transition-colors hover:bg-zinc-600/30"
+			onmousedown={startResize}
+			role="separator"
+			aria-label="Resize console"
+			aria-orientation="horizontal"
+		>
+			<div
+				class="absolute top-1/2 left-1/2 h-0.5 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
+			></div>
+		</div>
 	</div>
 </div>
