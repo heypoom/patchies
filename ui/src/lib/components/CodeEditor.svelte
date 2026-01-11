@@ -365,19 +365,7 @@
 
 		// Dispatch effect to set or clear error lines
 		editorView.dispatch({
-			effects: [
-				setErrorLinesEffect.of(validErrorLines),
-				setLineErrorsEffect.of(validLineErrors),
-
-				// Scroll to first error line if there are any
-				...(validErrorLines && validErrorLines.length > 0
-					? [
-							EditorView.scrollIntoView(editorView.state.doc.line(validErrorLines[0]).from, {
-								y: 'center'
-							})
-						]
-					: [])
-			]
+			effects: [setErrorLinesEffect.of(validErrorLines), setLineErrorsEffect.of(validLineErrors)]
 		});
 	});
 </script>
