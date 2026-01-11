@@ -118,18 +118,18 @@ To use this feature:
 
 ### Connection Rules
 
-These rules define what inlet and outlet can be connected together. Top handle are called inlets. Bottom handle are called outlets.
+These rules define what handles can be connected together.
 
 - You can connect multiple outlets to a single inlet and vice-versa.
-- Video outlets (orange) can only connect to video inlets.
-- Message outlets (gray) can only connect to message inlets.
+- Video outlets (orange) can _only_ connect to video inlets.
+- Message outlets (gray) can _only_ connect to message inlets.
 - Audio outlets (blue) can connect to audio inlets.
 - Analysis outlets (purple) from `fft~` output can connect to message and video inlets
-- Audio outlets can connect to audio parameter inlets.
+- Audio outlets can connect to _audio parameter_ inlets.
   - Example of audio param inlets: `osc~`'s `frequency` and `gain~`'s `gain`
   - Audio param inlets has grey color by default.
-  - Audio param inlets they can connect to message and audio outlets (like osc~ out, gain~ out)
-  - If you start dragging from an audio outlet (blue), the audio param inlets will _become blue_ to indicate that you can connect to them for parameter modulation.
+  - Message _and_ audio outlets (like `osc~` out and `gain~` out) can connect to audio param inlets
+  - If you start dragging from an audio outlet (blue), the audio param inlets will also _become blue_ to indicate that you can connect to them for _parameter modulation_.
 
 ### Sharing Links
 
