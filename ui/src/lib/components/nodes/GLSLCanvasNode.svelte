@@ -342,15 +342,14 @@
 	{/snippet}
 
 	{#snippet console()}
-		{#if data.showConsole}
-			<div class="mt-3 w-full">
-				<VirtualConsole
-					bind:this={consoleRef}
-					{nodeId}
-					placeholder="Shader compilation errors will appear here."
-					maxHeight="200px"
-				/>
-			</div>
-		{/if}
+		<!-- Always render VirtualConsole so it receives events even when hidden -->
+		<div class="mt-3 w-full" class:hidden={!data.showConsole}>
+			<VirtualConsole
+				bind:this={consoleRef}
+				{nodeId}
+				placeholder="Shader compilation errors will appear here."
+				maxHeight="200px"
+			/>
+		</div>
 	{/snippet}
 </CanvasPreviewLayout>
