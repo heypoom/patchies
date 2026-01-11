@@ -2,7 +2,7 @@
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount } from 'svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
-	import { isConnectionMode } from '../../../stores/ui.store';
+	import { isConnectionMode, isConnecting } from '../../../stores/ui.store';
 
 	let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
 
@@ -34,7 +34,7 @@
 
 	const handleClass = $derived.by(() => {
 		// makes handle obvious in connection mode.
-		if (!selected && $isConnectionMode) {
+		if (!selected && ($isConnectionMode || $isConnecting)) {
 			return '';
 		}
 

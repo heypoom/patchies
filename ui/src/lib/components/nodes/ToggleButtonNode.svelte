@@ -4,7 +4,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { match, P } from 'ts-pattern';
-	import { isConnectionMode } from '../../../stores/ui.store';
+	import { isConnectionMode, isConnecting } from '../../../stores/ui.store';
 
 	let { id: nodeId, selected, data }: { id: string; selected: boolean; data: any } = $props();
 
@@ -56,7 +56,7 @@
 
 	const handleClass = $derived.by(() => {
 		// makes handle obvious in connection mode.
-		if (!selected && $isConnectionMode) {
+		if (!selected && ($isConnectionMode || $isConnecting)) {
 			return '';
 		}
 

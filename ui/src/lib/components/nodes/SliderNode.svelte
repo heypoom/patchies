@@ -6,7 +6,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { isConnectionMode } from '../../../stores/ui.store';
+	import { isConnectionMode, isConnecting } from '../../../stores/ui.store';
 
 	let node: {
 		id: string;
@@ -122,7 +122,7 @@
 	});
 
 	const handleInletClass = $derived.by(() => {
-		if (node.selected || $isConnectionMode) {
+		if (node.selected || $isConnectionMode || $isConnecting) {
 			return ''
 		}
 
