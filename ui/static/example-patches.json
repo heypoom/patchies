@@ -175,6 +175,20 @@
 			"description": "Pong game written in Uxntal assembly, code from @compudanzas' Uxn tutorial",
 			"category": "Programming",
 			"author": "@compudanzas"
+		},
+		{
+			"id": "ihjgcqr474da8v5",
+			"name": "Console Stress Test",
+			"description": "Poom uses this patch to stress test the virtual console in the js object",
+			"category": "Dev Patches",
+			"author": "@heypoom"
+		},
+		{
+			"id": "kbo8b87e1l20gi9",
+			"name": "Handle Connection Test",
+			"description": "Poom uses this patch to test handle connection validation in many objects",
+			"category": "Dev Patches",
+			"author": "@heypoom"
 		}
 	]
 }
