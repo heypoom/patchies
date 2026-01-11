@@ -116,22 +116,6 @@ To use this feature:
 5. Repeat the connections as many time as you wish.
 6. Click the _easy connect_ button again to stop connecting.
 
-### Connection Rules
-
-<img src="./docs/images/connection-guide.webp" alt="Connection Rules" width="700">
-
-These rules define what handles can be connected together.
-
-- You can connect multiple outlets to a single inlet and vice-versa.
-- Video outlets (orange) can _only_ connect to video inlets.
-- Message outlets (gray) can _only_ connect to message inlets.
-- Audio outlets (blue) can connect to audio inlets.
-- Analysis outlets (purple) from `fft~` output can connect to message and video inlets
-- Audio outlets can connect to _audio parameter_ inlets for _parameter modulation_.
-  - `osc~`'s `frequency` and `gain~`'s `gain` are both audio param inlets.
-  - Message _and_ audio outlets (like `osc~` out and `gain~` out) can connect to audio param inlets
-  - If you start dragging from an audio outlet (blue), the audio param inlets will _turn from grey to blue_ to indicate it's connectable to those outlets.
-
 ### Sharing Links
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
@@ -266,6 +250,23 @@ If you have used an audio patcher before (e.g. Pure Data, Max/MSP, FL Studio Pat
 - Use `dac~` to output audio to your speakers.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
+
+## Connection Rules
+
+<img src="./docs/images/connection-guide.webp" alt="Connection Rules" width="700">
+
+These rules define what handles can be connected together.
+
+- You can connect multiple outlets to a single inlet and vice-versa.
+- Video outlets (orange) can _only_ connect to video inlets.
+- Message outlets (gray) can _only_ connect to message inlets.
+- Audio outlets (blue) can connect to audio inlets.
+- Analysis outlets (purple) from `fft~` output can connect to message and video inlets
+- Audio outlets can connect to _audio parameter_ inlets for _parameter modulation_.
+  - `osc~`'s `frequency` and `gain~`'s `gain` are both audio param inlets.
+  - Message _and_ audio outlets (like `osc~` out and `gain~` out) can connect to audio param inlets
+  - If you start dragging from an audio outlet (blue), the audio param inlets will _turn from grey to blue_ to indicate it's connectable to those outlets.
+
 
 ## Experimental features
 
