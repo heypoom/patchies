@@ -1253,7 +1253,7 @@
 			</Dialog.Header>
 			<div class="space-y-4">
 				<p class="text-sm text-zinc-300">
-					AI Object Insertion requires a Google Gemini API key. Get a free API key at
+					AI features require a Google Gemini API key. Get a free API key at
 					<a
 						href="https://aistudio.google.com/app/apikey"
 						target="_blank"
