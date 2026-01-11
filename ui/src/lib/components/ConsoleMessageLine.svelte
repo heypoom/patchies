@@ -13,8 +13,8 @@
 		log: {
 			text: 'text-zinc-100',
 			bg: '',
-			icon: Info,
-			iconColor: 'text-blue-400'
+			icon: null,
+			iconColor: null
 		},
 		warn: {
 			text: 'text-amber-200',
@@ -33,6 +33,12 @@
 			bg: 'bg-zinc-900/30 border-l-2 border-zinc-700/40',
 			icon: Info,
 			iconColor: 'text-zinc-600'
+		},
+		info: {
+			text: 'text-zinc-100',
+			bg: 'bg-zinc-700/30 border-l-2 border-zinc-700/40',
+			icon: Info,
+			iconColor: 'text-zinc-500'
 		}
 	};
 
@@ -65,14 +71,14 @@
 </script>
 
 <div class={['flex items-start gap-1.5 px-2 py-1 select-text', style.text, style.bg].join(' ')}>
-	{#if msg.type === 'error' || msg.type === 'warn' || msg.type === 'debug'}
+	{#if style.icon}
 		<svelte:component
 			this={style.icon}
 			class={['mt-0.5 flex-shrink-0', style.iconColor].join(' ')}
 			size={14}
 		/>
 	{/if}
-	<div class="console-content flex-1">
+	<div class="console-content mt-[1px] flex-1">
 		<div class="flex flex-wrap items-start gap-x-2">
 			{#each msg.args as arg, i}
 				{#if isInspectable(arg)}
