@@ -4,7 +4,7 @@
 	import { match, P } from 'ts-pattern';
 	import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 	import { isConnectionMode, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
-	import { canAcceptConnection } from '$lib/utils/connection-validation';
+	import { shouldDimHandle } from '$lib/utils/handle-dimming';
 
 	interface Props {
 		port: 'inlet' | 'outlet';
@@ -72,64 +72,15 @@
 	});
 
 	// Determine if this handle should be dimmed
-	const shouldDim = $derived.by(() => {
-		// Only dim when actively connecting
-		if (!$isConnecting || !$connectingFromHandleId) return false;
-
-		// Don't dim the handle that initiated the connection (compare fully qualified IDs)
-		if ($connectingFromHandleId === qualifiedHandleId) return false;
-
-		// Determine if the connecting handle is an inlet or outlet
-		// Handle patterns:
-		//   - Typed: "audio-out", "audio-out-0", "message-in", "message-in-1"
-		//   - Untyped: "out-0", "in-1", "out", "in"
-		//   - Fallback: "outlet", "inlet"
-		// Extract just the handle ID (remove nodeId/ prefix if present)
-		const connectingHandleId = $connectingFromHandleId.split('/')[1] || $connectingFromHandleId;
-
-		// Check for outlet: typed (-out), untyped (starts with out-), or exact match
-		const connectingIsOutlet =
-			connectingHandleId.includes('-out') ||
-			connectingHandleId.startsWith('out-') ||
-			connectingHandleId === 'out' ||
-			connectingHandleId === 'outlet';
-
-		// Check for inlet: typed (-in), untyped (starts with in-), or exact match
-		const connectingIsInlet =
-			connectingHandleId.includes('-in') ||
-			connectingHandleId.startsWith('in-') ||
-			connectingHandleId === 'in' ||
-			connectingHandleId === 'inlet';
-
-		// Determine the source port type (what initiated the connection)
-		const sourcePort: 'inlet' | 'outlet' = connectingIsOutlet ? 'outlet' : 'inlet';
-
-		// If connecting from an outlet, dim ALL outlets (user should select an inlet)
-		if (connectingIsOutlet && port === 'outlet') {
-			return true;
-		}
-
-		// If connecting from an inlet, dim ALL inlets (user should select an outlet)
-		if (connectingIsInlet && port === 'inlet') {
-			return true;
-		}
-
-		// Check if this handle can accept a connection from the source based on validation rules
-		// If the connection would be invalid, dim this handle
-		const wouldBeValidConnection = canAcceptConnection(
-			$connectingFromHandleId,
-			qualifiedHandleId,
-			sourcePort,
-			port,
-			{ isTargetAudioParam: isAudioParam }
-		);
-
-		if (!wouldBeValidConnection) {
-			return true;
-		}
-
-		return false;
-	});
+	const shouldDim = $derived(
+		shouldDimHandle({
+			isConnecting: $isConnecting,
+			connectingFromHandleId: $connectingFromHandleId,
+			currentHandleQualifiedId: qualifiedHandleId,
+			currentHandlePort: port,
+			isAudioParam
+		})
+	);
 
 	// Determine handle color based on type using ts-pattern
 	const handleClass = $derived.by(() => {
