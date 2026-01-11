@@ -60,6 +60,9 @@
 	const MIN_WIDTH = 300;
 	const MAX_WIDTH = 1000;
 
+	// Resize state - corner (both vertical and horizontal)
+	let isCornerResizing = $state(false);
+
 	const MAX_MESSAGES = 1000; // Limit stored messages to prevent unbounded growth
 
 	function handleConsoleOutput(event: ConsoleOutputEvent) {
@@ -149,11 +152,23 @@
 			consoleWidth = newWidth;
 			onResize?.();
 		}
+
+		// Handle corner resize (both at once)
+		if (isCornerResizing) {
+			const deltaY = e.clientY - resizeStartY;
+			const deltaX = e.clientX - resizeStartX;
+			const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
+			const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStartWidth + deltaX));
+			consoleHeight = newHeight;
+			consoleWidth = newWidth;
+			onResize?.();
+		}
 	}
 
 	function stopResize() {
 		isResizing = false;
 		isHorizontalResizing = false;
+		isCornerResizing = false;
 	}
 
 	// Horizontal resize handlers
@@ -163,6 +178,25 @@
 
 		// Capture current actual width
 		resizeStartWidth = consoleContainer?.offsetWidth || MIN_WIDTH;
+
+		// Switch to fixed width mode
+		if (consoleWidth === null) {
+			consoleWidth = resizeStartWidth;
+		}
+
+		e.preventDefault();
+		e.stopPropagation();
+	}
+
+	// Corner resize handler
+	function startCornerResize(e: MouseEvent) {
+		isCornerResizing = true;
+		resizeStartX = e.clientX;
+		resizeStartY = e.clientY;
+
+		// Capture current actual dimensions
+		resizeStartWidth = consoleContainer?.offsetWidth || MIN_WIDTH;
+		resizeStartHeight = consoleHeight;
 
 		// Switch to fixed width mode
 		if (consoleWidth === null) {
@@ -204,11 +238,23 @@
 			consoleWidth = newWidth;
 			onResize?.();
 		}
+
+		// Handle corner resize
+		if (isCornerResizing) {
+			const deltaY = e.touches[0].clientY - resizeStartY;
+			const deltaX = e.touches[0].clientX - resizeStartX;
+			const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
+			const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStartWidth + deltaX));
+			consoleHeight = newHeight;
+			consoleWidth = newWidth;
+			onResize?.();
+		}
 	}
 
 	function stopTouchResize() {
 		isResizing = false;
 		isHorizontalResizing = false;
+		isCornerResizing = false;
 	}
 
 	// Touch horizontal resize handlers for mobile
@@ -220,6 +266,26 @@
 		resizeStartX = e.touches[0].clientX;
 		// Capture current actual width
 		resizeStartWidth = consoleContainer?.offsetWidth || MIN_WIDTH;
+		// Switch to fixed width mode
+		if (consoleWidth === null) {
+			consoleWidth = resizeStartWidth;
+		}
+
+		e.preventDefault();
+		e.stopPropagation();
+	}
+
+	// Touch corner resize handler for mobile
+	function startTouchCornerResize(e: TouchEvent) {
+		if (e.touches.length !== 1) return;
+
+		isCornerResizing = true;
+
+		resizeStartX = e.touches[0].clientX;
+		resizeStartY = e.touches[0].clientY;
+		// Capture current actual dimensions
+		resizeStartWidth = consoleContainer?.offsetWidth || MIN_WIDTH;
+		resizeStartHeight = consoleHeight;
 		// Switch to fixed width mode
 		if (consoleWidth === null) {
 			consoleWidth = resizeStartWidth;
@@ -400,6 +466,19 @@
 		>
 			<div
 				class="absolute top-1/2 left-1/2 h-8 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
+			></div>
+		</button>
+
+		<!-- Corner resize handle (bottom-right) -->
+		<button
+			class="nodrag nopan absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
+			onmousedown={startCornerResize}
+			ontouchstart={startTouchCornerResize}
+			type="button"
+			aria-label="Resize console both vertically and horizontally"
+		>
+			<div
+				class="absolute top-1/2 left-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
 			></div>
 		</button>
 	</div>
