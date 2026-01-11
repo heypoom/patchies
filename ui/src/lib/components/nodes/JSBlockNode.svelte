@@ -32,6 +32,8 @@
 			outletCount?: number;
 			libraryName?: boolean;
 			executeCode?: number;
+			consoleHeight?: number;
+			consoleWidth?: number;
 		};
 		selected: boolean;
 	} = $props();
@@ -322,6 +324,10 @@
 						{playOrStopIcon}
 						{runOrStop}
 						onResize={updateContentWidth}
+						initialHeight={data.consoleHeight}
+						initialWidth={data.consoleWidth}
+						onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
+						onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
 					/>
 				{:else}
 					<button

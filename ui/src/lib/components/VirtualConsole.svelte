@@ -23,7 +23,11 @@
 		playOrStopIcon,
 		runOrStop,
 		onResize,
-		shouldAutoShowConsoleOnError = true
+		shouldAutoShowConsoleOnError = true,
+		initialHeight,
+		initialWidth,
+		onHeightChange,
+		onWidthChange
 	}: {
 		nodeId: string;
 		maxHeight?: string;
@@ -39,6 +43,10 @@
 		runOrStop?: () => void;
 		onResize?: () => void;
 		shouldAutoShowConsoleOnError?: boolean;
+		initialHeight?: number;
+		initialWidth?: number;
+		onHeightChange?: (height: number) => void;
+		onWidthChange?: (width: number) => void;
 	} = $props();
 
 	let messages = $state<Array<{ type: string; timestamp: number; args: unknown[] }>>([]);
@@ -48,7 +56,7 @@
 	const { updateNodeData } = useSvelteFlow();
 
 	// Resize state - vertical
-	let consoleHeight = $state(128); // Default height in pixels (h-32 = 128px)
+	let consoleHeight = $state(initialHeight ?? 128); // Default height in pixels (h-32 = 128px)
 	let isResizing = $state(false);
 	let resizeStartY = $state(0);
 	let resizeStartHeight = $state(0);
@@ -56,7 +64,7 @@
 	const MAX_HEIGHT = 1000;
 
 	// Resize state - horizontal
-	let consoleWidth = $state<number | null>(null); // null = auto-size, number = fixed width
+	let consoleWidth = $state<number | null>(initialWidth ?? null); // null = auto-size, number = fixed width
 	let isHorizontalResizing = $state(false);
 	let resizeStartX = $state(0);
 	let resizeStartWidth = $state(0);
@@ -172,6 +180,17 @@
 	}
 
 	function stopResize() {
+		// Notify parent of final dimensions when resizing ends
+		if (isResizing || isCornerResizing) {
+			onHeightChange?.(consoleHeight);
+		}
+
+		if (isHorizontalResizing || isCornerResizing) {
+			if (consoleWidth !== null) {
+				onWidthChange?.(consoleWidth);
+			}
+		}
+
 		isResizing = false;
 		isHorizontalResizing = false;
 		isCornerResizing = false;
@@ -258,6 +277,17 @@
 	}
 
 	function stopTouchResize() {
+		// Notify parent of final dimensions when resizing ends
+		if (isResizing || isCornerResizing) {
+			onHeightChange?.(consoleHeight);
+		}
+
+		if (isHorizontalResizing || isCornerResizing) {
+			if (consoleWidth !== null) {
+				onWidthChange?.(consoleWidth);
+			}
+		}
+
 		isResizing = false;
 		isHorizontalResizing = false;
 		isCornerResizing = false;
