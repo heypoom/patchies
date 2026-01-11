@@ -26,9 +26,19 @@
 		setNodes: (nodes: Node[]) => void;
 		setEdges: (edges: Edge[]) => void;
 		onShowAiPrompt?: () => void;
+		onShowGeminiKeyModal?: () => void;
 	}
 
-	let { position, onCancel, nodes, edges, setNodes, setEdges, onShowAiPrompt }: Props = $props();
+	let {
+		position,
+		onCancel,
+		nodes,
+		edges,
+		setNodes,
+		setEdges,
+		onShowAiPrompt,
+		onShowGeminiKeyModal
+	}: Props = $props();
 
 	// Component state
 	let searchQuery = $state('');
@@ -45,7 +55,6 @@
 		| 'delete-list'
 		| 'rename-list'
 		| 'rename-name'
-		| 'gemini-api-key'
 		| 'celestiai-api-key';
 
 	// Multi-stage state
@@ -54,7 +63,6 @@
 	let patchName = $state('');
 	let savedPatches = $state<string[]>([]);
 	let selectedPatchToRename = $state('');
-	let geminiApiKey = $state('');
 	let celestiaiApiKey = $state('');
 
 	// Base commands for stage 1
@@ -114,7 +122,7 @@
 		{
 			id: 'set-gemini-api-key',
 			name: 'Set Gemini API Key',
-			description: 'Configure Google Gemini API key'
+			description: 'Configure Google Gemini API key for AI features'
 		},
 		{
 			id: 'set-celestiai-api-key',
@@ -153,7 +161,6 @@
 			stage === 'delete-list' ||
 			stage === 'rename-list' ||
 			stage === 'rename-name' ||
-			stage === 'gemini-api-key' ||
 			stage === 'celestiai-api-key' ||
 			stage === 'commands'
 		) {
@@ -236,8 +243,6 @@
 			selectedIndex = 0;
 		} else if (stage === 'rename-name' && patchName.trim()) {
 			renamePatch();
-		} else if (stage === 'gemini-api-key' && geminiApiKey.trim()) {
-			saveGeminiApiKey();
 		} else if (stage === 'celestiai-api-key' && celestiaiApiKey.trim()) {
 			saveCelestiAiApiKey();
 		}
@@ -258,8 +263,8 @@
 			.with('delete-patch', () => nextStage('delete-list'))
 			.with('rename-patch', () => nextStage('rename-list'))
 			.with('set-gemini-api-key', () => {
-				nextStage('gemini-api-key');
-				geminiApiKey = '';
+				onCancel();
+				onShowGeminiKeyModal?.();
 			})
 			.with('set-celestiai-api-key', () => {
 				nextStage('celestiai-api-key');
@@ -467,13 +472,6 @@
 		}
 	}
 
-	function saveGeminiApiKey() {
-		if (!geminiApiKey.trim()) return;
-
-		localStorage.setItem('gemini-api-key', geminiApiKey.trim());
-		onCancel();
-	}
-
 	function saveCelestiAiApiKey() {
 		if (!celestiaiApiKey.trim()) return;
 
@@ -606,18 +604,6 @@
 				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
 			/>
 		</div>
-	{:else if stage === 'gemini-api-key'}
-		<div class="border-b border-zinc-700 p-3">
-			<div class="mb-2 text-xs text-zinc-400">Enter your Google Gemini API key:</div>
-			<input
-				bind:this={searchInput}
-				bind:value={geminiApiKey}
-				onkeydown={handleKeydown}
-				type="password"
-				placeholder="Enter API key..."
-				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-			/>
-		</div>
 	{:else if stage === 'celestiai-api-key'}
 		<div class="border-b border-zinc-700 p-3">
 			<div class="mb-2 text-xs text-zinc-400">Enter your CelestiAi AI API key:</div>
@@ -719,11 +705,6 @@
 					>"
 				</div>
 			{/if}
-		{:else if stage === 'gemini-api-key'}
-			<!-- Show current input preview -->
-			{#if geminiApiKey.trim()}
-				<div class="px-3 py-2 text-xs text-zinc-400">API key will be saved securely</div>
-			{/if}
 		{:else if stage === 'celestiai-api-key'}
 			<!-- Show current input preview -->
 			{#if celestiaiApiKey.trim()}
@@ -746,8 +727,6 @@
 			↑↓ Navigate • Enter Rename • Esc Back
 		{:else if stage === 'rename-name'}
 			Enter Rename • Esc Back
-		{:else if stage === 'gemini-api-key'}
-			Enter Save • Esc Back
 		{:else if stage === 'celestiai-api-key'}
 			Enter Save • Esc Back
 		{/if}
