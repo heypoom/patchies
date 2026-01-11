@@ -109,13 +109,12 @@ Use the _easy connect_ button to make the handles big and easy to touch, for the
 
 To use this feature:
 
-1. Locate the "Easy Connect" button on your bottom right, it should look like a cable.
-2. All handles will now become big and easy to touch.
-3. Tap on a handle to start the connection.
-4. It will highlight your starting handle and dim any invalid connection targets.
-5. Tap on another handle to connect the two handles together.
-6. You can repeat the connection as many time as you wish.
-7. Once you're done, click the "Easy Connect" button again to exit the object connection mode.
+1. Locate the cable button on your toolbar, that's _easy connect_.
+2. Tap on a big handle to start the connection.
+3. It highlights your starting handle and dim any invalid connection targets.
+4. Tap on another big handle to connect the two handles together.
+5. Repeat the connections as many time as you wish.
+6. Click the _easy connect_ button again to stop connecting.
 
 ### Connection Rules
 
