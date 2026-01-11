@@ -269,7 +269,6 @@ These rules define what handles can be connected together.
   - Message _and_ audio outlets (like `osc~` out and `gain~` out) can connect to audio param inlets
   - If you start dragging from an audio outlet (blue), the audio param inlets will _turn from grey to blue_ to indicate it's connectable to those outlets.
 
-
 ## Experimental features
 
 > [!CAUTION]
@@ -291,9 +290,14 @@ When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch bet
 
 > Don't like AI? Press `Ctrl/Cmd + K` then select `Toggle AI Features`. This permanently turns all AI-based nodes and all AI generation features off.
 
-This feature uses the `gemini-3-flash-preview` model to understand your prompt and generate the object configuration. First, set your Gemini API key in the command palette with `Cmd/Ctrl + K` → `Set Gemini API Key`. Then, use `Ctrl/Cmd + I` or the sparkles button on the bottom right.
+Here's how to set it up:
 
-Please create a separate API key that has strict budget limits. API keys are stored on localStorage as `gemini-api-key`, and therefore there is a real risk of your API keys being _stolen_ by malicious patches you open.
+1. Create a separate API key that has strict budget limits.
+2. Press `Cmd/Ctrl + I`.
+3. Enter your API Key and hit `Save & Continue`.
+4. Use `Ctrl/Cmd + I` or the _sparkles_ button on the bottom right to generate.
+
+This feature uses the `gemini-3-flash-preview` model to understand your prompt and generate the object configuration. API keys are stored on localStorage as `gemini-api-key` and there is a risk of your API keys being _stolen_ by malicious patches you open.
 
 ## List of objects
 
