@@ -78,7 +78,7 @@
 	{#if isExpandable(data)}
 		<button
 			onclick={() => (expanded = !expanded)}
-			class="-ml-0.5 inline-flex items-center rounded px-0.5 hover:bg-zinc-700/30"
+			class="-ml-0.5 inline-flex cursor-pointer items-center rounded px-0.5 hover:bg-zinc-700/30"
 		>
 			<span
 				class="mr-1 inline-block text-zinc-500 transition-transform"
