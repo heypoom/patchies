@@ -423,7 +423,7 @@ export interface SupportLink {
 	description: string;
 	category: 'library' | 'educator' | 'tool';
 	url: string;
-	type: 'patreon' | 'opencollective' | 'github' | 'donate' | 'purchase' | 'website';
+	type: 'patreon' | 'opencollective' | 'github' | 'donate' | 'book' | 'website';
 	projects?: string[];
 }
 
@@ -505,7 +505,7 @@ export const supportLinks: SupportLink[] = [
 		description: 'Educational resources for Uxn programming',
 		category: 'educator',
 		url: 'https://compudanzas.itch.io/introduction-to-uxn-programming',
-		type: 'purchase',
+		type: 'book',
 		projects: ['Uxn tutorials']
 	},
 	{
@@ -513,7 +513,7 @@ export const supportLinks: SupportLink[] = [
 		description: 'Creator of The Coding Train and Nature of Code',
 		category: 'educator',
 		url: 'https://natureofcode.com/',
-		type: 'purchase',
+		type: 'book',
 		projects: ['Nature of Code', 'The Coding Train']
 	},
 	{

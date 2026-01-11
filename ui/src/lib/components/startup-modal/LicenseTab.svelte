@@ -20,8 +20,8 @@
 				return 'GitHub Sponsors';
 			case 'donate':
 				return 'Donate';
-			case 'purchase':
-				return 'Purchase';
+			case 'book':
+				return 'Book';
 			case 'website':
 				return 'Website';
 			default:

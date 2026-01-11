@@ -143,7 +143,7 @@ Creative coding educator making programming accessible to all creative people th
 
 Creating comprehensive, beginner-friendly guides for Uxn programming and permacomputing.
 
-**Support:** [Purchase their ebook](https://compudanzas.itch.io/introduction-to-uxn-programming) ($8)
+**Support:** [Purchase Introduction to Uxn Programming](https://compudanzas.itch.io/introduction-to-uxn-programming) ($8)
 
 ---
 
@@ -153,7 +153,7 @@ Creating comprehensive, beginner-friendly guides for Uxn programming and permaco
 
 Beloved educator creating accessible programming tutorials and the comprehensive Nature of Code book.
 
-**Support:** [Purchase Nature of Code](https://natureofcode.com/) or donate to the Processing Foundation
+**Support:** [Purchase Nature of Code](https://natureofcode.com) or [donate to the Processing Foundation](https://processingfoundation.org/donate)
 
 ---
 
@@ -259,7 +259,7 @@ Different creators have different support options:
 - **GitHub Sponsors**: One-time or monthly support directly through GitHub
 - **OpenCollective**: Transparent community funding for open source projects
 - **Direct Donations**: Support through foundation websites
-- **Purchase Content**: Buy books, ebooks, or courses to support educational creators
+- **Purchase Content**: Buy books, e-books, or courses to support educational creators
 - **Spread the Word**: Share their work and tutorials with others
 
 If you'd like to support Poom (creator of Patchies), I would love it if you can send me stories and short videos about how you use Patchies to my [Instagram](https://instagram.com/phoomparin) or my email at [poom@poom.dev](mailto:poom@poom.dev). It'd _really_ made my day and give me tons of motivation to continue building this happy little tool 🧡
