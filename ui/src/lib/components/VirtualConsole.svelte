@@ -412,7 +412,7 @@
 		{:else}
 			<div
 				class="nodrag nopan nowheel cursor-text rounded border border-zinc-700 bg-zinc-800 font-mono text-xs select-text"
-				style="height: {consoleHeight}px;"
+				style="height: {consoleHeight}px; scrollbar-gutter: stable;"
 				oncopy={(e: ClipboardEvent) => e.stopPropagation()}
 				oncut={(e: ClipboardEvent) => e.stopPropagation()}
 				onkeydown={(e: KeyboardEvent) => {
@@ -456,7 +456,7 @@
 			></div>
 		</button>
 
-		<!-- Horizontal resize handle -->
+		<!-- Horizontal resize handle (left edge) -->
 		<button
 			class="nodrag nopan absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
 			onmousedown={startHorizontalResize}
