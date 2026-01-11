@@ -338,7 +338,8 @@
 	{/snippet}
 
 	{#snippet console()}
-		<div class="mt-3">
+		<!-- Always render VirtualConsole so it receives events even when hidden -->
+		<div class="mt-3" class:hidden={!data.showConsole}>
 			<VirtualConsole bind:this={consoleRef} {nodeId} onrun={updateSketch} />
 		</div>
 	{/snippet}
