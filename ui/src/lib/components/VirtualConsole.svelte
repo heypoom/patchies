@@ -6,6 +6,7 @@
 	import ConsoleMessageLine from './ConsoleMessageLine.svelte';
 	import { Copy, Loader, Pause, Play, RefreshCcw, Trash2 } from '@lucide/svelte/icons';
 	import { toast } from 'svelte-sonner';
+	import { VList } from 'virtua/svelte';
 
 	let {
 		nodeId,
@@ -38,17 +39,28 @@
 	} = $props();
 
 	let messages = $state<Array<{ type: string; timestamp: number; args: unknown[] }>>([]);
+	let vlistRef: any = $state(null);
 	let consoleContainer: HTMLDivElement | null = $state(null);
 	let eventBus = PatchiesEventBus.getInstance();
 	const { updateNodeData } = useSvelteFlow();
 
-	// Resize state
+	// Resize state - vertical
 	let consoleHeight = $state(128); // Default height in pixels (h-32 = 128px)
 	let isResizing = $state(false);
 	let resizeStartY = $state(0);
 	let resizeStartHeight = $state(0);
 	const MIN_HEIGHT = 100;
 	const MAX_HEIGHT = 600;
+
+	// Resize state - horizontal
+	let consoleWidth = $state<number | null>(null); // null = auto-size, number = fixed width
+	let isHorizontalResizing = $state(false);
+	let resizeStartX = $state(0);
+	let resizeStartWidth = $state(0);
+	const MIN_WIDTH = 280;
+	const MAX_WIDTH = 2000;
+
+	const MAX_MESSAGES = 1000; // Limit stored messages to prevent unbounded growth
 
 	function handleConsoleOutput(event: ConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
@@ -62,17 +74,21 @@
 			}
 		];
 
+		// Keep only the last MAX_MESSAGES to prevent unbounded growth
+		if (messages.length > MAX_MESSAGES) {
+			messages = messages.slice(-MAX_MESSAGES);
+		}
+
 		// Auto-show console on first error or warning
 		if (event.messageType === 'error' || event.messageType === 'warn') {
 			updateNodeData(nodeId, { showConsole: true });
 		}
 
-		// Auto-scroll to bottom
+		// Auto-scroll to bottom using VList's scrollToIndex
 		setTimeout(() => {
-			consoleContainer?.scrollTo({
-				top: consoleContainer.scrollHeight,
-				behavior: 'smooth'
-			});
+			if (vlistRef) {
+				vlistRef.scrollToIndex(messages.length - 1, { smooth: true, align: 'end' });
+			}
 		}, 10);
 	}
 
@@ -118,15 +134,43 @@
 	}
 
 	function handleResize(e: MouseEvent) {
-		if (!isResizing) return;
-		const deltaY = e.clientY - resizeStartY;
-		const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
-		consoleHeight = newHeight;
-		onResize?.();
+		// Handle vertical resize
+		if (isResizing) {
+			const deltaY = e.clientY - resizeStartY;
+			const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
+			consoleHeight = newHeight;
+			onResize?.();
+		}
+
+		// Handle horizontal resize
+		if (isHorizontalResizing) {
+			const deltaX = e.clientX - resizeStartX;
+			const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStartWidth + deltaX));
+			consoleWidth = newWidth;
+			onResize?.();
+		}
 	}
 
 	function stopResize() {
 		isResizing = false;
+		isHorizontalResizing = false;
+	}
+
+	// Horizontal resize handlers
+	function startHorizontalResize(e: MouseEvent) {
+		isHorizontalResizing = true;
+		resizeStartX = e.clientX;
+
+		// Capture current actual width
+		resizeStartWidth = consoleContainer?.offsetWidth || MIN_WIDTH;
+
+		// Switch to fixed width mode
+		if (consoleWidth === null) {
+			consoleWidth = resizeStartWidth;
+		}
+
+		e.preventDefault();
+		e.stopPropagation();
 	}
 
 	// Touch event handlers for mobile support
@@ -143,17 +187,46 @@
 	}
 
 	function handleTouchResize(e: TouchEvent) {
-		if (!isResizing || e.touches.length !== 1) return;
+		if (e.touches.length !== 1) return;
 
-		const deltaY = e.touches[0].clientY - resizeStartY;
-		const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
-		consoleHeight = newHeight;
+		// Handle vertical resize
+		if (isResizing) {
+			const deltaY = e.touches[0].clientY - resizeStartY;
+			const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
+			consoleHeight = newHeight;
+			onResize?.();
+		}
 
-		onResize?.();
+		// Handle horizontal resize
+		if (isHorizontalResizing) {
+			const deltaX = e.touches[0].clientX - resizeStartX;
+			const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStartWidth + deltaX));
+			consoleWidth = newWidth;
+			onResize?.();
+		}
 	}
 
 	function stopTouchResize() {
 		isResizing = false;
+		isHorizontalResizing = false;
+	}
+
+	// Touch horizontal resize handlers for mobile
+	function startTouchHorizontalResize(e: TouchEvent) {
+		if (e.touches.length !== 1) return;
+
+		isHorizontalResizing = true;
+
+		resizeStartX = e.touches[0].clientX;
+		// Capture current actual width
+		resizeStartWidth = consoleContainer?.offsetWidth || MIN_WIDTH;
+		// Switch to fixed width mode
+		if (consoleWidth === null) {
+			consoleWidth = resizeStartWidth;
+		}
+
+		e.preventDefault();
+		e.stopPropagation();
 	}
 
 	function handleRun() {
@@ -173,11 +246,11 @@
 	onMount(() => {
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
-		// Add global resize handlers
+		// Add global resize handlers (handles both vertical and horizontal)
 		window.addEventListener('mousemove', handleResize);
 		window.addEventListener('mouseup', stopResize);
 
-		// Add touch resize handlers for mobile
+		// Add touch resize handlers for mobile (handles both vertical and horizontal)
 		window.addEventListener('touchmove', handleTouchResize, { passive: false });
 		window.addEventListener('touchend', stopTouchResize);
 		window.addEventListener('touchcancel', stopTouchResize);
@@ -198,12 +271,18 @@
 </script>
 
 <div
+	bind:this={consoleContainer}
 	class={[
-		'max-w-[500px] min-w-[150px] rounded-md border bg-zinc-900 p-3',
+		'rounded-md border bg-zinc-900 p-3',
 		borderColor,
 		selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm',
 		className
 	].join(' ')}
+	style="
+		{consoleWidth !== null ? `width: ${consoleWidth}px;` : 'width: fit-content;'}
+		max-width: {MAX_WIDTH}px;
+		min-width: {MIN_WIDTH}px;
+	"
 >
 	<div class="mb-2 flex min-w-[280px] items-center justify-between">
 		<span class="font-mono text-[11px] text-zinc-400">console</span>
@@ -221,6 +300,8 @@
 			{/if}
 
 			{#if runOrStop && playOrStopIcon}
+				{@const PlayOrStopIconComponent = playOrStopIcon}
+
 				<button
 					onclick={handleRunOrStop}
 					class={[
@@ -228,13 +309,10 @@
 						isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
 					].join(' ')}
 					title={isLongRunningTaskActive ? 'Stop' : 'Run'}
+					aria-label={isLongRunningTaskActive ? 'Stop' : 'Run'}
 					aria-disabled={isRunning}
 				>
-					<svelte:component
-						this={playOrStopIcon}
-						class={isRunning ? 'animate-spin' : ''}
-						size="14px"
-					/>
+					<PlayOrStopIconComponent class={isRunning ? 'animate-spin' : ''} size="14px" />
 				</button>
 			{/if}
 
@@ -258,54 +336,70 @@
 	</div>
 
 	<div class="relative">
-		<div
-			bind:this={consoleContainer}
-			role="textbox"
-			aria-readonly="true"
-			aria-label="Console output"
-			tabindex="0"
-			class="nodrag nopan nowheel cursor-text overflow-y-auto rounded border border-zinc-700 bg-zinc-800 font-mono text-xs select-text"
-			style="height: {consoleHeight}px;"
-			oncopy={(e) => e.stopPropagation()}
-			oncut={(e) => e.stopPropagation()}
-			onkeydown={(e) => {
-				// Stop keyboard events from bubbling to XYFlow
-				// This prevents Ctrl/Cmd+C from triggering node copy
-				if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+		{#if messages.length === 0}
+			<div
+				class="nodrag nopan nowheel cursor-text rounded border border-zinc-700 bg-zinc-800 p-2 font-mono text-xs text-zinc-500 italic select-text"
+				style="height: {consoleHeight}px;"
+			>
+				{placeholder}
+			</div>
+		{:else}
+			<div
+				class="nodrag nopan nowheel cursor-text rounded border border-zinc-700 bg-zinc-800 font-mono text-xs select-text"
+				style="height: {consoleHeight}px;"
+				oncopy={(e: ClipboardEvent) => e.stopPropagation()}
+				oncut={(e: ClipboardEvent) => e.stopPropagation()}
+				onkeydown={(e: KeyboardEvent) => {
+					// Stop keyboard events from bubbling to XYFlow
+					if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+						e.stopPropagation();
+					}
+					if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
+						e.stopPropagation();
+					}
+				}}
+				onfocus={(e: FocusEvent) => {
 					e.stopPropagation();
-				}
-				if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
+				}}
+				onmousedown={(e: MouseEvent) => {
 					e.stopPropagation();
-				}
-			}}
-			onfocus={(e) => {
-				// When console gets focus, it means user is interacting with it
-				e.stopPropagation();
-			}}
-			onmousedown={(e) => {
-				// Prevent XYFlow from treating this as a node interaction
-				e.stopPropagation();
-			}}
-		>
-			{#if messages.length === 0}
-				<div class="p-2 text-zinc-500 italic">{placeholder}</div>
-			{:else}
-				{#each messages as msg}
-					<ConsoleMessageLine {msg} />
-				{/each}
-			{/if}
-		</div>
+				}}
+				role="textbox"
+				aria-readonly="true"
+				aria-label="Console output"
+				tabindex="0"
+			>
+				<VList bind:this={vlistRef} data={messages} getKey={(_: any, i: number) => i}>
+					{#snippet children(msg: any)}
+						<ConsoleMessageLine {msg} />
+					{/snippet}
+				</VList>
+			</div>
+		{/if}
 
-		<!-- Resize handle -->
+		<!-- Vertical resize handle -->
 		<button
 			class="nodrag nopan absolute right-0 bottom-0 left-0 h-2 cursor-ns-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
 			onmousedown={startResize}
 			ontouchstart={startTouchResize}
 			type="button"
-			aria-label="Resize console"
+			aria-label="Resize console vertically"
 		>
 			<div
 				class="absolute top-1/2 left-1/2 h-0.5 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
+			></div>
+		</button>
+
+		<!-- Horizontal resize handle -->
+		<button
+			class="nodrag nopan absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
+			onmousedown={startHorizontalResize}
+			ontouchstart={startTouchHorizontalResize}
+			type="button"
+			aria-label="Resize console horizontally"
+		>
+			<div
+				class="absolute top-1/2 left-1/2 h-8 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-600"
 			></div>
 		</button>
 	</div>

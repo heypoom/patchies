@@ -65,6 +65,7 @@
         "tone": "^15.1.22",
         "ts-pattern": "^5.8.0",
         "uxn.wasm": "^0.9.0",
+        "virtua": "^0.48.2",
         "vite-plugin-static-copy": "^3.1.1",
         "webchuck": "^1.2.10",
         "webmidi": "^3.1.12",
@@ -1888,6 +1889,8 @@
     "vinyl": ["vinyl@2.2.1", "", { "dependencies": { "clone": "^2.1.1", "clone-buffer": "^1.0.0", "clone-stats": "^1.0.0", "cloneable-readable": "^1.0.0", "remove-trailing-separator": "^1.0.1", "replace-ext": "^1.0.0" } }, "sha512-LII3bXRFBZLlezoG5FfZVcXflZgWP/4dCwKtxd5ky9+LOtM4CS3bIRQsmR1KMnMW07jpE8fqR2lcxPZ+8sJIcw=="],
 
     "vinyl-sourcemaps-apply": ["vinyl-sourcemaps-apply@0.2.1", "", { "dependencies": { "source-map": "^0.5.1" } }, "sha512-+oDh3KYZBoZC8hfocrbrxbLUeaYtQK7J5WU5Br9VqWqmCll3tFJqKp97GC9GmMsVIL0qnx2DgEDVxdo5EZ5sSw=="],
+
+    "virtua": ["virtua@0.48.2", "", { "peerDependencies": { "react": ">=16.14.0", "react-dom": ">=16.14.0", "solid-js": ">=1.0", "svelte": ">=5.0", "vue": ">=3.2" }, "optionalPeers": ["react", "react-dom", "solid-js", "svelte", "vue"] }, "sha512-z8zko7BRnSruf3pYMjhfKIdz138quGVRxSNSZJ7rcrhnxd03mRhGIWNZULE1Dz0VMdRVVaBeT6Ow8ynayHW3Jg=="],
 
     "vite": ["vite@7.0.5", "", { "dependencies": { "esbuild": "^0.25.0", "fdir": "^6.4.6", "picomatch": "^4.0.2", "postcss": "^8.5.6", "rollup": "^4.40.0", "tinyglobby": "^0.2.14" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "jiti": ">=1.21.0", "less": "^4.0.0", "lightningcss": "^1.21.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-1mncVwJxy2C9ThLwz0+2GKZyEXuC3MyWtAAlNftlZZXZDP3AJt5FmwcMit/IGGaNZ8ZOB2BNO/HFUB+CpN0NQw=="],
 
