@@ -262,13 +262,21 @@
 		// React to both errorLine and editorView changes
 		if (!editorView) return;
 
+		// Validate error line is within document bounds
+		const lineCount = editorView.state.doc.lines;
+
+		const validErrorLine = errorLine && errorLine > 0 && errorLine <= lineCount ? errorLine : null;
+
 		// Dispatch effect to set or clear error line
-		const line = errorLine || null;
 		editorView.dispatch({
 			effects: [
-				setErrorLineEffect.of(line),
-				...(errorLine
-					? [EditorView.scrollIntoView(editorView.state.doc.line(errorLine).from, { y: 'center' })]
+				setErrorLineEffect.of(validErrorLine),
+				...(validErrorLine
+					? [
+							EditorView.scrollIntoView(editorView.state.doc.line(validErrorLine).from, {
+								y: 'center'
+							})
+						]
 					: [])
 			]
 		});
