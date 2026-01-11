@@ -346,7 +346,7 @@
 		className
 	].join(' ')}
 	style="
-		{consoleWidth !== null ? `width: ${consoleWidth}px;` : 'width: fit-content;'}
+		{consoleWidth !== null ? `width: ${consoleWidth}px;` : 'width: 100%;'}
 		max-width: {MAX_WIDTH}px;
 		min-width: {MIN_WIDTH}px;
 	"

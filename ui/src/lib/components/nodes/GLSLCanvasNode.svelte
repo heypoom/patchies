@@ -339,7 +339,7 @@
 
 	{#snippet console()}
 		{#if data.showConsole}
-			<div class="mt-3">
+			<div class="mt-3 w-full">
 				<VirtualConsole
 					bind:this={consoleRef}
 					{nodeId}
