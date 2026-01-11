@@ -2,7 +2,7 @@
 	import { HelpCircle, X } from '@lucide/svelte/icons';
 	import AboutTab from './AboutTab.svelte';
 	import ExamplesTab from './ExamplesTab.svelte';
-	import LicenseTab from './LicenseTab.svelte';
+	import ThanksTab from './ThanksTab.svelte';
 	import ShortcutsTab from './ShortcutsTab.svelte';
 	import type { Tab } from './types';
 
@@ -96,7 +96,7 @@
 				{:else if activeTab === 'demos'}
 					<ExamplesTab {onLoadPatch} />
 				{:else if activeTab === 'thanks'}
-					<LicenseTab setTab={(tab) => (activeTab = tab)} />
+					<ThanksTab setTab={(tab) => (activeTab = tab)} />
 				{:else if activeTab === 'shortcuts'}
 					<ShortcutsTab />
 				{/if}

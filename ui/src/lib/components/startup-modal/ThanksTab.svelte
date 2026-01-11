@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { match } from 'ts-pattern';
 	import { FileText, Heart, ExternalLink } from '@lucide/svelte/icons';
+
 	import type { Tab } from './types';
+
 	import {
 		projectLicense,
 		dependenciesSection,
@@ -8,46 +11,37 @@
 		supportLinks
 	} from '$lib/data/license-data';
 
-	let { setTab }: { setTab: (tab: Tab) => void } = $props();
-
-	const getSupportTypeLabel = (type: string) => {
-		switch (type) {
-			case 'patreon':
-				return 'Patreon';
-			case 'opencollective':
-				return 'OpenCollective';
-			case 'github':
-				return 'GitHub Sponsors';
-			case 'donate':
-				return 'Donate';
-			case 'book':
-				return 'Book';
-			case 'website':
-				return 'Website';
-			default:
-				return 'Support';
-		}
-	};
+	const getSupportTypeLabel = (type: string) =>
+		match(type)
+			.with('patreon', () => 'Patreon')
+			.with('opencollective', () => 'OpenCollective')
+			.with('github', () => 'GitHub Sponsors')
+			.with('donate', () => 'Donate')
+			.with('book', () => 'Book')
+			.with('website', () => 'Website')
+			.otherwise(() => 'Support');
 
 	const libraryCreators = supportLinks.filter((s) => s.category === 'library');
 	const educators = supportLinks.filter((s) => s.category === 'educator');
 	const toolMaintainers = supportLinks.filter((s) => s.category === 'tool');
 </script>
 
-<div class="space-y-4">
+<div class="space-y-2 sm:space-y-4">
 	<!-- Header -->
 	<div>
-		<h1 id="modal-title" class="text-3xl font-bold text-zinc-100">Thanks 🥰</h1>
-		<p class="mt-1 text-lg text-zinc-400">
+		<h1 id="modal-title" class="text-xl font-bold text-zinc-100 sm:text-2xl">Thanks 🥰</h1>
+
+		<p class="mt-1 text-xs text-zinc-400 sm:text-sm">
 			Patchies is built upon amazing open source projects and the generosity of many people
 		</p>
 	</div>
 
 	<!-- Project License -->
-	<div class="rounded-lg bg-zinc-800/50 p-4">
-		<p class="text-sm text-zinc-300">
+	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+		<p class="text-xs text-zinc-300 sm:text-sm">
 			{projectLicense.description}
 		</p>
+
 		<div class="mt-3 space-y-2 text-sm text-zinc-400">
 			<ul class="ml-4 list-disc space-y-1">
 				{#each projectLicense.whatItMeans as point}
@@ -69,31 +63,31 @@
 	</div>
 
 	<!-- Support Open Source Creators -->
-	<div class="rounded-lg bg-zinc-800/50 p-4">
+	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
 		<div class="mb-3 flex items-center gap-2">
-			<Heart class="h-5 w-5 text-red-400" />
-			<h2 class="text-lg font-semibold text-zinc-200">Support Open Source Creators</h2>
+			<Heart class="h-4 w-4 text-red-400 sm:h-5 sm:w-5" />
+			<h2 class="text-base font-semibold text-zinc-200 sm:text-lg">Support Open Source Creators</h2>
 		</div>
-		<p class="mb-4 text-sm text-zinc-300">
+		<p class="mb-4 text-xs text-zinc-300 sm:text-sm">
 			If you enjoy using Patchies, please consider supporting the creators behind open source tools
 			and libraries who made it possible 🩷
 		</p>
 
 		<!-- Library Creators -->
 		<div class="mb-4">
-			<h3 class="mb-2 text-sm font-semibold text-zinc-300">Library & Tool Creators</h3>
+			<h3 class="mb-2 text-xs font-semibold text-zinc-300 sm:text-sm">Library & Tool Creators</h3>
 			<div class="space-y-2">
 				{#each libraryCreators as creator}
-					<div class="rounded-lg bg-zinc-900/50 p-3">
+					<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
-								<div class="flex items-center gap-2">
+								<div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
 									<h4 class="text-sm font-semibold text-zinc-100">{creator.name}</h4>
 									<a
 										href={creator.url}
 										target="_blank"
 										rel="noopener noreferrer"
-										class="flex items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
+										class="flex w-fit items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
 									>
 										{getSupportTypeLabel(creator.type)}
 										<ExternalLink class="h-3 w-3" />
@@ -114,19 +108,21 @@
 
 		<!-- Educators -->
 		<div>
-			<h3 class="mb-2 text-sm font-semibold text-zinc-300">Educators & Tutorial Creators</h3>
+			<h3 class="mb-2 text-xs font-semibold text-zinc-300 sm:text-sm">
+				Educators & Tutorial Creators
+			</h3>
 			<div class="space-y-2">
 				{#each educators as educator}
-					<div class="rounded-lg bg-zinc-900/50 p-3">
+					<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
-								<div class="flex items-center gap-2">
+								<div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
 									<h4 class="text-sm font-semibold text-zinc-100">{educator.name}</h4>
 									<a
 										href={educator.url}
 										target="_blank"
 										rel="noopener noreferrer"
-										class="flex items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
+										class="flex w-fit items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
 									>
 										{getSupportTypeLabel(educator.type)}
 										<ExternalLink class="h-3 w-3" />
@@ -147,22 +143,24 @@
 
 		<!-- Tool Maintainers -->
 		<div class="mt-4">
-			<h3 class="mb-2 text-sm font-semibold text-zinc-300">Tool & Dependency Maintainers</h3>
+			<h3 class="mb-2 text-xs font-semibold text-zinc-300 sm:text-sm">
+				Tool & Dependency Maintainers
+			</h3>
 			<p class="mb-2 text-xs text-zinc-400">
 				These maintainers create and maintain essential development tools and libraries:
 			</p>
 			<div class="space-y-2">
 				{#each toolMaintainers as tool}
-					<div class="rounded-lg bg-zinc-900/50 p-3">
+					<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
-								<div class="flex items-center gap-2">
+								<div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
 									<h4 class="text-sm font-semibold text-zinc-100">{tool.name}</h4>
 									<a
 										href={tool.url}
 										target="_blank"
 										rel="noopener noreferrer"
-										class="flex items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
+										class="flex w-fit items-center gap-1 rounded bg-blue-600/20 px-2 py-0.5 text-xs text-blue-400 hover:bg-blue-600/30"
 									>
 										{getSupportTypeLabel(tool.type)}
 										<ExternalLink class="h-3 w-3" />
@@ -183,15 +181,15 @@
 	</div>
 
 	<!-- Ported/Adapted Code -->
-	<div class="rounded-lg bg-zinc-800/50 p-4">
-		<h2 class="mb-3 text-lg font-semibold text-zinc-200">Ported & Adapted Code</h2>
-		<p class="mb-4 text-sm text-zinc-300">
+	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+		<h2 class="mb-3 text-base font-semibold text-zinc-200 sm:text-lg">Ported & Adapted Code</h2>
+		<p class="mb-4 text-xs text-zinc-300 sm:text-sm">
 			Patchies includes code ported from other open source projects 💙
 		</p>
 
 		<div class="space-y-4">
 			{#each portedCode as code}
-				<div class="rounded-lg bg-zinc-900/50 p-3">
+				<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 					<div class="mb-2 flex items-start justify-between">
 						<div>
 							<h3 class="text-sm font-semibold text-zinc-100">{code.name}</h3>
@@ -234,19 +232,19 @@
 	</div>
 
 	<!-- Special Thanks -->
-	<div class="rounded-lg bg-zinc-800/50 p-4">
+	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
 		<div class="mb-3 flex items-center gap-2">
-			<Heart class="h-5 w-5 text-pink-400" />
-			<h2 class="text-lg font-semibold text-zinc-200">Special Thanks</h2>
+			<Heart class="h-4 w-4 text-pink-400 sm:h-5 sm:w-5" />
+			<h2 class="text-base font-semibold text-zinc-200 sm:text-lg">Special Thanks</h2>
 		</div>
-		<p class="mb-4 text-sm text-zinc-300">
+		<p class="mb-4 text-xs text-zinc-300 sm:text-sm">
 			These amazing people helped bring Patchies to life through their direct support, feedback, and
 			encouragement. I can't thank them enough 🧡
 		</p>
 
 		<div class="space-y-4">
 			<!-- Kijjaz -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
+			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Kijjasak "Kijjaz" Triyanond (@kijjaz)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
 					A great senior and friend who dedicated thousands of hours to play testing Patchies.
@@ -269,7 +267,7 @@
 			</div>
 
 			<!-- dtinth -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
+			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Thai Pangsakulyanont (@dtinth)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
 					A great senior and friend who gave invaluable advice throughout Patchies' development.
@@ -320,7 +318,7 @@
 			</div>
 
 			<!-- Ryan -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
+			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">Thanapat "Ryan" Ogaslert (@crsrcrsrrr)</h3>
 				<p class="mt-1 text-xs text-zinc-300">
 					Creator of SYNAP [home/lab], works at College of Music, Mahidol University. Ryan
@@ -353,7 +351,7 @@
 			</div>
 
 			<!-- Pub -->
-			<div class="rounded-lg bg-zinc-900/50 p-3">
+			<div class="rounded-lg p-2 sm:bg-zinc-900/50 sm:p-3">
 				<h3 class="text-sm font-semibold text-zinc-100">
 					Chayapatr "Pub" Archiwaranguprok (@chayapatr)
 				</h3>
@@ -396,9 +394,11 @@
 	</div>
 
 	<!-- All Dependencies -->
-	<div class="rounded-lg bg-zinc-800/50 p-4">
-		<h2 class="mb-3 text-lg font-semibold text-zinc-200">{dependenciesSection.title}</h2>
-		<p class="mb-4 text-sm text-zinc-300">
+	<div class="rounded-lg p-2 sm:bg-zinc-800/50 sm:p-4">
+		<h2 class="mb-3 text-base font-semibold text-zinc-200 sm:text-lg">
+			{dependenciesSection.title}
+		</h2>
+		<p class="mb-4 text-xs text-zinc-300 sm:text-sm">
 			{dependenciesSection.description}
 		</p>
 
