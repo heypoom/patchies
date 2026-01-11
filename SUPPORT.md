@@ -55,26 +55,6 @@ Non-profit organization supporting creative coding education and software develo
 
 ---
 
-### XYFlow
-
-**Projects:** Svelte Flow, React Flow
-
-Powerful open source libraries for building node-based UIs with Svelte or React, used by companies like Stripe and LinkedIn.
-
-**Support:** [GitHub Sponsors](https://github.com/sponsors/xyflow)
-
----
-
-### Svelte
-
-**Projects:** Svelte, SvelteKit
-
-A JavaScript framework for building user interfaces with a focus on developer experience and performance.
-
-**Support:** [GitHub Sponsors](https://github.com/sponsors/sveltejs)
-
----
-
 ### Marijn Haverbeke
 
 **Projects:** CodeMirror, ProseMirror
@@ -124,6 +104,24 @@ Powerful audio programming language with decades of development for sound synthe
 **Support:** [Contribute to Csound](https://csound.com/contribute.html)
 
 ---
+
+### XYFlow
+
+**Projects:** Svelte Flow, React Flow
+
+Powerful open source libraries for building node-based UIs with Svelte or React, used by companies like Stripe and LinkedIn.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/xyflow)
+
+---
+
+### Svelte
+
+**Projects:** Svelte, SvelteKit
+
+A JavaScript framework for building user interfaces with a focus on developer experience and performance.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/sveltejs)
 
 ## Educators & Tutorial Creators
 
