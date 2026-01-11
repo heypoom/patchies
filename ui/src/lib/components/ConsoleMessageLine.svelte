@@ -2,12 +2,17 @@
 	import { CircleAlert, Info, TriangleAlert } from '@lucide/svelte/icons';
 
 	import ObjectInspector from './ObjectInspector.svelte';
+	import ErrorInspector from './ErrorInspector.svelte';
 
 	let {
 		msg
 	}: {
 		msg: { type: string; args: unknown[] };
 	} = $props();
+
+	function isError(arg: unknown): arg is Error {
+		return arg instanceof Error;
+	}
 
 	const typeStyles = {
 		log: {
@@ -79,7 +84,9 @@
 	<div class="console-content mt-[1px] min-w-0 flex-1">
 		<div class="flex flex-col items-start gap-x-2">
 			{#each msg.args as arg, i}
-				{#if isInspectable(arg)}
+				{#if isError(arg)}
+					<ErrorInspector error={arg} />
+				{:else if isInspectable(arg)}
 					<ObjectInspector data={arg} />
 				{:else}
 					<span class="break-words whitespace-pre-wrap">{formatArg(arg)}</span>
