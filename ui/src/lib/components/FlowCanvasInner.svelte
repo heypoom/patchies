@@ -1299,25 +1299,25 @@
 							showMissingApiKeyDialog = false;
 
 							toast.success(
-								'All AI features hidden. Use "Ctrl+K > Toggle AI Features" to show them again.'
+								'All AI features hidden. Use "Ctrl+K > Toggle AI Features" to re-enable them.'
 							);
 						}}
-						class="text-blue-400 underline hover:text-blue-300"
+						class="cursor-pointer text-red-400 underline hover:text-red-300"
 					>
-						Hide all AI features
+						Hide all AI features.
 					</button>
 				</p>
 			</div>
 			<Dialog.Footer class="flex gap-2">
 				<button
 					onclick={() => (showMissingApiKeyDialog = false)}
-					class="flex-1 rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+					class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={validateAndSaveGeminiApiKey}
-					class="flex-1 rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+					class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
 				>
 					Save & Continue
 				</button>

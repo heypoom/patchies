@@ -121,13 +121,15 @@
 		},
 		{
 			id: 'set-gemini-api-key',
-			name: 'Set Gemini API Key',
-			description: 'Configure Google Gemini API key for AI features'
+			name: 'Set Gemini AI API Key',
+			description: 'Configure Google Gemini API key for AI features',
+			requiresAi: true
 		},
 		{
 			id: 'set-celestiai-api-key',
 			name: 'Set CelestiAi AI API Key',
-			description: 'Configure CelestiAi AI API key'
+			description: 'Configure CelestiAi AI API key',
+			requiresAi: true
 		},
 		{
 			id: 'toggle-bottom-bar',
