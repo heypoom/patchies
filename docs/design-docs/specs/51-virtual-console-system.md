@@ -541,15 +541,15 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 
 ### Core Infrastructure
 
-- [ ] Extend `Logger` class in `ui/src/lib/utils/logger.ts`
-  - [ ] Add `nodeId?: string` and `args?: unknown[]` to `LogEntry`
-  - [ ] Add `nodeLog()`, `nodeWarn()`, `nodeError()` methods
-  - [ ] Add event bus integration
-  - [ ] Add `getNodeLogs()`, `clearNodeLogs()` methods
-- [ ] Add `ConsoleOutputEvent` to `ui/src/lib/eventbus/events.ts`
-- [ ] Create `VirtualConsole.svelte` component
-- [ ] Create `ConsoleMessageLine.svelte` for message rendering
-- [ ] Create `ConsoleValue.svelte` for rich value display (expandable objects/arrays)
+- [x] Extend `Logger` class in `ui/src/lib/utils/logger.ts`
+  - [x] Add `nodeId?: string` and `args?: unknown[]` to `LogEntry`
+  - [x] Add `nodeLog()`, `nodeWarn()`, `nodeError()` methods
+  - [x] Add event bus integration
+  - [x] Add `getNodeLogs()`, `clearNodeLogs()` methods
+- [x] Add `ConsoleOutputEvent` to `ui/src/lib/eventbus/events.ts`
+- [x] Create `VirtualConsole.svelte` component
+- [x] Create `ConsoleMessageLine.svelte` for message rendering
+- [x] Create `ConsoleValue.svelte` for rich value display (expandable objects/arrays)
 
 ### Migrate Existing Consoles
 
@@ -562,8 +562,8 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 
 - [ ] Add console to `P5CanvasNode.svelte`
 - [ ] Update `P5Manager.ts` to log errors via `logger`
-- [ ] Add console to `GLSLCanvasNode.svelte`
-- [ ] Update `GLSystem.ts` to log shader errors via `logger`
+- [x] Add console to `GLSLCanvasNode.svelte`
+- [x] Update `GLSystem.ts` to log shader errors via `logger`
 - [ ] Add console to `HydraNode.svelte`
 - [ ] Add console to `SwissGLNode.svelte`
 - [ ] Add console to `JSCanvasNode.svelte`
@@ -583,8 +583,8 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 - [ ] Test scrolling behavior
 - [ ] Test resizing console windows
 - [ ] Test expandable JSON objects
-- [ ] Test error colorization
-- [ ] Ensure console clears when node is re-run
+- [x] Test error colorization
+- [x] Ensure console clears when node is re-run
 - [ ] Test performance with many log messages (>1000 lines)
 
 ---
