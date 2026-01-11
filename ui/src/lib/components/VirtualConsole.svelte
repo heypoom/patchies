@@ -452,7 +452,7 @@
 			type="button"
 			aria-label="Resize console vertically"
 		>
-			<GripHorizontal size="16px" class="text-zinc-500 hover:text-zinc-400" />
+			<GripHorizontal size="10px" class="text-zinc-500 hover:text-zinc-400" />
 		</button>
 
 		<!-- Horizontal resize handle (right edge) -->
@@ -463,7 +463,7 @@
 			type="button"
 			aria-label="Resize console horizontally"
 		>
-			<GripVertical size="16px" class="text-zinc-500 hover:text-zinc-400" />
+			<GripVertical size="10px" class="text-zinc-500 hover:text-zinc-400" />
 		</button>
 
 		<!-- Corner resize handle (bottom-right) -->
@@ -474,7 +474,7 @@
 			type="button"
 			aria-label="Resize console both vertically and horizontally"
 		>
-			<Grip size="14px" class="text-zinc-500 hover:text-zinc-400" />
+			<Grip size="9px" class="text-zinc-500 hover:text-zinc-400" />
 		</button>
 	</div>
 </div>
