@@ -42,7 +42,7 @@
 			{projectLicense.description}
 		</p>
 
-		<div class="mt-3 space-y-2 text-sm text-zinc-400">
+		<div class="mt-3 space-y-2 text-xs text-zinc-400 sm:text-sm">
 			<ul class="ml-4 list-disc space-y-1">
 				{#each projectLicense.whatItMeans as point}
 					<li>{point}</li>
@@ -54,7 +54,7 @@
 				href={projectLicense.fullLicenseUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
+				class="flex items-center gap-2 text-xs text-blue-400 hover:underline sm:text-sm"
 			>
 				<FileText class="h-4 w-4" />
 				{projectLicense.fullLicenseText}
