@@ -89,7 +89,7 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 ### Connecting Objects
 
-https://github.com/user-attachments/assets/79b5080d-30d6-448e-84d8-abeaf46b936f
+[standard-connect.webm](https://github.com/user-attachments/assets/f44fb610-6030-4b4c-ad72-eb91481abd50)
 
 - Click and drag on an object's handle all the way to the other object's handle to connect them together.
 - A handle looks like circle grey, blue, orange or purple dots at the top or bottom of objects.
@@ -99,9 +99,9 @@ https://github.com/user-attachments/assets/79b5080d-30d6-448e-84d8-abeaf46b936f
 
 ### Easy Connect
 
-[mobile-drag-demo.webm](https://github.com/user-attachments/assets/aa1f77b0-9643-49fa-86f9-18f97425aa20)
+[easy-connect.webm](https://github.com/user-attachments/assets/00c8c9f5-e3c0-4ca0-9601-6e3b678886ba)
 
-We have an "easy connect" button that makes all the handles big and easy to touch, for these use-cases:
+Use the _easy connect_ button to make the handles big and easy to touch, for these use cases:
 
 1. You are using touch devices like a mobile phone or tablet.
 2. You cannot locate the tiny object handles or drag across them.
