@@ -23,6 +23,7 @@
 			code: string;
 			glUniformDefs: GLUniformDef[];
 			executeCode?: number;
+			showConsole?: boolean;
 		};
 		selected: boolean;
 	} = $props();
