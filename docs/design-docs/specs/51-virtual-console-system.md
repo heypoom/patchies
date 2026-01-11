@@ -7,12 +7,14 @@ Currently, most objects in Patchies log errors and messages to the browser DevTo
 ### Current Issues
 
 1. **No visual feedback for many nodes**
+
    - `p5` objects have no error feedback - impossible to debug without DevTools
    - `glsl` shader compilation errors only go to DevTools
    - `canvas` and `canvas.dom` errors are invisible
    - Audio nodes (`dsp~`, `sonic~`, `tone~`, `elem~`) log to DevTools only
 
 2. **Poor UX in existing consoles** (e.g., `js`, `python`)
+
    - Cannot drag-select text across console lines
    - Scrolling doesn't work properly in console area
    - JSON objects are not colorized or interactive
@@ -67,24 +69,24 @@ export class Logger {
 
   // NEW: Node-scoped logging methods
   nodeLog(nodeId: string, ...args: unknown[]): void {
-    this.addNodeLog(nodeId, 'log', args);
+    this.addNodeLog(nodeId, "log", args);
   }
 
   nodeWarn(nodeId: string, ...args: unknown[]): void {
-    this.addNodeLog(nodeId, 'warn', args);
+    this.addNodeLog(nodeId, "warn", args);
   }
 
   nodeError(nodeId: string, ...args: unknown[]): void {
-    this.addNodeLog(nodeId, 'error', args);
+    this.addNodeLog(nodeId, "error", args);
   }
 
   private addNodeLog(nodeId: string, level: LogLevel, args: unknown[]): void {
     const entry: LogEntry = {
       level,
-      message: args.map(arg => String(arg)).join(' '), // For backward compat
+      message: args.map((arg) => String(arg)).join(" "), // For backward compat
       timestamp: new Date(),
       nodeId,
-      args // Keep raw args for rich rendering
+      args, // Keep raw args for rich rendering
     };
 
     this.logs.push(entry);
@@ -95,11 +97,11 @@ export class Logger {
 
     // Emit event for reactive UI
     this.eventBus.dispatchEvent({
-      type: 'consoleOutput',
+      type: "consoleOutput",
       nodeId,
       messageType: level,
       timestamp: entry.timestamp.getTime(),
-      args
+      args,
     });
 
     // Still log to DevTools for debugging
@@ -108,12 +110,12 @@ export class Logger {
 
   // NEW: Get logs for a specific node
   getNodeLogs(nodeId: string): LogEntry[] {
-    return this.logs.filter(log => log.nodeId === nodeId);
+    return this.logs.filter((log) => log.nodeId === nodeId);
   }
 
   // NEW: Clear logs for a specific node
   clearNodeLogs(nodeId: string): void {
-    this.logs = this.logs.filter(log => log.nodeId !== nodeId);
+    this.logs = this.logs.filter((log) => log.nodeId !== nodeId);
   }
 }
 ```
@@ -132,9 +134,9 @@ Add new event type to `ui/src/lib/eventbus/events.ts`:
 
 ```typescript
 export interface ConsoleOutputEvent {
-  type: 'consoleOutput';
+  type: "consoleOutput";
   nodeId: string;
-  messageType: 'log' | 'warn' | 'error' | 'debug';
+  messageType: "log" | "warn" | "error" | "debug";
   timestamp: number;
   args: unknown[]; // Raw arguments for rich rendering
 }
@@ -142,13 +144,84 @@ export interface ConsoleOutputEvent {
 export type PatchiesEvent =
   | ConsoleOutputEvent
   | GLPreviewFrameCapturedEvent
-  | PyodideConsoleOutputEvent
-  // ... existing events
+  | PyodideConsoleOutputEvent;
+// ... existing events
 ```
 
 **Note:** We can eventually deprecate `PyodideConsoleOutputEvent` in favor of the generic `ConsoleOutputEvent`.
 
-### 3. Shared Console Component
+### 3. Custom Console Factory
+
+To reduce duplication across JS-executing nodes, we provide a `createCustomConsole()` utility:
+
+```typescript
+// ui/src/lib/utils/createCustomConsole.ts
+
+import { logger } from "$lib/utils/logger";
+
+/**
+ * Creates a custom console object that routes output to VirtualConsole via logger.
+ * Used by JS-executing nodes (js, p5, tone~, etc.) to capture console.* calls.
+ */
+export function createCustomConsole(nodeId: string) {
+  const nodeLogger = logger.ofNode(nodeId);
+  return {
+    log: (...args: unknown[]) => nodeLogger.log(...args),
+    error: (...args: unknown[]) => nodeLogger.error(...args),
+    warn: (...args: unknown[]) => nodeLogger.warn(...args),
+    debug: (...args: unknown[]) => nodeLogger.debug(...args),
+    info: (...args: unknown[]) => nodeLogger.info(...args),
+  };
+}
+
+export type CustomConsole = ReturnType<typeof createCustomConsole>;
+```
+
+**Usage in Svelte components:**
+
+```svelte
+<script lang="ts">
+  import { createCustomConsole } from '$lib/utils/createCustomConsole';
+
+  let { id: nodeId } = $props();
+
+  // Create once at component initialization
+  const customConsole = createCustomConsole(nodeId);
+
+  // Pass to code execution contexts
+  await jsRunner.executeJavaScript(nodeId, code, { customConsole });
+</script>
+```
+
+**Usage in TypeScript classes:**
+
+```typescript
+// e.g., ToneNode.ts
+import { createCustomConsole } from "$lib/utils/createCustomConsole";
+
+export class ToneNode implements AudioNodeV2 {
+  private customConsole;
+
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.customConsole = createCustomConsole(nodeId);
+  }
+
+  private async setCode(code: string) {
+    // Pass to user code execution
+    const codeFunction = new Function("console", code);
+    codeFunction(this.customConsole);
+  }
+}
+```
+
+**Key advantages:**
+
+- Eliminates 7 lines of boilerplate per node
+- Consistent console API across all JS-executing nodes
+- Single place to extend console functionality (e.g., adding `console.table()`)
+- Type-safe with exported `CustomConsole` type
+
+### 4. Shared Console Component
 
 Create a reusable `VirtualConsole.svelte` component that all nodes can use:
 
@@ -242,7 +315,7 @@ Create a reusable `VirtualConsole.svelte` component that all nodes can use:
 - Auto-scrolls to bottom when new messages arrive
 - Resizable via CSS `resize: vertical`
 
-### 4. Rich Console Message Renderer
+### 5. Rich Console Message Renderer
 
 Create `ConsoleMessageLine.svelte` for rich output:
 
@@ -391,12 +464,12 @@ Update `JSRunner` to use `logger` instead of custom console:
 ```typescript
 // ui/src/lib/js-runner/JSRunner.ts
 
-import { logger } from '$lib/utils/logger';
+import { logger } from "$lib/utils/logger";
 
 const customConsole = {
   log: (...args: unknown[]) => logger.nodeLog(nodeId, ...args),
   error: (...args: unknown[]) => logger.nodeError(nodeId, ...args),
-  warn: (...args: unknown[]) => logger.nodeWarn(nodeId, ...args)
+  warn: (...args: unknown[]) => logger.nodeWarn(nodeId, ...args),
 };
 ```
 
@@ -430,7 +503,7 @@ Update `P5Manager` to catch and log errors:
 ```typescript
 // ui/src/lib/p5/P5Manager.ts
 
-import { logger } from '$lib/utils/logger';
+import { logger } from "$lib/utils/logger";
 
 p.draw = function () {
   try {
@@ -502,15 +575,15 @@ Update audio node classes to use `logger`:
 ```typescript
 // ui/src/lib/audio/v2/nodes/DspNode.ts
 
-import { logger } from '$lib/utils/logger';
+import { logger } from "$lib/utils/logger";
 
 export class DspNode implements AudioNodeV2 {
   async send(message: string, data: unknown): Promise<void> {
-    if (message === 'code') {
+    if (message === "code") {
       try {
         // ... compile DSP code
       } catch (error) {
-        logger.nodeError(this.id, 'DSP compilation failed:', error);
+        logger.nodeError(this.id, "DSP compilation failed:", error);
       }
     }
   }
@@ -550,12 +623,14 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 - [x] Create `VirtualConsole.svelte` component
 - [x] Create `ConsoleMessageLine.svelte` for message rendering
 - [x] Create `ConsoleValue.svelte` for rich value display (expandable objects/arrays)
+- [x] Create `createCustomConsole()` utility for shared console creation
 
 ### Migrate Existing Consoles
 
 - [x] Update `JSBlockNode.svelte` to use `VirtualConsole`
 - [x] Update `JSRunner.ts` to use `logger`
 - [x] Add JS syntax error line highlighting with `parseJSError()` utility
+- [x] Update `MessageSystem.ts` to route `recv()` callback errors to VirtualConsole
 - [ ] Update `PythonNode.svelte` to use `VirtualConsole`
 - [ ] Migrate `PyodideSystem` to use `logger` (deprecate custom event)
 
@@ -594,6 +669,7 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 ## Design Decisions
 
 ### 1. Console Visibility
+
 **Decision:** Hidden by default, **auto-show on first error**
 
 - Consoles start hidden to reduce visual clutter
@@ -604,17 +680,19 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 ### 2. Console Positioning
 
 **Visual nodes (p5, glsl, hydra, swissgl, canvas, etc.):**
+
 - Console appears **below the preview canvas**
 - Keeps code editor and preview together visually
 
 **Audio/code nodes (js, python, dsp~, tone~, elem~, sonic~):**
+
 - Console appears **below the code editor**
 - Avoids overlap with code editor
 - Only one floating action button needed (for editor toggle)
 
 **Layout examples:**
 
-```
+```txt
 Visual node:               Code/Audio node:
 ┌─────────────┐           ┌─────────────┐
 │   Preview   │           │ Code Editor │
@@ -626,6 +704,7 @@ Visual node:               Code/Audio node:
 ```
 
 ### 3. Console Scope
+
 **Decision:** Per-node consoles only (no global console)
 
 - Each node has its own isolated console
@@ -633,6 +712,7 @@ Visual node:               Code/Audio node:
 - Future enhancement: Could add dedicated "Console" node that aggregates all logs
 
 ### 4. Console Mode
+
 **Decision:** Output-only (no REPL mode)
 
 - Focus on logging, warnings, and errors
@@ -641,6 +721,7 @@ Visual node:               Code/Audio node:
 - Future enhancement: REPL mode could be added later
 
 ### 5. Auto-clear Behavior
+
 **Decision:** Clear console when re-running code
 
 - Fresh output on each run
@@ -649,6 +730,7 @@ Visual node:               Code/Audio node:
 - User can still review logs in DevTools if needed
 
 ### 6. Console Buffer Limits
+
 **Decision:** Limit to 1000 messages (already built into Logger)
 
 - Prevents performance issues with excessive logging
@@ -656,6 +738,7 @@ Visual node:               Code/Audio node:
 - Future enhancement: Virtual scrolling if needed
 
 ### 7. Console Persistence
+
 **Decision:** Don't persist console output in saved patches
 
 - Console is transient debugging output
@@ -667,26 +750,32 @@ Visual node:               Code/Audio node:
 ## Future Enhancements
 
 1. **Search/Filter**
+
    - Search within console output
    - Filter by message type (log/warn/error)
 
 2. **Export Logs**
+
    - Copy all logs to clipboard
    - Download logs as .txt file
 
 3. **Timestamps**
+
    - Optional timestamp display
    - Relative timestamps (e.g., "2s ago")
 
 4. **Log Levels**
+
    - Support `console.debug()`, `console.info()`, etc.
    - Filterable log levels
 
 5. **Performance Monitoring**
+
    - Show execution time for code runs
    - Memory usage (if accessible)
 
 6. **Stack Traces**
+
    - Click to jump to error location in code editor
    - Syntax highlighting for stack traces
 
@@ -699,10 +788,12 @@ Visual node:               Code/Audio node:
 ## Performance Considerations
 
 1. **Event Bus Overhead**
+
    - Each console message creates an event
    - For high-frequency logging (e.g., in draw loop), consider batching
 
 2. **DOM Updates**
+
    - Use Svelte's reactivity efficiently
    - Consider virtual scrolling for large message lists
 
@@ -715,10 +806,12 @@ Visual node:               Code/Audio node:
 ## Accessibility
 
 1. **Screen Readers**
+
    - Console messages should be announced
    - Use `role="log"` and `aria-live="polite"`
 
 2. **Keyboard Navigation**
+
    - Tab through console controls (clear, expand, etc.)
    - Keyboard shortcuts for common actions
 
@@ -731,13 +824,16 @@ Visual node:               Code/Audio node:
 ## Migration Impact
 
 ### Breaking Changes
+
 None - this is purely additive functionality.
 
 ### Deprecations
+
 - Old `pyodideConsoleOutput` event will be replaced by generic `consoleOutput`
 - Can keep old event for backward compatibility during transition
 
 ### User-Facing Changes
+
 - Console windows become resizable
 - JSON objects become expandable/interactive
 - Better error visibility for all nodes

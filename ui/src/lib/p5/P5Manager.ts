@@ -314,6 +314,7 @@ export class P5Manager {
 		});
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private async loadCompatibilityLibraries(P5: any) {
 		// Load P5.js v1 compatibility add-ons for P5.js v2
 		// These preserve v1 APIs: preload(), bezierVertex(), curveVertex(), data structures, etc.
@@ -334,10 +335,12 @@ export class P5Manager {
 			});
 
 			// Call the compatibility function with P5 constructor
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const compatFn = (window as any)[lib.fn];
 			if (compatFn) {
 				compatFn(P5);
 				// Clean up the global function
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				delete (window as any)[lib.fn];
 			}
 		}
