@@ -129,6 +129,33 @@
 		isResizing = false;
 	}
 
+	// Touch event handlers for mobile support
+	function startTouchResize(e: TouchEvent) {
+		if (e.touches.length !== 1) return;
+
+		isResizing = true;
+
+		resizeStartY = e.touches[0].clientY;
+		resizeStartHeight = consoleHeight;
+
+		e.preventDefault();
+		e.stopPropagation();
+	}
+
+	function handleTouchResize(e: TouchEvent) {
+		if (!isResizing || e.touches.length !== 1) return;
+
+		const deltaY = e.touches[0].clientY - resizeStartY;
+		const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + deltaY));
+		consoleHeight = newHeight;
+
+		onResize?.();
+	}
+
+	function stopTouchResize() {
+		isResizing = false;
+	}
+
 	function handleRun() {
 		clearConsole();
 		onrun?.();
@@ -139,6 +166,7 @@
 		if (!isLongRunningTaskActive) {
 			clearConsole();
 		}
+
 		runOrStop?.();
 	}
 
@@ -148,6 +176,11 @@
 		// Add global resize handlers
 		window.addEventListener('mousemove', handleResize);
 		window.addEventListener('mouseup', stopResize);
+
+		// Add touch resize handlers for mobile
+		window.addEventListener('touchmove', handleTouchResize, { passive: false });
+		window.addEventListener('touchend', stopTouchResize);
+		window.addEventListener('touchcancel', stopTouchResize);
 	});
 
 	onDestroy(() => {
@@ -156,6 +189,11 @@
 		// Remove global resize handlers
 		window.removeEventListener('mousemove', handleResize);
 		window.removeEventListener('mouseup', stopResize);
+
+		// Remove touch resize handlers
+		window.removeEventListener('touchmove', handleTouchResize);
+		window.removeEventListener('touchend', stopTouchResize);
+		window.removeEventListener('touchcancel', stopTouchResize);
 	});
 </script>
 
@@ -262,6 +300,7 @@
 		<button
 			class="nodrag nopan absolute right-0 bottom-0 left-0 h-2 cursor-ns-resize border-0 bg-transparent p-0 transition-colors hover:bg-zinc-600/30"
 			onmousedown={startResize}
+			ontouchstart={startTouchResize}
 			type="button"
 			aria-label="Resize console"
 		>
