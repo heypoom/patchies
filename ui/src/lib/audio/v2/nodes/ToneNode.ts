@@ -1,8 +1,7 @@
 import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
-import { logger } from '$lib/utils/logger';
 import { createCustomConsole } from '$lib/utils/createCustomConsole';
-import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+import { handleCodeError } from '$lib/js-runner/handleCodeError';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 
@@ -189,14 +188,7 @@ export class ToneNode implements AudioNodeV2 {
 				this.cleanupFn = result.cleanup;
 			}
 		} catch (error) {
-			const errorInfo = parseJSError(error, countLines(code), TONE_WRAPPER_OFFSET);
-
-			if (errorInfo) {
-				logger.nodeError(this.nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
-			} else {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				this.customConsole.error(errorMessage);
-			}
+			handleCodeError(error, code, this.nodeId, this.customConsole, TONE_WRAPPER_OFFSET);
 		}
 	}
 

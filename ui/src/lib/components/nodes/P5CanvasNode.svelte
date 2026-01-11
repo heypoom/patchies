@@ -9,9 +9,8 @@
 	import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
 	import { shouldShowHandles } from '../../../stores/ui.store';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
-	import { logger } from '$lib/utils/logger';
 	import { createCustomConsole } from '$lib/utils/createCustomConsole';
-	import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+	import { handleCodeError } from '$lib/js-runner/handleCodeError';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
@@ -141,13 +140,7 @@
 
 	// Handle runtime errors (from draw(), setup(), etc.)
 	function handleRuntimeError(error: Error) {
-		const errorInfo = parseJSError(error, countLines(code), P5_WRAPPER_OFFSET);
-
-		if (errorInfo) {
-			logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
-		} else {
-			customConsole.error(error.message);
-		}
+		handleCodeError(error, code, nodeId, customConsole, P5_WRAPPER_OFFSET);
 	}
 
 	async function updateSketch({ onMount = false }: { onMount?: boolean } = {}) {
@@ -198,17 +191,7 @@
 
 				errorMessage = null;
 			} catch (error) {
-				// Try to parse error for line information
-				const errorInfo = parseJSError(error, countLines(code));
-
-				if (errorInfo) {
-					// Log error with line information for highlighting
-					logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
-				} else {
-					// Fallback to regular error logging
-					customConsole.error(error instanceof Error ? error.message : String(error));
-				}
-
+				handleCodeError(error, code, nodeId, customConsole);
 				errorMessage = error instanceof Error ? error.message : String(error);
 			}
 		}
