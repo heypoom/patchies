@@ -125,11 +125,10 @@ These rules define what handles can be connected together.
 - Message outlets (gray) can _only_ connect to message inlets.
 - Audio outlets (blue) can connect to audio inlets.
 - Analysis outlets (purple) from `fft~` output can connect to message and video inlets
-- Audio outlets can connect to _audio parameter_ inlets.
-  - Example of audio param inlets: `osc~`'s `frequency` and `gain~`'s `gain`
-  - Audio param inlets has grey color by default.
+- Audio outlets can connect to _audio parameter_ inlets for _parameter modulation_.
+  - `osc~`'s `frequency` and `gain~`'s `gain` are both audio param inlets.
   - Message _and_ audio outlets (like `osc~` out and `gain~` out) can connect to audio param inlets
-  - If you start dragging from an audio outlet (blue), the audio param inlets will also _become blue_ to indicate that you can connect to them for _parameter modulation_.
+  - If you start dragging from an audio outlet (blue), the audio param inlets will _turn from grey to blue_ to indicate it's connectable to those outlets.
 
 ### Sharing Links
 
