@@ -143,7 +143,7 @@
 		removeInvalidEdges(nextData.glUniformDefs);
 
 		updateNodeData(nodeId, nextData);
-		glSystem.upsertNode(nodeId, 'glsl', nextData);
+		glSystem.upsertNode(nodeId, 'glsl', nextData, { force: true }); // force rebuild even if code hasn't changed
 
 		// inform XYFlow that the handle has changed
 		updateNodeInternals();
