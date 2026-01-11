@@ -42,6 +42,19 @@ describe('isValidConnectionBetweenHandles', () => {
 		expect(isValidConnectionBetweenHandles('audio-out', 'message-in')).toBe(false);
 		expect(isValidConnectionBetweenHandles('message-out', 'audio-in')).toBe(false);
 	});
+
+	it('allows analysis-to-message connections', () => {
+		expect(isValidConnectionBetweenHandles('analysis-out', 'message-in')).toBe(true);
+		expect(isValidConnectionBetweenHandles('analysis-out', 'in-0')).toBe(true);
+	});
+
+	it('allows analysis-to-video connections', () => {
+		expect(isValidConnectionBetweenHandles('analysis-out', 'video-in')).toBe(true);
+	});
+
+	it('rejects analysis-to-audio inlet connections', () => {
+		expect(isValidConnectionBetweenHandles('analysis-out', 'audio-in')).toBe(false);
+	});
 });
 
 describe('canAcceptConnection', () => {

@@ -89,14 +89,15 @@ export function isValidConnectionBetweenHandles(
 		return isSourceAudio || isSourceMessage;
 	}
 
+	// Allow connecting `fft~` analysis result to message and video inlets (not audio inlets)
+	// This check must come BEFORE the video check so analysis→video is allowed
+	if (isSourceAnalysis) {
+		return isTargetMessage || isTargetVideo;
+	}
+
 	// Video connections must be video-to-video only
 	if (isSourceVideo || isTargetVideo) {
 		return isSourceVideo && isTargetVideo;
-	}
-
-	// Allow connecting `fft~` analysis result to anything except audio inlets
-	if (isSourceAnalysis) {
-		return !isTargetAudioInlet;
 	}
 
 	// Target audio inlets (e.g. dac~) must be connected to audio outputs/sources
