@@ -89,31 +89,19 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 ### Connecting Objects
 
-<img src="./docs/images/patchies-connect-objects.gif" alt="Patchies.app connecting objects" width="700">
+<img src="./docs/images/dragdemo.webm" alt="Patchies.app connecting objects" width="700">
 
 Click on the bottom handle (outlet) of an object, and drag it all the way to the another object's top handle (inlet).
 
 - Top handle are called inlets. Bottom handle are called outlets.
 - You can connect multiple outlets to a single inlet, and vice-versa.
-- Connection rules:
-  - Audio inlets must connect to audio outlets (for synthesis chains).
-  - Audio outlets can connect to message inlets (for parameter automation).
-  - Video connections stay within video/GL chains.
-  - Message connections are flexible.
-
-#### Mobile/Touch Connection Mode
-
-On mobile devices or when dragging is difficult, you can use the **Connect** button (cable icon) in the bottom toolbar:
-
-1. Click the **Connect** button - handles become much larger and easier to tap
-2. A blue banner appears with instruction: "Tap on two handles to connect them"
-3. Tap on a **source handle** (outlet at the bottom of a node)
-4. Tap on a **destination handle** (inlet at the top of another node)
-5. The connection will be created between the two handles
-
-To cancel connection mode at any time, click the Connect button again or the × in the banner.
-
-**Note**: In connection mode, handles grow from 7px to 24px (32px on hover) making them much easier to tap on touch devices.
+- Video outlets (orange) can connect to video inlets
+- Message outlets (gray) can connect to message inlets
+- Audio outlets (blue) can connect to audio inlets
+- Analysis outlets (purple) from `fft~` output can connect to message and video inlets
+- Audio outlets can connect to audio parameter inlets.
+  - Example of audio params: `osc~`'s `frequency`, `gain~`'s `gain`
+  - Audio param inlets are gray, but they can connect to message and audio outlets (like osc~ out, gain~ out)
 
 ### Sharing Links
 
