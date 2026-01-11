@@ -76,8 +76,8 @@
 		},
 		{
 			id: 'toggle-connect-mode',
-			name: 'Toggle Connect Mode',
-			description: 'Enter or exit tap-to-connect mode for connecting objects'
+			name: 'Toggle Easy Connect',
+			description: 'Enter or exit easy connect mode for quickly connecting objects'
 		},
 		{
 			id: 'ai-insert-object',

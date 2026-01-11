@@ -91,18 +91,44 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 https://github.com/user-attachments/assets/79b5080d-30d6-448e-84d8-abeaf46b936f
 
-Click and drag on an object's handle all the way to the other object's handle to connect them together.
+- Click and drag on an object's handle all the way to the other object's handle to connect them together.
+- A handle looks like circle grey, blue, orange or purple dots at the top or bottom of objects.
+- Alternatively, click on two handles consecutively to connect them together.
+- When connecting, the starting handle will highlight to show where you're connecting from.
+- When connecting, all [invalid connection targets](#connection-rules) will be dimmed.
 
-- You can also click on two handles consecutively to connect them together.
-- Top handle are called inlets. Bottom handle are called outlets.
-- You can connect multiple outlets to a single inlet, and vice-versa.
-- Video outlets (orange) can connect to video inlets
-- Message outlets (gray) can connect to message inlets
-- Audio outlets (blue) can connect to audio inlets
+### Easy Connect Button
+
+We have an "easy connect" button that makes all the handles big and easy to touch, for these use-cases:
+
+1. You are using touch devices like a mobile phone or tablet.
+2. You cannot locate the tiny object handles or drag across them.
+3. You want to quickly connect many handles together by tap or click.
+
+To use this feature:
+
+1. Locate the "Easy Connect" button on your bottom right, it should look like a cable.
+2. All handles will now become big and easy to touch.
+3. Tap on a handle to start the connection.
+4. It will highlight your starting handle and dim any invalid connection targets.
+5. Tap on another handle to connect the two handles together.
+6. You can repeat the connection as many time as you wish.
+7. Once you're done, click the "Easy Connect" button again to exit the object connection mode.
+
+### Connection Rules
+
+These rules define what inlet and outlet can be connected together. Top handle are called inlets. Bottom handle are called outlets.
+
+- You can connect multiple outlets to a single inlet and vice-versa.
+- Video outlets (orange) can only connect to video inlets.
+- Message outlets (gray) can only connect to message inlets.
+- Audio outlets (blue) can connect to audio inlets.
 - Analysis outlets (purple) from `fft~` output can connect to message and video inlets
 - Audio outlets can connect to audio parameter inlets.
-  - Example of audio params: `osc~`'s `frequency`, `gain~`'s `gain`
-  - Audio param inlets are gray, but they can connect to message and audio outlets (like osc~ out, gain~ out)
+  - Example of audio param inlets: `osc~`'s `frequency` and `gain~`'s `gain`
+  - Audio param inlets has grey color by default.
+  - Audio param inlets they can connect to message and audio outlets (like osc~ out, gain~ out)
+  - If you start dragging from an audio outlet (blue), the audio param inlets will _become blue_ to indicate that you can connect to them for parameter modulation.
 
 ### Sharing Links
 

@@ -1124,7 +1124,7 @@
 			<!-- You can't connect a single node to itself -->
 			{#if nodes.length >= 2}
 				<button
-					title={$isConnectionMode ? 'Exit Connect Mode' : 'Connect Objects'}
+					title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
 					class={`cursor-pointer rounded p-1 ${$isConnectionMode ? 'bg-blue-600/70 hover:bg-blue-800/70' : 'bg-zinc-900/70 hover:bg-zinc-700'}`}
 					onclick={(e) => {
 						e.preventDefault();
