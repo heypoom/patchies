@@ -57,9 +57,9 @@ Non-profit organization supporting creative coding education and software develo
 
 ### XYFlow
 
-**Projects:** React Flow, Svelte Flow
+**Projects:** Svelte Flow, React Flow
 
-Powerful open source libraries for building node-based UIs with React or Svelte, used by companies like Stripe and LinkedIn.
+Powerful open source libraries for building node-based UIs with Svelte or React, used by companies like Stripe and LinkedIn.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/xyflow)
 
