@@ -69,7 +69,7 @@
 	} = $props();
 
 	let editorElement: HTMLDivElement;
-	let editorView: EditorView | null = null;
+	let editorView: EditorView | null = $state(null);
 	let isInternalUpdate = false; // Flag to prevent loops when user types
 
 	onMount(async () => {
@@ -257,8 +257,9 @@
 		});
 	});
 
-	// Highlight error line when errorLine prop changes
+	// Highlight error line when errorLine prop or editorView changes
 	$effect(() => {
+		// React to both errorLine and editorView changes
 		if (!editorView) return;
 
 		// Dispatch effect to set or clear error line

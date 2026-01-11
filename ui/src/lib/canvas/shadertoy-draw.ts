@@ -49,7 +49,7 @@ export function createShaderToyDrawCommand({
 	width: number;
 	height: number;
 	framebuffer: regl.Framebuffer2D | null;
-	onError?: (error: Error) => void;
+	onError?: (error: Error & { errorLine?: number }) => void;
 }): regl.DrawCommand | null {
 	// Fragment shader with ShaderToy-compatible uniforms and textures
 	const fragmentShader = `#version 300 es
@@ -73,6 +73,10 @@ export function createShaderToyDrawCommand({
     }
   `;
 
+	// Count preamble lines (everything before user code insertion)
+	// Lines: #version, precision, blank, 5 uniforms, blank, in/out, blank = 13 lines
+	const PREAMBLE_LINES = 13;
+
 	// Validate both shaders before passing to regl
 	const vertexValidation = validateShader(gl, VERTEX_SHADER, gl.VERTEX_SHADER);
 	if (!vertexValidation.valid) {
@@ -81,9 +85,12 @@ export function createShaderToyDrawCommand({
 		return null;
 	}
 
-	const fragmentValidation = validateShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
+	const fragmentValidation = validateShader(gl, fragmentShader, gl.FRAGMENT_SHADER, PREAMBLE_LINES);
 	if (!fragmentValidation.valid) {
-		const error = new Error(fragmentValidation.error || 'Fragment shader compilation failed');
+		const error = new Error(
+			fragmentValidation.error || 'Fragment shader compilation failed'
+		) as Error & { errorLine?: number };
+		error.errorLine = fragmentValidation.errorLine;
 		onError?.(error);
 		return null;
 	}

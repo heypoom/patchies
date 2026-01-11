@@ -34,6 +34,7 @@
 	const updateNodeInternals = useUpdateNodeInternals();
 	const viewport = useViewport();
 
+	let eventBus = PatchiesEventBus.getInstance();
 	let glSystem = GLSystem.getInstance();
 
 	// Preview canvas display size
@@ -128,6 +129,9 @@
 	function updateShader() {
 		// Clear console on re-run
 		consoleRef?.clearConsole();
+
+		// Clear error line highlighting on re-run
+		errorLineNum = undefined;
 
 		// Construct uniform definitions from the shader code.
 		const nextData = {
@@ -235,18 +239,10 @@
 
 	// Listen for shader compilation errors and extract line numbers
 	$effect(() => {
-		const eventBus = PatchiesEventBus.getInstance();
-
 		const handleConsoleOutput = (event: ConsoleOutputEvent) => {
 			if (event.nodeId !== nodeId || event.messageType !== 'error') return;
 
-			// Extract line number from error message
-			// Format: "ERROR: 0:LINE_NUM: message" or similar
-			const errorMessage = String(event.args[0] || event.args[1] || '');
-			const lineMatch = errorMessage.match(/ERROR: \d+:(\d+):/);
-			const lineNum = lineMatch ? parseInt(lineMatch[1], 10) : undefined;
-
-			errorLineNum = lineNum;
+			errorLineNum = event.errorLine;
 		};
 
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
