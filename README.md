@@ -78,7 +78,7 @@ See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control
 
 <img src="./docs/images/patchies-edit-code.png" alt="Patchies.app editing code" width="700">
 
-- Use "Edit Code" hover button to open the code editor.
+- Click on `Edit Code` button to open the code editor.
 - `Shift + Enter` when in a code editor re-runs the code. This helps you to make changes to the code and see the results right away.
 
 ### Keyboard Shortcuts
