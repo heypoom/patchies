@@ -6,6 +6,7 @@
 		title,
 		nodeId,
 		selected = false,
+		hasError = false,
 		onrun,
 		onPlaybackToggle,
 		paused = false,
@@ -29,6 +30,7 @@
 		title: string;
 		nodeId?: string;
 		selected?: boolean;
+		hasError?: boolean;
 		onrun?: () => void;
 		onPlaybackToggle?: () => void;
 		paused?: boolean;
@@ -70,9 +72,11 @@
 			bind:this={previewCanvas}
 			class={[
 				'rounded-md border',
-				selected
-					? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
-					: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
+				hasError
+					? 'border-red-500/70'
+					: selected
+						? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
+						: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
 				nodrag ? 'nodrag cursor-default' : 'cursor-grab'
 			]}
 			tabindex={typeof tabindex === 'number' ? tabindex : undefined}

@@ -299,6 +299,7 @@
 	{height}
 	{selected}
 	{editorReady}
+	hasError={errorLineNum !== undefined}
 >
 	{#snippet topHandle()}
 		{#each data.glUniformDefs as def, defIndex}
