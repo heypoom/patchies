@@ -7,6 +7,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
+	import { CanvasMouseHandler, type MouseScope } from '$lib/canvas/CanvasMouseHandler';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import type {
@@ -42,6 +43,7 @@
 	let glSystem: GLSystem;
 	let audioAnalysisSystem: AudioAnalysisSystem;
 	let messageContext: MessageContext;
+	let mouseHandler: CanvasMouseHandler | null = null;
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let isPaused = $state(false);
@@ -59,12 +61,8 @@
 			: undefined
 	);
 
-	// Actual rendering resolution (for mouse coordinates)
-	let outputWidth = $state(800);
-	let outputHeight = $state(600);
-
 	// Mouse scope: 'local' (canvas-relative) or 'global' (screen-relative)
-	let mouseScope = $state<'global' | 'local'>('local');
+	let mouseScope = $state<MouseScope>('local');
 
 	// Detect if Hydra code uses mouse variable (ignore comments)
 	const usesMouseVariable = $derived.by(() => {
@@ -114,6 +112,7 @@
 		if (e.nodeId !== nodeId) return;
 
 		mouseScope = e.scope;
+		mouseHandler?.setScope(e.scope);
 	}
 
 	let messageInletCount = $derived(data.messageInletCount ?? 1);
@@ -145,10 +144,6 @@
 		messageContext.queue.addCallback(handleMessage);
 		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
-		// Initialize output dimensions from glSystem
-		outputWidth = glSystem.outputSize[0];
-		outputHeight = glSystem.outputSize[1];
-
 		// Listen for port count updates from the worker
 		const eventBus = glSystem.eventBus;
 
@@ -177,6 +172,7 @@
 		messageContext.destroy();
 		glSystem.removeNode(nodeId);
 		glSystem.removePreviewContext(nodeId, previewBitmapContext);
+		mouseHandler?.detach();
 
 		// Clean up event listeners
 		const eventBus = glSystem.eventBus;
@@ -192,6 +188,7 @@
 
 		// Reset mouse scope to local (worker also resets on code update)
 		mouseScope = 'local';
+		mouseHandler?.setScope('local');
 
 		try {
 			messageContext.clearTimers();
@@ -213,55 +210,26 @@
 		glSystem.toggleNodePause(nodeId);
 	}
 
-	function handleCanvasMouseMove(event: MouseEvent) {
-		if (!previewCanvas || !usesMouseVariable) return;
-
-		const rect = previewCanvas.getBoundingClientRect();
-
-		// Get position relative to canvas in screen pixels
-		const screenX = event.clientX - rect.left;
-		const screenY = event.clientY - rect.top;
-
-		// Map from displayed rect to actual framebuffer resolution (outputSize)
-		// Hydra uses standard screen coordinates (Y-down, origin top-left)
-		const x = (screenX / rect.width) * outputWidth;
-		const y = (screenY / rect.height) * outputHeight;
-
-		// Send mouse data (use x,y for both current and click position when moving)
-		glSystem.setMouseData(nodeId, x, y, 0, 0);
-	}
-
-	function handleGlobalMouseMove(event: MouseEvent) {
-		if (!usesMouseVariable) return;
-
-		// Use screen coordinates directly (entire screen)
-		const x = event.screenX;
-		const y = event.screenY;
-
-		glSystem.setMouseData(nodeId, x, y, 0, 0);
-	}
-
 	// Attach mouse event listeners based on scope
 	$effect(() => {
-		if (!usesMouseVariable) return;
+		if (!usesMouseVariable || !previewCanvas || !glSystem) return;
 
-		if (mouseScope === 'global') {
-			// Global scope: track mouse across entire screen
-			document.addEventListener('mousemove', handleGlobalMouseMove);
+		const [outputWidth, outputHeight] = glSystem.outputSize;
 
-			return () => {
-				document.removeEventListener('mousemove', handleGlobalMouseMove);
-			};
-		} else {
-			if (!previewCanvas) return;
+		mouseHandler = new CanvasMouseHandler({
+			type: 'simple',
+			nodeId,
+			canvas: previewCanvas,
+			outputWidth,
+			outputHeight,
+			scope: mouseScope
+		});
 
-			// Local scope: track mouse only over canvas
-			previewCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+		mouseHandler.attach();
 
-			return () => {
-				previewCanvas?.removeEventListener('mousemove', handleCanvasMouseMove);
-			};
-		}
+		return () => {
+			mouseHandler?.detach();
+		};
 	});
 
 	// Listen for console output events to capture lineErrors for code highlighting

@@ -7,6 +7,7 @@
 	import { match, P } from 'ts-pattern';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
+	import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
 	import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 	import type { GLUniformDef } from '../../../types/uniform-config';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
@@ -35,14 +36,11 @@
 
 	let eventBus = PatchiesEventBus.getInstance();
 	let glSystem = GLSystem.getInstance();
+	let mouseHandler: CanvasMouseHandler | null = null;
 
 	// Preview canvas display size
 	let width = $state(glSystem.previewSize[0]);
 	let height = $state(glSystem.previewSize[1]);
-
-	// Actual rendering resolution (for mouse coordinates)
-	let outputWidth = $state(glSystem.outputSize[0]);
-	let outputHeight = $state(glSystem.outputSize[1]);
 
 	let previewCanvas = $state<HTMLCanvasElement | undefined>();
 	let previewBitmapContext: ImageBitmapRenderingContext;
@@ -70,11 +68,6 @@
 
 		return codeWithoutComments.includes('iMouse');
 	});
-
-	// Mouse state for Shadertoy iMouse uniform
-	// Initialize zw to -1 to indicate "no click yet" (matches Shadertoy behavior)
-	let mouseState = $state({ x: 0, y: 0, z: -1, w: -1 });
-	let isMouseDown = $state(false);
 
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
@@ -160,87 +153,24 @@
 		glSystem.toggleNodePause(nodeId);
 	}
 
-	function handleCanvasMouseMove(event: MouseEvent) {
-		if (!previewCanvas || !usesMouseUniform) return;
-
-		const rect = previewCanvas.getBoundingClientRect();
-
-		// Get position relative to canvas in screen pixels
-		const screenX = event.clientX - rect.left;
-		const screenY = event.clientY - rect.top;
-
-		// Map from displayed rect to actual framebuffer resolution (outputSize)
-		// fragCoord matches the actual FBO size, NOT iResolution (which includes pixelRatio)
-		// Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
-		const x = (screenX / rect.width) * outputWidth;
-		const y = outputHeight - (screenY / rect.height) * outputHeight;
-
-		mouseState.x = x;
-		mouseState.y = y;
-
-		// Shadertoy spec: positive zw when mouse down (ongoing drag), negative when up (released)
-		const z = isMouseDown ? Math.abs(mouseState.z) : -Math.abs(mouseState.z);
-		const w = isMouseDown ? Math.abs(mouseState.w) : -Math.abs(mouseState.w);
-
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, z, w);
-	}
-
-	function handleCanvasMouseDown(event: MouseEvent) {
-		if (!previewCanvas || !usesMouseUniform) return;
-
-		const rect = previewCanvas.getBoundingClientRect();
-
-		// Get position relative to canvas in screen pixels
-		const screenX = event.clientX - rect.left;
-		const screenY = event.clientY - rect.top;
-
-		// Map from displayed rect to actual framebuffer resolution (outputSize)
-		// fragCoord matches the actual FBO size, NOT iResolution (which includes pixelRatio)
-		// Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
-		const x = (screenX / rect.width) * outputWidth;
-		const y = outputHeight - (screenY / rect.height) * outputHeight;
-
-		isMouseDown = true;
-		mouseState.z = x;
-		mouseState.w = y;
-		mouseState.x = x;
-		mouseState.y = y;
-
-		// Send positive values since mouse is now down (ongoing drag)
-		glSystem.setMouseData(nodeId, mouseState.x, mouseState.y, mouseState.z, mouseState.w);
-	}
-
-	function handleCanvasMouseUp() {
-		if (!usesMouseUniform) return;
-
-		isMouseDown = false;
-
-		// Send negative values since mouse is now up (released)
-		glSystem.setMouseData(
-			nodeId,
-			mouseState.x,
-			mouseState.y,
-			-Math.abs(mouseState.z),
-			-Math.abs(mouseState.w)
-		);
-	}
-
 	// Attach mouse event listeners when canvas is available and iMouse is used
 	$effect(() => {
 		if (!previewCanvas || !usesMouseUniform) return;
 
-		previewCanvas.addEventListener('mousemove', handleCanvasMouseMove);
-		previewCanvas.addEventListener('mousedown', handleCanvasMouseDown);
-		previewCanvas.addEventListener('mouseup', handleCanvasMouseUp);
-		previewCanvas.addEventListener('mouseleave', handleCanvasMouseUp);
+		const [outputWidth, outputHeight] = glSystem.outputSize;
+
+		mouseHandler = new CanvasMouseHandler({
+			type: 'shadertoy',
+			nodeId,
+			canvas: previewCanvas,
+			outputWidth,
+			outputHeight
+		});
+
+		mouseHandler.attach();
 
 		return () => {
-			if (!previewCanvas) return;
-
-			previewCanvas.removeEventListener('mousemove', handleCanvasMouseMove);
-			previewCanvas.removeEventListener('mousedown', handleCanvasMouseDown);
-			previewCanvas.removeEventListener('mouseup', handleCanvasMouseUp);
-			previewCanvas.removeEventListener('mouseleave', handleCanvasMouseUp);
+			mouseHandler?.detach();
 		};
 	});
 
@@ -270,9 +200,6 @@
 			glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 		}
 
-		// Initialize mouse data with "no click yet" state
-		glSystem.setMouseData(nodeId, 0, 0, -1, -1);
-
 		updateShader();
 
 		setTimeout(() => {
@@ -285,6 +212,7 @@
 		messageContext.destroy();
 		glSystem.removeNode(nodeId);
 		glSystem.removePreviewContext(nodeId, previewBitmapContext);
+		mouseHandler?.detach();
 	});
 </script>
 
