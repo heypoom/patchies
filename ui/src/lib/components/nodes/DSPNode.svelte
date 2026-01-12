@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Code, Play, X } from '@lucide/svelte/icons';
+	import { Code, Play, Terminal, X } from '@lucide/svelte/icons';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
@@ -11,6 +11,8 @@
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { DspNode } from '$lib/audio/v2/nodes/DspNode';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { logger } from '$lib/utils/logger';
 
 	let contentContainer: HTMLDivElement | null = null;
 
@@ -29,9 +31,15 @@
 			audioOutletCount?: number;
 			title?: string;
 			executeCode?: number;
+			showConsole?: boolean;
 		};
 		selected: boolean;
 	} = $props();
+
+	// Console and error tracking
+	let consoleRef: VirtualConsole | null = $state(null);
+	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+	let showConsole = $state(false);
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -66,6 +74,7 @@
 
 	const containerClass = $derived.by(() => {
 		if (selected) return 'object-container-selected';
+
 		return 'object-container';
 	});
 
@@ -139,6 +148,10 @@
 	}
 
 	function runDSP() {
+		// Clear console and error highlighting on re-run
+		consoleRef?.clearConsole();
+		lineErrors = undefined;
+
 		updateAudioCode(code);
 	}
 
@@ -209,6 +222,32 @@
 				})
 				.with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
 					messageContext.send(eventData.message, eventData.options as SendMessageOptions);
+				})
+				.with(
+					{ type: 'code-error', message: P.string, lineErrors: P.any, context: P.any },
+					(errorData) => {
+						// Show console on error
+						showConsole = true;
+
+						// Update line errors for code highlighting
+						if (errorData.lineErrors) {
+							lineErrors = errorData.lineErrors;
+							logger.nodeError(nodeId, { lineErrors: errorData.lineErrors }, errorData.message);
+						} else {
+							logger.nodeError(nodeId, errorData.message);
+						}
+					}
+				)
+				.with({ type: 'console-output', level: P.string, args: P.array(P.any) }, (consoleData) => {
+					const args = consoleData.args;
+
+					// Route to the appropriate logger method
+					match(consoleData.level)
+						.with('error', () => logger.nodeError(nodeId, ...args))
+						.with('warn', () => logger.nodeWarn(nodeId, ...args))
+						.with('info', () => logger.nodeInfo(nodeId, ...args))
+						.with('debug', () => logger.nodeDebug(nodeId, ...args))
+						.otherwise(() => logger.nodeLog(nodeId, ...args));
 				});
 		};
 	}
@@ -373,6 +412,20 @@
 					</Tooltip.Content>
 				</Tooltip.Root>
 
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button
+							onclick={() => (showConsole = !showConsole)}
+							class={['rounded p-1 hover:bg-zinc-700', showConsole ? 'bg-zinc-700' : '']}
+						>
+							<Terminal class="h-4 w-4 text-zinc-300" />
+						</button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>Toggle Console</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
 				<button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
 					<X class="h-4 w-4 text-zinc-300" />
 				</button>
@@ -387,6 +440,16 @@
 					placeholder="Enter dsp code here..."
 					class="nodrag h-64 w-full resize-none"
 					onrun={runDSP}
+					{lineErrors}
+				/>
+			</div>
+
+			<div class="mt-3 w-full" class:hidden={!showConsole}>
+				<VirtualConsole
+					bind:this={consoleRef}
+					{nodeId}
+					placeholder="DSP errors will appear here."
+					maxHeight="150px"
 				/>
 			</div>
 		</div>
