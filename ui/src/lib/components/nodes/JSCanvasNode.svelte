@@ -234,6 +234,7 @@
 	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
 	{selected}
 	{editorReady}
+	hasError={lineErrors !== undefined}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
