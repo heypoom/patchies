@@ -122,9 +122,29 @@
 	function handleUpdateState(state: any) {
 		isPlaying = state.started;
 	}
+
+	// For absolute positioning of console
+	let editorContainer: HTMLDivElement | null = $state(null);
+	let editorContainerWidth = $state(0);
+	const consoleGap = 8;
+
+	// Watch for size changes to the editor container
+	$effect(() => {
+		if (!editorContainer) return;
+
+		const resizeObserver = new ResizeObserver(() => {
+			editorContainerWidth = editorContainer?.clientWidth ?? 0;
+		});
+
+		resizeObserver.observe(editorContainer);
+
+		return () => resizeObserver.disconnect();
+	});
+
+	const consoleLeftPos = $derived(editorContainerWidth + consoleGap);
 </script>
 
-<div class="relative flex flex-row gap-2">
+<div class="relative">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -177,6 +197,7 @@
 				/>
 
 				<div
+					bind:this={editorContainer}
 					class={[
 						'flex w-full items-center justify-center rounded-md border bg-zinc-900',
 						hasError ? 'border-red-500' : 'border-transparent'
@@ -219,14 +240,16 @@
 		</div>
 	</div>
 
-	<!-- Virtual Console (right side) -->
-	<div class:hidden={!data.showConsole}>
-		<VirtualConsole
-			bind:this={consoleRef}
-			{nodeId}
-			onrun={evaluate}
-			placeholder="Strudel logs and errors will appear here."
-			shouldAutoShowConsoleOnError
-		/>
-	</div>
+	<!-- Virtual Console (right side, absolutely positioned) -->
+	{#if data.showConsole}
+		<div class="absolute top-0" style="left: {consoleLeftPos}px;">
+			<VirtualConsole
+				bind:this={consoleRef}
+				{nodeId}
+				onrun={evaluate}
+				placeholder="Strudel logs and errors will appear here."
+				shouldAutoShowConsoleOnError
+			/>
+		</div>
+	{/if}
 </div>
