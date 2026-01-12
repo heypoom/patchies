@@ -127,6 +127,12 @@
 				evalScope({ send, onMessage, recv: onMessage });
 			},
 			afterEval: () => {
+				// Clean up globals to avoid polluting the rest of the app
+				// These are only needed during synchronous pattern evaluation
+				delete (globalThis as any).send;
+				delete (globalThis as any).recv;
+				delete (globalThis as any).onMessage;
+
 				let attempts = 0;
 
 				let itv = setInterval(() => {
