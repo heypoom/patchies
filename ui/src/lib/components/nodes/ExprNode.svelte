@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Terminal } from '@lucide/svelte/icons';
 	import { onMount, onDestroy } from 'svelte';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
