@@ -14,6 +14,7 @@
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import { parseCanvasDimensions } from '$lib/p5/component-helpers';
+	import { P5_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 	let consoleRef: VirtualConsole | null = $state(null);
 
@@ -164,10 +165,6 @@
 			updateNodeData(nodeId, { paused: true });
 		}
 	}
-
-	// P5Manager wraps user code in executeUserCode's codeWithWrapper template.
-	// Empirically determined offset that works on both Chrome and Firefox.
-	const P5_WRAPPER_OFFSET = 6;
 
 	// Handle runtime errors (from draw(), setup(), etc.)
 	function handleRuntimeError(error: Error) {

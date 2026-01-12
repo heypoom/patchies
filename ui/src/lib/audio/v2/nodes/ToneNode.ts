@@ -4,17 +4,12 @@ import { createCustomConsole } from '$lib/utils/createCustomConsole';
 import { handleCodeError } from '$lib/js-runner/handleCodeError';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
+import { TONE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
 type OnSetTitle = (title: string) => void;
-
-// Parse error to extract line information for editor highlighting
-// ToneNode uses new Function() directly (not JSRunner), so we need to counteract
-// parseJSError's default WRAPPER_PREAMBLE_LINES=6 subtraction.
-// Empirically determined offset that works on both Chrome and Firefox.
-const TONE_WRAPPER_OFFSET = -2;
 
 /**
  * ToneNode implements the tone~ audio node.

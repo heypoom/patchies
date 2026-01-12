@@ -5,6 +5,7 @@ import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSyste
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -19,10 +20,6 @@ export interface CanvasConfig {
 	code: string;
 	nodeId: string;
 }
-
-// JSRunner wrapper adds 6 lines of preamble before user code
-// JSRunner's preamble is already accounted for in parseJSError
-const CANVAS_WRAPPER_OFFSET = 2;
 
 export class CanvasRenderer {
 	public config: CanvasConfig;

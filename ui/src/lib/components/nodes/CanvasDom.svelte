@@ -15,6 +15,7 @@
 	import { handleCodeError } from '$lib/js-runner/handleCodeError';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+	import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 	let {
 		id: nodeId,
@@ -49,9 +50,6 @@
 			lineErrors = event.lineErrors;
 		}
 	}
-
-	// canvas.dom uses `new Function()` with "use strict" prefix, which adds 1 line offset
-	const CANVAS_DOM_WRAPPER_OFFSET = -3;
 
 	// Create custom console for routing output to VirtualConsole
 	const customConsole = createCustomConsole(nodeId);

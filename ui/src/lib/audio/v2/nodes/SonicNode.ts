@@ -7,14 +7,11 @@ import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
+import { SONIC_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
 type OnSetTitle = (title: string) => void;
-
-// SonicNode uses JSRunner which has WRAPPER_PREAMBLE_LINES=6.
-// Empirically determined offset to correct line number reporting.
-const SONIC_WRAPPER_OFFSET = 2;
 
 /**
  * SonicNode implements the sonic~ audio node.
