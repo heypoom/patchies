@@ -348,6 +348,7 @@ export class CanvasRenderer {
 				args: [errorInfo.message],
 				lineErrors: errorInfo.lineErrors
 			});
+
 			return;
 		}
 

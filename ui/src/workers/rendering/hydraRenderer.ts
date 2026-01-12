@@ -7,6 +7,8 @@ import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
+import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -233,7 +235,10 @@ export class HydraRenderer {
 
 				// Canvas dimensions for normalizing mouse coordinates
 				width: this.renderer.outputSize[0],
-				height: this.renderer.outputSize[1]
+				height: this.renderer.outputSize[1],
+
+				// Custom console that routes to VirtualConsole
+				console: this.createCustomConsole()
 			};
 
 			const userFunction = new Function(
@@ -251,8 +256,7 @@ export class HydraRenderer {
 
 			userFunction(context);
 		} catch (error) {
-			console.error('Error executing Hydra code:', error);
-			throw error;
+			this.handleCodeError(error);
 		}
 	}
 
@@ -379,6 +383,52 @@ export class HydraRenderer {
 			nodeId: this.config.nodeId,
 			title
 		});
+	}
+
+	/**
+	 * Handles code execution errors with line number extraction for inline highlighting.
+	 * Parses the error to extract line info and sends it via consoleOutput with lineErrors.
+	 */
+	handleCodeError(error: unknown): void {
+		const { nodeId, code } = this.config;
+		const customConsole = this.createCustomConsole();
+
+		const errorInfo = parseJSError(error, countLines(code), HYDRA_WRAPPER_OFFSET);
+
+		if (errorInfo) {
+			// Send error with lineErrors for inline highlighting
+			self.postMessage({
+				type: 'consoleOutput',
+				nodeId,
+				level: 'error',
+				args: [errorInfo.message],
+				lineErrors: errorInfo.lineErrors
+			});
+
+			return;
+		}
+
+		// Fallback: no line info available
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		customConsole.error(errorMessage);
+	}
+
+	/**
+	 * Creates a custom console object that routes output to VirtualConsole via the main thread.
+	 */
+	createCustomConsole() {
+		const { nodeId } = this.config;
+
+		const sendLog = (level: 'log' | 'warn' | 'error', args: unknown[]) =>
+			self.postMessage({ type: 'consoleOutput', nodeId, level, args });
+
+		return {
+			log: (...args: unknown[]) => sendLog('log', args),
+			warn: (...args: unknown[]) => sendLog('warn', args),
+			error: (...args: unknown[]) => sendLog('error', args),
+			info: (...args: unknown[]) => sendLog('log', args),
+			debug: (...args: unknown[]) => sendLog('log', args)
+		};
 	}
 }
 

@@ -267,6 +267,7 @@ class DSPProcessor extends AudioWorkletProcessor {
 		} else {
 			// Fallback: no line info available
 			const message = error instanceof Error ? error.message : String(error);
+
 			this.port.postMessage({
 				type: 'code-error',
 				context,

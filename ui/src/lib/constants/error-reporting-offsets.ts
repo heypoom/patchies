@@ -59,3 +59,21 @@ export const SONIC_WRAPPER_OFFSET = 2;
  * So we need -1 to subtract 5 total (6 - 1 = 5).
  */
 export const DSP_WRAPPER_OFFSET = -1;
+
+/**
+ * HydraRenderer: Uses `new Function()` with wrapper lines before user code.
+ * Since Hydra doesn't use JSRunner (which has 6-line preamble), parseJSError
+ * subtracts 6 by default. Hydra's wrapper has exactly 6 lines before user code:
+ *
+ * Wrapper template (6 lines before user code):
+ * - Line 1: (empty - newline after backtick)
+ * - Line 2: let time = performance.now()
+ * - Line 3: (empty line)
+ * - Line 4: with (context) {
+ * - Line 5: var recv = onMessage;
+ * - Line 6: (empty line)
+ * - Line 7+: ${code} (user code)
+ *
+ * So we need 0 additional offset (6 - 6 = 0).
+ */
+export const HYDRA_WRAPPER_OFFSET = 2;

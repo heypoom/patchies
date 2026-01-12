@@ -9,7 +9,13 @@
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
-	import type { NodePortCountUpdateEvent, NodeTitleUpdateEvent } from '$lib/eventbus/events';
+	import type {
+		NodePortCountUpdateEvent,
+		NodeTitleUpdateEvent,
+		ConsoleOutputEvent
+	} from '$lib/eventbus/events';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 	let {
 		id: nodeId,
@@ -24,12 +30,14 @@
 			videoInletCount?: number;
 			videoOutletCount?: number;
 			executeCode?: number;
+			showConsole?: boolean;
 		};
 	} = $props();
 
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
+	let eventBus = PatchiesEventBus.getInstance();
 	let glSystem: GLSystem;
 	let audioAnalysisSystem: AudioAnalysisSystem;
 	let messageContext: MessageContext;
@@ -37,8 +45,18 @@
 	let previewBitmapContext: ImageBitmapRenderingContext;
 	let isPaused = $state(false);
 	let editorReady = $state(false);
-	let errorMessage = $state<string | null>(null);
+	let consoleRef: VirtualConsole | null = $state(null);
+	let lineErrors: Record<number, string[]> | undefined = $state(undefined);
 	let previousExecuteCode = $state<number | undefined>(undefined);
+
+	const code = $derived(data.code || '');
+	const errorLines = $derived(
+		lineErrors
+			? Object.keys(lineErrors)
+					.map(Number)
+					.sort((a, b) => a - b)
+			: undefined
+	);
 
 	// Actual rendering resolution (for mouse coordinates)
 	let outputWidth = $state(800);
@@ -88,8 +106,6 @@
 		updateNodeData(nodeId, { title: e.title });
 	}
 
-	const code = $derived(data.code || '');
-
 	let messageInletCount = $derived(data.messageInletCount ?? 1);
 	let messageOutletCount = $derived(data.messageOutletCount ?? 0);
 	let videoInletCount = $derived(data.videoInletCount ?? 1);
@@ -101,20 +117,16 @@
 	};
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
-		try {
-			match(message)
-				.with({ type: 'set', code: P.string }, ({ code }) => {
-					setCodeAndUpdate(code);
-				})
-				.with({ type: 'run' }, () => {
-					updateHydra();
-				})
-				.otherwise(() => {
-					glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
-				});
-		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
-		}
+		match(message)
+			.with({ type: 'set', code: P.string }, ({ code }) => {
+				setCodeAndUpdate(code);
+			})
+			.with({ type: 'run' }, () => {
+				updateHydra();
+			})
+			.otherwise(() => {
+				glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
+			});
 	};
 
 	onMount(() => {
@@ -161,6 +173,10 @@
 	});
 
 	function updateHydra() {
+		// Clear console and error line highlighting on re-run
+		consoleRef?.clearConsole();
+		lineErrors = undefined;
+
 		try {
 			messageContext.clearTimers();
 			audioAnalysisSystem.disableFFT(nodeId);
@@ -170,11 +186,9 @@
 			// If the code hasn't changed, the code will not be re-run.
 			// This allows us to forcibly re-run hydra to update FFT.
 			if (!isUpdated) glSystem.send('updateHydra', { nodeId });
-
-			errorMessage = null;
 		} catch (error) {
-			// Capture compilation/setup errors
-			errorMessage = error instanceof Error ? error.message : String(error);
+			// Note: Most errors will be caught by the worker and sent via consoleOutput
+			console.error('Hydra update error:', error);
 		}
 	}
 
@@ -213,10 +227,26 @@
 			previewCanvas.removeEventListener('mousemove', handleCanvasMouseMove);
 		};
 	});
+
+	// Listen for console output events to capture lineErrors for code highlighting
+	$effect(() => {
+		const handleConsoleOutput = (event: ConsoleOutputEvent) => {
+			if (event.nodeId !== nodeId || event.messageType !== 'error') return;
+
+			lineErrors = event.lineErrors;
+		};
+
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+
+		return () => {
+			eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+		};
+	});
 </script>
 
 <CanvasPreviewLayout
 	title={data.title ?? 'hydra'}
+	{nodeId}
 	onrun={updateHydra}
 	onPlaybackToggle={togglePause}
 	paused={isPaused}
@@ -225,6 +255,7 @@
 	{selected}
 	{editorReady}
 	bind:previewCanvas
+	hasError={errorLines !== undefined && errorLines.length > 0}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: videoInletCount }) as _, index (index)}
@@ -290,6 +321,21 @@
 			class="nodrag h-64 w-full resize-none"
 			onrun={updateHydra}
 			onready={() => (editorReady = true)}
+			{lineErrors}
 		/>
+	{/snippet}
+
+	{#snippet console()}
+		<!-- Always render VirtualConsole so it receives events even when hidden -->
+		<!-- We already have in-gutter errors, so we don't auto-show the console on new errors -->
+		<div class="mt-3 w-full" class:hidden={!data.showConsole}>
+			<VirtualConsole
+				bind:this={consoleRef}
+				{nodeId}
+				placeholder="Hydra errors will appear here."
+				maxHeight="200px"
+				shouldAutoShowConsoleOnError={false}
+			/>
+		</div>
 	{/snippet}
 </CanvasPreviewLayout>
