@@ -124,13 +124,7 @@
 
 				const onMessage = messageContext?.createOnMessageFunction();
 
-				// Inject custom console if provided, so user's console.log goes to VirtualConsole
-				const scopeExtras: Record<string, unknown> = { send, onMessage, recv: onMessage };
-				if (customConsole) {
-					scopeExtras.console = customConsole;
-				}
-
-				evalScope(scopeExtras);
+				evalScope({ send, onMessage, recv: onMessage });
 			},
 			afterEval: () => {
 				let attempts = 0;
