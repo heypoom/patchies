@@ -3,6 +3,7 @@
 
 	import ObjectInspector from './ObjectInspector.svelte';
 	import ErrorInspector from './ErrorInspector.svelte';
+	import { parseConsoleArgs } from '$lib/utils/console-format';
 
 	let {
 		msg
@@ -73,6 +74,8 @@
 			return String(arg);
 		}
 	}
+
+	const { styledSegments, remainingArgs } = $derived(parseConsoleArgs(msg.args));
 </script>
 
 <div class={['flex items-start gap-1.5 px-2 py-1 select-text', style.text, style.bg].join(' ')}>
@@ -83,15 +86,35 @@
 
 	<div class="console-content mt-[1px] min-w-0 flex-1">
 		<div class="flex flex-col items-start gap-x-2">
-			{#each msg.args as arg, i}
-				{#if isError(arg)}
-					<ErrorInspector error={arg} />
-				{:else if isInspectable(arg)}
-					<ObjectInspector data={arg} />
-				{:else}
-					<span class="break-words whitespace-pre-wrap">{formatArg(arg)}</span>
-				{/if}
-			{/each}
+			{#if styledSegments}
+				<!-- Render %c styled message -->
+				<span class="break-words whitespace-pre-wrap">
+					{#each styledSegments as segment}
+						<span style={segment.style}>{segment.text}</span>
+					{/each}
+				</span>
+				<!-- Render any remaining args after style strings -->
+				{#each remainingArgs as arg}
+					{#if isError(arg)}
+						<ErrorInspector error={arg} />
+					{:else if isInspectable(arg)}
+						<ObjectInspector data={arg} />
+					{:else}
+						<span class="break-words whitespace-pre-wrap">{formatArg(arg)}</span>
+					{/if}
+				{/each}
+			{:else}
+				<!-- Regular message without %c formatting -->
+				{#each msg.args as arg, i}
+					{#if isError(arg)}
+						<ErrorInspector error={arg} />
+					{:else if isInspectable(arg)}
+						<ObjectInspector data={arg} />
+					{:else}
+						<span class="break-words whitespace-pre-wrap">{formatArg(arg)}</span>
+					{/if}
+				{/each}
+			{/if}
 		</div>
 	</div>
 </div>

@@ -5,6 +5,7 @@
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { MessageContext, SendMessageOptions } from '$lib/messages/MessageContext';
 	import { logger } from '$lib/utils/logger';
+	import type { CustomConsole } from '$lib/utils/createCustomConsole';
 
 	let {
 		code = '',
@@ -15,6 +16,7 @@
 		onchange = undefined,
 		messageContext,
 		nodeId,
+		customConsole,
 		...props
 	}: {
 		code?: string;
@@ -25,6 +27,7 @@
 		onchange?: (code: string) => void;
 		messageContext?: MessageContext;
 		nodeId: string;
+		customConsole?: CustomConsole;
 		[key: string]: unknown;
 	} = $props();
 
@@ -43,6 +46,8 @@
 		const superdough = // @ts-expect-error -- no typedef
 			await import('superdough');
 
+		superdough.setLogger((msg: string) => logger.log(`[superdough] ${msg}`));
+
 		// Tell superdough to use our AudioContext instead of creating its own
 		const context = audioService.getAudioContext();
 
@@ -50,8 +55,6 @@
 			console.log('[superdough] patched to use patchies audio context');
 			superdough.setAudioContext(context);
 		}
-
-		superdough.setLogger((msg: string) => logger.log(`[superdough] ${msg}`));
 
 		// Load all required Strudel modules (including superdough)
 		const [strudelCore, strudelDraw, strudelTranspiler, strudelWebaudio, strudelCodemirror] =
@@ -111,7 +114,13 @@
 
 				const onMessage = messageContext?.createOnMessageFunction();
 
-				evalScope({ send, onMessage, recv: onMessage });
+				// Inject custom console if provided, so user's console.log goes to VirtualConsole
+				const scopeExtras: Record<string, unknown> = { send, onMessage, recv: onMessage };
+				if (customConsole) {
+					scopeExtras.console = customConsole;
+				}
+
+				evalScope(scopeExtras);
 			},
 			afterEval: () => {
 				let attempts = 0;

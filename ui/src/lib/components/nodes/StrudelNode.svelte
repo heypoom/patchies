@@ -1,26 +1,31 @@
 <script lang="ts">
-	import { Play, Square } from '@lucide/svelte/icons';
+	import { Play, Square, Terminal } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StrudelEditor from '$lib/components/StrudelEditor.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
+	import { createCustomConsole } from '$lib/utils/createCustomConsole';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { code: string } } = $props();
+	let { id: nodeId, data }: { id: string; data: { code: string; showConsole?: boolean } } =
+		$props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
 
 	let strudelEditor: StrudelEditor | null = null;
 	let messageContext: MessageContext;
-	let errorMessage = $state<string | null>(null);
+	let consoleRef: VirtualConsole | null = $state(null);
+	let hasError = $state(false);
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
 
 	const code = $derived(data.code || '');
+	const customConsole = createCustomConsole(nodeId);
 
 	const setCode = (newCode: string) => {
 		updateNodeData(nodeId, { code: newCode });
@@ -39,13 +44,29 @@
 				.with(P.union({ type: 'bang' }, { type: 'run' }), evaluate)
 				.with({ type: 'stop' }, stop);
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			customConsole.error(errorMsg);
+			hasError = true;
 		}
 	};
+
+	// Listen for Strudel log events (errors come through CustomEvent)
+	function handleStrudelLog(event: Event) {
+		const detail = (event as CustomEvent).detail;
+		if (detail?.type === 'error') {
+			customConsole.error(detail.message);
+			hasError = true;
+		} else if (detail?.message) {
+			customConsole.log(detail.message);
+		}
+	}
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+
+		// Listen for Strudel's log events
+		document.addEventListener('strudel.log', handleStrudelLog);
 
 		// Wait for the StrudelEditor to be ready
 		setTimeout(() => {
@@ -60,6 +81,7 @@
 
 	onDestroy(() => {
 		stop();
+		document.removeEventListener('strudel.log', handleStrudelLog);
 
 		if (messageContext) {
 			messageContext.queue.removeCallback(handleMessage);
@@ -72,20 +94,26 @@
 			try {
 				strudelEditor.editor.stop();
 				isPlaying = false;
-				errorMessage = null;
 			} catch (error) {
-				errorMessage = error instanceof Error ? error.message : String(error);
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				customConsole.error(errorMsg);
+				hasError = true;
 			}
 		}
 	}
 
 	function evaluate() {
 		if (strudelEditor?.editor) {
+			// Clear previous errors on new evaluation
+			consoleRef?.clearConsole();
+			hasError = false;
+
 			try {
 				strudelEditor.editor.evaluate();
-				errorMessage = null;
 			} catch (error) {
-				errorMessage = error instanceof Error ? error.message : String(error);
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				customConsole.error(errorMsg);
+				hasError = true;
 				isPlaying = false;
 			}
 		}
@@ -96,7 +124,7 @@
 	}
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex flex-row gap-2">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -105,6 +133,15 @@
 				</div>
 
 				<div class="flex items-center gap-1">
+					<!-- Console toggle button -->
+					<button
+						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+						onclick={() => updateNodeData(nodeId, { showConsole: !data.showConsole })}
+						title="Toggle Console"
+					>
+						<Terminal class="h-4 w-4 text-zinc-300" />
+					</button>
+
 					<!-- Play/Stop button -->
 					{#if isInitialized}
 						{#if isPlaying}
@@ -139,7 +176,12 @@
 					{nodeId}
 				/>
 
-				<div class="flex w-full items-center justify-center rounded-md bg-zinc-900">
+				<div
+					class={[
+						'flex w-full items-center justify-center rounded-md border bg-zinc-900',
+						hasError ? 'border-red-500' : 'border-transparent'
+					]}
+				>
 					<div class="nodrag">
 						<StrudelEditor
 							{code}
@@ -151,6 +193,7 @@
 							class="w-full"
 							{nodeId}
 							{messageContext}
+							{customConsole}
 						/>
 					</div>
 				</div>
@@ -172,19 +215,18 @@
 					class="!-bottom-2"
 					{nodeId}
 				/>
-
-				<!-- Error display -->
-				{#if errorMessage}
-					<div
-						class="absolute inset-0 flex items-center justify-center rounded-md bg-red-900/90 p-2"
-					>
-						<div class="text-center">
-							<div class="text-xs font-medium text-red-100">Strudel Error:</div>
-							<div class="mt-1 text-xs text-red-200">{errorMessage}</div>
-						</div>
-					</div>
-				{/if}
 			</div>
 		</div>
+	</div>
+
+	<!-- Virtual Console (right side) -->
+	<div class:hidden={!data.showConsole}>
+		<VirtualConsole
+			bind:this={consoleRef}
+			{nodeId}
+			onrun={evaluate}
+			placeholder="Strudel logs and errors will appear here."
+			shouldAutoShowConsoleOnError
+		/>
 	</div>
 </div>
