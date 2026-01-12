@@ -24,6 +24,7 @@
 		runOrStop,
 		onResize,
 		shouldAutoShowConsoleOnError = true,
+		shouldAutoHideConsoleOnNoError = false,
 		initialHeight,
 		initialWidth,
 		onHeightChange,
@@ -43,6 +44,7 @@
 		runOrStop?: () => void;
 		onResize?: () => void;
 		shouldAutoShowConsoleOnError?: boolean;
+		shouldAutoHideConsoleOnNoError?: boolean;
 		initialHeight?: number;
 		initialWidth?: number;
 		onHeightChange?: (height: number) => void;
@@ -112,6 +114,10 @@
 
 	export function clearConsole() {
 		messages = [];
+
+		if (shouldAutoHideConsoleOnNoError) {
+			updateNodeData(nodeId, { showConsole: false });
+		}
 	}
 
 	function copyOutput() {

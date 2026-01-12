@@ -36,13 +36,15 @@ const parser = new Parser({
 	}
 });
 
+export type ExpressionEvaluatorResult =
+	| { success: true; fn: (...args: number[]) => unknown }
+	| { success: false; error: string };
+
 /**
  * Create evaluation function from expression using expr-eval
  */
-export function createExpressionEvaluator(
-	expression: string
-): ((...args: number[]) => unknown) | null {
-	if (!expression.trim()) return null;
+export function createExpressionEvaluator(expression: string): ExpressionEvaluatorResult {
+	if (!expression.trim()) return { success: true, fn: () => 0 };
 
 	try {
 		const renamedParam = expression.replace(/\$(\d+)/g, 'x$1');
@@ -50,12 +52,10 @@ export function createExpressionEvaluator(
 		const expr = parser.parse(renamedParam);
 		const parameterNames = [...Array(9)].map((_, i) => `x${i + 1}`);
 
-		return expr.toJSFunction(parameterNames.join(','));
+		return { success: true, fn: expr.toJSFunction(parameterNames.join(',')) };
 	} catch (error) {
-		if (error instanceof Error) {
-			console.error('Failed to create expression evaluator:', error.message);
-		}
+		const message = error instanceof Error ? error.message : String(error);
 
-		return null;
+		return { success: false, error: message };
 	}
 }

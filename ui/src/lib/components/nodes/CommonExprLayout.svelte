@@ -24,6 +24,7 @@
 		exitOnRun = true,
 		runOnExit = false,
 		extraExtensions = [],
+		hasError = false,
 		children,
 		handles,
 		outlets
@@ -41,6 +42,7 @@
 		exitOnRun?: boolean;
 		runOnExit?: boolean;
 		extraExtensions?: any[];
+		hasError?: boolean;
 		children?: any;
 		handles?: any;
 		outlets?: any;
@@ -121,7 +123,11 @@
 		onExpressionChange(value);
 	}
 
-	const containerClass = $derived(selected ? 'object-container-selected' : 'object-container');
+	const containerClass = $derived.by(() => {
+		if (hasError) return '!border-red-500 object-container';
+
+		return selected ? 'object-container-selected' : 'object-container';
+	});
 
 	export function focus() {
 		if (isEditing) {
