@@ -241,15 +241,14 @@
 	</div>
 
 	<!-- Virtual Console (right side, absolutely positioned) -->
-	{#if data.showConsole}
-		<div class="absolute top-0" style="left: {consoleLeftPos}px;">
-			<VirtualConsole
-				bind:this={consoleRef}
-				{nodeId}
-				onrun={evaluate}
-				placeholder="Strudel logs and errors will appear here."
-				shouldAutoShowConsoleOnError
-			/>
-		</div>
-	{/if}
+
+	<div class="absolute top-0" style="left: {consoleLeftPos}px;" class:hidden={!data.showConsole}>
+		<VirtualConsole
+			bind:this={consoleRef}
+			{nodeId}
+			onrun={evaluate}
+			placeholder="Strudel logs and errors will appear here."
+			shouldAutoShowConsoleOnError
+		/>
+	</div>
 </div>
