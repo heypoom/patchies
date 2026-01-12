@@ -631,7 +631,7 @@ Users can drag the bottom-right corner to resize. The `nodrag` class prevents XY
 - [x] Update `JSRunner.ts` to use `logger`
 - [x] Add JS syntax error line highlighting with `parseJSError()` utility
 - [x] Update `MessageSystem.ts` to route `recv()` callback errors to VirtualConsole
-- [ ] Update `PythonNode.svelte` to use `VirtualConsole`
+- [x] Update `PythonNode.svelte` to use `VirtualConsole`
 - [ ] Migrate `PyodideSystem` to use `logger` (deprecate custom event)
 
 ### Add Consoles to Visual Nodes

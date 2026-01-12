@@ -4,6 +4,7 @@ import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
+import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -18,6 +19,10 @@ export interface CanvasConfig {
 	code: string;
 	nodeId: string;
 }
+
+// JSRunner wrapper adds 6 lines of preamble before user code
+// JSRunner's preamble is already accounted for in parseJSError
+const CANVAS_WRAPPER_OFFSET = 2;
 
 export class CanvasRenderer {
 	public config: CanvasConfig;
@@ -212,7 +217,7 @@ export class CanvasRenderer {
 				extraContext
 			});
 		} catch (error) {
-			console.error('Error executing canvas code:', error);
+			this.handleCodeError(error);
 		}
 	}
 
@@ -325,6 +330,33 @@ export class CanvasRenderer {
 
 	handleMessage(message: Message) {
 		this.onMessage?.(message.data, message);
+	}
+
+	/**
+	 * Handles code execution errors with line number extraction for inline highlighting.
+	 * Parses the error to extract line info and sends it via consoleOutput with lineErrors.
+	 */
+	handleCodeError(error: unknown): void {
+		const { nodeId, code } = this.config;
+		const customConsole = this.createCustomConsole();
+
+		const errorInfo = parseJSError(error, countLines(code), CANVAS_WRAPPER_OFFSET);
+
+		if (errorInfo) {
+			// Send error with lineErrors for inline highlighting
+			self.postMessage({
+				type: 'consoleOutput',
+				nodeId,
+				level: 'error',
+				args: [errorInfo.message],
+				lineErrors: errorInfo.lineErrors
+			});
+			return;
+		}
+
+		// Fallback: no line info available
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		customConsole.error(errorMessage);
 	}
 
 	/**

@@ -103,17 +103,23 @@ export class GLSystem {
 		// Handle console output from canvas renderer
 		if (data.type === 'consoleOutput') {
 			const { logger } = await import('$lib/utils/logger');
-			const nodeLogger = logger.ofNode(data.nodeId);
 
-			// Route to the appropriate log level
+			// Route to the appropriate log level using ts-pattern
+			const { match } = await import('ts-pattern');
 			const args = data.args ?? [data.message];
-			if (data.level === 'error') {
-				nodeLogger.error(...args);
-			} else if (data.level === 'warn') {
-				nodeLogger.warn(...args);
-			} else {
-				nodeLogger.log(...args);
-			}
+
+			match(data.level)
+				.with('error', () => {
+					// Use nodeError with lineErrors option if available
+					if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
+						logger.nodeError(data.nodeId, { lineErrors: data.lineErrors }, ...args);
+					} else {
+						logger.nodeError(data.nodeId, ...args);
+					}
+				})
+				.otherwise(() => {
+					logger.addNodeLog(data.nodeId, data.level, args);
+				});
 		}
 
 		// Handle preview frames

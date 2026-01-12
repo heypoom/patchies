@@ -12,6 +12,9 @@
 	import { shouldShowHandles } from '../../../stores/ui.store';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 	import { createCustomConsole } from '$lib/utils/createCustomConsole';
+	import { handleCodeError } from '$lib/js-runner/handleCodeError';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 
 	let {
 		id: nodeId,
@@ -32,6 +35,23 @@
 	} = $props();
 
 	let consoleRef: VirtualConsole | null = $state(null);
+
+	// Track error line numbers for code highlighting
+	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+	const eventBus = PatchiesEventBus.getInstance();
+
+	// Listen for console output events to capture lineErrors
+	function handleConsoleOutput(event: ConsoleOutputEvent) {
+		if (event.nodeId !== nodeId) return;
+
+		// If this error has lineErrors, update state for code highlighting
+		if (event.messageType === 'error' && event.lineErrors) {
+			lineErrors = event.lineErrors;
+		}
+	}
+
+	// canvas.dom uses `new Function()` with "use strict" prefix, which adds 1 line offset
+	const CANVAS_DOM_WRAPPER_OFFSET = -3;
 
 	// Create custom console for routing output to VirtualConsole
 	const customConsole = createCustomConsole(nodeId);
@@ -205,7 +225,11 @@
 				// Stop propagation for all keyboard events to prevent leaking to xyflow
 				e.stopPropagation();
 
-				keyboardCallbacks.onKeyDown(e);
+				try {
+					keyboardCallbacks.onKeyDown(e);
+				} catch (error) {
+					handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+				}
 			}
 		};
 
@@ -214,7 +238,11 @@
 				// Stop propagation for all keyboard events to prevent leaking to xyflow
 				e.stopPropagation();
 
-				keyboardCallbacks.onKeyUp(e);
+				try {
+					keyboardCallbacks.onKeyUp(e);
+				} catch (error) {
+					handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+				}
 			}
 		};
 
@@ -267,8 +295,9 @@
 	function runCode() {
 		if (!canvas || !ctx) return;
 
-		// Clear console on re-run
+		// Clear console and error highlighting on re-run
 		consoleRef?.clearConsole();
+		lineErrors = undefined;
 
 		// Reset drag state and video output state
 		dragEnabled = true;
@@ -339,13 +368,16 @@
 
 			userFunction(...Object.values(userGlobals));
 		} catch (error) {
-			customConsole.error(`[canvas.dom] user code error:`, error);
+			handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
 		}
 	}
 
 	onMount(() => {
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
+
+		// Listen for console output events to capture lineErrors
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
 		// Register with GLSystem for video output
 		glSystem.upsertNode(nodeId, 'img', {});
@@ -369,6 +401,7 @@
 		if (animationFrameId !== null) {
 			cancelAnimationFrame(animationFrameId);
 		}
+		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 		glSystem?.removeNode(nodeId);
 		messageContext?.destroy();
 	});
@@ -451,6 +484,7 @@
 				updateNodeData(nodeId, { code: newCode });
 			}}
 			onready={() => (editorReady = true)}
+			{lineErrors}
 		/>
 	{/snippet}
 

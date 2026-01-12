@@ -210,7 +210,7 @@ export class Logger {
 	/**
 	 * Add a node-scoped log entry and emit event for reactive UI.
 	 */
-	private addNodeLog(
+	addNodeLog(
 		nodeId: string,
 		level: LogLevel,
 		args: unknown[],

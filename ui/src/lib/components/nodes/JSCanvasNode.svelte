@@ -15,10 +15,12 @@
 		NodeTitleUpdateEvent,
 		NodeHidePortsUpdateEvent,
 		NodeDragEnabledUpdateEvent,
-		NodeVideoOutputEnabledUpdateEvent
+		NodeVideoOutputEnabledUpdateEvent,
+		ConsoleOutputEvent
 	} from '$lib/eventbus/events';
 	import { logger } from '$lib/utils/logger';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 	let {
 		id: nodeId,
@@ -39,6 +41,20 @@
 	} = $props();
 
 	let consoleRef: VirtualConsole | null = $state(null);
+
+	// Track error line numbers for code highlighting
+	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+	const eventBus = PatchiesEventBus.getInstance();
+
+	// Listen for console output events to capture lineErrors
+	function handleConsoleOutput(event: ConsoleOutputEvent) {
+		if (event.nodeId !== nodeId) return;
+
+		// If this error has lineErrors, update state for code highlighting
+		if (event.messageType === 'error' && event.lineErrors) {
+			lineErrors = event.lineErrors;
+		}
+	}
 
 	let glSystem = GLSystem.getInstance();
 	let audioAnalysisSystem: AudioAnalysisSystem;
@@ -133,12 +149,15 @@
 		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
 		// Listen for updates from the worker
-		const eventBus = glSystem.eventBus;
-		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
-		eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
-		eventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
-		eventBus.addEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
-		eventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
+		const glEventBus = glSystem.eventBus;
+		glEventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
+		glEventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
+		glEventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+		glEventBus.addEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+		glEventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
+
+		// Listen for console output events to capture lineErrors
+		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
@@ -155,14 +174,19 @@
 	});
 
 	onDestroy(() => {
-		const eventBus = glSystem?.eventBus;
-		if (eventBus) {
-			eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
-			eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
-			eventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
-			eventBus.removeEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
-			eventBus.removeEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
+		const glEventBus = glSystem?.eventBus;
+		if (glEventBus) {
+			glEventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
+			glEventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
+			glEventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+			glEventBus.removeEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+			glEventBus.removeEventListener(
+				'nodeVideoOutputEnabledUpdate',
+				handleVideoOutputEnabledUpdate
+			);
 		}
+
+		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 
 		audioAnalysisSystem?.disableFFT(nodeId);
 		glSystem?.removeNode(nodeId);
@@ -181,8 +205,9 @@
 	});
 
 	function updateCanvas() {
-		// Clear console on re-run
+		// Clear console and error highlighting on re-run
 		consoleRef?.clearConsole();
+		lineErrors = undefined;
 
 		try {
 			messageContext?.clearTimers();
@@ -263,6 +288,7 @@
 				updateNodeData(nodeId, { code: newCode });
 			}}
 			onready={() => (editorReady = true)}
+			{lineErrors}
 		/>
 	{/snippet}
 
