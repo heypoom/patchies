@@ -33,7 +33,6 @@ export class HydraRenderer {
 	public onMessage: MessageCallbackFn = () => {};
 
 	private timestamp = performance.now();
-	private sampleRate: number = 44000;
 
 	private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
 
@@ -41,6 +40,10 @@ export class HydraRenderer {
 	public isFFTEnabled = false;
 	private fftRequestCache = new Map<string, boolean>();
 	private fftDataCache = new Map<string, { data: Uint8Array | Float32Array; timestamp: number }>();
+
+	// Mouse state (updated each frame from RenderParams)
+	private mouseX = 0;
+	private mouseY = 0;
 
 	private constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
@@ -78,6 +81,10 @@ export class HydraRenderer {
 
 	renderFrame(params: RenderParams) {
 		if (!this.hydra) return;
+
+		// Update mouse state from render params
+		this.mouseX = params.mouseX;
+		this.mouseY = params.mouseY;
 
 		const time = performance.now();
 		const deltaTime = time - this.timestamp;
@@ -219,7 +226,14 @@ export class HydraRenderer {
 				},
 
 				// setTitle function to update node title
-				setTitle: this.setTitle.bind(this)
+				setTitle: this.setTitle.bind(this),
+
+				// Mouse object with getters for real-time values (Hydra-style)
+				mouse: this.createMouseObject(),
+
+				// Canvas dimensions for normalizing mouse coordinates
+				width: this.renderer.outputSize[0],
+				height: this.renderer.outputSize[1]
 			};
 
 			const userFunction = new Function(
@@ -246,6 +260,7 @@ export class HydraRenderer {
 		if (!this.hydra) return;
 
 		this.hydra.hush();
+
 		for (const source of this.hydra.sources) source.clear();
 	}
 
@@ -303,12 +318,26 @@ export class HydraRenderer {
 		};
 	}
 
+	createMouseObject() {
+		const getX = () => this.mouseX;
+		const getY = () => this.mouseY;
+
+		return {
+			get x() {
+				return getX();
+			},
+
+			get y() {
+				return getY();
+			}
+		};
+	}
+
 	// Method to receive FFT data from main thread
 	setFFTData(payload: AudioAnalysisPayloadWithType) {
-		const { analysisType, format, array, sampleRate } = payload;
+		const { analysisType, format, array } = payload;
 
 		const cacheKey = `${analysisType}-${format}`;
-		this.sampleRate = sampleRate;
 
 		this.fftDataCache.set(cacheKey, {
 			data: array,

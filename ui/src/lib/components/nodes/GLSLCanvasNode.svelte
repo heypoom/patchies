@@ -236,6 +236,7 @@
 
 		return () => {
 			if (!previewCanvas) return;
+
 			previewCanvas.removeEventListener('mousemove', handleCanvasMouseMove);
 			previewCanvas.removeEventListener('mousedown', handleCanvasMouseDown);
 			previewCanvas.removeEventListener('mouseup', handleCanvasMouseUp);

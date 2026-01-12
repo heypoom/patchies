@@ -40,6 +40,18 @@
 	let errorMessage = $state<string | null>(null);
 	let previousExecuteCode = $state<number | undefined>(undefined);
 
+	// Actual rendering resolution (for mouse coordinates)
+	let outputWidth = $state(800);
+	let outputHeight = $state(600);
+
+	// Detect if Hydra code uses mouse variable (ignore comments)
+	const usesMouseVariable = $derived.by(() => {
+		// Remove single-line comments
+		const codeWithoutComments = code.replace(/\/\/.*$/gm, '');
+
+		return codeWithoutComments.includes('mouse');
+	});
+
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
 		if (data.executeCode && data.executeCode !== previousExecuteCode) {
@@ -111,6 +123,10 @@
 		messageContext.queue.addCallback(handleMessage);
 		audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
+		// Initialize output dimensions from glSystem
+		outputWidth = glSystem.outputSize[0];
+		outputHeight = glSystem.outputSize[1];
+
 		// Listen for port count updates from the worker
 		const eventBus = glSystem.eventBus;
 
@@ -166,6 +182,37 @@
 		isPaused = !isPaused;
 		glSystem.toggleNodePause(nodeId);
 	}
+
+	function handleCanvasMouseMove(event: MouseEvent) {
+		if (!previewCanvas || !usesMouseVariable) return;
+
+		const rect = previewCanvas.getBoundingClientRect();
+
+		// Get position relative to canvas in screen pixels
+		const screenX = event.clientX - rect.left;
+		const screenY = event.clientY - rect.top;
+
+		// Map from displayed rect to actual framebuffer resolution (outputSize)
+		// Hydra uses standard screen coordinates (Y-down, origin top-left)
+		const x = (screenX / rect.width) * outputWidth;
+		const y = (screenY / rect.height) * outputHeight;
+
+		// Send mouse data (use x,y for both current and click position when moving)
+		glSystem.setMouseData(nodeId, x, y, 0, 0);
+	}
+
+	// Attach mouse event listeners when canvas is available and mouse is used
+	$effect(() => {
+		if (!previewCanvas || !usesMouseVariable) return;
+
+		previewCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+
+		return () => {
+			if (!previewCanvas) return;
+
+			previewCanvas.removeEventListener('mousemove', handleCanvasMouseMove);
+		};
+	});
 </script>
 
 <CanvasPreviewLayout
@@ -174,6 +221,7 @@
 	onPlaybackToggle={togglePause}
 	paused={isPaused}
 	showPauseButton={true}
+	nodrag={usesMouseVariable}
 	{selected}
 	{editorReady}
 	bind:previewCanvas
