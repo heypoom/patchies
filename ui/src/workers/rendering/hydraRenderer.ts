@@ -1,4 +1,4 @@
-import type { Hydra } from 'hydra-ts';
+import type { Hydra } from '$lib/hydra';
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
@@ -61,8 +61,8 @@ export class HydraRenderer {
 		framebuffer: regl.Framebuffer2D,
 		renderer: FBORenderer
 	): Promise<HydraRenderer> {
-		const hydraModule = await import('hydra-ts');
-		const arrayUtils = await import('hydra-ts/src/lib/array-utils');
+		const { Hydra } = await import('$lib/hydra');
+		const arrayUtils = await import('$lib/hydra/lib/array-utils');
 
 		arrayUtils.default.init();
 
@@ -70,8 +70,7 @@ export class HydraRenderer {
 
 		const [width, height] = instance.renderer.outputSize;
 
-		instance.hydra = new hydraModule.Hydra({
-			// @ts-expect-error -- regl version mismatch, but should still work!
+		instance.hydra = new Hydra({
 			regl: instance.renderer.regl,
 			width,
 			height,
@@ -122,7 +121,7 @@ export class HydraRenderer {
 				return;
 			}
 
-			source.tick(this.hydra.synth);
+			source.tick();
 		});
 
 		this.hydra.outputs.forEach((output) => {
@@ -179,7 +178,7 @@ export class HydraRenderer {
 		this.mouseScope = 'local';
 
 		try {
-			const { generators } = await import('hydra-ts');
+			const { generators } = await import('$lib/hydra');
 
 			const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
 			const { sources, outputs, hush, render } = this.hydra;

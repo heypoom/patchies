@@ -41,7 +41,6 @@
         "expr-eval": "^2.0.2",
         "fuse.js": "^7.1.0",
         "highlight.js": "^11.11.1",
-        "hydra-ts": "^1.0.0",
         "json5": "^2.2.3",
         "lezer-glsl": "^0.6.0",
         "lodash": "^4.17.21",
@@ -1208,8 +1207,6 @@
 
     "hydra-synth": ["hydra-synth@1.3.29", "", { "dependencies": { "meyda": "^5.5.1", "raf-loop": "^1.1.3", "regl": "^1.3.9" } }, "sha512-KK1wMGpo9AuVivvD9SP7ukPS7T/rMaYA7XMlnRF3oFbTw9u4l4aVTyexG+KmCd5XDD/4GulR1jVzySZlAuGPCw=="],
 
-    "hydra-ts": ["hydra-ts@1.0.0", "", { "dependencies": { "regl": "^1.3.9" } }, "sha512-qJXbIogzOXL8GIJauggAuuwPSqKdWsjlpHQ+oJt+dUo2bbRuvwFRQHAXld0BKU6a+9dZ2Kw2EWLyUi8pPKt13Q=="],
-
     "hyperdyperid": ["hyperdyperid@1.2.0", "", {}, "sha512-Y93lCzHYgGWdrJ66yIktxiaGULYc6oGiABxhcO5AufBeOyoIdZF7bIfLaOrbM0iGIOXQQgxxRrFEnb+Y6w1n4A=="],
 
     "hyphenate-style-name": ["hyphenate-style-name@1.1.0", "", {}, "sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw=="],
@@ -2119,8 +2116,6 @@
     "gaxios/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
 
     "hydra-synth/regl": ["regl@1.7.0", "", {}, "sha512-bEAtp/qrtKucxXSJkD4ebopFZYP0q1+3Vb2WECWv/T8yQEgKxDxJ7ztO285tAMaYZVR6mM1GgI6CCn8FROtL1w=="],
-
-    "hydra-ts/regl": ["regl@1.7.0", "", {}, "sha512-bEAtp/qrtKucxXSJkD4ebopFZYP0q1+3Vb2WECWv/T8yQEgKxDxJ7ztO285tAMaYZVR6mM1GgI6CCn8FROtL1w=="],
 
     "i18next/@babel/runtime": ["@babel/runtime@7.28.4", "", {}, "sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ=="],
 
