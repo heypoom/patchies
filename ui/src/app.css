@@ -137,4 +137,8 @@
 	.object-container-selected {
 		@apply shadow-glow-md border-zinc-400 bg-zinc-800;
 	}
+
+	.object-container-error {
+		@apply border-red-500 bg-zinc-900;
+	}
 }

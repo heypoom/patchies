@@ -56,7 +56,11 @@
 	const displayTitle = $derived(data.title || nodeName);
 
 	const containerClass = $derived.by(() => {
+		const hasError = lineErrors !== undefined;
+		if (hasError) return 'object-container-error';
+
 		if (selected) return 'object-container-selected';
+
 		return 'object-container';
 	});
 
