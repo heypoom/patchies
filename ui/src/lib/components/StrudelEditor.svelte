@@ -46,13 +46,21 @@
 		const superdough = // @ts-expect-error -- no typedef
 			await import('superdough');
 
-		superdough.setLogger((msg: string) => logger.log(`[superdough] ${msg}`));
+		const logToConsole = (msg: string) => {
+			if (customConsole) {
+				customConsole.log(msg);
+			} else {
+				logger.nodeLog(nodeId, msg);
+			}
+		};
+
+		superdough.setLogger(logToConsole);
 
 		// Tell superdough to use our AudioContext instead of creating its own
 		const context = audioService.getAudioContext();
 
 		if ('setAudioContext' in superdough) {
-			console.log('[superdough] patched to use patchies audio context');
+			logToConsole('[audio] ready');
 			superdough.setAudioContext(context);
 		}
 
