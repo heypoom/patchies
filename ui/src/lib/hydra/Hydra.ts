@@ -36,14 +36,26 @@ export interface Synth {
 	time: number;
 }
 
+export interface HydraErrorContext {
+	transformName: string;
+	transformType: string;
+	paramName: string;
+	paramIndex: number;
+	paramType: string;
+}
+
+export type HydraErrorHandler = (error: unknown, context: HydraErrorContext) => void;
+
 export interface GlEnvironment {
 	defaultUniforms: {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		[name: string]: DynamicVariable<any> | DynamicVariableFn<any, any, any>;
 	};
 	height: number;
 	precision: Precision;
 	regl: Regl;
 	width: number;
+	onError?: HydraErrorHandler;
 }
 
 interface HydraRendererOptions {
@@ -53,6 +65,7 @@ interface HydraRendererOptions {
 	precision?: Precision;
 	regl: Regl;
 	width: number;
+	onError?: HydraErrorHandler;
 }
 
 export class Hydra {
@@ -60,6 +73,7 @@ export class Hydra {
 	readonly synth: Synth;
 	readonly outputs: Output[];
 	readonly sources: Source[];
+	readonly glEnvironment: GlEnvironment;
 	output: Output;
 	readonly renderFbo: DrawCommand<DefaultContext>;
 	timeSinceLastUpdate = 0;
@@ -70,7 +84,8 @@ export class Hydra {
 		numSources = 4,
 		precision = 'mediump',
 		regl,
-		width
+		width,
+		onError
 	}: HydraRendererOptions) {
 		const outputs = [];
 		const sources = [];
@@ -91,13 +106,16 @@ export class Hydra {
 			resolution: regl.prop<HydraDrawUniforms, keyof HydraDrawUniforms>('resolution')
 		};
 
-		const glEnvironment = {
+		const glEnvironment: GlEnvironment = {
 			regl,
 			width,
 			height,
 			precision,
-			defaultUniforms
+			defaultUniforms,
+			onError
 		};
+
+		this.glEnvironment = glEnvironment;
 
 		const renderFbo = regl<HydraFboUniforms>({
 			frag: `
@@ -180,7 +198,7 @@ export class Hydra {
 			this.synth.stats.fps = Math.ceil(1000 / this.timeSinceLastUpdate);
 
 			this.sources.forEach((source) => {
-				source.tick(this.synth);
+				source.tick();
 			});
 
 			this.outputs.forEach((output) => {

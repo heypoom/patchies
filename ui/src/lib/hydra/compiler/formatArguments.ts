@@ -4,12 +4,26 @@
 import { Glsl } from '../glsl/Glsl';
 import type { TransformApplication } from '../glsl/Glsl';
 import arrayUtils from '../lib/array-utils';
-import type { TransformDefinitionInput } from '../glsl/transformDefinitions';
+import type {
+	TransformDefinitionInput,
+	TransformDefinitionType
+} from '../glsl/transformDefinitions';
 import { Source } from '../Source';
 import { Output } from '../Output';
 import { src } from '../glsl/index';
 
-export let onError: (error: unknown) => void = (e) => console.error('ERROR', e);
+export interface HydraErrorContext {
+	transformName: string;
+	transformType: TransformDefinitionType;
+	paramName: string;
+	paramIndex: number;
+	paramType: string;
+}
+
+export type HydraErrorHandler = (error: unknown, context: HydraErrorContext) => void;
+
+// Default no-op error handler
+const defaultOnError: HydraErrorHandler = () => {};
 
 export interface TypedArg {
 	value: TransformDefinitionInput['default'];
@@ -21,7 +35,8 @@ export interface TypedArg {
 
 export function formatArguments(
 	transformApplication: TransformApplication,
-	startIndex: number
+	startIndex: number,
+	onError: HydraErrorHandler = defaultOnError
 ): TypedArg[] {
 	const { transform, userArgs } = transformApplication;
 	const { inputs } = transform;
@@ -29,6 +44,7 @@ export function formatArguments(
 	return inputs.map((input, index) => {
 		const vecLen = input.vecLen ?? 0;
 
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		let value: any = input.default;
 		let isUniform = false;
 
@@ -46,13 +62,21 @@ export function formatArguments(
 			if (typeof arg === 'function') {
 				if (vecLen > 0) {
 					// expected input is a vector, not a scalar
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					value = (context: any, props: any) => fillArrayWithDefaults(arg(props), vecLen);
 				} else {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					value = (context: any, props: any) => {
 						try {
 							return arg(props);
 						} catch (e) {
-							onError(e);
+							onError(e, {
+								transformName: transform.name,
+								transformType: transform.type,
+								paramName: input.name,
+								paramIndex: index,
+								paramType: input.type
+							});
 							return input.default;
 						}
 					};
@@ -66,6 +90,7 @@ export function formatArguments(
 					value = fillArrayWithDefaults(value, vecLen);
 				} else {
 					// is Array
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					value = (context: any, props: any) => arrayUtils.getValue(arg)(props);
 					isUniform = true;
 				}
@@ -115,6 +140,7 @@ export function formatArguments(
 	});
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ensureDecimalDot(val: any): string {
 	val = val.toString();
 	if (val.indexOf('.') < 0) {
@@ -123,6 +149,7 @@ export function ensureDecimalDot(val: any): string {
 	return val;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function fillArrayWithDefaults(arr: any[], len: number) {
 	// fill the array with default values if it's too short
 	while (arr.length < len) {

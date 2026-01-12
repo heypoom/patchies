@@ -1,14 +1,15 @@
 import type { Texture2D } from 'regl';
 import type { TransformApplication } from '../glsl/Glsl';
 import { formatArguments } from './formatArguments';
-import type { TypedArg } from './formatArguments';
+import type { TypedArg, HydraErrorHandler } from './formatArguments';
 import type { ShaderParams } from './compileWithEnvironment';
 
 export type GlslGenerator = (uv: string) => string;
 
 export function generateGlsl(
 	transformApplications: TransformApplication[],
-	shaderParams: ShaderParams
+	shaderParams: ShaderParams,
+	onError?: HydraErrorHandler
 ): GlslGenerator {
 	let fragColor: GlslGenerator = () => '';
 
@@ -23,7 +24,7 @@ export function generateGlsl(
 			| Texture2D
 			| undefined;
 
-		const typedArgs = formatArguments(transformApplication, shaderParams.uniforms.length);
+		const typedArgs = formatArguments(transformApplication, shaderParams.uniforms.length, onError);
 
 		typedArgs.forEach((typedArg) => {
 			if (typedArg.isUniform) {
@@ -39,13 +40,14 @@ export function generateGlsl(
 		// current function for generating frag color shader code
 		const f0 = fragColor;
 		if (transformApplication.transform.type === 'src') {
-			fragColor = (uv) => `${shaderString(uv, transformApplication, typedArgs, shaderParams)}`;
+			fragColor = (uv) =>
+				`${shaderString(uv, transformApplication, typedArgs, shaderParams, onError)}`;
 		} else if (transformApplication.transform.type === 'coord') {
 			fragColor = (uv) =>
-				`${f0(`${shaderString(uv, transformApplication, typedArgs, shaderParams)}`)}`;
+				`${f0(`${shaderString(uv, transformApplication, typedArgs, shaderParams, onError)}`)}`;
 		} else if (transformApplication.transform.type === 'color') {
 			fragColor = (uv) =>
-				`${shaderString(`${f0(uv)}`, transformApplication, typedArgs, shaderParams)}`;
+				`${shaderString(`${f0(uv)}`, transformApplication, typedArgs, shaderParams, onError)}`;
 		} else if (transformApplication.transform.type === 'combine') {
 			// combining two generated shader strings (i.e. for blend, mult, add funtions)
 			f1 =
@@ -53,7 +55,7 @@ export function generateGlsl(
 				typedArgs[0].value && typedArgs[0].value.transforms
 					? (uv: string) =>
 							// @ts-ignore
-							`${generateGlsl(typedArgs[0].value.transforms, shaderParams)(uv)}`
+							`${generateGlsl(typedArgs[0].value.transforms, shaderParams, onError)(uv)}`
 					: typedArgs[0].isUniform
 						? () => typedArgs[0].name
 						: () => typedArgs[0].value;
@@ -62,7 +64,8 @@ export function generateGlsl(
 					`${f0(uv)}, ${f1(uv)}`,
 					transformApplication,
 					typedArgs.slice(1),
-					shaderParams
+					shaderParams,
+					onError
 				)}`;
 		} else if (transformApplication.transform.type === 'combineCoord') {
 			// combining two generated shader strings (i.e. for modulate functions)
@@ -71,7 +74,7 @@ export function generateGlsl(
 				typedArgs[0].value && typedArgs[0].value.transforms
 					? (uv: string) =>
 							// @ts-ignore
-							`${generateGlsl(typedArgs[0].value.transforms, shaderParams)(uv)}`
+							`${generateGlsl(typedArgs[0].value.transforms, shaderParams, onError)(uv)}`
 					: typedArgs[0].isUniform
 						? () => typedArgs[0].name
 						: () => typedArgs[0].value;
@@ -81,7 +84,8 @@ export function generateGlsl(
 						`${uv}, ${f1(uv)}`,
 						transformApplication,
 						typedArgs.slice(1),
-						shaderParams
+						shaderParams,
+						onError
 					)}`
 				)}`;
 		}
@@ -93,7 +97,8 @@ function shaderString(
 	uv: string,
 	transformApplication: TransformApplication,
 	inputs: TypedArg[],
-	shaderParams: ShaderParams
+	shaderParams: ShaderParams,
+	onError?: HydraErrorHandler
 ): string {
 	const str = inputs
 		.map((input) => {
@@ -103,7 +108,7 @@ function shaderString(
 			} else if (input.value && input.value.transforms) {
 				// this by definition needs to be a generator, hence we start with 'st' as the initial value for generating the glsl fragment
 				// @ts-ignore
-				return `${generateGlsl(input.value.transforms, shaderParams)('st')}`;
+				return `${generateGlsl(input.value.transforms, shaderParams, onError)('st')}`;
 			}
 			return input.value;
 		})

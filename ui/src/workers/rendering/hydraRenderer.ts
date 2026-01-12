@@ -1,4 +1,4 @@
-import type { Hydra } from '$lib/hydra';
+import type { Hydra, HydraErrorContext } from '$lib/hydra';
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
@@ -50,6 +50,11 @@ export class HydraRenderer {
 	// Mouse scope: 'local' = canvas-relative, 'global' = screen-relative
 	private mouseScope: 'global' | 'local' = 'local';
 
+	// Runtime error throttling (avoid flooding console at 120fps)
+	private lastRuntimeError: string | null = null;
+	private lastRuntimeErrorTime = 0;
+	private static readonly RUNTIME_ERROR_THROTTLE_MS = 1000;
+
 	private constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
 		this.framebuffer = framebuffer;
@@ -76,7 +81,8 @@ export class HydraRenderer {
 			height,
 			numSources: 4,
 			numOutputs: 4,
-			precision: instance.precision
+			precision: instance.precision,
+			onError: (error, context) => instance.handleRuntimeError(error, context)
 		});
 
 		await instance.updateCode();
@@ -401,6 +407,44 @@ export class HydraRenderer {
 			type: 'setMouseScope',
 			nodeId: this.config.nodeId,
 			scope
+		});
+	}
+
+	/**
+	 * Handles runtime errors from Hydra transforms (e.g., errors in arrow functions passed to osc(), rotate(), etc.)
+	 * These errors occur during rendering, not during initial code evaluation.
+	 * Throttled to avoid flooding console at high frame rates.
+	 */
+	handleRuntimeError(error: unknown, context: HydraErrorContext): void {
+		const { nodeId } = this.config;
+		const errorMessage = error instanceof Error ? error.message : String(error);
+
+		// Create a key to identify this specific error
+		const errorKey = `${context.transformName}:${context.paramName}:${errorMessage}`;
+		const now = performance.now();
+
+		// Throttle: skip if same error was reported recently
+		if (
+			this.lastRuntimeError === errorKey &&
+			now - this.lastRuntimeErrorTime < HydraRenderer.RUNTIME_ERROR_THROTTLE_MS
+		) {
+			return;
+		}
+
+		this.lastRuntimeError = errorKey;
+		this.lastRuntimeErrorTime = now;
+
+		// Format a helpful error message with context
+		const contextInfo =
+			context.transformType === 'render'
+				? 'during render'
+				: `in ${context.transformName}() parameter "${context.paramName}"`;
+
+		self.postMessage({
+			type: 'consoleOutput',
+			nodeId,
+			level: 'error',
+			args: [`Runtime error ${contextInfo}: ${errorMessage}`]
 		});
 	}
 

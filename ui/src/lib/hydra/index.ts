@@ -2,6 +2,7 @@
 // Vendored to enable configurable error handling for virtual console support
 
 export { Hydra } from './Hydra';
+export type { HydraErrorHandler, HydraErrorContext } from './Hydra';
 export { Source } from './Source';
 export { Output } from './Output';
 export * as generators from './glsl';
@@ -10,4 +11,3 @@ export {
 	modifierTransforms as defaultModifiers
 } from './glsl/transformDefinitions';
 export { createGenerators, createTransformChainClass } from './glsl/createGenerators';
-export { onError } from './compiler/formatArguments';

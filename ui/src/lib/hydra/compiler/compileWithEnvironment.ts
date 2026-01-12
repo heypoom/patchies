@@ -1,5 +1,5 @@
 import type { GlEnvironment } from '../Hydra';
-import type { TypedArg } from './formatArguments';
+import type { TypedArg, HydraErrorHandler } from './formatArguments';
 import { utilityFunctions } from '../glsl/utilityFunctions';
 import type { TransformApplication } from '../glsl/Glsl';
 import type { DynamicVariable, DynamicVariableFn, Texture2D, Uniform } from 'regl';
@@ -11,9 +11,12 @@ export type CompiledTransform = {
 		[name: string]:
 			| string
 			| Uniform
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			| ((context: any, props: any) => number | number[])
 			| Texture2D
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			| DynamicVariable<any>
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			| DynamicVariableFn<any, any, any>
 			| undefined;
 	};
@@ -29,7 +32,7 @@ export function compileWithEnvironment(
 	transformApplications: TransformApplication[],
 	environment: GlEnvironment
 ): CompiledTransform {
-	const shaderParams = compileGlsl(transformApplications);
+	const shaderParams = compileGlsl(transformApplications, environment.onError);
 
 	const uniforms: Record<TypedArg['name'], TypedArg['value']> = {};
 	shaderParams.uniforms.forEach((uniform) => {
@@ -77,7 +80,10 @@ export function compileWithEnvironment(
 	};
 }
 
-export function compileGlsl(transformApplications: TransformApplication[]): ShaderParams {
+export function compileGlsl(
+	transformApplications: TransformApplication[],
+	onError?: HydraErrorHandler
+): ShaderParams {
 	const shaderParams: ShaderParams = {
 		uniforms: [],
 		transformApplications: [],
@@ -85,7 +91,7 @@ export function compileGlsl(transformApplications: TransformApplication[]): Shad
 	};
 
 	// Note: generateGlsl() also mutates shaderParams.transformApplications
-	shaderParams.fragColor = generateGlsl(transformApplications, shaderParams)('st');
+	shaderParams.fragColor = generateGlsl(transformApplications, shaderParams, onError)('st');
 
 	// remove uniforms with duplicate names
 	const uniforms: Record<string, TypedArg> = {};

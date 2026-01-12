@@ -72,8 +72,14 @@ export class Output {
 		try {
 			this._draw(synth);
 		} catch (error) {
-			if (error instanceof Error) {
-				console.log('[hydra]', error.message);
+			if (this.environment.onError) {
+				this.environment.onError(error, {
+					transformName: 'draw',
+					transformType: 'render',
+					paramName: 'output',
+					paramIndex: 0,
+					paramType: 'framebuffer'
+				});
 			}
 		}
 	}
