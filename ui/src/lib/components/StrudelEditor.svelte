@@ -14,6 +14,7 @@
 		class: className = '',
 		onUpdateState = undefined,
 		onchange = undefined,
+		onBeforeEvaluate = undefined,
 		messageContext,
 		nodeId,
 		customConsole,
@@ -25,6 +26,7 @@
 		class?: string;
 		onUpdateState?: (state: unknown) => void;
 		onchange?: (code: string) => void;
+		onBeforeEvaluate?: () => void;
 		messageContext?: MessageContext;
 		nodeId: string;
 		customConsole?: CustomConsole;
@@ -168,6 +170,7 @@
 				{
 					key: 'Shift-Enter',
 					run: () => {
+						onBeforeEvaluate?.();
 						editor.evaluate();
 						return true;
 					}

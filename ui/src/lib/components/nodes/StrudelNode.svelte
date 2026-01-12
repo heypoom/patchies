@@ -53,6 +53,7 @@
 	// Listen for Strudel log events (errors come through CustomEvent)
 	function handleStrudelLog(event: Event) {
 		const detail = (event as CustomEvent).detail;
+
 		if (detail?.type === 'error') {
 			customConsole.error(detail.message);
 			hasError = true;
@@ -208,6 +209,10 @@
 							{code}
 							bind:this={strudelEditor}
 							onUpdateState={handleUpdateState}
+							onBeforeEvaluate={() => {
+								consoleRef?.clearConsole();
+								hasError = false;
+							}}
 							onchange={(newCode) => {
 								updateNodeData(nodeId, { code: newCode });
 							}}
