@@ -77,6 +77,7 @@ export function formatArguments(
 								paramIndex: index,
 								paramType: input.type
 							});
+
 							return input.default;
 						}
 					};

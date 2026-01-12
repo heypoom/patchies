@@ -416,7 +416,7 @@ export class HydraRenderer {
 	 * Throttled to avoid flooding console at high frame rates.
 	 */
 	handleRuntimeError(error: unknown, context: HydraErrorContext): void {
-		const { nodeId } = this.config;
+		const { nodeId, code } = this.config;
 		const errorMessage = error instanceof Error ? error.message : String(error);
 
 		// Create a key to identify this specific error
@@ -440,11 +440,15 @@ export class HydraRenderer {
 				? 'during render'
 				: `in ${context.transformName}() parameter "${context.paramName}"`;
 
+		// Try to extract line number from stack trace
+		const errorInfo = parseJSError(error, countLines(code), HYDRA_WRAPPER_OFFSET);
+
 		self.postMessage({
 			type: 'consoleOutput',
 			nodeId,
 			level: 'error',
-			args: [`Runtime error ${contextInfo}: ${errorMessage}`]
+			args: [`Error ${contextInfo}: ${errorMessage}`],
+			lineErrors: errorInfo?.lineErrors
 		});
 	}
 
