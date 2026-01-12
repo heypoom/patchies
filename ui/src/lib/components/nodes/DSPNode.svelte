@@ -448,7 +448,7 @@
 				<VirtualConsole
 					bind:this={consoleRef}
 					{nodeId}
-					placeholder="DSP errors will appear here."
+					placeholder="DSP logs and errors will appear here."
 					maxHeight="150px"
 				/>
 			</div>
