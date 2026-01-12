@@ -180,36 +180,38 @@ const patchiesAPICompletions: Completion[] = [
 
 // Setup functions that should only appear at top-level (not in function bodies)
 const topLevelOnlyFunctions = new Set([
-	'setPortCount',
-	'setAudioPortCount',
-	'setVideoCount',
-	'setTitle',
-	'setRunOnMount',
-	'setKeepAlive',
-	'setHidePorts',
 	'noDrag',
 	'noOutput',
-	'recv',
-	'onMessage',
 	'onKeyDown',
-	'onKeyUp'
+	'onKeyUp',
+	'onMessage',
+	'recv',
+	'setAudioPortCount',
+	'setCanvasSize',
+	'setHidePorts',
+	'setKeepAlive',
+	'setMouseScope',
+	'setPortCount',
+	'setRunOnMount',
+	'setTitle',
+	'setVideoCount'
 ]);
 
 // Node-specific functions - only show in certain node types
 const nodeSpecificFunctions: Record<string, string[]> = {
-	setKeepAlive: ['dsp~'],
-	setAudioPortCount: ['dsp~'],
-	setVideoCount: ['hydra'],
-	setMouseScope: ['hydra'],
-	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
-	setTitle: ['p5', 'hydra', 'canvas', 'canvas.dom', 'dsp~', 'elem~', 'tone~', 'sonic~'],
+	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel'],
 	noDrag: ['p5', 'canvas', 'canvas.dom'],
 	noOutput: ['p5', 'canvas', 'canvas.dom'],
-	setCanvasSize: ['canvas.dom'],
 	onKeyDown: ['canvas.dom'],
 	onKeyUp: ['canvas.dom'],
-	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel'],
-	setRunOnMount: ['js']
+	setAudioPortCount: ['dsp~'],
+	setCanvasSize: ['canvas.dom'],
+	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
+	setKeepAlive: ['dsp~'],
+	setMouseScope: ['hydra'],
+	setRunOnMount: ['js'],
+	setTitle: ['p5', 'hydra', 'canvas', 'canvas.dom', 'dsp~', 'elem~', 'tone~', 'sonic~'],
+	setVideoCount: ['hydra']
 };
 
 export interface PatchiesContext {
