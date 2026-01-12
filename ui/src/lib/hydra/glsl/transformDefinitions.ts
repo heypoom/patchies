@@ -248,7 +248,9 @@ export const generatorTransforms = [
 				default: NaN
 			}
 		],
-		glsl: `return texture2D(tex, fract(_st));`
+
+		// Flip Y to correct for WebGL's bottom-left origin vs input texture's top-left origin
+		glsl: `return texture2D(tex, fract(vec2(_st.x, 1.0 - _st.y)));`
 	},
 	{
 		name: 'solid',
