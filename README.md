@@ -351,8 +351,10 @@ These objects support video chaining and can be connected to create complex visu
 - You can call these special methods in your Hydra code:
   - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
   - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two visual inlets.
+  - `setMouseScope('global' | 'local')` sets mouse tracking scope. `'local'` (default) tracks mouse within the canvas preview, `'global'` tracks mouse across the entire screen using screen coordinates.
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
+  - `mouse.x` and `mouse.y` provide real-time mouse coordinates (scope depends on `setMouseScope`)
   - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
   - `setTitle(title)` sets the hydra object title
 - Try out these presets to get you started:

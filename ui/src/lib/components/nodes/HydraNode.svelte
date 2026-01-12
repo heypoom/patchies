@@ -12,6 +12,7 @@
 	import type {
 		NodePortCountUpdateEvent,
 		NodeTitleUpdateEvent,
+		NodeMouseScopeUpdateEvent,
 		ConsoleOutputEvent
 	} from '$lib/eventbus/events';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -62,6 +63,9 @@
 	let outputWidth = $state(800);
 	let outputHeight = $state(600);
 
+	// Mouse scope: 'local' (canvas-relative) or 'global' (screen-relative)
+	let mouseScope = $state<'global' | 'local'>('local');
+
 	// Detect if Hydra code uses mouse variable (ignore comments)
 	const usesMouseVariable = $derived.by(() => {
 		// Remove single-line comments
@@ -106,6 +110,12 @@
 		updateNodeData(nodeId, { title: e.title });
 	}
 
+	function handleMouseScopeUpdate(e: NodeMouseScopeUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+
+		mouseScope = e.scope;
+	}
+
 	let messageInletCount = $derived(data.messageInletCount ?? 1);
 	let messageOutletCount = $derived(data.messageOutletCount ?? 0);
 	let videoInletCount = $derived(data.videoInletCount ?? 1);
@@ -144,11 +154,13 @@
 
 		eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
 		eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
+		eventBus.addEventListener('nodeMouseScopeUpdate', handleMouseScopeUpdate);
 
 		if (previewCanvas) {
 			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 
 			const [previewWidth, previewHeight] = glSystem.previewSize;
+
 			previewCanvas.width = previewWidth;
 			previewCanvas.height = previewHeight;
 		}
@@ -170,12 +182,16 @@
 		const eventBus = glSystem.eventBus;
 		eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
 		eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
+		eventBus.removeEventListener('nodeMouseScopeUpdate', handleMouseScopeUpdate);
 	});
 
 	function updateHydra() {
 		// Clear console and error line highlighting on re-run
 		consoleRef?.clearConsole();
 		lineErrors = undefined;
+
+		// Reset mouse scope to local (worker also resets on code update)
+		mouseScope = 'local';
 
 		try {
 			messageContext.clearTimers();
@@ -215,17 +231,37 @@
 		glSystem.setMouseData(nodeId, x, y, 0, 0);
 	}
 
-	// Attach mouse event listeners when canvas is available and mouse is used
+	function handleGlobalMouseMove(event: MouseEvent) {
+		if (!usesMouseVariable) return;
+
+		// Use screen coordinates directly (entire screen)
+		const x = event.screenX;
+		const y = event.screenY;
+
+		glSystem.setMouseData(nodeId, x, y, 0, 0);
+	}
+
+	// Attach mouse event listeners based on scope
 	$effect(() => {
-		if (!previewCanvas || !usesMouseVariable) return;
+		if (!usesMouseVariable) return;
 
-		previewCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+		if (mouseScope === 'global') {
+			// Global scope: track mouse across entire screen
+			document.addEventListener('mousemove', handleGlobalMouseMove);
 
-		return () => {
+			return () => {
+				document.removeEventListener('mousemove', handleGlobalMouseMove);
+			};
+		} else {
 			if (!previewCanvas) return;
 
-			previewCanvas.removeEventListener('mousemove', handleCanvasMouseMove);
-		};
+			// Local scope: track mouse only over canvas
+			previewCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+
+			return () => {
+				previewCanvas?.removeEventListener('mousemove', handleCanvasMouseMove);
+			};
+		}
 	});
 
 	// Listen for console output events to capture lineErrors for code highlighting

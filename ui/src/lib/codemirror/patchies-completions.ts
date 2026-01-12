@@ -52,6 +52,13 @@ const patchiesAPICompletions: Completion[] = [
 		info: 'Set the number of video inlets and outlets for Hydra nodes (max 4 each). Defaults to 1 if not specified',
 		apply: 'setVideoCount(2, 1)'
 	},
+	{
+		label: 'setMouseScope',
+		type: 'function',
+		detail: "('global' | 'local') => void",
+		info: "Set mouse tracking scope. 'local' (default) tracks within canvas, 'global' tracks across entire screen",
+		apply: "setMouseScope('global')"
+	},
 
 	// Node Configuration
 	{
@@ -193,6 +200,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	setKeepAlive: ['dsp~'],
 	setAudioPortCount: ['dsp~'],
 	setVideoCount: ['hydra'],
+	setMouseScope: ['hydra'],
 	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
 	setTitle: ['p5', 'hydra', 'canvas', 'canvas.dom', 'dsp~', 'elem~', 'tone~', 'sonic~'],
 	noDrag: ['p5', 'canvas', 'canvas.dom'],

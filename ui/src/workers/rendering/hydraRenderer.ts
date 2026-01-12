@@ -47,6 +47,9 @@ export class HydraRenderer {
 	private mouseX = 0;
 	private mouseY = 0;
 
+	// Mouse scope: 'local' = canvas-relative, 'global' = screen-relative
+	private mouseScope: 'global' | 'local' = 'local';
+
 	private constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
 		this.framebuffer = framebuffer;
@@ -78,6 +81,7 @@ export class HydraRenderer {
 		});
 
 		await instance.updateCode();
+
 		return instance;
 	}
 
@@ -171,6 +175,9 @@ export class HydraRenderer {
 		this.fftDataCache.clear();
 		this.fftRequestCache.clear();
 
+		// Reset mouse scope to local (default)
+		this.mouseScope = 'local';
+
 		try {
 			const { generators } = await import('hydra-ts');
 
@@ -232,6 +239,9 @@ export class HydraRenderer {
 
 				// Mouse object with getters for real-time values (Hydra-style)
 				mouse: this.createMouseObject(),
+
+				// Set mouse scope: 'local' (canvas-relative) or 'global' (screen-relative)
+				setMouseScope: this.setMouseScope.bind(this),
 
 				// Canvas dimensions for normalizing mouse coordinates
 				width: this.renderer.outputSize[0],
@@ -382,6 +392,16 @@ export class HydraRenderer {
 			type: 'setTitle',
 			nodeId: this.config.nodeId,
 			title
+		});
+	}
+
+	setMouseScope(scope: 'global' | 'local') {
+		this.mouseScope = scope;
+
+		self.postMessage({
+			type: 'setMouseScope',
+			nodeId: this.config.nodeId,
+			scope
 		});
 	}
 

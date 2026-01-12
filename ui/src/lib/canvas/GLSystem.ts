@@ -193,6 +193,15 @@ export class GLSystem {
 			});
 		}
 
+		// Handle setMouseScope messages from workers (Hydra global mouse tracking)
+		if (data.type === 'setMouseScope') {
+			this.eventBus.dispatch({
+				type: 'nodeMouseScopeUpdate',
+				nodeId: data.nodeId,
+				scope: data.scope
+			});
+		}
+
 		// A block has requested a preview frame capture from a node.
 		if (data.type === 'previewFrameCaptured') {
 			this.eventBus.dispatch(data);

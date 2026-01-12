@@ -9,7 +9,8 @@ export type PatchiesEvent =
 	| NodeTitleUpdateEvent
 	| NodeHidePortsUpdateEvent
 	| NodeDragEnabledUpdateEvent
-	| NodeVideoOutputEnabledUpdateEvent;
+	| NodeVideoOutputEnabledUpdateEvent
+	| NodeMouseScopeUpdateEvent;
 
 export interface ConsoleOutputEvent {
 	type: 'consoleOutput';
@@ -75,4 +76,10 @@ export interface NodeVideoOutputEnabledUpdateEvent {
 	type: 'nodeVideoOutputEnabledUpdate';
 	nodeId: string;
 	videoOutputEnabled: boolean;
+}
+
+export interface NodeMouseScopeUpdateEvent {
+	type: 'nodeMouseScopeUpdate';
+	nodeId: string;
+	scope: 'global' | 'local';
 }
