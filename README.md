@@ -155,7 +155,7 @@ Most messages in Patchies are objects with a `type` field. For example, `bang` i
 
 Typing `bang` in the message box sends `{type: 'bang'}` for convenience. If you want to send a string "bang", type in `"bang"` with quotes. See the [message object](#msg-message-object)'s documentation for the message box syntax.
 
-<img src="./docs/images/patchies-implicit-message-type.png" alt="Patchies.app implicit message type" width="700">
+<img src="./docs/images/message-passing-bang-meow.webp" alt="Patchies.app implicit message type" width="700">
 
 In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~`, `tone~`, `elem~` and `sonic~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
