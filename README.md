@@ -760,7 +760,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 
 <img src="./docs/images/strudel-demo.webp" alt="Patchies.app strudel demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=zntnikb36c47eaw)!
+> ✨ Try this patch out [in the app](https://patchies.app/?id=zntnikb36c47eaw)! The strudel code is from "froos - how to funk in 42 lines of code", adapted from "how to funk in two minutes" by marc rebillet.
 
 - [Strudel](https://strudel.cc) is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
 - See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
