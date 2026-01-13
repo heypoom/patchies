@@ -157,7 +157,7 @@ Typing `bang` in the message box sends `{type: 'bang'}` for convenience. If you 
 
 <img src="./docs/images/message-passing-bang-meow.webp" alt="Patchies.app implicit message type" width="700">
 
-In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `strudel`, `dsp~`, `tone~`, `elem~` and `sonic~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
+In JavaScript-based objects such as `js`, `p5`, `hydra`, `canvas`, `canvas.dom`, `strudel`, `dsp~`, `tone~`, `elem~` and `sonic~`, you can use the `send()` and `recv()` functions to send and receive messages between objects. For example:
 
 ```js
 // In the source `js` object
