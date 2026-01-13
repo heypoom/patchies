@@ -20,18 +20,18 @@
         "@lezer/highlight": "^1.2.1",
         "@replit/codemirror-vim": "^6.3.0",
         "@rollup/browser": "^4.50.1",
-        "@strudel/codemirror": "^1.2.2",
-        "@strudel/core": "^1.2.2",
-        "@strudel/draw": "^1.2.2",
-        "@strudel/hydra": "^1.2.2",
-        "@strudel/midi": "^1.2.3",
-        "@strudel/mini": "^1.2.2",
-        "@strudel/repl": "^1.2.3",
-        "@strudel/soundfonts": "^1.2.3",
-        "@strudel/tonal": "^1.2.2",
-        "@strudel/transpiler": "^1.2.2",
-        "@strudel/web": "^1.2.3",
-        "@strudel/webaudio": "^1.2.3",
+        "@strudel/codemirror": "^1.2.6",
+        "@strudel/core": "^1.2.5",
+        "@strudel/draw": "^1.2.5",
+        "@strudel/hydra": "^1.2.5",
+        "@strudel/midi": "^1.2.6",
+        "@strudel/mini": "^1.2.5",
+        "@strudel/repl": "^1.2.7",
+        "@strudel/soundfonts": "^1.2.6",
+        "@strudel/tonal": "^1.2.5",
+        "@strudel/transpiler": "^1.2.5",
+        "@strudel/web": "^1.2.6",
+        "@strudel/webaudio": "^1.2.6",
         "@sveltejs/adapter-static": "^3.0.8",
         "@uiw/codemirror-theme-tokyo-night": "^4.24.2",
         "@xyflow/svelte": "^1.2.2",
@@ -124,7 +124,7 @@
     "core-js",
   ],
   "patchedDependencies": {
-    "superdough@1.2.3": "patches/superdough@1.2.3.patch",
+    "superdough@1.2.6": "patches/superdough@1.2.6.patch",
   },
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
@@ -449,29 +449,29 @@
 
     "@speed-highlight/core": ["@speed-highlight/core@1.2.7", "", {}, "sha512-0dxmVj4gxg3Jg879kvFS/msl4s9F3T9UXC1InxgOf7t5NvcPD97u/WTA5vL/IxWHMn7qSxBozqrnnE2wvl1m8g=="],
 
-    "@strudel/codemirror": ["@strudel/codemirror@1.2.2", "", { "dependencies": { "@codemirror/autocomplete": "^6.18.4", "@codemirror/commands": "^6.8.0", "@codemirror/lang-javascript": "^6.2.2", "@codemirror/language": "^6.10.8", "@codemirror/search": "^6.5.8", "@codemirror/state": "^6.5.1", "@codemirror/view": "^6.36.2", "@lezer/highlight": "^1.2.1", "@nanostores/persistent": "^0.10.2", "@replit/codemirror-emacs": "^6.1.0", "@replit/codemirror-vim": "^6.2.1", "@replit/codemirror-vscode-keymap": "^6.0.2", "@strudel/core": "1.2.2", "@strudel/draw": "1.2.2", "@strudel/transpiler": "1.2.2", "nanostores": "^0.11.3" } }, "sha512-uGB+krWvEJ+AgVV+clqJv1zoNcsdr3Gps13XbwCgHWeAoHnmvJhQvniyE1y0YPx7moCMiAM1cShEVqDddzTp3w=="],
+    "@strudel/codemirror": ["@strudel/codemirror@1.2.6", "", { "dependencies": { "@codemirror/autocomplete": "^6.18.4", "@codemirror/commands": "^6.8.0", "@codemirror/lang-javascript": "^6.2.2", "@codemirror/language": "^6.10.8", "@codemirror/search": "^6.5.8", "@codemirror/state": "^6.5.1", "@codemirror/view": "^6.36.2", "@lezer/highlight": "^1.2.1", "@nanostores/persistent": "^0.10.2", "@replit/codemirror-emacs": "^6.1.0", "@replit/codemirror-vim": "^6.3.0", "@replit/codemirror-vscode-keymap": "^6.0.2", "@strudel/core": "1.2.5", "@strudel/draw": "1.2.5", "@strudel/tonal": "1.2.5", "@strudel/transpiler": "1.2.5", "@tonaljs/tonal": "^4.10.0", "nanostores": "^0.11.3", "superdough": "1.2.6" } }, "sha512-zjKbnbnOY40dlIAQu1poq28rcngYliLsuDwXXVnJsaXzCZSVuXEOMq91LqY4IGz/2QUOIDGm663ziz6Nb4IXeg=="],
 
-    "@strudel/core": ["@strudel/core@1.2.2", "", { "dependencies": { "fraction.js": "^5.2.1" } }, "sha512-rPFAwV7Emz85HyKwfVVn+2cNOHCGBbWw6XImv0elnzRiXxKWMdmZfuSL3xgpheEg9WUgacgmzJL9kbvfCitGtA=="],
+    "@strudel/core": ["@strudel/core@1.2.5", "", { "dependencies": { "fraction.js": "^5.2.1" } }, "sha512-XO6ICbfuGfvaQ4sZmfIFsPDcjFez/+AVpNgJnmks5gtMMQNXpr0reuee61tvMiu2k5QYKzxWgzDl2FF9pJeIgA=="],
 
-    "@strudel/draw": ["@strudel/draw@1.2.2", "", { "dependencies": { "@strudel/core": "1.2.2" } }, "sha512-0Vmva6lc51L4rDcLwpGeoQ14t1/2RoyzhI6Sfa3drTALa69E3Jg2bn4o/sZgaifNRkPJhbIOdCqIVcir69Aj6w=="],
+    "@strudel/draw": ["@strudel/draw@1.2.5", "", { "dependencies": { "@strudel/core": "1.2.5" } }, "sha512-ZI4WPxUsVsxgDoeZMHo6VfFf+S1tsj8ubKBeSLcf6lH29JqPp7Nz6tPmbomOV1fzazZ7+xpkC7z772MdtgWy2g=="],
 
-    "@strudel/hydra": ["@strudel/hydra@1.2.2", "", { "dependencies": { "@strudel/core": "1.2.2", "@strudel/draw": "1.2.2", "hydra-synth": "^1.3.29" } }, "sha512-W8ZX50gb+wYx2SzI+c0UDjJNa6F0k+W2j6xgbazH/Y2MAot6zGVMwVsOXxpaL5ZOEN0jJ/W+h6EPdkiVVFUS9A=="],
+    "@strudel/hydra": ["@strudel/hydra@1.2.5", "", { "dependencies": { "@strudel/core": "1.2.5", "@strudel/draw": "1.2.5", "hydra-synth": "^1.3.29" } }, "sha512-IMosQ2SYYIwct4hnalimgRH+ROhNLBK0+7Jg5yzhN0dAeWEXMM6xAWYYycxU9/gThzeesrmO3BSHm8uWJQYSjg=="],
 
-    "@strudel/midi": ["@strudel/midi@1.2.3", "", { "dependencies": { "@strudel/core": "1.2.2", "@strudel/webaudio": "1.2.3", "webmidi": "^3.1.12" } }, "sha512-6WClxFeEcDQ4E6Vp6T0EsuL/Q98cUqT/++GeG13ntkCumnGoLYcHye/B62YW8mYDoW1UfBJwpYHIqtVO3FunGg=="],
+    "@strudel/midi": ["@strudel/midi@1.2.6", "", { "dependencies": { "@strudel/core": "1.2.5", "@strudel/webaudio": "1.2.6", "webmidi": "^3.1.12" } }, "sha512-H3heSKnfjrAfWZB7zoFdq3fsA4pepxYWHTRmSy4/vsukyvXxK/NoOyRRKS0dIysu/n8dvdX8D+j3IIIGrAiQQg=="],
 
-    "@strudel/mini": ["@strudel/mini@1.2.2", "", { "dependencies": { "@strudel/core": "1.2.2" } }, "sha512-kMGdAp6J6dI6oZijQdobVn/STt8bNQkMNcwe341E2gnRvz3S3KbYAKRVvAKrm9jFzy1zoL4F+a1BnqoOqlOPDw=="],
+    "@strudel/mini": ["@strudel/mini@1.2.5", "", { "dependencies": { "@strudel/core": "1.2.5" } }, "sha512-GmTWSBt49C3ogBy0hjM3bmf6K12PaJ1JJLsEvQu7j5J+lUd2n7GmLYR1UL6fntY4yVqT8ZwMhfUf6vIgUCTNbw=="],
 
-    "@strudel/repl": ["@strudel/repl@1.2.3", "", { "dependencies": { "@strudel/codemirror": "1.2.2", "@strudel/core": "1.2.2", "@strudel/draw": "1.2.2", "@strudel/hydra": "1.2.2", "@strudel/midi": "1.2.3", "@strudel/mini": "1.2.2", "@strudel/soundfonts": "1.2.3", "@strudel/tonal": "1.2.2", "@strudel/transpiler": "1.2.2", "@strudel/webaudio": "1.2.3" } }, "sha512-9zMDIeZPn3mxroTv/87AyZWll145vi3b1Oi1k+YGCJdENH3zM5UKrNNJPXwpvO7O28Tod1oYuxj04a2MExz9aw=="],
+    "@strudel/repl": ["@strudel/repl@1.2.7", "", { "dependencies": { "@strudel/codemirror": "1.2.6", "@strudel/core": "1.2.5", "@strudel/draw": "1.2.5", "@strudel/hydra": "1.2.5", "@strudel/midi": "1.2.6", "@strudel/mini": "1.2.5", "@strudel/soundfonts": "1.2.6", "@strudel/tonal": "1.2.5", "@strudel/transpiler": "1.2.5", "@strudel/webaudio": "1.2.6" } }, "sha512-wyxuCsZAN0FdUU/p/seiqUdUNHJyr8EQtYUcFEw2hBW5iBRNcDCGoeUCmjXPqowK3dOO1ftoo+RhNk8atQzR9g=="],
 
-    "@strudel/soundfonts": ["@strudel/soundfonts@1.2.3", "", { "dependencies": { "@strudel/core": "1.2.2", "@strudel/webaudio": "1.2.3", "sfumato": "^0.1.2", "soundfont2": "^0.5.0" } }, "sha512-uLIJfWMnENwXBe2PuhrrP6GIu21RLtgmCzaZMxBc/U+NrlLQquKc9TAQKH5narPXYFnEYPXB8JLylEcGAG2OXA=="],
+    "@strudel/soundfonts": ["@strudel/soundfonts@1.2.6", "", { "dependencies": { "@strudel/core": "1.2.5", "@strudel/webaudio": "1.2.6", "sfumato": "^0.1.2", "soundfont2": "^0.5.0" } }, "sha512-F7eBhohkCXCMo8WiufSAhD3JCfL5GTgCh9RlOJVT+1swiFeIss1vUAWJR3WjonB6moL8BiuNpcYOqO6i6cFy4A=="],
 
-    "@strudel/tonal": ["@strudel/tonal@1.2.2", "", { "dependencies": { "@strudel/core": "1.2.2", "@tonaljs/tonal": "^4.10.0", "chord-voicings": "^0.0.1", "webmidi": "^3.1.12" } }, "sha512-p09mb2gHZj0NXYbDyuXAK2NQZtrm6n589kE2JdlBTUuxtHHzyNzHzE3WeuGur2QY7avjwM5mw3kPnelstLTQVw=="],
+    "@strudel/tonal": ["@strudel/tonal@1.2.5", "", { "dependencies": { "@strudel/core": "1.2.5", "@tonaljs/tonal": "^4.10.0", "chord-voicings": "^0.0.1", "webmidi": "^3.1.12" } }, "sha512-mX3uW0nWH8Sa52HTLwnxlR5BrejFX77abeaiMbp+kQCMrX9I+XRdf8rEr7gdeInB6f/y2TzTVFpnsNsB5jLdoA=="],
 
-    "@strudel/transpiler": ["@strudel/transpiler@1.2.2", "", { "dependencies": { "@strudel/core": "1.2.2", "@strudel/mini": "1.2.2", "acorn": "^8.14.0", "escodegen": "^2.1.0", "estree-walker": "^3.0.3" } }, "sha512-UGz+nsM3ZSQ1pQD5KPEyYxSBPLyEySc9YCyjN5xiDNdxrBOEKpSgtj1Fj5NzVNlzfuhX+ao6GveZvKqSE4T64g=="],
+    "@strudel/transpiler": ["@strudel/transpiler@1.2.5", "", { "dependencies": { "@strudel/core": "1.2.5", "@strudel/mini": "1.2.5", "acorn": "^8.14.0", "escodegen": "^2.1.0", "estree-walker": "^3.0.3" } }, "sha512-mBZWfQBzknvnIYsjjzR8D67A+uIZ1iZ60U2WoXT21q5luXKz2c95RcTpqdx3oOGpLK9K00lDzcKjhQDJtj4OKw=="],
 
-    "@strudel/web": ["@strudel/web@1.2.3", "", { "dependencies": { "@strudel/core": "1.2.2", "@strudel/mini": "1.2.2", "@strudel/tonal": "1.2.2", "@strudel/transpiler": "1.2.2", "@strudel/webaudio": "1.2.3" } }, "sha512-jzMNiOIK4ayFImxYBTYTNtu8YIMXv/3PK362XxjPaAjqs5W6p9WZU6ShyNeSWXKP9MoyNSsUOPqVT3PNsvjdJQ=="],
+    "@strudel/web": ["@strudel/web@1.2.6", "", { "dependencies": { "@strudel/core": "1.2.5", "@strudel/mini": "1.2.5", "@strudel/tonal": "1.2.5", "@strudel/transpiler": "1.2.5", "@strudel/webaudio": "1.2.6" } }, "sha512-e6VltuX90zZz8JVe1FtN23DCaXA9p8zGDakp5OuUb5kZ5hC6cySFkkOsHdGC6dJ0EAsZSCKXMihRxgk9GhBwKA=="],
 
-    "@strudel/webaudio": ["@strudel/webaudio@1.2.3", "", { "dependencies": { "@strudel/core": "1.2.2", "@strudel/draw": "1.2.2", "superdough": "1.2.3" } }, "sha512-d+69P3fC9LFKkF4BXxnb99p+Vj51d094ywbgPhuRfw22sNkIPA49Xma6+Nft+NIpX0kFz6XL/gr1sDYF2z8M+A=="],
+    "@strudel/webaudio": ["@strudel/webaudio@1.2.6", "", { "dependencies": { "@strudel/core": "1.2.5", "@strudel/draw": "1.2.5", "superdough": "1.2.6", "supradough": "1.2.4" } }, "sha512-4LnyNvyeAXYNmXQGGw2f0chIkDr9Rbwo+SK6Y0p8C3W8juDiOfKq2ihSVph95yaBBPRYFJ5Kttj1kLknRHYsog=="],
 
     "@svelte-put/shortcut": ["@svelte-put/shortcut@4.1.0", "", { "peerDependencies": { "svelte": "^5.1.0" } }, "sha512-wImNEIkbxAIWFqlfuhcbC+jRPDeRa/uJGIXHMEVVD+jqL9xCwWNnkGQJ6Qb2XVszuRLHlb8SGZDL3Io/h3vs8w=="],
 
@@ -1713,13 +1713,15 @@
 
     "style-to-object": ["style-to-object@1.0.9", "", { "dependencies": { "inline-style-parser": "0.2.4" } }, "sha512-G4qppLgKu/k6FwRpHiGiKPaPTFcG3g4wNVX/Qsfu+RqQM30E7Tyu/TEgxcL9PNLF5pdRLwQdE3YKKf+KF2Dzlw=="],
 
-    "superdough": ["superdough@1.2.3", "", { "dependencies": { "nanostores": "^0.11.3" } }, "sha512-OoTHb1wRdoqmQKU21p8bAe8l0xMk4VYJJRlfGxDAo176a2USLubxNTUpgD0jv/W71U6BVTzYIt/5tkmD3p2eXA=="],
+    "superdough": ["superdough@1.2.6", "", { "dependencies": { "nanostores": "^0.11.3" } }, "sha512-zHEFfG+N4zhxJ9lUDf8p4Oj4sdGGQ5SrOPksdc0cKv5Yn0hzlNlMehEa5TkeIfDCiR27Y4H81ks7S8/CGSByhQ=="],
 
     "supersonic-scsynth": ["supersonic-scsynth@0.25.5", "", { "dependencies": { "@thi.ng/malloc": "^6.1.128" } }, "sha512-8pF1oaqVwerAR8/es1mw/y6FZt/aqMt3Ta64ekZhDr00YLWdp5LyrWGdsebnlzA34atqbGcWp+IhvSADj84wwg=="],
 
     "supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
     "supports-preserve-symlinks-flag": ["supports-preserve-symlinks-flag@1.0.0", "", {}, "sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w=="],
+
+    "supradough": ["supradough@1.2.4", "", {}, "sha512-/v3cL9fq05QCQVwbttLHNZcjyyFFz5wdKvg3j6V6moRXpDlQG89l8dQtUIpQvHsxYI5sXNod9rh5bf+Y4NMGeA=="],
 
     "svelte": ["svelte@5.36.8", "", { "dependencies": { "@ampproject/remapping": "^2.3.0", "@jridgewell/sourcemap-codec": "^1.5.0", "@sveltejs/acorn-typescript": "^1.0.5", "@types/estree": "^1.0.5", "acorn": "^8.12.1", "aria-query": "^5.3.1", "axobject-query": "^4.1.0", "clsx": "^2.1.1", "esm-env": "^1.2.1", "esrap": "^2.1.0", "is-reference": "^3.0.3", "locate-character": "^3.0.0", "magic-string": "^0.30.11", "zimmerframe": "^1.1.2" } }, "sha512-8JbZWQu96hMjH/oYQPxXW6taeC6Awl6muGHeZzJTxQx7NGRQ/J9wN1hkzRKLOlSDlbS2igiFg7p5xyTp5uXG3A=="],
 
@@ -1996,8 +1998,6 @@
     "@poppinss/dumper/supports-color": ["supports-color@10.0.0", "", {}, "sha512-HRVVSbCCMbj7/kdWF9Q+bbckjBHLtHMEoJWlkmYzzdwhYMkjkOwubLM6t7NbWKjgKamGDrWL1++KrjUO1t9oAQ=="],
 
     "@rollup/pluginutils/estree-walker": ["estree-walker@2.0.2", "", {}, "sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w=="],
-
-    "@strudel/codemirror/@codemirror/autocomplete": ["@codemirror/autocomplete@6.18.6", "", { "dependencies": { "@codemirror/language": "^6.0.0", "@codemirror/state": "^6.0.0", "@codemirror/view": "^6.17.0", "@lezer/common": "^1.0.0" } }, "sha512-PHHBXFomUs5DF+9tCOM/UoW6XQ4R44lLNNhRaW9PKPTU0D7lIjRg3ElxaJnTwsl/oHiR93WSXDBrekhoUGCPtg=="],
 
     "@tailwindcss/oxide-wasm32-wasi/@emnapi/core": ["@emnapi/core@1.4.5", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.4", "tslib": "^2.4.0" }, "bundled": true }, "sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q=="],
 
