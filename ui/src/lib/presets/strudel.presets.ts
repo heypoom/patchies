@@ -101,13 +101,7 @@ let bass = note(\`<
 [e2@6 e1@5 e1 [[d2 e3] g1]@4]
 >\`).s("gm_electric_bass_pick:1").release(.1)
 
-stack(
-  drums
-  ,wurli
-  ,organ
-  ,clav
-  ,bass
-)`;
+stack(drums, wurli, organ, clav, bass)`;
 
 type StrudelNodeData = {
 	code: string;
