@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -27,6 +28,7 @@ export default defineConfig({
 	plugins: [
 		wasm(),
 		topLevelAwait(),
+		bundleAudioWorkletPlugin(),
 		tailwindcss(),
 		sveltekit(),
 		devtoolsJson(),

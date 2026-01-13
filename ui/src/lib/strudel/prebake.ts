@@ -1,4 +1,12 @@
 export async function prebake() {
+	// Load superdough first to initialize AudioWorklets
+	// @ts-expect-error -- no typedef
+	const superdough = await import('superdough');
+
+	// Initialize audio worklets BEFORE registering synth sounds
+	// This loads the AudioWorkletProcessors (supersaw-oscillator, etc.) into the AudioContext
+	await superdough.initAudio();
+
 	// Load all required modules
 	const [
 		strudelCore,

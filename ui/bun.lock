@@ -65,6 +65,7 @@
         "ts-pattern": "^5.8.0",
         "uxn.wasm": "^0.9.0",
         "virtua": "^0.48.2",
+        "vite-plugin-bundle-audioworklet": "^0.1.1",
         "vite-plugin-static-copy": "^3.1.1",
         "webchuck": "^1.2.10",
         "webmidi": "^3.1.12",
@@ -1896,6 +1897,8 @@
     "vite-bundle-analyzer": ["vite-bundle-analyzer@1.2.3", "", { "bin": { "analyze": "dist/bin.js" } }, "sha512-8nhwDGHWMKKgg6oegAOpDgTT7/yzTVzeYzLF4y8WBJoYu9gO7h29UpHiQnXD2rAvfQzDy5Wqe/Za5cgqhnxi5g=="],
 
     "vite-node": ["vite-node@3.2.4", "", { "dependencies": { "cac": "^6.7.14", "debug": "^4.4.1", "es-module-lexer": "^1.7.0", "pathe": "^2.0.3", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0-0" }, "bin": { "vite-node": "vite-node.mjs" } }, "sha512-EbKSKh+bh1E1IFxeO0pg1n4dvoOTt0UDiXMd/qn++r98+jPO1xtJilvXldeuQ8giIB5IkpjCgMleHMNEsGH6pg=="],
+
+    "vite-plugin-bundle-audioworklet": ["vite-plugin-bundle-audioworklet@0.1.1", "", {}, "sha512-CYZArbUk7GxhYsMjibfbkqy6O0JK3wUo2WARWbwtYn+IAVHdxe1CGMSis9+vq3GoxhhdRaUsBq1bFrtfnR0uIw=="],
 
     "vite-plugin-devtools-json": ["vite-plugin-devtools-json@0.2.1", "", { "dependencies": { "uuid": "^11.1.0" }, "peerDependencies": { "vite": "^2.7.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-5aiNvf/iLTuLR1dUqoI5CLLGgeK2hd6u+tA+RIp7GUZDyAcM6ECaUEWOOtGpidbcxbkKq++KtmSqA3jhMbPwMA=="],
 
