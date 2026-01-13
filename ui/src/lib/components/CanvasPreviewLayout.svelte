@@ -79,7 +79,7 @@
 						: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
 				nodrag ? 'nodrag cursor-default' : 'cursor-grab'
 			]}
-			tabindex={typeof tabindex === 'number' ? tabindex : undefined}
+			{tabindex}
 			width={typeof width === 'number' ? width : undefined}
 			height={typeof height === 'number' ? height : undefined}
 			{style}
