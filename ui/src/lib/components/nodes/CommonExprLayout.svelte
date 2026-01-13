@@ -19,6 +19,7 @@
 		placeholder = 'expr',
 		displayPrefix,
 		editorClass = 'common-expr-node-code-editor',
+		previewContainerClass = '',
 		onExpressionChange = () => {},
 		onRun = () => {},
 		exitOnRun = true,
@@ -37,6 +38,7 @@
 		placeholder?: string;
 		displayPrefix?: string;
 		editorClass?: string;
+		previewContainerClass?: string;
 		onRun?: () => void;
 		onExpressionChange?: (expr: string) => void;
 		exitOnRun?: boolean;
@@ -188,7 +190,8 @@
 							ondblclick={handleDoubleClick}
 							class={[
 								'expr-display cursor-pointer rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
-								containerClass
+								containerClass,
+								previewContainerClass
 							]}
 							role="button"
 							tabindex="0"

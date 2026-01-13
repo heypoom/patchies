@@ -202,6 +202,7 @@
 					bind:isEditing
 					placeholder="SinOsc osc => dac; 1::second => now;"
 					editorClass="chuck-node-code-editor"
+					previewContainerClass="chuck-node-preview-container"
 					onExpressionChange={handleExpressionChange}
 					extraExtensions={chuckKeymaps}
 					exitOnRun={false}
@@ -267,6 +268,12 @@
 </div>
 
 <style>
+	:global(.chuck-node-preview-container) {
+		width: fit-content;
+		max-height: 500px;
+		overflow-y: hidden;
+	}
+
 	:global(.chuck-node-code-editor .cm-content) {
 		padding: 6px 8px 7px 4px !important;
 	}
