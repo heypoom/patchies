@@ -106,6 +106,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "zntnikb36c47eaw",
+			"name": "Funk 42",
+			"description": "How to funk in 42 lines of code. Original code by @froos using Strudel.",
+			"category": "Audio",
+			"author": "@froos"
+		},
+		{
 			"id": "f4tvzfxk1qr4xr2",
 			"name": "Random Walk World",
 			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
