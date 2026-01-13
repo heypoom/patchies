@@ -758,7 +758,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 
 ### `strudel`: Strudel music environment
 
-<img src="./docs/images/strudel-demo.webp" alt="Patchies.app basic example" width="700">
+<img src="./docs/images/strudel-demo.webp" alt="Patchies.app strudel demo" width="700">
 
 > ✨ Try this patch out [in the app](https://patchies.app/?id=zntnikb36c47eaw)!
 
@@ -777,6 +777,10 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Please consider supporting the development of TidalCycles and Strudel at [OpenCollective](https://opencollective.com/tidalcycles)!
 
 ### `chuck~`: creates a ChucK audio programming environment
+
+<img src="./docs/images/chuck-demo.webp" alt="Patchies.app chuck demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=3uwpeb3glcr4usz)! This is from @dtinth's [ChucK experiments](https://dt.in.th/ChucKSong4).
 
 - [ChucK](https://chuck.cs.princeton.edu) is a programming language for real-time sound synthesis and music creation.
 - Great for algorithmic composition and sound design.
