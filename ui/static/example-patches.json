@@ -78,6 +78,13 @@
 			"author": "@dtinth"
 		},
 		{
+			"id": "zntnikb36c47eaw",
+			"name": "Funk 42",
+			"description": "How to funk in 42 lines of code. Original code by @froos using Strudel.",
+			"category": "Audio",
+			"author": "@froos"
+		},
+		{
 			"id": "ocj3v2xp790gq8u",
 			"name": "Periodic Wave Oscillator",
 			"description": "Creates a periodic wave to shape the oscillator output",
@@ -104,13 +111,6 @@
 			"description": "Visualize an oscillation using slider, fft~ and js",
 			"category": "Audio",
 			"author": "@heypoom"
-		},
-		{
-			"id": "zntnikb36c47eaw",
-			"name": "Funk 42",
-			"description": "How to funk in 42 lines of code. Original code by @froos using Strudel.",
-			"category": "Audio",
-			"author": "@froos"
 		},
 		{
 			"id": "f4tvzfxk1qr4xr2",
