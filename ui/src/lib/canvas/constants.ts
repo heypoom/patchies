@@ -150,9 +150,9 @@ endin
 
 schedule("Main", 0, 0, 0)`;
 
-export const DEFAULT_TEXTMODE_CODE = `import { Textmode } from 'npm:textmode.js'
+export const DEFAULT_TEXTMODE_CODE = `import { create } from 'npm:textmode.js'
 
-const tm = new Textmode(canvas)
+const tm = await create({ canvas })
 
 function draw() {
   tm.clear()
