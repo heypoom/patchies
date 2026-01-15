@@ -781,6 +781,19 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - Add Shred `Ctrl/Cmd + \`: adds a new shred to the shreds list.
   - Remove Shred `Ctrl/Cmd + Backspace`: removes the most recent shred.
   - Click on the gear button to see list of running shreds. Remove any shred by clicking on the "x" button.
+- Messages
+  - string: adds the string expression as a new shred
+  - `bang`, `replace` or `run`: replaces the most recent shred with the current expression
+  - `add`: adds the current expression as a new shred
+  - `remove`: removes the last shred
+  - `stop`: stops all shreds
+  - `clearAll`: clears all shreds
+  - `{type: 'replace', code: string}`: replaces the most recent shred with the given code
+  - `{type: 'signal', event: string}`: signal an event by name
+  - `{type: 'broadcast', event: string}`: broadcast an event by name
+  - `{type: 'set', key: string, value: any}`: sets a chuck global value / array (can be string, int or float)
+  - `{type: 'setInt', key: string, value: any}`: sets a chuck global integer value / array
+  - `{type: 'setFloat', key: string, value: any}`: sets a chuck global float value / array
 
 ### `object`: textual object system
 

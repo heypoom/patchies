@@ -70,8 +70,8 @@ export class ChuckNode implements AudioNodeV2 {
 			.with(['init', P.any], async () => {
 				await this.ensureChuck();
 			})
-			.with(['run', P.string], async ([, code]) => {
-				await this.runCode(code);
+			.with(['add', P.string], async ([, code]) => {
+				await this.addShredCode(code);
 			})
 			.with(['replace', P.string], async ([, code]) => {
 				await this.replaceCode(code);
@@ -123,7 +123,7 @@ export class ChuckNode implements AudioNodeV2 {
 			.run();
 	}
 
-	async runCode(code: string): Promise<void> {
+	async addShredCode(code: string): Promise<void> {
 		const chuck = await this.ensureChuck();
 		if (!chuck) return;
 
@@ -157,7 +157,7 @@ export class ChuckNode implements AudioNodeV2 {
 		try {
 			if (this.shreds.length === 0) {
 				// if no shreds, just run the code.
-				await this.runCode(code);
+				await this.addShredCode(code);
 			} else {
 				await chuck.replaceCode(code);
 			}

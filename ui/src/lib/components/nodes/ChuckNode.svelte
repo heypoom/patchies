@@ -34,13 +34,16 @@
 		match(message)
 			.with(P.string, async (nextExpr) => {
 				updateNodeData(nodeId, { expr: nextExpr });
-				await send('run', nextExpr);
+				await send('add', nextExpr);
 			})
-			.with({ type: P.union('replace', 'bang') }, async () => {
+			.with({ type: 'replace', code: P.string }, async ({ code }) => {
+				await send('replace', code);
+			})
+			.with({ type: P.union('replace', 'bang', 'run') }, async () => {
 				await send('replace', data.expr);
 			})
-			.with({ type: 'run' }, async () => {
-				await send('run', data.expr);
+			.with({ type: 'add' }, async () => {
+				await send('add', data.expr);
 			})
 			.with({ type: 'remove' }, () => {
 				removeChuckCode();
@@ -66,9 +69,10 @@
 	const chuckKeymaps = [
 		keymap.of([
 			{
+				// Cmd + \ = add new shred
 				key: 'Cmd-\\',
 				run: () => {
-					handleRun();
+					handleAddShred();
 					return true;
 				}
 			}
@@ -77,7 +81,7 @@
 
 	const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
 
-	const handleRun = () => send('run', data.expr);
+	const handleAddShred = () => send('add', data.expr);
 	const handleReplace = () => send('replace', data.expr);
 
 	function subscribeShredsStore() {
@@ -162,7 +166,7 @@
 
 					<!-- Add shred button -->
 					<button
-						onclick={handleRun}
+						onclick={handleAddShred}
 						class="rounded p-1 hover:bg-zinc-700"
 						title="Add Shred (Cmd+\)"
 						disabled={!data.expr.trim()}
