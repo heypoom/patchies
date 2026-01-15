@@ -758,20 +758,25 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 
 ### `strudel`: Strudel music environment
 
-<img src="./docs/images/strudel-demo.webp" alt="Patchies.app strudel demo" width="700">
+<img src="./docs/images/strudel-haunted.webp" alt="Patchies.app strudel demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=zntnikb36c47eaw)! The strudel code is from "froos - how to funk in 42 lines of code", adapted from "how to funk in two minutes" by marc rebillet.
+> ✨ Try this patch out [in the app](https://patchies.app/?id=0lylv5056h5uul1)!
 
 - [Strudel](https://strudel.cc) is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
 - See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
 - Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
 - Use `Ctrl/Cmd + Enter` to re-evaluate the code.
 - Don't forget to connect the `dac~` object to hear the audio output.
-- Limitations
-  - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
 - Messages
   - `bang` or `run`: evaluates the code and starts playback
   - string or `{type: 'set', code: '...'}`: sets the code in the editor
+  - `{type: 'setStyles', value: {container: 'background: transparent'}}`: sets custom styles for editor container.
+    - you can apply blur and padding with CSS here.
+  - `{type: 'setFontSize', value: 18}`: sets the font size of the editor.
+  - `{type: 'setFontFamily', value: 'JetBrains Mono, monospace'}`: sets the font family of the editor. fallback is allowed.
+- Try out the [funk42 preset by froos](https://patchies.app/?id=zntnikb36c47eaw) for a more complex use of Strudel.
+- Limitations
+  - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
 - You can create multiple instances of `strudel` object, but only **one** will be playing at a time.
   - You can use the `bang` or `run` messages to switch playback between multiple Strudel objects to orchestrate them.
 - Please consider supporting the development of TidalCycles and Strudel at [OpenCollective](https://opencollective.com/tidalcycles)!
