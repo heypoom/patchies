@@ -497,21 +497,21 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
   ```js
   function draw() {
-    tm.clear()
-    
-    const time = Date.now() * 0.001
-    const text = 'HELLO TEXTMODE'
-    
+    tm.clear();
+
+    const time = Date.now() * 0.001;
+    const text = "HELLO TEXTMODE";
+
     for (let i = 0; i < text.length; i++) {
-      const x = 10 + i * 2
-      const y = 12 + Math.sin(time + i * 0.5) * 3
-      tm.print(text[i], x, y)
+      const x = 10 + i * 2;
+      const y = 12 + Math.sin(time + i * 0.5) * 3;
+      tm.print(text[i], x, y);
     }
-    
-    requestAnimationFrame(draw)
+
+    requestAnimationFrame(draw);
   }
-  
-  draw()
+
+  draw();
   ```
 
 - See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
@@ -575,7 +575,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Importing JavaScript packages from NPM
 
-> This feature is only available in `js`, `p5`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `sonic~` and `elem~` objects, for now.
 
 - You can import any JavaScript package by using the `npm:` prefix in the import statement.
 
@@ -604,7 +604,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Sharing JavaScript across multiple `js` blocks
 
-> This feature is only available in `js`, `p5`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `sonic~` and `elem~` objects, for now.
 
 You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
 

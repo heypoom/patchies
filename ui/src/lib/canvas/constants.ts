@@ -150,19 +150,23 @@ endin
 
 schedule("Main", 0, 0, 0)`;
 
-export const DEFAULT_TEXTMODE_CODE = `function draw() {
-  tm.clear()
+export const DEFAULT_TEXTMODE_CODE = `tm.draw(() => {
+  tm.background(0, 0, 0, 0)
   
-  const time = Date.now() * 0.001
-  const text = 'HELLO TEXTMODE'
+  const halfCols = tm.grid.cols / 2
+  const halfRows = tm.grid.rows / 2
   
-  for (let i = 0; i < text.length; i++) {
-    const x = 10 + i * 2
-    const y = 12 + Math.sin(time + i * 0.5) * 3
-    tm.print(text[i], x, y)
+  for (let y = -halfRows; y < halfRows; y++) {
+    for (let x = -halfCols; x < halfCols; x++) {
+      const dist = Math.sqrt(x * x + y * y)
+      const wave = Math.sin(dist * 0.2 - tm.frameCount * 0.1)
+      
+      tm.push()
+      tm.translate(x, y, 0)
+      tm.char(wave > 0.5 ? '▓' : wave > 0 ? '▒' : '░')
+      tm.charColor(0, 150 + wave * 100, 255)
+      tm.point()
+      tm.pop()
+    }
   }
-  
-  requestAnimationFrame(draw)
-}
-
-draw()`;
+})`;

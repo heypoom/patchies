@@ -66,7 +66,8 @@ export class FBORenderer {
 	public hydraByNode = new Map<string, HydraRenderer | null>();
 	public canvasByNode = new Map<string, CanvasRenderer | null>();
 	public textmodeByNode = new Map<string, TextmodeRenderer | null>();
-	private swglByNode = new Map<string, SwissGLContext>();
+	public swglByNode = new Map<string, SwissGLContext>();
+
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
@@ -94,7 +95,9 @@ export class FBORenderer {
 	async buildFBOs(renderGraph: RenderGraph) {
 		const [width, height] = this.outputSize;
 
-		this.destroyNodes();
+		// Get the set of node IDs that will exist in the new graph
+		const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
+		this.destroyNodes(newNodeIds);
 
 		this.renderGraph = renderGraph;
 		this.outputNodeId = renderGraph.outputNodeId;
@@ -215,26 +218,63 @@ export class FBORenderer {
 	): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
 		if (node.type !== 'textmode') return null;
 
-		// Delete existing textmode renderer if it exists.
+		let textmodeRenderer: TextmodeRenderer | null = null;
+
+		// 1. re-use existing textmode renderer if available
 		if (this.textmodeByNode.has(node.id)) {
-			this.textmodeByNode.get(node.id)?.destroy();
+			const renderer = this.textmodeByNode.get(node.id)!;
+
+			// Only reuse if there is a valid non-disposed renderer
+			if (renderer.tm && renderer.textmode && !renderer.tm.isDisposed) {
+				textmodeRenderer = renderer;
+
+				// Update framebuffer reference (new one is created each buildFBOs call)
+				textmodeRenderer.framebuffer = framebuffer;
+
+				// Force recreate draw command with new framebuffer
+				textmodeRenderer.resetDrawCommand();
+
+				// If textmode user code has changed, we update the underlying code
+				if (renderer.config.code !== node.data.code) {
+					textmodeRenderer.config.code = node.data.code;
+					textmodeRenderer.updateCode();
+				}
+			}
 		}
 
-		const textmodeRenderer = await TextmodeRenderer.create(
-			{ code: node.data.code, nodeId: node.id },
-			framebuffer,
-			this
-		);
+		// 2. if there are no renderer to re-use, we create a new one!
+		if (!textmodeRenderer) {
+			textmodeRenderer = await TextmodeRenderer.create(
+				{ code: node.data.code, nodeId: node.id },
+				framebuffer,
+				this
+			);
 
-		this.textmodeByNode.set(node.id, textmodeRenderer);
+			this.textmodeByNode.set(node.id, textmodeRenderer);
+		}
 
 		return {
-			render: () => {},
-			cleanup: () => {
-				textmodeRenderer.destroy();
-				this.textmodeByNode.delete(node.id);
-			}
+			render: () => {
+				textmodeRenderer.render();
+			},
+			// No-op cleanup - textmode renderers are expensive to create,
+			// so we keep them alive and reuse them across graph rebuilds.
+			// They are only destroyed when explicitly removed via destroyTextmodeRenderer().
+			cleanup: () => {}
 		};
+	}
+
+	/**
+	 * Explicitly destroy a textmode renderer when its node is removed from the graph.
+	 * Called from destroyNodes() for nodes that no longer exist.
+	 */
+	destroyTextmodeRenderer(nodeId: string) {
+		const renderer = this.textmodeByNode.get(nodeId);
+
+		if (renderer) {
+			renderer.destroy();
+			this.textmodeByNode.delete(nodeId);
+		}
 	}
 
 	createGlslRenderer(
@@ -407,7 +447,7 @@ export class FBORenderer {
 		};
 	}
 
-	destroyNodes() {
+	destroyNodes(newNodeIds?: Set<string>) {
 		for (const fboNode of this.fboNodes.values()) {
 			fboNode.framebuffer.destroy();
 			fboNode.texture.destroy();
@@ -415,6 +455,23 @@ export class FBORenderer {
 		}
 
 		this.fboNodes.clear();
+		this.cleanupExpensiveTextmodeRenderers(newNodeIds);
+	}
+
+	// Textmode.js is super expensive to setup.
+	// We wanted to only clean them up if the node is destroyed.
+	cleanupExpensiveTextmodeRenderers(newNodeIds?: Set<string>) {
+		// Clean up textmode renderers for nodes that no longer exist in the new graph
+		if (newNodeIds) {
+			const existingTextmodeIds = Array.from(this.textmodeByNode.keys());
+
+			// Collect IDs to delete first to avoid modifying map while iterating
+			const nodeIdsToDelete = existingTextmodeIds.filter((id) => !newNodeIds.has(id));
+
+			for (const nodeId of nodeIdsToDelete) {
+				this.destroyTextmodeRenderer(nodeId);
+			}
+		}
 	}
 
 	setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {

@@ -6,6 +6,8 @@ import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { setupWorkerDOMMocks } from './workerDOMMocks';
+import type { Textmodifier } from 'textmode.js';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -36,10 +38,20 @@ export class TextmodeRenderer {
 	private animationId: number | null = null;
 	private drawCommand: regl.DrawCommand | null = null;
 
+	/** Reset draw command when framebuffer changes */
+	resetDrawCommand() {
+		this.drawCommand = null;
+		this.canvasTexture = null;
+	}
+
 	// FFT state tracking
 	public isFFTEnabled = false;
 	private fftRequestCache = new Map<string, boolean>();
 	private fftDataCache = new Map<string, { data: Uint8Array | Float32Array; timestamp: number }>();
+
+	// textmode.js text modifier
+	public tm: Textmodifier | null = null;
+	public textmode: typeof import('textmode.js') | null = null;
 
 	private constructor(
 		config: TextmodeConfig,
@@ -139,6 +151,8 @@ export class TextmodeRenderer {
 			this.animationId = null;
 		}
 
+		const customConsole = this.createCustomConsole();
+
 		try {
 			const [width, height] = this.renderer.outputSize;
 
@@ -146,21 +160,47 @@ export class TextmodeRenderer {
 			this.offscreenCanvas.width = width;
 			this.offscreenCanvas.height = height;
 
+			// @ts-expect-error -- hack
+			this.offscreenCanvas.style = {};
+
+			// Setup DOM mocks before importing textmode.js (it expects document, window APIs)
+			setupWorkerDOMMocks();
+
 			// Import and create textmode instance
-			const { create } = await import('https://esm.run/textmode.js');
-			const tm = await create({ canvas: this.offscreenCanvas });
+			if (!this.textmode) {
+				this.textmode = await import('textmode.js');
+			}
+
+			// Create a textmode if not already created
+			if (!this.tm) {
+				try {
+					this.tm = await this.textmode.create({
+						width,
+						height,
+						fontSize: 18,
+						frameRate: 60,
+
+						// @ts-expect-error -- offscreen canvas hack
+						canvas: this.offscreenCanvas
+					});
+
+					customConsole.log('textmode re-created');
+				} catch (error) {
+					this.handleCodeError(error);
+				}
+			}
 
 			// Create extra context for textmode-specific functionality
 			const extraContext = {
 				canvas: this.offscreenCanvas,
-				tm: tm, // Provide the textmode instance to user code
+				tm: this.tm,
+				textmode: this.textmode,
 				width: width,
 				height: height,
 
 				requestAnimationFrame: (callback: FrameRequestCallback) => {
 					this.animationId = requestAnimationFrame(() => {
 						callback(performance.now());
-						this.drawCanvasToTexture();
 					});
 
 					return this.animationId;
@@ -217,6 +257,9 @@ export class TextmodeRenderer {
 	}
 
 	destroy() {
+		// Destroy the Textmodifier instance
+		this.tm?.destroy();
+
 		if (this.animationId !== null) {
 			cancelAnimationFrame(this.animationId);
 			this.animationId = null;
@@ -381,6 +424,8 @@ export class TextmodeRenderer {
 	}
 
 	public render() {
-		this.drawCanvasToTexture();
+		if (this.tm?.isLooping) {
+			this.drawCanvasToTexture();
+		}
 	}
 }
