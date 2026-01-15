@@ -726,7 +726,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 
 - [Orca](https://github.com/hundredrabbits/Orca) is an esoteric programming language where every character is an operation that runs sequentially every frame.
 - Create procedural sequences with 26 letter operators (A-Z) and special symbols for MIDI control.
-- Try out [this demo](https://patchies.app/?id=mjjh5j78q46oe9i) for a silly little procedurally-generated lullaby. Don't fall asleep!
+- Try out [this demo](https://patchies.app/?id=ks1srq082zkp4qb) for a silly little procedurally-generated lullaby. Don't fall asleep!
 - See [the Orca docs](https://github.com/hundredrabbits/Orca/blob/main/README.md) for how to use it.
 - **Output-agnostic**: Orca emits standard Patchies MIDI messages (`noteOn, noteOff, controlChange`)
   - Connect the outlet to `midi.out` for MIDI output to hardware.
