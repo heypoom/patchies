@@ -18,10 +18,10 @@
 		id: string;
 		data: {
 			code: string;
-			showConsole?: boolean;
-			styles?: Record<string, any>;
 			fontFamily?: string;
 			fontSize?: number;
+			showConsole?: boolean;
+			styles?: Record<string, any>;
 		};
 	} = $props();
 
@@ -34,7 +34,6 @@
 	let hasError = $state(false);
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
-	let styles = $state<Record<string, string>>({});
 
 	const code = $derived(data.code || '');
 	const customConsole = createCustomConsole(nodeId);
@@ -55,7 +54,7 @@
 				})
 				.with(P.union({ type: 'bang' }, { type: 'run' }), evaluate)
 				.with({ type: 'setStyles', value: P.any }, ({ value }) => {
-					styles = value as Record<string, string>;
+					updateNodeData(nodeId, { styles: value as Record<string, string> });
 				})
 				.with({ type: 'setFontFamily', value: P.string }, ({ value }) => {
 					strudelEditor?.editor?.setFontFamily(value);
@@ -226,7 +225,7 @@
 						'flex w-full items-center justify-center rounded-md border bg-zinc-900',
 						hasError ? 'border-red-500' : 'border-transparent'
 					]}
-					style={styles.container}
+					style={data.styles?.container}
 				>
 					<div class="nodrag">
 						<StrudelEditor
