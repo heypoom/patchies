@@ -7,13 +7,18 @@
 	import { logger } from '$lib/utils/logger';
 	import type { CustomConsole } from '$lib/utils/createCustomConsole';
 
+	import {
+		STRUDEL_EDITOR_DEFAULT_FONT_FAMILY,
+		STRUDEL_EDITOR_DEFAULT_FONT_SIZE
+	} from '$lib/strudel/editor-defaults';
+
 	let {
 		code = '',
 		sync = false,
 		solo = true,
 		class: className = '',
-		fontFamily = 'Menlo, monospace',
-		fontSize = 15,
+		fontFamily = STRUDEL_EDITOR_DEFAULT_FONT_FAMILY,
+		fontSize = STRUDEL_EDITOR_DEFAULT_FONT_SIZE,
 		onUpdateState = undefined,
 		onchange = undefined,
 		onBeforeEvaluate = undefined,
