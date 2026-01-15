@@ -38,7 +38,7 @@
 		showConsoleButton?: boolean;
 		previewCanvas?: HTMLCanvasElement;
 		nodrag?: boolean;
-		tabindex?: string | number;
+		tabindex?: number;
 
 		width?: string | number;
 		height?: string | number;

@@ -5,6 +5,7 @@ import JSCanvasNode from '$lib/components/nodes/JSCanvasNode.svelte';
 import TextmodeNode from '$lib/components/nodes/TextmodeNode.svelte';
 import TextmodeDom from '$lib/components/nodes/TextmodeDom.svelte';
 import CanvasDom from '$lib/components/nodes/CanvasDom.svelte';
+import ThreeDom from '$lib/components/nodes/ThreeDom.svelte';
 import GLSLCanvasNode from '$lib/components/nodes/GLSLCanvasNode.svelte';
 import SwissGLNode from '$lib/components/nodes/SwissGLNode.svelte';
 import StrudelNode from '$lib/components/nodes/StrudelNode.svelte';
@@ -67,6 +68,7 @@ export const nodeTypes: Record<string, any> = {
 	textmode: TextmodeNode,
 	'textmode.dom': TextmodeDom,
 	'canvas.dom': CanvasDom,
+	'three.dom': ThreeDom,
 	glsl: GLSLCanvasNode,
 	strudel: StrudelNode,
 	bchrn: ButterchurnNode,

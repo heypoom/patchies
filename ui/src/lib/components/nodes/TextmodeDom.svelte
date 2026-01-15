@@ -291,7 +291,7 @@
 	onrun={runCode}
 	bind:previewCanvas={canvas}
 	nodrag={!dragEnabled}
-	tabindex="0"
+	tabindex={0}
 	width={outputWidth}
 	height={outputHeight}
 	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}

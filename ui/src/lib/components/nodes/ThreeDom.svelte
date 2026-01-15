@@ -7,7 +7,7 @@
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
-	import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+	import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { shouldShowHandles } from '../../../stores/ui.store';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -15,7 +15,9 @@
 	import { handleCodeError } from '$lib/js-runner/handleCodeError';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
-	import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+	import type { WebGLRenderer } from 'three';
+
+	const THREE_DOM_WRAPPER_OFFSET = -2;
 
 	let {
 		id: nodeId,
@@ -41,11 +43,9 @@
 	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 	const eventBus = PatchiesEventBus.getInstance();
 
-	// Listen for console output events to capture lineErrors
 	function handleConsoleOutput(event: ConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
 
-		// If this error has lineErrors, update state for code highlighting
 		if (event.messageType === 'error' && event.lineErrors) {
 			lineErrors = event.lineErrors;
 		}
@@ -57,25 +57,31 @@
 	let glSystem = GLSystem.getInstance();
 	let messageContext: MessageContext;
 	let canvas = $state<HTMLCanvasElement | undefined>();
-	let ctx: CanvasRenderingContext2D | null = null;
 	let dragEnabled = $state(true);
 	let videoOutputEnabled = $state(true);
 	let editorReady = $state(false);
 	let animationFrameId: number | null = null;
 
+	// Lazy-loaded Three.js
+	let THREE: typeof import('three') | null = null;
+	let threeLoaded = $state(false);
+
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
-	const [defaultOutputWidth, defaultOutputHeight] = DEFAULT_OUTPUT_SIZE;
+	const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
 	let outputWidth = $state(defaultOutputWidth);
 	let outputHeight = $state(defaultOutputHeight);
-	let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
-	let previewHeight = $derived(outputHeight / PREVIEW_SCALE_FACTOR);
+
+	let previewWidth = $derived.by(() => outputWidth / PREVIEW_SCALE_FACTOR);
+	let previewHeight = $derived.by(() => outputHeight / PREVIEW_SCALE_FACTOR);
 
 	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 0);
 	let previousExecuteCode = $state<number | undefined>(undefined);
+
+	let renderer = $state<WebGLRenderer | null>(null);
 
 	// Watch for executeCode timestamp changes and re-run when it changes
 	$effect(() => {
@@ -226,7 +232,7 @@
 				try {
 					keyboardCallbacks.onKeyDown(e);
 				} catch (error) {
-					handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+					handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
 				}
 			}
 		};
@@ -239,7 +245,7 @@
 				try {
 					keyboardCallbacks.onKeyUp(e);
 				} catch (error) {
-					handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+					handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
 				}
 			}
 		};
@@ -253,34 +259,15 @@
 		};
 	}
 
-	function setupCanvas() {
-		if (!canvas) return;
-
-		// Set canvas to full output resolution (same as worker canvas)
-		// This matches the behavior of the worker-based canvas node
-		canvas.width = outputWidth;
-		canvas.height = outputHeight;
-
-		// Display at preview size
-		canvas.style.width = `${previewWidth}px`;
-		canvas.style.height = `${previewHeight}px`;
-
-		ctx = canvas.getContext('2d');
-	}
-
 	function setCanvasSize(width: number, height: number) {
 		if (!canvas) return;
 
+		if (renderer) {
+			renderer.setSize(width, height);
+		}
+
 		outputWidth = width;
 		outputHeight = height;
-
-		// Update canvas resolution
-		canvas.width = width;
-		canvas.height = height;
-
-		// Update display size
-		canvas.style.width = `${previewWidth}px`;
-		canvas.style.height = `${previewHeight}px`;
 	}
 
 	async function sendBitmap() {
@@ -290,8 +277,8 @@
 		await glSystem.setBitmapSource(nodeId, canvas);
 	}
 
-	function runCode() {
-		if (!canvas || !ctx) return;
+	async function runCode() {
+		if (!canvas) return;
 
 		// Clear console and error highlighting on re-run
 		consoleRef?.clearConsole();
@@ -314,6 +301,14 @@
 			// Clear timers from message context
 			messageContext.clearTimers();
 
+			// Lazy load Three.js if not already loaded
+			if (!THREE) {
+				THREE = await import('three');
+				renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+				threeLoaded = true;
+				customConsole.log('Three.js loaded!');
+			}
+
 			// Get message context methods
 			const context = messageContext.getContext();
 
@@ -321,10 +316,11 @@
 			// Note: width/height match the full output resolution (same as worker canvas)
 			const userGlobals = {
 				canvas,
-				ctx,
+				THREE,
 				width: outputWidth,
 				height: outputHeight,
 				mouse,
+				renderer,
 				setPortCount,
 				console: customConsole,
 				...context,
@@ -361,12 +357,15 @@
 				}
 			};
 
-			// Execute user code
-			const userFunction = new Function(...Object.keys(userGlobals), `"use strict";\n${data.code}`);
+			// Execute user code (async to support await in user code)
+			const userFunction = new Function(
+				...Object.keys(userGlobals),
+				`"use strict";\nreturn (async () => {\n${data.code}\n})()`
+			);
 
-			userFunction(...Object.values(userGlobals));
+			await userFunction(...Object.values(userGlobals));
 		} catch (error) {
-			handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+			handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
 		}
 	}
 
@@ -374,13 +373,8 @@
 		messageContext = new MessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
-		// Listen for console output events to capture lineErrors
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
-
-		// Register with GLSystem for video output
 		glSystem.upsertNode(nodeId, 'img', {});
-
-		setupCanvas();
 
 		const cleanupMouse = setupMouseListeners();
 		const cleanupKeyboard = setupKeyboardListeners();
@@ -399,6 +393,7 @@
 		if (animationFrameId !== null) {
 			cancelAnimationFrame(animationFrameId);
 		}
+
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 		glSystem?.removeNode(nodeId);
 		messageContext?.destroy();
@@ -417,7 +412,7 @@
 </script>
 
 <CanvasPreviewLayout
-	title={data.title ?? 'canvas.dom'}
+	title={data.title ?? 'three.dom'}
 	{nodeId}
 	onrun={runCode}
 	bind:previewCanvas={canvas}
@@ -475,8 +470,8 @@
 		<CodeEditor
 			value={data.code}
 			language="javascript"
-			nodeType="canvas.dom"
-			placeholder="Write your Canvas API code here..."
+			nodeType="three.dom"
+			placeholder="Write your Three.js code here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={runCode}
 			onchange={(newCode) => {
@@ -493,7 +488,7 @@
 			<VirtualConsole
 				bind:this={consoleRef}
 				{nodeId}
-				placeholder="Canvas errors will appear here."
+				placeholder="Three.js output will appear here."
 				maxHeight="200px"
 			/>
 		</div>
