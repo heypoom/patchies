@@ -61,11 +61,7 @@ export class LiveMusicManager {
 	destroy() {
 		this.stop();
 
-		const node = this.audioService.getNodeById(this.nodeId);
-
-		if (node) {
-			this.audioService.removeNode(node);
-		}
+		this.audioService.removeNodeById(this.nodeId);
 	}
 
 	get audioContext() {

@@ -174,12 +174,8 @@
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
 
-		const audioNode = audioService.getNodeById(node.id);
-
 		// Clean up fft~ node
-		if (audioNode) {
-			audioService.removeNode(audioNode);
-		}
+		audioService.removeNodeById(node.id);
 	});
 </script>
 

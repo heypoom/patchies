@@ -183,7 +183,7 @@
 	onDestroy(() => {
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
-		audioService.removeNode(audioService.getNodeById(node.id)!);
+		audioService.removeNodeById(node.id);
 	});
 
 	const containerClass = $derived.by(() => {

@@ -65,6 +65,10 @@ export class AudioService {
 		this.nodesById.delete(node.nodeId);
 	}
 
+	removeNodeById(nodeId: string): void {
+		this.removeNode(this.nodesById.get(nodeId));
+	}
+
 	getNodeById(nodeId: string): AudioNodeV2 | null {
 		return this.nodesById.get(nodeId) ?? null;
 	}

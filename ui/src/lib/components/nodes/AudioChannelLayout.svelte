@@ -67,11 +67,7 @@
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
 
-		const node = audioService.getNodeById(nodeId);
-
-		if (node) {
-			audioService.removeNode(node);
-		}
+		audioService.removeNodeById(nodeId);
 	});
 
 	function updateContentWidth() {

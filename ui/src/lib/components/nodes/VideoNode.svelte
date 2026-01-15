@@ -8,7 +8,6 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { match, P } from 'ts-pattern';
-	import { createNode } from '@elemaudio/core';
 	import { shouldShowHandles } from '../../../stores/ui.store';
 
 	let {
@@ -308,10 +307,13 @@
 		if (bitmapFrameId) {
 			cancelAnimationFrame(bitmapFrameId);
 		}
+
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
+
 		glSystem.removeNode(nodeId);
-		audioService.removeNode(audioService.getNodeById(nodeId)!);
+
+		audioService.removeNodeById(nodeId);
 	});
 
 	const handleCommonClass = $derived.by(() => {

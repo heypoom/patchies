@@ -166,10 +166,7 @@
 		for (const prevNodeId of previousNodes) {
 			if (!currentNodes.has(prevNodeId)) {
 				messageSystem.unregisterNode(prevNodeId);
-				const node = audioService.getNodeById(prevNodeId);
-				if (node) {
-					audioService.removeNode(node);
-				}
+				audioService.removeNodeById(prevNodeId);
 			}
 		}
 

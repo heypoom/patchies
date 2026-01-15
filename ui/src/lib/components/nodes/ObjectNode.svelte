@@ -288,12 +288,7 @@
 	}
 
 	function syncAudioService(name: string, params: unknown[]) {
-		const node = audioService.getNodeById(nodeId);
-
-		if (node) {
-			audioService.removeNode(node);
-		}
-
+		audioService.removeNodeById(nodeId);
 		audioService.createNode(nodeId, name, params);
 		audioService.updateEdges(getEdges());
 	}
@@ -472,12 +467,7 @@
 	});
 
 	onDestroy(() => {
-		const audioNode = audioService.getNodeById(nodeId);
-
-		if (audioNode) {
-			audioService.removeNode(audioNode);
-		}
-
+		audioService.removeNodeById(nodeId);
 		objectService.removeObjectById(nodeId);
 	});
 

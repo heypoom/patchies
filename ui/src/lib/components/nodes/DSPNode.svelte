@@ -258,7 +258,8 @@
 	onDestroy(() => {
 		messageContext.queue.removeCallback(handleMessage);
 		messageContext.destroy();
-		audioService.removeNode(audioService.getNodeById(nodeId)!);
+
+		audioService.removeNodeById(nodeId);
 	});
 
 	function updateContentWidth() {

@@ -95,11 +95,7 @@
 		stop();
 		glSystem.removeNode(nodeId);
 
-		const node = audioService.getNodeById(nodeId);
-
-		if (node) {
-			audioService.removeNode(node);
-		}
+		audioService.removeNodeById(nodeId);
 
 		visualizer.renderer = null;
 		visualizer = null;

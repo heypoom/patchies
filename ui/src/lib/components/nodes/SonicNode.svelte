@@ -113,11 +113,7 @@
 	});
 
 	onDestroy(() => {
-		const node = audioService.getNodeById(nodeId);
-
-		if (node) {
-			audioService.removeNode(node);
-		}
+		audioService.removeNodeById(nodeId);
 
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 	});

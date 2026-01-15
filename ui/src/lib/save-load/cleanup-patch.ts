@@ -22,8 +22,7 @@ export function cleanupPatch(nodes: Node[]) {
 		messageSystem.unregisterNode(node.id);
 		glSystem.removeNode(node.id);
 
-		const audioNode = audioService.getNodeById(node.id);
-		if (audioNode) audioService.removeNode(audioNode);
+		audioService.removeNodeById(node.id);
 	}
 
 	// Clear edges in all systems explicitly
