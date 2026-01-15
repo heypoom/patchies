@@ -178,6 +178,14 @@
 						editor.evaluate();
 						return true;
 					}
+				},
+				{
+					key: 'Mod-s',
+					run: () => {
+						onBeforeEvaluate?.();
+						editor.evaluate();
+						return true;
+					}
 				}
 			])
 		);
