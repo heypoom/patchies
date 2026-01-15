@@ -153,8 +153,8 @@ schedule("Main", 0, 0, 0)`;
 export const DEFAULT_TEXTMODE_CODE = `tm.draw(() => {
   tm.background(0, 0, 0, 0)
   
-  const halfCols = tm.grid.cols / 2
-  const halfRows = tm.grid.rows / 2
+  const halfCols = tm.grid.cols / 1.95
+  const halfRows = tm.grid.rows / 1.95
   
   for (let y = -halfRows; y < halfRows; y++) {
     for (let x = -halfCols; x < halfCols; x++) {
