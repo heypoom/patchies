@@ -481,21 +481,32 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `textmode`: creates ASCII/text-mode graphics
 
+<img src="./docs/images/textmode-demo.webp" alt="Patchies.app textmode.js demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=3hd88qv62h4zltq)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
+
 - [Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
 
 - The textmode renderer runs on the [rendering pipeline](#rendering-pipeline) using OffscreenCanvas on web workers, similar to the `canvas` node.
 
+  - Features that requires the DOM are currently unavailable, such as mouse, keyboard and touch support.
+
 - You can call these special methods in your textmode code:
 
+  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
   - `noDrag()` disables dragging the node.
   - `noOutput()` hides the video output port.
   - `setTitle(title)` sets the title of the node.
-  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
-  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
 
-- The textmode instance is automatically created and available as `tm` in your code. You can use it directly without importing or creating it:
+- The textmode instance is exposed as `tm` in your code:
 
   ```ts
+  tm.setup(() => {
+    tm.fontSize(16);
+    tm.frameRate(60);
+  });
+
   tm.draw(() => {
     tm.background(0, 0, 0, 0);
 
@@ -519,7 +530,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   ```
 
 - See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
-- The textmode node outputs video that can be chained with other visual objects (`glsl`, `hydra`, etc.).
+- Please consider supporting [@humanbydefinition](https://code.textmode.art/docs/support.html) who maintains textmode.js!
 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 

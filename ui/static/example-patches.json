@@ -176,6 +176,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "3hd88qv62h4zltq",
+			"name": "Animated Wave Pattern",
+			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
+			"category": "Interactive",
+			"author": "@humanbydefinition"
+		},
+		{
 			"id": "6pyirxuw3cqvwhg",
 			"name": "Assembly Stack Machine",
 			"description": "Example assembly patch demonstrating the virtual stack machine with color-coded memory visualization",
