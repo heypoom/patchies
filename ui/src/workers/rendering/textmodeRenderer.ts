@@ -151,8 +151,6 @@ export class TextmodeRenderer {
 			this.animationId = null;
 		}
 
-		const customConsole = this.createCustomConsole();
-
 		try {
 			const [width, height] = this.renderer.outputSize;
 
@@ -173,21 +171,15 @@ export class TextmodeRenderer {
 
 			// Create a textmode if not already created
 			if (!this.tm) {
-				try {
-					this.tm = this.textmode.create({
-						width,
-						height,
-						fontSize: 18,
-						frameRate: 60,
+				this.tm = this.textmode.create({
+					width,
+					height,
+					fontSize: 18,
+					frameRate: 60,
 
-						// @ts-expect-error -- offscreen canvas hack
-						canvas: this.offscreenCanvas
-					});
-
-					customConsole.log('textmode re-created');
-				} catch (error) {
-					this.handleCodeError(error);
-				}
+					// @ts-expect-error -- offscreen canvas hack
+					canvas: this.offscreenCanvas
+				});
 			}
 
 			// Create extra context for textmode-specific functionality
