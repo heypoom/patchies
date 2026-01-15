@@ -182,7 +182,7 @@
 	});
 </script>
 
-<div bind:this={editorContainer} class="assembly-editor overflow-hidden">
+<div bind:this={editorContainer} class="assembly-editor nodrag nopan nowheel overflow-hidden">
 	{#if !editorContainer}
 		<div class="p-4 font-mono text-sm text-zinc-400">
 			{placeholder}
