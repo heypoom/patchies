@@ -20,6 +20,8 @@
 			code: string;
 			showConsole?: boolean;
 			styles?: Record<string, any>;
+			fontFamily?: string;
+			fontSize?: number;
 		};
 	} = $props();
 
@@ -57,9 +59,11 @@
 				})
 				.with({ type: 'setFontFamily', value: P.string }, ({ value }) => {
 					strudelEditor?.editor?.setFontFamily(value);
+					updateNodeData(nodeId, { fontFamily: value });
 				})
 				.with({ type: 'setFontSize', value: P.number }, ({ value }) => {
 					strudelEditor?.editor?.setFontSize(value);
+					updateNodeData(nodeId, { fontSize: value });
 				})
 				.with({ type: 'stop' }, stop);
 		} catch (error) {
@@ -227,6 +231,8 @@
 					<div class="nodrag">
 						<StrudelEditor
 							{code}
+							fontFamily={data.fontFamily}
+							fontSize={data.fontSize}
 							bind:this={strudelEditor}
 							onUpdateState={handleUpdateState}
 							onBeforeEvaluate={() => {

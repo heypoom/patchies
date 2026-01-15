@@ -12,6 +12,8 @@
 		sync = false,
 		solo = true,
 		class: className = '',
+		fontFamily = 'Menlo, monospace',
+		fontSize = 15,
 		onUpdateState = undefined,
 		onchange = undefined,
 		onBeforeEvaluate = undefined,
@@ -24,6 +26,8 @@
 		sync?: boolean;
 		solo?: boolean;
 		class?: string;
+		fontFamily?: string;
+		fontSize?: number;
 		onUpdateState?: (state: unknown) => void;
 		onchange?: (code: string) => void;
 		onBeforeEvaluate?: () => void;
@@ -162,8 +166,8 @@
 		editor.updateSettings(settings);
 		editor.setCode(code);
 		editor.setTheme('strudelTheme');
-		editor.setFontFamily('Menlo, monospace');
-		editor.setFontSize(15);
+		editor.setFontFamily(fontFamily);
+		editor.setFontSize(fontSize);
 
 		const keymaps = Prec.highest(
 			keymap.of([
