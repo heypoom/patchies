@@ -12,6 +12,7 @@ export type RenderNode = {
 	| { type: 'swgl'; data: { code: string } }
 	| { type: 'canvas'; data: { code: string } }
 	| { type: 'textmode'; data: { code: string } }
+	| { type: 'three'; data: { code: string } }
 	| { type: 'img'; data: unknown }
 	| { type: 'bg.out'; data: unknown }
 );
@@ -82,6 +83,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
 	'swgl',
 	'canvas',
 	'textmode',
+	'three',
 	'img'
 ];
 

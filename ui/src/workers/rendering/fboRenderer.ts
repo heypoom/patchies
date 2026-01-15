@@ -13,6 +13,7 @@ import { match, P } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
 import { TextmodeRenderer } from './textmodeRenderer';
+import { ThreeRenderer } from './threeRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -66,6 +67,7 @@ export class FBORenderer {
 	public hydraByNode = new Map<string, HydraRenderer | null>();
 	public canvasByNode = new Map<string, CanvasRenderer | null>();
 	public textmodeByNode = new Map<string, TextmodeRenderer | null>();
+	public threeByNode = new Map<string, ThreeRenderer | null>();
 	public swglByNode = new Map<string, SwissGLContext>();
 
 	private fboNodes = new Map<string, FBONode>();
@@ -121,6 +123,7 @@ export class FBORenderer {
 				.with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
 				.with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
 				.with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
+				.with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
 				.with({ type: 'img' }, () => this.createEmptyRenderer())
 				.with({ type: 'bg.out' }, () => this.createEmptyRenderer())
 				.exhaustive();
@@ -261,6 +264,34 @@ export class FBORenderer {
 			// so we keep them alive and reuse them across graph rebuilds.
 			// They are only destroyed when explicitly removed via destroyTextmodeRenderer().
 			cleanup: () => {}
+		};
+	}
+
+	async createThreeRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+		if (node.type !== 'three') return null;
+
+		// Delete existing three renderer if it exists.
+		if (this.threeByNode.has(node.id)) {
+			this.threeByNode.get(node.id)?.destroy();
+		}
+
+		const threeRenderer = await ThreeRenderer.create(
+			{ code: node.data.code, nodeId: node.id },
+			framebuffer,
+			this
+		);
+
+		this.threeByNode.set(node.id, threeRenderer);
+
+		return {
+			render: threeRenderer.renderFrame.bind(threeRenderer),
+			cleanup: () => {
+				threeRenderer.destroy();
+				this.threeByNode.delete(node.id);
+			}
 		};
 	}
 
@@ -994,6 +1025,12 @@ export class FBORenderer {
 				if (!textmodeRenderer) return;
 
 				textmodeRenderer.onMessage(data, message);
+			})
+			.with('three', () => {
+				const threeRenderer = this.threeByNode.get(nodeId);
+				if (!threeRenderer) return;
+
+				threeRenderer.handleMessage(message);
 			})
 			.with(P.union('glsl', 'img', 'bg.out'), () => {})
 			.exhaustive();

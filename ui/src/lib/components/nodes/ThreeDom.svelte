@@ -60,7 +60,6 @@
 	let dragEnabled = $state(true);
 	let videoOutputEnabled = $state(true);
 	let editorReady = $state(false);
-	let animationFrameId: number | null = null;
 
 	// Lazy-loaded Three.js
 	let THREE: typeof import('three') | null = null;
@@ -292,11 +291,14 @@
 		// Clear keyboard callbacks when code is re-run
 		keyboardCallbacks = {};
 
+		// Clear message context timers
+		const messageContext = jsRunner.getMessageContext(nodeId);
+		messageContext.clearTimers();
+
 		try {
-			// Clear any previous animation frame
-			if (animationFrameId !== null) {
-				cancelAnimationFrame(animationFrameId);
-				animationFrameId = null;
+			// Stop any previous animation loop
+			if (renderer) {
+				renderer.setAnimationLoop(null);
 			}
 
 			// Lazy load Three.js if not already loaded
@@ -316,50 +318,61 @@
 			// If preprocessCode returns null, it means it's a library definition
 			if (processedCode === null) return;
 
-			// Execute via JSRunner with extraContext for Three.js-specific globals
-			await jsRunner.executeJavaScript(nodeId, processedCode, {
-				customConsole,
+			// Build context object with all globals
+			const context = {
+				console: customConsole,
+				canvas,
+				THREE,
+				renderer,
+				width: outputWidth,
+				height: outputHeight,
+				mouse,
+				noDrag: () => {
+					dragEnabled = false;
+				},
+				noOutput: () => {
+					videoOutputEnabled = false;
+					updateNodeInternals(nodeId);
+				},
+				setCanvasSize,
 				setPortCount,
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
-				extraContext: {
-					canvas,
-					THREE,
-					renderer,
-					width: outputWidth,
-					height: outputHeight,
-					mouse,
-					noDrag: () => {
-						dragEnabled = false;
-					},
-					noOutput: () => {
-						videoOutputEnabled = false;
-						updateNodeInternals(nodeId);
-					},
-					setCanvasSize,
-					onKeyDown: (callback: (event: KeyboardEvent) => void) => {
-						keyboardCallbacks.onKeyDown = callback;
-					},
-					onKeyUp: (callback: (event: KeyboardEvent) => void) => {
-						keyboardCallbacks.onKeyUp = callback;
-					},
-					requestAnimationFrame: (callback: FrameRequestCallback) => {
-						animationFrameId = requestAnimationFrame((time) => {
-							callback(time);
-							sendBitmap();
-						});
+				onKeyDown: (callback: (event: KeyboardEvent) => void) => {
+					keyboardCallbacks.onKeyDown = callback;
+				},
+				onKeyUp: (callback: (event: KeyboardEvent) => void) => {
+					keyboardCallbacks.onKeyUp = callback;
+				},
+				...messageContext.getContext()
+			};
 
-						return animationFrameId;
-					},
-					cancelAnimationFrame: (id: number) => {
-						cancelAnimationFrame(id);
+			// Execute with `with` context to extract draw function
+			const codeWithWrapper = `
+				var draw;
 
-						if (animationFrameId === id) {
-							animationFrameId = null;
-						}
-					}
+				with (context) {
+					${processedCode}
 				}
-			});
+
+				return typeof draw === 'function' ? draw : null;
+			`;
+
+			const userFunc = new Function('context', codeWithWrapper);
+			const userDraw = userFunc(context);
+
+			// Start animation loop if user defined a draw() function
+			if (typeof userDraw === 'function') {
+				renderer!.setAnimationLoop((time: number) => {
+					try {
+						userDraw(time);
+						sendBitmap();
+					} catch (error) {
+						handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
+						renderer?.setAnimationLoop(null);
+					}
+				});
+			}
 		} catch (error) {
 			handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
 		}
@@ -386,9 +399,8 @@
 	});
 
 	onDestroy(() => {
-		if (animationFrameId !== null) {
-			cancelAnimationFrame(animationFrameId);
-		}
+		// Stop the animation loop
+		renderer?.setAnimationLoop(null);
 
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 		glSystem?.removeNode(nodeId);

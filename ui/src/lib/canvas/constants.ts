@@ -166,10 +166,7 @@ function draw() {
   cube.rotation.x += 0.01
   cube.rotation.y += 0.01
   renderer.render(scene, camera)
-  requestAnimationFrame(draw)
-}
-
-draw()`;
+}`;
 
 export const DEFAULT_TEXTMODE_CODE = `tm.setup(() => {
   tm.fontSize(16)
