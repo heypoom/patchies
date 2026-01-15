@@ -72,6 +72,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | regl                              | ^2.1.1       | MIT                    |
 | stats.js                          | ^0.17.0      | MIT                    |
 | supersonic-scsynth                | ^0.25.5      | Tiered (MIT + GPL-3.0) |
+| textmode.js                       | ^1.0.0       | MIT                    |
 | tone                              | ^15.1.22     | MIT                    |
 | ts-pattern                        | ^5.8.0       | MIT                    |
 | uxn.wasm                          | ^0.9.0       | MIT                    |

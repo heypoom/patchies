@@ -495,23 +495,27 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - The textmode instance is automatically created and available as `tm` in your code. You can use it directly without importing or creating it:
 
-  ```js
-  function draw() {
-    tm.clear();
+  ```ts
+  tm.draw(() => {
+    tm.background(0, 0, 0, 0);
 
-    const time = Date.now() * 0.001;
-    const text = "HELLO TEXTMODE";
+    const halfCols = tm.grid.cols / 2;
+    const halfRows = tm.grid.rows / 2;
 
-    for (let i = 0; i < text.length; i++) {
-      const x = 10 + i * 2;
-      const y = 12 + Math.sin(time + i * 0.5) * 3;
-      tm.print(text[i], x, y);
+    for (let y = -halfRows; y < halfRows; y++) {
+      for (let x = -halfCols; x < halfCols; x++) {
+        const dist = Math.sqrt(x * x + y * y);
+        const wave = Math.sin(dist * 0.2 - tm.frameCount * 0.1);
+
+        tm.push();
+        tm.translate(x, y, 0);
+        tm.char(wave > 0.5 ? "▓" : wave > 0 ? "▒" : "░");
+        tm.charColor(0, 150 + wave * 100, 255);
+        tm.point();
+        tm.pop();
+      }
     }
-
-    requestAnimationFrame(draw);
-  }
-
-  draw();
+  });
   ```
 
 - See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
@@ -1457,7 +1461,7 @@ In particular, this will hide all AI-related objects and features, such as `ai.t
 ## Rendering Pipeline
 
 > [!TIP]
-> Use objects that run on the rendering pipeline e.g. `hydra`, `glsl`, `swgl`, `canvas` and `img` to reduce lag.
+> Use objects that run on the rendering pipeline e.g. `hydra`, `glsl`, `swgl`, `canvas`, `textmode` and `img` to reduce lag.
 
 Behind the scenes, the [video chaining](#video-chaining) feature constructs a _rendering pipeline_ based on the use of [framebuffer objects](https://www.khronos.org/opengl/wiki/Framebuffer_Object) (FBOs), which lets visual objects copy data to one another on a framebuffer level, with no back-and-forth CPU-GPU transfers needed. The pipeline makes use of Web Workers, WebGL2, [Regl](https://github.com/regl-project/regl) and OffscreenCanvas (for `canvas`).
 
@@ -1465,7 +1469,7 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 
 **Objects on the rendering pipeline (web worker thread):**
 
-- `hydra`, `glsl`, `swgl`, `canvas` and `img` run entirely on the web worker thread and are very high-performance.
+- `hydra`, `glsl`, `swgl`, `canvas`, `textmode` and `img` run entirely on the web worker thread and are very high-performance.
 
 **Objects on the main thread:**
 

@@ -85,6 +85,18 @@ Creator of Tone.js, the framework for creating interactive music in the browser.
 
 ---
 
+### @humanbydefinition
+
+**Projects:** textmode.js
+
+Author of Textmode.js, ASCII text-mode graphics library for creative coding, bringing retro terminal aesthetics to the browser.
+
+**Support:** [Support Page](https://code.textmode.art/docs/support.html)
+**Patreon:** [Patreon](https://ko-fi.com/humanbydefinition)
+**GitHub Sponsors:** [GitHub](https://github.com/sponsors/humanbydefinition)
+
+---
+
 ### Olivia Jack
 
 **Projects:** Hydra

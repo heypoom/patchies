@@ -338,6 +338,12 @@ export const dependencies: ProjectLicense[] = [
 		license: 'Tiered: MIT (client) + GPL-3.0-or-later (core)',
 		url: 'https://npmjs.com/package/supersonic-scsynth'
 	},
+	{
+		name: 'textmode.js',
+		version: '^1.0.0',
+		license: 'MIT',
+		url: 'https://code.textmode.art'
+	},
 	{ name: 'tone', version: '^15.1.22', license: 'MIT', url: 'https://npmjs.com/package/tone' },
 	{
 		name: 'ts-pattern',
@@ -477,6 +483,14 @@ export const supportLinks: SupportLink[] = [
 		url: 'https://github.com/sponsors/tambien',
 		type: 'github',
 		projects: ['Tone.js']
+	},
+	{
+		name: '@humanbydefinition',
+		description: 'Creator of Textmode.js',
+		category: 'library',
+		url: 'https://code.textmode.art/docs/support.html',
+		type: 'donate',
+		projects: ['Textmode.js']
 	},
 	{
 		name: 'Olivia Jack',
