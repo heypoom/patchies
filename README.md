@@ -1210,7 +1210,7 @@ core.render(el.phasor(rate), el.phasor(rate));
 
 The `csound~` object allows you to use [Csound](https://csound.com) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
 
-- **WARNING**: you must only create one `csound~` object per patch, for now. Creating multiple `csound~` object will break the patch's audio playback. This is a known bug.
+- **WARNING**: You must only create one `csound~` object per patch, for now. Creating multiple `csound~` object will break the patch's audio playback. Deleting the object also stops other object's audio. These are known bugs.
 
 You can send messages to control Csound instruments:
 
