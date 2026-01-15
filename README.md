@@ -499,6 +499,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `noDrag()` disables dragging the node.
   - `noOutput()` hides the video output port.
   - `setTitle(title)` sets the title of the node.
+  - `setHidePorts(true | false)` sets whether to hide inlets and outlets
 
 - The textmode instance is exposed as `tm` in your code:
 
@@ -532,6 +533,75 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
 - Please consider supporting [@humanbydefinition](https://code.textmode.art/docs/support.html) who maintains textmode.js!
+
+### `three` and `three.dom`: creates Three.js 3D graphics
+
+<img src="./docs/images/threejs-torus.webp" alt="Patchies.app three.js torus demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=ekavjpvr6h8atbj)! It shows how you can use 2D textures from other objects in Three.js.
+
+- [Three.js](https://threejs.org) is a powerful 3D graphics library for WebGL. Create 3D scenes, animations, and interactive visualizations in the browser.
+
+- There are two flavors of three objects with a few differences:
+
+  - `three`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Can take
+  - `three.dom`: Runs on the main thread. Supports interactivity via OrbitControls or custom handlers. Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
+
+- The `draw()` function should be defined to draw every frame:
+
+  ```js
+  const { Scene, PerspectiveCamera, BoxGeometry, Mesh, MeshNormalMaterial } =
+    THREE;
+
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(75, width / height, 0.1, 1000);
+  camera.position.z = 2;
+
+  const geometry = new BoxGeometry(1, 1, 1);
+  const material = new MeshNormalMaterial();
+  const cube = new Mesh(geometry, material);
+  scene.add(cube);
+
+  function draw() {
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+    renderer.render(scene, camera);
+  }
+  ```
+
+- You can call these special methods in the `three` object only:
+
+  - `getTexture(inlet): THREE.Texture` gets the video input as Three.js texture. Only works with
+  - `setVideoCount(ins, outs)` sets the number of video inlets and outlets (for video chaining).
+
+- You can call these special methods in the `three.dom` object only:
+
+  - `setCanvasSize(width, height)` resizes the output canvas size
+  - `onKeyDown(callback)` receives keydown events
+  - `onKeyUp(callback)` receives keyup events
+
+- You can call these special methods in both `three` and `three.dom`:
+
+  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
+  - `noDrag()` disables dragging the node.
+  - `noOutput()` hides the video output port.
+  - `setTitle(title)` sets the title of the node.
+  - `setPortCount(ins, outs)` sets the number of message inlets and outlets
+  - `setHidePorts(true | false)` sets whether to hide inlets and outlets
+
+- As well as these variables:
+
+  - `mouse.x` and `mouse.y` provides mouse position
+  - `width` and `height` provides output size
+
+- The Three.js context provides these variables:
+
+  - `THREE`: the Three.js library
+  - `renderer: WebGLRenderer`: the WebGL renderer from Three.js
+
+- See the [Three.js documentation](https://threejs.org/docs) and [examples](https://threejs.org/examples) for more inspiration.
+- Please consider supporting [mrdoob on GitHub Sponsors](https://github.com/sponsors/mrdoob)!
 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
@@ -591,7 +661,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Importing JavaScript packages from NPM
 
-> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `three`, `three.dom`, `sonic~` and `elem~` objects, for now.
 
 - You can import any JavaScript package by using the `npm:` prefix in the import statement.
 
@@ -620,7 +690,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Sharing JavaScript across multiple `js` blocks
 
-> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `three`, `three.dom`, `sonic~` and `elem~` objects, for now.
 
 You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
 
@@ -1376,7 +1446,7 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
 
-Supported objects are `glsl`, `hydra`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom` and `js`.
+Supported objects are `glsl`, `hydra`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom` and `js`.
 
 ### Usage with GLSL
 
@@ -1473,7 +1543,7 @@ In particular, this will hide all AI-related objects and features, such as `ai.t
 ## Rendering Pipeline
 
 > [!TIP]
-> Use objects that run on the rendering pipeline e.g. `hydra`, `glsl`, `swgl`, `canvas`, `textmode` and `img` to reduce lag.
+> Use objects that run on the rendering pipeline e.g. `hydra`, `glsl`, `swgl`, `canvas`, `textmode`, `three` and `img` to reduce lag.
 
 Behind the scenes, the [video chaining](#video-chaining) feature constructs a _rendering pipeline_ based on the use of [framebuffer objects](https://www.khronos.org/opengl/wiki/Framebuffer_Object) (FBOs), which lets visual objects copy data to one another on a framebuffer level, with no back-and-forth CPU-GPU transfers needed. The pipeline makes use of Web Workers, WebGL2, [Regl](https://github.com/regl-project/regl) and OffscreenCanvas (for `canvas`).
 
@@ -1481,11 +1551,11 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 
 **Objects on the rendering pipeline (web worker thread):**
 
-- `hydra`, `glsl`, `swgl`, `canvas`, `textmode` and `img` run entirely on the web worker thread and are very performant when using [chaining multiple video objects together](#video-chaining), as it does not require CPU-to-GPU pixel copy.
+- `hydra`, `glsl`, `swgl`, `canvas`, `textmode`, `three` and `img` run entirely on the web worker thread and are very performant when using [chaining multiple video objects together](#video-chaining), as it does not require CPU-to-GPU pixel copy.
 
 **Objects on the main thread:**
 
-- `p5`, `canvas.dom`, `textmode.dom` and `bchrn` runs on the main thread.
+- `p5`, `canvas.dom`, `textmode.dom`, `three.dom` and `bchrn` runs on the main thread.
 - If these objects are connected to video outlets, at each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
   - Try connecting `canvas.dom` to `bg.out`, your FPS will drop around 10FPS - 20FPS. Use "CMD+K > Toggle FPS Monitor" to verify.
   - Try connecting `canvas` to `bg.out`, your FPS will not drop at all.

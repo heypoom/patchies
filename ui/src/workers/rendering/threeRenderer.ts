@@ -252,7 +252,10 @@ export class ThreeRenderer {
 				// Custom console
 				console: this.createCustomConsole(),
 
-				requestAnimationFrame: () => {}
+				requestAnimationFrame: () => {},
+
+				setHidePorts: (hidePorts: boolean) =>
+					self.postMessage({ type: 'setHidePorts', nodeId: this.config.nodeId, hidePorts })
 			};
 
 			// Preprocess code for module support

@@ -344,6 +344,12 @@ export const dependencies: ProjectLicense[] = [
 		license: 'MIT',
 		url: 'https://code.textmode.art'
 	},
+	{
+		name: 'three',
+		version: '^0.172.0',
+		license: 'MIT',
+		url: 'https://threejs.org'
+	},
 	{ name: 'tone', version: '^15.1.22', license: 'MIT', url: 'https://npmjs.com/package/tone' },
 	{
 		name: 'ts-pattern',
@@ -499,6 +505,14 @@ export const supportLinks: SupportLink[] = [
 		url: 'https://ojack.xyz/',
 		type: 'website',
 		projects: ['Hydra']
+	},
+	{
+		name: '@mrdoob',
+		description: 'Creator of Three.js 3D graphics library',
+		category: 'library',
+		url: 'https://github.com/sponsors/mrdoob',
+		type: 'github',
+		projects: ['Three.js']
 	},
 	{
 		name: 'Patt Vira',

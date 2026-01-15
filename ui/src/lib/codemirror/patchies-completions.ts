@@ -199,14 +199,26 @@ const topLevelOnlyFunctions = new Set([
 
 // Node-specific functions - only show in certain node types
 const nodeSpecificFunctions: Record<string, string[]> = {
-	fft: ['js', 'p5', 'hydra', 'canvas', 'canvas.dom', 'swgl', 'strudel', 'textmode', 'textmode.dom'],
-	noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom'],
-	noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom'],
+	fft: [
+		'js',
+		'p5',
+		'hydra',
+		'canvas',
+		'canvas.dom',
+		'swgl',
+		'strudel',
+		'textmode',
+		'textmode.dom',
+		'three',
+		'three.dom'
+	],
+	noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
+	noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
 	onKeyDown: ['canvas.dom'],
 	onKeyUp: ['canvas.dom'],
 	setAudioPortCount: ['dsp~'],
 	setCanvasSize: ['canvas.dom'],
-	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl'],
+	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl', 'textmode', 'textmode.dom', 'three', 'three.dom'],
 	setKeepAlive: ['dsp~'],
 	setMouseScope: ['hydra'],
 	setRunOnMount: ['js'],
@@ -221,7 +233,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'tone~',
 		'sonic~',
 		'textmode',
-		'textmode.dom'
+		'textmode.dom',
+		'three',
+		'three.dom'
 	],
 	setVideoCount: ['hydra', 'three']
 };

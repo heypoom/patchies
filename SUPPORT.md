@@ -107,6 +107,16 @@ Creator of Hydra, the live-codeable video synthesizer that brings shader program
 
 ---
 
+### @mrdoob
+
+**Projects:** Three.js
+
+Creator of Three.js, the powerful 3D graphics library for WebGL that makes 3D graphics accessible to web developers.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/mrdoob)
+
+---
+
 ### Csound
 
 **Projects:** Csound

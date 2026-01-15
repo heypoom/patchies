@@ -327,9 +327,6 @@
 				width: outputWidth,
 				height: outputHeight,
 				mouse,
-				noDrag: () => {
-					dragEnabled = false;
-				},
 				noOutput: () => {
 					videoOutputEnabled = false;
 					updateNodeInternals(nodeId);
@@ -344,7 +341,10 @@
 				onKeyUp: (callback: (event: KeyboardEvent) => void) => {
 					keyboardCallbacks.onKeyUp = callback;
 				},
-				...messageContext.getContext()
+				...messageContext.getContext(),
+				noDrag: () => {
+					dragEnabled = false;
+				}
 			};
 
 			// Execute with `with` context to extract draw function
