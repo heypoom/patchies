@@ -2,7 +2,6 @@
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -16,8 +15,9 @@
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import type { WebGLRenderer } from 'three';
+	import { JSRunner } from '$lib/js-runner/JSRunner';
 
-	const THREE_DOM_WRAPPER_OFFSET = -2;
+	const THREE_DOM_WRAPPER_OFFSET = 2;
 
 	let {
 		id: nodeId,
@@ -42,6 +42,7 @@
 	// Track error line numbers for code highlighting
 	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 	const eventBus = PatchiesEventBus.getInstance();
+	const jsRunner = JSRunner.getInstance();
 
 	function handleConsoleOutput(event: ConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
@@ -55,7 +56,6 @@
 	const customConsole = createCustomConsole(nodeId);
 
 	let glSystem = GLSystem.getInstance();
-	let messageContext: MessageContext;
 	let canvas = $state<HTMLCanvasElement | undefined>();
 	let dragEnabled = $state(true);
 	let videoOutputEnabled = $state(true);
@@ -272,6 +272,7 @@
 
 	async function sendBitmap() {
 		if (!canvas) return;
+		if (!videoOutputEnabled) return;
 		if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
 
 		await glSystem.setBitmapSource(nodeId, canvas);
@@ -298,9 +299,6 @@
 				animationFrameId = null;
 			}
 
-			// Clear timers from message context
-			messageContext.clearTimers();
-
 			// Lazy load Three.js if not already loaded
 			if (!THREE) {
 				THREE = await import('three');
@@ -309,68 +307,66 @@
 				customConsole.log('Three.js loaded!');
 			}
 
-			// Get message context methods
-			const context = messageContext.getContext();
+			// Preprocess code for module support
+			const processedCode = await jsRunner.preprocessCode(data.code, {
+				nodeId,
+				setLibraryName: () => {} // three.dom doesn't support library definitions
+			});
 
-			// Create user code execution context
-			// Note: width/height match the full output resolution (same as worker canvas)
-			const userGlobals = {
-				canvas,
-				THREE,
-				width: outputWidth,
-				height: outputHeight,
-				mouse,
-				renderer,
+			// If preprocessCode returns null, it means it's a library definition
+			if (processedCode === null) return;
+
+			// Execute via JSRunner with extraContext for Three.js-specific globals
+			await jsRunner.executeJavaScript(nodeId, processedCode, {
+				customConsole,
 				setPortCount,
-				console: customConsole,
-				...context,
-				recv: context.onMessage, // Alias for consistency with worker canvas
-				// Override context defaults with custom implementations (must be after ...context)
-				noDrag: () => {
-					dragEnabled = false;
-				},
-				noOutput: () => {
-					videoOutputEnabled = false;
-					updateNodeInternals(nodeId);
-				},
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
-				setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
-				onKeyDown: (callback: (event: KeyboardEvent) => void) => {
-					keyboardCallbacks.onKeyDown = callback;
-				},
-				onKeyUp: (callback: (event: KeyboardEvent) => void) => {
-					keyboardCallbacks.onKeyUp = callback;
-				},
-				requestAnimationFrame: (callback: FrameRequestCallback) => {
-					animationFrameId = requestAnimationFrame((time) => {
-						callback(time);
-						sendBitmap();
-					});
-					return animationFrameId;
-				},
-				cancelAnimationFrame: (id: number) => {
-					cancelAnimationFrame(id);
-					if (animationFrameId === id) {
-						animationFrameId = null;
+				extraContext: {
+					canvas,
+					THREE,
+					renderer,
+					width: outputWidth,
+					height: outputHeight,
+					mouse,
+					noDrag: () => {
+						dragEnabled = false;
+					},
+					noOutput: () => {
+						videoOutputEnabled = false;
+						updateNodeInternals(nodeId);
+					},
+					setCanvasSize,
+					onKeyDown: (callback: (event: KeyboardEvent) => void) => {
+						keyboardCallbacks.onKeyDown = callback;
+					},
+					onKeyUp: (callback: (event: KeyboardEvent) => void) => {
+						keyboardCallbacks.onKeyUp = callback;
+					},
+					requestAnimationFrame: (callback: FrameRequestCallback) => {
+						animationFrameId = requestAnimationFrame((time) => {
+							callback(time);
+							sendBitmap();
+						});
+
+						return animationFrameId;
+					},
+					cancelAnimationFrame: (id: number) => {
+						cancelAnimationFrame(id);
+
+						if (animationFrameId === id) {
+							animationFrameId = null;
+						}
 					}
 				}
-			};
-
-			// Execute user code (async to support await in user code)
-			const userFunction = new Function(
-				...Object.keys(userGlobals),
-				`"use strict";\nreturn (async () => {\n${data.code}\n})()`
-			);
-
-			await userFunction(...Object.values(userGlobals));
+			});
 		} catch (error) {
 			handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
 		}
 	}
 
 	onMount(() => {
-		messageContext = new MessageContext(nodeId);
+		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
@@ -396,7 +392,7 @@
 
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 		glSystem?.removeNode(nodeId);
-		messageContext?.destroy();
+		jsRunner.destroy(nodeId);
 	});
 
 	const handleClass = $derived.by(() => {
