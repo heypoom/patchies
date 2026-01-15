@@ -1485,7 +1485,7 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 
 **Objects on the main thread:**
 
-- `p5`, `canvas.dom` and `bchrn` runs on the main thread.
+- `p5`, `canvas.dom`, `textmode.dom` and `bchrn` runs on the main thread.
 - If these objects are connected to video outlets, at each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
   - Try connecting `canvas.dom` to `bg.out`, your FPS will drop around 10FPS - 20FPS. Use "CMD+K > Toggle FPS Monitor" to verify.
   - Try connecting `canvas` to `bg.out`, your FPS will not drop at all.
