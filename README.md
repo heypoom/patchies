@@ -481,7 +481,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `textmode` and `textmode.dom`: creates ASCII/text-mode graphics
 
-<img src="./docs/images/textmode-demo.webp" alt="Patchies.app textmode.js demo" width="700">
+<img src="./docs/images/textmode.webp" alt="Patchies.app textmode.js demo" width="700">
 
 > ✨ Try this patch out [in the app](https://patchies.app/?id=3hd88qv62h4zltq)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
 
