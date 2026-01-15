@@ -9,7 +9,7 @@ import type {
 	UserParam
 } from '../../lib/rendering/types';
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR, WEBGL_EXTENSIONS } from '$lib/canvas/constants';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
 import { TextmodeRenderer } from './textmodeRenderer';
@@ -968,22 +968,35 @@ export class FBORenderer {
 		const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
 		if (!node) return;
 
-		if (node.type === 'hydra') {
-			const hydraRenderer = this.hydraByNode.get(nodeId);
-			if (!hydraRenderer) return;
+		const data = message['data'];
 
-			hydraRenderer.onMessage(message['data'], message);
-		} else if (node.type === 'canvas') {
-			const canvasRenderer = this.canvasByNode.get(nodeId);
-			if (!canvasRenderer) return;
+		match(node.type)
+			.with('hydra', () => {
+				const hydraRenderer = this.hydraByNode.get(nodeId);
+				if (!hydraRenderer) return;
 
-			canvasRenderer.handleMessage(message);
-		} else if (node.type === 'swgl') {
-			const swglContext = this.swglByNode.get(nodeId);
-			if (!swglContext) return;
+				hydraRenderer.onMessage(data, message);
+			})
+			.with('canvas', () => {
+				const canvasRenderer = this.canvasByNode.get(nodeId);
+				if (!canvasRenderer) return;
 
-			swglContext.onMessage(message['data'], message);
-		}
+				canvasRenderer.handleMessage(message);
+			})
+			.with('swgl', () => {
+				const swglContext = this.swglByNode.get(nodeId);
+				if (!swglContext) return;
+
+				swglContext.onMessage(data, message);
+			})
+			.with('textmode', () => {
+				const textmodeRenderer = this.textmodeByNode.get(nodeId);
+				if (!textmodeRenderer) return;
+
+				textmodeRenderer.onMessage(data, message);
+			})
+			.with(P.union('glsl', 'img', 'bg.out'), () => {})
+			.exhaustive();
 	}
 
 	getFboNodeById(nodeId: string): FBONode | undefined {
