@@ -176,6 +176,7 @@
 					run: () => {
 						onBeforeEvaluate?.();
 						editor.evaluate();
+
 						return true;
 					}
 				},
@@ -184,6 +185,7 @@
 					run: () => {
 						onBeforeEvaluate?.();
 						editor.evaluate();
+
 						return true;
 					}
 				}

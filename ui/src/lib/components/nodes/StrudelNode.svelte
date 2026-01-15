@@ -222,7 +222,7 @@
 				<div
 					bind:this={editorContainer}
 					class={[
-						'flex w-full items-center justify-center rounded-md border bg-zinc-900',
+						'flex w-full items-center justify-center rounded-md border bg-zinc-900 p-1',
 						hasError ? 'border-red-500' : 'border-transparent'
 					]}
 					style={data.styles?.container}
