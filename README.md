@@ -745,7 +745,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 
 <img src="./docs/images/strudel-haunted.webp" alt="Patchies.app strudel demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=0lylv5056h5uul1)!
+> ✨ Try this patch out [in the app](https://patchies.app/?id=d4z6mmfl6l9n8e2)!
 
 - [Strudel](https://strudel.cc) is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
 - See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.

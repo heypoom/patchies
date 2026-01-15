@@ -222,7 +222,7 @@
 				<div
 					bind:this={editorContainer}
 					class={[
-						'flex w-full items-center justify-center rounded-md border bg-zinc-900 p-1',
+						'nodrag nopan flex w-full items-center justify-center rounded-md border border-zinc-600 bg-zinc-900 p-1',
 						hasError ? 'border-red-500' : 'border-transparent'
 					]}
 					style={data.styles?.container}
@@ -252,17 +252,8 @@
 				<StandardHandle
 					port="outlet"
 					type="audio"
-					total={2}
+					total={1}
 					index={0}
-					class="!-bottom-2"
-					{nodeId}
-				/>
-
-				<StandardHandle
-					port="outlet"
-					type="message"
-					total={2}
-					index={1}
 					class="!-bottom-2"
 					{nodeId}
 				/>
