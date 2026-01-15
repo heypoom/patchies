@@ -191,7 +191,7 @@
 		mouseHandler?.setScope('local');
 
 		try {
-			messageContext.clearTimers();
+			messageContext?.clearTimers();
 			audioAnalysisSystem.disableFFT(nodeId);
 
 			const isUpdated = glSystem.upsertNode(nodeId, 'hydra', { code });
