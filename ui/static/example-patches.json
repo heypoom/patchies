@@ -176,6 +176,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "ekavjpvr6h8atbj",
+			"name": "Sleek Animated Torus",
+			"description": "Uses three.js with texture from hydra.js to create a sleek animated torus",
+			"category": "Interactive",
+			"author": "@heypoom"
+		},
+		{
 			"id": "3hd88qv62h4zltq",
 			"name": "Animated Wave Pattern",
 			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
