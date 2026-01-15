@@ -12,6 +12,7 @@ import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR, WEBGL_EXTENSIONS } from '$li
 import { match } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
+import { TextmodeRenderer } from './textmodeRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -64,6 +65,7 @@ export class FBORenderer {
 
 	public hydraByNode = new Map<string, HydraRenderer | null>();
 	public canvasByNode = new Map<string, CanvasRenderer | null>();
+	public textmodeByNode = new Map<string, TextmodeRenderer | null>();
 	private swglByNode = new Map<string, SwissGLContext>();
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
@@ -115,6 +117,7 @@ export class FBORenderer {
 				.with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
 				.with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
 				.with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
+				.with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
 				.with({ type: 'img' }, () => this.createEmptyRenderer())
 				.with({ type: 'bg.out' }, () => this.createEmptyRenderer())
 				.exhaustive();
@@ -202,6 +205,34 @@ export class FBORenderer {
 			cleanup: () => {
 				canvasRenderer.destroy();
 				this.canvasByNode.delete(node.id);
+			}
+		};
+	}
+
+	async createTextmodeRenderer(
+		node: RenderNode,
+		framebuffer: regl.Framebuffer2D
+	): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+		if (node.type !== 'textmode') return null;
+
+		// Delete existing textmode renderer if it exists.
+		if (this.textmodeByNode.has(node.id)) {
+			this.textmodeByNode.get(node.id)?.destroy();
+		}
+
+		const textmodeRenderer = await TextmodeRenderer.create(
+			{ code: node.data.code, nodeId: node.id },
+			framebuffer,
+			this
+		);
+
+		this.textmodeByNode.set(node.id, textmodeRenderer);
+
+		return {
+			render: () => {},
+			cleanup: () => {
+				textmodeRenderer.destroy();
+				this.textmodeByNode.delete(node.id);
 			}
 		};
 	}

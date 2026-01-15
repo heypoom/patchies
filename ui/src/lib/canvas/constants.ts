@@ -149,3 +149,24 @@ instr Main
 endin
 
 schedule("Main", 0, 0, 0)`;
+
+export const DEFAULT_TEXTMODE_CODE = `import { Textmode } from 'npm:textmode.js'
+
+const tm = new Textmode(canvas)
+
+function draw() {
+  tm.clear()
+  
+  const time = Date.now() * 0.001
+  const text = 'HELLO TEXTMODE'
+  
+  for (let i = 0; i < text.length; i++) {
+    const x = 10 + i * 2
+    const y = 12 + Math.sin(time + i * 0.5) * 3
+    tm.print(text[i], x, y)
+  }
+  
+  requestAnimationFrame(draw)
+}
+
+draw()`;
