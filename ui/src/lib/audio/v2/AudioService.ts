@@ -53,7 +53,9 @@ export class AudioService {
 	}
 
 	/** Removes a node from the graph. */
-	removeNode(node: AudioNodeV2): void {
+	removeNode(node?: AudioNodeV2 | null): void {
+		if (!node) return;
+
 		if (node.destroy) {
 			node.destroy();
 		} else {
