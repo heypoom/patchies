@@ -661,6 +661,18 @@ export class FBORenderer {
 			userUniformParams = textureArray;
 		}
 
+		// Convert texture map to array for Three.js (same pattern as Hydra)
+		if (node.type === 'three') {
+			const maxInletIndex = Math.max(-1, ...inputTextureMap.keys());
+			const textureArray: (regl.Texture2D | undefined)[] = [];
+
+			for (let i = 0; i <= maxInletIndex; i++) {
+				textureArray[i] = inputTextureMap.get(i);
+			}
+
+			userUniformParams = textureArray;
+		}
+
 		// Get mouse data for this node (defaults to [0, 0, 0, 0])
 		const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
 

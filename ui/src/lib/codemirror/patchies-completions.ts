@@ -223,7 +223,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'textmode',
 		'textmode.dom'
 	],
-	setVideoCount: ['hydra']
+	setVideoCount: ['hydra', 'three']
 };
 
 export interface PatchiesContext {

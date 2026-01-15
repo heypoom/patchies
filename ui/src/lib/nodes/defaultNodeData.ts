@@ -60,7 +60,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('textmode.dom', () => ({ code: DEFAULT_TEXTMODE_CODE }))
 		.with('canvas.dom', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('three.dom', () => ({ code: DEFAULT_THREE_CODE }))
-		.with('three', () => ({ code: DEFAULT_THREE_CODE }))
+		.with('three', () => ({
+			code: DEFAULT_THREE_CODE,
+			messageInletCount: 1,
+			messageOutletCount: 0,
+			videoInletCount: 1,
+			videoOutletCount: 1
+		}))
 		.with('ai.music', () => ({}))
 		.with('ai.tts', () => ({}))
 		.with('bg.out', () => ({}))

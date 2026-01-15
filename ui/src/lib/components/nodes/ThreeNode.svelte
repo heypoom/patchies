@@ -31,8 +31,10 @@
 		data: {
 			title: string;
 			code: string;
-			inletCount?: number;
-			outletCount?: number;
+			messageInletCount?: number;
+			messageOutletCount?: number;
+			videoInletCount?: number;
+			videoOutletCount?: number;
 			hidePorts?: boolean;
 			executeCode?: number;
 			showConsole?: boolean;
@@ -71,8 +73,10 @@
 	const [outputWidth, outputHeight] = glSystem.outputSize;
 	const [previewWidth, previewHeight] = glSystem.previewSize;
 
-	let inletCount = $derived(data.inletCount ?? 1);
-	let outletCount = $derived(data.outletCount ?? 0);
+	let messageInletCount = $derived(data.messageInletCount ?? 1);
+	let messageOutletCount = $derived(data.messageOutletCount ?? 0);
+	let videoInletCount = $derived(data.videoInletCount ?? 1);
+	let videoOutletCount = $derived(data.videoOutletCount ?? 1);
 	let previousExecuteCode = $state<number | undefined>(undefined);
 
 	// Watch for executeCode timestamp changes and re-run when it changes
@@ -90,14 +94,19 @@
 		match(e)
 			.with({ portType: 'message' }, (m) => {
 				updateNodeData(nodeId, {
-					inletCount: m.inletCount,
-					outletCount: m.outletCount
+					messageInletCount: m.inletCount,
+					messageOutletCount: m.outletCount
 				});
-				updateNodeInternals(nodeId);
 			})
-			.otherwise(() => {
-				// Handle other port types if needed
-			});
+			.with({ portType: 'video' }, (m) => {
+				updateNodeData(nodeId, {
+					videoInletCount: m.inletCount,
+					videoOutletCount: m.outletCount
+				});
+			})
+			.exhaustive();
+
+		updateNodeInternals(nodeId);
 	}
 
 	function handleTitleUpdate(e: NodeTitleUpdateEvent) {
@@ -238,13 +247,27 @@
 	hasError={lineErrors !== undefined}
 >
 	{#snippet topHandle()}
-		{#each Array.from({ length: inletCount }) as _, index}
+		{#each Array.from({ length: videoInletCount }) as _, index (index)}
 			<StandardHandle
 				port="inlet"
-				id={index}
-				title={`Inlet ${index}`}
-				total={inletCount}
+				type="video"
+				id={index.toString()}
+				title={`Video Inlet ${index}`}
+				total={messageInletCount + videoInletCount}
 				{index}
+				class={handleClass}
+				{nodeId}
+			/>
+		{/each}
+
+		{#each Array.from({ length: messageInletCount }) as _, index (index)}
+			<StandardHandle
+				port="inlet"
+				type="message"
+				id={index + videoInletCount}
+				title={`Message Inlet ${index}`}
+				total={messageInletCount + videoInletCount}
+				index={index + videoInletCount}
 				class={handleClass}
 				{nodeId}
 			/>
@@ -253,25 +276,28 @@
 
 	{#snippet bottomHandle()}
 		{#if videoOutputEnabled}
-			<StandardHandle
-				port="outlet"
-				type="video"
-				id={0}
-				title="Video output"
-				total={outletCount + 1}
-				index={outletCount}
-				class={handleClass}
-				{nodeId}
-			/>
+			{#each Array.from({ length: videoOutletCount }) as _, index (index)}
+				<StandardHandle
+					port="outlet"
+					type="video"
+					id={index.toString()}
+					title={`Video Outlet ${index}`}
+					total={messageOutletCount + videoOutletCount}
+					{index}
+					class={handleClass}
+					{nodeId}
+				/>
+			{/each}
 		{/if}
 
-		{#each Array.from({ length: outletCount }) as _, index}
+		{#each Array.from({ length: messageOutletCount }) as _, index (index)}
 			<StandardHandle
 				port="outlet"
-				id={index}
-				title={`Outlet ${index}`}
-				total={videoOutputEnabled ? outletCount + 1 : outletCount}
-				{index}
+				type="message"
+				id={index + videoOutletCount}
+				title={`Message Outlet ${index}`}
+				total={messageOutletCount + videoOutletCount}
+				index={index + videoOutletCount}
 				class={handleClass}
 				{nodeId}
 			/>

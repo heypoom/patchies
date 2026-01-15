@@ -52,6 +52,12 @@ export class ThreeRenderer {
 	private mouseX = 0;
 	private mouseY = 0;
 
+	// Video input textures (from connected nodes)
+	private inputTextures: (regl.Texture2D | undefined)[] = [];
+
+	// Three.js textures wrapping regl textures
+	private threeInputTextures: import('three').Texture[] = [];
+
 	private constructor(config: ThreeConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
 		this.config = config;
 		this.framebuffer = framebuffer;
@@ -118,6 +124,12 @@ export class ThreeRenderer {
 		// Update mouse state from render params
 		this.mouseX = params.mouseX;
 		this.mouseY = params.mouseY;
+
+		// Store input textures for getTexture() access
+		this.inputTextures = params.userParams as (regl.Texture2D | undefined)[];
+
+		// Update Three.js textures from regl textures
+		this.updateThreeTextures();
 
 		// Set render target to our framebuffer-bound target
 		this.threeWebGLRenderer.setRenderTarget(this.renderTarget);
@@ -187,6 +199,12 @@ export class ThreeRenderer {
 				setPortCount: (inletCount?: number, outletCount?: number) => {
 					this.setPortCount(inletCount, outletCount);
 				},
+
+				// Video inlet/outlet control
+				setVideoCount: this.setVideoCount.bind(this),
+
+				// Get texture from video inlet
+				getTexture: this.getTexture.bind(this),
 
 				setTitle: this.setTitle.bind(this),
 
@@ -353,6 +371,70 @@ export class ThreeRenderer {
 			nodeId: this.config.nodeId,
 			videoOutputEnabled
 		});
+	}
+
+	setVideoCount(inletCount = 1, outletCount = 1) {
+		self.postMessage({
+			type: 'setPortCount',
+			portType: 'video',
+			nodeId: this.config.nodeId,
+			inletCount,
+			outletCount
+		});
+	}
+
+	/**
+	 * Updates Three.js textures to use regl's WebGL textures directly.
+	 * This avoids expensive readPixels by sharing the underlying WebGLTexture.
+	 */
+	private updateThreeTextures() {
+		if (!this.THREE || !this.threeWebGLRenderer) return;
+
+		const [width, height] = this.renderer.outputSize;
+
+		for (let i = 0; i < this.inputTextures.length; i++) {
+			const reglTex = this.inputTextures[i];
+			if (!reglTex) continue;
+
+			// Create Three.js texture wrapper if it doesn't exist
+			if (!this.threeInputTextures[i]) {
+				// Create a minimal texture - we'll override its WebGL texture
+				this.threeInputTextures[i] = new this.THREE.Texture();
+				this.threeInputTextures[i].flipY = false; // regl textures are already in correct orientation
+				this.threeInputTextures[i].minFilter = this.THREE.LinearFilter;
+				this.threeInputTextures[i].magFilter = this.THREE.LinearFilter;
+			}
+
+			const threeTex = this.threeInputTextures[i];
+
+			// Get regl's internal WebGLTexture handle
+			// @ts-expect-error -- accessing internal regl property
+			const webglTexture = reglTex._texture?.texture as WebGLTexture | undefined;
+
+			if (webglTexture) {
+				// Directly assign the WebGL texture to Three.js's internal property
+				// This avoids expensive readPixels calls
+				const props = this.threeWebGLRenderer.properties.get(threeTex) as {
+					__webglTexture?: WebGLTexture;
+					__webglInit?: boolean;
+				};
+				props.__webglTexture = webglTexture;
+				props.__webglInit = true;
+
+				// Update texture dimensions for Three.js
+				threeTex.image = { width, height };
+				threeTex.needsUpdate = false; // Don't upload - we're using existing texture
+			}
+		}
+	}
+
+	/**
+	 * Gets a Three.js texture from a video inlet.
+	 * @param index The inlet index (0-based)
+	 * @returns A Three.js Texture or null if not connected
+	 */
+	getTexture(index: number): import('three').Texture | null {
+		return this.threeInputTextures[index] ?? null;
 	}
 
 	handleMessage(message: Message) {
