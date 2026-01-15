@@ -137,6 +137,7 @@ export class ThreeRenderer {
 
 		// Refresh both the Three.js and REGL internal state.
 		// We are sharing the same WebGL context between Three.js and REGL.
+		// Takes 0 - 1ms overall
 		this.threeWebGLRenderer.resetState();
 		this.renderer.regl._refresh();
 	}
