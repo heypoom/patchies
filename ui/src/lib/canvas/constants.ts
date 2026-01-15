@@ -150,14 +150,16 @@ endin
 
 schedule("Main", 0, 0, 0)`;
 
-export const DEFAULT_THREE_CODE = `const scene = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
+export const DEFAULT_THREE_CODE = `const { Scene, PerspectiveCamera, BoxGeometry, Mesh, MeshNormalMaterial } = THREE
+
+const scene = new Scene()
+const camera = new PerspectiveCamera(75, width / height, 0.1, 1000)
 
 camera.position.z = 2
 
-const geometry = new THREE.BoxGeometry(1, 1, 1)
-const material = new THREE.MeshNormalMaterial()
-const cube = new THREE.Mesh(geometry, material)
+const geometry = new BoxGeometry(1, 1, 1)
+const material = new MeshNormalMaterial()
+const cube = new Mesh(geometry, material)
 scene.add(cube)
 
 function draw() {
