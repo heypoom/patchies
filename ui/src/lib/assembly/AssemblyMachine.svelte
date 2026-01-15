@@ -42,7 +42,7 @@
 
 	const { updateNodeData } = useSvelteFlow();
 
-	let inletCount = $derived(data.inletCount ?? 3);
+	let inletCount = $derived(data.inletCount ?? 1);
 	let outletCount = $derived(data.outletCount ?? 3);
 
 	// Use node data as single source of truth for machine config

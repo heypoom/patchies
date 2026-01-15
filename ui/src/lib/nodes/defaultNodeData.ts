@@ -106,7 +106,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))
 		.with('asm', () => ({
 			code: DEFAULT_ASSEMBLY_CODE,
-			inletCount: 3,
+			inletCount: 1,
 			outletCount: 3,
 			showMemoryViewer: false,
 			machineConfig: {
