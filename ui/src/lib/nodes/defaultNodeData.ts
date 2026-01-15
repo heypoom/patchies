@@ -56,6 +56,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('swgl', () => ({ code: DEFAULT_SWISSGL_CODE }))
 		.with('canvas', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('textmode', () => ({ code: DEFAULT_TEXTMODE_CODE }))
+		.with('textmode.dom', () => ({ code: DEFAULT_TEXTMODE_CODE }))
 		.with('canvas.dom', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('ai.music', () => ({}))
 		.with('ai.tts', () => ({}))

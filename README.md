@@ -479,7 +479,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - When using [video chaining](#video-chaining), to output the canvas content to the video outlet, it drastically slow down the browser by a huge margin as it needs to copy each frame to the [rendering pipeline](#rendering-pipeline).
   - It runs on main thread, so heavy computation can affect UI responsiveness.
 
-### `textmode`: creates ASCII/text-mode graphics
+### `textmode` and `textdom.dom`: creates ASCII/text-mode graphics
 
 <img src="./docs/images/textmode-demo.webp" alt="Patchies.app textmode.js demo" width="700">
 
@@ -487,9 +487,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - [Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
 
-- The textmode renderer runs on the [rendering pipeline](#rendering-pipeline) using OffscreenCanvas on web workers, similar to the `canvas` node.
+- There are two flavors of textmode objects with a few differences:
 
-  - Features that requires the DOM are currently unavailable, such as mouse, keyboard and touch support.
+  - `textmode`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Features such as mouse, keyboard and touch support.
+  - `textmode.dom`: Runs on the main thread. Supports full mouse, keyboard and touch interactivity. Is slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
 
 - You can call these special methods in your textmode code:
 
