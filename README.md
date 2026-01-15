@@ -728,31 +728,16 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Create procedural sequences with 26 letter operators (A-Z) and special symbols for MIDI control.
 - Try out [this demo](https://patchies.app/?id=mjjh5j78q46oe9i) for a silly little procedurally-generated lullaby. Don't fall asleep!
 - See [the Orca docs](https://github.com/hundredrabbits/Orca/blob/main/README.md) for how to use it.
-- **Output-agnostic**: Orca emits standard Patchies MIDI messages (noteOn, noteOff, controlChange) that work with any audio node.
-  - Connect the outlet to `midi.out` for MIDI output.
-  - Try using the `poly-synth-midi.tone` preset, which uses `tone~` node to playback MIDI messages.
-- **Key operators**:
-  - `A-Z`: Mathematical, logical, and movement operations
-  - `:`: MIDI note output (channel, octave, note, velocity, length)
-  - `%`: Monophonic MIDI (only one note per channel)
-  - `!`: MIDI Control Change
-  - `U`: Euclidean rhythm generator (very useful for drum patterns!)
-  - `V`: Variables for storing values
-  - `R`: Random values
-  - `*`: Bang operator to trigger adjacent operators
-  - `#`: Comment (halts line)
+- **Output-agnostic**: Orca emits standard Patchies MIDI messages (`noteOn, noteOff, controlChange`)
+  - Connect the outlet to `midi.out` for MIDI output to hardware.
+  - Try the `poly-synth-midi.tone` preset, which uses the `tone~` node to playback MIDI messages with a polyphonic synth.
 - **Controls**:
-  - Click on the canvas to move the cursor
-  - Arrow keys to navigate
-  - Type characters to edit the grid directly
+  - Click on the canvas and type characters to edit the grid
   - Space to play/pause
-  - Enter to advance one frame
-  - BPM control to adjust tempo
-  - Settings button for grid size management
+  - `Enter` or `ctrl+f` advances one frame
   - `ctrl+shift+r` resets frame
-  - `ctrl+f` advances one frame (frame-by-frame), you can use this even with paused.
-  - `>` increases tempo
-  - `<` decreases tempo
+  - Settings button lets you update BPM, font size and grid size
+  - `>` increases tempo and `<` decreases tempo
 - **Attribution**: Based on the original Orca by Hundred Rabbits, licensed under [MIT License](https://github.com/hundredrabbits/Orca/blob/main/LICENSE.md).
 - Please consider supporting [Hundred Rabbits on Patreon](https://www.patreon.com/hundredrabbits) for their amazing work on Orca and Uxn!
 
