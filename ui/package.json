@@ -124,6 +124,7 @@
 		"regl": "^2.1.1",
 		"stats.js": "^0.17.0",
 		"supersonic-scsynth": "^0.25.5",
+		"textmode.js": "^0.8.1",
 		"tone": "^15.1.22",
 		"ts-pattern": "^5.8.0",
 		"uxn.wasm": "^0.9.0",

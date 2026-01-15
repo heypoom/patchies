@@ -12,7 +12,7 @@ Try it out at [patchies.app](https://patchies.app) - it's open source and free t
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
-- Create interactive graphics with [P5.js](https://p5js.org) and [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+- Create interactive graphics with [P5.js](https://p5js.org), [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [Textmode.js](https://code.textmode.art)
 - Synthesize and process video with [Hydra](https://hydra.ojack.xyz) and [GLSL shaders](https://www.shadertoy.com)
 - Live code music with [Strudel](https://strudel.cc), [ChucK](https://chuck.cs.princeton.edu/webchuck), [SuperSonic](https://sonic-pi.net/supersonic/demo.html) and [Orca](https://github.com/hundredrabbits/Orca)
 - Synthesize and process audio with [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) nodes, [Tone.js](https://tonejs.github.io) and [Elementary Audio](https://www.elementary.audio)
@@ -479,6 +479,44 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - When using [video chaining](#video-chaining), to output the canvas content to the video outlet, it drastically slow down the browser by a huge margin as it needs to copy each frame to the [rendering pipeline](#rendering-pipeline).
   - It runs on main thread, so heavy computation can affect UI responsiveness.
 
+### `textmode`: creates ASCII/text-mode graphics
+
+- [Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
+
+- The textmode renderer runs on the [rendering pipeline](#rendering-pipeline) using OffscreenCanvas on web workers, similar to the `canvas` node.
+
+- You can call these special methods in your textmode code:
+
+  - `noDrag()` disables dragging the node.
+  - `noOutput()` hides the video output port.
+  - `setTitle(title)` sets the title of the node.
+  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
+
+- The textmode instance is automatically created and available as `tm` in your code. You can use it directly without importing or creating it:
+
+  ```js
+  function draw() {
+    tm.clear();
+
+    const time = Date.now() * 0.001;
+    const text = "HELLO TEXTMODE";
+
+    for (let i = 0; i < text.length; i++) {
+      const x = 10 + i * 2;
+      const y = 12 + Math.sin(time + i * 0.5) * 3;
+      tm.print(text[i], x, y);
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+  ```
+
+- See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
+- The textmode node outputs video that can be chained with other visual objects (`glsl`, `hydra`, etc.).
+
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
 - [Butterchurn](https://github.com/jberg/butterchurn) is a JavaScript port of the Winamp Milkdrop visualizer.
@@ -537,7 +575,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Importing JavaScript packages from NPM
 
-> This feature is only available in `js`, `p5`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `sonic~` and `elem~` objects, for now.
 
 - You can import any JavaScript package by using the `npm:` prefix in the import statement.
 
@@ -566,7 +604,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Sharing JavaScript across multiple `js` blocks
 
-> This feature is only available in `js`, `p5`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `sonic~` and `elem~` objects, for now.
 
 You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
 

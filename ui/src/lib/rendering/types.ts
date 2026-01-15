@@ -11,6 +11,7 @@ export type RenderNode = {
 	| { type: 'hydra'; data: { code: string } }
 	| { type: 'swgl'; data: { code: string } }
 	| { type: 'canvas'; data: { code: string } }
+	| { type: 'textmode'; data: { code: string } }
 	| { type: 'img'; data: unknown }
 	| { type: 'bg.out'; data: unknown }
 );
@@ -80,6 +81,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
 	'hydra',
 	'swgl',
 	'canvas',
+	'textmode',
 	'img'
 ];
 

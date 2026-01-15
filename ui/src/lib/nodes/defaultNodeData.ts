@@ -13,7 +13,8 @@ import {
 	DEFAULT_TONE_JS_CODE,
 	DEFAULT_SONIC_CODE,
 	DEFAULT_ELEM_CODE,
-	DEFAULT_CSOUND_CODE
+	DEFAULT_CSOUND_CODE,
+	DEFAULT_TEXTMODE_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -54,6 +55,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('swgl', () => ({ code: DEFAULT_SWISSGL_CODE }))
 		.with('canvas', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
+		.with('textmode', () => ({ code: DEFAULT_TEXTMODE_CODE }))
 		.with('canvas.dom', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('ai.music', () => ({}))
 		.with('ai.tts', () => ({}))
