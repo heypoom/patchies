@@ -199,9 +199,9 @@ const topLevelOnlyFunctions = new Set([
 
 // Node-specific functions - only show in certain node types
 const nodeSpecificFunctions: Record<string, string[]> = {
-	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel', 'textmode'],
-	noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode'],
-	noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode'],
+	fft: ['js', 'p5', 'hydra', 'canvas', 'canvas.dom', 'swgl', 'strudel', 'textmode', 'textmode.dom'],
+	noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom'],
+	noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom'],
 	onKeyDown: ['canvas.dom'],
 	onKeyUp: ['canvas.dom'],
 	setAudioPortCount: ['dsp~'],
@@ -220,7 +220,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'elem~',
 		'tone~',
 		'sonic~',
-		'textmode'
+		'textmode',
+		'textmode.dom'
 	],
 	setVideoCount: ['hydra']
 };
