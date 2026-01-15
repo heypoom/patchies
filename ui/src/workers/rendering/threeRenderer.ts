@@ -90,22 +90,12 @@ export class ThreeRenderer {
 
 			instance.threeWebGLRenderer.setSize(width, height, false);
 
-			// Create render target that we'll bind to regl's framebuffer
+			// Create render target for Three.js to render into.
+			// We'll blit from this to our regl FBO after each render.
 			instance.renderTarget = new instance.THREE.WebGLRenderTarget(width, height, {
 				format: instance.THREE.RGBAFormat,
 				type: instance.THREE.UnsignedByteType
 			});
-
-			// Bind our regl framebuffer to the render target
-			const webglFramebuffer = getFramebuffer(framebuffer);
-
-			if (webglFramebuffer) {
-				const props = instance.threeWebGLRenderer.properties.get(instance.renderTarget);
-				// console.log('props', props);
-
-				// @ts-expect-error -- hack: access WebGLFramebuffer directly
-				props.__webglFramebuffer = webglFramebuffer;
-			}
 		} catch (error) {
 			console.error('error creating THREE', error);
 		}
@@ -131,7 +121,7 @@ export class ThreeRenderer {
 		// Update Three.js textures from regl textures
 		this.updateThreeTextures();
 
-		// Set render target to our framebuffer-bound target
+		// Render to Three.js's own render target
 		this.threeWebGLRenderer.setRenderTarget(this.renderTarget);
 
 		try {
@@ -141,14 +131,56 @@ export class ThreeRenderer {
 			this.handleRuntimeError(error);
 		}
 
-		// Reset Three.js internal WebGL state tracking
-		// This is critical when sharing context with regl
-		// https://threejs.org/docs/#WebGLRenderer.resetState
-		// > Can be used to reset the internal WebGL state.
-		// > This method is mostly relevant for applications which share
-		// > a single WebGL context across multiple WebGL libraries.
+		// Blit from Three.js render target to our regl FBO
+		// This avoids sharing framebuffer references between Three.js and regl
+		this.blitToReglFramebuffer();
 
+		// Refresh both the Three.js and REGL internal state.
+		// We are sharing the same WebGL context between Three.js and REGL.
 		this.threeWebGLRenderer.resetState();
+		this.renderer.regl._refresh();
+	}
+
+	/**
+	 * Blits the Three.js render target to our regl framebuffer.
+	 * Similar to how hydraRenderer copies its output to the regl FBO.
+	 */
+	private blitToReglFramebuffer() {
+		if (!this.threeWebGLRenderer || !this.renderTarget || !this.framebuffer) return;
+
+		const gl = this.renderer.gl;
+		if (!gl) return;
+
+		const [width, height] = this.renderer.outputSize;
+
+		// Get Three.js's internal WebGL framebuffer from the render target
+		const threeProps = this.threeWebGLRenderer.properties.get(this.renderTarget);
+
+		// @ts-expect-error -- accessing internal Three.js property
+		const sourceFBO = threeProps.__webglFramebuffer as WebGLFramebuffer | undefined;
+		if (!sourceFBO) return;
+
+		const destFBO = getFramebuffer(this.framebuffer);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
+
+		// Blit with Y-flip to match standard screen coordinates (like hydraRenderer)
+		gl.blitFramebuffer(
+			0,
+			0,
+			width,
+			height,
+			0,
+			height, // Flip destination Y
+			width,
+			0,
+			gl.COLOR_BUFFER_BIT,
+			gl.LINEAR
+		);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 	}
 
 	public async updateCode() {
