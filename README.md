@@ -770,10 +770,10 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Messages
   - `bang` or `run`: evaluates the code and starts playback
   - string or `{type: 'set', code: '...'}`: sets the code in the editor
-  - `{type: 'setStyles', value: {container: 'background: transparent'}}`: sets custom styles for editor container.
-    - you can apply blur and padding with CSS here.
   - `{type: 'setFontSize', value: 18}`: sets the font size of the editor.
   - `{type: 'setFontFamily', value: 'JetBrains Mono, monospace'}`: sets the font family of the editor. fallback is allowed.
+  - `{type: 'setStyles', value: {container: 'background: transparent'}}`: sets custom styles for editor container.
+    - you can apply blur and padding with CSS here.
 - Try out the [funk42 preset by froos](https://patchies.app/?id=zntnikb36c47eaw) for a more complex use of Strudel.
 - Limitations
   - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
