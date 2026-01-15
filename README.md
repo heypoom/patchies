@@ -1481,7 +1481,7 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 
 **Objects on the rendering pipeline (web worker thread):**
 
-- `hydra`, `glsl`, `swgl`, `canvas`, `textmode` and `img` run entirely on the web worker thread and are very high-performance.
+- `hydra`, `glsl`, `swgl`, `canvas`, `textmode` and `img` run entirely on the web worker thread and are very performant when using [chaining multiple video objects together](#video-chaining), as it does not require CPU-to-GPU pixel copy.
 
 **Objects on the main thread:**
 
