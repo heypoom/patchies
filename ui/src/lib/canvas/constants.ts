@@ -150,7 +150,12 @@ endin
 
 schedule("Main", 0, 0, 0)`;
 
-export const DEFAULT_TEXTMODE_CODE = `tm.draw(() => {
+export const DEFAULT_TEXTMODE_CODE = `tm.setup(() => {
+  tm.fontSize(16)
+  tm.frameRate(60)
+})
+
+tm.draw(() => {
   tm.background(0, 0, 0, 0)
   
   const halfCols = tm.grid.cols / 1.95
