@@ -489,8 +489,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - There are two flavors of textmode objects with a few differences:
 
-  - `textmode`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Features such as mouse, keyboard and touch support.
-  - `textmode.dom`: Runs on the main thread. Supports full mouse, keyboard and touch interactivity. Is slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
+  - `textmode`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Features such as mouse interactivity, images/videos and fonts are NOT supported.
+  - `textmode.dom`: Runs on the main thread. Supports [mouse](https://code.textmode.art/docs/events.html#mouse-events), [touch](https://code.textmode.art/docs/events.html#touch-events) and [keyboard](https://code.textmode.art/docs/events.html#keyboard-events) interactivity. Supports [video and images](https://code.textmode.art/docs/loadables.html). Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
 
 - You can call these special methods in your textmode code:
 
