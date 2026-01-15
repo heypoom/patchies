@@ -45,6 +45,7 @@
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
 	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
 	import { loadPatchFromUrl } from '$lib/save-load/load-patch-from-url';
+	import { cleanupPatch } from '$lib/save-load/cleanup-patch';
 	import { match } from 'ts-pattern';
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { serializePatch } from '$lib/save-load/serialize-patch';
@@ -226,6 +227,11 @@
 		else if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
 			showObjectBrowser = true;
+		}
+		// Handle CMD+N for new patch
+		else if (event.key.toLowerCase() === 'n' && (event.metaKey || event.ctrlKey) && !isTyping) {
+			event.preventDefault();
+			newPatch();
 		}
 		// Handle CMD+I for AI object insertion/editing
 		else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
@@ -812,6 +818,9 @@
 	}
 
 	function restorePatchFromSave(save: PatchSaveFormat) {
+		cleanupPatch(nodes);
+		previousNodes = new Set();
+
 		nodes = [];
 		edges = [];
 
@@ -897,6 +906,9 @@
 	}
 
 	function confirmNewPatch() {
+		cleanupPatch(nodes);
+		previousNodes = new Set();
+
 		nodes = [];
 		edges = [];
 		localStorage.removeItem('patchies-patch-autosave');
