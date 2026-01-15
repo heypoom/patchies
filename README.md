@@ -493,13 +493,9 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
 
-- The `canvas` variable is automatically available in your code and is passed to the textmode `create()` function:
+- The textmode instance is automatically created and available as `tm` in your code. You can use it directly without importing or creating it:
 
   ```js
-  import { create } from 'npm:textmode.js'
-  
-  const tm = await create({ canvas })
-  
   function draw() {
     tm.clear()
     

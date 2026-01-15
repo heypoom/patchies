@@ -146,9 +146,14 @@ export class TextmodeRenderer {
 			this.offscreenCanvas.width = width;
 			this.offscreenCanvas.height = height;
 
+			// Import and create textmode instance
+			const { create } = await import('https://esm.run/textmode.js');
+			const tm = await create({ canvas: this.offscreenCanvas });
+
 			// Create extra context for textmode-specific functionality
 			const extraContext = {
 				canvas: this.offscreenCanvas,
+				tm: tm, // Provide the textmode instance to user code
 				width: width,
 				height: height,
 
