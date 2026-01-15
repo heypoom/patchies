@@ -55,6 +55,12 @@
 				.with({ type: 'setStyles', value: P.any }, ({ value }) => {
 					styles = value as Record<string, string>;
 				})
+				.with({ type: 'setFontFamily', value: P.string }, ({ value }) => {
+					strudelEditor?.editor?.setFontFamily(value);
+				})
+				.with({ type: 'setFontSize', value: P.number }, ({ value }) => {
+					strudelEditor?.editor?.setFontSize(value);
+				})
 				.with({ type: 'stop' }, stop);
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);

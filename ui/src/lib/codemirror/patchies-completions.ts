@@ -210,7 +210,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	setKeepAlive: ['dsp~'],
 	setMouseScope: ['hydra'],
 	setRunOnMount: ['js'],
-	setTitle: ['p5', 'hydra', 'canvas', 'canvas.dom', 'dsp~', 'elem~', 'tone~', 'sonic~'],
+	setTitle: ['js', 'p5', 'hydra', 'canvas', 'canvas.dom', 'dsp~', 'elem~', 'tone~', 'sonic~'],
 	setVideoCount: ['hydra']
 };
 
