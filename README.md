@@ -492,7 +492,6 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `setTitle(title)` sets the title of the node.
   - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
-  - `setRenderMode('fast' | 'dom')` sets the rendering mode: 'fast' (default) uses video pipeline, 'dom' renders directly to DOM to support mouse/touch/keyboard interactivity.
 
 - The textmode instance is automatically created and available as `tm` in your code. You can use it directly without importing or creating it:
 

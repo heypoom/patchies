@@ -202,15 +202,6 @@ export class GLSystem {
 			});
 		}
 
-		// Handle setRenderMode messages from workers (textmode DOM/fast toggle)
-		if (data.type === 'setRenderMode') {
-			this.eventBus.dispatch({
-				type: 'nodeRenderModeUpdate',
-				nodeId: data.nodeId,
-				renderMode: data.renderMode
-			});
-		}
-
 		// A block has requested a preview frame capture from a node.
 		if (data.type === 'previewFrameCaptured') {
 			this.eventBus.dispatch(data);

@@ -18,8 +18,6 @@ type AudioAnalysisProps = {
 	format?: AudioAnalysisFormat;
 };
 
-export type TextmodeRenderMode = 'fast' | 'dom';
-
 export interface TextmodeConfig {
 	code: string;
 	nodeId: string;
@@ -54,9 +52,6 @@ export class TextmodeRenderer {
 	// textmode.js text modifier
 	public tm: Textmodifier | null = null;
 	public textmode: typeof import('textmode.js') | null = null;
-
-	// Render mode: 'fast' uses GL pipeline, 'dom' renders directly to DOM
-	public renderMode: TextmodeRenderMode = 'fast';
 
 	private constructor(
 		config: TextmodeConfig,
@@ -232,10 +227,6 @@ export class TextmodeRenderer {
 
 				noOutput: () => {
 					this.setVideoOutputEnabled(false);
-				},
-
-				setRenderMode: (mode: TextmodeRenderMode) => {
-					this.setRenderMode(mode);
 				}
 			};
 
@@ -371,16 +362,6 @@ export class TextmodeRenderer {
 			type: 'setVideoOutputEnabled',
 			nodeId: this.config.nodeId,
 			videoOutputEnabled
-		});
-	}
-
-	setRenderMode(mode: TextmodeRenderMode) {
-		this.renderMode = mode;
-
-		self.postMessage({
-			type: 'setRenderMode',
-			nodeId: this.config.nodeId,
-			renderMode: mode
 		});
 	}
 
