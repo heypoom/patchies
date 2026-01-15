@@ -1,4 +1,5 @@
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import type { TextmodeRenderMode } from '../../workers/rendering/textmodeRenderer';
 
 export type PatchiesEvent =
 	| ConsoleOutputEvent
@@ -10,7 +11,8 @@ export type PatchiesEvent =
 	| NodeHidePortsUpdateEvent
 	| NodeDragEnabledUpdateEvent
 	| NodeVideoOutputEnabledUpdateEvent
-	| NodeMouseScopeUpdateEvent;
+	| NodeMouseScopeUpdateEvent
+	| NodeRenderModeUpdateEvent;
 
 export interface ConsoleOutputEvent {
 	type: 'consoleOutput';
@@ -82,4 +84,10 @@ export interface NodeMouseScopeUpdateEvent {
 	type: 'nodeMouseScopeUpdate';
 	nodeId: string;
 	scope: 'global' | 'local';
+}
+
+export interface NodeRenderModeUpdateEvent {
+	type: 'nodeRenderModeUpdate';
+	nodeId: string;
+	renderMode: TextmodeRenderMode;
 }

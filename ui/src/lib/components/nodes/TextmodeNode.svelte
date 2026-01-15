@@ -5,7 +5,7 @@
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { GLSystem } from '$lib/canvas/GLSystem';
-	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+	import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
@@ -16,8 +16,11 @@
 		NodeHidePortsUpdateEvent,
 		NodeDragEnabledUpdateEvent,
 		NodeVideoOutputEnabledUpdateEvent,
+		NodeRenderModeUpdateEvent,
 		ConsoleOutputEvent
 	} from '$lib/eventbus/events';
+	import type { TextmodeRenderMode } from '../../../workers/rendering/textmodeRenderer';
+	import { DomTextmodeManager } from '$lib/textmode/DomTextmodeManager';
 	import { logger } from '$lib/utils/logger';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
@@ -65,6 +68,11 @@
 	let videoOutputEnabled = $state(true);
 	let editorReady = $state(false);
 
+	// DOM mode rendering state
+	let renderMode = $state<TextmodeRenderMode>('fast');
+	let domTextmodeManager: DomTextmodeManager | null = $state(null);
+	let domCanvas = $state<HTMLCanvasElement | null>(null);
+
 	const { updateNodeData } = useSvelteFlow();
 	const updateNodeInternals = useUpdateNodeInternals();
 
@@ -83,21 +91,49 @@
 		}
 	});
 
+	// Re-setup preview canvas context when switching back to fast mode
+	$effect(() => {
+		if (renderMode === 'fast' && previewCanvas) {
+			previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
+			glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+		}
+	});
+
+	// Initialize DOM textmode when canvas becomes available
+	$effect(() => {
+		if (renderMode === 'dom' && domCanvas && !domTextmodeManager) {
+			initDomTextmode();
+		}
+	});
+
+	async function initDomTextmode() {
+		if (!domCanvas) return;
+
+		domTextmodeManager = new DomTextmodeManager({
+			width: outputWidth,
+			height: outputHeight,
+			fontSize: 18,
+			frameRate: 60
+		});
+
+		domTextmodeManager.onFastRenderMode = () =>
+			handleRenderModeUpdate({ type: 'nodeRenderModeUpdate', nodeId, renderMode: 'fast' });
+
+		await domTextmodeManager.init(domCanvas);
+		domTextmodeManager.runCode(data.code);
+	}
+
 	// Event handlers for worker messages
 	function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
 		if (e.nodeId !== nodeId) return;
 
-		match(e)
-			.with({ portType: 'message' }, (m) => {
-				updateNodeData(nodeId, {
-					inletCount: m.inletCount,
-					outletCount: m.outletCount
-				});
-				updateNodeInternals(nodeId);
-			})
-			.otherwise(() => {
-				// Handle other port types if needed
+		match(e).with({ portType: 'message' }, (m) => {
+			updateNodeData(nodeId, {
+				inletCount: m.inletCount,
+				outletCount: m.outletCount
 			});
+			updateNodeInternals(nodeId);
+		});
 	}
 
 	function handleTitleUpdate(e: NodeTitleUpdateEvent) {
@@ -121,6 +157,29 @@
 		updateNodeInternals(nodeId);
 	}
 
+	function handleRenderModeUpdate(e: NodeRenderModeUpdateEvent) {
+		if (e.nodeId !== nodeId) return;
+		if (e.renderMode === renderMode) return;
+
+		renderMode = e.renderMode;
+
+		match(renderMode)
+			.with('dom', () => {
+				glSystem.removeNode(nodeId);
+			})
+			.with('fast', () => {
+				// Destroy the dom renderer
+				if (domTextmodeManager) {
+					domTextmodeManager.destroy();
+					domTextmodeManager = null;
+				}
+
+				// Enable fast renderer
+				glSystem.upsertNode(nodeId, 'textmode', { code: data.code });
+				glSystem.setPreviewEnabled(nodeId, true);
+			});
+	}
+
 	const setCodeAndUpdate = (newCode: string) => {
 		updateNodeData(nodeId, { code: newCode });
 		setTimeout(() => updateTextmode());
@@ -136,7 +195,10 @@
 					updateTextmode();
 				})
 				.otherwise(() => {
-					glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
+					match(renderMode)
+						.with('fast', () => glSystem.sendMessageToNode(nodeId, { ...meta, data: message }))
+						.with('dom', () => messageContext.send(message))
+						.exhaustive();
 				});
 		} catch (error) {
 			console.error('Error handling message:', error);
@@ -155,6 +217,7 @@
 		glEventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
 		glEventBus.addEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
 		glEventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
+		glEventBus.addEventListener('nodeRenderModeUpdate', handleRenderModeUpdate);
 
 		// Listen for console output events to capture lineErrors
 		eventBus.addEventListener('consoleOutput', handleConsoleOutput);
@@ -184,9 +247,16 @@
 				'nodeVideoOutputEnabledUpdate',
 				handleVideoOutputEnabledUpdate
 			);
+			glEventBus.removeEventListener('nodeRenderModeUpdate', handleRenderModeUpdate);
 		}
 
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+
+		// Clean up DOM textmode if that exists
+		if (domTextmodeManager) {
+			domTextmodeManager.destroy();
+			domTextmodeManager = null;
+		}
 
 		audioAnalysisSystem?.disableFFT(nodeId);
 		glSystem?.removeNode(nodeId);
@@ -212,29 +282,29 @@
 		try {
 			messageContext?.clearTimers();
 			audioAnalysisSystem?.disableFFT(nodeId);
-			const isUpdated = glSystem.upsertNode(nodeId, 'textmode', { code: data.code });
 
-			// If the code hasn't changed, the code will not be re-run.
-			// This allows us to forcibly re-run textmode to update FFT.
-			if (!isUpdated) glSystem.send('updateTextmode', { nodeId });
+			match(renderMode)
+				.with('fast', () => {
+					const isUpdated = glSystem.upsertNode(nodeId, 'textmode', { code: data.code });
+
+					// If the code hasn't changed, the code will not be re-run.
+					if (!isUpdated) glSystem.send('updateTextmode', { nodeId });
+				})
+				.with('dom', () => {
+					domTextmodeManager?.runCode(data.code);
+				});
 		} catch (error) {
 			logger.error(`[textmode] update textmode error:`, error);
 		}
 	}
 </script>
 
-<CanvasPreviewLayout
+<ObjectPreviewLayout
 	title={data.title ?? 'textmode'}
 	{nodeId}
 	onrun={updateTextmode}
-	bind:previewCanvas
-	nodrag={!dragEnabled}
-	width={outputWidth}
-	height={outputHeight}
-	style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
-	{selected}
+	{previewWidth}
 	{editorReady}
-	hasError={lineErrors !== undefined}
 >
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
@@ -250,6 +320,44 @@
 		{/each}
 	{/snippet}
 
+	{#snippet preview()}
+		{#if renderMode === 'dom'}
+			<!-- DOM mode: textmode renders directly to this canvas -->
+			<canvas
+				bind:this={domCanvas}
+				class={[
+					'rounded-md border',
+					lineErrors
+						? 'border-red-500/70'
+						: selected
+							? 'shadow-glow-md border-zinc-400'
+							: 'hover:shadow-glow-sm border-transparent',
+					dragEnabled ? 'cursor-grab' : 'nodrag cursor-default'
+				]}
+				width={outputWidth}
+				height={outputHeight}
+				style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+			></canvas>
+		{:else}
+			<!-- Fast mode: GL pipeline preview -->
+			<canvas
+				bind:this={previewCanvas}
+				class={[
+					'rounded-md border',
+					lineErrors
+						? 'border-red-500/70'
+						: selected
+							? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
+							: 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
+					dragEnabled ? 'cursor-grab' : 'nodrag cursor-default'
+				]}
+				width={outputWidth}
+				height={outputHeight}
+				style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+			></canvas>
+		{/if}
+	{/snippet}
+
 	{#snippet bottomHandle()}
 		{#if videoOutputEnabled}
 			<StandardHandle
@@ -259,7 +367,7 @@
 				title="Video output"
 				total={outletCount + 1}
 				index={outletCount}
-				class={handleClass}
+				class={`${handleClass} ${renderMode === 'dom' ? 'hidden' : ''}`}
 				{nodeId}
 			/>
 		{/if}
@@ -304,4 +412,4 @@
 			/>
 		</div>
 	{/snippet}
-</CanvasPreviewLayout>
+</ObjectPreviewLayout>

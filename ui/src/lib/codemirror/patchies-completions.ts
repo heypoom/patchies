@@ -129,6 +129,13 @@ const patchiesAPICompletions: Completion[] = [
 		apply: 'noOutput()'
 	},
 	{
+		label: 'setRenderMode',
+		type: 'function',
+		detail: "('fast' | 'dom') => void",
+		info: "Set rendering mode. 'fast' (default) uses video pipeline, 'dom' renders directly to DOM",
+		apply: "setRenderMode('dom')"
+	},
+	{
 		label: 'setCanvasSize',
 		type: 'function',
 		detail: '(width: number, height: number) => void',
@@ -194,7 +201,8 @@ const topLevelOnlyFunctions = new Set([
 	'setPortCount',
 	'setRunOnMount',
 	'setTitle',
-	'setVideoCount'
+	'setVideoCount',
+	'setRenderMode'
 ]);
 
 // Node-specific functions - only show in certain node types
@@ -202,6 +210,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	fft: ['js', 'p5', 'hydra', 'canvas', 'swgl', 'strudel', 'textmode'],
 	noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode'],
 	noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode'],
+	setRenderMode: ['textmode'],
 	onKeyDown: ['canvas.dom'],
 	onKeyUp: ['canvas.dom'],
 	setAudioPortCount: ['dsp~'],
