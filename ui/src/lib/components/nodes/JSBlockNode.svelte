@@ -264,7 +264,9 @@
 <div class="relative flex gap-x-3">
 	<div class="group relative">
 		<div class="flex flex-col gap-2" bind:this={contentContainer}>
-			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+			<div
+				class="group/header absolute -top-7 left-0 z-20 flex w-full items-center justify-between"
+			>
 				<div
 					class="z-10 w-fit rounded-lg bg-zinc-900/70 px-2 py-1 text-nowrap whitespace-nowrap backdrop-blur-lg"
 				>
@@ -273,10 +275,12 @@
 					</div>
 				</div>
 
-				<div>
+				<div
+					class="flex items-center transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover/header:opacity-100"
+				>
 					{#if !data.libraryName}
 						<button
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							class="rounded p-1 hover:bg-zinc-700"
 							onclick={() => {
 								updateNodeData(nodeId, { showConsole: !data.showConsole });
 								setTimeout(() => updateContentWidth(), 10);
@@ -287,11 +291,7 @@
 						</button>
 					{/if}
 
-					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-						onclick={toggleEditor}
-						title="Edit code"
-					>
+					<button class="rounded p-1 hover:bg-zinc-700" onclick={toggleEditor} title="Edit code">
 						<Code class="h-4 w-4 text-zinc-300" />
 					</button>
 				</div>
