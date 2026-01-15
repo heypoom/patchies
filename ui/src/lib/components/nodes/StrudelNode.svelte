@@ -11,8 +11,17 @@
 	import { createCustomConsole } from '$lib/utils/createCustomConsole';
 
 	// Get node data from XY Flow - nodes receive their data as props
-	let { id: nodeId, data }: { id: string; data: { code: string; showConsole?: boolean } } =
-		$props();
+	let {
+		id: nodeId,
+		data
+	}: {
+		id: string;
+		data: {
+			code: string;
+			showConsole?: boolean;
+			styles?: Record<string, any>;
+		};
+	} = $props();
 
 	// Get flow utilities to update node data
 	const { updateNodeData } = useSvelteFlow();
@@ -23,6 +32,7 @@
 	let hasError = $state(false);
 	let isPlaying = $state(false);
 	let isInitialized = $state(false);
+	let styles = $state<Record<string, string>>({});
 
 	const code = $derived(data.code || '');
 	const customConsole = createCustomConsole(nodeId);
@@ -42,6 +52,9 @@
 					setCode(code);
 				})
 				.with(P.union({ type: 'bang' }, { type: 'run' }), evaluate)
+				.with({ type: 'setStyles', value: P.any }, ({ value }) => {
+					styles = value as Record<string, string>;
+				})
 				.with({ type: 'stop' }, stop);
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
@@ -203,6 +216,7 @@
 						'flex w-full items-center justify-center rounded-md border bg-zinc-900',
 						hasError ? 'border-red-500' : 'border-transparent'
 					]}
+					style={styles.container}
 				>
 					<div class="nodrag">
 						<StrudelEditor
