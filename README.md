@@ -479,7 +479,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - When using [video chaining](#video-chaining), to output the canvas content to the video outlet, it drastically slow down the browser by a huge margin as it needs to copy each frame to the [rendering pipeline](#rendering-pipeline).
   - It runs on main thread, so heavy computation can affect UI responsiveness.
 
-### `textmode` and `textdom.dom`: creates ASCII/text-mode graphics
+### `textmode` and `textmode.dom`: creates ASCII/text-mode graphics
 
 <img src="./docs/images/textmode-demo.webp" alt="Patchies.app textmode.js demo" width="700">
 
