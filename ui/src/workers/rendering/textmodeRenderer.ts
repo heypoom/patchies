@@ -174,7 +174,7 @@ export class TextmodeRenderer {
 			// Create a textmode if not already created
 			if (!this.tm) {
 				try {
-					this.tm = await this.textmode.create({
+					this.tm = this.textmode.create({
 						width,
 						height,
 						fontSize: 18,
