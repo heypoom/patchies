@@ -37,7 +37,7 @@ This lets you visually see the program's core composition and its in-between res
 
 ## Getting Started
 
-<img src="./docs/images/patchies-demo-modal.png" alt="Patchies.app demo modal" width="700">
+<img src="./docs/images/demos-modal.webp" alt="Patchies.app demo modal" width="700">
 
 Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand.
 
