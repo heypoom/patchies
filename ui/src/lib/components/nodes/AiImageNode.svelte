@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Image, Loader } from '@lucide/svelte/icons';
+	import { Image as ImageIcon, Loader } from '@lucide/svelte/icons';
 	import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -166,7 +166,7 @@
 				<div class="pointer-events-none absolute h-full w-full">
 					<div class="flex h-full items-center justify-center">
 						<svelte:component
-							this={isLoading ? Loader : Image}
+							this={isLoading ? Loader : ImageIcon}
 							class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
 						/>
 					</div>

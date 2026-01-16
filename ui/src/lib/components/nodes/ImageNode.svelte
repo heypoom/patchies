@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Image, Upload } from '@lucide/svelte/icons';
+	import { Image as ImageIcon, Upload } from '@lucide/svelte/icons';
 	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -269,7 +269,7 @@
 							tabindex="0"
 							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
 						>
-							<Image class="h-4 w-4 text-zinc-400" />
+							<ImageIcon class="h-4 w-4 text-zinc-400" />
 
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
 								<span class="text-zinc-300">double click</span> or
