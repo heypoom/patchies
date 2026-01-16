@@ -339,8 +339,14 @@ export const dependencies: ProjectLicense[] = [
 		url: 'https://npmjs.com/package/supersonic-scsynth'
 	},
 	{
+		name: 'textmode.filters.js',
+		version: '^1.0.1',
+		license: 'MIT',
+		url: 'https://code.textmode.art'
+	},
+	{
 		name: 'textmode.js',
-		version: '^1.0.0',
+		version: '^0.8.1',
 		license: 'MIT',
 		url: 'https://code.textmode.art'
 	},

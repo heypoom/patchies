@@ -171,11 +171,13 @@ export class TextmodeRenderer {
 
 			// Create a textmode if not already created
 			if (!this.tm) {
+				const { createFiltersPlugin } = await import('textmode.filters.js');
 				this.tm = this.textmode.create({
 					width,
 					height,
 					fontSize: 18,
 					frameRate: 60,
+					plugins: [createFiltersPlugin()],
 
 					// @ts-expect-error -- offscreen canvas hack
 					canvas: this.offscreenCanvas

@@ -193,12 +193,15 @@
 			}
 
 			if (!tm) {
+				const { createFiltersPlugin } = await import('textmode.filters.js');
+
 				tm = textmode.create({
 					width: outputWidth,
 					height: outputHeight,
 					fontSize: data.fontSize ?? 18,
 					frameRate: data.frameRate ?? 60,
-					canvas
+					canvas,
+					plugins: [createFiltersPlugin()]
 				});
 			}
 
