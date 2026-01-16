@@ -15,72 +15,44 @@
 			"author": "@dtinth"
 		},
 		{
-			"id": "l8ypbfy88xfakyd",
-			"name": "Funky Beat",
-			"description": "A funky beat created using expr~ for audio-rate mathematical expressions 🎧",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "ks1srq082zkp4qb",
-			"name": "Orca Tones",
-			"description": "Basic Orca operators and Tone.js poly synth. Makes for a nice lullaby 😴",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "b2vsbbe4jt87qyz",
-			"name": "Drum Sequencer",
-			"description": "Interactive drum sequencer. Use P to play and K to stop",
-			"category": "Audio",
-			"author": "@heypoom"
-		},
-		{
-			"id": "tfjdf019hjyxmeu",
-			"name": "Scales",
-			"description": "Musical scales created with expr~",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "xhdtrqenaf6ur81",
-			"name": "Sleep",
-			"description": "Alternative version of scales patch",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "jf7n1ku67auc5xg",
-			"name": "Kicks",
-			"description": "Drum kicks created with expr~",
-			"category": "Audio",
-			"author": "@dtinth"
-		},
-		{
-			"id": "73zo2rxeclhrynw",
-			"name": "8 Pad Sampler",
-			"description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
+			"id": "30r7xvc378f59sz",
+			"name": "Haunted Lead",
+			"description": "A slow, haunting lead made with Strudel 😈",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
 		{
 			"id": "b17136cy9rxxebw",
 			"name": "FM Synth",
-			"description": "Uses osc~, expr, gain~, and fft~ to create a simple FM synth",
+			"description": "A simple FM synth made with osc~, expr, gain~ and fft~ 📡",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
 		{
 			"id": "3uwpeb3glcr4usz",
 			"name": "ChucK the Fourth",
-			"description": "ChucK composition with arp, melody, kick drum, bassline & feedback delay",
+			"description": "ChucK composition with arp, melody, kick drum, bassline & feedback delay 🎹",
 			"category": "Audio",
 			"author": "@dtinth"
 		},
 		{
-			"id": "30r7xvc378f59sz",
-			"name": "Haunted Lead",
-			"description": "Strudel demo of a slow haunting lead.",
+			"id": "l8ypbfy88xfakyd",
+			"name": "Upbeat Expressions",
+			"description": "A beat made entirely with mathematical expressions in expr~ 🤓",
+			"category": "Audio",
+			"author": "@kijjaz"
+		},
+		{
+			"id": "ks1srq082zkp4qb",
+			"name": "Dreamy Orca Tones",
+			"description": "A dreamy lullaby made with Orca and Tone.js 😴",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "b2vsbbe4jt87qyz",
+			"name": "Drum Sequencer",
+			"description": "Interactive drum sequencer. Use P to play and K to stop 🥁",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
@@ -90,6 +62,34 @@
 			"description": "How to funk in 42 lines of code. Original code by @froos using Strudel.",
 			"category": "Audio",
 			"author": "@froos"
+		},
+		{
+			"id": "tfjdf019hjyxmeu",
+			"name": "Scales",
+			"description": "Musical scale experiments created with expr~",
+			"category": "Audio",
+			"author": "@kijjaz"
+		},
+		{
+			"id": "xhdtrqenaf6ur81",
+			"name": "Scales II",
+			"description": "Alternative version of the scale experiments",
+			"category": "Audio",
+			"author": "@kijjaz"
+		},
+		{
+			"id": "jf7n1ku67auc5xg",
+			"name": "Kicks",
+			"description": "Drum kicks created with mathematical expressions in expr~",
+			"category": "Audio",
+			"author": "@dtinth"
+		},
+		{
+			"id": "73zo2rxeclhrynw",
+			"name": "8 Pad Sampler",
+			"description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
+			"category": "Audio",
+			"author": "@heypoom"
 		},
 		{
 			"id": "ocj3v2xp790gq8u",
@@ -148,6 +148,13 @@
 			"author": "@dtinth"
 		},
 		{
+			"id": "ekavjpvr6h8atbj",
+			"name": "Sleek Animated Torus",
+			"description": "Uses three.js with texture from hydra.js to create a sleek animated torus",
+			"category": "Interactive",
+			"author": "@heypoom"
+		},
+		{
 			"id": "9r2t5vizvv6xyou",
 			"name": "Patt Vira's P5.js Sketches",
 			"description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials.",
@@ -162,6 +169,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "3hd88qv62h4zltq",
+			"name": "Animated Wave Pattern",
+			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
+			"category": "Interactive",
+			"author": "@humanbydefinition"
+		},
+		{
 			"id": "c6adsknw8iix3m2",
 			"name": "Plotting Equations",
 			"description": "Uses expr node to create mathematical plots",
@@ -174,20 +188,6 @@
 			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
 			"category": "Interactive",
 			"author": "@heypoom"
-		},
-		{
-			"id": "ekavjpvr6h8atbj",
-			"name": "Sleek Animated Torus",
-			"description": "Uses three.js with texture from hydra.js to create a sleek animated torus",
-			"category": "Interactive",
-			"author": "@heypoom"
-		},
-		{
-			"id": "3hd88qv62h4zltq",
-			"name": "Animated Wave Pattern",
-			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
-			"category": "Interactive",
-			"author": "@humanbydefinition"
 		},
 		{
 			"id": "6pyirxuw3cqvwhg",
