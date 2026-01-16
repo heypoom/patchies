@@ -59,7 +59,7 @@
 		{
 			"id": "zntnikb36c47eaw",
 			"name": "Funk 42",
-			"description": "How to funk in 42 lines of code. Original code by @froos using Strudel.",
+			"description": "How to funk in 42 lines of code. Original code by @froos using Strudel",
 			"category": "Audio",
 			"author": "@froos"
 		},
@@ -143,7 +143,7 @@
 		{
 			"id": "xy5663osmepg063",
 			"name": "X-Y Distance Flowers",
-			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader.",
+			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader",
 			"category": "Visual",
 			"author": "@dtinth"
 		},
@@ -157,14 +157,21 @@
 		{
 			"id": "9r2t5vizvv6xyou",
 			"name": "Patt Vira's P5.js Sketches",
-			"description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials.",
+			"description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials",
 			"category": "Visual",
 			"author": "@pattvira"
 		},
 		{
 			"id": "izs6hjxchit2zad",
 			"name": "Interactive Widget Playground",
-			"description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code.",
+			"description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "74lecalqpersuat",
+			"name": "Textmode Textured Torus",
+			"description": "Uses textmode.js to create a texture to uv-wrap into a three.js torus. Textmode.js sketch by @humanbydefinition",
 			"category": "Visual",
 			"author": "@heypoom"
 		},
