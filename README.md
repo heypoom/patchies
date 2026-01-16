@@ -531,6 +531,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   });
   ```
 
+- Try these presets for more quick examples: `digital-rain.tm`, `animated-wave.tm`, `plasma-field.tm`, `rain.tm`, `torus.tm` and `fire.tm`
+
 - See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
 - Please consider supporting [@humanbydefinition](https://code.textmode.art/docs/support.html) who maintains textmode.js!
 
