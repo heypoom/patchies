@@ -230,6 +230,13 @@
 			"description": "Poom uses this patch to test the textmode.filters.js plugin",
 			"category": "Dev Patches",
 			"author": "@heypoom"
+		},
+		{
+			"id": "pztihv6nasqpfxf",
+			"name": "ChucK Global Variables Test",
+			"description": "Poom uses this patch to test the global variables in ChucK",
+			"category": "Dev Patches",
+			"author": "@heypoom"
 		}
 	]
 }

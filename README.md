@@ -921,6 +921,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - `{type: 'broadcast', event: string}`: broadcast an event by name
   - `{type: 'set', key: string, value: any}`: sets a chuck global value / array (can be string, int or float)
     - Make sure your variable types match! If you try to pass an int (e.g. 140) to a `global bpm float` of `140.0` it would not work. Try `setInt` or `setFloat` if there is an issue.
+    - Try out [this patch](https://patchies.app/?id=pztihv6nasqpfxf) to see how global variables work in ChucK. You need to declare it with `global` and make sure the dependent variables are re-computed in a loop.
   - `{type: 'setInt', key: string, value: any}`: sets a chuck global integer value / array
   - `{type: 'setFloat', key: string, value: any}`: sets a chuck global float value / array
 
