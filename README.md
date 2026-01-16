@@ -63,7 +63,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 Use `Ctrl/Cmd + B` or the search icon button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
 
-See all 100+ objects organized by category (_Visual_, _Audio_, _Video_, _Control_, etc.), with searchable names and brief description. Drag a random object and see what you can do with it!
+See all 100+ objects organized by category (_Video_, _Audio_, _Code_, _Control_, _UI_, etc.), with searchable names and brief description. Click to insert an object -- pick one at random and experiment with it!
 
 ### Modifying Objects
 
