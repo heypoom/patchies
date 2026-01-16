@@ -10,7 +10,7 @@
 		{
 			"id": "ip0chhw6jzuyo6x",
 			"name": "Chord Progression",
-			"description": "Advanced DSP example using dsp~ to create an infinitely descending chord progression 🎹",
+			"description": "An infinitely descending chord progression made with dsp~ 🎹",
 			"category": "Audio",
 			"author": "@dtinth"
 		},
