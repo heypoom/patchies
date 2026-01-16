@@ -182,12 +182,11 @@ The `recv` callback also accepts the `meta` argument in addition to the message 
 You can combine this with `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
 
 ```js
+// If the message came from inlet #2, send it out to outlet #2
 recv((data, meta) => {
   send(data, { to: meta.inlet });
 });
 ```
-
-In the above example, if the message came from inlet 2, it will be sent to outlet 2.
 
 In `js`, `p5`, `hydra`, `canvas`, `dsp~`, `tone~`, `elem~` and `sonic~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
