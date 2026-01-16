@@ -909,7 +909,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - Add Shred `Ctrl/Cmd + \`: adds a new shred to the shreds list.
   - Remove Shred `Ctrl/Cmd + Backspace`: removes the most recent shred.
   - Click on the gear button to see list of running shreds. Remove any shred by clicking on the "x" button.
-- Messages
+- Messages: playback and shred control
   - string: adds the string expression as a new shred
   - `bang`, `replace` or `run`: replaces the most recent shred with the current expression
   - `add`: adds the current expression as a new shred
@@ -917,13 +917,14 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - `stop`: stops all shreds
   - `clearAll`: clears all shreds
   - `{type: 'replace', code: string}`: replaces the most recent shred with the given code
-  - `{type: 'signal', event: string}`: signal an event by name
-  - `{type: 'broadcast', event: string}`: broadcast an event by name
+- Messages: global variables and events
+  - Try out [this patch](https://patchies.app/?id=pztihv6nasqpfxf) to see how global variables work in ChucK. This makes it possible to control ChucK programs with messages. You need to declare it with `global` and make sure the dependent variables are re-computed in a loop.
   - `{type: 'set', key: string, value: any}`: sets a chuck global value / array (can be string, int or float)
     - Make sure your variable types match! If you try to pass an int (e.g. 140) to a `global bpm float` of `140.0` it would not work. Try `setInt` or `setFloat` if there is an issue.
-    - Try out [this patch](https://patchies.app/?id=pztihv6nasqpfxf) to see how global variables work in ChucK. You need to declare it with `global` and make sure the dependent variables are re-computed in a loop.
   - `{type: 'setInt', key: string, value: any}`: sets a chuck global integer value / array
   - `{type: 'setFloat', key: string, value: any}`: sets a chuck global float value / array
+  - `{type: 'signal', event: string}`: signal an event by name
+  - `{type: 'broadcast', event: string}`: broadcast an event by name
 
 ### `object`: textual object system
 
