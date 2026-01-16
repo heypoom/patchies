@@ -531,6 +531,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   });
   ```
 
+- You can use the [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.js) plugin to apply image filters, e.g. `tm.layers.base.filter('brightness', 1.3)`
+
 - Try these presets for more quick examples: `digital-rain.tm`, `animated-wave.tm`, `plasma-field.tm`, `rain.tm`, `torus.tm` and `fire.tm`
 
 - See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
