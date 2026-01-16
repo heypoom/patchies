@@ -150,7 +150,7 @@
 		{
 			"id": "ekavjpvr6h8atbj",
 			"name": "Sleek Animated Torus",
-			"description": "Uses three.js with texture from hydra.js to create a sleek animated torus",
+			"description": "Uses three.js with texture from hydra.js to create an animated torus knot",
 			"category": "Visual",
 			"author": "@heypoom"
 		},
@@ -171,7 +171,7 @@
 		{
 			"id": "fjnmwdbf6emg4q9",
 			"name": "Textmode Textured Torus",
-			"description": "Uses textmode.js to create a texture to uv-wrap into a three.js torus. Textmode.js sketch by @humanbydefinition",
+			"description": "Uses textmode.js to create a texture to uv-wrap into a three.js torus knot. Textmode.js sketch by @humanbydefinition",
 			"category": "Visual",
 			"author": "@heypoom"
 		},
