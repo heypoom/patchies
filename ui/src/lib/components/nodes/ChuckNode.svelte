@@ -51,8 +51,8 @@
 			.with({ type: 'stop' }, () => {
 				stopChuck();
 			})
-			.with({ type: P.string }, async (m) => {
-				await send(m.type, m);
+			.with({ type: P.string }, async ({ type, ...payload }) => {
+				await send(type, payload);
 			});
 	};
 
