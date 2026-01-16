@@ -12,7 +12,7 @@ Try it out at [patchies.app](https://patchies.app) - it's open source and free t
 
 Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
 
-- Create interactive graphics with [P5.js](https://p5js.org), [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [Textmode.js](https://code.textmode.art)
+- Create interactive graphics with [P5.js](https://p5js.org), [Three.js](https://threejs.org), [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [Textmode.js](https://code.textmode.art)
 - Synthesize and process video with [Hydra](https://hydra.ojack.xyz) and [GLSL shaders](https://www.shadertoy.com)
 - Live code music with [Strudel](https://strudel.cc), [ChucK](https://chuck.cs.princeton.edu/webchuck), [SuperSonic](https://sonic-pi.net/supersonic/demo.html) and [Orca](https://github.com/hundredrabbits/Orca)
 - Synthesize and process audio with [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) nodes, [Tone.js](https://tonejs.github.io) and [Elementary Audio](https://www.elementary.audio)
