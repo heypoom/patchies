@@ -123,70 +123,70 @@
 			"id": "f4tvzfxk1qr4xr2",
 			"name": "Random Walk World",
 			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@heypoom"
 		},
 		{
 			"id": "84et6trrsq2ouoc",
 			"name": "Random Walk Lullaby",
 			"description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@heypoom"
 		},
 		{
 			"id": "3k3qnwk022tfj7e",
 			"name": "Signed Distance Flowers",
 			"description": "GLSL shader from @dtinth's talk 'the power of signed distance functions'",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@dtinth"
 		},
 		{
 			"id": "xy5663osmepg063",
 			"name": "X-Y Distance Flowers",
 			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader.",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@dtinth"
 		},
 		{
 			"id": "ekavjpvr6h8atbj",
 			"name": "Sleek Animated Torus",
 			"description": "Uses three.js with texture from hydra.js to create a sleek animated torus",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@heypoom"
 		},
 		{
 			"id": "9r2t5vizvv6xyou",
 			"name": "Patt Vira's P5.js Sketches",
 			"description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials.",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@pattvira"
 		},
 		{
 			"id": "izs6hjxchit2zad",
 			"name": "Interactive Widget Playground",
 			"description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code.",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@heypoom"
 		},
 		{
 			"id": "3hd88qv62h4zltq",
 			"name": "Animated Wave Pattern",
 			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@humanbydefinition"
 		},
 		{
 			"id": "c6adsknw8iix3m2",
 			"name": "Plotting Equations",
 			"description": "Uses expr node to create mathematical plots",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@heypoom"
 		},
 		{
 			"id": "08wca4jzuz5wpng",
 			"name": "Matter.js Physics Simulation",
 			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
-			"category": "Interactive",
+			"category": "Visual",
 			"author": "@heypoom"
 		},
 		{
