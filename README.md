@@ -188,7 +188,7 @@ recv((data, meta) => {
 });
 ```
 
-In `js`, `p5`, `hydra`, `canvas`, `dsp~`, `tone~`, `elem~` and `sonic~` objects, you can call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
+In most JavaScript-based objects, you can also call `setPortCount(inletCount, outletCount)` to set the exact number of message inlets and outlets. Example: `setPortCount(2, 1)` ensures there is 2 message inlets and 1 message outlet.
 
 See the [Message Passing with GLSL](#message-passing-with-glsl) section for how to use message passing with GLSL shaders to pass data to shaders dynamically.
 
