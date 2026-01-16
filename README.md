@@ -174,6 +174,8 @@ recv((data) => {
 
 This is similar to the second example above, but using JavaScript code.
 
+To find out what kind of messages an object sends to you, we use the `logger.js` preset, which is simply a `js` object that runs `recv(m => console.log(m))`, i.e. to log every incoming message to the console. You can add any preset by hitting `Enter` and searching for them.
+
 The `recv` callback also accepts the `meta` argument in addition to the message data. It includes the `inlet` field which lets you know which inlet the message came from.
 
 You can combine this with `send(data, {to: inletIndex})` to send data to only a particular inlet, for example:
