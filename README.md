@@ -901,7 +901,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 
 <img src="./docs/images/chuck-demo.webp" alt="Patchies.app chuck demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=wkkf6654sa5mqt9)! This is from @dtinth's [ChucK experiments](https://dt.in.th/ChucKSong4).
+> ✨ Try this patch out [in the app](https://patchies.app/?id=2nyuznzjgbp2j0a)! This is from @dtinth's [ChucK experiments](https://dt.in.th/ChucKSong4).
 
 - [ChucK](https://chuck.cs.princeton.edu) is a programming language for real-time sound synthesis and music creation.
 - Great for algorithmic composition and sound design.
@@ -921,7 +921,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - `clearAll`: clears all shreds
   - `{type: 'replace', code: string}`: replaces the most recent shred with the given code
 - Messages: global variables and events
-  - The [above demo patch](https://patchies.app/?id=wkkf6654sa5mqt9) shows how global variables lets you control ChucK programs with Patchies messages.
+  - The [above demo patch](https://patchies.app/?id=2nyuznzjgbp2j0a) shows how global variables lets you control ChucK programs with Patchies messages.
   - To use global variables, declare your variable with `global` (e.g. `global int bpm`) and make sure all dependent variables are re-computed in a loop.
   - `{type: 'set', key: string, value: any}`: sets a chuck global value / array (can be string, int or float)
     - Make sure your variable types match! If you try to pass an int (e.g. 140) to a `global bpm float` of `140.0` it would not work. Try `setInt` or `setFloat` if there is an issue.
