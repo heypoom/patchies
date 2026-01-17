@@ -1,3 +1,5 @@
+import { match, P } from 'ts-pattern';
+
 /**
  * Message type specifiers for filtering and routing messages.
  *
@@ -6,9 +8,20 @@
  * any: matches anything
  * list: matches arrays (Array.isArray)
  * object: matches plain objects (not arrays, not null)
- * number: matches any number
+ * number/float: matches any number
+ * integer: matches integers only
+ * null: matches null
  */
-export type MessageType = 'bang' | 'symbol' | 'any' | 'list' | 'object' | 'number' | 'null';
+export type MessageType =
+	| 'bang'
+	| 'symbol'
+	| 'any'
+	| 'list'
+	| 'object'
+	| 'number'
+	| 'float'
+	| 'integer'
+	| 'null';
 
 /** Map from abbreviations to full names */
 const ABBREVIATION_MAP: Record<string, MessageType> = {
@@ -18,12 +31,25 @@ const ABBREVIATION_MAP: Record<string, MessageType> = {
 	l: 'list',
 	o: 'object',
 	n: 'number',
-	f: 'number',
-	float: 'number'
+	f: 'float',
+	i: 'integer'
 };
 
+/** All valid message type full names */
+const ALL_MESSAGE_TYPES: MessageType[] = [
+	'bang',
+	'symbol',
+	'any',
+	'list',
+	'object',
+	'number',
+	'float',
+	'integer',
+	'null'
+];
+
 /** Set of valid message types for quick lookup */
-const VALID_TYPES = new Set<MessageType>(Object.values(ABBREVIATION_MAP));
+const VALID_TYPES = new Set<MessageType>(ALL_MESSAGE_TYPES);
 
 /** Get the full name for a message type (identity function since types are now full names) */
 export const getMessageTypeName = (type: MessageType): string => type;
@@ -55,48 +81,27 @@ export function normalizeMessageType(type: string): MessageType | undefined {
 /**
  * Check if a value matches a message type specifier.
  */
-export function matchesMessageType(type: MessageType, data: unknown): boolean {
-	switch (type) {
-		case 'bang':
-			// Bang: matches { type: 'bang' } or any input (bang is a trigger, not a filter)
-			return true;
+export function matchesMessageType(type: MessageType, value: unknown): boolean {
+	return match(type)
+		.with('bang', () => true)
+		.with('any', () => true)
+		.with(P.union('number', 'float'), () => typeof value === 'number')
+		.with('symbol', () => {
+			// real JS symbols
+			if (typeof value === 'symbol') return true;
 
-		case 'symbol':
-			// Actual JS symbols
-			if (typeof data === 'symbol') return true;
-
-			// Objects with a `type` key
-			if (
-				typeof data === 'object' &&
-				data !== null &&
-				'type' in data &&
-				typeof (data as Record<string, unknown>).type === 'string'
-			) {
-				return true;
-			}
-			return false;
-
-		case 'any':
-			// Any: always matches
-			return true;
-
-		case 'list':
-			// List: arrays only
-			return Array.isArray(data);
-
-		case 'object':
-			// Object: plain objects (not arrays, not null)
-			return typeof data === 'object' && data !== null && !Array.isArray(data);
-
-		case 'number':
-			return typeof data === 'number';
-
-		case 'null':
-			return data === 'number';
-
-		default:
-			return false;
-	}
+			return (
+				typeof value === 'object' &&
+				value !== null &&
+				'type' in value &&
+				typeof (value as Record<string, unknown>).type === 'string'
+			);
+		})
+		.with('list', () => Array.isArray(value))
+		.with('object', () => typeof value === 'object' && value !== null && !Array.isArray(value))
+		.with('integer', () => typeof value === 'number' && Number.isInteger(value))
+		.with('null', () => value === null)
+		.exhaustive();
 }
 
 /**
