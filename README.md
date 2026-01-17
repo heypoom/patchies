@@ -31,7 +31,7 @@ Patchies is designed to mix textual coding and visual patching, using the best o
 
 If you haven't used a patching environment before, patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You connect the output of one object to the input of another object to create a flow of data.
 
-This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). They're heavily inspired by tools like Max/MSP, Pd, TouchDesigner and VVVV.
+This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). They're heavily inspired by tools like Max, Pd, TouchDesigner and VVVV.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
@@ -242,7 +242,7 @@ If you don't have an idea where to start, why not build your own drum machine? [
 
 <img src="./docs/images/patchies-simple-drums.png" alt="Patchies.app simple drum machine" width="700">
 
-If you have used an audio patcher before (e.g. Pd, Max/MSP, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
+If you have used an audio patcher before (e.g. Pd, Max, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
 - Use these objects as audio sources: `osc~`, `sig~`, `mic~`, `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, `sonic~`
 
@@ -734,7 +734,7 @@ See the following example:
 
 #### Hot and cold inlets
 
-The `expr` object follows the Max/MSP and Pd convention of **hot** and **cold** inlets:
+The `expr` object follows the Max and Pd convention of **hot** and **cold** inlets:
 
 - **Inlet 0 (hot)**: When a message arrives at the first inlet (`$1`), the expression is evaluated and the result is sent to the outlet.
 - **Inlets 1+ (cold)**: When a message arrives at other inlets (`$2`, `$3`, etc.), the value is stored but no output is triggered. The stored values are used the next time inlet 0 receives a message.
@@ -840,7 +840,7 @@ You can use placeholders from `$1` - `$9` to send messages with stored variables
 
 <img src="./docs/images/message-placeholder.webp" alt="Patchies.app message box placeholders" width="700">
 
-The `msg` object follows the Max/MSP and Pd convention of **hot** and **cold** inlets:
+The `msg` object follows the Max and Pd convention of **hot** and **cold** inlets:
 
 - **No placeholders**: A single inlet that triggers output on any message (bang or value).
 - **1 placeholder (`$1`)**: A single hot inlet. Sending a value stores it as `$1` and triggers output. Sending a bang triggers output with the current stored value.
