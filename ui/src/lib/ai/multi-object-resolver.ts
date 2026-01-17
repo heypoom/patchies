@@ -339,7 +339,7 @@ IMPORTANT RULES:
 2. The JSON must have a "nodes" array and an "edges" array
 3. Each node in the "nodes" array must have a "type" field and a "data" field
 4. Each node SHOULD have a "position" field with relative x, y coordinates for good visual layout
-5. Position nodes in a TOP-TO-BOTTOM flow (like PureData): sources on top (y: 0), outputs at the bottom (y: 160+)
+5. Position nodes in a TOP-TO-BOTTOM flow (like Pd): sources on top (y: 0), outputs at the bottom (y: 160+)
 6. Use plenty of horizontal spacing (x: 0, x: 350, x: 700, x: 1050) for side-by-side or parallel nodes, so they don't overlap.
 7. Vertical steps should be at least 160-200 pixels between rows for a more compact layout
 8. Calculate spacing based on signal flow depth: sources at y=0, first processing stage y=180, next y=360, outputs y=540+
@@ -456,7 +456,7 @@ RESPONSE FORMAT:
   ]
 }
 
-LAYOUT EXAMPLE (top-to-bottom like PureData with generous spacing):
+LAYOUT EXAMPLE (top-to-bottom like Pd with generous spacing):
 - slider at top: { "position": { "x": 0, "y": 0 } }
 - tone~ below: { "position": { "x": 0, "y": 300 } } (300px gap minimum!)
 - If parallel inputs, use GENEROUS horizontal spacing:

@@ -33,7 +33,7 @@ bun run test             # All tests
 
 **Event Bus**: Type-safe system events (undo/redo, lifecycle, collaboration)
 
-**Message System**: Max/MSP-style routing with `send()` / `recv()`, auto-cleanup on node deletion
+**Message System**: Max-style routing with `send()` / `recv()`, auto-cleanup on node deletion
 
 **Rendering Pipeline**: FBO-based video chaining (P5 → Hydra → GLSL → Background). Topologically sorted render graphs.
 

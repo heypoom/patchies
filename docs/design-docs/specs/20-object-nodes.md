@@ -2,7 +2,7 @@
 
 Let's create a node simply called `object` that is the most general object in a system.
 
-Imagine most objects in PureData and Max/MSP: they do not have a specific visual interface. They would simply be a box with the name of the object inside, and optionally some parameters:
+Imagine most objects in Pd and Max: they do not have a specific visual interface. They would simply be a box with the name of the object inside, and optionally some parameters:
 
 - `gain`
 - `midi2freq`

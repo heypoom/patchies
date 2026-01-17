@@ -61,7 +61,7 @@ Core systems are singleton classes that provide system-wide functionality. They 
 
 **Location**: `src/lib/messages/MessageSystem.ts`
 
-**Purpose**: Max/MSP-style message routing between nodes. Enables inter-node communication through XY Flow edges.
+**Purpose**: Max-style message routing between nodes. Enables inter-node communication through XY Flow edges.
 
 **Key Concepts**:
 
