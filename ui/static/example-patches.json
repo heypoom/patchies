@@ -29,7 +29,7 @@
 			"author": "@heypoom"
 		},
 		{
-			"id": "3uwpeb3glcr4usz",
+			"id": "wkkf6654sa5mqt9",
 			"name": "ChucK the Fourth",
 			"description": "ChucK composition with arp, melody, kick drum, bassline & feedback delay 🎹",
 			"category": "Audio",
@@ -228,13 +228,6 @@
 			"id": "yv4vnfnv4r37hwt",
 			"name": "Textmode.js Filters Test",
 			"description": "Poom uses this patch to test the textmode.filters.js plugin",
-			"category": "Dev Patches",
-			"author": "@heypoom"
-		},
-		{
-			"id": "pztihv6nasqpfxf",
-			"name": "ChucK Global Variables Test",
-			"description": "Poom uses this patch to test the global variables in ChucK",
 			"category": "Dev Patches",
 			"author": "@heypoom"
 		}
