@@ -31,11 +31,10 @@
 	let msgText = $derived(data.message || '');
 	let inletValues = $state<unknown[]>([]);
 
-	const inletCount = $derived.by(() => {
+	// Number of $1-$9 placeholders in the message
+	const placeholderCount = $derived.by(() => {
 		return parseInletCount(data.message ?? '');
 	});
-
-	const totalInlets = $derived(1 + inletCount);
 
 	const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
 
@@ -73,22 +72,30 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
-			// If message arrives on inlet > 0, store it and send immediately (hot inlet)
-			if (meta?.inlet !== undefined && meta.inlet > 0) {
+			// Handle IDs: message-in-0 (hot), message-in-1, message-in-2, etc. (cold)
+			// inlet 0 -> $1, inlet 1 -> $2, etc.
+			const inlet = meta?.inlet ?? 0;
+
+			// Cold inlets (inlet >= 1): only store value, don't trigger
+			if (inlet >= 1) {
 				const nextValues = [...inletValues];
-				nextValues[meta.inlet - 1] = message; // $1 = inlet 1, stored at index 0
+				// inlet 1 -> $2 -> index 1, inlet 2 -> $3 -> index 2, etc.
+				nextValues[inlet] = message;
 				inletValues = nextValues;
-				sendMessage();
 				return;
 			}
 
-			// Inlet 0: handle bang and set messages
-			match(message)
+			// Hot inlet (inlet === 0): check for special messages first (bang, set)
+			const handled = match(message)
 				.with(P.union(null, undefined, { type: 'bang' }), () => {
+					// Bang triggers without storing
 					sendMessage();
+
+					return true;
 				})
 				.with({ type: 'set', value: P.any }, ({ value }) => {
 					let newMsgText: string;
+
 					if (typeof value === 'string') {
 						newMsgText = value;
 					} else {
@@ -99,7 +106,23 @@
 						}
 					}
 					updateNodeData(nodeId, { message: newMsgText });
-				});
+
+					return true;
+				})
+				.otherwise(() => false);
+
+			// If not a special message:
+			// - With placeholders: store value as $1 and trigger
+			// - Without placeholders: just trigger (any message acts like bang)
+			if (!handled) {
+				if (placeholderCount > 0) {
+					const nextValues = [...inletValues];
+					nextValues[0] = message; // Store as $1
+					inletValues = nextValues;
+				}
+
+				sendMessage();
+			}
 		} catch (error) {
 			console.error('MessageNode handleMessage error:', error);
 		}
@@ -138,6 +161,11 @@
 			}
 		}
 
+		// Don't send if there are still unsubstituted placeholders
+		if (/\$[1-9]/.test(processedMsg)) {
+			return;
+		}
+
 		// Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
 		try {
 			send(Json5.parse(processedMsg));
@@ -168,23 +196,18 @@
 			</div>
 
 			<div class="relative">
-				<!-- Primary inlet (always present) -->
-				<StandardHandle port="inlet" type="message" total={totalInlets} index={0} {nodeId} />
-
-				<!-- Control inlets for $1-$9 variables -->
-				{#if inletCount > 0}
-					{#each Array.from({ length: inletCount }) as _, index}
-						<StandardHandle
-							port="inlet"
-							type="message"
-							id={index + 1}
-							title={`$${index + 1}`}
-							total={totalInlets}
-							index={index + 1}
-							{nodeId}
-						/>
-					{/each}
-				{/if}
+				<!-- Inlets: message-in-0 (hot), message-in-1, message-in-2, etc. (cold) -->
+				{#each Array.from({ length: Math.max(1, placeholderCount) }) as _, index}
+					<StandardHandle
+						port="inlet"
+						type="message"
+						id={index}
+						title={placeholderCount > 0 ? `$${index + 1}` : 'bang'}
+						total={Math.max(1, placeholderCount)}
+						{index}
+						{nodeId}
+					/>
+				{/each}
 
 				<div class="relative">
 					{#if showTextInput}

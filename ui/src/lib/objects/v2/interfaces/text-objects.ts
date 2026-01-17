@@ -39,6 +39,13 @@ export interface TextObjectV2 {
 	 * @param meta - Message metadata (source, inlet, outlet, etc.)
 	 */
 	onMessage?(data: unknown, meta: MessageMeta): void;
+
+	/**
+	 * Get dynamic outlets for this instance.
+	 * Use this when outlet count depends on runtime state or creation params.
+	 * If not defined, static `outlets` from the class is used.
+	 */
+	getOutlets?(): ObjectOutlet[];
 }
 
 /**
@@ -54,12 +61,15 @@ export type TextObjectClass = {
 	/** Type identifier of the text object (e.g. `mtof` or `metro`) */
 	type: string;
 
+	/** Aliases for the object type (e.g. 't' for 'trigger') */
+	aliases?: string[];
+
 	/** Description of the object */
 	description?: string;
 
 	/** Inlet definitions */
 	inlets?: ObjectInlet[];
 
-	/** Outlet definitions */
+	/** Outlet definitions (used as default if instance doesn't implement getOutlets) */
 	outlets?: ObjectOutlet[];
 } & TextObjectConstructor;

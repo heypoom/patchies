@@ -118,13 +118,18 @@ export class MessageSystem {
 		// Clear existing connections
 		this.connections.clear();
 
-		// Build new connection map
+		// Build new connection map using Set for O(1) deduplication
+		const connectionSets = new Map<string, Set<string>>();
 		for (const edge of edges) {
-			if (!this.connections.has(edge.source)) {
-				this.connections.set(edge.source, []);
+			if (!connectionSets.has(edge.source)) {
+				connectionSets.set(edge.source, new Set());
 			}
+			connectionSets.get(edge.source)!.add(edge.target);
+		}
 
-			this.connections.get(edge.source)!.push(edge.target);
+		// Convert Sets to arrays for the connections map
+		for (const [source, targets] of connectionSets) {
+			this.connections.set(source, [...targets]);
 		}
 	}
 

@@ -1,6 +1,6 @@
 # 4. Message-Based Patcher
 
-We want to implement a system for message-based patching, with concepts such as objects, wires and message passing, which is borrowed from Max/MSP and PureData.
+We want to implement a system for message-based patching, with concepts such as objects, wires and message passing, which is borrowed from Max and Pd.
 
 ## Concepts
 

@@ -4,7 +4,7 @@ These are some of the possibilities for object behaviors in [[Patchies.app]]. Be
 
 - **On Message**: Objects that are connected responds to messages sent from other objects.
   - Can result in infinite loops due to feedback loop that never halts.
-  - example: Max/MSP
+  - example: Max
 - **Fixed Cycle**: Update all objects using a fixed cycle count, such as 1000 tick per second (TPS).
   - example: Game Engine, Minecraft
 - **Message Passing with Fixed Cycle**: Each node is invoked once per fixed cycle to forward the message to the recipients and process incoming messages.
