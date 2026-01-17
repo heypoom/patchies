@@ -3,16 +3,16 @@ import type { Migration } from '../types';
 /**
  * Migration 001: MessageNode inlet handle IDs
  *
- * Before: MessageNode had:
- *   - message-in (single inlet for bang/trigger)
+ * Before: MessageNode had various formats:
+ *   - message-in (original single inlet)
+ *   - message-in-1 (brief 1-based indexing period)
  *
- * After: MessageNode uses consistent indexing:
- *   - message-in-1 (hot inlet, bang or $1)
- *   - message-in-2 ($2 inlet, cold) - only if $2 exists
+ * After: MessageNode uses consistent 0-based indexing:
+ *   - message-in-0 (hot inlet, bang or $1)
+ *   - message-in-1 ($2 inlet, cold) - only if $2 exists
  *   - etc.
  *
- * This migration renames edges targeting message-in to message-in-1
-ode targets.
+ * This migration converts old handle formats to 0-based indexing.
  */
 export const migration001: Migration = {
 	version: 1,
@@ -26,12 +26,31 @@ export const migration001: Migration = {
 		);
 
 		const migratedEdges = patch.edges.map((edge) => {
-			if (messageNodeIds.has(edge.target) && edge.targetHandle === 'message-in') {
+			if (!messageNodeIds.has(edge.target)) return edge;
+
+			// Convert message-in -> message-in-0
+			if (edge.targetHandle === 'message-in') {
 				return {
 					...edge,
-					targetHandle: 'message-in-1',
-					id: edge.id.replace('message-in', 'message-in-1')
+					targetHandle: 'message-in-0',
+					id: edge.id.replace('message-in', 'message-in-0')
 				};
+			}
+
+			// Convert 1-based to 0-based: message-in-1 -> message-in-0, message-in-2 -> message-in-1, etc.
+			const match = edge.targetHandle?.match(/^message-in-(\d+)$/);
+
+			if (match) {
+				const oldIndex = parseInt(match[1], 10);
+				const newIndex = oldIndex - 1;
+
+				if (newIndex >= 0) {
+					return {
+						...edge,
+						targetHandle: `message-in-${newIndex}`,
+						id: edge.id.replace(`message-in-${oldIndex}`, `message-in-${newIndex}`)
+					};
+				}
 			}
 
 			return edge;

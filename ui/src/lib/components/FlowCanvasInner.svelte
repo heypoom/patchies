@@ -832,6 +832,9 @@
 		if (migrated.nodes.length > 0) {
 			nodeIdCounter = getNodeIdCounterFromSave(migrated.nodes);
 		}
+
+		// Immediately save migrated patch to autosave so reloads don't break
+		performAutosave();
 	}
 
 	async function loadPatchById(patchId: string) {

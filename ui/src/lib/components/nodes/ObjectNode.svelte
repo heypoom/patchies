@@ -508,8 +508,10 @@
 	const minWidthStyle = $derived.by(() => {
 		const maxPorts = Math.max(inlets.length, outlets.length);
 		if (maxPorts <= 2) return '';
+
 		// ~20px per port to ensure handles don't overlap
 		const minWidth = maxPorts * 20;
+
 		return `min-width: ${minWidth}px`;
 	});
 

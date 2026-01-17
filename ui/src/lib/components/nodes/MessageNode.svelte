@@ -72,20 +72,20 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
-			// Handle IDs: message-in-1 (hot), message-in-2, message-in-3, etc. (cold)
-			// inlet 1 -> $1, inlet 2 -> $2, etc.
-			const inlet = meta?.inlet ?? 1;
+			// Handle IDs: message-in-0 (hot), message-in-1, message-in-2, etc. (cold)
+			// inlet 0 -> $1, inlet 1 -> $2, etc.
+			const inlet = meta?.inlet ?? 0;
 
-			// Cold inlets (inlet >= 2): only store value, don't trigger
-			if (inlet >= 2) {
+			// Cold inlets (inlet >= 1): only store value, don't trigger
+			if (inlet >= 1) {
 				const nextValues = [...inletValues];
-				// inlet 2 -> $2 -> index 1, inlet 3 -> $3 -> index 2, etc.
-				nextValues[inlet - 1] = message;
+				// inlet 1 -> $2 -> index 1, inlet 2 -> $3 -> index 2, etc.
+				nextValues[inlet] = message;
 				inletValues = nextValues;
 				return;
 			}
 
-			// Hot inlet (inlet === 1): check for special messages first (bang, set)
+			// Hot inlet (inlet === 0): check for special messages first (bang, set)
 			const handled = match(message)
 				.with(P.union(null, undefined, { type: 'bang' }), () => {
 					// Bang triggers without storing
@@ -161,6 +161,11 @@
 			}
 		}
 
+		// Don't send if there are still unsubstituted placeholders
+		if (/\$[1-9]/.test(processedMsg)) {
+			return;
+		}
+
 		// Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
 		try {
 			send(Json5.parse(processedMsg));
@@ -191,12 +196,12 @@
 			</div>
 
 			<div class="relative">
-				<!-- Inlets: message-in-1 (hot), message-in-2, message-in-3, etc. (cold) -->
+				<!-- Inlets: message-in-0 (hot), message-in-1, message-in-2, etc. (cold) -->
 				{#each Array.from({ length: Math.max(1, placeholderCount) }) as _, index}
 					<StandardHandle
 						port="inlet"
 						type="message"
-						id={index + 1}
+						id={index}
 						title={placeholderCount > 0 ? `$${index + 1}` : 'bang'}
 						total={Math.max(1, placeholderCount)}
 						{index}
