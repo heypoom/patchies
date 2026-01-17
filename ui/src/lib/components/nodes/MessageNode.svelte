@@ -36,12 +36,6 @@
 		return parseInletCount(data.message ?? '');
 	});
 
-	// Total inlets follows hot/cold semantics:
-	// - 0 placeholders: 1 inlet (bang)
-	// - 1 placeholder: 1 inlet ($1 is hot - receives value AND triggers)
-	// - 2+ placeholders: N inlets ($1 is hot, $2+ are cold)
-	const totalInlets = $derived(Math.max(1, placeholderCount));
-
 	const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
 
 	let parsedObject = $derived.by(() => {
@@ -78,18 +72,20 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
-			const inlet = meta?.inlet ?? 0;
+			// Handle IDs: message-in-1 (hot), message-in-2, message-in-3, etc. (cold)
+			// inlet 1 -> $1, inlet 2 -> $2, etc.
+			const inlet = meta?.inlet ?? 1;
 
-			// Cold inlets (inlet > 0): only store value, don't trigger
-			if (inlet > 0) {
+			// Cold inlets (inlet >= 2): only store value, don't trigger
+			if (inlet >= 2) {
 				const nextValues = [...inletValues];
-				// inlet 1 stores $2, inlet 2 stores $3, etc. (since inlet 0 is $1)
-				nextValues[inlet] = message;
+				// inlet 2 -> $2 -> index 1, inlet 3 -> $3 -> index 2, etc.
+				nextValues[inlet - 1] = message;
 				inletValues = nextValues;
 				return;
 			}
 
-			// Check for special messages first (bang, set)
+			// Hot inlet (inlet === 1): check for special messages first (bang, set)
 			const handled = match(message)
 				.with(P.union(null, undefined, { type: 'bang' }), () => {
 					// Bang triggers without storing
@@ -195,16 +191,14 @@
 			</div>
 
 			<div class="relative">
-				<!-- Inlets based on placeholder count -->
-				<!-- 0 placeholders: 1 bang inlet -->
-				<!-- 1+ placeholders: inlet 0 = $1 (hot), inlet 1 = $2 (cold), etc. -->
-				{#each Array.from({ length: totalInlets }) as _, index}
+				<!-- Inlets: message-in-1 (hot), message-in-2, message-in-3, etc. (cold) -->
+				{#each Array.from({ length: Math.max(1, placeholderCount) }) as _, index}
 					<StandardHandle
 						port="inlet"
 						type="message"
-						id={index}
+						id={index + 1}
 						title={placeholderCount > 0 ? `$${index + 1}` : 'bang'}
-						total={totalInlets}
+						total={Math.max(1, placeholderCount)}
 						{index}
 						{nodeId}
 					/>

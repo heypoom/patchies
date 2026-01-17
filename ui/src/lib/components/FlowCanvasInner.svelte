@@ -48,6 +48,7 @@
 	import { cleanupPatch } from '$lib/save-load/cleanup-patch';
 	import { match } from 'ts-pattern';
 	import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
+	import { migratePatch } from '$lib/migration';
 	import { serializePatch } from '$lib/save-load/serialize-patch';
 	import { getSharedPatchData } from '$lib/api/pb';
 	import { createAndCopyShareLink } from '$lib/save-load/share';
@@ -815,18 +816,21 @@
 	}
 
 	function restorePatchFromSave(save: PatchSaveFormat) {
+		// Apply migrations to upgrade old patch formats
+		const migrated = migratePatch(save) as PatchSaveFormat;
+
 		cleanupPatch(nodes);
 		previousNodes = new Set();
 
 		nodes = [];
 		edges = [];
 
-		nodes = save.nodes;
-		edges = save.edges;
+		nodes = migrated.nodes;
+		edges = migrated.edges;
 
 		// Update node counter based on loaded nodes
-		if (save.nodes.length > 0) {
-			nodeIdCounter = getNodeIdCounterFromSave(save.nodes);
+		if (migrated.nodes.length > 0) {
+			nodeIdCounter = getNodeIdCounterFromSave(migrated.nodes);
 		}
 	}
 

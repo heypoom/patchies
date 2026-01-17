@@ -17,6 +17,7 @@
 	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
 	import { createAndCopyShareLink } from '$lib/save-load/share';
 	import { deleteSearchParam } from '$lib/utils/search-params';
+	import { migratePatch } from '$lib/migration';
 
 	interface Props {
 		position: { x: number; y: number };
@@ -397,16 +398,17 @@
 				throw new Error('Invalid patch data format');
 			}
 
-			setNodes(patchSave.nodes);
-			setEdges(patchSave.edges);
+			// Apply migrations to upgrade old patch formats
+			const migrated = migratePatch(patchSave) as PatchSaveFormat;
 
-			console.log(
-				`[load] found ${patchSave.nodes.length} nodes and ${patchSave.edges.length} edges`
-			);
+			setNodes(migrated.nodes);
+			setEdges(migrated.edges);
+
+			console.log(`[load] found ${migrated.nodes.length} nodes and ${migrated.edges.length} edges`);
 
 			AudioService.getInstance().getAudioContext().resume();
 
-			patchName = patchSave.name || 'Untitled';
+			patchName = migrated.name || 'Untitled';
 		} catch (error) {
 			console.error('Error deserializing patch data:', error);
 			throw error;
