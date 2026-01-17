@@ -291,8 +291,8 @@
 
 		if (objectService.isV2ObjectType(name)) {
 			objectService.removeObjectById(nodeId);
-			// Pass raw params to V2 objects - they interpret their own creation arguments
-			objectService.createObject(nodeId, name, messageContext, rawParams).then(() => {
+
+			objectService.createObject(nodeId, name, messageContext, params, rawParams).then(() => {
 				objectInstanceVersion++;
 				updateNodeInternals(nodeId);
 			});
@@ -487,13 +487,17 @@
 
 		// Create V2 text object if applicable
 		if (objectService.isV2ObjectType(data.name)) {
-			// Extract raw params from expr for V2 objects (they interpret their own creation args)
+			// Extract raw params from expr for V2 objects
 			const rawParams = (data.expr || '').trim().split(' ').slice(1);
-			objectService.createObject(nodeId, data.name, messageContext, rawParams).then(() => {
-				// Trigger re-evaluation of outlets after object is created
-				objectInstanceVersion++;
-				updateNodeInternals(nodeId);
-			});
+			const parsedParams = parseObjectParamFromString(data.name, rawParams);
+
+			objectService
+				.createObject(nodeId, data.name, messageContext, parsedParams, rawParams)
+				.then(() => {
+					// Trigger re-evaluation of outlets after object is created
+					objectInstanceVersion++;
+					updateNodeInternals(nodeId);
+				});
 		}
 
 		messageContext.queue.addCallback(handleObjectMessage);

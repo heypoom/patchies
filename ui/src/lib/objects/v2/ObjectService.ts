@@ -29,14 +29,16 @@ export class ObjectService {
 	 * @param nodeId - Unique identifier for the object
 	 * @param objectType - The type of object to create
 	 * @param messageContext - The MessageContext to use for message routing
-	 * @param params - Array of parameters for the object
+	 * @param params - Parsed parameters for initializing inlet values
+	 * @param rawParams - Raw string arguments for dynamic object configuration (e.g., trigger types)
 	 * @returns The created object instance, or null if type not defined
 	 */
 	async createObject(
 		nodeId: string,
 		objectType: string,
 		messageContext: MessageContext,
-		params: unknown[] = []
+		params: unknown[] = [],
+		rawParams: string[] = []
 	): Promise<TextObjectV2 | null> {
 		const ObjectClass = this.registry.get(objectType);
 
@@ -52,14 +54,18 @@ export class ObjectService {
 		this.objectsById.set(nodeId, object);
 
 		// Set up message routing from ObjectContext to the object
-		context.queue.addCallback((data, meta) => {
+		// Using addMessageCallback ensures cleanup on destroy
+		context.addMessageCallback((data, meta) => {
 			this.dispatchMessage(object, data, meta);
 		});
 
-		try {
-			await object.create?.(params);
-		} catch (error) {
-			logger.error(`cannot create object ${objectType}`, error);
+		if (object.create) {
+			try {
+				// Pass raw params to create() for dynamic configuration (e.g., trigger b f s)
+				await object.create?.(rawParams);
+			} catch (error) {
+				logger.error(`cannot create object ${objectType}`, error);
+			}
 		}
 
 		return object;

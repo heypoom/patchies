@@ -1,4 +1,5 @@
 import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
+import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { ObjectInlet } from './object-metadata';
 
 type ParamsChangeCallback = (params: unknown[], index: number, value: unknown) => void;
@@ -16,6 +17,7 @@ export class ObjectContext {
 	private params: unknown[] = [];
 	private inlets: ObjectInlet[] = [];
 	private paramsChangeCallbacks: ParamsChangeCallback[] = [];
+	private messageCallbacks: MessageCallbackFn[] = [];
 
 	constructor(nodeId: string, messageContext: MessageContext, inlets: ObjectInlet[] = []) {
 		this.nodeId = nodeId;
@@ -38,6 +40,14 @@ export class ObjectContext {
 	 */
 	get queue() {
 		return this.messageContext.queue;
+	}
+
+	/**
+	 * Add a message callback that will be automatically cleaned up on destroy.
+	 */
+	addMessageCallback(callback: MessageCallbackFn): void {
+		this.messageCallbacks.push(callback);
+		this.messageContext.queue.addCallback(callback);
 	}
 
 	/**
@@ -84,15 +94,15 @@ export class ObjectContext {
 
 	/**
 	 * Set all parameters at once (used during initialization).
-	 * Merges with default values - only overwrites if the incoming value is not null/undefined.
+	 * Merges with default values - explicit values override defaults.
 	 * Does not notify subscribers.
 	 */
 	initParams(params: unknown[]): void {
-		// Merge incoming params with defaults, preserving defaults for null/undefined values
+		// Merge incoming params with defaults
+		// Explicit values (even if falsy like 0 or "") override defaults
+		// Only preserve defaults for indices not provided in params array
 		for (let i = 0; i < params.length; i++) {
-			if (params[i] !== null && params[i] !== undefined) {
-				this.params[i] = params[i];
-			}
+			this.params[i] = params[i];
 		}
 	}
 
@@ -132,6 +142,12 @@ export class ObjectContext {
 	 * Clean up resources.
 	 */
 	destroy(): void {
+		// Remove all message callbacks from the queue
+		for (const callback of this.messageCallbacks) {
+			this.messageContext.queue.removeCallback(callback);
+		}
+
+		this.messageCallbacks = [];
 		this.paramsChangeCallbacks = [];
 	}
 }

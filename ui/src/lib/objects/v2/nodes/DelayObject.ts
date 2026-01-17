@@ -47,7 +47,6 @@ export class DelayObject implements TextObjectV2 {
 	}
 
 	destroy(): void {
-		// Clear all pending timeouts
 		for (const id of this.pendingTimeouts) {
 			clearTimeout(id);
 		}
