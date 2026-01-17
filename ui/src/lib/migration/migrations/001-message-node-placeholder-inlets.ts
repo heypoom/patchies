@@ -21,22 +21,15 @@ export const migration001: Migration = {
 	migrate(patch) {
 		if (!patch.nodes || !patch.edges) return patch;
 
-		// Find all message node IDs (node type is 'msg')
-		const messageNodeIds = new Set<string>();
-
-		for (const node of patch.nodes) {
-			if (node.type === 'msg') {
-				messageNodeIds.add(node.id);
-			}
-		}
+		const messageNodeIds = new Set(
+			patch.nodes.filter((node) => node.type === 'msg').map((node) => node.id)
+		);
 
 		const migratedEdges = patch.edges.map((edge) => {
 			if (messageNodeIds.has(edge.target) && edge.targetHandle === 'message-in') {
 				return {
 					...edge,
 					targetHandle: 'message-in-1',
-
-					// Update edge ID if it contains the handle name
 					id: edge.id.replace('message-in', 'message-in-1')
 				};
 			}
@@ -44,9 +37,6 @@ export const migration001: Migration = {
 			return edge;
 		});
 
-		return {
-			...patch,
-			edges: migratedEdges
-		};
+		return { ...patch, edges: migratedEdges };
 	}
 };

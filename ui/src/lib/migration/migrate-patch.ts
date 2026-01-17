@@ -68,5 +68,6 @@ export function migratePatch(patch: RawPatchData): RawPatchData {
  */
 export function needsMigration(patch: RawPatchData): boolean {
 	const version = parseVersion(patch?.version);
+
 	return version < CURRENT_PATCH_VERSION;
 }
