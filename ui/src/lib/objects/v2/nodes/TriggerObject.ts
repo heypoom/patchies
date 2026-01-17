@@ -37,8 +37,8 @@ export class TriggerObject implements TextObjectV2 {
 	];
 
 	static outlets: ObjectOutlet[] = [
-		{ name: 'out0', type: 'message', description: 'Output 1' },
-		{ name: 'out1', type: 'message', description: 'Output 2' }
+		{ name: '0', type: 'message', description: 'Output 1' },
+		{ name: '1', type: 'message', description: 'Output 2' }
 	];
 
 	readonly nodeId: string;
@@ -79,7 +79,7 @@ export class TriggerObject implements TextObjectV2 {
 	 */
 	getOutlets(): ObjectOutlet[] {
 		return this.outletTypes.map((type, i) => ({
-			name: `out${i}`,
+			name: String(i),
 			type: 'message' as const,
 			description: `${getMessageTypeName(type)} output`
 		}));
