@@ -84,10 +84,16 @@ export class ObjectContext {
 
 	/**
 	 * Set all parameters at once (used during initialization).
+	 * Merges with default values - only overwrites if the incoming value is not null/undefined.
 	 * Does not notify subscribers.
 	 */
 	initParams(params: unknown[]): void {
-		this.params = [...params];
+		// Merge incoming params with defaults, preserving defaults for null/undefined values
+		for (let i = 0; i < params.length; i++) {
+			if (params[i] !== null && params[i] !== undefined) {
+				this.params[i] = params[i];
+			}
+		}
 	}
 
 	/**
