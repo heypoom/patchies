@@ -820,6 +820,7 @@
 		const migrated = migratePatch(save) as PatchSaveFormat;
 
 		cleanupPatch(nodes);
+
 		previousNodes = new Set();
 
 		nodes = [];
@@ -843,8 +844,11 @@
 
 		try {
 			const save = await getSharedPatchData(patchId);
+
 			if (save) {
 				restorePatchFromSave(save);
+
+				window.location.reload();
 
 				// Reset viewport to center and default zoom
 				setTimeout(() => {
