@@ -6,19 +6,9 @@
  * any: matches anything
  * list: matches arrays (Array.isArray)
  * object: matches plain objects (not arrays, not null)
- * number: matches any finite number
- * integer: matches integers (Number.isInteger && Number.isFinite)
- * float: matches non-integer finite numbers
+ * number: matches any number
  */
-export type MessageType =
-	| 'bang'
-	| 'symbol'
-	| 'any'
-	| 'list'
-	| 'object'
-	| 'number'
-	| 'integer'
-	| 'float';
+export type MessageType = 'bang' | 'symbol' | 'any' | 'list' | 'object' | 'number' | 'null';
 
 /** Map from abbreviations to full names */
 const ABBREVIATION_MAP: Record<string, MessageType> = {
@@ -28,22 +18,12 @@ const ABBREVIATION_MAP: Record<string, MessageType> = {
 	l: 'list',
 	o: 'object',
 	n: 'number',
-	i: 'integer',
-	f: 'float',
-	int: 'integer'
+	f: 'number',
+	float: 'number'
 };
 
 /** Set of valid message types for quick lookup */
-const VALID_TYPES = new Set<MessageType>([
-	'bang',
-	'symbol',
-	'any',
-	'list',
-	'object',
-	'number',
-	'integer',
-	'float'
-]);
+const VALID_TYPES = new Set<MessageType>(Object.values(ABBREVIATION_MAP));
 
 /** Get the full name for a message type (identity function since types are now full names) */
 export const getMessageTypeName = (type: MessageType): string => type;
@@ -62,10 +42,12 @@ export function isValidMessageType(type: string): boolean {
  */
 export function normalizeMessageType(type: string): MessageType | undefined {
 	const lower = type.toLowerCase();
+
 	// Check if it's already a full name
 	if (VALID_TYPES.has(lower as MessageType)) {
 		return lower as MessageType;
 	}
+
 	// Check if it's an abbreviation
 	return ABBREVIATION_MAP[lower];
 }
@@ -80,8 +62,10 @@ export function matchesMessageType(type: MessageType, data: unknown): boolean {
 			return true;
 
 		case 'symbol':
-			// Symbol: objects with `type` key or JS symbols
+			// Actual JS symbols
 			if (typeof data === 'symbol') return true;
+
+			// Objects with a `type` key
 			if (
 				typeof data === 'object' &&
 				data !== null &&
@@ -105,16 +89,10 @@ export function matchesMessageType(type: MessageType, data: unknown): boolean {
 			return typeof data === 'object' && data !== null && !Array.isArray(data);
 
 		case 'number':
-			// Number: any finite number
-			return typeof data === 'number' && Number.isFinite(data);
+			return typeof data === 'number';
 
-		case 'integer':
-			// Integer: integers only
-			return typeof data === 'number' && Number.isInteger(data) && Number.isFinite(data);
-
-		case 'float':
-			// Float: non-integer finite numbers
-			return typeof data === 'number' && !Number.isInteger(data) && Number.isFinite(data);
+		case 'null':
+			return data === 'number';
 
 		default:
 			return false;
@@ -142,11 +120,10 @@ export function getTypedOutput(type: MessageType, data: unknown): unknown {
 
 /**
  * Parse a list of type specifier strings into MessageType array.
- * Accepts both abbreviations (b, s, a, l, o, n, i, f) and full names (bang, symbol, etc.).
+ * Accepts both abbreviations (e.g. b, s) and full names (e.g. bang, symbol).
  * Filters out invalid types.
  */
-export function parseMessageTypes(params: unknown[]): MessageType[] {
-	return params
+export const parseMessageTypes = (params: unknown[]): MessageType[] =>
+	params
 		.map((p) => normalizeMessageType(String(p)))
 		.filter((p): p is MessageType => p !== undefined);
-}

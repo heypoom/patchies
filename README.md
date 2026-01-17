@@ -718,7 +718,7 @@ See the following example:
 > ✨ Try this patch out [in the app](https://patchies.app/?id=c6adsknw8iix3m2)!
 
 - Evaluate mathematical expressions and formulas.
-- Use the `$1` to `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition, and sends a message with the result each time inlet one or two is updated.
+- Use the `$1` to `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition.
 - This uses the [expr-eval](https://github.com/silentmatt/expr-eval) library from silentmatt under the hood for evaluating mathematical expressions.
 - There are so many mathematical functions and operators you can use here! See the [expression syntax](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#expression-syntax) section.
 - Very helpful for control signals and parameter mapping.
@@ -730,9 +730,16 @@ See the following example:
   a + b;
   ```
 
-  This creates two inlets, and sends the result of `(inlet1 * 2) + (inlet2 + 3)` each time inlet one or two is updated.
-
 - You can also [define functions](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#function-definitions) to make the code easier to read, e.g. `add(a, b) = a + b`.
+
+#### Hot and cold inlets
+
+The `expr` object follows the Max/MSP and Pure Data convention of **hot** and **cold** inlets:
+
+- **Inlet 0 (hot)**: When a message arrives at the first inlet (`$1`), the expression is evaluated and the result is sent to the outlet.
+- **Inlets 1+ (cold)**: When a message arrives at other inlets (`$2`, `$3`, etc.), the value is stored but no output is triggered. The stored values are used the next time inlet 0 receives a message.
+
+This allows you to set up multiple values before triggering a computation. Use the `trigger` object to control the order of execution when you need to update multiple inlets and then trigger the output.
 
 ### `uxn`: Uxn virtual machine
 
@@ -827,9 +834,16 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Messages:
   - `bang`: outputs the message
 
+#### Placeholders and hot/cold inlets
+
 You can use placeholders from `$1` - `$9` to send messages with stored variables. This is very helpful if you have a message like `{type: 'noteOn', note: $1, velocity: 100}` and you need the note to be dynamic.
 
 <img src="./docs/images/message-placeholder.webp" alt="Patchies.app message box placeholders" width="700">
+
+The `msg` object follows the Max/MSP and Pure Data convention of **hot** and **cold** inlets:
+
+- **Inlet 0 (hot)**: When a `bang` message arrives at the first inlet, the stored message is sent (with placeholders substituted).
+- **Inlets 1+ (cold)**: When a message arrives at placeholder inlets (`$1`, `$2`, etc.), the value is stored but no output is triggered. Use these to set placeholder values before triggering with a bang.
 
 ### `slider`: numerical value slider
 
@@ -950,8 +964,41 @@ These objects run on _control rate_, which means they process messages (control 
 - `metro`: Metronome for regular timing
 - `delay`: Message delay (not audio)
 - `adsr`: ADSR envelope generator
+- `trigger` (alias `t`): Send messages through multiple outlets in right-to-left order
+- `spigot`: Message gate that allows or blocks data based on a condition
 
 Most of these objects are easy to re-implement yourself with the `js` object as they simply emit messages, but they are provided for your convenience!
+
+#### The `trigger` object
+
+The `trigger` object (shorthand: `t`) is essential for controlling message order and working with hot/cold inlets. It sends messages through multiple outlets in **right-to-left order**.
+
+**Usage:** `trigger <type1> <type2> ...` or `t <type1> <type2> ...`
+
+**Type specifiers:**
+
+- `b` or `bang`: Always sends `{type: 'bang'}`
+- `a` or `any`: Passes the input unchanged
+- `n` or `number`: Passes only if input is a finite number
+- `i` or `integer`: Passes only if input is an integer
+- `f` or `float`: Passes only if input is a non-integer number
+- `l` or `list`: Passes only if input is an array
+- `o` or `object`: Passes only if input is a plain object (not array)
+- `s` or `symbol`: Passes only if input is an object with a `type` key
+
+**Example:** `t b n` creates two outlets. When it receives the number `42`:
+
+1. First, outlet 1 (right) sends `42`
+2. Then, outlet 0 (left) sends `{type: 'bang'}`
+
+This right-to-left order is crucial for setting up cold inlets before triggering hot inlets. For example, to properly update an `expr $1 + $2` object:
+
+```text
+[slider] ──┬──► [t b a] ──► outlet 0 (bang) ──► expr inlet 0 (hot, triggers output)
+           │           └──► outlet 1 (value) ──► expr inlet 1 (cold, stores value)
+```
+
+The trigger ensures the value reaches the cold inlet (`$2`) before the bang triggers the hot inlet (`$1`).
 
 #### Audio objects
 

@@ -31,11 +31,16 @@
 	let msgText = $derived(data.message || '');
 	let inletValues = $state<unknown[]>([]);
 
-	const inletCount = $derived.by(() => {
+	// Number of $1-$9 placeholders in the message
+	const placeholderCount = $derived.by(() => {
 		return parseInletCount(data.message ?? '');
 	});
 
-	const totalInlets = $derived(1 + inletCount);
+	// Total inlets follows hot/cold semantics:
+	// - 0 placeholders: 1 inlet (bang)
+	// - 1 placeholder: 1 inlet ($1 is hot - receives value AND triggers)
+	// - 2+ placeholders: N inlets ($1 is hot, $2+ are cold)
+	const totalInlets = $derived(Math.max(1, placeholderCount));
 
 	const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
 
@@ -73,21 +78,28 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
-			// If message arrives on inlet > 0, store it for $1-$9 substitution (cold inlet)
-			if (meta?.inlet !== undefined && meta.inlet > 0) {
+			const inlet = meta?.inlet ?? 0;
+
+			// Cold inlets (inlet > 0): only store value, don't trigger
+			if (inlet > 0) {
 				const nextValues = [...inletValues];
-				nextValues[meta.inlet - 1] = message; // $1 = inlet 1, stored at index 0
+				// inlet 1 stores $2, inlet 2 stores $3, etc. (since inlet 0 is $1)
+				nextValues[inlet] = message;
 				inletValues = nextValues;
 				return;
 			}
 
-			// Inlet 0: handle bang and set messages
-			match(message)
+			// Check for special messages first (bang, set)
+			const handled = match(message)
 				.with(P.union(null, undefined, { type: 'bang' }), () => {
+					// Bang triggers without storing
 					sendMessage();
+
+					return true;
 				})
 				.with({ type: 'set', value: P.any }, ({ value }) => {
 					let newMsgText: string;
+
 					if (typeof value === 'string') {
 						newMsgText = value;
 					} else {
@@ -98,7 +110,23 @@
 						}
 					}
 					updateNodeData(nodeId, { message: newMsgText });
-				});
+
+					return true;
+				})
+				.otherwise(() => false);
+
+			// If not a special message:
+			// - With placeholders: store value as $1 and trigger
+			// - Without placeholders: just trigger (any message acts like bang)
+			if (!handled) {
+				if (placeholderCount > 0) {
+					const nextValues = [...inletValues];
+					nextValues[0] = message; // Store as $1
+					inletValues = nextValues;
+				}
+
+				sendMessage();
+			}
 		} catch (error) {
 			console.error('MessageNode handleMessage error:', error);
 		}
@@ -167,23 +195,20 @@
 			</div>
 
 			<div class="relative">
-				<!-- Primary inlet (always present) -->
-				<StandardHandle port="inlet" type="message" total={totalInlets} index={0} {nodeId} />
-
-				<!-- Control inlets for $1-$9 variables -->
-				{#if inletCount > 0}
-					{#each Array.from({ length: inletCount }) as _, index}
-						<StandardHandle
-							port="inlet"
-							type="message"
-							id={index + 1}
-							title={`$${index + 1}`}
-							total={totalInlets}
-							index={index + 1}
-							{nodeId}
-						/>
-					{/each}
-				{/if}
+				<!-- Inlets based on placeholder count -->
+				<!-- 0 placeholders: 1 bang inlet -->
+				<!-- 1+ placeholders: inlet 0 = $1 (hot), inlet 1 = $2 (cold), etc. -->
+				{#each Array.from({ length: totalInlets }) as _, index}
+					<StandardHandle
+						port="inlet"
+						type="message"
+						id={index}
+						title={placeholderCount > 0 ? `$${index + 1}` : 'bang'}
+						total={totalInlets}
+						{index}
+						{nodeId}
+					/>
+				{/each}
 
 				<div class="relative">
 					{#if showTextInput}
