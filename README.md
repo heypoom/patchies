@@ -739,7 +739,7 @@ The `expr` object follows the Max/MSP and Pure Data convention of **hot** and **
 - **Inlet 0 (hot)**: When a message arrives at the first inlet (`$1`), the expression is evaluated and the result is sent to the outlet.
 - **Inlets 1+ (cold)**: When a message arrives at other inlets (`$2`, `$3`, etc.), the value is stored but no output is triggered. The stored values are used the next time inlet 0 receives a message.
 
-This allows you to set up multiple values before triggering a computation. Use the `trigger` object to control the order of execution when you need to update multiple inlets and then trigger the output.
+This allows you to set up multiple values before triggering a computation. Use [the trigger object](#the-trigger-object) to control the order of execution when you need to update multiple inlets and then trigger the output.
 
 ### `uxn`: Uxn virtual machine
 
@@ -842,8 +842,9 @@ You can use placeholders from `$1` - `$9` to send messages with stored variables
 
 The `msg` object follows the Max/MSP and Pure Data convention of **hot** and **cold** inlets:
 
-- **Inlet 0 (hot)**: When a `bang` message arrives at the first inlet, the stored message is sent (with placeholders substituted).
-- **Inlets 1+ (cold)**: When a message arrives at placeholder inlets (`$1`, `$2`, etc.), the value is stored but no output is triggered. Use these to set placeholder values before triggering with a bang.
+- **No placeholders**: A single inlet that triggers output on any message (bang or value).
+- **1 placeholder (`$1`)**: A single hot inlet. Sending a value stores it as `$1` and triggers output. Sending a bang triggers output with the current stored value.
+- **2+ placeholders (`$1`, `$2`, etc.)**: First inlet is hot (`$1`), rest are cold (`$2`, `$3`, etc.). Cold inlets store values without triggering. Send values to cold inlets first, then trigger via the hot inlet. Use [the trigger object](#the-trigger-object) to do this.
 
 ### `slider`: numerical value slider
 
