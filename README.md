@@ -979,12 +979,10 @@ The `trigger` object (shorthand: `t`) is essential for controlling message order
 
 - `b` or `bang`: Always sends `{type: 'bang'}`
 - `a` or `any`: Passes the input unchanged
-- `n` or `number`: Passes only if input is a finite number
-- `i` or `integer`: Passes only if input is an integer
-- `f` or `float`: Passes only if input is a non-integer number
+- `n/f` or `number/float`: Passes only if input is a number (JS `Number` object)
 - `l` or `list`: Passes only if input is an array
 - `o` or `object`: Passes only if input is a plain object (not array)
-- `s` or `symbol`: Passes only if input is an object with a `type` key
+- `s` or `symbol`: Passes only if input is an object with a `type` key or a `Symbol`
 
 **Example:** `t b n` creates two outlets. When it receives the number `42`:
 
