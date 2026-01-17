@@ -848,20 +848,12 @@
 			if (save) {
 				restorePatchFromSave(save);
 
+				// HACK: reload to ensure the patch are clean
 				window.location.reload();
-
-				// Reset viewport to center and default zoom
-				setTimeout(() => {
-					fitView({ padding: 0.2, duration: 300 });
-				}, 100);
-
-				// Close the startup modal after loading
-				showStartupModal = false;
 			}
 		} catch (err) {
 			urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
 			console.error('Failed to load patch:', err);
-		} finally {
 			isLoadingFromUrl = false;
 		}
 	}
