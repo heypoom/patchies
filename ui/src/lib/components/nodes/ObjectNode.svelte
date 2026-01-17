@@ -164,13 +164,19 @@
 	});
 
 	function enterEditingMode() {
-		// Transform current name and parameter into editable expr
-		const paramString = data.params
-			.map((value, index) => stringifyParamByType(inlets[index], value, index))
-			.filter((value, index) => !isUnmodifiableType(inlets[index]?.type))
-			.join(' ');
+		// For objects with dynamic outlets, use the stored expr directly
+		// (their params configure structure, not inlet values)
+		if (hasDynamicOutlets && data.expr) {
+			expr = data.expr;
+		} else {
+			// Transform current name and parameter into editable expr
+			const paramString = data.params
+				.map((value, index) => stringifyParamByType(inlets[index], value, index))
+				.filter((value, index) => !isUnmodifiableType(inlets[index]?.type))
+				.join(' ');
 
-		expr = `${data.name} ${paramString}`;
+			expr = `${data.name} ${paramString}`.trim();
+		}
 
 		isEditing = true;
 		originalName = expr;
@@ -507,6 +513,19 @@
 		return `min-width: ${minWidth}px`;
 	});
 
+	// Check if this object has dynamic outlets (needs to show raw params instead of parsed)
+	const hasDynamicOutlets = $derived.by(() => {
+		void objectInstanceVersion;
+		const objectInstance = objectService.getObjectById(nodeId);
+		return !!objectInstance?.getOutlets;
+	});
+
+	// Get raw params from expr for display (used for objects with dynamic outlets)
+	const rawParamsFromExpr = $derived.by(() => {
+		const parts = (data.expr || '').trim().split(' ');
+		return parts.slice(1).join(' ');
+	});
+
 	const getInletTypeHoverClass = (inletIndex: number) => {
 		const type = inlets[inletIndex]?.type;
 
@@ -667,37 +686,42 @@
 									>{data.name}</span
 								>
 
-								{#each data.params as param, index}
-									{#if !isUnmodifiableType(inlets[index]?.type)}
-										<Tooltip.Root>
-											<Tooltip.Trigger>
-												<span
-													class={[
-														'text-zinc-400 underline-offset-2',
-														getInletTypeHoverClass(index)
-													]}
-												>
-													{#if isAutomated[index]}
-														{getShortInletName(index)}
-													{:else}
-														{stringifyParamByType(inlets[index], param, index)}
+								{#if hasDynamicOutlets && rawParamsFromExpr}
+									<!-- For objects with dynamic outlets, show the raw params from expr -->
+									<span class="text-zinc-400">{rawParamsFromExpr}</span>
+								{:else}
+									{#each data.params as param, index}
+										{#if !isUnmodifiableType(inlets[index]?.type)}
+											<Tooltip.Root>
+												<Tooltip.Trigger>
+													<span
+														class={[
+															'text-zinc-400 underline-offset-2',
+															getInletTypeHoverClass(index)
+														]}
+													>
+														{#if isAutomated[index]}
+															{getShortInletName(index)}
+														{:else}
+															{stringifyParamByType(inlets[index], param, index)}
+														{/if}
+													</span>
+												</Tooltip.Trigger>
+												<Tooltip.Content>
+													<p>{getInletHint(index)}</p>
+
+													{#if inlets[index]?.description}
+														<p class="text-xs text-zinc-500">{inlets[index].description}</p>
 													{/if}
-												</span>
-											</Tooltip.Trigger>
-											<Tooltip.Content>
-												<p>{getInletHint(index)}</p>
 
-												{#if inlets[index]?.description}
-													<p class="text-xs text-zinc-500">{inlets[index].description}</p>
-												{/if}
-
-												{#if isAutomated[index]}
-													<p class="text-xs text-pink-500">inlet is automated</p>
-												{/if}
-											</Tooltip.Content>
-										</Tooltip.Root>
-									{/if}
-								{/each}
+													{#if isAutomated[index]}
+														<p class="text-xs text-pink-500">inlet is automated</p>
+													{/if}
+												</Tooltip.Content>
+											</Tooltip.Root>
+										{/if}
+									{/each}
+								{/if}
 							</div>
 						</div>
 					{/if}
