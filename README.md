@@ -827,6 +827,10 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
 - Messages:
   - `bang`: outputs the message
 
+You can use placeholders from `$1` - `$9` to send messages with stored variables. This is very helpful if you have a message like `{type: 'noteOn', note: $1, velocity: 100}` and you need the note to be dynamic.
+
+<img src="./docs/images/message-placeholder.webp" alt="Patchies.app message box placeholders" width="700">
+
 ### `slider`: numerical value slider
 
 - Continuous value control with customizable range.
