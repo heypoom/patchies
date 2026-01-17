@@ -21,9 +21,7 @@ import {
  *   a -> any: passes input unchanged
  *   l -> list: passes arrays
  *   o -> object: passes plain objects (not arrays)
- *   n -> number: passes any finite number
- *   i -> integer: passes integers only
- *   f -> float: passes non-integer numbers only
+ *   n/f -> number/float: passes any number
  *
  * Example:
  *   [trigger f b] - on input 42, sends bang from outlet 1, then 42 from outlet 0
