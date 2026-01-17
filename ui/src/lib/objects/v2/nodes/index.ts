@@ -8,6 +8,7 @@ import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
 import { SpigotObject } from './SpigotObject';
+import { TriggerObject } from './TriggerObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
@@ -19,7 +20,8 @@ const TEXT_OBJECTS = [
 	LoadbangObject,
 	MetroObject,
 	MtofObject,
-	SpigotObject
+	SpigotObject,
+	TriggerObject
 ] as const satisfies TextObjectClass[];
 
 /**

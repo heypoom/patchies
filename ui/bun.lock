@@ -50,6 +50,7 @@
         "memfs": "^4.39.0",
         "meyda": "^5.6.3",
         "ml5": "^1.2.1",
+        "mnemonist": "^0.40.3",
         "mode-watcher": "^1.1.0",
         "ohash": "^2.0.11",
         "overtype": "^1.1.1",
@@ -1434,6 +1435,8 @@
 
     "ml5": ["ml5@1.2.1", "", { "dependencies": { "@mediapipe/face_mesh": "^0.4.1633559619", "@mediapipe/hands": "^0.4.1675469240", "@mediapipe/pose": "^0.5.1675469404", "@mediapipe/selfie_segmentation": "~0.1.0", "@tensorflow-models/body-segmentation": "^1.0.1", "@tensorflow-models/face-landmarks-detection": "1.0.5", "@tensorflow-models/hand-pose-detection": "^2.0.0", "@tensorflow-models/mobilenet": "^2.1.0", "@tensorflow-models/pose-detection": "^2.1.0", "@tensorflow-models/speech-commands": "^0.5.4", "@tensorflow/tfjs": "^4.22.0", "@tensorflow/tfjs-backend-webgpu": "^4.22.0", "@tensorflow/tfjs-vis": "^1.5.1", "axios": "^1.3.4", "webpack-merge": "^5.9.0" } }, "sha512-Abl1S3rC66urHO7QxAkO2V1w8/sCxexCvb/GBL3CrsSS7IE17cEXr9Vr0rEKDTtgNuASQhxkrGAUSNF81Umnew=="],
 
+    "mnemonist": ["mnemonist@0.40.3", "", { "dependencies": { "obliterator": "^2.0.4" } }, "sha512-Vjyr90sJ23CKKH/qPAgUKicw/v6pRoamxIEDFOF8uSgFME7DqPRpHgRTejWVjkdGg5dXj0/NyxZHZ9bcjH+2uQ=="],
+
     "mode-watcher": ["mode-watcher@1.1.0", "", { "dependencies": { "runed": "^0.25.0", "svelte-toolbelt": "^0.7.1" }, "peerDependencies": { "svelte": "^5.27.0" } }, "sha512-mUT9RRGPDYenk59qJauN1rhsIMKBmWA3xMF+uRwE8MW/tjhaDSCCARqkSuDTq8vr4/2KcAxIGVjACxTjdk5C3g=="],
 
     "mri": ["mri@1.2.0", "", {}, "sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA=="],
@@ -1475,6 +1478,8 @@
     "number-is-nan": ["number-is-nan@1.0.1", "", {}, "sha512-4jbtZXNAsfZbAHiiqjLPBiCl16dES1zI4Hpzzxw61Tk+loF+sBDBKx1ICKKKwIqQ7M0mFn1TmkN7euSncWgHiQ=="],
 
     "object-assign": ["object-assign@4.1.1", "", {}, "sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg=="],
+
+    "obliterator": ["obliterator@2.0.5", "", {}, "sha512-42CPE9AhahZRsMNslczq0ctAEtqk8Eka26QofnqC346BZdHDySk3LWka23LI7ULIw11NmltpiLagIq8gBozxTw=="],
 
     "ohash": ["ohash@2.0.11", "", {}, "sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ=="],
 

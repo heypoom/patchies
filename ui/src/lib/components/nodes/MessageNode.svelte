@@ -73,12 +73,11 @@
 
 	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
-			// If message arrives on inlet > 0, store it and send immediately (hot inlet)
+			// If message arrives on inlet > 0, store it for $1-$9 substitution (cold inlet)
 			if (meta?.inlet !== undefined && meta.inlet > 0) {
 				const nextValues = [...inletValues];
 				nextValues[meta.inlet - 1] = message; // $1 = inlet 1, stored at index 0
 				inletValues = nextValues;
-				sendMessage();
 				return;
 			}
 

@@ -53,6 +53,9 @@
 
 	let isAutomated = $state<Record<number, boolean>>({});
 
+	// Track object instance version to trigger re-evaluation of outlets
+	let objectInstanceVersion = $state(0);
+
 	let audioService = AudioService.getInstance();
 	let objectService = ObjectService.getInstance();
 	const messageContext = new MessageContext(nodeId);
@@ -107,8 +110,18 @@
 	});
 
 	// Dynamic outlets based on object definition
-	const outlets = $derived.by(() => {
+	// Supports objects with dynamic outlet count via instance getOutlets() method
+	const outlets = $derived.by((): ObjectOutlet[] => {
+		// Depend on objectInstanceVersion to re-evaluate when object is created
+		void objectInstanceVersion;
+
 		if (!objectMeta) return [];
+
+		// Check if the object instance has a getOutlets method for dynamic outlets
+		const objectInstance = objectService.getObjectById(nodeId);
+		if (objectInstance?.getOutlets) {
+			return objectInstance.getOutlets();
+		}
 
 		return objectMeta.outlets || [];
 	});
@@ -256,19 +269,27 @@
 	function getNameAndParams() {
 		const parts = expr.trim().split(' ');
 		const name = parts[0]?.toLowerCase();
-		const params = parts.slice(1);
+		const rawParams = parts.slice(1);
 
-		return { name, params: parseObjectParamFromString(name, params) };
+		return {
+			name,
+			rawParams,
+			params: parseObjectParamFromString(name, rawParams)
+		};
 	}
 
 	function tryCreatePlainObject() {
-		const { name, params } = getNameAndParams();
+		const { name, params, rawParams } = getNameAndParams();
 
 		updateNodeData(nodeId, { expr, name, params });
 
 		if (objectService.isV2ObjectType(name)) {
 			objectService.removeObjectById(nodeId);
-			objectService.createObject(nodeId, name, messageContext, params);
+			// Pass raw params to V2 objects - they interpret their own creation arguments
+			objectService.createObject(nodeId, name, messageContext, rawParams).then(() => {
+				objectInstanceVersion++;
+				updateNodeInternals(nodeId);
+			});
 		}
 	}
 
@@ -460,7 +481,13 @@
 
 		// Create V2 text object if applicable
 		if (objectService.isV2ObjectType(data.name)) {
-			objectService.createObject(nodeId, data.name, messageContext, data.params);
+			// Extract raw params from expr for V2 objects (they interpret their own creation args)
+			const rawParams = (data.expr || '').trim().split(' ').slice(1);
+			objectService.createObject(nodeId, data.name, messageContext, rawParams).then(() => {
+				// Trigger re-evaluation of outlets after object is created
+				objectInstanceVersion++;
+				updateNodeInternals(nodeId);
+			});
 		}
 
 		messageContext.queue.addCallback(handleObjectMessage);
@@ -469,6 +496,15 @@
 	onDestroy(() => {
 		audioService.removeNodeById(nodeId);
 		objectService.removeObjectById(nodeId);
+	});
+
+	// Calculate minimum width based on port count (inlets or outlets, whichever is larger)
+	const minWidthStyle = $derived.by(() => {
+		const maxPorts = Math.max(inlets.length, outlets.length);
+		if (maxPorts <= 2) return '';
+		// ~20px per port to ensure handles don't overlap
+		const minWidth = maxPorts * 20;
+		return `min-width: ${minWidth}px`;
 	});
 
 	const getInletTypeHoverClass = (inletIndex: number) => {
@@ -554,7 +590,10 @@
 				<div class="relative">
 					{#if isEditing}
 						<!-- Editing state: show input field -->
-						<div class={['w-fit rounded-lg border backdrop-blur-lg', containerClass]}>
+						<div
+							class={['w-fit rounded-lg border backdrop-blur-lg', containerClass]}
+							style={minWidthStyle}
+						>
 							<input
 								bind:this={inputElement}
 								bind:value={expr}
@@ -617,6 +656,7 @@
 								'w-full cursor-pointer rounded-lg border px-3 py-2 backdrop-blur-lg',
 								containerClass
 							]}
+							style={minWidthStyle}
 							ondblclick={handleDoubleClick}
 							role="button"
 							tabindex="0"

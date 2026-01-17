@@ -12,10 +12,18 @@ export class ObjectRegistry {
 
 	/**
 	 * Register an object type with its constructor.
+	 * Also registers any aliases defined on the class.
 	 * @param constructor - The object class with static `type` property
 	 */
 	register(constructor: TextObjectClass): void {
 		this.registry.set(constructor.type, constructor);
+
+		// Register aliases if defined
+		if (constructor.aliases) {
+			for (const alias of constructor.aliases) {
+				this.registry.set(alias, constructor);
+			}
+		}
 	}
 
 	/**
