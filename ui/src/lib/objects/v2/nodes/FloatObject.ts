@@ -41,6 +41,16 @@ export class FloatObject implements TextObjectV2 {
 		this.context = context;
 	}
 
+	create(params: unknown[]): void {
+		// Set initial value from first argument (e.g., "f 3.14" sets initial value to 3.14)
+		if (params.length > 0 && params[0] !== undefined) {
+			const num = Number(params[0]);
+			if (!isNaN(num)) {
+				this.context.setParam('hot', num);
+			}
+		}
+	}
+
 	onMessage(data: unknown, meta: MessageMeta): void {
 		match([meta.inletName, data])
 			// Hot inlet: bang outputs current value
