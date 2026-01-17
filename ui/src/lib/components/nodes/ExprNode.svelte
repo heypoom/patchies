@@ -48,17 +48,21 @@
 	});
 
 	// Handle incoming messages
+	// Inlet 0 is hot (triggers output), all other inlets are cold (only store values)
 	const handleMessage: MessageCallbackFn = (message, meta) => {
+		const inlet = meta?.inlet ?? 0;
 		const nextInletValues = [...inletValues];
 
+		// Store value for this inlet
 		match(message)
-			.with({ type: 'bang' }, () => {})
-			.with(P.union(P.number), (value) => {
-				if (meta?.inlet === undefined) return;
-
-				nextInletValues[meta.inlet] = value;
+			.with(P.number, (value) => {
+				nextInletValues[inlet] = value;
 				inletValues = nextInletValues;
-			});
+			})
+			.otherwise(() => {});
+
+		// Only inlet 0 (hot) triggers output
+		if (inlet !== 0) return;
 
 		// Evaluate expression and send result
 		if (evalResult.success) {
