@@ -64,20 +64,6 @@
 			"author": "@froos"
 		},
 		{
-			"id": "tfjdf019hjyxmeu",
-			"name": "Scales",
-			"description": "Musical scale experiments made with osc~, expr, expr~, delay~ and highpass~",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
-			"id": "xhdtrqenaf6ur81",
-			"name": "Scales II",
-			"description": "Alternative version of the scale experiments with a slightly different feel to it",
-			"category": "Audio",
-			"author": "@kijjaz"
-		},
-		{
 			"id": "jf7n1ku67auc5xg",
 			"name": "Kicks",
 			"description": "Basic drum kicks made with mathematical expressions in expr~",
