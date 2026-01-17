@@ -13,6 +13,7 @@
 
 	import 'highlight.js/styles/tokyo-night-dark.css';
 	import CodeEditor from '../CodeEditor.svelte';
+	import { parseInletCount } from '$lib/utils/expr-parser';
 
 	hljs.registerLanguage('javascript', javascript);
 
@@ -28,12 +29,22 @@
 
 	let showTextInput = $state(false);
 	let msgText = $derived(data.message || '');
+	let inletValues = $state<unknown[]>([]);
+
+	const inletCount = $derived.by(() => {
+		return parseInletCount(data.message ?? '');
+	});
+
+	const totalInlets = $derived(1 + inletCount);
 
 	const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
 
 	let parsedObject = $derived.by(() => {
+		// substitute $1-$9 with null for parsing/validation purposes
+		const msgWithPlaceholders = (data.message ?? '').replace(/\$([1-9])/g, 'null');
+
 		try {
-			return Json5.parse(data.message);
+			return Json5.parse(msgWithPlaceholders);
 		} catch {
 			return CANNOT_PARSE_SYMBOL;
 		}
@@ -60,8 +71,18 @@
 		}
 	});
 
-	const handleMessage: MessageCallbackFn = (message) => {
+	const handleMessage: MessageCallbackFn = (message, meta) => {
 		try {
+			// If message arrives on inlet > 0, store it and send immediately (hot inlet)
+			if (meta?.inlet !== undefined && meta.inlet > 0) {
+				const nextValues = [...inletValues];
+				nextValues[meta.inlet - 1] = message; // $1 = inlet 1, stored at index 0
+				inletValues = nextValues;
+				sendMessage();
+				return;
+			}
+
+			// Inlet 0: handle bang and set messages
 			match(message)
 				.with(P.union(null, undefined, { type: 'bang' }), () => {
 					sendMessage();
@@ -103,16 +124,28 @@
 	 * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
 	 * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
 	 * - Numbers (e.g. `100`) are sent as numbers
+	 * - $1-$9 placeholders are substituted with values from corresponding inlets
 	 */
 	function sendMessage() {
+		let processedMsg = msgText;
+
+		// Substitute $1-$9 with inlet values
+		for (let i = 1; i <= 9; i++) {
+			const value = inletValues[i - 1];
+			if (value !== undefined) {
+				const replacement = JSON.stringify(value);
+				processedMsg = processedMsg.replaceAll(`$${i}`, replacement);
+			}
+		}
+
 		// Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
 		try {
-			send(Json5.parse(msgText));
+			send(Json5.parse(processedMsg));
 			return;
 		} catch (e) {}
 
 		// Bare strings are treated as symbols: { type: <string> }
-		send({ type: msgText });
+		send({ type: processedMsg });
 	}
 
 	const containerClass = $derived(
@@ -135,7 +168,23 @@
 			</div>
 
 			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+				<!-- Primary inlet (always present) -->
+				<StandardHandle port="inlet" type="message" total={totalInlets} index={0} {nodeId} />
+
+				<!-- Control inlets for $1-$9 variables -->
+				{#if inletCount > 0}
+					{#each Array.from({ length: inletCount }) as _, index}
+						<StandardHandle
+							port="inlet"
+							type="message"
+							id={index + 1}
+							title={`$${index + 1}`}
+							total={totalInlets}
+							index={index + 1}
+							{nodeId}
+						/>
+					{/each}
+				{/if}
 
 				<div class="relative">
 					{#if showTextInput}
