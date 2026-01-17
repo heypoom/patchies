@@ -4,6 +4,7 @@
 
 import { AdsrObject } from './AdsrObject';
 import { DelayObject } from './DelayObject';
+import { IntObject } from './IntObject';
 import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
@@ -17,6 +18,7 @@ import type { TextObjectClass } from '../interfaces/text-objects';
 const TEXT_OBJECTS = [
 	AdsrObject,
 	DelayObject,
+	IntObject,
 	LoadbangObject,
 	MetroObject,
 	MtofObject,
