@@ -55,6 +55,7 @@ export class TriggerObject implements TextObjectV2 {
 		// Parse arguments: each valid type specifier adds an outlet
 		// e.g., ['f', 'b', 's'] = 3 outlets with types float, bang, symbol
 		const types = parseMessageTypes(params);
+
 		if (types.length > 0) {
 			this.outletTypes = types;
 		}
