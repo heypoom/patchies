@@ -9,6 +9,7 @@ import { IntObject } from './IntObject';
 import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
+import { SelectObject } from './SelectObject';
 import { SpigotObject } from './SpigotObject';
 import { TriggerObject } from './TriggerObject';
 
@@ -24,6 +25,7 @@ const TEXT_OBJECTS = [
 	LoadbangObject,
 	MetroObject,
 	MtofObject,
+	SelectObject,
 	SpigotObject,
 	TriggerObject
 ] as const satisfies TextObjectClass[];
