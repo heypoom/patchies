@@ -545,7 +545,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 <img src="./docs/images/threejs-torus.webp" alt="Patchies.app three.js torus demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=ekavjpvr6h8atbj)! It shows how you can use 2D textures from other objects in Three.js.
+> ✨ Try this patch out [in the app](https://patchies.app/?id=1c484xkin7p7p2r)! It shows how you can use 2D textures from other objects in Three.js.
 
 - [Three.js](https://threejs.org) is a powerful 3D graphics library for WebGL. Create 3D scenes, animations, and interactive visualizations in the browser.
 
