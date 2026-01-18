@@ -40,7 +40,8 @@ self.onmessage = (event) => {
 		.with('updateTextmode', () => handleUpdateTextmode(data.nodeId))
 		.with('updateThree', () => handleUpdateThree(data.nodeId))
 		.with('setFFTData', () => handleSetFFTData(data))
-		.with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code));
+		.with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
+		.with('benchmarkPreviews', () => fboRenderer.benchmarkPreviewMethods(data.iterations));
 };
 
 async function handleBuildRenderGraph(graph: RenderGraph) {

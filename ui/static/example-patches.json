@@ -237,6 +237,13 @@
 			"description": "Poom uses this patch to test the y-flip consistency across the rendering pipeline",
 			"category": "Dev Patches",
 			"author": "@heypoom"
+		},
+		{
+			"id": "oajrusf4ir2n6nm",
+			"name": "GLSL Stress Test",
+			"description": "Poom uses this patch to stress test the glsl objects",
+			"category": "Dev Patches",
+			"author": "@heypoom"
 		}
 	]
 }

@@ -833,6 +833,60 @@ export class FBORenderer {
 	}
 
 	/**
+	 * Benchmark old vs new preview rendering methods.
+	 * Call this from console: fboRenderer.benchmarkPreviewMethods(100)
+	 */
+	public benchmarkPreviewMethods(iterations = 50) {
+		const enabledPreviews = this.getEnabledPreviews();
+		if (enabledPreviews.length === 0) {
+			console.warn('[Benchmark] No previews enabled. Enable at least one preview first.');
+			return;
+		}
+
+		const nodeId = enabledPreviews[0];
+		const fboNode = this.fboNodes.get(nodeId);
+		if (!fboNode) {
+			console.warn('[Benchmark] Could not find FBO node');
+			return;
+		}
+
+		console.log(`[Benchmark] Running ${iterations} iterations on node ${nodeId}...`);
+
+		// Warm up
+		for (let i = 0; i < 5; i++) {
+			this.renderNodePreview(fboNode);
+			this.renderNodePreviewBitmap(fboNode);
+		}
+
+		// Benchmark old method (returns Uint8Array)
+		const oldStart = performance.now();
+		for (let i = 0; i < iterations; i++) {
+			this.renderNodePreview(fboNode);
+		}
+		const oldTime = performance.now() - oldStart;
+
+		// Benchmark new method (returns ImageBitmap)
+		const newStart = performance.now();
+		for (let i = 0; i < iterations; i++) {
+			this.renderNodePreviewBitmap(fboNode);
+		}
+		const newTime = performance.now() - newStart;
+
+		const speedup = oldTime / newTime;
+
+		console.log(`[Benchmark] Results (${iterations} iterations):`);
+		console.log(
+			`  Old (renderNodePreview):       ${oldTime.toFixed(2)}ms total, ${(oldTime / iterations).toFixed(3)}ms/call`
+		);
+		console.log(
+			`  New (renderNodePreviewBitmap): ${newTime.toFixed(2)}ms total, ${(newTime / iterations).toFixed(3)}ms/call`
+		);
+		console.log(`  Speedup: ${speedup.toFixed(2)}x ${speedup > 1 ? 'faster' : 'slower'}`);
+
+		return { oldTime, newTime, speedup, iterations };
+	}
+
+	/**
 	 * Render a single node's preview using regl.read() as per spec
 	 * @deprecated Use renderNodePreviewBitmap() for better performance
 	 */
