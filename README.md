@@ -726,6 +726,21 @@ See the following example:
 - There are so many functions and operators you can use here! See the [expression syntax](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#expression-syntax) section.
 - Very helpful for control signals and parameter mapping.
 - This works with non-numbers too! You can use it to access object fields and work with arrays.
+
+  ```js
+  // gets the 'note' field of an object and add 20 to it
+  $1.note + 20
+
+  // checks if the 'type' field is noteOn
+  $1.type == 'noteOn'
+
+  // perform conditional operations on an object
+  $1.value > 20 ? 'ok' : 'no'
+
+  // get the 5th index of an array
+  $1[5]
+  ```
+
 - You can also create variables and they are multi-line. Make sure to use `;` to separate statements. For example:
 
   ```js
