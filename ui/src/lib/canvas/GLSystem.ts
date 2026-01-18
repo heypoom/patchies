@@ -17,7 +17,7 @@ import {
 } from '$lib/audio/AudioAnalysisSystem';
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -77,24 +77,29 @@ export class GLSystem {
 		const { data } = event;
 		if (!data) return;
 
+		if (data.type === 'previewFrame') {
+			const context = this.previewCanvasContexts[data.nodeId];
+			if (!context || !data.bitmap) return;
+
+			context.transferFromImageBitmap(data.bitmap);
+
+			return;
+		}
+
+		if (data.type === 'animationFrame') {
+			if (!data.outputBitmap) return;
+
+			if (this.ipcSystem.outputWindow !== null) {
+				this.ipcSystem.sendRenderOutput(data.outputBitmap);
+			} else {
+				this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
+			}
+
+			return;
+		}
+
 		// Use match for early returns - most frequent messages first
 		match(data.type)
-			.with('animationFrame', () => {
-				if (!data.outputBitmap) return;
-
-				if (this.ipcSystem.outputWindow !== null) {
-					this.ipcSystem.sendRenderOutput(data.outputBitmap);
-				} else {
-					this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
-				}
-			})
-			.with('previewFrame', () => {
-				// Worker now sends ImageBitmap directly - no conversion needed on main thread
-				const context = this.previewCanvasContexts[data.nodeId];
-				if (!context || !data.bitmap) return;
-
-				context.transferFromImageBitmap(data.bitmap);
-			})
 			.with('shaderError', () => {
 				if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
 					logger.nodeError(
@@ -171,11 +176,7 @@ export class GLSystem {
 			.with('previewFrameCaptured', () => {
 				this.eventBus.dispatch(data);
 			})
-			.with('fftEnabled', () => {
-				this.audioAnalysis.handleRenderWorkerMessage(data);
-			})
-			.otherwise(() => {
-				// Handle any other FFT-related messages
+			.with(P.union('fftEnabled', 'registerFFTRequest'), () => {
 				this.audioAnalysis.handleRenderWorkerMessage(data);
 			});
 	};
