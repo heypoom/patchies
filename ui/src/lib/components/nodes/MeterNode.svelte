@@ -36,6 +36,18 @@
 	const CANVAS_WIDTH = 30;
 	const CANVAS_HEIGHT = 120;
 	const PEAK_HOLD_DURATION = 1000; // ms
+	const MIN_DB = -60; // Minimum dB level shown on meter
+	const MAX_DB = 0; // Maximum dB level (0 dB = full scale)
+
+	// Convert linear amplitude (0-1) to normalized meter position (0-1)
+	function amplitudeToMeterPosition(amplitude: number): number {
+		if (amplitude <= 0) return 0;
+		// Convert to dB: 20 * log10(amplitude)
+		const db = 20 * Math.log10(amplitude);
+		// Clamp and normalize to 0-1 range
+		const clamped = Math.max(MIN_DB, Math.min(MAX_DB, db));
+		return (clamped - MIN_DB) / (MAX_DB - MIN_DB);
+	}
 
 	const handleMessage: MessageCallbackFn = (message) => {
 		match(message)
@@ -49,15 +61,16 @@
 			});
 	};
 
-	function frequencyToRms(freq: Uint8Array): number {
+	function calculateRmsFromTimeDomain(timeDomainData: Uint8Array): number {
 		let sum = 0;
 
-		for (let i = 0; i < freq.length; i++) {
-			const normalized = freq[i] / 255.0;
+		for (let i = 0; i < timeDomainData.length; i++) {
+			// Time domain data is centered at 128 (0-255 range, 128 = silence)
+			const normalized = (timeDomainData[i] - 128) / 128.0;
 			sum += normalized * normalized;
 		}
 
-		return Math.sqrt(sum / freq.length);
+		return Math.sqrt(sum / timeDomainData.length);
 	}
 
 	function updateMeter() {
@@ -65,19 +78,26 @@
 
 		if (audioNodeById && getObjectType(audioNodeById) === 'fft~') {
 			const analyserNode = audioNodeById.audioNode as AnalyserNode;
-			const freqData = new Uint8Array(analyserNode.fftSize);
-			analyserNode.getByteFrequencyData(freqData);
+			const timeDomainData = new Uint8Array(analyserNode.fftSize);
+			analyserNode.getByteTimeDomainData(timeDomainData);
 
-			const rms = frequencyToRms(freqData);
-			currentLevel = currentLevel * smoothing + rms * (1 - smoothing);
+			const rms = calculateRmsFromTimeDomain(timeDomainData);
+
+			// Use instantaneous RMS for display, smoothing only for visual appeal
+			// Clamp very small values to zero to avoid floating point drift
+			const instantLevel = rms < 0.001 ? 0 : rms;
+			currentLevel = currentLevel * smoothing + instantLevel * (1 - smoothing);
 
 			const now = Date.now();
 
-			if (currentLevel > peakLevel) {
-				peakLevel = currentLevel;
+			if (instantLevel > peakLevel) {
+				// Use instantaneous level for peak detection, not smoothed
+				peakLevel = instantLevel;
 				peakHoldTime = now;
 			} else if (peakHold && now - peakHoldTime > PEAK_HOLD_DURATION) {
-				peakLevel = Math.max(currentLevel, peakLevel * 0.99);
+				// Decay peak slowly (0.995 at 60fps ≈ 3 seconds to reach 50%)
+				peakLevel = peakLevel * 0.995;
+				if (peakLevel < 0.001) peakLevel = 0;
 			}
 		}
 
@@ -100,8 +120,8 @@
 	}
 
 	function drawBarMeter() {
-		const levelHeight = currentLevel * CANVAS_HEIGHT;
-		const peakHeight = peakLevel * CANVAS_HEIGHT;
+		const levelHeight = amplitudeToMeterPosition(currentLevel) * CANVAS_HEIGHT;
+		const peakHeight = amplitudeToMeterPosition(peakLevel) * CANVAS_HEIGHT;
 
 		// Draw level bar
 		const gradient = ctx.createLinearGradient(0, CANVAS_HEIGHT, 0, 0);
@@ -129,8 +149,8 @@
 	function drawDigitalMeter() {
 		const segments = 20;
 		const segmentHeight = (CANVAS_HEIGHT - segments) / segments;
-		const levelSegments = Math.floor(currentLevel * segments);
-		const peakSegment = Math.floor(peakLevel * segments);
+		const levelSegments = Math.floor(amplitudeToMeterPosition(currentLevel) * segments);
+		const peakSegment = Math.floor(amplitudeToMeterPosition(peakLevel) * segments);
 
 		for (let i = 0; i < segments; i++) {
 			const y = CANVAS_HEIGHT - (i + 1) * (segmentHeight + 1);
