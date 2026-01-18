@@ -3,6 +3,7 @@ import type { FBONode, PreviewState } from '../../lib/rendering/types';
 import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { getFramebuffer } from './utils';
 import type { RenderingProfiler } from './RenderingProfiler';
+import { DEFAULT_PREVIEW_MAX_FPS_CAP } from './constants';
 
 interface PendingRead {
 	pbo: WebGLBuffer;
@@ -16,7 +17,7 @@ interface PendingRead {
  * PreviewRenderer handles GPU-to-CPU pixel readback for node previews.
  *
  * Uses PBO (Pixel Buffer Object) async reads with frame rate limiting:
- * - Previews update at ~30fps (every 2 frames at 60fps render rate)
+ * - Previews update at ~40fps
  * - Batch all preview reads in one frame, retrieve results 2+ frames later
  * - Non-blocking retrieval: skip if GPU isn't ready yet
  *
@@ -40,7 +41,7 @@ export class PreviewRenderer {
 	public maxPreviewsPerFrameNoOutput = 4;
 
 	// Frame rate limiting for previews (in ms)
-	private previewIntervalMs = Math.round(1000 / 40); // 40fps max for previews
+	private previewIntervalMs = Math.round(1000 / DEFAULT_PREVIEW_MAX_FPS_CAP);
 	private lastPreviewTime = 0;
 
 	// PBO async read state
@@ -94,6 +95,10 @@ export class PreviewRenderer {
 
 	setPreviewEnabled(nodeId: string, enabled: boolean): void {
 		this.previewState[nodeId] = enabled;
+	}
+
+	setPreviewFpsCap(fps: number): void {
+		this.previewIntervalMs = Math.round(1000 / fps);
 	}
 
 	isPreviewEnabled(nodeId: string): boolean {
@@ -153,9 +158,11 @@ export class PreviewRenderer {
 
 		// Step 2: Check if we should initiate new reads (frame rate limiting)
 		const now = performance.now();
+
 		if (now - this.lastPreviewTime < this.previewIntervalMs) {
 			return results;
 		}
+
 		this.lastPreviewTime = now;
 
 		// Step 3: Initiate new batch of async reads
@@ -216,8 +223,10 @@ export class PreviewRenderer {
 
 			// Create bitmap
 			const { canvas, ctx } = this.getCanvas(width, height);
+
 			const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
 			ctx.putImageData(imageData, 0, 0);
+
 			results.set(nodeId, canvas.transferToImageBitmap());
 		}
 
@@ -292,6 +301,7 @@ export class PreviewRenderer {
 		if (this.pboPool.length > 0) {
 			return this.pboPool.pop()!;
 		}
+
 		return this.gl.createBuffer()!;
 	}
 
@@ -380,6 +390,7 @@ export class PreviewRenderer {
 		if (!cached) {
 			const canvas = new OffscreenCanvas(width, height);
 			const ctx = canvas.getContext('2d')!;
+
 			cached = { canvas, ctx };
 			this.canvasCache.set(key, cached);
 		}
@@ -422,6 +433,7 @@ export class PreviewRenderer {
 		}
 
 		const start = performance.now();
+
 		this.gl.readPixels(0, 0, width, height, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixels);
 		this.profiler.recordReglRead(performance.now() - start);
 
@@ -434,12 +446,14 @@ export class PreviewRenderer {
 			this.gl.deleteSync(pending.sync);
 			this.gl.deleteBuffer(pending.pbo);
 		}
+
 		this.pendingReads = [];
 
 		// Clean up PBO pool
 		for (const pbo of this.pboPool) {
 			this.gl.deleteBuffer(pbo);
 		}
+
 		this.pboPool = [];
 
 		this.previewFbo?.destroy();
