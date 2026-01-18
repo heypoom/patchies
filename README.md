@@ -968,11 +968,9 @@ These objects run on _control rate_, which means they process messages (control 
 - `loadbang`: Send bang on patch load
 - `metro`: Metronome for regular timing
 - `delay`: Message delay (not audio)
-- `adsr`: ADSR envelope generator
-- `trigger` (alias `t`): Send messages through multiple outlets in right-to-left order
+- `trigger` (alias `t`): Send [messages through multiple outlets](#the-trigger-object) in right-to-left order
+- `adsr`: [ADSR envelope generator](#adsr-adsr-envelope-generator)
 - `spigot`: Message gate that allows or blocks data based on a condition
-
-Most of these objects are easy to re-implement yourself with the `js` object as they simply emit messages, but they are provided for your convenience!
 
 #### The `trigger` object
 
@@ -1002,6 +1000,52 @@ This right-to-left order is crucial for setting up cold inlets before triggering
 ```
 
 The trigger ensures the value reaches the cold inlet (`$2`) before the bang triggers the hot inlet (`$1`).
+
+### `adsr`: ADSR envelope generator
+
+<img src="./docs/images/simple-synth-keyboard.webp" alt="Patchies.app simple synth keyboard demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=geb2h5sc6pf2uj2)! This is a sampler that changes the playback speed depending on which notes you pressed.
+
+The `adsr` object generates ADSR envelope messages for controlling audio parameters (like gain). It has 6 inlets:
+
+1. **trigger**: `1` triggers attack→decay→sustain, `0` triggers release
+2. **peak**: peak amplitude (default: 1)
+3. **attack**: attack time in ms (default: 100)
+4. **decay**: decay time in ms (default: 200)
+5. **sustain**: sustain level (default: 0.5)
+6. **release**: release time in ms (default: 300)
+
+Connect the output to an audio parameter inlet (e.g., `gain~`'s gain inlet) to automate the parameter.
+
+#### Scheduled Parameter Messages
+
+Under the hood, `adsr` sends **scheduled messages** that automate audio parameters. You can also send these directly from `js` nodes.
+
+```ts
+// Trigger envelope (attack → decay → sustain)
+send({
+  type: 'trigger',
+  values: { start: 0, peak: 1, sustain: 0.7 },
+  attack: { time: 0.02 },  // seconds
+  decay: { time: 0.1 }
+})
+
+// Release envelope
+send({ type: 'release', release: { time: 0.3 }, endValue: 0 })
+
+// Set value immediately
+send({ type: 'set', value: 0.5 })
+
+// Set value at a future time (relative, in 0.5s from now)
+send({ type: 'set', value: 0.5, time: 0.5 })
+
+// Set value at absolute audio context time
+send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' })
+```
+
+- Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'` (default: linear).
+- Try the `midi-adsr-gain.js` preset shows how you can use MIDI messages to automate the gain parameter. [This patch](https://patchies.app/?id=1pvwvmtoo5s3gdz) shows how to use this in place of the `adsr` object.
 
 #### Audio objects
 
@@ -1133,52 +1177,6 @@ The `sampler~` object records audio from connected sources into a buffer and pla
 - `{type: 'setPlaybackRate', value: 0.5}` - play at half speed
 - `{type: 'setDetune', value: 1200}` - pitch up one octave
 - `{type: 'setDetune', value: -1200}` - pitch down one octave
-
-### `adsr`: ADSR envelope generator
-
-<img src="./docs/images/simple-synth-keyboard.webp" alt="Patchies.app simple synth keyboard demo" width="700">
-
-> ✨ Try this patch out [in the app](https://patchies.app/?id=geb2h5sc6pf2uj2)! This is a sampler that changes the playback speed depending on which notes you pressed.
-
-The `adsr` object generates ADSR envelope messages for controlling audio parameters (like gain). It has 6 inlets:
-
-1. **trigger**: `1` triggers attack→decay→sustain, `0` triggers release
-2. **peak**: peak amplitude (default: 1)
-3. **attack**: attack time in ms (default: 100)
-4. **decay**: decay time in ms (default: 200)
-5. **sustain**: sustain level (default: 0.5)
-6. **release**: release time in ms (default: 300)
-
-Connect the output to an audio parameter inlet (e.g., `gain~`'s gain inlet) to automate the parameter.
-
-#### Scheduled Parameter Messages
-
-Under the hood, `adsr` sends **scheduled messages** that automate audio parameters. You can also send these directly from `js` nodes.
-
-```ts
-// Trigger envelope (attack → decay → sustain)
-send({
-  type: 'trigger',
-  values: { start: 0, peak: 1, sustain: 0.7 },
-  attack: { time: 0.02 },  // seconds
-  decay: { time: 0.1 }
-})
-
-// Release envelope
-send({ type: 'release', release: { time: 0.3 }, endValue: 0 })
-
-// Set value immediately
-send({ type: 'set', value: 0.5 })
-
-// Set value at a future time (relative, in 0.5s from now)
-send({ type: 'set', value: 0.5, time: 0.5 })
-
-// Set value at absolute audio context time
-send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' })
-```
-
-- Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'` (default: linear).
-- Try the `midi-adsr-gain.js` preset shows how you can use MIDI messages to automate the gain parameter. [This patch](https://patchies.app/?id=1pvwvmtoo5s3gdz) shows how to use this in place of the `adsr` object.
 
 ### `expr~`: audio-rate mathematical expression evaluator
 
