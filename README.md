@@ -758,7 +758,7 @@ The `expr` object follows the Max and Pd convention of **hot** and **cold** inle
 - **Inlet 0 (hot)**: When a message arrives at the first inlet (`$1`), the expression is evaluated and the result is sent to the outlet.
 - **Inlets 1+ (cold)**: When a message arrives at other inlets (`$2`, `$3`, etc.), the value is stored but no output is triggered. The stored values are used the next time inlet 0 receives a message.
 
-This allows you to set up multiple values before triggering a computation. Use [the trigger object](#the-trigger-object) to control the order of execution when you need to update multiple inlets and then trigger the output.
+This allows you to set up multiple values before triggering a computation. Use [the trigger object](#trigger-sends-messages-in-right-to-left-order) to control the order of execution when you need to update multiple inlets and then trigger the output.
 
 ### `uxn`: Uxn virtual machine
 
@@ -863,7 +863,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 
 - **No placeholders**: A single inlet that triggers output on any message (bang or value).
 - **1 placeholder (`$1`)**: A single hot inlet. Sending a value stores it as `$1` and triggers output. Sending a bang triggers output with the current stored value.
-- **2+ placeholders (`$1`, `$2`, etc.)**: First inlet is hot (`$1`), rest are cold (`$2`, `$3`, etc.). Cold inlets store values without triggering. Send values to cold inlets first, then trigger via the hot inlet. Use [the trigger object](#the-trigger-object) to do this.
+- **2+ placeholders (`$1`, `$2`, etc.)**: First inlet is hot (`$1`), rest are cold (`$2`, `$3`, etc.). Cold inlets store values without triggering. Send values to cold inlets first, then trigger via the hot inlet. Use [the trigger object](#trigger-sends-messages-in-right-to-left-order) to do this.
 
 ### `slider`: numerical value slider
 
@@ -987,7 +987,7 @@ These objects run on _control rate_, which means they process messages (control 
 - `adsr`: [ADSR envelope generator](#adsr-adsr-envelope-generator)
 - `spigot`: Message gate that allows or blocks data based on a condition
 
-#### The `trigger` object
+#### `trigger`: sends messages in right-to-left order
 
 The `trigger` object (shorthand: `t`) is essential for controlling message order and working with hot/cold inlets. It sends messages through multiple outlets in **right-to-left order**.
 
