@@ -4,11 +4,11 @@ import type {
 	RenderGraph,
 	RenderNode,
 	FBONode,
-	PreviewState,
 	RenderFunction,
 	UserParam
 } from '../../lib/rendering/types';
-import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR, WEBGL_EXTENSIONS } from '$lib/canvas/constants';
+import { DEFAULT_OUTPUT_SIZE, WEBGL_EXTENSIONS } from '$lib/canvas/constants';
+import { PreviewRenderer } from './PreviewRenderer';
 import { match, P } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
@@ -30,11 +30,6 @@ import { RenderingProfiler } from './RenderingProfiler.js';
 export class FBORenderer {
 	public outputSize = DEFAULT_OUTPUT_SIZE;
 
-	public previewSize: [width: number, height: number] = [
-		this.outputSize[0] / PREVIEW_SCALE_FACTOR,
-		this.outputSize[1] / PREVIEW_SCALE_FACTOR
-	];
-
 	public renderGraph: RenderGraph | null = null;
 	public outputNodeId: string | null = null;
 
@@ -43,7 +38,7 @@ export class FBORenderer {
 	public isAnimating: boolean = false;
 
 	public offscreenCanvas: OffscreenCanvas;
-	public gl: WebGL2RenderingContext | null = null;
+	public gl: WebGL2RenderingContext;
 	public regl: regl.Regl;
 
 	// Mapping of nodeId -> uniform key -> uniform value
@@ -79,25 +74,11 @@ export class FBORenderer {
 	/** Profiler for frame timing and regl.read() metrics */
 	public profiler = new RenderingProfiler();
 	private startTime: number = Date.now();
-	private previewState: PreviewState = {};
 	private frameCancellable: regl.Cancellable | null = null;
 	public jsRunner = JSRunner.getInstance();
 
-	/**
-	 * Max previews to render per frame when output is enabled (0 = unlimited)
-	 *
-	 * We use `regl.read()` to get the pixels for the previews and it takes
-	 * 3ms per node. We can't afford to render all previews every frame.
-	 **/
-	public maxPreviewsPerFrame = 4;
-
-	/**
-	 * Max previews to render per frame when output is disabled.
-	 * We can afford more since we skip the output bitmap read.
-	 */
-	public maxPreviewsPerFrameNoOutput = 10;
-
-	private previewRoundRobinIndex = 0;
+	/** Preview renderer with async PBO reads */
+	public previewRenderer: PreviewRenderer;
 
 	constructor() {
 		const [width, height] = this.outputSize;
@@ -111,6 +92,8 @@ export class FBORenderer {
 			height: 1,
 			data: new Uint8Array([0, 0, 0, 0])
 		});
+
+		this.previewRenderer = new PreviewRenderer(this.gl, this.regl, this.profiler, this.outputSize);
 	}
 
 	/** Build FBOs for all nodes in the render graph */
@@ -170,8 +153,10 @@ export class FBORenderer {
 			// Do not send previews back to external texture nodes,
 			// as the texture is managed by the node on the frontend.
 			const defaultPreviewEnabled = !isExternalTextureNode(node.type);
-			this.previewState[node.id] = defaultPreviewEnabled;
+			this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
 		}
+
+		this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
 	}
 
 	// Some nodes are externally managed, e.g. the texture will be uploaded on it.
@@ -558,10 +543,8 @@ export class FBORenderer {
 	}
 
 	setPreviewEnabled(nodeId: string, enabled: boolean) {
-		this.previewState[nodeId] = enabled;
-
-		const enabledPreviews = this.getEnabledPreviews() ?? [];
-		this.shouldProcessPreviews = enabledPreviews.length > 0;
+		this.previewRenderer.setPreviewEnabled(nodeId, enabled);
+		this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
 	}
 
 	/** Toggle pause state for a node */
@@ -582,7 +565,7 @@ export class FBORenderer {
 
 	/** Get list of nodes with preview enabled */
 	getEnabledPreviews(): string[] {
-		return Object.keys(this.previewState).filter((nodeId) => this.previewState[nodeId]);
+		return this.previewRenderer.getEnabledPreviews();
 	}
 
 	/** Render a single frame using the render graph */
@@ -701,173 +684,23 @@ export class FBORenderer {
 
 	/**
 	 * Render previews for enabled nodes and return ImageBitmaps directly.
-	 * This is more efficient than returning raw pixels because:
-	 * 1. ImageBitmap creation happens in the worker (off main thread)
-	 * 2. ImageBitmap can be transferred zero-copy to main thread
-	 * 3. Main thread just calls transferFromImageBitmap() - no conversion needed
+	 * Uses async PBO reads - returns bitmaps from *previous* frame's reads
+	 * while initiating new reads for the current frame.
 	 *
-	 * If maxPreviewsPerFrame > 0, only renders that many previews per frame
-	 * using round-robin to ensure all previews eventually update.
+	 * This introduces 1 frame of latency but eliminates GPU stalls (~3ms per read).
 	 */
 	renderPreviewBitmaps(): Map<string, ImageBitmap> {
-		const previewBitmaps = new Map<string, ImageBitmap>();
-		const enabledPreviews = this.getEnabledPreviews();
-
-		if (enabledPreviews.length === 0) return previewBitmaps;
-
-		// Use higher limit when output is disabled (no output bitmap read)
-		const maxPreviewLimit = this.isOutputEnabled
-			? this.maxPreviewsPerFrame
-			: this.maxPreviewsPerFrameNoOutput;
-
-		// Determine which previews to render this frame
-		let previewsToRender: string[];
-
-		if (maxPreviewLimit > 0 && enabledPreviews.length > maxPreviewLimit) {
-			// Round-robin: render maxPreviews starting from current index
-			previewsToRender = [];
-
-			for (let i = 0; i < maxPreviewLimit; i++) {
-				const idx = (this.previewRoundRobinIndex + i) % enabledPreviews.length;
-				previewsToRender.push(enabledPreviews[idx]);
-			}
-
-			this.previewRoundRobinIndex =
-				(this.previewRoundRobinIndex + maxPreviewLimit) % enabledPreviews.length;
-		} else {
-			previewsToRender = enabledPreviews;
-		}
-
-		for (const nodeId of previewsToRender) {
-			const fboNode = this.fboNodes.get(nodeId);
-			if (!fboNode) continue;
-
-			let customSize: [number, number] | undefined = undefined;
-
-			if (this.canvasByNode.has(nodeId)) {
-				customSize = this.canvasOutputSize;
-			}
-
-			const bitmap = this.renderNodePreviewBitmap(fboNode, customSize);
-			if (!bitmap) continue;
-
-			previewBitmaps.set(nodeId, bitmap);
-		}
-
-		return previewBitmaps;
+		return this.previewRenderer.renderPreviewBitmaps(
+			this.fboNodes,
+			this.isOutputEnabled,
+			(nodeId) => (this.canvasByNode.has(nodeId) ? this.canvasOutputSize : undefined)
+		);
 	}
 
 	// HACK: use a different preview size for canvas nodes
 	// this is to make the canvas preview looks sharper
 	get canvasOutputSize(): [number, number] {
 		return [this.outputSize[0] / 2, this.outputSize[1] / 2];
-	}
-
-	/** Cache of OffscreenCanvas + context for preview output */
-	private previewCanvasCache = new Map<
-		string,
-		{ canvas: OffscreenCanvas; ctx: OffscreenCanvasRenderingContext2D }
-	>();
-
-	/**
-	 * Get or create cached canvas for a given size.
-	 */
-	private getPreviewCanvas(width: number, height: number) {
-		const cacheKey = `${width}x${height}`;
-
-		let cached = this.previewCanvasCache.get(cacheKey);
-		if (!cached) {
-			const canvas = new OffscreenCanvas(width, height);
-			const ctx = canvas.getContext('2d')!;
-			cached = { canvas, ctx };
-			this.previewCanvasCache.set(cacheKey, cached);
-		}
-
-		return cached;
-	}
-
-	/**
-	 * Render a single node's preview and return an ImageBitmap.
-	 * This is more efficient than renderNodePreview because:
-	 * - ImageBitmap creation happens in the worker
-	 * - The bitmap can be transferred zero-copy to the main thread
-	 */
-	public renderNodePreviewBitmap(
-		fboNode: FBONode,
-		customSize?: [number, number]
-	): ImageBitmap | null {
-		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
-		const [renderWidth, renderHeight] = this.outputSize;
-
-		const { canvas, ctx } = this.getPreviewCanvas(previewWidth, previewHeight);
-
-		const previewTexture = this.regl.texture({
-			width: previewWidth,
-			height: previewHeight,
-			wrapS: 'clamp',
-			wrapT: 'clamp'
-		});
-
-		const previewFramebuffer = this.regl.framebuffer({
-			color: previewTexture,
-			depthStencil: false
-		});
-
-		let pixels: Uint8Array;
-
-		previewFramebuffer.use(() => {
-			const gl = this.regl._gl as WebGL2RenderingContext;
-			const sourceFBO = getFramebuffer(fboNode.framebuffer);
-			const destPreviewFBO = getFramebuffer(previewFramebuffer);
-
-			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
-			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
-
-			// FlipY during blit by swapping destination Y coordinates (GPU-accelerated)
-			gl.blitFramebuffer(
-				0,
-				0,
-				renderWidth,
-				renderHeight,
-				0,
-				previewHeight, // dst Y0 = height (flipped)
-				previewWidth,
-				0, // dst Y1 = 0 (flipped)
-				gl.COLOR_BUFFER_BIT,
-				gl.LINEAR
-			);
-
-			pixels = this.timedReglRead();
-
-			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-		});
-
-		previewTexture.destroy();
-		previewFramebuffer.destroy();
-
-		// Put pixels directly to canvas (already flipped by GPU)
-		const imageData = new ImageData(new Uint8ClampedArray(pixels!), previewWidth, previewHeight);
-		ctx.putImageData(imageData, 0, 0);
-
-		return canvas.transferToImageBitmap();
-	}
-
-	// ===== Profiling Delegation =====
-
-	/** Time a regl.read() call and record it for profiling */
-	private timedReglRead(): Uint8Array {
-		if (!this.profiler.isEnabled) {
-			return this.regl.read() as Uint8Array;
-		}
-
-		const start = performance.now();
-		const pixels = this.regl.read() as Uint8Array;
-		const elapsed = performance.now() - start;
-
-		this.profiler.recordReglRead(elapsed);
-
-		return pixels;
 	}
 
 	/** Enable/disable frame profiling */
@@ -985,8 +818,7 @@ export class FBORenderer {
 	}
 
 	async setPreviewSize(width: number, height: number) {
-		this.previewSize = [width, height] as [w: number, h: number];
-
+		this.previewRenderer.setPreviewSize(width, height);
 		await this.buildFBOs(this.renderGraph!);
 	}
 
@@ -1000,6 +832,9 @@ export class FBORenderer {
 
 		this.offscreenCanvas.width = width;
 		this.offscreenCanvas.height = height;
+
+		// Update preview renderer's output size reference
+		this.previewRenderer.setOutputSize(this.outputSize);
 	}
 
 	/**
@@ -1164,62 +999,32 @@ export class FBORenderer {
 	/**
 	 * Captures a preview frame as an ImageBitmap (ready for zero-copy transfer).
 	 * Handles both FBO nodes and external texture nodes.
+	 * This is a synchronous capture for on-demand use (export, Gemini, etc.)
 	 */
 	capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
 		const externalTexture = this.externalTexturesByNode.get(nodeId);
 		if (externalTexture) {
-			return this.renderTextureBitmap(externalTexture, customSize);
+			const sourceFbo = this.regl.framebuffer({ color: externalTexture });
+			const bitmap = this.previewRenderer.capturePreviewBitmapSync(
+				sourceFbo,
+				externalTexture.width,
+				externalTexture.height,
+				customSize
+			);
+			sourceFbo.destroy();
+			return bitmap;
 		}
 
 		const fboNode = this.fboNodes.get(nodeId);
 		if (!fboNode) return null;
 
-		return this.renderNodePreviewBitmap(fboNode, customSize);
-	}
-
-	/**
-	 * Render an external texture as an ImageBitmap with GPU-accelerated flip.
-	 */
-	private renderTextureBitmap(texture: regl.Texture2D, customSize?: [number, number]): ImageBitmap {
-		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
-		const { canvas, ctx } = this.getPreviewCanvas(previewWidth, previewHeight);
-
-		const sourceFbo = this.regl.framebuffer({ color: texture });
-		const previewFbo = this.regl.framebuffer({ width: previewWidth, height: previewHeight });
-		const gl = this.regl._gl as WebGL2RenderingContext;
-
-		let pixels: Uint8Array;
-
-		previewFbo.use(() => {
-			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo));
-			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(previewFbo));
-
-			// FlipY during blit by swapping destination Y coordinates (GPU-accelerated)
-			gl.blitFramebuffer(
-				0,
-				0,
-				texture.width,
-				texture.height,
-				0,
-				previewHeight, // dst Y0 = height (flipped)
-				previewWidth,
-				0, // dst Y1 = 0 (flipped)
-				gl.COLOR_BUFFER_BIT,
-				gl.LINEAR
-			);
-
-			pixels = this.timedReglRead();
-		});
-
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-		sourceFbo.destroy();
-		previewFbo.destroy();
-
-		// Put pixels directly to canvas (already flipped by GPU)
-		const imageData = new ImageData(new Uint8ClampedArray(pixels!), previewWidth, previewHeight);
-		ctx.putImageData(imageData, 0, 0);
-
-		return canvas.transferToImageBitmap();
+		const [sourceWidth, sourceHeight] = this.outputSize;
+		return this.previewRenderer.capturePreviewBitmapSync(
+			fboNode.framebuffer,
+			sourceWidth,
+			sourceHeight,
+			customSize
+		);
 	}
 
 	/** Update JS module in the worker's JSRunner instance */

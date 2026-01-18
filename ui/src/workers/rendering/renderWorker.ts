@@ -51,11 +51,11 @@ self.onmessage = (event) => {
 			console.log('setMax::hasOutputNode', fboRenderer.isOutputEnabled);
 
 			if (data.max !== undefined) {
-				fboRenderer.maxPreviewsPerFrame = data.max;
+				fboRenderer.previewRenderer.maxPreviewsPerFrame = data.max;
 			}
 
 			if (data.maxNoOutput !== undefined) {
-				fboRenderer.maxPreviewsPerFrameNoOutput = data.maxNoOutput;
+				fboRenderer.previewRenderer.maxPreviewsPerFrameNoOutput = data.maxNoOutput;
 			}
 		});
 };
