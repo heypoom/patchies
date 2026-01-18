@@ -15,7 +15,8 @@
 	import {
 		isUnmodifiableType,
 		parseObjectParamFromString,
-		stringifyParamByType
+		stringifyParamByType,
+		getDecimalPrecision
 	} from '$lib/objects/parse-object-param';
 	import { validateMessageToObject } from '$lib/objects/validate-object-message';
 	import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
@@ -53,6 +54,9 @@
 	let originalName = data.expr || ''; // Store original name for escape functionality
 
 	let isAutomated = $state<Record<number, boolean>>({});
+
+	// Track highest precision seen per inlet for stable display width
+	let stickyPrecision = $state<Record<number, number>>({});
 
 	// Track object instance version to trigger re-evaluation of outlets
 	let objectInstanceVersion = $state(0);
@@ -108,6 +112,26 @@
 		if (!objectMeta) return [];
 
 		return objectMeta.inlets || [];
+	});
+
+	// Update sticky precision when params change (for stable display width)
+	$effect(() => {
+		data.params.forEach((param, index) => {
+			const inlet = inlets[index];
+
+			if (
+				inlet?.type === 'float' &&
+				inlet.maxPrecision !== undefined &&
+				typeof param === 'number'
+			) {
+				const currentPrecision = getDecimalPrecision(param, inlet.maxPrecision);
+				const existing = stickyPrecision[index] ?? 0;
+
+				if (currentPrecision > existing) {
+					stickyPrecision[index] = currentPrecision;
+				}
+			}
+		});
 	});
 
 	// Dynamic outlets based on object definition
@@ -190,6 +214,7 @@
 	function exitEditingMode(save: boolean = true) {
 		isEditing = false;
 		showAutocomplete = false;
+		stickyPrecision = {};
 
 		if (!save) {
 			// Restore original name on escape
@@ -710,10 +735,13 @@
 														{#if isAutomated[index]}
 															{getShortInletName(index)}
 														{:else}
-															{stringifyParamByType(inlets[index], param, index)}
+															{stringifyParamByType(inlets[index], param, index, {
+																stickyPrecision: stickyPrecision[index]
+															})}
 														{/if}
 													</span>
 												</Tooltip.Trigger>
+
 												<Tooltip.Content>
 													<p>{getInletHint(index)}</p>
 

@@ -73,7 +73,8 @@ export const isUnmodifiableType = (type?: ObjectDataType) =>
 export const stringifyParamByType = (
 	inlet: ObjectInlet | undefined,
 	value: unknown,
-	index: number
+	index: number,
+	{ stickyPrecision }: { stickyPrecision?: number } = {}
 ) => {
 	if (!inlet?.type) return String(value);
 
@@ -96,6 +97,11 @@ export const stringifyParamByType = (
 			// always use n floating point
 			if (inlet.precision !== undefined) {
 				return (value as number)?.toFixed(inlet.precision);
+			}
+
+			// If sticky precision is set, pad to that precision
+			if (stickyPrecision !== undefined && stickyPrecision > 0) {
+				return (value as number)?.toFixed(stickyPrecision);
 			}
 
 			// allow up to n floating point
@@ -158,4 +164,19 @@ function formatFloatingPoint(num: number, precision = 0): number {
 	const k = Math.pow(10, precision);
 
 	return Math.round(num * k) / k;
+}
+
+/**
+ * Get the decimal precision of a number (capped at maxPrecision).
+ * e.g., 4.1 -> 1, 4.1234 -> 4, 4 -> 0
+ */
+export function getDecimalPrecision(num: number, maxPrecision: number): number {
+	if (!Number.isFinite(num) || num % 1 === 0) return 0;
+
+	const str = String(num);
+	const decimalIndex = str.indexOf('.');
+	if (decimalIndex === -1) return 0;
+
+	const precision = str.length - decimalIndex - 1;
+	return Math.min(precision, maxPrecision);
 }
