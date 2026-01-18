@@ -16,7 +16,7 @@ export interface CategoryGroup {
 /**
  * Manual descriptions for visual nodes and other special nodes
  */
-const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
+export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
 	p5: 'P5.js creative coding canvas for generative graphics',
 	hydra: 'Live coding video synthesizer with feedback loops',
 	glsl: 'GLSL fragment shader for GPU-accelerated graphics',
