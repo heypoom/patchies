@@ -11,10 +11,13 @@ export interface ViewportBounds {
 export interface ViewportCullingConfig {
 	/** Extra padding in pixels around viewport to avoid flickering at edges */
 	margin: number;
+
 	/** Throttle interval in ms for viewport change updates */
 	throttleMs: number;
+
 	/** Default width for nodes without measured dimensions */
 	defaultNodeWidth: number;
+
 	/** Default height for nodes without measured dimensions */
 	defaultNodeHeight: number;
 }
