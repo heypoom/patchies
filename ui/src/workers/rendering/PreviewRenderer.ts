@@ -41,8 +41,8 @@ export class PreviewRenderer {
 	public previewSize: [number, number];
 
 	// Throttling configuration
-	public maxPreviewsPerFrame = DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT;
-	public maxPreviewsPerFrameNoOutput = DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT;
+	public maxPreviewsPerFrame = DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT;
+	public maxPreviewsPerFrameNoOutput = DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT;
 
 	// Frame rate limiting for previews (in ms)
 	private previewIntervalMs = Math.round(1000 / DEFAULT_PREVIEW_MAX_FPS_CAP);
