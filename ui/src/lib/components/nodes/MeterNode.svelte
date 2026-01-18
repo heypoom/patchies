@@ -187,7 +187,10 @@
 
 		<canvas
 			bind:this={canvas}
-			class="rounded border border-zinc-600 bg-zinc-900"
+			class={[
+				'rounded border bg-zinc-900',
+				node.selected ? 'object-container-selected' : 'border-zinc-600'
+			]}
 			style="width: {CANVAS_WIDTH}px; height: {CANVAS_HEIGHT}px;"
 		></canvas>
 
