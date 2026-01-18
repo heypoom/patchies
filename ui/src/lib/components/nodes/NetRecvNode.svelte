@@ -20,6 +20,7 @@
 	let channel = $derived(data.channel || '1');
 	let showChannelInput = $state(false);
 	let peerCount = $state(0);
+	let isConnected = $state(false);
 	let messagesReceived = $state(0);
 	let lastMessage = $state<unknown>(null);
 	let unsubscribe: (() => void) | null = null;
@@ -29,9 +30,10 @@
 		messageContext.queue.addCallback(handleMessage);
 		subscribeToChannel();
 
-		// Update peer count periodically
+		// Update connection state periodically
 		const interval = setInterval(() => {
 			peerCount = p2pManager.getPeerCount();
+			isConnected = p2pManager.isConnected();
 		}, 1000);
 
 		return () => {
@@ -79,15 +81,15 @@
 	};
 
 	const borderColor = $derived.by(() => {
-		if (selected && peerCount === 0) return 'border-gray-100';
+		if (selected && !isConnected) return 'border-gray-100';
 		if (selected) return 'border-blue-400';
-		if (peerCount === 0) return 'border-gray-500';
+		if (!isConnected) return 'border-gray-500';
 
 		return 'border-blue-600';
 	});
 
 	const textClass = $derived.by(() => {
-		if (peerCount === 0) return 'text-gray-400';
+		if (!isConnected) return 'text-gray-400';
 
 		return 'text-blue-200';
 	});
