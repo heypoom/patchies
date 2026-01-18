@@ -490,9 +490,6 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 [Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
 
-> [!CAUTION]
-> If you create too many `textmode` or `textmode.dom` objects, your browser will crash with `Too many active WebGL contexts. Oldest context will be lost`. It seems like textmode might not be sharing the WebGL contexts across `TextModifier` instances.
-
 - There are two flavors of textmode objects with a few differences:
 
   - `textmode`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Features such as mouse interactivity, images/videos and fonts are NOT supported.
@@ -536,6 +533,9 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
     }
   });
   ```
+
+> [!CAUTION]
+> If you create too many `textmode` or `textmode.dom` objects, your browser will crash with `Too many active WebGL contexts. Oldest context will be lost`. It seems like textmode might not be sharing the WebGL contexts across `TextModifier` instances.
 
 - You can use the [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.js) plugin to apply image filters, e.g. `tm.layers.base.filter('brightness', 1.3)`
 
