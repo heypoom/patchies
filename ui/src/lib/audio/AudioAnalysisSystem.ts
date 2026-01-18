@@ -181,6 +181,7 @@ export class AudioAnalysisSystem {
 	updateEdges(edges: Edge[]) {
 		this.fftConnectionCache.clear();
 		this.glslInlets.clear();
+		this.arrayPool.clear();
 
 		for (const edge of edges) {
 			this.setupGlslPolling(edge);
@@ -270,8 +271,26 @@ export class AudioAnalysisSystem {
 		this.requestedFFTFormats.delete(nodeId);
 		this.glslInlets.delete(nodeId);
 
+		// Clean up pooled arrays for this node to prevent memory leaks
+		this.clearArrayPoolForNode(nodeId);
+
 		if (this.fftEnabledNodes.size === 0) {
 			this.stopFFTPolling();
+		}
+	}
+
+	/** Remove pooled arrays associated with a specific node */
+	private clearArrayPoolForNode(nodeId: string): void {
+		const keysToDelete: string[] = [];
+
+		for (const key of this.arrayPool.keys()) {
+			if (key.startsWith(nodeId + '-')) {
+				keysToDelete.push(key);
+			}
+		}
+
+		for (const key of keysToDelete) {
+			this.arrayPool.delete(key);
 		}
 	}
 
