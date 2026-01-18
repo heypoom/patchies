@@ -240,7 +240,7 @@
 		},
 		{
 			"id": "evxzuqh67xa63h5",
-			"name": "Y-Flip Consistency Matrix (Pipeline)",
+			"name": "Y-Flip Pipeline Test",
 			"description": "Same as the Y-Flip Consistency Matrix patch, but only for nodes on the rendering pipeline",
 			"category": "Dev Patches",
 			"author": "@heypoom"
