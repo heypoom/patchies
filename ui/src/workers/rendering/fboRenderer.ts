@@ -742,8 +742,28 @@ export class FBORenderer {
 		return [this.outputSize[0] / 2, this.outputSize[1] / 2];
 	}
 
-	/** Cache of OffscreenCanvas per preview size for reuse */
-	private previewCanvasCache = new Map<string, OffscreenCanvas>();
+	/** Cache of OffscreenCanvas + context for preview output */
+	private previewCanvasCache = new Map<
+		string,
+		{ canvas: OffscreenCanvas; ctx: OffscreenCanvasRenderingContext2D }
+	>();
+
+	/**
+	 * Get or create cached canvas for a given size.
+	 */
+	private getPreviewCanvas(width: number, height: number) {
+		const cacheKey = `${width}x${height}`;
+
+		let cached = this.previewCanvasCache.get(cacheKey);
+		if (!cached) {
+			const canvas = new OffscreenCanvas(width, height);
+			const ctx = canvas.getContext('2d')!;
+			cached = { canvas, ctx };
+			this.previewCanvasCache.set(cacheKey, cached);
+		}
+
+		return cached;
+	}
 
 	/**
 	 * Render a single node's preview and return an ImageBitmap.
@@ -758,14 +778,7 @@ export class FBORenderer {
 		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
 		const [renderWidth, renderHeight] = this.outputSize;
 
-		// Get or create a cached OffscreenCanvas for this size
-		const cacheKey = `${previewWidth}x${previewHeight}`;
-		let previewCanvas = this.previewCanvasCache.get(cacheKey);
-
-		if (!previewCanvas) {
-			previewCanvas = new OffscreenCanvas(previewWidth, previewHeight);
-			this.previewCanvasCache.set(cacheKey, previewCanvas);
-		}
+		const { canvas, ctx } = this.getPreviewCanvas(previewWidth, previewHeight);
 
 		const previewTexture = this.regl.texture({
 			width: previewWidth,
@@ -789,15 +802,16 @@ export class FBORenderer {
 			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
 			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
 
+			// FlipY during blit by swapping destination Y coordinates (GPU-accelerated)
 			gl.blitFramebuffer(
 				0,
 				0,
 				renderWidth,
 				renderHeight,
 				0,
-				0,
+				previewHeight, // dst Y0 = height (flipped)
 				previewWidth,
-				previewHeight,
+				0, // dst Y1 = 0 (flipped)
 				gl.COLOR_BUFFER_BIT,
 				gl.LINEAR
 			);
@@ -811,20 +825,11 @@ export class FBORenderer {
 		previewTexture.destroy();
 		previewFramebuffer.destroy();
 
-		// Create ImageData and draw to OffscreenCanvas
+		// Put pixels directly to canvas (already flipped by GPU)
 		const imageData = new ImageData(new Uint8ClampedArray(pixels!), previewWidth, previewHeight);
-		const ctx = previewCanvas.getContext('2d')!;
-
-		// Clear and draw with flipY transformation to match standard screen coordinates
-		ctx.save();
-		ctx.clearRect(0, 0, previewWidth, previewHeight);
-		ctx.translate(0, previewHeight);
-		ctx.scale(1, -1);
 		ctx.putImageData(imageData, 0, 0);
-		ctx.restore();
 
-		// Transfer bitmap - this is a fast GPU operation
-		return previewCanvas.transferToImageBitmap();
+		return canvas.transferToImageBitmap();
 	}
 
 	/**
