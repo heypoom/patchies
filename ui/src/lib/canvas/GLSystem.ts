@@ -74,7 +74,7 @@ export class GLSystem {
 	}
 
 	handleRenderWorkerMessage = (event: MessageEvent<RenderWorkerMessage>) => {
-		const { data } = event;
+		const data = event.data;
 		if (!data) return;
 
 		if (data.type === 'previewFrame') {
