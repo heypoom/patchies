@@ -895,7 +895,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 
 <img src="./docs/images/strudel-haunted.webp" alt="Patchies.app strudel demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=30r7xvc378f59sz)!
+> ✨ Try this patch out [in the app](https://patchies.app/?id=rtjfuwsnvame8bb)!
 
 - [Strudel](https://strudel.cc) is a live coding environment based on TidalCycles. You can use it to expressively write dynamic music pieces, as well as create complex audio patterns and effects.
 - See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
