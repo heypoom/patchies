@@ -1134,6 +1134,51 @@ The `sampler~` object records audio from connected sources into a buffer and pla
 - `{type: 'setDetune', value: 1200}` - pitch up one octave
 - `{type: 'setDetune', value: -1200}` - pitch down one octave
 
+### `adsr`: ADSR envelope generator
+
+<img src="./docs/images/simple-synth-keyboard.webp" alt="Patchies.app simple synth keyboard demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=geb2h5sc6pf2uj2)! This is a sampler that changes the playback speed depending on which notes you pressed.
+
+The `adsr` object generates ADSR envelope messages for controlling audio parameters (like gain). It has 6 inlets:
+
+1. **trigger**: `1` triggers attack→decay→sustain, `0` triggers release
+2. **peak**: peak amplitude (default: 1)
+3. **attack**: attack time in ms (default: 100)
+4. **decay**: decay time in ms (default: 200)
+5. **sustain**: sustain level (default: 0.5)
+6. **release**: release time in ms (default: 300)
+
+Connect the output to an audio parameter inlet (e.g., `gain~`'s gain inlet) to automate the parameter.
+
+#### Scheduled Parameter Messages
+
+Under the hood, `adsr` sends **scheduled messages** that automate audio parameters. You can also send these directly from `js` nodes. For example, the `midi-adsr-gain.js` preset shows how you can use MIDI messages to automate the gain parameter.
+
+```ts
+// Trigger envelope (attack → decay → sustain)
+send({
+  type: 'trigger',
+  values: { start: 0, peak: 1, sustain: 0.7 },
+  attack: { time: 0.02 },  // seconds
+  decay: { time: 0.1 }
+})
+
+// Release envelope
+send({ type: 'release', release: { time: 0.3 }, endValue: 0 })
+
+// Set value immediately
+send({ type: 'set', value: 0.5 })
+
+// Set value at a future time (relative, in 0.5s from now)
+send({ type: 'set', value: 0.5, time: 0.5 })
+
+// Set value at absolute audio context time
+send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' })
+```
+
+Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'` (default: linear).
+
 ### `expr~`: audio-rate mathematical expression evaluator
 
 - Similar to `expr` but runs at audio rate for audio signal processing.

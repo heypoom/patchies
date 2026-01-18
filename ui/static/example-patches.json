@@ -86,7 +86,7 @@
 		},
 		{
 			"id": "geb2h5sc6pf2uj2",
-			"name": "Oscillator Keyboard",
+			"name": "Simple Synth Keyboard",
 			"description": "A simple synth made with virtual midi keyboard, osc~, trigger, expr, adsr, mtof and gain~",
 			"category": "Audio",
 			"author": "@heypoom"
