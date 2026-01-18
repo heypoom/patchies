@@ -2,8 +2,14 @@ import { match } from 'ts-pattern';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
 import { AudioService } from './v2/AudioService';
-import { ANALYSIS_KEY, GLSL_FFT_WAVEFORM_UNIFORM_NAME } from './v2/constants/fft';
+import {
+	ANALYSIS_KEY,
+	FFT_POLLING_FPS_FOCUSED,
+	FFT_POLLING_FPS_UNFOCUSED,
+	GLSL_FFT_WAVEFORM_UNIFORM_NAME
+} from './v2/constants/fft';
 import { getObjectType } from '$lib/objects/get-type';
+import { BrowserFocusService } from '$lib/browser/BrowserFocusService';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
@@ -56,14 +62,11 @@ export type GlslFFTInletMeta = {
 	uniformName: string;
 };
 
-// FFT polling rates
-const FFT_POLLING_FPS_FOCUSED = 24;
-const FFT_POLLING_FPS_UNFOCUSED = 6;
-
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
 	private audioService = AudioService.getInstance();
 	private messageSystem = MessageSystem.getInstance();
+	private browserFocus = BrowserFocusService.getInstance();
 
 	// Cache for FFT node connections: nodeId -> fftNodeId
 	private fftConnectionCache = new Map<string, string | null>();
@@ -86,11 +89,8 @@ export class AudioAnalysisSystem {
 	/** Object pool for typed arrays to avoid allocations on every poll */
 	private arrayPool = new Map<string, Uint8Array | Float32Array>();
 
-	/** Track if window is focused for adaptive polling rate */
-	private isWindowFocused = true;
-	private visibilityChangeHandler: (() => void) | null = null;
-	private focusHandler: (() => void) | null = null;
-	private blurHandler: (() => void) | null = null;
+	/** Unsubscribe function for focus listener */
+	private unsubscribeFocus: (() => void) | null = null;
 
 	private getPooledArray(
 		analyzerNodeId: string,
@@ -288,10 +288,20 @@ export class AudioAnalysisSystem {
 	private startFFTPolling() {
 		if (this.fftPollingInterval !== null) return;
 
-		const fps = this.isWindowFocused ? FFT_POLLING_FPS_FOCUSED : FFT_POLLING_FPS_UNFOCUSED;
+		const fps = this.browserFocus.isWindowFocused
+			? FFT_POLLING_FPS_FOCUSED
+			: FFT_POLLING_FPS_UNFOCUSED;
+
 		this.fftPollingInterval = window.setInterval(() => {
 			this.pollAndTransferFFTData();
 		}, 1000 / fps);
+
+		// Subscribe to focus changes if not already subscribed
+		if (!this.unsubscribeFocus) {
+			this.unsubscribeFocus = this.browserFocus.onFocusChange(() => {
+				this.restartPollingWithNewRate();
+			});
+		}
 	}
 
 	/** Stop FFT polling when no Hydra nodes need it */
@@ -300,12 +310,18 @@ export class AudioAnalysisSystem {
 			clearInterval(this.fftPollingInterval);
 			this.fftPollingInterval = null;
 		}
+
+		// Unsubscribe from focus changes
+		if (this.unsubscribeFocus) {
+			this.unsubscribeFocus();
+			this.unsubscribeFocus = null;
+		}
 	}
 
 	/** Poll FFT data and transfer it to Hydra and GLSL renderers. */
 	private pollAndTransferFFTData() {
 		// Skip polling entirely when tab is hidden - no one can see the visualizations anyway
-		if (document.hidden) return;
+		if (!this.browserFocus.isDocumentVisible) return;
 
 		if (!this.onFFTDataReady) return;
 
@@ -354,46 +370,6 @@ export class AudioAnalysisSystem {
 		return this.audioService.getAudioContext().sampleRate;
 	}
 
-	/** Initialize visibility and focus event listeners for adaptive polling */
-	initVisibilityListeners(): void {
-		if (this.visibilityChangeHandler) return; // Already initialized
-
-		this.visibilityChangeHandler = () => {
-			// When tab becomes hidden, we'll skip polling in pollAndTransferFFTData
-			// When tab becomes visible again, polling continues normally
-		};
-
-		this.focusHandler = () => {
-			this.isWindowFocused = true;
-			this.restartPollingWithNewRate();
-		};
-
-		this.blurHandler = () => {
-			this.isWindowFocused = false;
-			this.restartPollingWithNewRate();
-		};
-
-		document.addEventListener('visibilitychange', this.visibilityChangeHandler);
-		window.addEventListener('focus', this.focusHandler);
-		window.addEventListener('blur', this.blurHandler);
-	}
-
-	/** Cleanup visibility and focus event listeners */
-	destroyVisibilityListeners(): void {
-		if (this.visibilityChangeHandler) {
-			document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
-			this.visibilityChangeHandler = null;
-		}
-		if (this.focusHandler) {
-			window.removeEventListener('focus', this.focusHandler);
-			this.focusHandler = null;
-		}
-		if (this.blurHandler) {
-			window.removeEventListener('blur', this.blurHandler);
-			this.blurHandler = null;
-		}
-	}
-
 	/** Restart polling with the appropriate rate based on focus state */
 	private restartPollingWithNewRate(): void {
 		if (this.fftPollingInterval === null) return;
@@ -403,7 +379,9 @@ export class AudioAnalysisSystem {
 		this.fftPollingInterval = null;
 
 		// Restart with new rate
-		const fps = this.isWindowFocused ? FFT_POLLING_FPS_FOCUSED : FFT_POLLING_FPS_UNFOCUSED;
+		const fps = this.browserFocus.isWindowFocused
+			? FFT_POLLING_FPS_FOCUSED
+			: FFT_POLLING_FPS_UNFOCUSED;
 		this.fftPollingInterval = window.setInterval(() => {
 			this.pollAndTransferFFTData();
 		}, 1000 / fps);
@@ -412,7 +390,6 @@ export class AudioAnalysisSystem {
 	static getInstance(): AudioAnalysisSystem {
 		if (!AudioAnalysisSystem.instance) {
 			AudioAnalysisSystem.instance = new AudioAnalysisSystem();
-			AudioAnalysisSystem.instance.initVisibilityListeners();
 		}
 
 		return AudioAnalysisSystem.instance;
