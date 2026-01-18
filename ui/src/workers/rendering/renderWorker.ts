@@ -41,7 +41,14 @@ self.onmessage = (event) => {
 		.with('updateThree', () => handleUpdateThree(data.nodeId))
 		.with('setFFTData', () => handleSetFFTData(data))
 		.with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
-		.with('benchmarkPreviews', () => fboRenderer.benchmarkPreviewMethods(data.iterations));
+		.with('enableProfiling', () => fboRenderer.setProfilingEnabled(data.enabled))
+		.with('flushFrameStats', () => {
+			const stats = fboRenderer.flushFrameStats();
+			self.postMessage({ type: 'frameStats', stats });
+		})
+		.with('setMaxPreviewsPerFrame', () => {
+			fboRenderer.maxPreviewsPerFrame = data.max;
+		});
 };
 
 async function handleBuildRenderGraph(graph: RenderGraph) {
@@ -92,6 +99,9 @@ function handleStartAnimation() {
 				self.postMessage({ type: 'previewFrame', nodeId, bitmap }, { transfer: [bitmap] });
 			}
 		}
+
+		// Record frame timing for profiling
+		fboRenderer.recordFrameTime();
 	});
 }
 
@@ -171,22 +181,10 @@ function handleUpdateThree(nodeId: string) {
 	threeRenderer.updateCode();
 }
 
-async function handleCapturePreview(
-	nodeId: string,
-	requestId?: string,
-	customSize?: [number, number]
-) {
-	const [captureWidth, captureHeight] = customSize ?? fboRenderer.previewSize;
+function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [number, number]) {
+	const bitmap = fboRenderer.capturePreviewBitmap(nodeId, customSize);
 
-	const pixels = fboRenderer.getPreviewFrameCapture(nodeId, customSize);
-
-	if (pixels) {
-		const array = new Uint8ClampedArray(pixels.buffer);
-
-		// @ts-expect-error -- something is wrong with the typedef
-		const imageData = new ImageData(array, captureWidth, captureHeight);
-		const bitmap = await createImageBitmap(imageData);
-
+	if (bitmap) {
 		self.postMessage(
 			{
 				type: 'previewFrameCaptured',
@@ -197,7 +195,6 @@ async function handleCapturePreview(
 			},
 			{ transfer: [bitmap] }
 		);
-
 		return;
 	}
 

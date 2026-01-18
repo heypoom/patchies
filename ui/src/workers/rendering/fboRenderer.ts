@@ -25,6 +25,7 @@ import type {
 } from '$lib/audio/AudioAnalysisSystem.js';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
+import { RenderingProfiler } from './RenderingProfiler.js';
 
 export class FBORenderer {
 	public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -74,10 +75,23 @@ export class FBORenderer {
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
 	private frameCount: number = 0;
+
+	/** Profiler for frame timing and regl.read() metrics */
+	public profiler = new RenderingProfiler();
 	private startTime: number = Date.now();
 	private previewState: PreviewState = {};
 	private frameCancellable: regl.Cancellable | null = null;
 	public jsRunner = JSRunner.getInstance();
+
+	/**
+	 * Max previews to render per frame (0 = unlimited)
+	 *
+	 * We use `regl.read()` to get the pixels for the previews and it takes
+	 * 3ms per node. We can't afford to render all previews every frame.
+	 **/
+	public maxPreviewsPerFrame = 4;
+
+	private previewRoundRobinIndex = 0;
 
 	constructor() {
 		const [width, height] = this.outputSize;
@@ -685,12 +699,35 @@ export class FBORenderer {
 	 * 1. ImageBitmap creation happens in the worker (off main thread)
 	 * 2. ImageBitmap can be transferred zero-copy to main thread
 	 * 3. Main thread just calls transferFromImageBitmap() - no conversion needed
+	 *
+	 * If maxPreviewsPerFrame > 0, only renders that many previews per frame
+	 * using round-robin to ensure all previews eventually update.
 	 */
 	renderPreviewBitmaps(): Map<string, ImageBitmap> {
 		const previewBitmaps = new Map<string, ImageBitmap>();
 		const enabledPreviews = this.getEnabledPreviews();
 
-		for (const nodeId of enabledPreviews) {
+		if (enabledPreviews.length === 0) return previewBitmaps;
+
+		// Determine which previews to render this frame
+		let previewsToRender: string[];
+
+		if (this.maxPreviewsPerFrame > 0 && enabledPreviews.length > this.maxPreviewsPerFrame) {
+			// Round-robin: render maxPreviewsPerFrame starting from current index
+			previewsToRender = [];
+
+			for (let i = 0; i < this.maxPreviewsPerFrame; i++) {
+				const idx = (this.previewRoundRobinIndex + i) % enabledPreviews.length;
+				previewsToRender.push(enabledPreviews[idx]);
+			}
+
+			this.previewRoundRobinIndex =
+				(this.previewRoundRobinIndex + this.maxPreviewsPerFrame) % enabledPreviews.length;
+		} else {
+			previewsToRender = enabledPreviews;
+		}
+
+		for (const nodeId of previewsToRender) {
 			const fboNode = this.fboNodes.get(nodeId);
 			if (!fboNode) continue;
 
@@ -707,33 +744,6 @@ export class FBORenderer {
 		}
 
 		return previewBitmaps;
-	}
-
-	/**
-	 * @deprecated Use renderPreviewBitmaps() instead for better performance.
-	 * Render previews for enabled nodes and return their pixel data
-	 */
-	renderPreviews(): Map<string, Uint8Array> {
-		const previewPixels = new Map<string, Uint8Array>();
-		const enabledPreviews = this.getEnabledPreviews();
-
-		for (const nodeId of enabledPreviews) {
-			const fboNode = this.fboNodes.get(nodeId);
-			if (!fboNode) continue;
-
-			let customSize: [number, number] | undefined = undefined;
-
-			if (this.canvasByNode.has(nodeId)) {
-				customSize = this.canvasOutputSize;
-			}
-
-			const pixels = this.renderNodePreview(fboNode, customSize);
-			if (!pixels) continue;
-
-			previewPixels.set(nodeId, pixels);
-		}
-
-		return previewPixels;
 	}
 
 	// HACK: use a different preview size for canvas nodes
@@ -816,7 +826,7 @@ export class FBORenderer {
 				gl.LINEAR
 			);
 
-			pixels = this.regl.read() as Uint8Array;
+			pixels = this.timedReglRead();
 
 			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
 			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
@@ -832,113 +842,36 @@ export class FBORenderer {
 		return canvas.transferToImageBitmap();
 	}
 
-	/**
-	 * Benchmark old vs new preview rendering methods.
-	 * Call this from console: fboRenderer.benchmarkPreviewMethods(100)
-	 */
-	public benchmarkPreviewMethods(iterations = 50) {
-		const enabledPreviews = this.getEnabledPreviews();
-		if (enabledPreviews.length === 0) {
-			console.warn('[Benchmark] No previews enabled. Enable at least one preview first.');
-			return;
+	// ===== Profiling Delegation =====
+
+	/** Time a regl.read() call and record it for profiling */
+	private timedReglRead(): Uint8Array {
+		if (!this.profiler.isEnabled) {
+			return this.regl.read() as Uint8Array;
 		}
 
-		const nodeId = enabledPreviews[0];
-		const fboNode = this.fboNodes.get(nodeId);
-		if (!fboNode) {
-			console.warn('[Benchmark] Could not find FBO node');
-			return;
-		}
+		const start = performance.now();
+		const pixels = this.regl.read() as Uint8Array;
+		const elapsed = performance.now() - start;
 
-		console.log(`[Benchmark] Running ${iterations} iterations on node ${nodeId}...`);
+		this.profiler.recordReglRead(elapsed);
 
-		// Warm up
-		for (let i = 0; i < 5; i++) {
-			this.renderNodePreview(fboNode);
-			this.renderNodePreviewBitmap(fboNode);
-		}
-
-		// Benchmark old method (returns Uint8Array)
-		const oldStart = performance.now();
-		for (let i = 0; i < iterations; i++) {
-			this.renderNodePreview(fboNode);
-		}
-		const oldTime = performance.now() - oldStart;
-
-		// Benchmark new method (returns ImageBitmap)
-		const newStart = performance.now();
-		for (let i = 0; i < iterations; i++) {
-			this.renderNodePreviewBitmap(fboNode);
-		}
-		const newTime = performance.now() - newStart;
-
-		const speedup = oldTime / newTime;
-
-		console.log(`[Benchmark] Results (${iterations} iterations):`);
-		console.log(
-			`  Old (renderNodePreview):       ${oldTime.toFixed(2)}ms total, ${(oldTime / iterations).toFixed(3)}ms/call`
-		);
-		console.log(
-			`  New (renderNodePreviewBitmap): ${newTime.toFixed(2)}ms total, ${(newTime / iterations).toFixed(3)}ms/call`
-		);
-		console.log(`  Speedup: ${speedup.toFixed(2)}x ${speedup > 1 ? 'faster' : 'slower'}`);
-
-		return { oldTime, newTime, speedup, iterations };
+		return pixels;
 	}
 
-	/**
-	 * Render a single node's preview using regl.read() as per spec
-	 * @deprecated Use renderNodePreviewBitmap() for better performance
-	 */
-	public renderNodePreview(fboNode: FBONode, customSize?: [number, number]): Uint8Array | null {
-		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
-		const [renderWidth, renderHeight] = this.outputSize;
+	/** Enable/disable frame profiling */
+	public setProfilingEnabled(enabled: boolean) {
+		this.profiler.setEnabled(enabled);
+	}
 
-		const previewTexture = this.regl.texture({
-			width: previewWidth,
-			height: previewHeight,
-			wrapS: 'clamp',
-			wrapT: 'clamp'
-		});
+	/** Record frame time (call this at end of each frame) */
+	public recordFrameTime() {
+		this.profiler.recordFrameTime();
+	}
 
-		const previewFramebuffer = this.regl.framebuffer({
-			color: previewTexture,
-			depthStencil: false
-		});
-
-		let pixels: Uint8Array;
-
-		previewFramebuffer.use(() => {
-			const gl = this.regl._gl as WebGL2RenderingContext;
-			const sourceFBO = getFramebuffer(fboNode.framebuffer);
-			const destPreviewFBO = getFramebuffer(previewFramebuffer);
-
-			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
-			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
-
-			gl.blitFramebuffer(
-				0,
-				0,
-				renderWidth,
-				renderHeight,
-				0,
-				0,
-				previewWidth,
-				previewHeight,
-				gl.COLOR_BUFFER_BIT,
-				gl.LINEAR
-			);
-
-			pixels = this.regl.read() as Uint8Array;
-
-			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-		});
-
-		previewTexture.destroy();
-		previewFramebuffer.destroy();
-
-		return pixels!;
+	/** Get frame timing stats and clear buffer */
+	public flushFrameStats() {
+		return this.profiler.flushStats();
 	}
 
 	private renderNodeToMainOutput(node: FBONode): void {
@@ -1217,19 +1150,28 @@ export class FBORenderer {
 		return this.fboNodes.get(nodeId);
 	}
 
-	/** Captures the preview frame of a node. Also handles persistent data. */
-	getPreviewFrameCapture(nodeId: string, customSize?: [number, number]): Uint8Array | null {
+	/**
+	 * Captures a preview frame as an ImageBitmap (ready for zero-copy transfer).
+	 * Handles both FBO nodes and external texture nodes.
+	 */
+	capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
 		const externalTexture = this.externalTexturesByNode.get(nodeId);
-		if (externalTexture) return this.getTexturePreview(externalTexture, customSize);
+		if (externalTexture) {
+			return this.renderTextureBitmap(externalTexture, customSize);
+		}
 
 		const fboNode = this.fboNodes.get(nodeId);
 		if (!fboNode) return null;
 
-		return this.renderNodePreview(fboNode, customSize);
+		return this.renderNodePreviewBitmap(fboNode, customSize);
 	}
 
-	getTexturePreview(texture: regl.Texture2D, customSize?: [number, number]): Uint8Array {
+	/**
+	 * Render an external texture as an ImageBitmap with GPU-accelerated flip.
+	 */
+	private renderTextureBitmap(texture: regl.Texture2D, customSize?: [number, number]): ImageBitmap {
 		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
+		const { canvas, ctx } = this.getPreviewCanvas(previewWidth, previewHeight);
 
 		const sourceFbo = this.regl.framebuffer({ color: texture });
 		const previewFbo = this.regl.framebuffer({ width: previewWidth, height: previewHeight });
@@ -1241,25 +1183,32 @@ export class FBORenderer {
 			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo));
 			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(previewFbo));
 
+			// FlipY during blit by swapping destination Y coordinates (GPU-accelerated)
 			gl.blitFramebuffer(
 				0,
 				0,
 				texture.width,
 				texture.height,
 				0,
-				0,
+				previewHeight, // dst Y0 = height (flipped)
 				previewWidth,
-				previewHeight,
+				0, // dst Y1 = 0 (flipped)
 				gl.COLOR_BUFFER_BIT,
 				gl.LINEAR
 			);
 
-			pixels = this.regl.read();
+			pixels = this.timedReglRead();
 		});
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		sourceFbo.destroy();
+		previewFbo.destroy();
 
-		return pixels!;
+		// Put pixels directly to canvas (already flipped by GPU)
+		const imageData = new ImageData(new Uint8ClampedArray(pixels!), previewWidth, previewHeight);
+		ctx.putImageData(imageData, 0, 0);
+
+		return canvas.transferToImageBitmap();
 	}
 
 	/** Update JS module in the worker's JSRunner instance */
