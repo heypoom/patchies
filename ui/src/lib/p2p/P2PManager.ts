@@ -64,7 +64,7 @@ export class P2PManager {
 	private async _initialize(): Promise<void> {
 		// Try to claim a well-known slot (0, 1, 2, ...) for peer discovery
 		for (let slot = 0; slot < DISCOVERY_SLOTS; slot++) {
-			const slotPeerId = `${this.roomId}-${slot}`;
+			const slotPeerId = `${this.roomId}/${slot}`;
 
 			try {
 				await this.tryConnectWithId(slotPeerId);
@@ -76,7 +76,7 @@ export class P2PManager {
 		}
 
 		// All slots taken, use random ID (can still receive connections from others)
-		const randomPeerId = `${this.roomId}-${crypto.randomUUID().slice(0, 8)}`;
+		const randomPeerId = `${this.roomId}/${crypto.randomUUID().slice(0, 8)}`;
 
 		await this.tryConnectWithId(randomPeerId);
 	}
@@ -125,7 +125,8 @@ export class P2PManager {
 
 		// Try to connect to all well-known slots (except ourselves)
 		for (let slot = 0; slot < DISCOVERY_SLOTS; slot++) {
-			const slotPeerId = `${this.roomId}-${slot}`;
+			const slotPeerId = `${this.roomId}/${slot}`;
+
 			if (slotPeerId !== this.myPeerId && !this.connections.has(slotPeerId)) {
 				const conn = this.peer.connect(slotPeerId, { reliable: true });
 				this.setupConnection(conn);
