@@ -138,15 +138,19 @@ export class SamplerNode implements AudioNodeV2 {
 		this.loopEnd = end;
 
 		// Create new source node
-		this.sourceNode = this.audioContext.createBufferSource();
-		this.sourceNode.buffer = this.audioBuffer;
-		this.sourceNode.loopStart = start;
-		this.sourceNode.loopEnd = end;
-		this.sourceNode.playbackRate.value = this.playbackRate;
-		this.sourceNode.detune.value = this.detune;
-		this.sourceNode.loop = true;
-		this.sourceNode.connect(this.audioNode);
-		this.sourceNode.start(0, start);
+		const newSource = this.audioContext.createBufferSource();
+		newSource.buffer = this.audioBuffer;
+		newSource.loopStart = start;
+		newSource.loopEnd = end;
+		newSource.playbackRate.value = this.playbackRate;
+		newSource.detune.value = this.detune;
+		newSource.loop = true;
+		newSource.connect(this.audioNode);
+
+		// Store reference before starting
+		this.sourceNode = newSource;
+
+		newSource.start(0, start);
 	}
 
 	private async handleRecord(): Promise<void> {
@@ -192,16 +196,20 @@ export class SamplerNode implements AudioNodeV2 {
 		this.stopPlayback();
 
 		// Create new source node
-		this.sourceNode = this.audioContext.createBufferSource();
-		this.sourceNode.buffer = this.audioBuffer;
-		this.sourceNode.playbackRate.value = this.playbackRate;
-		this.sourceNode.detune.value = this.detune;
-		this.sourceNode.connect(this.audioNode);
+		const newSource = this.audioContext.createBufferSource();
+		newSource.buffer = this.audioBuffer;
+		newSource.playbackRate.value = this.playbackRate;
+		newSource.detune.value = this.detune;
+		newSource.connect(this.audioNode);
 
-		// Clean up when playback ends
-		this.sourceNode.onended = () => {
-			if (this.sourceNode && this.sourceNode.buffer === this.audioBuffer) {
-				this.sourceNode.disconnect();
+		// Store reference before setting up callback
+		this.sourceNode = newSource;
+
+		// Clean up when playback ends naturally
+		newSource.onended = () => {
+			// Only clean up if this is still the active source
+			if (this.sourceNode === newSource) {
+				newSource.disconnect();
 				this.sourceNode = null;
 			}
 		};
@@ -211,7 +219,7 @@ export class SamplerNode implements AudioNodeV2 {
 		const duration =
 			this.loopEnd !== undefined && this.loopEnd > startTime ? this.loopEnd - startTime : undefined;
 
-		this.sourceNode.start(0, startTime, duration);
+		newSource.start(0, startTime, duration);
 	}
 
 	private stopPlayback(): void {
