@@ -40,7 +40,24 @@ self.onmessage = (event) => {
 		.with('updateTextmode', () => handleUpdateTextmode(data.nodeId))
 		.with('updateThree', () => handleUpdateThree(data.nodeId))
 		.with('setFFTData', () => handleSetFFTData(data))
-		.with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code));
+		.with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
+		.with('enableProfiling', () => fboRenderer.setProfilingEnabled(data.enabled))
+		.with('flushFrameStats', () => {
+			const stats = fboRenderer.flushFrameStats();
+
+			self.postMessage({ type: 'frameStats', stats });
+		})
+		.with('setMaxPreviewsPerFrame', () => {
+			console.log('setMax::hasOutputNode', fboRenderer.isOutputEnabled);
+
+			if (data.max !== undefined) {
+				fboRenderer.maxPreviewsPerFrame = data.max;
+			}
+
+			if (data.maxNoOutput !== undefined) {
+				fboRenderer.maxPreviewsPerFrameNoOutput = data.maxNoOutput;
+			}
+		});
 };
 
 async function handleBuildRenderGraph(graph: RenderGraph) {
@@ -85,29 +102,15 @@ function handleStartAnimation() {
 		}
 
 		if (fboRenderer.shouldProcessPreviews) {
-			const previewPixels = fboRenderer.renderPreviews();
+			const previewBitmaps = fboRenderer.renderPreviewBitmaps();
 
-			for (const [nodeId, pixels] of previewPixels) {
-				let [previewWidth, previewHeight] = fboRenderer.previewSize;
-
-				// HACK: use a different preview size for canvas nodes
-				// this is to make the canvas preview looks sharper
-				if (fboRenderer.canvasByNode.has(nodeId)) {
-					[previewWidth, previewHeight] = fboRenderer.canvasOutputSize;
-				}
-
-				self.postMessage(
-					{
-						type: 'previewFrame',
-						nodeId,
-						buffer: pixels.buffer,
-						width: previewWidth,
-						height: previewHeight
-					},
-					{ transfer: [pixels.buffer] }
-				);
+			for (const [nodeId, bitmap] of previewBitmaps) {
+				self.postMessage({ type: 'previewFrame', nodeId, bitmap }, { transfer: [bitmap] });
 			}
 		}
+
+		// Record frame timing for profiling
+		fboRenderer.recordFrameTime();
 	});
 }
 
@@ -187,22 +190,10 @@ function handleUpdateThree(nodeId: string) {
 	threeRenderer.updateCode();
 }
 
-async function handleCapturePreview(
-	nodeId: string,
-	requestId?: string,
-	customSize?: [number, number]
-) {
-	const [captureWidth, captureHeight] = customSize ?? fboRenderer.previewSize;
+function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [number, number]) {
+	const bitmap = fboRenderer.capturePreviewBitmap(nodeId, customSize);
 
-	const pixels = fboRenderer.getPreviewFrameCapture(nodeId, customSize);
-
-	if (pixels) {
-		const array = new Uint8ClampedArray(pixels.buffer);
-
-		// @ts-expect-error -- something is wrong with the typedef
-		const imageData = new ImageData(array, captureWidth, captureHeight);
-		const bitmap = await createImageBitmap(imageData);
-
+	if (bitmap) {
 		self.postMessage(
 			{
 				type: 'previewFrameCaptured',
@@ -213,7 +204,6 @@ async function handleCapturePreview(
 			},
 			{ transfer: [bitmap] }
 		);
-
 		return;
 	}
 

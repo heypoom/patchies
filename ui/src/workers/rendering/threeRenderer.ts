@@ -425,7 +425,6 @@ export class ThreeRenderer {
 			if (!this.threeInputTextures[i]) {
 				// Create a minimal texture - we'll override its WebGL texture
 				this.threeInputTextures[i] = new this.THREE.Texture();
-				this.threeInputTextures[i].flipY = true; // Flip to match Three.js expected orientation
 				this.threeInputTextures[i].minFilter = this.THREE.LinearFilter;
 				this.threeInputTextures[i].magFilter = this.THREE.LinearFilter;
 			}
