@@ -92,23 +92,38 @@ export class AudioAnalysisSystem {
 	private focusHandler: (() => void) | null = null;
 	private blurHandler: (() => void) | null = null;
 
+	private getPooledArray(
+		analyzerNodeId: string,
+		type: AudioAnalysisType,
+		format: 'int',
+		size: number
+	): Uint8Array<ArrayBuffer>;
+
+	private getPooledArray(
+		analyzerNodeId: string,
+		type: AudioAnalysisType,
+		format: 'float',
+		size: number
+	): Float32Array<ArrayBuffer>;
+
 	/** Get or create a pooled typed array for FFT analysis */
 	private getPooledArray(
 		analyzerNodeId: string,
 		type: AudioAnalysisType,
 		format: AudioAnalysisFormat,
 		size: number
-	): Uint8Array | Float32Array {
+	): Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer> {
 		const poolKey = `${analyzerNodeId}-${type}-${format}`;
 		let array = this.arrayPool.get(poolKey);
 
 		// Create new array if not in pool or wrong size
 		if (!array || array.length !== size) {
 			array = format === 'int' ? new Uint8Array(size) : new Float32Array(size);
+
 			this.arrayPool.set(poolKey, array);
 		}
 
-		return array;
+		return array as Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer>;
 	}
 
 	getAnalysisForNode(
@@ -138,22 +153,26 @@ export class AudioAnalysisSystem {
 		return match([type, format])
 			.with(['wave', 'int'], () => {
 				const list = this.getPooledArray(analyzerNodeId!, 'wave', 'int', analyser.fftSize);
-				analyser.getByteTimeDomainData(list as Uint8Array);
+				analyser.getByteTimeDomainData(list);
+
 				return list;
 			})
 			.with(['wave', 'float'], () => {
 				const list = this.getPooledArray(analyzerNodeId!, 'wave', 'float', analyser.fftSize);
-				analyser.getFloatTimeDomainData(list as Float32Array);
+				analyser.getFloatTimeDomainData(list);
+
 				return list;
 			})
 			.with(['freq', 'int'], () => {
 				const list = this.getPooledArray(analyzerNodeId!, 'freq', 'int', analyser.fftSize);
-				analyser.getByteFrequencyData(list as Uint8Array);
+				analyser.getByteFrequencyData(list);
+
 				return list;
 			})
 			.with(['freq', 'float'], () => {
 				const list = this.getPooledArray(analyzerNodeId!, 'freq', 'float', analyser.fftSize);
-				analyser.getFloatFrequencyData(list as Float32Array);
+				analyser.getFloatFrequencyData(list);
+
 				return list;
 			})
 			.exhaustive();
