@@ -122,7 +122,7 @@
 						<Loader class="h-6 w-6 animate-spin text-zinc-300" />
 					</div>
 				{:else if generatedText}
-					<div class="nodrag relative">
+					<div class="nodrag nowheel nopan relative">
 						<div
 							class="max-h-[200px] min-h-[100px] w-full overflow-y-scroll rounded bg-transparent p-3 font-mono text-xs text-zinc-100 select-text focus:border-zinc-500 focus:outline-none"
 						>
