@@ -178,7 +178,8 @@ export class SamplerNode implements AudioNodeV2 {
 			try {
 				const blob = new Blob(recordedChunks, { type: 'audio/wav' });
 				const arrayBuffer = await blob.arrayBuffer();
-				this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+				const decoded = await this.audioContext.decodeAudioData(arrayBuffer);
+				this.audioBuffer = this.trimSilence(decoded);
 				this.mediaRecorder = null;
 			} catch (error) {
 				console.error('Failed to process recorded audio:', error);
@@ -235,5 +236,70 @@ export class SamplerNode implements AudioNodeV2 {
 		} catch {
 			// Ignore errors if node already stopped
 		}
+	}
+
+	private trimSilence(buffer: AudioBuffer, threshold = 0.01): AudioBuffer {
+		const numChannels = buffer.numberOfChannels;
+		const sampleRate = buffer.sampleRate;
+		const length = buffer.length;
+
+		// Find the max amplitude across all channels for each sample
+		const getMaxAmplitude = (sampleIndex: number): number => {
+			let max = 0;
+
+			for (let ch = 0; ch < numChannels; ch++) {
+				const channelData = buffer.getChannelData(ch);
+				max = Math.max(max, Math.abs(channelData[sampleIndex]));
+			}
+
+			return max;
+		};
+
+		// Find first sample above threshold (trim leading silence)
+		let startSample = 0;
+
+		for (let i = 0; i < length; i++) {
+			if (getMaxAmplitude(i) > threshold) {
+				startSample = i;
+				break;
+			}
+		}
+
+		// Find last sample above threshold (trim trailing silence)
+		let endSample = length - 1;
+
+		for (let i = length - 1; i >= startSample; i--) {
+			if (getMaxAmplitude(i) > threshold) {
+				endSample = i;
+				break;
+			}
+		}
+
+		// Add small padding to avoid cutting off attack/release (10ms)
+		const padding = Math.floor(sampleRate * 0.01);
+
+		startSample = Math.max(0, startSample - padding);
+		endSample = Math.min(length - 1, endSample + padding);
+
+		const newLength = endSample - startSample + 1;
+
+		// If no significant trimming, return original
+		if (newLength >= length * 0.95) {
+			return buffer;
+		}
+
+		// Create new trimmed buffer
+		const trimmedBuffer = this.audioContext.createBuffer(numChannels, newLength, sampleRate);
+
+		for (let ch = 0; ch < numChannels; ch++) {
+			const sourceData = buffer.getChannelData(ch);
+			const destData = trimmedBuffer.getChannelData(ch);
+
+			for (let i = 0; i < newLength; i++) {
+				destData[i] = sourceData[startSample + i];
+			}
+		}
+
+		return trimmedBuffer;
 	}
 }
