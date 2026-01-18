@@ -91,13 +91,13 @@
 				updateNodeData(node.id, { ...node.data, loopEnd: msg.value });
 				audioService.send(node.id, 'message', { type: 'setEnd', value: msg.value });
 			})
-			.with({ type: 'playbackRate', value: P.number }, (msg) => {
+			.with({ type: 'setPlaybackRate', value: P.number }, (msg) => {
 				updateNodeData(node.id, { ...node.data, playbackRate: msg.value });
-				audioService.send(node.id, 'message', { type: 'playbackRate', value: msg.value });
+				audioService.send(node.id, 'message', { type: 'setPlaybackRate', value: msg.value });
 			})
-			.with({ type: 'detune', value: P.number }, (msg) => {
+			.with({ type: 'setDetune', value: P.number }, (msg) => {
 				updateNodeData(node.id, { ...node.data, detune: msg.value });
-				audioService.send(node.id, 'message', { type: 'detune', value: msg.value });
+				audioService.send(node.id, 'message', { type: 'setDetune', value: msg.value });
 			})
 			.otherwise(() => audioService.send(node.id, 'message', message));
 	};
@@ -291,12 +291,12 @@
 
 	function updatePlaybackRate(value: number) {
 		updateNodeData(node.id, { ...node.data, playbackRate: value });
-		audioService.send(node.id, 'message', { type: 'playbackRate', value });
+		audioService.send(node.id, 'message', { type: 'setPlaybackRate', value });
 	}
 
 	function updateDetune(value: number) {
 		updateNodeData(node.id, { ...node.data, detune: value });
-		audioService.send(node.id, 'message', { type: 'detune', value });
+		audioService.send(node.id, 'message', { type: 'setDetune', value });
 	}
 
 	function resetSettings() {
@@ -313,8 +313,8 @@
 		audioService.send(node.id, 'message', { type: 'setStart', value: 0 });
 		audioService.send(node.id, 'message', { type: 'setEnd', value: recordingDuration });
 		audioService.send(node.id, 'message', { type: 'loopOff' });
-		audioService.send(node.id, 'message', { type: 'playbackRate', value: 1 });
-		audioService.send(node.id, 'message', { type: 'detune', value: 0 });
+		audioService.send(node.id, 'message', { type: 'setPlaybackRate', value: 1 });
+		audioService.send(node.id, 'message', { type: 'setDetune', value: 0 });
 	}
 
 	onMount(() => {
@@ -331,12 +331,13 @@
 			// Send initialization messages for playbackRate and detune
 			if (node.data.playbackRate) {
 				audioService.send(node.id, 'message', {
-					type: 'playbackRate',
+					type: 'setPlaybackRate',
 					value: node.data.playbackRate
 				});
 			}
+
 			if (node.data.detune) {
-				audioService.send(node.id, 'message', { type: 'detune', value: node.data.detune });
+				audioService.send(node.id, 'message', { type: 'setDetune', value: node.data.detune });
 			}
 
 			// Get audio buffer if it exists

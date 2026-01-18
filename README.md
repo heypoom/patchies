@@ -1036,7 +1036,7 @@ These objects run on _audio rate_, which means they process audio signals in rea
 > Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz): use `P` to play and `K` to stop!
 
 - `soundfile~`: Load and play audio files with transport controls
-- `sampler~`: Sample playback with triggering capabilities
+- `sampler~`: Sample playback with triggering capabilities, see [sampler~](#sampler-audio-sampler-with-recording-and-playback)
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers
 
@@ -1101,8 +1101,33 @@ send(curve);
 
 #### Notes on audio objects
 
-- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~`, `elem~` or `sonic~` objects. In fact, the default `dsp~`, `tone~` and `elem~` objects are simple sine wave oscillators that work similar to `osc~`.
 - Most of the audio objects correspond to Web Audio API nodes. See the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) documentation on how they work under the hood.
+- You can re-implement most of these audio objects yourself using the `dsp~`, `expr~`, `tone~`, `elem~` or `sonic~` objects. In fact, the default `dsp~`, `tone~` and `elem~` objects are simple sine wave oscillators that work similar to `osc~`.
+
+### `sampler~`: audio sampler with recording and playback
+
+The `sampler~` object records audio from connected sources into a buffer and plays it back with loop points, playback rate, and detune control. It's useful for sampling audio from other nodes, creating loops, and building sample-based instruments.
+
+- Buttons: record (circle), play sample, open settings
+- Settings: playback start/end, loop on/off, playback rate, detune in cents
+
+**Messages**
+
+- `play` / `bang`: play the recorded sample
+- `record`: start recording audio from connected sources
+- `end`: stop recording
+- `stop`: stop playback
+- `loop`: toggle loop and start loop playback
+- `{type: 'loop', start: 0.5, end: 2.0}`: set loop points (in seconds) and play
+- `loopOn`: enable loop mode
+- `{type: 'loopOn', start: 0.5, end: 2.0}`: enable loop with specific points
+- `loopOff`: Disable loop mode
+- `{type: 'setStart', value: 0.5}` - start playback at 0.5 seconds
+- `{type: 'setEnd', value: 2.0}` - end playback at 2.0 seconds
+- `{type: 'setPlaybackRate', value: 2.0}` - play at double speed
+- `{type: 'setPlaybackRate', value: 0.5}` - play at half speed
+- `{type: 'setDetune', value: 1200}` - pitch up one octave
+- `{type: 'setDetune', value: -1200}` - pitch down one octave
 
 ### `expr~`: audio-rate mathematical expression evaluator
 

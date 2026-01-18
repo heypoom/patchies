@@ -88,14 +88,14 @@ export class SamplerNode implements AudioNodeV2 {
 					this.sourceNode.loopEnd = value;
 				}
 			})
-			.with({ type: 'playbackRate', value: P.number }, ({ value }) => {
+			.with({ type: 'setPlaybackRate', value: P.number }, ({ value }) => {
 				this.playbackRate = value;
 
 				if (this.sourceNode) {
 					this.sourceNode.playbackRate.value = value;
 				}
 			})
-			.with({ type: 'detune', value: P.number }, ({ value }) => {
+			.with({ type: 'setDetune', value: P.number }, ({ value }) => {
 				this.detune = value;
 
 				if (this.sourceNode) {
