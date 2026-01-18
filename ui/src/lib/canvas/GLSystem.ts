@@ -1,5 +1,5 @@
 import { buildRenderGraph, type REdge, type RNode } from '$lib/rendering/graphUtils';
-import type { RenderGraph, RenderNode } from '$lib/rendering/types';
+import type { RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/rendering/types';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
@@ -73,7 +73,7 @@ export class GLSystem {
 		this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
 	}
 
-	handleRenderWorkerMessage = (event: MessageEvent) => {
+	handleRenderWorkerMessage = (event: MessageEvent<RenderWorkerMessage>) => {
 		const { data } = event;
 		if (!data) return;
 
@@ -89,18 +89,22 @@ export class GLSystem {
 		if (data.type === 'animationFrame') {
 			if (!data.outputBitmap) return;
 
-			if (this.ipcSystem.outputWindow !== null) {
-				this.ipcSystem.sendRenderOutput(data.outputBitmap);
-			} else {
+			if (this.ipcSystem.outputWindow === null) {
 				this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
+			} else {
+				this.ipcSystem.sendRenderOutput(data.outputBitmap);
 			}
 
 			return;
 		}
 
 		// Use match for early returns - most frequent messages first
-		match(data.type)
-			.with('consoleOutput', () => {
+		match(data)
+			.with({ type: 'sendMessageFromNode' }, (data) => {
+				// @ts-expect-error -- fix me
+				this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
+			})
+			.with({ type: 'consoleOutput' }, (data) => {
 				const args = data.args ?? [data.message];
 				match(data.level)
 					.with('error', () => {
@@ -114,7 +118,7 @@ export class GLSystem {
 						logger.addNodeLog(data.nodeId, data.level, args);
 					});
 			})
-			.with('shaderError', () => {
+			.with({ type: 'shaderError' }, (data) => {
 				if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
 					logger.nodeError(
 						data.nodeId,
@@ -126,10 +130,7 @@ export class GLSystem {
 					logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
 				}
 			})
-			.with('sendMessageFromNode', () => {
-				this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
-			})
-			.with('setPortCount', () => {
+			.with({ type: 'setPortCount' }, (data) => {
 				this.eventBus.dispatch({
 					type: 'nodePortCountUpdate',
 					nodeId: data.nodeId,
@@ -138,45 +139,47 @@ export class GLSystem {
 					outletCount: data.outletCount
 				});
 			})
-			.with('setTitle', () => {
+			.with({ type: 'setTitle' }, (data) => {
 				this.eventBus.dispatch({
 					type: 'nodeTitleUpdate',
 					nodeId: data.nodeId,
 					title: data.title
 				});
 			})
-			.with('setHidePorts', () => {
+			.with({ type: 'setHidePorts' }, (data) => {
 				this.eventBus.dispatch({
 					type: 'nodeHidePortsUpdate',
 					nodeId: data.nodeId,
 					hidePorts: data.hidePorts
 				});
 			})
-			.with('setDragEnabled', () => {
+			.with({ type: 'setDragEnabled' }, (data) => {
 				this.eventBus.dispatch({
 					type: 'nodeDragEnabledUpdate',
 					nodeId: data.nodeId,
 					dragEnabled: data.dragEnabled
 				});
 			})
-			.with('setVideoOutputEnabled', () => {
+			.with({ type: 'setVideoOutputEnabled' }, (data) => {
 				this.eventBus.dispatch({
 					type: 'nodeVideoOutputEnabledUpdate',
 					nodeId: data.nodeId,
 					videoOutputEnabled: data.videoOutputEnabled
 				});
 			})
-			.with('setMouseScope', () => {
+			.with({ type: 'setMouseScope' }, (data) => {
 				this.eventBus.dispatch({
 					type: 'nodeMouseScopeUpdate',
 					nodeId: data.nodeId,
 					scope: data.scope
 				});
 			})
-			.with('previewFrameCaptured', () => {
+			.with({ type: 'previewFrameCaptured' }, (data) => {
+				// @ts-expect-error -- fix me
 				this.eventBus.dispatch(data);
 			})
-			.with(P.union('fftEnabled', 'registerFFTRequest'), () => {
+			.with(P.union({ type: 'fftEnabled' }, { type: 'registerFFTRequest' }), (data) => {
+				// @ts-expect-error -- fix me
 				this.audioAnalysis.handleRenderWorkerMessage(data);
 			});
 	};

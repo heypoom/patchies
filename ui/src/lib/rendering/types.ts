@@ -58,22 +58,66 @@ export interface FBONode {
 	cleanup?: () => void;
 }
 
-// Message types for worker communication
+// Message types for worker communication (main -> worker)
 export type WorkerMessage =
 	| { type: 'buildRenderGraph'; nodes: RenderNode[]; edges: RenderEdge[] }
 	| { type: 'startAnimation' }
 	| { type: 'stopAnimation' }
 	| { type: 'setPreviewEnabled'; nodeId: string; enabled: boolean }
 	| { type: 'animationFrame'; outputBitmap: ImageBitmap }
-	| {
-			type: 'previewFrame';
-			nodeId: string;
-			buffer: ArrayBuffer;
-			width: number;
-			height: number;
-			timestamp: number;
-	  }
 	| { type: 'updateOutput'; buffer: ArrayBuffer };
+
+export type MouseScope = 'local' | 'global';
+
+// Message types from render worker (worker -> main)
+export type RenderWorkerMessage =
+	| { type: 'previewFrame'; nodeId: string; bitmap: ImageBitmap }
+	| { type: 'animationFrame'; outputBitmap: ImageBitmap }
+	| {
+			type: 'shaderError';
+			nodeId: string;
+			error: string;
+			stack?: string;
+			lineErrors?: Record<number, string>;
+	  }
+	| {
+			type: 'consoleOutput';
+			nodeId: string;
+			level: 'log' | 'warn' | 'error';
+			message?: string;
+			args?: unknown[];
+			lineErrors?: Record<number, string>;
+	  }
+	| {
+			type: 'sendMessageFromNode';
+			fromNodeId: string;
+			data: unknown;
+			options?: { outlet?: number };
+	  }
+	| {
+			type: 'setPortCount';
+			nodeId: string;
+			portType: 'message';
+			inletCount: number;
+			outletCount: number;
+	  }
+	| { type: 'setTitle'; nodeId: string; title: string }
+	| { type: 'setHidePorts'; nodeId: string; hidePorts: boolean }
+	| { type: 'setDragEnabled'; nodeId: string; dragEnabled: boolean }
+	| { type: 'setVideoOutputEnabled'; nodeId: string; videoOutputEnabled: boolean }
+	| { type: 'setMouseScope'; nodeId: string; scope: MouseScope }
+	| {
+			type: 'previewFrameCaptured';
+			success: boolean;
+			nodeId: string;
+			requestId?: string;
+			bitmap?: ImageBitmap;
+	  }
+	| { type: 'fftEnabled'; nodeId: string; enabled: boolean }
+	| { type: 'registerFFTRequest'; nodeId: string; analysisType: string; format: string }
+	| { type: 'previewToggled'; nodeId: string; enabled: boolean }
+	| { type: 'frameStats'; stats: unknown }
+	| { type: 'error'; message: string };
 
 export type PreviewState = Record<string, boolean>;
 
