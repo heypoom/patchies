@@ -28,6 +28,11 @@
 	class={`pointer-events-none z-[-1] flex h-[100%] w-[100%] cursor-none ${
 		$isBackgroundOutputCanvasEnabled ? 'bg-[#080809]' : 'hidden'
 	}`}
+	style="contain: strict; isolation: isolate;"
 >
-	<canvas bind:this={outputCanvasElement} class="h-screen w-full object-cover"></canvas>
+	<canvas
+		bind:this={outputCanvasElement}
+		class="h-screen w-full object-cover"
+		style="will-change: contents;"
+	></canvas>
 </div>
