@@ -56,6 +56,10 @@ export type GlslFFTInletMeta = {
 	uniformName: string;
 };
 
+// FFT polling rates
+const FFT_POLLING_FPS_FOCUSED = 24;
+const FFT_POLLING_FPS_UNFOCUSED = 6;
+
 export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
 	private audioService = AudioService.getInstance();
@@ -78,6 +82,34 @@ export class AudioAnalysisSystem {
 
 	/** Mapping of GLSL nodeId to inlet metadata. */
 	private glslInlets: Map<string, GlslFFTInletMeta[]> = new Map();
+
+	/** Object pool for typed arrays to avoid allocations on every poll */
+	private arrayPool = new Map<string, Uint8Array | Float32Array>();
+
+	/** Track if window is focused for adaptive polling rate */
+	private isWindowFocused = true;
+	private visibilityChangeHandler: (() => void) | null = null;
+	private focusHandler: (() => void) | null = null;
+	private blurHandler: (() => void) | null = null;
+
+	/** Get or create a pooled typed array for FFT analysis */
+	private getPooledArray(
+		analyzerNodeId: string,
+		type: AudioAnalysisType,
+		format: AudioAnalysisFormat,
+		size: number
+	): Uint8Array | Float32Array {
+		const poolKey = `${analyzerNodeId}-${type}-${format}`;
+		let array = this.arrayPool.get(poolKey);
+
+		// Create new array if not in pool or wrong size
+		if (!array || array.length !== size) {
+			array = format === 'int' ? new Uint8Array(size) : new Float32Array(size);
+			this.arrayPool.set(poolKey, array);
+		}
+
+		return array;
+	}
 
 	getAnalysisForNode(
 		consumerNodeId: string,
@@ -102,29 +134,26 @@ export class AudioAnalysisSystem {
 
 		const analyser = node.audioNode as AnalyserNode;
 
+		// Use pooled arrays to avoid allocation churn during frequent polling
 		return match([type, format])
 			.with(['wave', 'int'], () => {
-				const list = new Uint8Array(analyser.fftSize);
-				analyser.getByteTimeDomainData(list);
-
+				const list = this.getPooledArray(analyzerNodeId!, 'wave', 'int', analyser.fftSize);
+				analyser.getByteTimeDomainData(list as Uint8Array);
 				return list;
 			})
 			.with(['wave', 'float'], () => {
-				const list = new Float32Array(analyser.fftSize);
-				analyser.getFloatTimeDomainData(list);
-
+				const list = this.getPooledArray(analyzerNodeId!, 'wave', 'float', analyser.fftSize);
+				analyser.getFloatTimeDomainData(list as Float32Array);
 				return list;
 			})
 			.with(['freq', 'int'], () => {
-				const list = new Uint8Array(analyser.fftSize);
-				analyser.getByteFrequencyData(list);
-
+				const list = this.getPooledArray(analyzerNodeId!, 'freq', 'int', analyser.fftSize);
+				analyser.getByteFrequencyData(list as Uint8Array);
 				return list;
 			})
 			.with(['freq', 'float'], () => {
-				const list = new Float32Array(analyser.fftSize);
-				analyser.getFloatFrequencyData(list);
-
+				const list = this.getPooledArray(analyzerNodeId!, 'freq', 'float', analyser.fftSize);
+				analyser.getFloatFrequencyData(list as Float32Array);
 				return list;
 			})
 			.exhaustive();
@@ -236,13 +265,14 @@ export class AudioAnalysisSystem {
 		this.requestedFFTFormats.get(nodeId)!.add(`${type}-${format}`);
 	}
 
-	/** Start polling FFT data for Hydra nodes at 24fps as per spec */
+	/** Start polling FFT data for Hydra nodes with adaptive rate based on focus */
 	private startFFTPolling() {
 		if (this.fftPollingInterval !== null) return;
 
+		const fps = this.isWindowFocused ? FFT_POLLING_FPS_FOCUSED : FFT_POLLING_FPS_UNFOCUSED;
 		this.fftPollingInterval = window.setInterval(() => {
 			this.pollAndTransferFFTData();
-		}, 1000 / 24); // 24fps
+		}, 1000 / fps);
 	}
 
 	/** Stop FFT polling when no Hydra nodes need it */
@@ -255,6 +285,9 @@ export class AudioAnalysisSystem {
 
 	/** Poll FFT data and transfer it to Hydra and GLSL renderers. */
 	private pollAndTransferFFTData() {
+		// Skip polling entirely when tab is hidden - no one can see the visualizations anyway
+		if (document.hidden) return;
+
 		if (!this.onFFTDataReady) return;
 
 		for (const targetId of this.fftEnabledNodes) {
@@ -302,9 +335,65 @@ export class AudioAnalysisSystem {
 		return this.audioService.getAudioContext().sampleRate;
 	}
 
+	/** Initialize visibility and focus event listeners for adaptive polling */
+	initVisibilityListeners(): void {
+		if (this.visibilityChangeHandler) return; // Already initialized
+
+		this.visibilityChangeHandler = () => {
+			// When tab becomes hidden, we'll skip polling in pollAndTransferFFTData
+			// When tab becomes visible again, polling continues normally
+		};
+
+		this.focusHandler = () => {
+			this.isWindowFocused = true;
+			this.restartPollingWithNewRate();
+		};
+
+		this.blurHandler = () => {
+			this.isWindowFocused = false;
+			this.restartPollingWithNewRate();
+		};
+
+		document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+		window.addEventListener('focus', this.focusHandler);
+		window.addEventListener('blur', this.blurHandler);
+	}
+
+	/** Cleanup visibility and focus event listeners */
+	destroyVisibilityListeners(): void {
+		if (this.visibilityChangeHandler) {
+			document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+			this.visibilityChangeHandler = null;
+		}
+		if (this.focusHandler) {
+			window.removeEventListener('focus', this.focusHandler);
+			this.focusHandler = null;
+		}
+		if (this.blurHandler) {
+			window.removeEventListener('blur', this.blurHandler);
+			this.blurHandler = null;
+		}
+	}
+
+	/** Restart polling with the appropriate rate based on focus state */
+	private restartPollingWithNewRate(): void {
+		if (this.fftPollingInterval === null) return;
+
+		// Stop current polling
+		clearInterval(this.fftPollingInterval);
+		this.fftPollingInterval = null;
+
+		// Restart with new rate
+		const fps = this.isWindowFocused ? FFT_POLLING_FPS_FOCUSED : FFT_POLLING_FPS_UNFOCUSED;
+		this.fftPollingInterval = window.setInterval(() => {
+			this.pollAndTransferFFTData();
+		}, 1000 / fps);
+	}
+
 	static getInstance(): AudioAnalysisSystem {
 		if (!AudioAnalysisSystem.instance) {
 			AudioAnalysisSystem.instance = new AudioAnalysisSystem();
+			AudioAnalysisSystem.instance.initVisibilityListeners();
 		}
 
 		return AudioAnalysisSystem.instance;
