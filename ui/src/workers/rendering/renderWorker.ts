@@ -57,6 +57,9 @@ self.onmessage = (event) => {
 			if (data.maxNoOutput !== undefined) {
 				fboRenderer.previewRenderer.maxPreviewsPerFrameNoOutput = data.maxNoOutput;
 			}
+		})
+		.with('setVisibleNodes', () => {
+			fboRenderer.setVisibleNodes(new Set(data.nodeIds as string[]));
 		});
 };
 

@@ -703,6 +703,11 @@ export class FBORenderer {
 		return [this.outputSize[0] / 2, this.outputSize[1] / 2];
 	}
 
+	/** Set which nodes are visible in the viewport for preview culling */
+	setVisibleNodes(nodeIds: Set<string>) {
+		this.previewRenderer.setVisibleNodes(nodeIds);
+	}
+
 	/** Enable/disable frame profiling */
 	public setProfilingEnabled(enabled: boolean) {
 		this.profiler.setEnabled(enabled);

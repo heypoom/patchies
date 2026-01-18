@@ -18,6 +18,7 @@
 		type Node,
 		type Edge,
 		useSvelteFlow,
+		useViewport,
 		type IsValidConnection,
 		useOnSelectionChange
 	} from '@xyflow/svelte';
@@ -64,6 +65,7 @@
 		isValidConnectionBetweenHandles
 	} from '$lib/utils/connection-validation';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
 
 	import { toast } from 'svelte-sonner';
 
@@ -109,6 +111,14 @@
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
+
+	// Viewport culling for preview rendering optimization
+	const viewport = useViewport();
+	const viewportCullingManager = new ViewportCullingManager();
+
+	viewportCullingManager.onVisibleNodesChange = (visibleNodes) => {
+		glSystem.setVisibleNodes(visibleNodes);
+	};
 
 	// Track nodes and edges for message routing
 	let previousNodes = new Set<string>();
@@ -179,6 +189,15 @@
 		glSystem.updateEdges(edges);
 		audioService.updateEdges(edges);
 		audioAnalysisSystem.updateEdges(edges);
+	});
+
+	// Update visible nodes for preview culling when viewport or nodes change
+	$effect(() => {
+		const currentViewport = viewport.current;
+		const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+		const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+
+		viewportCullingManager.updateVisibleNodes(currentViewport, nodes, screenWidth, screenHeight);
 	});
 
 	// Handle global keyboard events
@@ -467,6 +486,9 @@
 			clearInterval(autosaveInterval);
 			autosaveInterval = null;
 		}
+
+		// Clean up viewport culling manager
+		viewportCullingManager.destroy();
 
 		glSystem.renderWorker.terminate();
 	});
