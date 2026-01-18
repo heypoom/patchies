@@ -1100,11 +1100,13 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - Dropping an audio file into the patcher also creates a `soundfile~` by default.
   - Right click shows a menu to turn the `soundfile~` into [sampler~](#sampler-audio-sampler-with-recording-and-playback) which has more playback capabilities.
   - Messages
-    - string: loads the audio file by url
+    - string: loads the audio file or stream by url
     - `bang`: play from start of sample
     - `play`: play from current position
     - `pause`: pause the playback
     - `stop`: stop the playback and reset playback position
+    - `read`: reads the audio buffer and sends it to output, see `convolver~`
+    - `{type: 'load', url: string}`: loads the audio file or stream by url
   - You can load radio stations too! Search for "online radio station search" to find stream urls.
     - e.g. send `'https://stream.japanradio.de/live'` to `soundfile~` then `bang` to play a radio station!
 - `sampler~`: Sample playback with triggering capabilities, see [sampler~](#sampler-audio-sampler-with-recording-and-playback)
