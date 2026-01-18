@@ -1107,6 +1107,10 @@ send(curve);
 
 ### `sampler~`: audio sampler with recording and playback
 
+<img src="./docs/images/chromatic-sampler.webp" alt="Patchies.app chromatic sampler demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=kvdc2bm7qmdhhff)! This is a sampler that changes the playback speed depending on which notes you pressed.
+
 The `sampler~` object records audio from connected sources into a buffer and plays it back with loop points, playback rate, and detune control. It's useful for sampling audio from other nodes, creating loops, and building sample-based instruments.
 
 - Buttons: record (circle), play sample, open settings

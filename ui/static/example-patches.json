@@ -85,9 +85,9 @@
 			"author": "@dtinth"
 		},
 		{
-			"id": "73zo2rxeclhrynw",
-			"name": "8 Pad Sampler",
-			"description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
+			"id": "kvdc2bm7qmdhhff",
+			"name": "Chromatic Sampler",
+			"description": "A simple sampler that plays your sample at different playback speeds depending on the note",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
@@ -116,6 +116,13 @@
 			"id": "dli3wu889pqcnwd",
 			"name": "Oscillated Slider",
 			"description": "Visualize an oscillation using slider, fft~ and js",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "73zo2rxeclhrynw",
+			"name": "8 Pad Sampler",
+			"description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
