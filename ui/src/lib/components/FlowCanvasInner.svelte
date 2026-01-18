@@ -430,10 +430,16 @@
 		hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
 
 		// Check if the user wants to see the startup modal on launch
-		const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
-		// Default to true if not set (first time users), or respect user's preference
-		if (showStartupSetting === null || showStartupSetting === 'true') {
-			showStartupModal = true;
+		// Don't show if loading from URL params (src or id)
+		const params = new URLSearchParams(window.location.search);
+		const isLoadingFromUrlParam = params.has('src') || params.has('id');
+
+		if (!isLoadingFromUrlParam) {
+			const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
+			// Default to true if not set (first time users), or respect user's preference
+			if (showStartupSetting === null || showStartupSetting === 'true') {
+				showStartupModal = true;
+			}
 		}
 
 		document.addEventListener('keydown', handleGlobalKeydown);
@@ -473,12 +479,14 @@
 		const id = params.get('id');
 
 		if (src) {
+			showStartupModal = false;
 			await loadPatchFromUrlParam(src);
 			deleteSearchParam('src');
 			return;
 		}
 
 		if (id) {
+			showStartupModal = false;
 			isLoadingFromUrl = true;
 
 			try {
@@ -843,14 +851,7 @@
 		urlLoadError = null;
 
 		try {
-			const save = await getSharedPatchData(patchId);
-
-			if (save) {
-				restorePatchFromSave(save);
-
-				// HACK: reload to ensure the patch are clean
-				window.location.reload();
-			}
+			window.location.href = `/?id=${patchId}`;
 		} catch (err) {
 			urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
 			console.error('Failed to load patch:', err);
