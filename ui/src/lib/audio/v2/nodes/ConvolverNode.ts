@@ -15,8 +15,8 @@ export class ConvolverNodeV2 implements AudioNodeV2 {
 		{ name: 'in', type: 'signal' },
 		{
 			name: 'buffer',
-			type: 'message',
-			description: 'AudioBuffer for impulse response'
+			type: 'signal',
+			description: 'receives an AudioBuffer for impulse response'
 		},
 		{
 			name: 'normalize',
