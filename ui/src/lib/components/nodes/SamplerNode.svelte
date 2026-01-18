@@ -36,6 +36,7 @@
 	let showSettings = $state(false);
 	let recordingAnalyser: AnalyserNode | null = null;
 	let recordingAnimationFrame: number | null = null;
+	let isDragging = $state(false);
 
 	// Derive all state from node.data instead of duplicating
 	const hasRecording = $derived(node.data.hasRecording || false);
@@ -317,6 +318,61 @@
 		audioService.send(node.id, 'message', { type: 'setDetune', value: 0 });
 	}
 
+	function handleDragOver(event: DragEvent) {
+		event.preventDefault();
+		isDragging = true;
+	}
+
+	function handleDragLeave(event: DragEvent) {
+		event.preventDefault();
+		isDragging = false;
+	}
+
+	async function handleDrop(event: DragEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+		isDragging = false;
+
+		const files = event.dataTransfer?.files;
+		if (!files || files.length === 0) return;
+
+		const file = files[0];
+		if (!file.type.startsWith('audio/')) {
+			console.warn('Only audio files are supported');
+			return;
+		}
+
+		await loadAudioFile(file);
+	}
+
+	async function loadAudioFile(file: File) {
+		try {
+			const arrayBuffer = await file.arrayBuffer();
+			const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
+
+			// Set the audio buffer on the V2 node
+			if (v2Node) {
+				v2Node.audioBuffer = decodedBuffer;
+			}
+
+			audioBuffer = decodedBuffer;
+			const duration = decodedBuffer.duration;
+
+			updateNodeData(node.id, {
+				...node.data,
+				hasRecording: true,
+				duration: duration,
+				loopStart: 0,
+				loopEnd: duration
+			});
+
+			// Update AudioService's loop end point
+			audioService.send(node.id, 'message', { type: 'setEnd', value: duration });
+		} catch (error) {
+			console.error('Failed to load audio file:', error);
+		}
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
@@ -366,6 +422,7 @@
 	});
 
 	const containerClass = $derived.by(() => {
+		if (isDragging) return 'border-blue-400 bg-blue-50/10';
 		if (node.data.loop && node.selected) return 'border-orange-300 bg-zinc-800 shadow-glow-md';
 		if (node.selected) return 'object-container-selected';
 		if (node.data.loop) return 'border-orange-400 bg-zinc-900 hover:shadow-glow-sm';
@@ -443,6 +500,10 @@
 						'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border-1',
 						containerClass
 					]}
+					ondragover={handleDragOver}
+					ondragleave={handleDragLeave}
+					ondrop={handleDrop}
+					role="figure"
 				>
 					{#if isRecording && recordingAnalyser}
 						<WaveformDisplay analyser={recordingAnalyser} {width} {height} />
@@ -462,7 +523,13 @@
 							style="height: {height}px; width: {width}px;"
 						>
 							<Mic class="h-4 w-4 text-zinc-400" />
-							<div class="font-mono text-[12px] font-light text-zinc-400">Ready to record</div>
+							<div class="font-mono text-[12px] font-light text-zinc-400">
+								{#if isDragging}
+									Drop audio file
+								{:else}
+									Record or drop file
+								{/if}
+							</div>
 						</div>
 					{/if}
 				</div>

@@ -1173,6 +1173,7 @@ send(curve);
 The `sampler~` object records audio from connected sources into a buffer and plays it back with loop points, playback rate, and detune control. It's useful for sampling audio from other nodes, creating loops, and building sample-based instruments.
 
 - Buttons: record (circle), play sample, open settings
+- Drop audio file into sampler to load it in
 - Settings: playback start/end, loop on/off, playback rate, detune in cents
 
 **Messages**
