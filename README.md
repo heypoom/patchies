@@ -1153,7 +1153,7 @@ Connect the output to an audio parameter inlet (e.g., `gain~`'s gain inlet) to a
 
 #### Scheduled Parameter Messages
 
-Under the hood, `adsr` sends **scheduled messages** that automate audio parameters. You can also send these directly from `js` nodes. For example, the `midi-adsr-gain.js` preset shows how you can use MIDI messages to automate the gain parameter.
+Under the hood, `adsr` sends **scheduled messages** that automate audio parameters. You can also send these directly from `js` nodes.
 
 ```ts
 // Trigger envelope (attack → decay → sustain)
@@ -1177,7 +1177,8 @@ send({ type: 'set', value: 0.5, time: 0.5 })
 send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' })
 ```
 
-Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'` (default: linear).
+- Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'` (default: linear).
+- Try the `midi-adsr-gain.js` preset shows how you can use MIDI messages to automate the gain parameter. [This patch](https://patchies.app/?id=1pvwvmtoo5s3gdz) shows how to use this in place of the `adsr` object.
 
 ### `expr~`: audio-rate mathematical expression evaluator
 
