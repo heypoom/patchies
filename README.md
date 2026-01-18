@@ -1166,7 +1166,7 @@ The `sampler~` object records audio from connected sources into a buffer and pla
 - Here are some patches you can play with!
   - [scales](https://patchies.app/?id=tfjdf019hjyxmeu) by [@kijjazz](https://www.instagram.com/kijjaz/)
     - alt ver: [sleep](https://patchies.app/?id=xhdtrqenaf6ur81)
-  - [kicks](https://patchies.app/?id=jf7n1ku67auc5xg) by [@dtinth](https://dt.in.th)
+  - [kicks](https://patchies.app/?id=y1kbx9b2s903nlj) by [@dtinth](https://dt.in.th)
 
 ### `dsp~`: dynamic JavaScript DSP processor
 

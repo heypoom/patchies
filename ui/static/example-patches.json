@@ -78,16 +78,16 @@
 			"author": "@kijjaz"
 		},
 		{
-			"id": "jf7n1ku67auc5xg",
-			"name": "Kicks",
-			"description": "Basic drum kicks made with mathematical expressions in expr~",
-			"category": "Audio",
-			"author": "@dtinth"
-		},
-		{
 			"id": "kvdc2bm7qmdhhff",
 			"name": "Chromatic Sampler",
 			"description": "A simple sampler that plays your sample at different playback speeds depending on the note",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
+			"id": "geb2h5sc6pf2uj2",
+			"name": "Oscillator Keyboard",
+			"description": "A simple synth made with virtual midi keyboard, osc~, trigger, expr, adsr, mtof and gain~",
 			"category": "Audio",
 			"author": "@heypoom"
 		},
@@ -104,6 +104,13 @@
 			"description": "Creates a distortion curve to shape the waveshaper output",
 			"category": "Audio",
 			"author": "@heypoom"
+		},
+		{
+			"id": "y1kbx9b2s903nlj",
+			"name": "Kicks",
+			"description": "Basic drum kicks made with mathematical expressions in expr~",
+			"category": "Audio",
+			"author": "@dtinth"
 		},
 		{
 			"id": "sgov4pl7f9ku4h7",
