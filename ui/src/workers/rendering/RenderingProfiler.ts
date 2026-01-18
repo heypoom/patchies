@@ -1,6 +1,6 @@
 /**
  * Profiler for rendering performance metrics.
- * Tracks frame timings and regl.read() call performance.
+ * Tracks frame timings and GPU readback performance (PBO getBufferSubData).
  */
 export class RenderingProfiler {
 	private frameTimings: Float64Array | null = null;
@@ -10,8 +10,8 @@ export class RenderingProfiler {
 	private lastFrameTime = 0;
 	private _isEnabled = false;
 
-	// regl.read() specific profiling
-	private reglReadTimings: number[] = [];
+	// GPU readback profiling (getBufferSubData for PBO async reads)
+	private gpuReadTimings: number[] = [];
 
 	get isEnabled(): boolean {
 		return this._isEnabled;
@@ -27,17 +27,17 @@ export class RenderingProfiler {
 			this.lastFrameTime = performance.now();
 			this.frameTimingIndex = 0;
 			this.frameTimingCount = 0;
-			this.reglReadTimings = [];
+			this.gpuReadTimings = [];
 			console.log('[Profiler] Frame timing enabled');
 		} else {
 			console.log('[Profiler] Frame timing disabled');
 		}
 	}
 
-	/** Record a regl.read() timing */
+	/** Record a GPU readback timing (getBufferSubData) */
 	recordReglRead(elapsed: number) {
 		if (!this._isEnabled) return;
-		this.reglReadTimings.push(elapsed);
+		this.gpuReadTimings.push(elapsed);
 	}
 
 	/** Record frame time (call at end of each frame) */
@@ -105,8 +105,8 @@ export class RenderingProfiler {
 
 		// regl.read() specific stats
 		let reglReadStats = null;
-		if (this.reglReadTimings.length > 0) {
-			const readTimings = [...this.reglReadTimings].sort((a, b) => a - b);
+		if (this.gpuReadTimings.length > 0) {
+			const readTimings = [...this.gpuReadTimings].sort((a, b) => a - b);
 			const readSum = readTimings.reduce((a, b) => a + b, 0);
 			const readAvg = readSum / readTimings.length;
 			const readMin = readTimings[0];
@@ -129,7 +129,7 @@ export class RenderingProfiler {
 				percentOfFrameTime: percentOfFrameTime.toFixed(1) + '%'
 			};
 
-			console.log(`[Profiler] regl.read() Stats (${readTimings.length} calls):`);
+			console.log(`[Profiler] GPU Readback Stats (${readTimings.length} calls):`);
 			console.log(
 				`  Per call - Avg: ${reglReadStats.avgPerCall}ms, Min: ${reglReadStats.minPerCall}ms, Max: ${reglReadStats.maxPerCall}ms`
 			);
@@ -145,7 +145,7 @@ export class RenderingProfiler {
 		// Reset
 		this.frameTimingIndex = 0;
 		this.frameTimingCount = 0;
-		this.reglReadTimings = [];
+		this.gpuReadTimings = [];
 
 		return { ...stats, reglRead: reglReadStats };
 	}
