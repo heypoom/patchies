@@ -3,13 +3,29 @@ import type { FBONode, PreviewState } from '../../lib/rendering/types';
 import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { getFramebuffer } from './utils';
 import type { RenderingProfiler } from './RenderingProfiler';
+import {
+	DEFAULT_PREVIEW_MAX_FPS_CAP,
+	DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT,
+	DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT
+} from './constants';
+
+interface PendingRead {
+	pbo: WebGLBuffer;
+	width: number;
+	height: number;
+	sync: WebGLSync;
+	nodeId: string;
+}
 
 /**
  * PreviewRenderer handles GPU-to-CPU pixel readback for node previews.
  *
- * Uses synchronous reads with round-robin throttling to maintain performance.
- * Previews are rendered in batches (maxPreviewsPerFrame) to avoid overwhelming
- * the GPU with readback operations.
+ * Uses PBO (Pixel Buffer Object) async reads with frame rate limiting:
+ * - Previews update at ~40fps
+ * - Batch all preview reads in one frame, retrieve results 2+ frames later
+ * - Non-blocking retrieval: skip if GPU isn't ready yet
+ *
+ * This eliminates GPU stalls from readPixels while keeping previews responsive.
  */
 export class PreviewRenderer {
 	private gl: WebGL2RenderingContext;
@@ -25,8 +41,17 @@ export class PreviewRenderer {
 	public previewSize: [number, number];
 
 	// Throttling configuration
-	public maxPreviewsPerFrame = 4;
-	public maxPreviewsPerFrameNoOutput = 8;
+	public maxPreviewsPerFrame = DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT;
+	public maxPreviewsPerFrameNoOutput = DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT;
+
+	// Frame rate limiting for previews (in ms)
+	private previewIntervalMs = Math.round(1000 / DEFAULT_PREVIEW_MAX_FPS_CAP);
+	private lastPreviewTime = 0;
+
+	// PBO async read state
+	private pboPool: WebGLBuffer[] = [];
+	private pendingReads: PendingRead[] = [];
+	private pendingNodeIds: Set<string> = new Set(); // Track nodes with in-flight reads
 
 	// Canvas cache for ImageBitmap creation
 	private canvasCache = new Map<
@@ -77,6 +102,10 @@ export class PreviewRenderer {
 		this.previewState[nodeId] = enabled;
 	}
 
+	setPreviewFpsCap(fps: number): void {
+		this.previewIntervalMs = Math.round(1000 / fps);
+	}
+
 	isPreviewEnabled(nodeId: string): boolean {
 		return this.previewState[nodeId] ?? false;
 	}
@@ -91,8 +120,6 @@ export class PreviewRenderer {
 
 	setPreviewSize(width: number, height: number): void {
 		this.previewSize = [width, height];
-
-		// Recreate preview FBO with new size
 		this.previewFbo?.destroy();
 		this.previewTexture?.destroy();
 		this.createPreviewFbo();
@@ -104,11 +131,27 @@ export class PreviewRenderer {
 
 	removeNode(nodeId: string): void {
 		delete this.previewState[nodeId];
+		this.pendingNodeIds.delete(nodeId);
+
+		// Clean up any pending reads for this node
+		this.pendingReads = this.pendingReads.filter((p) => {
+			if (p.nodeId === nodeId) {
+				this.gl.deleteSync(p.sync);
+				this.returnPbo(p.pbo);
+				return false;
+			}
+			return true;
+		});
 	}
 
 	/**
-	 * Main entry point: render previews for this frame.
-	 * Uses round-robin throttling to limit reads per frame.
+	 * Main entry point: render previews using async PBO reads.
+	 *
+	 * Flow:
+	 * 1. Check for completed async reads and create bitmaps (non-blocking)
+	 * 2. If enough time has passed, initiate new batch of reads
+	 *
+	 * Returns bitmaps that are ready (may be empty if nothing completed yet).
 	 */
 	renderPreviewBitmaps(
 		fboNodes: Map<string, FBONode>,
@@ -117,49 +160,129 @@ export class PreviewRenderer {
 	): Map<string, ImageBitmap> {
 		const results = new Map<string, ImageBitmap>();
 
+		// Step 1: Harvest any completed reads (non-blocking)
+		this.harvestCompletedReads(results);
+
+		// Step 2: Check if we should initiate new reads (frame rate limiting)
+		const now = performance.now();
+
+		if (now - this.lastPreviewTime < this.previewIntervalMs) {
+			return results;
+		}
+
+		this.lastPreviewTime = now;
+
+		// Step 3: Initiate new batch of async reads
 		const enabledPreviews = this.getEnabledPreviews();
 		if (enabledPreviews.length === 0) return results;
 
 		const maxLimit = isOutputEnabled ? this.maxPreviewsPerFrame : this.maxPreviewsPerFrameNoOutput;
-		const nodesToRender = this.selectNodesForFrame(enabledPreviews, maxLimit);
+		const nodesToRead = this.selectNodesForFrame(enabledPreviews, maxLimit);
 
-		for (const nodeId of nodesToRender) {
+		for (const nodeId of nodesToRead) {
+			// Skip if this node already has a pending read
+			if (this.pendingNodeIds.has(nodeId)) continue;
+
 			const fboNode = fboNodes.get(nodeId);
 			if (!fboNode) continue;
 
 			const customSize = getCustomSize?.(nodeId);
-			const bitmap = this.renderNodePreview(fboNode, customSize);
-			if (bitmap) {
-				results.set(nodeId, bitmap);
-			}
+			this.initiateAsyncRead(nodeId, fboNode.framebuffer, customSize);
 		}
 
 		return results;
 	}
 
 	/**
-	 * Render a single node's preview and return an ImageBitmap.
+	 * Harvest completed async reads without blocking.
+	 * Uses clientWaitSync with 0 timeout to check if ready.
 	 */
-	private renderNodePreview(fboNode: FBONode, customSize?: [number, number]): ImageBitmap | null {
+	private harvestCompletedReads(results: Map<string, ImageBitmap>): void {
+		const gl = this.gl;
+		const stillPending: PendingRead[] = [];
+
+		for (const pending of this.pendingReads) {
+			const { pbo, width, height, sync, nodeId } = pending;
+
+			// Non-blocking check: is the GPU done?
+			const status = gl.clientWaitSync(sync, 0, 0);
+
+			if (status === gl.TIMEOUT_EXPIRED) {
+				// Not ready yet, keep waiting
+				stillPending.push(pending);
+				continue;
+			}
+
+			if (status === gl.WAIT_FAILED) {
+				// Sync failed - clean up and discard this read
+				console.warn(`[PreviewRenderer]: clientWaitSync failed for node ${nodeId}`);
+
+				gl.deleteSync(sync);
+				this.returnPbo(pbo);
+				this.pendingNodeIds.delete(nodeId);
+				continue;
+			}
+
+			// Ready! (ALREADY_SIGNALED or CONDITION_SATISFIED)
+			gl.deleteSync(sync);
+
+			// Read the data (should be instant since GPU is done)
+			const size = width * height * 4;
+			const pixels = new Uint8Array(size);
+
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+
+			const start = this.profiler.isEnabled ? performance.now() : 0;
+			gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
+			if (this.profiler.isEnabled) {
+				this.profiler.recordReglRead(performance.now() - start);
+			}
+
+			gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+			this.returnPbo(pbo);
+
+			// Create bitmap
+			const { canvas, ctx } = this.getCanvas(width, height);
+
+			const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+			ctx.putImageData(imageData, 0, 0);
+
+			results.set(nodeId, canvas.transferToImageBitmap());
+
+			// Remove from pending set
+			this.pendingNodeIds.delete(nodeId);
+		}
+
+		this.pendingReads = stillPending;
+	}
+
+	/**
+	 * Initiate an async read using PBO.
+	 * readPixels with PBO bound returns immediately.
+	 */
+	private initiateAsyncRead(
+		nodeId: string,
+		framebuffer: regl.Framebuffer2D,
+		customSize?: [number, number]
+	): void {
 		const [pw, ph] = customSize ?? this.previewSize;
 		const width = Math.floor(pw);
 		const height = Math.floor(ph);
 
-		if (width <= 0 || height <= 0) return null;
+		if (width <= 0 || height <= 0) return;
 
 		const [sourceWidth, sourceHeight] = this.outputSize;
-		const { canvas, ctx } = this.getCanvas(width, height);
+		const gl = this.gl;
 
 		this.ensurePreviewFboSize(width, height);
 
-		const gl = this.gl;
-		const sourceFBO = getFramebuffer(fboNode.framebuffer);
+		// Blit source to preview FBO with flip
+		const sourceFBO = getFramebuffer(framebuffer);
 		const destFBO = getFramebuffer(this.previewFbo!);
 
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
 
-		// FlipY during blit by swapping destination Y coordinates
 		gl.blitFramebuffer(
 			0,
 			0,
@@ -173,18 +296,44 @@ export class PreviewRenderer {
 			gl.LINEAR
 		);
 
+		// Setup PBO for async read
+		const pbo = this.getPbo();
+		const size = width * height * 4;
+
+		gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+		gl.bufferData(gl.PIXEL_PACK_BUFFER, size, gl.STREAM_READ);
+
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, destFBO);
 
-		const pixels = this.timedRead(width, height);
+		// This returns immediately - GPU transfer happens async
+		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
 
+		// Create fence sync to know when read is complete
+		const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
+
+		gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
-		const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
-		ctx.putImageData(imageData, 0, 0);
-
-		return canvas.transferToImageBitmap();
+		this.pendingReads.push({ pbo, width, height, sync, nodeId });
+		this.pendingNodeIds.add(nodeId);
 	}
+
+	// ===== PBO Pool =====
+
+	private getPbo(): WebGLBuffer {
+		if (this.pboPool.length > 0) {
+			return this.pboPool.pop()!;
+		}
+
+		return this.gl.createBuffer()!;
+	}
+
+	private returnPbo(pbo: WebGLBuffer): void {
+		this.pboPool.push(pbo);
+	}
+
+	// ===== Sync Capture (for on-demand use) =====
 
 	/**
 	 * Synchronous single-node preview capture.
@@ -211,7 +360,6 @@ export class PreviewRenderer {
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
 
-		// FlipY during blit
 		gl.blitFramebuffer(
 			0,
 			0,
@@ -227,7 +375,7 @@ export class PreviewRenderer {
 
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, destFBO);
 
-		const pixels = this.timedRead(width, height);
+		const pixels = this.timedSyncRead(width, height);
 
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
@@ -245,7 +393,6 @@ export class PreviewRenderer {
 			return enabledPreviews;
 		}
 
-		// Round-robin selection
 		const selected: string[] = [];
 		for (let i = 0; i < maxLimit; i++) {
 			const idx = (this.previewRoundRobinIndex + i) % enabledPreviews.length;
@@ -267,6 +414,7 @@ export class PreviewRenderer {
 		if (!cached) {
 			const canvas = new OffscreenCanvas(width, height);
 			const ctx = canvas.getContext('2d')!;
+
 			cached = { canvas, ctx };
 			this.canvasCache.set(key, cached);
 		}
@@ -299,7 +447,7 @@ export class PreviewRenderer {
 		});
 	}
 
-	private timedRead(width: number, height: number): Uint8Array {
+	private timedSyncRead(width: number, height: number): Uint8Array {
 		const size = width * height * 4;
 		const pixels = new Uint8Array(size);
 
@@ -309,6 +457,7 @@ export class PreviewRenderer {
 		}
 
 		const start = performance.now();
+
 		this.gl.readPixels(0, 0, width, height, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixels);
 		this.profiler.recordReglRead(performance.now() - start);
 
@@ -316,6 +465,22 @@ export class PreviewRenderer {
 	}
 
 	destroy(): void {
+		// Clean up pending reads
+		for (const pending of this.pendingReads) {
+			this.gl.deleteSync(pending.sync);
+			this.gl.deleteBuffer(pending.pbo);
+		}
+
+		this.pendingReads = [];
+		this.pendingNodeIds.clear();
+
+		// Clean up PBO pool
+		for (const pbo of this.pboPool) {
+			this.gl.deleteBuffer(pbo);
+		}
+
+		this.pboPool = [];
+
 		this.previewFbo?.destroy();
 		this.previewTexture?.destroy();
 	}
