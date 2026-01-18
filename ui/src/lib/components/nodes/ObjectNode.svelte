@@ -671,6 +671,7 @@
 											<button
 												type="button"
 												onclick={() => selectSuggestion(suggestion)}
+												onmouseenter={() => (selectedSuggestion = index)}
 												class={[
 													'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
 													index === selectedSuggestion
