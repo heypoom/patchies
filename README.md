@@ -488,7 +488,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 > ✨ Try this patch out [in the app](https://patchies.app/?id=3hd88qv62h4zltq)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
 
-- [Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
+[Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
+
+> [!CAUTION]
+> If you create too many `textmode` or `textmode.dom` objects, your browser will crash with `Too many active WebGL contexts. Oldest context will be lost`. It seems like textmode might not be sharing the WebGL contexts across `TextModifier` instances.
 
 - There are two flavors of textmode objects with a few differences:
 
@@ -1406,9 +1409,10 @@ core.render(el.phasor(rate), el.phasor(rate));
 
 ### `csound~`: Sound and music computing
 
-The `csound~` object allows you to use [Csound](https://csound.com) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
+> [!CAUTION]
+> You must only create one `csound~` object per patch, for now. Creating multiple `csound~` object will break the patch's audio playback. Deleting the object also stops other object's audio. These are known bugs.
 
-- **WARNING**: You must only create one `csound~` object per patch, for now. Creating multiple `csound~` object will break the patch's audio playback. Deleting the object also stops other object's audio. These are known bugs.
+The `csound~` object allows you to use [Csound](https://csound.com) for audio synthesis and processing. Csound is a powerful, domain-specific language for audio programming with decades of development.
 
 You can send messages to control Csound instruments:
 
