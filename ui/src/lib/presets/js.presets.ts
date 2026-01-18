@@ -14,7 +14,9 @@ const h = () => {
 
 requestAnimationFrame(h)`;
 
-const MIDI_ADSR_GAIN_JS = `recv(m => {
+const MIDI_ADSR_GAIN_JS = `setRunOnMount(true)
+
+recv(m => {
   if (m.type === 'noteOn') {
     send({
       type: 'trigger',
@@ -132,7 +134,7 @@ export const JS_PRESETS: Record<
 	},
 	'midi-adsr-gain.js': {
 		type: 'js',
-		data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: false }
+		data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: true }
 	},
 	'midi-control-router.js': {
 		type: 'js',
