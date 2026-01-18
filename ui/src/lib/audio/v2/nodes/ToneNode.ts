@@ -158,13 +158,13 @@ export class ToneNode implements AudioNodeV2 {
 		const Tone = await this.ensureTone();
 
 		if (!code || code.trim() === '') {
-			await this.cleanup();
+			this.cleanup();
 			return;
 		}
 
 		try {
 			// Clean up any existing objects
-			await this.cleanup();
+			this.cleanup();
 
 			// Reset message inlet count and recv callback for new code
 			this.messageInletCount = 0;
@@ -254,36 +254,16 @@ export class ToneNode implements AudioNodeV2 {
 		}
 	}
 
-	private async cleanup() {
-		const Tone = await this.ensureTone();
-
-		// Call any user-provided cleanup function first
+	private cleanup() {
+		// Call any user-provided cleanup function
+		// User code is responsible for disposing their own Tone objects and transport
 		if (this.cleanupFn) {
 			try {
 				this.cleanupFn();
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
-
 				this.customConsole.error(`Error during cleanup: ${errorMessage}`);
 			}
-		}
-
-		// Stop and clear the transport more safely
-		try {
-			const transport = Tone.getTransport();
-
-			// Try to stop without parameters
-			if (transport.state !== 'stopped') {
-				transport.stop();
-			}
-
-			try {
-				transport.cancel();
-			} catch {
-				// ignore
-			}
-		} catch {
-			// ignore
 		}
 
 		this.cleanupFn = null;
