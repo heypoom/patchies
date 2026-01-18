@@ -89,7 +89,7 @@
 
 			{#if name}<span class="mr-2 text-zinc-200">{name}:</span>{/if}
 
-			<span class="text-zinc-300">{expanded ? preview.text : inlinePreview}</span>
+			<span class="text-left text-zinc-300">{expanded ? preview.text : inlinePreview}</span>
 		</button>
 
 		{#if expanded}
