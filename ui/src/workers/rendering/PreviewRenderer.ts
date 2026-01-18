@@ -3,7 +3,11 @@ import type { FBONode, PreviewState } from '../../lib/rendering/types';
 import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { getFramebuffer } from './utils';
 import type { RenderingProfiler } from './RenderingProfiler';
-import { DEFAULT_PREVIEW_MAX_FPS_CAP } from './constants';
+import {
+	DEFAULT_PREVIEW_MAX_FPS_CAP,
+	DEFAULT_PREVIEW_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT,
+	DEFAULT_PREVIEW_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT
+} from './constants';
 
 interface PendingRead {
 	pbo: WebGLBuffer;
@@ -37,8 +41,8 @@ export class PreviewRenderer {
 	public previewSize: [number, number];
 
 	// Throttling configuration
-	public maxPreviewsPerFrame = 4;
-	public maxPreviewsPerFrameNoOutput = 4;
+	public maxPreviewsPerFrame = DEFAULT_PREVIEW_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT;
+	public maxPreviewsPerFrameNoOutput = DEFAULT_PREVIEW_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT;
 
 	// Frame rate limiting for previews (in ms)
 	private previewIntervalMs = Math.round(1000 / DEFAULT_PREVIEW_MAX_FPS_CAP);
