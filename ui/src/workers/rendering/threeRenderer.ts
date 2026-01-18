@@ -166,19 +166,8 @@ export class ThreeRenderer {
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
 
-		// Blit with Y-flip to match standard screen coordinates (like hydraRenderer)
-		gl.blitFramebuffer(
-			0,
-			0,
-			width,
-			height,
-			0,
-			height, // Flip destination Y
-			width,
-			0,
-			gl.COLOR_BUFFER_BIT,
-			gl.LINEAR
-		);
+		// Blit without Y-flip - Three.js output is already in correct orientation
+		gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.LINEAR);
 
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
@@ -436,7 +425,7 @@ export class ThreeRenderer {
 			if (!this.threeInputTextures[i]) {
 				// Create a minimal texture - we'll override its WebGL texture
 				this.threeInputTextures[i] = new this.THREE.Texture();
-				this.threeInputTextures[i].flipY = false; // regl textures are already in correct orientation
+				this.threeInputTextures[i].flipY = true; // Flip to match Three.js expected orientation
 				this.threeInputTextures[i].minFilter = this.THREE.LinearFilter;
 				this.threeInputTextures[i].magFilter = this.THREE.LinearFilter;
 			}
