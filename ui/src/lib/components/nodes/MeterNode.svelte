@@ -81,10 +81,17 @@
 
 			const rms = calculateRmsFromTimeDomain(timeDomainData);
 
-			// Use instantaneous RMS for display, smoothing only for visual appeal
 			// Clamp very small values to zero to avoid floating point drift
 			const instantLevel = rms < 0.001 ? 0 : rms;
-			currentLevel = currentLevel * smoothing + instantLevel * (1 - smoothing);
+
+			// Asymmetric smoothing: fast attack, slow release
+			if (instantLevel > currentLevel) {
+				// Fast attack - respond quickly to rising levels
+				currentLevel = instantLevel;
+			} else {
+				// Slow release - decay smoothly
+				currentLevel = currentLevel * smoothing + instantLevel * (1 - smoothing);
+			}
 
 			const now = Date.now();
 
