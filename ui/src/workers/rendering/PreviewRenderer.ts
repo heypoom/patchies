@@ -26,7 +26,7 @@ export class PreviewRenderer {
 
 	// Throttling configuration
 	public maxPreviewsPerFrame = 4;
-	public maxPreviewsPerFrameNoOutput = 8;
+	public maxPreviewsPerFrameNoOutput = 4;
 
 	// Canvas cache for ImageBitmap creation
 	private canvasCache = new Map<
