@@ -1538,6 +1538,10 @@ You can send messages to control Csound instruments:
 
 ### `netsend` and `netrecv`: send and receive messages over network
 
+<img src="./docs/images/irc-netrecv.webp" alt="Patchies.app irc chat netsend/netrecv demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=pdfb7c8skxk4w4s)! This lets you chat over the network. Try clicking on "Share Link" and sending it to your friend!
+
 - Send and receive messages across the network
 - `Enter` then `netsend <channelname>` to create a `netsend` object that sends messages to the specified channel name, such as `netsend chat`
   - Send messages into the inlet to send it to that channel
