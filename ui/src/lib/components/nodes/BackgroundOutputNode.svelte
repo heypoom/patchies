@@ -48,7 +48,7 @@
 
 				<div
 					class={[
-						'flex h-[60px] w-[60px] items-center justify-center rounded-lg bg-zinc-900/50 backdrop-blur-xl',
+						'flex h-[60px] w-[60px] items-center justify-center rounded-lg bg-zinc-900',
 						borderClass
 					]}
 				>

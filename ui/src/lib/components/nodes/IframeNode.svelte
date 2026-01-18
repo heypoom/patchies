@@ -103,7 +103,7 @@
 	<NodeResizer class="z-1" isVisible={node.selected} />
 
 	{#if node.selected}
-		<div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900/60 px-2 py-1 backdrop-blur-lg">
+		<div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
 			<div class="font-mono text-xs font-medium text-zinc-400">iframe</div>
 		</div>
 	{/if}

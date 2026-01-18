@@ -488,7 +488,7 @@
 		<div class="flex flex-col gap-2">
 			<!-- Floating title and controls -->
 			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div class="z-10 rounded-lg bg-black/60 px-2 py-1 backdrop-blur-lg">
+				<div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
 					<div class="font-mono text-xs font-medium text-zinc-400">orca</div>
 				</div>
 

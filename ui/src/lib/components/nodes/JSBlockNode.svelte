@@ -267,9 +267,7 @@
 			<div
 				class="group/header absolute -top-7 left-0 z-20 flex w-full items-center justify-between"
 			>
-				<div
-					class="z-10 w-fit rounded-lg bg-zinc-900/70 px-2 py-1 text-nowrap whitespace-nowrap backdrop-blur-lg"
-				>
+				<div class="z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1 text-nowrap whitespace-nowrap">
 					<div class="font-mono text-xs font-medium text-zinc-400">
 						{data.libraryName ?? data.title ?? 'js'}
 					</div>

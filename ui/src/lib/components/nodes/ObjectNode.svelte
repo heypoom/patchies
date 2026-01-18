@@ -622,10 +622,7 @@
 				<div class="relative">
 					{#if isEditing}
 						<!-- Editing state: show input field -->
-						<div
-							class={['w-fit rounded-lg border backdrop-blur-lg', containerClass]}
-							style={minWidthStyle}
-						>
+						<div class={['w-fit rounded-lg border', containerClass]} style={minWidthStyle}>
 							<input
 								bind:this={inputElement}
 								bind:value={expr}
@@ -641,7 +638,7 @@
 						{#if showAutocomplete && filteredSuggestions.length > 0}
 							<div class="nopan nodrag nowheel absolute top-full left-0 z-50 flex">
 								<div
-									class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900/80 shadow-xl backdrop-blur-lg"
+									class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900 shadow-xl"
 								>
 									<!-- Results List -->
 									<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
@@ -684,10 +681,7 @@
 						<!-- Locked state: show read-only text -->
 						<div
 							bind:this={nodeElement}
-							class={[
-								'w-full cursor-pointer rounded-lg border px-3 py-2 backdrop-blur-lg',
-								containerClass
-							]}
+							class={['w-full cursor-pointer rounded-lg border px-3 py-2', containerClass]}
 							style={minWidthStyle}
 							ondblclick={handleDoubleClick}
 							role="button"
