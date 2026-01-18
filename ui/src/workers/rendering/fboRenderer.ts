@@ -84,12 +84,18 @@ export class FBORenderer {
 	public jsRunner = JSRunner.getInstance();
 
 	/**
-	 * Max previews to render per frame (0 = unlimited)
+	 * Max previews to render per frame when output is enabled (0 = unlimited)
 	 *
 	 * We use `regl.read()` to get the pixels for the previews and it takes
 	 * 3ms per node. We can't afford to render all previews every frame.
 	 **/
 	public maxPreviewsPerFrame = 4;
+
+	/**
+	 * Max previews to render per frame when output is disabled.
+	 * We can afford more since we skip the output bitmap read.
+	 */
+	public maxPreviewsPerFrameNoOutput = 10;
 
 	private previewRoundRobinIndex = 0;
 
@@ -709,20 +715,25 @@ export class FBORenderer {
 
 		if (enabledPreviews.length === 0) return previewBitmaps;
 
+		// Use higher limit when output is disabled (no output bitmap read)
+		const maxPreviewLimit = this.isOutputEnabled
+			? this.maxPreviewsPerFrame
+			: this.maxPreviewsPerFrameNoOutput;
+
 		// Determine which previews to render this frame
 		let previewsToRender: string[];
 
-		if (this.maxPreviewsPerFrame > 0 && enabledPreviews.length > this.maxPreviewsPerFrame) {
-			// Round-robin: render maxPreviewsPerFrame starting from current index
+		if (maxPreviewLimit > 0 && enabledPreviews.length > maxPreviewLimit) {
+			// Round-robin: render maxPreviews starting from current index
 			previewsToRender = [];
 
-			for (let i = 0; i < this.maxPreviewsPerFrame; i++) {
+			for (let i = 0; i < maxPreviewLimit; i++) {
 				const idx = (this.previewRoundRobinIndex + i) % enabledPreviews.length;
 				previewsToRender.push(enabledPreviews[idx]);
 			}
 
 			this.previewRoundRobinIndex =
-				(this.previewRoundRobinIndex + this.maxPreviewsPerFrame) % enabledPreviews.length;
+				(this.previewRoundRobinIndex + maxPreviewLimit) % enabledPreviews.length;
 		} else {
 			previewsToRender = enabledPreviews;
 		}

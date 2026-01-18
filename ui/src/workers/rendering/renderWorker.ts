@@ -44,10 +44,19 @@ self.onmessage = (event) => {
 		.with('enableProfiling', () => fboRenderer.setProfilingEnabled(data.enabled))
 		.with('flushFrameStats', () => {
 			const stats = fboRenderer.flushFrameStats();
+
 			self.postMessage({ type: 'frameStats', stats });
 		})
 		.with('setMaxPreviewsPerFrame', () => {
-			fboRenderer.maxPreviewsPerFrame = data.max;
+			console.log('setMax::hasOutputNode', fboRenderer.isOutputEnabled);
+
+			if (data.max !== undefined) {
+				fboRenderer.maxPreviewsPerFrame = data.max;
+			}
+
+			if (data.maxNoOutput !== undefined) {
+				fboRenderer.maxPreviewsPerFrameNoOutput = data.maxNoOutput;
+			}
 		});
 };
 
