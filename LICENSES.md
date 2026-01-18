@@ -67,6 +67,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | p2pkit                            | ^0.0.0-2     | MIT                    |
 | p2pt                              | ^1.5.1       | MIT                    |
 | p5                                | ^1.11.9      | LGPL-2.1               |
+| peerjs                            | ^1.5.4       | MIT                    |
 | pocketbase                        | ^0.26.2      | MIT                    |
 | pyodide                           | ^0.28.1      | Apache-2.0             |
 | regl                              | ^2.1.1       | MIT                    |

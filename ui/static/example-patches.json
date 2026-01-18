@@ -225,6 +225,13 @@
 			"author": "@compudanzas"
 		},
 		{
+			"id": "pdfb7c8skxk4w4s",
+			"name": "IRC Chat Simulator",
+			"description": "Chat with your friends over the network using netsend and netrecv",
+			"category": "Programming",
+			"author": "@heypoom"
+		},
+		{
 			"id": "o5lxdb668heya4i",
 			"name": "Console Stress Test",
 			"description": "Poom uses this patch to stress test the virtual console in the js object",

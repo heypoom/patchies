@@ -1550,6 +1550,7 @@ You can send messages to control Csound instruments:
   - It will automatically add the `room` parameter to your shared link, letting you connect with friends.
 - Behind the scenes, this uses [PeerJS](https://github.com/peers/peerjs) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) for peer-to-peer connection.
   - This uses the [PeerServer Cloud](https://peerjs.com/peerserver) service for signaling and peer discovery.
+  - Consider [supporting PeerJS on OpenCollective](https://opencollective.com/peer) if you find this feature useful!
 
 ### AI & Generation Objects
 

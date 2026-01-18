@@ -137,6 +137,16 @@ Powerful open source libraries for building node-based UIs with Svelte or React,
 
 ---
 
+### PeerJS
+
+**Projects:** PeerJS, PeerServer
+
+Simple peer-to-peer library for WebRTC, powering the `netsend` and `netrecv` objects in Patchies for real-time collaboration.
+
+**Support:** [OpenCollective](https://opencollective.com/peer)
+
+---
+
 ### Svelte
 
 **Projects:** Svelte, SvelteKit
