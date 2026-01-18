@@ -410,6 +410,11 @@ export class GLSystem {
 		this.send('sendMessageToNode', { nodeId, message });
 	}
 
+	/** Set which nodes are visible in the viewport for preview culling */
+	setVisibleNodes(nodeIds: Set<string>) {
+		this.send('setVisibleNodes', { nodeIds: Array.from(nodeIds) });
+	}
+
 	/**
 	 * Check if a node has outgoing connections to GPU video nodes (glsl, hydra, swgl)
 	 * Used to optimize bitmap transfers - no need to send bitmaps if nothing consumes them

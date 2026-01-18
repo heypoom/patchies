@@ -35,6 +35,7 @@ export class PreviewRenderer {
 	// Preview state
 	private previewState: PreviewState = {};
 	private previewRoundRobinIndex = 0;
+	private visibleNodes: Set<string> = new Set();
 
 	// Size configuration
 	public outputSize: [number, number];
@@ -116,6 +117,11 @@ export class PreviewRenderer {
 
 	hasEnabledPreviews(): boolean {
 		return this.getEnabledPreviews().length > 0;
+	}
+
+	/** Set which nodes are visible in the viewport for preview culling */
+	setVisibleNodes(nodeIds: Set<string>): void {
+		this.visibleNodes = nodeIds;
 	}
 
 	setPreviewSize(width: number, height: number): void {
@@ -389,17 +395,24 @@ export class PreviewRenderer {
 	// ===== Helpers =====
 
 	private selectNodesForFrame(enabledPreviews: string[], maxLimit: number): string[] {
-		if (maxLimit <= 0 || enabledPreviews.length <= maxLimit) {
-			return enabledPreviews;
+		// Filter to only visible nodes (fallback to all if visibleNodes is empty)
+		const visibleEnabledPreviews =
+			this.visibleNodes.size === 0
+				? enabledPreviews
+				: enabledPreviews.filter((nodeId) => this.visibleNodes.has(nodeId));
+
+		if (maxLimit <= 0 || visibleEnabledPreviews.length <= maxLimit) {
+			return visibleEnabledPreviews;
 		}
 
 		const selected: string[] = [];
 		for (let i = 0; i < maxLimit; i++) {
-			const idx = (this.previewRoundRobinIndex + i) % enabledPreviews.length;
-			selected.push(enabledPreviews[idx]);
+			const idx = (this.previewRoundRobinIndex + i) % visibleEnabledPreviews.length;
+			selected.push(visibleEnabledPreviews[idx]);
 		}
 
-		this.previewRoundRobinIndex = (this.previewRoundRobinIndex + maxLimit) % enabledPreviews.length;
+		this.previewRoundRobinIndex =
+			(this.previewRoundRobinIndex + maxLimit) % visibleEnabledPreviews.length;
 
 		return selected;
 	}
