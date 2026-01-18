@@ -15,7 +15,7 @@ export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
 export type AudioAnalysisValue = Uint8Array<ArrayBufferLike> | Float32Array<ArrayBufferLike>;
 
-type HydraRenderWorkerMessage =
+type RenderWorkerMessage =
 	| { type: 'fftEnabled'; enabled: boolean; nodeId: string }
 	| {
 			type: 'registerFFTRequest';
@@ -265,7 +265,7 @@ export class AudioAnalysisSystem {
 		this.startFFTPolling();
 	}
 
-	/** Disable FFT for a Hydra node */
+	/** Disable FFT for a node */
 	disableFFT(nodeId: string) {
 		this.fftEnabledNodes.delete(nodeId);
 		this.requestedFFTFormats.delete(nodeId);
@@ -294,7 +294,7 @@ export class AudioAnalysisSystem {
 		}
 	}
 
-	/** Register that a Hydra node has requested a specific FFT format */
+	/** Register that a node has requested a specific FFT format */
 	registerFFTRequest(nodeId: string, type: AudioAnalysisType, format: AudioAnalysisFormat) {
 		if (!this.requestedFFTFormats.has(nodeId)) {
 			this.requestedFFTFormats.set(nodeId, new Set());
@@ -303,7 +303,7 @@ export class AudioAnalysisSystem {
 		this.requestedFFTFormats.get(nodeId)!.add(`${type}-${format}`);
 	}
 
-	/** Start polling FFT data for Hydra nodes with adaptive rate based on focus */
+	/** Start polling FFT data for nodes with adaptive rate based on focus */
 	private startFFTPolling() {
 		if (this.fftPollingInterval !== null) return;
 
@@ -323,7 +323,7 @@ export class AudioAnalysisSystem {
 		}
 	}
 
-	/** Stop FFT polling when no Hydra nodes need it */
+	/** Stop FFT polling when no nodes need it */
 	private stopFFTPolling() {
 		if (this.fftPollingInterval !== null) {
 			clearInterval(this.fftPollingInterval);
@@ -337,7 +337,7 @@ export class AudioAnalysisSystem {
 		}
 	}
 
-	/** Poll FFT data and transfer it to Hydra and GLSL renderers. */
+	/** Poll FFT data and transfer it to renderers. */
 	private pollAndTransferFFTData() {
 		// Skip polling entirely when tab is hidden - no one can see the visualizations anyway
 		if (!this.browserFocus.isDocumentVisible) return;
@@ -371,7 +371,7 @@ export class AudioAnalysisSystem {
 		}
 	}
 
-	handleRenderWorkerMessage(data: HydraRenderWorkerMessage) {
+	handleRenderWorkerMessage(data: RenderWorkerMessage) {
 		match(data)
 			.with({ type: 'fftEnabled' }, ({ enabled, nodeId }) => {
 				if (enabled) {
