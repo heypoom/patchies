@@ -846,17 +846,12 @@
 		performAutosave();
 	}
 
+	// HACK: loading normally is causing artifacts when switching between patches
+	//       so we go with this super hacky solution
 	async function loadPatchById(patchId: string) {
 		isLoadingFromUrl = true;
 		urlLoadError = null;
-
-		try {
-			window.location.href = `/?id=${patchId}`;
-		} catch (err) {
-			urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
-			console.error('Failed to load patch:', err);
-			isLoadingFromUrl = false;
-		}
+		window.location.href = `/?id=${patchId}`;
 	}
 
 	// Load patch from URL parameter
