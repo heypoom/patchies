@@ -51,6 +51,7 @@ export class PreviewRenderer {
 	// PBO async read state
 	private pboPool: WebGLBuffer[] = [];
 	private pendingReads: PendingRead[] = [];
+	private pendingNodeIds: Set<string> = new Set(); // Track nodes with in-flight reads
 
 	// Canvas cache for ImageBitmap creation
 	private canvasCache = new Map<
@@ -130,6 +131,8 @@ export class PreviewRenderer {
 
 	removeNode(nodeId: string): void {
 		delete this.previewState[nodeId];
+		this.pendingNodeIds.delete(nodeId);
+
 		// Clean up any pending reads for this node
 		this.pendingReads = this.pendingReads.filter((p) => {
 			if (p.nodeId === nodeId) {
@@ -177,6 +180,9 @@ export class PreviewRenderer {
 		const nodesToRead = this.selectNodesForFrame(enabledPreviews, maxLimit);
 
 		for (const nodeId of nodesToRead) {
+			// Skip if this node already has a pending read
+			if (this.pendingNodeIds.has(nodeId)) continue;
+
 			const fboNode = fboNodes.get(nodeId);
 			if (!fboNode) continue;
 
@@ -232,6 +238,9 @@ export class PreviewRenderer {
 			ctx.putImageData(imageData, 0, 0);
 
 			results.set(nodeId, canvas.transferToImageBitmap());
+
+			// Remove from pending set
+			this.pendingNodeIds.delete(nodeId);
 		}
 
 		this.pendingReads = stillPending;
@@ -297,6 +306,7 @@ export class PreviewRenderer {
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
 		this.pendingReads.push({ pbo, width, height, sync, nodeId });
+		this.pendingNodeIds.add(nodeId);
 	}
 
 	// ===== PBO Pool =====
@@ -452,6 +462,7 @@ export class PreviewRenderer {
 		}
 
 		this.pendingReads = [];
+		this.pendingNodeIds.clear();
 
 		// Clean up PBO pool
 		for (const pbo of this.pboPool) {
