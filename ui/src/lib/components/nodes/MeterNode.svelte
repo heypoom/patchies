@@ -12,7 +12,6 @@
 		data: {
 			smoothing?: number;
 			peakHold?: boolean;
-			style?: 'bar' | 'digital';
 		};
 		selected: boolean;
 	} = $props();
@@ -31,7 +30,6 @@
 	// Configuration
 	const smoothing = $derived(node.data.smoothing ?? 0.8);
 	const peakHold = $derived(node.data.peakHold ?? true);
-	const style = $derived(node.data.style ?? 'bar');
 
 	const CANVAS_WIDTH = 30;
 	const CANVAS_HEIGHT = 120;
@@ -112,11 +110,7 @@
 		ctx.fillStyle = '#18181b';
 		ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-		if (style === 'bar') {
-			drawBarMeter();
-		} else {
-			drawDigitalMeter();
-		}
+		drawBarMeter();
 	}
 
 	function drawBarMeter() {
@@ -143,33 +137,6 @@
 			const y = (i / 10) * CANVAS_HEIGHT;
 			ctx.fillRect(0, CANVAS_HEIGHT - y, 3, 1);
 			ctx.fillRect(27, CANVAS_HEIGHT - y, 3, 1);
-		}
-	}
-
-	function drawDigitalMeter() {
-		const segments = 20;
-		const segmentHeight = (CANVAS_HEIGHT - segments) / segments;
-		const levelSegments = Math.floor(amplitudeToMeterPosition(currentLevel) * segments);
-		const peakSegment = Math.floor(amplitudeToMeterPosition(peakLevel) * segments);
-
-		for (let i = 0; i < segments; i++) {
-			const y = CANVAS_HEIGHT - (i + 1) * (segmentHeight + 1);
-
-			if (i < levelSegments) {
-				if (i < segments * 0.7) {
-					ctx.fillStyle = '#22c55e'; // Green
-				} else if (i < segments * 0.9) {
-					ctx.fillStyle = '#eab308'; // Yellow
-				} else {
-					ctx.fillStyle = '#ef4444'; // Red
-				}
-			} else if (peakHold && i === peakSegment) {
-				ctx.fillStyle = '#ffffff';
-			} else {
-				ctx.fillStyle = '#27272a';
-			}
-
-			ctx.fillRect(5, y, 20, segmentHeight);
 		}
 	}
 
