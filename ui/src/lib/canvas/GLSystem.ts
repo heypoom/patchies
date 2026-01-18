@@ -100,18 +100,6 @@ export class GLSystem {
 
 		// Use match for early returns - most frequent messages first
 		match(data.type)
-			.with('shaderError', () => {
-				if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
-					logger.nodeError(
-						data.nodeId,
-						{ lineErrors: data.lineErrors },
-						'Shader compilation failed:',
-						data.error
-					);
-				} else {
-					logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
-				}
-			})
 			.with('consoleOutput', () => {
 				const args = data.args ?? [data.message];
 				match(data.level)
@@ -125,6 +113,18 @@ export class GLSystem {
 					.otherwise(() => {
 						logger.addNodeLog(data.nodeId, data.level, args);
 					});
+			})
+			.with('shaderError', () => {
+				if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
+					logger.nodeError(
+						data.nodeId,
+						{ lineErrors: data.lineErrors },
+						'Shader compilation failed:',
+						data.error
+					);
+				} else {
+					logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
+				}
 			})
 			.with('sendMessageFromNode', () => {
 				this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
