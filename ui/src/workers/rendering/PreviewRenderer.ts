@@ -207,9 +207,19 @@ export class PreviewRenderer {
 			// Non-blocking check: is the GPU done?
 			const status = gl.clientWaitSync(sync, 0, 0);
 
-			if (status === gl.TIMEOUT_EXPIRED || status === gl.WAIT_FAILED) {
+			if (status === gl.TIMEOUT_EXPIRED) {
 				// Not ready yet, keep waiting
 				stillPending.push(pending);
+				continue;
+			}
+
+			if (status === gl.WAIT_FAILED) {
+				// Sync failed - clean up and discard this read
+				console.warn(`[PreviewRenderer]: clientWaitSync failed for node ${nodeId}`);
+
+				gl.deleteSync(sync);
+				this.returnPbo(pbo);
+				this.pendingNodeIds.delete(nodeId);
 				continue;
 			}
 
