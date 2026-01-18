@@ -66,6 +66,8 @@
 	} from '$lib/utils/connection-validation';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { NodeReplaceEvent } from '$lib/eventbus/events';
 
 	import { toast } from 'svelte-sonner';
 
@@ -81,6 +83,7 @@
 	let glSystem = GLSystem.getInstance();
 	let audioService = AudioService.getInstance();
 	let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
+	let eventBus = PatchiesEventBus.getInstance();
 
 	// Object palette state
 	let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -462,6 +465,7 @@
 		}
 
 		document.addEventListener('keydown', handleGlobalKeydown);
+		eventBus.addEventListener('nodeReplace', replaceNode);
 
 		autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -480,6 +484,8 @@
 		for (const node of nodes) {
 			messageSystem.unregisterNode(node.id);
 		}
+
+		eventBus.removeEventListener('nodeReplace', replaceNode);
 
 		// Clean up autosave interval
 		if (autosaveInterval) {
@@ -689,6 +695,49 @@
 		};
 
 		nodes = [...nodes, newNode];
+	}
+
+	/**
+	 * Replace a node with a new type while preserving position and updating edges.
+	 * Used for converting between compatible node types (e.g., soundfile~ to sampler~).
+	 */
+	function replaceNode(event: NodeReplaceEvent) {
+		const { nodeId, newType, newData, handleMapping } = event;
+
+		// Find the old node
+		const oldNode = nodes.find((n) => n.id === nodeId);
+		if (!oldNode) return;
+
+		// Create new node ID
+		const newId = `${newType}-${nodeIdCounter++}`;
+
+		// Create the replacement node at the same position
+		const newNode: Node = {
+			id: newId,
+			type: newType,
+			position: oldNode.position,
+			data: newData
+		};
+
+		// Update edges to point to the new node, mapping handle IDs if provided
+		edges = edges.map((edge) => {
+			if (edge.source === nodeId) {
+				const newSourceHandle = handleMapping?.[edge.sourceHandle ?? ''] ?? edge.sourceHandle;
+
+				return { ...edge, source: newId, sourceHandle: newSourceHandle };
+			}
+
+			if (edge.target === nodeId) {
+				const newTargetHandle = handleMapping?.[edge.targetHandle ?? ''] ?? edge.targetHandle;
+
+				return { ...edge, target: newId, targetHandle: newTargetHandle };
+			}
+
+			return edge;
+		});
+
+		// Replace the old node with the new one
+		nodes = nodes.map((n) => (n.id === nodeId ? newNode : n));
 	}
 
 	/**

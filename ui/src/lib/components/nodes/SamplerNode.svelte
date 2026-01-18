@@ -19,6 +19,9 @@
 			loop?: boolean;
 			playbackRate?: number;
 			detune?: number;
+			// Used when converting from soundfile~
+			_audioFile?: File;
+			_audioUrl?: string;
 		};
 	} = $props();
 
@@ -373,7 +376,7 @@
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
@@ -399,6 +402,35 @@
 			// Get audio buffer if it exists
 			if (v2Node.audioBuffer) {
 				audioBuffer = v2Node.audioBuffer;
+			}
+
+			// Load audio from soundfile~ conversion if present
+			if (node.data._audioFile || node.data._audioUrl) {
+				try {
+					let arrayBuffer: ArrayBuffer;
+
+					if (node.data._audioFile) {
+						arrayBuffer = await node.data._audioFile.arrayBuffer();
+					} else if (node.data._audioUrl) {
+						const response = await fetch(node.data._audioUrl);
+						arrayBuffer = await response.arrayBuffer();
+					} else {
+						return;
+					}
+
+					const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
+					v2Node.audioBuffer = decodedBuffer;
+					audioBuffer = decodedBuffer;
+
+					// Clear the temporary conversion data
+					updateNodeData(node.id, {
+						...node.data,
+						_audioFile: undefined,
+						_audioUrl: undefined
+					});
+				} catch (error) {
+					console.error('Failed to load audio from soundfile~ conversion:', error);
+				}
 			}
 		}
 	});

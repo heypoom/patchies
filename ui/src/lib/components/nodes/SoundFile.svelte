@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Play, Square, Upload, Volume2 } from '@lucide/svelte/icons';
+	import { Mic, Play, Square, Upload, Volume2 } from '@lucide/svelte/icons';
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -12,6 +12,8 @@
 	import { getFileNameFromUrl } from '$lib/utils/sound-url';
 	import { logger } from '$lib/utils/logger';
 	import { getObjectType } from '$lib/objects/get-type';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import * as ContextMenu from '$lib/components/ui/context-menu';
 
 	let node: {
 		id: string;
@@ -193,92 +195,165 @@
 
 		return 'border-dashed border-zinc-600 bg-zinc-900';
 	});
+
+	/**
+	 * Convert this soundfile~ node to a sampler~ node, preserving the audio file.
+	 * The sampler~ will load the same audio file with additional features like
+	 * recording, loop points, playback rate, and detune controls.
+	 */
+	async function convertToSampler() {
+		if (!hasFile) return;
+
+		const eventBus = PatchiesEventBus.getInstance();
+
+		// Prepare the audio buffer for the sampler
+		let audioBuffer: AudioBuffer | null = null;
+
+		try {
+			let buffer: ArrayBuffer;
+
+			if (node.data.file) {
+				buffer = await node.data.file.arrayBuffer();
+			} else if (node.data.url) {
+				const response = await fetch(node.data.url);
+				buffer = await response.arrayBuffer();
+			} else {
+				return;
+			}
+
+			audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
+		} catch (err) {
+			logger.error('Failed to decode audio for sampler conversion:', err);
+			return;
+		}
+
+		// Dispatch node replace event with sampler data
+		// Handle mapping: soundfile~ uses "audio-out-0", sampler~ uses "audio-out-audio-out"
+		// Also map inlet: soundfile~ uses "message-in", sampler~ has "audio-in-audio-in" and "message-in-message-in"
+		eventBus.dispatch({
+			type: 'nodeReplace',
+			nodeId: node.id,
+			newType: 'sampler~',
+			newData: {
+				hasRecording: true,
+				duration: audioBuffer.duration,
+				loopStart: 0,
+				loopEnd: audioBuffer.duration,
+				loop: false,
+				playbackRate: 1,
+				detune: 0,
+				// Store the file or URL so sampler can load it
+				_audioFile: node.data.file,
+				_audioUrl: node.data.url
+			},
+			handleMapping: {
+				// Outlet: soundfile~ audio-out-0 -> sampler~ audio-out-audio-out
+				'audio-out-0': 'audio-out-audio-out',
+
+				// Inlet: soundfile~ message-in -> sampler~ message-in-message-in
+				'message-in': 'message-in-message-in'
+			}
+		});
+	}
 </script>
 
-<div class="relative flex gap-x-3">
-	<div class="group relative">
-		<div class="flex flex-col gap-2">
-			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div></div>
+<ContextMenu.Root>
+	<ContextMenu.Trigger>
+		<div class="relative flex gap-x-3">
+			<div class="group relative">
+				<div class="flex flex-col gap-2">
+					<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+						<div></div>
 
-				{#if hasFile}
-					<div class="flex gap-1">
-						<button
-							title="Play"
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-							onclick={playFile}
-						>
-							<Play class="h-4 w-4 text-zinc-300" />
-						</button>
+						{#if hasFile}
+							<div class="flex gap-1">
+								<button
+									title="Play"
+									class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+									onclick={playFile}
+								>
+									<Play class="h-4 w-4 text-zinc-300" />
+								</button>
 
-						<button
-							title="Stop"
-							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-							onclick={stopFile}
-						>
-							<Square class="h-4 w-4 text-zinc-300" />
-						</button>
+								<button
+									title="Stop"
+									class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+									onclick={stopFile}
+								>
+									<Square class="h-4 w-4 text-zinc-300" />
+								</button>
+							</div>
+						{/if}
 					</div>
-				{/if}
-			</div>
 
-			<div class="relative">
-				<StandardHandle port="inlet" type="message" total={1} index={0} nodeId={node.id} />
+					<div class="relative">
+						<StandardHandle port="inlet" type="message" total={1} index={0} nodeId={node.id} />
 
-				<div
-					class={[
-						'flex flex-col items-center justify-center gap-3 rounded-lg border-1',
-						containerClass
-					]}
-					ondragover={handleDragOver}
-					ondragleave={handleDragLeave}
-					ondrop={handleDrop}
-					role="figure"
-				>
-					{#if hasFile}
 						<div
-							class="flex items-center justify-center gap-2 px-3 py-[7px]"
-							ondblclick={openFileDialog}
+							class={[
+								'flex flex-col items-center justify-center gap-3 rounded-lg border-1',
+								containerClass
+							]}
+							ondragover={handleDragOver}
+							ondragleave={handleDragLeave}
+							ondrop={handleDrop}
 							role="figure"
 						>
-							<Volume2 class="h-4 w-4 text-zinc-500" />
+							{#if hasFile}
+								<div
+									class="flex items-center justify-center gap-2 px-3 py-[7px]"
+									ondblclick={openFileDialog}
+									role="figure"
+								>
+									<Volume2 class="h-4 w-4 text-zinc-500" />
 
-							<div class="text-center font-mono">
-								<div class="max-w-[150px] truncate text-[12px] font-light text-zinc-300">
-									{fileName}
+									<div class="text-center font-mono">
+										<div class="max-w-[150px] truncate text-[12px] font-light text-zinc-300">
+											{fileName}
+										</div>
+									</div>
 								</div>
-							</div>
-						</div>
-					{:else}
-						<div
-							class="flex items-center justify-center gap-2 px-3 py-[7px]"
-							ondblclick={openFileDialog}
-							role="figure"
-						>
-							<Upload class="h-3 w-3 text-zinc-400" />
+							{:else}
+								<div
+									class="flex items-center justify-center gap-2 px-3 py-[7px]"
+									ondblclick={openFileDialog}
+									role="figure"
+								>
+									<Upload class="h-3 w-3 text-zinc-400" />
 
-							<div class="font-mono text-[12px] font-light text-zinc-400">
-								<span class="text-zinc-300">double click</span> or
-								<span class="text-zinc-300">drop</span>
-								sound file
-							</div>
+									<div class="font-mono text-[12px] font-light text-zinc-400">
+										<span class="text-zinc-300">double click</span> or
+										<span class="text-zinc-300">drop</span>
+										sound file
+									</div>
+								</div>
+							{/if}
 						</div>
-					{/if}
+
+						<StandardHandle
+							port="outlet"
+							type="audio"
+							id="0"
+							title="Audio output"
+							total={1}
+							index={0}
+							nodeId={node.id}
+						/>
+					</div>
 				</div>
-
-				<StandardHandle
-					port="outlet"
-					type="audio"
-					id="0"
-					title="Audio output"
-					total={1}
-					index={0}
-					nodeId={node.id}
-				/>
 			</div>
 		</div>
-	</div>
-</div>
+	</ContextMenu.Trigger>
+
+	<ContextMenu.Content>
+		{#if hasFile}
+			<ContextMenu.Item onclick={convertToSampler}>
+				<Mic class="mr-2 h-4 w-4" />
+				Convert to Sampler
+			</ContextMenu.Item>
+		{/if}
+	</ContextMenu.Content>
+</ContextMenu.Root>
 
 <!-- Hidden file input -->
 <input

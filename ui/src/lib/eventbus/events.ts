@@ -10,7 +10,8 @@ export type PatchiesEvent =
 	| NodeHidePortsUpdateEvent
 	| NodeDragEnabledUpdateEvent
 	| NodeVideoOutputEnabledUpdateEvent
-	| NodeMouseScopeUpdateEvent;
+	| NodeMouseScopeUpdateEvent
+	| NodeReplaceEvent;
 
 export interface ConsoleOutputEvent {
 	type: 'consoleOutput';
@@ -82,4 +83,14 @@ export interface NodeMouseScopeUpdateEvent {
 	type: 'nodeMouseScopeUpdate';
 	nodeId: string;
 	scope: 'global' | 'local';
+}
+
+export interface NodeReplaceEvent {
+	type: 'nodeReplace';
+	nodeId: string;
+	newType: string;
+	newData: Record<string, unknown>;
+
+	/** Maps old handle IDs to new handle IDs for edge reconnection */
+	handleMapping?: Record<string, string>;
 }
