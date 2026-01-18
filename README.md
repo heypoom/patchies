@@ -1096,6 +1096,17 @@ These objects run on _audio rate_, which means they process audio signals in rea
 > Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz): use `P` to play and `K` to stop!
 
 - `soundfile~`: Load and play audio files with transport controls
+  - Double click or drop file into `soundfile~` to load it.
+  - Dropping an audio file into the patcher also creates a `soundfile~` by default.
+  - Right click shows a menu to turn the `soundfile~` into [sampler~](#sampler-audio-sampler-with-recording-and-playback) which has more playback capabilities.
+  - Messages
+    - string: loads the audio file by url
+    - `bang`: play from start of sample
+    - `play`: play from current position
+    - `pause`: pause the playback
+    - `stop`: stop the playback and reset playback position
+  - You can load radio stations too! Search for "online radio station search" to find stream urls.
+    - e.g. send `'https://stream.japanradio.de/live'` to `soundfile~` then `bang` to play a radio station!
 - `sampler~`: Sample playback with triggering capabilities, see [sampler~](#sampler-audio-sampler-with-recording-and-playback)
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers
