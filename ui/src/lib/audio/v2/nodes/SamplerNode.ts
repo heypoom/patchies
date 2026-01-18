@@ -162,6 +162,9 @@ export class SamplerNode implements AudioNodeV2 {
 		this.loopStart = 0;
 		this.loopEnd = 0;
 
+		// Clear old audio buffer so polling can detect the new one
+		this.audioBuffer = null;
+
 		const recorder = new MediaRecorder(this.recordingDestination.stream);
 		const recordedChunks: Blob[] = [];
 
