@@ -1536,15 +1536,20 @@ You can send messages to control Csound instruments:
 - Control external synthesizers and DAWs.
 - Supports note, CC, and system messages.
 
-### `netsend`: network message sender
+### `netsend` and `netrecv`: send and receive messages over network
 
-- Sends message across patches over WebRTC.
-- When creating objects, type in `netsend <channelname>` to create a `netsend` object that sends messages to the specified channel name. Example: `netsend drywet`
-
-### `netrecv`: network message receiver
-
-- Receives message across patches over WebRTC.
-- When creating objects, type in `netrecv <channelname>` to create a `netrecv` object that receives messages from the specified channel name. Example: `netrecv drywet`
+- Send and receive messages across the network
+- `Enter` then `netsend <channelname>` to create a `netsend` object that sends messages to the specified channel name, such as `netsend chat`
+  - Send messages into the inlet to send it to that channel
+- `Enter` then `netrecv <channelname>` to create a `netrecv` object that receives messages from the specified channel name, such as `netrecv chat`
+  - Messages will flow out of the `netrecv` from that channel
+- When you first create a `netsend` or `netrecv` object, it will attach a `room` parameter to your URL.
+  - You must have the same `?room=` parameter to be able to connect to each other.
+  - If you load someone's patch, you can remove the `room` parameter to generate a different room to use.
+- Use the "Share Link" button (or `Ctrl/Cmd + K > Share Patch Link`) to share the patch with friends.
+  - It will automatically add the `room` parameter to your shared link, letting you connect with friends.
+- Behind the scenes, this uses [PeerJS](https://github.com/peers/peerjs) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) for peer-to-peer connection.
+  - This uses the [PeerServer Cloud](https://peerjs.com/peerserver) service for signaling and peer discovery.
 
 ### AI & Generation Objects
 
