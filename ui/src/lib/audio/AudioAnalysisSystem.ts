@@ -2,14 +2,20 @@ import { match } from 'ts-pattern';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { Edge } from '@xyflow/svelte';
 import { AudioService } from './v2/AudioService';
-import { ANALYSIS_KEY, GLSL_FFT_WAVEFORM_UNIFORM_NAME } from './v2/constants/fft';
+import {
+	ANALYSIS_KEY,
+	FFT_POLLING_FPS_FOCUSED,
+	FFT_POLLING_FPS_UNFOCUSED,
+	GLSL_FFT_WAVEFORM_UNIFORM_NAME
+} from './v2/constants/fft';
 import { getObjectType } from '$lib/objects/get-type';
+import { BrowserFocusService } from '$lib/browser/BrowserFocusService';
 
 export type AudioAnalysisType = 'wave' | 'freq';
 export type AudioAnalysisFormat = 'int' | 'float';
 export type AudioAnalysisValue = Uint8Array<ArrayBufferLike> | Float32Array<ArrayBufferLike>;
 
-type HydraRenderWorkerMessage =
+type RenderWorkerMessage =
 	| { type: 'fftEnabled'; enabled: boolean; nodeId: string }
 	| {
 			type: 'registerFFTRequest';
@@ -60,6 +66,7 @@ export class AudioAnalysisSystem {
 	private static instance: AudioAnalysisSystem;
 	private audioService = AudioService.getInstance();
 	private messageSystem = MessageSystem.getInstance();
+	private browserFocus = BrowserFocusService.getInstance();
 
 	// Cache for FFT node connections: nodeId -> fftNodeId
 	private fftConnectionCache = new Map<string, string | null>();
@@ -78,6 +85,46 @@ export class AudioAnalysisSystem {
 
 	/** Mapping of GLSL nodeId to inlet metadata. */
 	private glslInlets: Map<string, GlslFFTInletMeta[]> = new Map();
+
+	/** Object pool for typed arrays to avoid allocations on every poll */
+	private arrayPool = new Map<string, Uint8Array | Float32Array>();
+
+	/** Unsubscribe function for focus listener */
+	private unsubscribeFocus: (() => void) | null = null;
+
+	private getPooledArray(
+		analyzerNodeId: string,
+		type: AudioAnalysisType,
+		format: 'int',
+		size: number
+	): Uint8Array<ArrayBuffer>;
+
+	private getPooledArray(
+		analyzerNodeId: string,
+		type: AudioAnalysisType,
+		format: 'float',
+		size: number
+	): Float32Array<ArrayBuffer>;
+
+	/** Get or create a pooled typed array for FFT analysis */
+	private getPooledArray(
+		analyzerNodeId: string,
+		type: AudioAnalysisType,
+		format: AudioAnalysisFormat,
+		size: number
+	): Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer> {
+		const poolKey = `${analyzerNodeId}-${type}-${format}`;
+		let array = this.arrayPool.get(poolKey);
+
+		// Create new array if not in pool or wrong size
+		if (!array || array.length !== size) {
+			array = format === 'int' ? new Uint8Array(size) : new Float32Array(size);
+
+			this.arrayPool.set(poolKey, array);
+		}
+
+		return array as Uint8Array<ArrayBuffer> | Float32Array<ArrayBuffer>;
+	}
 
 	getAnalysisForNode(
 		consumerNodeId: string,
@@ -102,27 +149,28 @@ export class AudioAnalysisSystem {
 
 		const analyser = node.audioNode as AnalyserNode;
 
+		// Use pooled arrays to avoid allocation churn during frequent polling
 		return match([type, format])
 			.with(['wave', 'int'], () => {
-				const list = new Uint8Array(analyser.fftSize);
+				const list = this.getPooledArray(analyzerNodeId!, 'wave', 'int', analyser.fftSize);
 				analyser.getByteTimeDomainData(list);
 
 				return list;
 			})
 			.with(['wave', 'float'], () => {
-				const list = new Float32Array(analyser.fftSize);
+				const list = this.getPooledArray(analyzerNodeId!, 'wave', 'float', analyser.fftSize);
 				analyser.getFloatTimeDomainData(list);
 
 				return list;
 			})
 			.with(['freq', 'int'], () => {
-				const list = new Uint8Array(analyser.fftSize);
+				const list = this.getPooledArray(analyzerNodeId!, 'freq', 'int', analyser.fftSize);
 				analyser.getByteFrequencyData(list);
 
 				return list;
 			})
 			.with(['freq', 'float'], () => {
-				const list = new Float32Array(analyser.fftSize);
+				const list = this.getPooledArray(analyzerNodeId!, 'freq', 'float', analyser.fftSize);
 				analyser.getFloatFrequencyData(list);
 
 				return list;
@@ -133,6 +181,7 @@ export class AudioAnalysisSystem {
 	updateEdges(edges: Edge[]) {
 		this.fftConnectionCache.clear();
 		this.glslInlets.clear();
+		this.arrayPool.clear();
 
 		for (const edge of edges) {
 			this.setupGlslPolling(edge);
@@ -216,18 +265,36 @@ export class AudioAnalysisSystem {
 		this.startFFTPolling();
 	}
 
-	/** Disable FFT for a Hydra node */
+	/** Disable FFT for a node */
 	disableFFT(nodeId: string) {
 		this.fftEnabledNodes.delete(nodeId);
 		this.requestedFFTFormats.delete(nodeId);
 		this.glslInlets.delete(nodeId);
+
+		// Clean up pooled arrays for this node to prevent memory leaks
+		this.clearArrayPoolForNode(nodeId);
 
 		if (this.fftEnabledNodes.size === 0) {
 			this.stopFFTPolling();
 		}
 	}
 
-	/** Register that a Hydra node has requested a specific FFT format */
+	/** Remove pooled arrays associated with a specific node */
+	private clearArrayPoolForNode(nodeId: string): void {
+		const keysToDelete: string[] = [];
+
+		for (const key of this.arrayPool.keys()) {
+			if (key.startsWith(nodeId + '-')) {
+				keysToDelete.push(key);
+			}
+		}
+
+		for (const key of keysToDelete) {
+			this.arrayPool.delete(key);
+		}
+	}
+
+	/** Register that a node has requested a specific FFT format */
 	registerFFTRequest(nodeId: string, type: AudioAnalysisType, format: AudioAnalysisFormat) {
 		if (!this.requestedFFTFormats.has(nodeId)) {
 			this.requestedFFTFormats.set(nodeId, new Set());
@@ -236,25 +303,45 @@ export class AudioAnalysisSystem {
 		this.requestedFFTFormats.get(nodeId)!.add(`${type}-${format}`);
 	}
 
-	/** Start polling FFT data for Hydra nodes at 24fps as per spec */
+	/** Start polling FFT data for nodes with adaptive rate based on focus */
 	private startFFTPolling() {
 		if (this.fftPollingInterval !== null) return;
 
+		const fps = this.browserFocus.isWindowFocused
+			? FFT_POLLING_FPS_FOCUSED
+			: FFT_POLLING_FPS_UNFOCUSED;
+
 		this.fftPollingInterval = window.setInterval(() => {
 			this.pollAndTransferFFTData();
-		}, 1000 / 24); // 24fps
+		}, 1000 / fps);
+
+		// Subscribe to focus changes if not already subscribed
+		if (!this.unsubscribeFocus) {
+			this.unsubscribeFocus = this.browserFocus.onFocusChange(() => {
+				this.restartPollingWithNewRate();
+			});
+		}
 	}
 
-	/** Stop FFT polling when no Hydra nodes need it */
+	/** Stop FFT polling when no nodes need it */
 	private stopFFTPolling() {
 		if (this.fftPollingInterval !== null) {
 			clearInterval(this.fftPollingInterval);
 			this.fftPollingInterval = null;
 		}
+
+		// Unsubscribe from focus changes
+		if (this.unsubscribeFocus) {
+			this.unsubscribeFocus();
+			this.unsubscribeFocus = null;
+		}
 	}
 
-	/** Poll FFT data and transfer it to Hydra and GLSL renderers. */
+	/** Poll FFT data and transfer it to renderers. */
 	private pollAndTransferFFTData() {
+		// Skip polling entirely when tab is hidden - no one can see the visualizations anyway
+		if (!this.browserFocus.isDocumentVisible) return;
+
 		if (!this.onFFTDataReady) return;
 
 		for (const targetId of this.fftEnabledNodes) {
@@ -284,7 +371,7 @@ export class AudioAnalysisSystem {
 		}
 	}
 
-	handleRenderWorkerMessage(data: HydraRenderWorkerMessage) {
+	handleRenderWorkerMessage(data: RenderWorkerMessage) {
 		match(data)
 			.with({ type: 'fftEnabled' }, ({ enabled, nodeId }) => {
 				if (enabled) {
@@ -300,6 +387,24 @@ export class AudioAnalysisSystem {
 
 	get sampleRate(): number {
 		return this.audioService.getAudioContext().sampleRate;
+	}
+
+	/** Restart polling with the appropriate rate based on focus state */
+	private restartPollingWithNewRate(): void {
+		if (this.fftPollingInterval === null) return;
+
+		// Stop current polling
+		clearInterval(this.fftPollingInterval);
+		this.fftPollingInterval = null;
+
+		// Restart with new rate
+		const fps = this.browserFocus.isWindowFocused
+			? FFT_POLLING_FPS_FOCUSED
+			: FFT_POLLING_FPS_UNFOCUSED;
+
+		this.fftPollingInterval = window.setInterval(() => {
+			this.pollAndTransferFFTData();
+		}, 1000 / fps);
 	}
 
 	static getInstance(): AudioAnalysisSystem {
