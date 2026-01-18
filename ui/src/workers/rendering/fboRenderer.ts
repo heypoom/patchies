@@ -680,6 +680,37 @@ export class FBORenderer {
 	}
 
 	/**
+	 * Render previews for enabled nodes and return ImageBitmaps directly.
+	 * This is more efficient than returning raw pixels because:
+	 * 1. ImageBitmap creation happens in the worker (off main thread)
+	 * 2. ImageBitmap can be transferred zero-copy to main thread
+	 * 3. Main thread just calls transferFromImageBitmap() - no conversion needed
+	 */
+	renderPreviewBitmaps(): Map<string, ImageBitmap> {
+		const previewBitmaps = new Map<string, ImageBitmap>();
+		const enabledPreviews = this.getEnabledPreviews();
+
+		for (const nodeId of enabledPreviews) {
+			const fboNode = this.fboNodes.get(nodeId);
+			if (!fboNode) continue;
+
+			let customSize: [number, number] | undefined = undefined;
+
+			if (this.canvasByNode.has(nodeId)) {
+				customSize = this.canvasOutputSize;
+			}
+
+			const bitmap = this.renderNodePreviewBitmap(fboNode, customSize);
+			if (!bitmap) continue;
+
+			previewBitmaps.set(nodeId, bitmap);
+		}
+
+		return previewBitmaps;
+	}
+
+	/**
+	 * @deprecated Use renderPreviewBitmaps() instead for better performance.
 	 * Render previews for enabled nodes and return their pixel data
 	 */
 	renderPreviews(): Map<string, Uint8Array> {
@@ -711,8 +742,94 @@ export class FBORenderer {
 		return [this.outputSize[0] / 2, this.outputSize[1] / 2];
 	}
 
+	/** Cache of OffscreenCanvas per preview size for reuse */
+	private previewCanvasCache = new Map<string, OffscreenCanvas>();
+
+	/**
+	 * Render a single node's preview and return an ImageBitmap.
+	 * This is more efficient than renderNodePreview because:
+	 * - ImageBitmap creation happens in the worker
+	 * - The bitmap can be transferred zero-copy to the main thread
+	 */
+	public renderNodePreviewBitmap(
+		fboNode: FBONode,
+		customSize?: [number, number]
+	): ImageBitmap | null {
+		const [previewWidth, previewHeight] = customSize ?? this.previewSize;
+		const [renderWidth, renderHeight] = this.outputSize;
+
+		// Get or create a cached OffscreenCanvas for this size
+		const cacheKey = `${previewWidth}x${previewHeight}`;
+		let previewCanvas = this.previewCanvasCache.get(cacheKey);
+
+		if (!previewCanvas) {
+			previewCanvas = new OffscreenCanvas(previewWidth, previewHeight);
+			this.previewCanvasCache.set(cacheKey, previewCanvas);
+		}
+
+		const previewTexture = this.regl.texture({
+			width: previewWidth,
+			height: previewHeight,
+			wrapS: 'clamp',
+			wrapT: 'clamp'
+		});
+
+		const previewFramebuffer = this.regl.framebuffer({
+			color: previewTexture,
+			depthStencil: false
+		});
+
+		let pixels: Uint8Array;
+
+		previewFramebuffer.use(() => {
+			const gl = this.regl._gl as WebGL2RenderingContext;
+			const sourceFBO = getFramebuffer(fboNode.framebuffer);
+			const destPreviewFBO = getFramebuffer(previewFramebuffer);
+
+			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
+			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
+
+			gl.blitFramebuffer(
+				0,
+				0,
+				renderWidth,
+				renderHeight,
+				0,
+				0,
+				previewWidth,
+				previewHeight,
+				gl.COLOR_BUFFER_BIT,
+				gl.LINEAR
+			);
+
+			pixels = this.regl.read() as Uint8Array;
+
+			gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+			gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+		});
+
+		previewTexture.destroy();
+		previewFramebuffer.destroy();
+
+		// Create ImageData and draw to OffscreenCanvas
+		const imageData = new ImageData(new Uint8ClampedArray(pixels!), previewWidth, previewHeight);
+		const ctx = previewCanvas.getContext('2d')!;
+
+		// Clear and draw with flipY transformation to match standard screen coordinates
+		ctx.save();
+		ctx.clearRect(0, 0, previewWidth, previewHeight);
+		ctx.translate(0, previewHeight);
+		ctx.scale(1, -1);
+		ctx.putImageData(imageData, 0, 0);
+		ctx.restore();
+
+		// Transfer bitmap - this is a fast GPU operation
+		return previewCanvas.transferToImageBitmap();
+	}
+
 	/**
 	 * Render a single node's preview using regl.read() as per spec
+	 * @deprecated Use renderNodePreviewBitmap() for better performance
 	 */
 	public renderNodePreview(fboNode: FBONode, customSize?: [number, number]): Uint8Array | null {
 		const [previewWidth, previewHeight] = customSize ?? this.previewSize;

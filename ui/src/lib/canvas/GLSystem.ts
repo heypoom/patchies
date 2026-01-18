@@ -16,6 +16,8 @@ import {
 	type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
+import { logger } from '$lib/utils/logger';
+import { match } from 'ts-pattern';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -71,144 +73,111 @@ export class GLSystem {
 		this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
 	}
 
-	handleRenderWorkerMessage = async (event: MessageEvent) => {
+	handleRenderWorkerMessage = (event: MessageEvent) => {
 		const { data } = event;
-
 		if (!data) return;
 
-		if (data.type === 'animationFrame' && data.outputBitmap) {
-			if (this.ipcSystem.outputWindow !== null) {
-				this.ipcSystem.sendRenderOutput(data.outputBitmap);
-			} else {
-				this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
-			}
-		}
+		// Use match for early returns - most frequent messages first
+		match(data.type)
+			.with('animationFrame', () => {
+				if (!data.outputBitmap) return;
 
-		// Handle shader compilation errors
-		if (data.type === 'shaderError') {
-			const { logger } = await import('$lib/utils/logger');
+				if (this.ipcSystem.outputWindow !== null) {
+					this.ipcSystem.sendRenderOutput(data.outputBitmap);
+				} else {
+					this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
+				}
+			})
+			.with('previewFrame', () => {
+				// Worker now sends ImageBitmap directly - no conversion needed on main thread
+				const context = this.previewCanvasContexts[data.nodeId];
+				if (!context || !data.bitmap) return;
 
-			if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
-				logger.nodeError(
-					data.nodeId,
-					{ lineErrors: data.lineErrors },
-					'Shader compilation failed:',
-					data.error
-				);
-			} else {
-				logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
-			}
-		}
-
-		// Handle console output from canvas renderer
-		if (data.type === 'consoleOutput') {
-			const { logger } = await import('$lib/utils/logger');
-
-			// Route to the appropriate log level using ts-pattern
-			const { match } = await import('ts-pattern');
-			const args = data.args ?? [data.message];
-
-			match(data.level)
-				.with('error', () => {
-					// Use nodeError with lineErrors option if available
-					if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
-						logger.nodeError(data.nodeId, { lineErrors: data.lineErrors }, ...args);
-					} else {
-						logger.nodeError(data.nodeId, ...args);
-					}
-				})
-				.otherwise(() => {
-					logger.addNodeLog(data.nodeId, data.level, args);
+				context.transferFromImageBitmap(data.bitmap);
+			})
+			.with('shaderError', () => {
+				if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
+					logger.nodeError(
+						data.nodeId,
+						{ lineErrors: data.lineErrors },
+						'Shader compilation failed:',
+						data.error
+					);
+				} else {
+					logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
+				}
+			})
+			.with('consoleOutput', () => {
+				const args = data.args ?? [data.message];
+				match(data.level)
+					.with('error', () => {
+						if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
+							logger.nodeError(data.nodeId, { lineErrors: data.lineErrors }, ...args);
+						} else {
+							logger.nodeError(data.nodeId, ...args);
+						}
+					})
+					.otherwise(() => {
+						logger.addNodeLog(data.nodeId, data.level, args);
+					});
+			})
+			.with('sendMessageFromNode', () => {
+				this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
+			})
+			.with('setPortCount', () => {
+				this.eventBus.dispatch({
+					type: 'nodePortCountUpdate',
+					nodeId: data.nodeId,
+					portType: data.portType,
+					inletCount: data.inletCount,
+					outletCount: data.outletCount
 				});
-		}
-
-		// Handle preview frames
-		if (data.type === 'previewFrame' && data.buffer) {
-			const { nodeId, buffer, width, height } = data;
-
-			const context = this.previewCanvasContexts[nodeId];
-			if (!context) return;
-
-			try {
-				const uint8Array = new Uint8Array(buffer);
-				const imageData = new ImageData(new Uint8ClampedArray(uint8Array), width, height);
-
-				// Apply flipY to match standard screen coordinates (Y-down, origin top-left)
-				const bitmap = await createImageBitmap(imageData, { imageOrientation: 'flipY' });
-				context.transferFromImageBitmap(bitmap);
-			} catch (error) {
-				console.error('Failed to create ImageBitmap for preview:', error);
-			}
-		}
-
-		// Render worker (e.g. Hydra) is sending message back to the main thread.
-		if (data.type === 'sendMessageFromNode') {
-			this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
-		}
-
-		// Handle direct setPortCount messages from workers
-		if (data.type === 'setPortCount') {
-			this.eventBus.dispatch({
-				type: 'nodePortCountUpdate',
-				nodeId: data.nodeId,
-				portType: data.portType,
-				inletCount: data.inletCount,
-				outletCount: data.outletCount
+			})
+			.with('setTitle', () => {
+				this.eventBus.dispatch({
+					type: 'nodeTitleUpdate',
+					nodeId: data.nodeId,
+					title: data.title
+				});
+			})
+			.with('setHidePorts', () => {
+				this.eventBus.dispatch({
+					type: 'nodeHidePortsUpdate',
+					nodeId: data.nodeId,
+					hidePorts: data.hidePorts
+				});
+			})
+			.with('setDragEnabled', () => {
+				this.eventBus.dispatch({
+					type: 'nodeDragEnabledUpdate',
+					nodeId: data.nodeId,
+					dragEnabled: data.dragEnabled
+				});
+			})
+			.with('setVideoOutputEnabled', () => {
+				this.eventBus.dispatch({
+					type: 'nodeVideoOutputEnabledUpdate',
+					nodeId: data.nodeId,
+					videoOutputEnabled: data.videoOutputEnabled
+				});
+			})
+			.with('setMouseScope', () => {
+				this.eventBus.dispatch({
+					type: 'nodeMouseScopeUpdate',
+					nodeId: data.nodeId,
+					scope: data.scope
+				});
+			})
+			.with('previewFrameCaptured', () => {
+				this.eventBus.dispatch(data);
+			})
+			.with('fftEnabled', () => {
+				this.audioAnalysis.handleRenderWorkerMessage(data);
+			})
+			.otherwise(() => {
+				// Handle any other FFT-related messages
+				this.audioAnalysis.handleRenderWorkerMessage(data);
 			});
-		}
-
-		// Handle setTitle messages from workers
-		if (data.type === 'setTitle') {
-			this.eventBus.dispatch({
-				type: 'nodeTitleUpdate',
-				nodeId: data.nodeId,
-				title: data.title
-			});
-		}
-
-		// Handle setHidePorts messages from workers
-		if (data.type === 'setHidePorts') {
-			this.eventBus.dispatch({
-				type: 'nodeHidePortsUpdate',
-				nodeId: data.nodeId,
-				hidePorts: data.hidePorts
-			});
-		}
-
-		// Handle setDragEnabled messages from workers
-		if (data.type === 'setDragEnabled') {
-			this.eventBus.dispatch({
-				type: 'nodeDragEnabledUpdate',
-				nodeId: data.nodeId,
-				dragEnabled: data.dragEnabled
-			});
-		}
-
-		// Handle setVideoOutputEnabled messages from workers
-		if (data.type === 'setVideoOutputEnabled') {
-			this.eventBus.dispatch({
-				type: 'nodeVideoOutputEnabledUpdate',
-				nodeId: data.nodeId,
-				videoOutputEnabled: data.videoOutputEnabled
-			});
-		}
-
-		// Handle setMouseScope messages from workers (Hydra global mouse tracking)
-		if (data.type === 'setMouseScope') {
-			this.eventBus.dispatch({
-				type: 'nodeMouseScopeUpdate',
-				nodeId: data.nodeId,
-				scope: data.scope
-			});
-		}
-
-		// A block has requested a preview frame capture from a node.
-		if (data.type === 'previewFrameCaptured') {
-			this.eventBus.dispatch(data);
-		}
-
-		// Handle FFT mechanism
-		this.audioAnalysis.handleRenderWorkerMessage(data);
 	};
 
 	start() {
