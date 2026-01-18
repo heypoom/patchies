@@ -5,6 +5,7 @@ import { paintPreset } from './paint';
 import { xyPadPreset } from './xy-pad';
 import { hslaPickerPreset } from './hsla-picker';
 import { rgbaPickerPreset } from './rgba-picker';
+import { virtualMidiKeyboardPreset } from './virtual-midi-keyboard';
 
 export const CANVAS_PRESETS = {
 	'fft.canvas': fftPreset,
@@ -13,5 +14,6 @@ export const CANVAS_PRESETS = {
 	'particle.canvas': paintPreset,
 	'xy-pad.canvas': xyPadPreset,
 	'hsla.picker': hslaPickerPreset,
-	'rgba.picker': rgbaPickerPreset
+	'rgba.picker': rgbaPickerPreset,
+	'midi.keyboard': virtualMidiKeyboardPreset
 };
