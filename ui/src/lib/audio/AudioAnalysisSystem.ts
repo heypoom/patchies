@@ -401,6 +401,7 @@ export class AudioAnalysisSystem {
 		const fps = this.browserFocus.isWindowFocused
 			? FFT_POLLING_FPS_FOCUSED
 			: FFT_POLLING_FPS_UNFOCUSED;
+
 		this.fftPollingInterval = window.setInterval(() => {
 			this.pollAndTransferFFTData();
 		}, 1000 / fps);
