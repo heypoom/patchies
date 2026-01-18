@@ -28,7 +28,10 @@
 
 	let isEditing = $state(!data.expr); // Start in editing mode if no expression
 	let expr = $state(data.expr || ''); // Active expression being evaluated
-	let inletValues = $state<number[]>([]);
+
+	// Doesn't have to only be numbers! Could be arrays and objects!
+	let inletValues = $state<unknown[]>([]);
+
 	let layoutRef = $state<any>();
 	let consoleRef: VirtualConsole | null = $state(null);
 	let evalResult = $state<ExpressionEvaluatorResult>({ success: true, fn: () => 0 });
@@ -55,11 +58,11 @@
 
 		// Store value for this inlet
 		match(message)
-			.with(P.number, (value) => {
+			.with({ type: 'bang' }, () => {})
+			.otherwise((value) => {
 				nextInletValues[inlet] = value;
 				inletValues = nextInletValues;
-			})
-			.otherwise(() => {});
+			});
 
 		// Only inlet 0 (hot) triggers output
 		if (inlet !== 0) return;

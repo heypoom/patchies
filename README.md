@@ -714,17 +714,18 @@ See the following example:
 
 <img src="./docs/images/patchies-js-modules.png" alt="Patchies.app JS Modules" width="700">
 
-### `expr`: mathematical expression evaluator
+### `expr`: expression evaluator
 
 <img src="./docs/images/patchies-expr-plot.png" alt="Patchies.app expression plot" width="700">
 
 > ✨ Try this patch out [in the app](https://patchies.app/?id=c6adsknw8iix3m2)!
 
-- Evaluate mathematical expressions and formulas.
+- Evaluate expressions and formulas.
 - Use the `$1` to `$9` variables to create inlets dynamically. For example, `$1 + $2` creates two inlets for addition.
-- This uses the [expr-eval](https://github.com/silentmatt/expr-eval) library from silentmatt under the hood for evaluating mathematical expressions.
-- There are so many mathematical functions and operators you can use here! See the [expression syntax](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#expression-syntax) section.
+- This uses the [expr-eval](https://github.com/silentmatt/expr-eval) library from silentmatt under the hood for evaluating expressions.
+- There are so many functions and operators you can use here! See the [expression syntax](https://github.com/silentmatt/expr-eval?tab=readme-ov-file#expression-syntax) section.
 - Very helpful for control signals and parameter mapping.
+- This works with non-numbers too! You can use it to access object fields and work with arrays.
 - You can also create variables and they are multi-line. Make sure to use `;` to separate statements. For example:
 
   ```js

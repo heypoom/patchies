@@ -37,7 +37,7 @@ const parser = new Parser({
 });
 
 export type ExpressionEvaluatorResult =
-	| { success: true; fn: (...args: number[]) => unknown }
+	| { success: true; fn: (...args: unknown[]) => unknown }
 	| { success: false; error: string };
 
 /**
