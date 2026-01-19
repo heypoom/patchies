@@ -5,6 +5,7 @@ import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import type { Chuck } from 'webchuck';
 import { writable } from 'svelte/store';
+import { getChuckGlobalVariableArrayType, getChuckGlobalVariableType } from '../chuck-helpers';
 
 export interface ChuckShred {
 	id: number;
@@ -95,17 +96,27 @@ export class ChuckNode implements AudioNodeV2 {
 				this.chuck?.setString(m.key, m.value);
 			})
 			.with(['set', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
-				if (m.value.every(Number.isInteger)) {
-					this.chuck?.setIntArray(m.key, m.value);
-				} else {
+				const currentShred = this.shreds.at(-1);
+				if (!currentShred) return;
+
+				const varType = getChuckGlobalVariableArrayType(currentShred?.code, m.key);
+
+				if (varType == 'float' || m.value.every((num) => !Number.isInteger(num))) {
 					this.chuck?.setFloatArray(m.key, m.value);
+				} else {
+					this.chuck?.setIntArray(m.key, m.value);
 				}
 			})
 			.with(['set', { key: P.string, value: P.number }], async ([, m]) => {
-				if (Number.isInteger(m.value)) {
-					this.chuck?.setInt(m.key, m.value);
-				} else {
+				const currentShred = this.shreds.at(-1);
+				if (!currentShred) return;
+
+				const varType = getChuckGlobalVariableType(currentShred?.code, m.key);
+
+				if (varType == 'float' || !Number.isInteger(m.value)) {
 					this.chuck?.setFloat(m.key, m.value);
+				} else {
+					this.chuck?.setInt(m.key, m.value);
 				}
 			})
 			.with(['setInt', { key: P.string, value: P.number }], async ([, m]) => {
@@ -114,10 +125,10 @@ export class ChuckNode implements AudioNodeV2 {
 			.with(['setFloat', { key: P.string, value: P.number }], async ([, m]) => {
 				this.chuck?.setFloat(m.key, m.value);
 			})
-			.with(['setInt', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
+			.with(['setIntArray', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
 				this.chuck?.setIntArray(m.key, m.value);
 			})
-			.with(['setFloat', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
+			.with(['setFloatArray', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
 				this.chuck?.setFloatArray(m.key, m.value);
 			})
 			.run();

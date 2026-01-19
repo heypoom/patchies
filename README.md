@@ -963,8 +963,10 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - To use global variables, declare your variable with `global` (e.g. `global int bpm`) and make sure all dependent variables are re-computed in a loop.
   - `{type: 'set', key: string, value: any}`: sets a chuck global value / array (can be string, int or float)
     - Make sure your variable types match! If you try to pass an int (e.g. 140) to a `global bpm float` of `140.0` it would not work. Try `setInt` or `setFloat` if there is an issue.
-  - `{type: 'setInt', key: string, value: any}`: sets a chuck global integer value / array
-  - `{type: 'setFloat', key: string, value: any}`: sets a chuck global float value / array
+  - `{type: 'setInt', key: string, value: number}`: sets a chuck global integer value
+  - `{type: 'setFloat', key: string, value: number}`: sets a chuck global float value
+  - `{type: 'setIntArray', key: string, value: number[]}`: sets a chuck global integer array
+  - `{type: 'setFloatArray', key: string, value: number[]}`: sets a chuck global float array
   - `{type: 'signal', event: string}`: signal an event by name
   - `{type: 'broadcast', event: string}`: broadcast an event by name
 
