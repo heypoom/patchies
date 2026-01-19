@@ -1567,9 +1567,7 @@ You can send messages to control Csound instruments:
   - If you load someone's patch, you can remove the `room` parameter to generate a different room to use.
 - Use the "Share Link" button (or `Ctrl/Cmd + K > Share Patch Link`) to share the patch with friends.
   - It will automatically add the `room` parameter to your shared link, letting you connect with friends.
-- Behind the scenes, this uses [PeerJS](https://github.com/peers/peerjs) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) for peer-to-peer connection.
-  - This uses the [PeerServer Cloud](https://peerjs.com/peerserver) service for signaling and peer discovery.
-  - Consider [supporting PeerJS on OpenCollective](https://opencollective.com/peer) if you find this feature useful!
+- Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) (torrent strategy) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) with public trackers for peer-to-peer mesh discovery.
 
 ### AI & Generation Objects
 

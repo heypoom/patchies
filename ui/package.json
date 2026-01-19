@@ -118,7 +118,6 @@
 		"ohash": "^2.0.11",
 		"overtype": "^1.1.1",
 		"p5": "^2.0.0",
-		"peerjs": "^1.5.5",
 		"pocketbase": "^0.26.2",
 		"pyodide": "^0.28.1",
 		"regl": "^2.1.1",
@@ -133,6 +132,7 @@
 		"virtua": "^0.48.2",
 		"vite-plugin-bundle-audioworklet": "^0.1.1",
 		"vite-plugin-static-copy": "^3.1.1",
+		"trystero": "^0.22.0",
 		"webchuck": "^1.2.10",
 		"webmidi": "^3.1.12"
 	},
