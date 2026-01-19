@@ -1,23 +1,13 @@
-import { joinRoom, selfId, type Room } from 'trystero';
+import { joinRoom, selfId, type DataPayload, type Room } from 'trystero';
 import { getSearchParam, setSearchParam } from '$lib/utils/search-params';
 
 export type P2PMessageHandler = (data: unknown, peerId: string) => void;
 export type P2PConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 type ChannelEntry = {
-	send: (data: unknown, peerId?: string | string[] | null) => Promise<void[]>;
+	send: (data: DataPayload, peerId?: string | string[] | null) => Promise<void[]>;
 	handlers: Set<P2PMessageHandler>;
 };
-
-const DEFAULT_TORRENT_RELAYS = [
-	'wss://tracker.btorrent.xyz',
-	'wss://tracker.openwebtorrent.com',
-	'wss://tracker.fastcast.nz',
-	'wss://tracker.sloppyta.co:443/',
-	'wss://tracker.novage.com.ua:443/',
-	'wss://spacetradersapi-chatbox.herokuapp.com:443/announce',
-	'wss://tracker.files.fm:7073/announce'
-];
 
 /**
  * P2P Manager using Trystero for WebRTC-based peer-to-peer communication.
@@ -62,7 +52,7 @@ export class P2PManager {
 	}
 
 	private async _initialize(): Promise<void> {
-		const config = { appId: 'patchies', relayUrls: DEFAULT_TORRENT_RELAYS };
+		const config = { appId: 'patchies' };
 
 		this.room = joinRoom(config, this.roomId);
 
@@ -99,7 +89,7 @@ export class P2PManager {
 		const entry = this.ensureChannelEntry(channel);
 		if (!entry) return;
 
-		entry.send(data).catch((error) => {
+		entry.send(data as DataPayload).catch((error) => {
 			console.error('[p2p] Error sending to peers:', error);
 		});
 	}
