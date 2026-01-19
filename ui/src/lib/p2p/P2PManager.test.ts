@@ -42,7 +42,7 @@ const mockRoom = {
 
 const joinRoomMock = vi.fn(() => mockRoom);
 
-vi.mock('trystero/torrent', () => ({
+vi.mock('trystero', () => ({
 	joinRoom: joinRoomMock,
 	selfId: 'self-mock'
 }));
