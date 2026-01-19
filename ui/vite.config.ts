@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -32,7 +33,73 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		devtoolsJson(),
-		viteStaticCopyPyodide()
+		viteStaticCopyPyodide(),
+		SvelteKitPWA({
+			registerType: 'autoUpdate',
+			manifest: {
+				name: 'Patchies',
+				short_name: 'Patchies',
+				description: 'Visual programming environment for audio-visual patches',
+				theme_color: '#18181b',
+				background_color: '#09090b',
+				display: 'standalone',
+				icons: [
+					{
+						src: '/favicon.svg',
+						sizes: 'any',
+						type: 'image/svg+xml',
+						purpose: 'any maskable'
+					}
+				]
+			},
+			workbox: {
+				globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,ico}'],
+				globIgnores: ['**/webchuck/**', '**/assets/pyodide*'],
+				maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+				runtimeCaching: [
+					{
+						urlPattern: /\.wasm$/i,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'wasm-cache',
+							expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 }
+						}
+					},
+					{
+						urlPattern: /webchuck/i,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'webchuck-cache',
+							expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 }
+						}
+					},
+					{
+						urlPattern: /pyodide/i,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'pyodide-cache',
+							expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 }
+						}
+					},
+					{
+						urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'google-fonts-cache',
+							expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }
+						}
+					},
+					{
+						urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'gstatic-fonts-cache',
+							expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }
+						}
+					}
+				]
+			}
+		})
 	],
 	optimizeDeps: {
 		exclude: [
