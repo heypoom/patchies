@@ -139,7 +139,7 @@ export class P2PManager {
 
 	private ensureChannelEntry(channel: string): ChannelEntry | null {
 		if (!this.room) {
-			console.warn('[p2p] P2P manager not initialized');
+			console.warn('[p2p] P2P manager not initialized. Call initialize() first.');
 			return null;
 		}
 
