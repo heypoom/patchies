@@ -1,4 +1,4 @@
-import { joinRoom, selfId, type Room } from 'trystero/torrent';
+import { joinRoom, selfId, type Room } from 'trystero';
 import { getSearchParam, setSearchParam } from '$lib/utils/search-params';
 
 export type P2PMessageHandler = (data: unknown, peerId: string) => void;
