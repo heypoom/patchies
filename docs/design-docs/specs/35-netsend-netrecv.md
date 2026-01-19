@@ -1,6 +1,6 @@
 # 35. Netsend and Netrecv
 
-Let's create two objects: `netsend <chan>` and `netrecv <chan>`. We want to send the JSON data over wire using the `p2pkit` library, and using the trackers in `trackersAnnounceURLs`.
+Let's create two objects: `netsend <chan>` and `netrecv <chan>`. We want to send the JSON data over wire using the Trystero library (torrent strategy) which provides room-based mesh networking.
 
 Use the below code sample as inspiration. The below code sample only handles MIDI, but for us we can handle a more generic JSON data.
 

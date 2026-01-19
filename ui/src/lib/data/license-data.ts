@@ -318,7 +318,12 @@ export const dependencies: ProjectLicense[] = [
 	{ name: 'p2pkit', version: '^0.0.0-2', license: 'MIT', url: 'https://npmjs.com/package/p2pkit' },
 	{ name: 'p2pt', version: '^1.5.1', license: 'MIT', url: 'https://npmjs.com/package/p2pt' },
 	{ name: 'p5', version: '^1.11.9', license: 'LGPL-2.1', url: 'https://npmjs.com/package/p5' },
-	{ name: 'peerjs', version: '^1.5.4', license: 'MIT', url: 'https://npmjs.com/package/peerjs' },
+	{
+		name: 'trystero',
+		version: '^0.22.0',
+		license: 'MIT',
+		url: 'https://npmjs.com/package/trystero'
+	},
 	{
 		name: 'pocketbase',
 		version: '^0.26.2',
