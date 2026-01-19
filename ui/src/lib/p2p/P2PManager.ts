@@ -74,10 +74,8 @@ export class P2PManager {
 			this.peers.delete(peerId);
 		});
 
-		if (typeof this.room.getPeers === 'function') {
-			const currentPeers = this.room.getPeers();
-			Object.keys(currentPeers).forEach((peerId) => this.peers.add(peerId));
-		}
+		const currentPeers = this.room.getPeers();
+		Object.keys(currentPeers).forEach((peerId) => this.peers.add(peerId));
 
 		this.connectionState = 'connected';
 	}
