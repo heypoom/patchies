@@ -1567,7 +1567,8 @@ You can send messages to control Csound instruments:
   - If you load someone's patch, you can remove the `room` parameter to generate a different room to use.
 - Use the "Share Link" button (or `Ctrl/Cmd + K > Share Patch Link`) to share the patch with friends.
   - It will automatically add the `room` parameter to your shared link, letting you connect with friends.
-- Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) (torrent strategy) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) with public trackers for peer-to-peer mesh discovery.
+- Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API), leveraging public Nostr relay servers for peer-to-peer mesh discovery.
+  - The `appId` is `"patchies"`. This lets you write Node.js/Bun scripts that can talk with Patchies ([example](https://gist.github.com/dtinth/a781d6fee01707d067ca70ecb58966c1)), so you can extend your patch beyond the browser's confinements.
 
 ### AI & Generation Objects
 
