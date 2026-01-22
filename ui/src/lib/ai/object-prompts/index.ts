@@ -11,6 +11,7 @@ import { canvasPrompt } from './canvas';
 import { chuckPrompt } from './chuck~';
 import { csoundPrompt } from './csound~';
 import { defaultPrompt } from './default';
+import { domPrompt } from './dom';
 import { dspPrompt } from './dsp~';
 import { exprPrompt } from './expr';
 import { exprTildePrompt } from './expr~';
@@ -46,6 +47,7 @@ export const objectPrompts: Record<string, string> = {
 	hydra: hydraPrompt,
 	glsl: glslPrompt,
 	'canvas.dom': canvasDomPrompt,
+	dom: domPrompt,
 	slider: sliderPrompt,
 	js: jsPrompt,
 	expr: exprPrompt,

@@ -73,8 +73,28 @@
 		}
 	}
 
+	let mutationObserver: MutationObserver | null = null;
+
 	onMount(() => {
 		measureContainerWidth();
+
+		// If previewWidth is not provided, observe the container for DOM changes
+		// to re-measure width when content changes dynamically
+		if (previewWidth === undefined && previewContainer) {
+			mutationObserver = new MutationObserver(() => {
+				measureContainerWidth();
+			});
+			mutationObserver.observe(previewContainer, {
+				childList: true,
+				subtree: true,
+				attributes: true,
+				attributeFilter: ['style', 'class']
+			});
+		}
+
+		return () => {
+			mutationObserver?.disconnect();
+		};
 	});
 
 	let editorLeftPos = $derived.by(() => {

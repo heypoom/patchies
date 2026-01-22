@@ -60,6 +60,9 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('textmode.dom', () => ({ code: DEFAULT_TEXTMODE_CODE }))
 		.with('canvas.dom', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('three.dom', () => ({ code: DEFAULT_THREE_CODE }))
+		.with('dom', () => ({
+			code: '// root is a div element you can manipulate\nroot.innerHTML = "<h1>Hello DOM!</h1>"'
+		}))
 		.with('three', () => ({
 			code: DEFAULT_THREE_CODE,
 			messageInletCount: 1,
