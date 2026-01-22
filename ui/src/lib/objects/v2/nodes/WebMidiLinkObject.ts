@@ -5,16 +5,17 @@ import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 import { match } from 'ts-pattern';
 
-type MidiEventData = {
-	type: 'noteOn' | 'noteOff';
-	note: number;
-	velocity?: number;
-	channel?: number;
-};
+type MidiEventData =
+	| { type: 'noteOn'; note: number; velocity?: number; channel?: number }
+	| { type: 'noteOff'; note: number; velocity?: number; channel?: number }
+	| { type: 'controlChange'; control: number; value: number; channel?: number }
+	| { type: 'programChange'; program: number; channel?: number }
+	| { type: 'pitchBend'; value: number; channel?: number };
 
 /**
  * WebMidiLinkObject converts MIDI events to WebMidiLink format.
- * Receives noteOn/noteOff events and outputs midi messages as hex strings.
+ * Receives MIDI events and outputs messages as hex strings per the WebMidiLink spec.
+ * @see https://www.g200kg.com/en/docs/webmidilink/spec.html
  */
 export class WebMidiLinkObject implements TextObjectV2 {
 	static type = 'webmidilink';
@@ -24,7 +25,7 @@ export class WebMidiLinkObject implements TextObjectV2 {
 		{
 			name: 'midi',
 			type: 'message',
-			description: 'MIDI event (noteOn/noteOff with note, velocity, channel)'
+			description: 'MIDI event (noteOn, noteOff, controlChange, programChange, pitchBend)'
 		}
 	];
 
@@ -60,12 +61,21 @@ export class WebMidiLinkObject implements TextObjectV2 {
 
 		const channel = event.channel ?? 1;
 
-		match(event.type)
-			.with('noteOn', () => {
-				this.output.channels[channel].sendNoteOn(event.note, { rawAttack: event.velocity ?? 127 });
+		match(event)
+			.with({ type: 'noteOn' }, (e) => {
+				this.output.channels[channel].sendNoteOn(e.note, { rawAttack: e.velocity ?? 127 });
 			})
-			.with('noteOff', () => {
-				this.output.channels[channel].sendNoteOff(event.note, { rawRelease: event.velocity ?? 0 });
+			.with({ type: 'noteOff' }, (e) => {
+				this.output.channels[channel].sendNoteOff(e.note, { rawRelease: e.velocity ?? 0 });
+			})
+			.with({ type: 'controlChange' }, (e) => {
+				this.output.channels[channel].sendControlChange(e.control, e.value);
+			})
+			.with({ type: 'programChange' }, (e) => {
+				this.output.channels[channel].sendProgramChange(e.program);
+			})
+			.with({ type: 'pitchBend' }, (e) => {
+				this.output.channels[channel].sendPitchBend(e.value);
 			})
 			.exhaustive();
 	}
