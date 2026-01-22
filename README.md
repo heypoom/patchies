@@ -641,6 +641,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - Embed external web pages and interactive web content in your patches.
 - Resizable iframe with customizable URL.
+- Hit `Enter` and type `iframe <url>` to create an iframe with a pre-filled URL. Example: `iframe example.com`
 - Messages:
   - `{type: 'load', url: 'https://...'}`: loads the webpage from the given URL.
   - Any other messages are sent to the iframe via `postMessage`. Use this for communication protocols like [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) that rely on postMessage.

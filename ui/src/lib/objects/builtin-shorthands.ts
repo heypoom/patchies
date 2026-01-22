@@ -123,6 +123,21 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 
 			return { nodeType: name, data: nodeData };
 		}
+	},
+	{
+		names: ['iframe'],
+		description: 'Embedded web content',
+		transform: (expr, name) => {
+			let url = expr.replace(name, '').trim();
+
+			if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+				url = `https://${url}`;
+			}
+			return {
+				nodeType: 'iframe',
+				data: { url, width: 400, height: 300 }
+			};
+		}
 	}
 ];
 
