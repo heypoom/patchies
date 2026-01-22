@@ -40,13 +40,13 @@
 
 	const handleMessage: MessageCallbackFn = (m) => {
 		match(m)
-			.with(P.string, (url) => {
-				loadUrl(url);
-			})
 			.with({ type: 'load', url: P.string }, ({ url }) => {
 				loadUrl(url);
 			})
-			.otherwise(() => {});
+			.otherwise((data) => {
+				// Forward other messages into the iframe via postMessage
+				iframeRef?.contentWindow?.postMessage(data, '*');
+			});
 	};
 
 	function loadUrl(url: string) {
