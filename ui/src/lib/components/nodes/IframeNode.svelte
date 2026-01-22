@@ -7,6 +7,9 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { shouldShowHandles } from '../../../stores/ui.store';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+	import type { IframePostMessageEvent } from '$lib/eventbus/events';
+	import { IframePostMessageListener } from '$lib/iframe/IframePostMessageListener';
 
 	let node: {
 		id: string;
@@ -24,8 +27,11 @@
 
 	let messageContext: MessageContext;
 	let urlInputRef: HTMLInputElement;
+	let iframeRef: HTMLIFrameElement | undefined = $state();
 	let showUrlInput = $state(false);
 	let tempUrl = $state('');
+
+	const eventBus = PatchiesEventBus.getInstance();
 
 	const DEFAULT_WIDTH = 400;
 	const DEFAULT_HEIGHT = 300;
@@ -80,14 +86,32 @@
 		}
 	}
 
+	// Handle postMessage events from this iframe
+	function handleIframePostMessage(event: IframePostMessageEvent) {
+		// Check if the message came from our iframe
+		if (!iframeRef?.contentWindow || event.source !== iframeRef.contentWindow) {
+			return;
+		}
+
+		// Forward the message data to the outlet
+		messageContext?.send(event.data);
+	}
+
 	onMount(() => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
+
+		// Initialize the global postMessage listener (singleton)
+		IframePostMessageListener.getInstance();
+
+		// Subscribe to iframe postMessage events
+		eventBus.addEventListener('iframePostMessage', handleIframePostMessage);
 	});
 
 	onDestroy(() => {
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
+		eventBus.removeEventListener('iframePostMessage', handleIframePostMessage);
 	});
 
 	const handleCommonClass = $derived.by(() => {
@@ -124,6 +148,7 @@
 					{#if hasUrl}
 						<div class="relative">
 							<iframe
+								bind:this={iframeRef}
 								src={node.data.url}
 								title="iframe content"
 								class="rounded-md border border-zinc-700 bg-white"
@@ -192,6 +217,16 @@
 						</div>
 					{/if}
 				</div>
+
+				<StandardHandle
+					port="outlet"
+					type="message"
+					title="postMessage output"
+					total={1}
+					index={0}
+					class={handleCommonClass}
+					nodeId={node.id}
+				/>
 			</div>
 		</div>
 	</div>

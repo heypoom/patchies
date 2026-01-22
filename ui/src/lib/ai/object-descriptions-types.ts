@@ -18,11 +18,13 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "dac~" } })
 
 ## Visual & Creative Coding Objects
+- vue: write custom user interface and component using Vue.js
 - p5: P5.js sketches for interactive graphics and animations
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects
-- canvas: HTML5 Canvas 2D (offscreen, for video chaining)
 - canvas.dom: Interactive HTML5 Canvas with mouse/keyboard input
+- canvas: HTML5 Canvas 2D (offscreen, for fast video chaining in rendering pipeline)
+- dom: write to the DOM element
 - swgl: SwissGL shaders for WebGL2
 - bg.out: Background output (final video output)
 

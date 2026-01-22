@@ -11,7 +11,8 @@ export type PatchiesEvent =
 	| NodeDragEnabledUpdateEvent
 	| NodeVideoOutputEnabledUpdateEvent
 	| NodeMouseScopeUpdateEvent
-	| NodeReplaceEvent;
+	| NodeReplaceEvent
+	| IframePostMessageEvent;
 
 export interface ConsoleOutputEvent {
 	type: 'consoleOutput';
@@ -93,4 +94,14 @@ export interface NodeReplaceEvent {
 
 	/** Maps old handle IDs to new handle IDs for edge reconnection */
 	handleMapping?: Record<string, string>;
+}
+
+export interface IframePostMessageEvent {
+	type: 'iframePostMessage';
+	/** The source window that sent the postMessage */
+	source: Window;
+	/** The message data from postMessage */
+	data: unknown;
+	/** The origin of the message */
+	origin: string;
 }
