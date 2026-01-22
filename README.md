@@ -1017,6 +1017,7 @@ These objects run on _control rate_, which means they process messages (control 
 - `trigger` (alias `t`): Send [messages through multiple outlets](#the-trigger-object) in right-to-left order
 - `adsr`: [ADSR envelope generator](#adsr-adsr-envelope-generator)
 - `spigot`: Message gate that allows or blocks data based on a condition
+- `webmidilink`: Converts `midi.in` messages to [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) link level 0 formats. Connect this to [iframe](#iframe-embed-web-content) to send MIDI messages to WebMIDILink-enabled iframes.
 
 #### `trigger`: sends messages in right-to-left order
 
