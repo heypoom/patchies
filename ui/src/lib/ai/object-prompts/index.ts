@@ -36,6 +36,7 @@ import { uxnPrompt } from './uxn';
 import { sonicPrompt } from './sonic~';
 import { elemPrompt } from './elem~';
 import { labelPrompt } from './label';
+import { vuePrompt } from './vue';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -48,6 +49,7 @@ export const objectPrompts: Record<string, string> = {
 	glsl: glslPrompt,
 	'canvas.dom': canvasDomPrompt,
 	dom: domPrompt,
+	vue: vuePrompt,
 	slider: sliderPrompt,
 	js: jsPrompt,
 	expr: exprPrompt,

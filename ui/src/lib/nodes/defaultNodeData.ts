@@ -61,7 +61,17 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('canvas.dom', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('three.dom', () => ({ code: DEFAULT_THREE_CODE }))
 		.with('dom', () => ({
-			code: '// root is a div element you can manipulate\nroot.innerHTML = "<h1>Hello DOM!</h1>"'
+			code: '// root is a div element you can manipulate\nroot.innerHTML = "<h1 style="padding: 2px 12px">Hello DOM!</h1>"'
+		}))
+		.with('vue', () => ({
+			code: `const message = ref('Hello Vue!')
+
+createApp({
+  template: '<div style="padding: 2px 12px; color: #4ade80">{{ message }}</div>',
+  setup() {
+    return { message }
+  }
+}).mount(root)`
 		}))
 		.with('three', () => ({
 			code: DEFAULT_THREE_CODE,

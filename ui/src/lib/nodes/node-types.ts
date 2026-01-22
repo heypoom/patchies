@@ -55,6 +55,7 @@ import KeyboardNode from '$lib/components/nodes/KeyboardNode.svelte';
 import OrcaNode from '$lib/components/nodes/OrcaNode.svelte';
 import UxnNode from '$lib/components/nodes/UxnNode.svelte';
 import DomNode from '$lib/components/nodes/DomNode.svelte';
+import VueNode from '$lib/components/nodes/VueNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -73,6 +74,7 @@ export const nodeTypes: Record<string, any> = {
 	three: ThreeNode,
 	'three.dom': ThreeDom,
 	dom: DomNode,
+	vue: VueNode,
 	glsl: GLSLCanvasNode,
 	strudel: StrudelNode,
 	bchrn: ButterchurnNode,

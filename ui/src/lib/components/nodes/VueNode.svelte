@@ -14,7 +14,7 @@
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 
-	const DOM_WRAPPER_OFFSET = 2;
+	const VUE_WRAPPER_OFFSET = 2;
 
 	let {
 		id: nodeId,
@@ -42,6 +42,11 @@
 	let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 	const eventBus = PatchiesEventBus.getInstance();
 	const jsRunner = JSRunner.getInstance();
+
+	// Vue instance
+	let Vue: typeof import('vue') | null = null;
+	let vueLoaded = $state(false);
+	let currentApp: ReturnType<(typeof import('vue'))['createApp']> | null = null;
 
 	function handleConsoleOutput(event: ConsoleOutputEvent) {
 		if (event.nodeId !== nodeId) return;
@@ -116,6 +121,17 @@
 		messageContext.messageCallback = null;
 	}
 
+	function unmountVueApp() {
+		if (currentApp) {
+			try {
+				currentApp.unmount();
+			} catch {
+				// Ignore unmount errors
+			}
+			currentApp = null;
+		}
+	}
+
 	async function runCode() {
 		if (!rootContainer) return;
 
@@ -126,14 +142,30 @@
 		// Reset drag state
 		dragEnabled = true;
 
-		// Clear the root container
+		// Unmount previous Vue app
+		unmountVueApp();
+
+		// Clear the root container and create a fresh div for Vue to mount to
+		// This prevents Svelte and Vue from competing for the same element
 		rootContainer.innerHTML = '';
+		const vueRoot = document.createElement('div');
+		vueRoot.className = 'h-full w-full';
+		rootContainer.appendChild(vueRoot);
 
 		try {
+			// Lazy load Vue if not already loaded
+			// Use vue/dist/vue.esm-bundler.js which includes the template compiler
+			if (!Vue) {
+				// @ts-expect-error - vue.esm-bundler.js has no type declarations but works at runtime
+				Vue = await import('vue/dist/vue.esm-bundler.js');
+				vueLoaded = true;
+				customConsole.log('Vue loaded!');
+			}
+
 			// Preprocess code for module support
 			const processedCode = await jsRunner.preprocessCode(data.code, {
 				nodeId,
-				setLibraryName: () => {} // dom doesn't support library definitions
+				setLibraryName: () => {} // vue doesn't support library definitions
 			});
 
 			// If preprocessCode returns null, it means it's a library definition
@@ -141,23 +173,41 @@
 				return;
 			}
 
-			await jsRunner.executeJavaScript(nodeId, processedCode, {
+			const result = await jsRunner.executeJavaScript(nodeId, processedCode, {
 				customConsole,
 				setPortCount,
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
 				extraContext: {
-					root: rootContainer,
+					root: vueRoot,
 					width: containerWidth,
 					height: containerHeight,
 					setSize,
 					noDrag: () => {
 						dragEnabled = false;
-					}
+					},
+					// Vue globals
+					Vue,
+					createApp: Vue.createApp,
+					ref: Vue.ref,
+					reactive: Vue.reactive,
+					computed: Vue.computed,
+					watch: Vue.watch,
+					watchEffect: Vue.watchEffect,
+					onMounted: Vue.onMounted,
+					onUnmounted: Vue.onUnmounted,
+					nextTick: Vue.nextTick,
+					h: Vue.h,
+					defineComponent: Vue.defineComponent
 				}
 			});
+
+			// If the user returned an app instance, store it for cleanup
+			if (result && typeof result.unmount === 'function') {
+				currentApp = result;
+			}
 		} catch (error) {
-			handleCodeError(error, data.code, nodeId, customConsole, DOM_WRAPPER_OFFSET);
+			handleCodeError(error, data.code, nodeId, customConsole, VUE_WRAPPER_OFFSET);
 		}
 	}
 
@@ -173,6 +223,7 @@
 	});
 
 	onDestroy(() => {
+		unmountVueApp();
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 		jsRunner.destroy(nodeId);
 	});
@@ -189,7 +240,7 @@
 	});
 </script>
 
-<ObjectPreviewLayout title={data.title ?? 'dom'} {nodeId} onrun={runCode} {editorReady}>
+<ObjectPreviewLayout title={data.title ?? 'vue'} {nodeId} onrun={runCode} {editorReady}>
 	{#snippet topHandle()}
 		{#each Array.from({ length: inletCount }) as _, index}
 			<StandardHandle
@@ -241,8 +292,8 @@
 		<CodeEditor
 			value={data.code}
 			language="javascript"
-			nodeType="dom"
-			placeholder="Write your DOM code here..."
+			nodeType="vue"
+			placeholder="Write your Vue code here..."
 			class="nodrag h-64 w-full resize-none"
 			onrun={runCode}
 			onchange={(newCode) => {
@@ -258,7 +309,7 @@
 			<VirtualConsole
 				bind:this={consoleRef}
 				{nodeId}
-				placeholder="DOM output will appear here."
+				placeholder="Vue output will appear here."
 				maxHeight="200px"
 			/>
 		</div>
