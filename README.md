@@ -641,8 +641,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - Embed external web pages and interactive web content in your patches.
 - Resizable iframe with customizable URL.
-- Messages
-  - `string` or `{type: 'load', url: 'https://...'}`: loads the webpage from the given URL.
+- Messages:
+  - `{type: 'load', url: 'https://...'}`: loads the webpage from the given URL.
+  - Any other messages are sent to the iframe via `postMessage`. Use this for communication protocols like [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) that rely on postMessage.
+- The message outlet outputs any `postMessage` events received from the iframe. This allows bidirectional communication between your patch and embedded web content.
 - Double-click to enter a URL when no content is loaded.
 - The iframe is sandboxed for security.
 
@@ -759,6 +761,32 @@ The `expr` object follows the Max and Pd convention of **hot** and **cold** inle
 - **Inlets 1+ (cold)**: When a message arrives at other inlets (`$2`, `$3`, etc.), the value is stored but no output is triggered. The stored values are used the next time inlet 0 receives a message.
 
 This allows you to set up multiple values before triggering a computation. Use [the trigger object](#trigger-sends-messages-in-right-to-left-order) to control the order of execution when you need to update multiple inlets and then trigger the output.
+
+### `vue`: create user interfaces with Vue
+
+- Build custom UI components using [Vue.js 3](https://vuejs.org) with the Composition API.
+- You have to specify the template in the `createApp({template})` as a string for now, or use hyperscript via `h()` for more complicated things.
+- These Vue.js objects and modules are exposed: `Vue` (the entire Vue.js module), `createApp`, `ref`, `reactive`, `computed`, `watch`, `watchEffect`, `onMounted`, `onUnmounted`, `nextTick`, `h`, `defineComponent`
+- TailwindCSS is enabled by default for styling.
+  - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
+- You can call these methods in your `vue` code:
+  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+  - `noDrag()` disables dragging the node.
+  - `setTitle(title)` sets the title of the node.
+  - `setPortCount(inletCount, outletCount)` sets the number of message inlets and outlets.
+- See the [Vue.js documentation](https://vuejs.org/guide/introduction.html) to learn how Vue works.
+
+### `dom`: create user interfaces with Vanilla JS
+
+- Build custom UI components using vanilla JavaScript and the DOM API.
+- `root` provides the root element that you can modify, e.g. `root.innerHTML = 'hello'`.
+- TailwindCSS is enabled by default for styling.
+  - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
+- You can call these methods in your `dom` code:
+  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+  - `noDrag()` disables dragging the node.
+  - `setTitle(title)` sets the title of the node.
+  - `setPortCount(inletCount, outletCount)` sets the number of message inlets and outlets.
 
 ### `uxn`: Uxn virtual machine
 
