@@ -147,13 +147,13 @@
 		unmountVueApp();
 
 		try {
-			// Create isolated shadow DOM container with Tailwind
-			const contentRoot = createIsolatedContainer(rootContainer);
+			// Create isolated shadow DOM container with Tailwind (enabled by default)
+			const container = createIsolatedContainer(rootContainer);
 
 			// Create a separate div for Vue to mount to
 			const vueRoot = document.createElement('div');
 			vueRoot.className = 'h-full w-full';
-			contentRoot.appendChild(vueRoot);
+			container.root.appendChild(vueRoot);
 
 			// Lazy load Vue if not already loaded
 			// Use vue/dist/vue.esm-bundler.js which includes the template compiler
@@ -188,6 +188,7 @@
 					noDrag: () => {
 						dragEnabled = false;
 					},
+					tailwind: container.tailwind,
 					// Vue globals
 					Vue,
 					createApp: Vue.createApp,

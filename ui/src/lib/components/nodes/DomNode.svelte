@@ -128,8 +128,8 @@
 		dragEnabled = true;
 
 		try {
-			// Create isolated shadow DOM container with Tailwind
-			const contentRoot = createIsolatedContainer(rootContainer);
+			// Create isolated shadow DOM container with Tailwind (enabled by default)
+			const container = createIsolatedContainer(rootContainer);
 
 			// Preprocess code for module support
 			const processedCode = await jsRunner.preprocessCode(data.code, {
@@ -148,13 +148,14 @@
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
 				extraContext: {
-					root: contentRoot,
+					root: container.root,
 					width: containerWidth,
 					height: containerHeight,
 					setSize,
 					noDrag: () => {
 						dragEnabled = false;
-					}
+					},
+					tailwind: container.tailwind
 				}
 			});
 		} catch (error) {

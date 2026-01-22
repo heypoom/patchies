@@ -4,7 +4,7 @@ export const domPrompt = `## dom Object Instructions
 
 DOM manipulation node with direct JavaScript access to a root div element. Container is fluid-sized by default.
 
-**Tailwind CSS is available!** Use Tailwind utility classes for styling.
+**Tailwind CSS is enabled by default!** Use Tailwind utility classes for styling. Call \`tailwind(false)\` to disable it for better performance if not needed.
 
 **Available Context:**
 - root: HTMLDivElement - the container element you can manipulate
@@ -14,6 +14,7 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 - setTitle(title): Set node title
 - setHidePorts(hide): Hide/show ports
 - noDrag(): Disable node dragging (useful for interactive elements)
+- tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 ${messagingInstructions}
 

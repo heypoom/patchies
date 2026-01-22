@@ -4,7 +4,7 @@ export const vuePrompt = `## vue Object Instructions
 
 Vue 3 reactive components with Composition API. Container is fluid-sized by default.
 
-**Tailwind CSS is available!** Use Tailwind utility classes for styling in templates.
+**Tailwind CSS is enabled by default!** Use Tailwind utility classes for styling in templates. Call \`tailwind(false)\` to disable it for better performance if not needed.
 
 **Available Context:**
 - root: HTMLDivElement - the container element to mount your Vue app
@@ -14,6 +14,7 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - setTitle(title): Set node title
 - setHidePorts(hide): Hide/show ports
 - noDrag(): Disable node dragging (useful for interactive elements)
+- tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 **Vue 3 APIs (auto-imported):**
 - createApp: Create and mount Vue applications

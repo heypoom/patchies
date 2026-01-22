@@ -61,12 +61,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('canvas.dom', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('three.dom', () => ({ code: DEFAULT_THREE_CODE }))
 		.with('dom', () => ({
-			code: '// root is a div element you can manipulate\n// Tailwind CSS is available!\nroot.innerHTML = \'<h1 class="px-3 py-1 text-green-400">Hello DOM!</h1>\''
+			code: '// root is a div element you can manipulate\n// Tailwind CSS is enabled by default, tailwind(false) to disable\nroot.innerHTML = \'<h1 class="px-3 py-1 text-green-400">Hello DOM!</h1>\''
 		}))
 		.with('vue', () => ({
 			code: `const message = ref('Hello Vue!')
 
-// Tailwind CSS is available!
+// Tailwind CSS is enabled by default, tailwind(false) to disable
 createApp({
   template: '<div class="px-3 py-1 text-green-400">{{ message }}</div>',
   setup() {
