@@ -126,14 +126,16 @@
 <div class="relative">
 	<NodeResizer class="z-1" isVisible={node.selected} />
 
-	{#if node.selected}
-		<div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
-			<div class="font-mono text-xs font-medium text-zinc-400">iframe</div>
-		</div>
-	{/if}
-
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
+			<div
+				class="group/header absolute -top-7 left-0 z-20 flex w-full items-center justify-between"
+			>
+				<div class="z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1 text-nowrap whitespace-nowrap">
+					<div class="font-mono text-xs font-medium text-zinc-400">iframe</div>
+				</div>
+			</div>
+
 			<div class="relative">
 				<StandardHandle
 					port="inlet"
