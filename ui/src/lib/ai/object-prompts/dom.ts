@@ -4,6 +4,8 @@ export const domPrompt = `## dom Object Instructions
 
 DOM manipulation node with direct JavaScript access to a root div element. Container is fluid-sized by default.
 
+**Tailwind CSS is available!** Use Tailwind utility classes for styling.
+
 **Available Context:**
 - root: HTMLDivElement - the container element you can manipulate
 - width, height: Container dimensions (undefined if fluid, set after setSize)
@@ -19,12 +21,12 @@ ${messagingInstructions}
 - Message inlet: "in-0", "in-1", etc.
 - Message outlet: "out-0", "out-1", etc.
 
-Example - Simple HTML:
+Example - Simple HTML with Tailwind:
 \`\`\`json
 {
   "type": "dom",
   "data": {
-    "code": "root.innerHTML = '<h1 style=\"color: #4ade80\">Hello!</h1><p>This is DOM manipulation</p>'"
+    "code": "root.innerHTML = '<h1 class=\"text-green-400 text-2xl font-bold\">Hello!</h1><p class=\"text-zinc-400\">This is DOM manipulation</p>'"
   }
 }
 \`\`\`
@@ -34,7 +36,7 @@ Example - Interactive button:
 {
   "type": "dom",
   "data": {
-    "code": "noDrag(); const btn = document.createElement('button'); btn.textContent = 'Click me'; btn.style.cssText = 'padding: 8px 16px; background: #4ade80; border: none; border-radius: 4px; cursor: pointer;'; btn.onclick = () => send('clicked'); root.appendChild(btn);"
+    "code": "noDrag(); root.innerHTML = '<button class=\"px-4 py-2 bg-green-400 text-black rounded cursor-pointer hover:bg-green-300\">Click me</button>'; root.querySelector('button').onclick = () => send('clicked');"
   }
 }
 \`\`\`
@@ -44,7 +46,7 @@ Example - Dynamic list with messages:
 {
   "type": "dom",
   "data": {
-    "code": "const ul = document.createElement('ul'); ul.style.cssText = 'list-style: none; padding: 0; margin: 0;'; root.appendChild(ul); recv(msg => { const li = document.createElement('li'); li.textContent = msg; li.style.cssText = 'padding: 4px; color: #a1a1aa;'; ul.appendChild(li); });"
+    "code": "root.innerHTML = '<ul class=\"list-none p-0 m-0\"></ul>'; const ul = root.querySelector('ul'); recv(msg => { const li = document.createElement('li'); li.textContent = msg; li.className = 'p-1 text-zinc-400'; ul.appendChild(li); });"
   }
 }
 \`\`\`
@@ -54,7 +56,7 @@ Example - Custom form with fixed size:
 {
   "type": "dom",
   "data": {
-    "code": "noDrag(); setSize(250, 100); root.innerHTML = '<input type=\"text\" id=\"inp\" style=\"width: 100%; padding: 8px; margin-bottom: 8px; background: #27272a; border: 1px solid #52525b; color: white; border-radius: 4px;\"><button style=\"width: 100%; padding: 8px; background: #4ade80; border: none; border-radius: 4px; cursor: pointer;\">Submit</button>'; root.querySelector('button').onclick = () => send(root.querySelector('#inp').value);"
+    "code": "noDrag(); setSize(250, 100); root.innerHTML = '<input type=\"text\" id=\"inp\" class=\"w-full p-2 mb-2 bg-zinc-800 border border-zinc-600 text-white rounded\"><button class=\"w-full p-2 bg-green-400 text-black rounded cursor-pointer\">Submit</button>'; root.querySelector('button').onclick = () => send(root.querySelector('#inp').value);"
   }
 }
 \`\`\``;

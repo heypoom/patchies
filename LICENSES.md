@@ -73,6 +73,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | regl                              | ^2.1.1       | MIT                    |
 | stats.js                          | ^0.17.0      | MIT                    |
 | supersonic-scsynth                | ^0.25.5      | Tiered (MIT + GPL-3.0) |
+| tailwindcss                       | ^4.0.0       | MIT                    |
 | textmode.filters.js               | ^1.0.1       | MIT                    |
 | textmode.js                       | ^0.8.1       | MIT                    |
 | three                             | ^0.172.0     | MIT                    |
@@ -131,6 +132,25 @@ The package patch makes minor modifications to expose internal audio nodes for i
 - Exposes audio node chains as `window.strudelNodes` and returns them for connectivity with other Patchies audio objects
 
 These modifications enable seamless integration between Strudel's audio engine and Patchies' audio chaining system while maintaining full compatibility with the AGPL-3.0 license.
+
+#### Tailwind CSS Browser Runtime (Adapted)
+
+The `dom` and `vue` nodes in Patchies use an adapted version of the [@tailwindcss/browser](https://github.com/tailwindlabs/tailwindcss) runtime for JIT CSS compilation.
+
+- **Original Project**: Tailwind CSS / @tailwindcss/browser
+- **Authors**: Tailwind Labs
+- **Repository**: <https://github.com/tailwindlabs/tailwindcss>
+- **License**: MIT
+- **Copyright**: © Tailwind Labs
+
+The implementation was adapted to work within Shadow DOM for style isolation:
+
+- Creates a shared Tailwind compiler instance reused across all nodes
+- Each Shadow DOM gets its own style element with compiled CSS
+- Uses MutationObserver to detect class changes and trigger incremental builds
+- Imports Tailwind's CSS assets (preflight, theme, utilities) directly
+
+This allows `dom` and `vue` nodes to use Tailwind utility classes without styles leaking to the rest of the application. The original MIT license is preserved.
 
 ### Source Code Access
 

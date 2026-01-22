@@ -61,13 +61,14 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('canvas.dom', () => ({ code: DEFAULT_JS_CANVAS_CODE }))
 		.with('three.dom', () => ({ code: DEFAULT_THREE_CODE }))
 		.with('dom', () => ({
-			code: '// root is a div element you can manipulate\nroot.innerHTML = "<h1 style="padding: 2px 12px">Hello DOM!</h1>"'
+			code: '// root is a div element you can manipulate\n// Tailwind CSS is available!\nroot.innerHTML = \'<h1 class="px-3 py-1 text-green-400">Hello DOM!</h1>\''
 		}))
 		.with('vue', () => ({
 			code: `const message = ref('Hello Vue!')
 
+// Tailwind CSS is available!
 createApp({
-  template: '<div style="padding: 2px 12px; color: #4ade80">{{ message }}</div>',
+  template: '<div class="px-3 py-1 text-green-400">{{ message }}</div>',
   setup() {
     return { message }
   }

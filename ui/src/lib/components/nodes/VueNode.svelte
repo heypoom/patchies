@@ -13,6 +13,7 @@
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
+	import { createIsolatedContainer } from '$lib/utils/tailwindBrowser';
 
 	const VUE_WRAPPER_OFFSET = 2;
 
@@ -145,14 +146,15 @@
 		// Unmount previous Vue app
 		unmountVueApp();
 
-		// Clear the root container and create a fresh div for Vue to mount to
-		// This prevents Svelte and Vue from competing for the same element
-		rootContainer.innerHTML = '';
-		const vueRoot = document.createElement('div');
-		vueRoot.className = 'h-full w-full';
-		rootContainer.appendChild(vueRoot);
-
 		try {
+			// Create isolated shadow DOM container with Tailwind
+			const contentRoot = createIsolatedContainer(rootContainer);
+
+			// Create a separate div for Vue to mount to
+			const vueRoot = document.createElement('div');
+			vueRoot.className = 'h-full w-full';
+			contentRoot.appendChild(vueRoot);
+
 			// Lazy load Vue if not already loaded
 			// Use vue/dist/vue.esm-bundler.js which includes the template compiler
 			if (!Vue) {

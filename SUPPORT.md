@@ -155,6 +155,16 @@ A JavaScript framework for building user interfaces with a focus on developer ex
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/sveltejs)
 
+---
+
+### Tailwind Labs
+
+**Projects:** Tailwind CSS, @tailwindcss/browser
+
+Creators of Tailwind CSS, the utility-first CSS framework. The dom and vue nodes use an adapted version of their browser runtime.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/tailwindlabs)
+
 ## Educators & Tutorial Creators
 
 ### Patt Vira

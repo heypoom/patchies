@@ -13,6 +13,7 @@
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
+	import { createIsolatedContainer } from '$lib/utils/tailwindBrowser';
 
 	const DOM_WRAPPER_OFFSET = 2;
 
@@ -126,10 +127,10 @@
 		// Reset drag state
 		dragEnabled = true;
 
-		// Clear the root container
-		rootContainer.innerHTML = '';
-
 		try {
+			// Create isolated shadow DOM container with Tailwind
+			const contentRoot = createIsolatedContainer(rootContainer);
+
 			// Preprocess code for module support
 			const processedCode = await jsRunner.preprocessCode(data.code, {
 				nodeId,
@@ -147,7 +148,7 @@
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
 				extraContext: {
-					root: rootContainer,
+					root: contentRoot,
 					width: containerWidth,
 					height: containerHeight,
 					setSize,

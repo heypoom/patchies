@@ -362,6 +362,7 @@ export const dependencies: ProjectLicense[] = [
 		license: 'MIT',
 		url: 'https://threejs.org'
 	},
+	{ name: 'tailwindcss', version: '^4.0.0', license: 'MIT', url: 'https://tailwindcss.com' },
 	{ name: 'tone', version: '^15.1.22', license: 'MIT', url: 'https://npmjs.com/package/tone' },
 	{
 		name: 'ts-pattern',
@@ -433,6 +434,17 @@ export const portedCode: PortedCode[] = [
 		license: 'AGPL-3.0',
 		notes:
 			'Package patch (superdough@1.2.3.patch) adds window globals for audio node integration: exposes destination gain node and audio node chains for connectivity with other Patchies audio objects.'
+	},
+	{
+		name: 'Tailwind CSS Browser Runtime (adapted)',
+		description:
+			'The dom and vue nodes use an adapted version of the @tailwindcss/browser runtime for JIT CSS compilation in Shadow DOM.',
+		authors: 'Tailwind Labs',
+		repository: 'https://github.com/tailwindlabs/tailwindcss',
+		license: 'MIT',
+		copyright: '© Tailwind Labs',
+		notes:
+			'Adapted from @tailwindcss/browser to work within Shadow DOM for style isolation. The implementation creates a shared Tailwind compiler and per-shadow-root style injection with MutationObserver for class detection.'
 	}
 ];
 
