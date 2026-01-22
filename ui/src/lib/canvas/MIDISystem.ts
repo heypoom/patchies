@@ -153,7 +153,8 @@ export class MIDISystem {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'noteOn',
 					note: e.note.number,
-					velocity: e.note.rawAttack || 0
+					velocity: e.note.rawAttack || 0,
+					channel: e.message.channel
 				});
 			};
 
@@ -167,7 +168,8 @@ export class MIDISystem {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'noteOff',
 					note: e.note.number,
-					velocity: e.note.rawRelease || 0
+					velocity: e.note.rawRelease || 0,
+					channel: e.message.channel
 				});
 			};
 
@@ -181,7 +183,8 @@ export class MIDISystem {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'controlChange',
 					control: e.controller.number,
-					value: typeof e.value === 'number' ? e.value : 0
+					value: typeof e.value === 'number' ? e.value : 0,
+					channel: e.message.channel
 				});
 			};
 
@@ -194,7 +197,8 @@ export class MIDISystem {
 			listeners.programChange = (e: MessageEvent) => {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'programChange',
-					program: typeof e.value === 'number' ? e.value : 0
+					program: typeof e.value === 'number' ? e.value : 0,
+					channel: e.message.channel
 				});
 			};
 
@@ -208,7 +212,8 @@ export class MIDISystem {
 				this.messageSystem.sendMessage(nodeId, {
 					type: 'pitchBend',
 					value: e.value,
-					control: e.statusByte
+					control: e.statusByte,
+					channel: e.message.channel
 				});
 			};
 
