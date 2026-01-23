@@ -50,6 +50,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "x7q9819cn6zplpk",
+			"name": "Virtual Smooth Jazz",
+			"description": "A virtual smooth jazz band made with SpessaSynth and WebMIDILink. Click on iframe to play 🎷",
+			"category": "Audio",
+			"author": "@kijjaz"
+		},
+		{
 			"id": "b2vsbbe4jt87qyz",
 			"name": "Drum Sequencer",
 			"description": "Automated drum sequencer that plays samples. Use P to play and K to stop 🥁",
