@@ -4,6 +4,8 @@
 		Command,
 		Copy,
 		FilePlusCorner,
+		PanelLeftOpen,
+		PanelLeftClose,
 		Link,
 		Search,
 		Sparkles,
@@ -25,6 +27,7 @@
 		copiedNodeData,
 		hasGeminiApiKey,
 		showStartupModal = $bindable(false),
+		isLeftSidebarOpen = false,
 		onDelete,
 		onInsertObject,
 		onBrowseObjects,
@@ -35,7 +38,8 @@
 		onAiInsertOrEdit,
 		onCommandPalette,
 		onNewPatch,
-		onLoadPatch
+		onLoadPatch,
+		onToggleLeftSidebar
 	}: {
 		nodes: Node[];
 		edges: Edge[];
@@ -48,6 +52,7 @@
 		}> | null;
 		hasGeminiApiKey: boolean;
 		showStartupModal: boolean;
+		isLeftSidebarOpen: boolean;
 		onDelete: () => void;
 		onInsertObject: () => void;
 		onBrowseObjects: () => void;
@@ -59,6 +64,7 @@
 		onCommandPalette: () => void;
 		onNewPatch: () => void;
 		onLoadPatch: (patchId: string) => void | Promise<void>;
+		onToggleLeftSidebar: () => void;
 	} = $props();
 
 	const hasSelection = $derived(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0);
@@ -193,6 +199,23 @@
 			onNewPatch();
 		}}><FilePlusCorner class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
 	>
+
+	<button
+		title={isLeftSidebarOpen ? 'Close Sidebar' : 'Open Sidebar'}
+		class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+		onclick={(e) => {
+			e.preventDefault();
+			e.stopPropagation();
+
+			onToggleLeftSidebar();
+		}}
+	>
+		{#if isLeftSidebarOpen}
+			<PanelLeftClose class="h-4 w-4 text-zinc-300" />
+		{:else}
+			<PanelLeftOpen class="h-4 w-4 text-zinc-300" />
+		{/if}
+	</button>
 
 	<StartupModal
 		bind:open={showStartupModal}

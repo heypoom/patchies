@@ -1047,7 +1047,7 @@
 						showMissingApiKeyDialog = true;
 					}}
 					onNewPatch={newPatch}
-					onBrowseFiles={() => (showSidebar = true)}
+					onOpenLeftSidebar={() => (showSidebar = true)}
 				/>
 			{/if}
 		</div>
@@ -1061,6 +1061,7 @@
 				{selectedEdgeIds}
 				{copiedNodeData}
 				{hasGeminiApiKey}
+				isLeftSidebarOpen={showSidebar}
 				bind:showStartupModal
 				onDelete={deleteSelectedElements}
 				onInsertObject={insertObjectWithButton}
@@ -1073,6 +1074,9 @@
 				onCommandPalette={triggerCommandPalette}
 				onNewPatch={newPatch}
 				onLoadPatch={loadPatchById}
+				onToggleLeftSidebar={() => {
+					showSidebar = !showSidebar;
+				}}
 			/>
 		{/if}
 

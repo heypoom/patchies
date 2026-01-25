@@ -29,7 +29,7 @@
 		onShowAiPrompt?: () => void;
 		onShowGeminiKeyModal?: () => void;
 		onNewPatch?: () => void;
-		onBrowseFiles?: () => void;
+		onOpenLeftSidebar?: () => void;
 	}
 
 	let {
@@ -42,7 +42,7 @@
 		onShowAiPrompt,
 		onShowGeminiKeyModal,
 		onNewPatch,
-		onBrowseFiles
+		onOpenLeftSidebar
 	}: Props = $props();
 
 	// Component state
@@ -313,7 +313,7 @@
 			})
 			.with('browse-files', () => {
 				onCancel();
-				onBrowseFiles?.();
+				onOpenLeftSidebar?.();
 			})
 			.with('toggle-vim-mode', () => {
 				const current = localStorage.getItem('editor.vim') === 'true';
