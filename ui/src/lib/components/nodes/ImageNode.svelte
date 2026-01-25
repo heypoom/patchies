@@ -187,6 +187,7 @@
 		try {
 			// Use File System Access API if available
 			if ('showOpenFilePicker' in window) {
+				// @ts-expect-error - showOpenFilePicker is not typed
 				const [handle] = await window.showOpenFilePicker({
 					types: [
 						{
@@ -196,6 +197,7 @@
 					],
 					multiple: false
 				});
+
 				const file = await handle.getFile();
 				await loadFile(file, handle);
 			} else {
