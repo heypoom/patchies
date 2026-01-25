@@ -1,17 +1,5 @@
 <script lang="ts">
-	import {
-		CirclePlus,
-		Command,
-		Copy,
-		FilePlusCorner,
-		Link,
-		Search,
-		Sparkles,
-		Trash2,
-		Volume2,
-		Cable,
-		ClipboardPaste
-	} from '@lucide/svelte/icons';
+	import { Volume2, Cable } from '@lucide/svelte/icons';
 	import {
 		SvelteFlow,
 		Controls,
@@ -24,9 +12,8 @@
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import CommandPalette from './CommandPalette.svelte';
-	import StartupModal from './startup-modal/StartupModal.svelte';
-	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
+	import BottomToolbar from './BottomToolbar.svelte';
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
@@ -52,7 +39,6 @@
 	import { migratePatch } from '$lib/migration';
 	import { serializePatch } from '$lib/save-load/serialize-patch';
 	import { getSharedPatchData } from '$lib/api/pb';
-	import { createAndCopyShareLink } from '$lib/save-load/share';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
@@ -1065,134 +1051,26 @@
 
 	<!-- Bottom toolbar buttons -->
 	{#if $isBottomBarVisible}
-		<div class="fixed right-0 bottom-0 p-2">
-			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
-				<button
-					title="Delete (Del)"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						const ok = confirm('Delete this element?');
-
-						if (ok) {
-							deleteSelectedElements();
-						}
-					}}><Trash2 class="h-4 w-4 text-red-400" /></button
-				>
-			{/if}
-
-			<button
-				title="Quick Insert Object (Enter)"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					insertObjectWithButton();
-				}}><CirclePlus class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			<button
-				title="Browse Objects (Cmd+B)"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					showObjectBrowser = true;
-				}}><Search class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			{#if selectedNodeIds.length > 0 || (selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0)}
-				<button
-					title="Copy / Paste"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						if (selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0) {
-							pasteNode('button');
-						} else if (selectedNodeIds && (!copiedNodeData || copiedNodeData.length === 0)) {
-							copySelectedNodes();
-						}
-					}}
-				>
-					{#if selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0}
-						<ClipboardPaste class="h-4 w-4 text-zinc-300" />
-					{:else}
-						<Copy class="h-4 w-4 text-zinc-300" />
-					{/if}
-				</button>
-			{/if}
-
-			<!-- Only show connection button if there are at least 2 nodes -->
-			<!-- You can't connect a single node to itself -->
-			{#if nodes.length >= 2}
-				<button
-					title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
-					class={`cursor-pointer rounded p-1 ${$isConnectionMode ? 'bg-blue-600/70 hover:bg-blue-800/70' : 'bg-zinc-900/70 hover:bg-zinc-700'}`}
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						if ($isConnectionMode) {
-							cancelConnectionMode();
-						} else {
-							isConnectionMode.set(true);
-						}
-					}}><Cable class="h-4 w-4 text-zinc-300" /></button
-				>
-			{/if}
-
-			{#if $isAiFeaturesVisible && hasGeminiApiKey}
-				<button
-					title="AI Create/Edit Object (Cmd+I)"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						onAiInsertOrEdit();
-					}}><Sparkles class="h-4 w-4 text-zinc-300" /></button
-				>
-			{/if}
-
-			<button
-				title="Share Patch Link"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={() => createAndCopyShareLink(nodes, edges)}
-				><Link class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			<button
-				title="Command Palette (Cmd+K)"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					triggerCommandPalette();
-				}}><Command class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			<VolumeControl />
-
-			<button
-				title="New Patch"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					newPatch();
-				}}><FilePlusCorner class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
-			>
-
-			<StartupModal bind:open={showStartupModal} onLoadPatch={loadPatchById} />
-		</div>
+		<BottomToolbar
+			{nodes}
+			{edges}
+			{selectedNodeIds}
+			{selectedEdgeIds}
+			{copiedNodeData}
+			{hasGeminiApiKey}
+			bind:showStartupModal
+			onDelete={deleteSelectedElements}
+			onInsertObject={insertObjectWithButton}
+			onBrowseObjects={() => (showObjectBrowser = true)}
+			onCopy={copySelectedNodes}
+			onPaste={() => pasteNode('button')}
+			onCancelConnectionMode={cancelConnectionMode}
+			onEnableConnectionMode={() => isConnectionMode.set(true)}
+			{onAiInsertOrEdit}
+			onCommandPalette={triggerCommandPalette}
+			onNewPatch={newPatch}
+			onLoadPatch={loadPatchById}
+		/>
 	{/if}
 
 	<!-- Object Browser Modal -->

@@ -94,8 +94,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 
 chuck~: integrate with chuck's fs methods
 
-- we create special directory `/obj/` to store node-specific filesystem
-- e.g. `mount://obj/`
+- we create special namespace `/obj` to store node-specific filesystem, e.g. `obj://chuck~-20/hello.ck`
 - we then call chuck methods to sync filesystem
 - `chuck.createDirectory(parent, name)`
 - `chuck.createFile(directory, filename, data: string | ArrayBuffer)` -- creates a file in chuck's VFS
