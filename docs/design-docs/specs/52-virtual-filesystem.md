@@ -43,9 +43,10 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 - Patchies vfs has two prefixes:
   - `user://` is for user uploaded files. example: `user://images/poom.jpg`
   - `nodes://` is for files associated with nodes, using `/<node-id>` as prefixes.
-    - example: `nodes://chuck~-24` contains filesystem for ChucK
-    - example: `nodes://elem~-36` contains filesystem for Elementary Audio
-    - only some node will have a virtual node filesystem, such as `chuck~` and `elem~`
+    - example: `nodes://chuck~-24` contains filesystem for a ChucK object
+    - example: `nodes://elem~-36` contains filesystem for an Elementary Audio object
+    - example: `nodes://csound~-42` contains filesystem for a Csound object
+    - only some node will have a virtual node filesystem, such as `chuck~` and `elem~` and `csound~`
   - the prefixes helps us to check if it is a virtual filesystem path, or an already resolved path.
 
 ## Integration Paths
@@ -60,23 +61,29 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
   - `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('mount://images/poom.jpg')`
   - `createVideo` as well, e.g. `await createVideo('mount://videos/poom.mp4')`
 
-- chuck~: integrate with chuck's fs methods
-  - we create special directory `/nodes/` to store node-specific filesystem
-    - e.g. `mount://nodes/`
-  - we then call chuck methods to sync filesystem
-    - `chuck.createDirectory(parent, name)`
-    - `chuck.createFile(directory, filename, data: string | ArrayBuffer)` -- creates a file in chuck's VFS
-  - we should add a message to `chuck~` to interact with vfs
-    - `{type: 'runFile', filename: string, args?: string}` -- run a ChucK file e.g. `{type: 'runFile', filename: './hello.ck', args: '1:2:foo'}`
-      - no args use `chuck.runFile`, has args use `chuck.runFileWithArgs`
-    - `{type: 'replaceFile', filename: string, args?: string}` -- replace last shred with a ChucK file e.g. `{type: 'replaceFile', filename: './hello.ck', args: '1:2:foo'}`
-      - no args use `chuck.replaceFile`, has args use `chuck.replaceFileWithArgs`
+### chuck~ integration
 
-- elem~: integrate with Elementary Audio's virtual filesystem
-  - docs: <https://www.elementary.audio/docs/guides/Virtual_File_System>
-  - `core.updateVirtualFileSystem(fs: Object<string, Float32Array | Float32Array[]))`
-  - `core.listVirtualFileSystem() -> string[]`
-  - `core.pruneVirtualFileSystem`
+chuck~: integrate with chuck's fs methods
+
+- we create special directory `/nodes/` to store node-specific filesystem
+- e.g. `mount://nodes/`
+- we then call chuck methods to sync filesystem
+- `chuck.createDirectory(parent, name)`
+- `chuck.createFile(directory, filename, data: string | ArrayBuffer)` -- creates a file in chuck's VFS
+- we should add a message to `chuck~` to interact with vfs
+- `{type: 'runFile', filename: string, args?: string}` -- run a ChucK file e.g. `{type: 'runFile', filename: './hello.ck', args: '1:2:foo'}`
+  - no args use `chuck.runFile`, has args use `chuck.runFileWithArgs`
+- `{type: 'replaceFile', filename: string, args?: string}` -- replace last shred with a ChucK file e.g. `{type: 'replaceFile', filename: './hello.ck', args: '1:2:foo'}`
+  - no args use `chuck.replaceFile`, has args use `chuck.replaceFileWithArgs`
+
+### elem~ integration
+
+integrate with Elementary Audio's virtual filesystem
+
+- docs: <https://www.elementary.audio/docs/guides/Virtual_File_System>
+- `core.updateVirtualFileSystem(fs: Object<string, Float32Array | Float32Array[]))`
+- `core.listVirtualFileSystem() -> string[]`
+- `core.pruneVirtualFileSystem`
 
 we will need additional parsing here for `elem~` as the audio data has to be decoded, e.g.
 
@@ -89,7 +96,25 @@ core.updateVirtualFileSystem({
 });
 ```
 
-- csound~: integrate with CSound's virtual filesystem
+### csound~ integration
+
+csound~: integrate with CSound's virtual filesystem
+
+- We should be able to synchronize csound filesystem with Patchies' virtual filesystem
+- You can access csound filesystem with `csound.fs` which returns this object:
+
+```ts
+declare interface CsoundFs {
+  appendFile: (path: string, file: Uint8Array) => Promise<void>;
+  writeFile: (path: string, file: Uint8Array) => Promise<void>;
+  readFile: (path: string) => Promise<Uint8Array>;
+  unlink: (path: string) => Promise<void>;
+  readdir: (path: string) => Promise<string[]>;
+  mkdir: (path: string) => Promise<void>;
+  stat: (path: string) => Promise<CsoundFsStat | undefined>;
+  pathExists: (path: string) => Promise<boolean>;
+}
+```
 
 ## Future Ideas
 
