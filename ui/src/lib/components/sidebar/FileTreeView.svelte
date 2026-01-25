@@ -16,7 +16,7 @@
 		Link,
 		RefreshCw
 	} from '@lucide/svelte/icons';
-	import { VirtualFilesystem, getLocalProvider } from '$lib/vfs';
+	import { VirtualFilesystem, getLocalProvider, guessMimeType } from '$lib/vfs';
 	import { parseVFSPath, isVFSFolder, isLocalFolder, type VFSEntry } from '$lib/vfs/types';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -680,8 +680,10 @@
 								<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
 								<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
 							{:else}
+								{@const mimeType = guessMimeType(item.name)}
+								{@const fileIcon = getFileIcon(mimeType)}
 								<span class="w-3"></span>
-								<File class="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+								<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
 							{/if}
 							<span class="truncate font-mono text-zinc-300" title={item.name}>
 								{item.name}
