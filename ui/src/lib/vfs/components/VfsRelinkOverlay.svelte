@@ -69,20 +69,28 @@
 			<!-- Compact: inline layout -->
 			<div class="flex items-center justify-center gap-2 px-2">
 				<Lock class="mr-1 h-4 w-4 flex-shrink-0 text-amber-400" />
-				<div class="text-[11px] font-light text-zinc-400">Re-link folder in sidebar.</div>
+				<div class="text-[11px] font-light text-zinc-400">
+					Re-link <span class="font-medium text-zinc-300">{linkedFolderName}</span> in sidebar.
+				</div>
 			</div>
 		{:else}
 			<!-- Normal: stacked layout -->
 			<Lock class="mb-2 h-5 w-5 text-amber-400" />
 
-			<div class="text-[12px] font-light text-zinc-400">Re-link folder in sidebar.</div>
-
-			<div class="overflow-hidden text-[10px] font-light text-zinc-600">
-				{linkedFolderName ? `Folder: ${linkedFolderName}` : vfsPath}
+			<div class="text-[12px] font-light text-zinc-400">
+				Re-link <span class="font-medium text-zinc-300">{linkedFolderName ?? 'folder'}</span> in sidebar.
 			</div>
 
+			{#if !linkedFolderName}
+				<div class="overflow-hidden text-[10px] font-light text-zinc-500">
+					{vfsPath}
+				</div>
+			{/if}
+
 			<div class="mt-1 text-[10px] text-zinc-500">
-				Find the folder in the sidebar and click the re-link button.
+				Find the folder in the sidebar and click <span class="font-medium text-zinc-300"
+					>re-link</span
+				>.
 			</div>
 		{/if}
 	</div>
@@ -118,7 +126,7 @@
 
 			<div class="text-[12px] font-light text-zinc-400">Re-select file.</div>
 
-			<div class="overflow-hidden text-[10px] font-light text-zinc-600">
+			<div class="overflow-hidden text-[10px] font-light text-zinc-500">
 				{vfsPath}
 			</div>
 
