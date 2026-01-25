@@ -454,10 +454,14 @@
 			</div>
 		{/if}
 
-		<!-- Folder name input inline -->
+		<!-- Folder name input inline - styled to match existing folder rows -->
 		{#if showFolderInput === node.path}
-			<div class="flex items-center gap-1 px-2 py-1" style="padding-left: {paddingLeft + 20}px">
-				<Folder class="mr-0.5 h-3 w-3 shrink-0 text-yellow-500" />
+			<div
+				class="flex items-center gap-1.5 py-1"
+				style="padding-left: {(node.name === 'root' ? 0 : depth + 1) * 12 + 8}px"
+			>
+				<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+				<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
 				<input
 					type="text"
 					class="flex-1 bg-transparent font-mono text-xs text-zinc-300 placeholder-zinc-500 outline-none"
