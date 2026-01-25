@@ -271,6 +271,15 @@ export class LocalFilesystemProvider implements VFSProvider {
 			throw new Error(`LocalFilesystemProvider: Permission denied for directory: ${path}`);
 		}
 
+		return this.listHandleContents(handle);
+	}
+
+	/**
+	 * List contents of a directory handle directly.
+	 */
+	async listHandleContents(
+		handle: FileSystemDirectoryHandle
+	): Promise<Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>> {
 		const entries: Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }> =
 			[];
 

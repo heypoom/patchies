@@ -419,9 +419,15 @@
 	const supportsDirectoryPicker = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
 	// Cache for local folder contents (path -> contents)
+	// The path key can be either:
+	// - A VFS path for the root linked folder (e.g., "user://my-folder")
+	// - A VFS-style path for subdirectories (e.g., "user://my-folder/subdir")
 	let localFolderContents = $state(
 		new Map<string, Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>>()
 	);
+
+	// Cache for directory handles within linked folders (for expanding subdirs)
+	let subdirHandleCache = $state(new Map<string, FileSystemDirectoryHandle>());
 
 	async function handleLinkFolderClick(event: MouseEvent) {
 		event.stopPropagation();
@@ -449,12 +455,30 @@
 		}
 	}
 
-	async function loadLocalFolderContents(path: string) {
+	async function loadLocalFolderContents(path: string, handle?: FileSystemDirectoryHandle) {
 		const provider = getLocalProvider();
 		if (!provider) return;
 
 		try {
-			const contents = await provider.listDirContents(path);
+			let contents: Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>;
+
+			if (handle) {
+				// Use the provided handle directly (for subdirectories)
+				contents = await provider.listHandleContents(handle);
+			} else {
+				// Use the VFS path to get root linked folder contents
+				contents = await provider.listDirContents(path);
+			}
+
+			// Cache directory handles for subdirectories
+			for (const item of contents) {
+				if (item.kind === 'directory') {
+					const subdirPath = `${path}/${item.name}`;
+					subdirHandleCache.set(subdirPath, item.handle as FileSystemDirectoryHandle);
+				}
+			}
+			subdirHandleCache = new Map(subdirHandleCache);
+
 			localFolderContents.set(path, contents);
 			localFolderContents = new Map(localFolderContents);
 		} catch (err) {
@@ -496,7 +520,85 @@
 			}
 		}
 	}
+
+	async function handleSubdirClick(subdirPath: string) {
+		const handle = subdirHandleCache.get(subdirPath);
+		if (!handle) return;
+
+		// Toggle expansion
+		const willExpand = !expandedPaths.has(subdirPath);
+		if (willExpand) {
+			expandedPaths.add(subdirPath);
+		} else {
+			expandedPaths.delete(subdirPath);
+		}
+		expandedPaths = new Set(expandedPaths);
+
+		// Load contents if expanding and not already loaded
+		if (willExpand && !localFolderContents.has(subdirPath)) {
+			await loadLocalFolderContents(subdirPath, handle);
+		}
+	}
 </script>
+
+{#snippet linkedFolderItem(
+	item: { name: string; kind: 'file' | 'directory'; handle: FileSystemHandle },
+	parentPath: string,
+	itemDepth: number
+)}
+	{@const itemPath = `${parentPath}/${item.name}`}
+	{@const isDir = item.kind === 'directory'}
+	{@const isItemExpanded = expandedPaths.has(itemPath)}
+	{@const paddingLeftPx = itemDepth * 12 + 8}
+
+	<div class="group flex w-full items-center text-left text-xs hover:bg-zinc-800">
+		<button
+			class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
+			style="padding-left: {paddingLeftPx}px"
+			draggable={!isDir ? 'true' : 'false'}
+			ondragstart={(e) => !isDir && handleLinkedFileDragStart(e, parentPath, item.name)}
+			onclick={async () => {
+				if (isDir) {
+					await handleSubdirClick(itemPath);
+				}
+			}}
+		>
+			{#if isDir}
+				{#if isItemExpanded}
+					<ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
+					<FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+				{:else}
+					<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+					<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+				{/if}
+			{:else}
+				{@const mimeType = guessMimeType(item.name)}
+				{@const fileIcon = getFileIcon(mimeType)}
+				<span class="w-3"></span>
+				<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
+			{/if}
+			<span class="truncate font-mono text-zinc-300" title={item.name}>
+				{item.name}
+			</span>
+		</button>
+	</div>
+
+	{#if isDir && isItemExpanded}
+		{@const subdirContents = localFolderContents.get(itemPath)}
+		{#if subdirContents && subdirContents.length > 0}
+			{#each subdirContents as subItem}
+				{@render linkedFolderItem(subItem, itemPath, itemDepth + 1)}
+			{/each}
+		{:else}
+			<div
+				class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
+				style="padding-left: {paddingLeftPx + 20}px"
+			>
+				{subdirContents ? 'Empty folder' : 'Loading...'}
+			</div>
+		{/if}
+	{/if}
+{/snippet}
 
 <!-- Hidden file input for uploads -->
 <input
@@ -745,32 +847,11 @@
 
 	{#if isFolder && (node.name === 'root' || isExpanded)}
 		{#if isLinkedFolder && node.path}
-			<!-- Render local folder contents from cache -->
+			<!-- Render local folder contents from cache using recursive snippet -->
 			{@const contents = localFolderContents.get(node.path)}
 			{#if contents && contents.length > 0}
 				{#each contents as item}
-					<div class="group flex w-full items-center text-left text-xs hover:bg-zinc-800">
-						<button
-							class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
-							style="padding-left: {(depth + 1) * 12 + 8}px"
-							draggable={item.kind === 'file' ? 'true' : 'false'}
-							ondragstart={(e) =>
-								item.kind === 'file' && handleLinkedFileDragStart(e, node.path!, item.name)}
-						>
-							{#if item.kind === 'directory'}
-								<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
-								<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-							{:else}
-								{@const mimeType = guessMimeType(item.name)}
-								{@const fileIcon = getFileIcon(mimeType)}
-								<span class="w-3"></span>
-								<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
-							{/if}
-							<span class="truncate font-mono text-zinc-300" title={item.name}>
-								{item.name}
-							</span>
-						</button>
-					</div>
+					{@render linkedFolderItem(item, node.path, depth + 1)}
 				{/each}
 			{:else}
 				<div
