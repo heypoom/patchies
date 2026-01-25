@@ -9,6 +9,7 @@
 	import { match, P } from 'ts-pattern';
 	import { shouldShowHandles } from '../../../stores/ui.store';
 	import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+	import { logger } from '$lib/utils/logger';
 
 	let node: {
 		id: string;
@@ -34,7 +35,7 @@
 	let fileInputRef: HTMLInputElement;
 	let canvasElement: HTMLCanvasElement | null = $state(null);
 	let hasImage = $state(false);
-	let needsPermission = $state(false);
+	let needsReselect = $state(false);
 	let isLoading = $state(false);
 
 	const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
@@ -79,7 +80,7 @@
 	async function loadFromVfsPath(vfsPath: string) {
 		try {
 			isLoading = true;
-			needsPermission = false;
+			needsReselect = false;
 
 			const fileOrBlob = await vfs.resolve(vfsPath);
 
@@ -90,11 +91,15 @@
 
 			await displayImage(file);
 		} catch (err) {
-			console.error('Failed to load from VFS:', err);
+			logger.error('[vfs load error]', err);
 
-			// Check if it's a permission error
-			if (err instanceof Error && err.message.includes('Permission denied')) {
-				needsPermission = true;
+			// Check if it's a permission error or missing handle/data
+			if (
+				err instanceof Error &&
+				(err.message.includes('Permission denied') ||
+					err.message.includes('No handle or cached data found'))
+			) {
+				needsReselect = true;
 			}
 
 			hasImage = false;
@@ -259,7 +264,7 @@
 		const source = await createImageBitmap(img, { imageOrientation: 'flipY' });
 		glSystem.setPreflippedBitmap(node.id, source);
 		hasImage = true;
-		needsPermission = false;
+		needsReselect = false;
 
 		setTimeout(() => {
 			setPreviewImage(preview);
@@ -299,7 +304,7 @@
 		// First try to request permission from existing handle
 		const granted = await vfs.requestPermission(node.data.vfsPath);
 		if (granted) {
-			needsPermission = false;
+			needsReselect = false;
 			await loadFromVfsPath(node.data.vfsPath);
 			return;
 		}
@@ -391,7 +396,7 @@
 							ondragleave={handleDragLeave}
 							ondrop={handleDrop}
 						></canvas>
-					{:else if hasVfsPath && needsPermission}
+					{:else if hasVfsPath && needsReselect}
 						<div
 							class="flex flex-col items-center justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-1 py-3"
 							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
@@ -401,6 +406,10 @@
 
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
 								Re-select file
+							</div>
+
+							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
+								{node.data.vfsPath}
 							</div>
 
 							<button
