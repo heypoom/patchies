@@ -358,18 +358,14 @@
 				ondrop={(e) => isFolder && handleFolderDrop(e)}
 				onclick={() => {
 					if (isFolder && node.path && !isNamespace) {
-						// For non-namespace folders: click to select, double-click or chevron to expand
-						toggleSelected(node.path);
+						// For non-namespace folders: select (without deselect) and toggle expand
+						selectedPaths = new Set([node.path]);
+						toggleExpanded(node.path);
 					} else if (isFolder && node.path) {
 						// For namespace roots: just expand/collapse
 						toggleExpanded(node.path);
 					} else if (isFile && node.path) {
 						toggleSelected(node.path);
-					}
-				}}
-				ondblclick={() => {
-					if (isFolder && node.path && !isNamespace) {
-						toggleExpanded(node.path);
 					}
 				}}
 			>
