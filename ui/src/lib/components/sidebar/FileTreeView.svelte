@@ -95,6 +95,18 @@
 		}
 	}
 
+	function handleLinkedFileDragStart(event: DragEvent, linkedFolderPath: string, fileName: string) {
+		// Construct the VFS path for the file within the linked folder
+		const vfsPath = `${linkedFolderPath}/${fileName}`;
+
+		event.dataTransfer?.setData('application/x-vfs-path', vfsPath);
+		event.dataTransfer?.setData('text/plain', vfsPath);
+
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'copy';
+		}
+	}
+
 	// Build tree structure from VFS entries
 	const tree = $derived.by(() => {
 		const entries = $vfsEntries;
@@ -697,6 +709,9 @@
 						<button
 							class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
 							style="padding-left: {(depth + 1) * 12 + 8}px"
+							draggable={item.kind === 'file' ? 'true' : 'false'}
+							ondragstart={(e) =>
+								item.kind === 'file' && handleLinkedFileDragStart(e, node.path!, item.name)}
 						>
 							{#if item.kind === 'directory'}
 								<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />

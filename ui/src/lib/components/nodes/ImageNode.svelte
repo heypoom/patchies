@@ -126,8 +126,8 @@
 		// Check for VFS path drop first
 		const vfsPathData = event.dataTransfer?.getData('application/x-vfs-path');
 		if (vfsPathData) {
-			// Verify it's an image file
-			const entry = vfs.getEntry(vfsPathData);
+			// Verify it's an image file (supports linked folder files too)
+			const entry = vfs.getEntryOrLinkedFile(vfsPathData);
 
 			if (entry?.mimeType?.startsWith('image/')) {
 				updateNode(node.id, { data: { ...node.data, vfsPath: vfsPathData } });
@@ -317,7 +317,7 @@
 
 		// If no handle exists (file was dropped without handle support),
 		// prompt user to re-select the file
-		const entry = vfs.getEntry(node.data.vfsPath);
+		const entry = vfs.getEntryOrLinkedFile(node.data.vfsPath);
 		const filename = entry?.filename || 'the file';
 
 		console.log(`VFS: No handle for ${node.data.vfsPath}, prompting user to re-select ${filename}`);

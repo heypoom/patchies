@@ -313,19 +313,80 @@ export class VirtualFilesystem {
 
 	/**
 	 * Resolve a VFS path to actual file content.
+	 * Supports paths within linked folders (e.g., user://my-folder/subdir/file.jpg)
 	 */
 	async resolve(path: string): Promise<File | Blob> {
 		const entry = this.entries.get(path);
-		if (!entry) {
-			throw new Error(`VFS: Path not found: ${path}`);
+		if (entry) {
+			// Direct entry found
+			const provider = this.providers.get(entry.provider);
+			if (!provider) {
+				throw new Error(`VFS: No provider registered for type: ${entry.provider}`);
+			}
+			return provider.resolve(entry, path);
 		}
 
-		const provider = this.providers.get(entry.provider);
-		if (!provider) {
-			throw new Error(`VFS: No provider registered for type: ${entry.provider}`);
+		// Entry not found - check if it's a path within a linked folder
+		const linkedFolderPath = this.findLinkedFolderForPath(path);
+		if (linkedFolderPath) {
+			const localProvider = this.getLocalProvider();
+			if (!localProvider) {
+				throw new Error(`VFS: Local provider not available for linked folder resolution`);
+			}
+
+			// Extract relative path within the linked folder
+			const relativePath = path.slice(linkedFolderPath.length + 1).split('/');
+			return localProvider.resolveFileInDir(linkedFolderPath, relativePath);
 		}
 
-		return provider.resolve(entry, path);
+		throw new Error(`VFS: Path not found: ${path}`);
+	}
+
+	/**
+	 * Find the linked folder path that contains a given path.
+	 * E.g., for "user://my-folder/sub/file.jpg" returns "user://my-folder" if it's a linked folder.
+	 */
+	private findLinkedFolderForPath(path: string): string | null {
+		// Check each potential parent path to find a linked folder
+		const segments = path.split('/');
+
+		// Start from the namespace (e.g., "user://my-folder")
+		for (let i = 3; i < segments.length; i++) {
+			const potentialFolderPath = segments.slice(0, i).join('/');
+			const entry = this.entries.get(potentialFolderPath);
+			if (entry?.provider === 'local-folder') {
+				return potentialFolderPath;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Check if a path is within a linked folder.
+	 */
+	isPathInLinkedFolder(path: string): boolean {
+		return this.findLinkedFolderForPath(path) !== null;
+	}
+
+	/**
+	 * Get metadata for a path, including paths within linked folders.
+	 * For linked folder files, returns a synthetic entry.
+	 */
+	getEntryOrLinkedFile(path: string): VFSEntry | undefined {
+		const entry = this.entries.get(path);
+		if (entry) return entry;
+
+		// Check if it's within a linked folder
+		const linkedFolderPath = this.findLinkedFolderForPath(path);
+		if (linkedFolderPath) {
+			const filename = path.split('/').pop() || '';
+			return {
+				provider: 'local',
+				filename,
+				mimeType: guessMimeType(filename)
+			};
+		}
+		return undefined;
 	}
 
 	/**

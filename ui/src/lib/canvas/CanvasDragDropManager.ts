@@ -176,10 +176,12 @@ export class CanvasDragDropManager {
 
 	/**
 	 * Handle VFS file drops by creating appropriate nodes
+	 * Supports both direct VFS entries and files within linked folders
 	 */
 	private handleVfsFileDrop(vfsPath: string, position: { x: number; y: number }): void {
 		const vfs = VirtualFilesystem.getInstance();
-		const entry = vfs.getEntry(vfsPath);
+		// Use getEntryOrLinkedFile to support files within linked folders
+		const entry = vfs.getEntryOrLinkedFile(vfsPath);
 
 		if (!entry) {
 			logger.warn('VFS entry not found:', vfsPath);
