@@ -295,6 +295,14 @@ export async function hasFileData(path: string): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────────
 
 /**
+ * Check if the dir-handles store exists in the database.
+ * This can be false if the DB upgrade was blocked by another tab.
+ */
+function hasDirHandlesStore(db: IDBDatabase): boolean {
+	return db.objectStoreNames.contains(DIR_HANDLES_STORE);
+}
+
+/**
  * Store a FileSystemDirectoryHandle for a VFS path.
  */
 export async function storeDirHandle(
@@ -302,6 +310,16 @@ export async function storeDirHandle(
 	handle: FileSystemDirectoryHandle
 ): Promise<void> {
 	const db = await openDB();
+
+	// Check if store exists (upgrade may have been blocked)
+	if (!hasDirHandlesStore(db)) {
+		db.close();
+		console.warn(
+			'VFS: dir-handles store not available. Close other tabs and refresh to complete database upgrade.'
+		);
+		return;
+	}
+
 	return new Promise((resolve, reject) => {
 		const tx = db.transaction(DIR_HANDLES_STORE, 'readwrite');
 		const store = tx.objectStore(DIR_HANDLES_STORE);
@@ -319,6 +337,12 @@ export async function storeDirHandle(
  */
 export async function getDirHandle(path: string): Promise<FileSystemDirectoryHandle | undefined> {
 	const db = await openDB();
+
+	if (!hasDirHandlesStore(db)) {
+		db.close();
+		return undefined;
+	}
+
 	return new Promise((resolve, reject) => {
 		const tx = db.transaction(DIR_HANDLES_STORE, 'readonly');
 		const store = tx.objectStore(DIR_HANDLES_STORE);
@@ -336,6 +360,12 @@ export async function getDirHandle(path: string): Promise<FileSystemDirectoryHan
  */
 export async function removeDirHandle(path: string): Promise<void> {
 	const db = await openDB();
+
+	if (!hasDirHandlesStore(db)) {
+		db.close();
+		return;
+	}
+
 	return new Promise((resolve, reject) => {
 		const tx = db.transaction(DIR_HANDLES_STORE, 'readwrite');
 		const store = tx.objectStore(DIR_HANDLES_STORE);
@@ -353,6 +383,12 @@ export async function removeDirHandle(path: string): Promise<void> {
  */
 export async function getAllDirHandles(): Promise<Map<string, FileSystemDirectoryHandle>> {
 	const db = await openDB();
+
+	if (!hasDirHandlesStore(db)) {
+		db.close();
+		return new Map();
+	}
+
 	return new Promise((resolve, reject) => {
 		const tx = db.transaction(DIR_HANDLES_STORE, 'readonly');
 		const store = tx.objectStore(DIR_HANDLES_STORE);

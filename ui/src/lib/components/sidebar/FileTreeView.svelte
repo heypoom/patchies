@@ -471,6 +471,31 @@
 		event.stopPropagation();
 		await loadLocalFolderContents(path);
 	}
+
+	async function handleRelinkFolderClick(path: string, event: MouseEvent) {
+		event.stopPropagation();
+
+		if (!supportsDirectoryPicker) {
+			return;
+		}
+
+		try {
+			// @ts-expect-error - showDirectoryPicker is not typed
+			const handle = await window.showDirectoryPicker({ mode: 'read' });
+			await vfs.relinkLocalFolder(path, handle);
+
+			// Load the folder contents
+			await loadLocalFolderContents(path);
+
+			// Expand the folder
+			expandedPaths.add(path);
+			expandedPaths = new Set(expandedPaths);
+		} catch (err) {
+			if (err instanceof Error && err.name !== 'AbortError') {
+				console.error('Failed to relink folder:', err);
+			}
+		}
+	}
 </script>
 
 <!-- Hidden file input for uploads -->
@@ -630,19 +655,38 @@
 			{/if}
 
 			{#if isLinkedFolder && node.path}
-				<div class="flex shrink-0 items-center gap-0.5 pr-2 opacity-0 group-hover:opacity-100">
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
-								onclick={(e) => handleRefreshLinkedFolder(node.path!, e)}
-								title="Refresh folder"
-							>
-								<RefreshCw class="h-3.5 w-3.5" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content side="bottom">Refresh folder</Tooltip.Content>
-					</Tooltip.Root>
+				<div
+					class="flex shrink-0 items-center gap-0.5 pr-2 {needsReselectFlag
+						? ''
+						: 'opacity-0 group-hover:opacity-100'}"
+				>
+					{#if needsReselectFlag}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<button
+									class="rounded p-0.5 text-amber-400 hover:bg-amber-700/50 hover:text-amber-300"
+									onclick={(e) => handleRelinkFolderClick(node.path!, e)}
+									title="Re-link folder"
+								>
+									<FolderSymlink class="h-3.5 w-3.5" />
+								</button>
+							</Tooltip.Trigger>
+							<Tooltip.Content side="bottom">Re-link folder</Tooltip.Content>
+						</Tooltip.Root>
+					{:else}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<button
+									class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
+									onclick={(e) => handleRefreshLinkedFolder(node.path!, e)}
+									title="Refresh folder"
+								>
+									<RefreshCw class="h-3.5 w-3.5" />
+								</button>
+							</Tooltip.Trigger>
+							<Tooltip.Content side="bottom">Refresh folder</Tooltip.Content>
+						</Tooltip.Root>
+					{/if}
 				</div>
 			{/if}
 

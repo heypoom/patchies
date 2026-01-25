@@ -68,6 +68,7 @@ export class VirtualFilesystem {
 	static getInstance(): VirtualFilesystem {
 		if (!VirtualFilesystem.instance) {
 			VirtualFilesystem.instance = new VirtualFilesystem();
+
 			// Expose for debugging
 			if (typeof window !== 'undefined') {
 				window.vfs = VirtualFilesystem.instance;
@@ -295,6 +296,30 @@ export class VirtualFilesystem {
 	}
 
 	/**
+	 * Re-link a local folder that lost its handle (e.g., after sharing a patch).
+	 * Updates the existing entry with a new directory handle.
+	 */
+	async relinkLocalFolder(path: string, handle: FileSystemDirectoryHandle): Promise<void> {
+		const entry = this.entries.get(path);
+		if (!entry || entry.provider !== 'local-folder') {
+			throw new Error(`VFS: Cannot relink - path is not a linked folder: ${path}`);
+		}
+
+		// Update the entry filename in case the new folder has a different name
+		entry.filename = handle.name;
+
+		// Store the new handle
+		const provider = this.getLocalProvider();
+		if (provider) {
+			await provider.storeDirHandle(path, handle);
+		}
+
+		// Clear pending permission status
+		this.pendingPermissions.delete(path);
+		this.notifyChange();
+	}
+
+	/**
 	 * Get the local provider instance (for directory operations).
 	 */
 	private getLocalProvider():
@@ -472,10 +497,12 @@ export class VirtualFilesystem {
 		this.entries.clear();
 		this.pendingPermissions.clear();
 
+		// user namespace -- for user-uploaded files
 		if (tree.user) {
 			this.hydrateNamespace(tree.user, VFS_PREFIXES.USER);
 		}
 
+		// objects namespace -- for each objects
 		if (tree.objects) {
 			for (const [nodeId, nodeTree] of Object.entries(tree.objects)) {
 				this.hydrateNamespace(nodeTree, `${VFS_PREFIXES.OBJECT}${nodeId}/`);
@@ -486,6 +513,7 @@ export class VirtualFilesystem {
 		for (const [path, entry] of this.entries) {
 			if (entry.provider === 'local') {
 				const provider = this.providers.get('local');
+
 				if (provider && 'needsPermission' in provider) {
 					const needs = await (
 						provider as VFSProvider & { needsPermission: (path: string) => Promise<boolean> }
@@ -494,6 +522,30 @@ export class VirtualFilesystem {
 						this.pendingPermissions.add(path);
 					}
 				}
+
+				continue;
+			}
+
+			if (entry.provider === 'local-folder') {
+				// Check if linked folder has its handle available
+				const localProvider = this.getLocalProvider();
+
+				if (localProvider) {
+					const handle = await localProvider.getDirHandle(path);
+
+					if (!handle) {
+						// Handle is missing - needs re-link
+						this.pendingPermissions.add(path);
+					} else {
+						// Handle exists, check permission
+						const hasPermission = await localProvider.hasDirPermission(path);
+						if (!hasPermission) {
+							this.pendingPermissions.add(path);
+						}
+					}
+				}
+
+				continue;
 			}
 		}
 
@@ -642,6 +694,7 @@ export class VirtualFilesystem {
 				this.pendingPermissions.add(path);
 			}
 		}
+
 		this.notifyChange();
 	}
 }

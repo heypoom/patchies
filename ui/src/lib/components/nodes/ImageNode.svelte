@@ -97,7 +97,8 @@
 			if (
 				err instanceof Error &&
 				(err.message.includes('Permission denied') ||
-					err.message.includes('No handle or cached data found'))
+					err.message.includes('No handle or cached data found') ||
+					err.message.includes('No directory handle'))
 			) {
 				needsReselect = true;
 			}
@@ -427,22 +428,27 @@
 						></canvas>
 					{:else if hasVfsPath && needsReselect}
 						<div
-							class="flex flex-col items-center justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-1 py-3"
+							class={[
+								'flex flex-col items-start justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-8 py-3 font-mono',
+								isDragging ? 'border-transparent ring-2 ring-blue-400' : ''
+							]}
 							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
 								defaultPreviewHeight}px"
+							ondragover={handleDragOver}
+							ondragleave={handleDragLeave}
+							ondrop={handleDrop}
+							role="application"
 						>
-							<Lock class="h-4 w-4 text-amber-400" />
+							<Lock class="mb-2 h-5 w-5 text-amber-400" />
 
-							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
-								Re-select file
-							</div>
+							<div class="text-[12px] font-light text-zinc-400">Re-select file.</div>
 
-							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
+							<div class="overflow-hidden text-[10px] font-light text-zinc-600">
 								{node.data.vfsPath}
 							</div>
 
 							<button
-								class="rounded bg-amber-600 px-2 py-1 font-mono text-[10px] text-white hover:bg-amber-500"
+								class="mt-1 rounded bg-amber-600 px-2 py-1 font-mono text-[10px] text-white hover:bg-amber-500"
 								onclick={requestFilePermission}
 							>
 								Choose File
