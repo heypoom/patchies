@@ -8,6 +8,7 @@
 		Folder,
 		FolderOpen,
 		FolderPlus,
+		FolderSymlink,
 		Image,
 		User,
 		Box,
@@ -16,7 +17,7 @@
 		RefreshCw
 	} from '@lucide/svelte/icons';
 	import { VirtualFilesystem, getLocalProvider } from '$lib/vfs';
-	import { parseVFSPath, isVFSFolder, type VFSEntry } from '$lib/vfs/types';
+	import { parseVFSPath, isVFSFolder, isLocalFolder, type VFSEntry } from '$lib/vfs/types';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 
 	interface TreeNode {
@@ -397,6 +398,64 @@
 		input.value = '';
 		pendingReselectPath = null;
 	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Local Folder Linking
+	// ─────────────────────────────────────────────────────────────────
+
+	// Check if browser supports directory picker (Chrome/Edge only)
+	const supportsDirectoryPicker = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
+
+	// Cache for local folder contents (path -> contents)
+	let localFolderContents = $state(
+		new Map<string, Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>>()
+	);
+
+	async function handleLinkFolderClick(event: MouseEvent) {
+		event.stopPropagation();
+
+		if (!supportsDirectoryPicker) {
+			return;
+		}
+
+		try {
+			// @ts-expect-error - showDirectoryPicker is not typed
+			const handle = await window.showDirectoryPicker({ mode: 'read' });
+			const path = await vfs.linkLocalFolder(handle);
+
+			// Expand the new folder
+			expandedPaths.add('user://');
+			expandedPaths.add(path);
+			expandedPaths = new Set(expandedPaths);
+
+			// Load its contents
+			await loadLocalFolderContents(path);
+		} catch (err) {
+			if (err instanceof Error && err.name !== 'AbortError') {
+				console.error('Failed to link folder:', err);
+			}
+		}
+	}
+
+	async function loadLocalFolderContents(path: string) {
+		const provider = getLocalProvider();
+		if (!provider) return;
+
+		try {
+			const contents = await provider.listDirContents(path);
+			localFolderContents.set(path, contents);
+			localFolderContents = new Map(localFolderContents);
+		} catch (err) {
+			console.error('Failed to load local folder contents:', err);
+		}
+	}
+
+	// Load contents when a local folder is expanded
+	async function handleLocalFolderExpand(path: string) {
+		if (!localFolderContents.has(path)) {
+			await loadLocalFolderContents(path);
+		}
+	}
 </script>
 
 <!-- Hidden file input for uploads -->
@@ -427,7 +486,9 @@
 	{@const isObjectNamespace = node.path === 'obj://'}
 	{@const isDropTarget = isInDropTarget(node.path)}
 	{@const isNamespace = isUserNamespace || isObjectNamespace}
-	{@const canHaveChildren = isNamespace || (isFolder && node.path?.startsWith('user://'))}
+	{@const isLinkedFolder = node.entry && isLocalFolder(node.entry)}
+	{@const canHaveChildren =
+		isNamespace || (isFolder && node.path?.startsWith('user://') && !isLinkedFolder)}
 	{@const needsReselectFlag = needsReselect(node.path)}
 
 	{#if node.name !== 'root'}
@@ -448,11 +509,15 @@
 				ondragstart={(e) => isFile && handleDragStart(e, node)}
 				ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
 				ondrop={(e) => isFolder && handleFolderDrop(e)}
-				onclick={() => {
+				onclick={async () => {
 					if (isFolder && node.path && !isNamespace) {
 						// For non-namespace folders: select (without deselect) and toggle expand
 						selectedPaths = new Set([node.path]);
 						toggleExpanded(node.path);
+						// Load local folder contents when expanding
+						if (isLinkedFolder && !expandedPaths.has(node.path)) {
+							await handleLocalFolderExpand(node.path);
+						}
 					} else if (isFolder && node.path) {
 						// For namespace roots: just expand/collapse
 						toggleExpanded(node.path);
@@ -471,6 +536,8 @@
 						<User class="h-3.5 w-3.5 shrink-0 text-yellow-400" />
 					{:else if isObjectNamespace}
 						<Box class="h-3.5 w-3.5 shrink-0 text-purple-400" />
+					{:else if isLinkedFolder}
+						<FolderSymlink class="h-3.5 w-3.5 shrink-0 text-cyan-400" />
 					{:else if isExpanded}
 						<FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
 					{:else}
@@ -501,6 +568,21 @@
 						</Tooltip.Trigger>
 						<Tooltip.Content side="bottom">Create folder</Tooltip.Content>
 					</Tooltip.Root>
+
+					{#if isUserNamespace && supportsDirectoryPicker}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<button
+									class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
+									onclick={handleLinkFolderClick}
+									title="Link local folder"
+								>
+									<FolderSymlink class="h-3.5 w-3.5" />
+								</button>
+							</Tooltip.Trigger>
+							<Tooltip.Content side="bottom">Link local folder</Tooltip.Content>
+						</Tooltip.Root>
+					{/if}
 
 					<Tooltip.Root>
 						<Tooltip.Trigger>
@@ -584,7 +666,38 @@
 	{/if}
 
 	{#if isFolder && (node.name === 'root' || isExpanded)}
-		{#if isEmptyFolder && node.name !== 'root'}
+		{#if isLinkedFolder && node.path}
+			<!-- Render local folder contents from cache -->
+			{@const contents = localFolderContents.get(node.path)}
+			{#if contents && contents.length > 0}
+				{#each contents as item}
+					<div class="group flex w-full items-center text-left text-xs hover:bg-zinc-800">
+						<button
+							class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
+							style="padding-left: {(depth + 1) * 12 + 8}px"
+						>
+							{#if item.kind === 'directory'}
+								<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+								<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+							{:else}
+								<span class="w-3"></span>
+								<File class="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+							{/if}
+							<span class="truncate font-mono text-zinc-300" title={item.name}>
+								{item.name}
+							</span>
+						</button>
+					</div>
+				{/each}
+			{:else}
+				<div
+					class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
+					style="padding-left: {paddingLeft + 20}px"
+				>
+					{contents ? 'Empty folder' : 'Loading...'}
+				</div>
+			{/if}
+		{:else if isEmptyFolder && node.name !== 'root'}
 			<div
 				class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
 				style="padding-left: {paddingLeft + 20}px"
@@ -615,7 +728,7 @@
 	{#if tree.children && tree.children.size > 0}
 		{@render treeNode(tree)}
 	{:else}
-		<div class="pointer-events-none px-4 py-8 text-center text-xs text-zinc-500">
+		<div class="pointer-events-none px-4 py-8 text-center font-mono text-xs text-zinc-500">
 			<p>No files in the virtual filesystem.</p>
 			<p class="mt-2">Drop files here to add them.</p>
 		</div>

@@ -1,6 +1,6 @@
 // Virtual Filesystem Types
 
-export type VFSProviderType = 'url' | 'local' | 'folder';
+export type VFSProviderType = 'url' | 'local' | 'folder' | 'local-folder';
 
 /**
  * Entry metadata stored in the VFS tree.
@@ -17,10 +17,17 @@ export interface VFSEntry {
 }
 
 /**
- * Check if a VFSEntry is a folder
+ * Check if a VFSEntry is a folder (regular or linked)
  */
 export function isVFSFolder(entry: VFSEntry): boolean {
-	return entry.provider === 'folder';
+	return entry.provider === 'folder' || entry.provider === 'local-folder';
+}
+
+/**
+ * Check if a VFSEntry is a linked local folder
+ */
+export function isLocalFolder(entry: VFSEntry): boolean {
+	return entry.provider === 'local-folder';
 }
 
 /**

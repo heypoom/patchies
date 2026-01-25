@@ -12,9 +12,10 @@ interface FileSystemFileHandleWithPermissions extends FileSystemFileHandle {
 }
 
 const DB_NAME = 'patchies-vfs';
-const DB_VERSION = 2; // Bumped for new store
+const DB_VERSION = 3; // Bumped for directory handles store
 const HANDLES_STORE = 'handles';
 const FILES_STORE = 'files'; // Fallback store for file data (Firefox, Safari)
+const DIR_HANDLES_STORE = 'dir-handles'; // Store for FileSystemDirectoryHandle
 
 /**
  * Cached file data for browsers without FileSystemFileHandle support.
@@ -45,6 +46,10 @@ function openDB(): Promise<IDBDatabase> {
 
 			if (!db.objectStoreNames.contains(FILES_STORE)) {
 				db.createObjectStore(FILES_STORE);
+			}
+
+			if (!db.objectStoreNames.contains(DIR_HANDLES_STORE)) {
+				db.createObjectStore(DIR_HANDLES_STORE);
 			}
 		};
 	});
@@ -279,4 +284,123 @@ export async function hasFileData(path: string): Promise<boolean> {
 
 		tx.oncomplete = () => db.close();
 	});
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Directory Handle Storage (for linked local folders)
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Store a FileSystemDirectoryHandle for a VFS path.
+ */
+export async function storeDirHandle(
+	path: string,
+	handle: FileSystemDirectoryHandle
+): Promise<void> {
+	const db = await openDB();
+	return new Promise((resolve, reject) => {
+		const tx = db.transaction(DIR_HANDLES_STORE, 'readwrite');
+		const store = tx.objectStore(DIR_HANDLES_STORE);
+		const request = store.put(handle, path);
+
+		request.onerror = () => reject(request.error);
+		request.onsuccess = () => resolve();
+
+		tx.oncomplete = () => db.close();
+	});
+}
+
+/**
+ * Get a FileSystemDirectoryHandle for a VFS path.
+ */
+export async function getDirHandle(path: string): Promise<FileSystemDirectoryHandle | undefined> {
+	const db = await openDB();
+	return new Promise((resolve, reject) => {
+		const tx = db.transaction(DIR_HANDLES_STORE, 'readonly');
+		const store = tx.objectStore(DIR_HANDLES_STORE);
+		const request = store.get(path);
+
+		request.onerror = () => reject(request.error);
+		request.onsuccess = () => resolve(request.result as FileSystemDirectoryHandle | undefined);
+
+		tx.oncomplete = () => db.close();
+	});
+}
+
+/**
+ * Remove a FileSystemDirectoryHandle for a VFS path.
+ */
+export async function removeDirHandle(path: string): Promise<void> {
+	const db = await openDB();
+	return new Promise((resolve, reject) => {
+		const tx = db.transaction(DIR_HANDLES_STORE, 'readwrite');
+		const store = tx.objectStore(DIR_HANDLES_STORE);
+		const request = store.delete(path);
+
+		request.onerror = () => reject(request.error);
+		request.onsuccess = () => resolve();
+
+		tx.oncomplete = () => db.close();
+	});
+}
+
+/**
+ * Get all stored directory handles.
+ */
+export async function getAllDirHandles(): Promise<Map<string, FileSystemDirectoryHandle>> {
+	const db = await openDB();
+	return new Promise((resolve, reject) => {
+		const tx = db.transaction(DIR_HANDLES_STORE, 'readonly');
+		const store = tx.objectStore(DIR_HANDLES_STORE);
+		const handles = new Map<string, FileSystemDirectoryHandle>();
+
+		const cursorRequest = store.openCursor();
+
+		cursorRequest.onerror = () => reject(cursorRequest.error);
+		cursorRequest.onsuccess = (event) => {
+			const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
+			if (cursor) {
+				handles.set(cursor.key as string, cursor.value as FileSystemDirectoryHandle);
+				cursor.continue();
+			} else {
+				resolve(handles);
+			}
+		};
+
+		tx.oncomplete = () => db.close();
+	});
+}
+
+/**
+ * Check if a directory handle has read permission.
+ */
+export async function hasDirPermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
+	try {
+		const handleWithPerms = handle as FileSystemDirectoryHandle & {
+			queryPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
+		};
+		const permission = await handleWithPerms.queryPermission({ mode: 'read' });
+		return permission === 'granted';
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Request read permission for a directory handle.
+ */
+export async function requestDirHandlePermission(
+	handle: FileSystemDirectoryHandle
+): Promise<boolean> {
+	try {
+		const handleWithPerms = handle as FileSystemDirectoryHandle & {
+			requestPermission(
+				descriptor?: FileSystemHandlePermissionDescriptor
+			): Promise<PermissionState>;
+		};
+		const permission = await handleWithPerms.requestPermission({ mode: 'read' });
+		return permission === 'granted';
+	} catch {
+		return false;
+	}
 }

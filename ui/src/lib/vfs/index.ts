@@ -9,6 +9,8 @@ export {
 	type VFSProviderType,
 	isVFSEntry,
 	isVFSPath,
+	isVFSFolder,
+	isLocalFolder,
 	parseVFSPath,
 	VFS_PREFIXES
 } from './types';

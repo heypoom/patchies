@@ -254,7 +254,57 @@ export class VirtualFilesystem {
 	 */
 	isFolder(path: string): boolean {
 		const entry = this.entries.get(path);
-		return entry?.provider === 'folder';
+		return entry?.provider === 'folder' || entry?.provider === 'local-folder';
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Local Folder Linking (delegates to LocalFilesystemProvider)
+	// ─────────────────────────────────────────────────────────────────
+
+	/**
+	 * Link a local folder using a FileSystemDirectoryHandle.
+	 * The VFS only stores the folder entry; contents are resolved on-demand by the provider.
+	 */
+	async linkLocalFolder(handle: FileSystemDirectoryHandle): Promise<string> {
+		const folderName = handle.name;
+		const existingPaths = new Set(this.entries.keys());
+
+		// Generate a unique path under user://
+		let path = `user://${folderName}`;
+		let counter = 1;
+		while (existingPaths.has(path)) {
+			path = `user://${folderName}-${counter}`;
+			counter++;
+		}
+
+		const entry: VFSEntry = {
+			provider: 'local-folder',
+			filename: folderName
+		};
+
+		this.entries.set(path, entry);
+
+		// Delegate storage to provider
+		const provider = this.getLocalProvider();
+		if (provider) {
+			await provider.storeDirHandle(path, handle);
+		}
+
+		this.notifyChange();
+		return path;
+	}
+
+	/**
+	 * Get the local provider instance (for directory operations).
+	 */
+	private getLocalProvider():
+		| import('./providers/LocalFilesystemProvider').LocalFilesystemProvider
+		| undefined {
+		const provider = this.providers.get('local');
+		if (provider && 'storeDirHandle' in provider) {
+			return provider as import('./providers/LocalFilesystemProvider').LocalFilesystemProvider;
+		}
+		return undefined;
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -478,8 +528,17 @@ export class VirtualFilesystem {
 	 * Remove a single entry.
 	 */
 	remove(path: string): void {
+		const entry = this.entries.get(path);
+
 		this.entries.delete(path);
 		this.pendingPermissions.delete(path);
+
+		// Clean up directory handle if it's a local folder
+		if (entry?.provider === 'local-folder') {
+			const provider = this.getLocalProvider();
+			provider?.removeDirHandle(path);
+		}
+
 		this.notifyChange();
 	}
 
@@ -489,11 +548,39 @@ export class VirtualFilesystem {
 	clear(): void {
 		this.entries.clear();
 		this.pendingPermissions.clear();
+		this.getLocalProvider()?.clearDirHandles();
 		this.notifyChange();
 	}
 
 	clearPersistedData(): void {
 		clearHandles();
 		clearFileData();
+	}
+
+	/**
+	 * Load directory handles from storage and create entries for them.
+	 * Call this during app initialization.
+	 */
+	async loadDirHandlesFromStorage(): Promise<void> {
+		const provider = this.getLocalProvider();
+		if (!provider) return;
+
+		const handles = await provider.loadDirHandlesFromStorage();
+		for (const [path, handle] of handles) {
+			// Create entry if it doesn't exist
+			if (!this.entries.has(path)) {
+				this.entries.set(path, {
+					provider: 'local-folder',
+					filename: handle.name
+				});
+			}
+
+			// Check permission status
+			const hasPermission = await provider.hasDirPermission(path);
+			if (!hasPermission) {
+				this.pendingPermissions.add(path);
+			}
+		}
+		this.notifyChange();
 	}
 }

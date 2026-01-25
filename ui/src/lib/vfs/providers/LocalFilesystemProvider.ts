@@ -10,7 +10,13 @@ import {
 	storeFileData,
 	getFileData,
 	removeFileData,
-	hasFileData
+	hasFileData,
+	storeDirHandle,
+	getDirHandle,
+	removeDirHandle,
+	getAllDirHandles,
+	hasDirPermission,
+	requestDirHandlePermission
 } from '../persistence';
 
 /**
@@ -25,11 +31,14 @@ import {
 export class LocalFilesystemProvider implements VFSProvider {
 	readonly type = 'local' as const;
 
-	/** In-memory cache of handles for the current session */
+	/** In-memory cache of file handles for the current session */
 	private handleCache: Map<string, FileSystemFileHandle> = new Map();
 
 	/** In-memory cache of file data for the current session */
 	private fileCache: Map<string, File> = new Map();
+
+	/** In-memory cache of directory handles for the current session */
+	private dirHandleCache: Map<string, FileSystemDirectoryHandle> = new Map();
 
 	async resolve(entry: VFSEntry, path: string): Promise<File | Blob> {
 		// 1. Check in-memory file cache first
@@ -190,5 +199,135 @@ export class LocalFilesystemProvider implements VFSProvider {
 		for (const [path, handle] of handles) {
 			this.handleCache.set(path, handle);
 		}
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Directory Handle Methods (for local-folder provider type)
+	// ─────────────────────────────────────────────────────────────────
+
+	/**
+	 * Store a directory handle for a VFS path.
+	 */
+	async storeDirHandle(path: string, handle: FileSystemDirectoryHandle): Promise<void> {
+		this.dirHandleCache.set(path, handle);
+		await storeDirHandle(path, handle);
+	}
+
+	/**
+	 * Get a directory handle for a VFS path.
+	 */
+	async getDirHandle(path: string): Promise<FileSystemDirectoryHandle | undefined> {
+		// Check cache first
+		let handle = this.dirHandleCache.get(path);
+		if (handle) return handle;
+
+		// Try to load from IndexedDB
+		handle = await getDirHandle(path);
+		if (handle) {
+			this.dirHandleCache.set(path, handle);
+		}
+		return handle;
+	}
+
+	/**
+	 * Remove a directory handle.
+	 */
+	async removeDirHandle(path: string): Promise<void> {
+		this.dirHandleCache.delete(path);
+		await removeDirHandle(path);
+	}
+
+	/**
+	 * Check if a directory handle has permission.
+	 */
+	async hasDirPermission(path: string): Promise<boolean> {
+		const handle = await this.getDirHandle(path);
+		if (!handle) return false;
+		return hasDirPermission(handle);
+	}
+
+	/**
+	 * Request permission for a directory handle.
+	 */
+	async requestDirPermission(path: string): Promise<boolean> {
+		const handle = await this.getDirHandle(path);
+		if (!handle) return false;
+		return requestDirHandlePermission(handle);
+	}
+
+	/**
+	 * List contents of a local folder.
+	 */
+	async listDirContents(
+		path: string
+	): Promise<Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>> {
+		const handle = await this.getDirHandle(path);
+		if (!handle) {
+			throw new Error(`LocalFilesystemProvider: No directory handle for path: ${path}`);
+		}
+
+		const hasPermission = await hasDirPermission(handle);
+		if (!hasPermission) {
+			throw new Error(`LocalFilesystemProvider: Permission denied for directory: ${path}`);
+		}
+
+		const entries: Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }> =
+			[];
+
+		// @ts-expect-error - TypeScript doesn't have full types for File System Access API iterators
+		for await (const entryHandle of handle.values()) {
+			entries.push({
+				name: entryHandle.name,
+				kind: entryHandle.kind,
+				handle: entryHandle
+			});
+		}
+
+		// Sort: directories first, then alphabetically
+		entries.sort((a, b) => {
+			if (a.kind !== b.kind) {
+				return a.kind === 'directory' ? -1 : 1;
+			}
+			return a.name.localeCompare(b.name);
+		});
+
+		return entries;
+	}
+
+	/**
+	 * Resolve a file from within a local folder.
+	 */
+	async resolveFileInDir(folderPath: string, relativePath: string[]): Promise<File> {
+		let handle = await this.getDirHandle(folderPath);
+		if (!handle) {
+			throw new Error(`LocalFilesystemProvider: No directory handle for path: ${folderPath}`);
+		}
+
+		// Navigate through subdirectories
+		for (let i = 0; i < relativePath.length - 1; i++) {
+			handle = await handle.getDirectoryHandle(relativePath[i]);
+		}
+
+		const fileName = relativePath[relativePath.length - 1];
+		const fileHandle = await handle.getFileHandle(fileName);
+		return fileHandle.getFile();
+	}
+
+	/**
+	 * Load all directory handles from IndexedDB into cache.
+	 */
+	async loadDirHandlesFromStorage(): Promise<Map<string, FileSystemDirectoryHandle>> {
+		const handles = await getAllDirHandles();
+		for (const [path, handle] of handles) {
+			this.dirHandleCache.set(path, handle);
+		}
+		return handles;
+	}
+
+	/**
+	 * Clear directory handle cache.
+	 */
+	clearDirHandles(): void {
+		this.dirHandleCache.clear();
 	}
 }
