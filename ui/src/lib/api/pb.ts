@@ -1,4 +1,4 @@
-import { PATCH_SAVE_VERSION, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
+import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
 import type { Node, Edge } from '@xyflow/svelte';
 import PocketBase from 'pocketbase';
 
@@ -23,13 +23,7 @@ export async function createShareablePatch(
 ): Promise<string | null> {
 	const name = _name || `Shared Patch ${new Date().toLocaleDateString()}`;
 
-	const save: PatchSaveFormat = {
-		name,
-		nodes,
-		edges,
-		timestamp: Date.now(),
-		version: PATCH_SAVE_VERSION
-	};
+	const save = serializePatch({ name, nodes, edges });
 
 	try {
 		const result = await pb.collection('patches').create({
