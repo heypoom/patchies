@@ -136,7 +136,7 @@
 
 	{#if node.name !== 'root'}
 		<button
-			class="flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs
+			class="flex w-full cursor-pointer items-center gap-1.5 px-2 py-1 text-left text-xs
 				{isSelected ? 'bg-blue-900/40 hover:bg-blue-900/50' : 'hover:bg-zinc-800'}"
 			style="padding-left: {paddingLeft}px"
 			draggable={isFile ? 'true' : 'false'}

@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { VirtualFilesystem } from '$lib/vfs';
+import { logger } from '$lib/utils/logger';
 
 /**
  * Callback to create a node with type, position, and optional custom data
@@ -66,14 +67,21 @@ export class CanvasDragDropManager {
 		// Get accurate positioning with zoom/pan
 		const position = this.screenToFlowPosition({ x: event.clientX, y: event.clientY });
 
+		// Handle VFS file drops - create appropriate node based on file type
+		if (vfsPath && !isDropOnNode) {
+			this.handleVfsFileDrop(vfsPath, position);
+			return;
+		}
+
 		// Handle assembly memory drops - create asm.value node
 		if (memoryData && !isDropOnNode) {
 			try {
 				const data = JSON.parse(memoryData);
 				this.createNode('asm.value', position, data);
+
 				return;
 			} catch (error) {
-				console.warn('Failed to parse memory drag data:', error);
+				logger.warn('Failed to parse memory drag data:', error);
 			}
 		}
 
@@ -147,18 +155,19 @@ export class CanvasDragDropManager {
 
 					if (fsHandle?.kind === 'file') {
 						handle = fsHandle as FileSystemFileHandle;
-						console.log('got handle', handle);
+						logger.debug('got fs handle', handle);
 					}
 				} catch {
 					// Not supported or denied - continue without handle
-					console.log('not supported or denied - continue without handle');
+					logger.debug('fs not supported or denied');
 				}
 			}
 
-			const nodeType = this.getNodeTypeFromFile(file);
+			const nodeType = this.getNodeTypeFromMimeType(file.type);
 
 			if (nodeType) {
-				console.log('creating node with handle', handle);
+				logger.debug('creating node with handle', handle);
+
 				const customData = await this.getFileNodeData(file, nodeType, handle);
 				this.createNode(nodeType, position, customData);
 			}
@@ -166,33 +175,60 @@ export class CanvasDragDropManager {
 	}
 
 	/**
-	 * Map file types to node types based on MIME type
+	 * Handle VFS file drops by creating appropriate nodes
 	 */
-	private getNodeTypeFromFile(file: File): string | null {
-		const mimeType = file.type;
+	private handleVfsFileDrop(vfsPath: string, position: { x: number; y: number }): void {
+		const vfs = VirtualFilesystem.getInstance();
+		const entry = vfs.getEntry(vfsPath);
 
-		// Image files -> img node
-		if (mimeType.startsWith('image/')) {
-			return 'img';
+		if (!entry) {
+			logger.warn('VFS entry not found:', vfsPath);
+			return;
 		}
 
-		// Video files -> video node
-		if (mimeType.startsWith('video/')) {
-			return 'video';
+		const nodeType = this.getNodeTypeFromMimeType(entry.mimeType);
+
+		if (nodeType) {
+			const customData = this.getVfsFileNodeData(vfsPath, nodeType);
+			this.createNode(nodeType, position, customData);
+		}
+	}
+
+	/**
+	 * Map MIME types to node types
+	 */
+	private getNodeTypeFromMimeType(mimeType: string | undefined): string | null {
+		if (!mimeType) return null;
+
+		return match(mimeType)
+			.when(
+				(t) => t.startsWith('image/'),
+				() => 'img'
+			)
+			.when(
+				(t) => t.startsWith('video/'),
+				() => 'video'
+			)
+			.when(
+				(t) => t.startsWith('text/'),
+				() => 'markdown'
+			)
+			.when(
+				(t) => t.startsWith('audio/'),
+				() => 'soundfile~'
+			)
+			.otherwise(() => null);
+	}
+
+	/**
+	 * Create appropriate data for VFS file-based nodes
+	 */
+	private getVfsFileNodeData(vfsPath: string, nodeType: string): unknown {
+		if (['img', 'video', 'soundfile~', 'markdown'].includes(nodeType)) {
+			return { ...getDefaultNodeData(nodeType), vfsPath };
 		}
 
-		// Text files -> markdown node
-		if (mimeType.startsWith('text/')) {
-			return 'markdown';
-		}
-
-		// Audio files -> soundfile~ node
-		if (mimeType.startsWith('audio/')) {
-			return 'soundfile~';
-		}
-
-		// Unsupported file type
-		return null;
+		return getDefaultNodeData(nodeType);
 	}
 
 	/**
@@ -221,7 +257,8 @@ export class CanvasDragDropManager {
 						markdown: content
 					};
 				} catch (error) {
-					console.error('Failed to read markdown file:', error);
+					logger.error('Failed to read markdown file:', error);
+
 					return {
 						...getDefaultNodeData('markdown'),
 						markdown: `Error loading file: ${file.name}`
