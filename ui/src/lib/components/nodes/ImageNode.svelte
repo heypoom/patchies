@@ -36,12 +36,48 @@
 	let canvasElement: HTMLCanvasElement | null = $state(null);
 	let hasImage = $state(false);
 	let needsReselect = $state(false);
+	let needsFolderRelink = $state(false);
 	let isLoading = $state(false);
 
 	const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
 	const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
 	const hasVfsPath = $derived(!!node.data.vfsPath);
+
+	// Get the linked folder path if this file is inside a linked folder
+	const linkedFolderPath = $derived.by(() => {
+		if (!node.data.vfsPath) return null;
+		// Check each parent path segment to find a linked folder
+		const segments = node.data.vfsPath.split('/');
+		for (let i = 3; i < segments.length; i++) {
+			const potentialPath = segments.slice(0, i).join('/');
+			const entry = vfs.getEntry(potentialPath);
+			if (entry?.provider === 'local-folder') {
+				return potentialPath;
+			}
+		}
+		return null;
+	});
+
+	const linkedFolderName = $derived(linkedFolderPath?.split('/').pop() ?? null);
+
+	// Subscribe to pending permissions to retry loading when folder is re-linked
+	const pendingPermissions = vfs.pendingPermissions$;
+
+	// Watch for when the linked folder is re-linked (removed from pending permissions)
+	$effect(() => {
+		const pending = $pendingPermissions;
+
+		// If we're waiting for a folder relink and the folder is no longer pending, retry loading
+		if (needsFolderRelink && linkedFolderPath && !pending.has(linkedFolderPath)) {
+			// Folder has been re-linked, retry loading
+			needsFolderRelink = false;
+
+			if (node.data.vfsPath) {
+				loadFromVfsPath(node.data.vfsPath);
+			}
+		}
+	});
 
 	const handleMessage: MessageCallbackFn = (m) => {
 		match(m)
@@ -81,6 +117,7 @@
 		try {
 			isLoading = true;
 			needsReselect = false;
+			needsFolderRelink = false;
 
 			const fileOrBlob = await vfs.resolve(vfsPath);
 
@@ -93,14 +130,16 @@
 		} catch (err) {
 			logger.error('[vfs load error]', err);
 
-			// Check if it's a permission error or missing handle/data
-			if (
-				err instanceof Error &&
-				(err.message.includes('Permission denied') ||
-					err.message.includes('No handle or cached data found') ||
-					err.message.includes('No directory handle'))
-			) {
-				needsReselect = true;
+			if (err instanceof Error) {
+				// Check if the error is about a missing directory handle (linked folder)
+				if (err.message.includes('No directory handle')) {
+					needsFolderRelink = true;
+				} else if (
+					err.message.includes('Permission denied') ||
+					err.message.includes('No handle or cached data found')
+				) {
+					needsReselect = true;
+				}
 			}
 
 			hasImage = false;
@@ -272,6 +311,7 @@
 		glSystem.setPreflippedBitmap(node.id, source);
 		hasImage = true;
 		needsReselect = false;
+		needsFolderRelink = false;
 
 		setTimeout(() => {
 			setPreviewImage(preview);
@@ -312,6 +352,7 @@
 		const granted = await vfs.requestPermission(node.data.vfsPath);
 		if (granted) {
 			needsReselect = false;
+			needsFolderRelink = false;
 			await loadFromVfsPath(node.data.vfsPath);
 			return;
 		}
@@ -426,6 +467,25 @@
 							ondragleave={handleDragLeave}
 							ondrop={handleDrop}
 						></canvas>
+					{:else if hasVfsPath && needsFolderRelink}
+						<div
+							class="flex flex-col items-start justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-8 py-3 font-mono"
+							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
+								defaultPreviewHeight}px"
+							role="application"
+						>
+							<Lock class="mb-2 h-5 w-5 text-amber-400" />
+
+							<div class="text-[12px] font-light text-zinc-400">Re-link folder in sidebar.</div>
+
+							<div class="overflow-hidden text-[10px] font-light text-zinc-600">
+								{linkedFolderName ? `Folder: ${linkedFolderName}` : node.data.vfsPath}
+							</div>
+
+							<div class="mt-1 text-[10px] text-zinc-500">
+								Find the folder in the sidebar and click the re-link button.
+							</div>
+						</div>
 					{:else if hasVfsPath && needsReselect}
 						<div
 							class={[
