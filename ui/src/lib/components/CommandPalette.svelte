@@ -29,6 +29,7 @@
 		onShowAiPrompt?: () => void;
 		onShowGeminiKeyModal?: () => void;
 		onNewPatch?: () => void;
+		onBrowseFiles?: () => void;
 	}
 
 	let {
@@ -40,7 +41,8 @@
 		setEdges,
 		onShowAiPrompt,
 		onShowGeminiKeyModal,
-		onNewPatch
+		onNewPatch,
+		onBrowseFiles
 	}: Props = $props();
 
 	// Component state
@@ -138,6 +140,11 @@
 			id: 'toggle-bottom-bar',
 			name: 'Toggle Bottom Bar',
 			description: 'Show or hide the bottom toolbar'
+		},
+		{
+			id: 'browse-files',
+			name: 'Browse Files',
+			description: 'View files in the virtual filesystem'
 		}
 	];
 
@@ -303,6 +310,10 @@
 			.with('new-patch', () => {
 				onCancel();
 				onNewPatch?.();
+			})
+			.with('browse-files', () => {
+				onCancel();
+				onBrowseFiles?.();
 			})
 			.with('toggle-vim-mode', () => {
 				const current = localStorage.getItem('editor.vim') === 'true';

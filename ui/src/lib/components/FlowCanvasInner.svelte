@@ -53,6 +53,8 @@
 	import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
 	import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
 	import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
+	import SidebarPanel from './sidebar/SidebarPanel.svelte';
+	import FileTreeView from './sidebar/FileTreeView.svelte';
 	import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { NodeReplaceEvent } from '$lib/eventbus/events';
@@ -98,6 +100,9 @@
 
 	// Dialog state for new patch confirmation
 	let showNewPatchDialog = $state(false);
+
+	// Sidebar state
+	let showSidebar = $state(false);
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -874,216 +879,228 @@
 	}
 </script>
 
-<div class="flow-container flex h-screen w-full flex-col">
-	<!-- URL Loading Indicator -->
-	{#if isLoadingFromUrl}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
-			>
+<div class="flow-container flex h-screen w-full">
+	<!-- File Browser Sidebar -->
+	<SidebarPanel bind:open={showSidebar}>
+		<FileTreeView />
+	</SidebarPanel>
+
+	<!-- Main content area -->
+	<div class="relative flex flex-1 flex-col">
+		<!-- URL Loading Indicator -->
+		{#if isLoadingFromUrl}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 				<div
-					class="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
-				></div>
-
-				<span>Loading your patch...</span>
-			</div>
-		</div>
-	{/if}
-
-	<!-- URL Loading Error -->
-	{#if urlLoadError}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
-			>
-				<span>Failed to load patch: {urlLoadError}</span>
-
-				<button
-					class="ml-2 text-red-300 hover:text-red-100"
-					onclick={() => (urlLoadError = null)}
-					title="Dismiss"
+					class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
 				>
-					×
-				</button>
-			</div>
-		</div>
-	{/if}
+					<div
+						class="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
+					></div>
 
-	<!-- Audio Resume Hint -->
-	{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
-			>
-				<Volume2 class="h-4 w-4" />
-				<span>Click anywhere to play sound</span>
+					<span>Loading your patch...</span>
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	<!-- Connection Mode Indicator -->
-	{#if $isConnectionMode}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
-					$isConnecting
-						? 'border-green-600 bg-green-900/80 text-green-200'
-						: 'border-blue-600 bg-blue-900/80 text-blue-200'
-				}`}
-			>
-				<Cable class="h-4 w-4" />
-				<span>
-					{#if $isConnecting}
-						Tap or drag to another handle to connect
-					{:else}
-						Tap on a handle to start the connection
-					{/if}
-				</span>
-				<button
-					class={`ml-2 hover:text-blue-100 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
-					onclick={cancelConnectionMode}
-					title="Cancel"
+		<!-- URL Loading Error -->
+		{#if urlLoadError}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+				<div
+					class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
 				>
-					×
-				</button>
+					<span>Failed to load patch: {urlLoadError}</span>
+
+					<button
+						class="ml-2 text-red-300 hover:text-red-100"
+						onclick={() => (urlLoadError = null)}
+						title="Dismiss"
+					>
+						×
+					</button>
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	<!-- Main flow area -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div
-		bind:this={flowContainer}
-		class="relative flex-1"
-		ondrop={onDrop}
-		ondragover={onDragOver}
-		onmousemove={handleMouseMove}
-		onclick={resumeAudio}
-		tabindex="0"
-	>
-		<SvelteFlow
-			bind:nodes
-			bind:edges
-			{nodeTypes}
-			{edgeTypes}
-			fitView
-			class="bg-zinc-900"
-			snapGrid={[5, 5]}
-			proOptions={{ hideAttribution: true }}
-			{isValidConnection}
-			onconnectstart={(event, params) => {
-				isConnecting.set(true);
-				// Construct fully qualified handle identifier (nodeId/handleId)
-				const qualifiedHandleId =
-					params.nodeId && params.handleId
-						? `${params.nodeId}/${params.handleId}`
-						: params.handleId || null;
-				connectingFromHandleId.set(qualifiedHandleId);
-			}}
-			onconnectend={() => {
-				isConnecting.set(false);
-				connectingFromHandleId.set(null);
-			}}
-			onclickconnectstart={(event, params) => {
-				isConnecting.set(true);
-				// Construct fully qualified handle identifier (nodeId/handleId)
-				const qualifiedHandleId =
-					params.nodeId && params.handleId
-						? `${params.nodeId}/${params.handleId}`
-						: params.handleId || null;
-				connectingFromHandleId.set(qualifiedHandleId);
-			}}
-			onclickconnectend={(event, connectionState) => {
-				isConnecting.set(false);
-				connectingFromHandleId.set(null);
+		<!-- Audio Resume Hint -->
+		{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+				<div
+					class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
+				>
+					<Volume2 class="h-4 w-4" />
+					<span>Click anywhere to play sound</span>
+				</div>
+			</div>
+		{/if}
 
-				// Show success toast if connection was successfully made
-				// connectionState will have connection details if successful
-				if (connectionState?.isValid) {
-					toast.success('Objects connected by tap.');
-				}
-			}}
+		<!-- Connection Mode Indicator -->
+		{#if $isConnectionMode}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+				<div
+					class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
+						$isConnecting
+							? 'border-green-600 bg-green-900/80 text-green-200'
+							: 'border-blue-600 bg-blue-900/80 text-blue-200'
+					}`}
+				>
+					<Cable class="h-4 w-4" />
+					<span>
+						{#if $isConnecting}
+							Tap or drag to another handle to connect
+						{:else}
+							Tap on a handle to start the connection
+						{/if}
+					</span>
+					<button
+						class={`ml-2 hover:text-blue-100 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
+						onclick={cancelConnectionMode}
+						title="Cancel"
+					>
+						×
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Main flow area -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			bind:this={flowContainer}
+			class="relative flex-1"
+			ondrop={onDrop}
+			ondragover={onDragOver}
+			onmousemove={handleMouseMove}
+			onclick={resumeAudio}
+			tabindex="0"
 		>
-			<BackgroundPattern />
+			<SvelteFlow
+				bind:nodes
+				bind:edges
+				{nodeTypes}
+				{edgeTypes}
+				fitView
+				class="bg-zinc-900"
+				snapGrid={[5, 5]}
+				proOptions={{ hideAttribution: true }}
+				{isValidConnection}
+				onconnectstart={(event, params) => {
+					isConnecting.set(true);
+					// Construct fully qualified handle identifier (nodeId/handleId)
+					const qualifiedHandleId =
+						params.nodeId && params.handleId
+							? `${params.nodeId}/${params.handleId}`
+							: params.handleId || null;
+					connectingFromHandleId.set(qualifiedHandleId);
+				}}
+				onconnectend={() => {
+					isConnecting.set(false);
+					connectingFromHandleId.set(null);
+				}}
+				onclickconnectstart={(event, params) => {
+					isConnecting.set(true);
+					// Construct fully qualified handle identifier (nodeId/handleId)
+					const qualifiedHandleId =
+						params.nodeId && params.handleId
+							? `${params.nodeId}/${params.handleId}`
+							: params.handleId || null;
+					connectingFromHandleId.set(qualifiedHandleId);
+				}}
+				onclickconnectend={(event, connectionState) => {
+					isConnecting.set(false);
+					connectingFromHandleId.set(null);
 
-			<BackgroundOutputCanvas />
+					// Show success toast if connection was successfully made
+					// connectionState will have connection details if successful
+					if (connectionState?.isValid) {
+						toast.success('Objects connected by tap.');
+					}
+				}}
+			>
+				<BackgroundPattern />
 
-			<Controls class={$isBottomBarVisible ? '' : '!hidden'} />
-		</SvelteFlow>
+				<BackgroundOutputCanvas />
 
-		<!-- Command Palette -->
-		{#if showCommandPalette}
-			<CommandPalette
-				position={commandPalettePosition}
-				onCancel={handleCommandPaletteCancel}
+				<Controls class={$isBottomBarVisible ? '' : '!hidden'} />
+			</SvelteFlow>
+
+			<!-- Command Palette -->
+			{#if showCommandPalette}
+				<CommandPalette
+					position={commandPalettePosition}
+					onCancel={handleCommandPaletteCancel}
+					{nodes}
+					{edges}
+					setNodes={(newNodes) => {
+						nodes = newNodes;
+						nodeIdCounter = getNodeIdCounterFromSave(newNodes);
+					}}
+					setEdges={(newEdges) => {
+						edges = newEdges;
+					}}
+					onShowAiPrompt={() => {
+						aiEditingNodeId = null;
+						onAiInsertOrEdit();
+					}}
+					onShowGeminiKeyModal={() => {
+						showMissingApiKeyDialog = true;
+					}}
+					onNewPatch={newPatch}
+					onBrowseFiles={() => (showSidebar = true)}
+				/>
+			{/if}
+		</div>
+
+		<!-- Bottom toolbar buttons -->
+		{#if $isBottomBarVisible}
+			<BottomToolbar
 				{nodes}
 				{edges}
-				setNodes={(newNodes) => {
-					nodes = newNodes;
-					nodeIdCounter = getNodeIdCounterFromSave(newNodes);
-				}}
-				setEdges={(newEdges) => {
-					edges = newEdges;
-				}}
-				onShowAiPrompt={() => {
-					aiEditingNodeId = null;
-					onAiInsertOrEdit();
-				}}
-				onShowGeminiKeyModal={() => {
-					showMissingApiKeyDialog = true;
-				}}
+				{selectedNodeIds}
+				{selectedEdgeIds}
+				{copiedNodeData}
+				{hasGeminiApiKey}
+				bind:showStartupModal
+				onDelete={deleteSelectedElements}
+				onInsertObject={insertObjectWithButton}
+				onBrowseObjects={() => (showObjectBrowser = true)}
+				onCopy={copySelectedNodes}
+				onPaste={() => pasteNode('button')}
+				onCancelConnectionMode={cancelConnectionMode}
+				onEnableConnectionMode={() => isConnectionMode.set(true)}
+				{onAiInsertOrEdit}
+				onCommandPalette={triggerCommandPalette}
 				onNewPatch={newPatch}
+				onLoadPatch={loadPatchById}
 			/>
 		{/if}
-	</div>
 
-	<!-- Bottom toolbar buttons -->
-	{#if $isBottomBarVisible}
-		<BottomToolbar
-			{nodes}
-			{edges}
-			{selectedNodeIds}
-			{selectedEdgeIds}
-			{copiedNodeData}
-			{hasGeminiApiKey}
-			bind:showStartupModal
-			onDelete={deleteSelectedElements}
-			onInsertObject={insertObjectWithButton}
-			onBrowseObjects={() => (showObjectBrowser = true)}
-			onCopy={copySelectedNodes}
-			onPaste={() => pasteNode('button')}
-			onCancelConnectionMode={cancelConnectionMode}
-			onEnableConnectionMode={() => isConnectionMode.set(true)}
-			{onAiInsertOrEdit}
-			onCommandPalette={triggerCommandPalette}
-			onNewPatch={newPatch}
-			onLoadPatch={loadPatchById}
+		<!-- Object Browser Modal -->
+		<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+
+		<!-- AI Object Prompt Dialog -->
+		<AiObjectPrompt
+			bind:open={showAiPrompt}
+			position={aiPromptPosition}
+			editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
+			onInsertObject={handleAiObjectInsert}
+			onInsertMultipleObjects={handleAiMultipleObjectsInsert}
+			onEditObject={handleAiObjectEdit}
 		/>
-	{/if}
 
-	<!-- Object Browser Modal -->
-	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+		<!-- Toast Notifications -->
+		<Toaster position="top-center" />
 
-	<!-- AI Object Prompt Dialog -->
-	<AiObjectPrompt
-		bind:open={showAiPrompt}
-		position={aiPromptPosition}
-		editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
-		onInsertObject={handleAiObjectInsert}
-		onInsertMultipleObjects={handleAiMultipleObjectsInsert}
-		onEditObject={handleAiObjectEdit}
-	/>
+		<!-- Gemini API Key Missing Dialog -->
+		<GeminiApiKeyDialog
+			bind:open={showMissingApiKeyDialog}
+			onSaveAndContinue={onGeminiApiKeySaved}
+		/>
 
-	<!-- Toast Notifications -->
-	<Toaster position="top-center" />
-
-	<!-- Gemini API Key Missing Dialog -->
-	<GeminiApiKeyDialog bind:open={showMissingApiKeyDialog} onSaveAndContinue={onGeminiApiKeySaved} />
-
-	<!-- New Patch Confirmation Dialog -->
-	<NewPatchDialog bind:open={showNewPatchDialog} onConfirm={confirmNewPatch} />
+		<!-- New Patch Confirmation Dialog -->
+		<NewPatchDialog bind:open={showNewPatchDialog} onConfirm={confirmNewPatch} />
+	</div>
 </div>
 
 <style>

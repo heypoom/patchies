@@ -357,8 +357,6 @@
 									defaultPreviewHeight}px"
 							></canvas>
 
-							{node.data.vfsPath}
-
 							<button
 								title="Change image"
 								class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
