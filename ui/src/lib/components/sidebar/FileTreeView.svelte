@@ -450,11 +450,14 @@
 		}
 	}
 
-	// Load contents when a local folder is expanded
+	// Load contents when a local folder is expanded (always refresh to pick up filesystem changes)
 	async function handleLocalFolderExpand(path: string) {
-		if (!localFolderContents.has(path)) {
-			await loadLocalFolderContents(path);
-		}
+		await loadLocalFolderContents(path);
+	}
+
+	async function handleRefreshLinkedFolder(path: string, event: MouseEvent) {
+		event.stopPropagation();
+		await loadLocalFolderContents(path);
 	}
 </script>
 
@@ -610,6 +613,23 @@
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content side="bottom">Add from URL</Tooltip.Content>
+					</Tooltip.Root>
+				</div>
+			{/if}
+
+			{#if isLinkedFolder && node.path}
+				<div class="flex shrink-0 items-center gap-0.5 pr-2 opacity-0 group-hover:opacity-100">
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
+								onclick={(e) => handleRefreshLinkedFolder(node.path!, e)}
+								title="Refresh folder"
+							>
+								<RefreshCw class="h-3.5 w-3.5" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content side="bottom">Refresh folder</Tooltip.Content>
 					</Tooltip.Root>
 				</div>
 			{/if}
