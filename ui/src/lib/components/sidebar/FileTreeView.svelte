@@ -29,6 +29,7 @@
 
 	let expandedPaths = $state(new Set<string>(['user://', 'obj://']));
 	let selectedPaths = $state(new Set<string>());
+	let dropTargetPath = $state<string | null>(null);
 
 	function toggleSelected(path: string) {
 		if (selectedPaths.has(path)) {
@@ -152,6 +153,70 @@
 
 		return { icon: File, color: 'text-zinc-400' };
 	}
+
+	// Check if a path is within the drop target folder
+	function isInDropTarget(nodePath: string | undefined): boolean {
+		if (!dropTargetPath || !nodePath) return false;
+		return (
+			nodePath === dropTargetPath || nodePath.startsWith(dropTargetPath.replace(/\/$/, '') + '/')
+		);
+	}
+
+	function handleFolderDragOver(event: DragEvent, folderPath: string) {
+		// Only accept file drops, not internal VFS drags
+		const hasFiles = event.dataTransfer?.types.includes('Files');
+		const hasVfsPath = event.dataTransfer?.types.includes('application/x-vfs-path');
+
+		if (hasFiles && !hasVfsPath) {
+			event.preventDefault();
+			event.stopPropagation();
+			if (event.dataTransfer) {
+				event.dataTransfer.dropEffect = 'copy';
+			}
+			dropTargetPath = folderPath;
+		}
+	}
+
+	function handleTreeDragOver(event: DragEvent) {
+		// Fallback for empty areas - only if not over a folder
+		const hasFiles = event.dataTransfer?.types.includes('Files');
+		const hasVfsPath = event.dataTransfer?.types.includes('application/x-vfs-path');
+
+		if (hasFiles && !hasVfsPath) {
+			event.preventDefault();
+			if (event.dataTransfer) {
+				event.dataTransfer.dropEffect = 'copy';
+			}
+			// Only set to user:// if we're not already targeting a folder
+			if (dropTargetPath === null) {
+				dropTargetPath = 'user://';
+			}
+		}
+	}
+
+	function handleFolderDragLeave(event: DragEvent) {
+		// Only clear if leaving the tree entirely
+		const relatedTarget = event.relatedTarget as HTMLElement | null;
+		if (!relatedTarget?.closest('[role="tree"]')) {
+			dropTargetPath = null;
+		}
+	}
+
+	async function handleFolderDrop(event: DragEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+
+		const targetFolder = dropTargetPath;
+		dropTargetPath = null;
+
+		const files = event.dataTransfer?.files;
+		if (!files || files.length === 0) return;
+
+		// Store each dropped file in VFS with the target folder
+		for (const file of Array.from(files)) {
+			await vfs.storeFile(file, undefined, targetFolder ?? undefined);
+		}
+	}
 </script>
 
 {#snippet treeNode(node: TreeNode, depth: number = 0)}
@@ -162,14 +227,21 @@
 	{@const paddingLeft = depth * 12 + 8}
 	{@const isUserNamespace = node.path === 'user://'}
 	{@const isObjectNamespace = node.path === 'obj://'}
+	{@const isDropTarget = isInDropTarget(node.path)}
 
 	{#if node.name !== 'root'}
 		<button
 			class="flex w-full cursor-pointer items-center gap-1.5 px-2 py-1 text-left text-xs
-				{isSelected ? 'bg-blue-900/40 hover:bg-blue-900/50' : 'hover:bg-zinc-800'}"
+				{isDropTarget
+				? 'bg-blue-600/30'
+				: isSelected
+					? 'bg-blue-900/40 hover:bg-blue-900/50'
+					: 'hover:bg-zinc-800'}"
 			style="padding-left: {paddingLeft}px"
 			draggable={isFile ? 'true' : 'false'}
 			ondragstart={(e) => isFile && handleDragStart(e, node)}
+			ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
+			ondrop={(e) => isFolder && handleFolderDrop(e)}
 			onclick={() => {
 				if (isFolder && node.path) {
 					toggleExpanded(node.path);
@@ -196,7 +268,7 @@
 			{:else}
 				{@const fileIcon = getFileIcon(node.entry?.mimeType)}
 				<span class="w-3"></span>
-				<svelte:component this={fileIcon.icon} class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
+				<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
 			{/if}
 
 			<span class="truncate font-mono text-zinc-300" title={node.entry?.filename || node.name}>
@@ -213,13 +285,24 @@
 {/snippet}
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div class="py-2 outline-none" tabindex="0" role="tree" onkeydown={handleKeydown}>
+<div
+	class="py-2 outline-none {dropTargetPath === 'user://' &&
+	(!tree.children || tree.children.size === 0)
+		? 'bg-blue-600/30'
+		: ''}"
+	tabindex="0"
+	role="tree"
+	onkeydown={handleKeydown}
+	ondragover={handleTreeDragOver}
+	ondragleave={handleFolderDragLeave}
+	ondrop={handleFolderDrop}
+>
 	{#if tree.children && tree.children.size > 0}
 		{@render treeNode(tree)}
 	{:else}
-		<div class="px-4 py-8 text-center text-xs text-zinc-500">
+		<div class="pointer-events-none px-4 py-8 text-center text-xs text-zinc-500">
 			<p>No files in the virtual filesystem.</p>
-			<p class="mt-2">Drop files onto the canvas to add them.</p>
+			<p class="mt-2">Drop files here to add them.</p>
 		</div>
 	{/if}
 </div>

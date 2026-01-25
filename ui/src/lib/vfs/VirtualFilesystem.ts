@@ -113,10 +113,15 @@ export class VirtualFilesystem {
 	/**
 	 * Store a local file in the VFS and return its generated path.
 	 * Optionally provide a FileSystemFileHandle for better persistence in Chrome/Edge.
+	 * Optionally provide a targetFolder to place the file in a specific folder.
 	 */
-	async storeFile(file: File, handle?: FileSystemFileHandle): Promise<string> {
+	async storeFile(
+		file: File,
+		handle?: FileSystemFileHandle,
+		targetFolder?: string
+	): Promise<string> {
 		const existingPaths = new Set(this.entries.keys());
-		const path = generateUserPath(file.name, file.type, existingPaths);
+		const path = generateUserPath(file.name, file.type, existingPaths, targetFolder);
 
 		const entry: VFSEntry = {
 			provider: 'local',

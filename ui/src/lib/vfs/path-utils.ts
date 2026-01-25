@@ -64,24 +64,32 @@ export function getCategoryFromExtension(
  * Generate a unique user:// path for a file, handling collisions.
  *
  * @param filename - Original filename (e.g., 'photo.jpg')
- * @param mimeType - MIME type for categorization
+ * @param _mimeType - Unused, kept for API compatibility
  * @param existingPaths - Set of paths already in use
- * @returns Generated path like 'user://images/photo.jpg' or 'user://images/photo-1.jpg'
+ * @param targetFolder - Optional target folder path (e.g., 'user://images/')
+ * @returns Generated path like 'user://photo.jpg' or 'user://images/photo.jpg'
  */
 export function generateUserPath(
 	filename: string,
-	mimeType: string | undefined,
-	existingPaths: Set<string>
+	_mimeType: string | undefined,
+	existingPaths: Set<string>,
+	targetFolder?: string
 ): string {
-	const category = mimeType ? getCategoryFromMime(mimeType) : getCategoryFromExtension(filename);
 	const ext = getExtension(filename);
 	const base = getBasename(filename);
 
-	let path = `${VFS_PREFIXES.USER}${category}/${filename}`;
+	// Determine the prefix - either the target folder or default user://
+	let prefix = VFS_PREFIXES.USER;
+	if (targetFolder) {
+		// Ensure the folder ends with /
+		prefix = targetFolder.endsWith('/') ? targetFolder : `${targetFolder}/`;
+	}
+
+	let path = `${prefix}${filename}`;
 	let counter = 1;
 
 	while (existingPaths.has(path)) {
-		path = `${VFS_PREFIXES.USER}${category}/${base}-${counter}${ext}`;
+		path = `${prefix}${base}-${counter}${ext}`;
 		counter++;
 	}
 
