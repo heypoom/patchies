@@ -20,8 +20,7 @@
 			playbackRate?: number;
 			detune?: number;
 			// Used when converting from soundfile~
-			_audioFile?: File;
-			_audioUrl?: string;
+			vfsPath?: string;
 		};
 	} = $props();
 
@@ -404,32 +403,21 @@
 				audioBuffer = v2Node.audioBuffer;
 			}
 
-			// Load audio from soundfile~ conversion if present
-			if (node.data._audioFile || node.data._audioUrl) {
+			// Load audio from soundfile~ conversion (VFS path)
+			if (node.data.vfsPath) {
 				try {
-					let arrayBuffer: ArrayBuffer;
+					const { VirtualFilesystem } = await import('$lib/vfs');
 
-					if (node.data._audioFile) {
-						arrayBuffer = await node.data._audioFile.arrayBuffer();
-					} else if (node.data._audioUrl) {
-						const response = await fetch(node.data._audioUrl);
-						arrayBuffer = await response.arrayBuffer();
-					} else {
-						return;
-					}
+					const vfs = VirtualFilesystem.getInstance();
+					const fileOrBlob = await vfs.resolve(node.data.vfsPath);
 
+					const arrayBuffer = await fileOrBlob.arrayBuffer();
 					const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
+
 					v2Node.audioBuffer = decodedBuffer;
 					audioBuffer = decodedBuffer;
-
-					// Clear the temporary conversion data
-					updateNodeData(node.id, {
-						...node.data,
-						_audioFile: undefined,
-						_audioUrl: undefined
-					});
 				} catch (error) {
-					console.error('Failed to load audio from soundfile~ conversion:', error);
+					console.error('Failed to load audio from VFS path:', error);
 				}
 			}
 		}
