@@ -47,15 +47,21 @@ export class CanvasDragDropManager {
 	 * Handle drop events on the canvas
 	 */
 	onDrop(event: DragEvent): void {
-		event.preventDefault();
-
 		const type = event.dataTransfer?.getData('application/svelteflow');
 		const items = event.dataTransfer?.items;
 		const memoryData = event.dataTransfer?.getData('application/asm-memory');
+		const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
 
 		// Check if the drop target is within a node (to avoid duplicate handling)
 		const target = event.target as HTMLElement;
 		const isDropOnNode = target.closest('.svelte-flow__node');
+
+		// If dropping VFS file on a node, let the node handle it via native drop event
+		if (vfsPath && isDropOnNode) {
+			return;
+		}
+
+		event.preventDefault();
 
 		// Get accurate positioning with zoom/pan
 		const position = this.screenToFlowPosition({ x: event.clientX, y: event.clientY });
@@ -96,8 +102,11 @@ export class CanvasDragDropManager {
 		// Check what type of drag this is and set appropriate drop effect
 		const hasMemoryData = event.dataTransfer?.types.includes('application/asm-memory');
 		const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
+		const hasVfsData = event.dataTransfer?.types.includes('application/x-vfs-path');
 
-		if (hasMemoryData) {
+		if (hasVfsData) {
+			event.dataTransfer!.dropEffect = 'copy';
+		} else if (hasMemoryData) {
 			event.dataTransfer!.dropEffect = 'copy';
 		} else if (hasSvelteFlowData) {
 			event.dataTransfer!.dropEffect = 'move';

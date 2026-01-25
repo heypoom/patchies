@@ -23,6 +23,27 @@
 	}
 
 	let expandedPaths = $state(new Set<string>(['user://', 'obj://']));
+	let selectedPaths = $state(new Set<string>());
+
+	function toggleSelected(path: string) {
+		if (selectedPaths.has(path)) {
+			selectedPaths.delete(path);
+		} else {
+			selectedPaths.add(path);
+		}
+		selectedPaths = new Set(selectedPaths);
+	}
+
+	function handleDragStart(event: DragEvent, node: TreeNode) {
+		if (!node.path || !node.entry) return;
+
+		event.dataTransfer?.setData('application/x-vfs-path', node.path);
+		event.dataTransfer?.setData('text/plain', node.path);
+
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'copy';
+		}
+	}
 
 	// Build tree structure from VFS entries
 	const tree = $derived.by(() => {
@@ -107,18 +128,25 @@
 
 {#snippet treeNode(node: TreeNode, depth: number = 0)}
 	{@const isFolder = node.children && node.children.size > 0}
+	{@const isFile = !isFolder && node.entry}
 	{@const isExpanded = node.path ? expandedPaths.has(node.path) : true}
+	{@const isSelected = node.path ? selectedPaths.has(node.path) : false}
 	{@const paddingLeft = depth * 12 + 8}
 	{@const isUserNamespace = node.path === 'user://'}
 	{@const isObjectNamespace = node.path === 'obj://'}
 
 	{#if node.name !== 'root'}
 		<button
-			class="flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs hover:bg-zinc-800"
+			class="flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs hover:bg-zinc-800
+				{isSelected ? 'bg-blue-900/40' : ''}"
 			style="padding-left: {paddingLeft}px"
+			draggable={isFile ? 'true' : 'false'}
+			ondragstart={(e) => isFile && handleDragStart(e, node)}
 			onclick={() => {
 				if (isFolder && node.path) {
 					toggleExpanded(node.path);
+				} else if (isFile && node.path) {
+					toggleSelected(node.path);
 				}
 			}}
 		>

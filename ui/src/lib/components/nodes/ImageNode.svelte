@@ -118,6 +118,22 @@
 		event.stopPropagation();
 		isDragging = false;
 
+		// Check for VFS path drop first
+		const vfsPathData = event.dataTransfer?.getData('application/x-vfs-path');
+		if (vfsPathData) {
+			// Verify it's an image file
+			const entry = vfs.getEntry(vfsPathData);
+
+			if (entry?.mimeType?.startsWith('image/')) {
+				updateNode(node.id, { data: { ...node.data, vfsPath: vfsPathData } });
+				await loadFromVfsPath(vfsPathData);
+				return;
+			} else {
+				console.warn('Only image files are supported, got:', entry?.mimeType);
+				return;
+			}
+		}
+
 		const items = event.dataTransfer?.items;
 		if (!items || items.length === 0) return;
 
@@ -297,6 +313,24 @@
 		await openFilePickerWithHandle();
 	}
 
+	// Handle VFS drop events from FlowCanvasInner
+	async function handleVfsDrop(event: CustomEvent<{ vfsPath: string; nodeId: string }>) {
+		const { vfsPath, nodeId: targetNodeId } = event.detail;
+
+		// Only handle if this drop is for this node
+		if (targetNodeId !== node.id) return;
+
+		const entry = vfs.getEntry(vfsPath);
+		if (entry?.mimeType?.startsWith('image/')) {
+			updateNode(node.id, { data: { ...node.data, vfsPath } });
+			await loadFromVfsPath(vfsPath);
+		} else {
+			console.warn('Only image files are supported, got:', entry?.mimeType);
+		}
+	}
+
+	let nodeElement: HTMLDivElement;
+
 	onMount(async () => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
@@ -313,6 +347,7 @@
 	onDestroy(() => {
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
+
 		glSystem.removeNode(node.id);
 	});
 
@@ -324,17 +359,29 @@
 	});
 </script>
 
-<div class="relative">
+<div class="relative" bind:this={nodeElement}>
 	<NodeResizer class="z-1" isVisible={node.selected} keepAspectRatio />
-
-	{#if node.selected}
-		<div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
-			<div class="font-mono text-xs font-medium text-zinc-400">img</div>
-		</div>
-	{/if}
 
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
+			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+				<div class="z-10 rounded-lg bg-black/60 px-2 py-1">
+					<div class="font-mono text-xs font-medium text-zinc-400">img</div>
+				</div>
+
+				{#if hasVfsPath && hasImage}
+					<div class="flex gap-1">
+						<button
+							title="Change image"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							onclick={openFileDialog}
+						>
+							<Upload class="h-4 w-4 text-zinc-300" />
+						</button>
+					</div>
+				{/if}
+			</div>
+
 			<div class="relative">
 				<StandardHandle
 					port="inlet"
@@ -347,24 +394,17 @@
 
 				<div class="flex flex-col gap-2">
 					{#if hasVfsPath && hasImage}
-						<div class="relative">
-							<canvas
-								bind:this={canvasElement}
-								width={node.data.width ?? defaultOutputWidth}
-								height={node.data.height ?? defaultOutputHeight}
-								class="rounded-md"
-								style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
-									defaultPreviewHeight}px"
-							></canvas>
-
-							<button
-								title="Change image"
-								class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-								onclick={openFileDialog}
-							>
-								<Upload class="h-3 w-3 text-zinc-300" />
-							</button>
-						</div>
+						<canvas
+							bind:this={canvasElement}
+							width={node.data.width ?? defaultOutputWidth}
+							height={node.data.height ?? defaultOutputHeight}
+							class="rounded-md {isDragging ? 'ring-2 ring-blue-400' : ''}"
+							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
+								defaultPreviewHeight}px"
+							ondragover={handleDragOver}
+							ondragleave={handleDragLeave}
+							ondrop={handleDrop}
+						></canvas>
 					{:else if hasVfsPath && needsPermission}
 						<div
 							class="flex flex-col items-center justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-1 py-3"
