@@ -27,11 +27,10 @@
 
 	function toggleSelected(path: string) {
 		if (selectedPaths.has(path)) {
-			selectedPaths.delete(path);
+			selectedPaths = new Set();
 		} else {
-			selectedPaths.add(path);
+			selectedPaths = new Set([path]);
 		}
-		selectedPaths = new Set(selectedPaths);
 	}
 
 	function handleDragStart(event: DragEvent, node: TreeNode) {
@@ -137,8 +136,8 @@
 
 	{#if node.name !== 'root'}
 		<button
-			class="flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs hover:bg-zinc-800
-				{isSelected ? 'bg-blue-900/40' : ''}"
+			class="flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs
+				{isSelected ? 'bg-blue-900/40 hover:bg-blue-900/50' : 'hover:bg-zinc-800'}"
 			style="padding-left: {paddingLeft}px"
 			draggable={isFile ? 'true' : 'false'}
 			ondragstart={(e) => isFile && handleDragStart(e, node)}
