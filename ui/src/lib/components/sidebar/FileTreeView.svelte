@@ -12,7 +12,8 @@
 		User,
 		Box,
 		Upload,
-		Link
+		Link,
+		RefreshCw
 	} from '@lucide/svelte/icons';
 	import { VirtualFilesystem, getLocalProvider } from '$lib/vfs';
 	import { parseVFSPath, isVFSFolder, type VFSEntry } from '$lib/vfs/types';
@@ -30,6 +31,9 @@
 
 	// Reactive store of VFS entries
 	const vfsEntries = vfs.entries$;
+
+	// Reactive store of paths needing permission re-grant
+	const pendingPermissions = vfs.pendingPermissions$;
 
 	let expandedPaths = $state(new Set<string>(['user://', 'obj://']));
 	let selectedPaths = $state(new Set<string>());
@@ -331,6 +335,68 @@
 			folderInputValue = '';
 		}
 	}
+
+	// Check if a path or any of its children need permission re-grant
+	function needsReselect(nodePath: string | undefined): boolean {
+		if (!nodePath) return false;
+		// Check if this exact path needs permission
+		if ($pendingPermissions.has(nodePath)) return true;
+		// Check if any child path needs permission (for folders)
+		for (const pending of $pendingPermissions) {
+			if (pending.startsWith(nodePath.replace(/\/$/, '') + '/')) return true;
+		}
+		return false;
+	}
+
+	// Hidden file input for reselect
+	let reselectInputRef: HTMLInputElement | null = $state(null);
+	let pendingReselectPath: string | null = $state(null);
+
+	async function handleReselectClick(path: string, event: MouseEvent) {
+		event.stopPropagation();
+
+		// Get original entry to determine mime type for file picker filter
+		const entry = vfs.getEntry(path);
+
+		// Try to use showOpenFilePicker for handle support (Chrome/Edge)
+		if ('showOpenFilePicker' in window) {
+			try {
+				// @ts-expect-error - showOpenFilePicker is not typed
+				const [handle] = await window.showOpenFilePicker({
+					types: entry?.mimeType?.startsWith('image/')
+						? [{ description: 'Images', accept: { 'image/*': [] } }]
+						: undefined,
+					multiple: false
+				});
+
+				const file = await handle.getFile();
+				await vfs.replaceFile(path, file, handle);
+				return;
+			} catch (err) {
+				// User cancelled or error - fall back to input
+				if (err instanceof Error && err.name === 'AbortError') return;
+			}
+		}
+
+		// Fallback: use traditional file input
+		pendingReselectPath = path;
+		reselectInputRef?.click();
+	}
+
+	async function handleReselectFileChange(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const files = input.files;
+		if (!files || files.length === 0 || !pendingReselectPath) return;
+
+		const file = files[0];
+
+		// Replace the file at the same path (no handle available from file input)
+		await vfs.replaceFile(pendingReselectPath, file);
+
+		// Reset
+		input.value = '';
+		pendingReselectPath = null;
+	}
 </script>
 
 <!-- Hidden file input for uploads -->
@@ -340,6 +406,14 @@
 	multiple
 	class="hidden"
 	onchange={handleFileInputChange}
+/>
+
+<!-- Hidden file input for reselect -->
+<input
+	bind:this={reselectInputRef}
+	type="file"
+	class="hidden"
+	onchange={handleReselectFileChange}
 />
 
 {#snippet treeNode(node: TreeNode, depth: number = 0)}
@@ -354,15 +428,18 @@
 	{@const isDropTarget = isInDropTarget(node.path)}
 	{@const isNamespace = isUserNamespace || isObjectNamespace}
 	{@const canHaveChildren = isNamespace || (isFolder && node.path?.startsWith('user://'))}
+	{@const needsReselectFlag = needsReselect(node.path)}
 
 	{#if node.name !== 'root'}
 		<div
 			class="group flex w-full items-center text-left text-xs
-				{isDropTarget
-				? 'bg-blue-600/30'
-				: isSelected
-					? 'bg-blue-900/40 hover:bg-blue-900/50'
-					: 'hover:bg-zinc-800'}"
+				{needsReselectFlag
+				? 'bg-amber-900/30'
+				: isDropTarget
+					? 'bg-blue-600/30'
+					: isSelected
+						? 'bg-blue-900/40 hover:bg-blue-900/50'
+						: 'hover:bg-zinc-800'}"
 		>
 			<button
 				class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
@@ -449,6 +526,23 @@
 							</button>
 						</Tooltip.Trigger>
 						<Tooltip.Content side="bottom">Add from URL</Tooltip.Content>
+					</Tooltip.Root>
+				</div>
+			{/if}
+
+			{#if needsReselectFlag && isFile && node.path}
+				<div class="flex shrink-0 items-center pr-2">
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-0.5 text-amber-400 hover:bg-amber-700/50 hover:text-amber-300"
+								onclick={(e) => handleReselectClick(node.path!, e)}
+								title="Re-link file"
+							>
+								<RefreshCw class="h-3.5 w-3.5" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content side="bottom">Re-link file</Tooltip.Content>
 					</Tooltip.Root>
 				</div>
 			{/if}

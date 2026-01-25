@@ -176,9 +176,15 @@
 
 		const file = files[0];
 
-		// File input doesn't give us handles, so we'll use showOpenFilePicker for persistence
-		// For now, just load without handle (won't persist across reloads)
-		await loadFile(file);
+		// If we're replacing an existing file that needs reselection, use replaceFile
+		if (node.data.vfsPath && needsReselect) {
+			await vfs.replaceFile(node.data.vfsPath, file);
+			await displayImage(file);
+		} else {
+			// File input doesn't give us handles, so we'll use showOpenFilePicker for persistence
+			// For now, just load without handle (won't persist across reloads)
+			await loadFile(file);
+		}
 
 		// Reset input so same file can be selected again
 		input.value = '';
@@ -316,11 +322,34 @@
 
 		console.log(`VFS: No handle for ${node.data.vfsPath}, prompting user to re-select ${filename}`);
 
-		// Open file picker - the new file will replace the old VFS entry
-		await openFilePickerWithHandle();
-	}
+		// Open file picker and replace the existing VFS entry
+		try {
+			if ('showOpenFilePicker' in window) {
+				// @ts-expect-error - showOpenFilePicker is not typed
+				const [handle] = await window.showOpenFilePicker({
+					types: [
+						{
+							description: 'Images',
+							accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'] }
+						}
+					],
+					multiple: false
+				});
 
-	let nodeElement: HTMLDivElement;
+				const file = await handle.getFile();
+				// Replace file at the existing path instead of creating a new one
+				await vfs.replaceFile(node.data.vfsPath, file, handle);
+				await displayImage(file);
+			} else {
+				// Fall back to traditional file input (won't have handle for persistence)
+				fileInputRef?.click();
+			}
+		} catch (err) {
+			if (err instanceof Error && err.name !== 'AbortError') {
+				console.error('File picker error:', err);
+			}
+		}
+	}
 
 	onMount(async () => {
 		messageContext = new MessageContext(node.id);
@@ -350,7 +379,7 @@
 	});
 </script>
 
-<div class="relative" bind:this={nodeElement}>
+<div class="relative">
 	<NodeResizer class="z-1" isVisible={node.selected} keepAspectRatio />
 
 	<div class="group relative">

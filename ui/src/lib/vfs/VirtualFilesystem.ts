@@ -50,6 +50,12 @@ export class VirtualFilesystem {
 		this.getAllEntries()
 	);
 
+	/** Readable store of paths needing permission re-grant */
+	readonly pendingPermissions$: Readable<Set<string>> = derived(
+		this.versionStore,
+		() => new Set(this.pendingPermissions)
+	);
+
 	private constructor() {
 		// Private constructor for singleton
 	}
@@ -152,6 +158,44 @@ export class VirtualFilesystem {
 
 		this.notifyChange();
 		return path;
+	}
+
+	/**
+	 * Replace a file at an existing path (for re-linking files that lost permission).
+	 * This updates the file data and clears the pending permission status.
+	 */
+	async replaceFile(path: string, file: File, handle?: FileSystemFileHandle): Promise<void> {
+		const entry = this.entries.get(path);
+		if (!entry) {
+			throw new Error(`VFS: Cannot replace file at non-existent path: ${path}`);
+		}
+
+		// Update entry metadata
+		entry.filename = file.name;
+		entry.mimeType = file.type || guessMimeType(file.name);
+
+		// Store via provider
+		const provider = this.providers.get('local');
+		if (provider && 'storeFile' in provider) {
+			const localProvider = provider as VFSProvider & {
+				storeFile: (path: string, file: File, handle?: FileSystemFileHandle) => Promise<void>;
+				storeFileWithHandle: (
+					path: string,
+					file: File,
+					handle: FileSystemFileHandle
+				) => Promise<void>;
+			};
+
+			if (handle && 'storeFileWithHandle' in localProvider) {
+				await localProvider.storeFileWithHandle(path, file, handle);
+			} else {
+				await localProvider.storeFile(path, file);
+			}
+		}
+
+		// Clear pending permission status
+		this.pendingPermissions.delete(path);
+		this.notifyChange();
 	}
 
 	/**
