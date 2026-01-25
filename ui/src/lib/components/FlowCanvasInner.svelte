@@ -550,7 +550,7 @@
 		event.preventDefault();
 
 		const type = event.dataTransfer?.getData('application/svelteflow');
-		const files = event.dataTransfer?.files;
+		const items = event.dataTransfer?.items;
 		const memoryData = event.dataTransfer?.getData('application/asm-memory');
 
 		// Check if the drop target is within a node (to avoid duplicate handling)
@@ -572,9 +572,13 @@
 		}
 
 		// Handle file drops - only if not dropping on an existing node
-		if (files && files.length > 0 && !isDropOnNode) {
-			handleFileDrops(files, position);
-			return;
+		if (items && items.length > 0 && !isDropOnNode) {
+			// Filter to file items only
+			const fileItems = Array.from(items).filter((item) => item.kind === 'file');
+			if (fileItems.length > 0) {
+				handleFileDrops(fileItems, position);
+				return;
+			}
 		}
 
 		// Handle node palette drops
@@ -584,20 +588,51 @@
 	}
 
 	// Handle dropped files by creating appropriate nodes
-	function handleFileDrops(files: FileList, basePosition: { x: number; y: number }) {
-		Array.from(files).forEach(async (file, index) => {
+	async function handleFileDrops(
+		items: DataTransferItem[],
+		basePosition: { x: number; y: number }
+	) {
+		for (let index = 0; index < items.length; index++) {
+			const item = items[index];
+
 			// Offset multiple files to avoid overlap
 			const position = {
 				x: basePosition.x + index * 20,
 				y: basePosition.y + index * 20
 			};
 
+			const file = item.getAsFile();
+			if (!file) continue;
+
+			// Try to get FileSystemFileHandle for persistence (Chrome 86+)
+			let handle: FileSystemFileHandle | undefined;
+
+			if ('getAsFileSystemHandle' in item) {
+				try {
+					type Item = DataTransferItem & {
+						getAsFileSystemHandle(): Promise<FileSystemHandle | null>;
+					};
+
+					const fsHandle = await (item as Item).getAsFileSystemHandle();
+
+					if (fsHandle?.kind === 'file') {
+						handle = fsHandle as FileSystemFileHandle;
+						console.log('got handle', handle);
+					}
+				} catch {
+					// Not supported or denied - continue without handle
+					console.log('not supported or denied - continue without handle');
+				}
+			}
+
 			const nodeType = getNodeTypeFromFile(file);
+
 			if (nodeType) {
-				const customData = await getFileNodeData(file, nodeType);
+				console.log('creating node with handle', handle);
+				const customData = await getFileNodeData(file, nodeType, handle);
 				createNode(nodeType, position, customData);
 			}
-		});
+		}
 	}
 
 	// Map file types to node types based on spec
@@ -629,12 +664,12 @@
 	}
 
 	// Create appropriate data for file-based nodes
-	async function getFileNodeData(file: File, nodeType: string) {
+	async function getFileNodeData(file: File, nodeType: string, handle?: FileSystemFileHandle) {
 		const vfs = VirtualFilesystem.getInstance();
 
 		return await match(nodeType)
 			.with('img', async () => {
-				const vfsPath = await vfs.storeFile(file);
+				const vfsPath = await vfs.storeFile(file, handle);
 				return {
 					...getDefaultNodeData('img'),
 					vfsPath
