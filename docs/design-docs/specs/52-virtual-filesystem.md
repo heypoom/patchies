@@ -22,7 +22,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 ## Providers
 
 - Local Filesystem: use the `Filesystem` browser API to map the virtual filesystem file and folder to the user's local folder
-  - default when the file dragged into the canvas or nodes
+  - default when the file dragged into the canvas or obj
 - URL: load that file content from a given URL
   - creating an object with a default url e.g. `img <url>` should use the URL provider automatically
   - using a message to set the url should use the URL provider automatically
@@ -43,13 +43,13 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 - Create a singleton class `VirtualFilesystem` for accessing the virtual filesystem.
 - Patchies vfs has two prefixes:
   - `user://` is for user uploaded files. example: `user://images/poom.jpg`
-  - `nodes://` is for files associated with nodes, using `/<node-id>` as prefixes.
-    - example: `nodes://chuck~-24` contains filesystem for a ChucK object
-    - example: `nodes://elem~-36` contains filesystem for an Elementary Audio object
-    - example: `nodes://csound~-42` contains filesystem for a Csound object
+  - `obj://` is for files associated with obj, using `/<object-id>` as prefixes.
+    - example: `obj://chuck~-24` contains filesystem for a ChucK object
+    - example: `obj://elem~-36` contains filesystem for an Elementary Audio object
+    - example: `obj://csound~-42` contains filesystem for a Csound object
     - only some node will have a virtual node filesystem, such as `chuck~` and `elem~` and `csound~`
   - the prefixes helps us to check if it is a virtual filesystem path, or an already resolved path.
-- In the saved patches, we should also store a `files` mapping as well, with top-level namespaces `user` and `nodes`:
+- In the saved patches, we should also store a `files` mapping as well, with top-level namespaces `user` and `obj`:
 
 ```ts
 {
@@ -89,8 +89,8 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 
 chuck~: integrate with chuck's fs methods
 
-- we create special directory `/nodes/` to store node-specific filesystem
-- e.g. `mount://nodes/`
+- we create special directory `/obj/` to store node-specific filesystem
+- e.g. `mount://obj/`
 - we then call chuck methods to sync filesystem
 - `chuck.createDirectory(parent, name)`
 - `chuck.createFile(directory, filename, data: string | ArrayBuffer)` -- creates a file in chuck's VFS
