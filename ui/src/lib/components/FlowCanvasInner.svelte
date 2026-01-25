@@ -70,6 +70,7 @@
 	import type { NodeReplaceEvent } from '$lib/eventbus/events';
 
 	import { toast } from 'svelte-sonner';
+	import { initializeVFS, VirtualFilesystem } from '$lib/vfs';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -443,6 +444,9 @@
 	onMount(() => {
 		flowContainer?.focus();
 
+		// Initialize VFS with providers
+		initializeVFS();
+
 		glSystem.start();
 		audioService.start();
 
@@ -521,7 +525,7 @@
 				const save = await getSharedPatchData(id);
 				deleteSearchParam('id');
 
-				if (save) restorePatchFromSave(save);
+				if (save) await restorePatchFromSave(save);
 			} catch (err) {
 				urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
 			} finally {
@@ -536,7 +540,7 @@
 
 			if (save) {
 				const parsed: PatchSaveFormat = JSON.parse(save);
-				if (parsed) restorePatchFromSave(parsed);
+				if (parsed) await restorePatchFromSave(parsed);
 			}
 		} catch {}
 	}
@@ -626,15 +630,16 @@
 
 	// Create appropriate data for file-based nodes
 	async function getFileNodeData(file: File, nodeType: string) {
+		const vfs = VirtualFilesystem.getInstance();
+
 		return await match(nodeType)
-			.with('img', () =>
-				Promise.resolve({
+			.with('img', async () => {
+				const vfsPath = await vfs.storeFile(file);
+				return {
 					...getDefaultNodeData('img'),
-					file,
-					fileName: file.name,
-					url: URL.createObjectURL(file)
-				})
-			)
+					vfsPath
+				};
+			})
 			.with('markdown', async () => {
 				try {
 					const content = await file.text();
@@ -894,7 +899,7 @@
 		toast.success(`Pasted ${copiedNodeData.length} node${copiedNodeData.length === 1 ? '' : 's'}`);
 	}
 
-	function restorePatchFromSave(save: PatchSaveFormat) {
+	async function restorePatchFromSave(save: PatchSaveFormat) {
 		// Apply migrations to upgrade old patch formats
 		const migrated = migratePatch(save) as PatchSaveFormat;
 
@@ -904,6 +909,22 @@
 
 		nodes = [];
 		edges = [];
+
+		// Hydrate VFS from saved files
+		const vfs = VirtualFilesystem.getInstance();
+		vfs.clear();
+
+		if (migrated.files) {
+			await vfs.hydrate(migrated.files);
+
+			// Check for pending permissions and log them
+			const pending = vfs.getPendingPermissions();
+
+			if (pending.length > 0) {
+				console.log('VFS: Some local files need permission:', pending);
+				// Permission will be requested by individual nodes when they try to load
+			}
+		}
 
 		nodes = migrated.nodes;
 		edges = migrated.edges;
@@ -935,7 +956,7 @@
 
 			if (result.success) {
 				const { data } = result;
-				restorePatchFromSave(data);
+				await restorePatchFromSave(data);
 			} else {
 				urlLoadError = result.error;
 				console.error('Failed to load patch from URL:', result.error);
@@ -978,6 +999,11 @@
 
 		nodes = [];
 		edges = [];
+
+		const vfs = VirtualFilesystem.getInstance();
+		vfs.clear();
+		vfs.clearPersistedData();
+
 		localStorage.removeItem('patchies-patch-autosave');
 		isBackgroundOutputCanvasEnabled.set(false);
 		showNewPatchDialog = false;

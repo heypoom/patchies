@@ -270,7 +270,7 @@
 
 					// Create flipped ImageBitmap to match pipeline orientation
 					const bitmap = await createImageBitmap(resizerCanvas, { imageOrientation: 'flipY' });
-					await glSystem.setBitmap(nodeId, bitmap);
+					await glSystem.setPreflippedBitmap(nodeId, bitmap);
 				}
 			} else {
 				// Video is already small enough, upload directly

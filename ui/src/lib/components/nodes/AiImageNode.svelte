@@ -106,7 +106,7 @@
 			const previewBitmap = await createImageBitmap(image);
 			// Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
 			const flippedBitmap = await createImageBitmap(image, { imageOrientation: 'flipY' });
-			glSystem.setBitmap(nodeId, flippedBitmap);
+			glSystem.setPreflippedBitmap(nodeId, flippedBitmap);
 
 			// draw the preview image to the canvas
 			canvasElement

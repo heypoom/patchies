@@ -97,7 +97,7 @@
 
 					// Create flipped ImageBitmap from the scaled canvas and upload
 					const bitmap = await createImageBitmap(resizerCanvas, { imageOrientation: 'flipY' });
-					await glSystem.setBitmap(nodeId, bitmap);
+					await glSystem.setPreflippedBitmap(nodeId, bitmap);
 				}
 			} else {
 				// Video is already small enough, upload directly

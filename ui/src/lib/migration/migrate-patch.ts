@@ -1,11 +1,12 @@
 import type { RawPatchData, Migration } from './types';
 import { migration001 } from './migrations/001-message-node-placeholder-inlets';
+import { migration002 } from './migrations/002-add-vfs-files-field';
 
 /**
  * All migrations in order. Each migration upgrades from version N-1 to N.
  * Add new migrations to the end of this array.
  */
-const migrations: Migration[] = [migration001];
+const migrations: Migration[] = [migration001, migration002];
 
 /**
  * Current patch version - derived from the highest migration version
