@@ -1,5 +1,6 @@
 // Virtual Filesystem Singleton
 
+import { writable, derived, type Readable } from 'svelte/store';
 import { match } from 'ts-pattern';
 import {
 	type VFSEntry,
@@ -41,8 +42,21 @@ export class VirtualFilesystem {
 	/** Paths that need permission re-grant (local files after reload) */
 	private pendingPermissions: Set<string> = new Set();
 
+	/** Version counter for reactivity - increments on any mutation */
+	private versionStore = writable(0);
+
+	/** Readable store of all entries - subscribe to this for reactive updates */
+	readonly entries$: Readable<Map<string, VFSEntry>> = derived(this.versionStore, () =>
+		this.getAllEntries()
+	);
+
 	private constructor() {
 		// Private constructor for singleton
+	}
+
+	/** Notify subscribers that the VFS has changed */
+	private notifyChange(): void {
+		this.versionStore.update((v) => v + 1);
 	}
 
 	static getInstance(): VirtualFilesystem {
@@ -84,6 +98,7 @@ export class VirtualFilesystem {
 	 */
 	registerEntry(path: string, entry: VFSEntry): void {
 		this.entries.set(path, entry);
+		this.notifyChange();
 	}
 
 	/**
@@ -130,6 +145,7 @@ export class VirtualFilesystem {
 			}
 		}
 
+		this.notifyChange();
 		return path;
 	}
 
@@ -150,6 +166,7 @@ export class VirtualFilesystem {
 		};
 
 		this.entries.set(path, entry);
+		this.notifyChange();
 
 		return path;
 	}
@@ -282,6 +299,8 @@ export class VirtualFilesystem {
 				}
 			}
 		}
+
+		this.notifyChange();
 	}
 
 	private hydrateNamespace(node: { [key: string]: VFSTreeNode }, prefix: string): void {
@@ -375,6 +394,7 @@ export class VirtualFilesystem {
 	remove(path: string): void {
 		this.entries.delete(path);
 		this.pendingPermissions.delete(path);
+		this.notifyChange();
 	}
 
 	/**
@@ -383,6 +403,7 @@ export class VirtualFilesystem {
 	clear(): void {
 		this.entries.clear();
 		this.pendingPermissions.clear();
+		this.notifyChange();
 	}
 
 	clearPersistedData(): void {

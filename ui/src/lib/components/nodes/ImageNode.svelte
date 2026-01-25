@@ -313,22 +313,6 @@
 		await openFilePickerWithHandle();
 	}
 
-	// Handle VFS drop events from FlowCanvasInner
-	async function handleVfsDrop(event: CustomEvent<{ vfsPath: string; nodeId: string }>) {
-		const { vfsPath, nodeId: targetNodeId } = event.detail;
-
-		// Only handle if this drop is for this node
-		if (targetNodeId !== node.id) return;
-
-		const entry = vfs.getEntry(vfsPath);
-		if (entry?.mimeType?.startsWith('image/')) {
-			updateNode(node.id, { data: { ...node.data, vfsPath } });
-			await loadFromVfsPath(vfsPath);
-		} else {
-			console.warn('Only image files are supported, got:', entry?.mimeType);
-		}
-	}
-
 	let nodeElement: HTMLDivElement;
 
 	onMount(async () => {

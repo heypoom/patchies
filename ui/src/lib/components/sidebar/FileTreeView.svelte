@@ -11,7 +11,7 @@
 		User,
 		Box
 	} from '@lucide/svelte/icons';
-	import { VirtualFilesystem } from '$lib/vfs';
+	import { VirtualFilesystem, getLocalProvider } from '$lib/vfs';
 	import { parseVFSPath, type VFSEntry } from '$lib/vfs/types';
 
 	interface TreeNode {
@@ -22,6 +22,11 @@
 		isExpanded?: boolean;
 	}
 
+	const vfs = VirtualFilesystem.getInstance();
+
+	// Reactive store of VFS entries
+	const vfsEntries = vfs.entries$;
+
 	let expandedPaths = $state(new Set<string>(['user://', 'obj://']));
 	let selectedPaths = $state(new Set<string>());
 
@@ -30,6 +35,31 @@
 			selectedPaths = new Set();
 		} else {
 			selectedPaths = new Set([path]);
+		}
+	}
+
+	async function deleteSelectedFiles() {
+		if (selectedPaths.size === 0) return;
+
+		const localProvider = getLocalProvider();
+
+		for (const path of selectedPaths) {
+			// Remove from VFS in-memory entries
+			vfs.remove(path);
+
+			// Clean up persisted data (handle + file data from IndexedDB)
+			if (localProvider) {
+				await localProvider.remove(path);
+			}
+		}
+
+		selectedPaths = new Set();
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Delete' || event.key === 'Backspace') {
+			event.preventDefault();
+			deleteSelectedFiles();
 		}
 	}
 
@@ -46,8 +76,7 @@
 
 	// Build tree structure from VFS entries
 	const tree = $derived.by(() => {
-		const vfs = VirtualFilesystem.getInstance();
-		const entries = vfs.getAllEntries();
+		const entries = $vfsEntries;
 
 		const root: TreeNode = {
 			name: 'root',
@@ -183,7 +212,8 @@
 	{/if}
 {/snippet}
 
-<div class="py-2">
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div class="py-2 outline-none" tabindex="0" role="tree" onkeydown={handleKeydown}>
 	{#if tree.children && tree.children.size > 0}
 		{@render treeNode(tree)}
 	{:else}
