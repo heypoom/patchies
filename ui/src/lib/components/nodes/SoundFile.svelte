@@ -233,7 +233,7 @@
 								linkedFolderName={vfsMedia.linkedFolderName}
 								vfsPath={node.data.vfsPath}
 								width={200}
-								height={80}
+								height={50}
 								isDragging={vfsMedia.isDragging}
 								onRequestPermission={vfsMedia.requestFilePermission}
 								onDragOver={vfsMedia.handleDragOver}
