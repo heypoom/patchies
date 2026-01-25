@@ -473,7 +473,7 @@
 	{#if isFolder && (node.name === 'root' || isExpanded)}
 		{#if isEmptyFolder && node.name !== 'root'}
 			<div
-				class="px-2 py-1 text-xs text-zinc-600 italic"
+				class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
 				style="padding-left: {paddingLeft + 20}px"
 			>
 				Empty folder
