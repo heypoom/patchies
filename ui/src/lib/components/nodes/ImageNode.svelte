@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Image as ImageIcon, Upload, Lock } from '@lucide/svelte/icons';
+	import { Image as ImageIcon, Upload } from '@lucide/svelte/icons';
 	import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -8,8 +8,7 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { shouldShowHandles } from '../../../stores/ui.store';
-	import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
-	import { logger } from '$lib/utils/logger';
+	import { useVfsMedia, VfsRelinkOverlay, VfsDropZone } from '$lib/vfs';
 
 	let node: {
 		id: string;
@@ -30,254 +29,29 @@
 
 	let messageContext: MessageContext;
 	let glSystem = GLSystem.getInstance();
-	let vfs = VirtualFilesystem.getInstance();
-	let isDragging = $state(false);
-	let fileInputRef: HTMLInputElement;
 	let canvasElement: HTMLCanvasElement | null = $state(null);
 	let hasImage = $state(false);
-	let needsReselect = $state(false);
-	let needsFolderRelink = $state(false);
-	let isLoading = $state(false);
 
 	const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
 	const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
-	const hasVfsPath = $derived(!!node.data.vfsPath);
-
-	// Get the linked folder path if this file is inside a linked folder
-	const linkedFolderPath = $derived.by(() => {
-		if (!node.data.vfsPath) return null;
-		// Check each parent path segment to find a linked folder
-		const segments = node.data.vfsPath.split('/');
-		for (let i = 3; i < segments.length; i++) {
-			const potentialPath = segments.slice(0, i).join('/');
-			const entry = vfs.getEntry(potentialPath);
-			if (entry?.provider === 'local-folder') {
-				return potentialPath;
-			}
-		}
-		return null;
-	});
-
-	const linkedFolderName = $derived(linkedFolderPath?.split('/').pop() ?? null);
-
-	// Subscribe to pending permissions to retry loading when folder is re-linked
-	const pendingPermissions = vfs.pendingPermissions$;
-
-	// Watch for when the linked folder is re-linked (removed from pending permissions)
-	$effect(() => {
-		const pending = $pendingPermissions;
-
-		// If we're waiting for a folder relink and the folder is no longer pending, retry loading
-		if (needsFolderRelink && linkedFolderPath && !pending.has(linkedFolderPath)) {
-			// Folder has been re-linked, retry loading
-			needsFolderRelink = false;
-
-			if (node.data.vfsPath) {
-				loadFromVfsPath(node.data.vfsPath);
-			}
-		}
+	// Use VFS media composable for all file handling
+	const vfsMedia = useVfsMedia({
+		nodeId: node.id,
+		acceptMimePrefix: 'image/',
+		onFileLoaded: displayImage,
+		updateNodeData: (data) => updateNode(node.id, { data: { ...node.data, ...data } }),
+		getVfsPath: () => node.data.vfsPath,
+		filePickerAccept: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'],
+		filePickerDescription: 'Images'
 	});
 
 	const handleMessage: MessageCallbackFn = (m) => {
 		match(m)
-			.with(P.string, loadFromPath)
-			.with({ type: 'load', url: P.string }, ({ url }) => {
-				loadImageFromUrl(url);
-			})
-			.with({ type: 'load', path: P.string }, ({ path }) => {
-				loadFromPath(path);
-			});
+			.with(P.string, vfsMedia.loadFromPath)
+			.with({ type: 'load', url: P.string }, ({ url }) => vfsMedia.loadFromUrl(url))
+			.with({ type: 'load', path: P.string }, ({ path }) => vfsMedia.loadFromPath(path));
 	};
-
-	function loadFromPath(urlOrPath: string) {
-		if (isVFSPath(urlOrPath)) {
-			loadFromVfsPath(urlOrPath);
-		} else {
-			loadImageFromUrl(urlOrPath);
-		}
-	}
-
-	async function loadImageFromUrl(url: string) {
-		try {
-			isLoading = true;
-			const vfsPath = await vfs.registerUrl(url);
-
-			// Update node data with VFS path
-			updateNode(node.id, { data: { ...node.data, vfsPath } });
-
-			await loadFromVfsPath(vfsPath);
-		} catch (err) {
-			console.error('Failed to load image from URL:', err);
-			isLoading = false;
-		}
-	}
-
-	async function loadFromVfsPath(vfsPath: string) {
-		try {
-			isLoading = true;
-			needsReselect = false;
-			needsFolderRelink = false;
-
-			const fileOrBlob = await vfs.resolve(vfsPath);
-
-			const file =
-				fileOrBlob instanceof File
-					? fileOrBlob
-					: new File([fileOrBlob], 'image', { type: fileOrBlob.type });
-
-			await displayImage(file);
-		} catch (err) {
-			logger.error('[vfs load error]', err);
-
-			if (err instanceof Error) {
-				// Check if the error is about a missing directory handle (linked folder)
-				if (err.message.includes('No directory handle')) {
-					needsFolderRelink = true;
-				} else if (
-					err.message.includes('Permission denied') ||
-					err.message.includes('No handle or cached data found')
-				) {
-					needsReselect = true;
-				}
-			}
-
-			hasImage = false;
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	function handleDragOver(event: DragEvent) {
-		event.preventDefault();
-		isDragging = true;
-	}
-
-	function handleDragLeave(event: DragEvent) {
-		event.preventDefault();
-		isDragging = false;
-	}
-
-	async function handleDrop(event: DragEvent) {
-		event.preventDefault();
-		event.stopPropagation();
-		isDragging = false;
-
-		// Check for VFS path drop first
-		const vfsPathData = event.dataTransfer?.getData('application/x-vfs-path');
-		if (vfsPathData) {
-			// Verify it's an image file (supports linked folder files too)
-			const entry = vfs.getEntryOrLinkedFile(vfsPathData);
-
-			if (entry?.mimeType?.startsWith('image/')) {
-				updateNode(node.id, { data: { ...node.data, vfsPath: vfsPathData } });
-				await loadFromVfsPath(vfsPathData);
-				return;
-			} else {
-				console.warn('Only image files are supported, got:', entry?.mimeType);
-				return;
-			}
-		}
-
-		const items = event.dataTransfer?.items;
-		if (!items || items.length === 0) return;
-
-		const item = items[0];
-		if (!item.type.startsWith('image/')) {
-			console.warn('Only image files are supported');
-			return;
-		}
-
-		// Try to get FileSystemFileHandle for persistence (Chrome 86+)
-		let handle: FileSystemFileHandle | undefined;
-		if ('getAsFileSystemHandle' in item) {
-			try {
-				const fsHandle = await (
-					item as DataTransferItem & { getAsFileSystemHandle(): Promise<FileSystemHandle | null> }
-				).getAsFileSystemHandle();
-				if (fsHandle?.kind === 'file') {
-					handle = fsHandle as FileSystemFileHandle;
-				}
-			} catch {
-				// Not supported or user denied - fall back to file-only
-			}
-		}
-
-		const file = item.getAsFile();
-		if (!file) return;
-
-		await loadFile(file, handle);
-	}
-
-	async function handleFileSelect(event: Event) {
-		const input = event.target as HTMLInputElement;
-		const files = input.files;
-		if (!files || files.length === 0) return;
-
-		const file = files[0];
-
-		// If we're replacing an existing file that needs reselection, use replaceFile
-		if (node.data.vfsPath && needsReselect) {
-			await vfs.replaceFile(node.data.vfsPath, file);
-			await displayImage(file);
-		} else {
-			// File input doesn't give us handles, so we'll use showOpenFilePicker for persistence
-			// For now, just load without handle (won't persist across reloads)
-			await loadFile(file);
-		}
-
-		// Reset input so same file can be selected again
-		input.value = '';
-	}
-
-	/**
-	 * Open file picker with handle support for persistence.
-	 * This is the recommended way to select files for reload persistence.
-	 */
-	async function openFilePickerWithHandle() {
-		try {
-			// Use File System Access API if available
-			if ('showOpenFilePicker' in window) {
-				// @ts-expect-error - showOpenFilePicker is not typed
-				const [handle] = await window.showOpenFilePicker({
-					types: [
-						{
-							description: 'Images',
-							accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'] }
-						}
-					],
-					multiple: false
-				});
-
-				const file = await handle.getFile();
-				await loadFile(file, handle);
-			} else {
-				// Fall back to traditional file input
-				fileInputRef?.click();
-			}
-		} catch (err) {
-			// User cancelled or error - ignore
-			if (err instanceof Error && err.name !== 'AbortError') {
-				console.error('File picker error:', err);
-			}
-		}
-	}
-
-	async function loadFile(file: File, handle?: FileSystemFileHandle) {
-		try {
-			isLoading = true;
-
-			const vfsPath = await vfs.storeFile(file, handle);
-			updateNode(node.id, { data: { ...node.data, vfsPath } });
-
-			await displayImage(file);
-		} catch (error) {
-			console.error('Failed to load image:', error);
-			hasImage = false;
-		} finally {
-			isLoading = false;
-		}
-	}
 
 	async function displayImage(file: File) {
 		const img = new Image();
@@ -310,8 +84,7 @@
 		const source = await createImageBitmap(img, { imageOrientation: 'flipY' });
 		glSystem.setPreflippedBitmap(node.id, source);
 		hasImage = true;
-		needsReselect = false;
-		needsFolderRelink = false;
+		vfsMedia.markLoaded();
 
 		setTimeout(() => {
 			setPreviewImage(preview);
@@ -340,59 +113,6 @@
 		}
 	}
 
-	function openFileDialog() {
-		// Use the handle-based picker for persistence support
-		openFilePickerWithHandle();
-	}
-
-	async function requestFilePermission() {
-		if (!node.data.vfsPath) return;
-
-		// First try to request permission from existing handle
-		const granted = await vfs.requestPermission(node.data.vfsPath);
-		if (granted) {
-			needsReselect = false;
-			needsFolderRelink = false;
-			await loadFromVfsPath(node.data.vfsPath);
-			return;
-		}
-
-		// If no handle exists (file was dropped without handle support),
-		// prompt user to re-select the file
-		const entry = vfs.getEntryOrLinkedFile(node.data.vfsPath);
-		const filename = entry?.filename || 'the file';
-
-		console.log(`VFS: No handle for ${node.data.vfsPath}, prompting user to re-select ${filename}`);
-
-		// Open file picker and replace the existing VFS entry
-		try {
-			if ('showOpenFilePicker' in window) {
-				// @ts-expect-error - showOpenFilePicker is not typed
-				const [handle] = await window.showOpenFilePicker({
-					types: [
-						{
-							description: 'Images',
-							accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'] }
-						}
-					],
-					multiple: false
-				});
-
-				const file = await handle.getFile();
-				// Replace file at the existing path instead of creating a new one
-				await vfs.replaceFile(node.data.vfsPath, file, handle);
-				await displayImage(file);
-			} else {
-				// Fall back to traditional file input (won't have handle for persistence)
-				fileInputRef?.click();
-			}
-		} catch (err) {
-			if (err instanceof Error && err.name !== 'AbortError') {
-				console.error('File picker error:', err);
-			}
-		}
-	}
-
 	onMount(async () => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
@@ -402,7 +122,7 @@
 
 		// If we have a VFS path, try to load from it
 		if (node.data.vfsPath) {
-			await loadFromVfsPath(node.data.vfsPath);
+			await vfsMedia.loadFromVfsPath(node.data.vfsPath);
 		}
 	});
 
@@ -431,12 +151,12 @@
 					<div class="font-mono text-xs font-medium text-zinc-400">img</div>
 				</div>
 
-				{#if hasVfsPath && hasImage}
+				{#if vfsMedia.hasVfsPath && hasImage}
 					<div class="flex gap-1">
 						<button
 							title="Change image"
 							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-							onclick={openFileDialog}
+							onclick={vfsMedia.openFileDialog}
 						>
 							<Upload class="h-4 w-4 text-zinc-300" />
 						</button>
@@ -455,66 +175,33 @@
 				/>
 
 				<div class="flex flex-col gap-2">
-					{#if hasVfsPath && hasImage}
+					{#if vfsMedia.hasVfsPath && hasImage}
 						<canvas
 							bind:this={canvasElement}
 							width={node.data.width ?? defaultOutputWidth}
 							height={node.data.height ?? defaultOutputHeight}
-							class="rounded-md {isDragging ? 'ring-2 ring-blue-400' : ''}"
+							class="rounded-md {vfsMedia.isDragging ? 'ring-2 ring-blue-400' : ''}"
 							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
 								defaultPreviewHeight}px"
-							ondragover={handleDragOver}
-							ondragleave={handleDragLeave}
-							ondrop={handleDrop}
+							ondragover={vfsMedia.handleDragOver}
+							ondragleave={vfsMedia.handleDragLeave}
+							ondrop={vfsMedia.handleDrop}
 						></canvas>
-					{:else if hasVfsPath && needsFolderRelink}
-						<div
-							class="flex flex-col items-start justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-8 py-3 font-mono"
-							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
-								defaultPreviewHeight}px"
-							role="application"
-						>
-							<Lock class="mb-2 h-5 w-5 text-amber-400" />
-
-							<div class="text-[12px] font-light text-zinc-400">Re-link folder in sidebar.</div>
-
-							<div class="overflow-hidden text-[10px] font-light text-zinc-600">
-								{linkedFolderName ? `Folder: ${linkedFolderName}` : node.data.vfsPath}
-							</div>
-
-							<div class="mt-1 text-[10px] text-zinc-500">
-								Find the folder in the sidebar and click the re-link button.
-							</div>
-						</div>
-					{:else if hasVfsPath && needsReselect}
-						<div
-							class={[
-								'flex flex-col items-start justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-8 py-3 font-mono',
-								isDragging ? 'border-transparent ring-2 ring-blue-400' : ''
-							]}
-							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
-								defaultPreviewHeight}px"
-							ondragover={handleDragOver}
-							ondragleave={handleDragLeave}
-							ondrop={handleDrop}
-							role="application"
-						>
-							<Lock class="mb-2 h-5 w-5 text-amber-400" />
-
-							<div class="text-[12px] font-light text-zinc-400">Re-select file.</div>
-
-							<div class="overflow-hidden text-[10px] font-light text-zinc-600">
-								{node.data.vfsPath}
-							</div>
-
-							<button
-								class="mt-1 rounded bg-amber-600 px-2 py-1 font-mono text-[10px] text-white hover:bg-amber-500"
-								onclick={requestFilePermission}
-							>
-								Choose File
-							</button>
-						</div>
-					{:else if isLoading}
+					{:else if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
+						<VfsRelinkOverlay
+							needsReselect={vfsMedia.needsReselect}
+							needsFolderRelink={vfsMedia.needsFolderRelink}
+							linkedFolderName={vfsMedia.linkedFolderName}
+							vfsPath={node.data.vfsPath}
+							width={node.width ?? defaultPreviewWidth}
+							height={node.height ?? defaultPreviewHeight}
+							isDragging={vfsMedia.isDragging}
+							onRequestPermission={vfsMedia.requestFilePermission}
+							onDragOver={vfsMedia.handleDragOver}
+							onDragLeave={vfsMedia.handleDragLeave}
+							onDrop={vfsMedia.handleDrop}
+						/>
+					{:else if vfsMedia.isLoading}
 						<div
 							class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-600 bg-zinc-900 px-1 py-3"
 							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
@@ -528,27 +215,17 @@
 							</div>
 						</div>
 					{:else}
-						<div
-							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
-							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
-							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
-								defaultPreviewHeight}px"
-							ondragover={handleDragOver}
-							ondragleave={handleDragLeave}
-							ondrop={handleDrop}
-							ondblclick={openFileDialog}
-							role="button"
-							tabindex="0"
-							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
-						>
-							<ImageIcon class="h-4 w-4 text-zinc-400" />
-
-							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
-								<span class="text-zinc-300">double click</span> or
-								<span class="text-zinc-300">drop</span><br />
-								image file
-							</div>
-						</div>
+						<VfsDropZone
+							icon={ImageIcon}
+							fileType="image"
+							width={node.width ?? defaultPreviewWidth}
+							height={node.height ?? defaultPreviewHeight}
+							isDragging={vfsMedia.isDragging}
+							onDoubleClick={vfsMedia.openFileDialog}
+							onDragOver={vfsMedia.handleDragOver}
+							onDragLeave={vfsMedia.handleDragLeave}
+							onDrop={vfsMedia.handleDrop}
+						/>
 					{/if}
 				</div>
 
@@ -569,9 +246,9 @@
 
 <!-- Hidden file input -->
 <input
-	bind:this={fileInputRef}
+	bind:this={vfsMedia.fileInputRef}
 	type="file"
 	accept="image/*"
-	onchange={handleFileSelect}
+	onchange={vfsMedia.handleFileSelect}
 	class="hidden"
 />
