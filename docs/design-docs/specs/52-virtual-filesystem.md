@@ -49,7 +49,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
     - example: `obj://csound~-42` contains filesystem for a Csound object
     - only some node will have a virtual node filesystem, such as `chuck~` and `elem~` and `csound~`
   - the prefixes helps us to check if it is a virtual filesystem path, or an already resolved path.
-- In the saved patches, we should also store a `files` mapping as well, with top-level namespaces `user` and `obj`:
+- In the saved patches, we should also store a `files` mapping as well, with top-level namespaces `user` (`user://`) and `objects` (`obj://`):
 
 ```ts
 {
@@ -66,6 +66,11 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
                     provider: "local",
                 },
             }
+        },
+        "objects": {
+           "csound~-24": {},
+           "elem~-36": {},
+           "chuck~-48": {}
         }
     }
 }
