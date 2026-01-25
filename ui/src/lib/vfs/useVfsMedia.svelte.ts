@@ -8,6 +8,7 @@
 import { VirtualFilesystem, isVFSPath } from './index';
 import { logger } from '$lib/utils/logger';
 import { get } from 'svelte/store';
+import { match } from 'ts-pattern';
 
 export interface UseVfsMediaOptions {
 	/** The node ID for VFS path generation */
@@ -445,28 +446,16 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 // Helpers
 // ─────────────────────────────────────────────────────────────────
 
-function getDefaultAcceptExtensions(mimePrefix: string): string[] {
-	switch (mimePrefix) {
-		case 'image/':
-			return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'];
-		case 'audio/':
-			return ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
-		case 'video/':
-			return ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
-		default:
-			return [];
-	}
-}
+const getDefaultAcceptExtensions = (mimePrefix: string): string[] =>
+	match(mimePrefix)
+		.with('image/', () => ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'])
+		.with('audio/', () => ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'])
+		.with('video/', () => ['.mp4', '.webm', '.mov', '.avi', '.mkv'])
+		.otherwise(() => []);
 
-function getDefaultDescription(mimePrefix: string): string {
-	switch (mimePrefix) {
-		case 'image/':
-			return 'Images';
-		case 'audio/':
-			return 'Audio Files';
-		case 'video/':
-			return 'Video Files';
-		default:
-			return 'Files';
-	}
-}
+const getDefaultDescription = (mimePrefix: string): string =>
+	match(mimePrefix)
+		.with('image/', () => 'Images')
+		.with('audio/', () => 'Audio Files')
+		.with('video/', () => 'Video Files')
+		.otherwise(() => 'Files');
