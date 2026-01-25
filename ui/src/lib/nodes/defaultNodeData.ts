@@ -152,6 +152,13 @@ createApp({
 		}))
 		.with('merge~', () => ({ channels: 2 }))
 		.with('split~', () => ({ channels: 2 }))
+		.with('mic~', () => ({
+			deviceId: '',
+			echoCancellation: true,
+			noiseSuppression: true,
+			autoGainControl: true
+		}))
+		.with('dac~', () => ({ deviceId: '' }))
 		.with('meter~', () => ({ smoothing: 0.8, peakHold: true, style: 'bar' }))
 		.with('keyboard', () => ({ keybind: '', mode: 'all', trigger: 'keydown', repeat: false }))
 		.with('sampler~', () => ({

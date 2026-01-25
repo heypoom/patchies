@@ -23,7 +23,9 @@ const AUDIO_NODES = [
 	'meter~',
 	'elem~',
 	'csound~',
-	'bchrn'
+	'bchrn',
+	'dac~',
+	'mic~'
 ];
 
 const isAudioObject = (node: MinimalNode): boolean => {
