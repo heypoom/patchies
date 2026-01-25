@@ -176,6 +176,43 @@ export class VirtualFilesystem {
 		return path;
 	}
 
+	/**
+	 * Create a folder at the specified path.
+	 * @param parentPath - Parent folder path (e.g., 'user://' or 'user://images')
+	 * @param folderName - Name of the new folder
+	 * @returns The full path of the created folder
+	 */
+	createFolder(parentPath: string, folderName: string): string {
+		// Normalize parent path (remove trailing slash if present, except for namespace roots)
+		const normalizedParent =
+			parentPath.endsWith('/') && !parentPath.endsWith('://')
+				? parentPath.slice(0, -1)
+				: parentPath;
+
+		// Build the full folder path
+		const folderPath = normalizedParent.endsWith('://')
+			? `${normalizedParent}${folderName}`
+			: `${normalizedParent}/${folderName}`;
+
+		const entry: VFSEntry = {
+			provider: 'folder',
+			filename: folderName
+		};
+
+		this.entries.set(folderPath, entry);
+		this.notifyChange();
+
+		return folderPath;
+	}
+
+	/**
+	 * Check if a path is a folder.
+	 */
+	isFolder(path: string): boolean {
+		const entry = this.entries.get(path);
+		return entry?.provider === 'folder';
+	}
+
 	// ─────────────────────────────────────────────────────────────────
 	// Resolution
 	// ─────────────────────────────────────────────────────────────────

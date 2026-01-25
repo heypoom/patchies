@@ -7,12 +7,16 @@
 		FileVideo,
 		Folder,
 		FolderOpen,
+		FolderPlus,
 		Image,
 		User,
-		Box
+		Box,
+		Upload,
+		Link
 	} from '@lucide/svelte/icons';
 	import { VirtualFilesystem, getLocalProvider } from '$lib/vfs';
-	import { parseVFSPath, type VFSEntry } from '$lib/vfs/types';
+	import { parseVFSPath, isVFSFolder, type VFSEntry } from '$lib/vfs/types';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 
 	interface TreeNode {
 		name: string;
@@ -45,12 +49,20 @@
 		const localProvider = getLocalProvider();
 
 		for (const path of selectedPaths) {
-			// Remove from VFS in-memory entries
-			vfs.remove(path);
+			// If it's a folder, also delete all children
+			const allPaths = vfs.list();
+			const pathsToDelete = allPaths.filter(
+				(p) => p === path || p.startsWith(path.endsWith('/') ? path : path + '/')
+			);
 
-			// Clean up persisted data (handle + file data from IndexedDB)
-			if (localProvider) {
-				await localProvider.remove(path);
+			for (const pathToDelete of pathsToDelete) {
+				// Remove from VFS in-memory entries
+				vfs.remove(pathToDelete);
+
+				// Clean up persisted data (handle + file data from IndexedDB)
+				if (localProvider) {
+					await localProvider.remove(pathToDelete);
+				}
 			}
 		}
 
@@ -58,6 +70,9 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
+		// Don't intercept if user is typing in an input
+		if (event.target instanceof HTMLInputElement) return;
+
 		if (event.key === 'Delete' || event.key === 'Backspace') {
 			event.preventDefault();
 			deleteSelectedFiles();
@@ -106,12 +121,18 @@
 
 				if (!current.children.has(segment)) {
 					const nodePath = `${parsed.namespace === 'user' ? 'user://' : 'obj://'}${parsed.segments.slice(0, i + 1).join('/')}`;
+					const isFolder = isLast && isVFSFolder(entry);
 					current.children.set(segment, {
 						name: segment,
 						path: nodePath,
-						children: isLast ? undefined : new Map(),
+						// Folders always have children map (even if empty), files don't
+						children: isLast && !isFolder ? undefined : new Map(),
 						entry: isLast ? entry : undefined
 					});
+				} else if (isLast) {
+					// Update existing node with entry info (in case folder was created before files added)
+					const existingNode = current.children.get(segment)!;
+					existingNode.entry = entry;
 				}
 
 				current = current.children.get(segment)!;
@@ -217,10 +238,98 @@
 			await vfs.storeFile(file, undefined, targetFolder ?? undefined);
 		}
 	}
+
+	// Hidden file input for upload
+	let fileInputRef: HTMLInputElement | null = $state(null);
+	let pendingUploadFolder: string | null = $state(null);
+
+	function handleUploadClick(folderPath: string, event: MouseEvent) {
+		event.stopPropagation();
+		pendingUploadFolder = folderPath;
+		fileInputRef?.click();
+	}
+
+	async function handleFileInputChange(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const files = input.files;
+		if (!files || files.length === 0) return;
+
+		for (const file of Array.from(files)) {
+			await vfs.storeFile(file, undefined, pendingUploadFolder ?? undefined);
+		}
+
+		// Reset input so same file can be selected again
+		input.value = '';
+		pendingUploadFolder = null;
+	}
+
+	// URL input state
+	let showUrlInput = $state<string | null>(null);
+	let urlInputValue = $state('');
+
+	function handleAddUrlClick(folderPath: string, event: MouseEvent) {
+		event.stopPropagation();
+		showUrlInput = folderPath;
+		urlInputValue = '';
+	}
+
+	async function handleUrlSubmit(event: KeyboardEvent) {
+		if (event.key === 'Enter' && urlInputValue.trim()) {
+			event.preventDefault();
+			// For now, registerUrl doesn't support target folder, so we just register at root
+			// TODO: Add folder support to registerUrl
+			await vfs.registerUrl(urlInputValue.trim());
+			showUrlInput = null;
+			urlInputValue = '';
+		} else if (event.key === 'Escape') {
+			showUrlInput = null;
+			urlInputValue = '';
+		}
+	}
+
+	// Create folder state
+	let showFolderInput = $state<string | null>(null);
+	let folderInputValue = $state('');
+
+	function handleCreateFolderClick(folderPath: string, event: MouseEvent) {
+		event.stopPropagation();
+		showFolderInput = folderPath;
+		folderInputValue = '';
+	}
+
+	function handleFolderInputSubmit(event: KeyboardEvent) {
+		if (event.key === 'Enter' && folderInputValue.trim()) {
+			event.preventDefault();
+			const parentPath = showFolderInput;
+			if (parentPath) {
+				// Create the folder in VFS
+				const newFolderPath = vfs.createFolder(parentPath, folderInputValue.trim());
+				// Expand parent and the new folder
+				expandedPaths.add(parentPath);
+				expandedPaths.add(newFolderPath);
+				expandedPaths = new Set(expandedPaths);
+			}
+			showFolderInput = null;
+			folderInputValue = '';
+		} else if (event.key === 'Escape') {
+			showFolderInput = null;
+			folderInputValue = '';
+		}
+	}
 </script>
 
+<!-- Hidden file input for uploads -->
+<input
+	bind:this={fileInputRef}
+	type="file"
+	multiple
+	class="hidden"
+	onchange={handleFileInputChange}
+/>
+
 {#snippet treeNode(node: TreeNode, depth: number = 0)}
-	{@const isFolder = node.children && node.children.size > 0}
+	{@const isFolder = node.children !== undefined}
+	{@const isEmptyFolder = isFolder && node.children?.size === 0}
 	{@const isFile = !isFolder && node.entry}
 	{@const isExpanded = node.path ? expandedPaths.has(node.path) : true}
 	{@const isSelected = node.path ? selectedPaths.has(node.path) : false}
@@ -228,59 +337,156 @@
 	{@const isUserNamespace = node.path === 'user://'}
 	{@const isObjectNamespace = node.path === 'obj://'}
 	{@const isDropTarget = isInDropTarget(node.path)}
+	{@const isNamespace = isUserNamespace || isObjectNamespace}
+	{@const canHaveChildren = isNamespace || (isFolder && node.path?.startsWith('user://'))}
 
 	{#if node.name !== 'root'}
-		<button
-			class="flex w-full cursor-pointer items-center gap-1.5 px-2 py-1 text-left text-xs
+		<div
+			class="group flex w-full items-center text-left text-xs
 				{isDropTarget
 				? 'bg-blue-600/30'
 				: isSelected
 					? 'bg-blue-900/40 hover:bg-blue-900/50'
 					: 'hover:bg-zinc-800'}"
-			style="padding-left: {paddingLeft}px"
-			draggable={isFile ? 'true' : 'false'}
-			ondragstart={(e) => isFile && handleDragStart(e, node)}
-			ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
-			ondrop={(e) => isFolder && handleFolderDrop(e)}
-			onclick={() => {
-				if (isFolder && node.path) {
-					toggleExpanded(node.path);
-				} else if (isFile && node.path) {
-					toggleSelected(node.path);
-				}
-			}}
 		>
-			{#if isFolder}
-				{#if isExpanded}
-					<ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
+			<button
+				class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
+				style="padding-left: {paddingLeft}px"
+				draggable={isFile ? 'true' : 'false'}
+				ondragstart={(e) => isFile && handleDragStart(e, node)}
+				ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
+				ondrop={(e) => isFolder && handleFolderDrop(e)}
+				onclick={() => {
+					if (isFolder && node.path && !isNamespace) {
+						// For non-namespace folders: click to select, double-click or chevron to expand
+						toggleSelected(node.path);
+					} else if (isFolder && node.path) {
+						// For namespace roots: just expand/collapse
+						toggleExpanded(node.path);
+					} else if (isFile && node.path) {
+						toggleSelected(node.path);
+					}
+				}}
+				ondblclick={() => {
+					if (isFolder && node.path && !isNamespace) {
+						toggleExpanded(node.path);
+					}
+				}}
+			>
+				{#if isFolder}
+					{#if isExpanded}
+						<ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
+					{:else}
+						<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+					{/if}
+					{#if isUserNamespace}
+						<User class="h-3.5 w-3.5 shrink-0 text-yellow-400" />
+					{:else if isObjectNamespace}
+						<Box class="h-3.5 w-3.5 shrink-0 text-purple-400" />
+					{:else if isExpanded}
+						<FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+					{:else}
+						<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+					{/if}
 				{:else}
-					<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+					{@const fileIcon = getFileIcon(node.entry?.mimeType)}
+					<span class="w-3"></span>
+					<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
 				{/if}
-				{#if isUserNamespace}
-					<User class="h-3.5 w-3.5 shrink-0 text-yellow-400" />
-				{:else if isObjectNamespace}
-					<Box class="h-3.5 w-3.5 shrink-0 text-purple-400" />
-				{:else if isExpanded}
-					<FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-				{:else}
-					<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-				{/if}
-			{:else}
-				{@const fileIcon = getFileIcon(node.entry?.mimeType)}
-				<span class="w-3"></span>
-				<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
-			{/if}
 
-			<span class="truncate font-mono text-zinc-300" title={node.entry?.filename || node.name}>
-				{node.entry?.filename || node.name}
-			</span>
-		</button>
+				<span class="truncate font-mono text-zinc-300" title={node.entry?.filename || node.name}>
+					{node.entry?.filename || node.name}
+				</span>
+			</button>
+
+			{#if canHaveChildren && node.path}
+				<div class="flex shrink-0 items-center gap-0.5 pr-2 opacity-0 group-hover:opacity-100">
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+								onclick={(e) => handleCreateFolderClick(node.path!, e)}
+								title="Create folder"
+							>
+								<FolderPlus class="h-3.5 w-3.5" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content side="bottom">Create folder</Tooltip.Content>
+					</Tooltip.Root>
+
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+								onclick={(e) => handleUploadClick(node.path!, e)}
+								title="Upload file"
+							>
+								<Upload class="h-3.5 w-3.5" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content side="bottom">Upload file</Tooltip.Content>
+					</Tooltip.Root>
+
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+								onclick={(e) => handleAddUrlClick(node.path!, e)}
+								title="Add from URL"
+							>
+								<Link class="h-3.5 w-3.5" />
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content side="bottom">Add from URL</Tooltip.Content>
+					</Tooltip.Root>
+				</div>
+			{/if}
+		</div>
+
+		<!-- URL input inline -->
+		{#if showUrlInput === node.path}
+			<div class="flex items-center gap-1 px-2 py-1" style="padding-left: {paddingLeft + 20}px">
+				<Link class="mr-0.5 h-3 w-3 shrink-0 text-zinc-500" />
+				<input
+					type="text"
+					class="flex-1 bg-transparent font-mono text-xs text-zinc-300 placeholder-zinc-500 outline-none"
+					placeholder="Enter URL..."
+					bind:value={urlInputValue}
+					onkeydown={handleUrlSubmit}
+					autofocus
+				/>
+			</div>
+		{/if}
+
+		<!-- Folder name input inline -->
+		{#if showFolderInput === node.path}
+			<div class="flex items-center gap-1 px-2 py-1" style="padding-left: {paddingLeft + 20}px">
+				<Folder class="mr-0.5 h-3 w-3 shrink-0 text-yellow-500" />
+				<input
+					type="text"
+					class="flex-1 bg-transparent font-mono text-xs text-zinc-300 placeholder-zinc-500 outline-none"
+					placeholder="Folder name..."
+					bind:value={folderInputValue}
+					onkeydown={handleFolderInputSubmit}
+					autofocus
+				/>
+			</div>
+		{/if}
 	{/if}
 
 	{#if isFolder && (node.name === 'root' || isExpanded)}
-		{#each [...(node.children?.entries() || [])] as [, child]}
-			{@render treeNode(child, node.name === 'root' ? 0 : depth + 1)}
-		{/each}
+		{#if isEmptyFolder && node.name !== 'root'}
+			<div
+				class="px-2 py-1 text-xs text-zinc-600 italic"
+				style="padding-left: {paddingLeft + 20}px"
+			>
+				Empty folder
+			</div>
+		{:else}
+			{#each [...(node.children?.entries() || [])] as [, child]}
+				{@render treeNode(child, node.name === 'root' ? 0 : depth + 1)}
+			{/each}
+		{/if}
 	{/if}
 {/snippet}
 

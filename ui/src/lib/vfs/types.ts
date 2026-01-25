@@ -1,6 +1,6 @@
 // Virtual Filesystem Types
 
-export type VFSProviderType = 'url' | 'local';
+export type VFSProviderType = 'url' | 'local' | 'folder';
 
 /**
  * Entry metadata stored in the VFS tree.
@@ -12,8 +12,15 @@ export interface VFSEntry {
 	url?: string;
 	/** Original filename for display */
 	filename: string;
-	/** MIME type, e.g., 'image/png' */
+	/** MIME type, e.g., 'image/png'. Not present for folders. */
 	mimeType?: string;
+}
+
+/**
+ * Check if a VFSEntry is a folder
+ */
+export function isVFSFolder(entry: VFSEntry): boolean {
+	return entry.provider === 'folder';
 }
 
 /**
