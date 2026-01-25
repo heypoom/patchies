@@ -1034,6 +1034,7 @@
 				onShowGeminiKeyModal={() => {
 					showMissingApiKeyDialog = true;
 				}}
+				onNewPatch={newPatch}
 			/>
 		{/if}
 	</div>

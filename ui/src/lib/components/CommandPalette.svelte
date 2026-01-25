@@ -28,6 +28,7 @@
 		setEdges: (edges: Edge[]) => void;
 		onShowAiPrompt?: () => void;
 		onShowGeminiKeyModal?: () => void;
+		onNewPatch?: () => void;
 	}
 
 	let {
@@ -38,7 +39,8 @@
 		setNodes,
 		setEdges,
 		onShowAiPrompt,
-		onShowGeminiKeyModal
+		onShowGeminiKeyModal,
+		onNewPatch
 	}: Props = $props();
 
 	// Component state
@@ -298,19 +300,9 @@
 				onCancel();
 				await createAndCopyShareLink(nodes, edges);
 			})
-			.with('new-patch', async () => {
-				const ok = confirm(
-					'Are you sure you want to delete everything? This action CANNOT be undone.'
-				);
-
+			.with('new-patch', () => {
 				onCancel();
-
-				if (ok) {
-					setNodes([]);
-					setEdges([]);
-					localStorage.removeItem('patchies-patch-autosave');
-					isBackgroundOutputCanvasEnabled.set(false);
-				}
+				onNewPatch?.();
 			})
 			.with('toggle-vim-mode', () => {
 				const current = localStorage.getItem('editor.vim') === 'true';
