@@ -79,11 +79,11 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
   - sound (`soundfile~`)
   - this is *highest priority* to implement.
 
-- P5.js (`p5`)
-  - `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('user://images/poom.jpg')`
-  - `createVideo` should be injected as well, e.g. `await createVideo('user://videos/poom.mp4')`
-  - other methods to inject: `loadFont`, `loadSound`, `loadJSON`, `loadModel`
-  - only resolve through VFS if the vfs prefix i.e. `user://` is available
+### p5 integration
+
+- methods to inject: `loadImage`, `createVideo`, `loadFont`, `loadSound`, `loadJSON`, `loadModel`
+- example: `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('user://images/poom.jpg')`
+- only resolve through VFS if the vfs prefix i.e. `user://` is available
 
 ### chuck~ integration
 
