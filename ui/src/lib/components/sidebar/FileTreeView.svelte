@@ -159,6 +159,21 @@
 		expandedPaths = new Set(expandedPaths);
 	}
 
+	function getSortedChildren(node: TreeNode): TreeNode[] {
+		if (!node.children) return [];
+
+		return [...node.children.values()].sort((a, b) => {
+			// Folders come before files
+			const aIsFolder = a.children !== undefined;
+			const bIsFolder = b.children !== undefined;
+			if (aIsFolder && !bIsFolder) return -1;
+			if (!aIsFolder && bIsFolder) return 1;
+
+			// Then alphabetical
+			return a.name.localeCompare(b.name);
+		});
+	}
+
 	function getFileIcon(mimeType?: string) {
 		if (!mimeType) return { icon: File, color: 'text-zinc-400' };
 
@@ -483,7 +498,7 @@
 				Empty folder
 			</div>
 		{:else}
-			{#each [...(node.children?.entries() || [])] as [, child]}
+			{#each getSortedChildren(node) as child}
 				{@render treeNode(child, node.name === 'root' ? 0 : depth + 1)}
 			{/each}
 		{/if}
