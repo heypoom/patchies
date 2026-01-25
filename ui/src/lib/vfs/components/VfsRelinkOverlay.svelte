@@ -49,35 +49,49 @@
 		onDrop,
 		class: className = ''
 	}: Props = $props();
+
+	// Compact mode for small heights
+	const isCompact = $derived(height < 120);
 </script>
 
 {#if needsFolderRelink}
 	<!-- Folder needs to be re-linked via sidebar -->
 	<div
 		class={[
-			'flex flex-col items-start justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-8 py-3 font-mono',
+			'flex flex-col items-start justify-center overflow-hidden rounded-lg border border-amber-600/50 bg-amber-950/20 font-mono',
+			isCompact ? 'gap-1 px-3 py-2' : 'gap-2 px-8 py-3',
 			className
 		]}
 		style="width: {width}px; height: {height}px"
 		role="application"
 	>
-		<Lock class="mb-2 h-5 w-5 text-amber-400" />
+		{#if isCompact}
+			<!-- Compact: inline layout -->
+			<div class="flex items-center justify-center gap-2 px-2">
+				<Lock class="mr-1 h-4 w-4 flex-shrink-0 text-amber-400" />
+				<div class="text-[11px] font-light text-zinc-400">Re-link folder in sidebar.</div>
+			</div>
+		{:else}
+			<!-- Normal: stacked layout -->
+			<Lock class="mb-2 h-5 w-5 text-amber-400" />
 
-		<div class="text-[12px] font-light text-zinc-400">Re-link folder in sidebar.</div>
+			<div class="text-[12px] font-light text-zinc-400">Re-link folder in sidebar.</div>
 
-		<div class="overflow-hidden text-[10px] font-light text-zinc-600">
-			{linkedFolderName ? `Folder: ${linkedFolderName}` : vfsPath}
-		</div>
+			<div class="overflow-hidden text-[10px] font-light text-zinc-600">
+				{linkedFolderName ? `Folder: ${linkedFolderName}` : vfsPath}
+			</div>
 
-		<div class="mt-1 text-[10px] text-zinc-500">
-			Find the folder in the sidebar and click the re-link button.
-		</div>
+			<div class="mt-1 text-[10px] text-zinc-500">
+				Find the folder in the sidebar and click the re-link button.
+			</div>
+		{/if}
 	</div>
 {:else if needsReselect}
 	<!-- File needs to be re-selected -->
 	<div
 		class={[
-			'flex flex-col items-start justify-center gap-2 rounded-lg border border-amber-600/50 bg-amber-950/20 px-8 py-3 font-mono',
+			'flex flex-col items-start justify-center overflow-hidden rounded-lg border border-amber-600/50 bg-amber-950/20 font-mono',
+			isCompact ? 'gap-1 px-3 py-2' : 'gap-2 px-8 py-3',
 			isDragging ? 'border-transparent ring-2 ring-blue-400' : '',
 			className
 		]}
@@ -87,19 +101,33 @@
 		ondrop={onDrop}
 		role="application"
 	>
-		<Lock class="mb-2 h-5 w-5 text-amber-400" />
+		{#if isCompact}
+			<!-- Compact: inline layout with button -->
+			<div class="flex items-center gap-2">
+				<Lock class="h-4 w-4 flex-shrink-0 text-amber-400" />
+				<button
+					class="rounded bg-amber-600 px-2 py-0.5 font-mono text-[10px] text-white hover:bg-amber-500"
+					onclick={onRequestPermission}
+				>
+					Re-select file
+				</button>
+			</div>
+		{:else}
+			<!-- Normal: stacked layout -->
+			<Lock class="mb-2 h-5 w-5 text-amber-400" />
 
-		<div class="text-[12px] font-light text-zinc-400">Re-select file.</div>
+			<div class="text-[12px] font-light text-zinc-400">Re-select file.</div>
 
-		<div class="overflow-hidden text-[10px] font-light text-zinc-600">
-			{vfsPath}
-		</div>
+			<div class="overflow-hidden text-[10px] font-light text-zinc-600">
+				{vfsPath}
+			</div>
 
-		<button
-			class="mt-1 rounded bg-amber-600 px-2 py-1 font-mono text-[10px] text-white hover:bg-amber-500"
-			onclick={onRequestPermission}
-		>
-			Choose File
-		</button>
+			<button
+				class="mt-1 rounded bg-amber-600 px-2 py-1 font-mono text-[10px] text-white hover:bg-amber-500"
+				onclick={onRequestPermission}
+			>
+				Choose File
+			</button>
+		{/if}
 	</div>
 {/if}
