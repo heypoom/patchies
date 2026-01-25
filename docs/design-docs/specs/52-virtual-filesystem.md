@@ -82,6 +82,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
   - images (`img`)
   - video (`video`)
   - sound (`soundfile~`)
+  - converted recorded samples in `sampler~`
   - this is *highest priority* to implement.
 
 ### p5 integration
@@ -146,7 +147,6 @@ declare interface CsoundFs {
 
 ## Future Ideas
 
-- Recorded samples in sampler~
 - Guest upload mode with a really tiny file size limit and rate limiting
 
 ---
