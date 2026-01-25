@@ -8,12 +8,13 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { shouldShowHandles } from '../../../stores/ui.store';
+	import { useVfsMedia, VfsRelinkOverlay, VfsDropZone } from '$lib/vfs';
 
 	let node: {
 		id: string;
 		data: {
-			fileName?: string;
-			file?: File;
+			vfsPath?: string;
+
 			width?: number;
 			height?: number;
 		};
@@ -28,138 +29,66 @@
 
 	let messageContext: MessageContext;
 	let glSystem = GLSystem.getInstance();
-	let isDragging = $state(false);
-	let fileInputRef: HTMLInputElement;
 	let canvasElement: HTMLCanvasElement | null = $state(null);
 	let hasImage = $state(false);
 
 	const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
 	const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
-	const hasFile = $derived(!!node.data.file);
+	// Use VFS media composable for all file handling
+	const vfsMedia = useVfsMedia({
+		nodeId: node.id,
+		acceptMimePrefix: 'image/',
+		onFileLoaded: displayImage,
+		updateNodeData: (data) => updateNode(node.id, { data: { ...node.data, ...data } }),
+		getVfsPath: () => node.data.vfsPath,
+		filePickerAccept: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'],
+		filePickerDescription: 'Images'
+	});
 
 	const handleMessage: MessageCallbackFn = (m) => {
 		match(m)
-			.with(P.string, (url) => {
-				loadImageFromUrl(url);
-			})
-			.with({ type: 'load', url: P.string }, ({ url }) => {
-				loadImageFromUrl(url);
-			});
+			.with(P.string, vfsMedia.loadFromPath)
+			.with({ type: 'load', url: P.string }, ({ url }) => vfsMedia.loadFromUrl(url))
+			.with({ type: 'load', path: P.string }, ({ path }) => vfsMedia.loadFromPath(path));
 	};
 
-	async function loadImageFromUrl(url: string) {
-		try {
-			const res = await fetch(url);
-			const blob = await res.blob();
+	async function displayImage(file: File) {
+		const img = new Image();
+		const objectUrl = URL.createObjectURL(file);
 
-			// Extract filename from URL, fallback to generic name
-			const filename = getFileNameFromUrl(url);
-			const file = new File([blob], filename, { type: blob.type });
-			await loadFile(file);
-		} catch (err) {
-			console.error('Failed to load image from URL:', err);
-		}
-	}
+		await new Promise<void>((resolve, reject) => {
+			img.onload = () => resolve();
+			img.onerror = () => reject(new Error('failed to load image'));
+			img.src = objectUrl;
+		});
 
-	function getFileNameFromUrl(url: string): string {
-		try {
-			const urlObj = new URL(url);
-			const pathname = urlObj.pathname;
-			const filename = pathname.substring(pathname.lastIndexOf('/') + 1);
+		const preview = await createImageBitmap(img);
 
-			if (filename && filename.includes('.')) {
-				return decodeURIComponent(filename);
+		URL.revokeObjectURL(objectUrl);
+
+		const previewWidth = Math.round(preview.width / IMAGE_PREVIEW_SCALE_FACTOR);
+		const previewHeight = Math.round(preview.height / IMAGE_PREVIEW_SCALE_FACTOR);
+
+		updateNode(node.id, {
+			width: previewWidth,
+			height: previewHeight,
+			data: {
+				...node.data,
+				width: preview.width,
+				height: preview.height
 			}
-		} catch (error) {
-			// URL parsing failed, continue to fallback
-		}
+		});
 
-		return 'image.png';
-	}
+		// Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
+		const source = await createImageBitmap(img, { imageOrientation: 'flipY' });
+		glSystem.setPreflippedBitmap(node.id, source);
+		hasImage = true;
+		vfsMedia.markLoaded();
 
-	function handleDragOver(event: DragEvent) {
-		event.preventDefault();
-		isDragging = true;
-	}
-
-	function handleDragLeave(event: DragEvent) {
-		event.preventDefault();
-		isDragging = false;
-	}
-
-	function handleDrop(event: DragEvent) {
-		event.preventDefault();
-		event.stopPropagation();
-		isDragging = false;
-
-		const files = event.dataTransfer?.files;
-		if (!files || files.length === 0) return;
-
-		const file = files[0];
-		if (!file.type.startsWith('image/')) {
-			console.warn('Only image files are supported');
-			return;
-		}
-
-		loadFile(file);
-	}
-
-	function handleFileSelect(event: Event) {
-		const input = event.target as HTMLInputElement;
-		const files = input.files;
-		if (!files || files.length === 0) return;
-
-		const file = files[0];
-		loadFile(file);
-	}
-
-	async function loadFile(file: File) {
-		const isFile = file instanceof File;
-
-		try {
-			if (!isFile) return;
-
-			const img = new Image();
-			const objectUrl = URL.createObjectURL(file);
-
-			await new Promise<void>((resolve, reject) => {
-				img.onload = () => resolve();
-				img.onerror = () => reject(new Error('failed to load image'));
-				img.src = objectUrl;
-			});
-
-			const preview = await createImageBitmap(img);
-
-			URL.revokeObjectURL(objectUrl);
-
-			const previewWidth = Math.round(preview.width / IMAGE_PREVIEW_SCALE_FACTOR);
-			const previewHeight = Math.round(preview.height / IMAGE_PREVIEW_SCALE_FACTOR);
-
-			updateNode(node.id, {
-				width: previewWidth,
-				height: previewHeight,
-				data: {
-					...node.data,
-					file,
-					fileName: file.name,
-					width: preview.width,
-					height: preview.height
-				}
-			});
-
-			// Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
-			const source = await createImageBitmap(img, { imageOrientation: 'flipY' });
-			glSystem.setBitmap(node.id, source);
-			hasImage = true;
-
-			setTimeout(() => {
-				setPreviewImage(preview);
-			}, 50);
-		} catch (error) {
-			console.error('Failed to load image:', error);
-			hasImage = false;
-		}
+		setTimeout(() => {
+			setPreviewImage(preview);
+		}, 50);
 	}
 
 	function setPreviewImage(bitmap: ImageBitmap) {
@@ -184,25 +113,23 @@
 		}
 	}
 
-	function openFileDialog() {
-		fileInputRef?.click();
-	}
-
-	onMount(() => {
+	onMount(async () => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
 
 		// Register node with GLSystem
 		glSystem.upsertNode(node.id, 'img', {});
 
-		if (node.data.file) {
-			loadFile(node.data.file);
+		// If we have a VFS path, try to load from it
+		if (node.data.vfsPath) {
+			await vfsMedia.loadFromVfsPath(node.data.vfsPath);
 		}
 	});
 
 	onDestroy(() => {
 		messageContext?.queue.removeCallback(handleMessage);
 		messageContext?.destroy();
+
 		glSystem.removeNode(node.id);
 	});
 
@@ -217,14 +144,26 @@
 <div class="relative">
 	<NodeResizer class="z-1" isVisible={node.selected} keepAspectRatio />
 
-	{#if node.selected}
-		<div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
-			<div class="font-mono text-xs font-medium text-zinc-400">img</div>
-		</div>
-	{/if}
-
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
+			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+				<div class="z-10 rounded-lg bg-black/60 px-2 py-1">
+					<div class="font-mono text-xs font-medium text-zinc-400">img</div>
+				</div>
+
+				{#if vfsMedia.hasVfsPath && hasImage}
+					<div class="flex gap-1">
+						<button
+							title="Change image"
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							onclick={vfsMedia.openFileDialog}
+						>
+							<Upload class="h-4 w-4 text-zinc-300" />
+						</button>
+					</div>
+				{/if}
+			</div>
+
 			<div class="relative">
 				<StandardHandle
 					port="inlet"
@@ -236,47 +175,57 @@
 				/>
 
 				<div class="flex flex-col gap-2">
-					{#if hasFile && hasImage}
-						<div class="relative">
-							<canvas
-								bind:this={canvasElement}
-								width={node.data.width ?? defaultOutputWidth}
-								height={node.data.height ?? defaultOutputHeight}
-								class="rounded-md"
-								style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
-									defaultPreviewHeight}px"
-							></canvas>
-
-							<button
-								title="Change image"
-								class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-								onclick={openFileDialog}
-							>
-								<Upload class="h-3 w-3 text-zinc-300" />
-							</button>
-						</div>
-					{:else}
-						<div
-							class="flex flex-col items-center justify-center gap-2 rounded-lg border-1 px-1 py-3
-							{isDragging ? 'border-blue-400 bg-blue-50/10' : 'border-dashed border-zinc-600 bg-zinc-900'}"
+					{#if vfsMedia.hasVfsPath && hasImage}
+						<canvas
+							bind:this={canvasElement}
+							width={node.data.width ?? defaultOutputWidth}
+							height={node.data.height ?? defaultOutputHeight}
+							class="rounded-md {vfsMedia.isDragging ? 'ring-2 ring-blue-400' : ''}"
 							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
 								defaultPreviewHeight}px"
-							ondragover={handleDragOver}
-							ondragleave={handleDragLeave}
-							ondrop={handleDrop}
-							ondblclick={openFileDialog}
-							role="button"
-							tabindex="0"
-							onkeydown={(e) => e.key === 'Enter' && openFileDialog()}
+							ondragover={vfsMedia.handleDragOver}
+							ondragleave={vfsMedia.handleDragLeave}
+							ondrop={vfsMedia.handleDrop}
+						></canvas>
+					{:else if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
+						<VfsRelinkOverlay
+							needsReselect={vfsMedia.needsReselect}
+							needsFolderRelink={vfsMedia.needsFolderRelink}
+							linkedFolderName={vfsMedia.linkedFolderName}
+							vfsPath={node.data.vfsPath}
+							width={node.width ?? defaultPreviewWidth}
+							height={node.height ?? defaultPreviewHeight}
+							isDragging={vfsMedia.isDragging}
+							onRequestPermission={vfsMedia.requestFilePermission}
+							onDragOver={vfsMedia.handleDragOver}
+							onDragLeave={vfsMedia.handleDragLeave}
+							onDrop={vfsMedia.handleDrop}
+						/>
+					{:else if vfsMedia.isLoading}
+						<div
+							class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-600 bg-zinc-900 px-1 py-3"
+							style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
+								defaultPreviewHeight}px"
 						>
-							<ImageIcon class="h-4 w-4 text-zinc-400" />
-
+							<div
+								class="h-4 w-4 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"
+							></div>
 							<div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
-								<span class="text-zinc-300">double click</span> or
-								<span class="text-zinc-300">drop</span><br />
-								image file
+								Loading...
 							</div>
 						</div>
+					{:else}
+						<VfsDropZone
+							icon={ImageIcon}
+							fileType="image"
+							width={node.width ?? defaultPreviewWidth}
+							height={node.height ?? defaultPreviewHeight}
+							isDragging={vfsMedia.isDragging}
+							onDoubleClick={vfsMedia.openFileDialog}
+							onDragOver={vfsMedia.handleDragOver}
+							onDragLeave={vfsMedia.handleDragLeave}
+							onDrop={vfsMedia.handleDrop}
+						/>
 					{/if}
 				</div>
 
@@ -297,9 +246,9 @@
 
 <!-- Hidden file input -->
 <input
-	bind:this={fileInputRef}
+	bind:this={vfsMedia.fileInputRef}
 	type="file"
 	accept="image/*"
-	onchange={handleFileSelect}
+	onchange={vfsMedia.handleFileSelect}
 	class="hidden"
 />

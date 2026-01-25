@@ -390,14 +390,6 @@ export class GLSystem {
 		);
 	}
 
-	/**
-	 * @deprecated Use setPreflippedBitmap() instead to make flip requirement explicit.
-	 * This alias exists for backward compatibility.
-	 */
-	setBitmap(nodeId: string, bitmap: ImageBitmap) {
-		this.setPreflippedBitmap(nodeId, bitmap);
-	}
-
 	removeBitmap(nodeId: string) {
 		this.send('removeBitmap', { nodeId });
 	}

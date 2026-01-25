@@ -1,4 +1,5 @@
 import type { Edge, Node } from '@xyflow/svelte';
+import type { VFSTree } from '$lib/vfs/types';
 
 /**
  * Raw patch data before migration (version may be missing or old)
@@ -9,6 +10,7 @@ export type RawPatchData = {
 	timestamp?: number;
 	nodes?: Node[];
 	edges?: Edge[];
+	files?: VFSTree;
 };
 
 /**

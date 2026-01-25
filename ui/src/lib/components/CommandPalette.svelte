@@ -28,6 +28,8 @@
 		setEdges: (edges: Edge[]) => void;
 		onShowAiPrompt?: () => void;
 		onShowGeminiKeyModal?: () => void;
+		onNewPatch?: () => void;
+		onOpenLeftSidebar?: () => void;
 	}
 
 	let {
@@ -38,7 +40,9 @@
 		setNodes,
 		setEdges,
 		onShowAiPrompt,
-		onShowGeminiKeyModal
+		onShowGeminiKeyModal,
+		onNewPatch,
+		onOpenLeftSidebar
 	}: Props = $props();
 
 	// Component state
@@ -136,6 +140,11 @@
 			id: 'toggle-bottom-bar',
 			name: 'Toggle Bottom Bar',
 			description: 'Show or hide the bottom toolbar'
+		},
+		{
+			id: 'browse-files',
+			name: 'Browse Files',
+			description: 'View files in the virtual filesystem'
 		}
 	];
 
@@ -298,19 +307,13 @@
 				onCancel();
 				await createAndCopyShareLink(nodes, edges);
 			})
-			.with('new-patch', async () => {
-				const ok = confirm(
-					'Are you sure you want to delete everything? This action CANNOT be undone.'
-				);
-
+			.with('new-patch', () => {
 				onCancel();
-
-				if (ok) {
-					setNodes([]);
-					setEdges([]);
-					localStorage.removeItem('patchies-patch-autosave');
-					isBackgroundOutputCanvasEnabled.set(false);
-				}
+				onNewPatch?.();
+			})
+			.with('browse-files', () => {
+				onCancel();
+				onOpenLeftSidebar?.();
 			})
 			.with('toggle-vim-mode', () => {
 				const current = localStorage.getItem('editor.vim') === 'true';

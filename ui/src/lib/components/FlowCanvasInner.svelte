@@ -1,17 +1,5 @@
 <script lang="ts">
-	import {
-		CirclePlus,
-		Command,
-		Copy,
-		FilePlus2,
-		Link,
-		Search,
-		Sparkles,
-		Trash2,
-		Volume2,
-		Cable,
-		ClipboardPaste
-	} from '@lucide/svelte/icons';
+	import { Volume2, Cable } from '@lucide/svelte/icons';
 	import {
 		SvelteFlow,
 		Controls,
@@ -24,9 +12,8 @@
 	} from '@xyflow/svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import CommandPalette from './CommandPalette.svelte';
-	import StartupModal from './startup-modal/StartupModal.svelte';
-	import VolumeControl from './VolumeControl.svelte';
 	import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
+	import BottomToolbar from './BottomToolbar.svelte';
 	import AiObjectPrompt from './AiObjectPrompt.svelte';
 	import { MessageSystem } from '$lib/messages/MessageSystem';
 	import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
@@ -52,7 +39,6 @@
 	import { migratePatch } from '$lib/migration';
 	import { serializePatch } from '$lib/save-load/serialize-patch';
 	import { getSharedPatchData } from '$lib/api/pb';
-	import { createAndCopyShareLink } from '$lib/save-load/share';
 	import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
 	import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
 	import BackgroundPattern from './BackgroundPattern.svelte';
@@ -64,12 +50,17 @@
 		isAudioParamInlet,
 		isValidConnectionBetweenHandles
 	} from '$lib/utils/connection-validation';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
+	import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
+	import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
+	import SidebarPanel from './sidebar/SidebarPanel.svelte';
+	import FileTreeView from './sidebar/FileTreeView.svelte';
+	import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { NodeReplaceEvent } from '$lib/eventbus/events';
 
 	import { toast } from 'svelte-sonner';
+	import { initializeVFS, VirtualFilesystem } from '$lib/vfs';
 
 	const AUTOSAVE_INTERVAL = 2500;
 
@@ -106,11 +97,12 @@
 
 	// Dialog state for missing API key
 	let showMissingApiKeyDialog = $state(false);
-	let geminiApiKeyInput = $state('');
-	let geminiApiKeyError = $state<string | null>(null);
 
 	// Dialog state for new patch confirmation
 	let showNewPatchDialog = $state(false);
+
+	// Sidebar state
+	let showSidebar = $state(false);
 
 	// Get flow utilities for coordinate transformation
 	const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -311,35 +303,14 @@
 		const hasApiKey = !!localStorage.getItem('gemini-api-key');
 
 		if (!hasApiKey) {
-			geminiApiKeyInput = '';
-			geminiApiKeyError = null;
 			showMissingApiKeyDialog = true;
 		}
 
 		return hasApiKey;
 	}
 
-	function validateAndSaveGeminiApiKey() {
-		geminiApiKeyError = null;
-
-		const trimmedKey = geminiApiKeyInput.trim();
-
-		if (!trimmedKey) {
-			geminiApiKeyError = 'API key cannot be empty';
-			return;
-		}
-
-		if (!trimmedKey.startsWith('AIza')) {
-			geminiApiKeyError = 'Invalid API key format. Gemini API keys start with "AIza"';
-			return;
-		}
-
-		// Save the key
-		localStorage.setItem('gemini-api-key', trimmedKey);
+	function onGeminiApiKeySaved() {
 		hasGeminiApiKey = true;
-
-		// Close dialog and proceed with AI insertion
-		showMissingApiKeyDialog = false;
 
 		// If a single node is selected, edit it; otherwise create new
 		if (selectedNodeIds.length === 1) {
@@ -443,6 +414,9 @@
 	onMount(() => {
 		flowContainer?.focus();
 
+		// Initialize VFS with providers
+		initializeVFS();
+
 		glSystem.start();
 		audioService.start();
 
@@ -521,7 +495,7 @@
 				const save = await getSharedPatchData(id);
 				deleteSearchParam('id');
 
-				if (save) restorePatchFromSave(save);
+				if (save) await restorePatchFromSave(save);
 			} catch (err) {
 				urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
 			} finally {
@@ -536,151 +510,32 @@
 
 			if (save) {
 				const parsed: PatchSaveFormat = JSON.parse(save);
-				if (parsed) restorePatchFromSave(parsed);
+				if (parsed) await restorePatchFromSave(parsed);
 			}
 		} catch {}
 	}
 
-	// Handle drop events
+	// Drag-drop manager (initialized lazily after screenToFlowPosition is available)
+	let dragDropManager: CanvasDragDropManager | null = null;
+
+	function getDragDropManager(): CanvasDragDropManager {
+		if (!dragDropManager) {
+			dragDropManager = new CanvasDragDropManager({
+				screenToFlowPosition,
+				createNode,
+				createNodeFromName
+			});
+		}
+
+		return dragDropManager;
+	}
+
 	function onDrop(event: DragEvent) {
-		event.preventDefault();
-
-		const type = event.dataTransfer?.getData('application/svelteflow');
-		const files = event.dataTransfer?.files;
-		const memoryData = event.dataTransfer?.getData('application/asm-memory');
-
-		// Check if the drop target is within a node (to avoid duplicate handling)
-		const target = event.target as HTMLElement;
-		const isDropOnNode = target.closest('.svelte-flow__node');
-
-		// Get accurate positioning with zoom/pan
-		const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-
-		// Handle assembly memory drops - create asm.value node
-		if (memoryData && !isDropOnNode) {
-			try {
-				const data = JSON.parse(memoryData);
-				createNode('asm.value', position, data);
-				return;
-			} catch (error) {
-				console.warn('Failed to parse memory drag data:', error);
-			}
-		}
-
-		// Handle file drops - only if not dropping on an existing node
-		if (files && files.length > 0 && !isDropOnNode) {
-			handleFileDrops(files, position);
-			return;
-		}
-
-		// Handle node palette drops
-		if (type) {
-			createNodeFromName(type, position);
-		}
-	}
-
-	// Handle dropped files by creating appropriate nodes
-	function handleFileDrops(files: FileList, basePosition: { x: number; y: number }) {
-		Array.from(files).forEach(async (file, index) => {
-			// Offset multiple files to avoid overlap
-			const position = {
-				x: basePosition.x + index * 20,
-				y: basePosition.y + index * 20
-			};
-
-			const nodeType = getNodeTypeFromFile(file);
-			if (nodeType) {
-				const customData = await getFileNodeData(file, nodeType);
-				createNode(nodeType, position, customData);
-			}
-		});
-	}
-
-	// Map file types to node types based on spec
-	function getNodeTypeFromFile(file: File): string | null {
-		const mimeType = file.type;
-
-		// Image files -> img node
-		if (mimeType.startsWith('image/')) {
-			return 'img';
-		}
-
-		// Video files -> video node
-		if (mimeType.startsWith('video/')) {
-			return 'video';
-		}
-
-		// Text files -> markdown node
-		if (mimeType.startsWith('text/')) {
-			return 'markdown';
-		}
-
-		// Audio files -> soundfile~ node
-		if (mimeType.startsWith('audio/')) {
-			return 'soundfile~';
-		}
-
-		// Unsupported file type
-		return null;
-	}
-
-	// Create appropriate data for file-based nodes
-	async function getFileNodeData(file: File, nodeType: string) {
-		return await match(nodeType)
-			.with('img', () =>
-				Promise.resolve({
-					...getDefaultNodeData('img'),
-					file,
-					fileName: file.name,
-					url: URL.createObjectURL(file)
-				})
-			)
-			.with('markdown', async () => {
-				try {
-					const content = await file.text();
-					return {
-						...getDefaultNodeData('markdown'),
-						markdown: content
-					};
-				} catch (error) {
-					console.error('Failed to read markdown file:', error);
-					return {
-						...getDefaultNodeData('markdown'),
-						markdown: `Error loading file: ${file.name}`
-					};
-				}
-			})
-			.with('soundfile~', () =>
-				Promise.resolve({
-					...getDefaultNodeData('soundfile~'),
-					file,
-					fileName: file.name
-				})
-			)
-			.with('video', () =>
-				Promise.resolve({
-					...getDefaultNodeData('video'),
-					file,
-					fileName: file.name
-				})
-			)
-			.otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
+		getDragDropManager().onDrop(event);
 	}
 
 	function onDragOver(event: DragEvent) {
-		event.preventDefault();
-
-		// Check what type of drag this is and set appropriate drop effect
-		const hasMemoryData = event.dataTransfer?.types.includes('application/asm-memory');
-		const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
-
-		if (hasMemoryData) {
-			event.dataTransfer!.dropEffect = 'copy';
-		} else if (hasSvelteFlowData) {
-			event.dataTransfer!.dropEffect = 'move';
-		} else {
-			event.dataTransfer!.dropEffect = 'move';
-		}
+		getDragDropManager().onDragOver(event);
 	}
 
 	// Create a new node at the specified position
@@ -775,17 +630,6 @@
 
 		// Last resort: create as-is
 		createNode(name, position);
-	}
-
-	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
-		const position = screenToFlowPosition(lastMousePosition);
-
-		if (isPreset && PRESETS[nodeType]) {
-			const preset = PRESETS[nodeType];
-			createNode(preset.type, position, preset.data);
-		} else {
-			createNodeFromName(nodeType, position);
-		}
 	}
 
 	function handleCommandPaletteCancel() {
@@ -894,7 +738,7 @@
 		toast.success(`Pasted ${copiedNodeData.length} node${copiedNodeData.length === 1 ? '' : 's'}`);
 	}
 
-	function restorePatchFromSave(save: PatchSaveFormat) {
+	async function restorePatchFromSave(save: PatchSaveFormat) {
 		// Apply migrations to upgrade old patch formats
 		const migrated = migratePatch(save) as PatchSaveFormat;
 
@@ -904,6 +748,22 @@
 
 		nodes = [];
 		edges = [];
+
+		// Hydrate VFS from saved files
+		const vfs = VirtualFilesystem.getInstance();
+		vfs.clear();
+
+		if (migrated.files) {
+			await vfs.hydrate(migrated.files);
+
+			// Check for pending permissions and log them
+			const pending = vfs.getPendingPermissions();
+
+			if (pending.length > 0) {
+				console.log('VFS: Some local files need permission:', pending);
+				// Permission will be requested by individual nodes when they try to load
+			}
+		}
 
 		nodes = migrated.nodes;
 		edges = migrated.edges;
@@ -935,7 +795,7 @@
 
 			if (result.success) {
 				const { data } = result;
-				restorePatchFromSave(data);
+				await restorePatchFromSave(data);
 			} else {
 				urlLoadError = result.error;
 				console.error('Failed to load patch from URL:', result.error);
@@ -978,6 +838,11 @@
 
 		nodes = [];
 		edges = [];
+
+		const vfs = VirtualFilesystem.getInstance();
+		vfs.clear();
+		vfs.clearPersistedData();
+
 		localStorage.removeItem('patchies-patch-autosave');
 		isBackgroundOutputCanvasEnabled.set(false);
 		showNewPatchDialog = false;
@@ -1014,431 +879,232 @@
 	}
 </script>
 
-<div class="flow-container flex h-screen w-full flex-col">
-	<!-- URL Loading Indicator -->
-	{#if isLoadingFromUrl}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
-			>
+<div class="flow-container flex h-screen w-full">
+	<!-- File Browser Sidebar -->
+	<SidebarPanel bind:open={showSidebar}>
+		<FileTreeView />
+	</SidebarPanel>
+
+	<!-- Main content area -->
+	<div class="relative flex flex-1 flex-col">
+		<!-- URL Loading Indicator -->
+		{#if isLoadingFromUrl}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
 				<div
-					class="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
-				></div>
-
-				<span>Loading your patch...</span>
-			</div>
-		</div>
-	{/if}
-
-	<!-- URL Loading Error -->
-	{#if urlLoadError}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
-			>
-				<span>Failed to load patch: {urlLoadError}</span>
-
-				<button
-					class="ml-2 text-red-300 hover:text-red-100"
-					onclick={() => (urlLoadError = null)}
-					title="Dismiss"
+					class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
 				>
-					×
-				</button>
-			</div>
-		</div>
-	{/if}
+					<div
+						class="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
+					></div>
 
-	<!-- Audio Resume Hint -->
-	{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
-			>
-				<Volume2 class="h-4 w-4" />
-				<span>Click anywhere to play sound</span>
+					<span>Loading your patch...</span>
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	<!-- Connection Mode Indicator -->
-	{#if $isConnectionMode}
-		<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
-			<div
-				class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
-					$isConnecting
-						? 'border-green-600 bg-green-900/80 text-green-200'
-						: 'border-blue-600 bg-blue-900/80 text-blue-200'
-				}`}
-			>
-				<Cable class="h-4 w-4" />
-				<span>
-					{#if $isConnecting}
-						Tap or drag to another handle to connect
-					{:else}
-						Tap on a handle to start the connection
-					{/if}
-				</span>
-				<button
-					class={`ml-2 hover:text-blue-100 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
-					onclick={cancelConnectionMode}
-					title="Cancel"
+		<!-- URL Loading Error -->
+		{#if urlLoadError}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+				<div
+					class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
 				>
-					×
-				</button>
+					<span>Failed to load patch: {urlLoadError}</span>
+
+					<button
+						class="ml-2 text-red-300 hover:text-red-100"
+						onclick={() => (urlLoadError = null)}
+						title="Dismiss"
+					>
+						×
+					</button>
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	<!-- Main flow area -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div
-		bind:this={flowContainer}
-		class="relative flex-1"
-		ondrop={onDrop}
-		ondragover={onDragOver}
-		onmousemove={handleMouseMove}
-		onclick={resumeAudio}
-		tabindex="0"
-	>
-		<SvelteFlow
-			bind:nodes
-			bind:edges
-			{nodeTypes}
-			{edgeTypes}
-			fitView
-			class="bg-zinc-900"
-			snapGrid={[5, 5]}
-			proOptions={{ hideAttribution: true }}
-			{isValidConnection}
-			onconnectstart={(event, params) => {
-				isConnecting.set(true);
-				// Construct fully qualified handle identifier (nodeId/handleId)
-				const qualifiedHandleId =
-					params.nodeId && params.handleId
-						? `${params.nodeId}/${params.handleId}`
-						: params.handleId || null;
-				connectingFromHandleId.set(qualifiedHandleId);
-			}}
-			onconnectend={() => {
-				isConnecting.set(false);
-				connectingFromHandleId.set(null);
-			}}
-			onclickconnectstart={(event, params) => {
-				isConnecting.set(true);
-				// Construct fully qualified handle identifier (nodeId/handleId)
-				const qualifiedHandleId =
-					params.nodeId && params.handleId
-						? `${params.nodeId}/${params.handleId}`
-						: params.handleId || null;
-				connectingFromHandleId.set(qualifiedHandleId);
-			}}
-			onclickconnectend={(event, connectionState) => {
-				isConnecting.set(false);
-				connectingFromHandleId.set(null);
+		<!-- Audio Resume Hint -->
+		{#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+				<div
+					class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
+				>
+					<Volume2 class="h-4 w-4" />
+					<span>Click anywhere to play sound</span>
+				</div>
+			</div>
+		{/if}
 
-				// Show success toast if connection was successfully made
-				// connectionState will have connection details if successful
-				if (connectionState?.isValid) {
-					toast.success('Objects connected by tap.');
-				}
-			}}
+		<!-- Connection Mode Indicator -->
+		{#if $isConnectionMode}
+			<div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+				<div
+					class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
+						$isConnecting
+							? 'border-green-600 bg-green-900/80 text-green-200'
+							: 'border-blue-600 bg-blue-900/80 text-blue-200'
+					}`}
+				>
+					<Cable class="h-4 w-4" />
+					<span>
+						{#if $isConnecting}
+							Tap or drag to another handle to connect
+						{:else}
+							Tap on a handle to start the connection
+						{/if}
+					</span>
+					<button
+						class={`ml-2 hover:text-blue-100 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
+						onclick={cancelConnectionMode}
+						title="Cancel"
+					>
+						×
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Main flow area -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			bind:this={flowContainer}
+			class="relative flex-1"
+			ondrop={onDrop}
+			ondragover={onDragOver}
+			onmousemove={handleMouseMove}
+			onclick={resumeAudio}
+			tabindex="0"
 		>
-			<BackgroundPattern />
+			<SvelteFlow
+				bind:nodes
+				bind:edges
+				{nodeTypes}
+				{edgeTypes}
+				fitView
+				class="bg-zinc-900"
+				snapGrid={[5, 5]}
+				proOptions={{ hideAttribution: true }}
+				{isValidConnection}
+				onconnectstart={(event, params) => {
+					isConnecting.set(true);
+					// Construct fully qualified handle identifier (nodeId/handleId)
+					const qualifiedHandleId =
+						params.nodeId && params.handleId
+							? `${params.nodeId}/${params.handleId}`
+							: params.handleId || null;
+					connectingFromHandleId.set(qualifiedHandleId);
+				}}
+				onconnectend={() => {
+					isConnecting.set(false);
+					connectingFromHandleId.set(null);
+				}}
+				onclickconnectstart={(event, params) => {
+					isConnecting.set(true);
+					// Construct fully qualified handle identifier (nodeId/handleId)
+					const qualifiedHandleId =
+						params.nodeId && params.handleId
+							? `${params.nodeId}/${params.handleId}`
+							: params.handleId || null;
+					connectingFromHandleId.set(qualifiedHandleId);
+				}}
+				onclickconnectend={(event, connectionState) => {
+					isConnecting.set(false);
+					connectingFromHandleId.set(null);
 
-			<BackgroundOutputCanvas />
+					// Show success toast if connection was successfully made
+					// connectionState will have connection details if successful
+					if (connectionState?.isValid) {
+						toast.success('Objects connected by tap.');
+					}
+				}}
+			>
+				<BackgroundPattern />
 
-			<Controls class={$isBottomBarVisible ? '' : '!hidden'} />
-		</SvelteFlow>
+				<BackgroundOutputCanvas />
 
-		<!-- Command Palette -->
-		{#if showCommandPalette}
-			<CommandPalette
-				position={commandPalettePosition}
-				onCancel={handleCommandPaletteCancel}
+				<Controls class={$isBottomBarVisible ? '' : '!hidden'} />
+			</SvelteFlow>
+
+			<!-- Command Palette -->
+			{#if showCommandPalette}
+				<CommandPalette
+					position={commandPalettePosition}
+					onCancel={handleCommandPaletteCancel}
+					{nodes}
+					{edges}
+					setNodes={(newNodes) => {
+						nodes = newNodes;
+						nodeIdCounter = getNodeIdCounterFromSave(newNodes);
+					}}
+					setEdges={(newEdges) => {
+						edges = newEdges;
+					}}
+					onShowAiPrompt={() => {
+						aiEditingNodeId = null;
+						onAiInsertOrEdit();
+					}}
+					onShowGeminiKeyModal={() => {
+						showMissingApiKeyDialog = true;
+					}}
+					onNewPatch={newPatch}
+					onOpenLeftSidebar={() => (showSidebar = true)}
+				/>
+			{/if}
+		</div>
+
+		<!-- Bottom toolbar buttons -->
+		{#if $isBottomBarVisible}
+			<BottomToolbar
 				{nodes}
 				{edges}
-				setNodes={(newNodes) => {
-					nodes = newNodes;
-					nodeIdCounter = getNodeIdCounterFromSave(newNodes);
-				}}
-				setEdges={(newEdges) => {
-					edges = newEdges;
-				}}
-				onShowAiPrompt={() => {
-					aiEditingNodeId = null;
-					onAiInsertOrEdit();
-				}}
-				onShowGeminiKeyModal={() => {
-					geminiApiKeyInput = '';
-					geminiApiKeyError = null;
-					showMissingApiKeyDialog = true;
+				{selectedNodeIds}
+				{selectedEdgeIds}
+				{copiedNodeData}
+				{hasGeminiApiKey}
+				isLeftSidebarOpen={showSidebar}
+				bind:showStartupModal
+				onDelete={deleteSelectedElements}
+				onInsertObject={insertObjectWithButton}
+				onBrowseObjects={() => (showObjectBrowser = true)}
+				onCopy={copySelectedNodes}
+				onPaste={() => pasteNode('button')}
+				onCancelConnectionMode={cancelConnectionMode}
+				onEnableConnectionMode={() => isConnectionMode.set(true)}
+				{onAiInsertOrEdit}
+				onCommandPalette={triggerCommandPalette}
+				onNewPatch={newPatch}
+				onLoadPatch={loadPatchById}
+				onToggleLeftSidebar={() => {
+					showSidebar = !showSidebar;
 				}}
 			/>
 		{/if}
+
+		<!-- Object Browser Modal -->
+		<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+
+		<!-- AI Object Prompt Dialog -->
+		<AiObjectPrompt
+			bind:open={showAiPrompt}
+			position={aiPromptPosition}
+			editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
+			onInsertObject={handleAiObjectInsert}
+			onInsertMultipleObjects={handleAiMultipleObjectsInsert}
+			onEditObject={handleAiObjectEdit}
+		/>
+
+		<!-- Toast Notifications -->
+		<Toaster position="top-center" />
+
+		<!-- Gemini API Key Missing Dialog -->
+		<GeminiApiKeyDialog
+			bind:open={showMissingApiKeyDialog}
+			onSaveAndContinue={onGeminiApiKeySaved}
+		/>
+
+		<!-- New Patch Confirmation Dialog -->
+		<NewPatchDialog bind:open={showNewPatchDialog} onConfirm={confirmNewPatch} />
 	</div>
-
-	<!-- Bottom toolbar buttons -->
-	{#if $isBottomBarVisible}
-		<div class="fixed right-0 bottom-0 p-2">
-			{#if selectedNodeIds.length > 0 || selectedEdgeIds.length > 0}
-				<button
-					title="Delete (Del)"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						const ok = confirm('Delete this element?');
-
-						if (ok) {
-							deleteSelectedElements();
-						}
-					}}><Trash2 class="h-4 w-4 text-red-400" /></button
-				>
-			{/if}
-
-			<button
-				title="Quick Insert Object (Enter)"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					insertObjectWithButton();
-				}}><CirclePlus class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			<button
-				title="Browse Objects (Cmd+B)"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					showObjectBrowser = true;
-				}}><Search class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			{#if selectedNodeIds.length > 0 || (selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0)}
-				<button
-					title="Copy / Paste"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						if (selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0) {
-							pasteNode('button');
-						} else if (selectedNodeIds && (!copiedNodeData || copiedNodeData.length === 0)) {
-							copySelectedNodes();
-						}
-					}}
-				>
-					{#if selectedNodeIds.length === 0 && copiedNodeData && copiedNodeData.length > 0}
-						<ClipboardPaste class="h-4 w-4 text-zinc-300" />
-					{:else}
-						<Copy class="h-4 w-4 text-zinc-300" />
-					{/if}
-				</button>
-			{/if}
-
-			<!-- Only show connection button if there are at least 2 nodes -->
-			<!-- You can't connect a single node to itself -->
-			{#if nodes.length >= 2}
-				<button
-					title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
-					class={`cursor-pointer rounded p-1 ${$isConnectionMode ? 'bg-blue-600/70 hover:bg-blue-800/70' : 'bg-zinc-900/70 hover:bg-zinc-700'}`}
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						if ($isConnectionMode) {
-							cancelConnectionMode();
-						} else {
-							isConnectionMode.set(true);
-						}
-					}}><Cable class="h-4 w-4 text-zinc-300" /></button
-				>
-			{/if}
-
-			{#if $isAiFeaturesVisible && hasGeminiApiKey}
-				<button
-					title="AI Create/Edit Object (Cmd+I)"
-					class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-
-						onAiInsertOrEdit();
-					}}><Sparkles class="h-4 w-4 text-zinc-300" /></button
-				>
-			{/if}
-
-			<button
-				title="Share Patch Link"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={() => createAndCopyShareLink(nodes, edges)}
-				><Link class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			<button
-				title="Command Palette (Cmd+K)"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					triggerCommandPalette();
-				}}><Command class="h-4 w-4 text-zinc-300" /></button
-			>
-
-			<VolumeControl />
-
-			<button
-				title="New Patch"
-				class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-
-					newPatch();
-				}}><FilePlus2 class="h-4 w-4 text-zinc-300 hover:text-red-400" /></button
-			>
-
-			<StartupModal bind:open={showStartupModal} onLoadPatch={loadPatchById} />
-		</div>
-	{/if}
-
-	<!-- Object Browser Modal -->
-	<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
-
-	<!-- AI Object Prompt Dialog -->
-	<AiObjectPrompt
-		bind:open={showAiPrompt}
-		position={aiPromptPosition}
-		editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
-		onInsertObject={handleAiObjectInsert}
-		onInsertMultipleObjects={handleAiMultipleObjectsInsert}
-		onEditObject={handleAiObjectEdit}
-	/>
-
-	<!-- Toast Notifications -->
-	<Toaster position="top-center" />
-
-	<!-- Gemini API Key Missing Dialog -->
-	<Dialog.Root bind:open={showMissingApiKeyDialog}>
-		<Dialog.Content class="sm:max-w-md">
-			<Dialog.Header>
-				<Dialog.Title>Gemini API Key Required</Dialog.Title>
-			</Dialog.Header>
-			<div class="space-y-4">
-				<p class="text-sm text-zinc-300">
-					AI features require a Google Gemini API key. Get a free API key at
-					<a
-						href="https://aistudio.google.com/app/apikey"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-blue-400 underline hover:text-blue-300"
-					>
-						Google AI Studio
-					</a>.
-				</p>
-
-				<div class="space-y-2">
-					<label for="gemini-key-input" class="block text-sm text-zinc-300">
-						Enter your API key:
-					</label>
-					<input
-						id="gemini-key-input"
-						type="password"
-						bind:value={geminiApiKeyInput}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') {
-								e.preventDefault();
-								validateAndSaveGeminiApiKey();
-							}
-						}}
-						placeholder="AIza..."
-						class="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-					/>
-					{#if geminiApiKeyError}
-						<p class="text-xs text-red-400">{geminiApiKeyError}</p>
-					{/if}
-				</div>
-
-				<p class="text-xs text-zinc-400">
-					⚠️ Create a separate API key with strict budget limits. Keys are stored in browser
-					localStorage.
-				</p>
-
-				<p class="text-xs text-zinc-500">
-					Don't want to use AI features?
-					<button
-						onclick={() => {
-							$isAiFeaturesVisible = false;
-							showMissingApiKeyDialog = false;
-
-							toast.success(
-								'All AI features hidden. Use "Ctrl+K > Toggle AI Features" to re-enable them.'
-							);
-						}}
-						class="cursor-pointer text-red-400 underline hover:text-red-300"
-					>
-						Hide all AI features.
-					</button>
-				</p>
-			</div>
-			<Dialog.Footer class="flex gap-2">
-				<button
-					onclick={() => (showMissingApiKeyDialog = false)}
-					class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-				>
-					Cancel
-				</button>
-				<button
-					onclick={validateAndSaveGeminiApiKey}
-					class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-				>
-					Save & Continue
-				</button>
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Root>
-
-	<!-- New Patch Confirmation Dialog -->
-	<Dialog.Root bind:open={showNewPatchDialog}>
-		<Dialog.Content class="sm:max-w-md">
-			<Dialog.Header>
-				<Dialog.Title>Create New Patch?</Dialog.Title>
-			</Dialog.Header>
-			<div class="space-y-4">
-				<p class="text-sm text-zinc-300">
-					Are you sure you want to create a new patch? All unsaved changes will be lost!
-				</p>
-				<p class="text-xs text-zinc-400">
-					💡 Tip: Use <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl+K</kbd>
-					→ "Save Patch" or "Share Patch Link" to save your current work before creating a new patch.
-				</p>
-			</div>
-			<Dialog.Footer class="flex gap-2">
-				<button
-					onclick={() => (showNewPatchDialog = false)}
-					class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-				>
-					Cancel
-				</button>
-				<button
-					onclick={confirmNewPatch}
-					class="flex-1 cursor-pointer rounded bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500"
-				>
-					Delete & Create New
-				</button>
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Root>
 </div>
 
 <style>
