@@ -37,6 +37,10 @@ function openDB(): Promise<IDBDatabase> {
 		request.onerror = () => reject(request.error);
 		request.onsuccess = () => resolve(request.result);
 
+		request.onblocked = () => {
+			console.warn('VFS: IndexedDB upgrade blocked. Close other tabs using this app and refresh.');
+		};
+
 		request.onupgradeneeded = (event) => {
 			const db = (event.target as IDBOpenDBRequest).result;
 
