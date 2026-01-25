@@ -513,9 +513,11 @@
 					if (isFolder && node.path && !isNamespace) {
 						// For non-namespace folders: select (without deselect) and toggle expand
 						selectedPaths = new Set([node.path]);
+						// Check if we're about to expand (before toggling)
+						const willExpand = !expandedPaths.has(node.path);
 						toggleExpanded(node.path);
 						// Load local folder contents when expanding
-						if (isLinkedFolder && !expandedPaths.has(node.path)) {
+						if (isLinkedFolder && willExpand) {
 							await handleLocalFolderExpand(node.path);
 						}
 					} else if (isFolder && node.path) {
