@@ -31,15 +31,16 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 ## Example
 
 ```txt
-/ (root)
+/user
   /images
-    /poom.jpg {provider: 'url', url: 'https://poom.dev/cool'}
-  /secrets {provider: 'fs'}
+    /poom.jpg  -- {provider: 'url', url: 'https://poom.dev/cool'}
+  /secrets     -- {provider: 'local'}
 ```
 
 ## Design Ideas
 
-- Each object only stores the virtual filesystem path, it must not store the file object.
+- Each object must only store the virtual filesystem path, it must not store the file object.
+- Create a singleton class `VirtualFilesystem` for accessing the virtual filesystem.
 - Patchies vfs has two prefixes:
   - `user://` is for user uploaded files. example: `user://images/poom.jpg`
   - `nodes://` is for files associated with nodes, using `/<node-id>` as prefixes.
@@ -48,6 +49,27 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
     - example: `nodes://csound~-42` contains filesystem for a Csound object
     - only some node will have a virtual node filesystem, such as `chuck~` and `elem~` and `csound~`
   - the prefixes helps us to check if it is a virtual filesystem path, or an already resolved path.
+- In the saved patches, we should also store a `files` mapping as well, with top-level namespaces `user` and `nodes`:
+
+```ts
+{
+    "nodes": [],
+    "edges": [],
+    "files": {
+        "user": {
+            "images": {
+                "poom.mp4": {
+                    provider: "url",
+                    url: "https://"
+                },
+                "foobar.mp4": {
+                    provider: "local",
+                },
+            }
+        }
+    }
+}
+```
 
 ## Integration Paths
 
@@ -58,8 +80,10 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
   - this is *highest priority* to implement.
 
 - P5.js (`p5`)
-  - `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('mount://images/poom.jpg')`
-  - `createVideo` as well, e.g. `await createVideo('mount://videos/poom.mp4')`
+  - `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('user://images/poom.jpg')`
+  - `createVideo` should be injected as well, e.g. `await createVideo('user://videos/poom.mp4')`
+  - other methods to inject: `loadFont`, `loadSound`, `loadJSON`, `loadModel`
+  - only resolve through VFS if the vfs prefix i.e. `user://` is available
 
 ### chuck~ integration
 
