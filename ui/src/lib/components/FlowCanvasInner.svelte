@@ -627,17 +627,6 @@
 		createNode(name, position);
 	}
 
-	function handlePaletteSelect(nodeType: string, isPreset?: boolean) {
-		const position = screenToFlowPosition(lastMousePosition);
-
-		if (isPreset && PRESETS[nodeType]) {
-			const preset = PRESETS[nodeType];
-			createNode(preset.type, position, preset.data);
-		} else {
-			createNodeFromName(nodeType, position);
-		}
-	}
-
 	function handleCommandPaletteCancel() {
 		showCommandPalette = false;
 		// Re-check if API key was just set
