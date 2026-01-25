@@ -246,6 +246,7 @@ export class CanvasDragDropManager {
 		return await match(nodeType)
 			.with('img', async () => {
 				const vfsPath = await vfs.storeFile(file, handle);
+
 				return {
 					...getDefaultNodeData('img'),
 					vfsPath
@@ -267,20 +268,24 @@ export class CanvasDragDropManager {
 					};
 				}
 			})
-			.with('soundfile~', () =>
-				Promise.resolve({
+			.with('soundfile~', async () => {
+				const vfsPath = await vfs.storeFile(file, handle);
+
+				return {
 					...getDefaultNodeData('soundfile~'),
-					file,
+					vfsPath,
 					fileName: file.name
-				})
-			)
-			.with('video', () =>
-				Promise.resolve({
+				};
+			})
+			.with('video', async () => {
+				const vfsPath = await vfs.storeFile(file, handle);
+
+				return {
 					...getDefaultNodeData('video'),
-					file,
+					vfsPath,
 					fileName: file.name
-				})
-			)
+				};
+			})
 			.otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
 	}
 }
