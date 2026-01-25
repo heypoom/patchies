@@ -66,6 +66,7 @@
 	} from '$lib/utils/connection-validation';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
+	import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import type { NodeReplaceEvent } from '$lib/eventbus/events';
 
@@ -545,182 +546,27 @@
 		} catch {}
 	}
 
-	// Handle drop events
+	// Drag-drop manager (initialized lazily after screenToFlowPosition is available)
+	let dragDropManager: CanvasDragDropManager | null = null;
+
+	function getDragDropManager(): CanvasDragDropManager {
+		if (!dragDropManager) {
+			dragDropManager = new CanvasDragDropManager({
+				screenToFlowPosition,
+				createNode,
+				createNodeFromName
+			});
+		}
+
+		return dragDropManager;
+	}
+
 	function onDrop(event: DragEvent) {
-		event.preventDefault();
-
-		const type = event.dataTransfer?.getData('application/svelteflow');
-		const items = event.dataTransfer?.items;
-		const memoryData = event.dataTransfer?.getData('application/asm-memory');
-
-		// Check if the drop target is within a node (to avoid duplicate handling)
-		const target = event.target as HTMLElement;
-		const isDropOnNode = target.closest('.svelte-flow__node');
-
-		// Get accurate positioning with zoom/pan
-		const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-
-		// Handle assembly memory drops - create asm.value node
-		if (memoryData && !isDropOnNode) {
-			try {
-				const data = JSON.parse(memoryData);
-				createNode('asm.value', position, data);
-				return;
-			} catch (error) {
-				console.warn('Failed to parse memory drag data:', error);
-			}
-		}
-
-		// Handle file drops - only if not dropping on an existing node
-		if (items && items.length > 0 && !isDropOnNode) {
-			// Filter to file items only
-			const fileItems = Array.from(items).filter((item) => item.kind === 'file');
-			if (fileItems.length > 0) {
-				handleFileDrops(fileItems, position);
-				return;
-			}
-		}
-
-		// Handle node palette drops
-		if (type) {
-			createNodeFromName(type, position);
-		}
-	}
-
-	// Handle dropped files by creating appropriate nodes
-	async function handleFileDrops(
-		items: DataTransferItem[],
-		basePosition: { x: number; y: number }
-	) {
-		for (let index = 0; index < items.length; index++) {
-			const item = items[index];
-
-			// Offset multiple files to avoid overlap
-			const position = {
-				x: basePosition.x + index * 20,
-				y: basePosition.y + index * 20
-			};
-
-			const file = item.getAsFile();
-			if (!file) continue;
-
-			// Try to get FileSystemFileHandle for persistence (Chrome 86+)
-			let handle: FileSystemFileHandle | undefined;
-
-			if ('getAsFileSystemHandle' in item) {
-				try {
-					type Item = DataTransferItem & {
-						getAsFileSystemHandle(): Promise<FileSystemHandle | null>;
-					};
-
-					const fsHandle = await (item as Item).getAsFileSystemHandle();
-
-					if (fsHandle?.kind === 'file') {
-						handle = fsHandle as FileSystemFileHandle;
-						console.log('got handle', handle);
-					}
-				} catch {
-					// Not supported or denied - continue without handle
-					console.log('not supported or denied - continue without handle');
-				}
-			}
-
-			const nodeType = getNodeTypeFromFile(file);
-
-			if (nodeType) {
-				console.log('creating node with handle', handle);
-				const customData = await getFileNodeData(file, nodeType, handle);
-				createNode(nodeType, position, customData);
-			}
-		}
-	}
-
-	// Map file types to node types based on spec
-	function getNodeTypeFromFile(file: File): string | null {
-		const mimeType = file.type;
-
-		// Image files -> img node
-		if (mimeType.startsWith('image/')) {
-			return 'img';
-		}
-
-		// Video files -> video node
-		if (mimeType.startsWith('video/')) {
-			return 'video';
-		}
-
-		// Text files -> markdown node
-		if (mimeType.startsWith('text/')) {
-			return 'markdown';
-		}
-
-		// Audio files -> soundfile~ node
-		if (mimeType.startsWith('audio/')) {
-			return 'soundfile~';
-		}
-
-		// Unsupported file type
-		return null;
-	}
-
-	// Create appropriate data for file-based nodes
-	async function getFileNodeData(file: File, nodeType: string, handle?: FileSystemFileHandle) {
-		const vfs = VirtualFilesystem.getInstance();
-
-		return await match(nodeType)
-			.with('img', async () => {
-				const vfsPath = await vfs.storeFile(file, handle);
-				return {
-					...getDefaultNodeData('img'),
-					vfsPath
-				};
-			})
-			.with('markdown', async () => {
-				try {
-					const content = await file.text();
-					return {
-						...getDefaultNodeData('markdown'),
-						markdown: content
-					};
-				} catch (error) {
-					console.error('Failed to read markdown file:', error);
-					return {
-						...getDefaultNodeData('markdown'),
-						markdown: `Error loading file: ${file.name}`
-					};
-				}
-			})
-			.with('soundfile~', () =>
-				Promise.resolve({
-					...getDefaultNodeData('soundfile~'),
-					file,
-					fileName: file.name
-				})
-			)
-			.with('video', () =>
-				Promise.resolve({
-					...getDefaultNodeData('video'),
-					file,
-					fileName: file.name
-				})
-			)
-			.otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
+		getDragDropManager().onDrop(event);
 	}
 
 	function onDragOver(event: DragEvent) {
-		event.preventDefault();
-
-		// Check what type of drag this is and set appropriate drop effect
-		const hasMemoryData = event.dataTransfer?.types.includes('application/asm-memory');
-		const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
-
-		if (hasMemoryData) {
-			event.dataTransfer!.dropEffect = 'copy';
-		} else if (hasSvelteFlowData) {
-			event.dataTransfer!.dropEffect = 'move';
-		} else {
-			event.dataTransfer!.dropEffect = 'move';
-		}
+		getDragDropManager().onDragOver(event);
 	}
 
 	// Create a new node at the specified position
