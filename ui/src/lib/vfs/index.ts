@@ -33,6 +33,7 @@ export {
 } from './path-utils';
 export { UrlProvider } from './providers/UrlProvider';
 export { LocalFilesystemProvider } from './providers/LocalFilesystemProvider';
+export { createGetVfsUrl, revokeObjectUrls } from './vfs-url-helper';
 
 // Persistence utilities (for advanced use)
 export {

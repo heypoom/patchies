@@ -2,7 +2,7 @@ import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-ut
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
 import { debounce } from 'lodash';
-import { createGetVfsUrl } from '$lib/p5/P5VfsIntegration';
+import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 
 export interface JSRunnerOptions {
 	customConsole?: {
@@ -225,6 +225,7 @@ export class JSRunner {
 		}
 
 		this.messageContextMap.delete(nodeId);
+		revokeObjectUrls(nodeId);
 
 		const moduleName = getModuleNameByNode(nodeId);
 		if (this.modules.has(moduleName)) {

@@ -4,7 +4,7 @@ import type { UserFnRunContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import { deleteAfterComment } from '$lib/js-runner/js-module-utils';
 import type { Viewport } from '@xyflow/svelte';
-import { revokeObjectUrls } from './P5VfsIntegration';
+import { revokeObjectUrls } from '$lib/vfs';
 
 interface P5SketchConfig {
 	code: string;

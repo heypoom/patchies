@@ -1,13 +1,13 @@
 /**
- * P5.js VFS Integration
+ * VFS URL Helper
  *
- * Provides a simple `vfsUrl()` helper to resolve VFS paths (user://, obj://) to object URLs.
- * Usage in P5.js: loadImage(await vfsUrl('user://images/photo.jpg'))
+ * Provides a `vfsUrl()` helper to resolve VFS paths (user://, obj://) to object URLs.
+ * Usage: loadImage(await vfsUrl('user://images/photo.jpg'))
  */
 
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 
-/** Object URLs created during the sketch lifecycle - must be revoked on destroy */
+/** Object URLs created during the node lifecycle - must be revoked on destroy */
 const objectUrls = new Map<string, Set<string>>();
 
 function trackObjectUrl(nodeId: string, url: string): void {
@@ -18,7 +18,7 @@ function trackObjectUrl(nodeId: string, url: string): void {
 	objectUrls.get(nodeId)!.add(url);
 }
 
-/** Revoke all object URLs for a node (call on sketch destroy) */
+/** Revoke all object URLs for a node (call on node destroy) */
 export function revokeObjectUrls(nodeId: string): void {
 	const urls = objectUrls.get(nodeId);
 
@@ -34,11 +34,11 @@ export function revokeObjectUrls(nodeId: string): void {
 /**
  * Create the vfsUrl helper function for a specific node.
  *
- * Resolves a VFS path to an object URL that P5.js can load.
+ * Resolves a VFS path to an object URL that can be loaded.
  * If the path is not a VFS path, returns it unchanged.
  *
  * @example
- * // In P5.js preload():
+ * // In preload or setup:
  * img = await loadImage(vfsUrl('user://images/photo.jpg'));
  *
  * // Or with regular URLs (passes through unchanged):
