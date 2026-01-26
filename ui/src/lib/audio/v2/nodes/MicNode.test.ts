@@ -35,7 +35,7 @@ describe('MicNode', () => {
 		const micNode = new MicNode('test-node', audioContext);
 
 		// Update settings with a device ID
-		await micNode.updateSettings({ deviceId: 'test-device-id' });
+		micNode.updateSettings({ deviceId: 'test-device-id' });
 
 		// Wait for async operation
 		await new Promise((resolve) => setTimeout(resolve, 100));
