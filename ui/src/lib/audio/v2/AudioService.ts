@@ -35,6 +35,9 @@ export class AudioService {
 	/** Our own AudioContext instance */
 	private audioContext: AudioContext | null = null;
 
+	/** Current edges - stored for retrying connections when nodes are created late */
+	private currentEdges: Edge[] = [];
+
 	getAudioContext(): AudioContext {
 		if (!this.audioContext) {
 			this.audioContext = new AudioContext({ latencyHint: 'interactive' });
@@ -171,6 +174,9 @@ export class AudioService {
 	 * Update audio connections based on object graph's edges.
 	 */
 	updateEdges(edges: Edge[]): void {
+		// Store edges for late-arriving nodes
+		this.currentEdges = edges;
+
 		try {
 			// Disconnect all existing connections
 			for (const node of this.nodesById.values()) {
@@ -254,7 +260,33 @@ export class AudioService {
 			logger.error(`cannot create node ${nodeType}`, error);
 		}
 
+		// Connect destination nodes (dac~) to output
+		const group = NodeClass.group;
+		if (this.outGain && group === 'destinations') {
+			try {
+				node.audioNode?.connect(this.outGain);
+			} catch (error) {
+				logger.warn(`cannot connect to device's audio output`, error);
+			}
+		}
+
+		// Connect any pending edges involving this node
+		// This handles race conditions where edges are set before nodes mount
+		this.connectPendingEdges(nodeId);
+
 		return node;
+	}
+
+	/**
+	 * Connect pending edges that involve a specific node.
+	 * Called after a node is created to handle late-arriving nodes.
+	 */
+	private connectPendingEdges(nodeId: string): void {
+		for (const edge of this.currentEdges) {
+			if (edge.source === nodeId || edge.target === nodeId) {
+				this.connectByEdge(edge);
+			}
+		}
 	}
 
 	/**

@@ -27,18 +27,24 @@
 	// Local form state
 	let deviceId = $state(data.deviceId ?? '');
 
+	// Check browser capabilities - only Chrome 110+ supports AudioContext.setSinkId
+	const supportsDeviceSelection = DacNode.supportsOutputDeviceSelection;
+
 	const containerClass = $derived.by(() => {
 		return selected ? 'object-container-selected' : 'object-container';
 	});
 
 	onMount(async () => {
-		if (!$hasEnumeratedDevices) {
+		// Only enumerate devices if browser supports device selection
+		if (supportsDeviceSelection && !$hasEnumeratedDevices) {
 			await enumerateAudioDevices();
 		}
 
 		const node = await audioService.createNode(nodeId, 'dac~');
+
 		if (node && node instanceof DacNode) {
 			dacNode = node;
+
 			// Apply saved settings
 			if (data.deviceId) {
 				dacNode.updateSettings({ deviceId: data.deviceId });
@@ -68,22 +74,24 @@
 <div class="relative flex gap-x-3">
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
-			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div></div>
-				<div>
-					<button
-						class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-						onclick={(e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							showSettings = !showSettings;
-						}}
-						title="Configure output"
-					>
-						<Settings class="h-4 w-4 text-zinc-300" />
-					</button>
+			{#if supportsDeviceSelection}
+				<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+					<div></div>
+					<div>
+						<button
+							class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+							onclick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								showSettings = !showSettings;
+							}}
+							title="Configure output"
+						>
+							<Settings class="h-4 w-4 text-zinc-300" />
+						</button>
+					</div>
 				</div>
-			</div>
+			{/if}
 
 			<div class="relative">
 				<StandardHandle
@@ -102,7 +110,8 @@
 					title="Audio Output"
 				>
 					<div class="flex items-center justify-center gap-2">
-						<Volume2 class="h-3 w-3 text-zinc-400" />
+						<Volume2 class="h-4 w-4 text-zinc-500" />
+
 						<div class="font-mono text-xs text-zinc-300">dac~</div>
 					</div>
 				</button>
@@ -118,12 +127,12 @@
 				</button>
 			</div>
 
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="nodrag w-56 rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl"
+				class="nodrag ml-2 w-56 rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl"
 				onkeydown={handleKeydown}
 			>
 				<div class="space-y-3">
-					<!-- Device Selection -->
 					<div>
 						<div class="mb-1 text-[8px] text-zinc-400">Output Device</div>
 						<select

@@ -115,7 +115,8 @@
 					title="Microphone Input"
 				>
 					<div class="flex items-center justify-center gap-2">
-						<Mic class="h-3 w-3 text-zinc-400" />
+						<Mic class="h-4 w-4 text-zinc-500" />
+
 						<div class="font-mono text-xs text-zinc-300">mic~</div>
 					</div>
 				</button>
@@ -144,7 +145,7 @@
 
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="nodrag w-56 rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl"
+				class="nodrag ml-2 w-56 rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl"
 				onkeydown={handleKeydown}
 			>
 				<div class="space-y-3">
