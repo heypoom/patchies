@@ -52,6 +52,7 @@
 
 	// Compact mode for small heights
 	const isCompact = $derived(height < 120);
+	const isTiny = $derived(height < 40);
 </script>
 
 {#if needsFolderRelink}
@@ -68,10 +69,17 @@
 		{#if isCompact}
 			<!-- Compact: inline layout -->
 			<div class="flex items-center justify-center gap-2 px-2">
-				<Lock class="mr-1 h-4 w-4 flex-shrink-0 text-amber-400" />
-				<div class="text-[11px] font-light text-zinc-400">
-					Re-link <span class="font-medium text-zinc-300">{linkedFolderName}</span> in sidebar.
-				</div>
+				{#if isTiny}
+					<div class="text-[11px] font-light text-zinc-400">
+						re-link <span class="font-medium text-zinc-300">{linkedFolderName}</span>
+					</div>
+				{:else}
+					<Lock class="mr-1 h-4 w-4 flex-shrink-0 text-amber-400" />
+
+					<div class="text-[11px] font-light text-zinc-400">
+						Re-link <span class="font-medium text-zinc-300">{linkedFolderName}</span> in sidebar.
+					</div>
+				{/if}
 			</div>
 		{:else}
 			<!-- Normal: stacked layout -->
