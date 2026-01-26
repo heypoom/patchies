@@ -16,8 +16,7 @@
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import type { WebGLRenderer } from 'three';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
-
-	const THREE_DOM_WRAPPER_OFFSET = 5;
+	import { THREE_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 	let {
 		id: nodeId,
