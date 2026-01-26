@@ -343,7 +343,7 @@
 			return;
 		}
 
-		// Fall back to regular file drop
+		// Fall back to regular file drop from desktop
 		const files = event.dataTransfer?.files;
 		if (!files || files.length === 0) return;
 
@@ -353,7 +353,11 @@
 			return;
 		}
 
-		await loadAudioFile(file);
+		// Store in VFS first for persistence, then load from there
+		const { VirtualFilesystem } = await import('$lib/vfs');
+		const vfs = VirtualFilesystem.getInstance();
+		const storedPath = await vfs.storeFile(file);
+		await loadFromVfsPath(storedPath);
 	}
 
 	async function loadFromVfsPath(vfsPath: string) {
