@@ -1683,7 +1683,7 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
 
-Supported objects are `glsl`, `hydra`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom` and `js`.
+Supported objects are `glsl`, `hydra`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `swgl`, `js` and `tone~`.
 
 ### Usage with GLSL
 

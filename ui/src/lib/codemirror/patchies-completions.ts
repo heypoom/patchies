@@ -207,6 +207,14 @@ const topLevelOnlyFunctions = new Set([
 ]);
 
 // Node-specific functions - only show in certain node types
+//
+// Note on JSRunner defaults (main-thread nodes):
+// JSRunner.executeJavaScript() provides these by default for main-thread nodes:
+//   console, send, onMessage/recv, setInterval, requestAnimationFrame,
+//   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, getVfsUrl
+//
+// Worker nodes (hydra, canvas, textmode, three, swgl) must provide their own
+// implementations via extraContext since JSRunner defaults are for main thread.
 const nodeSpecificFunctions: Record<string, string[]> = {
 	fft: [
 		'js',
@@ -215,11 +223,11 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'canvas',
 		'canvas.dom',
 		'swgl',
-		'strudel',
 		'textmode',
 		'textmode.dom',
 		'three',
-		'three.dom'
+		'three.dom',
+		'tone~'
 	],
 	noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
 	noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
@@ -267,6 +275,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'textmode.dom',
 		'three',
 		'three.dom',
+		'tone~',
 		'sonic~',
 		'elem~'
 	]
