@@ -247,7 +247,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'three.dom'
 	],
 	setVideoCount: ['hydra', 'three'],
-	getVfsUrl: ['js', 'p5', 'canvas.dom', 'textmode.dom', 'three.dom']
+	getVfsUrl: ['js', 'p5', 'canvas.dom', 'textmode.dom', 'three.dom', 'sonic~', 'elem~']
 };
 
 export interface PatchiesContext {
