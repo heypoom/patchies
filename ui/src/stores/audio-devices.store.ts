@@ -15,7 +15,7 @@ export const hasEnumeratedDevices = writable(false);
 export async function enumerateAudioDevices(): Promise<void> {
 	try {
 		// Request permission first to get device labels
-		await navigator.mediaDevices.getUserMedia({
+		const stream = await navigator.mediaDevices.getUserMedia({
 			audio: {
 				sampleRate: { ideal: 48000 },
 				echoCancellation: true,
@@ -23,6 +23,10 @@ export async function enumerateAudioDevices(): Promise<void> {
 				autoGainControl: true
 			}
 		});
+
+		// Immediately stop the stream otherwise further calls
+		// will re-use the stream and ignore custom config
+		stream.getTracks().forEach((track) => track.stop());
 
 		const devices = await navigator.mediaDevices.enumerateDevices();
 
