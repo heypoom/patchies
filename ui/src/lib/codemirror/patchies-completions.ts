@@ -132,21 +132,21 @@ const patchiesAPICompletions: Completion[] = [
 		label: 'setCanvasSize',
 		type: 'function',
 		detail: '(width: number, height: number) => void',
-		info: 'Set the canvas resolution (canvas.dom only)',
+		info: 'Set the canvas resolution',
 		apply: 'setCanvasSize(500, 500)'
 	},
 	{
 		label: 'onKeyDown',
 		type: 'function',
 		detail: '(callback: (event: KeyboardEvent) => void) => void',
-		info: 'Register a callback for keyboard keydown events (canvas.dom only). Events are trapped and do not leak to xyflow.',
+		info: 'Register a callback for keyboard keydown events. Events are trapped and do not leak to xyflow.',
 		apply: 'onKeyDown((e) => {\n  console.log(e.key)\n})'
 	},
 	{
 		label: 'onKeyUp',
 		type: 'function',
 		detail: '(callback: (event: KeyboardEvent) => void) => void',
-		info: 'Register a callback for keyboard keyup events (canvas.dom only). Events are trapped and do not leak to xyflow.',
+		info: 'Register a callback for keyboard keyup events. Events are trapped and do not leak to xyflow.',
 		apply: 'onKeyUp((e) => {\n  console.log(e.key)\n})'
 	},
 
@@ -223,11 +223,21 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	],
 	noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
 	noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
-	onKeyDown: ['canvas.dom'],
-	onKeyUp: ['canvas.dom'],
+	onKeyDown: ['canvas.dom', 'three.dom'],
+	onKeyUp: ['canvas.dom', 'three.dom'],
 	setAudioPortCount: ['dsp~'],
-	setCanvasSize: ['canvas.dom'],
-	setHidePorts: ['p5', 'hydra', 'canvas', 'swgl', 'textmode', 'textmode.dom', 'three', 'three.dom'],
+	setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
+	setHidePorts: [
+		'p5',
+		'hydra',
+		'canvas',
+		'canvas.dom',
+		'swgl',
+		'textmode',
+		'textmode.dom',
+		'three',
+		'three.dom'
+	],
 	setKeepAlive: ['dsp~'],
 	setMouseScope: ['hydra'],
 	setRunOnMount: ['js'],
@@ -247,7 +257,18 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'three.dom'
 	],
 	setVideoCount: ['hydra', 'three'],
-	getVfsUrl: ['js', 'p5', 'three.dom', 'sonic~', 'elem~']
+	getVfsUrl: [
+		'js',
+		'p5',
+		'canvas',
+		'canvas.dom',
+		'textmode',
+		'textmode.dom',
+		'three',
+		'three.dom',
+		'sonic~',
+		'elem~'
+	]
 };
 
 export interface PatchiesContext {

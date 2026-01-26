@@ -654,7 +654,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Importing JavaScript packages from NPM
 
-> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `three`, `three.dom`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `sonic~` and `elem~` objects.
 
 - You can import any JavaScript package by using the `npm:` prefix in the import statement.
   - This uses [esm.run](https://esm.run) under the hood to load the package from NPM.
@@ -682,7 +682,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Loading files from the virtual filesystem
 
-> This feature is available in `js`, `p5`, `three.dom`, `sonic~`, and `elem~` objects.
+> This feature is available in `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `sonic~`, and `elem~` objects.
 
 Use `await getVfsUrl(...)` to load files from the virtual filesystem (VFS). This lets you use images, videos, fonts, and other assets that you've uploaded to your patch.
 
@@ -711,7 +711,7 @@ const data = await fetch(url);
 
 #### Sharing JavaScript across multiple `js` blocks
 
-> This feature is only available in `js`, `p5`, `canvas`, `textmode`, `three`, `three.dom`, `sonic~` and `elem~` objects, for now.
+> This feature is only available in `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `sonic~` and `elem~` objects, for now.
 
 You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
 
