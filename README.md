@@ -999,6 +999,35 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - `{type: 'signal', event: string}`: signal an event by name
   - `{type: 'broadcast', event: string}`: broadcast an event by name
 
+### Audio I/O objects
+
+<img src="./docs/images/patchies-advanced-drums.png" alt="Patchies.app advanced drum synthesizer" width="700">
+
+> Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz): use `P` to play and `K` to stop!
+
+- `mic~`: Capture audio from microphone input
+- `dac~`: Send audio to speakers
+- `meter~`: Visual audio level meter that shows the loudness of the audio source.
+- `soundfile~`: Load and play audio files with transport controls
+  - Double click or drop file into `soundfile~` to load it.
+  - Dropping an audio file into the patcher also creates a `soundfile~` by default.
+  - Right click shows a menu to turn the `soundfile~` into [sampler~](#sampler-audio-sampler-with-recording-and-playback) which has more playback capabilities.
+  - Messages
+    - string: loads the audio file or stream by url
+    - `bang`: play from start of sample
+    - `play`: play from current position
+    - `pause`: pause the playback
+    - `stop`: stop the playback and reset playback position
+    - `read`: reads the audio buffer and sends it to output, see `convolver~`
+    - `{type: 'load', url: string}`: loads the audio file or stream by url
+  - You can load radio stations too! Search for "online radio station search" to find stream urls.
+    - e.g. send `'https://stream.japanradio.de/live'` to `soundfile~` then `bang` to play a radio station!
+- `sampler~`: Sample playback with triggering capabilities, see [sampler~](#sampler-audio-sampler-with-recording-and-playback)
+- `split~`: Split multi-channel audio into separate mono channels.
+  - Use the settings button to set the number of output channels.
+- `merge~`: Merge multiple mono channels into a single multi-channel audio.
+  - Use the settings button to set the number of input channels.
+
 ### `object`: textual object system
 
 - Supports a wide range of audio processing, control, and utility objects.
@@ -1115,36 +1144,7 @@ These objects run on _audio rate_, which means they process audio signals in rea
   - To input the impulse response, connect a `soundfile~` object to the `convolver~` object's `message` inlet. Then, upload a sound file or send a url as an input message.
   - Then, send a `read` message to the `soundfile~` object to read the impulse response into the `convolver~` object.
   - The sound file must be a valid [impulse response](https://en.wikipedia.org/wiki/Impulse_response) file. It is a usually a short audio file with a single impulse followed by reverb tail. You can clap your hands in a room and record the sound to create your own impulse response.
-- `split~`: Split multi-channel audio into separate mono channels.
-  - Use the settings button to set the number of output channels.
-- `merge~`: Merge multiple mono channels into a single multi-channel audio.
-  - Use the settings button to set the number of input channels.
 - `fft~`: FFT analysis for frequency domain processing. See the [audio analysis](#audio-analysis) section for how to read the FFT data.
-- `meter~`: Visual audio level meter that shows the loudness of the audio source.
-
-**Sound Input and Output:**
-
-<img src="./docs/images/patchies-advanced-drums.png" alt="Patchies.app advanced drum synthesizer" width="700">
-
-> Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz): use `P` to play and `K` to stop!
-
-- `soundfile~`: Load and play audio files with transport controls
-  - Double click or drop file into `soundfile~` to load it.
-  - Dropping an audio file into the patcher also creates a `soundfile~` by default.
-  - Right click shows a menu to turn the `soundfile~` into [sampler~](#sampler-audio-sampler-with-recording-and-playback) which has more playback capabilities.
-  - Messages
-    - string: loads the audio file or stream by url
-    - `bang`: play from start of sample
-    - `play`: play from current position
-    - `pause`: pause the playback
-    - `stop`: stop the playback and reset playback position
-    - `read`: reads the audio buffer and sends it to output, see `convolver~`
-    - `{type: 'load', url: string}`: loads the audio file or stream by url
-  - You can load radio stations too! Search for "online radio station search" to find stream urls.
-    - e.g. send `'https://stream.japanradio.de/live'` to `soundfile~` then `bang` to play a radio station!
-- `sampler~`: Sample playback with triggering capabilities, see [sampler~](#sampler-audio-sampler-with-recording-and-playback)
-- `mic~`: Capture audio from microphone input
-- `dac~`: Send audio to speakers
 
 #### Using periodic waves in `osc~` oscillator
 

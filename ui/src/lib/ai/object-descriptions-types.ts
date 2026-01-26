@@ -9,12 +9,17 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - textbox: Text input and display
 
 ## Audio I/O (Dedicated node types)
-- dac~: Audio output to speakers/headphones
 - mic~: Audio input from microphone
+- dac~: Audio output to speakers/headphones
+- meter~: Visual audio level meter
+- soundfile~: Load and play audio files
+- sampler~: Sample playback with triggering
+- split~: Split multi-channel audio into separate mono channels.
+- merge~: Merge multiple mono channels into a single multi-channel audio.
 
 ## Audio Objects (Created via "object" node type)
 - object: Meta-object for creating text-based audio objects:
-  * Processing: gain~, pan~, delay~, compressor~, waveshaper~, split~, merge~, convolver~
+  * Processing: gain~, pan~, delay~, compressor~, waveshaper~, convolver~
   * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
   * Synthesis: osc~ (oscillator), sig~ (signal)
   * Control: mtof, loadbang, metro, adsr
@@ -40,8 +45,6 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - csound~: Csound sound and music computing
 - strudel: Strudel live coding (TidalCycles)
 - orca: Orca livecoding sequencer
-- soundfile~: Load and play audio files
-- sampler~: Sample playback with triggering
 - expr~: Audio-rate mathematical expressions
 
 ## Programming & Control Objects
