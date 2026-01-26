@@ -706,7 +706,9 @@
 			</button>
 
 			{#if canHaveChildren && node.path}
-				<div class="flex shrink-0 items-center gap-0.5 pr-2 opacity-0 group-hover:opacity-100">
+				<div
+					class="flex shrink-0 items-center gap-0.5 pr-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+				>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<button
