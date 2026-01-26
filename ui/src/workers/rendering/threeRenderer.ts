@@ -197,8 +197,25 @@ export class ThreeRenderer {
 			const renderer = this.threeWebGLRenderer;
 			const renderTarget = this.renderTarget;
 
-			// Create context with Three.js and utilities
-			const context = {
+			// Preprocess code for module support
+			const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
+				nodeId: this.config.nodeId
+			});
+
+			if (processedCode === null) return;
+
+			// Three.js wrapper code that extracts the draw function (same pattern as ThreeDom.svelte)
+			const codeWithWrapper = `
+				var recv = onMessage; // alias for onMessage
+				var draw;
+
+				${processedCode}
+
+				return typeof draw === 'function' ? draw : null;
+			`;
+
+			// Three.js-specific extra context
+			const extraContext = {
 				THREE,
 				renderer,
 				renderTarget,
@@ -221,18 +238,11 @@ export class ThreeRenderer {
 
 				send: this.sendMessage.bind(this),
 
-				// Port and UI control
-				setPortCount: (inletCount?: number, outletCount?: number) => {
-					this.setPortCount(inletCount, outletCount);
-				},
-
 				// Video inlet/outlet control
 				setVideoCount: this.setVideoCount.bind(this),
 
 				// Get texture from video inlet
 				getTexture: this.getTexture.bind(this),
-
-				setTitle: this.setTitle.bind(this),
 
 				noDrag: () => {
 					this.setDragEnabled(false);
@@ -242,35 +252,26 @@ export class ThreeRenderer {
 					this.setVideoOutputEnabled(false);
 				},
 
-				// Custom console
-				console: this.createCustomConsole(),
-
-				requestAnimationFrame: () => {},
-
-				setHidePorts: (hidePorts: boolean) =>
-					self.postMessage({ type: 'setHidePorts', nodeId: this.config.nodeId, hidePorts })
+				requestAnimationFrame: () => {}
 			};
 
-			// Preprocess code for module support
-			const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
-				nodeId: this.config.nodeId
-			});
-
-			if (processedCode === null) return;
-
-			// Parse user's code to extract the render function
-			const funcBody = `
-				with (context) {
-					var recv = onMessage; // alias for onMessage
-
-					${processedCode}
+			// Execute using JSRunner with Three.js-specific extra context
+			const userDraw = await this.renderer.jsRunner.executeJavaScript(
+				this.config.nodeId,
+				codeWithWrapper,
+				{
+					customConsole: this.createCustomConsole(),
+					setPortCount: (inletCount?: number, outletCount?: number) => {
+						this.setPortCount(inletCount, outletCount);
+					},
+					setTitle: this.setTitle.bind(this),
+					setHidePorts: (hidePorts: boolean) =>
+						self.postMessage({ type: 'setHidePorts', nodeId: this.config.nodeId, hidePorts }),
+					extraContext
 				}
+			);
 
-				return typeof draw === 'function' ? draw : null;
-			`;
-
-			const userFunction = new Function('context', funcBody);
-			this.userRenderFunc = userFunction(context);
+			this.userRenderFunc = typeof userDraw === 'function' ? userDraw : null;
 
 			if (!this.userRenderFunc) {
 				this.createCustomConsole().warn(
