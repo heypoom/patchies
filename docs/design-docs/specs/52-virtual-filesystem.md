@@ -1,5 +1,7 @@
 # 52. Virtual Filesystem
 
+> Status: Implemented
+
 I wanted the ability to persist, browse and resolve files in a virtual file system.
 
 ## Goals
@@ -83,71 +85,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
   - video (`video`)
   - sound (`soundfile~`)
   - converted recorded samples in `sampler~`
-  - this is *highest priority* to implement.
-
-### p5 integration
-
-- methods to inject: `loadImage`, `createVideo`, `loadFont`, `loadSound`, `loadJSON`, `loadModel`
-- example: `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('user://images/poom.jpg')`
-- only resolve through VFS if the vfs prefix i.e. `user://` is available
-
-### chuck~ integration
-
-chuck~: integrate with chuck's fs methods
-
-- we create special namespace `/obj` to store node-specific filesystem, e.g. `obj://chuck~-20/hello.ck`
-- we then call chuck methods to sync filesystem
-- `chuck.createDirectory(parent, name)`
-- `chuck.createFile(directory, filename, data: string | ArrayBuffer)` -- creates a file in chuck's VFS
-- we should add a message to `chuck~` to interact with vfs
-- `{type: 'runFile', filename: string, args?: string}` -- run a ChucK file e.g. `{type: 'runFile', filename: './hello.ck', args: '1:2:foo'}`
-  - no args use `chuck.runFile`, has args use `chuck.runFileWithArgs`
-- `{type: 'replaceFile', filename: string, args?: string}` -- replace last shred with a ChucK file e.g. `{type: 'replaceFile', filename: './hello.ck', args: '1:2:foo'}`
-  - no args use `chuck.replaceFile`, has args use `chuck.replaceFileWithArgs`
-
-### elem~ integration
-
-integrate with Elementary Audio's virtual filesystem
-
-- docs: <https://www.elementary.audio/docs/guides/Virtual_File_System>
-- `core.updateVirtualFileSystem(fs: Object<string, Float32Array | Float32Array[]))`
-- `core.listVirtualFileSystem() -> string[]`
-- `core.pruneVirtualFileSystem`
-
-we will need additional parsing here for `elem~` as the audio data has to be decoded, e.g.
-
-```ts
-let res = await fetch(...);
-let sampleBuffer = await ctx.decodeAudioData(await res.arrayBuffer());
- 
-core.updateVirtualFileSystem({
-  'sample0': [sampleBuffer.getChannelData(0), sampleBuffer.getChannelData(1)],
-});
-```
-
-### csound~ integration
-
-csound~: integrate with CSound's virtual filesystem
-
-- We should be able to synchronize csound filesystem with Patchies' virtual filesystem
-- You can access csound filesystem with `csound.fs` which returns this object:
-
-```ts
-declare interface CsoundFs {
-  appendFile: (path: string, file: Uint8Array) => Promise<void>;
-  writeFile: (path: string, file: Uint8Array) => Promise<void>;
-  readFile: (path: string) => Promise<Uint8Array>;
-  unlink: (path: string) => Promise<void>;
-  readdir: (path: string) => Promise<string[]>;
-  mkdir: (path: string) => Promise<void>;
-  stat: (path: string) => Promise<CsoundFsStat | undefined>;
-  pathExists: (path: string) => Promise<boolean>;
-}
-```
-
-## Future Ideas
-
-- Guest upload mode with a really tiny file size limit and rate limiting
+  - this is _highest priority_ to implement.
 
 ---
 
@@ -174,13 +112,13 @@ src/lib/vfs/
 
 ```ts
 // types.ts
-export type VFSProviderType = 'url' | 'local';
+export type VFSProviderType = "url" | "local";
 
 export interface VFSEntry {
   provider: VFSProviderType;
-  url?: string;                     // for 'url' provider
-  filename: string;                 // original filename for display
-  mimeType?: string;                // e.g., 'image/png'
+  url?: string; // for 'url' provider
+  filename: string; // original filename for display
+  mimeType?: string; // e.g., 'image/png'
 }
 
 export interface VFSProvider {
@@ -204,25 +142,25 @@ class VirtualFilesystem {
 
   // Registration
   registerFile(path: string, entry: VFSEntry): void;
-  registerLocalFile(file: File): Promise<string>;  // returns generated path like 'user://images/photo.jpg'
-  registerUrl(url: string): Promise<string>;       // returns generated path
+  registerLocalFile(file: File): Promise<string>; // returns generated path like 'user://images/photo.jpg'
+  registerUrl(url: string): Promise<string>; // returns generated path
 
   // Resolution
   resolve(path: string): Promise<File | Blob>;
   getEntry(path: string): VFSEntry | undefined;
 
   // Path utilities
-  isVFSPath(path: string): boolean;               // checks for user:// or obj:// prefix
+  isVFSPath(path: string): boolean; // checks for user:// or obj:// prefix
 
   // Listing
-  list(prefix?: string): string[];                // list all paths under prefix
+  list(prefix?: string): string[]; // list all paths under prefix
 
   // Persistence
-  serialize(): VFSTree;                           // for patch save
-  hydrate(tree: VFSTree): Promise<void>;          // for patch load
+  serialize(): VFSTree; // for patch save
+  hydrate(tree: VFSTree): Promise<void>; // for patch load
 
   // Permission management (for local files after reload)
-  getPendingPermissions(): string[];              // paths needing user permission
+  getPendingPermissions(): string[]; // paths needing user permission
   requestPermission(path: string): Promise<boolean>;
   requestAllPermissions(): Promise<Map<string, boolean>>;
 
@@ -241,8 +179,13 @@ class VirtualFilesystem {
 // Key: VFS path (e.g., 'user://images/photo.jpg')
 // Value: FileSystemFileHandle
 
-async function storeHandle(path: string, handle: FileSystemFileHandle): Promise<void>;
-async function getHandle(path: string): Promise<FileSystemFileHandle | undefined>;
+async function storeHandle(
+  path: string,
+  handle: FileSystemFileHandle,
+): Promise<void>;
+async function getHandle(
+  path: string,
+): Promise<FileSystemFileHandle | undefined>;
 async function removeHandle(path: string): Promise<void>;
 async function getAllHandles(): Promise<Map<string, FileSystemFileHandle>>;
 async function clearHandles(): Promise<void>;
@@ -252,13 +195,16 @@ async function clearHandles(): Promise<void>;
 
 ```ts
 // path-utils.ts
-function generateUserPath(filename: string, existingPaths: Set<string>): string {
+function generateUserPath(
+  filename: string,
+  existingPaths: Set<string>,
+): string {
   // Input: 'photo.jpg'
   // Output: 'user://images/photo.jpg' or 'user://images/photo-1.jpg' if collision
 
-  const ext = getExtension(filename);      // '.jpg'
-  const base = getBasename(filename);      // 'photo'
-  const category = getCategoryFromMime();  // 'images' | 'videos' | 'audio' | 'files'
+  const ext = getExtension(filename); // '.jpg'
+  const base = getBasename(filename); // 'photo'
+  const category = getCategoryFromMime(); // 'images' | 'videos' | 'audio' | 'files'
 
   let path = `user://${category}/${filename}`;
   let counter = 1;
@@ -318,7 +264,7 @@ export type PatchSaveFormat = {
   timestamp: number;
   nodes: Node[];
   edges: Edge[];
-  files?: VFSTree;  // NEW
+  files?: VFSTree; // NEW
 };
 ```
 
@@ -329,7 +275,7 @@ function serializePatch(): PatchSaveFormat {
   const vfs = VirtualFilesystem.getInstance();
   return {
     // ...existing fields
-    files: vfs.serialize()
+    files: vfs.serialize(),
   };
 }
 ```
@@ -379,13 +325,13 @@ Alternatively, in a future file browser sidebar, highlight files needing permiss
 // migrations/002-add-files-field.ts
 export const migration002: Migration = {
   version: 2,
-  name: 'add-files-field',
+  name: "add-files-field",
   migrate(patch: RawPatchData): RawPatchData {
     return {
       ...patch,
-      files: patch.files ?? { user: {}, objects: {} }
+      files: patch.files ?? { user: {}, objects: {} },
     };
-  }
+  },
 };
 ```
 
@@ -401,11 +347,11 @@ export const migration002: Migration = {
 
 ### Testing Checklist
 
-- [ ] Drop image file → stored in VFS → displays correctly
-- [ ] Send URL message → stored in VFS → displays correctly
-- [ ] Save patch → VFS tree included in JSON
-- [ ] Load patch with URL files → resolves automatically
-- [ ] Load patch with local files → prompts for permission → resolves after grant
-- [ ] Collision handling → `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`
-- [ ] Delete node → VFS entry remains (intentional, for undo support)
-- [ ] Clear patch → VFS cleared
+- [x] Drop image file → stored in VFS → displays correctly
+- [x] Send URL message → stored in VFS → displays correctly
+- [x] Save patch → VFS tree included in JSON
+- [x] Load patch with URL files → resolves automatically
+- [x] Load patch with local files → prompts for permission → resolves after grant
+- [x] Collision handling → `photo.jpg`, `photo-1.jpg`, `photo-2.jpg`
+- [x] Delete node → VFS entry remains (intentional, for undo support)
+- [x] Clear patch → VFS cleared
