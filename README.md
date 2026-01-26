@@ -1005,9 +1005,10 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - `{type: 'getFloatArray', key: string}`: gets a chuck global float array and emits `{key, value}`
   - `{type: 'signal', event: string}`: signal an event by name
   - `{type: 'broadcast', event: string}`: broadcast an event by name
-  - `{type: 'listenOnce', event: string}`: listen for an event once, emits the event name as a string when triggered
-  - `{type: 'listenStart', event: string}`: start listening for an event continuously, emits the event name each time it's triggered
+  - `{type: 'listenOnce', event: string}`: listen for an event once, emits `{event}` when triggered
+  - `{type: 'listenStart', event: string}`: start listening for an event continuously, emits `{event}` each time it's triggered
   - `{type: 'listenStop', event: string}`: stop listening for an event
+- Output: ChucK's `<<<` print statements are emitted as raw strings from the message outlet
 
 ### Audio I/O objects
 

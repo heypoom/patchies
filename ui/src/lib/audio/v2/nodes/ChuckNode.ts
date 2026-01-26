@@ -188,7 +188,7 @@ export class ChuckNode implements AudioNodeV2 {
 			})
 			.with(['listenOnce', { event: P.string }], ([, m]) => {
 				this.chuck?.listenForEventOnce(m.event, () => {
-					this.messageContext.send(m.event);
+					this.messageContext.send({ event: m.event });
 				});
 			})
 			.with(['listenStart', { event: P.string }], ([, m]) => {
@@ -199,7 +199,7 @@ export class ChuckNode implements AudioNodeV2 {
 				}
 
 				const callbackId = this.chuck?.startListeningForEvent(m.event, () => {
-					this.messageContext.send(m.event);
+					this.messageContext.send({ event: m.event });
 				});
 
 				if (callbackId !== undefined) {
