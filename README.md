@@ -979,7 +979,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - Add Shred `Ctrl/Cmd + \`: adds a new shred to the shreds list.
   - Remove Shred `Ctrl/Cmd + Backspace`: removes the most recent shred.
   - Click on the gear button to see list of running shreds. Remove any shred by clicking on the "x" button.
-- It also accepts an audio input e.g. `adc => PitShift p => dac;`, so you can use ChucK as a filter.
+- It also accepts an audio input e.g. `adc => PitShift p => dac;`, so you can use ChucK as a filter or for analysis.
 - Messages: playback and shred control
   - string: adds the string expression as a new shred
   - `bang`, `replace` or `run`: replaces the most recent shred with the current expression
@@ -988,6 +988,11 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - `stop`: stops all shreds
   - `clearAll`: clears all shreds
   - `{type: 'replace', code: string}`: replaces the most recent shred with the given code
+
+<img src="./docs/images/chuck-fft.webp" alt="Patchies.app chuck fft demo" width="700">
+
+> You can use ChucK for audio analysis and applying filters as it receives audio inputs and is able to emit events and global variables
+
 - Messages: global variables and events
   - The [above demo patch](https://patchies.app/?id=2nyuznzjgbp2j0a) shows how global variables lets you control ChucK programs with Patchies messages.
   - To use global variables, declare your variable with `global` (e.g. `global int bpm`) and make sure all dependent variables are re-computed in a loop.
