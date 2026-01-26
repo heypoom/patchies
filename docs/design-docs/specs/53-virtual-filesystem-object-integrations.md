@@ -7,6 +7,7 @@ Now that we have implemented [the virtual filesystem](./52-virtual-filesystem.md
 - methods to inject: `loadImage`, `createVideo`, `loadFont`, `loadSound`, `loadJSON`, `loadModel`
 - example: `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('user://images/poom.jpg')`
 - only resolve through VFS if the vfs prefix i.e. `user://` is available
+- if VFS prefix is not passed, fallback to the direct P5 call e.g. `loadImage(...)` directly without Patchies intervention
 
 ## chuck~ integration
 
