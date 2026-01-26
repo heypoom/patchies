@@ -682,7 +682,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 #### Loading files from the virtual filesystem
 
-> This feature is available in `js`, `p5`, `canvas.dom`, `textmode.dom`, `three.dom`, `sonic~`, and `elem~` objects.
+> This feature is available in `js`, `p5`, `three.dom`, `sonic~`, and `elem~` objects.
 
 Use `await getVfsUrl(...)` to load files from the virtual filesystem (VFS). This lets you use images, videos, fonts, and other assets that you've uploaded to your patch.
 
