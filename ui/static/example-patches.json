@@ -99,6 +99,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "5g8j4qkgu22e27c",
+			"name": "FFT-based Envelope Follower",
+			"description": "Analyzes the audio source with ChucK and visualizes the FFT data",
+			"category": "Audio",
+			"author": "@heypoom"
+		},
+		{
 			"id": "ocj3v2xp790gq8u",
 			"name": "Periodic Wave Oscillator",
 			"description": "Creates a periodic wave to shape the oscillator output",
