@@ -96,7 +96,7 @@ const patchiesAPICompletions: Completion[] = [
 		type: 'function',
 		detail: '(ms: number) => Promise<void>',
 		info: 'Execute a callback after a delay',
-		apply: 'await delay(1000)'
+		apply: 'delay(1000)'
 	},
 	{
 		label: 'setInterval',
@@ -165,7 +165,7 @@ const patchiesAPICompletions: Completion[] = [
 		type: 'function',
 		detail: '(moduleName: string) => Promise<Module>',
 		info: 'Load ES modules from esm.sh (use with top-level await). Example: await esm("lodash")',
-		apply: 'await esm("lodash")'
+		apply: 'esm("lodash")'
 	},
 
 	// VFS
@@ -174,7 +174,7 @@ const patchiesAPICompletions: Completion[] = [
 		type: 'function',
 		detail: '(path: string) => Promise<string>',
 		info: 'Resolve a VFS path (user://, obj://) to an object URL. Regular URLs pass through unchanged.',
-		apply: "await getVfsUrl('user://')"
+		apply: "getVfsUrl('user://')"
 	},
 
 	// Console
