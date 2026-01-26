@@ -102,23 +102,64 @@ export class FBORenderer {
 
 		// Get the set of node IDs that will exist in the new graph
 		const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
-		this.destroyNodes(newNodeIds);
+
+		// Only destroy FBOs for nodes that no longer exist in the new graph.
+		// This prevents the black flash on Chrome when rebuilding the graph,
+		// since existing FBOs retain their content until overwritten.
+		for (const [nodeId, fboNode] of this.fboNodes) {
+			if (!newNodeIds.has(nodeId)) {
+				fboNode.framebuffer.destroy();
+				fboNode.texture.destroy();
+				fboNode.cleanup?.();
+				this.fboNodes.delete(nodeId);
+			}
+		}
+
+		this.cleanupExpensiveTextmodeRenderers(newNodeIds);
 
 		this.renderGraph = renderGraph;
 		this.outputNodeId = renderGraph.outputNodeId;
 
 		for (const node of renderGraph.nodes) {
-			const texture = this.regl.texture({
-				width,
-				height,
-				wrapS: 'clamp',
-				wrapT: 'clamp'
-			});
+			// Check if we can reuse an existing FBO for this node.
+			// Reuse if available and size matches (size may change on resize).
+			const existingFbo = this.fboNodes.get(node.id);
 
-			const framebuffer = this.regl.framebuffer({
-				color: texture,
-				depthStencil: false
-			});
+			const canReuseFbo =
+				existingFbo && existingFbo.texture.width === width && existingFbo.texture.height === height;
+
+			let texture: regl.Texture2D;
+			let framebuffer: regl.Framebuffer2D;
+
+			if (canReuseFbo) {
+				// Reuse existing FBO - preserves content, prevents flash
+				texture = existingFbo.texture;
+				framebuffer = existingFbo.framebuffer;
+
+				// Clean up old renderer (but keep FBO)
+				existingFbo.cleanup?.();
+			} else {
+				// Destroy old FBO if it exists but size doesn't match
+				if (existingFbo) {
+					existingFbo.framebuffer.destroy();
+					existingFbo.texture.destroy();
+					existingFbo.cleanup?.();
+					this.fboNodes.delete(node.id);
+				}
+
+				// Create new FBO
+				texture = this.regl.texture({
+					width,
+					height,
+					wrapS: 'clamp',
+					wrapT: 'clamp'
+				});
+
+				framebuffer = this.regl.framebuffer({
+					color: texture,
+					depthStencil: false
+				});
+			}
 
 			const renderer = await match(node)
 				.with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
@@ -135,8 +176,11 @@ export class FBORenderer {
 			if (renderer === null) {
 				console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
 
-				framebuffer.destroy();
-				texture.destroy();
+				if (!canReuseFbo) {
+					framebuffer.destroy();
+					texture.destroy();
+				}
+
 				continue;
 			}
 
