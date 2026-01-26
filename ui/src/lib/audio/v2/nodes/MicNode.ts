@@ -90,7 +90,7 @@ export class MicNode implements AudioNodeV2 {
 
 		try {
 			const constraints: MediaTrackConstraints = {
-				...(this.settings.deviceId && { exact: this.settings.deviceId }),
+				...(this.settings.deviceId && { deviceId: { exact: this.settings.deviceId } }),
 				sampleRate: { ideal: 48000 },
 				echoCancellation: this.settings.echoCancellation,
 				noiseSuppression: this.settings.noiseSuppression,
