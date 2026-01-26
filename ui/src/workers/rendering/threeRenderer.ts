@@ -249,8 +249,7 @@ export class ThreeRenderer {
 
 			// Preprocess code for module support
 			const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
-				nodeId: this.config.nodeId,
-				setLibraryName: () => {}
+				nodeId: this.config.nodeId
 			});
 
 			if (processedCode === null) return;

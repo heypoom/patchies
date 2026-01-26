@@ -168,7 +168,7 @@ export class JSRunner {
 		code: string,
 		options: {
 			nodeId: string;
-			setLibraryName: (name: string | null) => void;
+			setLibraryName?: (name: string | null) => void;
 		}
 	): Promise<string | null> {
 		const { nodeId, setLibraryName } = options;
@@ -186,7 +186,7 @@ export class JSRunner {
 
 			if (libName) {
 				this.setLibraryCode(nodeId, code);
-				setLibraryName(libName);
+				setLibraryName?.(libName);
 
 				return null;
 			}
@@ -198,7 +198,7 @@ export class JSRunner {
 				this.setModuleAndSync(previousLibName, null);
 			}
 
-			setLibraryName(null);
+			setLibraryName?.(null);
 
 			this.setModuleAndSync(moduleName, code);
 

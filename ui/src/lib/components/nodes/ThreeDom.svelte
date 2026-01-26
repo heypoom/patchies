@@ -310,10 +310,7 @@
 			}
 
 			// Preprocess code for module support
-			const processedCode = await jsRunner.preprocessCode(data.code, {
-				nodeId,
-				setLibraryName: () => {} // three.dom doesn't support library definitions
-			});
+			const processedCode = await jsRunner.preprocessCode(data.code, { nodeId });
 
 			// If preprocessCode returns null, it means it's a library definition
 			if (processedCode === null) return;

@@ -311,7 +311,15 @@
 		}
 
 		try {
-			await jsRunner.executeJavaScript(nodeId, data.code, {
+			// Preprocess code for module support
+			const processedCode = await jsRunner.preprocessCode(data.code, { nodeId });
+
+			// If preprocessCode returns null, it means it's a library definition
+			if (processedCode === null) {
+				return;
+			}
+
+			await jsRunner.executeJavaScript(nodeId, processedCode, {
 				customConsole,
 				setPortCount,
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),

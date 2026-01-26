@@ -148,10 +148,7 @@ export class SonicNode implements AudioNodeV2 {
 			const on = (event: string, callback: Function) => sonic.on(event, callback);
 
 			// Preprocess code using JSRunner
-			const processedCode = await this.jsRunner.preprocessCode(code, {
-				nodeId: this.nodeId,
-				setLibraryName: () => {}
-			});
+			const processedCode = await this.jsRunner.preprocessCode(code, { nodeId: this.nodeId });
 
 			if (!processedCode) {
 				logger.warn('code preprocessing returned null');

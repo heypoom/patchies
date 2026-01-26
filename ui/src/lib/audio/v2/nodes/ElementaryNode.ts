@@ -174,10 +174,7 @@ export class ElementaryNode implements AudioNodeV2 {
 				this.messageContext.send(message, options);
 
 			// Preprocess code using JSRunner
-			const processedCode = await this.jsRunner.preprocessCode(code, {
-				nodeId: this.nodeId,
-				setLibraryName: () => {}
-			});
+			const processedCode = await this.jsRunner.preprocessCode(code, { nodeId: this.nodeId });
 
 			if (!processedCode) {
 				logger.warn('code preprocessing returned null');

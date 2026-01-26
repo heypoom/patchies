@@ -91,8 +91,7 @@ export class P5Manager {
 		`;
 
 		let processedCode = await this.jsRunner.preprocessCode(codeWithTemplate, {
-			nodeId: this.nodeId,
-			setLibraryName: () => {}
+			nodeId: this.nodeId
 		});
 
 		if (processedCode !== null) {
