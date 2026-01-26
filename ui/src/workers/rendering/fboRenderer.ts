@@ -66,6 +66,10 @@ export class FBORenderer {
 	public threeByNode = new Map<string, ThreeRenderer | null>();
 	public swglByNode = new Map<string, SwissGLContext>();
 
+	/** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
+	private pendingHydraCleanup: HydraRenderer[] = [];
+	private hydraCleanupTimer: ReturnType<typeof setInterval> | null = null;
+
 	private fboNodes = new Map<string, FBONode>();
 	private fallbackTexture: regl.Texture2D;
 	private lastTime: number = 0;
@@ -229,6 +233,12 @@ export class FBORenderer {
 		const oldRenderer = this.hydraByNode.get(node.id);
 		const previousSynthTime = oldRenderer?.hydra?.synth.time;
 
+		// Queue old renderer for deferred cleanup (runs on timer, not every frame)
+		if (oldRenderer) {
+			this.pendingHydraCleanup.push(oldRenderer);
+			this.scheduleHydraCleanup();
+		}
+
 		const hydraRenderer = await HydraRenderer.create(
 			{ code: node.data.code, nodeId: node.id },
 			framebuffer,
@@ -249,6 +259,22 @@ export class FBORenderer {
 				this.hydraByNode.delete(node.id);
 			}
 		};
+	}
+
+	/** Schedule deferred cleanup of old Hydra renderers (runs once after delay) */
+	private scheduleHydraCleanup() {
+		// Don't schedule if already scheduled
+		if (this.hydraCleanupTimer !== null) return;
+
+		// Wait 500ms then clean up all pending renderers
+		this.hydraCleanupTimer = setTimeout(() => {
+			for (const renderer of this.pendingHydraCleanup) {
+				renderer.destroy();
+			}
+
+			this.pendingHydraCleanup = [];
+			this.hydraCleanupTimer = null;
+		}, 500);
 	}
 
 	async createCanvasRenderer(

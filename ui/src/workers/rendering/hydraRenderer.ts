@@ -296,6 +296,9 @@ export class HydraRenderer {
 		for (const output of this.hydra.outputs) {
 			output.fbos.forEach((fbo) => fbo.destroy());
 		}
+
+		// Prevent double-destroy
+		this.hydra = null;
 	}
 
 	sendMessage(data: unknown, options: SendMessageOptions) {
