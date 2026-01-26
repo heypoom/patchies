@@ -136,14 +136,25 @@ export class FBORenderer {
 				texture = existingFbo.texture;
 				framebuffer = existingFbo.framebuffer;
 
-				// Clean up old renderer (but keep FBO)
-				existingFbo.cleanup?.();
+				// For Hydra nodes: skip cleanup to avoid visual glitch.
+				// The old Hydra instance stays alive until replaced in createHydraRenderer,
+				// allowing us to read synth time directly. It then gets garbage collected.
+				// For other nodes: run cleanup normally.
+				const isHydraNode = this.hydraByNode.has(node.id);
+				if (!isHydraNode) {
+					existingFbo.cleanup?.();
+				}
 			} else {
 				// Destroy old FBO if it exists but size doesn't match
 				if (existingFbo) {
+					// For Hydra: skip cleanup (will be GC'd after createHydraRenderer reads synth time)
+					const isHydraNode = this.hydraByNode.has(node.id);
+					if (!isHydraNode) {
+						existingFbo.cleanup?.();
+					}
+
 					existingFbo.framebuffer.destroy();
 					existingFbo.texture.destroy();
-					existingFbo.cleanup?.();
 					this.fboNodes.delete(node.id);
 				}
 
@@ -214,16 +225,20 @@ export class FBORenderer {
 	): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
 		if (node.type !== 'hydra') return null;
 
-		// Delete existing hydra renderer if it exists.
-		if (this.hydraByNode.has(node.id)) {
-			this.hydraByNode.get(node.id)?.stop();
-		}
+		// Get synth time from old renderer (still alive since we skip cleanup for Hydra)
+		const oldRenderer = this.hydraByNode.get(node.id);
+		const previousSynthTime = oldRenderer?.hydra?.synth.time;
 
 		const hydraRenderer = await HydraRenderer.create(
 			{ code: node.data.code, nodeId: node.id },
 			framebuffer,
 			this
 		);
+
+		// Restore synth time if we had a previous value
+		if (previousSynthTime !== undefined && hydraRenderer.hydra) {
+			hydraRenderer.hydra.synth.time = previousSynthTime;
+		}
 
 		this.hydraByNode.set(node.id, hydraRenderer);
 
