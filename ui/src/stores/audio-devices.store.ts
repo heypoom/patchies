@@ -1,4 +1,4 @@
-import { writable, derived, get } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 
 export interface AudioDevice {
 	id: string;
@@ -15,7 +15,13 @@ export const hasEnumeratedDevices = writable(false);
 export async function enumerateAudioDevices(): Promise<void> {
 	try {
 		// Request permission first to get device labels
-		await navigator.mediaDevices.getUserMedia({ audio: true });
+		await navigator.mediaDevices.getUserMedia({
+			audio: {
+				echoCancellation: true,
+				noiseSuppression: true,
+				autoGainControl: true
+			}
+		});
 
 		const devices = await navigator.mediaDevices.enumerateDevices();
 
@@ -50,6 +56,7 @@ export async function enumerateAudioDevices(): Promise<void> {
 export function getDefaultInputDeviceId(): string {
 	const inputs = get(audioInputDevices);
 	const defaultDevice = inputs.find((d) => d.id === 'default') || inputs[0];
+
 	return defaultDevice?.id ?? '';
 }
 
@@ -57,6 +64,7 @@ export function getDefaultInputDeviceId(): string {
 export function getDefaultOutputDeviceId(): string {
 	const outputs = get(audioOutputDevices);
 	const defaultDevice = outputs.find((d) => d.id === 'default') || outputs[0];
+
 	return defaultDevice?.id ?? '';
 }
 

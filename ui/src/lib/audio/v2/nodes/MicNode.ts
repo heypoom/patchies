@@ -2,14 +2,13 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 export interface MicSettings {
-	deviceId: string;
-	echoCancellation: boolean;
-	noiseSuppression: boolean;
-	autoGainControl: boolean;
+	deviceId?: string;
+	echoCancellation?: boolean;
+	noiseSuppression?: boolean;
+	autoGainControl?: boolean;
 }
 
 export const DEFAULT_MIC_SETTINGS: MicSettings = {
-	deviceId: '',
 	echoCancellation: true,
 	noiseSuppression: true,
 	autoGainControl: true
@@ -91,11 +90,14 @@ export class MicNode implements AudioNodeV2 {
 
 		try {
 			const constraints: MediaTrackConstraints = {
-				deviceId: this.settings.deviceId ? { exact: this.settings.deviceId } : undefined,
+				...(this.settings.deviceId && { exact: this.settings.deviceId }),
+				sampleRate: { ideal: this.audioContext.sampleRate },
 				echoCancellation: this.settings.echoCancellation,
 				noiseSuppression: this.settings.noiseSuppression,
 				autoGainControl: this.settings.autoGainControl
 			};
+
+			console.log('constraints', constraints);
 
 			const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
 			const streamSource = this.audioContext.createMediaStreamSource(stream);
