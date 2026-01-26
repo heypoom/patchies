@@ -157,10 +157,10 @@
 			}
 		}
 
-		// Only add roots if they have children
-		if (userRoot.children && userRoot.children.size > 0) {
-			root.children!.set('user', userRoot);
-		}
+		// Always show user namespace (so users can upload/create folders)
+		root.children!.set('user', userRoot);
+
+		// Only add objects namespace if it has children
 		if (objRoot.children && objRoot.children.size > 0) {
 			root.children!.set('objects', objRoot);
 		}
@@ -601,7 +601,7 @@
 				class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
 				style="padding-left: {paddingLeftPx + 20}px"
 			>
-				{subdirContents ? 'Empty folder' : 'Loading...'}
+				{subdirContents ? 'Drop files to add' : 'Loading...'}
 			</div>
 		{/if}
 	{/if}
@@ -865,7 +865,7 @@
 					class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
 					style="padding-left: {paddingLeft + 20}px"
 				>
-					{contents ? 'Empty folder' : 'Loading...'}
+					{contents ? 'Drop files to add' : 'Loading...'}
 				</div>
 			{/if}
 		{:else if isEmptyFolder && node.name !== 'root'}
@@ -873,7 +873,7 @@
 				class="px-2 py-1 font-mono text-xs text-zinc-600 italic"
 				style="padding-left: {paddingLeft + 20}px"
 			>
-				Empty folder
+				Drop files to add
 			</div>
 		{:else}
 			{#each getSortedChildren(node) as child}
@@ -896,12 +896,5 @@
 	ondragleave={handleFolderDragLeave}
 	ondrop={handleFolderDrop}
 >
-	{#if tree.children && tree.children.size > 0}
-		{@render treeNode(tree)}
-	{:else}
-		<div class="pointer-events-none px-4 py-8 text-center font-mono text-xs text-zinc-500">
-			<p>No files in the virtual filesystem.</p>
-			<p class="mt-2">Drop files here to add them.</p>
-		</div>
-	{/if}
+	{@render treeNode(tree)}
 </div>
