@@ -85,7 +85,8 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
   - video (`video`)
   - sound (`soundfile~`)
   - converted recorded samples in `sampler~`
-  - this is _highest priority_ to implement.
+
+- Deeper integration will be in [53. Virtual Filesystem Object Integrations](./53-virtual-filesystem-object-integrations.md)
 
 ---
 
