@@ -1635,7 +1635,13 @@ The following features are only available in the objects using JSRunner, as foll
 
 ### Loading files from the virtual filesystem
 
-Use `await getVfsUrl(...)` to load files from the virtual filesystem (VFS). This lets you use images, videos, fonts, and other assets that you've uploaded to your patch.
+<img src="./docs/images/canvas-vfs.webp" alt="Patchies.app virtual filesystem with canvas demo" width="700">
+
+- Use `await getVfsUrl(...)` to load files from the virtual filesystem (VFS) as blob urls. This lets you use images, videos, fonts, 3D models and other assets that you've uploaded to your patch.
+- Use the "Open Sidebar" button on the bottom right side, or `Ctrl/Cmd + K > Browse Files` to open the sidebar.
+  - This lets you manage the virtual filesystem by e.g. creating folders, adding linked folders, uploading files, adding file by urls.
+  - You can drag files from the file tree to the canvas, or into the supported nodes.
+- If you want the underlying file Blob that's associated with the url, use `await fetch(await getVfsUrl(...))` to retrieve the blob per the above screenshot.
 
 ```js
 // In p5:
