@@ -2,6 +2,7 @@ import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { createCustomConsole } from '$lib/utils/createCustomConsole';
 import { handleCodeError } from '$lib/js-runner/handleCodeError';
+import { JSRunner } from '$lib/js-runner/JSRunner';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { TONE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
@@ -171,60 +172,30 @@ export class ToneNode implements AudioNodeV2 {
 			this.messageOutletCount = 0;
 			this.recvCallback = null;
 
-			// Create setPortCount function available in user code
-			const setPortCount = (inletCount: number = 0, outletCount: number = 0) => {
-				this.messageInletCount = Math.max(0, inletCount);
-				this.messageOutletCount = Math.max(0, outletCount);
-				this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
-			};
+			const jsRunner = JSRunner.getInstance();
 
-			// Create setTitle function available in user code
-			const setTitle = (title: string) => {
-				this.onSetTitle(title);
-			};
+			const processedCode = await jsRunner.preprocessCode(code, { nodeId: this.nodeId });
+			if (processedCode === null) return;
 
-			// Create recv function for receiving messages
-			const recv = (callback: (message: unknown, meta: unknown) => void) => {
-				this.recvCallback = callback;
-			};
-
-			// Create send function for sending messages
-			const send = (message: unknown, options?: { to?: number }) =>
-				this.messageContext.send(message, options);
-
-			// Create outputNode that connects to our gain node
-			const outputNode = this.audioNode;
-
-			// Create inputNode that receives incoming audio
-			const inputNode = this.inputNode;
-
-			// Execute the Tone.js code with our context
-			const codeFunction = new Function(
-				'Tone',
-				'setPortCount',
-				'setTitle',
-				'recv',
-				'send',
-				'outputNode',
-				'inputNode',
-				'console',
-				`
-
-				${code}
-			`
-			);
-
-			// Execute the code and store any returned cleanup function
-			const result = codeFunction(
+			const extraContext = {
 				Tone,
-				setPortCount,
-				setTitle,
-				recv,
-				send,
-				outputNode,
-				inputNode,
-				this.customConsole
-			);
+				outputNode: this.audioNode,
+				inputNode: this.inputNode
+			};
+
+			// Execute using JSRunner with Tone.js-specific extra context
+			const result = await jsRunner.executeJavaScript(this.nodeId, processedCode, {
+				extraContext,
+				customConsole: this.customConsole,
+				setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
+					this.messageInletCount = Math.max(0, inletCount);
+					this.messageOutletCount = Math.max(0, outletCount);
+					this.onSetPortCount(this.messageInletCount, this.messageOutletCount);
+				},
+				setTitle: (title: string) => {
+					this.onSetTitle(title);
+				}
+			});
 
 			if (result && typeof result.cleanup === 'function') {
 				this.cleanupFn = result.cleanup;
@@ -275,5 +246,8 @@ export class ToneNode implements AudioNodeV2 {
 		this.messageContext.destroy();
 		this.audioNode.disconnect();
 		this.inputNode.disconnect();
+
+		// Clean up JSRunner context for this node
+		JSRunner.getInstance().destroy(this.nodeId);
 	}
 }
