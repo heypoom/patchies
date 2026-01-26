@@ -53,6 +53,7 @@ export class ChuckNode implements AudioNodeV2 {
 	private shreds: ChuckShred[] = [];
 	private ready = false;
 	private pendingInputConnections: AudioNode[] = [];
+	private eventListenerIds: Map<string, number> = new Map();
 
 	/** Allows Svelte to subscribe to the shreds */
 	public shredsStore = writable<ChuckShred[]>([]);
@@ -136,6 +137,81 @@ export class ChuckNode implements AudioNodeV2 {
 			})
 			.with(['setFloatArray', { key: P.string, value: P.array(P.number) }], async ([, m]) => {
 				this.chuck?.setFloatArray(m.key, m.value);
+			})
+			.with(['get', { key: P.string }], async ([, m]) => {
+				if (!this.chuck) return;
+
+				const currentShred = this.shreds.at(-1);
+				if (!currentShred) return;
+
+				// Detect type from code and call appropriate getter
+				const varType = getChuckGlobalVariableType(currentShred.code, m.key);
+				const arrayType = getChuckGlobalVariableArrayType(currentShred.code, m.key);
+
+				let value: unknown;
+				if (arrayType === 'int') {
+					value = await this.chuck.getIntArray(m.key);
+				} else if (arrayType === 'float') {
+					value = await this.chuck.getFloatArray(m.key);
+				} else if (varType === 'int') {
+					value = await this.chuck.getInt(m.key);
+				} else if (varType === 'float') {
+					value = await this.chuck.getFloat(m.key);
+				} else if (varType === 'string') {
+					value = await this.chuck.getString(m.key);
+				} else {
+					// Default to float for unknown types
+					value = await this.chuck.getFloat(m.key);
+				}
+
+				this.messageContext.send(value);
+			})
+			.with(['getInt', { key: P.string }], async ([, m]) => {
+				const value = await this.chuck?.getInt(m.key);
+				if (value !== undefined) this.messageContext.send(value);
+			})
+			.with(['getFloat', { key: P.string }], async ([, m]) => {
+				const value = await this.chuck?.getFloat(m.key);
+				if (value !== undefined) this.messageContext.send(value);
+			})
+			.with(['getString', { key: P.string }], async ([, m]) => {
+				const value = await this.chuck?.getString(m.key);
+				if (value !== undefined) this.messageContext.send(value);
+			})
+			.with(['getIntArray', { key: P.string }], async ([, m]) => {
+				const value = await this.chuck?.getIntArray(m.key);
+				if (value !== undefined) this.messageContext.send(value);
+			})
+			.with(['getFloatArray', { key: P.string }], async ([, m]) => {
+				const value = await this.chuck?.getFloatArray(m.key);
+				if (value !== undefined) this.messageContext.send(value);
+			})
+			.with(['listenOnce', { event: P.string }], ([, m]) => {
+				this.chuck?.listenForEventOnce(m.event, () => {
+					this.messageContext.send(m.event);
+				});
+			})
+			.with(['listenStart', { event: P.string }], ([, m]) => {
+				// Stop existing listener if any
+				const existingId = this.eventListenerIds.get(m.event);
+				if (existingId !== undefined) {
+					this.chuck?.stopListeningForEvent(m.event, existingId);
+				}
+
+				const callbackId = this.chuck?.startListeningForEvent(m.event, () => {
+					this.messageContext.send(m.event);
+				});
+
+				if (callbackId !== undefined) {
+					this.eventListenerIds.set(m.event, callbackId);
+				}
+			})
+			.with(['listenStop', { event: P.string }], ([, m]) => {
+				const callbackId = this.eventListenerIds.get(m.event);
+				if (callbackId !== undefined) {
+					this.chuck?.stopListeningForEvent(m.event, callbackId);
+					this.eventListenerIds.delete(m.event);
+				}
 			})
 			.run();
 	}
@@ -304,6 +380,11 @@ export class ChuckNode implements AudioNodeV2 {
 
 	destroy(): void {
 		if (this.chuck) {
+			// Stop all event listeners
+			for (const [event, callbackId] of this.eventListenerIds) {
+				this.chuck.stopListeningForEvent(event, callbackId);
+			}
+
 			try {
 				this.chuck.removeLastCode();
 			} catch (error) {
@@ -316,6 +397,7 @@ export class ChuckNode implements AudioNodeV2 {
 		this.chuck = null;
 		this.ready = false;
 		this.pendingInputConnections = [];
+		this.eventListenerIds.clear();
 		this.messageContext.destroy();
 	}
 }

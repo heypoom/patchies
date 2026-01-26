@@ -997,8 +997,17 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - `{type: 'setFloat', key: string, value: number}`: sets a chuck global float value
   - `{type: 'setIntArray', key: string, value: number[]}`: sets a chuck global integer array
   - `{type: 'setFloatArray', key: string, value: number[]}`: sets a chuck global float array
+  - `{type: 'get', key: string}`: gets a chuck global value (auto-detects type from code) and emits it
+  - `{type: 'getInt', key: string}`: gets a chuck global integer value and emits it
+  - `{type: 'getFloat', key: string}`: gets a chuck global float value and emits it
+  - `{type: 'getString', key: string}`: gets a chuck global string value and emits it
+  - `{type: 'getIntArray', key: string}`: gets a chuck global integer array and emits it
+  - `{type: 'getFloatArray', key: string}`: gets a chuck global float array and emits it
   - `{type: 'signal', event: string}`: signal an event by name
   - `{type: 'broadcast', event: string}`: broadcast an event by name
+  - `{type: 'listenOnce', event: string}`: listen for an event once, emits the event name as a string when triggered
+  - `{type: 'listenStart', event: string}`: start listening for an event continuously, emits the event name each time it's triggered
+  - `{type: 'listenStop', event: string}`: stop listening for an event
 
 ### Audio I/O objects
 
