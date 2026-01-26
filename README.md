@@ -1001,9 +1001,9 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 
 ### Audio I/O objects
 
-<img src="./docs/images/patchies-advanced-drums.png" alt="Patchies.app advanced drum synthesizer" width="700">
+<img src="./docs/images/audio-io-settings.webp" alt="Patchies.app audio input output settings" width="700">
 
-> Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz): use `P` to play and `K` to stop!
+> Tip: you can configure audio devices and its settings by using the settings button on mic~ and dac~
 
 - `mic~`: Capture audio from microphone input
 - `dac~`: Send audio to speakers
@@ -1012,6 +1012,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - Double click or drop file into `soundfile~` to load it.
   - Dropping an audio file into the patcher also creates a `soundfile~` by default.
   - Right click shows a menu to turn the `soundfile~` into [sampler~](#sampler-audio-sampler-with-recording-and-playback) which has more playback capabilities.
+    - This lets the `sampler~` persist between reloads too.
   - Messages
     - string: loads the audio file or stream by url
     - `bang`: play from start of sample
@@ -1022,6 +1023,11 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
     - `{type: 'load', url: string}`: loads the audio file or stream by url
   - You can load radio stations too! Search for "online radio station search" to find stream urls.
     - e.g. send `'https://stream.japanradio.de/live'` to `soundfile~` then `bang` to play a radio station!
+
+<img src="./docs/images/patchies-advanced-drums.png" alt="Patchies.app advanced drum synthesizer" width="700">
+
+> Try out the [drum sequencer](https://patchies.app/?id=b2vsbbe4jt87qyz): use `P` to play and `K` to stop!
+
 - `sampler~`: Sample playback with triggering capabilities, see [sampler~](#sampler-audio-sampler-with-recording-and-playback)
 - `split~`: Split multi-channel audio into separate mono channels.
   - Use the settings button to set the number of output channels.
