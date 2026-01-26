@@ -291,10 +291,6 @@
 		// Clear keyboard callbacks when code is re-run
 		keyboardCallbacks = {};
 
-		// Clear message context timers
-		const messageContext = jsRunner.getMessageContext(nodeId);
-		messageContext.clearTimers();
-
 		try {
 			// Stop any previous animation loop
 			if (renderer) {
@@ -315,48 +311,44 @@
 			// If preprocessCode returns null, it means it's a library definition
 			if (processedCode === null) return;
 
-			// Build context object with all globals
-			const context = {
-				console: customConsole,
-				canvas,
-				THREE,
-				renderer,
-				width: outputWidth,
-				height: outputHeight,
-				mouse,
-				noOutput: () => {
-					videoOutputEnabled = false;
-					updateNodeInternals(nodeId);
-				},
-				setCanvasSize,
-				setPortCount,
-				setTitle: (title: string) => updateNodeData(nodeId, { title }),
-				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
-				onKeyDown: (callback: (event: KeyboardEvent) => void) => {
-					keyboardCallbacks.onKeyDown = callback;
-				},
-				onKeyUp: (callback: (event: KeyboardEvent) => void) => {
-					keyboardCallbacks.onKeyUp = callback;
-				},
-				...messageContext.getContext(),
-				noDrag: () => {
-					dragEnabled = false;
-				}
-			};
-
-			// Execute with `with` context to extract draw function
+			// Three.js wrapper code that extracts the draw function (same pattern as P5Manager)
 			const codeWithWrapper = `
 				var draw;
 
-				with (context) {
-					${processedCode}
-				}
+				${processedCode}
 
 				return typeof draw === 'function' ? draw : null;
 			`;
 
-			const userFunc = new Function('context', codeWithWrapper);
-			const userDraw = userFunc(context);
+			// Execute using JSRunner with Three.js-specific extra context
+			const userDraw = await jsRunner.executeJavaScript(nodeId, codeWithWrapper, {
+				customConsole,
+				setPortCount,
+				setTitle: (title: string) => updateNodeData(nodeId, { title }),
+				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
+				extraContext: {
+					canvas,
+					THREE,
+					renderer,
+					width: outputWidth,
+					height: outputHeight,
+					mouse,
+					noOutput: () => {
+						videoOutputEnabled = false;
+						updateNodeInternals(nodeId);
+					},
+					setCanvasSize,
+					onKeyDown: (callback: (event: KeyboardEvent) => void) => {
+						keyboardCallbacks.onKeyDown = callback;
+					},
+					onKeyUp: (callback: (event: KeyboardEvent) => void) => {
+						keyboardCallbacks.onKeyUp = callback;
+					},
+					noDrag: () => {
+						dragEnabled = false;
+					}
+				}
+			});
 
 			// Start animation loop if user defined a draw() function
 			if (typeof userDraw === 'function') {
