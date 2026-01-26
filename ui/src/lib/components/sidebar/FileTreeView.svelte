@@ -4,12 +4,13 @@
 		ChevronDown,
 		File,
 		FileText,
-		FileVideo,
+		FilePlay,
 		Folder,
 		FolderOpen,
 		FolderPlus,
 		FolderSymlink,
 		Image,
+		Music,
 		User,
 		Box,
 		Upload,
@@ -197,9 +198,15 @@
 		if (mimeType.startsWith('image/')) {
 			return { icon: Image, color: 'text-green-400' };
 		}
+
 		if (mimeType.startsWith('video/')) {
-			return { icon: FileVideo, color: 'text-pink-400' };
+			return { icon: FilePlay, color: 'text-pink-400' };
 		}
+
+		if (mimeType.startsWith('audio/')) {
+			return { icon: Music, color: 'text-purple-400' };
+		}
+
 		if (mimeType.startsWith('text/') || mimeType === 'application/json') {
 			return { icon: FileText, color: 'text-blue-400' };
 		}
