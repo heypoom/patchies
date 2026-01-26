@@ -34,6 +34,7 @@ export const migration002: Migration = {
 
 					return { ...node, data: node.data };
 				}
+
 				return node;
 			});
 		}

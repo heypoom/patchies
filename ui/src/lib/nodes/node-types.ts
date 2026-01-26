@@ -47,6 +47,8 @@ import LabelNode from '$lib/components/nodes/LabelNode.svelte';
 import LinkButton from '$lib/components/nodes/LinkButton.svelte';
 import ChannelMergerNode from '$lib/components/nodes/ChannelMergerNode.svelte';
 import ChannelSplitterNode from '$lib/components/nodes/ChannelSplitterNode.svelte';
+import MicNode from '$lib/components/nodes/MicNode.svelte';
+import DacNode from '$lib/components/nodes/DacNode.svelte';
 import MeterNode from '$lib/components/nodes/MeterNode.svelte';
 import { AssemblyMachine } from '$lib/assembly';
 import AssemblyValueViewer from '$lib/components/nodes/AssemblyValueViewer.svelte';
@@ -113,6 +115,8 @@ export const nodeTypes: Record<string, any> = {
 	'asm.mem': AssemblyMemory,
 	'merge~': ChannelMergerNode,
 	'split~': ChannelSplitterNode,
+	'mic~': MicNode,
+	'dac~': DacNode,
 	'meter~': MeterNode,
 	keyboard: KeyboardNode,
 	orca: OrcaNode,

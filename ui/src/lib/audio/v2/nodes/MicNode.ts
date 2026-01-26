@@ -1,6 +1,19 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
+export interface MicSettings {
+	deviceId?: string;
+	echoCancellation?: boolean;
+	noiseSuppression?: boolean;
+	autoGainControl?: boolean;
+}
+
+export const DEFAULT_MIC_SETTINGS: MicSettings = {
+	echoCancellation: true,
+	noiseSuppression: true,
+	autoGainControl: true
+};
+
 export class MicNode implements AudioNodeV2 {
 	static type = 'mic~';
 	static group: AudioNodeGroup = 'sources';
@@ -25,6 +38,8 @@ export class MicNode implements AudioNodeV2 {
 	private mediaStream: MediaStream | null = null;
 	private mediaStreamSource: MediaStreamAudioSourceNode | null = null;
 
+	settings: MicSettings = { ...DEFAULT_MIC_SETTINGS };
+
 	constructor(nodeId: string, audioContext: AudioContext) {
 		this.nodeId = nodeId;
 		this.audioContext = audioContext;
@@ -42,6 +57,12 @@ export class MicNode implements AudioNodeV2 {
 		}
 	}
 
+	/** Update mic settings and restart with new constraints */
+	updateSettings(newSettings: Partial<MicSettings>): void {
+		this.settings = { ...this.settings, ...newSettings };
+		this.restartMic();
+	}
+
 	destroy(): void {
 		// Stop all microphone tracks
 		if (this.mediaStream) {
@@ -57,7 +78,7 @@ export class MicNode implements AudioNodeV2 {
 		this.audioNode.disconnect();
 	}
 
-	private async restartMic(): Promise<void> {
+	async restartMic(): Promise<void> {
 		// Clean up existing mic resources
 		if (this.mediaStreamSource) {
 			this.mediaStreamSource.disconnect();
@@ -68,7 +89,15 @@ export class MicNode implements AudioNodeV2 {
 		}
 
 		try {
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			const constraints: MediaTrackConstraints = {
+				...(this.settings.deviceId && { exact: this.settings.deviceId }),
+				sampleRate: { ideal: 48000 },
+				echoCancellation: this.settings.echoCancellation,
+				noiseSuppression: this.settings.noiseSuppression,
+				autoGainControl: this.settings.autoGainControl
+			};
+
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
 			const streamSource = this.audioContext.createMediaStreamSource(stream);
 
 			streamSource.connect(this.audioNode);
