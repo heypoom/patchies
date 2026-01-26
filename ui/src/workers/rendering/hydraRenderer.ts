@@ -195,9 +195,19 @@ export class HydraRenderer {
 			// Clear any existing patterns
 			this.stop();
 
-			// Create a context with Hydra synth instance available as 'h'
-			// Also destructure common functions for easier access
-			const context = {
+			// Apply Hydra-specific code transformation (.out() -> .out(o0))
+			const hydraCode = processCode(this.config.code);
+
+			// Preprocess code for module support
+			const processedCode = await this.renderer.jsRunner.preprocessCode(hydraCode, {
+				nodeId: this.config.nodeId
+			});
+
+			// If preprocessCode returns null, it means it's a library definition
+			if (processedCode === null) return;
+
+			// Hydra-specific context with synth instance and generators
+			const extraContext = {
 				h: this.hydra.synth,
 				render,
 				hush,
@@ -225,22 +235,12 @@ export class HydraRenderer {
 
 				setVideoCount: this.setVideoCount.bind(this),
 
+				// Worker-specific overrides (JSRunner defaults are for main thread)
+				send: this.sendMessage.bind(this),
+				fft: this.createFFTFunction(),
 				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;
 				},
-
-				send: this.sendMessage.bind(this),
-
-				// FFT function for audio analysis
-				fft: this.createFFTFunction(),
-
-				// setPortCount function for dynamic port management
-				setPortCount: (inletCount?: number, outletCount?: number) => {
-					this.setPortCount(inletCount, outletCount);
-				},
-
-				// setTitle function to update node title
-				setTitle: this.setTitle.bind(this),
 
 				// Mouse object with getters for real-time values (Hydra-style)
 				mouse: this.createMouseObject(),
@@ -252,24 +252,24 @@ export class HydraRenderer {
 				width: this.renderer.outputSize[0],
 				height: this.renderer.outputSize[1],
 
-				// Custom console that routes to VirtualConsole
-				console: this.createCustomConsole()
+				// Hydra time helper
+				time: performance.now()
 			};
 
-			const userFunction = new Function(
-				'context',
-				`
-				let time = performance.now()
-
-				with (context) {
-					var recv = onMessage; // alias for onMessage
-
-					${processCode(this.config.code)}
-				}
-			`
-			);
-
-			userFunction(context);
+			// Use JSRunner's executeJavaScript method with full module support
+			await this.renderer.jsRunner.executeJavaScript(this.config.nodeId, processedCode, {
+				customConsole: this.createCustomConsole(),
+				setPortCount: (inletCount?: number, outletCount?: number) => {
+					this.setPortCount(inletCount, outletCount);
+				},
+				setTitle: (title: string) => {
+					this.setTitle(title);
+				},
+				setHidePorts: (hidePorts: boolean) => {
+					this.setHidePorts(hidePorts);
+				},
+				extraContext
+			});
 		} catch (error) {
 			this.handleCodeError(error);
 		}
@@ -296,6 +296,9 @@ export class HydraRenderer {
 		for (const output of this.hydra.outputs) {
 			output.fbos.forEach((fbo) => fbo.destroy());
 		}
+
+		// Clean up JSRunner context for this node
+		this.renderer.jsRunner.destroy(this.config.nodeId);
 
 		// Prevent double-destroy
 		this.hydra = null;
@@ -400,6 +403,14 @@ export class HydraRenderer {
 			type: 'setTitle',
 			nodeId: this.config.nodeId,
 			title
+		});
+	}
+
+	setHidePorts(hidePorts: boolean) {
+		self.postMessage({
+			type: 'setHidePorts',
+			nodeId: this.config.nodeId,
+			hidePorts
 		});
 	}
 
