@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Lock } from '@lucide/svelte/icons';
+	import * as Tooltip from '../../components/ui/tooltip';
 
 	interface Props {
 		/** Whether the file needs to be re-selected (handle lost/permission denied) */
@@ -119,14 +120,21 @@
 	>
 		{#if isCompact}
 			<!-- Compact: inline layout with button -->
-			<div class="flex items-center gap-2">
+			<div class="relative flex items-center gap-2">
 				<Lock class="h-4 w-4 flex-shrink-0 text-amber-400" />
-				<button
-					class="rounded bg-amber-600 px-2 py-0.5 font-mono text-[10px] text-white hover:bg-amber-500"
-					onclick={onRequestPermission}
-				>
-					Re-select file
-				</button>
+
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						class="cursor-pointer rounded bg-amber-600 px-2 py-0.5 font-mono text-[10px] text-white hover:bg-amber-500"
+						onclick={onRequestPermission}
+					>
+						Re-select file
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{vfsPath}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
 			</div>
 		{:else}
 			<!-- Normal: stacked layout -->
