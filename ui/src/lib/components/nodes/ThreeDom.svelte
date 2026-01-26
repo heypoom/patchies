@@ -17,7 +17,7 @@
 	import type { WebGLRenderer } from 'three';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 
-	const THREE_DOM_WRAPPER_OFFSET = 2;
+	const THREE_DOM_WRAPPER_OFFSET = 5;
 
 	let {
 		id: nodeId,
