@@ -14,6 +14,7 @@ import {
 } from './types';
 import { generateUserPath, getFilenameFromUrl, guessMimeType } from './path-utils';
 import { clearFileData, clearHandles } from './persistence';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 declare global {
 	interface Window {
@@ -198,6 +199,12 @@ export class VirtualFilesystem {
 		// Clear pending permission status
 		this.pendingPermissions.delete(path);
 		this.notifyChange();
+
+		// Dispatch event so nodes know the file was relinked
+		PatchiesEventBus.getInstance().dispatch({
+			type: 'fileRelinked',
+			path
+		});
 	}
 
 	/**

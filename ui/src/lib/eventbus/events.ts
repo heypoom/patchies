@@ -12,7 +12,8 @@ export type PatchiesEvent =
 	| NodeVideoOutputEnabledUpdateEvent
 	| NodeMouseScopeUpdateEvent
 	| NodeReplaceEvent
-	| IframePostMessageEvent;
+	| IframePostMessageEvent
+	| FileRelinkedEvent;
 
 export interface ConsoleOutputEvent {
 	type: 'consoleOutput';
@@ -98,10 +99,20 @@ export interface NodeReplaceEvent {
 
 export interface IframePostMessageEvent {
 	type: 'iframePostMessage';
+
 	/** The source window that sent the postMessage */
 	source: Window;
+
 	/** The message data from postMessage */
 	data: unknown;
+
 	/** The origin of the message */
 	origin: string;
+}
+
+export interface FileRelinkedEvent {
+	type: 'fileRelinked';
+
+	/** The VFS path that was relinked */
+	path: string;
 }

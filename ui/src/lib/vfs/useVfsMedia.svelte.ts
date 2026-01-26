@@ -7,6 +7,8 @@
 
 import { VirtualFilesystem, isVFSPath, guessMimeType } from './index';
 import { logger } from '$lib/utils/logger';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { FileRelinkedEvent } from '$lib/eventbus/events';
 import { get } from 'svelte/store';
 import { match } from 'ts-pattern';
 
@@ -127,6 +129,24 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 				loadFromVfsPath(path);
 			}
 		}
+	});
+
+	// Listen for file relink events from the event bus
+	$effect(() => {
+		const eventBus = PatchiesEventBus.getInstance();
+
+		const handleFileRelinked = (event: FileRelinkedEvent) => {
+			if (needsReselect && options.getVfsPath() === event.path) {
+				// Try to load the relinked file
+				loadFromVfsPath(event.path);
+			}
+		};
+
+		eventBus.addEventListener('fileRelinked', handleFileRelinked);
+
+		return () => {
+			eventBus.removeEventListener('fileRelinked', handleFileRelinked);
+		};
 	});
 
 	// ─────────────────────────────────────────────────────────────────
