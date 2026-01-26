@@ -91,13 +91,11 @@ export class MicNode implements AudioNodeV2 {
 		try {
 			const constraints: MediaTrackConstraints = {
 				...(this.settings.deviceId && { exact: this.settings.deviceId }),
-				sampleRate: { ideal: this.audioContext.sampleRate },
+				sampleRate: { ideal: 48000 },
 				echoCancellation: this.settings.echoCancellation,
 				noiseSuppression: this.settings.noiseSuppression,
 				autoGainControl: this.settings.autoGainControl
 			};
-
-			console.log('constraints', constraints);
 
 			const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
 			const streamSource = this.audioContext.createMediaStreamSource(stream);

@@ -17,6 +17,7 @@ export async function enumerateAudioDevices(): Promise<void> {
 		// Request permission first to get device labels
 		await navigator.mediaDevices.getUserMedia({
 			audio: {
+				sampleRate: { ideal: 48000 },
 				echoCancellation: true,
 				noiseSuppression: true,
 				autoGainControl: true
