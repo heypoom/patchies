@@ -9,7 +9,8 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
-	import { useVfsMedia, VfsRelinkOverlay } from '$lib/vfs';
+	import { useVfsMedia } from '$lib/vfs';
+	import { VfsRelinkOverlay } from '$lib/vfs/components';
 
 	let node: NodeProps & {
 		data: {

@@ -13,7 +13,8 @@
 	import { getObjectType } from '$lib/objects/get-type';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 	import * as ContextMenu from '$lib/components/ui/context-menu';
-	import { useVfsMedia, VfsRelinkOverlay } from '$lib/vfs';
+	import { useVfsMedia } from '$lib/vfs';
+	import { VfsRelinkOverlay } from '$lib/vfs/components';
 
 	let node: {
 		id: string;

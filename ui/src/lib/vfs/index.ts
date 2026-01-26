@@ -5,8 +5,6 @@ export { VirtualFilesystem } from './VirtualFilesystem';
 // Composables
 export { useVfsMedia, type UseVfsMediaOptions, type UseVfsMediaReturn } from './useVfsMedia.svelte';
 
-// UI Components
-export { VfsRelinkOverlay, VfsDropZone } from './components';
 export {
 	type VFSEntry,
 	type VFSTree,

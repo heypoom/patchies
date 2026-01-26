@@ -8,7 +8,8 @@
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 	import { match, P } from 'ts-pattern';
 	import { shouldShowHandles } from '../../../stores/ui.store';
-	import { useVfsMedia, VfsRelinkOverlay, VfsDropZone } from '$lib/vfs';
+	import { useVfsMedia } from '$lib/vfs';
+	import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
 
 	let node: {
 		id: string;
