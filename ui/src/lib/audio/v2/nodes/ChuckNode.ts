@@ -339,7 +339,12 @@ export class ChuckNode implements AudioNodeV2 {
 			this.chuck.clearGlobals();
 		}
 
-		this.chuck = await Chuck.init([], this.audioContext, 2, './webchuck/');
+		this.chuck = await Chuck.init(
+			[],
+			this.audioContext,
+			this.audioNode.channelCount,
+			'./webchuck/'
+		);
 		this.chuck.connect(this.audioNode);
 
 		// Redirect ChucK print to message system
