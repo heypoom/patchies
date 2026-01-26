@@ -9,6 +9,7 @@
 	import { match, P } from 'ts-pattern';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
+	import { useVfsMedia, VfsRelinkOverlay } from '$lib/vfs';
 
 	let node: NodeProps & {
 		data: {
@@ -38,7 +39,50 @@
 	let showSettings = $state(false);
 	let recordingAnalyser: AnalyserNode | null = null;
 	let recordingAnimationFrame: number | null = null;
-	let isDragging = $state(false);
+
+	// Use VFS media composable for file handling (drag/drop, persistence, relink)
+	const vfsMedia = useVfsMedia({
+		nodeId: node.id,
+		acceptMimePrefix: 'audio/',
+		onFileLoaded: handleFileLoaded,
+		updateNodeData: (data) => updateNodeData(node.id, { ...node.data, ...data }),
+		getVfsPath: () => node.data.vfsPath,
+		filePickerAccept: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
+		filePickerDescription: 'Audio Files'
+	});
+
+	/**
+	 * Called when VFS successfully loads a file.
+	 * Decodes audio and sets up the sampler.
+	 */
+	async function handleFileLoaded(file: File) {
+		try {
+			const arrayBuffer = await file.arrayBuffer();
+			const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
+
+			// Set the audio buffer on the V2 node
+			if (v2Node) {
+				v2Node.audioBuffer = decodedBuffer;
+			}
+
+			audioBuffer = decodedBuffer;
+			const duration = decodedBuffer.duration;
+
+			updateNodeData(node.id, {
+				...node.data,
+				hasRecording: true,
+				duration: duration,
+				loopStart: 0,
+				loopEnd: duration
+			});
+
+			// Update AudioService's loop end point
+			audioService.send(node.id, 'message', { type: 'setEnd', value: duration });
+			vfsMedia.markLoaded();
+		} catch (error) {
+			console.error('Failed to load audio file:', error);
+		}
+	}
 
 	// Derive all state from node.data instead of duplicating
 	const hasRecording = $derived(node.data.hasRecording || false);
@@ -320,103 +364,6 @@
 		audioService.send(node.id, 'message', { type: 'setDetune', value: 0 });
 	}
 
-	function handleDragOver(event: DragEvent) {
-		event.preventDefault();
-		isDragging = true;
-	}
-
-	function handleDragLeave(event: DragEvent) {
-		event.preventDefault();
-		isDragging = false;
-	}
-
-	async function handleDrop(event: DragEvent) {
-		event.preventDefault();
-		event.stopPropagation();
-		isDragging = false;
-
-		// Check for VFS path drag (from FileTreeView)
-		const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
-
-		if (vfsPath) {
-			await loadFromVfsPath(vfsPath);
-			return;
-		}
-
-		// Fall back to regular file drop from desktop
-		const files = event.dataTransfer?.files;
-		if (!files || files.length === 0) return;
-
-		const file = files[0];
-		if (!file.type.startsWith('audio/')) {
-			console.warn('Only audio files are supported');
-			return;
-		}
-
-		// Store in VFS first for persistence, then load from there
-		const { VirtualFilesystem } = await import('$lib/vfs');
-		const vfs = VirtualFilesystem.getInstance();
-		const storedPath = await vfs.storeFile(file);
-		await loadFromVfsPath(storedPath);
-	}
-
-	async function loadFromVfsPath(vfsPath: string) {
-		try {
-			const { VirtualFilesystem, guessMimeType } = await import('$lib/vfs');
-			const vfs = VirtualFilesystem.getInstance();
-
-			// Check if it's an audio file by mime type
-			const mimeType = guessMimeType(vfsPath);
-			if (!mimeType?.startsWith('audio/')) {
-				console.warn('Only audio files are supported');
-				return;
-			}
-
-			const fileOrBlob = await vfs.resolve(vfsPath);
-
-			// Convert to File if it's a Blob
-			const file =
-				fileOrBlob instanceof File
-					? fileOrBlob
-					: new File([fileOrBlob], vfsPath.split('/').pop() || 'audio', { type: mimeType });
-
-			await loadAudioFile(file);
-
-			// Store the VFS path in node data for persistence
-			updateNodeData(node.id, { ...node.data, vfsPath });
-		} catch (error) {
-			console.error('Failed to load audio from VFS:', error);
-		}
-	}
-
-	async function loadAudioFile(file: File) {
-		try {
-			const arrayBuffer = await file.arrayBuffer();
-			const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
-
-			// Set the audio buffer on the V2 node
-			if (v2Node) {
-				v2Node.audioBuffer = decodedBuffer;
-			}
-
-			audioBuffer = decodedBuffer;
-			const duration = decodedBuffer.duration;
-
-			updateNodeData(node.id, {
-				...node.data,
-				hasRecording: true,
-				duration: duration,
-				loopStart: 0,
-				loopEnd: duration
-			});
-
-			// Update AudioService's loop end point
-			audioService.send(node.id, 'message', { type: 'setEnd', value: duration });
-		} catch (error) {
-			console.error('Failed to load audio file:', error);
-		}
-	}
-
 	onMount(async () => {
 		messageContext = new MessageContext(node.id);
 		messageContext.queue.addCallback(handleMessage);
@@ -444,24 +391,11 @@
 			if (v2Node.audioBuffer) {
 				audioBuffer = v2Node.audioBuffer;
 			}
+		}
 
-			// Load audio from soundfile~ conversion (VFS path)
-			if (node.data.vfsPath) {
-				try {
-					const { VirtualFilesystem } = await import('$lib/vfs');
-
-					const vfs = VirtualFilesystem.getInstance();
-					const fileOrBlob = await vfs.resolve(node.data.vfsPath);
-
-					const arrayBuffer = await fileOrBlob.arrayBuffer();
-					const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
-
-					v2Node.audioBuffer = decodedBuffer;
-					audioBuffer = decodedBuffer;
-				} catch (error) {
-					console.error('Failed to load audio from VFS path:', error);
-				}
-			}
+		// Load audio from VFS path (handles permissions, relink, etc.)
+		if (node.data.vfsPath) {
+			await vfsMedia.loadFromVfsPath(node.data.vfsPath);
 		}
 	});
 
@@ -484,7 +418,7 @@
 	});
 
 	const containerClass = $derived.by(() => {
-		if (isDragging) return 'border-blue-400 bg-blue-50/10';
+		if (vfsMedia.isDragging) return 'border-blue-400 bg-blue-50/10';
 		if (node.data.loop && node.selected) return 'border-orange-300 bg-zinc-800 shadow-glow-md';
 		if (node.selected) return 'object-container-selected';
 		if (node.data.loop) return 'border-orange-400 bg-zinc-900 hover:shadow-glow-sm';
@@ -557,44 +491,60 @@
 					nodeId={node.id}
 				/>
 
-				<div
-					class={[
-						'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border-1',
-						containerClass
-					]}
-					ondragover={handleDragOver}
-					ondragleave={handleDragLeave}
-					ondrop={handleDrop}
-					role="figure"
-				>
-					{#if isRecording && recordingAnalyser}
-						<WaveformDisplay analyser={recordingAnalyser} {width} {height} />
-					{:else if hasRecording && audioBuffer}
-						<WaveformDisplay
-							{audioBuffer}
-							{loopStart}
-							{loopEnd}
-							{playbackProgress}
-							{width}
-							{height}
-							showLoopPoints={loopStart > 0.05 || Math.abs(loopEnd - recordingDuration) > 0.05}
-						/>
-					{:else}
-						<div
-							class="flex items-center justify-center gap-2 px-3"
-							style="height: {height}px; width: {width}px;"
-						>
-							<Mic class="h-4 w-4 text-zinc-400" />
-							<div class="font-mono text-[12px] font-light text-zinc-400">
-								{#if isDragging}
-									Drop audio file
-								{:else}
-									Record or drop file
-								{/if}
+				{#if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
+					<VfsRelinkOverlay
+						needsReselect={vfsMedia.needsReselect}
+						needsFolderRelink={vfsMedia.needsFolderRelink}
+						linkedFolderName={vfsMedia.linkedFolderName}
+						vfsPath={node.data.vfsPath}
+						{width}
+						{height}
+						isDragging={vfsMedia.isDragging}
+						onRequestPermission={vfsMedia.requestFilePermission}
+						onDragOver={vfsMedia.handleDragOver}
+						onDragLeave={vfsMedia.handleDragLeave}
+						onDrop={vfsMedia.handleDrop}
+					/>
+				{:else}
+					<div
+						class={[
+							'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border-1',
+							containerClass
+						]}
+						ondragover={vfsMedia.handleDragOver}
+						ondragleave={vfsMedia.handleDragLeave}
+						ondrop={vfsMedia.handleDrop}
+						role="figure"
+					>
+						{#if isRecording && recordingAnalyser}
+							<WaveformDisplay analyser={recordingAnalyser} {width} {height} />
+						{:else if hasRecording && audioBuffer}
+							<WaveformDisplay
+								{audioBuffer}
+								{loopStart}
+								{loopEnd}
+								{playbackProgress}
+								{width}
+								{height}
+								showLoopPoints={loopStart > 0.05 || Math.abs(loopEnd - recordingDuration) > 0.05}
+							/>
+						{:else}
+							<div
+								class="flex items-center justify-center gap-2 px-3"
+								style="height: {height}px; width: {width}px;"
+							>
+								<Mic class="h-4 w-4 text-zinc-400" />
+								<div class="font-mono text-[12px] font-light text-zinc-400">
+									{#if vfsMedia.isDragging}
+										Drop audio file
+									{:else}
+										Record or drop file
+									{/if}
+								</div>
 							</div>
-						</div>
-					{/if}
-				</div>
+						{/if}
+					</div>
+				{/if}
 
 				<!-- Audio Output Handle -->
 				<StandardHandle
@@ -724,3 +674,12 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Hidden file input for file dialog -->
+<input
+	bind:this={vfsMedia.fileInputRef}
+	type="file"
+	accept="audio/*"
+	onchange={vfsMedia.handleFileSelect}
+	class="hidden"
+/>

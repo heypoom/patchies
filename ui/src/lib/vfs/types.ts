@@ -8,12 +8,18 @@ export type VFSProviderType = 'url' | 'local' | 'folder' | 'local-folder';
  */
 export interface VFSEntry {
 	provider: VFSProviderType;
+
 	/** URL for 'url' provider */
 	url?: string;
+
 	/** Original filename for display */
 	filename: string;
+
 	/** MIME type, e.g., 'image/png'. Not present for folders. */
 	mimeType?: string;
+
+	/** File size in bytes. Used for duplicate detection. */
+	size?: number;
 }
 
 /**

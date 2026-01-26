@@ -5,7 +5,7 @@
  * and drag-drop logic for media nodes (image, audio, video).
  */
 
-import { VirtualFilesystem, isVFSPath } from './index';
+import { VirtualFilesystem, isVFSPath, guessMimeType } from './index';
 import { logger } from '$lib/utils/logger';
 import { get } from 'svelte/store';
 import { match } from 'ts-pattern';
@@ -175,8 +175,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 			options.updateNodeData({ vfsPath });
 
 			await loadFromVfsPath(vfsPath);
-		} catch (err) {
-			console.error('Failed to load from URL:', err);
+		} catch {
 			isLoading = false;
 		}
 	}
@@ -193,15 +192,41 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 		try {
 			isLoading = true;
 
+			// Check if a file with the same name and size already exists in VFS
+			const existingPath = findExistingVfsPath(file.name, file.size);
+			if (existingPath) {
+				options.updateNodeData({ vfsPath: existingPath });
+				await options.onFileLoaded(file);
+				return;
+			}
+
 			const vfsPath = await vfs.storeFile(file, handle);
 			options.updateNodeData({ vfsPath });
 
 			await options.onFileLoaded(file);
-		} catch (error) {
-			console.error('Failed to load file:', error);
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	/**
+	 * Find an existing VFS path for a file with the given name and size.
+	 * Only matches 'local' provider entries (not linked folders).
+	 * Returns the path if found, or null if not.
+	 */
+	function findExistingVfsPath(filename: string, size: number): string | null {
+		const allPaths = vfs.list();
+
+		for (const path of allPaths) {
+			const entry = vfs.getEntry(path);
+
+			// Only match 'local' provider entries with same filename and size
+			if (entry?.provider === 'local' && entry.filename === filename && entry.size === size) {
+				return path;
+			}
+		}
+
+		return null;
 	}
 
 	// ─────────────────────────────────────────────────────────────────
@@ -222,11 +247,6 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 		}
 
 		// If no handle exists, prompt user to re-select the file
-		const entry = vfs.getEntryOrLinkedFile(vfsPath);
-		const filename = entry?.filename || 'the file';
-
-		console.log(`VFS: No handle for ${vfsPath}, prompting user to re-select ${filename}`);
-
 		// Open file picker and replace the existing VFS entry
 		try {
 			if ('showOpenFilePicker' in window) {
@@ -236,6 +256,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 				const [handle] = await window.showOpenFilePicker(pickerOptions);
 
 				const file = await handle.getFile();
+
 				// Replace file at the existing path instead of creating a new one
 				await vfs.replaceFile(vfsPath, file, handle);
 				await options.onFileLoaded(file);
@@ -245,7 +266,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 			}
 		} catch (err) {
 			if (err instanceof Error && err.name !== 'AbortError') {
-				console.error('File picker error:', err);
+				// Silently ignore file picker errors
 			}
 		}
 	}
@@ -268,7 +289,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 		} catch (err) {
 			// User cancelled or error - ignore
 			if (err instanceof Error && err.name !== 'AbortError') {
-				console.error('File picker error:', err);
+				// Silently ignore file picker errors
 			}
 		}
 	}
@@ -333,32 +354,50 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 			}
 		}
 
+		// Try items API first (supports FileSystemFileHandle for persistence)
 		const items = event.dataTransfer?.items;
-		if (!items || items.length === 0) return;
-
-		const item = items[0];
-		if (!item.type.startsWith(options.acceptMimePrefix)) {
-			console.warn(`Only ${options.acceptMimePrefix}* files are supported`);
-			return;
-		}
-
-		// Try to get FileSystemFileHandle for persistence (Chrome 86+)
+		let file: File | null = null;
 		let handle: FileSystemFileHandle | undefined;
-		if ('getAsFileSystemHandle' in item) {
-			try {
-				const fsHandle = await (
-					item as DataTransferItem & { getAsFileSystemHandle(): Promise<FileSystemHandle | null> }
-				).getAsFileSystemHandle();
-				if (fsHandle?.kind === 'file') {
-					handle = fsHandle as FileSystemFileHandle;
+
+		if (items && items.length > 0) {
+			const item = items[0];
+
+			// IMPORTANT: Get file FIRST before any async operations
+			// DataTransferItem becomes invalid after awaiting
+			file = item.getAsFile();
+
+			// Try to get FileSystemFileHandle for persistence (Chrome 86+)
+			if ('getAsFileSystemHandle' in item) {
+				try {
+					const fsHandle = await (
+						item as DataTransferItem & { getAsFileSystemHandle(): Promise<FileSystemHandle | null> }
+					).getAsFileSystemHandle();
+					if (fsHandle?.kind === 'file') {
+						handle = fsHandle as FileSystemFileHandle;
+					}
+				} catch {
+					// Not supported or user denied - fall back to file-only
 				}
-			} catch {
-				// Not supported or user denied - fall back to file-only
 			}
 		}
 
-		const file = item.getAsFile();
+		// Fall back to files API if items didn't work
+		if (!file) {
+			const files = event.dataTransfer?.files;
+			if (files && files.length > 0) {
+				file = files[0];
+			}
+		}
+
 		if (!file) return;
+
+		// Check MIME type - use file.type if available, otherwise guess from extension
+		const mimeType = file.type || guessMimeType(file.name);
+
+		if (!mimeType || !mimeType.startsWith(options.acceptMimePrefix)) {
+			console.warn(`Only ${options.acceptMimePrefix}* files are supported, got: ${mimeType}`);
+			return;
+		}
 
 		await loadFile(file, handle);
 	}

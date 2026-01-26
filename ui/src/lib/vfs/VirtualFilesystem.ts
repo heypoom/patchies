@@ -133,7 +133,8 @@ export class VirtualFilesystem {
 		const entry: VFSEntry = {
 			provider: 'local',
 			filename: file.name,
-			mimeType: file.type || guessMimeType(file.name)
+			mimeType: file.type || guessMimeType(file.name),
+			size: file.size
 		};
 
 		this.entries.set(path, entry);
