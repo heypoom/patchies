@@ -15,6 +15,7 @@ import { KEYBOARD_PRESETS } from './keyboard.presets';
 import { ORCA_PRESETS } from './orca.presets';
 import { STRUDEL_PRESETS } from './strudel.presets';
 import { TEXTMODE_PRESETS } from './textmode.presets';
+import { THREE_PRESETS } from './three.preset';
 
 /**
  * Presets are pre-configured nodes with custom default data.
@@ -37,5 +38,6 @@ export const PRESETS: Record<string, { type: string; data: unknown }> = {
 	...KEYBOARD_PRESETS,
 	...ORCA_PRESETS,
 	...STRUDEL_PRESETS,
-	...TEXTMODE_PRESETS
+	...TEXTMODE_PRESETS,
+	...THREE_PRESETS
 };
