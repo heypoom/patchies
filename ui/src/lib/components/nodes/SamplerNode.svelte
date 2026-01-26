@@ -335,6 +335,15 @@
 		event.stopPropagation();
 		isDragging = false;
 
+		// Check for VFS path drag (from FileTreeView)
+		const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
+
+		if (vfsPath) {
+			await loadFromVfsPath(vfsPath);
+			return;
+		}
+
+		// Fall back to regular file drop
 		const files = event.dataTransfer?.files;
 		if (!files || files.length === 0) return;
 
@@ -345,6 +354,35 @@
 		}
 
 		await loadAudioFile(file);
+	}
+
+	async function loadFromVfsPath(vfsPath: string) {
+		try {
+			const { VirtualFilesystem, guessMimeType } = await import('$lib/vfs');
+			const vfs = VirtualFilesystem.getInstance();
+
+			// Check if it's an audio file by mime type
+			const mimeType = guessMimeType(vfsPath);
+			if (!mimeType?.startsWith('audio/')) {
+				console.warn('Only audio files are supported');
+				return;
+			}
+
+			const fileOrBlob = await vfs.resolve(vfsPath);
+
+			// Convert to File if it's a Blob
+			const file =
+				fileOrBlob instanceof File
+					? fileOrBlob
+					: new File([fileOrBlob], vfsPath.split('/').pop() || 'audio', { type: mimeType });
+
+			await loadAudioFile(file);
+
+			// Store the VFS path in node data for persistence
+			updateNodeData(node.id, { ...node.data, vfsPath });
+		} catch (error) {
+			console.error('Failed to load audio from VFS:', error);
+		}
 	}
 
 	async function loadAudioFile(file: File) {
