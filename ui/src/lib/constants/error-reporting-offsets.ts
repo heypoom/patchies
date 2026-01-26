@@ -25,10 +25,10 @@ export const P5_WRAPPER_OFFSET = 6;
 export const CANVAS_WRAPPER_OFFSET = 2;
 
 /**
- * CanvasDom: Uses `new Function()` with just `"use strict";\n` prefix (1 line).
- * Since parseJSError subtracts 6 by default, we need -3 to only subtract 3 lines total.
+ * Canvas DOM worker: Uses JSRunner.executeJavaScript with additional context.
+ * Adds 2 extra lines.
  */
-export const CANVAS_DOM_WRAPPER_OFFSET = -3;
+export const CANVAS_DOM_WRAPPER_OFFSET = 2;
 
 /**
  * ToneNode: Uses custom wrapper with fewer lines than JSRunner's preamble.

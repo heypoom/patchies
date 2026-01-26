@@ -2,7 +2,7 @@
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
+	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -54,8 +54,8 @@
 	// Create custom console for routing output to VirtualConsole
 	const customConsole = createCustomConsole(nodeId);
 
+	const jsRunner = JSRunner.getInstance();
 	let glSystem = GLSystem.getInstance();
-	let messageContext: MessageContext;
 	let canvas = $state<HTMLCanvasElement | undefined>();
 	let ctx: CanvasRenderingContext2D | null = null;
 	let dragEnabled = $state(true);
@@ -290,7 +290,7 @@
 		await glSystem.setBitmapSource(nodeId, canvas);
 	}
 
-	function runCode() {
+	async function runCode() {
 		if (!canvas || !ctx) return;
 
 		// Clear console and error highlighting on re-run
@@ -304,74 +304,61 @@
 		// Clear keyboard callbacks when code is re-run
 		keyboardCallbacks = {};
 
+		// Clear any previous animation frame
+		if (animationFrameId !== null) {
+			cancelAnimationFrame(animationFrameId);
+			animationFrameId = null;
+		}
+
 		try {
-			// Clear any previous animation frame
-			if (animationFrameId !== null) {
-				cancelAnimationFrame(animationFrameId);
-				animationFrameId = null;
-			}
-
-			// Clear timers from message context
-			messageContext.clearTimers();
-
-			// Get message context methods
-			const context = messageContext.getContext();
-
-			// Create user code execution context
-			// Note: width/height match the full output resolution (same as worker canvas)
-			const userGlobals = {
-				canvas,
-				ctx,
-				width: outputWidth,
-				height: outputHeight,
-				mouse,
+			await jsRunner.executeJavaScript(nodeId, data.code, {
+				customConsole,
 				setPortCount,
-				console: customConsole,
-				...context,
-				recv: context.onMessage, // Alias for consistency with worker canvas
-				// Override context defaults with custom implementations (must be after ...context)
-				noDrag: () => {
-					dragEnabled = false;
-				},
-				noOutput: () => {
-					videoOutputEnabled = false;
-					updateNodeInternals(nodeId);
-				},
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
-				setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
-				onKeyDown: (callback: (event: KeyboardEvent) => void) => {
-					keyboardCallbacks.onKeyDown = callback;
-				},
-				onKeyUp: (callback: (event: KeyboardEvent) => void) => {
-					keyboardCallbacks.onKeyUp = callback;
-				},
-				requestAnimationFrame: (callback: FrameRequestCallback) => {
-					animationFrameId = requestAnimationFrame((time) => {
-						callback(time);
-						sendBitmap();
-					});
-					return animationFrameId;
-				},
-				cancelAnimationFrame: (id: number) => {
-					cancelAnimationFrame(id);
-					if (animationFrameId === id) {
-						animationFrameId = null;
+				extraContext: {
+					canvas,
+					ctx,
+					width: outputWidth,
+					height: outputHeight,
+					mouse,
+					noDrag: () => {
+						dragEnabled = false;
+					},
+					noOutput: () => {
+						videoOutputEnabled = false;
+						updateNodeInternals(nodeId);
+					},
+					setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
+					onKeyDown: (callback: (event: KeyboardEvent) => void) => {
+						keyboardCallbacks.onKeyDown = callback;
+					},
+					onKeyUp: (callback: (event: KeyboardEvent) => void) => {
+						keyboardCallbacks.onKeyUp = callback;
+					},
+					// Override JSRunner's requestAnimationFrame to also send bitmap
+					requestAnimationFrame: (callback: FrameRequestCallback) => {
+						animationFrameId = requestAnimationFrame((time) => {
+							callback(time);
+							sendBitmap();
+						});
+						return animationFrameId;
+					},
+					cancelAnimationFrame: (id: number) => {
+						cancelAnimationFrame(id);
+						if (animationFrameId === id) {
+							animationFrameId = null;
+						}
 					}
 				}
-			};
-
-			// Execute user code
-			const userFunction = new Function(...Object.keys(userGlobals), `"use strict";\n${data.code}`);
-
-			userFunction(...Object.values(userGlobals));
+			});
 		} catch (error) {
 			handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
 		}
 	}
 
 	onMount(() => {
-		messageContext = new MessageContext(nodeId);
+		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
 		// Listen for console output events to capture lineErrors
@@ -401,7 +388,7 @@
 		}
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 		glSystem?.removeNode(nodeId);
-		messageContext?.destroy();
+		jsRunner.destroy(nodeId);
 	});
 
 	const handleClass = $derived.by(() => {
