@@ -119,13 +119,25 @@
 </script>
 
 {#snippet chuckHandles()}
+	<!-- Audio input (accessible via adc in ChucK code) -->
+	<StandardHandle
+		port="inlet"
+		type="audio"
+		id={0}
+		title="Audio Input (accessible via adc in ChucK code)"
+		total={2}
+		index={0}
+		{nodeId}
+	/>
+
 	<!-- Control inlet for messages and code -->
 	<StandardHandle
 		port="inlet"
 		type="message"
+		id={1}
 		title="Control Input (code, bang, stop)"
-		total={1}
-		index={0}
+		total={2}
+		index={1}
 		{nodeId}
 	/>
 {/snippet}

@@ -979,6 +979,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - Add Shred `Ctrl/Cmd + \`: adds a new shred to the shreds list.
   - Remove Shred `Ctrl/Cmd + Backspace`: removes the most recent shred.
   - Click on the gear button to see list of running shreds. Remove any shred by clicking on the "x" button.
+- It also accepts an audio input e.g. `adc => PitShift p => dac;`, so you can use ChucK as a filter.
 - Messages: playback and shred control
   - string: adds the string expression as a new shred
   - `bang`, `replace` or `run`: replaces the most recent shred with the current expression

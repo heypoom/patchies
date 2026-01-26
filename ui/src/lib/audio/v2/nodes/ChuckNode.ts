@@ -19,12 +19,17 @@ export interface ChuckShred {
  */
 export class ChuckNode implements AudioNodeV2 {
 	static type = 'chuck~';
-	static group: AudioNodeGroup = 'sources';
+	static group: AudioNodeGroup = 'processors';
 	static description = 'ChucK strongly-timed concurrent audio programming';
 
 	static inlets: ObjectInlet[] = [
 		{
 			name: 'in',
+			type: 'signal',
+			description: 'Audio input (accessible via adc in ChucK code)'
+		},
+		{
+			name: 'msg',
 			type: 'message',
 			description: 'Control input (code, bang, stop)'
 		}
@@ -47,6 +52,7 @@ export class ChuckNode implements AudioNodeV2 {
 	private chuck: Chuck | null = null;
 	private shreds: ChuckShred[] = [];
 	private ready = false;
+	private pendingInputConnections: AudioNode[] = [];
 
 	/** Allows Svelte to subscribe to the shreds */
 	public shredsStore = writable<ChuckShred[]>([]);
@@ -269,7 +275,31 @@ export class ChuckNode implements AudioNodeV2 {
 			logger.error('chuck~ AudioWorkletProcessor error:', event);
 		});
 
+		// Connect any pending input connections
+		for (const inputNode of this.pendingInputConnections) {
+			inputNode.connect(this.chuck);
+		}
+
+		this.pendingInputConnections = [];
+
 		logger.log('[chuck~] reloaded');
+	}
+
+	/**
+	 * Handle incoming audio connections.
+	 * Routes audio to the ChucK instance so it's accessible via `adc` in ChucK code.
+	 */
+	connectFrom(source: AudioNodeV2): void {
+		if (!source.audioNode) return;
+
+		// Connect the source to the ChucK instance (not our output gain node)
+		// This makes the audio available via `adc` in ChucK code
+		if (this.chuck) {
+			source.audioNode.connect(this.chuck);
+		} else {
+			// ChucK not ready yet - queue the connection
+			this.pendingInputConnections.push(source.audioNode);
+		}
 	}
 
 	destroy(): void {
@@ -285,6 +315,7 @@ export class ChuckNode implements AudioNodeV2 {
 		this.shreds = [];
 		this.chuck = null;
 		this.ready = false;
+		this.pendingInputConnections = [];
 		this.messageContext.destroy();
 	}
 }
