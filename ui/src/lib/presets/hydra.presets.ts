@@ -14,7 +14,7 @@ const ADD = `setVideoCount(2)
 src(s0).add(s1).out(o0)`;
 
 const SUB = `setVideoCount(2)
-src(s0).sub(s1).out(o0)`;
+src(s0).sub(s1, 0.95).out(o0)`;
 
 const BEANS = `osc(30,0.01,1)
   .mult(osc(20,-0.1,1).modulate(noise(3,1)).rotate(0.7))
