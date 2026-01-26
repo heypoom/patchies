@@ -2,6 +2,7 @@
 	import { Settings, X, Mic } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { MicNode, DEFAULT_MIC_SETTINGS, type MicSettings } from '$lib/audio/v2/nodes/MicNode';
 	import {
@@ -20,6 +21,7 @@
 		selected: boolean;
 	} = $props();
 
+	const { updateNodeData } = useSvelteFlow();
 	let audioService = AudioService.getInstance();
 	let showSettings = $state(false);
 	let micNode: MicNode | null = $state(null);
@@ -60,12 +62,15 @@
 	function applySettings() {
 		if (!micNode) return;
 
-		micNode.updateSettings({
+		const settings = {
 			deviceId,
 			echoCancellation,
 			noiseSuppression,
 			autoGainControl
-		});
+		};
+
+		micNode.updateSettings(settings);
+		updateNodeData(nodeId, settings);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {

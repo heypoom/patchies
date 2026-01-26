@@ -2,6 +2,7 @@
 	import { Settings, X, Volume2 } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
 	import { AudioService } from '$lib/audio/v2/AudioService';
 	import { DacNode, type DacSettings } from '$lib/audio/v2/nodes/DacNode';
 	import {
@@ -20,6 +21,7 @@
 		selected: boolean;
 	} = $props();
 
+	const { updateNodeData } = useSvelteFlow();
 	let audioService = AudioService.getInstance();
 	let showSettings = $state(false);
 	let dacNode: DacNode | null = $state(null);
@@ -58,7 +60,10 @@
 
 	function applySettings() {
 		if (!dacNode) return;
-		dacNode.updateSettings({ deviceId });
+
+		const settings = { deviceId };
+		dacNode.updateSettings(settings);
+		updateNodeData(nodeId, settings);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
