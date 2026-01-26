@@ -8,14 +8,17 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - msg: Send predefined messages
 - textbox: Text input and display
 
+## Audio I/O (Dedicated node types)
+- dac~: Audio output to speakers/headphones
+- mic~: Audio input from microphone
+
 ## Audio Objects (Created via "object" node type)
 - object: Meta-object for creating text-based audio objects:
-  * Audio I/O: dac~ (speakers), adc~ (microphone)
   * Processing: gain~, pan~, delay~, compressor~, waveshaper~, split~, merge~, convolver~
   * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
   * Synthesis: osc~ (oscillator), sig~ (signal)
   * Control: mtof, loadbang, metro, adsr
-  * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "dac~" } })
+  * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "gain~ 0.5" } })
 
 ## Visual & Creative Coding Objects
 - vue: write custom user interface and component using Vue.js
