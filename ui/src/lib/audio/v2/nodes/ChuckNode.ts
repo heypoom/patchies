@@ -164,27 +164,27 @@ export class ChuckNode implements AudioNodeV2 {
 					value = await this.chuck.getFloat(m.key);
 				}
 
-				this.messageContext.send(value);
+				this.messageContext.send({ key: m.key, value });
 			})
 			.with(['getInt', { key: P.string }], async ([, m]) => {
 				const value = await this.chuck?.getInt(m.key);
-				if (value !== undefined) this.messageContext.send(value);
+				if (value !== undefined) this.messageContext.send({ key: m.key, value });
 			})
 			.with(['getFloat', { key: P.string }], async ([, m]) => {
 				const value = await this.chuck?.getFloat(m.key);
-				if (value !== undefined) this.messageContext.send(value);
+				if (value !== undefined) this.messageContext.send({ key: m.key, value });
 			})
 			.with(['getString', { key: P.string }], async ([, m]) => {
 				const value = await this.chuck?.getString(m.key);
-				if (value !== undefined) this.messageContext.send(value);
+				if (value !== undefined) this.messageContext.send({ key: m.key, value });
 			})
 			.with(['getIntArray', { key: P.string }], async ([, m]) => {
 				const value = await this.chuck?.getIntArray(m.key);
-				if (value !== undefined) this.messageContext.send(value);
+				if (value !== undefined) this.messageContext.send({ key: m.key, value });
 			})
 			.with(['getFloatArray', { key: P.string }], async ([, m]) => {
 				const value = await this.chuck?.getFloatArray(m.key);
-				if (value !== undefined) this.messageContext.send(value);
+				if (value !== undefined) this.messageContext.send({ key: m.key, value });
 			})
 			.with(['listenOnce', { event: P.string }], ([, m]) => {
 				this.chuck?.listenForEventOnce(m.event, () => {
