@@ -30,6 +30,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - p5: P5.js sketches for interactive graphics and animations
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects
+- three: Three.js 3D graphics (offscreen worker, for video chaining)
+- three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
 - canvas.dom: Interactive HTML5 Canvas with mouse/keyboard input
 - canvas: HTML5 Canvas 2D (offscreen, for fast video chaining in rendering pipeline)
 - dom: write to the DOM element

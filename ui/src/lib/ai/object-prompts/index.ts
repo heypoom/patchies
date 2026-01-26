@@ -37,6 +37,8 @@ import { sonicPrompt } from './sonic~';
 import { elemPrompt } from './elem~';
 import { labelPrompt } from './label';
 import { vuePrompt } from './vue';
+import { threePrompt } from './three';
+import { threeDomPrompt } from './three.dom';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -74,7 +76,9 @@ export const objectPrompts: Record<string, string> = {
 	'bg.out': bgOutPrompt,
 	'sonic~': sonicPrompt,
 	'elem~': elemPrompt,
-	label: labelPrompt
+	label: labelPrompt,
+	three: threePrompt,
+	'three.dom': threeDomPrompt
 };
 
 /**
