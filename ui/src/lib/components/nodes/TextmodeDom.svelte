@@ -2,7 +2,7 @@
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
+	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -57,8 +57,8 @@
 	// Create custom console for routing output to VirtualConsole
 	const customConsole = createCustomConsole(nodeId);
 
+	const jsRunner = JSRunner.getInstance();
 	let glSystem = GLSystem.getInstance();
-	let messageContext: MessageContext;
 	let canvas = $state<HTMLCanvasElement | undefined>();
 	let dragEnabled = $state(true);
 	let videoOutputEnabled = $state(true);
@@ -172,6 +172,8 @@
 	async function runCode() {
 		if (!canvas) return;
 
+		let hadErrors = !!lineErrors;
+
 		// Clear console and error highlighting on re-run
 		consoleRef?.clearConsole();
 		lineErrors = undefined;
@@ -180,18 +182,16 @@
 		dragEnabled = true;
 		videoOutputEnabled = true;
 
+		// Stop bitmap loop on re-run
+		stopBitmapLoop();
+
 		try {
-			// Clear timers from message context
-			messageContext.clearTimers();
-
-			// Stop bitmap loop and destroy existing textmode instance on re-run
-			stopBitmapLoop();
-
 			// Import textmode.js if needed
 			if (!textmode) {
 				textmode = await import('textmode.js');
 			}
 
+			// Create textmode instance once (lazy initialization)
 			if (!tm) {
 				const { createFiltersPlugin } = await import('textmode.filters.js');
 
@@ -203,57 +203,72 @@
 					canvas,
 					plugins: [createFiltersPlugin()]
 				});
+
+				// Wrap tm.draw once to catch errors in user callbacks (they run asynchronously)
+				const originalDraw = tm.draw.bind(tm);
+
+				tm.draw = (callback: () => void) => {
+					originalDraw(() => {
+						try {
+							callback();
+						} catch (error) {
+							handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+							tm?.noLoop();
+						}
+					});
+				};
 			}
 
-			const context = messageContext.getContext();
-
-			const userGlobals = {
-				canvas,
-				tm,
-				textmode,
-				width: outputWidth,
-				height: outputHeight,
+			await jsRunner.executeJavaScript(nodeId, data.code, {
+				customConsole,
 				setPortCount,
-				console: customConsole,
-				...context,
-				recv: context.onMessage,
-				noDrag: () => {
-					dragEnabled = false;
-				},
-				noOutput: () => {
-					videoOutputEnabled = false;
-					updateNodeInternals(nodeId);
-				},
 				setTitle: (title: string) => updateNodeData(nodeId, { title }),
 				setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
-				setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
-				requestAnimationFrame: (callback: FrameRequestCallback) => {
-					return requestAnimationFrame((time) => {
-						callback(time);
-						sendBitmap();
-					});
-				},
-				cancelAnimationFrame: (id: number) => {
-					cancelAnimationFrame(id);
+				extraContext: {
+					canvas,
+					tm,
+					textmode,
+					width: outputWidth,
+					height: outputHeight,
+					noDrag: () => {
+						dragEnabled = false;
+					},
+					noOutput: () => {
+						videoOutputEnabled = false;
+						updateNodeInternals(nodeId);
+					},
+					setCanvasSize: (width: number, height: number) => setCanvasSize(width, height),
+					// Override JSRunner's requestAnimationFrame to also send bitmap
+					requestAnimationFrame: (callback: FrameRequestCallback) => {
+						return requestAnimationFrame((time) => {
+							callback(time);
+							sendBitmap();
+						});
+					},
+					cancelAnimationFrame: (id: number) => {
+						cancelAnimationFrame(id);
+					}
 				}
-			};
+			});
 
-			// Execute user code
-			const userFunction = new Function(...Object.keys(userGlobals), `"use strict";\n${data.code}`);
-
-			userFunction(...Object.values(userGlobals));
+			// No longer errored!
+			if (hadErrors && !tm.isLooping()) {
+				tm?.loop();
+			}
 
 			// Start bitmap loop after code execution to send frames to GLSystem
 			if (tm.isLooping()) {
 				startBitmapLoop();
 			}
 		} catch (error) {
+			tm?.noLoop();
+
 			handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
 		}
 	}
 
 	onMount(() => {
-		messageContext = new MessageContext(nodeId);
+		const messageContext = jsRunner.getMessageContext(nodeId);
 		messageContext.queue.addCallback(handleMessage);
 
 		// Listen for console output events to capture lineErrors
@@ -274,7 +289,7 @@
 		tm?.destroy();
 		eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 		glSystem?.removeNode(nodeId);
-		messageContext?.destroy();
+		jsRunner.destroy(nodeId);
 	});
 
 	const handleClass = $derived.by(() => {
