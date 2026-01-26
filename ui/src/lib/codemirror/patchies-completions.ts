@@ -168,6 +168,15 @@ const patchiesAPICompletions: Completion[] = [
 		apply: 'await esm("lodash")'
 	},
 
+	// VFS
+	{
+		label: 'getVfsUrl',
+		type: 'function',
+		detail: '(path: string) => Promise<string>',
+		info: 'Resolve a VFS path (user://, obj://) to an object URL. Regular URLs pass through unchanged.',
+		apply: "await getVfsUrl('user://')"
+	},
+
 	// Console
 	{
 		label: 'console.log',
@@ -237,7 +246,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'three',
 		'three.dom'
 	],
-	setVideoCount: ['hydra', 'three']
+	setVideoCount: ['hydra', 'three'],
+	getVfsUrl: ['js', 'p5', 'canvas.dom', 'textmode.dom', 'three.dom']
 };
 
 export interface PatchiesContext {

@@ -4,10 +4,35 @@ Now that we have implemented [the virtual filesystem](./52-virtual-filesystem.md
 
 ## p5 integration
 
-- methods to inject: `loadImage`, `createVideo`, `loadFont`, `loadSound`, `loadJSON`, `loadModel`
-- example: `loadImage` should be injected with our special function to support VFS, e.g. `await loadImage('user://images/poom.jpg')`
-- only resolve through VFS if the vfs prefix i.e. `user://` is available
-- if VFS prefix is not passed, fallback to the direct P5 call e.g. `loadImage(...)` directly without Patchies intervention
+> status: implemented ✅
+
+**Implementation**: Provides `vfsUrl()` helper injected into P5 sketch context.
+
+### Usage
+
+```js
+let img;
+
+async function preload() {
+  // VFS path - resolved to object URL
+  img = await loadImage(vfsUrl("user://images/photo.jpg"));
+
+  // Regular URL - passes through unchanged
+  font = await loadFont(vfsUrl("https://example.com/font.ttf"));
+}
+```
+
+### How it works
+
+- `vfsUrl(path)` - async function that resolves VFS paths (`user://`, `obj://`) to object URLs
+- If path is not a VFS path, returns it unchanged (passthrough)
+- Object URLs are automatically tracked and revoked when the sketch is destroyed
+- Works with: `loadImage`, `loadFont`, `loadJSON`, `loadModel`, `createVideo`, `loadSound`
+
+### Files
+
+- [P5VfsIntegration.ts](../../../ui/src/lib/p5/P5VfsIntegration.ts) - VFS helper implementation
+- [P5Manager.ts](../../../ui/src/lib/p5/P5Manager.ts) - Injects `vfsUrl` at line 294
 
 ## chuck~ integration
 

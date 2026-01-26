@@ -4,6 +4,7 @@ import type { UserFnRunContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import { deleteAfterComment } from '$lib/js-runner/js-module-utils';
 import type { Viewport } from '@xyflow/svelte';
+import { revokeObjectUrls } from './P5VfsIntegration';
 
 interface P5SketchConfig {
 	code: string;
@@ -355,6 +356,9 @@ export class P5Manager {
 
 		// Clean up JSRunner resources for this node
 		this.jsRunner.destroy(this.nodeId);
+
+		// Clean up VFS object URLs
+		revokeObjectUrls(this.nodeId);
 	}
 
 	async sendBitmap() {

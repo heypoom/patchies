@@ -2,6 +2,7 @@ import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-ut
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
 import { debounce } from 'lodash';
+import { createGetVfsUrl } from '$lib/p5/P5VfsIntegration';
 
 export interface JSRunnerOptions {
 	customConsole?: {
@@ -264,6 +265,7 @@ export class JSRunner {
 			'setRunOnMount',
 			'setTitle',
 			'setHidePorts',
+			'getVfsUrl',
 			...Object.keys(extraContext)
 		];
 
@@ -279,6 +281,7 @@ export class JSRunner {
 			setRunOnMount,
 			setTitle,
 			setHidePorts,
+			createGetVfsUrl(nodeId),
 			...Object.values(extraContext)
 		];
 
