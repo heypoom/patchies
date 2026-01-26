@@ -70,8 +70,35 @@ function draw(t) {
   renderer.render(scene, camera)
 }`;
 
+const CRATE_THREE = `const { Scene, PerspectiveCamera, BoxGeometry, Mesh, MeshBasicMaterial, ImageBitmapLoader, CanvasTexture } = THREE
+
+const scene = new Scene()
+const camera = new PerspectiveCamera(75, width / height, 0.1, 1000)
+camera.position.z = 2
+
+const geometry = new BoxGeometry(1, 1, 1)
+const material = new MeshBasicMaterial({ color: 0xffffff })
+const cube = new Mesh(geometry, material)
+scene.add(cube)
+
+const url = 'https://threejs.org/examples/textures/crate.gif'
+const loader = new ImageBitmapLoader()
+
+loader.load(url, (bitmap) => {
+  const tex = new CanvasTexture(bitmap)
+  material.map = tex
+  material.needsUpdate = true
+})
+
+function draw(t) {
+  cube.rotation.x += 0.01
+  cube.rotation.y += 0.01
+  renderer.render(scene, camera)
+}`;
+
 export const THREE_PRESETS: Record<string, { type: string; data: { code: string } }> = {
 	'video-cube.three': { type: 'three', data: { code: VIDEO_CUBE_THREE.trim() } },
 	'video-torus.three': { type: 'three', data: { code: VIDEO_TORUS_THREE.trim() } },
-	'video-sphere.three': { type: 'three', data: { code: VIDEO_SPHERE_THREE.trim() } }
+	'video-sphere.three': { type: 'three', data: { code: VIDEO_SPHERE_THREE.trim() } },
+	'crate.three': { type: 'three', data: { code: CRATE_THREE.trim() } }
 };
