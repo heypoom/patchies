@@ -651,79 +651,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - Use `send(data, { to: inletIndex })` to send data to a specific inlet of another object.
 - Top-level awaits are supported.
   - Use `await delay(ms)` to pause the code for `ms` milliseconds. For example, `await delay(1000)` pauses the code for 1 second.
-
-#### Importing JavaScript packages from NPM
-
-> This feature is only available in `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `sonic~`, `tone~` and `elem~` objects.
-
-- You can import any JavaScript package by using the `npm:` prefix in the import statement.
-  - This uses [esm.run](https://esm.run) under the hood to load the package from NPM.
-  - This gets translated into top-level dynamic imports behind the scenes.
-  - `import * as X` is not yet supported.
-
-  ```js
-  import Matter from "npm:matter-js";
-  import { uniq } from "npm:lodash-es";
-
-  console.log(Matter); // Matter.js library
-  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
-  ```
-
-- Alternatively, write the dynamic import yourself:
-
-  ```js
-  const { uniq } = await import("https://esm.run/lodash-es");
-  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
-
-  // or use a shorthand `await esm()` function that does the same thing
-  const { uniq } = await esm("lodash-es");
-  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
-  ```
-
-#### Loading files from the virtual filesystem
-
-> This feature is available in `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `sonic~`, `tone~` and `elem~` objects.
-
-Use `await getVfsUrl(...)` to load files from the virtual filesystem (VFS). This lets you use images, videos, fonts, and other assets that you've uploaded to your patch.
-
-```js
-// In p5:
-let img;
-
-async function setup() {
-  let url = await getVfsUrl("user://photo.jpg");
-  img = await loadImage(url);
-}
-
-function draw() {
-  image(img, 0, 0);
-}
-```
-
-```js
-// In js or canvas.dom:
-const url = await getVfsUrl("user://data.json");
-const data = await fetch(url);
-```
-
-- VFS paths use the `user://` prefix for user-uploaded files.
-- Object URLs are automatically cleaned up when the node is destroyed.
-
-#### Sharing JavaScript across multiple `js` blocks
-
-> This feature is only available in `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `sonic~`, `tone~` and `elem~` objects.
-
-You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
-
-- For example, adding `// @lib foobar` on top of the code snippet with an exported constant, function, class, or module will register the module as `foobar`.
-  - This will turn the object into a library object, as shown by the package icon.
-- You must use the ES modules `export` syntax in your library `js` object, e.g. `export const rand = () => Math.random()`. This works for everything: classes, functions, modules.
-  - Note that the constants are NOT shared across objects. Each object has their own isolated execution context. You cannot create shared singletons. Use [message passing](#message-passing) to communicate between objects.
-- You can then use ES modules syntax like `import { rand } from 'foobar'` from other objects that supports this feature.
-
-See the following example:
-
-<img src="./docs/images/patchies-js-modules.png" alt="Patchies.app JS Modules" width="700">
+- There are many features offered by the [Patchies JavaScript Runner](#patchies-javascript-runner) that are available in `js` and a couple other objects. The runner allows you to import third party npm libraries, load file blob urls from virtual filesystem, use libraries defined in the patcher, and more.
 
 ### `expr`: expression evaluator
 
@@ -1672,6 +1600,79 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 - Render Markdown text as formatted content.
 - Perfect for documentation, instructions, or dynamic text display.
 - Supports full Markdown syntax including links and formatting.
+
+## Patchies JavaScript Runner
+
+Most of the JavaScript nodes in Patchies are using the JavaScript Runner (JSRunner), which is responsible for executing JavaScript code in a sandboxed environment and providing Patchies-specific features to the code.
+
+The following features are only available in the objects using JSRunner, as follows: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `sonic~`, `tone~` and `elem~`.
+
+### Importing JavaScript packages from NPM
+
+- You can import any JavaScript package by using the `npm:` prefix in the import statement.
+  - This uses [esm.run](https://esm.run) under the hood to load the package from NPM.
+  - This gets translated into top-level dynamic imports behind the scenes.
+  - `import * as X` is not yet supported.
+
+  ```js
+  import Matter from "npm:matter-js";
+  import { uniq } from "npm:lodash-es";
+
+  console.log(Matter); // Matter.js library
+  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
+  ```
+
+- Alternatively, write the dynamic import yourself:
+
+  ```js
+  const { uniq } = await import("https://esm.run/lodash-es");
+  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
+
+  // or use a shorthand `await esm()` function that does the same thing
+  const { uniq } = await esm("lodash-es");
+  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
+  ```
+
+### Loading files from the virtual filesystem
+
+Use `await getVfsUrl(...)` to load files from the virtual filesystem (VFS). This lets you use images, videos, fonts, and other assets that you've uploaded to your patch.
+
+```js
+// In p5:
+let img;
+
+async function setup() {
+  let url = await getVfsUrl("user://photo.jpg");
+  img = await loadImage(url);
+}
+
+function draw() {
+  image(img, 0, 0);
+}
+```
+
+```js
+// In js or canvas.dom:
+const url = await getVfsUrl("user://data.json");
+const data = await fetch(url);
+```
+
+- VFS paths use the `user://` prefix for user-uploaded files.
+- Object URLs are automatically cleaned up when the node is destroyed.
+
+### Sharing JavaScript across multiple `js` blocks
+
+You can share JavaScript code across multiple `js` blocks by using the `// @lib <module-name>` comment at the top of your code, and exporting at least one constant, function, class, or module.
+
+- For example, adding `// @lib foobar` on top of the code snippet with an exported constant, function, class, or module will register the module as `foobar`.
+  - This will turn the object into a library object, as shown by the package icon.
+- You must use the ES modules `export` syntax in your library `js` object, e.g. `export const rand = () => Math.random()`. This works for everything: classes, functions, modules.
+  - Note that the constants are NOT shared across objects. Each object has their own isolated execution context. You cannot create shared singletons. Use [message passing](#message-passing) to communicate between objects.
+- You can then use ES modules syntax like `import { rand } from 'foobar'` from other objects that supports this feature.
+
+See the following example:
+
+<img src="./docs/images/patchies-js-modules.png" alt="Patchies.app JS Modules" width="700">
 
 ## Audio Analysis
 
