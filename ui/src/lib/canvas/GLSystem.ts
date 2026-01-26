@@ -18,6 +18,7 @@ import {
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
+import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -181,8 +182,37 @@ export class GLSystem {
 			.with(P.union({ type: 'fftEnabled' }, { type: 'registerFFTRequest' }), (data) => {
 				// @ts-expect-error -- fix me
 				this.audioAnalysis.handleRenderWorkerMessage(data);
+			})
+			.with({ type: 'resolveVfsUrl' }, async (data) => {
+				this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
 			});
 	};
+
+	/**
+	 * Resolves a VFS path from the worker and sends back an object URL.
+	 * Object URLs created on main thread are accessible from workers (same origin).
+	 */
+	private async handleVfsUrlResolution(requestId: string, nodeId: string, path: string) {
+		try {
+			// If not a VFS path, send back the original path unchanged
+			if (!isVFSPath(path)) {
+				this.send('vfsUrlResolved', { requestId, nodeId, url: path });
+				return;
+			}
+
+			const vfs = VirtualFilesystem.getInstance();
+			const blob = await vfs.resolve(path);
+
+			// Create object URL on main thread - workers can use it (same origin)
+			const url = URL.createObjectURL(blob);
+
+			// TODO: Track for cleanup when node is destroyed
+			this.send('vfsUrlResolved', { requestId, nodeId, url });
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
+		}
+	}
 
 	start() {
 		if (get(isGlslPlaying)) return;

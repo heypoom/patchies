@@ -9,6 +9,7 @@ import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -238,6 +239,7 @@ export class HydraRenderer {
 				// Worker-specific overrides (JSRunner defaults are for main thread)
 				send: this.sendMessage.bind(this),
 				fft: this.createFFTFunction(),
+				getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
 				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;
 				},

@@ -3,6 +3,7 @@ import { match } from 'ts-pattern';
 import type { RenderGraph } from '../../lib/rendering/types.js';
 import { FBORenderer } from './fboRenderer.js';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem.js';
+import { handleVfsUrlResolved } from './vfsWorkerUtils.js';
 
 const fboRenderer: FBORenderer = new FBORenderer();
 
@@ -60,6 +61,9 @@ self.onmessage = (event) => {
 		})
 		.with('setVisibleNodes', () => {
 			fboRenderer.setVisibleNodes(new Set(data.nodeIds as string[]));
+		})
+		.with('vfsUrlResolved', () => {
+			handleVfsUrlResolved(data);
 		});
 };
 

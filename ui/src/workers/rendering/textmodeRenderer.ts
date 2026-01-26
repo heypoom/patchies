@@ -8,6 +8,7 @@ import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { setupWorkerDOMMocks } from './workerDOMMocks';
 import type { Textmodifier } from 'textmode.js';
+import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -210,6 +211,9 @@ export class TextmodeRenderer {
 
 				// FFT function for audio analysis
 				fft: this.createFFTFunction(),
+
+				// VFS URL resolution (worker -> main thread -> object URL)
+				getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
 
 				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;

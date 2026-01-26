@@ -260,6 +260,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 	getVfsUrl: [
 		'js',
 		'p5',
+		'hydra',
 		'canvas',
 		'canvas.dom',
 		'textmode',

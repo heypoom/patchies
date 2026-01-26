@@ -117,7 +117,8 @@ export type RenderWorkerMessage =
 	| { type: 'registerFFTRequest'; nodeId: string; analysisType: string; format: string }
 	| { type: 'previewToggled'; nodeId: string; enabled: boolean }
 	| { type: 'frameStats'; stats: unknown }
-	| { type: 'error'; message: string };
+	| { type: 'error'; message: string }
+	| { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string };
 
 export type PreviewState = Record<string, boolean>;
 

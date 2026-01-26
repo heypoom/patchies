@@ -6,6 +6,7 @@ import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -178,6 +179,9 @@ export class CanvasRenderer {
 
 				// FFT function for audio analysis
 				fft: this.createFFTFunction(),
+
+				// VFS URL resolution (worker -> main thread -> object URL)
+				getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
 
 				onMessage: (callback: MessageCallbackFn) => {
 					this.onMessage = callback;

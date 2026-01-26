@@ -7,6 +7,7 @@ import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { getFramebuffer } from './utils';
+import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
 
 const THREE_WRAPPER_OFFSET = 6;
 
@@ -209,6 +210,9 @@ export class ThreeRenderer {
 
 				// FFT function for audio analysis
 				fft: this.createFFTFunction(),
+
+				// VFS URL resolution (worker -> main thread -> object URL)
+				getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
 
 				// Message passing
 				onMessage: (callback: MessageCallbackFn) => {
