@@ -321,7 +321,7 @@ These objects support video chaining and can be connected to create complex visu
   - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.
     - When `noDrag()` is enabled, you can still drag the "p5" title to move the whole object around.
   - `noOutput()` hides the video output port (the orange outlet at the bottom). This is useful when creating interface widgets that don't need to be part of the video chain.
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
   - Try out [ML5.js](https://ml5js.org) for machine learning and [Matter.js](https://brm.io/matter-js) for physics simulation. They play well with P5.js.
@@ -351,7 +351,7 @@ These objects support video chaining and can be connected to create complex visu
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `mouse.x` and `mouse.y` provide real-time mouse coordinates (scope depends on `setMouseScope`)
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - Try out these presets to get you started:
   - `pipe.hydra`: passes the image through without any changes
   - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
@@ -429,7 +429,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `noDrag()` disables dragging the node. This allows you to add mouse or touch interactivity to your canvas without accidentally moving the node.
   - `noOutput()` hides the video output port. Useful when creating interface widgets or tools that don't need to be part of the video processing chain.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - This runs on the [rendering pipeline](#rendering-pipeline) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on web workers. This means:
   - Pro: It can chain with other visual objects (`glsl`, `hydra`, etc.) without lag. You can draw animations using the canvas API and output it at 60fps.
@@ -484,7 +484,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - The textmode instance is exposed as `tm` in your code:
 
@@ -574,7 +574,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - As well as these variables:
   - `mouse.x` and `mouse.y` provides mouse position
@@ -635,7 +635,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - A general-purpose JavaScript code block for scripting and automation.
 - Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
-- See [Patchies JavaScript Runner](#patchies-javascript-runner) for the full list of available functions (`send`, `recv`, `setInterval`, `onCleanup`, etc.) and features (NPM imports, VFS, shared libraries).
+- See [Patchies JavaScript Runner](#patchies-javascript-runner) for the full list of available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.) and features (NPM imports, VFS, shared libraries).
 
 ### `expr`: expression evaluator
 
@@ -692,7 +692,7 @@ This allows you to set up multiple values before triggering a computation. Use [
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `vue` code:
   - `noDrag()` disables dragging the node.
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - See the [Vue.js documentation](https://vuejs.org/guide/introduction.html) to learn how Vue works.
 
 ### `dom`: create user interfaces with Vanilla JS
@@ -703,7 +703,7 @@ This allows you to set up multiple values before triggering a computation. Use [
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `dom` code:
   - `noDrag()` disables dragging the node.
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 ### `uxn`: Uxn virtual machine
 
@@ -1328,7 +1328,7 @@ The Tone.js context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-In addition to the audio processing capabilities, `tone~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
+In addition to the audio processing capabilities, `tone~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 Try out these presets:
 
@@ -1374,7 +1374,7 @@ The `sonic~` context provides:
 
 Available events: `'ready'`, `'loading:start'`, `'loading:complete'`, `'error'`, `'message'`
 
-In addition to the synthesis capabilities, `sonic~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
+In addition to the synthesis capabilities, `sonic~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 Load and play a synth:
 
@@ -1436,7 +1436,7 @@ The `elem~` context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-In addition to the audio processing capabilities, `elem~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
+In addition to the audio processing capabilities, `elem~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 Here's how to create a simple phasor:
 
