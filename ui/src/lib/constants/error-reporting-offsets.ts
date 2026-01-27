@@ -65,12 +65,12 @@ export const DSP_WRAPPER_OFFSET = -2;
  *
  * So we need 0 additional offset (6 - 6 = 0).
  */
-export const HYDRA_WRAPPER_OFFSET = 2;
+export const HYDRA_WRAPPER_OFFSET = 0;
 
 export const THREE_DOM_WRAPPER_OFFSET = 5;
 
-export const DOM_WRAPPER_OFFSET = 2;
+export const DOM_WRAPPER_OFFSET = 0;
 
-export const VUE_WRAPPER_OFFSET = 2;
+export const VUE_WRAPPER_OFFSET = 0;
 
 export const THREE_WRAPPER_OFFSET = 6;
