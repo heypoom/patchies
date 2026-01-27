@@ -9,7 +9,7 @@ await sonic.loadSynthDef('sonic-pi-prophet')
 recv(msg => {
   const note = typeof msg === 'number' ? msg : 60
 
-  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', msg, 'release', 2)
+  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2)
 })`
 		}
 	},
@@ -23,7 +23,7 @@ await sonic.loadSynthDef('sonic-pi-tb303')
 recv(msg => {
   const note = typeof msg === 'number' ? msg : 60
 
-  sonic.send('/s_new', 'sonic-pi-tb303', -1, 0, 0, 'note', msg, 'cutoff', 80, 'res', 0.9)
+  sonic.send('/s_new', 'sonic-pi-tb303', -1, 0, 0, 'note', note, 'cutoff', 80, 'res', 0.9)
 })`
 		}
 	},
@@ -65,7 +65,7 @@ let idx = 0
 recv(msg => {
   const note = typeof msg === 'number' ? msg : 60
 
-  sonic.send('/s_new', synths[idx++ % synths.length], -1, 0, 0, 'note', msg)
+  sonic.send('/s_new', synths[idx++ % synths.length], -1, 0, 0, 'note', note)
 })`
 		}
 	}
