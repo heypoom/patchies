@@ -321,8 +321,7 @@ These objects support video chaining and can be connected to create complex visu
   - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.
     - When `noDrag()` is enabled, you can still drag the "p5" title to move the whole object around.
   - `noOutput()` hides the video output port (the orange outlet at the bottom). This is useful when creating interface widgets that don't need to be part of the video chain.
-  - `setTitle(title)` sets the title of the node. Use this to create custom, reusable widgets with meaningful names. Example: `setTitle('Color Picker')`.
-  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
 
 - You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
   - Try out [ML5.js](https://ml5js.org) for machine learning and [Matter.js](https://brm.io/matter-js) for physics simulation. They play well with P5.js.
@@ -352,8 +351,7 @@ These objects support video chaining and can be connected to create complex visu
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `mouse.x` and `mouse.y` provide real-time mouse coordinates (scope depends on `setMouseScope`)
-  - `send(message)` and `recv(callback)` works here, see [Message Passing](#message-passing).
-  - `setTitle(title)` sets the hydra object title
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
 - Try out these presets to get you started:
   - `pipe.hydra`: passes the image through without any changes
   - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
@@ -430,9 +428,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - You can call these special methods in your canvas code:
   - `noDrag()` disables dragging the node. This allows you to add mouse or touch interactivity to your canvas without accidentally moving the node.
   - `noOutput()` hides the video output port. Useful when creating interface widgets or tools that don't need to be part of the video processing chain.
-  - `setTitle(title)` sets the title of the node. Create custom, reusable widgets with meaningful names like `setTitle('Spectogram')`.
-  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
-  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
+  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
 
 - This runs on the [rendering pipeline](#rendering-pipeline) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on web workers. This means:
   - Pro: It can chain with other visual objects (`glsl`, `hydra`, etc.) without lag. You can draw animations using the canvas API and output it at 60fps.
@@ -451,7 +448,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - Use `onKeyDown(callback)` and `onKeyUp(callback)` to register keyboard event handlers. Events are trapped and won't leak to xyflow (e.g., pressing Delete won't delete the node).
   - Full DOM and browser API access (e.g. `document` and `window`)
   - Use `setCanvasSize(width, height)` to dynamically resize the canvas resolution (e.g., `setCanvasSize(500, 500)`).
-  - Otherwise, the API remains the same as `canvas`: `noDrag()`, `noOutput()`, `setTitle(title)`, `send(message)`, `recv(callback)`, `fft()` can all be used in `canvas.dom`.
+  - Otherwise, the API remains the same as `canvas`: `noDrag()`, `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](#patchies-javascript-runner) functions.
 
 - When to use `canvas.dom` instead of `canvas`:
   - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual.
@@ -483,12 +480,11 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `textmode.dom`: Runs on the main thread. Supports [mouse](https://code.textmode.art/docs/events.html#mouse-events), [touch](https://code.textmode.art/docs/events.html#touch-events) and [keyboard](https://code.textmode.art/docs/events.html#keyboard-events) interactivity. Supports [video and images](https://code.textmode.art/docs/loadables.html). Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
 
 - You can call these special methods in your textmode code:
-  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
-  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
   - `noDrag()` disables dragging the node.
   - `noOutput()` hides the video output port.
-  - `setTitle(title)` sets the title of the node.
-  - `setHidePorts(true | false)` sets whether to hide inlets and outlets
+  - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
+  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `onCleanup`, etc.).
 
 - The textmode instance is exposed as `tm` in your code:
 
@@ -574,13 +570,11 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `onKeyUp(callback)` receives keyup events
 
 - You can call these special methods in both `three` and `three.dom`:
-  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
-  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis)
   - `noDrag()` disables dragging the node.
   - `noOutput()` hides the video output port.
-  - `setTitle(title)` sets the title of the node.
-  - `setPortCount(ins, outs)` sets the number of message inlets and outlets
-  - `setHidePorts(true | false)` sets whether to hide inlets and outlets
+  - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
+  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
 
 - As well as these variables:
   - `mouse.x` and `mouse.y` provides mouse position
@@ -639,21 +633,9 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `js`: A JavaScript code block
 
-- Use `console.log()` to log messages to the virtual console.
-- Use `setInterval(callback, ms)` to run a callback every `ms` milliseconds.
-  - The code block has a special version of `setInterval` that automatically cleans up the interval on unmount. Do not use `window.setInterval` from the window scope as that will not clean up.
-- Use `requestAnimationFrame(callback)` to run a callback on the next animation frame.
-  - The code block has a special version of `requestAnimationFrame` that automatically cleans up on unmount. Do not use `window.requestAnimationFrame` from the window scope as that will not clean up.
-- Use `onCleanup(callback)` to register a cleanup callback that runs when the node is unmounted or code is re-executed.
-  - Useful for disconnecting resources, unsubscribing from events, or any custom cleanup logic.
-- Use `send()` and `recv()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section above.
+- A general-purpose JavaScript code block for scripting and automation.
 - Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
-- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets you want. By default, there is 1 inlet and 1 outlet.
-  - Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
-  - Use `send(data, { to: inletIndex })` to send data to a specific inlet of another object.
-- Top-level awaits are supported.
-  - Use `await delay(ms)` to pause the code for `ms` milliseconds. For example, `await delay(1000)` pauses the code for 1 second.
-- There are many features offered by the [Patchies JavaScript Runner](#patchies-javascript-runner) that are available in `js` and a couple other objects. The runner allows you to import third party npm libraries, load file blob urls from virtual filesystem, use libraries defined in the patcher, and more.
+- See [Patchies JavaScript Runner](#patchies-javascript-runner) for the full list of available functions (`send`, `recv`, `setInterval`, `onCleanup`, etc.) and features (NPM imports, VFS, shared libraries).
 
 ### `expr`: expression evaluator
 
@@ -709,10 +691,8 @@ This allows you to set up multiple values before triggering a computation. Use [
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `vue` code:
-  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
   - `noDrag()` disables dragging the node.
-  - `setTitle(title)` sets the title of the node.
-  - `setPortCount(inletCount, outletCount)` sets the number of message inlets and outlets.
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
 - See the [Vue.js documentation](https://vuejs.org/guide/introduction.html) to learn how Vue works.
 
 ### `dom`: create user interfaces with Vanilla JS
@@ -722,10 +702,8 @@ This allows you to set up multiple values before triggering a computation. Use [
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `dom` code:
-  - `send(message)` and `recv(callback)`, see [Message Passing](#message-passing).
   - `noDrag()` disables dragging the node.
-  - `setTitle(title)` sets the title of the node.
-  - `setPortCount(inletCount, outletCount)` sets the number of message inlets and outlets.
+  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
 
 ### `uxn`: Uxn virtual machine
 
@@ -1347,14 +1325,7 @@ The Tone.js context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-In addition to the audio processing capabilities, `tone~` also supports messaging:
-
-- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
-  - By default, there are no message inlets or outlets.
-- Use `setTitle(title)` to set the title of the object.
-  - By default, the title is `tone~`.
-  - This lets you create custom objects with meaningful names.
-- Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
+In addition to the audio processing capabilities, `tone~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
 
 Try out these presets:
 
@@ -1400,14 +1371,7 @@ The `sonic~` context provides:
 
 Available events: `'ready'`, `'loading:start'`, `'loading:complete'`, `'error'`, `'message'`
 
-In addition to the synthesis capabilities, `sonic~` also supports messaging:
-
-- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
-  - By default, there are no message inlets or outlets.
-- Use `setTitle(title)` to set the title of the object.
-  - By default, the title is `sonic~`.
-  - This lets you create custom objects with meaningful names.
-- Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
+In addition to the synthesis capabilities, `sonic~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
 
 Load and play a synth:
 
@@ -1469,14 +1433,7 @@ The `elem~` context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-In addition to the audio processing capabilities, `elem~` also supports messaging:
-
-- Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets.
-  - By default, there are no message inlets or outlets.
-- Use `setTitle(title)` to set the title of the object.
-  - By default, the title is `elem~`.
-  - This lets you create custom objects with meaningful names.
-- Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
+In addition to the audio processing capabilities, `elem~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setTitle`, `setPortCount`, `onCleanup`, etc.).
 
 Here's how to create a simple phasor:
 
@@ -1607,7 +1564,35 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 Most of the JavaScript nodes in Patchies are using the JavaScript Runner (JSRunner), which is responsible for executing JavaScript code in a sandboxed environment and providing Patchies-specific features to the code.
 
-The following features are only available in the objects using JSRunner, as follows: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `sonic~`, `tone~` and `elem~`.
+The following features are only available in the objects using JSRunner, as follows: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
+
+### Common Runtime Functions
+
+These functions are available in all JSRunner-enabled nodes:
+
+- **Console**: Use `console.log()` to log messages to the virtual console (not the browser console).
+
+- **Timers with auto-cleanup**:
+  - `setInterval(callback, ms)` runs a callback every `ms` milliseconds. Automatically cleaned up on unmount or code re-execution.
+  - `requestAnimationFrame(callback)` schedules a callback for the next animation frame. Automatically cleaned up on unmount or code re-execution.
+  - Do not use `window.setInterval` or `window.requestAnimationFrame` as they will not clean up automatically.
+
+- **Custom cleanup**: Use `onCleanup(callback)` to register a cleanup callback that runs when the node is unmounted or code is re-executed. Useful for disconnecting resources, unsubscribing from events, or any custom cleanup logic.
+
+- **Message passing**: Use `send(message)` and `recv(callback)` to communicate with other nodes. See [Message Passing](#message-passing) for details.
+
+- **Port configuration**: Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets. Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
+
+- **Node title**: Use `setTitle(title)` to set the display title of the node.
+
+- **Async helpers**: Top-level `await` is supported. Use `await delay(ms)` to pause execution for `ms` milliseconds.
+
+- **Audio analysis**: Use `fft()` to get audio frequency analysis data from a connected `fft~` node's message inlet. See [Audio Analysis](#audio-analysis) for details.
+
+- **LLM integration**: Use `await llm(prompt, options?)` to call Google's Gemini API from your code.
+  - Requires a Gemini API key set in settings: `Ctrl/Cmd + K > Gemini`
+  - Example: `const response = await llm("Describe this image")`
+  - Options: `{ imageNodeId?: string, abortSignal?: AbortSignal }` - pass `imageNodeId` to include a visual node's output as image context.
 
 ### Importing JavaScript packages from NPM
 
