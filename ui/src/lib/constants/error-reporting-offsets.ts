@@ -38,7 +38,7 @@ export const TONE_WRAPPER_OFFSET = 0;
 /**
  * ElementaryNode: Uses JSRunner with additional wrapper lines.
  */
-export const ELEM_WRAPPER_OFFSET = 2;
+export const ELEM_WRAPPER_OFFSET = 0;
 
 /**
  * SonicNode: Uses JSRunner with additional wrapper lines.
