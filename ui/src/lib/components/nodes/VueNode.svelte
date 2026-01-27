@@ -257,12 +257,12 @@
 	{#snippet preview()}
 		<div
 			class={[
-				'overflow-hidden border',
+				'overflow-hidden rounded-md',
 				lineErrors !== undefined
 					? 'border-red-500/70'
 					: selected
-						? 'shadow-glow-md border-zinc-400'
-						: 'hover:shadow-glow-sm border-transparent',
+						? 'shadow-glow-md ring ring-zinc-400'
+						: 'hover:shadow-glow-sm',
 				dragEnabled ? '' : 'nodrag'
 			]}
 			style={containerWidth !== undefined && containerHeight !== undefined
