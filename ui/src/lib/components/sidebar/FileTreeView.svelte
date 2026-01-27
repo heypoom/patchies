@@ -349,7 +349,7 @@
 			}
 
 			// Dispatch event to update vfsPath in nodes
-			PatchiesEventBus.getInstance().dispatch({
+			eventBus.dispatch({
 				type: 'vfsPathRenamed',
 				oldPath: pathToMove,
 				newPath
