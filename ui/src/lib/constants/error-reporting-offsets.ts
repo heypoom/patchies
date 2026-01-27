@@ -47,18 +47,8 @@ export const SONIC_WRAPPER_OFFSET = 0;
 
 /**
  * DSP AudioWorklet: Uses `new Function()` with wrapper lines before user code.
- * Since DSP doesn't use JSRunner (which has 6-line preamble), we need a negative
- * offset to compensate: parseJSError subtracts 6, but we only have 5 wrapper lines.
- *
- * Wrapper template (5 lines before user code):
- * - Line 1: (empty - newline after backtick)
- * - Line 2: var $1, $2, ... $9;
- * - Line 3: (empty line)
- * - Line 4+: ${code} (user code)
- *
- * So we need -1 to subtract 5 total (6 - 1 = 5).
  */
-export const DSP_WRAPPER_OFFSET = -1;
+export const DSP_WRAPPER_OFFSET = -2;
 
 /**
  * HydraRenderer: Uses `new Function()` with wrapper lines before user code.
