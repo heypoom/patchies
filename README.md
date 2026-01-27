@@ -1682,7 +1682,7 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
 
-Supported objects are `glsl`, `hydra`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `swgl`, `js` and `tone~`.
+Supported objects are `glsl`, `swgl`, as well as any objects using the unified [JavaScript Runner](#patchies-javascript-runner), such as `canvas.dom`, `hydra` and many more.
 
 ### Usage with GLSL
 
@@ -1692,7 +1692,7 @@ Supported objects are `glsl`, `hydra`, `p5`, `canvas`, `canvas.dom`, `textmode`,
 
 ### Usage with JavaScript-based objects
 
-You can call the `fft()` function to get the audio analysis data in the supported JavaScript-based objects: `hydra`, `p5`, `canvas`, `canvas.dom` and `js`.
+You can call the `fft()` function to get the audio analysis data in any objects using the unified [JavaScript Runner](#patchies-javascript-runner).
 
 - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
   - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-fft-code) for why this is needed and how to convert existing code.
