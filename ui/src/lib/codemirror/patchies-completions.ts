@@ -219,7 +219,6 @@ const topLevelOnlyFunctions = new Set([
 	'setMouseScope',
 	'setPortCount',
 	'setRunOnMount',
-	'setTitle',
 	'setVideoCount'
 ]);
 

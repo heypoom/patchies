@@ -12,6 +12,7 @@ import { MtofObject } from './MtofObject';
 import { SelectObject } from './SelectObject';
 import { SpigotObject } from './SpigotObject';
 import { TriggerObject } from './TriggerObject';
+import { TtsObject } from './TtsObject';
 import { WebMidiLinkObject } from './WebMidiLinkObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
@@ -29,6 +30,7 @@ const TEXT_OBJECTS = [
 	SelectObject,
 	SpigotObject,
 	TriggerObject,
+	TtsObject,
 	WebMidiLinkObject
 ] as const satisfies TextObjectClass[];
 
