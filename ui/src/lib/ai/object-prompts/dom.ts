@@ -22,6 +22,9 @@ ${messagingInstructions}
 - Message inlet: "in-0", "in-1", etc.
 - Message outlet: "out-0", "out-1", etc.
 
+**Caveats**
+- Do NOT use gradient colors in Tailwind classes, like "bg-gradient-to-r from-amber-500 to-orange-400". They are not supported.
+
 Example - Simple HTML with Tailwind:
 \`\`\`json
 {
