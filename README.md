@@ -405,7 +405,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 ### `swgl`: creates a SwissGL shader
 
-- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code. Here is how to make a simple animated mesh:
+- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code. See the [API docs](https://github.com/google/swissgl/blob/main/docs/API.md) for full reference. Here is how to make a simple animated mesh:
 
   ```js
   function render({ t }) {
