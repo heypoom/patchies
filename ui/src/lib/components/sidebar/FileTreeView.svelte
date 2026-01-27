@@ -93,13 +93,13 @@
 	}
 
 	function handleDragStart(event: DragEvent, node: TreeNode) {
-		if (!node.path || !node.entry) return;
+		if (!node.path) return;
 
 		event.dataTransfer?.setData('application/x-vfs-path', node.path);
 		event.dataTransfer?.setData('text/plain', node.path);
 
 		if (event.dataTransfer) {
-			event.dataTransfer.effectAllowed = 'copy';
+			event.dataTransfer.effectAllowed = 'copyMove';
 		}
 	}
 
@@ -230,15 +230,18 @@
 	}
 
 	function handleFolderDragOver(event: DragEvent, folderPath: string) {
-		// Only accept file drops, not internal VFS drags
+		// Only allow drops into user:// or obj:// namespace
+		if (!folderPath.startsWith('user://') && !folderPath.startsWith('obj://')) return;
+
 		const hasFiles = event.dataTransfer?.types.includes('Files');
 		const hasVfsPath = event.dataTransfer?.types.includes('application/x-vfs-path');
 
-		if (hasFiles && !hasVfsPath) {
+		// Accept external file drops or internal VFS moves
+		if (hasFiles || hasVfsPath) {
 			event.preventDefault();
 			event.stopPropagation();
 			if (event.dataTransfer) {
-				event.dataTransfer.dropEffect = 'copy';
+				event.dataTransfer.dropEffect = hasVfsPath ? 'move' : 'copy';
 			}
 			dropTargetPath = folderPath;
 		}
@@ -249,10 +252,10 @@
 		const hasFiles = event.dataTransfer?.types.includes('Files');
 		const hasVfsPath = event.dataTransfer?.types.includes('application/x-vfs-path');
 
-		if (hasFiles && !hasVfsPath) {
+		if (hasFiles || hasVfsPath) {
 			event.preventDefault();
 			if (event.dataTransfer) {
-				event.dataTransfer.dropEffect = 'copy';
+				event.dataTransfer.dropEffect = hasVfsPath ? 'move' : 'copy';
 			}
 			// Only set to user:// if we're not already targeting a folder
 			if (dropTargetPath === null) {
@@ -276,12 +279,88 @@
 		const targetFolder = dropTargetPath;
 		dropTargetPath = null;
 
+		// Check for internal VFS move first
+		const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
+		if (vfsPath && targetFolder) {
+			await moveVfsFile(vfsPath, targetFolder);
+			return;
+		}
+
+		// Handle external file drops
 		const files = event.dataTransfer?.files;
 		if (!files || files.length === 0) return;
 
 		// Store each dropped file in VFS with the target folder
 		for (const file of Array.from(files)) {
 			await vfs.storeFile(file, undefined, targetFolder ?? undefined);
+		}
+	}
+
+	async function moveVfsFile(oldPath: string, targetFolder: string) {
+		const parsed = parseVFSPath(oldPath);
+		if (!parsed) return;
+
+		// Get the entry to access the real filename
+		const rootEntry = vfs.getEntry(oldPath);
+		// Use entry.filename (the real name) or fall back to path segment
+		const filename = rootEntry?.filename || parsed.segments[parsed.segments.length - 1];
+
+		// Construct new path in target folder
+		const targetParsed = parseVFSPath(targetFolder);
+		if (!targetParsed) return;
+
+		// Build new path: targetFolder + filename
+		const newBasePath = targetFolder.endsWith('/')
+			? `${targetFolder}${filename}`
+			: `${targetFolder}/${filename}`;
+
+		// Don't move if it's the same location
+		if (oldPath === newBasePath) return;
+
+		// Check if moving to a child of itself (invalid)
+		const oldPathPrefix = oldPath.endsWith('/') ? oldPath : oldPath + '/';
+		if (newBasePath.startsWith(oldPathPrefix)) {
+			toast.error("Can't move a folder into itself");
+			return;
+		}
+
+		// Get all paths that need to be moved (the item and all its children)
+		const allPaths = vfs.list();
+		const pathsToMove = allPaths.filter((p) => p === oldPath || p.startsWith(oldPathPrefix));
+
+		const localProvider = getLocalProvider();
+
+		// Move each path
+		for (const pathToMove of pathsToMove) {
+			const entry = vfs.getEntry(pathToMove);
+			if (!entry) continue;
+
+			// Calculate new path by replacing the old base with the new base
+			const relativePath = pathToMove === oldPath ? '' : pathToMove.slice(oldPath.length);
+			const newPath = newBasePath + relativePath;
+
+			// Move in VFS - preserve the original filename from the entry
+			vfs.registerEntry(newPath, entry);
+			vfs.remove(pathToMove);
+
+			// Move in LocalProvider
+			if (localProvider) {
+				await localProvider.rename(pathToMove, newPath);
+			}
+
+			// Dispatch event to update vfsPath in nodes
+			PatchiesEventBus.getInstance().dispatch({
+				type: 'vfsPathRenamed',
+				oldPath: pathToMove,
+				newPath
+			});
+		}
+
+		// Update selection if moved item was selected
+		if (selectedPaths.has(oldPath)) {
+			selectedPaths.delete(oldPath);
+			selectedPaths.add(newBasePath);
+			selectedPaths = new Set(selectedPaths);
 		}
 	}
 
@@ -731,10 +810,12 @@
 
 	{@const isRenaming = renamingPath === node.path}
 	{@const showContextMenu = node.path && !isNamespace && !isLinkedFolder}
+	{@const isDraggable = (isFile || (isFolder && !isNamespace && !isLinkedFolder)) && node.path}
 
 	{#if node.name !== 'root'}
 		<ContextMenu.Root>
 			<ContextMenu.Trigger disabled={!showContextMenu} class="block w-full">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					class="group flex w-full items-center text-left text-xs
 						{needsReselectFlag
@@ -744,14 +825,14 @@
 							: isSelected
 								? 'bg-blue-900/40 hover:bg-blue-900/50'
 								: 'hover:bg-zinc-800'}"
+					ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
+					ondrop={(e) => isFolder && handleFolderDrop(e)}
 				>
 					<button
 						class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
 						style="padding-left: {paddingLeft}px"
-						draggable={isFile ? 'true' : 'false'}
-						ondragstart={(e) => isFile && handleDragStart(e, node)}
-						ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
-						ondrop={(e) => isFolder && handleFolderDrop(e)}
+						draggable={isDraggable ? 'true' : 'false'}
+						ondragstart={(e) => isDraggable && handleDragStart(e, node)}
 						onclick={async () => {
 							if (isRenaming) return;
 							if (isFolder && node.path && !isNamespace) {
