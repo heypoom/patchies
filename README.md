@@ -1574,8 +1574,10 @@ These functions are available in all JSRunner-enabled nodes:
 
 - **Timers with auto-cleanup**:
   - `setInterval(callback, ms)` runs a callback every `ms` milliseconds. Automatically cleaned up on unmount or code re-execution.
+  - `setTimeout(callback, ms)` runs a callback after `ms` milliseconds. Automatically cleaned up on unmount or code re-execution.
+  - `delay(ms)` returns a Promise that resolves after `ms` milliseconds. If you stop the `js` object while awaiting `delay(ms)`, the promise rejects and code execution stops.
   - `requestAnimationFrame(callback)` schedules a callback for the next animation frame. Automatically cleaned up on unmount or code re-execution.
-  - Do not use `window.setInterval` or `window.requestAnimationFrame` as they will not clean up automatically.
+  - Do not use `window.setInterval`, `window.setTimeout`, or `window.requestAnimationFrame` as they will not clean up automatically.
 
 - **Custom cleanup**: Use `onCleanup(callback)` to register a cleanup callback that runs when the node is unmounted or code is re-executed. Useful for disconnecting resources, unsubscribing from events, or any custom cleanup logic.
 
