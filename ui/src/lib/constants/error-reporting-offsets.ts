@@ -43,7 +43,7 @@ export const ELEM_WRAPPER_OFFSET = 2;
 /**
  * SonicNode: Uses JSRunner with additional wrapper lines.
  */
-export const SONIC_WRAPPER_OFFSET = 2;
+export const SONIC_WRAPPER_OFFSET = 0;
 
 /**
  * DSP AudioWorklet: Uses `new Function()` with wrapper lines before user code.
