@@ -175,6 +175,44 @@ export class LocalFilesystemProvider implements VFSProvider {
 	}
 
 	/**
+	 * Rename/move a file from oldPath to newPath.
+	 * Transfers both handle and file data to the new path.
+	 */
+	async rename(oldPath: string, newPath: string): Promise<void> {
+		// Get cached data
+		const handle = this.handleCache.get(oldPath);
+		const file = this.fileCache.get(oldPath);
+
+		// Also check IndexedDB for persisted data
+		const persistedHandle = await getHandle(oldPath);
+		const persistedFile = await getFileData(oldPath);
+
+		// Move to new path in caches
+		if (handle) {
+			this.handleCache.set(newPath, handle);
+			this.handleCache.delete(oldPath);
+		}
+
+		if (file) {
+			this.fileCache.set(newPath, file);
+			this.fileCache.delete(oldPath);
+		}
+
+		// Move in IndexedDB - store at new path first, then remove old
+		const storePromises: Promise<void>[] = [];
+		if (persistedHandle) {
+			storePromises.push(storeHandle(newPath, persistedHandle));
+		}
+
+		if (persistedFile) {
+			storePromises.push(storeFileData(newPath, persistedFile));
+		}
+
+		await Promise.all(storePromises);
+		await Promise.all([removeHandle(oldPath), removeFileData(oldPath)]);
+	}
+
+	/**
 	 * Clear all cached data.
 	 */
 	clear(): void {

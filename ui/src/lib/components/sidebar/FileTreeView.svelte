@@ -15,11 +15,16 @@
 		Box,
 		Upload,
 		Link,
-		RefreshCw
+		RefreshCw,
+		Trash2,
+		Pencil,
+		Copy
 	} from '@lucide/svelte/icons';
 	import { VirtualFilesystem, getLocalProvider, guessMimeType } from '$lib/vfs';
 	import { parseVFSPath, isVFSFolder, isLocalFolder, type VFSEntry } from '$lib/vfs/types';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as ContextMenu from '$lib/components/ui/context-menu';
+	import { toast } from 'svelte-sonner';
 
 	interface TreeNode {
 		name: string;
@@ -356,6 +361,85 @@
 		}
 	}
 
+	// Rename state
+	let renamingPath = $state<string | null>(null);
+	let renameInputValue = $state('');
+
+	function handleRenameClick(path: string, currentName: string) {
+		renamingPath = path;
+		renameInputValue = currentName;
+	}
+
+	async function handleRenameSubmit(event: KeyboardEvent) {
+		if (event.key === 'Enter' && renameInputValue.trim() && renamingPath) {
+			event.preventDefault();
+			const newName = renameInputValue.trim();
+			const oldPath = renamingPath;
+
+			// Get the parent path and construct new path
+			const parsed = parseVFSPath(oldPath);
+			if (parsed) {
+				const parentSegments = parsed.segments.slice(0, -1);
+				const newPath =
+					parentSegments.length > 0
+						? `${parsed.namespace}://${parentSegments.join('/')}/${newName}`
+						: `${parsed.namespace}://${newName}`;
+
+				// Get entry, register at new path, remove old path
+				const entry = vfs.getEntry(oldPath);
+				if (entry) {
+					// Update the filename in the entry
+					const updatedEntry = { ...entry, filename: newName };
+					vfs.registerEntry(newPath, updatedEntry);
+					vfs.remove(oldPath);
+
+					// Also rename in LocalProvider to persist the change
+					const localProvider = getLocalProvider();
+					if (localProvider) {
+						await localProvider.rename(oldPath, newPath);
+					}
+
+					// Update selection if renamed item was selected
+					if (selectedPaths.has(oldPath)) {
+						selectedPaths.delete(oldPath);
+						selectedPaths.add(newPath);
+						selectedPaths = new Set(selectedPaths);
+					}
+				}
+			}
+
+			renamingPath = null;
+			renameInputValue = '';
+		} else if (event.key === 'Escape') {
+			renamingPath = null;
+			renameInputValue = '';
+		}
+	}
+
+	async function handleCopyPath(path: string) {
+		await navigator.clipboard.writeText(path);
+		toast.success('Path copied to clipboard');
+	}
+
+	async function handleDeleteFromContextMenu(path: string) {
+		const localProvider = getLocalProvider();
+
+		// If it's a folder, also delete all children
+		const allPaths = vfs.list();
+		const pathsToDelete = allPaths.filter(
+			(p) => p === path || p.startsWith(path.endsWith('/') ? path : path + '/')
+		);
+
+		for (const pathToDelete of pathsToDelete) {
+			vfs.remove(pathToDelete);
+			if (localProvider) {
+				await localProvider.remove(pathToDelete);
+			}
+		}
+
+		selectedPaths = new Set();
+	}
+
 	// Check if a path or any of its children need permission re-grant
 	function needsReselect(nodePath: string | undefined): boolean {
 		if (!nodePath) return false;
@@ -640,184 +724,230 @@
 		isNamespace || (isFolder && node.path?.startsWith('user://') && !isLinkedFolder)}
 	{@const needsReselectFlag = needsReselect(node.path)}
 
+	{@const isRenaming = renamingPath === node.path}
+	{@const showContextMenu = node.path && !isNamespace && !isLinkedFolder}
+
 	{#if node.name !== 'root'}
-		<div
-			class="group flex w-full items-center text-left text-xs
-				{needsReselectFlag
-				? 'bg-amber-900/30'
-				: isDropTarget
-					? 'bg-blue-600/30'
-					: isSelected
-						? 'bg-blue-900/40 hover:bg-blue-900/50'
-						: 'hover:bg-zinc-800'}"
-		>
-			<button
-				class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
-				style="padding-left: {paddingLeft}px"
-				draggable={isFile ? 'true' : 'false'}
-				ondragstart={(e) => isFile && handleDragStart(e, node)}
-				ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
-				ondrop={(e) => isFolder && handleFolderDrop(e)}
-				onclick={async () => {
-					if (isFolder && node.path && !isNamespace) {
-						// For non-namespace folders: select (without deselect) and toggle expand
-						selectedPaths = new Set([node.path]);
-						// Check if we're about to expand (before toggling)
-						const willExpand = !expandedPaths.has(node.path);
-						toggleExpanded(node.path);
-						// Load local folder contents when expanding
-						if (isLinkedFolder && willExpand) {
-							await handleLocalFolderExpand(node.path);
-						}
-					} else if (isFolder && node.path) {
-						// For namespace roots: just expand/collapse
-						toggleExpanded(node.path);
-					} else if (isFile && node.path) {
-						toggleSelected(node.path);
-					}
-				}}
-			>
-				{#if isFolder}
-					{#if isExpanded}
-						<ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
-					{:else}
-						<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
-					{/if}
-					{#if isUserNamespace}
-						<User class="h-3.5 w-3.5 shrink-0 text-yellow-400" />
-					{:else if isObjectNamespace}
-						<Box class="h-3.5 w-3.5 shrink-0 text-purple-400" />
-					{:else if isLinkedFolder}
-						<FolderSymlink class="h-3.5 w-3.5 shrink-0 text-cyan-400" />
-					{:else if isExpanded}
-						<FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-					{:else}
-						<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-					{/if}
-				{:else}
-					{@const fileIcon = getFileIcon(node.entry?.mimeType)}
-					<span class="w-3"></span>
-					<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
-				{/if}
-
-				<span class="truncate font-mono text-zinc-300" title={node.entry?.filename || node.name}>
-					{node.entry?.filename || node.name}
-				</span>
-			</button>
-
-			{#if canHaveChildren && node.path}
+		<ContextMenu.Root>
+			<ContextMenu.Trigger disabled={!showContextMenu} class="block w-full">
 				<div
-					class="flex shrink-0 items-center gap-0.5 pr-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+					class="group flex w-full items-center text-left text-xs
+						{needsReselectFlag
+						? 'bg-amber-900/30'
+						: isDropTarget
+							? 'bg-blue-600/30'
+							: isSelected
+								? 'bg-blue-900/40 hover:bg-blue-900/50'
+								: 'hover:bg-zinc-800'}"
 				>
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-								onclick={(e) => handleCreateFolderClick(node.path!, e)}
-								title="Create folder"
-							>
-								<FolderPlus class="h-3.5 w-3.5" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content side="bottom">Create folder</Tooltip.Content>
-					</Tooltip.Root>
+					<button
+						class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
+						style="padding-left: {paddingLeft}px"
+						draggable={isFile ? 'true' : 'false'}
+						ondragstart={(e) => isFile && handleDragStart(e, node)}
+						ondragover={(e) => isFolder && node.path && handleFolderDragOver(e, node.path)}
+						ondrop={(e) => isFolder && handleFolderDrop(e)}
+						onclick={async () => {
+							if (isRenaming) return;
+							if (isFolder && node.path && !isNamespace) {
+								// For non-namespace folders: select (without deselect) and toggle expand
+								selectedPaths = new Set([node.path]);
+								// Check if we're about to expand (before toggling)
+								const willExpand = !expandedPaths.has(node.path);
+								toggleExpanded(node.path);
+								// Load local folder contents when expanding
+								if (isLinkedFolder && willExpand) {
+									await handleLocalFolderExpand(node.path);
+								}
+							} else if (isFolder && node.path) {
+								// For namespace roots: just expand/collapse
+								toggleExpanded(node.path);
+							} else if (isFile && node.path) {
+								toggleSelected(node.path);
+							}
+						}}
+					>
+						{#if isFolder}
+							{#if isExpanded}
+								<ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
+							{:else}
+								<ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+							{/if}
+							{#if isUserNamespace}
+								<User class="h-3.5 w-3.5 shrink-0 text-yellow-400" />
+							{:else if isObjectNamespace}
+								<Box class="h-3.5 w-3.5 shrink-0 text-purple-400" />
+							{:else if isLinkedFolder}
+								<FolderSymlink class="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+							{:else if isExpanded}
+								<FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+							{:else}
+								<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+							{/if}
+						{:else}
+							{@const fileIcon = getFileIcon(node.entry?.mimeType)}
+							<span class="w-3"></span>
+							<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
+						{/if}
 
-					{#if isUserNamespace && supportsDirectoryPicker}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<button
-									class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
-									onclick={handleLinkFolderClick}
-									title="Link local folder"
-								>
-									<FolderSymlink class="h-3.5 w-3.5" />
-								</button>
-							</Tooltip.Trigger>
-							<Tooltip.Content side="bottom">Link local folder</Tooltip.Content>
-						</Tooltip.Root>
+						{#if isRenaming}
+							<!-- svelte-ignore a11y_autofocus -->
+							<input
+								type="text"
+								class="flex-1 truncate rounded bg-transparent px-1 font-mono text-zinc-300 ring-1 ring-blue-500 outline-none"
+								bind:value={renameInputValue}
+								onkeydown={handleRenameSubmit}
+								onclick={(e) => e.stopPropagation()}
+								autofocus
+							/>
+						{:else}
+							<span
+								class="truncate font-mono text-zinc-300"
+								title={node.entry?.filename || node.name}
+							>
+								{node.entry?.filename || node.name}
+							</span>
+						{/if}
+					</button>
+
+					{#if canHaveChildren && node.path}
+						<div
+							class="flex shrink-0 items-center gap-0.5 pr-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+						>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<button
+										class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+										onclick={(e) => handleCreateFolderClick(node.path!, e)}
+										title="Create folder"
+									>
+										<FolderPlus class="h-3.5 w-3.5" />
+									</button>
+								</Tooltip.Trigger>
+								<Tooltip.Content side="bottom">Create folder</Tooltip.Content>
+							</Tooltip.Root>
+
+							{#if isUserNamespace && supportsDirectoryPicker}
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<button
+											class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
+											onclick={handleLinkFolderClick}
+											title="Link local folder"
+										>
+											<FolderSymlink class="h-3.5 w-3.5" />
+										</button>
+									</Tooltip.Trigger>
+									<Tooltip.Content side="bottom">Link local folder</Tooltip.Content>
+								</Tooltip.Root>
+							{/if}
+
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<button
+										class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+										onclick={(e) => handleUploadClick(node.path!, e)}
+										title="Upload file"
+									>
+										<Upload class="h-3.5 w-3.5" />
+									</button>
+								</Tooltip.Trigger>
+								<Tooltip.Content side="bottom">Upload file</Tooltip.Content>
+							</Tooltip.Root>
+
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<button
+										class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+										onclick={(e) => handleAddUrlClick(node.path!, e)}
+										title="Add from URL"
+									>
+										<Link class="h-3.5 w-3.5" />
+									</button>
+								</Tooltip.Trigger>
+								<Tooltip.Content side="bottom">Add from URL</Tooltip.Content>
+							</Tooltip.Root>
+						</div>
 					{/if}
 
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-								onclick={(e) => handleUploadClick(node.path!, e)}
-								title="Upload file"
-							>
-								<Upload class="h-3.5 w-3.5" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content side="bottom">Upload file</Tooltip.Content>
-					</Tooltip.Root>
+					{#if isLinkedFolder && node.path}
+						<div
+							class="flex shrink-0 items-center gap-0.5 pr-2 {needsReselectFlag
+								? ''
+								: 'opacity-0 group-hover:opacity-100'}"
+						>
+							{#if needsReselectFlag}
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<button
+											class="rounded p-0.5 text-amber-400 hover:bg-amber-700/50 hover:text-amber-300"
+											onclick={(e) => handleRelinkFolderClick(node.path!, e)}
+											title="Re-link folder"
+										>
+											<FolderSymlink class="h-3.5 w-3.5" />
+										</button>
+									</Tooltip.Trigger>
+									<Tooltip.Content side="bottom">Re-link folder</Tooltip.Content>
+								</Tooltip.Root>
+							{:else}
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<button
+											class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
+											onclick={(e) => handleRefreshLinkedFolder(node.path!, e)}
+											title="Refresh folder"
+										>
+											<RefreshCw class="h-3.5 w-3.5" />
+										</button>
+									</Tooltip.Trigger>
+									<Tooltip.Content side="bottom">Refresh folder</Tooltip.Content>
+								</Tooltip.Root>
+							{/if}
+						</div>
+					{/if}
 
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-								onclick={(e) => handleAddUrlClick(node.path!, e)}
-								title="Add from URL"
-							>
-								<Link class="h-3.5 w-3.5" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content side="bottom">Add from URL</Tooltip.Content>
-					</Tooltip.Root>
-				</div>
-			{/if}
-
-			{#if isLinkedFolder && node.path}
-				<div
-					class="flex shrink-0 items-center gap-0.5 pr-2 {needsReselectFlag
-						? ''
-						: 'opacity-0 group-hover:opacity-100'}"
-				>
-					{#if needsReselectFlag}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<button
-									class="rounded p-0.5 text-amber-400 hover:bg-amber-700/50 hover:text-amber-300"
-									onclick={(e) => handleRelinkFolderClick(node.path!, e)}
-									title="Re-link folder"
-								>
-									<FolderSymlink class="h-3.5 w-3.5" />
-								</button>
-							</Tooltip.Trigger>
-							<Tooltip.Content side="bottom">Re-link folder</Tooltip.Content>
-						</Tooltip.Root>
-					{:else}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<button
-									class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-cyan-400"
-									onclick={(e) => handleRefreshLinkedFolder(node.path!, e)}
-									title="Refresh folder"
-								>
-									<RefreshCw class="h-3.5 w-3.5" />
-								</button>
-							</Tooltip.Trigger>
-							<Tooltip.Content side="bottom">Refresh folder</Tooltip.Content>
-						</Tooltip.Root>
+					{#if needsReselectFlag && isFile && node.path}
+						<div class="flex shrink-0 items-center pr-2">
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<button
+										class="rounded p-0.5 text-amber-400 hover:bg-amber-700/50 hover:text-amber-300"
+										onclick={(e) => handleReselectClick(node.path!, e)}
+										title="Re-link file"
+									>
+										<RefreshCw class="h-3.5 w-3.5" />
+									</button>
+								</Tooltip.Trigger>
+								<Tooltip.Content side="bottom">Re-link file</Tooltip.Content>
+							</Tooltip.Root>
+						</div>
 					{/if}
 				</div>
-			{/if}
+			</ContextMenu.Trigger>
 
-			{#if needsReselectFlag && isFile && node.path}
-				<div class="flex shrink-0 items-center pr-2">
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								class="rounded p-0.5 text-amber-400 hover:bg-amber-700/50 hover:text-amber-300"
-								onclick={(e) => handleReselectClick(node.path!, e)}
-								title="Re-link file"
-							>
-								<RefreshCw class="h-3.5 w-3.5" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content side="bottom">Re-link file</Tooltip.Content>
-					</Tooltip.Root>
-				</div>
+			{#if showContextMenu}
+				<ContextMenu.Content>
+					<ContextMenu.Item
+						onclick={() => handleRenameClick(node.path!, node.entry?.filename || node.name)}
+					>
+						<Pencil class="mr-2 h-4 w-4" />
+						Rename
+					</ContextMenu.Item>
+					<ContextMenu.Item onclick={() => handleCopyPath(node.path!)}>
+						<Copy class="mr-2 h-4 w-4" />
+						Copy Path
+					</ContextMenu.Item>
+					<ContextMenu.Separator />
+					<ContextMenu.Item
+						variant="destructive"
+						onclick={() => handleDeleteFromContextMenu(node.path!)}
+					>
+						<Trash2 class="mr-2 h-4 w-4" />
+						Delete
+					</ContextMenu.Item>
+				</ContextMenu.Content>
 			{/if}
-		</div>
+		</ContextMenu.Root>
 
 		<!-- URL input inline -->
 		{#if showUrlInput === node.path}
