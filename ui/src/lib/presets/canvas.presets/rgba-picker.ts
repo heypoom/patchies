@@ -1,5 +1,8 @@
-export const RGBA_PICKER_JS = `noDrag();
+export const RGBA_PICKER_JS = `const [width, height] = [800, 800]
+
+noDrag();
 noOutput();
+setCanvasSize(800, 800);
 setPortCount(1, 1);
 setTitle("rgba.picker");
 

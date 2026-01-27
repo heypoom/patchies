@@ -278,9 +278,10 @@
 		canvas.width = width;
 		canvas.height = height;
 
-		// Update display size
-		canvas.style.width = `${previewWidth}px`;
-		canvas.style.height = `${previewHeight}px`;
+		// Update display size - calculate directly instead of using $derived values
+		// which may not have updated yet in the same synchronous execution
+		canvas.style.width = `${width / PREVIEW_SCALE_FACTOR}px`;
+		canvas.style.height = `${height / PREVIEW_SCALE_FACTOR}px`;
 	}
 
 	async function sendBitmap() {
@@ -327,8 +328,12 @@
 				extraContext: {
 					canvas,
 					ctx,
-					width: outputWidth,
-					height: outputHeight,
+					get width() {
+						return outputWidth;
+					},
+					get height() {
+						return outputHeight;
+					},
 					mouse,
 					noDrag: () => {
 						dragEnabled = false;

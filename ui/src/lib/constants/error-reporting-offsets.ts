@@ -28,7 +28,7 @@ export const CANVAS_WRAPPER_OFFSET = 2;
  * Canvas DOM worker: Uses JSRunner.executeJavaScript with additional context.
  * Adds 2 extra lines.
  */
-export const CANVAS_DOM_WRAPPER_OFFSET = 2;
+export const CANVAS_DOM_WRAPPER_OFFSET = 0;
 
 /**
  * ToneNode: Uses custom wrapper with fewer lines than JSRunner's preamble.
