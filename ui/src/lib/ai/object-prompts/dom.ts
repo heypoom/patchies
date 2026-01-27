@@ -26,6 +26,7 @@ ${messagingInstructions}
 - Do NOT use gradient colors in Tailwind classes, like "bg-gradient-to-r from-amber-500 to-orange-400". They are not supported.
 
 **Tips**
+- If you use a border, you must use rounded-lg in the outer container, otherwise the border will be cut off.
 - For more complex ui, use libraries like htm/preact/standalone: "import { html, render } from 'npm:htm/preact/standalone'", then you can "render(html\`<$\{MyComponent} />\`, root)" and write Preact components with render tagged template literals.
 
 Example - Simple HTML with Tailwind:

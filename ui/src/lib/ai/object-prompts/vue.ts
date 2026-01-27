@@ -33,6 +33,7 @@ ${messagingInstructions}
 - Message outlet: "out-0", "out-1", etc.
 
 **Caveats**
+- If you use a border, you must use rounded-lg in the outer container, otherwise the border will be cut off.
 - Do NOT use gradient colors in Tailwind classes, like "bg-gradient-to-r from-amber-500 to-orange-400". They are not supported.
 
 Example - Simple reactive counter with Tailwind:
