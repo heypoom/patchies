@@ -30,6 +30,7 @@
 	let iframeRef: HTMLIFrameElement | undefined = $state();
 	let showUrlInput = $state(false);
 	let tempUrl = $state('');
+	let isResizing = $state(false);
 
 	const eventBus = PatchiesEventBus.getInstance();
 
@@ -124,7 +125,12 @@
 </script>
 
 <div class="relative">
-	<NodeResizer class="z-1" isVisible={node.selected} />
+	<NodeResizer
+		class="z-1"
+		isVisible={node.selected}
+		onResizeStart={() => (isResizing = true)}
+		onResizeEnd={() => (isResizing = false)}
+	/>
 
 	<div class="group relative">
 		<div class="flex flex-col gap-2">
@@ -155,7 +161,7 @@
 								title="iframe content"
 								class="rounded-md border border-zinc-700 bg-white"
 								style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
-									DEFAULT_HEIGHT}px"
+									DEFAULT_HEIGHT}px;{isResizing ? ' pointer-events: none;' : ''}"
 								sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
 								allow="geolocation; microphone; camera; midi; encrypted-media"
 							></iframe>
