@@ -984,6 +984,14 @@ These objects run on _control rate_, which means they process messages (control 
 - `tts`: Text-to-speech using the Web Speech API. Any message received is converted to a string and spoken aloud. Send `{type: 'setVoice', value: 'voiceName'}` to change voice.
 - `webmidilink`: Converts `midi.in` messages to [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) link level 0 formats. Connect this to [iframe](#iframe-embed-web-content) to send MIDI messages to WebMIDILink-enabled iframes.
   - see [this demo](https://patchies.app/?id=x7q9819cn6zplpk) from @kijjaz on using `webmidilink` to make smooth jazz with SpessaSynth. click on the iframe to play sound.
+- `mqtt`: MQTT client for pub/sub messaging.
+  - Usage: `mqtt` or `mqtt wss://broker.url topic1 topic2`.
+  - Messages:
+    - Emits `{type: 'message', topic, message}`.
+    - set connection url: `{type: 'setUrl', value: 'wss://broker.url'}`
+    - subscribe to topics: `{type: 'subscribe', topic: 'topic' or ['topic1', 'topic2']}`
+    - unsubscribe from topics: `{type: 'unsubscribe', topic: 'topic' or ['topic1', 'topic2']}`
+    - publish a message to a topic: `{type: 'publish', topic: 'topic', message: 'message'}`.
 
 #### `trigger`: sends messages in right-to-left order
 
