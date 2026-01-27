@@ -22,7 +22,7 @@ export const P5_WRAPPER_OFFSET = 6;
  * Canvas worker: Uses JSRunner.executeJavaScript with additional context.
  * Adds 2 extra lines.
  */
-export const CANVAS_WRAPPER_OFFSET = 2;
+export const CANVAS_WRAPPER_OFFSET = 0;
 
 /**
  * Canvas DOM worker: Uses JSRunner.executeJavaScript with additional context.
