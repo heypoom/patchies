@@ -14,9 +14,8 @@
 
 /**
  * P5CanvasNode: P5Manager wraps user code in executeUserCode's codeWithWrapper template.
- * Adds 6 extra lines beyond JSRunner's preamble.
  */
-export const P5_WRAPPER_OFFSET = 6;
+export const P5_WRAPPER_OFFSET = 4;
 
 /**
  * Canvas worker: Uses JSRunner.executeJavaScript with additional context.
