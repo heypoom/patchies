@@ -1269,6 +1269,8 @@ const process = (inputs, outputs) => {
 };
 ```
 
+> **Note:** `dsp~` does not use [Patchies' JavaScript Runner](#patchies-javascript-runner). It runs in an AudioWorklet (separate thread) which doesn't have access to `window`, DOM APIs, or timing functions like `setTimeout`/`delay`/`setInterval`/`requestAnimationFrame`. This is necessary for real-time audio processing (~345 calls/sec at 44.1kHz).
+
 In addition to the value inlets, we also have messaging capabilities:
 
 - Use `setPortCount(inletCount, outletCount)` to set the number of message inlets.
@@ -1283,6 +1285,7 @@ In addition to the value inlets, we also have messaging capabilities:
   - (default) `setKeepAlive(false)` lets the worklet to stop processing when it's not connected to other audio nodes, which can improve performance.
   - see `snapshot~` and `bang~` presets for examples on when to use `setKeepAlive`
 - Use `send` and `recv` to communicate with the outside world. See [Message Passing](#message-passing).
+- Use `console.log()` to log messages to the virtual console (forwarded from the AudioWorklet to the main thread).
 
 ```ts
 setPortCount(2);
@@ -1562,9 +1565,9 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 ## Patchies JavaScript Runner
 
-Most of the JavaScript nodes in Patchies are using the JavaScript Runner (JSRunner), which is responsible for executing JavaScript code in a sandboxed environment and providing Patchies-specific features to the code.
+Most of the JavaScript-based nodes in Patchies are using the unified JavaScript Runner (JSRunner), which is responsible for executing JavaScript code in a sandboxed environment and providing Patchies-specific features to the code.
 
-The following features are only available in the objects using JSRunner, as follows: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
+The following features are available in the objects using JSRunner, as follows: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
 
 ### Common Runtime Functions
 
