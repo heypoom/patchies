@@ -23,7 +23,7 @@ const SET_JS_LIBRARY_CODE_DEBOUNCE = 500;
 export class JSRunner {
 	private static instance: JSRunner;
 
-	public moduleProviderUrl = `https://esm.run/`;
+	public moduleProviderUrl = `https://esm.sh/`;
 	public modules: Map<string, string> = new Map();
 	private messageContextMap: Map<string, MessageContext> = new Map();
 
@@ -85,33 +85,62 @@ export class JSRunner {
 						},
 						renderChunk(code) {
 							let transformedCode = code;
-							const importsToRemove = [];
+
+							// Group imports by source to handle multiple named imports from same source
+							const importsBySource = new Map<
+								string,
+								{ namedImports: string[]; defaultImport: string | null }
+							>();
 
 							for (const { localName, source, isDefault } of importMappings.values()) {
+								if (!importsBySource.has(source)) {
+									importsBySource.set(source, { namedImports: [], defaultImport: null });
+								}
+
+								const group = importsBySource.get(source)!;
+								if (isDefault) {
+									group.defaultImport = localName;
+								} else {
+									group.namedImports.push(localName);
+								}
+							}
+
+							// Process each source once
+							for (const [source, { namedImports, defaultImport }] of importsBySource) {
+								const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+								const packageName = source.replace('npm:', '');
+
+								// Match the entire import statement for this source
 								const importRegex = new RegExp(
-									`^\\s*import\\s+(?:\\{.*?\\s*${localName}\\s*.*?\\}|${localName})\\s+from\\s+['"]${source}['"];?\\s*`,
+									`^\\s*import\\s+(?:[\\w\\s{},*]+)\\s+from\\s+['"]${escapedSource}['"];?\\s*`,
 									'm'
 								);
 
 								const match = transformedCode.match(importRegex);
-								const packageName = source.replace('npm:', '');
 
 								if (match) {
 									const fullStatement = match[0];
-									importsToRemove.push(fullStatement);
+									const replacements: string[] = [];
 
-									let replacement;
-
-									if (isDefault) {
-										replacement = `const ${localName} = (await esm('${packageName}')).default\n`;
-									} else {
-										replacement = `const { ${localName} } = await esm('${packageName}')\n`;
+									if (defaultImport) {
+										replacements.push(
+											`const ${defaultImport} = (await esm('${packageName}')).default`
+										);
 									}
 
-									transformedCode = transformedCode.replace(fullStatement, replacement);
+									if (namedImports.length > 0) {
+										replacements.push(
+											`const { ${namedImports.join(', ')} } = await esm('${packageName}')`
+										);
+									}
+
+									transformedCode = transformedCode.replace(
+										fullStatement,
+										replacements.join('\n') + '\n'
+									);
 								}
 
-								// process side effect imports
+								// Process side effect imports
 								transformedCode = transformedCode.replace(
 									`import '${source}'`,
 									`await esm('${packageName}')`

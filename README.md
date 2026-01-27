@@ -19,7 +19,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - Run programs and games on the [Uxn](https://wiki.xxiivv.com/site/uxn.html) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) assembly.
 - Compute in a raw and fun way with [stack machine assembly](./modules/vasm/README.md)
 - Run numerical computations with [Python 3](https://pyodide.org)
-- Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.run](https://esm.run).
+- Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.sh](https://esm.sh).
 
 ## ...by patching them together ✨
 
@@ -1611,7 +1611,7 @@ These functions are available in all JSRunner-enabled nodes:
 ### Importing JavaScript packages from NPM
 
 - You can import any JavaScript package by using the `npm:` prefix in the import statement.
-  - This uses [esm.run](https://esm.run) under the hood to load the package from NPM.
+  - This uses [esm.sh](https://esm.sh) under the hood to load the package from NPM.
   - This gets translated into top-level dynamic imports behind the scenes.
   - `import * as X` is not yet supported.
 
@@ -1626,7 +1626,7 @@ These functions are available in all JSRunner-enabled nodes:
 - Alternatively, write the dynamic import yourself:
 
   ```js
-  const { uniq } = await import("https://esm.run/lodash-es");
+  const { uniq } = await import("https://esm.sh/lodash-es");
   console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
 
   // or use a shorthand `await esm()` function that does the same thing
