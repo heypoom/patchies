@@ -14,6 +14,7 @@
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import { createIsolatedContainer } from '$lib/utils/tailwindBrowser';
+	import { DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 	let {
 		id: nodeId,
