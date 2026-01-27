@@ -14,13 +14,11 @@ type MqttModule = {
 	connect(url: string): MqttClient;
 };
 
-const DEFAULT_BROKER = 'wss://test.mosquitto.org:8081';
-
 /**
  * MqttObject connects to an MQTT broker and sends/receives messages.
  *
- * Usage: `mqtt topic1 topic2` or `mqtt wss://broker.url topic1 topic2 ...`
- * Defaults to Mosquitto public broker if no URL provided.
+ * Usage: `mqtt wss://broker.url topic1 topic2 ...`
+ * URL is required - no default broker for security reasons.
  *
  * Messages:
  * - `{type: 'setUrl', value: 'wss://...'}` - connect to broker
@@ -73,18 +71,15 @@ export class MqttObject implements TextObjectV2 {
 			return;
 		}
 
-		// Check if first param is a URL or a topic
+		// First param must be a URL
 		const firstParam = params[0] ? String(params[0]) : '';
 		const isUrl = firstParam.startsWith('ws://') || firstParam.startsWith('wss://');
 
 		if (isUrl) {
-			// First param is URL, rest are topics
 			const topics = params.slice(1).map(String);
 			this.connect(firstParam, topics);
 		} else if (params.length > 0) {
-			// No URL provided, use default broker, all params are topics
-			const topics = params.map(String);
-			this.connect(DEFAULT_BROKER, topics);
+			console.warn('mqtt: first parameter must be a broker URL (ws:// or wss://)');
 		}
 	}
 
