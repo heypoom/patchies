@@ -21,6 +21,12 @@ export interface UserFnRunContext {
 	/** Schedules setInterval with cleanup. */
 	setInterval: (callback: () => void, ms: number) => number;
 
+	/** Schedules setTimeout with cleanup. */
+	setTimeout: (callback: () => void, ms: number) => number;
+
+	/** Abortable delay that resolves immediately when timers are cleared. */
+	delay: (ms: number) => Promise<void>;
+
 	/** Schedules requestAnimationFrame with cleanup. */
 	requestAnimationFrame: (callback: () => void) => number;
 
@@ -50,12 +56,17 @@ export class MessageContext {
 
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
+	private timeouts: number[] = [];
 	private animationFrames: number[] = [];
 	private cleanupCallbacks: (() => void)[] = [];
+	private pendingDelays: Map<number, { timeoutId: number; reject: (err: Error) => void }> =
+		new Map();
+	private delayIdCounter = 0;
 
 	public onSend: UserFnRunContext['send'] = () => {};
 	public onMessageCallbackRegistered = () => {};
 	public onIntervalCallbackRegistered = () => {};
+	public onTimeoutCallbackRegistered = () => {};
 	public onAnimationFrameCallbackRegistered = () => {};
 
 	// Cache for lazy-loaded AudioAnalysisSystem (only loaded in browser, not workers)
@@ -108,6 +119,21 @@ export class MessageContext {
 		};
 	}
 
+	// Create the timeout function for this node
+	createSetTimeoutFunction() {
+		return (callback: () => void, ms: number) => {
+			const timeoutId = window.setTimeout(() => {
+				// Remove from tracking array since it fired
+				const index = this.timeouts.indexOf(timeoutId);
+				if (index > -1) this.timeouts.splice(index, 1);
+				callback();
+			}, ms);
+			this.timeouts.push(timeoutId);
+			this.onTimeoutCallbackRegistered();
+			return timeoutId;
+		};
+	}
+
 	// Create the requestAnimationFrame function for this node
 	createRequestAnimationFrameFunction() {
 		return (callback: () => void) => {
@@ -122,6 +148,21 @@ export class MessageContext {
 	createOnCleanupFunction() {
 		return (callback: () => void) => {
 			this.cleanupCallbacks.push(callback);
+		};
+	}
+
+	// Create an abortable delay function for this node
+	createDelayFunction() {
+		return (ms: number): Promise<void> => {
+			return new Promise((resolve, reject) => {
+				const delayId = this.delayIdCounter++;
+				const timeoutId = window.setTimeout(() => {
+					this.pendingDelays.delete(delayId);
+					resolve();
+				}, ms);
+				this.pendingDelays.set(delayId, { timeoutId, reject });
+				this.onTimeoutCallbackRegistered();
+			});
 		};
 	}
 
@@ -155,6 +196,8 @@ export class MessageContext {
 			send: this.send.bind(this),
 			onMessage: this.createOnMessageFunction(),
 			setInterval: this.createSetIntervalFunction(),
+			setTimeout: this.createSetTimeoutFunction(),
+			delay: this.createDelayFunction(),
 			requestAnimationFrame: this.createRequestAnimationFrameFunction(),
 			onCleanup: this.createOnCleanupFunction(),
 			noDrag: () => {},
@@ -162,7 +205,7 @@ export class MessageContext {
 		};
 	}
 
-	// Clear all timers (intervals and animation frames) for code re-execution
+	// Clear all timers (intervals, timeouts, delays, and animation frames) for code re-execution
 	clearTimers() {
 		// Clear all intervals created by this node
 		for (const intervalId of this.intervals) {
@@ -170,6 +213,21 @@ export class MessageContext {
 		}
 
 		this.intervals = [];
+
+		// Clear all timeouts created by this node
+		for (const timeoutId of this.timeouts) {
+			window.clearTimeout(timeoutId);
+		}
+
+		this.timeouts = [];
+
+		// Clear all pending delays and reject them (so awaiting code aborts)
+		for (const { timeoutId, reject } of this.pendingDelays.values()) {
+			window.clearTimeout(timeoutId);
+			reject(new Error('delay() is stopped by user'));
+		}
+
+		this.pendingDelays.clear();
 
 		// Clear all animation frames created by this node
 		for (const animationFrameId of this.animationFrames) {

@@ -102,8 +102,15 @@ const patchiesAPICompletions: Completion[] = [
 		label: 'setInterval',
 		type: 'function',
 		detail: '(callback, ms) => number',
-		info: 'Execute a callback repeatedly at an interval',
+		info: 'Execute a callback repeatedly at an interval (with automatic cleanup)',
 		apply: 'setInterval(() => {\n  \n}, 1000)'
+	},
+	{
+		label: 'setTimeout',
+		type: 'function',
+		detail: '(callback, ms) => number',
+		info: 'Execute a callback after a delay (with automatic cleanup)',
+		apply: 'setTimeout(() => {\n  \n}, 1000)'
 	},
 	{
 		label: 'requestAnimationFrame',
@@ -220,7 +227,7 @@ const topLevelOnlyFunctions = new Set([
 //
 // Note on JSRunner defaults (main-thread nodes):
 // JSRunner.executeJavaScript() provides these by default for main-thread nodes:
-//   console, send, onMessage/recv, setInterval, requestAnimationFrame,
+//   console, send, onMessage/recv, setInterval, setTimeout, requestAnimationFrame,
 //   fft, llm, setPortCount, setRunOnMount, setTitle, setHidePorts, getVfsUrl
 //
 // Worker nodes (hydra, canvas, textmode, three, swgl) must provide their own

@@ -8,8 +8,7 @@ import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { getFramebuffer } from './utils';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
-
-const THREE_WRAPPER_OFFSET = 6;
+import { THREE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';

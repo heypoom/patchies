@@ -415,13 +415,18 @@
 					onclick={handleRunOrStop}
 					class={[
 						'rounded p-1 text-zinc-300 hover:bg-zinc-700',
-						isRunning ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
+						isRunning && !isLongRunningTaskActive
+							? 'cursor-not-allowed opacity-30'
+							: 'cursor-pointer'
 					].join(' ')}
 					title={isLongRunningTaskActive ? 'Stop' : 'Run'}
 					aria-label={isLongRunningTaskActive ? 'Stop' : 'Run'}
-					aria-disabled={isRunning}
+					aria-disabled={isRunning && !isLongRunningTaskActive}
 				>
-					<PlayOrStopIconComponent class={isRunning ? 'animate-spin' : ''} size="14px" />
+					<PlayOrStopIconComponent
+						class={isRunning && !isLongRunningTaskActive ? 'animate-spin' : ''}
+						size="14px"
+					/>
 				</button>
 			{/if}
 

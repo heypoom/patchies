@@ -262,6 +262,8 @@ export class JSRunner {
 			'send',
 			'onMessage',
 			'setInterval',
+			'setTimeout',
+			'delay',
 			'requestAnimationFrame',
 			'onCleanup',
 			'fft',
@@ -279,6 +281,8 @@ export class JSRunner {
 			messageSystemContext.send,
 			messageSystemContext.onMessage,
 			messageSystemContext.setInterval,
+			messageSystemContext.setTimeout,
+			messageSystemContext.delay,
 			messageSystemContext.requestAnimationFrame,
 			messageSystemContext.onCleanup,
 			messageSystemContext.fft,
@@ -294,7 +298,6 @@ export class JSRunner {
 		const codeWithWrapper = `
 			const inner = async () => {
 				var recv = onMessage; // alias
-				var delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 				var esm = (name) => import('${this.moduleProviderUrl}' + name);
 
 				${code}

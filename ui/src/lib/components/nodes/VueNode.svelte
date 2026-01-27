@@ -14,8 +14,7 @@
 	import type { ConsoleOutputEvent } from '$lib/eventbus/events';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import { createIsolatedContainer } from '$lib/utils/tailwindBrowser';
-
-	const VUE_WRAPPER_OFFSET = 2;
+	import { VUE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 
 	let {
 		id: nodeId,
@@ -188,17 +187,17 @@
 					tailwind: container.tailwind,
 					// Vue globals
 					Vue,
-					createApp: Vue.createApp,
-					ref: Vue.ref,
-					reactive: Vue.reactive,
-					computed: Vue.computed,
-					watch: Vue.watch,
-					watchEffect: Vue.watchEffect,
-					onMounted: Vue.onMounted,
-					onUnmounted: Vue.onUnmounted,
-					nextTick: Vue.nextTick,
-					h: Vue.h,
-					defineComponent: Vue.defineComponent
+					createApp: Vue!.createApp,
+					ref: Vue!.ref,
+					reactive: Vue!.reactive,
+					computed: Vue!.computed,
+					watch: Vue!.watch,
+					watchEffect: Vue!.watchEffect,
+					onMounted: Vue!.onMounted,
+					onUnmounted: Vue!.onUnmounted,
+					nextTick: Vue!.nextTick,
+					h: Vue!.h,
+					defineComponent: Vue!.defineComponent
 				}
 			});
 

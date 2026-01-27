@@ -83,10 +83,11 @@
 	});
 
 	const borderColor = $derived.by(() => {
-		if (isRunning && selected) return 'border-pink-300';
-		if (isRunning) return 'border-pink-500';
+		// Prioritize showing emerald if there are active timers (stoppable state)
 		if (isLongRunningTaskActive && selected) return 'border-emerald-300';
 		if (isLongRunningTaskActive) return 'border-emerald-500';
+		if (isRunning && selected) return 'border-pink-300';
+		if (isRunning) return 'border-pink-500';
 		if (selected) return 'border-zinc-400';
 
 		return 'border-zinc-600';
@@ -95,8 +96,9 @@
 	const playOrStopIcon = $derived.by(() => {
 		if (data.libraryName) return Package;
 
-		if (isRunning) return Loader;
+		// Prioritize showing Pause if there are active timers (so user can stop them)
 		if (isLongRunningTaskActive) return Pause;
+		if (isRunning) return Loader;
 
 		return Play;
 	});
@@ -111,7 +113,7 @@
 					executeCode();
 				})
 				.with({ type: 'stop' }, () => {
-					stopLongRunningTasks();
+					cleanupRunningTasks();
 				});
 		} catch (error) {
 			customConsole.error(error instanceof Error ? error.message : String(error));
@@ -124,6 +126,9 @@
 			isMessageCallbackActive = true;
 		};
 		messageContext.onIntervalCallbackRegistered = () => {
+			isTimerCallbackActive = true;
+		};
+		messageContext.onTimeoutCallbackRegistered = () => {
 			isTimerCallbackActive = true;
 		};
 		messageContext.onAnimationFrameCallbackRegistered = () => {
@@ -176,7 +181,9 @@
 		isMessageCallbackActive = false;
 	}
 
-	function stopLongRunningTasks() {
+	function cleanupRunningTasks() {
+		const messageContext = jsRunner.getMessageContext(nodeId);
+		messageContext.runCleanupCallbacks();
 		clearTimers();
 		clearMessageHandler();
 	}
@@ -237,7 +244,7 @@
 
 	function runOrStop() {
 		if (isLongRunningTaskActive) {
-			stopLongRunningTasks();
+			cleanupRunningTasks();
 		} else {
 			executeCode();
 		}
@@ -331,7 +338,7 @@
 					<button
 						class={[
 							'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
-							isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
+							isRunning && !isLongRunningTaskActive ? 'cursor-not-allowed' : 'cursor-pointer',
 							borderColor,
 							selected ? 'shadow-glow-md bg-zinc-800' : 'hover:shadow-glow-sm bg-zinc-900'
 						]}
@@ -343,10 +350,10 @@
 
 							handleDoubleClickOnRun();
 						}}
-						aria-disabled={isRunning}
-						aria-label="Run code"
+						aria-disabled={isRunning && !isLongRunningTaskActive}
+						aria-label={isLongRunningTaskActive ? 'Stop' : 'Run code'}
 					>
-						<div class={[isRunning ? 'animate-spin opacity-30' : '']}>
+						<div class={[isRunning && !isLongRunningTaskActive ? 'animate-spin opacity-30' : '']}>
 							<svelte:component this={playOrStopIcon} size="16px" />
 						</div>
 					</button>

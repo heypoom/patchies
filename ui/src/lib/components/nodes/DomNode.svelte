@@ -15,8 +15,6 @@
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 	import { createIsolatedContainer } from '$lib/utils/tailwindBrowser';
 
-	const DOM_WRAPPER_OFFSET = 2;
-
 	let {
 		id: nodeId,
 		data,

@@ -79,3 +79,9 @@ export const DSP_WRAPPER_OFFSET = -1;
 export const HYDRA_WRAPPER_OFFSET = 2;
 
 export const THREE_DOM_WRAPPER_OFFSET = 5;
+
+export const DOM_WRAPPER_OFFSET = 2;
+
+export const VUE_WRAPPER_OFFSET = 2;
+
+export const THREE_WRAPPER_OFFSET = 6;

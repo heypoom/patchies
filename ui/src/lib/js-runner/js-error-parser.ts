@@ -27,17 +27,9 @@ interface BrowserError extends Error {
 /**
  * Lines of wrapper code added before user code in JSRunner.executeJavaScript.
  * This offset is subtracted from reported line numbers.
- *
- * The wrapper template literal in JSRunner.ts:
- * Line 1: (empty - newline after backtick)
- * Line 2: const inner = async () => {
- * Line 3: var recv = onMessage;
- * Line 4: var delay = ...
- * Line 5: var esm = ...
- * Line 6: (empty line)
- * Line 7+: ${code} (user code starts here)
+ * If you modify JSRunner preamble, you need to update this value.
  */
-const WRAPPER_PREAMBLE_LINES = 6;
+const WRAPPER_PREAMBLE_LINES = 7;
 
 /**
  * Parse a JavaScript error to extract line information.
