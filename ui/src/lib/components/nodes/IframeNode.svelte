@@ -155,6 +155,7 @@
 				<div class="flex flex-col gap-2">
 					{#if hasUrl}
 						<div class="relative">
+							<!-- we need pointer-events none on resize otherwise the mouse goes into iframe -->
 							<iframe
 								bind:this={iframeRef}
 								src={node.data.url}
