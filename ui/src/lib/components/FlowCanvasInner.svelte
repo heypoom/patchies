@@ -57,7 +57,7 @@
 	import FileTreeView from './sidebar/FileTreeView.svelte';
 	import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
 	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-	import type { NodeReplaceEvent } from '$lib/eventbus/events';
+	import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events';
 
 	import { toast } from 'svelte-sonner';
 	import { initializeVFS, VirtualFilesystem } from '$lib/vfs';
@@ -440,6 +440,7 @@
 
 		document.addEventListener('keydown', handleGlobalKeydown);
 		eventBus.addEventListener('nodeReplace', replaceNode);
+		eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
 
 		autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -460,6 +461,7 @@
 		}
 
 		eventBus.removeEventListener('nodeReplace', replaceNode);
+		eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
 
 		// Clean up autosave interval
 		if (autosaveInterval) {
@@ -593,6 +595,22 @@
 
 		// Replace the old node with the new one
 		nodes = nodes.map((n) => (n.id === nodeId ? newNode : n));
+	}
+
+	/**
+	 * Update vfsPath in all nodes when a VFS path is renamed.
+	 */
+	function handleVfsPathRenamed(event: VfsPathRenamedEvent) {
+		const { oldPath, newPath } = event;
+
+		nodes = nodes.map((node) => {
+			// Check if this node has a vfsPath that matches the old path
+			if (node.data?.vfsPath === oldPath) {
+				return { ...node, data: { ...node.data, vfsPath: newPath } };
+			}
+
+			return node;
+		});
 	}
 
 	/**

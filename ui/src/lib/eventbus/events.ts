@@ -13,7 +13,8 @@ export type PatchiesEvent =
 	| NodeMouseScopeUpdateEvent
 	| NodeReplaceEvent
 	| IframePostMessageEvent
-	| FileRelinkedEvent;
+	| FileRelinkedEvent
+	| VfsPathRenamedEvent;
 
 export interface ConsoleOutputEvent {
 	type: 'consoleOutput';
@@ -115,4 +116,14 @@ export interface FileRelinkedEvent {
 
 	/** The VFS path that was relinked */
 	path: string;
+}
+
+export interface VfsPathRenamedEvent {
+	type: 'vfsPathRenamed';
+
+	/** The old VFS path */
+	oldPath: string;
+
+	/** The new VFS path */
+	newPath: string;
 }

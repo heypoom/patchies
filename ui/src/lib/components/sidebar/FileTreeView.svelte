@@ -25,6 +25,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as ContextMenu from '$lib/components/ui/context-menu';
 	import { toast } from 'svelte-sonner';
+	import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 	interface TreeNode {
 		name: string;
@@ -35,6 +36,7 @@
 	}
 
 	const vfs = VirtualFilesystem.getInstance();
+	const eventBus = PatchiesEventBus.getInstance();
 
 	// Reactive store of VFS entries
 	const vfsEntries = vfs.entries$;
@@ -398,6 +400,9 @@
 					if (localProvider) {
 						await localProvider.rename(oldPath, newPath);
 					}
+
+					// Dispatch event to update vfsPath in nodes
+					eventBus.dispatch({ type: 'vfsPathRenamed', oldPath, newPath });
 
 					// Update selection if renamed item was selected
 					if (selectedPaths.has(oldPath)) {
