@@ -257,7 +257,7 @@
 	{#snippet preview()}
 		<div
 			class={[
-				'overflow-hidden rounded-md border',
+				'overflow-hidden border',
 				lineErrors !== undefined
 					? 'border-red-500/70'
 					: selected
