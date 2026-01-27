@@ -38,6 +38,9 @@ export interface UserFnRunContext {
 
 	/** Sets the title of the node. */
 	setTitle?: (title: string) => void;
+
+	/** Registers a cleanup callback that runs when the node is unmounted or code is re-executed. */
+	onCleanup: (callback: () => void) => void;
 }
 
 export class MessageContext {
@@ -48,6 +51,7 @@ export class MessageContext {
 	public messageCallback: MessageCallbackFn | null = null;
 	private intervals: number[] = [];
 	private animationFrames: number[] = [];
+	private cleanupCallbacks: (() => void)[] = [];
 
 	public onSend: UserFnRunContext['send'] = () => {};
 	public onMessageCallbackRegistered = () => {};
@@ -114,6 +118,13 @@ export class MessageContext {
 		};
 	}
 
+	// Create the onCleanup function for this node
+	createOnCleanupFunction() {
+		return (callback: () => void) => {
+			this.cleanupCallbacks.push(callback);
+		};
+	}
+
 	// Create an fft function that automatically infers connected FFT nodes
 	createFFTFunction() {
 		if (typeof window === 'undefined') return null;
@@ -145,6 +156,7 @@ export class MessageContext {
 			onMessage: this.createOnMessageFunction(),
 			setInterval: this.createSetIntervalFunction(),
 			requestAnimationFrame: this.createRequestAnimationFrameFunction(),
+			onCleanup: this.createOnCleanupFunction(),
 			noDrag: () => {},
 			...(fft && { fft })
 		};
@@ -167,6 +179,19 @@ export class MessageContext {
 		this.animationFrames = [];
 	}
 
+	// Run all user-registered cleanup callbacks
+	runCleanupCallbacks() {
+		for (const callback of this.cleanupCallbacks) {
+			try {
+				callback();
+			} catch (e) {
+				logger.warn('Error in cleanup callback:', e);
+			}
+		}
+
+		this.cleanupCallbacks = [];
+	}
+
 	// Clear only animation frames (for code re-execution)
 	clearAnimationFrames() {
 		// Clear all animation frames created by this node
@@ -179,6 +204,7 @@ export class MessageContext {
 
 	// Clean up when the node is destroyed
 	destroy() {
+		this.runCleanupCallbacks();
 		this.clearTimers();
 		this.queue.removeCallback(this.messageCallbackHandler.bind(this));
 

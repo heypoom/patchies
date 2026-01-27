@@ -224,23 +224,26 @@ export class JSRunner {
 			this.setModuleAndSync(libraryName, null);
 		}
 
+		// Destroy context before removing from map (runs cleanup callbacks)
+		const context = this.messageContextMap.get(nodeId);
+		if (context) {
+			context.destroy();
+		}
+
 		this.messageContextMap.delete(nodeId);
+
 		revokeObjectUrls(nodeId);
 
 		const moduleName = getModuleNameByNode(nodeId);
 		if (this.modules.has(moduleName)) {
 			this.setModuleAndSync(moduleName, null);
 		}
-
-		const context = this.messageContextMap.get(nodeId);
-		if (context) {
-			context.destroy();
-		}
 	}
 
 	executeJavaScript(nodeId: string, code: string, options: JSRunnerOptions = {}) {
 		const messageContext = this.getMessageContext(nodeId);
 
+		messageContext.runCleanupCallbacks();
 		messageContext.clearTimers();
 
 		const {
@@ -260,6 +263,7 @@ export class JSRunner {
 			'onMessage',
 			'setInterval',
 			'requestAnimationFrame',
+			'onCleanup',
 			'fft',
 			'llm',
 			'setPortCount',
@@ -276,6 +280,7 @@ export class JSRunner {
 			messageSystemContext.onMessage,
 			messageSystemContext.setInterval,
 			messageSystemContext.requestAnimationFrame,
+			messageSystemContext.onCleanup,
 			messageSystemContext.fft,
 			createLLMFunction(),
 			setPortCount,

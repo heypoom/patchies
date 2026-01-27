@@ -644,6 +644,8 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - The code block has a special version of `setInterval` that automatically cleans up the interval on unmount. Do not use `window.setInterval` from the window scope as that will not clean up.
 - Use `requestAnimationFrame(callback)` to run a callback on the next animation frame.
   - The code block has a special version of `requestAnimationFrame` that automatically cleans up on unmount. Do not use `window.requestAnimationFrame` from the window scope as that will not clean up.
+- Use `onCleanup(callback)` to register a cleanup callback that runs when the node is unmounted or code is re-executed.
+  - Useful for disconnecting resources, unsubscribing from events, or any custom cleanup logic.
 - Use `send()` and `recv()` to send and receive messages between objects. This also works in other JS-based objects. See the [Message Passing](#message-passing) section above.
 - Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
 - Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets you want. By default, there is 1 inlet and 1 outlet.

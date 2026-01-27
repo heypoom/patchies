@@ -113,6 +113,15 @@ const patchiesAPICompletions: Completion[] = [
 		apply: 'requestAnimationFrame(() => {\n  \n})'
 	},
 
+	// Lifecycle
+	{
+		label: 'onCleanup',
+		type: 'function',
+		detail: '(callback) => void',
+		info: 'Register a cleanup callback that runs when the node is unmounted or code is re-executed',
+		apply: 'onCleanup(() => {\n  \n})'
+	},
+
 	// Canvas/Interaction
 	{
 		label: 'noDrag',
@@ -191,6 +200,7 @@ const patchiesAPICompletions: Completion[] = [
 const topLevelOnlyFunctions = new Set([
 	'noDrag',
 	'noOutput',
+	'onCleanup',
 	'onKeyDown',
 	'onKeyUp',
 	'onMessage',
@@ -216,6 +226,18 @@ const topLevelOnlyFunctions = new Set([
 // Worker nodes (hydra, canvas, textmode, three, swgl) must provide their own
 // implementations via extraContext since JSRunner defaults are for main thread.
 const nodeSpecificFunctions: Record<string, string[]> = {
+	onCleanup: [
+		'js',
+		'p5',
+		'canvas.dom',
+		'three.dom',
+		'textmode.dom',
+		'dom',
+		'vue',
+		'tone~',
+		'elem~',
+		'sonic~'
+	],
 	fft: [
 		'js',
 		'p5',
