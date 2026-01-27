@@ -33,7 +33,7 @@ export const CANVAS_DOM_WRAPPER_OFFSET = 0;
 /**
  * ToneNode: Uses custom wrapper with fewer lines than JSRunner's preamble.
  */
-export const TONE_WRAPPER_OFFSET = -2;
+export const TONE_WRAPPER_OFFSET = 0;
 
 /**
  * ElementaryNode: Uses JSRunner with additional wrapper lines.
