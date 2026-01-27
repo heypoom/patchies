@@ -25,6 +25,9 @@ ${messagingInstructions}
 **Caveats**
 - Do NOT use gradient colors in Tailwind classes, like "bg-gradient-to-r from-amber-500 to-orange-400". They are not supported.
 
+**Tips**
+- For more complex ui, use libraries like htm/preact/standalone: "import { html, render } from 'npm:htm/preact/standalone'", then you can "render(html\`<$\{MyComponent} />\`, root)" and write Preact components with render tagged template literals.
+
 Example - Simple HTML with Tailwind:
 \`\`\`json
 {
