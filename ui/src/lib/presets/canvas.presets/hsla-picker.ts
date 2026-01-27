@@ -2,7 +2,7 @@ export const HSLA_PICKER_JS = `const [width, height] = [800, 800]
 
 noDrag()
 noOutput()
-setCanvasSize(800, 800)
+setCanvasSize(width, height)
 setPortCount(1, 1)
 setTitle("hsla.picker")
 
