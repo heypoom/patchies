@@ -1622,11 +1622,13 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 ### `ai.tts`: AI text-to-speech
 
-- Convert text to speech using Google Cloud Text-to-Speech.
+<img src="./docs/images/ai-tts-demo.webp" alt="Patchies.app ai.tts demo" width="700">
+
+- Convert text to speech using [Google Cloud Text-to-Speech AI](https://cloud.google.com/text-to-speech)
 - Access 700+ voices across 110+ languages (WaveNet, Neural2, Studio, Chirp HD).
 - Configure speaking rate (0.25x-4x), pitch (-20 to +20), and volume gain.
 - Uses the same Gemini API key stored in settings.
-- Outputs audio for further processing.
+- Outputs audio to the audio pipeline for further processing.
 
 **Inlet messages:**
 
