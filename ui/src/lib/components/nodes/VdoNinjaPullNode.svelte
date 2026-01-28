@@ -7,7 +7,7 @@
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
-	import type { VdoNinjaNode } from '$lib/audio/v2/nodes/VdoNinjaNode';
+	import type { VdoNinjaPullNode } from '$lib/audio/v2/nodes/VdoNinjaPullNode';
 	import { loadVdoNinjaSdk, createVdoNinjaInstance, type VDONinjaSDK } from '$lib/vdo-ninja/sdk';
 
 	export type VdoNinjaPullNodeData = {
@@ -56,7 +56,7 @@
 	let videoElement: HTMLVideoElement | null = null;
 	let remoteStream: MediaStream | null = null;
 	let bitmapFrameId: number | null = null;
-	let vdoAudioNode: VdoNinjaNode | null = null;
+	let vdoAudioNode: VdoNinjaPullNode | null = null;
 
 	// Track received streams
 	let hasVideoTrack = $state(false);
@@ -98,7 +98,7 @@
 			nodeId,
 			'vdo.ninja.pull',
 			[]
-		)) as VdoNinjaNode | null;
+		)) as VdoNinjaPullNode | null;
 
 		// Load VDO.Ninja SDK
 		try {

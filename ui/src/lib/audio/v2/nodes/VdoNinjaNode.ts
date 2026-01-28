@@ -2,10 +2,10 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 /**
- * VdoNinjaNode - Audio node for receiving audio from VDO.Ninja streams.
+ * VdoNinjaPullNode - Audio node for receiving audio from VDO.Ninja streams.
  * Accepts a MediaStream and outputs audio to the pipeline.
  */
-export class VdoNinjaNode implements AudioNodeV2 {
+export class VdoNinjaPullNode implements AudioNodeV2 {
 	static type = 'vdo.ninja.pull';
 	static group: AudioNodeGroup = 'sources';
 	static description = 'Receives audio from VDO.Ninja WebRTC streams';
