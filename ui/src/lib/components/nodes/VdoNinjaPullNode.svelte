@@ -7,8 +7,8 @@
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
-	import type { VdoNinjaPullNode } from '$lib/audio/v2/nodes/VdoNinjaPullNode';
 	import { loadVdoNinjaSdk, createVdoNinjaInstance, type VDONinjaSDK } from '$lib/vdo-ninja/sdk';
+	import type { VdoNinjaPullNode } from '$lib/audio/v2/nodes/VdoNinjaNode';
 
 	export type VdoNinjaPullNodeData = {
 		room?: string;

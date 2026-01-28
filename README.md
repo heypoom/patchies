@@ -1605,9 +1605,10 @@ Stream audio, video and messages over WebRTC using [VDO.Ninja](https://vdo.ninja
   - **Outlets:**
     - Message outlet: events and received data from peers
   - **Settings:**
+    - Stream ID: identifier for your stream (viewers use this to pull your stream)
     - Room Name: the VDO.Ninja room to join
-    - Stream ID: optional identifier for your stream (viewers use this to pull your stream)
     - Data Only: toggle to disable video/audio streaming (mesh networking for messages only)
+    - _At least one of Stream ID or Room Name is required to connect_
   - **Inlet Messages:**
 
     | Message                              | Description                                             |

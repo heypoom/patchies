@@ -574,7 +574,7 @@
 					<!-- Stream ID -->
 					<div>
 						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Stream ID (required)</span>
+							<span class="text-[8px] text-zinc-400">Stream ID</span>
 							<div class="flex gap-1">
 								<button
 									onclick={() =>
@@ -608,7 +608,7 @@
 					<!-- Room Name -->
 					<div>
 						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Room Name (optional)</span>
+							<span class="text-[8px] text-zinc-400">Room Name</span>
 							<button
 								onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
 								disabled={!room}
@@ -676,6 +676,12 @@
 
 					<!-- Connect/Disconnect button -->
 					<div>
+						{#if connectionStatus !== 'connected' && !room && !streamId}
+							<div class="mb-2 text-center text-[9px] text-zinc-500">
+								Enter a stream id or room name to connect
+							</div>
+						{/if}
+
 						{#if connectionStatus === 'connected'}
 							<button
 								onclick={disconnect}
