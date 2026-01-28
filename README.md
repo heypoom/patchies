@@ -1560,6 +1560,7 @@ You can send messages to control Csound instruments:
 - `sse https://example.com/events` to create a node with a pre-filled URL.
 - Auto-connects on load if a URL is configured.
 - Messages are automatically parsed as JSON if possible, otherwise sent as raw strings.
+- `{type: 'connect', url: string}` to connect, `{type: 'disconnect'}` to disconnect.
 
 ### AI & Generation Objects
 
