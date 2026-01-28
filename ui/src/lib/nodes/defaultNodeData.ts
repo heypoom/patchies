@@ -183,5 +183,9 @@ createApp({
 			showEditor: false,
 			consoleOutput: ''
 		}))
+		.with('mqtt', () => ({
+			topics: [],
+			decodeAsString: true
+		}))
 		.otherwise(() => ({}));
 }

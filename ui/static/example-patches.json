@@ -246,6 +246,13 @@
 			"author": "@heypoom"
 		},
 		{
+			"id": "oc460hxe5cqgk56",
+			"name": "MQTT Client Demo",
+			"description": "Send and receive messages via public MQTT brokers",
+			"category": "Programming",
+			"author": "@heypoom"
+		},
+		{
 			"id": "o5lxdb668heya4i",
 			"name": "Console Stress Test",
 			"description": "Poom uses this patch to stress test the virtual console in the js object",
