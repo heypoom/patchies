@@ -5,23 +5,7 @@
 	import { useSvelteFlow } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match, P } from 'ts-pattern';
-
-	type MqttClient = {
-		subscribe(topics: string[], callback?: (err: Error | null) => void): void;
-		unsubscribe(topics: string[], callback?: (err: Error | null) => void): void;
-		publish(topic: string, message: string): void;
-		on(event: string, callback: (...args: unknown[]) => void): void;
-		end(): void;
-	};
-
-	type MqttConnectOptions = {
-		connectTimeout?: number;
-		reconnectPeriod?: number;
-	};
-
-	type MqttModule = {
-		connect(url: string, options?: MqttConnectOptions): MqttClient;
-	};
+	import type { MqttClient } from 'mqtt';
 
 	export type MqttNodeData = {
 		topics: string[];
@@ -30,11 +14,7 @@
 
 	type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
-	const TEST_BROKERS = [
-		'wss://test.mosquitto.org:8081/mqtt',
-		'wss://broker.hivemq.com:8884/mqtt',
-		'wss://broker.emqx.io:8084/mqtt'
-	];
+	const TEST_BROKERS = ['wss://test.mosquitto.org:8081/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
 
 	let {
 		id: nodeId,
@@ -53,7 +33,7 @@
 	let errorMessage = $state('');
 
 	// MQTT state
-	let mqtt: MqttModule | null = $state(null);
+	let mqtt: typeof import('mqtt').default | null = $state(null);
 	let client: MqttClient | null = $state(null);
 
 	// Local state (URL not persisted for security - may contain credentials)
@@ -66,37 +46,29 @@
 	const containerClass = $derived.by(() => {
 		const baseClass = selected ? 'object-container-selected' : 'object-container';
 
-		const statusClass =
-			connectionStatus === 'connected'
-				? 'border-green-500'
-				: connectionStatus === 'error'
-					? 'border-red-500'
-					: connectionStatus === 'connecting'
-						? 'border-yellow-500'
-						: '';
+		const statusClass = match(connectionStatus)
+			.with('connected', () => 'border-green-500')
+			.with('error', () => 'border-red-500')
+			.with('connecting', () => 'border-yellow-500')
+			.otherwise(() => '');
 
 		return [baseClass, statusClass];
 	});
 
-	const statusDot = $derived.by(() => {
-		switch (connectionStatus) {
-			case 'connected':
-				return 'bg-green-500';
-			case 'error':
-				return 'bg-red-500';
-			case 'connecting':
-				return 'bg-yellow-500 animate-pulse';
-			default:
-				return 'bg-zinc-500';
-		}
-	});
+	const statusDot = $derived.by(() =>
+		match(connectionStatus)
+			.with('connected', () => 'bg-green-500')
+			.with('error', () => 'bg-red-500')
+			.with('connecting', () => 'bg-yellow-500 animate-pulse')
+			.otherwise(() => 'bg-zinc-500')
+	);
 
 	onMount(async () => {
 		messageContext = new MessageContext(nodeId);
-		messageContext.queue.addCallback(handleInletMessage);
+		messageContext.queue.addCallback(handleMessage);
 
 		try {
-			const { default: mqttModule } = (await import('mqtt')) as { default: MqttModule };
+			const { default: mqttModule } = await import('mqtt');
 			mqtt = mqttModule;
 		} catch (err) {
 			connectionStatus = 'error';
@@ -108,7 +80,7 @@
 	onDestroy(() => {
 		disconnect();
 		if (messageContext) {
-			messageContext.queue.removeCallback(handleInletMessage);
+			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
 		}
 	});
@@ -173,6 +145,7 @@
 					clearTimeout(connectionTimeout);
 					connectionTimeout = null;
 				}
+
 				connectionStatus = 'error';
 				errorMessage = err instanceof Error ? err.message : 'Connection error';
 				messageContext.send({ type: 'error', message: errorMessage });
@@ -185,6 +158,7 @@
 						clearTimeout(connectionTimeout);
 						connectionTimeout = null;
 					}
+
 					connectionStatus = 'error';
 					errorMessage = 'Connection failed - check broker URL';
 					messageContext.send({ type: 'error', message: errorMessage });
@@ -306,7 +280,7 @@
 		}
 	}
 
-	function handleInletMessage(msg: unknown) {
+	function handleMessage(msg: unknown) {
 		if (!isObjectMessage(msg)) return;
 
 		match(msg)
@@ -327,9 +301,7 @@
 				updateTopics(currentTopics.filter((t: string) => !removeTopics.includes(t)));
 			})
 			.with({ type: 'publish', topic: P.string, message: P.any }, (m) => {
-				if (client) {
-					client.publish(m.topic, String(m.message));
-				}
+				client?.publish(m.topic, String(m.message));
 			})
 			.otherwise(() => {});
 	}
