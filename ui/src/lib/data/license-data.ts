@@ -453,7 +453,7 @@ export interface SupportLink {
 	description: string;
 	category: 'library' | 'educator' | 'tool';
 	url: string;
-	type: 'patreon' | 'opencollective' | 'github' | 'donate' | 'book' | 'website';
+	type: 'patreon' | 'opencollective' | 'github' | 'donate' | 'book' | 'website' | 'repo';
 	projects?: string[];
 }
 
@@ -651,12 +651,12 @@ export const supportLinks: SupportLink[] = [
 		projects: ['Svelte Flow', 'React Flow']
 	},
 	{
-		name: 'PeerJS',
-		description: 'Simple peer-to-peer library for WebRTC, powering netsend/netrecv',
+		name: 'Trystero',
+		description: 'Serverless WebRTC matchmaking for P2P, powering netsend/netrecv',
 		category: 'library',
-		url: 'https://opencollective.com/peer',
-		type: 'opencollective',
-		projects: ['PeerJS', 'PeerServer']
+		url: 'https://github.com/dmotz/trystero',
+		type: 'repo',
+		projects: ['Trystero']
 	},
 	{
 		name: 'Svelte',

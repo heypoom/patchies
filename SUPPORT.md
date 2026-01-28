@@ -137,13 +137,13 @@ Powerful open source libraries for building node-based UIs with Svelte or React,
 
 ---
 
-### PeerJS
+### Trystero
 
-**Projects:** PeerJS, PeerServer
+**Projects:** Trystero
 
-Simple peer-to-peer library for WebRTC, powering the `netsend` and `netrecv` objects in Patchies for real-time collaboration.
+Serverless WebRTC matchmaking library for building instant multiplayer web apps with P2P connections, powering the `netsend` and `netrecv` objects in Patchies for real-time collaboration.
 
-**Support:** [OpenCollective](https://opencollective.com/peer)
+**Repository:** [GitHub](https://github.com/dmotz/trystero)
 
 ---
 

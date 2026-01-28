@@ -19,6 +19,7 @@
 			.with('donate', () => 'Donate')
 			.with('book', () => 'Book')
 			.with('website', () => 'Website')
+			.with('repo', () => 'Repository')
 			.otherwise(() => 'Support');
 
 	const libraryCreators = supportLinks.filter((s) => s.category === 'library');
