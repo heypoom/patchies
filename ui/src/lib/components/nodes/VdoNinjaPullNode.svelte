@@ -355,12 +355,28 @@
 		}
 	}
 
+	// Track previous dataOnly value to detect actual changes
+	let prevDataOnly: boolean | null = null;
+
 	// Handle dataOnly toggle - update node internals, remove stale edges, and reconnect
 	$effect(() => {
 		// Track dataOnly to trigger effect
 		const isDataOnly = dataOnly;
 
 		updateNodeInternals(nodeId);
+
+		// Skip on initial mount
+		if (prevDataOnly === null) {
+			prevDataOnly = isDataOnly;
+			return;
+		}
+
+		// Skip if dataOnly hasn't actually changed
+		if (prevDataOnly === isDataOnly) {
+			return;
+		}
+
+		prevDataOnly = isDataOnly;
 
 		// When switching to data-only mode, remove video/audio edges
 		if (isDataOnly) {
