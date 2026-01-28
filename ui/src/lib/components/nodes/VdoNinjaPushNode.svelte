@@ -13,7 +13,7 @@
 
 	export type VdoNinjaNodeData = {
 		room?: string;
-		streamID?: string;
+		streamId?: string;
 		dataOnly?: boolean;
 	};
 
@@ -22,6 +22,7 @@
 	// Generate random alphanumeric IDs (no dashes or special chars)
 	const generateRandomId = () => {
 		const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
 		return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join(
 			''
 		);
@@ -53,7 +54,7 @@
 
 	// Local state
 	let room = $state(data.room ?? '');
-	let streamID = $state(data.streamID ?? '');
+	let streamId = $state(data.streamId ?? '');
 	let dataOnly = $state(data.dataOnly ?? false);
 
 	// Message context for inlet/outlet communication
@@ -167,20 +168,20 @@
 
 			if (dataOnly) {
 				// Use autoConnect for data-only mode - simpler mesh networking
-				await vdo.autoConnect(room, { streamID: streamID || undefined });
+				await vdo.autoConnect(room, { streamId: streamId || undefined });
 			} else {
 				await vdo.connect();
 				await vdo.joinRoom({ room });
 
-				if (streamID) {
-					await vdo.announce({ streamID });
+				if (streamId) {
+					await vdo.announce({ streamId });
 				}
 
 				// startStreaming() is called from handleConnectedEvent() once connection is established
 			}
 
-			// Save room/streamID/dataOnly to node data
-			updateNodeData(nodeId, { room, streamID, dataOnly });
+			// Save room/streamId/dataOnly to node data
+			updateNodeData(nodeId, { room, streamId, dataOnly });
 		} catch (err) {
 			connectionStatus = 'error';
 			errorMessage = err instanceof Error ? err.message : 'Connection failed';
@@ -264,7 +265,7 @@
 		// Publish stream if we have tracks
 		if (mediaStream.getTracks().length > 0) {
 			try {
-				await vdo.publish(mediaStream, { streamID: streamID || undefined });
+				await vdo.publish(mediaStream, { streamId: streamId || undefined });
 
 				isStreaming = true;
 				messageContext.send({ type: 'streaming', tracks: mediaStream.getTracks().length });
@@ -352,9 +353,13 @@
 
 	const handleMessage = (msg: unknown) =>
 		match(msg)
-			.with({ type: 'connect', room: P.string, streamID: P.optional(P.string) }, (m) => {
+			.with({ type: 'connect', room: P.string, streamId: P.optional(P.string) }, (m) => {
 				room = m.room;
-				streamID = m.streamID ?? streamID;
+				streamId = m.streamId ?? streamId;
+				connect();
+			})
+			.with({ type: 'connect' }, () => {
+				// Connect using existing room/streamId settings
 				connect();
 			})
 			.with({ type: 'disconnect' }, () => {
@@ -368,7 +373,7 @@
 
 	function useRandomRoom() {
 		room = 'p' + generateRandomId();
-		streamID = 's' + generateRandomId();
+		streamId = 's' + generateRandomId();
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -540,7 +545,7 @@
 							>
 								<div class="mb-1.5 font-semibold text-zinc-300">Inlet Messages</div>
 								<div class="space-y-1 text-zinc-400">
-									<div><span class="text-green-400">connect</span> {`{room: '...'}`}</div>
+									<div><span class="text-green-400">connect</span> {`{room?, streamId?}`}</div>
 									<div><span class="text-green-400">disconnect</span></div>
 									<div class="text-zinc-500 italic">other messages → sent to peers</div>
 								</div>
@@ -596,8 +601,8 @@
 							<span class="text-[8px] text-zinc-400">Stream ID (optional)</span>
 							<button
 								onclick={() =>
-									streamID && window.open(`https://vdo.ninja/?pull=${streamID}`, '_blank')}
-								disabled={!streamID}
+									streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
+								disabled={!streamId}
 								class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
 								title="View stream in VDO.Ninja"
 							>
@@ -607,8 +612,8 @@
 						</div>
 						<input
 							type="text"
-							bind:value={streamID}
-							oninput={(e) => (streamID = sanitizeId(e.currentTarget.value))}
+							bind:value={streamId}
+							oninput={(e) => (streamId = sanitizeId(e.currentTarget.value))}
 							placeholder="mystreamid"
 							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
 						/>

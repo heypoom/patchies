@@ -198,12 +198,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('vdo.ninja.push', () => ({
 			room: '',
-			streamID: '',
+			streamId: '',
 			dataOnly: false
 		}))
 		.with('vdo.ninja.pull', () => ({
 			room: '',
-			viewStreamID: '',
+			streamId: '',
 			dataOnly: false
 		}))
 		.otherwise(() => ({}));

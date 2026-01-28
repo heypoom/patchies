@@ -6,15 +6,15 @@
 export interface VDONinjaSDK {
 	connect(): Promise<void>;
 	joinRoom(opts: { room: string; password?: string }): Promise<void>;
-	announce(opts: { streamID: string }): Promise<void>;
-	publish(stream: MediaStream, opts: { streamID?: string }): Promise<void>;
-	view(streamID: string, opts?: { audio?: boolean; video?: boolean }): Promise<RTCPeerConnection>;
+	announce(opts: { streamId: string }): Promise<void>;
+	publish(stream: MediaStream, opts: { streamId?: string }): Promise<void>;
+	view(streamId: string, opts?: { audio?: boolean; video?: boolean }): Promise<RTCPeerConnection>;
 	sendData(data: unknown, opts?: { allowFallback?: boolean }): void;
 	disconnect(): void;
 	addEventListener(event: string, handler: (e: CustomEvent) => void): void;
 	removeEventListener(event: string, handler: (e: CustomEvent) => void): void;
 	// Auto-connect mode for simpler data-only mesh networking
-	autoConnect(room: string, opts?: { streamID?: string }): Promise<void>;
+	autoConnect(room: string, opts?: { streamId?: string }): Promise<void>;
 }
 
 type SDKState = 'idle' | 'loading' | 'loaded' | 'error';

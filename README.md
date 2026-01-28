@@ -1589,6 +1589,78 @@ You can send messages to control Csound instruments:
 | `{type: 'end', text: '...'}`      | Speech finished   |
 | `{type: 'error', message: '...'}` | An error occurred |
 
+### VDO.Ninja
+
+<img src="./docs/images/vdo-ninja.webp" alt="Patchies.app vdo.ninja demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=6amqyelsbtsyvr0)! This lets you send and receive audio, video and messages via vdo.ninja.
+
+Stream audio, video and messages over WebRTC using [VDO.Ninja](https://vdo.ninja). These nodes enable real-time collaboration and remote audio/video streaming between Patchies instances, OBS instances or with VDO.Ninja web clients.
+
+- `vdo.ninja.push`: Push audio, video, and messages to a VDO.Ninja room
+  - **Inlets:**
+    - Message inlet: send data to peers, or control commands
+    - Video inlet: video signal to stream (hidden in data-only mode)
+    - Audio inlet: audio signal to stream (hidden in data-only mode)
+  - **Outlets:**
+    - Message outlet: events and received data from peers
+  - **Settings:**
+    - Room Name: the VDO.Ninja room to join
+    - Stream ID: optional identifier for your stream (viewers use this to pull your stream)
+    - Data Only: toggle to disable video/audio streaming (mesh networking for messages only)
+  - **Inlet Messages:**
+
+    | Message                              | Description                                             |
+    | ------------------------------------ | ------------------------------------------------------- |
+    | `{type: 'connect'}`                  | Connect using room/streamId configured in node settings |
+    | `{type: 'connect', room, streamId?}` | Connect to a room with specified values                 |
+    | `{type: 'disconnect'}`               | Disconnect from the room                                |
+    | Any other message                    | Sent to all peers in the room                           |
+
+  - **Outlet Messages:**
+
+    | Message                       | Description                     |
+    | ----------------------------- | ------------------------------- |
+    | `{type: 'connected', room}`   | Successfully connected          |
+    | `{type: 'disconnected'}`      | Disconnected from room          |
+    | `{type: 'data', data, uuid}`  | Received data from a peer       |
+    | `{type: 'track', kind, uuid}` | Received media track            |
+    | `{type: 'streaming', tracks}` | Started streaming with N tracks |
+    | `{type: 'error', message}`    | Connection or streaming error   |
+
+- `vdo.ninja.pull`: Pull audio, video, and messages from a VDO.Ninja room
+  - **Inlets:**
+    - Message inlet: control commands
+  - **Outlets:**
+    - Message outlet: events and received data from peers
+    - Video outlet: video from remote stream (hidden in data-only mode)
+    - Audio outlet: audio from remote stream (hidden in data-only mode)
+  - **Settings:**
+    - Room Name: the VDO.Ninja room to join
+    - Stream ID to View (required in normal mode): the stream ID to pull from
+    - Data Only: toggle to disable video/audio receiving (mesh networking for messages only)
+  - **Inlet Messages:**
+
+    | Message                              | Description                                             |
+    | ------------------------------------ | ------------------------------------------------------- |
+    | `{type: 'connect'}`                  | Connect using room/streamId configured in node settings |
+    | `{type: 'connect', room, streamId?}` | Connect to a room with specified values                 |
+    | `{type: 'view', streamId}`           | Start viewing a specific stream                         |
+    | `{type: 'disconnect'}`               | Disconnect from the room                                |
+
+  - **Outlet Messages:**
+
+    | Message                                 | Description               |
+    | --------------------------------------- | ------------------------- |
+    | `{type: 'connected', room}`             | Successfully connected    |
+    | `{type: 'disconnected'}`                | Disconnected from room    |
+    | `{type: 'viewing', streamId}`           | Started viewing a stream  |
+    | `{type: 'track', kind, uuid, streamId}` | Received media track      |
+    | `{type: 'message', data, uuid}`         | Received data from a peer |
+    | `{type: 'error', message}`              | Connection error          |
+
+> **Tip:** In data-only mode, you don't need a Stream ID - all peers in the room can exchange messages via mesh networking. In normal mode (with video/audio), you need to specify which stream to view.
+
 ### AI & Generation Objects
 
 > [!CAUTION]

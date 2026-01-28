@@ -242,14 +242,21 @@
 			"id": "pdfb7c8skxk4w4s",
 			"name": "IRC Chat Simulator",
 			"description": "Chat with your friends over the network using netsend and netrecv",
-			"category": "Programming",
+			"category": "Networking",
 			"author": "@heypoom"
 		},
 		{
 			"id": "oc460hxe5cqgk56",
 			"name": "MQTT Client Demo",
 			"description": "Send and receive messages via public MQTT brokers",
-			"category": "Programming",
+			"category": "Networking",
+			"author": "@heypoom"
+		},
+		{
+			"id": "6amqyelsbtsyvr0",
+			"name": "Vdo.ninja Two Way Streaming",
+			"description": "Send and receive audio, video and messages via vdo.ninja",
+			"category": "Networking",
 			"author": "@heypoom"
 		},
 		{

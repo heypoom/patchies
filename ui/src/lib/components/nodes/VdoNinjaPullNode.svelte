@@ -12,7 +12,7 @@
 
 	export type VdoNinjaPullNodeData = {
 		room?: string;
-		viewStreamID?: string;
+		streamId?: string;
 		dataOnly?: boolean;
 	};
 
@@ -44,7 +44,7 @@
 
 	// Local state
 	let room = $state(data.room ?? '');
-	let viewStreamID = $state(data.viewStreamID ?? '');
+	let streamId = $state(data.streamId ?? '');
 	let dataOnly = $state(data.dataOnly ?? false);
 
 	// Message context
@@ -145,10 +145,10 @@
 	}
 
 	function handleTrackEvent(event: CustomEvent) {
-		const { track, streams, uuid, streamID } = event.detail;
+		const { track, streams, uuid, streamId } = event.detail;
 
 		// Only handle tracks from our target stream
-		if (viewStreamID && streamID !== viewStreamID) {
+		if (streamId && streamId !== streamId) {
 			return;
 		}
 
@@ -156,7 +156,7 @@
 			type: 'track',
 			kind: track.kind,
 			uuid,
-			streamID
+			streamId
 		});
 
 		// Create or get remote stream
@@ -215,13 +215,13 @@
 				await vdo.joinRoom({ room });
 
 				// If we have a stream ID to view, request it
-				if (viewStreamID) {
-					await viewStream(viewStreamID);
+				if (streamId) {
+					await viewStream(streamId);
 				}
 			}
 
 			// Save to node data
-			updateNodeData(nodeId, { room, viewStreamID, dataOnly });
+			updateNodeData(nodeId, { room, streamId, dataOnly });
 		} catch (err) {
 			connectionStatus = 'error';
 			errorMessage = err instanceof Error ? err.message : 'Connection failed';
@@ -229,15 +229,16 @@
 		}
 	}
 
-	async function viewStream(streamID: string) {
+	async function viewStream(streamId: string) {
 		if (!vdo || connectionStatus !== 'connected') return;
 
 		try {
 			// Always establish connection to enable data channel
 			// In data only mode, we still connect but won't receive media tracks
 			// (since the push node won't be publishing any)
-			await vdo.view(streamID, { audio: true, video: true });
-			messageContext.send({ type: 'viewing', streamID, dataOnly });
+			await vdo.view(streamId, { audio: true, video: true });
+
+			messageContext.send({ type: 'viewing', streamId, dataOnly });
 		} catch (err) {
 			const errMsg = err instanceof Error ? err.message : 'Failed to view stream';
 			errorMessage = errMsg;
@@ -308,14 +309,18 @@
 		if (!isObjectMessage(msg)) return;
 
 		match(msg)
-			.with({ type: 'connect', room: P.string, viewStreamID: P.optional(P.string) }, (m) => {
+			.with({ type: 'connect', room: P.string, streamId: P.optional(P.string) }, (m) => {
 				room = m.room;
-				viewStreamID = m.viewStreamID ?? viewStreamID;
+				streamId = m.streamId ?? streamId;
 				connect();
 			})
-			.with({ type: 'view', streamID: P.string }, (m) => {
-				viewStreamID = m.streamID;
-				viewStream(m.streamID);
+			.with({ type: 'connect' }, () => {
+				// Connect using existing room/streamId settings
+				connect();
+			})
+			.with({ type: 'view', streamId: P.string }, (m) => {
+				streamId = m.streamId;
+				viewStream(m.streamId);
 			})
 			.with({ type: 'disconnect' }, () => {
 				disconnect();
@@ -489,16 +494,16 @@
 							>
 								<div class="mb-1.5 font-semibold text-zinc-300">Inlet Messages</div>
 								<div class="space-y-1 text-zinc-400">
-									<div><span class="text-green-400">connect</span> {`{room, viewStreamID?}`}</div>
-									<div><span class="text-green-400">view</span> {`{streamID: '...'}`}</div>
+									<div><span class="text-green-400">connect</span> {`{room?, streamId?}`}</div>
+									<div><span class="text-green-400">view</span> {`{streamId: '...'}`}</div>
 									<div><span class="text-green-400">disconnect</span></div>
 								</div>
 								<div class="mt-2 mb-1.5 font-semibold text-zinc-300">Outlet Messages</div>
 								<div class="space-y-1 text-zinc-400">
 									<div><span class="text-blue-400">connected</span> {`{room}`}</div>
 									<div><span class="text-blue-400">disconnected</span></div>
-									<div><span class="text-blue-400">viewing</span> {`{streamID}`}</div>
-									<div><span class="text-blue-400">track</span> {`{kind, uuid, streamID}`}</div>
+									<div><span class="text-blue-400">viewing</span> {`{streamId}`}</div>
+									<div><span class="text-blue-400">track</span> {`{kind, uuid, streamId}`}</div>
 									<div><span class="text-blue-400">message</span> {`{data, uuid}`}</div>
 									<div><span class="text-blue-400">error</span> {`{message}`}</div>
 								</div>
@@ -537,9 +542,8 @@
 								<span class="text-[8px] text-zinc-400">Stream ID to View (required)</span>
 								<button
 									onclick={() =>
-										viewStreamID &&
-										window.open(`https://vdo.ninja/?pull=${viewStreamID}`, '_blank')}
-									disabled={!viewStreamID}
+										streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
+									disabled={!streamId}
 									class="flex items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
 									title="View stream in VDO.Ninja"
 								>
@@ -549,8 +553,8 @@
 							</div>
 							<input
 								type="text"
-								bind:value={viewStreamID}
-								oninput={(e) => (viewStreamID = sanitizeId(e.currentTarget.value))}
+								bind:value={streamId}
+								oninput={(e) => (streamId = sanitizeId(e.currentTarget.value))}
 								placeholder="mystreamid"
 								class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
 							/>
@@ -625,7 +629,7 @@
 								disabled={!room ||
 									!sdkLoaded ||
 									connectionStatus === 'connecting' ||
-									(!dataOnly && !viewStreamID)}
+									(!dataOnly && !streamId)}
 								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#if !sdkLoaded}
@@ -640,9 +644,9 @@
 					</div>
 
 					<!-- View Stream button (when connected but not viewing) -->
-					{#if connectionStatus === 'connected' && viewStreamID && !hasVideoTrack && !hasAudioTrack}
+					{#if connectionStatus === 'connected' && streamId && !hasVideoTrack && !hasAudioTrack}
 						<button
-							onclick={() => viewStream(viewStreamID)}
+							onclick={() => viewStream(streamId)}
 							class="w-full rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-500"
 						>
 							View Stream
