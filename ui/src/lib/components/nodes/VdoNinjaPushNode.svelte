@@ -151,8 +151,10 @@
 
 	async function connect() {
 		if (!sdkLoaded) return;
-		// Need either room or streamId
-		if (!room && !streamId) return;
+		// In normal mode: need either room or streamId
+		// In data-only mode: need room for mesh networking
+		if (!dataOnly && !room && !streamId) return;
+		if (dataOnly && !room) return;
 
 		disconnect();
 		connectionStatus = 'connecting';
@@ -572,44 +574,46 @@
 						</div>
 					</div>
 
-					<!-- Stream ID -->
-					<div>
-						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Stream ID</span>
-							<div class="flex gap-1">
-								<button
-									onclick={() =>
-										streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
-									disabled={!streamId}
-									class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
-									title="View stream in VDO.Ninja"
-								>
-									<ExternalLink class="h-2.5 w-2.5" />
-									View
-								</button>
-								<button
-									onclick={useRandomRoom}
-									class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600"
-									title="Generate random IDs"
-								>
-									<Dice5 class="h-2.5 w-2.5" />
-									Random
-								</button>
+					<!-- Stream ID (only shown in normal mode) -->
+					{#if !dataOnly}
+						<div>
+							<div class="mb-1 flex items-center justify-between">
+								<span class="text-[8px] text-zinc-400">Stream ID</span>
+								<div class="flex gap-1">
+									<button
+										onclick={() =>
+											streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
+										disabled={!streamId}
+										class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+										title="View stream in VDO.Ninja"
+									>
+										<ExternalLink class="h-2.5 w-2.5" />
+										View
+									</button>
+									<button
+										onclick={useRandomRoom}
+										class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600"
+										title="Generate random IDs"
+									>
+										<Dice5 class="h-2.5 w-2.5" />
+										Random
+									</button>
+								</div>
 							</div>
+							<input
+								type="text"
+								bind:value={streamId}
+								oninput={(e) => (streamId = sanitizeId(e.currentTarget.value))}
+								placeholder="mystreamid"
+								class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
+							/>
 						</div>
-						<input
-							type="text"
-							bind:value={streamId}
-							oninput={(e) => (streamId = sanitizeId(e.currentTarget.value))}
-							placeholder="mystreamid"
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
-						/>
-					</div>
+					{/if}
 
 					<!-- Room Name -->
 					<div>
 						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Room Name</span>
+							<span class="text-[8px] text-zinc-400">Room Name{dataOnly ? ' (required)' : ''}</span>
 							<button
 								onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
 								disabled={!room}
@@ -677,9 +681,13 @@
 
 					<!-- Connect/Disconnect button -->
 					<div>
-						{#if connectionStatus !== 'connected' && !room && !streamId}
+						{#if connectionStatus !== 'connected' && !dataOnly && !room && !streamId}
 							<div class="mb-2 text-center text-[9px] text-zinc-500">
 								Enter a stream id or room name to connect
+							</div>
+						{:else if connectionStatus !== 'connected' && dataOnly && !room}
+							<div class="mb-2 text-center text-[9px] text-zinc-500">
+								Enter a room name to connect
 							</div>
 						{/if}
 
@@ -693,7 +701,10 @@
 						{:else}
 							<button
 								onclick={connect}
-								disabled={(!room && !streamId) || !sdkLoaded || connectionStatus === 'connecting'}
+								disabled={!sdkLoaded ||
+									connectionStatus === 'connecting' ||
+									(!dataOnly && !room && !streamId) ||
+									(dataOnly && !room)}
 								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#if !sdkLoaded}
