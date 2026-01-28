@@ -8,7 +8,6 @@ import { FloatObject } from './FloatObject';
 import { IntObject } from './IntObject';
 import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
-import { MqttObject } from './MqttObject';
 import { MtofObject } from './MtofObject';
 import { SelectObject } from './SelectObject';
 import { SpigotObject } from './SpigotObject';
@@ -27,7 +26,6 @@ const TEXT_OBJECTS = [
 	IntObject,
 	LoadbangObject,
 	MetroObject,
-	MqttObject,
 	MtofObject,
 	SelectObject,
 	SpigotObject,
