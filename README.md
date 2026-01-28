@@ -1592,7 +1592,7 @@ You can send messages to control Csound instruments:
 ### AI & Generation Objects
 
 > [!CAUTION]
-> API keys are stored on localStorage as `gemini-api-key` for Gemini (for `ai.txt`, `ai.img` and `ai.music`), and `celestiai-api-key` for `ai.tts`. This is super insecure.
+> API keys are stored on localStorage as `gemini-api-key` for Gemini (for `ai.txt`, `ai.img`, `ai.tts` and `ai.music`). This is super insecure.
 
 Be very cautious that Patchies allows any arbitrary code execution right now with no sandboxing whatsoever, and if you load anyone's patch with malicious code, they can **steal your API keys**. I recommend removing API keys after use before loading other people's patch.
 
@@ -1600,7 +1600,7 @@ Please, do not use your main API keys here! Create separate API keys with limite
 
 In addition, these objects can be hidden from insert object and the object list via "CMD + K > Toggle AI Features" if you prefer not to use AI objects in your patches.
 
-With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key for `ai.txt`, `ai.img` and `ai.music`. You can get the API key from [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key for `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. You can get the API key from [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 
 ### `ai.txt`: AI text generation
 
@@ -1622,9 +1622,23 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 ### `ai.tts`: AI text-to-speech
 
-- Convert text to speech using AI voices.
-- Create dynamic narration or vocal elements.
+- Convert text to speech using Google Cloud Text-to-Speech.
+- Access 700+ voices across 110+ languages (WaveNet, Neural2, Studio, Chirp HD).
+- Configure speaking rate (0.25x-4x), pitch (-20 to +20), and volume gain.
+- Uses the same Gemini API key stored in settings.
 - Outputs audio for further processing.
+
+**Inlet messages:**
+
+- `"text"` - Generate and play speech for the given text
+- `{type: "speak", text: "..."}` - Same as above, explicit format
+- `{type: "load", text: "..."}` - Generate speech without playing (preload)
+- `{type: "play"}` or `{type: "bang"}` - Play cached audio
+- `{type: "stop"}` - Stop playback
+- `{type: "setVoice", value: "voice-name"}` - Set voice (e.g., "en-US-Chirp3-HD-Achernar")
+- `{type: "setRate", value: 1.0}` - Set speaking rate (0.25-4)
+- `{type: "setPitch", value: 0}` - Set pitch (-20 to 20)
+- `{type: "setVolume", value: 0}` - Set volume gain in dB (-96 to 16)
 
 ### Documentation & Content
 
