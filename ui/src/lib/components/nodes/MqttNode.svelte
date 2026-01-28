@@ -284,8 +284,8 @@
 		if (!isObjectMessage(msg)) return;
 
 		match(msg)
-			.with({ type: 'setUrl', value: P.string }, (m) => {
-				url = m.value;
+			.with({ type: 'connect', url: P.string }, (m) => {
+				url = m.url;
 				connect(url, data.topics ?? []);
 			})
 			.with({ type: 'subscribe', topic: P.union(P.string, P.array(P.string)) }, (m) => {
@@ -302,6 +302,9 @@
 			})
 			.with({ type: 'publish', topic: P.string, message: P.any }, (m) => {
 				client?.publish(m.topic, String(m.message));
+			})
+			.with({ type: 'disconnect' }, () => {
+				disconnect();
 			})
 			.otherwise(() => {});
 	}
@@ -336,7 +339,7 @@
 					port="inlet"
 					type="message"
 					id={0}
-					title="setUrl, subscribe, unsubscribe, publish"
+					title="connect, disconnect, subscribe, unsubscribe, publish"
 					total={1}
 					index={0}
 					class="top-0"
@@ -405,13 +408,14 @@
 							>
 								<div class="mb-1.5 font-semibold text-zinc-300">Inlet Messages</div>
 								<div class="space-y-1 text-zinc-400">
-									<div><span class="text-green-400">setUrl</span> {`{value: 'wss://...'}`}</div>
-									<div><span class="text-green-400">subscribe</span> {`{topic: '...'}`}</div>
-									<div><span class="text-green-400">unsubscribe</span> {`{topic: '...'}`}</div>
+									<div><span class="text-green-400">connect</span> {`{url: 'wss://...'}`}</div>
+									<div><span class="text-green-400">disconnect</span></div>
 									<div>
 										<span class="text-green-400">publish</span>
 										{`{topic: '...', message: '...'}`}
 									</div>
+									<div><span class="text-green-400">subscribe</span> {`{topic: '...'}`}</div>
+									<div><span class="text-green-400">unsubscribe</span> {`{topic: '...'}`}</div>
 								</div>
 								<div class="mt-2 mb-1.5 font-semibold text-zinc-300">Outlet Messages</div>
 								<div class="space-y-1 text-zinc-400">
