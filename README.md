@@ -1517,7 +1517,74 @@ You can send messages to control Csound instruments:
 - Use the "Share Link" button (or `Ctrl/Cmd + K > Share Patch Link`) to share the patch with friends.
   - It will automatically add the `room` parameter to your shared link, letting you connect with friends.
 - Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API), leveraging public Nostr relay servers for peer-to-peer mesh discovery.
-  - The `appId` is `"patchies"`. This lets you write Node.js/Bun scripts that can talk with Patchies ([example](https://gist.github.com/dtinth/a781d6fee01707d067ca70ecb58966c1)), so you can extend your patch beyond the browser's confinements.
+
+#### Interacting with Node.js and Bun scripts with `netsend` and `netrecv`
+
+You can use `netsend` and `netrecv` to send and receive messages from your own Node.js and Bun scripts, by using the [Trystero](https://github.com/dmotz/trystero) library with the RTC polyfills such as `node-datachannel/polyfill`.
+
+Here's an example of an OSC (OpenSoundControl) bridge. You can send message to `netsend osc` to route that to your OSC server.
+
+```ts
+import { joinRoom } from "trystero";
+import { Client } from "node-osc";
+import { RTCPeerConnection } from "node-datachannel/polyfill";
+
+const appId = "patchies";
+const roomId = "f84df292-3811-4d9b-be54-ce024d4ae1c0"; // your room id!
+
+const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId);
+const [netsend, netrecv] = room.makeAction("osc");
+const osc = new Client("127.0.0.1", 3333);
+
+room.onPeerJoin((peerId) => console.log("peer joined:", peerId));
+room.onPeerLeave((peerId) => console.log("peer left:", peerId));
+
+netrecv((data) => {
+  const { address, args } = data;
+
+  osc.send(address, ...args, (err) => {
+    if (err) console.error(err);
+    netsend("osc sent!");
+    osc.close();
+  });
+});
+```
+
+Here's another example of an ArtNet bridge for controlling DMX-enabled equipments:
+
+```tsx
+import { joinRoom } from "trystero";
+import { RTCPeerConnection } from "node-datachannel/polyfill";
+import dmxlib from "dmxnet";
+
+const appId = "patchies";
+const roomId = "f84df292-3811-4d9b-be54-ce024d4ae1c0"; // your room id!
+
+const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId);
+
+room.onPeerJoin((peerId) => console.log("peer joined:", peerId));
+room.onPeerLeave((peerId) => console.log("peer left:", peerId));
+
+const [netsend, netrecv] = room.makeAction("dmx");
+
+const dmxnet = new dmxlib.dmxnet({});
+const sender = dmxnet.newSender({
+  ip: "127.0.0.1",
+  subnet: 0,
+  universe: 0,
+  port: 6454,
+});
+
+netrecv((data, peerId) => {
+  if (Array.isArray(data)) {
+    for (let frame of data) {
+      sender.prepChannel(frame.channel, frame.value);
+    }
+
+    sender.transmit();
+  }
+});
+```
 
 ### `mqtt`: MQTT Client
 
