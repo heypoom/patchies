@@ -453,7 +453,7 @@ export interface SupportLink {
 	description: string;
 	category: 'library' | 'educator' | 'tool';
 	url: string;
-	type: 'patreon' | 'opencollective' | 'github' | 'donate' | 'book' | 'website';
+	type: 'patreon' | 'opencollective' | 'github' | 'donate' | 'book' | 'website' | 'repo';
 	projects?: string[];
 }
 
@@ -655,7 +655,7 @@ export const supportLinks: SupportLink[] = [
 		description: 'Serverless WebRTC matchmaking for P2P, powering netsend/netrecv',
 		category: 'library',
 		url: 'https://github.com/dmotz/trystero',
-		type: 'github',
+		type: 'repo',
 		projects: ['Trystero']
 	},
 	{
