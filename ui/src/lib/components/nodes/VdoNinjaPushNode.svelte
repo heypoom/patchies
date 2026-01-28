@@ -361,15 +361,16 @@
 
 	const handleMessage = (msg: unknown) =>
 		match(msg)
-			.with({ type: 'connect', room: P.string, streamId: P.optional(P.string) }, (m) => {
-				room = m.room;
-				streamId = m.streamId ?? streamId;
-				connect();
-			})
-			.with({ type: 'connect' }, () => {
-				// Connect using existing room/streamId settings
-				connect();
-			})
+			.with(
+				{ type: 'connect', room: P.optional(P.string), streamId: P.optional(P.string) },
+				(m) => {
+					if (m.room !== undefined) room = m.room;
+					if (m.streamId !== undefined) streamId = m.streamId;
+
+					updateNodeData(nodeId, { room, streamId });
+					connect();
+				}
+			)
 			.with({ type: 'disconnect' }, () => {
 				disconnect();
 			})
