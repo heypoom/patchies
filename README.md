@@ -1589,7 +1589,7 @@ You can send messages to control Csound instruments:
 | `{type: 'end', text: '...'}`      | Speech finished   |
 | `{type: 'error', message: '...'}` | An error occurred |
 
-### VDO.Ninja
+### VDO.Ninja: send and receive audio, video and messages over WebRTC
 
 <img src="./docs/images/vdo-ninja-loopback.webp" alt="Patchies.app vdo.ninja loopback demo" width="700">
 
