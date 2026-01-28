@@ -1516,7 +1516,7 @@ You can send messages to control Csound instruments:
   - If you load someone's patch, you can remove the `room` parameter to generate a different room to use.
 - Use the "Share Link" button (or `Ctrl/Cmd + K > Share Patch Link`) to share the patch with friends.
   - It will automatically add the `room` parameter to your shared link, letting you connect with friends.
-- Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API), leveraging public Nostr relay servers for peer-to-peer mesh discovery.
+- Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API), leveraging public relay servers for peer-to-peer mesh discovery.
 
 #### Interacting with Node.js and Bun scripts with `netsend` and `netrecv`
 
