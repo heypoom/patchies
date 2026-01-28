@@ -150,7 +150,9 @@
 	}
 
 	async function connect() {
-		if (!sdkLoaded || !room) return;
+		if (!sdkLoaded) return;
+		// Need either room or streamId
+		if (!room && !streamId) return;
 
 		disconnect();
 		connectionStatus = 'connecting';
@@ -168,13 +170,19 @@
 
 			if (dataOnly) {
 				// Use autoConnect for data-only mode - simpler mesh networking
-				await vdo.autoConnect(room, { streamId: streamId || undefined });
+				await vdo.autoConnect(room || undefined, { streamID: streamId || undefined });
 			} else {
 				await vdo.connect();
-				await vdo.joinRoom({ room });
 
+				if (room) {
+					await vdo.joinRoom({ room });
+					console.log('[push] joined room', room);
+				}
+
+				// Announce with streamId (required for others to view)
 				if (streamId) {
-					await vdo.announce({ streamId });
+					await vdo.announce({ streamID: streamId });
+					console.log('[push] announced stream id', streamId);
 				}
 
 				// startStreaming() is called from handleConnectedEvent() once connection is established
@@ -265,7 +273,7 @@
 		// Publish stream if we have tracks
 		if (mediaStream.getTracks().length > 0) {
 			try {
-				await vdo.publish(mediaStream, { streamId: streamId || undefined });
+				await vdo.publish(mediaStream, { streamID: streamId || undefined });
 
 				isStreaming = true;
 				messageContext.send({ type: 'streaming', tracks: mediaStream.getTracks().length });
@@ -530,7 +538,9 @@
 							<div class={['h-2 w-2 rounded-full', statusDot]}></div>
 							<span class="text-xs text-zinc-400">
 								{match(connectionStatus)
-									.with('connected', () => `Connected to ${room}`)
+									.with('connected', () =>
+										room ? `Connected to ${room}` : `Streaming as ${streamId}`
+									)
 									.with('connecting', () => 'Connecting...')
 									.with('error', () => errorMessage || 'Error')
 									.otherwise(() => 'Disconnected')}
@@ -561,16 +571,17 @@
 						</div>
 					</div>
 
-					<!-- Room Name -->
+					<!-- Stream ID -->
 					<div>
 						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Room Name</span>
+							<span class="text-[8px] text-zinc-400">Stream ID (required)</span>
 							<div class="flex gap-1">
 								<button
-									onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
-									disabled={!room}
+									onclick={() =>
+										streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
+									disabled={!streamId}
 									class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
-									title="View room in VDO.Ninja"
+									title="View stream in VDO.Ninja"
 								>
 									<ExternalLink class="h-2.5 w-2.5" />
 									View
@@ -578,7 +589,7 @@
 								<button
 									onclick={useRandomRoom}
 									class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600"
-									title="Generate random room"
+									title="Generate random IDs"
 								>
 									<Dice5 class="h-2.5 w-2.5" />
 									Random
@@ -587,24 +598,22 @@
 						</div>
 						<input
 							type="text"
-							bind:value={room}
-							oninput={(e) => (room = sanitizeId(e.currentTarget.value))}
-							data-room-input="true"
-							placeholder="myroomname"
+							bind:value={streamId}
+							oninput={(e) => (streamId = sanitizeId(e.currentTarget.value))}
+							placeholder="mystreamid"
 							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
 						/>
 					</div>
 
-					<!-- Stream ID -->
+					<!-- Room Name -->
 					<div>
 						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Stream ID (optional)</span>
+							<span class="text-[8px] text-zinc-400">Room Name (optional)</span>
 							<button
-								onclick={() =>
-									streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
-								disabled={!streamId}
+								onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
+								disabled={!room}
 								class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
-								title="View stream in VDO.Ninja"
+								title="View room in VDO.Ninja"
 							>
 								<ExternalLink class="h-2.5 w-2.5" />
 								View
@@ -612,9 +621,10 @@
 						</div>
 						<input
 							type="text"
-							bind:value={streamId}
-							oninput={(e) => (streamId = sanitizeId(e.currentTarget.value))}
-							placeholder="mystreamid"
+							bind:value={room}
+							oninput={(e) => (room = sanitizeId(e.currentTarget.value))}
+							data-room-input="true"
+							placeholder="myroomname"
 							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
 						/>
 					</div>
@@ -676,7 +686,7 @@
 						{:else}
 							<button
 								onclick={connect}
-								disabled={!room || !sdkLoaded || connectionStatus === 'connecting'}
+								disabled={(!room && !streamId) || !sdkLoaded || connectionStatus === 'connecting'}
 								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#if !sdkLoaded}

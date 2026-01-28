@@ -191,7 +191,9 @@
 	}
 
 	async function connect() {
-		if (!sdkLoaded || !room) return;
+		if (!sdkLoaded) return;
+		// Need streamId to view a stream (room is optional)
+		if (!dataOnly && !streamId) return;
 
 		disconnect();
 		connectionStatus = 'connecting';
@@ -209,12 +211,15 @@
 
 			if (dataOnly) {
 				// Use autoConnect for data-only mode - simpler mesh networking
-				await vdo.autoConnect(room);
+				await vdo.autoConnect(room || undefined);
 			} else {
 				await vdo.connect();
-				await vdo.joinRoom({ room });
 
-				// If we have a stream ID to view, request it
+				if (room) {
+					await vdo.joinRoom({ room });
+				}
+
+				// View the stream by streamId
 				if (streamId) {
 					await viewStream(streamId);
 				}
@@ -479,7 +484,7 @@
 							<div class={['h-2 w-2 rounded-full', statusDot]}></div>
 							<span class="text-xs text-zinc-400">
 								{match(connectionStatus)
-									.with('connected', () => `Connected to ${room}`)
+									.with('connected', () => (room ? `Connected to ${room}` : `Viewing ${streamId}`))
 									.with('connecting', () => 'Connecting...')
 									.with('error', () => errorMessage || 'Error')
 									.otherwise(() => 'Disconnected')}
@@ -511,30 +516,6 @@
 						</div>
 					</div>
 
-					<!-- Room Name -->
-					<div>
-						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Room Name</span>
-							<button
-								onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
-								disabled={!room}
-								class="flex items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
-								title="View room in VDO.Ninja"
-							>
-								<ExternalLink class="h-2.5 w-2.5" />
-								View
-							</button>
-						</div>
-						<input
-							type="text"
-							bind:value={room}
-							oninput={(e) => (room = sanitizeId(e.currentTarget.value))}
-							data-room-input="true"
-							placeholder="myroomname"
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
-						/>
-					</div>
-
 					<!-- Stream ID to View (only shown in normal mode) -->
 					{#if !dataOnly}
 						<div>
@@ -560,6 +541,30 @@
 							/>
 						</div>
 					{/if}
+
+					<!-- Room Name -->
+					<div>
+						<div class="mb-1 flex items-center justify-between">
+							<span class="text-[8px] text-zinc-400">Room Name (optional)</span>
+							<button
+								onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
+								disabled={!room}
+								class="flex items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+								title="View room in VDO.Ninja"
+							>
+								<ExternalLink class="h-2.5 w-2.5" />
+								View
+							</button>
+						</div>
+						<input
+							type="text"
+							bind:value={room}
+							oninput={(e) => (room = sanitizeId(e.currentTarget.value))}
+							data-room-input="true"
+							placeholder="myroomname"
+							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
+						/>
+					</div>
 
 					<!-- Data Only Toggle -->
 					<div class="flex items-center justify-between">
@@ -626,8 +631,7 @@
 						{:else}
 							<button
 								onclick={connect}
-								disabled={!room ||
-									!sdkLoaded ||
+								disabled={!sdkLoaded ||
 									connectionStatus === 'connecting' ||
 									(!dataOnly && !streamId)}
 								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
