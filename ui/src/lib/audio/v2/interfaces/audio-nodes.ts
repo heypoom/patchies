@@ -23,6 +23,9 @@ export type AudioNodeClass = {
 
 	/** Group of the audio node (e.g. sources or processors) */
 	group: AudioNodeGroup;
+
+	/** If true, the node is hidden from object browser and autocomplete */
+	headless?: boolean;
 } & ObjectMetadata &
 	AudioNodeConstructor;
 

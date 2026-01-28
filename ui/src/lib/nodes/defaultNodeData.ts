@@ -196,5 +196,15 @@ createApp({
 			pitch: 1,
 			volume: 1
 		}))
+		.with('vdo.ninja.push', () => ({
+			room: '',
+			streamID: '',
+			dataOnly: false
+		}))
+		.with('vdo.ninja.pull', () => ({
+			room: '',
+			viewStreamID: '',
+			dataOnly: false
+		}))
 		.otherwise(() => ({}));
 }

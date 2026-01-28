@@ -32,6 +32,7 @@ import { SamplerNode } from './SamplerNode';
 import { SonicNode } from './SonicNode';
 import { SoundfileNode } from './SoundfileNode';
 import { ToneNode } from './ToneNode';
+import { VdoNinjaNode } from './VdoNinjaNode';
 import { WaveShaperNodeV2 } from './WaveShaperNode';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
@@ -69,6 +70,7 @@ const AUDIO_NODES = [
 	SonicNode,
 	SoundfileNode,
 	ToneNode,
+	VdoNinjaNode,
 	WaveShaperNodeV2
 ] as const satisfies AudioNodeClass[];
 
