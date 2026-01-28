@@ -1570,13 +1570,16 @@ You can send messages to control Csound instruments:
 
 **Inlet messages:**
 
-| Message                            | Description           |
-| ---------------------------------- | --------------------- |
-| `"text"` (string)                  | Speak the text        |
-| `{type: 'setVoice', value: '...')` | Set the voice by name |
-| `{type: 'stop'}`                   | Stop current speech   |
-| `{type: 'pause'}`                  | Pause current speech  |
-| `{type: 'resume'}`                 | Resume paused speech  |
+| Message                            | Description                  |
+| ---------------------------------- | ---------------------------- |
+| `"text"` (string)                  | Speak the text               |
+| `{type: 'setVoice', value: '...')` | Set the voice by name        |
+| `{type: 'setRate', value: 0.1-10}` | Set speech rate (default: 1) |
+| `{type: 'setPitch', value: 0-2}`   | Set pitch (default: 1)       |
+| `{type: 'setVolume', value: 0-1}`  | Set volume (default: 1)      |
+| `{type: 'stop'}`                   | Stop current speech          |
+| `{type: 'pause'}`                  | Pause current speech         |
+| `{type: 'resume'}`                 | Resume paused speech         |
 
 **Outlet messages:**
 

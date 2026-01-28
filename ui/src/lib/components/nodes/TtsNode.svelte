@@ -10,6 +10,9 @@
 
 	export type TtsNodeData = {
 		voiceName?: string;
+		rate?: number; // 0.1 to 10, default 1
+		pitch?: number; // 0 to 2, default 1
+		volume?: number; // 0 to 1, default 1
 	};
 
 	let {
@@ -36,6 +39,11 @@
 	let messageContext: MessageContext;
 
 	const containerClass = $derived(selected ? 'object-container-selected' : 'object-container');
+
+	// Settings with defaults
+	const rate = $derived(data.rate ?? 1);
+	const pitch = $derived(data.pitch ?? 1);
+	const volume = $derived(data.volume ?? 1);
 
 	// Group voices by language
 	const groupedVoices = $derived.by(() => {
@@ -104,6 +112,11 @@
 			utterance.voice = currentVoice;
 		}
 
+		// Apply settings
+		utterance.rate = rate;
+		utterance.pitch = pitch;
+		utterance.volume = volume;
+
 		utterance.onstart = () => {
 			messageContext.send({ type: 'start', text });
 		};
@@ -131,6 +144,15 @@
 		match(msg)
 			.with({ type: 'setVoice', value: P.string }, (m) => {
 				setVoice(m.value);
+			})
+			.with({ type: 'setRate', value: P.number }, (m) => {
+				updateNodeData(nodeId, { rate: Math.max(0.1, Math.min(10, m.value)) });
+			})
+			.with({ type: 'setPitch', value: P.number }, (m) => {
+				updateNodeData(nodeId, { pitch: Math.max(0, Math.min(2, m.value)) });
+			})
+			.with({ type: 'setVolume', value: P.number }, (m) => {
+				updateNodeData(nodeId, { volume: Math.max(0, Math.min(1, m.value)) });
 			})
 			.with({ type: 'stop' }, () => {
 				speechSynthesis.cancel();
@@ -257,14 +279,17 @@
 						<div class="group relative">
 							<Info class="h-3 w-3 cursor-help text-zinc-500 hover:text-zinc-300" />
 							<div
-								class="pointer-events-none absolute top-5 right-0 z-50 hidden w-48 rounded border border-zinc-600 bg-zinc-800 p-2 text-[9px] shadow-lg group-hover:block"
+								class="pointer-events-none absolute top-5 right-0 z-50 hidden w-52 rounded border border-zinc-600 bg-zinc-800 p-2 text-[9px] shadow-lg group-hover:block"
 							>
 								<div class="mb-1.5 font-semibold text-zinc-300">Inlet Messages</div>
 								<div class="space-y-1 text-zinc-400">
 									<div><span class="text-green-400">"text"</span> speak the text</div>
 									<div><span class="text-green-400">setVoice</span> {`{value: 'name'}`}</div>
-									<div><span class="text-green-400">stop</span> cancel speech</div>
+									<div><span class="text-green-400">setRate</span> {`{value: 0.1-10}`}</div>
+									<div><span class="text-green-400">setPitch</span> {`{value: 0-2}`}</div>
+									<div><span class="text-green-400">setVolume</span> {`{value: 0-1}`}</div>
 									<div>
+										<span class="text-green-400">stop</span> /
 										<span class="text-green-400">pause</span> /
 										<span class="text-green-400">resume</span>
 									</div>
@@ -321,6 +346,70 @@
 								</Command.Root>
 							</Popover.Content>
 						</Popover.Root>
+					</div>
+
+					<!-- Rate slider -->
+					<div>
+						<div class="mb-1.5 flex items-center justify-between">
+							<span class="text-xs text-zinc-400">Rate</span>
+							<span class="text-[10px] text-zinc-500">{rate.toFixed(1)}x</span>
+						</div>
+						<input
+							type="range"
+							min="0.1"
+							max="3"
+							step="0.1"
+							value={rate}
+							onchange={(e) => updateNodeData(nodeId, { rate: parseFloat(e.currentTarget.value) })}
+							class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
+						/>
+						<div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
+							<span>0.1x</span>
+							<span>3x</span>
+						</div>
+					</div>
+
+					<!-- Pitch slider -->
+					<div>
+						<div class="mb-1.5 flex items-center justify-between">
+							<span class="text-xs text-zinc-400">Pitch</span>
+							<span class="text-[10px] text-zinc-500">{pitch.toFixed(1)}</span>
+						</div>
+						<input
+							type="range"
+							min="0"
+							max="2"
+							step="0.1"
+							value={pitch}
+							onchange={(e) => updateNodeData(nodeId, { pitch: parseFloat(e.currentTarget.value) })}
+							class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
+						/>
+						<div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
+							<span>Low</span>
+							<span>High</span>
+						</div>
+					</div>
+
+					<!-- Volume slider -->
+					<div>
+						<div class="mb-1.5 flex items-center justify-between">
+							<span class="text-xs text-zinc-400">Volume</span>
+							<span class="text-[10px] text-zinc-500">{Math.round(volume * 100)}%</span>
+						</div>
+						<input
+							type="range"
+							min="0"
+							max="1"
+							step="0.05"
+							value={volume}
+							onchange={(e) =>
+								updateNodeData(nodeId, { volume: parseFloat(e.currentTarget.value) })}
+							class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
+						/>
+						<div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
+							<span>0%</span>
+							<span>100%</span>
+						</div>
 					</div>
 				</div>
 			</div>

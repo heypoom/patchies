@@ -191,7 +191,10 @@ createApp({
 			url: ''
 		}))
 		.with('tts', () => ({
-			voiceName: ''
+			voiceName: '',
+			rate: 1,
+			pitch: 1,
+			volume: 1
 		}))
 		.otherwise(() => ({}));
 }
