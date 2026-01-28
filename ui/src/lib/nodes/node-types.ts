@@ -61,6 +61,8 @@ import VueNode from '$lib/components/nodes/VueNode.svelte';
 import MqttNode from '$lib/components/nodes/MqttNode.svelte';
 import EventSourceNode from '$lib/components/nodes/EventSourceNode.svelte';
 import TtsNode from '$lib/components/nodes/TtsNode.svelte';
+import VdoNinjaPushNode from '$lib/components/nodes/VdoNinjaPushNode.svelte';
+import VdoNinjaPullNode from '$lib/components/nodes/VdoNinjaPullNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -126,7 +128,9 @@ export const nodeTypes: Record<string, any> = {
 	uxn: UxnNode,
 	mqtt: MqttNode,
 	sse: EventSourceNode,
-	tts: TtsNode
+	tts: TtsNode,
+	'vdo.ninja.push': VdoNinjaPushNode,
+	'vdo.ninja.pull': VdoNinjaPullNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

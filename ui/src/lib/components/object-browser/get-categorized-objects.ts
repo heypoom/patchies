@@ -66,7 +66,9 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
 	link: 'Clickable hyperlink button',
 	'merge~': 'Audio channel merger (mono to stereo)',
 	'split~': 'Audio channel splitter (stereo to mono)',
-	'meter~': 'Audio level meter display'
+	'meter~': 'Audio level meter display',
+	'vdo.ninja.push': 'Push video/audio/data to VDO.Ninja room',
+	'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja room'
 };
 
 /**
@@ -122,7 +124,9 @@ const VISUAL_NODE_CATEGORIES: Record<string, string> = {
 	'merge~': 'Audio FX',
 	'split~': 'Audio FX',
 	'meter~': 'Audio',
-	bchrn: 'Unstable'
+	bchrn: 'Unstable',
+	'vdo.ninja.push': 'I/O',
+	'vdo.ninja.pull': 'Video Sources'
 };
 
 /**
@@ -141,8 +145,8 @@ export function getCategorizedObjects(includeAiFeatures: boolean = true): Catego
 	const audioRegistry = AudioRegistry.getInstance();
 	const objectRegistry = ObjectRegistry.getInstance();
 
-	// Get audio nodes from AudioRegistry
-	const audioNodeTypes = audioRegistry.getNodeTypes();
+	// Get audio nodes from AudioRegistry (excluding headless nodes)
+	const audioNodeTypes = audioRegistry.getVisibleNodeTypes();
 	for (const nodeType of audioNodeTypes) {
 		if (seenNames.has(nodeType)) continue;
 		seenNames.add(nodeType);

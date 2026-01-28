@@ -25,7 +25,9 @@ const AUDIO_NODES = [
 	'csound~',
 	'bchrn',
 	'dac~',
-	'mic~'
+	'mic~',
+	'vdo.ninja.push',
+	'vdo.ninja.pull'
 ];
 
 const isAudioObject = (node: MinimalNode): boolean => {

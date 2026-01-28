@@ -45,6 +45,16 @@ export class AudioRegistry {
 	}
 
 	/**
+	 * Get all visible (non-headless) node types for autocomplete and object browser.
+	 * @returns Array of visible node type identifiers
+	 */
+	getVisibleNodeTypes(): string[] {
+		return Array.from(this.registry.entries())
+			.filter(([_, nodeClass]) => !nodeClass.headless)
+			.map(([nodeType]) => nodeType);
+	}
+
+	/**
 	 * Get the singleton instance.
 	 */
 	static getInstance(): AudioRegistry {
