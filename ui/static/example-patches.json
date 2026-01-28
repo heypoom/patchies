@@ -253,9 +253,9 @@
 			"author": "@heypoom"
 		},
 		{
-			"id": "6amqyelsbtsyvr0",
-			"name": "Vdo.ninja Two Way Streaming",
-			"description": "Send and receive audio, video and messages via vdo.ninja",
+			"id": "nahfiov94it8bxr",
+			"name": "Vdo.Ninja Loopback Stream",
+			"description": "Send and receive audio, video and messages over network via vdo.ninja",
 			"category": "Networking",
 			"author": "@heypoom"
 		},

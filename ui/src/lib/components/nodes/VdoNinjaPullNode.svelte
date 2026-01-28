@@ -192,8 +192,11 @@
 
 	async function connect() {
 		if (!sdkLoaded) return;
-		// Need streamId to view a stream (room is optional)
+
+		// In normal mode: need streamId to view a stream
+		// In data-only mode: need room for mesh networking
 		if (!dataOnly && !streamId) return;
+		if (dataOnly && !room) return;
 
 		disconnect();
 		connectionStatus = 'connecting';
@@ -523,7 +526,7 @@
 					{#if !dataOnly}
 						<div>
 							<div class="mb-1 flex items-center justify-between">
-								<span class="text-[8px] text-zinc-400">Stream ID to View (required)</span>
+								<span class="text-[8px] text-zinc-400">Stream ID to pull (required)</span>
 								<button
 									onclick={() =>
 										streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
@@ -548,7 +551,7 @@
 					<!-- Room Name -->
 					<div>
 						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Room Name (optional)</span>
+							<span class="text-[8px] text-zinc-400">Room Name{dataOnly ? ' (required)' : ''}</span>
 							<button
 								onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
 								disabled={!room}
@@ -624,6 +627,14 @@
 
 					<!-- Connect/Disconnect button -->
 					<div>
+						{#if connectionStatus !== 'connected' && !dataOnly && !streamId}
+							<div class="mb-2 text-center text-[9px] text-zinc-500">Enter a stream id to view</div>
+						{:else if connectionStatus !== 'connected' && dataOnly && !room}
+							<div class="mb-2 text-center text-[9px] text-zinc-500">
+								Enter a room name to connect
+							</div>
+						{/if}
+
 						{#if connectionStatus === 'connected'}
 							<button
 								onclick={disconnect}
@@ -636,7 +647,8 @@
 								onclick={connect}
 								disabled={!sdkLoaded ||
 									connectionStatus === 'connecting' ||
-									(!dataOnly && !streamId)}
+									(!dataOnly && !streamId) ||
+									(dataOnly && !room)}
 								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#if !sdkLoaded}

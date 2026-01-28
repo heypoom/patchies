@@ -1591,9 +1591,9 @@ You can send messages to control Csound instruments:
 
 ### VDO.Ninja
 
-<img src="./docs/images/vdo-ninja.webp" alt="Patchies.app vdo.ninja demo" width="700">
+<img src="./docs/images/vdo-ninja-loopback.webp" alt="Patchies.app vdo.ninja loopback demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=6amqyelsbtsyvr0)! This lets you send and receive audio, video and messages via vdo.ninja.
+> ✨ Try this patch out [in the app](https://patchies.app/?id=nahfiov94it8bxr)! This shows how to send and receive audio, video and messages via vdo.ninja.
 
 Stream audio, video and messages over WebRTC using [VDO.Ninja](https://vdo.ninja). These nodes enable real-time collaboration and remote audio/video streaming between Patchies instances, OBS instances or with VDO.Ninja web clients.
 
@@ -1608,15 +1608,15 @@ Stream audio, video and messages over WebRTC using [VDO.Ninja](https://vdo.ninja
     - Stream ID: identifier for your stream (viewers use this to pull your stream)
     - Room Name: the VDO.Ninja room to join
     - Data Only: toggle to disable video/audio streaming (mesh networking for messages only)
-    - _At least one of Stream ID or Room Name is required to connect_
+    - _At least one of stream id or room name is required to connect. You can specify both as well._
   - **Inlet Messages:**
 
-    | Message                              | Description                                             |
-    | ------------------------------------ | ------------------------------------------------------- |
-    | `{type: 'connect'}`                  | Connect using room/streamId configured in node settings |
-    | `{type: 'connect', room, streamId?}` | Connect to a room with specified values                 |
-    | `{type: 'disconnect'}`               | Disconnect from the room                                |
-    | Any other message                    | Sent to all peers in the room                           |
+    | Message                               | Description                                             |
+    | ------------------------------------- | ------------------------------------------------------- |
+    | `{type: 'connect'}`                   | Connect using room/streamId configured in node settings |
+    | `{type: 'connect', room?, streamId?}` | Connect to a room with specified values                 |
+    | `{type: 'disconnect'}`                | Disconnect from the room                                |
+    | Any other message                     | Sent to all peers in the room                           |
 
   - **Outlet Messages:**
 
@@ -1660,7 +1660,7 @@ Stream audio, video and messages over WebRTC using [VDO.Ninja](https://vdo.ninja
     | `{type: 'message', data, uuid}`         | Received data from a peer |
     | `{type: 'error', message}`              | Connection error          |
 
-> **Tip:** In data-only mode, you don't need a Stream ID - all peers in the room can exchange messages via mesh networking. In normal mode (with video/audio), you need to specify which stream to view.
+> **Tip:** In data-only mode, you don't need a stream id - all peers in the room can exchange messages via mesh networking. In normal mode (with video/audio), you need to specify which stream to view.
 
 ### AI & Generation Objects
 
