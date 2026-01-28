@@ -7,6 +7,7 @@
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
 	import { AudioService } from '$lib/audio/v2/AudioService';
+	import { VdoNinjaPushNode as VdoNinjaPushAudioNode } from '$lib/audio/v2/nodes/VdoNinjaPushNode';
 	import { capturePreviewFrame } from '$lib/ai/google';
 	import { loadVdoNinjaSdk, createVdoNinjaInstance, type VDONinjaSDK } from '$lib/vdo-ninja/sdk';
 
@@ -65,7 +66,7 @@
 	let videoCanvas: HTMLCanvasElement | null = null;
 	let videoCtx: CanvasRenderingContext2D | null = null;
 	let frameLoopId: number | null = null;
-	let audioDestinationNode: MediaStreamAudioDestinationNode | null = null;
+	let audioNode: VdoNinjaPushAudioNode | null = null;
 	let isStreaming = $state(false);
 	let isStartingStream = false; // Guard against concurrent startStreaming calls
 
@@ -104,6 +105,12 @@
 		videoCanvas.height = height;
 		videoCtx = videoCanvas.getContext('2d');
 
+		// Create audio node for capturing audio from the pipeline
+		const node = await audioService.createNode(nodeId, 'vdo.ninja.push');
+		if (node && node instanceof VdoNinjaPushAudioNode) {
+			audioNode = node;
+		}
+
 		// Load VDO.Ninja SDK
 		try {
 			await loadVdoNinjaSdk();
@@ -118,6 +125,7 @@
 	onDestroy(() => {
 		disconnect();
 		stopStreaming();
+		audioService.removeNodeById(nodeId);
 		if (messageContext) {
 			messageContext.queue.removeCallback(handleMessage);
 			messageContext.destroy();
@@ -234,12 +242,10 @@
 		// Create combined media stream
 		mediaStream = new MediaStream();
 
-		// Set up audio destination for capturing audio from pipeline
-		if (currentHasAudio) {
-			const audioContext = audioService.getAudioContext();
-			audioDestinationNode = audioContext.createMediaStreamDestination();
-			// The audio will be connected via AudioService edges
-			const audioTracks = audioDestinationNode.stream.getAudioTracks();
+		// Get audio from the audio node (connected via AudioService edges)
+		if (currentHasAudio && audioNode) {
+			const audioTracks = audioNode.getAudioTracks();
+
 			if (audioTracks.length > 0) {
 				mediaStream.addTrack(audioTracks[0]);
 			}
@@ -286,11 +292,6 @@
 		if (frameLoopId !== null) {
 			cancelAnimationFrame(frameLoopId);
 			frameLoopId = null;
-		}
-
-		if (audioDestinationNode) {
-			audioDestinationNode.disconnect();
-			audioDestinationNode = null;
 		}
 
 		if (mediaStream) {
