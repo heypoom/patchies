@@ -187,5 +187,8 @@ createApp({
 			topics: [],
 			decodeAsString: true
 		}))
+		.with('sse', () => ({
+			url: ''
+		}))
 		.otherwise(() => ({}));
 }

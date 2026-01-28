@@ -138,6 +138,19 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 				data: { url, width: 400, height: 300 }
 			};
 		}
+	},
+	{
+		names: ['sse'],
+		description: 'Server-Sent Events source',
+		transform: (expr, name) => {
+			let url = expr.replace(name, '').trim();
+
+			if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+				url = `https://${url}`;
+			}
+
+			return { nodeType: 'sse', data: { url } };
+		}
 	}
 ];
 
