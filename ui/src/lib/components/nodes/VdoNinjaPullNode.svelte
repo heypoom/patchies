@@ -96,7 +96,7 @@
 		// Create audio node for VDO.Ninja audio output
 		vdoAudioNode = (await audioService.createNode(
 			nodeId,
-			'vdo.ninja.push',
+			'vdo.ninja.pull',
 			[]
 		)) as VdoNinjaNode | null;
 

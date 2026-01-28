@@ -6,7 +6,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Accepts a MediaStream and outputs audio to the pipeline.
  */
 export class VdoNinjaNode implements AudioNodeV2 {
-	static type = 'vdo.ninja.push';
+	static type = 'vdo.ninja.pull';
 	static group: AudioNodeGroup = 'sources';
 	static description = 'Receives audio from VDO.Ninja WebRTC streams';
 

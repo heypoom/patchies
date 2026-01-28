@@ -66,13 +66,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('vue', () => ({
 			code: `const message = ref('Hello Vue!')
 
-// Tailwind CSS is enabled by default, tailwind(false) to disable
-createApp({
-  template: '<div class="px-3 py-1 text-green-400">{{ message }}</div>',
-  setup() {
-    return { message }
-  }
-}).mount(root)`
+ // Tailwind CSS is enabled by default, tailwind(false) to disable
+ createApp({
+   template: '<div class="px-3 py-1 text-green-400">{{ message }}</div>',
+   setup() {
+     return { message }
+   }
+ }).mount(root)`
 		}))
 		.with('three', () => ({
 			code: DEFAULT_THREE_CODE,
