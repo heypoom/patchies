@@ -127,6 +127,11 @@
 	function handleConnectedEvent() {
 		connectionStatus = 'connected';
 		messageContext.send({ type: 'connected', room });
+
+		// Start streaming now that we're connected (if not in data-only mode)
+		if (!dataOnly) {
+			startStreaming();
+		}
 	}
 
 	function handleErrorEvent(event: CustomEvent) {
@@ -163,8 +168,7 @@
 					await vdo.announce({ streamID });
 				}
 
-				// Start streaming if we have connected inlets
-				await startStreaming();
+				// startStreaming() is called from handleConnectedEvent() once connection is established
 			}
 
 			// Save room/streamID/dataOnly to node data
@@ -219,6 +223,7 @@
 		const currentHasVideo = edges.some(
 			(e) => e.target === nodeId && e.targetHandle?.startsWith('video-in')
 		);
+
 		const currentHasAudio = edges.some(
 			(e) => e.target === nodeId && e.targetHandle?.startsWith('audio-in')
 		);
@@ -244,6 +249,7 @@
 		if (currentHasVideo && videoCanvas) {
 			const videoStream = videoCanvas.captureStream(30); // 30 fps
 			const videoTrack = videoStream.getVideoTracks()[0];
+
 			if (videoTrack) {
 				mediaStream.addTrack(videoTrack);
 			}
@@ -253,6 +259,7 @@
 		if (mediaStream.getTracks().length > 0) {
 			try {
 				await vdo.publish(mediaStream, { streamID: streamID || undefined });
+
 				isStreaming = true;
 				messageContext.send({ type: 'streaming', tracks: mediaStream.getTracks().length });
 			} catch (err) {
