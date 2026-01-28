@@ -1519,6 +1519,41 @@ You can send messages to control Csound instruments:
 - Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API), leveraging public Nostr relay servers for peer-to-peer mesh discovery.
   - The `appId` is `"patchies"`. This lets you write Node.js/Bun scripts that can talk with Patchies ([example](https://gist.github.com/dtinth/a781d6fee01707d067ca70ecb58966c1)), so you can extend your patch beyond the browser's confinements.
 
+### `mqtt`: MQTT Client
+
+<img src="./docs/images/mqtt-demo.webp" alt="Patchies.app mqtt demo" width="700">
+
+> ✨ Try this patch out [in the app](https://patchies.app/?id=oc460hxe5cqgk56)! This shows how to send and receive messages over MQTT.
+
+- Connect to MQTT brokers over WebSocket for pub/sub messaging with IoT devices, home automation systems, or other MQTT-enabled services.
+- Type `mqtt` in the object box to create the node, then click the gear icon to configure.
+- **Connection**: Enter a WebSocket broker URL (e.g., `wss://test.mosquitto.org:8081/mqtt`) and click Connect.
+  - Use the "Random" button to try public test brokers.
+- **Topics**: Add topics to subscribe to. Messages received on subscribed topics are sent out the outlet.
+- **Security note**: Broker URLs are not saved with the patch (they may contain credentials). Topics are saved.
+  - Use `loadbang` with `{type: 'connect', url}` to auto-connect after patch load.
+
+**Inlet messages:**
+
+| Message                                           | Description                  |
+| ------------------------------------------------- | ---------------------------- |
+| `{type: 'connect', url: 'wss://...'}`             | Connect to a broker          |
+| `{type: 'disconnect'}`                            | Disconnect from the broker   |
+| `{type: 'subscribe', topic: '...'}`               | Subscribe to a topic         |
+| `{type: 'unsubscribe', topic: '...'}`             | Unsubscribe from a topic     |
+| `{type: 'publish', topic: '...', message: '...'}` | Publish a message to a topic |
+
+**Outlet messages:**
+
+| Message                                           | Description               |
+| ------------------------------------------------- | ------------------------- |
+| `{type: 'connected'}`                             | Successfully connected    |
+| `{type: 'disconnected'}`                          | Disconnected from broker  |
+| `{type: 'message', topic: '...', message: '...'}` | Received a message        |
+| `{type: 'subscribed', topics: [...]}`             | Successfully subscribed   |
+| `{type: 'unsubscribed', topics: [...]}`           | Successfully unsubscribed |
+| `{type: 'error', message: '...'}`                 | An error occurred         |
+
 ### AI & Generation Objects
 
 > [!CAUTION]
