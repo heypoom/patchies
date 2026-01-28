@@ -137,7 +137,7 @@
 	function handleDataEvent(event: CustomEvent) {
 		const { data: receivedData, uuid } = event.detail;
 
-		messageContext.send({ type: 'data', data: receivedData, uuid });
+		messageContext.send({ type: 'message', data: receivedData, uuid });
 	}
 
 	function handleTrackEvent(event: CustomEvent) {
@@ -488,7 +488,7 @@
 									<div><span class="text-blue-400">disconnected</span></div>
 									<div><span class="text-blue-400">viewing</span> {`{streamID}`}</div>
 									<div><span class="text-blue-400">track</span> {`{kind, uuid, streamID}`}</div>
-									<div><span class="text-blue-400">data</span> {`{data, uuid}`}</div>
+									<div><span class="text-blue-400">message</span> {`{data, uuid}`}</div>
 									<div><span class="text-blue-400">error</span> {`{message}`}</div>
 								</div>
 							</div>
