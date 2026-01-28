@@ -2,7 +2,7 @@
 	import { Settings, X, Video, Info, ExternalLink } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import { useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
@@ -31,7 +31,8 @@
 		selected: boolean;
 	} = $props();
 
-	const { updateNodeData } = useSvelteFlow();
+	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let showSettings = $state(false);
 	let connectionStatus = $state<ConnectionStatus>('disconnected');
@@ -333,6 +334,29 @@
 			showSettings = false;
 		}
 	}
+
+	// Handle dataOnly toggle - update node internals and remove stale edges
+	$effect(() => {
+		// Track dataOnly to trigger effect
+		const isDataOnly = dataOnly;
+
+		updateNodeInternals(nodeId);
+
+		// When switching to data-only mode, remove video/audio edges
+		if (isDataOnly) {
+			const edges = getEdges();
+
+			const staleEdges = edges.filter(
+				(e) =>
+					e.source === nodeId &&
+					(e.sourceHandle?.startsWith('video-out') || e.sourceHandle?.startsWith('audio-out'))
+			);
+
+			if (staleEdges.length > 0) {
+				deleteElements({ edges: staleEdges });
+			}
+		}
+	});
 </script>
 
 <div class="relative flex gap-x-3">
@@ -386,35 +410,35 @@
 					type="message"
 					id="0"
 					title="data from peers"
-					total={3}
+					total={dataOnly ? 1 : 3}
 					index={0}
 					class="bottom-0"
 					{nodeId}
 				/>
 
-				<!-- Video Outlet -->
-				<StandardHandle
-					port="outlet"
-					type="video"
-					id="0"
-					title={dataOnly ? 'disabled (data only mode)' : 'video stream'}
-					total={3}
-					index={1}
-					{nodeId}
-					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
-				/>
+				{#if !dataOnly}
+					<!-- Video Outlet -->
+					<StandardHandle
+						port="outlet"
+						type="video"
+						id="0"
+						title="video stream"
+						total={3}
+						index={1}
+						{nodeId}
+					/>
 
-				<!-- Audio Outlet -->
-				<StandardHandle
-					port="outlet"
-					type="audio"
-					id="0"
-					title={dataOnly ? 'disabled (data only mode)' : 'audio stream'}
-					total={3}
-					index={2}
-					{nodeId}
-					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
-				/>
+					<!-- Audio Outlet -->
+					<StandardHandle
+						port="outlet"
+						type="audio"
+						id="0"
+						title="audio stream"
+						total={3}
+						index={2}
+						{nodeId}
+					/>
+				{/if}
 			</div>
 		</div>
 	</div>

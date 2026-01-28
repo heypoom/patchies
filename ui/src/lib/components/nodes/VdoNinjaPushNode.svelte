@@ -2,7 +2,7 @@
 	import { Settings, X, Video, Info, Dice5, ExternalLink } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import { useSvelteFlow } from '@xyflow/svelte';
+	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match, P } from 'ts-pattern';
 	import { GLSystem } from '$lib/canvas/GLSystem';
@@ -39,7 +39,8 @@
 		selected: boolean;
 	} = $props();
 
-	const { updateNodeData, getEdges } = useSvelteFlow();
+	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	let showSettings = $state(false);
 	let connectionStatus = $state<ConnectionStatus>('disconnected');
@@ -381,6 +382,27 @@
 			frameLoopId = requestAnimationFrame(captureFrameLoop);
 		}
 	});
+
+	// Handle dataOnly toggle - update node internals and remove stale edges
+	$effect(() => {
+		// Track dataOnly to trigger effect
+		const isDataOnly = dataOnly;
+
+		updateNodeInternals(nodeId);
+
+		// When switching to data-only mode, remove video/audio edges
+		if (isDataOnly) {
+			const edges = getEdges();
+			const staleEdges = edges.filter(
+				(e) =>
+					e.target === nodeId &&
+					(e.targetHandle?.startsWith('video-in') || e.targetHandle?.startsWith('audio-in'))
+			);
+			if (staleEdges.length > 0) {
+				deleteElements({ edges: staleEdges });
+			}
+		}
+	});
 </script>
 
 <div class="relative flex gap-x-3">
@@ -410,35 +432,35 @@
 					type="message"
 					id="0"
 					title="send data to peers"
-					total={3}
+					total={dataOnly ? 1 : 3}
 					index={0}
 					class="top-0"
 					{nodeId}
 				/>
 
-				<!-- Video Inlet -->
-				<StandardHandle
-					port="inlet"
-					type="video"
-					id="0"
-					title={dataOnly ? 'disabled (data only mode)' : 'video to stream'}
-					total={3}
-					index={1}
-					{nodeId}
-					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
-				/>
+				{#if !dataOnly}
+					<!-- Video Inlet -->
+					<StandardHandle
+						port="inlet"
+						type="video"
+						id="0"
+						title="video to stream"
+						total={3}
+						index={1}
+						{nodeId}
+					/>
 
-				<!-- Audio Inlet -->
-				<StandardHandle
-					port="inlet"
-					type="audio"
-					id="0"
-					title={dataOnly ? 'disabled (data only mode)' : 'audio to stream'}
-					total={3}
-					index={2}
-					{nodeId}
-					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
-				/>
+					<!-- Audio Inlet -->
+					<StandardHandle
+						port="inlet"
+						type="audio"
+						id="0"
+						title="audio to stream"
+						total={3}
+						index={2}
+						{nodeId}
+					/>
+				{/if}
 
 				<button
 					class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}
