@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Settings, X, Video, Info, ExternalLink } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match, P } from 'ts-pattern';
@@ -335,7 +335,7 @@
 		}
 	}
 
-	// Handle dataOnly toggle - update node internals and remove stale edges
+	// Handle dataOnly toggle - update node internals, remove stale edges, and reconnect
 	$effect(() => {
 		// Track dataOnly to trigger effect
 		const isDataOnly = dataOnly;
@@ -355,6 +355,13 @@
 			if (staleEdges.length > 0) {
 				deleteElements({ edges: staleEdges });
 			}
+		}
+
+		// Reconnect if currently connected to apply new mode
+		const wasConnected = untrack(() => connectionStatus === 'connected');
+		if (wasConnected) {
+			disconnect();
+			connect();
 		}
 	});
 </script>
@@ -519,29 +526,32 @@
 						/>
 					</div>
 
-					<!-- Stream ID to View -->
-					<div>
-						<div class="mb-1 flex items-center justify-between">
-							<span class="text-[8px] text-zinc-400">Stream ID to View</span>
-							<button
-								onclick={() =>
-									viewStreamID && window.open(`https://vdo.ninja/?pull=${viewStreamID}`, '_blank')}
-								disabled={!viewStreamID}
-								class="flex items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
-								title="View stream in VDO.Ninja"
-							>
-								<ExternalLink class="h-2.5 w-2.5" />
-								View
-							</button>
+					<!-- Stream ID to View (only shown in normal mode) -->
+					{#if !dataOnly}
+						<div>
+							<div class="mb-1 flex items-center justify-between">
+								<span class="text-[8px] text-zinc-400">Stream ID to View (required)</span>
+								<button
+									onclick={() =>
+										viewStreamID &&
+										window.open(`https://vdo.ninja/?pull=${viewStreamID}`, '_blank')}
+									disabled={!viewStreamID}
+									class="flex items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+									title="View stream in VDO.Ninja"
+								>
+									<ExternalLink class="h-2.5 w-2.5" />
+									View
+								</button>
+							</div>
+							<input
+								type="text"
+								bind:value={viewStreamID}
+								oninput={(e) => (viewStreamID = sanitizeId(e.currentTarget.value))}
+								placeholder="mystreamid"
+								class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
+							/>
 						</div>
-						<input
-							type="text"
-							bind:value={viewStreamID}
-							oninput={(e) => (viewStreamID = sanitizeId(e.currentTarget.value))}
-							placeholder="mystreamid"
-							class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:border-zinc-400 focus:outline-none"
-						/>
-					</div>
+					{/if}
 
 					<!-- Data Only Toggle -->
 					<div class="flex items-center justify-between">
@@ -608,7 +618,10 @@
 						{:else}
 							<button
 								onclick={connect}
-								disabled={!room || !sdkLoaded || connectionStatus === 'connecting'}
+								disabled={!room ||
+									!sdkLoaded ||
+									connectionStatus === 'connecting' ||
+									(!dataOnly && !viewStreamID)}
 								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#if !sdkLoaded}

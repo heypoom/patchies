@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Settings, X, Video, Info, Dice5, ExternalLink } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
 	import { match, P } from 'ts-pattern';
@@ -383,7 +383,7 @@
 		}
 	});
 
-	// Handle dataOnly toggle - update node internals and remove stale edges
+	// Handle dataOnly toggle - update node internals, remove stale edges, and reconnect
 	$effect(() => {
 		// Track dataOnly to trigger effect
 		const isDataOnly = dataOnly;
@@ -401,6 +401,13 @@
 			if (staleEdges.length > 0) {
 				deleteElements({ edges: staleEdges });
 			}
+		}
+
+		// Reconnect if currently connected to apply new mode
+		const wasConnected = untrack(() => connectionStatus === 'connected');
+		if (wasConnected) {
+			disconnect();
+			connect();
 		}
 	});
 </script>
