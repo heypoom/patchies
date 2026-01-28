@@ -417,30 +417,28 @@
 				/>
 
 				<!-- Video Inlet -->
-				<div class={dataOnly ? 'opacity-30' : ''}>
-					<StandardHandle
-						port="inlet"
-						type="video"
-						id="0"
-						title={dataOnly ? 'disabled (data only mode)' : 'video to stream'}
-						total={3}
-						index={1}
-						{nodeId}
-					/>
-				</div>
+				<StandardHandle
+					port="inlet"
+					type="video"
+					id="0"
+					title={dataOnly ? 'disabled (data only mode)' : 'video to stream'}
+					total={3}
+					index={1}
+					{nodeId}
+					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
+				/>
 
 				<!-- Audio Inlet -->
-				<div class={dataOnly ? 'opacity-30' : ''}>
-					<StandardHandle
-						port="inlet"
-						type="audio"
-						id="0"
-						title={dataOnly ? 'disabled (data only mode)' : 'audio to stream'}
-						total={3}
-						index={2}
-						{nodeId}
-					/>
-				</div>
+				<StandardHandle
+					port="inlet"
+					type="audio"
+					id="0"
+					title={dataOnly ? 'disabled (data only mode)' : 'audio to stream'}
+					total={3}
+					index={2}
+					{nodeId}
+					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
+				/>
 
 				<button
 					class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}

@@ -393,30 +393,28 @@
 				/>
 
 				<!-- Video Outlet -->
-				<div class={dataOnly ? 'opacity-30' : ''}>
-					<StandardHandle
-						port="outlet"
-						type="video"
-						id="0"
-						title={dataOnly ? 'disabled (data only mode)' : 'video stream'}
-						total={3}
-						index={1}
-						{nodeId}
-					/>
-				</div>
+				<StandardHandle
+					port="outlet"
+					type="video"
+					id="0"
+					title={dataOnly ? 'disabled (data only mode)' : 'video stream'}
+					total={3}
+					index={1}
+					{nodeId}
+					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
+				/>
 
 				<!-- Audio Outlet -->
-				<div class={dataOnly ? 'opacity-30' : ''}>
-					<StandardHandle
-						port="outlet"
-						type="audio"
-						id="0"
-						title={dataOnly ? 'disabled (data only mode)' : 'audio stream'}
-						total={3}
-						index={2}
-						{nodeId}
-					/>
-				</div>
+				<StandardHandle
+					port="outlet"
+					type="audio"
+					id="0"
+					title={dataOnly ? 'disabled (data only mode)' : 'audio stream'}
+					total={3}
+					index={2}
+					{nodeId}
+					class={dataOnly ? '!cursor-not-allowed opacity-30' : ''}
+				/>
 			</div>
 		</div>
 	</div>
