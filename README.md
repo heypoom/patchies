@@ -981,7 +981,6 @@ These objects run on _control rate_, which means they process messages (control 
 - `trigger` (alias `t`): Send [messages through multiple outlets](#the-trigger-object) in right-to-left order
 - `adsr`: [ADSR envelope generator](#adsr-adsr-envelope-generator)
 - `spigot`: Message gate that allows or blocks data based on a condition
-- `tts`: Text-to-speech using the Web Speech API. Any message received is converted to a string and spoken aloud. Send `{type: 'setVoice', value: 'voiceName'}` to change voice.
 - `webmidilink`: Converts `midi.in` messages to [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) link level 0 formats. Connect this to [iframe](#iframe-embed-web-content) to send MIDI messages to WebMIDILink-enabled iframes.
   - see [this demo](https://patchies.app/?id=x7q9819cn6zplpk) from @kijjaz on using `webmidilink` to make smooth jazz with SpessaSynth. click on the iframe to play sound.
 
@@ -1561,6 +1560,31 @@ You can send messages to control Csound instruments:
 - Auto-connects on load if a URL is configured.
 - Messages are automatically parsed as JSON if possible, otherwise sent as raw strings.
 - `{type: 'connect', url: string}` to connect, `{type: 'disconnect'}` to disconnect.
+
+### `tts`: Text-to-Speech
+
+- Speak text aloud using the browser's built-in [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API).
+- Type `tts` in the object box to create the node, then click the gear icon to select a voice.
+- **Voice selection**: Choose from available system voices using the searchable dropdown. Voice selection is persisted with the patch.
+- No API key required - uses your browser's native TTS engine.
+
+**Inlet messages:**
+
+| Message                            | Description           |
+| ---------------------------------- | --------------------- |
+| `"text"` (string)                  | Speak the text        |
+| `{type: 'setVoice', value: '...')` | Set the voice by name |
+| `{type: 'stop'}`                   | Stop current speech   |
+| `{type: 'pause'}`                  | Pause current speech  |
+| `{type: 'resume'}`                 | Resume paused speech  |
+
+**Outlet messages:**
+
+| Message                           | Description       |
+| --------------------------------- | ----------------- |
+| `{type: 'start', text: '...'}`    | Speech started    |
+| `{type: 'end', text: '...'}`      | Speech finished   |
+| `{type: 'error', message: '...'}` | An error occurred |
 
 ### AI & Generation Objects
 

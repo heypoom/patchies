@@ -60,6 +60,7 @@ import DomNode from '$lib/components/nodes/DomNode.svelte';
 import VueNode from '$lib/components/nodes/VueNode.svelte';
 import MqttNode from '$lib/components/nodes/MqttNode.svelte';
 import EventSourceNode from '$lib/components/nodes/EventSourceNode.svelte';
+import TtsNode from '$lib/components/nodes/TtsNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -124,7 +125,8 @@ export const nodeTypes: Record<string, any> = {
 	orca: OrcaNode,
 	uxn: UxnNode,
 	mqtt: MqttNode,
-	sse: EventSourceNode
+	sse: EventSourceNode,
+	tts: TtsNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

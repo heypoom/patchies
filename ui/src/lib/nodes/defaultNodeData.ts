@@ -190,5 +190,8 @@ createApp({
 		.with('sse', () => ({
 			url: ''
 		}))
+		.with('tts', () => ({
+			voiceName: ''
+		}))
 		.otherwise(() => ({}));
 }
