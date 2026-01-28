@@ -20,8 +20,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - Compute in a raw and fun way with [stack machine assembly](./modules/vasm/README.md)
 - Run numerical computations with [Python 3](https://pyodide.org)
 - Connect to the outside world with [MIDI](#midi--network-objects), [MQTT](#mqtt-mqtt-client) and [SSE](#sse-server-sent-events). Send [networked messages](#netsend-and-netrecv-send-and-receive-messages-over-network) with [Trystero](https://github.com/dmotz/trystero) and connect Bun/Node scripts. Stream real-time audio and video with [VDO.Ninja](#vdoninja-send-and-receive-audio-video-and-messages-over-webrtc).
-- Use any [third party JavaScrip
-  t library](#importing-javascript-packages-from-npm) via [esm.sh](https://esm.sh).
+- Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.sh](https://esm.sh).
 
 ## ...by patching them together ✨
 
