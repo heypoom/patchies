@@ -169,7 +169,9 @@ export function guessMimeType(filename: string): string | undefined {
 		'.flac': 'audio/flac',
 		'.aac': 'audio/aac',
 		'.m4a': 'audio/mp4',
-		'.aiff': 'audio/aiff'
+		'.aiff': 'audio/aiff',
+		// Code
+		'.js': 'application/javascript'
 	};
 
 	return mimeMap[ext];

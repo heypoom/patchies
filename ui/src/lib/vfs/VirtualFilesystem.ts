@@ -407,7 +407,15 @@ export class VirtualFilesystem {
 	 */
 	getEntryOrLinkedFile(path: string): VFSEntry | undefined {
 		const entry = this.entries.get(path);
-		if (entry) return entry;
+
+		if (entry) {
+			// Fall back to guessing MIME type if not stored (for files added before MIME support)
+			if (!entry.mimeType) {
+				return { ...entry, mimeType: guessMimeType(entry.filename) };
+			}
+
+			return entry;
+		}
 
 		// Check if it's within a linked folder
 		const linkedFolderPath = this.findLinkedFolderForPath(path);

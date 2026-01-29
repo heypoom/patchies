@@ -215,6 +215,13 @@ export class CanvasDragDropManager {
 				() => 'video'
 			)
 			.when(
+				(t) =>
+					t === 'application/javascript' ||
+					t === 'text/javascript' ||
+					t === 'application/x-javascript',
+				() => 'js'
+			)
+			.when(
 				(t) => t.startsWith('text/'),
 				() => 'markdown'
 			)
@@ -229,23 +236,29 @@ export class CanvasDragDropManager {
 	 * Create appropriate data for VFS file-based nodes
 	 */
 	private async getVfsFileNodeData(vfsPath: string, nodeType: string): Promise<unknown> {
-		// For markdown, read the file content (same behavior as real file drops)
-		if (nodeType === 'markdown') {
+		const vfs = VirtualFilesystem.getInstance();
+
+		// Refactored: combine common logic for file-based text nodes
+		if (nodeType === 'markdown' || nodeType === 'js') {
 			try {
-				const vfs = VirtualFilesystem.getInstance();
 				const file = await vfs.resolve(vfsPath);
 				const content = await file.text();
 
 				return {
-					...getDefaultNodeData('markdown'),
-					markdown: content
+					...getDefaultNodeData(nodeType),
+					...(nodeType === 'markdown' && { markdown: content }),
+					...(nodeType === 'js' && { code: content })
 				};
 			} catch (error) {
-				logger.error('Failed to read VFS markdown file:', error);
+				logger.error(
+					`Failed to read VFS ${nodeType === 'markdown' ? 'markdown' : 'JavaScript'} file:`,
+					error
+				);
 
 				return {
-					...getDefaultNodeData('markdown'),
-					markdown: `Error loading file: ${vfsPath}`
+					...getDefaultNodeData(nodeType),
+					...(nodeType === 'markdown' && { markdown: '// Error loading file' }),
+					...(nodeType === 'js' && { code: '// Error loading file' })
 				};
 			}
 		}

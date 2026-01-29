@@ -3,6 +3,7 @@
 		ChevronRight,
 		ChevronDown,
 		File,
+		FileCode,
 		FileText,
 		FilePlay,
 		Folder,
@@ -212,6 +213,14 @@
 
 		if (mimeType.startsWith('audio/')) {
 			return { icon: Music, color: 'text-purple-400' };
+		}
+
+		if (
+			mimeType === 'application/javascript' ||
+			mimeType === 'text/javascript' ||
+			mimeType === 'application/x-javascript'
+		) {
+			return { icon: FileCode, color: 'text-yellow-400' };
 		}
 
 		if (mimeType.startsWith('text/') || mimeType === 'application/json') {
@@ -871,7 +880,9 @@
 								<Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
 							{/if}
 						{:else}
-							{@const fileIcon = getFileIcon(node.entry?.mimeType)}
+							{@const fileIcon = getFileIcon(
+								node.entry?.mimeType || guessMimeType(node.entry?.filename || node.name)
+							)}
 							<span class="w-3"></span>
 							<fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
 						{/if}
