@@ -19,6 +19,7 @@
 	displayPrefix="filter"
 	placeholder="$1.type === 'play'"
 	outletTitle="Matched"
+	requireAllInlets
 	onResult={(result, originalMessage, send) => {
 		// Filter: send original message if result is truthy
 		if (result) {

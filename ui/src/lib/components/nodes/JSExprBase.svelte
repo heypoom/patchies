@@ -25,6 +25,7 @@
 		displayPrefix,
 		placeholder,
 		outletTitle = 'Output',
+		requireAllInlets = false,
 		onResult
 	}: {
 		id: string;
@@ -33,12 +34,14 @@
 		displayPrefix: string;
 		placeholder: string;
 		outletTitle?: string;
+		requireAllInlets?: boolean;
 		onResult: ResultHandler;
 	} = $props();
 
 	let isEditing = $state(!data.expr);
 	let expr = $state(data.expr || '');
 	let inletValues = $state<unknown[]>([]);
+	let populatedInlets = $state(new Set<number>());
 	let hasError = $state(false);
 	let layoutRef = $state<CommonExprLayout | null>(null);
 	let consoleRef: VirtualConsole | null = $state(null);
@@ -98,10 +101,19 @@
 			.otherwise((value) => {
 				nextInletValues[inlet] = value;
 				inletValues = nextInletValues;
+				populatedInlets = new Set([...populatedInlets, inlet]);
 			});
 
 		// Only inlet 0 (hot) triggers evaluation
 		if (inlet !== 0) return;
+
+		// If requireAllInlets is set, check all inlets have received values
+		if (requireAllInlets && inletCount > 1) {
+			const allPopulated = Array.from({ length: inletCount }, (_, i) => i).every((i) =>
+				populatedInlets.has(i)
+			);
+			if (!allPopulated) return;
+		}
 
 		evaluate(nextInletValues).then((evalResult) => {
 			if (evalResult.success) {
@@ -135,6 +147,7 @@
 		const newInletCount = parseInletCount(data.expr || '');
 		if (newInletCount !== inletValues.length) {
 			inletValues = new Array(newInletCount).fill(undefined);
+			populatedInlets = new Set();
 		}
 	}
 

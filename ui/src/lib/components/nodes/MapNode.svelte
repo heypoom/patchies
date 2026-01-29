@@ -19,6 +19,7 @@
 	displayPrefix="map"
 	placeholder="$1 + 1"
 	outletTitle="Output"
+	requireAllInlets
 	onResult={(result, _originalMessage, send) => {
 		// Map: send the transformed result
 		send(result);
