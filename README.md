@@ -690,9 +690,9 @@ This allows you to set up multiple values before triggering a computation. Use [
 
 ### `filter`: conditional message passing
 
-- Filter messages based on a JavaScript expression. If the expression evaluates to a truthy value, the message passes through; otherwise, it's blocked.
+- Filter messages based on a JavaScript expression. If the expression evaluates to a truthy value, the message is sent to the **first outlet** (matched); otherwise, it's sent to the **second outlet** (no match).
 - Use `$1` to `$9` variables like in `expr` to reference inlet values.
-- Unlike `expr` which outputs the result of the expression, `filter` passes through the original input message when the condition is met.
+- Unlike `expr` which outputs the result of the expression, `filter` passes through the original input message when the condition is met (or not met).
 
   ```js
   // Only pass through messages where type is 'play'
@@ -705,6 +705,7 @@ This allows you to set up multiple values before triggering a computation. Use [
   $1 > 100;
   ```
 
+- **Two outlets**: The first outlet emits messages that match the filter condition. The second outlet emits messages that fail to match, allowing you to handle both cases.
 - Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
 
 ### `map`: transform messages with JavaScript

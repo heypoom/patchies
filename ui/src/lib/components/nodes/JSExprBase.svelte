@@ -12,11 +12,9 @@
 	import { createCustomConsole } from '$lib/utils/createCustomConsole';
 	import { JSRunner } from '$lib/js-runner/JSRunner';
 
-	type ResultHandler = (
-		result: unknown,
-		originalMessage: unknown,
-		send: (msg: unknown) => void
-	) => void;
+	type SendFn = (msg: unknown, options?: { to?: number }) => void;
+
+	type ResultHandler = (result: unknown, originalMessage: unknown, send: SendFn) => void;
 
 	let {
 		id: nodeId,
@@ -24,7 +22,7 @@
 		selected,
 		displayPrefix,
 		placeholder,
-		outletTitle = 'Output',
+		outletTitles = ['Output'],
 		requireAllInlets = false,
 		onResult
 	}: {
@@ -33,7 +31,7 @@
 		selected: boolean;
 		displayPrefix: string;
 		placeholder: string;
-		outletTitle?: string;
+		outletTitles?: string[];
 		requireAllInlets?: boolean;
 		onResult: ResultHandler;
 	} = $props();
@@ -117,7 +115,7 @@
 
 		evaluate(nextInletValues).then((evalResult) => {
 			if (evalResult.success) {
-				onResult(evalResult.result, message, (msg) => messageContext.send(msg));
+				onResult(evalResult.result, message, (msg, options) => messageContext.send(msg, options));
 			}
 		});
 	};
@@ -186,7 +184,17 @@
 {/snippet}
 
 {#snippet outlets()}
-	<StandardHandle port="outlet" type="message" title={outletTitle} total={1} index={0} {nodeId} />
+	{#each outletTitles as title, index}
+		<StandardHandle
+			port="outlet"
+			type="message"
+			id={index}
+			{title}
+			total={outletTitles.length}
+			{index}
+			{nodeId}
+		/>
+	{/each}
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">

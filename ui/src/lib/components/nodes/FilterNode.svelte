@@ -18,12 +18,14 @@
 	{selected}
 	displayPrefix="filter"
 	placeholder="$1.type === 'play'"
-	outletTitle="Matched"
+	outletTitles={['Matched', 'No Match']}
 	requireAllInlets
 	onResult={(result, originalMessage, send) => {
-		// Filter: send original message if result is truthy
+		// Filter: send to outlet 0 if truthy, outlet 1 (nomatch) if falsy
 		if (result) {
-			send(originalMessage);
+			send(originalMessage, { to: 0 });
+		} else {
+			send(originalMessage, { to: 1 });
 		}
 	}}
 />
