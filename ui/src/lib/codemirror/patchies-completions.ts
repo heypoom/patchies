@@ -200,6 +200,15 @@ const patchiesAPICompletions: Completion[] = [
 		detail: '(...data) => void',
 		info: 'Log messages to the virtual console (not browser console)',
 		apply: 'console.log()'
+	},
+
+	// Visual Feedback
+	{
+		label: 'flash',
+		type: 'function',
+		detail: '() => void',
+		info: 'Flash the node border to indicate activity',
+		apply: 'flash()'
 	}
 ];
 
@@ -310,7 +319,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
 		'tone~',
 		'sonic~',
 		'elem~'
-	]
+	],
+	flash: ['js']
 };
 
 export interface PatchiesContext {
