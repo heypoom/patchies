@@ -26,6 +26,7 @@
 		runOnExit = false,
 		extraExtensions = [],
 		hasError = false,
+		allowEmptyExpr = false,
 		children,
 		handles,
 		outlets
@@ -45,6 +46,7 @@
 		runOnExit?: boolean;
 		extraExtensions?: any[];
 		hasError?: boolean;
+		allowEmptyExpr?: boolean;
 		children?: any;
 		handles?: any;
 		outlets?: any;
@@ -94,8 +96,8 @@
 			updateNodeData(nodeId, { expr: originalExpr });
 			onExpressionChange(originalExpr);
 
-			// If the original expression was empty, delete the node
-			if (!originalExpr.trim()) {
+			// If the original expression was empty, delete the node (unless empty is allowed)
+			if (!originalExpr.trim() && !allowEmptyExpr) {
 				deleteElements({ nodes: [{ id: nodeId }] });
 				return;
 			}
@@ -106,8 +108,8 @@
 				const trimmedExpr = expr.trim();
 				updateNodeData(nodeId, { expr: trimmedExpr });
 				onExpressionChange(trimmedExpr);
-			} else {
-				// If trying to save with empty expression, delete the node
+			} else if (!allowEmptyExpr) {
+				// If trying to save with empty expression, delete the node (unless empty is allowed)
 				deleteElements({ nodes: [{ id: nodeId }] });
 			}
 		}
@@ -198,15 +200,19 @@
 							onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
 						>
 							<div class="expr-preview flex items-center gap-2 font-mono">
-								{#if expr}
+								{#if expr || displayPrefix}
 									<span class="flex max-w-[400px] overflow-hidden">
 										{#if displayPrefix}
-											<span class="mr-2 text-xs text-zinc-400">{displayPrefix}</span>
+											<span class={['text-xs text-zinc-400', expr ? 'mr-2' : '']}
+												>{displayPrefix}</span
+											>
 										{/if}
 
-										<code class="text-xs whitespace-pre">
-											{@html highlightedHtml}
-										</code>
+										{#if expr}
+											<code class="text-xs whitespace-pre">
+												{@html highlightedHtml}
+											</code>
+										{/if}
 									</span>
 								{/if}
 							</div>

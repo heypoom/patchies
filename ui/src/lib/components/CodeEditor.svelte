@@ -9,7 +9,8 @@
 		Decoration,
 		type DecorationSet,
 		hoverTooltip,
-		type Tooltip
+		type Tooltip,
+		placeholder as cmPlaceholder
 	} from '@codemirror/view';
 	import { StateField, StateEffect } from '@codemirror/state';
 	import { useVimInEditor } from '../../stores/editor.store';
@@ -273,13 +274,7 @@
 
 			// Add placeholder if provided
 			if (placeholder) {
-				extensions.push(
-					EditorState.transactionExtender.of(() => {
-						return {
-							effects: EditorView.announce.of(placeholder)
-						};
-					})
-				);
+				extensions.push(cmPlaceholder(placeholder));
 			}
 
 			const state = EditorState.create({
