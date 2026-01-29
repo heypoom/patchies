@@ -692,13 +692,13 @@ This allows you to set up multiple values before triggering a computation. Use [
 
   ```js
   // Only pass through messages where type is 'play'
-  $1.type === 'play'
+  $1.type === "play";
 
   // Filter for note-on messages with velocity above 64
-  $1.type === 'noteOn' && $1.velocity > 64
+  $1.type === "noteOn" && $1.velocity > 64;
 
   // Pass through numbers greater than 100
-  $1 > 100
+  $1 > 100;
   ```
 
 - Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
@@ -707,7 +707,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 
 - Transform incoming messages using JavaScript expressions. The result of the expression is sent to the outlet.
 - Use `$1` to `$9` variables like in `expr` to reference inlet values.
-- Unlike `expr` which uses expr-eval, `map` uses full JavaScript, giving you access to all JS features and the JSRunner context (`esm()` for NPM imports, `llm()`, `fft()`, etc.).
+- Unlike `expr` which uses expr-eval, `map` uses full JavaScript, giving you access to all JS features and some of the [runner context](#patchies-javascript-runner) (e.g. `esm()` for NPM imports, `llm()`, etc.).
 
   ```js
   // Add 1 to the incoming value (same as expr $1 + 1)
@@ -735,13 +735,13 @@ This allows you to set up multiple values before triggering a computation. Use [
 
   ```js
   // Log incoming messages
-  console.log('received:', $1)
+  console.log("received:", $1);
 
   // Log specific fields
-  console.log('note:', $1.note, 'velocity:', $1.velocity)
+  console.log("note:", $1.note, "velocity:", $1.velocity);
 
   // Conditional logging
-  if ($1.type === 'noteOn') console.log('Note on!', $1)
+  if ($1.type === "noteOn") console.log("Note on!", $1);
   ```
 
 - The expression result is ignored - the original message always passes through.
@@ -1069,7 +1069,9 @@ These objects run on _control rate_, which means they process messages (control 
 - `loadbang`: Send bang on patch load
 - `metro`: Metronome for regular timing
 - `delay`: Message delay (not audio)
-- `trigger` (alias `t`): Send [messages through multiple outlets](#the-trigger-object) in right-to-left order
+- `debounce`: Waits for quiet period before emitting last value (e.g., `debounce 100`)
+- `throttle`: Rate limits messages to at most one per time period (e.g., `throttle 100`)
+- `trigger` (alias `t`): Send [messages through multiple outlets](#trigger-sends-messages-in-right-to-left-order) in right-to-left order
 - `adsr`: [ADSR envelope generator](#adsr-adsr-envelope-generator)
 - `spigot`: Message gate that allows or blocks data based on a condition
 - `webmidilink`: Converts `midi.in` messages to [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) link level 0 formats. Connect this to [iframe](#iframe-embed-web-content) to send MIDI messages to WebMIDILink-enabled iframes.
@@ -1886,7 +1888,10 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 Most of the JavaScript-based nodes in Patchies are using the unified JavaScript Runner (JSRunner), which is responsible for executing JavaScript code in a sandboxed environment and providing Patchies-specific features to the code.
 
-The following features are available in the objects using JSRunner, as follows: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
+- The full features of the JavaScript Runner are available in the following objects: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
+
+- Some nodes uses _single-expression evaluation_ mode, where the expression is evaluated once for each incoming message. These nodes are `filter`, `map`, `tap` and `scan`.
+  - These nodes _cannot_ use these functions: `send`, `onMessage`, `recv`, `fft`, `delay`, `onCleanup`, `setInterval`, `setTimeout` and `requestAnimationFrame`, as they are run once on each message and does not allow messaging callbacks.
 
 ### Common Runtime Functions
 

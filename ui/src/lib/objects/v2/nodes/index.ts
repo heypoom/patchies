@@ -3,6 +3,7 @@
  */
 
 import { AdsrObject } from './AdsrObject';
+import { DebounceObject } from './DebounceObject';
 import { DelayObject } from './DelayObject';
 import { FloatObject } from './FloatObject';
 import { IntObject } from './IntObject';
@@ -11,6 +12,7 @@ import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
 import { SelectObject } from './SelectObject';
 import { SpigotObject } from './SpigotObject';
+import { ThrottleObject } from './ThrottleObject';
 import { TriggerObject } from './TriggerObject';
 import { WebMidiLinkObject } from './WebMidiLinkObject';
 
@@ -20,6 +22,7 @@ import type { TextObjectClass } from '../interfaces/text-objects';
 
 const TEXT_OBJECTS = [
 	AdsrObject,
+	DebounceObject,
 	DelayObject,
 	FloatObject,
 	IntObject,
@@ -28,6 +31,7 @@ const TEXT_OBJECTS = [
 	MtofObject,
 	SelectObject,
 	SpigotObject,
+	ThrottleObject,
 	TriggerObject,
 	WebMidiLinkObject
 ] as const satisfies TextObjectClass[];
