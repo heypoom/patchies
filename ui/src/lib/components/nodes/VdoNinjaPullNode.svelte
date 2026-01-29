@@ -677,16 +677,6 @@
 							</div>
 						{/if}
 					</div>
-
-					<!-- View Stream button (when connected but not viewing) -->
-					{#if connectionStatus === 'connected' && streamId && !hasVideoTrack && !hasAudioTrack}
-						<button
-							onclick={() => viewStream(streamId)}
-							class="w-full rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-500"
-						>
-							View Stream
-						</button>
-					{/if}
 				</div>
 			</div>
 		</div>
