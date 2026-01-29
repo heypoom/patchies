@@ -123,14 +123,15 @@
 		>
 			<ChevronRight class={['h-3 w-3 transition-transform', isOpen && 'rotate-90']} />
 			<span>Advanced Parameters</span>
+
 			{#if paramCount > 0}
 				<span class="rounded bg-zinc-700 px-1 text-[8px] text-zinc-300">{paramCount}</span>
 			{/if}
 		</Collapsible.Trigger>
 
-		<div class="flex items-center gap-1">
+		<div class="ml-1 flex items-center gap-1">
 			{#if warnings.length > 0}
-				<div class="flex items-center gap-1 text-[8px] text-yellow-500">
+				<div class="mr-0.5 flex items-center gap-1 text-[8px] text-yellow-500">
 					<AlertTriangle class="h-2.5 w-2.5" />
 					<span>{warnings.length}</span>
 				</div>
