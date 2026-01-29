@@ -1,0 +1,207 @@
+<script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import StandardHandle from '$lib/components/StandardHandle.svelte';
+	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+	import { MessageContext } from '$lib/messages/MessageContext';
+	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+	import { match } from 'ts-pattern';
+	import { parseInletCount } from '$lib/utils/expr-parser';
+	import CommonExprLayout from './CommonExprLayout.svelte';
+	import { createCustomConsole } from '$lib/utils/createCustomConsole';
+	import { JSRunner } from '$lib/js-runner/JSRunner';
+
+	type ResultHandler = (
+		result: unknown,
+		originalMessage: unknown,
+		send: (msg: unknown) => void
+	) => void;
+
+	let {
+		id: nodeId,
+		data,
+		selected,
+		displayPrefix,
+		placeholder,
+		outletTitle = 'Output',
+		onResult
+	}: {
+		id: string;
+		data: { expr: string; showConsole?: boolean };
+		selected: boolean;
+		displayPrefix: string;
+		placeholder: string;
+		outletTitle?: string;
+		onResult: ResultHandler;
+	} = $props();
+
+	let isEditing = $state(!data.expr);
+	let expr = $state(data.expr || '');
+	let inletValues = $state<unknown[]>([]);
+	let hasError = $state(false);
+	let layoutRef = $state<CommonExprLayout | null>(null);
+	let consoleRef: VirtualConsole | null = $state(null);
+
+	const messageContext = new MessageContext(nodeId);
+	const customConsole = createCustomConsole(nodeId);
+	const jsRunner = JSRunner.getInstance();
+
+	const inletCount = $derived.by(() => {
+		if (!expr.trim()) return 1;
+		return Math.max(1, parseInletCount(expr.trim()));
+	});
+
+	/**
+	 * Evaluate the JS expression using JSRunner
+	 */
+	async function evaluate(
+		values: unknown[]
+	): Promise<{ success: true; result: unknown } | { success: false }> {
+		if (!expr.trim()) return { success: true, result: values[0] };
+
+		try {
+			const extraContext: Record<string, unknown> = {};
+			for (let i = 0; i < 9; i++) {
+				extraContext[`$${i + 1}`] = values[i];
+			}
+
+			const code = `return (${expr})`;
+
+			const result = await jsRunner.executeJavaScript(nodeId, code, {
+				customConsole,
+				skipMessageContext: true,
+				extraContext
+			});
+
+			hasError = false;
+			return { success: true, result };
+		} catch (error) {
+			hasError = true;
+			customConsole.error(error instanceof Error ? error.message : String(error));
+			return { success: false };
+		}
+	}
+
+	const handleMessage: MessageCallbackFn = (message, meta) => {
+		const inlet = meta?.inlet ?? 0;
+		const nextInletValues = [...inletValues];
+
+		match(message)
+			.with({ type: 'bang' }, () => {})
+			.otherwise((value) => {
+				nextInletValues[inlet] = value;
+				inletValues = nextInletValues;
+			});
+
+		// Only inlet 0 (hot) triggers evaluation
+		if (inlet !== 0) return;
+
+		evaluate(nextInletValues).then((evalResult) => {
+			if (evalResult.success) {
+				onResult(evalResult.result, message, (msg) => messageContext.send(msg));
+			}
+		});
+	};
+
+	function handleExpressionChange(newExpr: string) {
+		data.expr = newExpr;
+	}
+
+	function handleRun() {
+		consoleRef?.clearConsole();
+		expr = data.expr;
+
+		if (expr.trim()) {
+			// Only do syntax validation - don't execute with undefined values
+			// Runtime errors (like accessing .type on undefined) are expected and OK
+			try {
+				new Function('$1', '$2', '$3', '$4', '$5', '$6', '$7', '$8', '$9', `return (${expr})`);
+				hasError = false;
+			} catch (error) {
+				hasError = true;
+				customConsole.error(error instanceof Error ? error.message : String(error));
+			}
+		} else {
+			hasError = false;
+		}
+
+		const newInletCount = parseInletCount(data.expr || '');
+		if (newInletCount !== inletValues.length) {
+			inletValues = new Array(newInletCount).fill(undefined);
+		}
+	}
+
+	export function focus() {
+		layoutRef?.focus();
+	}
+
+	onMount(() => {
+		messageContext.queue.addCallback(handleMessage);
+		inletValues = new Array(inletCount).fill(undefined);
+
+		if (isEditing) {
+			setTimeout(() => layoutRef?.focus(), 10);
+		}
+	});
+
+	onDestroy(() => {
+		messageContext.queue.removeCallback(handleMessage);
+		messageContext.destroy();
+	});
+</script>
+
+{#snippet handles()}
+	{#each Array.from({ length: inletCount }) as _, index}
+		<StandardHandle
+			port="inlet"
+			type="message"
+			id={index}
+			title={`$${index + 1}`}
+			total={inletCount}
+			{index}
+			class="top-0"
+			{nodeId}
+		/>
+	{/each}
+{/snippet}
+
+{#snippet outlets()}
+	<StandardHandle port="outlet" type="message" title={outletTitle} total={1} index={0} {nodeId} />
+{/snippet}
+
+<div class="group relative flex flex-col gap-2">
+	<CommonExprLayout
+		bind:this={layoutRef}
+		{nodeId}
+		{data}
+		{selected}
+		expr={data.expr}
+		bind:isEditing
+		{placeholder}
+		{displayPrefix}
+		editorClass="{displayPrefix}-node-code-editor"
+		onExpressionChange={handleExpressionChange}
+		{handles}
+		{outlets}
+		onRun={handleRun}
+		exitOnRun={false}
+		runOnExit
+		{hasError}
+	/>
+
+	<div class:hidden={!data.showConsole}>
+		<VirtualConsole
+			bind:this={consoleRef}
+			{nodeId}
+			placeholder="Errors will appear here."
+			shouldAutoShowConsoleOnError
+			shouldAutoHideConsoleOnNoError
+		/>
+	</div>
+</div>
+
+<style>
+	:global(.filter-node-code-editor .cm-content),
+	:global(.map-node-code-editor .cm-content) {
+		padding: 6px 8px 7px 4px !important;
+	}
+</style>

@@ -703,6 +703,31 @@ This allows you to set up multiple values before triggering a computation. Use [
 
 - Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
 
+### `map`: transform messages with JavaScript
+
+- Transform incoming messages using JavaScript expressions. The result of the expression is sent to the outlet.
+- Use `$1` to `$9` variables like in `expr` to reference inlet values.
+- Unlike `expr` which uses expr-eval, `map` uses full JavaScript, giving you access to all JS features and the JSRunner context (`esm()` for NPM imports, `llm()`, `fft()`, etc.).
+
+  ```js
+  // Add 1 to the incoming value (same as expr $1 + 1)
+  $1 + 1
+
+  // Override a field in the incoming message object
+  {...$1, note: 64}
+
+  // Use JavaScript built-in functions
+  Math.floor($1)
+
+  // Use string methods
+  $1.toUpperCase()
+
+  // Use array methods
+  $1.map(x => x * 2)
+  ```
+
+- Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
+
 ### `vue`: create user interfaces with Vue
 
 - Build custom UI components using [Vue.js 3](https://vuejs.org) with the Composition API.

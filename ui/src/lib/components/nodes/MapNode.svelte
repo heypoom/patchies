@@ -16,13 +16,11 @@
 	id={nodeId}
 	{data}
 	{selected}
-	displayPrefix="filter"
-	placeholder="$1.type === 'play'"
-	outletTitle="Matched"
-	onResult={(result, originalMessage, send) => {
-		// Filter: send original message if result is truthy
-		if (result) {
-			send(originalMessage);
-		}
+	displayPrefix="map"
+	placeholder="$1 + 1"
+	outletTitle="Output"
+	onResult={(result, _originalMessage, send) => {
+		// Map: send the transformed result
+		send(result);
 	}}
 />
