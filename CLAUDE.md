@@ -93,7 +93,8 @@ bun run test             # All tests
 
 1. Update `src/lib/nodes/node-types.ts`
 2. Update `src/lib/nodes/defaultNodeData.ts`
-3. Update `README.md` (for audio/visual nodes)
+3. Update `README.md` with documentation
+4. Update `src/lib/components/object-browser/get-categorized-objects.ts` (add description + category)
 
 ## Audio V2 Migration
 

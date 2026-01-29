@@ -772,6 +772,28 @@ This allows you to set up multiple values before triggering a computation. Use [
   { sum: $1.sum + $2, count: $1.count + 1 }
   ```
 
+### `uniq`: filter consecutive duplicates
+
+- Filters out consecutive duplicate values (like Unix `uniq` or RxJS `distinctUntilChanged`).
+- By default, uses strict equality (`===`) to compare values.
+- Optional comparator expression: `$1` is the previous value, `$2` is the current value. Return `true` if equal (skip), `false` if different (pass through).
+
+  ```js
+  // Default: strict equality (no expression needed)
+  // 1 1 1 2 2 3 3 3 4 → 1 2 3 4
+
+  // Compare by specific property
+  $1.id === $2.id
+
+  // Compare by multiple properties
+  $1.x === $2.x && $1.y === $2.y
+
+  // Custom comparison (e.g., within threshold)
+  Math.abs($1 - $2) < 0.01
+  ```
+
+- Second inlet resets the state (forgets the last value).
+
 - **Inlet 0**: Input value (`$2`) - triggers evaluation
 - **Inlet 1**: Reset/set accumulator - send `bang` to reset to initial value, or send a value to set the accumulator directly
 - The first input initializes the accumulator (unless `initialValue` is set in data)
