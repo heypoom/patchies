@@ -66,6 +66,14 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 		})
 	},
 	{
+		names: ['reduce'],
+		description: 'Accumulate values with stateful reduction',
+		transform: (expr, name) => ({
+			nodeType: 'reduce',
+			data: { expr: expr.replace(name, '').trim() }
+		})
+	},
+	{
 		names: ['expr~'],
 		description: 'Audio-rate expression',
 		transform: (expr, name) => ({
