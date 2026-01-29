@@ -11,11 +11,13 @@
 	import { VdoNinjaPushNode as VdoNinjaPushAudioNode } from '$lib/audio/v2/nodes/VdoNinjaPushNode';
 	import { capturePreviewFrame } from '$lib/ai/google';
 	import { loadVdoNinjaSdk, createVdoNinjaInstance, type VDONinjaSDK } from '$lib/vdo-ninja/sdk';
+	import VdoNinjaParamsInput, { parseVdoNinjaParams } from './VdoNinjaParamsInput.svelte';
 
 	export type VdoNinjaNodeData = {
 		room?: string;
 		streamId?: string;
 		dataOnly?: boolean;
+		params?: string;
 	};
 
 	type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -57,6 +59,9 @@
 	let room = $state(data.room ?? '');
 	let streamId = $state(data.streamId ?? '');
 	let dataOnly = $state(data.dataOnly ?? false);
+	let params = $state(data.params ?? '');
+
+	let parsedParams = $derived.by(() => parseVdoNinjaParams(params).params);
 
 	// Message context for inlet/outlet communication
 	let messageContext: MessageContext;
@@ -191,8 +196,8 @@
 				// startStreaming() is called from handleConnectedEvent() once connection is established
 			}
 
-			// Save room/streamId/dataOnly to node data
-			updateNodeData(nodeId, { room, streamId, dataOnly });
+			// Save room/streamId/dataOnly/params to node data
+			updateNodeData(nodeId, { room, streamId, dataOnly, params });
 		} catch (err) {
 			connectionStatus = 'error';
 			errorMessage = err instanceof Error ? err.message : 'Connection failed';
@@ -276,7 +281,10 @@
 		// Publish stream if we have tracks
 		if (mediaStream.getTracks().length > 0) {
 			try {
-				await vdo.publish(mediaStream, { streamID: streamId || undefined });
+				await vdo.publish(mediaStream, {
+					streamID: streamId || undefined,
+					...parsedParams
+				});
 
 				isStreaming = true;
 				messageContext.send({ type: 'streaming', tracks: mediaStream.getTracks().length });
@@ -454,6 +462,19 @@
 		if (wasConnected) {
 			disconnect();
 			connect();
+		}
+	});
+
+	// Save params when changed
+	let prevParams: string | null = null;
+	$effect(() => {
+		if (prevParams === null) {
+			prevParams = params;
+			return;
+		}
+		if (prevParams !== params) {
+			prevParams = params;
+			updateNodeData(nodeId, { params });
 		}
 	});
 </script>
@@ -707,6 +728,11 @@
 						</button>
 					</div>
 
+					<!-- Advanced Parameters (only shown in normal mode) -->
+					{#if !dataOnly}
+						<VdoNinjaParamsInput bind:value={params} />
+					{/if}
+
 					<!-- Streaming Status -->
 					{#if connectionStatus === 'connected' && !dataOnly}
 						<div class="rounded bg-zinc-800 p-2 text-[10px] text-zinc-400">
@@ -728,16 +754,6 @@
 
 					<!-- Connect/Disconnect button -->
 					<div>
-						{#if connectionStatus !== 'connected' && !dataOnly && !room && !streamId}
-							<div class="mb-2 text-center text-[9px] text-zinc-500">
-								Enter a stream id or room name to connect
-							</div>
-						{:else if connectionStatus !== 'connected' && dataOnly && !room}
-							<div class="mb-2 text-center text-[9px] text-zinc-500">
-								Enter a room name to connect
-							</div>
-						{/if}
-
 						{#if connectionStatus === 'connected'}
 							<button
 								onclick={disconnect}
@@ -752,7 +768,7 @@
 									connectionStatus === 'connecting' ||
 									(!dataOnly && !room && !streamId) ||
 									(dataOnly && !room)}
-								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
+								class="w-full cursor-pointer rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#if !sdkLoaded}
 									Loading SDK...
@@ -762,6 +778,16 @@
 									Connect
 								{/if}
 							</button>
+						{/if}
+
+						{#if connectionStatus !== 'connected' && !dataOnly && !room && !streamId}
+							<div class="mt-2 text-center text-[9px] text-zinc-500">
+								Enter a stream id or room name to connect
+							</div>
+						{:else if connectionStatus !== 'connected' && dataOnly && !room}
+							<div class="mt-2 text-center text-[9px] text-zinc-500">
+								Enter a room name to connect
+							</div>
 						{/if}
 					</div>
 				</div>

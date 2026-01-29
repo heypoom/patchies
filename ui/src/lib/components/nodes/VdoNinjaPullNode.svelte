@@ -643,14 +643,6 @@
 
 					<!-- Connect/Disconnect button -->
 					<div>
-						{#if connectionStatus !== 'connected' && !dataOnly && !streamId}
-							<div class="mb-2 text-center text-[9px] text-zinc-500">Enter a stream id to view</div>
-						{:else if connectionStatus !== 'connected' && dataOnly && !room}
-							<div class="mb-2 text-center text-[9px] text-zinc-500">
-								Enter a room name to connect
-							</div>
-						{/if}
-
 						{#if connectionStatus === 'connected'}
 							<button
 								onclick={disconnect}
@@ -665,7 +657,7 @@
 									connectionStatus === 'connecting' ||
 									(!dataOnly && !streamId) ||
 									(dataOnly && !room)}
-								class="w-full rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
+								class="w-full cursor-pointer rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#if !sdkLoaded}
 									Loading SDK...
@@ -675,6 +667,14 @@
 									Connect
 								{/if}
 							</button>
+						{/if}
+
+						{#if connectionStatus !== 'connected' && !dataOnly && !streamId}
+							<div class="mt-2 text-center text-[9px] text-zinc-500">Enter a stream id to view</div>
+						{:else if connectionStatus !== 'connected' && dataOnly && !room}
+							<div class="mt-2 text-center text-[9px] text-zinc-500">
+								Enter a room name to connect
+							</div>
 						{/if}
 					</div>
 
