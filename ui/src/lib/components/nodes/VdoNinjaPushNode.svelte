@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Settings, X, Video, Info, Dice5, ExternalLink } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -382,9 +383,12 @@
 				}
 			});
 
-	function useRandomRoom() {
-		room = 'p' + generateRandomId();
+	function randomizeStreamId() {
 		streamId = 's' + generateRandomId();
+	}
+
+	function randomizeRoom() {
+		room = 'p' + generateRandomId();
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -598,24 +602,31 @@
 							<div class="mb-1 flex items-center justify-between">
 								<span class="text-[8px] text-zinc-400">Stream ID</span>
 								<div class="flex gap-1">
-									<button
-										onclick={() =>
-											streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
-										disabled={!streamId}
-										class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
-										title="View stream in VDO.Ninja"
-									>
-										<ExternalLink class="h-2.5 w-2.5" />
-										View
-									</button>
-									<button
-										onclick={useRandomRoom}
-										class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600"
-										title="Generate random IDs"
-									>
-										<Dice5 class="h-2.5 w-2.5" />
-										Random
-									</button>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<button
+												onclick={() =>
+													streamId && window.open(`https://vdo.ninja/?pull=${streamId}`, '_blank')}
+												disabled={!streamId}
+												class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+											>
+												<ExternalLink class="h-2.5 w-2.5" />
+												View
+											</button>
+										</Tooltip.Trigger>
+										<Tooltip.Content>View stream in VDO.Ninja</Tooltip.Content>
+									</Tooltip.Root>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<button
+												onclick={randomizeStreamId}
+												class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600"
+											>
+												<Dice5 class="h-2.5 w-2.5" />
+											</button>
+										</Tooltip.Trigger>
+										<Tooltip.Content>Generate random stream ID</Tooltip.Content>
+									</Tooltip.Root>
 								</div>
 							</div>
 							<input
@@ -632,15 +643,33 @@
 					<div>
 						<div class="mb-1 flex items-center justify-between">
 							<span class="text-[8px] text-zinc-400">Room Name{dataOnly ? ' (required)' : ''}</span>
-							<button
-								onclick={() => room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
-								disabled={!room}
-								class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
-								title="View room in VDO.Ninja"
-							>
-								<ExternalLink class="h-2.5 w-2.5" />
-								View
-							</button>
+							<div class="flex gap-1">
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<button
+											onclick={() =>
+												room && window.open(`https://vdo.ninja/?room=${room}`, '_blank')}
+											disabled={!room}
+											class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+										>
+											<ExternalLink class="h-2.5 w-2.5" />
+											View
+										</button>
+									</Tooltip.Trigger>
+									<Tooltip.Content>View room in VDO.Ninja</Tooltip.Content>
+								</Tooltip.Root>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<button
+											onclick={randomizeRoom}
+											class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-1.5 py-0.5 text-[8px] text-zinc-300 hover:bg-zinc-600"
+										>
+											<Dice5 class="h-2.5 w-2.5" />
+										</button>
+									</Tooltip.Trigger>
+									<Tooltip.Content>Generate random room name</Tooltip.Content>
+								</Tooltip.Root>
+							</div>
 						</div>
 						<input
 							type="text"
