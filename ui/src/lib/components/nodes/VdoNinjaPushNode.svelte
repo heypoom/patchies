@@ -328,10 +328,13 @@
 			return;
 		}
 
-		// Check if we have incoming video connections using reactive getEdges()
+		// Check if we have incoming video/audio connections using reactive getEdges()
 		const edges = getEdges();
 		const videoInletEdge = edges.find(
 			(e) => e.target === nodeId && e.targetHandle?.startsWith('video-in')
+		);
+		const audioInletEdge = edges.find(
+			(e) => e.target === nodeId && e.targetHandle?.startsWith('audio-in')
 		);
 
 		// Update hasVideoInlet state
@@ -340,6 +343,41 @@
 			hasVideoInlet = currentHasVideo;
 			// If we just got a video inlet and not streaming, try to start
 			if (hasVideoInlet && !isStreaming) {
+				await startStreaming();
+			}
+		}
+
+		// Update hasAudioInlet state and handle late audio connections
+		const currentHasAudio = !!audioInletEdge;
+		if (currentHasAudio !== hasAudioInlet) {
+			const justConnectedAudio = currentHasAudio && !hasAudioInlet;
+			hasAudioInlet = currentHasAudio;
+
+			// If audio was just connected and we're already streaming, add audio track
+			if (justConnectedAudio && isStreaming && mediaStream && audioNode) {
+				// Resume audio context if needed
+				const audioContext = audioService.getAudioContext();
+
+				if (audioContext.state === 'suspended') {
+					await audioContext.resume();
+					console.log('[push] resumed audio context');
+				}
+
+				// Check if we already have audio tracks
+				const existingAudioTracks = mediaStream.getAudioTracks();
+
+				if (existingAudioTracks.length === 0) {
+					const audioTracks = audioNode.getAudioTracks();
+					if (audioTracks.length > 0) {
+						mediaStream.addTrack(audioTracks[0]);
+						messageContext.send({ type: 'audio_added' });
+						console.log('[push] added audio track to existing stream');
+					}
+				}
+			}
+
+			// If we just got audio inlet and not streaming yet, try to start
+			if (justConnectedAudio && !isStreaming) {
 				await startStreaming();
 			}
 		}
