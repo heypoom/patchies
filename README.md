@@ -684,6 +684,25 @@ The `expr` object follows the Max and Pd convention of **hot** and **cold** inle
 
 This allows you to set up multiple values before triggering a computation. Use [the trigger object](#trigger-sends-messages-in-right-to-left-order) to control the order of execution when you need to update multiple inlets and then trigger the output.
 
+### `filter`: conditional message passing
+
+- Filter messages based on a JavaScript expression. If the expression evaluates to a truthy value, the message passes through; otherwise, it's blocked.
+- Use `$1` to `$9` variables like in `expr` to reference inlet values.
+- Unlike `expr` which outputs the result of the expression, `filter` passes through the original input message when the condition is met.
+
+  ```js
+  // Only pass through messages where type is 'play'
+  $1.type === 'play'
+
+  // Filter for note-on messages with velocity above 64
+  $1.type === 'noteOn' && $1.velocity > 64
+
+  // Pass through numbers greater than 100
+  $1 > 100
+  ```
+
+- Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
+
 ### `vue`: create user interfaces with Vue
 
 - Build custom UI components using [Vue.js 3](https://vuejs.org) with the Composition API.
