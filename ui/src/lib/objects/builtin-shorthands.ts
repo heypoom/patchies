@@ -66,10 +66,10 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 		})
 	},
 	{
-		names: ['reduce'],
-		description: 'Accumulate values with stateful reduction',
+		names: ['scan'],
+		description: 'Accumulate values with stateful scanning',
 		transform: (expr, name) => ({
-			nodeType: 'reduce',
+			nodeType: 'scan',
 			data: { expr: expr.replace(name, '').trim() }
 		})
 	},

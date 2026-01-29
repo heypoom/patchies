@@ -198,8 +198,8 @@
 			expr={data.expr}
 			bind:isEditing
 			placeholder="$1 + $2"
-			displayPrefix="reduce"
-			editorClass="reduce-node-code-editor"
+			displayPrefix="scan"
+			editorClass="scan-node-code-editor"
 			onExpressionChange={handleExpressionChange}
 			{handles}
 			{outlets}
@@ -222,7 +222,7 @@
 </div>
 
 <style>
-	:global(.reduce-node-code-editor .cm-content) {
+	:global(.scan-node-code-editor .cm-content) {
 		padding: 6px 8px 7px 4px !important;
 	}
 </style>

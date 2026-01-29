@@ -747,9 +747,9 @@ This allows you to set up multiple values before triggering a computation. Use [
 - The expression result is ignored - the original message always passes through.
 - Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
 
-### `reduce`: stateful accumulation
+### `scan`: stateful accumulation
 
-- Accumulate values over time using a JavaScript expression.
+- Accumulate values over time using a JavaScript expression (like RxJS `scan`).
 - `$1` is the accumulator (previous result), `$2` is the new input value.
 - The result becomes the new accumulator and is sent to the outlet.
 
