@@ -10,7 +10,7 @@ Try it out at [patchies.app](https://patchies.app) - it's open source and free t
 
 ## Use tools and libraries you love
 
-Patchies lets you use the audio-visual tools and libraries that you know (and love!), together in one place. For example:
+Patchies lets you use the audio, visual and computational tools and libraries that you know (and love!), together in one place. For example:
 
 - Create interactive graphics with [P5.js](https://p5js.org), [Three.js](https://threejs.org), [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [Textmode.js](https://code.textmode.art)
 - Synthesize and process video with [Hydra](https://hydra.ojack.xyz) and [GLSL shaders](https://www.shadertoy.com)
@@ -20,6 +20,7 @@ Patchies lets you use the audio-visual tools and libraries that you know (and lo
 - Compute in a raw and fun way with [stack machine assembly](./modules/vasm/README.md)
 - Run numerical computations with [Python 3](https://pyodide.org)
 - Connect to the outside world with [MIDI](#midi--network-objects), [MQTT](#mqtt-mqtt-client), [SSE](#sse-server-sent-events), [WebRTC](#netsend-and-netrecv-send-and-receive-messages-over-network) and [VDO.Ninja](#vdoninja-send-and-receive-audio-video-and-messages-over-webrtc).
+- Manage data and control flow with [code and control objects](#programming--control-objects) such as [js](#js-a-javascript-code-block), [expr](#expr-expression-evaluator), [filter](#filter-conditional-message-passing), [map](#map-transform-messages-with-javascript), [iframe](#iframe-embed-web-content), spigot, metro and more.
 - Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.sh](https://esm.sh).
 
 ## ...by patching them together ✨
