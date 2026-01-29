@@ -9,6 +9,7 @@
 	import { parseInletCount } from '$lib/utils/expr-parser';
 	import CommonExprLayout from './CommonExprLayout.svelte';
 	import { createCustomConsole } from '$lib/utils/createCustomConsole';
+	import { JSRunner } from '$lib/js-runner/JSRunner';
 
 	let {
 		id: nodeId,
@@ -31,6 +32,7 @@
 
 	const messageContext = new MessageContext(nodeId);
 	const customConsole = createCustomConsole(nodeId);
+	const jsRunner = JSRunner.getInstance();
 
 	const inletCount = $derived.by(() => {
 		if (!expr.trim()) return 1;
@@ -38,21 +40,27 @@
 	});
 
 	/**
-	 * Evaluate the filter expression using JS
+	 * Evaluate the filter expression using JSRunner
 	 * Returns true if the data should pass through, false otherwise
 	 */
-	function evaluateFilter(values: unknown[]): boolean {
+	async function evaluateFilter(values: unknown[]): Promise<boolean> {
 		if (!expr.trim()) return true;
 
 		try {
-			// Replace $1, $2, etc. with actual values
-			// Create function params and args
-			const paramNames = [...Array(9)].map((_, i) => `$${i + 1}`);
-			const args = [...Array(9)].map((_, i) => values[i]);
+			// Build extraContext with $1-$9 variables
+			const extraContext: Record<string, unknown> = {};
+			for (let i = 0; i < 9; i++) {
+				extraContext[`$${i + 1}`] = values[i];
+			}
 
-			// Create and execute the function
-			const fn = new Function(...paramNames, `return (${expr})`);
-			const result = fn(...args);
+			// Wrap expression to return its value
+			const code = `return (${expr})`;
+
+			const result = await jsRunner.executeJavaScript(nodeId, code, {
+				customConsole,
+				skipMessageContext: true,
+				extraContext
+			});
 
 			hasError = false;
 			return Boolean(result);
@@ -78,28 +86,42 @@
 		// Only inlet 0 (hot) triggers evaluation
 		if (inlet !== 0) return;
 
-		// Evaluate filter and send if match
-		if (evaluateFilter(nextInletValues)) {
-			// Pass through the original message
-			messageContext.send(message);
-		}
+		// Evaluate filter and send if match (async)
+		evaluateFilter(nextInletValues).then((shouldPass) => {
+			if (shouldPass) {
+				messageContext.send(message);
+			}
+		});
 	};
 
 	function handleExpressionChange(newExpr: string) {
 		data.expr = newExpr;
 	}
 
-	function handleRun() {
+	async function handleRun() {
 		consoleRef?.clearConsole();
 		expr = data.expr;
 
-		// Validate by trying to parse
-		try {
-			new Function('$1', `return (${expr})`);
+		// Validate by trying to evaluate with dummy values
+		if (expr.trim()) {
+			try {
+				const extraContext: Record<string, unknown> = {};
+				for (let i = 0; i < 9; i++) {
+					extraContext[`$${i + 1}`] = undefined;
+				}
+
+				await jsRunner.executeJavaScript(nodeId, `return (${expr})`, {
+					customConsole,
+					skipMessageContext: true,
+					extraContext
+				});
+				hasError = false;
+			} catch (error) {
+				hasError = true;
+				customConsole.error(error instanceof Error ? error.message : String(error));
+			}
+		} else {
 			hasError = false;
-		} catch (error) {
-			hasError = true;
-			customConsole.error(error instanceof Error ? error.message : String(error));
 		}
 
 		// Update inlet count when expression changes

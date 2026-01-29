@@ -16,6 +16,9 @@ export interface JSRunnerOptions {
 	setTitle?: (title: string) => void;
 	setHidePorts?: (hidePorts: boolean) => void;
 	extraContext?: Record<string, unknown>;
+
+	/** Skip MessageContext setup - use when caller manages their own MessageContext */
+	skipMessageContext?: boolean;
 }
 
 const SET_JS_LIBRARY_CODE_DEBOUNCE = 500;
@@ -269,22 +272,49 @@ export class JSRunner {
 		}
 	}
 
-	executeJavaScript(nodeId: string, code: string, options: JSRunnerOptions = {}) {
-		const messageContext = this.getMessageContext(nodeId);
+	/**
+	 * If we are using the "no message context"
+	 * execution mode e.g. `filter` node, some methods will
+	 * not be available.
+	 */
+	private static noopMessageContext = {
+		send: () => {},
+		onMessage: () => {},
+		setInterval: () => 0,
+		setTimeout: () => 0,
+		delay: () => Promise.resolve(),
+		requestAnimationFrame: () => 0,
+		onCleanup: () => {},
+		fft: () => new Float32Array(0)
+	};
 
+	/**
+	 * Sets up the message context for the node's execution.
+	 *
+	 * Returns the messaging context for the node.
+	 */
+	private setupRunnerMessageContext(nodeId: string) {
+		const messageContext = this.getMessageContext(nodeId);
 		messageContext.runCleanupCallbacks();
 		messageContext.clearTimers();
 
+		return messageContext.getContext();
+	}
+
+	executeJavaScript(nodeId: string, code: string, options: JSRunnerOptions = {}) {
 		const {
 			customConsole = console,
 			setPortCount = () => {},
 			setRunOnMount = () => {},
 			setTitle = () => {},
 			setHidePorts = () => {},
-			extraContext = {}
+			extraContext = {},
+			skipMessageContext = false
 		} = options;
 
-		const messageSystemContext = messageContext.getContext();
+		const messageSystemContext = skipMessageContext
+			? JSRunner.noopMessageContext
+			: this.setupRunnerMessageContext(nodeId);
 
 		const functionParams = [
 			'console',
