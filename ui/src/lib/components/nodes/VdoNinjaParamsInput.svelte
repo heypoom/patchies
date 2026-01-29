@@ -98,7 +98,7 @@
 </script>
 
 <script lang="ts">
-	import { AlertTriangle, ChevronRight } from '@lucide/svelte/icons';
+	import { AlertTriangle, ChevronRight, CircleHelp } from '@lucide/svelte/icons';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 
 	let {
@@ -117,23 +117,50 @@
 </script>
 
 <Collapsible.Root bind:open={isOpen} class={className}>
-	<Collapsible.Trigger
-		class="flex w-full cursor-pointer items-center justify-between rounded px-1 py-0.5 text-[9px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
-	>
-		<div class="flex items-center gap-1">
+	<div class="flex items-center justify-between">
+		<Collapsible.Trigger
+			class="flex flex-1 cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-[9px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
+		>
 			<ChevronRight class={['h-3 w-3 transition-transform', isOpen && 'rotate-90']} />
 			<span>Advanced Parameters</span>
 			{#if paramCount > 0}
 				<span class="rounded bg-zinc-700 px-1 text-[8px] text-zinc-300">{paramCount}</span>
 			{/if}
-		</div>
-		{#if warnings.length > 0}
-			<div class="flex items-center gap-1 text-[8px] text-yellow-500">
-				<AlertTriangle class="h-2.5 w-2.5" />
-				<span>{warnings.length}</span>
+		</Collapsible.Trigger>
+
+		<div class="flex items-center gap-1">
+			{#if warnings.length > 0}
+				<div class="flex items-center gap-1 text-[8px] text-yellow-500">
+					<AlertTriangle class="h-2.5 w-2.5" />
+					<span>{warnings.length}</span>
+				</div>
+			{/if}
+
+			<div class="group/help relative">
+				<CircleHelp class="h-3 w-3 cursor-help text-zinc-500 hover:text-zinc-300" />
+				<div
+					class="pointer-events-none absolute top-5 right-0 z-50 hidden w-56 rounded border border-zinc-600 bg-zinc-800 p-2 text-[9px] shadow-lg group-hover/help:block"
+				>
+					<div class="mb-1.5 font-semibold text-zinc-300">Available Parameters</div>
+					<div class="space-y-1 text-zinc-400">
+						<div>
+							<span class="text-orange-400">Video:</span> videoBitrate, videoCodec, videoWidth, videoHeight,
+							videoFrameRate, videoResolution
+						</div>
+						<div><span class="text-blue-400">Audio:</span> audioBitrate, audioCodec</div>
+						<div><span class="text-green-400">Meta:</span> label, meta, order</div>
+						<div>
+							<span class="text-purple-400">Flags:</span> broadcast, allowmidi, allowdrawing, iframe,
+							widget, allowresources, allowchunked
+						</div>
+					</div>
+					<div class="mt-1.5 border-t border-zinc-700 pt-1.5 text-zinc-500">
+						Format: key=value (space separated)
+					</div>
+				</div>
 			</div>
-		{/if}
-	</Collapsible.Trigger>
+		</div>
+	</div>
 
 	<Collapsible.Content class="mt-1 space-y-1">
 		<input
