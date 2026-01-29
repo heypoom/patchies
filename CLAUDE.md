@@ -91,10 +91,19 @@ bun run test             # All tests
 
 ### New Node Checklist
 
-1. Update `src/lib/nodes/node-types.ts`
-2. Update `src/lib/nodes/defaultNodeData.ts`
-3. Update `README.md` with documentation
-4. Update `src/lib/components/object-browser/get-categorized-objects.ts` (add description + category)
+**For visual/expression nodes (map, filter, uniq, etc.):**
+
+1. Create component in `src/lib/components/nodes/`
+2. Update `src/lib/nodes/node-types.ts`
+3. Update `src/lib/nodes/defaultNodeData.ts`
+4. Update `README.md` with documentation
+5. Update `src/lib/components/object-browser/get-categorized-objects.ts` (add description + category)
+
+**For text control objects (delay, uniqby, etc.):**
+
+1. Create class in `src/lib/objects/v2/nodes/` implementing `TextObjectV2`
+2. Register in `src/lib/objects/v2/nodes/index.ts`
+3. Update `README.md` Control objects section
 
 ## Audio V2 Migration
 
