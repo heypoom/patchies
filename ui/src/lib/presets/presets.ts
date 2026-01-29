@@ -16,6 +16,7 @@ import { ORCA_PRESETS } from './orca.presets';
 import { STRUDEL_PRESETS } from './strudel.presets';
 import { TEXTMODE_PRESETS } from './textmode.presets';
 import { THREE_PRESETS } from './three.preset';
+import { IFRAME_PRESETS } from './iframe.presets';
 
 /**
  * Presets are pre-configured nodes with custom default data.
@@ -39,5 +40,6 @@ export const PRESETS: Record<string, { type: string; data: unknown }> = {
 	...ORCA_PRESETS,
 	...STRUDEL_PRESETS,
 	...TEXTMODE_PRESETS,
-	...THREE_PRESETS
+	...THREE_PRESETS,
+	...IFRAME_PRESETS
 };
