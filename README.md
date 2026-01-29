@@ -918,7 +918,8 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - `100` sends the number `100`
   - `{x: 1, y: 2}` sends the object `{x: 1, y: 2}`
 - Messages:
-  - `bang`: outputs the message
+  - `bang`: outputs the message without storing a new value
+  - `{type: 'set', value: <value>}`: sets the message without triggering output
 
 #### Placeholders and hot/cold inlets
 
