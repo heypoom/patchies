@@ -74,6 +74,14 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 		})
 	},
 	{
+		names: ['peek'],
+		description: 'Display received values',
+		transform: (expr, name) => ({
+			nodeType: 'peek',
+			data: { expr: expr.replace(name, '').trim() }
+		})
+	},
+	{
 		names: ['expr~'],
 		description: 'Audio-rate expression',
 		transform: (expr, name) => ({

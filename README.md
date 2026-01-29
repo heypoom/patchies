@@ -805,6 +805,8 @@ This allows you to set up multiple values before triggering a computation. Use [
 
 - Displays the latest received value, useful for debugging message flow.
 - Shows strings, numbers, booleans, and JSON objects with formatting.
+- Optional expression to peek at specific fields: `peek $1.type` or click the code icon to add an expression.
+- Use `$1` to reference the incoming message (e.g., `$1.x`, `$1.data.name`).
 
 ### `vue`: create user interfaces with Vue
 
