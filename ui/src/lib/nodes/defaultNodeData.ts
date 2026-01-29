@@ -97,6 +97,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		}))
 		.with('markdown', () => ({ markdown: 'hello' }))
 		.with('expr', () => ({ expr: '' }))
+		.with('filter', () => ({ expr: '' }))
 		.with('expr~', () => ({ expr: 's' }))
 		.with('chuck~', () => ({ expr: DEFAULT_CHUCK_CODE }))
 		.with('webcam', () => ({}))

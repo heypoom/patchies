@@ -27,6 +27,7 @@ import SliderNode from '$lib/components/nodes/SliderNode.svelte';
 import PythonNode from '$lib/components/nodes/PythonNode.svelte';
 import MarkdownNode from '$lib/components/nodes/MarkdownNode.svelte';
 import ExprNode from '$lib/components/nodes/ExprNode.svelte';
+import FilterNode from '$lib/components/nodes/FilterNode.svelte';
 import AudioExprNode from '$lib/components/nodes/AudioExprNode.svelte';
 import ChuckNode from '$lib/components/nodes/ChuckNode.svelte';
 import SoundFile from '$lib/components/nodes/SoundFile.svelte';
@@ -98,6 +99,7 @@ export const nodeTypes: Record<string, any> = {
 	python: PythonNode,
 	markdown: MarkdownNode,
 	expr: ExprNode,
+	filter: FilterNode,
 	'expr~': AudioExprNode,
 	'chuck~': ChuckNode,
 	'soundfile~': SoundFile,
