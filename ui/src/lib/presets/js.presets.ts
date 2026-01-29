@@ -1,4 +1,6 @@
-const MESSAGE_CONSOLE_JS = `recv(m => console.log(m))`;
+const MESSAGE_CONSOLE_JS = `setTitle("logger")
+setPortCount(1, 0)
+recv(m => console.log(m))`;
 
 const DELAY_JS = `recv(async (m) => {
   await delay(1000) // how long to wait for

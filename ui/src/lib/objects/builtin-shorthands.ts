@@ -42,6 +42,30 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 		})
 	},
 	{
+		names: ['filter'],
+		description: 'Filter messages with JS condition',
+		transform: (expr, name) => ({
+			nodeType: 'filter',
+			data: { expr: expr.replace(name, '').trim() }
+		})
+	},
+	{
+		names: ['map'],
+		description: 'Transform messages with JS expression',
+		transform: (expr, name) => ({
+			nodeType: 'map',
+			data: { expr: expr.replace(name, '').trim() }
+		})
+	},
+	{
+		names: ['tap'],
+		description: 'Execute side effects and pass through',
+		transform: (expr, name) => ({
+			nodeType: 'tap',
+			data: { expr: expr.replace(name, '').trim() }
+		})
+	},
+	{
 		names: ['expr~'],
 		description: 'Audio-rate expression',
 		transform: (expr, name) => ({

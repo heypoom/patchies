@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { useSvelteFlow } from '@xyflow/svelte';
+	import { Terminal } from '@lucide/svelte/icons';
 	import StandardHandle from '$lib/components/StandardHandle.svelte';
 	import VirtualConsole from '$lib/components/VirtualConsole.svelte';
 	import { MessageContext } from '$lib/messages/MessageContext';
@@ -41,9 +43,15 @@
 	let layoutRef = $state<CommonExprLayout | null>(null);
 	let consoleRef: VirtualConsole | null = $state(null);
 
+	const { updateNodeData } = useSvelteFlow();
 	const messageContext = new MessageContext(nodeId);
 	const customConsole = createCustomConsole(nodeId);
 	const jsRunner = JSRunner.getInstance();
+
+	function toggleConsole() {
+		data.showConsole = !data.showConsole;
+		updateNodeData(nodeId, { showConsole: data.showConsole });
+	}
 
 	const inletCount = $derived.by(() => {
 		if (!expr.trim()) return 1;
@@ -169,24 +177,34 @@
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">
-	<CommonExprLayout
-		bind:this={layoutRef}
-		{nodeId}
-		{data}
-		{selected}
-		expr={data.expr}
-		bind:isEditing
-		{placeholder}
-		{displayPrefix}
-		editorClass="{displayPrefix}-node-code-editor"
-		onExpressionChange={handleExpressionChange}
-		{handles}
-		{outlets}
-		onRun={handleRun}
-		exitOnRun={false}
-		runOnExit
-		{hasError}
-	/>
+	<div class="relative">
+		<button
+			class="absolute -top-6 right-0 z-10 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+			onclick={toggleConsole}
+			title="Toggle console"
+		>
+			<Terminal class="h-3.5 w-3.5 text-zinc-400" />
+		</button>
+
+		<CommonExprLayout
+			bind:this={layoutRef}
+			{nodeId}
+			{data}
+			{selected}
+			expr={data.expr}
+			bind:isEditing
+			{placeholder}
+			{displayPrefix}
+			editorClass="{displayPrefix}-node-code-editor"
+			onExpressionChange={handleExpressionChange}
+			{handles}
+			{outlets}
+			onRun={handleRun}
+			exitOnRun={false}
+			runOnExit
+			{hasError}
+		/>
+	</div>
 
 	<div class:hidden={!data.showConsole}>
 		<VirtualConsole
@@ -201,7 +219,8 @@
 
 <style>
 	:global(.filter-node-code-editor .cm-content),
-	:global(.map-node-code-editor .cm-content) {
+	:global(.map-node-code-editor .cm-content),
+	:global(.tap-node-code-editor .cm-content) {
 		padding: 6px 8px 7px 4px !important;
 	}
 </style>

@@ -728,6 +728,25 @@ This allows you to set up multiple values before triggering a computation. Use [
 
 - Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
 
+### `tap`: debug and inspect messages
+
+- Execute JavaScript expressions for side effects (like logging) while passing the original message through unchanged.
+- Perfect for debugging message flow without altering the data.
+
+  ```js
+  // Log incoming messages
+  console.log('received:', $1)
+
+  // Log specific fields
+  console.log('note:', $1.note, 'velocity:', $1.velocity)
+
+  // Conditional logging
+  if ($1.type === 'noteOn') console.log('Note on!', $1)
+  ```
+
+- The expression result is ignored - the original message always passes through.
+- Follows the same hot/cold inlet convention as `expr`: inlet 0 triggers evaluation, other inlets store values.
+
 ### `vue`: create user interfaces with Vue
 
 - Build custom UI components using [Vue.js 3](https://vuejs.org) with the Composition API.

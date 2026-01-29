@@ -99,6 +99,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 		.with('expr', () => ({ expr: '' }))
 		.with('filter', () => ({ expr: '' }))
 		.with('map', () => ({ expr: '' }))
+		.with('tap', () => ({ expr: '', showConsole: true }))
 		.with('expr~', () => ({ expr: 's' }))
 		.with('chuck~', () => ({ expr: DEFAULT_CHUCK_CODE }))
 		.with('webcam', () => ({}))

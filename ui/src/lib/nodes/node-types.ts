@@ -29,6 +29,7 @@ import MarkdownNode from '$lib/components/nodes/MarkdownNode.svelte';
 import ExprNode from '$lib/components/nodes/ExprNode.svelte';
 import FilterNode from '$lib/components/nodes/FilterNode.svelte';
 import MapNode from '$lib/components/nodes/MapNode.svelte';
+import TapNode from '$lib/components/nodes/TapNode.svelte';
 import AudioExprNode from '$lib/components/nodes/AudioExprNode.svelte';
 import ChuckNode from '$lib/components/nodes/ChuckNode.svelte';
 import SoundFile from '$lib/components/nodes/SoundFile.svelte';
@@ -102,6 +103,7 @@ export const nodeTypes: Record<string, any> = {
 	expr: ExprNode,
 	filter: FilterNode,
 	map: MapNode,
+	tap: TapNode,
 	'expr~': AudioExprNode,
 	'chuck~': ChuckNode,
 	'soundfile~': SoundFile,
