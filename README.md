@@ -637,6 +637,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - A general-purpose JavaScript code block for scripting and automation.
 - Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
 - See [Patchies JavaScript Runner](#patchies-javascript-runner) for the full list of available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.) and features (NPM imports, VFS, shared libraries).
+- Try the `logger.js` preset which lets you log incoming messages to the console. Useful for debugging.
 
 ### `expr`: expression evaluator
 
