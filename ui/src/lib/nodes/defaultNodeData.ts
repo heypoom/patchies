@@ -211,5 +211,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 			streamId: '',
 			dataOnly: false
 		}))
+		.with('peek', () => ({}))
 		.otherwise(() => ({}));
 }

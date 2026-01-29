@@ -801,6 +801,11 @@ This allows you to set up multiple values before triggering a computation. Use [
 - **Inlet 1**: Reset/set accumulator - send `bang` to reset to initial value, or send a value to set the accumulator directly
 - The first input initializes the accumulator (unless `initialValue` is set in data)
 
+### `peek`: display message values
+
+- Displays the latest received value, useful for debugging message flow.
+- Shows strings, numbers, booleans, and JSON objects with formatting.
+
 ### `vue`: create user interfaces with Vue
 
 - Build custom UI components using [Vue.js 3](https://vuejs.org) with the Composition API.
