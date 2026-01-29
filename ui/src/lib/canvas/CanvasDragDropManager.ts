@@ -292,10 +292,8 @@ export class CanvasDragDropManager {
 			.with('markdown', async () => {
 				try {
 					const content = await file.text();
-					return {
-						...getDefaultNodeData('markdown'),
-						markdown: content
-					};
+
+					return { ...getDefaultNodeData('markdown'), markdown: content };
 				} catch (error) {
 					logger.error('Failed to read markdown file:', error);
 
@@ -303,6 +301,17 @@ export class CanvasDragDropManager {
 						...getDefaultNodeData('markdown'),
 						markdown: `Error loading file: ${file.name}`
 					};
+				}
+			})
+			.with('js', async () => {
+				try {
+					const content = await file.text();
+
+					return { ...getDefaultNodeData('js'), code: content };
+				} catch (error) {
+					logger.error('Failed to read JavaScript file:', error);
+
+					return { ...getDefaultNodeData('js'), code: `// Error loading file: ${file.name}` };
 				}
 			})
 			.with('soundfile~', async () => {
