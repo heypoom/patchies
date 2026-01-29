@@ -19,6 +19,7 @@
 			height?: number;
 		};
 		selected: boolean;
+		dragging: boolean;
 		width: number;
 		height: number;
 	} = $props();
@@ -155,14 +156,14 @@
 				<div class="flex flex-col gap-2">
 					{#if hasUrl}
 						<div class="relative">
-							<!-- we need pointer-events none on resize otherwise the mouse goes into iframe -->
+							<!-- we need pointer-events none on resize/drag otherwise the mouse goes into iframe -->
 							<iframe
 								bind:this={iframeRef}
 								src={node.data.url}
 								title="iframe content"
 								class="rounded-md border border-zinc-700 bg-white"
 								style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
-									DEFAULT_HEIGHT}px;{isResizing ? ' pointer-events: none;' : ''}"
+									DEFAULT_HEIGHT}px;{isResizing || node.dragging ? ' pointer-events: none;' : ''}"
 								sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
 								allow="geolocation; microphone; camera; midi; encrypted-media"
 							></iframe>
