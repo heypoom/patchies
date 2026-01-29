@@ -178,7 +178,10 @@ export class CanvasDragDropManager {
 	 * Handle VFS file drops by creating appropriate nodes
 	 * Supports both direct VFS entries and files within linked folders
 	 */
-	private handleVfsFileDrop(vfsPath: string, position: { x: number; y: number }): void {
+	private async handleVfsFileDrop(
+		vfsPath: string,
+		position: { x: number; y: number }
+	): Promise<void> {
 		const vfs = VirtualFilesystem.getInstance();
 		// Use getEntryOrLinkedFile to support files within linked folders
 		const entry = vfs.getEntryOrLinkedFile(vfsPath);
@@ -191,7 +194,7 @@ export class CanvasDragDropManager {
 		const nodeType = this.getNodeTypeFromMimeType(entry.mimeType);
 
 		if (nodeType) {
-			const customData = this.getVfsFileNodeData(vfsPath, nodeType);
+			const customData = await this.getVfsFileNodeData(vfsPath, nodeType);
 			this.createNode(nodeType, position, customData);
 		}
 	}
@@ -225,8 +228,29 @@ export class CanvasDragDropManager {
 	/**
 	 * Create appropriate data for VFS file-based nodes
 	 */
-	private getVfsFileNodeData(vfsPath: string, nodeType: string): unknown {
-		if (['img', 'video', 'soundfile~', 'markdown'].includes(nodeType)) {
+	private async getVfsFileNodeData(vfsPath: string, nodeType: string): Promise<unknown> {
+		// For markdown, read the file content (same behavior as real file drops)
+		if (nodeType === 'markdown') {
+			try {
+				const vfs = VirtualFilesystem.getInstance();
+				const file = await vfs.resolve(vfsPath);
+				const content = await file.text();
+
+				return {
+					...getDefaultNodeData('markdown'),
+					markdown: content
+				};
+			} catch (error) {
+				logger.error('Failed to read VFS markdown file:', error);
+
+				return {
+					...getDefaultNodeData('markdown'),
+					markdown: `Error loading file: ${vfsPath}`
+				};
+			}
+		}
+
+		if (['img', 'video', 'soundfile~'].includes(nodeType)) {
 			return { ...getDefaultNodeData(nodeType), vfsPath };
 		}
 
