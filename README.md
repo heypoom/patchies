@@ -636,8 +636,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 ### `js`: A JavaScript code block
 
 - A general-purpose JavaScript code block for scripting and automation.
-- Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
 - See [Patchies JavaScript Runner](#patchies-javascript-runner) for the full list of available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.) and features (NPM imports, VFS, shared libraries).
+- You can also use these special methods exclusive to `js` object:
+  - Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
+  - Use `flash()` to briefly flash the node's border, useful for visual feedback when processing messages.
 - Try the `logger.js` preset which lets you log incoming messages to the console. Useful for debugging.
 
 ### `expr`: expression evaluator
@@ -783,13 +785,13 @@ This allows you to set up multiple values before triggering a computation. Use [
   // 1 1 1 2 2 3 3 3 4 → 1 2 3 4
 
   // Compare by specific property
-  $1.id === $2.id
+  $1.id === $2.id;
 
   // Compare by multiple properties
-  $1.x === $2.x && $1.y === $2.y
+  $1.x === $2.x && $1.y === $2.y;
 
   // Custom comparison (e.g., within threshold)
-  Math.abs($1 - $2) < 0.01
+  Math.abs($1 - $2) < 0.01;
   ```
 
 - Second inlet resets the state (forgets the last value).

@@ -203,7 +203,7 @@
 								{#if expr || displayPrefix}
 									<span class="flex max-w-[400px] overflow-hidden">
 										{#if displayPrefix}
-											<span class={['text-xs text-zinc-400', expr ? 'mr-2' : '']}
+											<span class={['text-xs', expr ? 'mr-2 text-zinc-400' : 'text-zinc-200']}
 												>{displayPrefix}</span
 											>
 										{/if}

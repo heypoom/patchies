@@ -53,6 +53,7 @@
 
 	let showEditor = $state(false);
 	let contentWidth = $state(100);
+	let isFlashing = $state(false);
 
 	const code = $derived(data.code || '');
 	let previousExecuteCode = $state<number | undefined>(undefined);
@@ -83,6 +84,9 @@
 	});
 
 	const borderColor = $derived.by(() => {
+		// Flash takes top priority
+		if (isFlashing) return 'border-zinc-300';
+
 		// Prioritize showing emerald if there are active timers (stoppable state)
 		if (isLongRunningTaskActive && selected) return 'border-emerald-300';
 		if (isLongRunningTaskActive) return 'border-emerald-500';
@@ -223,7 +227,8 @@
 				customConsole,
 				setPortCount,
 				setRunOnMount,
-				setTitle
+				setTitle,
+				extraContext: { flash }
 			});
 		} catch (error) {
 			handleCodeError(error, code, nodeId, customConsole);
@@ -252,6 +257,13 @@
 
 	function setTitle(title: string) {
 		updateNodeData(nodeId, { title });
+	}
+
+	function flash() {
+		isFlashing = true;
+		setTimeout(() => {
+			isFlashing = false;
+		}, 150);
 	}
 
 	function handleDoubleClickOnRun() {
@@ -340,7 +352,11 @@
 							'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
 							isRunning && !isLongRunningTaskActive ? 'cursor-not-allowed' : 'cursor-pointer',
 							borderColor,
-							selected ? 'shadow-glow-md bg-zinc-800' : 'hover:shadow-glow-sm bg-zinc-900'
+							isFlashing
+								? 'bg-zinc-500'
+								: selected
+									? 'shadow-glow-md bg-zinc-800'
+									: 'hover:shadow-glow-sm bg-zinc-900'
 						]}
 						style={`min-width: ${minContainerWidth}px`}
 						onclick={runOrStop}
