@@ -68,12 +68,14 @@
 
     URL.revokeObjectURL(objectUrl);
 
+    // Only set node dimensions on first load (when no dimensions exist yet)
+    // Preserve user-resized dimensions on reload
+    const shouldSetDimensions = !node.width || !node.height;
     const previewWidth = Math.round(preview.width / IMAGE_PREVIEW_SCALE_FACTOR);
     const previewHeight = Math.round(preview.height / IMAGE_PREVIEW_SCALE_FACTOR);
 
     updateNode(node.id, {
-      width: previewWidth,
-      height: previewHeight,
+      ...(shouldSetDimensions && { width: previewWidth, height: previewHeight }),
       data: {
         ...node.data,
         width: preview.width,
