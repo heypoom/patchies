@@ -3,6 +3,7 @@
     ChevronRight,
     ChevronDown,
     Library,
+    LibraryBig,
     Folder,
     FolderOpen,
     FolderPlus,
@@ -17,6 +18,7 @@
     Copy
   } from '@lucide/svelte/icons';
   import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { toast } from 'svelte-sonner';
   import { presetLibraryStore, editableLibraries } from '../../../stores/preset-library.store';
   import type {
@@ -279,6 +281,28 @@
             {/if}
           {/if}
         </button>
+
+        {#if isFolder && canEdit}
+          <div
+            class="flex shrink-0 items-center gap-0.5 pr-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          >
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    startFolderCreation(fullPathStr);
+                  }}
+                  title="New folder"
+                >
+                  <FolderPlus class="h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">New folder</Tooltip.Content>
+            </Tooltip.Root>
+          </div>
+        {/if}
       </div>
     </ContextMenu.Trigger>
 
@@ -374,6 +398,44 @@
             <Lock class="ml-1 h-3 w-3 text-zinc-600" />
           {/if}
         </button>
+
+        {#if !library.readonly}
+          <div
+            class="flex shrink-0 items-center gap-0.5 pr-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          >
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    startFolderCreation(library.id);
+                  }}
+                  title="New folder"
+                >
+                  <FolderPlus class="h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">New folder</Tooltip.Content>
+            </Tooltip.Root>
+
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    exportLibrary(library.id);
+                  }}
+                  title="Export library"
+                >
+                  <Download class="h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">Export library</Tooltip.Content>
+            </Tooltip.Root>
+          </div>
+        {/if}
       </div>
     </ContextMenu.Trigger>
 
@@ -446,29 +508,31 @@
   onchange={handleImportChange}
 />
 
-<div class="flex flex-col" role="tree">
-  <!-- Toolbar -->
-  <div class="flex items-center gap-1 border-b border-zinc-800 px-2 py-1.5">
-    <button
-      class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-      onclick={createNewLibrary}
-      title="New Library"
-    >
-      <Plus class="h-4 w-4" />
-    </button>
-    <button
-      class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-      onclick={handleImportClick}
-      title="Import Library"
-    >
-      <Upload class="h-4 w-4" />
-    </button>
-  </div>
-
+<div class="flex h-full flex-col" role="tree">
   <!-- Libraries -->
-  <div class="flex-1 py-1">
+  <div class="flex-1 overflow-y-auto py-1">
     {#each $presetLibraryStore as library}
       {@render libraryNode(library)}
     {/each}
+  </div>
+
+  <!-- Footer actions -->
+  <div class="flex items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
+    <button
+      class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+      onclick={createNewLibrary}
+      title="New Library"
+    >
+      <LibraryBig class="h-3.5 w-3.5" />
+      <span>New Library</span>
+    </button>
+    <button
+      class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+      onclick={handleImportClick}
+      title="Import Library"
+    >
+      <Upload class="h-3.5 w-3.5" />
+      <span>Import</span>
+    </button>
   </div>
 </div>
