@@ -17,21 +17,8 @@
     open = false;
   }
 
-  function handleOpen() {
-    open = true;
-  }
-
   const tabs: Tab[] = ['about', 'demos', 'shortcuts', 'thanks'];
 </script>
-
-<!-- Help button trigger -->
-<button
-  onclick={handleOpen}
-  class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
-  title="Help and examples"
->
-  <HelpCircle class="h-4 w-4 text-zinc-300" />
-</button>
 
 {#if open}
   <!-- Modal backdrop -->

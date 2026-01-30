@@ -30,6 +30,8 @@
     onShowGeminiKeyModal?: () => void;
     onNewPatch?: () => void;
     onOpenLeftSidebar?: () => void;
+    onSaveAsPreset?: (node: Node) => void;
+    onShowHelp?: () => void;
   }
 
   let {
@@ -42,8 +44,13 @@
     onShowAiPrompt,
     onShowGeminiKeyModal,
     onNewPatch,
-    onOpenLeftSidebar
+    onOpenLeftSidebar,
+    onSaveAsPreset,
+    onShowHelp
   }: Props = $props();
+
+  // Get the first selected node (for save as preset)
+  const selectedNode = $derived(nodes.find((n) => n.selected));
 
   // Component state
   let searchQuery = $state('');
@@ -137,6 +144,17 @@
       id: 'browse-files',
       name: 'Browse Files',
       description: 'View files in the virtual filesystem'
+    },
+    {
+      id: 'save-as-preset',
+      name: 'Save Selected Object as Preset',
+      description: 'Save the selected node as a reusable preset',
+      requiresSelection: true
+    },
+    {
+      id: 'help',
+      name: 'Help / Getting Started',
+      description: 'Show the getting started guide and help documentation'
     }
   ];
 
@@ -144,6 +162,7 @@
   const filteredCommands = $derived.by(() => {
     return commands
       .filter((cmd) => !cmd.requiresAi || $isAiFeaturesVisible)
+      .filter((cmd) => !cmd.requiresSelection || selectedNode)
       .filter((cmd) => cmd.name.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
@@ -322,6 +341,16 @@
       .with('ai-insert-object', () => {
         onCancel();
         onShowAiPrompt?.();
+      })
+      .with('save-as-preset', () => {
+        if (selectedNode) {
+          onCancel();
+          onSaveAsPreset?.(selectedNode);
+        }
+      })
+      .with('help', () => {
+        onCancel();
+        onShowHelp?.();
       })
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);

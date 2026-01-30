@@ -23,7 +23,9 @@
     isConnecting,
     connectingFromHandleId,
     isConnectionMode,
-    isObjectBrowserOpen
+    isObjectBrowserOpen,
+    isMobile,
+    isSidebarOpen
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -55,8 +57,8 @@
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
   import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
+  import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
-  import FileTreeView from './sidebar/FileTreeView.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events';
@@ -100,8 +102,23 @@
   // Dialog state for new patch confirmation
   let showNewPatchDialog = $state(false);
 
-  // Sidebar state
-  let showSidebar = $state(false);
+  // Dialog state for save as preset
+  let showSavePresetDialog = $state(false);
+  let nodeToSaveAsPreset = $state<Node | null>(null);
+
+  // Sidebar view state - persisted to localStorage
+  let sidebarView = $state<'files' | 'presets'>(
+    (typeof window !== 'undefined' &&
+      (localStorage.getItem('patchies-sidebar-view') as 'files' | 'presets')) ||
+      'files'
+  );
+
+  // Persist sidebar view changes
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('patchies-sidebar-view', sidebarView);
+    }
+  });
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -234,8 +251,13 @@
 
       triggerCommandPalette();
     }
-    // Handle CMD+B for browse objects
+    // Handle CMD+B for toggle sidebar
     else if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey) && !isTyping) {
+      event.preventDefault();
+      $isSidebarOpen = !$isSidebarOpen;
+    }
+    // Handle CMD+O for browse objects
+    else if (event.key.toLowerCase() === 'o' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();
       $isObjectBrowserOpen = true;
     }
@@ -440,6 +462,8 @@
     document.addEventListener('keydown', handleGlobalKeydown);
     eventBus.addEventListener('nodeReplace', replaceNode);
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
+    eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
+    eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -461,6 +485,8 @@
 
     eventBus.removeEventListener('nodeReplace', replaceNode);
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
+    eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
+    eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
 
     // Clean up autosave interval
     if (autosaveInterval) {
@@ -537,6 +563,29 @@
 
   function onDragOver(event: DragEvent) {
     getDragDropManager().onDragOver(event);
+  }
+
+  // Get the center of the viewport in flow coordinates
+  function getViewportCenter(): { x: number; y: number } {
+    const viewportCenterX = window.innerWidth / 2;
+    const viewportCenterY = window.innerHeight / 2;
+    return screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
+  }
+
+  // Handle insert VFS file event from mobile toolbar
+  async function handleInsertVfsFile(event: { type: 'insertVfsFileToCanvas'; vfsPath: string }) {
+    const position = getViewportCenter();
+    await getDragDropManager().insertVfsFile(event.vfsPath, position);
+  }
+
+  // Handle insert preset event from mobile toolbar
+  function handleInsertPreset(event: {
+    type: 'insertPresetToCanvas';
+    path: string[];
+    preset: { type: string; name: string; data: unknown };
+  }) {
+    const position = getViewportCenter();
+    getDragDropManager().insertPreset(event.preset, position);
   }
 
   // Create a new node at the specified position
@@ -835,8 +884,8 @@
 
   function insertObjectWithButton() {
     const position = screenToFlowPosition({
-      x: Math.max(0, window.innerWidth / 2 - 200),
-      y: 50
+      x: $isMobile ? window.innerWidth / 2 : window.innerWidth / 2 - 200,
+      y: $isMobile ? window.innerHeight / 3 : 50
     });
 
     setTimeout(() => {
@@ -905,10 +954,8 @@
 </script>
 
 <div class="flow-container flex h-screen w-full">
-  <!-- File Browser Sidebar -->
-  <SidebarPanel bind:open={showSidebar}>
-    <FileTreeView />
-  </SidebarPanel>
+  <!-- Sidebar (Files / Presets) -->
+  <SidebarPanel bind:open={$isSidebarOpen} bind:view={sidebarView} />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">
@@ -947,7 +994,7 @@
     {/if}
 
     <!-- Audio Resume Hint -->
-    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal}
+    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen)}
       <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
@@ -1047,7 +1094,7 @@
 
         <BackgroundOutputCanvas />
 
-        <Controls class={$isBottomBarVisible ? '' : '!hidden'} />
+        <Controls class={$isBottomBarVisible && !$isMobile ? '' : '!hidden'} />
       </SvelteFlow>
 
       <!-- Command Palette -->
@@ -1072,7 +1119,12 @@
             showMissingApiKeyDialog = true;
           }}
           onNewPatch={newPatch}
-          onOpenLeftSidebar={() => (showSidebar = true)}
+          onOpenLeftSidebar={() => ($isSidebarOpen = true)}
+          onSaveAsPreset={(node) => {
+            nodeToSaveAsPreset = node;
+            showSavePresetDialog = true;
+          }}
+          onShowHelp={() => (showStartupModal = true)}
         />
       {/if}
     </div>
@@ -1086,7 +1138,7 @@
         {selectedEdgeIds}
         {copiedNodeData}
         {hasGeminiApiKey}
-        isLeftSidebarOpen={showSidebar}
+        isLeftSidebarOpen={$isSidebarOpen}
         bind:showStartupModal
         onDelete={deleteSelectedElements}
         onInsertObject={insertObjectWithButton}
@@ -1100,7 +1152,16 @@
         onNewPatch={newPatch}
         onLoadPatch={loadPatchById}
         onToggleLeftSidebar={() => {
-          showSidebar = !showSidebar;
+          $isSidebarOpen = !$isSidebarOpen;
+        }}
+        onSaveSelectedAsPreset={() => {
+          if (selectedNodeIds.length === 1) {
+            const node = nodes.find((n) => n.id === selectedNodeIds[0]);
+            if (node) {
+              nodeToSaveAsPreset = node;
+              showSavePresetDialog = true;
+            }
+          }
         }}
       />
     {/if}
@@ -1132,6 +1193,9 @@
 
     <!-- New Patch Confirmation Dialog -->
     <NewPatchDialog bind:open={showNewPatchDialog} onConfirm={confirmNewPatch} />
+
+    <!-- Save as Preset Dialog -->
+    <SavePresetDialog bind:open={showSavePresetDialog} node={nodeToSaveAsPreset} />
   </div>
 </div>
 

@@ -60,6 +60,7 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.20.0",
+    "vaul-svelte": "^1.0.0-next.7",
     "vite": "^7.0.4",
     "vite-bundle-analyzer": "^1.2.3",
     "vite-plugin-devtools-json": "^0.2.0",

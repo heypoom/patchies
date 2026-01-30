@@ -1,4 +1,23 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, readable } from 'svelte/store';
+
+// Mobile detection (768px breakpoint)
+const MOBILE_BREAKPOINT = 768;
+
+function createIsMobileStore() {
+  return readable(false, (set) => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    set(mediaQuery.matches);
+
+    const handler = (e: MediaQueryListEvent) => set(e.matches);
+    mediaQuery.addEventListener('change', handler);
+
+    return () => mediaQuery.removeEventListener('change', handler);
+  });
+}
+
+export const isMobile = createIsMobileStore();
 
 export const isBottomBarVisible = writable(true);
 export const isFpsMonitorVisible = writable(false);
@@ -21,6 +40,19 @@ if (typeof localStorage !== 'undefined') {
 export const isConnectionMode = writable(false);
 
 export const isObjectBrowserOpen = writable(false);
+
+// Sidebar state - persisted to localStorage
+const storedSidebarOpen =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-open') : null;
+
+export const isSidebarOpen = writable(storedSidebarOpen === 'true');
+
+// Persist sidebar state to localStorage
+if (typeof localStorage !== 'undefined') {
+  isSidebarOpen.subscribe((value) => {
+    localStorage.setItem('patchies-sidebar-open', String(value));
+  });
+}
 
 // Tracks if XYFlow is actively connecting handles
 export const isConnecting = writable(false);

@@ -535,7 +535,7 @@
                 style="height: {height}px; width: {width}px;"
               >
                 <Mic class="h-4 w-4 text-zinc-400" />
-                <div class="font-mono text-[12px] font-light text-zinc-400">
+                <div class="font-mono text-[12px] text-zinc-400">
                   {#if vfsMedia.isDragging}
                     Drop audio file
                   {:else}

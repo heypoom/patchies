@@ -1,34 +1,45 @@
 <script lang="ts">
-  import { X } from '@lucide/svelte/icons';
-  import type { Snippet } from 'svelte';
+  import { X, Folder, Bookmark } from '@lucide/svelte/icons';
+  import FileTreeView from './FileTreeView.svelte';
+  import PresetTreeView from './PresetTreeView.svelte';
 
-  type SidebarView = 'files';
+  export type SidebarView = 'files' | 'presets';
 
   let {
     open = $bindable(false),
-    view = 'files',
-    children
+    view = $bindable<SidebarView>('files')
   }: {
     open: boolean;
     view?: SidebarView;
-    children?: Snippet;
   } = $props();
 
-  const viewTitles: Record<SidebarView, string> = {
-    files: 'Files'
-  };
+  const views: { id: SidebarView; icon: typeof Folder; title: string }[] = [
+    { id: 'files', icon: Folder, title: 'Files' },
+    { id: 'presets', icon: Bookmark, title: 'Presets' }
+  ];
 </script>
 
 {#if open}
   <div class="flex h-full w-full shrink-0 flex-col border-r border-zinc-700 bg-zinc-950 sm:w-64">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-zinc-700 px-3 py-2">
-      <h2 class="font-mono text-xs font-medium tracking-wide text-zinc-400 uppercase">
-        {viewTitles[view]}
-      </h2>
+    <!-- Header with view switcher -->
+    <div class="flex items-center justify-between border-b border-zinc-700 px-2 py-1.5">
+      <!-- View switcher icons -->
+      <div class="flex items-center gap-0.5">
+        {#each views as v}
+          <button
+            class="cursor-pointer rounded p-1.5 transition-colors {view === v.id
+              ? 'bg-zinc-700 text-zinc-200'
+              : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+            onclick={() => (view = v.id)}
+            title={v.title}
+          >
+            <v.icon class="h-4 w-4" />
+          </button>
+        {/each}
+      </div>
 
       <button
-        class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+        class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
         onclick={() => (open = false)}
         title="Close sidebar"
       >
@@ -38,8 +49,10 @@
 
     <!-- Content -->
     <div class="flex-1 overflow-y-auto">
-      {#if children}
-        {@render children()}
+      {#if view === 'files'}
+        <FileTreeView />
+      {:else if view === 'presets'}
+        <PresetTreeView />
       {/if}
     </div>
   </div>

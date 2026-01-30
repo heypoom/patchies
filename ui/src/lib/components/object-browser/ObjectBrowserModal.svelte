@@ -7,7 +7,7 @@
   } from './get-categorized-objects';
   import Fuse from 'fuse.js';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
-  import { PRESETS } from '$lib/presets/presets';
+  import { flattenedPresets } from '../../../stores/preset-library.store';
 
   let {
     open = $bindable(false),
@@ -21,34 +21,37 @@
   // Get all categorized objects, filtering AI features based on the store
   const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible));
 
-  // Get preset categories grouped by their underlying object type
+  // Get preset categories grouped by library and type
   const presetCategories = $derived.by((): CategoryGroup[] => {
-    const presetsByType = new Map<string, ObjectItem[]>();
+    const presetsByCategory = new Map<string, ObjectItem[]>();
 
-    for (const [presetName, preset] of Object.entries(PRESETS)) {
-      const type = preset.type;
+    for (const flatPreset of $flattenedPresets) {
+      const { preset, libraryName, path } = flatPreset;
+      // Get the type folder (second element in path after library id)
+      const typeFolder = path.length > 2 ? path[1] : preset.type;
+      const categoryKey = `${libraryName}: ${typeFolder}`;
 
-      if (!presetsByType.has(type)) {
-        presetsByType.set(type, []);
+      if (!presetsByCategory.has(categoryKey)) {
+        presetsByCategory.set(categoryKey, []);
       }
 
-      presetsByType.get(type)!.push({
-        name: presetName,
-        description: `Preset using ${type}`,
-        category: `Presets: ${type}`
+      presetsByCategory.get(categoryKey)!.push({
+        name: preset.name,
+        description: preset.description || `Preset using ${preset.type}`,
+        category: categoryKey
       });
     }
 
-    // Sort presets within each type alphabetically
-    for (const presets of presetsByType.values()) {
+    // Sort presets within each category alphabetically
+    for (const presets of presetsByCategory.values()) {
       presets.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    // Sort types alphabetically and create category groups
-    const sortedTypes = Array.from(presetsByType.keys()).sort();
-    return sortedTypes.map((type) => ({
-      title: `Presets: ${type}`,
-      objects: presetsByType.get(type)!
+    // Sort categories alphabetically
+    const sortedCategories = Array.from(presetsByCategory.keys()).sort();
+    return sortedCategories.map((category) => ({
+      title: category,
+      objects: presetsByCategory.get(category)!
     }));
   });
 
@@ -64,7 +67,7 @@
         cat.objects.map((obj) => ({
           ...obj,
           categoryTitle: cat.title,
-          isPreset: cat.title.startsWith('Presets:')
+          isPreset: cat.title.includes(': ')
         }))
       ),
       {
@@ -247,7 +250,7 @@
         {:else}
           <div class="space-y-4">
             {#each filteredCategories as category (category.title)}
-              {@const isCategoryPreset = category.title.startsWith('Presets:')}
+              {@const isCategoryPreset = category.title.includes(': ')}
               <div>
                 <!-- Category header -->
                 <button
@@ -275,7 +278,7 @@
                 {#if expandedCategories.has(category.title)}
                   <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                     {#each category.objects as object (object.name)}
-                      {@const isPreset = category.title.startsWith('Presets:')}
+                      {@const isPreset = category.title.includes(': ')}
                       <button
                         onclick={() => handleSelectObject(object.name)}
                         class={[

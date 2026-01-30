@@ -14,7 +14,9 @@ export type PatchiesEvent =
   | NodeReplaceEvent
   | IframePostMessageEvent
   | FileRelinkedEvent
-  | VfsPathRenamedEvent;
+  | VfsPathRenamedEvent
+  | InsertVfsFileToCanvasEvent
+  | InsertPresetToCanvasEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -126,4 +128,25 @@ export interface VfsPathRenamedEvent {
 
   /** The new VFS path */
   newPath: string;
+}
+
+export interface InsertVfsFileToCanvasEvent {
+  type: 'insertVfsFileToCanvas';
+
+  /** The VFS path of the file to insert */
+  vfsPath: string;
+}
+
+export interface InsertPresetToCanvasEvent {
+  type: 'insertPresetToCanvas';
+
+  /** The preset path (e.g., ['built-in', 'basics', 'sine']) */
+  path: string[];
+
+  /** The preset data */
+  preset: {
+    type: string;
+    name: string;
+    data: unknown;
+  };
 }
