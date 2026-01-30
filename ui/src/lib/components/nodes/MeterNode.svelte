@@ -114,7 +114,7 @@
     if (!ctx) return;
 
     // Clear canvas
-    ctx.fillStyle = '#18181b';
+    ctx.fillStyle = '#080809';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     drawBarMeter();

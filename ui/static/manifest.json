@@ -4,8 +4,8 @@
   "description": "Visual programming environment for audio-visual patches",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#18181b",
-  "theme_color": "#18181b",
+  "background_color": "#080809",
+  "theme_color": "#080809",
   "icons": [
     {
       "src": "/favicon.svg",

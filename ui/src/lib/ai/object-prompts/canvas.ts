@@ -27,7 +27,7 @@ Example - Animated circle:
 {
   "type": "canvas",
   "data": {
-    "code": "let a = 0; function draw() { ctx.fillStyle = '#18181b'; ctx.fillRect(0,0,width,height); ctx.fillStyle = '#4ade80'; ctx.arc(width/2, height/2, 50, 0, Math.PI*2); ctx.fill(); a += 0.05; requestAnimationFrame(draw); } draw();"
+    "code": "let a = 0; function draw() { ctx.fillStyle = '#080809'; ctx.fillRect(0,0,width,height); ctx.fillStyle = '#4ade80'; ctx.arc(width/2, height/2, 50, 0, Math.PI*2); ctx.fill(); a += 0.05; requestAnimationFrame(draw); } draw();"
   }
 }
 \`\`\``;

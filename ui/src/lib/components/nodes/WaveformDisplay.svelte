@@ -65,7 +65,7 @@
       }
 
       // Clear canvas
-      ctx.fillStyle = '#18181b'; // zinc-900
+      ctx.fillStyle = '#080809'; // zinc-900
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
       // Draw accumulated waveform
@@ -115,7 +115,7 @@
     if (!ctx) return;
 
     // Clear canvas
-    ctx.fillStyle = '#18181b'; // zinc-900
+    ctx.fillStyle = '#080809'; // zinc-900
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Get waveform data
@@ -238,7 +238,7 @@
       // Clear the canvas
       const ctx = canvasRef.getContext('2d');
       if (ctx) {
-        ctx.fillStyle = '#18181b'; // zinc-900
+        ctx.fillStyle = '#080809'; // zinc-900
         ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
       }
     }

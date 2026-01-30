@@ -34,7 +34,7 @@ recv(m => {
 })
 
 function draw() {
-  ctx.fillStyle = '#18181b'
+  ctx.fillStyle = '#080809'
   ctx.fillRect(0, 0, width, height)
 
   // Grid
