@@ -336,14 +336,6 @@ These objects support video chaining and can be connected to create complex visu
 
   - Try out [ML5.js](https://ml5js.org) for machine learning and [Matter.js](https://brm.io/matter-js) for physics simulation. They play well with P5.js.
 
-  ```js
-  import ml5 from "npm:ml5";
-
-  function preload() {
-    classifier = ml5.imageClassifier("MobileNet");
-  }
-  ```
-
 - You can import shared JavaScript libraries across multiple `p5` objects, see [sharing JavaScript across multiple `js` blocks](#sharing-javascript-across-multiple-js-blocks).
   - Try out this [Matter.js example](https://patchies.app/?id=08wca4jzuz5wpng) from Daniel Shiffman's [The Nature of Code](https://natureofcode.com) that creates a simple physics simulation. In this example, the code for the Boundary and Box class is separated into shared library objects. You can [purchase the book](https://natureofcode.com/) to support Daniel's amazing educational work!
 - Please consider supporting the [Processing Foundation](https://processingfoundation.org/donate) who maintains p5.js!
