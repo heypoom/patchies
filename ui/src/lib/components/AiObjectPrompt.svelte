@@ -305,16 +305,17 @@
   {#if isMinimized && isLoading && !($isSidebarOpen && $isMobile)}
     <button
       onclick={handleRestore}
-      class="fixed top-4 right-4 z-50 flex max-w-80 cursor-pointer flex-col items-end gap-1 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
+      class="fixed top-4 right-4 z-50 flex max-w-72 cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
         ? 'border-amber-500 bg-amber-900/90 ring-2 ring-amber-500/50'
         : isMultiObjectMode
           ? 'border-blue-500 bg-blue-900/90 ring-2 ring-blue-500/50'
           : 'border-purple-500 bg-purple-900/90 ring-2 ring-purple-500/50'}"
       title="Click to restore AI prompt"
     >
-      <div class="flex items-center gap-2">
-        <Loader class="h-4 w-4 animate-spin text-white" />
-        <span class="text-xs font-medium text-white">
+      <Loader class="mt-0.5 h-4 w-4 shrink-0 animate-spin text-white" />
+
+      <div>
+        <div class="mt-0.5 text-xs font-medium text-white">
           {#if isEditMode}
             Editing...
           {:else if isGeneratingConfig}
@@ -322,17 +323,16 @@
           {:else}
             Deciding...
           {/if}
-        </span>
-        <Maximize2 class="h-3 w-3 text-white/70" />
+        </div>
+
+        {#if thinkingText}
+          <div class="mt-2 line-clamp-2 font-mono text-[8px] leading-tight text-white/60 italic">
+            {thinkingText}
+          </div>
+        {/if}
       </div>
 
-      {#if thinkingText}
-        <div
-          class="max-h-16 max-w-full overflow-hidden text-right text-[10px] leading-tight text-white/70 italic"
-        >
-          {thinkingText}
-        </div>
-      {/if}
+      <Maximize2 class="mt-0.5 h-3 w-3 shrink-0 text-white/70" />
     </button>
   {/if}
 
