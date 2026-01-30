@@ -9,7 +9,8 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import { PRESETS } from '$lib/presets/presets';
+  import { flattenedPresets } from '../../../stores/preset-library.store';
+  import type { FlattenedPreset } from '$lib/presets/types';
   import Fuse from 'fuse.js';
   import * as Tooltip from '../ui/tooltip';
   import {
@@ -66,13 +67,26 @@
   let objectService = ObjectService.getInstance();
   const messageContext = new MessageContext(nodeId);
 
+  // Create a lookup map for presets by name (includes library info for disambiguation)
+  const presetLookup = $derived.by(() => {
+    const lookup = new Map<string, FlattenedPreset>();
+
+    for (const fp of $flattenedPresets) {
+      // Use preset name as key - if duplicate names exist, later ones override
+      // This is acceptable since user presets should take precedence
+      lookup.set(fp.preset.name, fp);
+    }
+
+    return lookup;
+  });
+
   // Combine all searchable items (objects + presets) with metadata
   const allSearchableItems = $derived.by(() => {
     const objectDefNames = getObjectNames();
     const visualNodeList = nodeNames.filter((name) => name !== 'object' && name !== 'asm.value');
     const combinedObjectNames = new Set([...visualNodeList, ...objectDefNames]);
 
-    const items: Array<{ name: string; type: 'object' | 'preset' }> = [];
+    const items: Array<{ name: string; type: 'object' | 'preset'; libraryName?: string }> = [];
 
     // Add regular objects, filtering AI objects if AI features are disabled
     Array.from(combinedObjectNames).forEach((name) => {
@@ -83,10 +97,14 @@
       items.push({ name, type: 'object' });
     });
 
-    // Add presets
-    Object.keys(PRESETS).forEach((name) => {
-      items.push({ name, type: 'preset' });
-    });
+    // Add presets from all libraries
+    for (const fp of $flattenedPresets) {
+      items.push({
+        name: fp.preset.name,
+        type: 'preset',
+        libraryName: fp.libraryName
+      });
+    }
 
     return items;
   });
@@ -330,14 +348,14 @@
     if (!expr.trim()) return false;
 
     // Check if the expression exactly matches a preset name
-    const preset = PRESETS[expr.trim()];
+    const flatPreset = presetLookup.get(expr.trim());
 
-    if (!preset) {
+    if (!flatPreset) {
       return false; // Not a preset
     }
 
     // Transform to the preset's node type with its data
-    changeNode(preset.type, preset.data as Record<string, unknown>);
+    changeNode(flatPreset.preset.type, flatPreset.preset.data as Record<string, unknown>);
     return true;
   }
 
@@ -598,9 +616,13 @@
     if (!current) return null;
 
     if (current.type === 'preset') {
-      const preset = PRESETS[current.name];
+      const flatPreset = presetLookup.get(current.name);
+      if (!flatPreset) return null;
 
-      return `Preset: ${current.name} (using ${preset.type})` || null;
+      const { preset, libraryName } = flatPreset;
+      const desc = preset.description || `using ${preset.type}`;
+
+      return `${libraryName} > ${current.name}: ${desc}`;
     }
 
     if (current.type === 'object') {
@@ -684,9 +706,11 @@
                           <span class="font-mono">{suggestion.name}</span>
 
                           {#if suggestion.type === 'preset'}
-                            <span class="text-[10px] text-zinc-500"
-                              >{PRESETS[suggestion.name].type}</span
-                            >
+                            {@const preset = presetLookup.get(suggestion.name)}
+
+                            {#if preset}
+                              <span class="text-[10px] text-zinc-500">{preset.preset.type}</span>
+                            {/if}
                           {/if}
                         </button>
                       {/each}
