@@ -47,7 +47,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 - Click on the "demos" tab to view the list of demos you can play with
 - Use the mouse to pan the canvas.
 - Use the scroll wheel to zoom the canvas.
-- You can always go back to this dialog by clicking on the "Help" button on the bottom right.
+- You can always go back to this dialog by clicking the three dots on the bottom right, then `Help / Getting Started`.
 
 ## Creating Objects
 
