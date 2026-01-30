@@ -181,7 +181,7 @@
         </button>
       {/if}
 
-      {#if $isMobile && $isAiFeaturesVisible && hasGeminiApiKey}
+      {#if $isAiFeaturesVisible && hasGeminiApiKey}
         <button title="AI Create/Edit" class={aiButtonClass()} onclick={onAiInsertOrEdit}>
           {#if $aiButtonState.isLoading}
             <Loader class="{iconClass} animate-spin cursor-not-allowed" />
@@ -295,28 +295,9 @@
             sideOffset={8}
           >
             <div class="flex flex-col py-1">
-              {#if $isAiFeaturesVisible && hasGeminiApiKey}
-                <button
-                  class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed"
-                  onclick={() => {
-                    onAiInsertOrEdit();
-                    overflowOpen = false;
-                  }}
-                  disabled={$aiButtonState.isLoading}
-                >
-                  {#if $aiButtonState.isLoading}
-                    <Loader class="h-4 w-4 animate-spin text-zinc-400" />
-                  {:else}
-                    <Sparkles class="h-4 w-4 text-zinc-400" />
-                  {/if}
-
-                  <span>AI Create/Edit</span>
-                  <span class="ml-auto text-xs text-zinc-500">⌘I</span>
-                </button>
-              {/if}
-
               <button
-                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed"
+                disabled={$aiButtonState.isLoading}
                 onclick={() => {
                   createAndCopyShareLink(nodes, edges);
                   overflowOpen = false;
