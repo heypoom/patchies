@@ -184,8 +184,8 @@ export function getCategorizedObjects(includeAiFeatures: boolean = true): Catego
 		});
 	}
 
-	// Get text objects from ObjectRegistry
-	const textObjectTypes = objectRegistry.getObjectTypes();
+	// Get text objects from ObjectRegistry (primary types only, no aliases)
+	const textObjectTypes = objectRegistry.getPrimaryObjectTypes();
 	for (const objectType of textObjectTypes) {
 		if (seenNames.has(objectType)) continue;
 		seenNames.add(objectType);

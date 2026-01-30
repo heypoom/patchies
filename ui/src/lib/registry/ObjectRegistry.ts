@@ -45,11 +45,29 @@ export class ObjectRegistry {
 	}
 
 	/**
-	 * Get all registered object types.
+	 * Get all registered object types (includes aliases).
 	 * @returns Array of registered object type identifiers
 	 */
 	getObjectTypes(): string[] {
 		return Array.from(this.registry.keys());
+	}
+
+	/**
+	 * Get only primary object types (excludes aliases).
+	 * @returns Array of primary object type identifiers
+	 */
+	getPrimaryObjectTypes(): string[] {
+		const seen = new Set<TextObjectClass>();
+		const primaryTypes: string[] = [];
+
+		for (const constructor of this.registry.values()) {
+			if (!seen.has(constructor)) {
+				seen.add(constructor);
+				primaryTypes.push(constructor.type);
+			}
+		}
+
+		return primaryTypes;
 	}
 
 	/**
