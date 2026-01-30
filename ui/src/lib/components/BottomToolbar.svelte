@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    Bookmark,
     CirclePlus,
     Command,
     Copy,
@@ -39,7 +40,8 @@
     onCommandPalette,
     onNewPatch,
     onLoadPatch,
-    onToggleLeftSidebar
+    onToggleLeftSidebar,
+    onSaveSelectedAsPreset
   }: {
     nodes: Node[];
     edges: Edge[];
@@ -65,6 +67,7 @@
     onNewPatch: () => void;
     onLoadPatch: (patchId: string) => void | Promise<void>;
     onToggleLeftSidebar: () => void;
+    onSaveSelectedAsPreset: () => void;
   } = $props();
 
   const hasSelection = $derived(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0);
@@ -72,6 +75,7 @@
   const showCopyPasteButton = $derived(
     selectedNodeIds.length > 0 || (selectedNodeIds.length === 0 && hasCopiedData)
   );
+  const canSaveAsPreset = $derived(selectedNodeIds.length === 1);
 </script>
 
 <div class="fixed right-0 bottom-0 p-2">
@@ -135,6 +139,19 @@
         <Copy class="h-4 w-4 text-zinc-300" />
       {/if}
     </button>
+  {/if}
+
+  {#if canSaveAsPreset}
+    <button
+      title="Save as Preset"
+      class="cursor-pointer rounded bg-zinc-900/70 p-1 hover:bg-zinc-700"
+      onclick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        onSaveSelectedAsPreset();
+      }}><Bookmark class="h-4 w-4 text-zinc-300" /></button
+    >
   {/if}
 
   <!-- Only show connection button if there are at least 2 nodes -->

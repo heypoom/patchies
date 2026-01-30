@@ -1108,6 +1108,15 @@
         onToggleLeftSidebar={() => {
           showSidebar = !showSidebar;
         }}
+        onSaveSelectedAsPreset={() => {
+          if (selectedNodeIds.length === 1) {
+            const node = nodes.find((n) => n.id === selectedNodeIds[0]);
+            if (node) {
+              nodeToSaveAsPreset = node;
+              showSavePresetDialog = true;
+            }
+          }
+        }}
       />
     {/if}
 
