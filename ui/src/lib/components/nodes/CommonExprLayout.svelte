@@ -232,12 +232,6 @@
 	}
 
 	.expr-display {
-		font-family:
-			Monaco,
-			Menlo,
-			Ubuntu Mono,
-			Consolas,
-			source-code-pro,
-			monospace;
+		font-family: var(--font-mono);
 	}
 </style>

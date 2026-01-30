@@ -118,8 +118,7 @@
 				EditorView.theme({
 					'&': {
 						fontSize: '13px',
-						fontFamily:
-							'JetBrains Mono, Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace'
+						fontFamily: 'var(--font-mono)'
 					},
 					'.cm-content': {
 						padding: '0px',
@@ -192,8 +191,7 @@
 
 <style>
 	.assembly-editor {
-		--cm-font-family:
-			'JetBrains Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+		--cm-font-family: var(--font-mono);
 	}
 
 	/* Background color overrides to match CodeEditor.svelte */

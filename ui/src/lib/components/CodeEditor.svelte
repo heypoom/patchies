@@ -186,7 +186,7 @@
 				EditorView.theme({
 					'&': {
 						fontSize,
-						fontFamily: 'Monaco, Menlo, Ubuntu Mono, Consolas, source-code-pro, monospace'
+						fontFamily: 'var(--font-mono)'
 					},
 					'.cm-content': {
 						padding: '12px',
@@ -226,7 +226,7 @@
 						padding: '6px 10px',
 						maxWidth: '400px',
 						fontSize: '11px',
-						fontFamily: 'Monaco, Menlo, Ubuntu Mono, Consolas, monospace',
+						fontFamily: 'var(--font-mono)',
 						boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)'
 					},
 					'.cm-error-tooltip-message': {
