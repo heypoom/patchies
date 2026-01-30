@@ -11,6 +11,7 @@
   } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import { isMobile, isSidebarOpen } from '../../stores/ui.store';
+  import { aiPromptStore, type AiPromptMode } from '../../stores/ai-prompt.store';
   import {
     resolveObjectFromPrompt,
     editObjectFromPrompt,
@@ -51,6 +52,7 @@
   let dialogPosition = $state({ x: position.x, y: position.y });
   let isMinimized = $state(false);
   let thinkingText = $state<string | null>(null);
+  let thinkingLog = $state<string[]>([]);
   let isPromptExpanded = $state(false);
 
   const isEditMode = $derived(editingNode !== null);
@@ -84,6 +86,27 @@
       setTimeout(() => {
         promptInput?.focus();
       }, 0);
+    }
+  });
+
+  // Sync state with the global store for toolbar button styling
+  $effect(() => {
+    const mode: AiPromptMode = isEditMode ? 'edit' : isMultiObjectMode ? 'multi' : 'single';
+    if (open) {
+      aiPromptStore.open(mode);
+    } else {
+      aiPromptStore.close();
+    }
+  });
+
+  $effect(() => {
+    aiPromptStore.setLoading(isLoading);
+  });
+
+  $effect(() => {
+    if (open) {
+      const mode: AiPromptMode = isEditMode ? 'edit' : isMultiObjectMode ? 'multi' : 'single';
+      aiPromptStore.setMode(mode);
     }
   });
 
@@ -164,6 +187,7 @@
     resolvedObjectType = null;
     isGeneratingConfig = false;
     thinkingText = null;
+    thinkingLog = [];
     isPromptExpanded = false;
     abortController = new AbortController();
     handleMinimize();
@@ -182,6 +206,7 @@
           abortController.signal,
           (thought) => {
             thinkingText = thought;
+            thinkingLog = [...thinkingLog, thought];
           }
         );
 
@@ -215,6 +240,7 @@
             abortController.signal,
             (thought) => {
               thinkingText = thought;
+              thinkingLog = [...thinkingLog, thought];
             }
           );
         } else {
@@ -229,6 +255,7 @@
             abortController.signal,
             (thought) => {
               thinkingText = thought;
+              thinkingLog = [...thinkingLog, thought];
             }
           );
         }
@@ -312,10 +339,8 @@
           : 'border-purple-500 bg-purple-900/90 ring-2 ring-purple-500/50'}"
       title="Click to restore AI prompt"
     >
-      <Loader class="mt-0.5 h-4 w-4 shrink-0 animate-spin text-white" />
-
-      <div>
-        <div class="mt-0.5 text-xs font-medium text-white">
+      <div class="min-w-0 flex-1 text-left">
+        <div class="text-xs font-medium text-white">
           {#if isEditMode}
             Editing...
           {:else if isGeneratingConfig}
@@ -326,7 +351,9 @@
         </div>
 
         {#if thinkingText}
-          <div class="mt-2 line-clamp-2 font-mono text-[8px] leading-tight text-white/60 italic">
+          <div
+            class="mt-1 line-clamp-2 text-left font-mono text-[8px] leading-tight text-white/60 italic"
+          >
             {thinkingText}
           </div>
         {/if}
@@ -431,12 +458,20 @@
           </div>
         {/if}
 
-        <!-- Prominent thinking display -->
-        {#if thinkingText}
+        <!-- Prominent thinking display - full log -->
+        {#if thinkingLog.length > 0}
           <div
-            class="mt-3 max-h-48 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-sm leading-relaxed text-zinc-300"
+            class="mt-3 flex max-h-48 flex-col gap-2 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300"
           >
-            {thinkingText}
+            {#each thinkingLog as thought, i}
+              <div
+                class="border-l-2 border-zinc-600 pl-2 {i === thinkingLog.length - 1
+                  ? 'text-zinc-200'
+                  : 'text-zinc-500'}"
+              >
+                {thought}
+              </div>
+            {/each}
           </div>
         {:else}
           <div class="mt-3 flex items-center justify-center py-4 text-xs text-zinc-500">

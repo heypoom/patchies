@@ -43,7 +43,27 @@ bun run test             # All tests
 
 ## Code Patterns
 
-- **Always use `ts-pattern`**, never `switch` statements
+- **Always use `ts-pattern`**, never `switch` statements. This includes:
+  - Conditional logic based on type/mode/state
+  - Dynamic CSS class selection based on variants
+  - Any branching on union types or enums
+
+  ```ts
+  // WRONG - never use switch
+  switch (mode) {
+    case 'edit': return 'bg-amber-600';
+    case 'multi': return 'bg-blue-600';
+    default: return 'bg-purple-600';
+  }
+
+  // RIGHT - always use ts-pattern
+  import { match } from 'ts-pattern';
+  match(mode)
+    .with('edit', () => 'bg-amber-600')
+    .with('multi', () => 'bg-blue-600')
+    .otherwise(() => 'bg-purple-600');
+  ```
+
 - Separate UI from business logic (manager pattern)
 - TypeScript for all code
 - Svelte 5: `$state`, `$props`, `$effect`, `$derived` (no `on:click`, use `onclick`)

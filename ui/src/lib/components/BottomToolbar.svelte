@@ -9,6 +9,7 @@
     PanelLeftOpen,
     PanelLeftClose,
     Link,
+    Loader,
     Search,
     Sparkles,
     Trash2,
@@ -17,7 +18,9 @@
     Ellipsis
   } from '@lucide/svelte/icons';
   import type { Node, Edge } from '@xyflow/svelte';
+  import { match } from 'ts-pattern';
   import { isAiFeaturesVisible, isConnectionMode, isMobile } from '../../stores/ui.store';
+  import { aiButtonState } from '../../stores/ai-prompt.store';
   import { createAndCopyShareLink } from '$lib/save-load/share';
   import VolumeControl from './VolumeControl.svelte';
   import StartupModal from './startup-modal/StartupModal.svelte';
@@ -93,12 +96,34 @@
     'cursor-pointer rounded bg-blue-600/70 p-2 hover:bg-blue-800/70 flex items-center justify-center';
   const iconClass = 'h-4 w-4 text-zinc-300';
 
+  // AI button classes based on mode
+  const aiButtonClass = $derived(() => {
+    if (!$aiButtonState.isActive) return buttonClass;
+
+    return match($aiButtonState.mode)
+      .with(
+        'edit',
+        () =>
+          'cursor-pointer rounded bg-amber-600/70 p-2 hover:bg-amber-700/70 flex items-center justify-center'
+      )
+      .with(
+        'multi',
+        () =>
+          'cursor-pointer rounded bg-blue-600/70 p-2 hover:bg-blue-700/70 flex items-center justify-center'
+      )
+      .otherwise(
+        () =>
+          'cursor-pointer rounded bg-purple-600/70 p-2 hover:bg-purple-700/70 flex items-center justify-center'
+      );
+  });
+
   // Menu item for overflow/drawer menus
   const menuItemClass =
     'flex items-center gap-3 w-full px-4 py-3 text-left text-sm text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700';
 
   function handleDelete() {
     const ok = confirm('Delete this element?');
+
     if (ok) {
       onDelete();
     }
@@ -126,6 +151,18 @@
         </button>
       {/if}
 
+      <button
+        title="Browse Objects (Cmd+O)"
+        class={buttonClass}
+        onclick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onBrowseObjects();
+        }}
+      >
+        <CirclePlus class={iconClass} />
+      </button>
+
       {#if canCopy}
         <button title="Copy" class={buttonClass} onclick={onCopy}>
           <Copy class={iconClass} />
@@ -144,21 +181,13 @@
         </button>
       {/if}
 
-      <button
-        title="Browse Objects (Cmd+O)"
-        class={buttonClass}
-        onclick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onBrowseObjects();
-        }}
-      >
-        <CirclePlus class={iconClass} />
-      </button>
-
       {#if $isMobile && $isAiFeaturesVisible && hasGeminiApiKey}
-        <button title="AI Create/Edit" class={buttonClass} onclick={onAiInsertOrEdit}>
-          <Sparkles class={iconClass} />
+        <button title="AI Create/Edit" class={aiButtonClass()} onclick={onAiInsertOrEdit}>
+          {#if $aiButtonState.isLoading}
+            <Loader class="{iconClass} animate-spin cursor-not-allowed" />
+          {:else}
+            <Sparkles class={iconClass} />
+          {/if}
         </button>
       {/if}
 
@@ -268,13 +297,19 @@
             <div class="flex flex-col py-1">
               {#if $isAiFeaturesVisible && hasGeminiApiKey}
                 <button
-                  class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed"
                   onclick={() => {
                     onAiInsertOrEdit();
                     overflowOpen = false;
                   }}
+                  disabled={$aiButtonState.isLoading}
                 >
-                  <Sparkles class="h-4 w-4 text-zinc-400" />
+                  {#if $aiButtonState.isLoading}
+                    <Loader class="h-4 w-4 animate-spin text-zinc-400" />
+                  {:else}
+                    <Sparkles class="h-4 w-4 text-zinc-400" />
+                  {/if}
+
                   <span>AI Create/Edit</span>
                   <span class="ml-auto text-xs text-zinc-500">⌘I</span>
                 </button>
@@ -296,6 +331,7 @@
                 onclick={(e) => {
                   e.stopPropagation();
                   overflowOpen = false;
+
                   // Delay opening to let the popover close first
                   setTimeout(() => onCommandPalette(), 0);
                 }}
