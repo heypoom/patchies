@@ -217,9 +217,11 @@
 
               <button
                 class={menuItemClass}
-                onclick={() => {
-                  onCommandPalette();
+                onclick={(e) => {
+                  e.stopPropagation();
                   overflowOpen = false;
+                  // Delay opening to let the drawer close first
+                  setTimeout(() => onCommandPalette(), 0);
                 }}
               >
                 <Command class="h-5 w-5 text-zinc-400" />
@@ -256,6 +258,7 @@
           <Popover.Trigger class={buttonClass}>
             <Ellipsis class={iconClass} />
           </Popover.Trigger>
+
           <Popover.Content
             class="w-56 border-zinc-700 bg-zinc-900 p-0"
             side="top"
@@ -265,7 +268,7 @@
             <div class="flex flex-col py-1">
               {#if $isAiFeaturesVisible && hasGeminiApiKey}
                 <button
-                  class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                   onclick={() => {
                     onAiInsertOrEdit();
                     overflowOpen = false;
@@ -278,7 +281,7 @@
               {/if}
 
               <button
-                class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                 onclick={() => {
                   createAndCopyShareLink(nodes, edges);
                   overflowOpen = false;
@@ -289,10 +292,12 @@
               </button>
 
               <button
-                class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-                onclick={() => {
-                  onCommandPalette();
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                onclick={(e) => {
+                  e.stopPropagation();
                   overflowOpen = false;
+                  // Delay opening to let the popover close first
+                  setTimeout(() => onCommandPalette(), 0);
                 }}
               >
                 <Command class="h-4 w-4 text-zinc-400" />
@@ -301,7 +306,7 @@
               </button>
 
               <button
-                class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                 onclick={() => {
                   onNewPatch();
                   overflowOpen = false;
@@ -313,7 +318,7 @@
               </button>
 
               <button
-                class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                 onclick={() => {
                   showStartupModal = true;
                   overflowOpen = false;
