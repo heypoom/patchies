@@ -105,8 +105,25 @@
   let showSavePresetDialog = $state(false);
   let nodeToSaveAsPreset = $state<Node | null>(null);
 
-  // Sidebar state
-  let showSidebar = $state(false);
+  // Sidebar state - persisted to localStorage
+  let showSidebar = $state(
+    typeof window !== 'undefined' && localStorage.getItem('patchies-sidebar-open') === 'true'
+  );
+
+  // Sidebar view state - persisted to localStorage
+  let sidebarView = $state<'files' | 'presets'>(
+    (typeof window !== 'undefined' &&
+      (localStorage.getItem('patchies-sidebar-view') as 'files' | 'presets')) ||
+      'files'
+  );
+
+  // Persist sidebar state changes
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('patchies-sidebar-open', String(showSidebar));
+      localStorage.setItem('patchies-sidebar-view', sidebarView);
+    }
+  });
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -239,8 +256,13 @@
 
       triggerCommandPalette();
     }
-    // Handle CMD+B for browse objects
+    // Handle CMD+B for toggle sidebar
     else if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey) && !isTyping) {
+      event.preventDefault();
+      showSidebar = !showSidebar;
+    }
+    // Handle CMD+O for browse objects
+    else if (event.key.toLowerCase() === 'o' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();
       $isObjectBrowserOpen = true;
     }
@@ -911,7 +933,7 @@
 
 <div class="flow-container flex h-screen w-full">
   <!-- Sidebar (Files / Presets) -->
-  <SidebarPanel bind:open={showSidebar} />
+  <SidebarPanel bind:open={showSidebar} bind:view={sidebarView} />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">

@@ -45,7 +45,27 @@
   // Reactive store of paths needing permission re-grant
   const pendingPermissions = vfs.pendingPermissions$;
 
-  let expandedPaths = $state(new Set<string>(['user://', 'obj://']));
+  // Load expanded paths from localStorage, defaulting to user:// and obj://
+  function loadExpandedPaths(): Set<string> {
+    if (typeof window === 'undefined') return new Set(['user://', 'obj://']);
+    try {
+      const saved = localStorage.getItem('patchies-file-tree-expanded');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch {}
+    return new Set(['user://', 'obj://']);
+  }
+
+  let expandedPaths = $state(loadExpandedPaths());
+
+  // Persist expanded paths changes
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('patchies-file-tree-expanded', JSON.stringify([...expandedPaths]));
+    }
+  });
   let selectedPaths = $state(new Set<string>());
   let dropTargetPath = $state<string | null>(null);
 

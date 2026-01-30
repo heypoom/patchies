@@ -55,6 +55,11 @@
     },
     {
       keys: ['Ctrl', 'B'],
+      description: 'Toggle the left sidebar panel',
+      category: 'keyboard'
+    },
+    {
+      keys: ['Ctrl', 'O'],
       description: 'Browse all objects with search and categories',
       category: 'keyboard'
     },

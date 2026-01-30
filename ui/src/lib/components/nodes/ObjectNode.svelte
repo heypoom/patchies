@@ -734,7 +734,7 @@
                   type="button"
                   class="mt-1.5 flex w-fit cursor-pointer items-center gap-1 text-left font-mono text-[8px] text-zinc-500 underline-offset-2 hover:text-blue-300 hover:underline"
                   onclick={() => ($isObjectBrowserOpen = true)}
-                  title="Discover objects by categories (Ctrl+B)"
+                  title="Discover objects by categories (Ctrl+O)"
                 >
                   <Search class="h-2.5 w-2.5" />
                   Browse objects

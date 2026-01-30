@@ -30,8 +30,27 @@
   } from '$lib/presets/types';
   import { isPreset } from '$lib/presets/preset-utils';
 
-  // Expansion state
-  let expandedPaths = $state(new Set<string>(['built-in', 'user']));
+  // Load expanded paths from localStorage, defaulting to built-in and user
+  function loadExpandedPaths(): Set<string> {
+    if (typeof window === 'undefined') return new Set(['built-in', 'user']);
+    try {
+      const saved = localStorage.getItem('patchies-preset-tree-expanded');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch {}
+    return new Set(['built-in', 'user']);
+  }
+
+  let expandedPaths = $state(loadExpandedPaths());
+
+  // Persist expanded paths changes
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('patchies-preset-tree-expanded', JSON.stringify([...expandedPaths]));
+    }
+  });
 
   // Renaming state
   let renamingPath = $state<string | null>(null);

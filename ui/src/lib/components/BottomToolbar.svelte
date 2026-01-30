@@ -226,7 +226,7 @@
     </button>
 
     <button
-      title="Browse Objects (Cmd+B)"
+      title="Browse Objects (Cmd+O)"
       class={buttonClass}
       onclick={(e) => {
         e.preventDefault();
@@ -240,7 +240,7 @@
     <VolumeControl />
 
     <button
-      title={isLeftSidebarOpen ? 'Close Sidebar' : 'Open Sidebar'}
+      title={isLeftSidebarOpen ? 'Close Sidebar (Cmd+B)' : 'Open Sidebar (Cmd+B)'}
       class={buttonClass}
       onclick={(e) => {
         e.preventDefault();
