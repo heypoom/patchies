@@ -254,7 +254,7 @@
     };
 
     // Create namespace roots
-    const userRoot: TreeNode = { name: 'user', path: 'user://', children: new Map() };
+    const userRoot: TreeNode = { name: 'User', path: 'user://', children: new Map() };
     const objRoot: TreeNode = { name: 'objects', path: 'obj://', children: new Map() };
 
     for (const [path, entry] of entries) {
@@ -997,9 +997,9 @@
                 <ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
               {/if}
               {#if isUserNamespace}
-                <User class="h-3.5 w-3.5 shrink-0 text-yellow-400" />
+                <User class="h-3.5 w-3.5 shrink-0 text-blue-400" />
               {:else if isObjectNamespace}
-                <Box class="h-3.5 w-3.5 shrink-0 text-purple-400" />
+                <Box class="h-3.5 w-3.5 shrink-0 text-blue-400" />
               {:else if isLinkedFolder}
                 <FolderSymlink class="h-3.5 w-3.5 shrink-0 text-cyan-400" />
               {:else if isExpanded}
@@ -1027,7 +1027,9 @@
               />
             {:else}
               <span
-                class="truncate font-mono text-zinc-300"
+                class="truncate font-mono {isNamespace
+                  ? 'font-medium text-zinc-200'
+                  : 'text-zinc-300'}"
                 title={node.entry?.filename || node.name}
               >
                 {node.entry?.filename || node.name}
