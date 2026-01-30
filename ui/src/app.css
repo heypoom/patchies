@@ -127,17 +127,32 @@
 
   body {
     @apply bg-background text-foreground;
+
+    /* Prevent overscroll bounce on iOS for app-like feel */
+    overscroll-behavior: none;
   }
 }
 
 /* Safe area utilities for PWA/notched devices */
 @layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  .mt-safe {
+    margin-top: env(safe-area-inset-top, 0px);
+  }
+
   .mb-safe {
     margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .top-safe {
+    top: env(safe-area-inset-top, 0px);
   }
 
   .bottom-safe {
