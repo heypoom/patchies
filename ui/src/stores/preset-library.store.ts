@@ -282,15 +282,6 @@ function createPresetLibraryStore() {
     },
 
     /**
-     * Restore built-in library to pristine state
-     */
-    restoreBuiltinLibrary(): void {
-      update((libs) =>
-        libs.map((lib) => (lib.id === BUILTIN_LIBRARY_ID ? createBuiltinLibrary() : lib))
-      );
-    },
-
-    /**
      * Import a library from export format
      */
     importLibrary(exported: PresetLibraryExport): string {

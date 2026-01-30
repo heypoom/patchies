@@ -478,14 +478,6 @@
       handleCreateLibrary();
     }
   }
-
-  // Restore built-in
-  function restoreBuiltin() {
-    if (confirm('Restore built-in presets to default? This will reset any changes.')) {
-      presetLibraryStore.restoreBuiltinLibrary();
-      toast.success('Restored built-in presets');
-    }
-  }
 </script>
 
 {#snippet presetEntry(
@@ -757,16 +749,12 @@
         </ContextMenu.Item>
         <ContextMenu.Separator />
       {/if}
+
       <ContextMenu.Item onclick={() => exportLibrary(library.id)}>
         <Download class="mr-2 h-4 w-4" />
         Export
       </ContextMenu.Item>
-      {#if library.id === 'built-in'}
-        <ContextMenu.Item onclick={restoreBuiltin}>
-          <RotateCcw class="mr-2 h-4 w-4" />
-          Restore Defaults
-        </ContextMenu.Item>
-      {/if}
+
       {#if !library.readonly && library.id !== 'user'}
         <ContextMenu.Separator />
         <ContextMenu.Item

@@ -175,7 +175,6 @@ function isPreset(entry: PresetFolderEntry): entry is Preset {
 - On store init, check if "built-in" library exists
 - If not, create it from legacy presets via migration
 - Mark as `readonly: true`
-- "Restore built-in" action resets this library to pristine state
 
 ### Phase 2: Sidebar UI
 
@@ -253,12 +252,6 @@ function isPreset(entry: PresetFolderEntry): entry is Preset {
 - Delete `src/lib/presets/*.ts` files (after migration verified)
 - Update all imports to use new store
 - Remove legacy preset display code from ObjectBrowser
-
-**5.2 Add "Restore Built-in Presets" action**
-
-- In library context menu for built-in library
-- Confirms before resetting
-- Re-runs migration from legacy data
 
 ---
 
