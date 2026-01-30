@@ -623,6 +623,13 @@
 			return;
 		}
 
+		// Check if it's a preset
+		const preset = PRESETS[name];
+		if (preset) {
+			createNode(preset.type, position, preset.data as Record<string, unknown>);
+			return;
+		}
+
 		// Check if it's a textual object (audio or text object)
 		const audioRegistry = AudioRegistry.getInstance();
 		const objectRegistry = ObjectRegistry.getInstance();

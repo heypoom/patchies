@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronDown, Search, SearchX, X } from '@lucide/svelte/icons';
+	import { ChevronDown, Search, SearchX, X, Eye, EyeOff } from '@lucide/svelte/icons';
 	import {
 		getCategorizedObjects,
 		type CategoryGroup,
@@ -7,6 +7,7 @@
 	} from './get-categorized-objects';
 	import Fuse from 'fuse.js';
 	import { isAiFeaturesVisible } from '../../../stores/ui.store';
+	import { PRESETS } from '$lib/presets/presets';
 
 	let {
 		open = $bindable(false),
@@ -15,17 +16,55 @@
 
 	let searchQuery = $state('');
 	let expandedCategories = $state<Set<string>>(new Set());
+	let showPresets = $state(true);
 
 	// Get all categorized objects, filtering AI features based on the store
 	const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible));
 
+	// Get preset categories grouped by their underlying object type
+	const presetCategories = $derived.by((): CategoryGroup[] => {
+		const presetsByType = new Map<string, ObjectItem[]>();
+
+		for (const [presetName, preset] of Object.entries(PRESETS)) {
+			const type = preset.type;
+
+			if (!presetsByType.has(type)) {
+				presetsByType.set(type, []);
+			}
+
+			presetsByType.get(type)!.push({
+				name: presetName,
+				description: `Preset using ${type}`,
+				category: `Presets: ${type}`
+			});
+		}
+
+		// Sort presets within each type alphabetically
+		for (const presets of presetsByType.values()) {
+			presets.sort((a, b) => a.name.localeCompare(b.name));
+		}
+
+		// Sort types alphabetically and create category groups
+		const sortedTypes = Array.from(presetsByType.keys()).sort();
+		return sortedTypes.map((type) => ({
+			title: `Presets: ${type}`,
+			objects: presetsByType.get(type)!
+		}));
+	});
+
+	// Combined categories: objects first, then presets
+	const allCategoriesWithPresets = $derived(
+		showPresets ? [...allCategories, ...presetCategories] : allCategories
+	);
+
 	// Create Fuse instance for fuzzy search - update when categories change
 	const fuse = $derived(
 		new Fuse(
-			allCategories.flatMap((cat) =>
+			allCategoriesWithPresets.flatMap((cat) =>
 				cat.objects.map((obj) => ({
 					...obj,
-					categoryTitle: cat.title
+					categoryTitle: cat.title,
+					isPreset: cat.title.startsWith('Presets:')
 				}))
 			),
 			{
@@ -39,7 +78,7 @@
 	// Filtered categories based on search
 	const filteredCategories = $derived.by(() => {
 		if (!searchQuery.trim()) {
-			return allCategories;
+			return allCategoriesWithPresets;
 		}
 
 		const results = fuse.search(searchQuery);
@@ -57,7 +96,7 @@
 			});
 		}
 
-		return allCategories
+		return allCategoriesWithPresets
 			.map((cat) => ({
 				...cat,
 				objects: matchedObjects.get(cat.title) || []
@@ -88,7 +127,7 @@
 	// Initialize with all categories expanded
 	$effect(() => {
 		if (open && expandedCategories.size === 0) {
-			expandedCategories = new Set(allCategories.map((cat) => cat.title));
+			expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
 		}
 	});
 
@@ -98,7 +137,7 @@
 			expandedCategories = new Set(filteredCategories.map((cat) => cat.title));
 		} else if (!searchQuery.trim()) {
 			// Expand all when search is cleared
-			expandedCategories = new Set(allCategories.map((cat) => cat.title));
+			expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
 		}
 	});
 
@@ -160,23 +199,39 @@
 
 			<!-- Search bar -->
 			<div class="border-b border-zinc-800 px-4 py-3 sm:px-6">
-				<div class="relative">
-					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-					<input
-						type="text"
-						bind:value={searchQuery}
-						placeholder="Search objects..."
-						class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-2 pr-4 pl-10 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
-					/>
-					{#if searchQuery}
-						<button
-							onclick={() => (searchQuery = '')}
-							class="absolute top-1/2 right-3 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-							aria-label="Clear search"
-						>
-							<X class="h-4 w-4" />
-						</button>
-					{/if}
+				<div class="flex items-center gap-3">
+					<div class="relative flex-1">
+						<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder="Search objects..."
+							class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-2 pr-4 pl-10 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600"
+						/>
+						{#if searchQuery}
+							<button
+								onclick={() => (searchQuery = '')}
+								class="absolute top-1/2 right-3 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+								aria-label="Clear search"
+							>
+								<X class="h-4 w-4" />
+							</button>
+						{/if}
+					</div>
+
+					<!-- Presets toggle -->
+					<button
+						onclick={() => (showPresets = !showPresets)}
+						class={[
+							'flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors',
+							showPresets
+								? 'border-zinc-600 bg-zinc-800 text-zinc-300'
+								: 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+						]}
+					>
+						{#if showPresets}<Eye class="h-4 w-4" />{:else}<EyeOff class="h-4 w-4" />{/if}
+						<span>Presets</span>
+					</button>
 				</div>
 			</div>
 
@@ -192,22 +247,27 @@
 				{:else}
 					<div class="space-y-4">
 						{#each filteredCategories as category (category.title)}
+							{@const isCategoryPreset = category.title.startsWith('Presets:')}
 							<div>
 								<!-- Category header -->
 								<button
 									onclick={() => toggleCategory(category.title)}
 									class="mb-2 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left transition-colors hover:bg-zinc-900"
 								>
-									<span class="text-sm font-medium text-zinc-400">
+									<span
+										class={[
+											'text-sm font-medium',
+											isCategoryPreset ? 'text-zinc-500' : 'text-zinc-400'
+										]}
+									>
 										{category.title}
 										<span class="text-zinc-600">({category.objects.length})</span>
 									</span>
 									<ChevronDown
-										class="h-4 w-4 text-zinc-500 transition-transform {expandedCategories.has(
-											category.title
-										)
-											? ''
-											: '-rotate-90'}"
+										class={[
+											'h-4 w-4 text-zinc-500 transition-transform',
+											expandedCategories.has(category.title) ? '' : '-rotate-90'
+										]}
 									/>
 								</button>
 
@@ -215,11 +275,22 @@
 								{#if expandedCategories.has(category.title)}
 									<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
 										{#each category.objects as object (object.name)}
+											{@const isPreset = category.title.startsWith('Presets:')}
 											<button
 												onclick={() => handleSelectObject(object.name)}
-												class="flex cursor-pointer flex-col gap-1 rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-left transition-colors hover:border-zinc-700 hover:bg-zinc-800"
+												class={[
+													'flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
+													isPreset
+														? 'border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
+														: 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800'
+												]}
 											>
-												<span class="font-mono text-sm text-zinc-200">{object.name}</span>
+												<span
+													class={[
+														'font-mono text-sm',
+														isPreset ? 'text-zinc-300' : 'text-zinc-200'
+													]}>{object.name}</span
+												>
 												<span class="line-clamp-2 text-xs text-zinc-500">{object.description}</span>
 											</button>
 										{/each}
