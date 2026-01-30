@@ -120,18 +120,6 @@
     event.preventDefault();
   }
 
-  function handleHeaderTouchStart(event: TouchEvent) {
-    const target = event.target as HTMLElement;
-    if (target.closest('button')) return;
-
-    const touch = event.touches[0];
-    isDragging = true;
-    dragOffset = {
-      x: touch.clientX - dialogPosition.x,
-      y: touch.clientY - dialogPosition.y
-    };
-  }
-
   function handleMouseMove(event: MouseEvent) {
     if (!isDragging) return;
     dialogPosition = {
@@ -140,20 +128,7 @@
     };
   }
 
-  function handleTouchMove(event: TouchEvent) {
-    if (!isDragging) return;
-    const touch = event.touches[0];
-    dialogPosition = {
-      x: touch.clientX - dragOffset.x,
-      y: touch.clientY - dragOffset.y
-    };
-  }
-
   function handleMouseUp() {
-    isDragging = false;
-  }
-
-  function handleTouchEnd() {
     isDragging = false;
   }
 
@@ -266,15 +241,11 @@
       }, 0);
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchmove', handleTouchMove);
-      document.addEventListener('touchend', handleTouchEnd);
       return () => {
         clearTimeout(timeoutId);
         document.removeEventListener('click', handleClickOutside);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
   });
@@ -303,7 +274,6 @@
         ? 'cursor-grabbing'
         : 'cursor-grab'}"
       onmousedown={handleHeaderMouseDown}
-      ontouchstart={handleHeaderTouchStart}
       role="button"
       tabindex="-1"
     >
