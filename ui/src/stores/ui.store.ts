@@ -20,6 +20,8 @@ if (typeof localStorage !== 'undefined') {
 
 export const isConnectionMode = writable(false);
 
+export const isObjectBrowserOpen = writable(false);
+
 // Tracks if XYFlow is actively connecting handles
 export const isConnecting = writable(false);
 

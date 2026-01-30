@@ -22,7 +22,8 @@
 		isBottomBarVisible,
 		isConnecting,
 		connectingFromHandleId,
-		isConnectionMode
+		isConnectionMode,
+		isObjectBrowserOpen
 	} from '../../stores/ui.store';
 	import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 	import { nodeTypes } from '$lib/nodes/node-types';
@@ -83,9 +84,6 @@
 	let showCommandPalette = $state(false);
 	let commandPalettePosition = $state.raw({ x: 0, y: 0 });
 	let flowContainer: HTMLDivElement;
-
-	// Object browser modal state
-	let showObjectBrowser = $state(false);
 
 	// AI object prompt state
 	let showAiPrompt = $state(false);
@@ -238,7 +236,7 @@
 		// Handle CMD+B for browse objects
 		else if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey) && !isTyping) {
 			event.preventDefault();
-			showObjectBrowser = true;
+			$isObjectBrowserOpen = true;
 		}
 		// Handle CMD+N for new patch
 		else if (event.key.toLowerCase() === 'n' && (event.metaKey || event.ctrlKey) && !isTyping) {
@@ -1083,7 +1081,7 @@
 				bind:showStartupModal
 				onDelete={deleteSelectedElements}
 				onInsertObject={insertObjectWithButton}
-				onBrowseObjects={() => (showObjectBrowser = true)}
+				onBrowseObjects={() => ($isObjectBrowserOpen = true)}
 				onCopy={copySelectedNodes}
 				onPaste={() => pasteNode('button')}
 				onCancelConnectionMode={cancelConnectionMode}
@@ -1099,7 +1097,10 @@
 		{/if}
 
 		<!-- Object Browser Modal -->
-		<ObjectBrowserModal bind:open={showObjectBrowser} onSelectObject={handleObjectBrowserSelect} />
+		<ObjectBrowserModal
+			bind:open={$isObjectBrowserOpen}
+			onSelectObject={handleObjectBrowserSelect}
+		/>
 
 		<!-- AI Object Prompt Dialog -->
 		<AiObjectPrompt

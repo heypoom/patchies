@@ -27,7 +27,7 @@
 	import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 	import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
-	import { isAiFeaturesVisible } from '../../../stores/ui.store';
+	import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
 
 	let {
 		id: nodeId,
@@ -661,46 +661,57 @@
 
 						<!-- Autocomplete dropdown -->
 						{#if showAutocomplete && filteredSuggestions.length > 0}
-							<div class="nopan nodrag nowheel absolute top-full left-0 z-50 flex">
-								<div
-									class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900 shadow-xl"
+							<div class="nopan nodrag nowheel absolute top-full left-0 z-50 flex flex-col">
+								<div class="flex">
+									<div
+										class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900 shadow-xl"
+									>
+										<!-- Results List -->
+										<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
+											{#each filteredSuggestions as suggestion, index}
+												<button
+													type="button"
+													onclick={() => selectSuggestion(suggestion)}
+													onmouseenter={() => (selectedSuggestion = index)}
+													class={[
+														'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
+														index === selectedSuggestion
+															? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
+															: 'border-transparent text-zinc-300 hover:bg-zinc-800/80'
+													]}
+												>
+													<span class="font-mono">{suggestion.name}</span>
+
+													{#if suggestion.type === 'preset'}
+														<span class="text-[10px] text-zinc-500"
+															>{PRESETS[suggestion.name].type}</span
+														>
+													{/if}
+												</button>
+											{/each}
+										</div>
+
+										<!-- Footer with keyboard hints -->
+										<div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
+											<span>↑↓ navigate • Enter select • Esc cancel</span>
+										</div>
+									</div>
+
+									<div class="mt-2 ml-3 min-w-48 font-mono">
+										<div class="text-xs">
+											{selectedDescription}
+										</div>
+									</div>
+								</div>
+
+								<!-- Browse all link -->
+								<button
+									type="button"
+									class="mt-2 cursor-pointer text-left font-mono text-[8px] text-zinc-500 underline-offset-2 hover:text-blue-300 hover:underline"
+									onclick={() => ($isObjectBrowserOpen = true)}
 								>
-									<!-- Results List -->
-									<div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
-										{#each filteredSuggestions as suggestion, index}
-											<button
-												type="button"
-												onclick={() => selectSuggestion(suggestion)}
-												onmouseenter={() => (selectedSuggestion = index)}
-												class={[
-													'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
-													index === selectedSuggestion
-														? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
-														: 'border-transparent text-zinc-300 hover:bg-zinc-800/80'
-												]}
-											>
-												<span class="font-mono">{suggestion.name}</span>
-
-												{#if suggestion.type === 'preset'}
-													<span class="text-[10px] text-zinc-500"
-														>{PRESETS[suggestion.name].type}</span
-													>
-												{/if}
-											</button>
-										{/each}
-									</div>
-
-									<!-- Footer with keyboard hints -->
-									<div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
-										<span>↑↓ navigate • Enter select • Esc cancel</span>
-									</div>
-								</div>
-
-								<div class="mt-2 ml-3 min-w-48 font-mono">
-									<div class="text-xs">
-										{selectedDescription}
-									</div>
-								</div>
+									Browse all objects
+								</button>
 							</div>
 						{/if}
 					{:else}
