@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { ChevronRight, Folder, Library } from '@lucide/svelte/icons';
   import * as Dialog from '$lib/components/ui/dialog';
-  import * as Select from '$lib/components/ui/select';
   import { presetLibraryStore, editableLibraries } from '../../../stores/preset-library.store';
-  import type { Preset } from '$lib/presets/types';
+  import type { Preset, PresetFolder, PresetPath } from '$lib/presets/types';
   import type { Node } from '@xyflow/svelte';
   import { toast } from 'svelte-sonner';
+  import { isPreset } from '$lib/presets/preset-utils';
+  import FolderPickerDialog, { type FolderNode } from '../sidebar/FolderPickerDialog.svelte';
 
   let {
     open = $bindable(false),
@@ -18,6 +20,8 @@
   let presetName = $state('');
   let presetDescription = $state('');
   let selectedLibraryId = $state('user');
+  let selectedFolderPath = $state<PresetPath>([]);
+  let showFolderPicker = $state(false);
 
   // Reset form when dialog opens with a new node
   $effect(() => {
@@ -28,11 +32,69 @@
         (nodeData.expr as string) || (nodeData.name as string) || node.type || 'New Preset';
       presetDescription = '';
       selectedLibraryId = 'user';
+      selectedFolderPath = [];
     }
   });
 
+  // Build folder tree for the picker
+  const folderTree = $derived.by((): FolderNode[] => {
+    const libraries = $editableLibraries;
+
+    function buildChildren(folder: PresetFolder, parentPath: PresetPath): FolderNode[] {
+      const children: FolderNode[] = [];
+
+      for (const [name, entry] of Object.entries(folder)) {
+        if (!isPreset(entry)) {
+          const fullPath = [...parentPath, name];
+          children.push({
+            id: fullPath.join('/'),
+            name,
+            children: buildChildren(entry as PresetFolder, fullPath)
+          });
+        }
+      }
+
+      return children.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return libraries.map((lib) => ({
+      id: lib.id,
+      name: lib.name,
+      icon: Library,
+      iconClass: 'text-blue-400',
+      children: buildChildren(lib.presets, [])
+    }));
+  });
+
+  // Get display text for selected location
+  const selectedLocationDisplay = $derived.by(() => {
+    const library = $editableLibraries.find((lib) => lib.id === selectedLibraryId);
+    if (!library) return 'Select location';
+
+    if (selectedFolderPath.length === 0) {
+      return library.name;
+    }
+
+    return `${library.name} / ${selectedFolderPath.join(' / ')}`;
+  });
+
+  function handleFolderSelect(folderId: string) {
+    // Parse the folder ID - could be just libraryId or libraryId/folder/path
+    const parts = folderId.split('/');
+
+    // Check if first part is a library ID
+    const library = $editableLibraries.find((lib) => lib.id === parts[0]);
+    if (library) {
+      selectedLibraryId = parts[0];
+      selectedFolderPath = parts.slice(1);
+    } else {
+      // It's a folder path within the current library
+      selectedFolderPath = parts;
+    }
+  }
+
   function handleSave() {
-    if (!node || !presetName.trim()) return;
+    if (!node || !node.type || !presetName.trim()) return;
 
     const nodeData = node.data as Record<string, unknown>;
 
@@ -43,7 +105,7 @@
       data: nodeData
     };
 
-    const success = presetLibraryStore.addPreset(selectedLibraryId, [], preset);
+    const success = presetLibraryStore.addPreset(selectedLibraryId, selectedFolderPath, preset);
 
     if (success) {
       toast.success(`Saved preset "${preset.name}"`);
@@ -98,24 +160,22 @@
         ></textarea>
       </div>
 
-      <!-- Library -->
+      <!-- Location (Library + Folder) -->
       <div class="space-y-2">
-        <label for="preset-library" class="text-sm font-medium text-zinc-300">Library</label>
-        <Select.Root type="single" bind:value={selectedLibraryId}>
-          <Select.Trigger
-            class="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200"
-          >
-            {$editableLibraries.find((lib) => lib.id === selectedLibraryId)?.name ??
-              'Select library'}
-          </Select.Trigger>
-          <Select.Content class="border border-zinc-700 bg-zinc-800">
-            {#each $editableLibraries as library}
-              <Select.Item value={library.id} class="text-zinc-200 hover:bg-zinc-700">
-                {library.name}
-              </Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
+        <label class="text-sm font-medium text-zinc-300">Save to</label>
+        <button
+          type="button"
+          onclick={() => (showFolderPicker = true)}
+          class="flex w-full items-center gap-2 rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-left text-sm text-zinc-200 hover:border-zinc-600"
+        >
+          {#if selectedFolderPath.length > 0}
+            <Folder class="h-4 w-4 shrink-0 text-yellow-500" />
+          {:else}
+            <Library class="h-4 w-4 shrink-0 text-blue-400" />
+          {/if}
+          <span class="flex-1 truncate">{selectedLocationDisplay}</span>
+          <ChevronRight class="h-4 w-4 shrink-0 text-zinc-500" />
+        </button>
       </div>
     </div>
 
@@ -136,3 +196,11 @@
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
+
+<FolderPickerDialog
+  bind:open={showFolderPicker}
+  title="Save to..."
+  description="Select a library or folder"
+  folders={folderTree}
+  onSelect={handleFolderSelect}
+/>

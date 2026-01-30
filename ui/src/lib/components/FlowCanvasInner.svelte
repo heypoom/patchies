@@ -467,6 +467,8 @@
     document.addEventListener('keydown', handleGlobalKeydown);
     eventBus.addEventListener('nodeReplace', replaceNode);
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
+    eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
+    eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -488,6 +490,8 @@
 
     eventBus.removeEventListener('nodeReplace', replaceNode);
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
+    eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
+    eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
 
     // Clean up autosave interval
     if (autosaveInterval) {
@@ -564,6 +568,29 @@
 
   function onDragOver(event: DragEvent) {
     getDragDropManager().onDragOver(event);
+  }
+
+  // Get the center of the viewport in flow coordinates
+  function getViewportCenter(): { x: number; y: number } {
+    const viewportCenterX = window.innerWidth / 2;
+    const viewportCenterY = window.innerHeight / 2;
+    return screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
+  }
+
+  // Handle insert VFS file event from mobile toolbar
+  async function handleInsertVfsFile(event: { type: 'insertVfsFileToCanvas'; vfsPath: string }) {
+    const position = getViewportCenter();
+    await getDragDropManager().insertVfsFile(event.vfsPath, position);
+  }
+
+  // Handle insert preset event from mobile toolbar
+  function handleInsertPreset(event: {
+    type: 'insertPresetToCanvas';
+    path: string[];
+    preset: { type: string; name: string; data: unknown };
+  }) {
+    const position = getViewportCenter();
+    getDragDropManager().insertPreset(event.preset, position);
   }
 
   // Create a new node at the specified position

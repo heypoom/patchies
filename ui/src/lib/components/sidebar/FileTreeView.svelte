@@ -19,14 +19,20 @@
     RefreshCw,
     Trash2,
     Pencil,
-    Copy
+    Copy,
+    Plus,
+    FolderInput,
+    Ellipsis
   } from '@lucide/svelte/icons';
   import { VirtualFilesystem, getLocalProvider, guessMimeType } from '$lib/vfs';
   import { parseVFSPath, isVFSFolder, isLocalFolder, type VFSEntry } from '$lib/vfs/types';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Popover from '$lib/components/ui/popover';
   import { toast } from 'svelte-sonner';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { isMobile } from '../../../stores/ui.store';
+  import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
 
   interface TreeNode {
     name: string;
@@ -68,6 +74,107 @@
   });
   let selectedPaths = $state(new Set<string>());
   let dropTargetPath = $state<string | null>(null);
+
+  // Mobile-specific state
+  let showMoveDialog = $state(false);
+  let mobileMoreOpen = $state(false);
+
+  // Get the currently selected file path (for mobile toolbar)
+  const selectedFilePath = $derived.by(() => {
+    if (selectedPaths.size !== 1) return null;
+    const path = [...selectedPaths][0];
+    const entry = vfs.getEntry(path);
+    // Only return if it's a file (not a folder)
+    if (entry && !isVFSFolder(entry)) return path;
+    return null;
+  });
+
+  // Get selected file entry for display
+  const selectedFileEntry = $derived.by(() => {
+    if (!selectedFilePath) return null;
+    return vfs.getEntry(selectedFilePath);
+  });
+
+  // Build folder tree for move dialog
+  const moveFolderTree = $derived.by((): FolderNode[] => {
+    const entries = $vfsEntries;
+
+    // Collect all folder paths
+    const folderPaths = new Set<string>();
+    folderPaths.add('user://');
+
+    for (const [path, entry] of entries) {
+      if (isVFSFolder(entry) && !isLocalFolder(entry)) {
+        folderPaths.add(path);
+      }
+      // Also add parent paths of all files as potential folders
+      const parsed = parseVFSPath(path);
+      if (parsed && parsed.namespace === 'user' && parsed.segments.length > 1) {
+        for (let i = 1; i < parsed.segments.length; i++) {
+          const parentPath = `user://${parsed.segments.slice(0, i).join('/')}`;
+          folderPaths.add(parentPath);
+        }
+      }
+    }
+
+    // Build tree structure
+    function buildChildren(parentPath: string): FolderNode[] {
+      const children: FolderNode[] = [];
+      const prefix = parentPath === 'user://' ? 'user://' : `${parentPath}/`;
+
+      for (const folderPath of folderPaths) {
+        if (!folderPath.startsWith(prefix) || folderPath === parentPath) continue;
+
+        // Check if this is a direct child
+        const relativePath = folderPath.slice(prefix.length);
+        if (!relativePath.includes('/')) {
+          // Check if this folder is the current file's parent (disable it)
+          const isCurrentParent = !!(
+            selectedFilePath &&
+            selectedFilePath.startsWith(folderPath + '/') &&
+            !selectedFilePath.slice(folderPath.length + 1).includes('/')
+          );
+
+          children.push({
+            id: folderPath,
+            name: relativePath,
+            children: buildChildren(folderPath),
+            disabled: isCurrentParent
+          });
+        }
+      }
+
+      return children.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return [
+      {
+        id: 'user://',
+        name: 'user',
+        icon: User,
+        iconClass: 'text-yellow-400',
+        children: buildChildren('user://')
+      }
+    ];
+  });
+
+  // Handle insert to canvas (mobile)
+  function handleInsertToCanvas() {
+    if (!selectedFilePath) return;
+    eventBus.dispatch({
+      type: 'insertVfsFileToCanvas',
+      vfsPath: selectedFilePath
+    });
+    selectedPaths = new Set();
+    toast.success('Added to canvas');
+  }
+
+  // Handle move file
+  async function handleMoveFile(targetFolder: string) {
+    if (!selectedFilePath) return;
+    await moveVfsFile(selectedFilePath, targetFolder);
+    selectedPaths = new Set();
+  }
 
   function toggleSelected(path: string) {
     if (selectedPaths.has(path)) {
@@ -1137,7 +1244,7 @@
   class="py-2 outline-none {dropTargetPath === 'user://' &&
   (!tree.children || tree.children.size === 0)
     ? 'bg-blue-600/30'
-    : ''}"
+    : ''} {$isMobile && selectedFilePath ? 'pb-14' : ''}"
   tabindex="0"
   role="tree"
   onkeydown={handleKeydown}
@@ -1147,3 +1254,99 @@
 >
   {@render treeNode(tree)}
 </div>
+
+<!-- Mobile floating toolbar -->
+{#if $isMobile && selectedFilePath}
+  <div
+    class="fixed right-0 bottom-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
+  >
+    <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
+      {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
+    </span>
+
+    <button
+      class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+      onclick={handleInsertToCanvas}
+      title="Insert to Canvas"
+    >
+      <Plus class="h-3.5 w-3.5" />
+      <span>Insert</span>
+    </button>
+
+    <button
+      class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
+      onclick={() => (showMoveDialog = true)}
+      title="Move to folder"
+    >
+      <FolderInput class="h-3.5 w-3.5" />
+      <span>Move</span>
+    </button>
+
+    <Popover.Root bind:open={mobileMoreOpen}>
+      <Popover.Trigger
+        class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+      >
+        <Ellipsis class="h-4 w-4" />
+      </Popover.Trigger>
+      <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+        <button
+          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+          onclick={() => {
+            if (selectedFilePath) {
+              const entry = vfs.getEntry(selectedFilePath);
+              handleRenameClick(
+                selectedFilePath,
+                entry?.filename || selectedFilePath.split('/').pop() || ''
+              );
+            }
+            mobileMoreOpen = false;
+          }}
+        >
+          <Pencil class="h-4 w-4 text-zinc-400" />
+          Rename
+        </button>
+        <button
+          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+          onclick={async () => {
+            if (selectedFilePath) {
+              await handleCopyPath(selectedFilePath);
+            }
+            mobileMoreOpen = false;
+          }}
+        >
+          <Copy class="h-4 w-4 text-zinc-400" />
+          Copy Path
+        </button>
+        <button
+          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
+          onclick={async () => {
+            if (selectedFilePath) {
+              await handleDeleteFromContextMenu(selectedFilePath);
+            }
+            mobileMoreOpen = false;
+          }}
+        >
+          <Trash2 class="h-4 w-4" />
+          Delete
+        </button>
+      </Popover.Content>
+    </Popover.Root>
+
+    <button
+      class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+      onclick={() => (selectedPaths = new Set())}
+    >
+      Cancel
+    </button>
+  </div>
+{/if}
+
+<!-- Move to folder dialog -->
+<FolderPickerDialog
+  bind:open={showMoveDialog}
+  title="Move to..."
+  description="Select a destination folder"
+  confirmText="Move here"
+  folders={moveFolderTree}
+  onSelect={handleMoveFile}
+/>

@@ -15,10 +15,12 @@
     Upload,
     RotateCcw,
     Plus,
-    Copy
+    FolderInput,
+    Ellipsis
   } from '@lucide/svelte/icons';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import * as Popover from '$lib/components/ui/popover';
   import { toast } from 'svelte-sonner';
   import { presetLibraryStore, editableLibraries } from '../../../stores/preset-library.store';
   import type {
@@ -29,6 +31,9 @@
     PresetPath
   } from '$lib/presets/types';
   import { isPreset } from '$lib/presets/preset-utils';
+  import { isMobile } from '../../../stores/ui.store';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
 
   // Load expanded paths from localStorage, defaulting to built-in and user
   function loadExpandedPaths(): Set<string> {
@@ -66,6 +71,96 @@
   // Drag-drop state
   let dropTargetPath = $state<string | null>(null);
   let dragSourcePath = $state<string | null>(null);
+
+  // Mobile-specific state
+  let selectedPresetPath = $state<{ libraryId: string; path: PresetPath; preset: Preset } | null>(
+    null
+  );
+  let showMoveDialog = $state(false);
+  let mobileMoreOpen = $state(false);
+
+  const eventBus = PatchiesEventBus.getInstance();
+
+  // Build folder tree for move dialog (only editable libraries)
+  const moveFolderTree = $derived.by((): FolderNode[] => {
+    const libraries = $editableLibraries;
+
+    function buildChildren(folder: PresetFolder, parentPath: PresetPath): FolderNode[] {
+      const children: FolderNode[] = [];
+
+      for (const [name, entry] of Object.entries(folder)) {
+        if (!isPreset(entry)) {
+          const fullPath = [...parentPath, name];
+          // Disable if this is the current preset's parent folder
+          const isCurrentParent = !!(
+            selectedPresetPath &&
+            selectedPresetPath.path.length === fullPath.length + 1 &&
+            selectedPresetPath.path.slice(0, -1).join('/') === fullPath.join('/')
+          );
+
+          children.push({
+            id: fullPath.join('/'),
+            name,
+            children: buildChildren(entry as PresetFolder, fullPath),
+            disabled: isCurrentParent
+          });
+        }
+      }
+
+      return children.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return libraries.map((lib) => ({
+      id: lib.id,
+      name: lib.name,
+      icon: Library,
+      iconClass: 'text-blue-400',
+      children: buildChildren(lib.presets, [])
+    }));
+  });
+
+  // Handle insert preset to canvas (mobile)
+  function handleInsertPresetToCanvas() {
+    if (!selectedPresetPath) return;
+    eventBus.dispatch({
+      type: 'insertPresetToCanvas',
+      path: [selectedPresetPath.libraryId, ...selectedPresetPath.path],
+      preset: {
+        type: selectedPresetPath.preset.type,
+        name: selectedPresetPath.preset.name,
+        data: selectedPresetPath.preset.data
+      }
+    });
+    selectedPresetPath = null;
+    toast.success('Added to canvas');
+  }
+
+  // Handle move preset
+  function handleMovePreset(targetFolderId: string) {
+    if (!selectedPresetPath) return;
+
+    // Parse target: could be just libraryId or libraryId/folder/path
+    const parts = targetFolderId.split('/');
+    const targetLibraryId = parts[0];
+    const targetFolderPath = parts.slice(1);
+
+    const success = presetLibraryStore.moveEntry(
+      selectedPresetPath.libraryId,
+      selectedPresetPath.path,
+      targetLibraryId,
+      targetFolderPath
+    );
+
+    if (success) {
+      toast.success(`Moved "${selectedPresetPath.preset.name}"`);
+    }
+    selectedPresetPath = null;
+  }
+
+  // Select preset on mobile
+  function selectPresetOnMobile(libraryId: string, path: PresetPath, preset: Preset) {
+    selectedPresetPath = { libraryId, path, preset };
+  }
 
   function toggleExpanded(path: string) {
     if (expandedPaths.has(path)) {
@@ -365,6 +460,11 @@
   {@const canEdit = !library.readonly}
   {@const isDraggable = canEdit}
   {@const isCurrentDropTarget = isDropTarget(fullPathStr)}
+  {@const isSelectedPreset =
+    !isFolder &&
+    selectedPresetPath &&
+    selectedPresetPath.libraryId === libraryId &&
+    selectedPresetPath.path.join('/') === entryPath.join('/')}
 
   <ContextMenu.Root>
     <ContextMenu.Trigger disabled={!canEdit} class="block w-full">
@@ -372,7 +472,9 @@
       <div
         class="group flex w-full items-center text-left text-xs {isCurrentDropTarget
           ? 'bg-blue-600/30'
-          : 'hover:bg-zinc-800'}"
+          : isSelectedPreset
+            ? 'bg-blue-900/40 hover:bg-blue-900/50'
+            : 'hover:bg-zinc-800'}"
         ondragover={(e) => isFolder && handleFolderDragOver(e, fullPathStr, canEdit)}
         ondragleave={handleFolderDragLeave}
         ondrop={(e) => isFolder && handleFolderDrop(e, libraryId, entryPath)}
@@ -388,6 +490,14 @@
             if (isRenaming) return;
             if (isFolder) {
               toggleExpanded(fullPathStr);
+            } else if ($isMobile) {
+              // On mobile, select preset to show toolbar
+              const preset = entry as Preset;
+              if (isSelectedPreset) {
+                selectedPresetPath = null;
+              } else {
+                selectPresetOnMobile(libraryId, entryPath, preset);
+              }
             }
           }}
         >
@@ -665,7 +775,7 @@
 
 <div class="flex h-full flex-col" role="tree">
   <!-- Libraries -->
-  <div class="flex-1 overflow-y-auto py-1">
+  <div class="flex-1 overflow-y-auto py-1 {$isMobile && selectedPresetPath ? 'pb-14' : ''}">
     {#each $presetLibraryStore as library}
       {@render libraryNode(library)}
     {/each}
@@ -691,3 +801,94 @@
     </button>
   </div>
 </div>
+
+<!-- Mobile floating toolbar -->
+{#if $isMobile && selectedPresetPath}
+  {@const currentSelection = selectedPresetPath}
+  {@const selectedLibrary = $presetLibraryStore.find((l) => l.id === currentSelection.libraryId)}
+  {@const canEdit = selectedLibrary && !selectedLibrary.readonly}
+
+  <div
+    class="fixed right-0 bottom-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
+  >
+    <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
+      {selectedPresetPath.preset.name}
+    </span>
+
+    <button
+      class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+      onclick={handleInsertPresetToCanvas}
+      title="Insert to Canvas"
+    >
+      <Plus class="h-3.5 w-3.5" />
+      <span>Insert</span>
+    </button>
+
+    {#if canEdit}
+      <button
+        class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
+        onclick={() => (showMoveDialog = true)}
+        title="Move to folder"
+      >
+        <FolderInput class="h-3.5 w-3.5" />
+        <span>Move</span>
+      </button>
+
+      <Popover.Root bind:open={mobileMoreOpen}>
+        <Popover.Trigger
+          class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+        >
+          <Ellipsis class="h-4 w-4" />
+        </Popover.Trigger>
+        <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+            onclick={() => {
+              if (selectedPresetPath) {
+                startRename(
+                  pathToString([selectedPresetPath.libraryId, ...selectedPresetPath.path]),
+                  selectedPresetPath.preset.name
+                );
+              }
+              mobileMoreOpen = false;
+              selectedPresetPath = null;
+            }}
+          >
+            <Pencil class="h-4 w-4 text-zinc-400" />
+            Rename
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
+            onclick={() => {
+              if (selectedPresetPath) {
+                deleteEntry(selectedPresetPath.libraryId, selectedPresetPath.path, false);
+              }
+              mobileMoreOpen = false;
+              selectedPresetPath = null;
+            }}
+          >
+            <Trash2 class="h-4 w-4" />
+            Delete
+          </button>
+        </Popover.Content>
+      </Popover.Root>
+    {/if}
+
+    <button
+      class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+      onclick={() => (selectedPresetPath = null)}
+    >
+      Cancel
+    </button>
+  </div>
+{/if}
+
+<!-- Move to folder dialog -->
+<FolderPickerDialog
+  bind:open={showMoveDialog}
+  title="Move to..."
+  description="Select a destination folder"
+  confirmText="Move here"
+  folders={moveFolderTree}
+  onSelect={handleMovePreset}
+/>

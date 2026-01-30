@@ -151,6 +151,23 @@ export class CanvasDragDropManager {
   }
 
   /**
+   * Insert a preset at the specified position (public method for event-based insertion)
+   */
+  insertPreset(
+    preset: { type: string; data: unknown; name: string },
+    position: { x: number; y: number }
+  ): void {
+    this.createNode(preset.type, position, preset.data);
+  }
+
+  /**
+   * Insert a VFS file at the specified position (public method for event-based insertion)
+   */
+  async insertVfsFile(vfsPath: string, position: { x: number; y: number }): Promise<void> {
+    await this.handleVfsFileDrop(vfsPath, position);
+  }
+
+  /**
    * Handle dropped files by creating appropriate nodes
    */
   private async handleFileDrops(
