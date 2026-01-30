@@ -1261,86 +1261,89 @@
 <!-- Mobile floating toolbar -->
 {#if $isMobile && selectedFilePath}
   <div
-    class="bottom-safe fixed right-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
+    class="fixed right-0 bottom-0 left-0 border-t border-zinc-800 bg-zinc-900/95 px-4 pt-2 backdrop-blur-sm"
+    style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))"
   >
-    <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
-      {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
-    </span>
+    <div class="flex items-center justify-center gap-2">
+      <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
+        {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
+      </span>
 
-    <button
-      class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-      onclick={handleInsertToCanvas}
-      title="Insert to Canvas"
-    >
-      <Plus class="h-3.5 w-3.5" />
-      <span>Insert</span>
-    </button>
-
-    <button
-      class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
-      onclick={() => (showMoveDialog = true)}
-      title="Move to folder"
-    >
-      <FolderInput class="h-3.5 w-3.5" />
-      <span>Move</span>
-    </button>
-
-    <Popover.Root bind:open={mobileMoreOpen}>
-      <Popover.Trigger
-        class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+      <button
+        class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+        onclick={handleInsertToCanvas}
+        title="Insert to Canvas"
       >
-        <Ellipsis class="h-4 w-4" />
-      </Popover.Trigger>
-      <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
-        <button
-          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-          onclick={() => {
-            if (selectedFilePath) {
-              const entry = vfs.getEntry(selectedFilePath);
-              handleRenameClick(
-                selectedFilePath,
-                entry?.filename || selectedFilePath.split('/').pop() || ''
-              );
-            }
-            mobileMoreOpen = false;
-          }}
-        >
-          <Pencil class="h-4 w-4 text-zinc-400" />
-          Rename
-        </button>
-        <button
-          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-          onclick={async () => {
-            if (selectedFilePath) {
-              await handleCopyPath(selectedFilePath);
-            }
-            mobileMoreOpen = false;
-          }}
-        >
-          <Copy class="h-4 w-4 text-zinc-400" />
-          Copy Path
-        </button>
-        <button
-          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
-          onclick={async () => {
-            if (selectedFilePath) {
-              await handleDeleteFromContextMenu(selectedFilePath);
-            }
-            mobileMoreOpen = false;
-          }}
-        >
-          <Trash2 class="h-4 w-4" />
-          Delete
-        </button>
-      </Popover.Content>
-    </Popover.Root>
+        <Plus class="h-3.5 w-3.5" />
+        <span>Insert</span>
+      </button>
 
-    <button
-      class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
-      onclick={() => (selectedPaths = new Set())}
-    >
-      Cancel
-    </button>
+      <button
+        class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
+        onclick={() => (showMoveDialog = true)}
+        title="Move to folder"
+      >
+        <FolderInput class="h-3.5 w-3.5" />
+        <span>Move</span>
+      </button>
+
+      <Popover.Root bind:open={mobileMoreOpen}>
+        <Popover.Trigger
+          class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+        >
+          <Ellipsis class="h-4 w-4" />
+        </Popover.Trigger>
+        <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+            onclick={() => {
+              if (selectedFilePath) {
+                const entry = vfs.getEntry(selectedFilePath);
+                handleRenameClick(
+                  selectedFilePath,
+                  entry?.filename || selectedFilePath.split('/').pop() || ''
+                );
+              }
+              mobileMoreOpen = false;
+            }}
+          >
+            <Pencil class="h-4 w-4 text-zinc-400" />
+            Rename
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+            onclick={async () => {
+              if (selectedFilePath) {
+                await handleCopyPath(selectedFilePath);
+              }
+              mobileMoreOpen = false;
+            }}
+          >
+            <Copy class="h-4 w-4 text-zinc-400" />
+            Copy Path
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
+            onclick={async () => {
+              if (selectedFilePath) {
+                await handleDeleteFromContextMenu(selectedFilePath);
+              }
+              mobileMoreOpen = false;
+            }}
+          >
+            <Trash2 class="h-4 w-4" />
+            Delete
+          </button>
+        </Popover.Content>
+      </Popover.Root>
+
+      <button
+        class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+        onclick={() => (selectedPaths = new Set())}
+      >
+        Cancel
+      </button>
+    </div>
   </div>
 {/if}
 

@@ -822,7 +822,7 @@
 
   <!-- Footer actions -->
   <div
-    class="flex items-center gap-1 border-t border-zinc-800 px-2 pt-1.5"
+    class="sticky bottom-0 flex items-center gap-1 border-t border-zinc-800 bg-zinc-950 px-2 pt-1.5"
     style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
   >
     <button
@@ -851,77 +851,80 @@
   {@const canEdit = selectedLibrary && !selectedLibrary.readonly}
 
   <div
-    class="bottom-safe fixed right-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
+    class="fixed right-0 bottom-0 left-0 border-t border-zinc-800 bg-zinc-900/95 px-4 pt-2 backdrop-blur-sm"
+    style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))"
   >
-    <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
-      {selectedPresetPath.preset.name}
-    </span>
+    <div class="flex items-center justify-center gap-2">
+      <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
+        {selectedPresetPath.preset.name}
+      </span>
 
-    <button
-      class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-      onclick={handleInsertPresetToCanvas}
-      title="Insert to Canvas"
-    >
-      <Plus class="h-3.5 w-3.5" />
-      <span>Insert</span>
-    </button>
-
-    {#if canEdit}
       <button
-        class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
-        onclick={() => (showMoveDialog = true)}
-        title="Move to folder"
+        class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+        onclick={handleInsertPresetToCanvas}
+        title="Insert to Canvas"
       >
-        <FolderInput class="h-3.5 w-3.5" />
-        <span>Move</span>
+        <Plus class="h-3.5 w-3.5" />
+        <span>Insert</span>
       </button>
 
-      <Popover.Root bind:open={mobileMoreOpen}>
-        <Popover.Trigger
-          class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+      {#if canEdit}
+        <button
+          class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
+          onclick={() => (showMoveDialog = true)}
+          title="Move to folder"
         >
-          <Ellipsis class="h-4 w-4" />
-        </Popover.Trigger>
-        <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
-          <button
-            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-            onclick={() => {
-              if (selectedPresetPath) {
-                startRename(
-                  pathToString([selectedPresetPath.libraryId, ...selectedPresetPath.path]),
-                  selectedPresetPath.preset.name
-                );
-              }
-              mobileMoreOpen = false;
-              selectedPresetPath = null;
-            }}
-          >
-            <Pencil class="h-4 w-4 text-zinc-400" />
-            Rename
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
-            onclick={() => {
-              if (selectedPresetPath) {
-                deleteEntry(selectedPresetPath.libraryId, selectedPresetPath.path, false);
-              }
-              mobileMoreOpen = false;
-              selectedPresetPath = null;
-            }}
-          >
-            <Trash2 class="h-4 w-4" />
-            Delete
-          </button>
-        </Popover.Content>
-      </Popover.Root>
-    {/if}
+          <FolderInput class="h-3.5 w-3.5" />
+          <span>Move</span>
+        </button>
 
-    <button
-      class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
-      onclick={() => (selectedPresetPath = null)}
-    >
-      Cancel
-    </button>
+        <Popover.Root bind:open={mobileMoreOpen}>
+          <Popover.Trigger
+            class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+          >
+            <Ellipsis class="h-4 w-4" />
+          </Popover.Trigger>
+          <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+            <button
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+              onclick={() => {
+                if (selectedPresetPath) {
+                  startRename(
+                    pathToString([selectedPresetPath.libraryId, ...selectedPresetPath.path]),
+                    selectedPresetPath.preset.name
+                  );
+                }
+                mobileMoreOpen = false;
+                selectedPresetPath = null;
+              }}
+            >
+              <Pencil class="h-4 w-4 text-zinc-400" />
+              Rename
+            </button>
+            <button
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-zinc-800"
+              onclick={() => {
+                if (selectedPresetPath) {
+                  deleteEntry(selectedPresetPath.libraryId, selectedPresetPath.path, false);
+                }
+                mobileMoreOpen = false;
+                selectedPresetPath = null;
+              }}
+            >
+              <Trash2 class="h-4 w-4" />
+              Delete
+            </button>
+          </Popover.Content>
+        </Popover.Root>
+      {/if}
+
+      <button
+        class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
+        onclick={() => (selectedPresetPath = null)}
+      >
+        Cancel
+      </button>
+    </div>
   </div>
 {/if}
 
