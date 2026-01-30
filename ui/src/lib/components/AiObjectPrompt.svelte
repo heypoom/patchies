@@ -486,7 +486,7 @@
           bind:value={promptText}
           onkeydown={handleKeydown}
           placeholder={placeholderText}
-          class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {isEditMode
+          class="nodrag w-full resize-y rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {isEditMode
             ? 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
             : isMultiObjectMode
               ? 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
