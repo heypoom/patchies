@@ -46,6 +46,7 @@
 	import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
 	import { AudioRegistry } from '$lib/registry/AudioRegistry';
 	import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+	import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import {
 		isAudioParamInlet,
@@ -635,11 +636,12 @@
 		const objectRegistry = ObjectRegistry.getInstance();
 
 		if (audioRegistry.isDefined(name) || objectRegistry.isDefined(name)) {
-			// Create an 'object' node with the textual object name
+			// Create an 'object' node with the textual object name and default params
+			const defaultParams = parseObjectParamFromString(name, []);
 			createNode('object', position, {
 				expr: name,
 				name: name,
-				params: []
+				params: defaultParams
 			});
 			return;
 		}
