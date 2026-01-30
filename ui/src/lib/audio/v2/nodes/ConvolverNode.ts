@@ -7,47 +7,47 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
  * Applies an impulse response to create reverb and spatial effects.
  */
 export class ConvolverNodeV2 implements AudioNodeV2 {
-	static type = 'convolver~';
-	static group: AudioNodeGroup = 'processors';
-	static description = 'ConvolverNode for reverb and acoustic modeling using impulse responses';
+  static type = 'convolver~';
+  static group: AudioNodeGroup = 'processors';
+  static description = 'ConvolverNode for reverb and acoustic modeling using impulse responses';
 
-	static inlets: ObjectInlet[] = [
-		{ name: 'in', type: 'signal' },
-		{
-			name: 'buffer',
-			type: 'signal',
-			description: 'receives an AudioBuffer for impulse response'
-		},
-		{
-			name: 'normalize',
-			type: 'bool',
-			description: 'Whether to normalize the impulse response',
-			defaultValue: true
-		}
-	];
+  static inlets: ObjectInlet[] = [
+    { name: 'in', type: 'signal' },
+    {
+      name: 'buffer',
+      type: 'signal',
+      description: 'receives an AudioBuffer for impulse response'
+    },
+    {
+      name: 'normalize',
+      type: 'bool',
+      description: 'Whether to normalize the impulse response',
+      defaultValue: true
+    }
+  ];
 
-	static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal' }];
+  static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal' }];
 
-	readonly nodeId: string;
-	audioNode: ConvolverNode;
+  readonly nodeId: string;
+  audioNode: ConvolverNode;
 
-	constructor(nodeId: string, audioContext: AudioContext) {
-		this.nodeId = nodeId;
-		this.audioNode = audioContext.createConvolver();
-	}
+  constructor(nodeId: string, audioContext: AudioContext) {
+    this.nodeId = nodeId;
+    this.audioNode = audioContext.createConvolver();
+  }
 
-	create(params: unknown[]): void {
-		const [, , normalize] = params as [unknown, unknown, boolean];
-		this.audioNode.normalize = normalize ?? true;
-	}
+  create(params: unknown[]): void {
+    const [, , normalize] = params as [unknown, unknown, boolean];
+    this.audioNode.normalize = normalize ?? true;
+  }
 
-	send(key: string, message: unknown): void {
-		if (key === 'buffer' && message instanceof AudioBuffer) {
-			this.audioNode.buffer = message;
-		}
+  send(key: string, message: unknown): void {
+    if (key === 'buffer' && message instanceof AudioBuffer) {
+      this.audioNode.buffer = message;
+    }
 
-		if (key === 'normalize' && typeof message === 'boolean') {
-			this.audioNode.normalize = message;
-		}
-	}
+    if (key === 'normalize' && typeof message === 'boolean') {
+      this.audioNode.normalize = message;
+    }
+  }
 }

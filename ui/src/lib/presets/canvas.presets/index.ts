@@ -8,12 +8,12 @@ import { rgbaPickerPreset } from './rgba-picker';
 import { virtualMidiKeyboardPreset } from './virtual-midi-keyboard';
 
 export const CANVAS_PRESETS = {
-	'fft.canvas': fftPreset,
-	'fractal-tree.canvas': fractalTreePreset,
-	'plotter.canvas': plotterPreset,
-	'particle.canvas': paintPreset,
-	'xy-pad.canvas': xyPadPreset,
-	'hsla.picker': hslaPickerPreset,
-	'rgba.picker': rgbaPickerPreset,
-	'midi.keyboard': virtualMidiKeyboardPreset
+  'fft.canvas': fftPreset,
+  'fractal-tree.canvas': fractalTreePreset,
+  'plotter.canvas': plotterPreset,
+  'particle.canvas': paintPreset,
+  'xy-pad.canvas': xyPadPreset,
+  'hsla.picker': hslaPickerPreset,
+  'rgba.picker': rgbaPickerPreset,
+  'midi.keyboard': virtualMidiKeyboardPreset
 };

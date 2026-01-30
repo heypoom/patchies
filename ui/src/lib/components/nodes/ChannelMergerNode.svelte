@@ -1,25 +1,25 @@
 <script lang="ts">
-	import AudioChannelLayout from './AudioChannelLayout.svelte';
+  import AudioChannelLayout from './AudioChannelLayout.svelte';
 
-	// Get node data from XY Flow - nodes receive their data as props
-	let {
-		id: nodeId,
-		data,
-		selected
-	}: {
-		id: string;
-		data: {
-			channels: number;
-		};
-		selected: boolean;
-	} = $props();
+  // Get node data from XY Flow - nodes receive their data as props
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: {
+    id: string;
+    data: {
+      channels: number;
+    };
+    selected: boolean;
+  } = $props();
 </script>
 
 <AudioChannelLayout
-	id={nodeId}
-	{data}
-	{selected}
-	audioType="merge~"
-	displayName="merge~"
-	title="Channel Merger"
+  id={nodeId}
+  {data}
+  {selected}
+  audioType="merge~"
+  displayName="merge~"
+  title="Channel Merger"
 />

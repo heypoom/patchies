@@ -13,30 +13,30 @@ const audioRegistry = AudioRegistry.getInstance();
  * @returns true if the inlet is an AudioParam, false otherwise
  */
 export function isAudioParamInlet(
-	objectName: string | undefined,
-	targetHandle: string | null | undefined
+  objectName: string | undefined,
+  targetHandle: string | null | undefined
 ): boolean {
-	if (objectName === undefined) return false;
-	if (!objectName?.endsWith('~')) return false;
+  if (objectName === undefined) return false;
+  if (!objectName?.endsWith('~')) return false;
 
-	const audioNodeClass = audioRegistry.get(objectName);
-	if (!audioNodeClass?.inlets) return false;
+  const audioNodeClass = audioRegistry.get(objectName);
+  if (!audioNodeClass?.inlets) return false;
 
-	const inletIndex = handleToPortIndex(targetHandle ?? null);
-	if (inletIndex === null || isNaN(inletIndex)) return false;
+  const inletIndex = handleToPortIndex(targetHandle ?? null);
+  if (inletIndex === null || isNaN(inletIndex)) return false;
 
-	const inlet = audioNodeClass.inlets[inletIndex];
+  const inlet = audioNodeClass.inlets[inletIndex];
 
-	return inlet?.isAudioParam ?? false;
+  return inlet?.isAudioParam ?? false;
 }
 
 export interface ConnectionValidationOptions {
-	/**
-	 * Whether the target inlet is an AudioParam.
-	 * AudioParams can accept both audio signals (for audio-rate modulation)
-	 * and message connections (for parameter automation).
-	 */
-	isTargetAudioParam?: boolean;
+  /**
+   * Whether the target inlet is an AudioParam.
+   * AudioParams can accept both audio signals (for audio-rate modulation)
+   * and message connections (for parameter automation).
+   */
+  isTargetAudioParam?: boolean;
 }
 
 /**
@@ -48,69 +48,69 @@ export interface ConnectionValidationOptions {
  * @returns true if the connection is valid, false otherwise
  */
 export function isValidConnectionBetweenHandles(
-	sourceHandle: string | null | undefined,
-	targetHandle: string | null | undefined,
-	options?: ConnectionValidationOptions
+  sourceHandle: string | null | undefined,
+  targetHandle: string | null | undefined,
+  options?: ConnectionValidationOptions
 ): boolean {
-	if (!sourceHandle || !targetHandle) return false;
+  if (!sourceHandle || !targetHandle) return false;
 
-	// Normalize handles: treat untyped handles (in-0, out-1, in, out) as message handles
-	// This handles dynamic nodes like p5, canvas.dom, js, etc. that don't specify type
-	const normalizeHandle = (handle: string): string => {
-		// If handle starts with a known type, keep it as-is
-		if (
-			handle.startsWith('video-') ||
-			handle.startsWith('audio-') ||
-			handle.startsWith('message-') ||
-			handle.startsWith(ANALYSIS_KEY)
-		) {
-			return handle;
-		}
+  // Normalize handles: treat untyped handles (in-0, out-1, in, out) as message handles
+  // This handles dynamic nodes like p5, canvas.dom, js, etc. that don't specify type
+  const normalizeHandle = (handle: string): string => {
+    // If handle starts with a known type, keep it as-is
+    if (
+      handle.startsWith('video-') ||
+      handle.startsWith('audio-') ||
+      handle.startsWith('message-') ||
+      handle.startsWith(ANALYSIS_KEY)
+    ) {
+      return handle;
+    }
 
-		// Default: treat untyped handles (in-X, out-X, in, out, etc.) as message handles
-		return `message-${handle}`;
-	};
+    // Default: treat untyped handles (in-X, out-X, in, out, etc.) as message handles
+    return `message-${handle}`;
+  };
 
-	const normalizedSource = normalizeHandle(sourceHandle);
-	const normalizedTarget = normalizeHandle(targetHandle);
+  const normalizedSource = normalizeHandle(sourceHandle);
+  const normalizedTarget = normalizeHandle(targetHandle);
 
-	// Pre-compute handle type checks
-	const isSourceAudio = normalizedSource.startsWith('audio');
-	const isSourceVideo = normalizedSource.startsWith('video');
-	const isSourceMessage = normalizedSource.startsWith('message');
-	const isSourceAnalysis = normalizedSource.startsWith(ANALYSIS_KEY);
+  // Pre-compute handle type checks
+  const isSourceAudio = normalizedSource.startsWith('audio');
+  const isSourceVideo = normalizedSource.startsWith('video');
+  const isSourceMessage = normalizedSource.startsWith('message');
+  const isSourceAnalysis = normalizedSource.startsWith(ANALYSIS_KEY);
 
-	const isTargetVideo = normalizedTarget.startsWith('video');
-	const isTargetMessage = normalizedTarget.startsWith('message');
-	const isTargetAudioInlet = normalizedTarget.startsWith('audio-in');
+  const isTargetVideo = normalizedTarget.startsWith('video');
+  const isTargetMessage = normalizedTarget.startsWith('message');
+  const isTargetAudioInlet = normalizedTarget.startsWith('audio-in');
 
-	// Audio params can accept both audio signals (e.g. gain~ out) and message connections (e.g. numbers)
-	if (options?.isTargetAudioParam) {
-		return isSourceAudio || isSourceMessage;
-	}
+  // Audio params can accept both audio signals (e.g. gain~ out) and message connections (e.g. numbers)
+  if (options?.isTargetAudioParam) {
+    return isSourceAudio || isSourceMessage;
+  }
 
-	// Allow connecting `fft~` analysis result to message and video inlets (not audio inlets)
-	// This check must come BEFORE the video check so analysis→video is allowed
-	if (isSourceAnalysis) {
-		return isTargetMessage || isTargetVideo;
-	}
+  // Allow connecting `fft~` analysis result to message and video inlets (not audio inlets)
+  // This check must come BEFORE the video check so analysis→video is allowed
+  if (isSourceAnalysis) {
+    return isTargetMessage || isTargetVideo;
+  }
 
-	// Video connections must be video-to-video only
-	if (isSourceVideo || isTargetVideo) {
-		return isSourceVideo && isTargetVideo;
-	}
+  // Video connections must be video-to-video only
+  if (isSourceVideo || isTargetVideo) {
+    return isSourceVideo && isTargetVideo;
+  }
 
-	// Target audio inlets (e.g. dac~) must be connected to audio outputs/sources
-	if (isTargetAudioInlet) {
-		return isSourceAudio;
-	}
+  // Target audio inlets (e.g. dac~) must be connected to audio outputs/sources
+  if (isTargetAudioInlet) {
+    return isSourceAudio;
+  }
 
-	// Message-to-message connections are allowed
-	if (isSourceMessage && isTargetMessage) {
-		return true;
-	}
+  // Message-to-message connections are allowed
+  if (isSourceMessage && isTargetMessage) {
+    return true;
+  }
 
-	return false;
+  return false;
 }
 
 /**
@@ -125,27 +125,27 @@ export function isValidConnectionBetweenHandles(
  * @returns true if the target can accept connections from the source, false otherwise
  */
 export function canAcceptConnection(
-	sourceHandleId: string,
-	targetHandleId: string,
-	sourcePort: 'inlet' | 'outlet',
-	targetPort: 'inlet' | 'outlet',
-	options?: ConnectionValidationOptions
+  sourceHandleId: string,
+  targetHandleId: string,
+  sourcePort: 'inlet' | 'outlet',
+  targetPort: 'inlet' | 'outlet',
+  options?: ConnectionValidationOptions
 ): boolean {
-	// Extract just the handle type from qualified IDs (remove nodeId/ prefix if present)
-	const sourceHandle = sourceHandleId.includes('/') ? sourceHandleId.split('/')[1] : sourceHandleId;
+  // Extract just the handle type from qualified IDs (remove nodeId/ prefix if present)
+  const sourceHandle = sourceHandleId.includes('/') ? sourceHandleId.split('/')[1] : sourceHandleId;
 
-	const targetHandle = targetHandleId.includes('/') ? targetHandleId.split('/')[1] : targetHandleId;
+  const targetHandle = targetHandleId.includes('/') ? targetHandleId.split('/')[1] : targetHandleId;
 
-	// If connecting from an outlet, the target must be an inlet
-	if (sourcePort === 'outlet' && targetPort !== 'inlet') {
-		return false;
-	}
+  // If connecting from an outlet, the target must be an inlet
+  if (sourcePort === 'outlet' && targetPort !== 'inlet') {
+    return false;
+  }
 
-	// If connecting from an inlet, the target must be an outlet
-	if (sourcePort === 'inlet' && targetPort !== 'outlet') {
-		return false;
-	}
+  // If connecting from an inlet, the target must be an outlet
+  if (sourcePort === 'inlet' && targetPort !== 'outlet') {
+    return false;
+  }
 
-	// Use the main validation logic
-	return isValidConnectionBetweenHandles(sourceHandle, targetHandle, options);
+  // Use the main validation logic
+  return isValidConnectionBetweenHandles(sourceHandle, targetHandle, options);
 }

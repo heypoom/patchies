@@ -32,10 +32,10 @@ function drawBranch(x, y, length, angle) {
 draw();`;
 
 export const fractalTreePreset = {
-	type: 'canvas' as const,
-	data: {
-		code: FRACTAL_TREE_JS,
-		inletCount: 1,
-		outletCount: 0
-	}
+  type: 'canvas' as const,
+  data: {
+    code: FRACTAL_TREE_JS,
+    inletCount: 1,
+    outletCount: 0
+  }
 };

@@ -6,47 +6,47 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
  * and forward messages from their own iframes.
  */
 export class IframePostMessageListener {
-	private static instance: IframePostMessageListener | null = null;
-	private eventBus: PatchiesEventBus;
-	private boundHandler: (event: MessageEvent) => void;
+  private static instance: IframePostMessageListener | null = null;
+  private eventBus: PatchiesEventBus;
+  private boundHandler: (event: MessageEvent) => void;
 
-	private constructor() {
-		this.eventBus = PatchiesEventBus.getInstance();
-		this.boundHandler = this.handleMessage.bind(this);
+  private constructor() {
+    this.eventBus = PatchiesEventBus.getInstance();
+    this.boundHandler = this.handleMessage.bind(this);
 
-		if (typeof window !== 'undefined') {
-			window.addEventListener('message', this.boundHandler);
-		}
-	}
+    if (typeof window !== 'undefined') {
+      window.addEventListener('message', this.boundHandler);
+    }
+  }
 
-	private handleMessage(event: MessageEvent) {
-		// Only dispatch if the source is a window (from an iframe)
-		// Skip messages from extensions, workers, or same-window postMessages
-		if (!event.source || event.source === window) {
-			return;
-		}
+  private handleMessage(event: MessageEvent) {
+    // Only dispatch if the source is a window (from an iframe)
+    // Skip messages from extensions, workers, or same-window postMessages
+    if (!event.source || event.source === window) {
+      return;
+    }
 
-		this.eventBus.dispatch({
-			type: 'iframePostMessage',
-			source: event.source as Window,
-			data: event.data,
-			origin: event.origin
-		});
-	}
+    this.eventBus.dispatch({
+      type: 'iframePostMessage',
+      source: event.source as Window,
+      data: event.data,
+      origin: event.origin
+    });
+  }
 
-	static getInstance(): IframePostMessageListener {
-		if (!IframePostMessageListener.instance) {
-			IframePostMessageListener.instance = new IframePostMessageListener();
-		}
+  static getInstance(): IframePostMessageListener {
+    if (!IframePostMessageListener.instance) {
+      IframePostMessageListener.instance = new IframePostMessageListener();
+    }
 
-		return IframePostMessageListener.instance;
-	}
+    return IframePostMessageListener.instance;
+  }
 
-	destroy() {
-		if (typeof window !== 'undefined') {
-			window.removeEventListener('message', this.boundHandler);
-		}
+  destroy() {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('message', this.boundHandler);
+    }
 
-		IframePostMessageListener.instance = null;
-	}
+    IframePostMessageListener.instance = null;
+  }
 }

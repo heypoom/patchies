@@ -104,20 +104,20 @@ let bass = note(\`<
 stack(drums, wurli, organ, clav, bass)`;
 
 type StrudelNodeData = {
-	code: string;
+  code: string;
 };
 
 export const STRUDEL_PRESETS: Record<string, { type: string; data: StrudelNodeData }> = {
-	'bump-street.strudel': {
-		type: 'strudel',
-		data: { code: BUMP_STREET.trim() }
-	},
-	'traffic-flam.strudel': {
-		type: 'strudel',
-		data: { code: TRAFFIC_FLAM.trim() }
-	},
-	'funk-42.strudel': {
-		type: 'strudel',
-		data: { code: FUNK_42.trim() }
-	}
+  'bump-street.strudel': {
+    type: 'strudel',
+    data: { code: BUMP_STREET.trim() }
+  },
+  'traffic-flam.strudel': {
+    type: 'strudel',
+    data: { code: TRAFFIC_FLAM.trim() }
+  },
+  'funk-42.strudel': {
+    type: 'strudel',
+    data: { code: FUNK_42.trim() }
+  }
 };

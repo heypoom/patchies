@@ -1,7 +1,7 @@
 /** What node type and initial node data should be */
 export interface ShorthandResult {
-	nodeType: string;
-	data: Record<string, unknown>;
+  nodeType: string;
+  data: Record<string, unknown>;
 }
 
 /**
@@ -9,12 +9,12 @@ export interface ShorthandResult {
  * Shorthands are macros that transform user input into specific node types.
  */
 export interface ObjectShorthand {
-	/** Names that trigger this shorthand (e.g. ['msg', 'm']) */
-	names: string[];
+  /** Names that trigger this shorthand (e.g. ['msg', 'm']) */
+  names: string[];
 
-	/** Description for autocomplete UI */
-	description?: string;
+  /** Description for autocomplete UI */
+  description?: string;
 
-	/** Transform function that returns the node type and data */
-	transform: (expr: string, matchedName: string) => ShorthandResult;
+  /** Transform function that returns the node type and data */
+  transform: (expr: string, matchedName: string) => ShorthandResult;
 }

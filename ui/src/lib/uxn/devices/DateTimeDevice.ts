@@ -4,53 +4,53 @@
 import type { UxnEmulator } from '../UxnEmulator';
 
 export class DateTimeDevice {
-	private emu: UxnEmulator;
+  private emu: UxnEmulator;
 
-	constructor(emu: UxnEmulator) {
-		this.emu = emu;
-	}
+  constructor(emu: UxnEmulator) {
+    this.emu = emu;
+  }
 
-	dei(port: number): number {
-		const now = new Date();
+  dei(port: number): number {
+    const now = new Date();
 
-		switch (port) {
-			case 0xc0:
-				return now.getFullYear() >> 8;
-			case 0xc1:
-				return now.getFullYear() & 0xff;
-			case 0xc2:
-				return now.getMonth();
-			case 0xc3:
-				return now.getDate();
-			case 0xc4:
-				return now.getHours();
-			case 0xc5:
-				return now.getMinutes();
-			case 0xc6:
-				return now.getSeconds();
-			case 0xc7:
-				return now.getDay();
-			case 0xc8:
-				return this.doty() >> 8;
-			case 0xc9:
-				return this.doty() & 0xff;
-			// TODO dst
-			// case 0xca https://stackoverflow.com/a/56429156
-		}
-		return 1;
-	}
+    switch (port) {
+      case 0xc0:
+        return now.getFullYear() >> 8;
+      case 0xc1:
+        return now.getFullYear() & 0xff;
+      case 0xc2:
+        return now.getMonth();
+      case 0xc3:
+        return now.getDate();
+      case 0xc4:
+        return now.getHours();
+      case 0xc5:
+        return now.getMinutes();
+      case 0xc6:
+        return now.getSeconds();
+      case 0xc7:
+        return now.getDay();
+      case 0xc8:
+        return this.doty() >> 8;
+      case 0xc9:
+        return this.doty() & 0xff;
+      // TODO dst
+      // case 0xca https://stackoverflow.com/a/56429156
+    }
+    return 1;
+  }
 
-	private doty(): number {
-		const now = new Date();
-		const start = new Date(now.getFullYear(), 0, 0);
+  private doty(): number {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
 
-		const diff =
-			now.getTime() -
-			start.getTime() +
-			(start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000;
+    const diff =
+      now.getTime() -
+      start.getTime() +
+      (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000;
 
-		const oneDay = 1000 * 60 * 60 * 24;
+    const oneDay = 1000 * 60 * 60 * 24;
 
-		return Math.floor(diff / oneDay) - 1;
-	}
+    return Math.floor(diff / oneDay) - 1;
+  }
 }

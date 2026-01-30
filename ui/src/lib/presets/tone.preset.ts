@@ -78,20 +78,20 @@ recv(m => {
 return { cleanup: () => filter.dispose() }`;
 
 export const TONE_JS_PRESETS = {
-	'poly-synth-midi.tone': {
-		type: 'tone~',
-		data: { code: POLY_SYNTH_MIDI_JS, messageInletCount: 1, title: 'synth~' }
-	},
-	'pipe.tone': {
-		type: 'tone~',
-		data: { code: PIPE_JS, messageInletCount: 0 }
-	},
-	'reverb.tone': {
-		type: 'tone~',
-		data: { code: REVERB_JS, messageInletCount: 0, title: 'reverb~' }
-	},
-	'lowpass.tone': {
-		type: 'tone~',
-		data: { code: LOWPASS_JS, messageInletCount: 1, title: 'lowpass~' }
-	}
+  'poly-synth-midi.tone': {
+    type: 'tone~',
+    data: { code: POLY_SYNTH_MIDI_JS, messageInletCount: 1, title: 'synth~' }
+  },
+  'pipe.tone': {
+    type: 'tone~',
+    data: { code: PIPE_JS, messageInletCount: 0 }
+  },
+  'reverb.tone': {
+    type: 'tone~',
+    data: { code: REVERB_JS, messageInletCount: 0, title: 'reverb~' }
+  },
+  'lowpass.tone': {
+    type: 'tone~',
+    data: { code: LOWPASS_JS, messageInletCount: 1, title: 'lowpass~' }
+  }
 };

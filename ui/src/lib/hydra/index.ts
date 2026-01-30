@@ -7,7 +7,7 @@ export { Source } from './Source';
 export { Output } from './Output';
 export * as generators from './glsl';
 export {
-	generatorTransforms as defaultGenerators,
-	modifierTransforms as defaultModifiers
+  generatorTransforms as defaultGenerators,
+  modifierTransforms as defaultModifiers
 } from './glsl/transformDefinitions';
 export { createGenerators, createTransformChainClass } from './glsl/createGenerators';

@@ -1,98 +1,98 @@
 <script lang="ts">
-	import type { InspectedMachine, Effect } from '$lib/assembly';
+  import type { InspectedMachine, Effect } from '$lib/assembly';
 
-	interface Props {
-		machineId: number;
-		state?: InspectedMachine | null;
-		error?: string | null;
-		logs?: string[];
-	}
+  interface Props {
+    machineId: number;
+    state?: InspectedMachine | null;
+    error?: string | null;
+    logs?: string[];
+  }
 
-	let { machineId, state, error, logs = [] }: Props = $props();
+  let { machineId, state, error, logs = [] }: Props = $props();
 
-	// Derive status information
-	const errored = $derived(state?.status === 'Errored');
-	const awaiting = $derived(state?.status === 'Awaiting');
-	const sleeping = $derived(state?.status === 'Sleeping');
-	const halted = $derived(state?.status === 'Halted');
-	const running = $derived(state?.status === 'Running');
-	const ready = $derived(state?.status === 'Ready');
-	const backpressuring = $derived((state?.inbox_size || 0) > 50);
-	const sending = $derived((state?.outbox_size || 0) >= 1);
+  // Derive status information
+  const errored = $derived(state?.status === 'Errored');
+  const awaiting = $derived(state?.status === 'Awaiting');
+  const sleeping = $derived(state?.status === 'Sleeping');
+  const halted = $derived(state?.status === 'Halted');
+  const running = $derived(state?.status === 'Running');
+  const ready = $derived(state?.status === 'Ready');
+  const backpressuring = $derived((state?.inbox_size || 0) > 50);
+  const sending = $derived((state?.outbox_size || 0) >= 1);
 
-	function getStatusBadge(): string {
-		if (errored) return 'text-red-400';
-		if (awaiting) return 'text-purple-400';
-		if (sending) return 'text-blue-400';
-		if (sleeping) return 'text-gray-400';
-		if (halted) return 'text-gray-500';
-		if (running) return 'text-green-400';
-		if (ready) return 'text-blue-400';
+  function getStatusBadge(): string {
+    if (errored) return 'text-red-400';
+    if (awaiting) return 'text-purple-400';
+    if (sending) return 'text-blue-400';
+    if (sleeping) return 'text-gray-400';
+    if (halted) return 'text-gray-500';
+    if (running) return 'text-green-400';
+    if (ready) return 'text-blue-400';
 
-		return '';
-	}
+    return '';
+  }
 </script>
 
 <div class={['flex flex-col gap-1 px-1 font-mono text-xs']}>
-	<div
-		class={[
-			'absolute top-2 right-4 rounded-sm bg-zinc-900/80 px-1 py-0.5 font-mono text-[10px] lowercase',
-			getStatusBadge()
-		]}
-	>
-		{state?.status}
-	</div>
+  <div
+    class={[
+      'absolute top-2 right-4 rounded-sm bg-zinc-900/80 px-1 py-0.5 font-mono text-[10px] lowercase',
+      getStatusBadge()
+    ]}
+  >
+    {state?.status}
+  </div>
 
-	<!-- Error Display -->
-	{#if error}
-		<div
-			class="my-1 rounded border border-red-500/20 bg-red-500/10 px-2 py-1 whitespace-pre text-red-400"
-		>
-			{error}
-		</div>
-	{/if}
+  <!-- Error Display -->
+  {#if error}
+    <div
+      class="my-1 rounded border border-red-500/20 bg-red-500/10 px-2 py-1 whitespace-pre text-red-400"
+    >
+      {error}
+    </div>
+  {/if}
 
-	<!-- Effects/Logs Display -->
-	{#if logs.length > 0}
-		<div class="mt-1 mb-2 rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-400">
-			{#each logs as log}
-				<div>&gt; {log}</div>
-			{/each}
-		</div>
-	{/if}
+  <!-- Effects/Logs Display -->
+  {#if logs.length > 0}
+    <div class="mt-1 mb-2 rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-400">
+      {#each logs as log}
+        <div>&gt; {log}</div>
+      {/each}
+    </div>
+  {/if}
 
-	<!-- Registers and State -->
-	{#if state}
-		<div class="bg-transparent">
-			<div class="flex gap-3 font-mono text-green-400">
-				<div>
-					<span class="text-[10px] text-zinc-400">ID</span>
-					<span>{machineId}</span>
-				</div>
+  <!-- Registers and State -->
+  {#if state}
+    <div class="bg-transparent">
+      <div class="flex gap-3 font-mono text-green-400">
+        <div>
+          <span class="text-[10px] text-zinc-400">ID</span>
+          <span>{machineId}</span>
+        </div>
 
-				<div>
-					<span class="text-[10px] text-zinc-400">PC</span>
-					<span>{state.registers.pc.toString().padStart(2, '0')}</span>
-				</div>
+        <div>
+          <span class="text-[10px] text-zinc-400">PC</span>
+          <span>{state.registers.pc.toString().padStart(2, '0')}</span>
+        </div>
 
-				<div>
-					<span class="text-[10px] text-zinc-400">SP</span>
-					<span>{state.registers.sp}</span>
-				</div>
+        <div>
+          <span class="text-[10px] text-zinc-400">SP</span>
+          <span>{state.registers.sp}</span>
+        </div>
 
-				<div>
-					<span class="text-[10px] text-zinc-400">FP</span>
-					<span>{state.registers.fp}</span>
-				</div>
+        <div>
+          <span class="text-[10px] text-zinc-400">FP</span>
+          <span>{state.registers.fp}</span>
+        </div>
 
-				<!-- Inbox -->
-				{#if state.inbox_size > 0 || state.outbox_size > 0}
-					<div class="text-blue-400" class:text-red-400={backpressuring}>
-						<span class="text-[10px] text-zinc-400">IO</span>
-						<span class="ml-1">{state.inbox_size ?? 0}/{state.outbox_size ?? 0}</span>
-					</div>
-				{/if}
-			</div>
-		</div>
-	{/if}
+        <!-- Inbox -->
+        {#if state.inbox_size > 0 || state.outbox_size > 0}
+          <div class="text-blue-400" class:text-red-400={backpressuring}>
+            <span class="text-[10px] text-zinc-400">IO</span>
+            <span class="ml-1">{state.inbox_size ?? 0}/{state.outbox_size ?? 0}</span>
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
 </div>

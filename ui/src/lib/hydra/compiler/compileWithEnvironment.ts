@@ -6,66 +6,66 @@ import type { DynamicVariable, DynamicVariableFn, Texture2D, Uniform } from 'reg
 import { generateGlsl } from './generateGlsl';
 
 export type CompiledTransform = {
-	frag: string;
-	uniforms: {
-		[name: string]:
-			| string
-			| Uniform
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			| ((context: any, props: any) => number | number[])
-			| Texture2D
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			| DynamicVariable<any>
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			| DynamicVariableFn<any, any, any>
-			| undefined;
-	};
+  frag: string;
+  uniforms: {
+    [name: string]:
+      | string
+      | Uniform
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      | ((context: any, props: any) => number | number[])
+      | Texture2D
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      | DynamicVariable<any>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      | DynamicVariableFn<any, any, any>
+      | undefined;
+  };
 };
 
 export interface ShaderParams {
-	uniforms: TypedArg[];
-	transformApplications: TransformApplication[];
-	fragColor: string;
+  uniforms: TypedArg[];
+  transformApplications: TransformApplication[];
+  fragColor: string;
 }
 
 export function compileWithEnvironment(
-	transformApplications: TransformApplication[],
-	environment: GlEnvironment
+  transformApplications: TransformApplication[],
+  environment: GlEnvironment
 ): CompiledTransform {
-	const shaderParams = compileGlsl(transformApplications, environment.onError);
+  const shaderParams = compileGlsl(transformApplications, environment.onError);
 
-	const uniforms: Record<TypedArg['name'], TypedArg['value']> = {};
-	shaderParams.uniforms.forEach((uniform) => {
-		uniforms[uniform.name] = uniform.value;
-	});
+  const uniforms: Record<TypedArg['name'], TypedArg['value']> = {};
+  shaderParams.uniforms.forEach((uniform) => {
+    uniforms[uniform.name] = uniform.value;
+  });
 
-	const frag = `
+  const frag = `
   precision ${environment.precision} float;
   ${Object.values(shaderParams.uniforms)
-		.map((uniform) => {
-			return `
+    .map((uniform) => {
+      return `
       uniform ${uniform.type} ${uniform.name};`;
-		})
-		.join('')}
+    })
+    .join('')}
   uniform float time;
   uniform vec2 resolution;
   varying vec2 uv;
 
   ${Object.values(utilityFunctions)
-		.map((transform) => {
-			return `
+    .map((transform) => {
+      return `
             ${transform.glsl}
           `;
-		})
-		.join('')}
+    })
+    .join('')}
 
   ${shaderParams.transformApplications
-		.map((transformApplication) => {
-			return `
+    .map((transformApplication) => {
+      return `
             ${transformApplication.transform.glsl}
           `;
-		})
-		.join('')}
+    })
+    .join('')}
 
   void main () {
     vec4 c = vec4(1, 0, 0, 1);
@@ -74,29 +74,29 @@ export function compileWithEnvironment(
   }
   `;
 
-	return {
-		frag: frag,
-		uniforms: { ...environment.defaultUniforms, ...uniforms }
-	};
+  return {
+    frag: frag,
+    uniforms: { ...environment.defaultUniforms, ...uniforms }
+  };
 }
 
 export function compileGlsl(
-	transformApplications: TransformApplication[],
-	onError?: HydraErrorHandler
+  transformApplications: TransformApplication[],
+  onError?: HydraErrorHandler
 ): ShaderParams {
-	const shaderParams: ShaderParams = {
-		uniforms: [],
-		transformApplications: [],
-		fragColor: ''
-	};
+  const shaderParams: ShaderParams = {
+    uniforms: [],
+    transformApplications: [],
+    fragColor: ''
+  };
 
-	// Note: generateGlsl() also mutates shaderParams.transformApplications
-	shaderParams.fragColor = generateGlsl(transformApplications, shaderParams, onError)('st');
+  // Note: generateGlsl() also mutates shaderParams.transformApplications
+  shaderParams.fragColor = generateGlsl(transformApplications, shaderParams, onError)('st');
 
-	// remove uniforms with duplicate names
-	const uniforms: Record<string, TypedArg> = {};
-	shaderParams.uniforms.forEach((uniform) => (uniforms[uniform.name] = uniform));
-	shaderParams.uniforms = Object.values(uniforms);
+  // remove uniforms with duplicate names
+  const uniforms: Record<string, TypedArg> = {};
+  shaderParams.uniforms.forEach((uniform) => (uniforms[uniform.name] = uniform));
+  shaderParams.uniforms = Object.values(uniforms);
 
-	return shaderParams;
+  return shaderParams;
 }

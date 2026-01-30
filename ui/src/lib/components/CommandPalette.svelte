@@ -1,700 +1,700 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { match } from 'ts-pattern';
-	import {
-		isAiFeaturesVisible,
-		isBottomBarVisible,
-		isFpsMonitorVisible,
-		isConnectionMode,
-		isConnecting,
-		connectingFromHandleId
-	} from '../../stores/ui.store';
-	import type { Node, Edge } from '@xyflow/svelte';
-	import { IpcSystem } from '$lib/canvas/IpcSystem';
-	import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
-	import { AudioService } from '$lib/audio/v2/AudioService';
-	import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
-	import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
-	import { createAndCopyShareLink } from '$lib/save-load/share';
-	import { deleteSearchParam } from '$lib/utils/search-params';
-	import { migratePatch } from '$lib/migration';
+  import { onMount } from 'svelte';
+  import { match } from 'ts-pattern';
+  import {
+    isAiFeaturesVisible,
+    isBottomBarVisible,
+    isFpsMonitorVisible,
+    isConnectionMode,
+    isConnecting,
+    connectingFromHandleId
+  } from '../../stores/ui.store';
+  import type { Node, Edge } from '@xyflow/svelte';
+  import { IpcSystem } from '$lib/canvas/IpcSystem';
+  import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+  import { AudioService } from '$lib/audio/v2/AudioService';
+  import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
+  import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
+  import { createAndCopyShareLink } from '$lib/save-load/share';
+  import { deleteSearchParam } from '$lib/utils/search-params';
+  import { migratePatch } from '$lib/migration';
 
-	interface Props {
-		position: { x: number; y: number };
-		onCancel: () => void;
-		nodes: Node[];
-		edges: Edge[];
-		setNodes: (nodes: Node[]) => void;
-		setEdges: (edges: Edge[]) => void;
-		onShowAiPrompt?: () => void;
-		onShowGeminiKeyModal?: () => void;
-		onNewPatch?: () => void;
-		onOpenLeftSidebar?: () => void;
-	}
+  interface Props {
+    position: { x: number; y: number };
+    onCancel: () => void;
+    nodes: Node[];
+    edges: Edge[];
+    setNodes: (nodes: Node[]) => void;
+    setEdges: (edges: Edge[]) => void;
+    onShowAiPrompt?: () => void;
+    onShowGeminiKeyModal?: () => void;
+    onNewPatch?: () => void;
+    onOpenLeftSidebar?: () => void;
+  }
 
-	let {
-		position,
-		onCancel,
-		nodes,
-		edges,
-		setNodes,
-		setEdges,
-		onShowAiPrompt,
-		onShowGeminiKeyModal,
-		onNewPatch,
-		onOpenLeftSidebar
-	}: Props = $props();
+  let {
+    position,
+    onCancel,
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    onShowAiPrompt,
+    onShowGeminiKeyModal,
+    onNewPatch,
+    onOpenLeftSidebar
+  }: Props = $props();
 
-	// Component state
-	let searchQuery = $state('');
-	let selectedIndex = $state(0);
-	let searchInput: HTMLInputElement | undefined = $state();
-	let paletteContainer: HTMLDivElement | undefined = $state();
-	let resultsContainer: HTMLDivElement | undefined = $state();
-	let ipcSystem = IpcSystem.getInstance();
+  // Component state
+  let searchQuery = $state('');
+  let selectedIndex = $state(0);
+  let searchInput: HTMLInputElement | undefined = $state();
+  let paletteContainer: HTMLDivElement | undefined = $state();
+  let resultsContainer: HTMLDivElement | undefined = $state();
+  let ipcSystem = IpcSystem.getInstance();
 
-	type StageName =
-		| 'commands'
-		| 'save-name'
-		| 'load-list'
-		| 'delete-list'
-		| 'rename-list'
-		| 'rename-name';
+  type StageName =
+    | 'commands'
+    | 'save-name'
+    | 'load-list'
+    | 'delete-list'
+    | 'rename-list'
+    | 'rename-name';
 
-	// Multi-stage state
-	let stage = $state<StageName>('commands');
+  // Multi-stage state
+  let stage = $state<StageName>('commands');
 
-	let patchName = $state('');
-	let savedPatches = $state<string[]>([]);
-	let selectedPatchToRename = $state('');
+  let patchName = $state('');
+  let savedPatches = $state<string[]>([]);
+  let selectedPatchToRename = $state('');
 
-	// Base commands for stage 1
-	const commands = [
-		{
-			id: 'share-patch',
-			name: 'Share Patch Link',
-			description: 'Get a shareable link for your patch.'
-		},
-		{
-			id: 'new-patch',
-			name: 'New Patch (!!)',
-			description: 'Remove all nodes and edges from the canvas. All unsaved changes will be lost!'
-		},
-		{
-			id: 'enter-fullscreen',
-			name: 'Enter Fullscreen',
-			description: 'Enter fullscreen mode in the main window.'
-		},
-		{
-			id: 'toggle-connect-mode',
-			name: 'Toggle Easy Connect',
-			description: 'Enter or exit easy connect mode for quickly connecting objects'
-		},
-		{
-			id: 'ai-insert-object',
-			name: 'Insert or Edit Object with AI',
-			description: 'Use AI to create objects with natural language',
-			requiresAi: true
-		},
-		{ id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
-		{ id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
-		{ id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
-		{ id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
-		{ id: 'rename-patch', name: 'Rename Patch', description: 'Rename saved patch' },
-		{ id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' },
-		{
-			id: 'open-output-screen',
-			name: 'Open Output Screen',
-			description: 'Open a secondary output screen for live performances.'
-		},
-		{
-			id: 'toggle-ai-features',
-			name: 'Toggle AI Features',
-			description: 'Show or hide AI-related objects and features'
-		},
-		{
-			id: 'toggle-vim-mode',
-			name: 'Toggle Vim Mode',
-			description: 'Enable or disable Vim keybindings in code editors'
-		},
-		{
-			id: 'toggle-fps-monitor',
-			name: 'Toggle FPS Monitor',
-			description: 'Show or hide the FPS monitor'
-		},
-		{
-			id: 'set-gemini-api-key',
-			name: 'Set Gemini AI API Key',
-			description: 'Configure Google Gemini API key for AI features',
-			requiresAi: true
-		},
-		{
-			id: 'toggle-bottom-bar',
-			name: 'Toggle Bottom Bar',
-			description: 'Show or hide the bottom toolbar'
-		},
-		{
-			id: 'browse-files',
-			name: 'Browse Files',
-			description: 'View files in the virtual filesystem'
-		}
-	];
+  // Base commands for stage 1
+  const commands = [
+    {
+      id: 'share-patch',
+      name: 'Share Patch Link',
+      description: 'Get a shareable link for your patch.'
+    },
+    {
+      id: 'new-patch',
+      name: 'New Patch (!!)',
+      description: 'Remove all nodes and edges from the canvas. All unsaved changes will be lost!'
+    },
+    {
+      id: 'enter-fullscreen',
+      name: 'Enter Fullscreen',
+      description: 'Enter fullscreen mode in the main window.'
+    },
+    {
+      id: 'toggle-connect-mode',
+      name: 'Toggle Easy Connect',
+      description: 'Enter or exit easy connect mode for quickly connecting objects'
+    },
+    {
+      id: 'ai-insert-object',
+      name: 'Insert or Edit Object with AI',
+      description: 'Use AI to create objects with natural language',
+      requiresAi: true
+    },
+    { id: 'export-patch', name: 'Export Patch', description: 'Save patch as JSON file' },
+    { id: 'import-patch', name: 'Import Patch', description: 'Load patch from JSON file' },
+    { id: 'save-patch', name: 'Save Patch', description: 'Save patch to local storage' },
+    { id: 'load-patch', name: 'Load Patch', description: 'Load patch from local storage' },
+    { id: 'rename-patch', name: 'Rename Patch', description: 'Rename saved patch' },
+    { id: 'delete-patch', name: 'Delete Patch', description: 'Delete patch from local storage' },
+    {
+      id: 'open-output-screen',
+      name: 'Open Output Screen',
+      description: 'Open a secondary output screen for live performances.'
+    },
+    {
+      id: 'toggle-ai-features',
+      name: 'Toggle AI Features',
+      description: 'Show or hide AI-related objects and features'
+    },
+    {
+      id: 'toggle-vim-mode',
+      name: 'Toggle Vim Mode',
+      description: 'Enable or disable Vim keybindings in code editors'
+    },
+    {
+      id: 'toggle-fps-monitor',
+      name: 'Toggle FPS Monitor',
+      description: 'Show or hide the FPS monitor'
+    },
+    {
+      id: 'set-gemini-api-key',
+      name: 'Set Gemini AI API Key',
+      description: 'Configure Google Gemini API key for AI features',
+      requiresAi: true
+    },
+    {
+      id: 'toggle-bottom-bar',
+      name: 'Toggle Bottom Bar',
+      description: 'Show or hide the bottom toolbar'
+    },
+    {
+      id: 'browse-files',
+      name: 'Browse Files',
+      description: 'View files in the virtual filesystem'
+    }
+  ];
 
-	// Filtered items based on current stage
-	const filteredCommands = $derived.by(() => {
-		return commands
-			.filter((cmd) => !cmd.requiresAi || $isAiFeaturesVisible)
-			.filter((cmd) => cmd.name.toLowerCase().includes(searchQuery.toLowerCase()));
-	});
+  // Filtered items based on current stage
+  const filteredCommands = $derived.by(() => {
+    return commands
+      .filter((cmd) => !cmd.requiresAi || $isAiFeaturesVisible)
+      .filter((cmd) => cmd.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
-	const filteredPatches = $derived.by(() => {
-		return savedPatches.filter((patch) => patch.toLowerCase().includes(searchQuery.toLowerCase()));
-	});
+  const filteredPatches = $derived.by(() => {
+    return savedPatches.filter((patch) => patch.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
-	// Auto-focus search input
-	onMount(() => {
-		searchInput?.focus();
-		loadSavedPatches();
-	});
+  // Auto-focus search input
+  onMount(() => {
+    searchInput?.focus();
+    loadSavedPatches();
+  });
 
-	// Focus input when stage changes
-	$effect(() => {
-		if (
-			stage === 'save-name' ||
-			stage === 'load-list' ||
-			stage === 'delete-list' ||
-			stage === 'rename-list' ||
-			stage === 'rename-name' ||
-			stage === 'commands'
-		) {
-			setTimeout(() => {
-				searchInput?.focus();
-			}, 0);
-		}
-	});
+  // Focus input when stage changes
+  $effect(() => {
+    if (
+      stage === 'save-name' ||
+      stage === 'load-list' ||
+      stage === 'delete-list' ||
+      stage === 'rename-list' ||
+      stage === 'rename-name' ||
+      stage === 'commands'
+    ) {
+      setTimeout(() => {
+        searchInput?.focus();
+      }, 0);
+    }
+  });
 
-	function loadSavedPatches() {
-		const saved = localStorage.getItem('patchies-saved-patches');
-		if (saved) {
-			try {
-				savedPatches = JSON.parse(saved);
-			} catch (e) {
-				savedPatches = [];
-			}
-		}
-	}
+  function loadSavedPatches() {
+    const saved = localStorage.getItem('patchies-saved-patches');
+    if (saved) {
+      try {
+        savedPatches = JSON.parse(saved);
+      } catch (e) {
+        savedPatches = [];
+      }
+    }
+  }
 
-	function handleKeydown(event: KeyboardEvent) {
-		match(event.key)
-			.with('Escape', () => {
-				event.preventDefault();
-				if (stage !== 'commands') {
-					// Go back to commands stage
-					stage = 'commands';
-					searchQuery = '';
-					selectedIndex = 0;
-					searchInput?.focus();
-				} else {
-					onCancel();
-				}
-			})
-			.with('ArrowDown', () => {
-				event.preventDefault();
-				const maxIndex =
-					stage === 'commands'
-						? filteredCommands.length - 1
-						: stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
-							? filteredPatches.length - 1
-							: 0;
-				selectedIndex = Math.min(selectedIndex + 1, maxIndex);
-				scrollToSelectedItem();
-			})
-			.with('ArrowUp', () => {
-				event.preventDefault();
-				selectedIndex = Math.max(selectedIndex - 1, 0);
-				scrollToSelectedItem();
-			})
-			.with('Enter', () => {
-				event.preventDefault();
-				handleSelect();
-			});
-	}
+  function handleKeydown(event: KeyboardEvent) {
+    match(event.key)
+      .with('Escape', () => {
+        event.preventDefault();
+        if (stage !== 'commands') {
+          // Go back to commands stage
+          stage = 'commands';
+          searchQuery = '';
+          selectedIndex = 0;
+          searchInput?.focus();
+        } else {
+          onCancel();
+        }
+      })
+      .with('ArrowDown', () => {
+        event.preventDefault();
+        const maxIndex =
+          stage === 'commands'
+            ? filteredCommands.length - 1
+            : stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
+              ? filteredPatches.length - 1
+              : 0;
+        selectedIndex = Math.min(selectedIndex + 1, maxIndex);
+        scrollToSelectedItem();
+      })
+      .with('ArrowUp', () => {
+        event.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        scrollToSelectedItem();
+      })
+      .with('Enter', () => {
+        event.preventDefault();
+        handleSelect();
+      });
+  }
 
-	function handleSelect() {
-		if (stage === 'commands' && filteredCommands.length > 0) {
-			const selectedCommand = filteredCommands[selectedIndex];
-			executeCommand(selectedCommand.id);
-		} else if (stage === 'save-name' && patchName.trim()) {
-			// remove any URL params related to shared patches
-			deleteSearchParam('id');
-			deleteSearchParam('src');
+  function handleSelect() {
+    if (stage === 'commands' && filteredCommands.length > 0) {
+      const selectedCommand = filteredCommands[selectedIndex];
+      executeCommand(selectedCommand.id);
+    } else if (stage === 'save-name' && patchName.trim()) {
+      // remove any URL params related to shared patches
+      deleteSearchParam('id');
+      deleteSearchParam('src');
 
-			savePatchToLocalStorage({ name: patchName, nodes, edges });
-			onCancel();
-		} else if (stage === 'load-list' && filteredPatches.length > 0) {
-			const selectedPatch = filteredPatches[selectedIndex];
-			loadFromLocalStorage(selectedPatch);
-		} else if (stage === 'delete-list' && filteredPatches.length > 0) {
-			const selectedPatch = filteredPatches[selectedIndex];
-			deleteFromLocalStorage(selectedPatch);
-		} else if (stage === 'rename-list' && filteredPatches.length > 0) {
-			const selectedPatch = filteredPatches[selectedIndex];
-			selectedPatchToRename = selectedPatch;
-			stage = 'rename-name';
-			searchQuery = '';
-			patchName = selectedPatch; // Pre-fill with current name
-			selectedIndex = 0;
-		} else if (stage === 'rename-name' && patchName.trim()) {
-			renamePatch();
-		}
-	}
+      savePatchToLocalStorage({ name: patchName, nodes, edges });
+      onCancel();
+    } else if (stage === 'load-list' && filteredPatches.length > 0) {
+      const selectedPatch = filteredPatches[selectedIndex];
+      loadFromLocalStorage(selectedPatch);
+    } else if (stage === 'delete-list' && filteredPatches.length > 0) {
+      const selectedPatch = filteredPatches[selectedIndex];
+      deleteFromLocalStorage(selectedPatch);
+    } else if (stage === 'rename-list' && filteredPatches.length > 0) {
+      const selectedPatch = filteredPatches[selectedIndex];
+      selectedPatchToRename = selectedPatch;
+      stage = 'rename-name';
+      searchQuery = '';
+      patchName = selectedPatch; // Pre-fill with current name
+      selectedIndex = 0;
+    } else if (stage === 'rename-name' && patchName.trim()) {
+      renamePatch();
+    }
+  }
 
-	const nextStage = (stageName: StageName) => {
-		stage = stageName;
-		searchQuery = '';
-		selectedIndex = 0;
-	};
+  const nextStage = (stageName: StageName) => {
+    stage = stageName;
+    searchQuery = '';
+    selectedIndex = 0;
+  };
 
-	function executeCommand(commandId: string) {
-		match(commandId)
-			.with('export-patch', () => saveToFile())
-			.with('import-patch', () => loadFromFile())
-			.with('save-patch', () => nextStage('save-name'))
-			.with('load-patch', () => nextStage('load-list'))
-			.with('delete-patch', () => nextStage('delete-list'))
-			.with('rename-patch', () => nextStage('rename-list'))
-			.with('set-gemini-api-key', () => {
-				onCancel();
-				onShowGeminiKeyModal?.();
-			})
-			.with('toggle-bottom-bar', () => {
-				$isBottomBarVisible = !$isBottomBarVisible;
-				onCancel();
-			})
-			.with('toggle-fps-monitor', () => {
-				$isFpsMonitorVisible = !$isFpsMonitorVisible;
-				onCancel();
-			})
-			.with('toggle-ai-features', () => {
-				$isAiFeaturesVisible = !$isAiFeaturesVisible;
-				onCancel();
-			})
-			.with('open-output-screen', () => {
-				isBackgroundOutputCanvasEnabled.set(false);
-				ipcSystem.openOutputWindow();
-				onCancel();
-			})
-			.with('enter-fullscreen', () => {
-				document.querySelector('html')?.requestFullscreen();
-				onCancel();
-			})
-			.with('share-patch', async () => {
-				onCancel();
-				await createAndCopyShareLink(nodes, edges);
-			})
-			.with('new-patch', () => {
-				onCancel();
-				onNewPatch?.();
-			})
-			.with('browse-files', () => {
-				onCancel();
-				onOpenLeftSidebar?.();
-			})
-			.with('toggle-vim-mode', () => {
-				const current = localStorage.getItem('editor.vim') === 'true';
-				localStorage.setItem('editor.vim', String(!current));
+  function executeCommand(commandId: string) {
+    match(commandId)
+      .with('export-patch', () => saveToFile())
+      .with('import-patch', () => loadFromFile())
+      .with('save-patch', () => nextStage('save-name'))
+      .with('load-patch', () => nextStage('load-list'))
+      .with('delete-patch', () => nextStage('delete-list'))
+      .with('rename-patch', () => nextStage('rename-list'))
+      .with('set-gemini-api-key', () => {
+        onCancel();
+        onShowGeminiKeyModal?.();
+      })
+      .with('toggle-bottom-bar', () => {
+        $isBottomBarVisible = !$isBottomBarVisible;
+        onCancel();
+      })
+      .with('toggle-fps-monitor', () => {
+        $isFpsMonitorVisible = !$isFpsMonitorVisible;
+        onCancel();
+      })
+      .with('toggle-ai-features', () => {
+        $isAiFeaturesVisible = !$isAiFeaturesVisible;
+        onCancel();
+      })
+      .with('open-output-screen', () => {
+        isBackgroundOutputCanvasEnabled.set(false);
+        ipcSystem.openOutputWindow();
+        onCancel();
+      })
+      .with('enter-fullscreen', () => {
+        document.querySelector('html')?.requestFullscreen();
+        onCancel();
+      })
+      .with('share-patch', async () => {
+        onCancel();
+        await createAndCopyShareLink(nodes, edges);
+      })
+      .with('new-patch', () => {
+        onCancel();
+        onNewPatch?.();
+      })
+      .with('browse-files', () => {
+        onCancel();
+        onOpenLeftSidebar?.();
+      })
+      .with('toggle-vim-mode', () => {
+        const current = localStorage.getItem('editor.vim') === 'true';
+        localStorage.setItem('editor.vim', String(!current));
 
-				onCancel();
-				window.location.reload();
-			})
-			.with('toggle-connect-mode', () => {
-				if ($isConnectionMode) {
-					// Exit connection mode - clear all connection state
-					isConnectionMode.set(false);
-					isConnecting.set(false);
-					connectingFromHandleId.set(null);
-				} else {
-					// Enter connection mode
-					isConnectionMode.set(true);
-				}
-				onCancel();
-			})
-			.with('ai-insert-object', () => {
-				onCancel();
-				onShowAiPrompt?.();
-			})
-			.otherwise(() => {
-				console.warn(`Unknown command: ${commandId}`);
-			});
-	}
+        onCancel();
+        window.location.reload();
+      })
+      .with('toggle-connect-mode', () => {
+        if ($isConnectionMode) {
+          // Exit connection mode - clear all connection state
+          isConnectionMode.set(false);
+          isConnecting.set(false);
+          connectingFromHandleId.set(null);
+        } else {
+          // Enter connection mode
+          isConnectionMode.set(true);
+        }
+        onCancel();
+      })
+      .with('ai-insert-object', () => {
+        onCancel();
+        onShowAiPrompt?.();
+      })
+      .otherwise(() => {
+        console.warn(`Unknown command: ${commandId}`);
+      });
+  }
 
-	function saveToFile() {
-		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-		const patchJson = serializePatch({ name: patchName, nodes, edges });
+  function saveToFile() {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const patchJson = serializePatch({ name: patchName, nodes, edges });
 
-		const blob = new Blob([patchJson], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `patch-${timestamp}.json`;
-		a.click();
-		URL.revokeObjectURL(url);
-		onCancel();
-	}
+    const blob = new Blob([patchJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `patch-${timestamp}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onCancel();
+  }
 
-	function loadFromFile() {
-		const input = document.createElement('input');
-		input.type = 'file';
-		input.accept = '.json';
+  function loadFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
 
-		input.onchange = (event) => {
-			const file = (event.target as HTMLInputElement).files?.[0];
-			if (file) {
-				const reader = new FileReader();
-				reader.onload = (e) => {
-					try {
-						const patchData = JSON.parse(e.target?.result as string);
-						loadPatchData(patchData);
-						onCancel();
-					} catch (error) {
-						console.error('Error loading patch:', error);
-					}
-				};
-				reader.readAsText(file);
-			}
-		};
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const patchData = JSON.parse(e.target?.result as string);
+            loadPatchData(patchData);
+            onCancel();
+          } catch (error) {
+            console.error('Error loading patch:', error);
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
 
-		input.click();
-	}
+    input.click();
+  }
 
-	function loadFromLocalStorage(patchName: string) {
-		const patchData = localStorage.getItem(`patchies-patch-${patchName}`);
-		if (patchData) {
-			try {
-				const data = JSON.parse(patchData);
-				loadPatchData(data);
-				onCancel();
-			} catch (error) {
-				console.error('Error loading patch from storage:', error);
-			}
-		}
-	}
+  function loadFromLocalStorage(patchName: string) {
+    const patchData = localStorage.getItem(`patchies-patch-${patchName}`);
+    if (patchData) {
+      try {
+        const data = JSON.parse(patchData);
+        loadPatchData(data);
+        onCancel();
+      } catch (error) {
+        console.error('Error loading patch from storage:', error);
+      }
+    }
+  }
 
-	function loadPatchData(patchSave: PatchSaveFormat) {
-		try {
-			if (!patchSave || !patchSave.nodes || !patchSave.edges) {
-				throw new Error('Invalid patch data format');
-			}
+  function loadPatchData(patchSave: PatchSaveFormat) {
+    try {
+      if (!patchSave || !patchSave.nodes || !patchSave.edges) {
+        throw new Error('Invalid patch data format');
+      }
 
-			// Apply migrations to upgrade old patch formats
-			const migrated = migratePatch(patchSave) as PatchSaveFormat;
+      // Apply migrations to upgrade old patch formats
+      const migrated = migratePatch(patchSave) as PatchSaveFormat;
 
-			setNodes(migrated.nodes);
-			setEdges(migrated.edges);
+      setNodes(migrated.nodes);
+      setEdges(migrated.edges);
 
-			console.log(`[load] found ${migrated.nodes.length} nodes and ${migrated.edges.length} edges`);
+      console.log(`[load] found ${migrated.nodes.length} nodes and ${migrated.edges.length} edges`);
 
-			AudioService.getInstance().getAudioContext().resume();
+      AudioService.getInstance().getAudioContext().resume();
 
-			patchName = migrated.name || 'Untitled';
-		} catch (error) {
-			console.error('Error deserializing patch data:', error);
-			throw error;
-		}
-	}
+      patchName = migrated.name || 'Untitled';
+    } catch (error) {
+      console.error('Error deserializing patch data:', error);
+      throw error;
+    }
+  }
 
-	function deleteFromLocalStorage(patchName: string) {
-		localStorage.removeItem(`patchies-patch-${patchName}`);
+  function deleteFromLocalStorage(patchName: string) {
+    localStorage.removeItem(`patchies-patch-${patchName}`);
 
-		const saved = localStorage.getItem('patchies-saved-patches') || '[]';
-		try {
-			let savedPatchesList: string[] = JSON.parse(saved);
-			savedPatchesList = savedPatchesList.filter((name) => name !== patchName);
-			localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
+    const saved = localStorage.getItem('patchies-saved-patches') || '[]';
+    try {
+      let savedPatchesList: string[] = JSON.parse(saved);
+      savedPatchesList = savedPatchesList.filter((name) => name !== patchName);
+      localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
 
-			savedPatches = savedPatchesList;
+      savedPatches = savedPatchesList;
 
-			if (selectedIndex >= savedPatchesList.length) {
-				selectedIndex = Math.max(0, savedPatchesList.length - 1);
-			}
-		} catch (error) {
-			console.error('Error deleting patch from storage:', error);
-		}
-	}
+      if (selectedIndex >= savedPatchesList.length) {
+        selectedIndex = Math.max(0, savedPatchesList.length - 1);
+      }
+    } catch (error) {
+      console.error('Error deleting patch from storage:', error);
+    }
+  }
 
-	function renamePatch() {
-		if (!selectedPatchToRename || !patchName.trim() || patchName === selectedPatchToRename) {
-			onCancel();
-			return;
-		}
+  function renamePatch() {
+    if (!selectedPatchToRename || !patchName.trim() || patchName === selectedPatchToRename) {
+      onCancel();
+      return;
+    }
 
-		try {
-			// Get the patch data from the old name
-			const patchData = localStorage.getItem(`patchies-patch-${selectedPatchToRename}`);
-			if (!patchData) {
-				console.error('Patch data not found for rename');
-				onCancel();
-				return;
-			}
+    try {
+      // Get the patch data from the old name
+      const patchData = localStorage.getItem(`patchies-patch-${selectedPatchToRename}`);
+      if (!patchData) {
+        console.error('Patch data not found for rename');
+        onCancel();
+        return;
+      }
 
-			// Save with new name
-			localStorage.setItem(`patchies-patch-${patchName}`, patchData);
+      // Save with new name
+      localStorage.setItem(`patchies-patch-${patchName}`, patchData);
 
-			// Remove old patch data
-			localStorage.removeItem(`patchies-patch-${selectedPatchToRename}`);
+      // Remove old patch data
+      localStorage.removeItem(`patchies-patch-${selectedPatchToRename}`);
 
-			// Update saved patches list
-			const saved = localStorage.getItem('patchies-saved-patches') || '[]';
-			let savedPatchesList: string[] = JSON.parse(saved);
+      // Update saved patches list
+      const saved = localStorage.getItem('patchies-saved-patches') || '[]';
+      let savedPatchesList: string[] = JSON.parse(saved);
 
-			// Replace old name with new name
-			const oldIndex = savedPatchesList.indexOf(selectedPatchToRename);
-			if (oldIndex !== -1) {
-				savedPatchesList[oldIndex] = patchName;
-				localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
+      // Replace old name with new name
+      const oldIndex = savedPatchesList.indexOf(selectedPatchToRename);
+      if (oldIndex !== -1) {
+        savedPatchesList[oldIndex] = patchName;
+        localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatchesList));
 
-				// Update local state
-				savedPatches = savedPatchesList;
-			}
+        // Update local state
+        savedPatches = savedPatchesList;
+      }
 
-			onCancel();
-		} catch (error) {
-			console.error('Error renaming patch:', error);
-			onCancel();
-		}
-	}
+      onCancel();
+    } catch (error) {
+      console.error('Error renaming patch:', error);
+      onCancel();
+    }
+  }
 
-	function scrollToSelectedItem() {
-		if (!resultsContainer) return;
+  function scrollToSelectedItem() {
+    if (!resultsContainer) return;
 
-		const selectedElement = resultsContainer.children[selectedIndex] as HTMLElement;
-		if (!selectedElement) return;
+    const selectedElement = resultsContainer.children[selectedIndex] as HTMLElement;
+    if (!selectedElement) return;
 
-		const containerRect = resultsContainer.getBoundingClientRect();
-		const elementRect = selectedElement.getBoundingClientRect();
+    const containerRect = resultsContainer.getBoundingClientRect();
+    const elementRect = selectedElement.getBoundingClientRect();
 
-		// Check if element is below the visible area
-		if (elementRect.bottom > containerRect.bottom) {
-			selectedElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
-		}
-		// Check if element is above the visible area
-		else if (elementRect.top < containerRect.top) {
-			selectedElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
-		}
-	}
+    // Check if element is below the visible area
+    if (elementRect.bottom > containerRect.bottom) {
+      selectedElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    }
+    // Check if element is above the visible area
+    else if (elementRect.top < containerRect.top) {
+      selectedElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  }
 
-	function handleClickOutside(event: MouseEvent) {
-		// @ts-expect-error -- to fix
-		if (paletteContainer && !paletteContainer.contains(event.target)) {
-			onCancel();
-		}
-	}
+  function handleClickOutside(event: MouseEvent) {
+    // @ts-expect-error -- to fix
+    if (paletteContainer && !paletteContainer.contains(event.target)) {
+      onCancel();
+    }
+  }
 
-	function handleItemClick(index: number, event?: MouseEvent) {
-		event?.stopPropagation();
-		selectedIndex = index;
-		handleSelect();
-	}
+  function handleItemClick(index: number, event?: MouseEvent) {
+    event?.stopPropagation();
+    selectedIndex = index;
+    handleSelect();
+  }
 
-	$effect(() => {
-		const maxIndex =
-			stage === 'commands'
-				? filteredCommands.length - 1
-				: stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
-					? filteredPatches.length - 1
-					: 0;
-		selectedIndex = Math.min(selectedIndex, Math.max(0, maxIndex));
-	});
+  $effect(() => {
+    const maxIndex =
+      stage === 'commands'
+        ? filteredCommands.length - 1
+        : stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
+          ? filteredPatches.length - 1
+          : 0;
+    selectedIndex = Math.min(selectedIndex, Math.max(0, maxIndex));
+  });
 
-	$effect(() => {
-		document.addEventListener('click', handleClickOutside);
-		return () => document.removeEventListener('click', handleClickOutside);
-	});
+  $effect(() => {
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  });
 </script>
 
 <div
-	bind:this={paletteContainer}
-	class="absolute z-50 w-80 rounded-lg border border-zinc-600 bg-zinc-900/90 shadow-2xl backdrop-blur-xl"
-	style="left: {position.x}px; top: {position.y}px;"
+  bind:this={paletteContainer}
+  class="absolute z-50 w-80 rounded-lg border border-zinc-600 bg-zinc-900/90 shadow-2xl backdrop-blur-xl"
+  style="left: {position.x}px; top: {position.y}px;"
 >
-	<!-- Search Input -->
-	{#if stage === 'commands'}
-		<div class="border-b border-zinc-700 p-3">
-			<input
-				bind:this={searchInput}
-				bind:value={searchQuery}
-				onkeydown={handleKeydown}
-				type="text"
-				placeholder="Search commands..."
-				class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-			/>
-		</div>
-	{:else if stage === 'save-name'}
-		<div class="border-b border-zinc-700 p-3">
-			<div class="mb-2 text-xs text-zinc-400">What is the name of the patch?</div>
-			<input
-				bind:this={searchInput}
-				bind:value={patchName}
-				onkeydown={handleKeydown}
-				type="text"
-				placeholder="Enter patch name..."
-				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-			/>
-		</div>
-	{:else if stage === 'load-list'}
-		<div class="border-b border-zinc-700 p-3">
-			<div class="mb-2 text-xs text-zinc-400">Select a patch to load:</div>
-			<input
-				bind:this={searchInput}
-				bind:value={searchQuery}
-				onkeydown={handleKeydown}
-				type="text"
-				placeholder="Search patches..."
-				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-			/>
-		</div>
-	{:else if stage === 'delete-list'}
-		<div class="border-b border-zinc-700 p-3">
-			<div class="mb-2 text-xs text-zinc-400">Select a patch to delete:</div>
-			<input
-				bind:this={searchInput}
-				bind:value={searchQuery}
-				onkeydown={handleKeydown}
-				type="text"
-				placeholder="Search patches..."
-				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-			/>
-		</div>
-	{:else if stage === 'rename-list'}
-		<div class="border-b border-zinc-700 p-3">
-			<div class="mb-2 text-xs text-zinc-400">Select a patch to rename:</div>
-			<input
-				bind:this={searchInput}
-				bind:value={searchQuery}
-				onkeydown={handleKeydown}
-				type="text"
-				placeholder="Search patches..."
-				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-			/>
-		</div>
-	{:else if stage === 'rename-name'}
-		<div class="border-b border-zinc-700 p-3">
-			<div class="mb-2 text-xs text-zinc-400">Enter new name for "{selectedPatchToRename}":</div>
-			<input
-				bind:this={searchInput}
-				bind:value={patchName}
-				onkeydown={handleKeydown}
-				type="text"
-				placeholder="Enter new patch name..."
-				class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-			/>
-		</div>
-	{/if}
+  <!-- Search Input -->
+  {#if stage === 'commands'}
+    <div class="border-b border-zinc-700 p-3">
+      <input
+        bind:this={searchInput}
+        bind:value={searchQuery}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="Search commands..."
+        class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
+  {:else if stage === 'save-name'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="mb-2 text-xs text-zinc-400">What is the name of the patch?</div>
+      <input
+        bind:this={searchInput}
+        bind:value={patchName}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="Enter patch name..."
+        class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
+  {:else if stage === 'load-list'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="mb-2 text-xs text-zinc-400">Select a patch to load:</div>
+      <input
+        bind:this={searchInput}
+        bind:value={searchQuery}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="Search patches..."
+        class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
+  {:else if stage === 'delete-list'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="mb-2 text-xs text-zinc-400">Select a patch to delete:</div>
+      <input
+        bind:this={searchInput}
+        bind:value={searchQuery}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="Search patches..."
+        class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
+  {:else if stage === 'rename-list'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="mb-2 text-xs text-zinc-400">Select a patch to rename:</div>
+      <input
+        bind:this={searchInput}
+        bind:value={searchQuery}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="Search patches..."
+        class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
+  {:else if stage === 'rename-name'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="mb-2 text-xs text-zinc-400">Enter new name for "{selectedPatchToRename}":</div>
+      <input
+        bind:this={searchInput}
+        bind:value={patchName}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="Enter new patch name..."
+        class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
+  {/if}
 
-	<!-- Results List -->
-	<div bind:this={resultsContainer} class="max-h-64 overflow-y-auto">
-		{#if stage === 'commands'}
-			{#each filteredCommands as command, index (command.id)}
-				<div
-					class="cursor-pointer px-3 py-2 {index === selectedIndex
-						? 'bg-zinc-600/50'
-						: 'hover:bg-zinc-700'}"
-					onclick={(e) => handleItemClick(index, e)}
-					onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
-					role="button"
-					tabindex="-1"
-				>
-					<div class="font-mono text-sm text-zinc-200">{command.name}</div>
-					<div class="text-xs text-zinc-400">{command.description}</div>
-				</div>
-			{/each}
-		{:else if stage === 'save-name'}
-			<!-- Show current input preview -->
-			{#if patchName.trim()}
-				<div class="px-3 py-2 text-xs text-zinc-400">
-					Will save as: <span class="text-zinc-200">{patchName}</span>
-				</div>
-			{/if}
-		{:else if stage === 'load-list'}
-			{#if filteredPatches.length === 0}
-				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
-			{:else}
-				{#each filteredPatches as patch, index (patch)}
-					<div
-						class="cursor-pointer px-3 py-2 {index === selectedIndex
-							? 'bg-zinc-600/50'
-							: 'hover:bg-zinc-700'}"
-						onclick={(e) => handleItemClick(index, e)}
-						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
-						role="button"
-						tabindex="-1"
-					>
-						<div class="font-mono text-sm text-zinc-200">{patch}</div>
-					</div>
-				{/each}
-			{/if}
-		{:else if stage === 'delete-list'}
-			{#if filteredPatches.length === 0}
-				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
-			{:else}
-				{#each filteredPatches as patch, index (patch)}
-					<div
-						class="cursor-pointer px-3 py-2 {index === selectedIndex
-							? 'bg-red-800'
-							: 'hover:bg-red-900/50'}"
-						onclick={(e) => handleItemClick(index, e)}
-						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
-						role="button"
-						tabindex="-1"
-					>
-						<div class="font-mono text-sm text-red-200">{patch}</div>
-					</div>
-				{/each}
-			{/if}
-		{:else if stage === 'rename-list'}
-			{#if filteredPatches.length === 0}
-				<div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
-			{:else}
-				{#each filteredPatches as patch, index (patch)}
-					<div
-						class="cursor-pointer px-3 py-2 {index === selectedIndex
-							? 'bg-blue-800'
-							: 'hover:bg-blue-900/50'}"
-						onclick={(e) => handleItemClick(index, e)}
-						onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
-						role="button"
-						tabindex="-1"
-					>
-						<div class="font-mono text-sm text-blue-200">{patch}</div>
-					</div>
-				{/each}
-			{/if}
-		{:else if stage === 'rename-name'}
-			<!-- Show current input preview -->
-			{#if patchName.trim() && patchName !== selectedPatchToRename}
-				<div class="px-3 py-2 text-xs text-zinc-400">
-					Will rename "<span class="text-blue-200">{selectedPatchToRename}</span>" to "<span
-						class="text-zinc-200">{patchName}</span
-					>"
-				</div>
-			{/if}
-		{/if}
-	</div>
+  <!-- Results List -->
+  <div bind:this={resultsContainer} class="max-h-64 overflow-y-auto">
+    {#if stage === 'commands'}
+      {#each filteredCommands as command, index (command.id)}
+        <div
+          class="cursor-pointer px-3 py-2 {index === selectedIndex
+            ? 'bg-zinc-600/50'
+            : 'hover:bg-zinc-700'}"
+          onclick={(e) => handleItemClick(index, e)}
+          onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
+          role="button"
+          tabindex="-1"
+        >
+          <div class="font-mono text-sm text-zinc-200">{command.name}</div>
+          <div class="text-xs text-zinc-400">{command.description}</div>
+        </div>
+      {/each}
+    {:else if stage === 'save-name'}
+      <!-- Show current input preview -->
+      {#if patchName.trim()}
+        <div class="px-3 py-2 text-xs text-zinc-400">
+          Will save as: <span class="text-zinc-200">{patchName}</span>
+        </div>
+      {/if}
+    {:else if stage === 'load-list'}
+      {#if filteredPatches.length === 0}
+        <div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
+      {:else}
+        {#each filteredPatches as patch, index (patch)}
+          <div
+            class="cursor-pointer px-3 py-2 {index === selectedIndex
+              ? 'bg-zinc-600/50'
+              : 'hover:bg-zinc-700'}"
+            onclick={(e) => handleItemClick(index, e)}
+            onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
+            role="button"
+            tabindex="-1"
+          >
+            <div class="font-mono text-sm text-zinc-200">{patch}</div>
+          </div>
+        {/each}
+      {/if}
+    {:else if stage === 'delete-list'}
+      {#if filteredPatches.length === 0}
+        <div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
+      {:else}
+        {#each filteredPatches as patch, index (patch)}
+          <div
+            class="cursor-pointer px-3 py-2 {index === selectedIndex
+              ? 'bg-red-800'
+              : 'hover:bg-red-900/50'}"
+            onclick={(e) => handleItemClick(index, e)}
+            onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
+            role="button"
+            tabindex="-1"
+          >
+            <div class="font-mono text-sm text-red-200">{patch}</div>
+          </div>
+        {/each}
+      {/if}
+    {:else if stage === 'rename-list'}
+      {#if filteredPatches.length === 0}
+        <div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
+      {:else}
+        {#each filteredPatches as patch, index (patch)}
+          <div
+            class="cursor-pointer px-3 py-2 {index === selectedIndex
+              ? 'bg-blue-800'
+              : 'hover:bg-blue-900/50'}"
+            onclick={(e) => handleItemClick(index, e)}
+            onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
+            role="button"
+            tabindex="-1"
+          >
+            <div class="font-mono text-sm text-blue-200">{patch}</div>
+          </div>
+        {/each}
+      {/if}
+    {:else if stage === 'rename-name'}
+      <!-- Show current input preview -->
+      {#if patchName.trim() && patchName !== selectedPatchToRename}
+        <div class="px-3 py-2 text-xs text-zinc-400">
+          Will rename "<span class="text-blue-200">{selectedPatchToRename}</span>" to "<span
+            class="text-zinc-200">{patchName}</span
+          >"
+        </div>
+      {/if}
+    {/if}
+  </div>
 
-	<!-- Footer -->
-	<div class="border-t border-zinc-700 px-3 py-2 text-xs text-zinc-500">
-		{#if stage === 'commands'}
-			↑↓ Navigate • Enter Select • Esc Cancel
-		{:else if stage === 'save-name'}
-			Enter Save • Esc Back
-		{:else if stage === 'load-list'}
-			↑↓ Navigate • Enter Load • Esc Back
-		{:else if stage === 'delete-list'}
-			↑↓ Navigate • Enter Delete • Esc Back
-		{:else if stage === 'rename-list'}
-			↑↓ Navigate • Enter Rename • Esc Back
-		{:else if stage === 'rename-name'}
-			Enter Rename • Esc Back
-		{/if}
-	</div>
+  <!-- Footer -->
+  <div class="border-t border-zinc-700 px-3 py-2 text-xs text-zinc-500">
+    {#if stage === 'commands'}
+      ↑↓ Navigate • Enter Select • Esc Cancel
+    {:else if stage === 'save-name'}
+      Enter Save • Esc Back
+    {:else if stage === 'load-list'}
+      ↑↓ Navigate • Enter Load • Esc Back
+    {:else if stage === 'delete-list'}
+      ↑↓ Navigate • Enter Delete • Esc Back
+    {:else if stage === 'rename-list'}
+      ↑↓ Navigate • Enter Rename • Esc Back
+    {:else if stage === 'rename-name'}
+      Enter Rename • Esc Back
+    {/if}
+  </div>
 </div>

@@ -15,30 +15,30 @@ import type { Migration } from '../types';
  * re-add images after this migration.
  */
 export const migration002: Migration = {
-	version: 2,
-	name: 'add-vfs-files-field',
+  version: 2,
+  name: 'add-vfs-files-field',
 
-	migrate(patch) {
-		// Add empty files structure if not present
-		const migratedPatch = {
-			...patch,
-			files: patch.files ?? { user: {}, objects: {} }
-		};
+  migrate(patch) {
+    // Add empty files structure if not present
+    const migratedPatch = {
+      ...patch,
+      files: patch.files ?? { user: {}, objects: {} }
+    };
 
-		// Strip file and fileName from `img` node
-		if (migratedPatch.nodes) {
-			migratedPatch.nodes = migratedPatch.nodes.map((node) => {
-				if (node.type === 'img' && node.data) {
-					delete node.data.file;
-					delete node.data.fileName;
+    // Strip file and fileName from `img` node
+    if (migratedPatch.nodes) {
+      migratedPatch.nodes = migratedPatch.nodes.map((node) => {
+        if (node.type === 'img' && node.data) {
+          delete node.data.file;
+          delete node.data.fileName;
 
-					return { ...node, data: node.data };
-				}
+          return { ...node, data: node.data };
+        }
 
-				return node;
-			});
-		}
+        return node;
+      });
+    }
 
-		return migratedPatch;
-	}
+    return migratedPatch;
+  }
 };

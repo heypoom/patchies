@@ -1,27 +1,27 @@
 <script lang="ts">
-	import JSExprBase from './JSExprBase.svelte';
+  import JSExprBase from './JSExprBase.svelte';
 
-	let {
-		id: nodeId,
-		data,
-		selected
-	}: {
-		id: string;
-		data: { expr: string; showConsole?: boolean };
-		selected: boolean;
-	} = $props();
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: {
+    id: string;
+    data: { expr: string; showConsole?: boolean };
+    selected: boolean;
+  } = $props();
 </script>
 
 <JSExprBase
-	id={nodeId}
-	{data}
-	{selected}
-	displayPrefix="map"
-	placeholder="$1 + 1"
-	outletTitle="Output"
-	requireAllInlets
-	onResult={(result, _originalMessage, send) => {
-		// Map: send the transformed result
-		send(result);
-	}}
+  id={nodeId}
+  {data}
+  {selected}
+  displayPrefix="map"
+  placeholder="$1 + 1"
+  outletTitle="Output"
+  requireAllInlets
+  onResult={(result, _originalMessage, send) => {
+    // Map: send the transformed result
+    send(result);
+  }}
 />

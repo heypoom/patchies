@@ -15,41 +15,41 @@ import { CCMessageHandler } from './CCMessageHandler';
 import { MonoMessageHandler } from './MonoMessageHandler';
 
 export class IO {
-	private messageContext: MessageContext;
+  private messageContext: MessageContext;
 
-	midi: MidiMessageHandler;
-	cc: CCMessageHandler;
-	mono: MonoMessageHandler;
+  midi: MidiMessageHandler;
+  cc: CCMessageHandler;
+  mono: MonoMessageHandler;
 
-	constructor(messageContext: MessageContext) {
-		this.messageContext = messageContext;
-		this.midi = new MidiMessageHandler(messageContext);
-		this.cc = new CCMessageHandler(messageContext);
-		this.mono = new MonoMessageHandler(messageContext);
-	}
+  constructor(messageContext: MessageContext) {
+    this.messageContext = messageContext;
+    this.midi = new MidiMessageHandler(messageContext);
+    this.cc = new CCMessageHandler(messageContext);
+    this.mono = new MonoMessageHandler(messageContext);
+  }
 
-	start(): void {
-		this.clear();
-	}
+  start(): void {
+    this.clear();
+  }
 
-	clear(): void {
-		this.midi.clear();
-		this.cc.clear();
-		this.mono.clear();
-	}
+  clear(): void {
+    this.midi.clear();
+    this.cc.clear();
+    this.mono.clear();
+  }
 
-	run(): void {
-		this.midi.run();
-		this.cc.run();
-		this.mono.run();
-	}
+  run(): void {
+    this.midi.run();
+    this.cc.run();
+    this.mono.run();
+  }
 
-	silence(): void {
-		this.midi.silence();
-		this.mono.silence();
-	}
+  silence(): void {
+    this.midi.silence();
+    this.mono.silence();
+  }
 
-	reset(): void {
-		this.clear();
-	}
+  reset(): void {
+    this.clear();
+  }
 }

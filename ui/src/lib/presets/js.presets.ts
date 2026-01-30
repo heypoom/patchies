@@ -111,55 +111,55 @@ recv((m, {inlet}) => {
 })`;
 
 export const JS_PRESETS: Record<
-	string,
-	{ type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
+  string,
+  { type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
 > = {
-	'logger.js': {
-		type: 'js',
-		data: { code: MESSAGE_CONSOLE_JS.trim(), showConsole: true, runOnMount: true }
-	},
-	'delay.js': {
-		type: 'js',
-		data: { code: DELAY_JS.trim(), showConsole: false, runOnMount: true }
-	},
-	'bang-every-frame.js': {
-		type: 'js',
-		data: { code: BANG_EVERY_FRAME_JS, showConsole: false, runOnMount: true }
-	},
-	'frame-counter.js': {
-		type: 'js',
-		data: { code: FRAME_COUNTER_JS, showConsole: false, runOnMount: true }
-	},
-	'interval.js': {
-		type: 'js',
-		data: { code: INTERVAL_JS, showConsole: false, runOnMount: true }
-	},
-	'midi-adsr-gain.js': {
-		type: 'js',
-		data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: true }
-	},
-	'midi-control-router.js': {
-		type: 'js',
-		data: { code: MIDI_CONTROL_ROUTER_JS, showConsole: false, runOnMount: true }
-	},
-	'sawtooth-harmonics.js': {
-		type: 'js',
-		data: { code: SAWTOOTH_HARMONICS_JS, showConsole: false, runOnMount: true }
-	},
-	'waveshaper-distortion.js': {
-		type: 'js',
-		data: { code: WAVESHAPER_DISTORTION_JS, showConsole: false, runOnMount: false }
-	},
-	'pipe-msg.js': {
-		type: 'js',
-		data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
-	},
-	'add.js': {
-		type: 'js',
-		data: { code: ADD_JS, showConsole: false, runOnMount: true }
-	},
-	'add-cold.js': {
-		type: 'js',
-		data: { code: ADD_COLD_JS, showConsole: false, runOnMount: true }
-	}
+  'logger.js': {
+    type: 'js',
+    data: { code: MESSAGE_CONSOLE_JS.trim(), showConsole: true, runOnMount: true }
+  },
+  'delay.js': {
+    type: 'js',
+    data: { code: DELAY_JS.trim(), showConsole: false, runOnMount: true }
+  },
+  'bang-every-frame.js': {
+    type: 'js',
+    data: { code: BANG_EVERY_FRAME_JS, showConsole: false, runOnMount: true }
+  },
+  'frame-counter.js': {
+    type: 'js',
+    data: { code: FRAME_COUNTER_JS, showConsole: false, runOnMount: true }
+  },
+  'interval.js': {
+    type: 'js',
+    data: { code: INTERVAL_JS, showConsole: false, runOnMount: true }
+  },
+  'midi-adsr-gain.js': {
+    type: 'js',
+    data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: true }
+  },
+  'midi-control-router.js': {
+    type: 'js',
+    data: { code: MIDI_CONTROL_ROUTER_JS, showConsole: false, runOnMount: true }
+  },
+  'sawtooth-harmonics.js': {
+    type: 'js',
+    data: { code: SAWTOOTH_HARMONICS_JS, showConsole: false, runOnMount: true }
+  },
+  'waveshaper-distortion.js': {
+    type: 'js',
+    data: { code: WAVESHAPER_DISTORTION_JS, showConsole: false, runOnMount: false }
+  },
+  'pipe-msg.js': {
+    type: 'js',
+    data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
+  },
+  'add.js': {
+    type: 'js',
+    data: { code: ADD_JS, showConsole: false, runOnMount: true }
+  },
+  'add-cold.js': {
+    type: 'js',
+    data: { code: ADD_COLD_JS, showConsole: false, runOnMount: true }
+  }
 };

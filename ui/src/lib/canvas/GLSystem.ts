@@ -11,9 +11,9 @@ import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import {
-	AudioAnalysisSystem,
-	type AudioAnalysisPayloadWithType,
-	type OnFFTReadyCallback
+  AudioAnalysisSystem,
+  type AudioAnalysisPayloadWithType,
+  type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
@@ -23,458 +23,458 @@ import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 export type UserUniformValue = number | boolean | number[];
 
 export class GLSystem {
-	/** Web worker for offscreen rendering. */
-	public renderWorker: Worker;
-
-	public ipcSystem = IpcSystem.getInstance();
-	public messageSystem = MessageSystem.getInstance();
-	public eventBus = PatchiesEventBus.getInstance();
-	public audioAnalysis = AudioAnalysisSystem.getInstance();
-
-	/** Rendering context for the background output that covers the entire screen. */
-	public backgroundOutputCanvasContext: ImageBitmapRenderingContext | null = null;
-
-	/** Mapping of nodeId to rendering context for preview */
-	public previewCanvasContexts: Record<string, ImageBitmapRenderingContext | null> = {};
-
-	/** Stores FBO-compatible nodes */
-	public nodes: RNode[] = [];
-
-	/** Stores FBO-compatible edges */
-	public edges: REdge[] = [];
-
-	private static instance: GLSystem;
-	private hashes = { nodes: '', edges: '', graph: '' };
-	private renderGraph: RenderGraph | null = null;
-
-	/** Cache for outgoing video connections to avoid recalculating on every frame */
-	private outgoingConnectionsCache = new Map<string, boolean>();
-
-	public outputSize = DEFAULT_OUTPUT_SIZE;
-
-	public previewSize: [width: number, height: number] = [
-		this.outputSize[0] / PREVIEW_SCALE_FACTOR,
-		this.outputSize[1] / PREVIEW_SCALE_FACTOR
-	];
-
-	static getInstance() {
-		if (!GLSystem.instance) {
-			GLSystem.instance = new GLSystem();
-		}
-
-		// @ts-expect-error -- expose globally for debugging
-		window.glSystem = GLSystem.instance;
-
-		return GLSystem.instance;
-	}
-
-	constructor() {
-		this.renderWorker = new RenderWorker();
-		this.renderWorker.addEventListener('message', this.handleRenderWorkerMessage.bind(this));
-		this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
-	}
-
-	handleRenderWorkerMessage = (event: MessageEvent<RenderWorkerMessage>) => {
-		const data = event.data;
-		if (!data) return;
-
-		if (data.type === 'previewFrame') {
-			const context = this.previewCanvasContexts[data.nodeId];
-			if (!context || !data.bitmap) return;
-
-			context.transferFromImageBitmap(data.bitmap);
-
-			return;
-		}
-
-		if (data.type === 'animationFrame') {
-			if (!data.outputBitmap) return;
-
-			if (this.ipcSystem.outputWindow === null) {
-				this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
-			} else {
-				this.ipcSystem.sendRenderOutput(data.outputBitmap);
-			}
-
-			return;
-		}
-
-		// Use match for early returns - most frequent messages first
-		match(data)
-			.with({ type: 'sendMessageFromNode' }, (data) => {
-				// @ts-expect-error -- fix me
-				this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
-			})
-			.with({ type: 'consoleOutput' }, (data) => {
-				const args = data.args ?? [data.message];
-				match(data.level)
-					.with('error', () => {
-						if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
-							logger.nodeError(data.nodeId, { lineErrors: data.lineErrors }, ...args);
-						} else {
-							logger.nodeError(data.nodeId, ...args);
-						}
-					})
-					.otherwise(() => {
-						logger.addNodeLog(data.nodeId, data.level, args);
-					});
-			})
-			.with({ type: 'shaderError' }, (data) => {
-				if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
-					logger.nodeError(
-						data.nodeId,
-						{ lineErrors: data.lineErrors },
-						'Shader compilation failed:',
-						data.error
-					);
-				} else {
-					logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
-				}
-			})
-			.with({ type: 'setPortCount' }, (data) => {
-				this.eventBus.dispatch({
-					type: 'nodePortCountUpdate',
-					nodeId: data.nodeId,
-					portType: data.portType,
-					inletCount: data.inletCount,
-					outletCount: data.outletCount
-				});
-			})
-			.with({ type: 'setTitle' }, (data) => {
-				this.eventBus.dispatch({
-					type: 'nodeTitleUpdate',
-					nodeId: data.nodeId,
-					title: data.title
-				});
-			})
-			.with({ type: 'setHidePorts' }, (data) => {
-				this.eventBus.dispatch({
-					type: 'nodeHidePortsUpdate',
-					nodeId: data.nodeId,
-					hidePorts: data.hidePorts
-				});
-			})
-			.with({ type: 'setDragEnabled' }, (data) => {
-				this.eventBus.dispatch({
-					type: 'nodeDragEnabledUpdate',
-					nodeId: data.nodeId,
-					dragEnabled: data.dragEnabled
-				});
-			})
-			.with({ type: 'setVideoOutputEnabled' }, (data) => {
-				this.eventBus.dispatch({
-					type: 'nodeVideoOutputEnabledUpdate',
-					nodeId: data.nodeId,
-					videoOutputEnabled: data.videoOutputEnabled
-				});
-			})
-			.with({ type: 'setMouseScope' }, (data) => {
-				this.eventBus.dispatch({
-					type: 'nodeMouseScopeUpdate',
-					nodeId: data.nodeId,
-					scope: data.scope
-				});
-			})
-			.with({ type: 'previewFrameCaptured' }, (data) => {
-				// @ts-expect-error -- fix me
-				this.eventBus.dispatch(data);
-			})
-			.with(P.union({ type: 'fftEnabled' }, { type: 'registerFFTRequest' }), (data) => {
-				// @ts-expect-error -- fix me
-				this.audioAnalysis.handleRenderWorkerMessage(data);
-			})
-			.with({ type: 'resolveVfsUrl' }, async (data) => {
-				this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
-			});
-	};
-
-	/**
-	 * Resolves a VFS path from the worker and sends back an object URL.
-	 * Object URLs created on main thread are accessible from workers (same origin).
-	 */
-	private async handleVfsUrlResolution(requestId: string, nodeId: string, path: string) {
-		try {
-			// If not a VFS path, send back the original path unchanged
-			if (!isVFSPath(path)) {
-				this.send('vfsUrlResolved', { requestId, nodeId, url: path });
-				return;
-			}
-
-			const vfs = VirtualFilesystem.getInstance();
-			const blob = await vfs.resolve(path);
-
-			// Create object URL on main thread - workers can use it (same origin)
-			const url = URL.createObjectURL(blob);
-
-			// TODO: Track for cleanup when node is destroyed
-			this.send('vfsUrlResolved', { requestId, nodeId, url });
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
-		}
-	}
-
-	start() {
-		if (get(isGlslPlaying)) return;
-
-		this.send('startAnimation');
-		isGlslPlaying.set(true);
-	}
-
-	stop() {
-		if (!get(isGlslPlaying)) return;
-
-		this.send('stopAnimation');
-		isGlslPlaying.set(false);
-	}
-
-	setOutputEnabled(enabled: boolean) {
-		this.send('setOutputEnabled', { enabled });
-	}
-
-	setPreviewEnabled(nodeId: string, enabled: boolean) {
-		this.send('setPreviewEnabled', { nodeId, enabled });
-	}
-
-	togglePreview(nodeId: string) {
-		const visibleMap = get(previewVisibleMap);
-
-		visibleMap[nodeId] = !visibleMap[nodeId];
-		previewVisibleMap.set(visibleMap);
-
-		this.setPreviewEnabled(nodeId, visibleMap[nodeId]);
-	}
-
-	/** Toggle pause state for a node */
-	toggleNodePause(nodeId: string) {
-		this.send('toggleNodePause', { nodeId });
-	}
-
-	send<T>(type: string, data?: T) {
-		this.renderWorker.postMessage({ type, ...data });
-	}
-
-	upsertNode(
-		id: string,
-		type: RenderNode['type'],
-		data: Record<string, unknown>,
-		options?: { force?: boolean }
-	): boolean {
-		const nodeIndex = this.nodes.findIndex((node) => node.id === id);
-
-		if (nodeIndex === -1) {
-			this.nodes.push({ id: id, type, data });
-		} else {
-			const node = this.nodes[nodeIndex];
-			this.nodes[nodeIndex] = { ...node, type, data };
-		}
-
-		return this.updateRenderGraph(options?.force ?? false);
-	}
-
-	setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
-		this.send('setUniformData', {
-			nodeId,
-			uniformName,
-			uniformValue
-		});
-	}
-
-	setMouseData(nodeId: string, x: number, y: number, z: number, w: number) {
-		this.send('setMouseData', {
-			nodeId,
-			x,
-			y,
-			z,
-			w
-		});
-	}
-
-	removeNode(nodeId: string) {
-		const node = this.nodes.find((n) => n.id === nodeId);
-		if (!node) return;
-
-		// Cleanup persistent external texture.
-		if (isExternalTextureNode(node.type as RenderNode['type'])) {
-			this.removeBitmap(nodeId);
-		}
-
-		// Cleanup persistent uniform data for GLSL nodes.
-		if (node.type === 'glsl') {
-			this.removeUniformData(nodeId);
-		}
-
-		this.nodes = this.nodes.filter((node) => node.id !== nodeId);
-
-		// Disable sending FFT analysis to the said node.
-		this.audioAnalysis.disableFFT(nodeId);
-
-		// Clear connection cache for this node
-		this.outgoingConnectionsCache.delete(nodeId);
-
-		this.updateRenderGraph();
-	}
-
-	removePreviewContext(nodeId: string, context: ImageBitmapRenderingContext) {
-		if (this.previewCanvasContexts[nodeId] === context) {
-			this.previewCanvasContexts[nodeId] = null;
-		}
-	}
-
-	updateEdges(edges: REdge[]) {
-		this.edges = edges;
-		this.updateRenderGraph();
-
-		const hasOutputNode = edges.some((edge) => edge.target.startsWith('bg.out'));
-
-		if (this.ipcSystem.outputWindow === null) {
-			isBackgroundOutputCanvasEnabled.set(hasOutputNode);
-		}
-
-		this.setOutputEnabled(hasOutputNode);
-	}
-
-	private updateRenderGraph(force = false) {
-		if (!force && !this.hasFlowGraphChanged(this.nodes, this.edges)) return false;
-
-		const graph = buildRenderGraph(this.nodes, this.edges);
-		if (!force && !this.hasHashChanged('graph', graph)) return false;
-
-		this.send('buildRenderGraph', { graph });
-		this.renderGraph = graph;
-
-		// Clear connection cache when render graph changes
-		this.outgoingConnectionsCache.clear();
-
-		return true;
-	}
-
-	// TODO: optimize this!
-	hasFlowGraphChanged(nodes: RNode[], edges: REdge[]) {
-		return this.hasHashChanged('nodes', nodes) || this.hasHashChanged('edges', edges);
-	}
-
-	hasHashChanged<K extends keyof GLSystem['hashes'], T>(key: K, object: T) {
-		const hash = ohash.hash(object);
-		if (this.hashes[key] === hash) return false;
-
-		this.hashes[key] = hash;
-		return true;
-	}
-
-	setPreviewSize(width: number, height: number) {
-		this.previewSize = [width, height];
-
-		for (const nodeId in this.previewCanvasContexts) {
-			const context = this.previewCanvasContexts[nodeId];
-
-			if (context) {
-				const canvas = context.canvas;
-				canvas.width = width;
-				canvas.height = height;
-
-				// re-create the context to accommodate the new size
-				delete this.previewCanvasContexts[nodeId];
-
-				this.previewCanvasContexts[nodeId] = canvas.getContext(
-					'bitmaprenderer'
-				) as ImageBitmapRenderingContext;
-			}
-		}
-
-		this.send('setPreviewSize', { width, height });
-	}
-
-	setOutputSize(width: number, height: number) {
-		this.outputSize = [width, height];
-		this.send('setOutputSize', { width, height });
-	}
-
-	setBitmapSource(nodeId: string, source: ImageBitmapSource) {
-		// Create flipped bitmap asynchronously without blocking
-		// createImageBitmap is GPU-accelerated and returns quickly
-		createImageBitmap(source, { imageOrientation: 'flipY' }).then((bitmap) => {
-			this.setPreflippedBitmap(nodeId, bitmap);
-		});
-	}
-
-	/**
-	 * Set a pre-flipped ImageBitmap for a node.
-	 *
-	 * IMPORTANT: The bitmap MUST be created with { imageOrientation: 'flipY' }
-	 * to match the pipeline's standard screen coordinates (Y-down, top-left origin).
-	 *
-	 * If you have a non-flipped source, use setBitmapSource() instead.
-	 *
-	 * @param nodeId - The node ID to set the bitmap for
-	 * @param bitmap - Pre-flipped ImageBitmap (created with imageOrientation: 'flipY')
-	 */
-	setPreflippedBitmap(nodeId: string, bitmap: ImageBitmap) {
-		this.renderWorker.postMessage(
-			{
-				type: 'setBitmap',
-				nodeId,
-				bitmap
-			},
-			{ transfer: [bitmap] }
-		);
-	}
-
-	removeBitmap(nodeId: string) {
-		this.send('removeBitmap', { nodeId });
-	}
-
-	removeUniformData(nodeId: string) {
-		this.send('removeUniformData', { nodeId });
-	}
-
-	sendMessageToNode(nodeId: string, message: Message) {
-		this.send('sendMessageToNode', { nodeId, message });
-	}
-
-	/** Set which nodes are visible in the viewport for preview culling */
-	setVisibleNodes(nodeIds: Set<string>) {
-		this.send('setVisibleNodes', { nodeIds: Array.from(nodeIds) });
-	}
-
-	/**
-	 * Check if a node has outgoing connections to GPU video nodes (glsl, hydra, swgl)
-	 * Used to optimize bitmap transfers - no need to send bitmaps if nothing consumes them
-	 * Results are cached to avoid recalculation on every frame
-	 */
-	public hasOutgoingVideoConnections(nodeId: string): boolean {
-		if (this.outgoingConnectionsCache.has(nodeId)) {
-			return this.outgoingConnectionsCache.get(nodeId)!;
-		}
-
-		let hasConnections = false;
-
-		if (this.renderGraph) {
-			const hasOutgoingVideoEdges = this.renderGraph.edges.some(
-				(edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
-			);
-
-			const isOutputNode = this.renderGraph.outputNodeId === nodeId;
-
-			hasConnections = hasOutgoingVideoEdges || isOutputNode;
-		}
-
-		this.outgoingConnectionsCache.set(nodeId, hasConnections);
-
-		return hasConnections;
-	}
-
-	/** Callback for when AudioAnalysisSystem has FFT data ready */
-	sendFFTDataToWorker: OnFFTReadyCallback = (payload) => {
-		const node = this.nodes.find((n) => n.id === payload.nodeId);
-		if (!node) return;
-
-		const payloadWithType: AudioAnalysisPayloadWithType = {
-			...payload,
-			type: 'setFFTData',
-			nodeType: node.type as 'hydra' | 'glsl' | 'canvas'
-		};
-
-		this.renderWorker.postMessage(payloadWithType, { transfer: [payloadWithType.array.buffer] });
-	};
+  /** Web worker for offscreen rendering. */
+  public renderWorker: Worker;
+
+  public ipcSystem = IpcSystem.getInstance();
+  public messageSystem = MessageSystem.getInstance();
+  public eventBus = PatchiesEventBus.getInstance();
+  public audioAnalysis = AudioAnalysisSystem.getInstance();
+
+  /** Rendering context for the background output that covers the entire screen. */
+  public backgroundOutputCanvasContext: ImageBitmapRenderingContext | null = null;
+
+  /** Mapping of nodeId to rendering context for preview */
+  public previewCanvasContexts: Record<string, ImageBitmapRenderingContext | null> = {};
+
+  /** Stores FBO-compatible nodes */
+  public nodes: RNode[] = [];
+
+  /** Stores FBO-compatible edges */
+  public edges: REdge[] = [];
+
+  private static instance: GLSystem;
+  private hashes = { nodes: '', edges: '', graph: '' };
+  private renderGraph: RenderGraph | null = null;
+
+  /** Cache for outgoing video connections to avoid recalculating on every frame */
+  private outgoingConnectionsCache = new Map<string, boolean>();
+
+  public outputSize = DEFAULT_OUTPUT_SIZE;
+
+  public previewSize: [width: number, height: number] = [
+    this.outputSize[0] / PREVIEW_SCALE_FACTOR,
+    this.outputSize[1] / PREVIEW_SCALE_FACTOR
+  ];
+
+  static getInstance() {
+    if (!GLSystem.instance) {
+      GLSystem.instance = new GLSystem();
+    }
+
+    // @ts-expect-error -- expose globally for debugging
+    window.glSystem = GLSystem.instance;
+
+    return GLSystem.instance;
+  }
+
+  constructor() {
+    this.renderWorker = new RenderWorker();
+    this.renderWorker.addEventListener('message', this.handleRenderWorkerMessage.bind(this));
+    this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
+  }
+
+  handleRenderWorkerMessage = (event: MessageEvent<RenderWorkerMessage>) => {
+    const data = event.data;
+    if (!data) return;
+
+    if (data.type === 'previewFrame') {
+      const context = this.previewCanvasContexts[data.nodeId];
+      if (!context || !data.bitmap) return;
+
+      context.transferFromImageBitmap(data.bitmap);
+
+      return;
+    }
+
+    if (data.type === 'animationFrame') {
+      if (!data.outputBitmap) return;
+
+      if (this.ipcSystem.outputWindow === null) {
+        this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
+      } else {
+        this.ipcSystem.sendRenderOutput(data.outputBitmap);
+      }
+
+      return;
+    }
+
+    // Use match for early returns - most frequent messages first
+    match(data)
+      .with({ type: 'sendMessageFromNode' }, (data) => {
+        // @ts-expect-error -- fix me
+        this.messageSystem.sendMessage(data.fromNodeId, data.data, data.options);
+      })
+      .with({ type: 'consoleOutput' }, (data) => {
+        const args = data.args ?? [data.message];
+        match(data.level)
+          .with('error', () => {
+            if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
+              logger.nodeError(data.nodeId, { lineErrors: data.lineErrors }, ...args);
+            } else {
+              logger.nodeError(data.nodeId, ...args);
+            }
+          })
+          .otherwise(() => {
+            logger.addNodeLog(data.nodeId, data.level, args);
+          });
+      })
+      .with({ type: 'shaderError' }, (data) => {
+        if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
+          logger.nodeError(
+            data.nodeId,
+            { lineErrors: data.lineErrors },
+            'Shader compilation failed:',
+            data.error
+          );
+        } else {
+          logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
+        }
+      })
+      .with({ type: 'setPortCount' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodePortCountUpdate',
+          nodeId: data.nodeId,
+          portType: data.portType,
+          inletCount: data.inletCount,
+          outletCount: data.outletCount
+        });
+      })
+      .with({ type: 'setTitle' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodeTitleUpdate',
+          nodeId: data.nodeId,
+          title: data.title
+        });
+      })
+      .with({ type: 'setHidePorts' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodeHidePortsUpdate',
+          nodeId: data.nodeId,
+          hidePorts: data.hidePorts
+        });
+      })
+      .with({ type: 'setDragEnabled' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodeDragEnabledUpdate',
+          nodeId: data.nodeId,
+          dragEnabled: data.dragEnabled
+        });
+      })
+      .with({ type: 'setVideoOutputEnabled' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodeVideoOutputEnabledUpdate',
+          nodeId: data.nodeId,
+          videoOutputEnabled: data.videoOutputEnabled
+        });
+      })
+      .with({ type: 'setMouseScope' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodeMouseScopeUpdate',
+          nodeId: data.nodeId,
+          scope: data.scope
+        });
+      })
+      .with({ type: 'previewFrameCaptured' }, (data) => {
+        // @ts-expect-error -- fix me
+        this.eventBus.dispatch(data);
+      })
+      .with(P.union({ type: 'fftEnabled' }, { type: 'registerFFTRequest' }), (data) => {
+        // @ts-expect-error -- fix me
+        this.audioAnalysis.handleRenderWorkerMessage(data);
+      })
+      .with({ type: 'resolveVfsUrl' }, async (data) => {
+        this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
+      });
+  };
+
+  /**
+   * Resolves a VFS path from the worker and sends back an object URL.
+   * Object URLs created on main thread are accessible from workers (same origin).
+   */
+  private async handleVfsUrlResolution(requestId: string, nodeId: string, path: string) {
+    try {
+      // If not a VFS path, send back the original path unchanged
+      if (!isVFSPath(path)) {
+        this.send('vfsUrlResolved', { requestId, nodeId, url: path });
+        return;
+      }
+
+      const vfs = VirtualFilesystem.getInstance();
+      const blob = await vfs.resolve(path);
+
+      // Create object URL on main thread - workers can use it (same origin)
+      const url = URL.createObjectURL(blob);
+
+      // TODO: Track for cleanup when node is destroyed
+      this.send('vfsUrlResolved', { requestId, nodeId, url });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
+    }
+  }
+
+  start() {
+    if (get(isGlslPlaying)) return;
+
+    this.send('startAnimation');
+    isGlslPlaying.set(true);
+  }
+
+  stop() {
+    if (!get(isGlslPlaying)) return;
+
+    this.send('stopAnimation');
+    isGlslPlaying.set(false);
+  }
+
+  setOutputEnabled(enabled: boolean) {
+    this.send('setOutputEnabled', { enabled });
+  }
+
+  setPreviewEnabled(nodeId: string, enabled: boolean) {
+    this.send('setPreviewEnabled', { nodeId, enabled });
+  }
+
+  togglePreview(nodeId: string) {
+    const visibleMap = get(previewVisibleMap);
+
+    visibleMap[nodeId] = !visibleMap[nodeId];
+    previewVisibleMap.set(visibleMap);
+
+    this.setPreviewEnabled(nodeId, visibleMap[nodeId]);
+  }
+
+  /** Toggle pause state for a node */
+  toggleNodePause(nodeId: string) {
+    this.send('toggleNodePause', { nodeId });
+  }
+
+  send<T>(type: string, data?: T) {
+    this.renderWorker.postMessage({ type, ...data });
+  }
+
+  upsertNode(
+    id: string,
+    type: RenderNode['type'],
+    data: Record<string, unknown>,
+    options?: { force?: boolean }
+  ): boolean {
+    const nodeIndex = this.nodes.findIndex((node) => node.id === id);
+
+    if (nodeIndex === -1) {
+      this.nodes.push({ id: id, type, data });
+    } else {
+      const node = this.nodes[nodeIndex];
+      this.nodes[nodeIndex] = { ...node, type, data };
+    }
+
+    return this.updateRenderGraph(options?.force ?? false);
+  }
+
+  setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
+    this.send('setUniformData', {
+      nodeId,
+      uniformName,
+      uniformValue
+    });
+  }
+
+  setMouseData(nodeId: string, x: number, y: number, z: number, w: number) {
+    this.send('setMouseData', {
+      nodeId,
+      x,
+      y,
+      z,
+      w
+    });
+  }
+
+  removeNode(nodeId: string) {
+    const node = this.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    // Cleanup persistent external texture.
+    if (isExternalTextureNode(node.type as RenderNode['type'])) {
+      this.removeBitmap(nodeId);
+    }
+
+    // Cleanup persistent uniform data for GLSL nodes.
+    if (node.type === 'glsl') {
+      this.removeUniformData(nodeId);
+    }
+
+    this.nodes = this.nodes.filter((node) => node.id !== nodeId);
+
+    // Disable sending FFT analysis to the said node.
+    this.audioAnalysis.disableFFT(nodeId);
+
+    // Clear connection cache for this node
+    this.outgoingConnectionsCache.delete(nodeId);
+
+    this.updateRenderGraph();
+  }
+
+  removePreviewContext(nodeId: string, context: ImageBitmapRenderingContext) {
+    if (this.previewCanvasContexts[nodeId] === context) {
+      this.previewCanvasContexts[nodeId] = null;
+    }
+  }
+
+  updateEdges(edges: REdge[]) {
+    this.edges = edges;
+    this.updateRenderGraph();
+
+    const hasOutputNode = edges.some((edge) => edge.target.startsWith('bg.out'));
+
+    if (this.ipcSystem.outputWindow === null) {
+      isBackgroundOutputCanvasEnabled.set(hasOutputNode);
+    }
+
+    this.setOutputEnabled(hasOutputNode);
+  }
+
+  private updateRenderGraph(force = false) {
+    if (!force && !this.hasFlowGraphChanged(this.nodes, this.edges)) return false;
+
+    const graph = buildRenderGraph(this.nodes, this.edges);
+    if (!force && !this.hasHashChanged('graph', graph)) return false;
+
+    this.send('buildRenderGraph', { graph });
+    this.renderGraph = graph;
+
+    // Clear connection cache when render graph changes
+    this.outgoingConnectionsCache.clear();
+
+    return true;
+  }
+
+  // TODO: optimize this!
+  hasFlowGraphChanged(nodes: RNode[], edges: REdge[]) {
+    return this.hasHashChanged('nodes', nodes) || this.hasHashChanged('edges', edges);
+  }
+
+  hasHashChanged<K extends keyof GLSystem['hashes'], T>(key: K, object: T) {
+    const hash = ohash.hash(object);
+    if (this.hashes[key] === hash) return false;
+
+    this.hashes[key] = hash;
+    return true;
+  }
+
+  setPreviewSize(width: number, height: number) {
+    this.previewSize = [width, height];
+
+    for (const nodeId in this.previewCanvasContexts) {
+      const context = this.previewCanvasContexts[nodeId];
+
+      if (context) {
+        const canvas = context.canvas;
+        canvas.width = width;
+        canvas.height = height;
+
+        // re-create the context to accommodate the new size
+        delete this.previewCanvasContexts[nodeId];
+
+        this.previewCanvasContexts[nodeId] = canvas.getContext(
+          'bitmaprenderer'
+        ) as ImageBitmapRenderingContext;
+      }
+    }
+
+    this.send('setPreviewSize', { width, height });
+  }
+
+  setOutputSize(width: number, height: number) {
+    this.outputSize = [width, height];
+    this.send('setOutputSize', { width, height });
+  }
+
+  setBitmapSource(nodeId: string, source: ImageBitmapSource) {
+    // Create flipped bitmap asynchronously without blocking
+    // createImageBitmap is GPU-accelerated and returns quickly
+    createImageBitmap(source, { imageOrientation: 'flipY' }).then((bitmap) => {
+      this.setPreflippedBitmap(nodeId, bitmap);
+    });
+  }
+
+  /**
+   * Set a pre-flipped ImageBitmap for a node.
+   *
+   * IMPORTANT: The bitmap MUST be created with { imageOrientation: 'flipY' }
+   * to match the pipeline's standard screen coordinates (Y-down, top-left origin).
+   *
+   * If you have a non-flipped source, use setBitmapSource() instead.
+   *
+   * @param nodeId - The node ID to set the bitmap for
+   * @param bitmap - Pre-flipped ImageBitmap (created with imageOrientation: 'flipY')
+   */
+  setPreflippedBitmap(nodeId: string, bitmap: ImageBitmap) {
+    this.renderWorker.postMessage(
+      {
+        type: 'setBitmap',
+        nodeId,
+        bitmap
+      },
+      { transfer: [bitmap] }
+    );
+  }
+
+  removeBitmap(nodeId: string) {
+    this.send('removeBitmap', { nodeId });
+  }
+
+  removeUniformData(nodeId: string) {
+    this.send('removeUniformData', { nodeId });
+  }
+
+  sendMessageToNode(nodeId: string, message: Message) {
+    this.send('sendMessageToNode', { nodeId, message });
+  }
+
+  /** Set which nodes are visible in the viewport for preview culling */
+  setVisibleNodes(nodeIds: Set<string>) {
+    this.send('setVisibleNodes', { nodeIds: Array.from(nodeIds) });
+  }
+
+  /**
+   * Check if a node has outgoing connections to GPU video nodes (glsl, hydra, swgl)
+   * Used to optimize bitmap transfers - no need to send bitmaps if nothing consumes them
+   * Results are cached to avoid recalculation on every frame
+   */
+  public hasOutgoingVideoConnections(nodeId: string): boolean {
+    if (this.outgoingConnectionsCache.has(nodeId)) {
+      return this.outgoingConnectionsCache.get(nodeId)!;
+    }
+
+    let hasConnections = false;
+
+    if (this.renderGraph) {
+      const hasOutgoingVideoEdges = this.renderGraph.edges.some(
+        (edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
+      );
+
+      const isOutputNode = this.renderGraph.outputNodeId === nodeId;
+
+      hasConnections = hasOutgoingVideoEdges || isOutputNode;
+    }
+
+    this.outgoingConnectionsCache.set(nodeId, hasConnections);
+
+    return hasConnections;
+  }
+
+  /** Callback for when AudioAnalysisSystem has FFT data ready */
+  sendFFTDataToWorker: OnFFTReadyCallback = (payload) => {
+    const node = this.nodes.find((n) => n.id === payload.nodeId);
+    if (!node) return;
+
+    const payloadWithType: AudioAnalysisPayloadWithType = {
+      ...payload,
+      type: 'setFFTData',
+      nodeType: node.type as 'hydra' | 'glsl' | 'canvas'
+    };
+
+    this.renderWorker.postMessage(payloadWithType, { transfer: [payloadWithType.array.buffer] });
+  };
 }

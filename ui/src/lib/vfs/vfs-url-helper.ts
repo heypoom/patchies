@@ -11,24 +11,24 @@ import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 const objectUrls = new Map<string, Set<string>>();
 
 function trackObjectUrl(nodeId: string, url: string): void {
-	if (!objectUrls.has(nodeId)) {
-		objectUrls.set(nodeId, new Set());
-	}
+  if (!objectUrls.has(nodeId)) {
+    objectUrls.set(nodeId, new Set());
+  }
 
-	objectUrls.get(nodeId)!.add(url);
+  objectUrls.get(nodeId)!.add(url);
 }
 
 /** Revoke all object URLs for a node (call on node destroy) */
 export function revokeObjectUrls(nodeId: string): void {
-	const urls = objectUrls.get(nodeId);
+  const urls = objectUrls.get(nodeId);
 
-	if (urls) {
-		for (const url of urls) {
-			URL.revokeObjectURL(url);
-		}
+  if (urls) {
+    for (const url of urls) {
+      URL.revokeObjectURL(url);
+    }
 
-		objectUrls.delete(nodeId);
-	}
+    objectUrls.delete(nodeId);
+  }
 }
 
 /**
@@ -45,18 +45,18 @@ export function revokeObjectUrls(nodeId: string): void {
  * img = await loadImage(vfsUrl('https://example.com/image.png'));
  */
 export function createGetVfsUrl(nodeId: string): (path: string) => Promise<string> {
-	return async function vfsUrl(path: string): Promise<string> {
-		// VFS is only accessible on the main thread for now
-		if (typeof window === 'undefined') return path;
+  return async function vfsUrl(path: string): Promise<string> {
+    // VFS is only accessible on the main thread for now
+    if (typeof window === 'undefined') return path;
 
-		if (!isVFSPath(path)) {
-			return path;
-		}
+    if (!isVFSPath(path)) {
+      return path;
+    }
 
-		const vfs = VirtualFilesystem.getInstance();
-		const blob = await vfs.resolve(path);
-		const url = URL.createObjectURL(blob);
-		trackObjectUrl(nodeId, url);
-		return url;
-	};
+    const vfs = VirtualFilesystem.getInstance();
+    const blob = await vfs.resolve(path);
+    const url = URL.createObjectURL(blob);
+    trackObjectUrl(nodeId, url);
+    return url;
+  };
 }

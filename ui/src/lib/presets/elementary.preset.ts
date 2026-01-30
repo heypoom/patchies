@@ -27,16 +27,16 @@ recv(freq => setRate({ value: freq }))
 core.render(el.${name}(rate), el.${name}(rate))`;
 
 export const ELEMENTARY_PRESETS = {
-	'lowpass.elem': {
-		type: 'elem~',
-		data: { code: LOWPASS_ELEM, messageInletCount: 1, title: 'lowpass~' }
-	},
-	'phasor.elem': {
-		type: 'elem~',
-		data: { code: createRatePreset('phasor'), messageInletCount: 1, title: 'phasor~' }
-	},
-	'train.elem': {
-		type: 'elem~',
-		data: { code: createRatePreset('train'), messageInletCount: 1, title: 'train~' }
-	}
+  'lowpass.elem': {
+    type: 'elem~',
+    data: { code: LOWPASS_ELEM, messageInletCount: 1, title: 'lowpass~' }
+  },
+  'phasor.elem': {
+    type: 'elem~',
+    data: { code: createRatePreset('phasor'), messageInletCount: 1, title: 'phasor~' }
+  },
+  'train.elem': {
+    type: 'elem~',
+    data: { code: createRatePreset('train'), messageInletCount: 1, title: 'train~' }
+  }
 };

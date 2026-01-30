@@ -44,41 +44,41 @@ import { threeDomPrompt } from './three.dom';
  * Mapping of object types to their instruction prompts.
  */
 export const objectPrompts: Record<string, string> = {
-	'tone~': tonePrompt,
-	'dsp~': dspPrompt,
-	p5: p5Prompt,
-	hydra: hydraPrompt,
-	glsl: glslPrompt,
-	'canvas.dom': canvasDomPrompt,
-	dom: domPrompt,
-	vue: vuePrompt,
-	slider: sliderPrompt,
-	js: jsPrompt,
-	expr: exprPrompt,
-	'expr~': exprTildePrompt,
-	button: buttonPrompt,
-	toggle: togglePrompt,
-	msg: msgPrompt,
-	textbox: textboxPrompt,
-	canvas: canvasPrompt,
-	strudel: strudelPrompt,
-	python: pythonPrompt,
-	swgl: swglPrompt,
-	uxn: uxnPrompt,
-	asm: asmPrompt,
-	orca: orcaPrompt,
-	'chuck~': chuckPrompt,
-	'csound~': csoundPrompt,
-	'soundfile~': soundfilePrompt,
-	'sampler~': samplerPrompt,
-	markdown: markdownPrompt,
-	object: objectPrompt,
-	'bg.out': bgOutPrompt,
-	'sonic~': sonicPrompt,
-	'elem~': elemPrompt,
-	label: labelPrompt,
-	three: threePrompt,
-	'three.dom': threeDomPrompt
+  'tone~': tonePrompt,
+  'dsp~': dspPrompt,
+  p5: p5Prompt,
+  hydra: hydraPrompt,
+  glsl: glslPrompt,
+  'canvas.dom': canvasDomPrompt,
+  dom: domPrompt,
+  vue: vuePrompt,
+  slider: sliderPrompt,
+  js: jsPrompt,
+  expr: exprPrompt,
+  'expr~': exprTildePrompt,
+  button: buttonPrompt,
+  toggle: togglePrompt,
+  msg: msgPrompt,
+  textbox: textboxPrompt,
+  canvas: canvasPrompt,
+  strudel: strudelPrompt,
+  python: pythonPrompt,
+  swgl: swglPrompt,
+  uxn: uxnPrompt,
+  asm: asmPrompt,
+  orca: orcaPrompt,
+  'chuck~': chuckPrompt,
+  'csound~': csoundPrompt,
+  'soundfile~': soundfilePrompt,
+  'sampler~': samplerPrompt,
+  markdown: markdownPrompt,
+  object: objectPrompt,
+  'bg.out': bgOutPrompt,
+  'sonic~': sonicPrompt,
+  'elem~': elemPrompt,
+  label: labelPrompt,
+  three: threePrompt,
+  'three.dom': threeDomPrompt
 };
 
 /**
@@ -86,5 +86,5 @@ export const objectPrompts: Record<string, string> = {
  * Used by both single and multi-object generation.
  */
 export function getObjectSpecificInstructions(objectType: string): string {
-	return objectPrompts[objectType] ?? defaultPrompt(objectType);
+  return objectPrompts[objectType] ?? defaultPrompt(objectType);
 }

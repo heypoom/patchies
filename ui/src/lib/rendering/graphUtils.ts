@@ -6,9 +6,9 @@ import type { RenderNode, RenderEdge, RenderGraph } from './types.js';
 import { isFBOCompatible } from './types.js';
 
 export type RNode = {
-	id: string;
-	type: string;
-	data: Record<string, unknown>;
+  id: string;
+  type: string;
+  data: Record<string, unknown>;
 };
 
 export type REdge = Pick<XYEdge, 'id' | 'source' | 'target' | 'sourceHandle' | 'targetHandle'>;
@@ -17,146 +17,146 @@ export type REdge = Pick<XYEdge, 'id' | 'source' | 'target' | 'sourceHandle' | '
  * Filter nodes and edges to only include FBO-compatible nodes
  */
 export function filterFBOCompatibleGraph(
-	nodes: RNode[],
-	edges: REdge[]
+  nodes: RNode[],
+  edges: REdge[]
 ): { nodes: RenderNode[]; edges: RenderEdge[] } {
-	// Filter to only GLSL nodes for now
-	const compatibleNodes = nodes
-		.filter((node) => isFBOCompatible(node.type))
-		.map(
-			(node): RenderNode => ({
-				id: node.id,
-				type: node.type as 'img',
-				inputs: [],
-				outputs: [],
-				inletMap: new Map(),
-				data: node.data
-			})
-		);
+  // Filter to only GLSL nodes for now
+  const compatibleNodes = nodes
+    .filter((node) => isFBOCompatible(node.type))
+    .map(
+      (node): RenderNode => ({
+        id: node.id,
+        type: node.type as 'img',
+        inputs: [],
+        outputs: [],
+        inletMap: new Map(),
+        data: node.data
+      })
+    );
 
-	const nodeIds = new Set(compatibleNodes.map((n) => n.id));
+  const nodeIds = new Set(compatibleNodes.map((n) => n.id));
 
-	// Filter edges to only connect compatible nodes
-	const compatibleEdges = edges
-		.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
-		.map((edge) => ({
-			id: edge.id,
-			source: edge.source,
-			target: edge.target,
-			sourceHandle: edge.sourceHandle ?? undefined,
-			targetHandle: edge.targetHandle ?? undefined
-		}));
+  // Filter edges to only connect compatible nodes
+  const compatibleEdges = edges
+    .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+    .map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: edge.sourceHandle ?? undefined,
+      targetHandle: edge.targetHandle ?? undefined
+    }));
 
-	// Build input/output relationships
-	const nodeMap = new Map(compatibleNodes.map((n) => [n.id, n]));
+  // Build input/output relationships
+  const nodeMap = new Map(compatibleNodes.map((n) => [n.id, n]));
 
-	for (const edge of compatibleEdges) {
-		const sourceNode = nodeMap.get(edge.source);
-		const targetNode = nodeMap.get(edge.target);
+  for (const edge of compatibleEdges) {
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
 
-		if (sourceNode && targetNode) {
-			sourceNode.outputs.push(edge.target);
-			targetNode.inputs.push(edge.source);
+    if (sourceNode && targetNode) {
+      sourceNode.outputs.push(edge.target);
+      targetNode.inputs.push(edge.source);
 
-			// Parse inlet index from target handle for video connections
-			if (edge.targetHandle?.startsWith('video-in')) {
-				const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
+      // Parse inlet index from target handle for video connections
+      if (edge.targetHandle?.startsWith('video-in')) {
+        const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
 
-				if (inletMatch) {
-					const inletIndex = parseInt(inletMatch[1], 10);
-					targetNode.inletMap.set(inletIndex, edge.source);
-				}
-			}
-		}
-	}
+        if (inletMatch) {
+          const inletIndex = parseInt(inletMatch[1], 10);
+          targetNode.inletMap.set(inletIndex, edge.source);
+        }
+      }
+    }
+  }
 
-	return { nodes: compatibleNodes, edges: compatibleEdges };
+  return { nodes: compatibleNodes, edges: compatibleEdges };
 }
 
 /**
  * Topological sort of nodes to determine render order
  */
 export function topologicalSort(nodes: RenderNode[]): string[] {
-	const visited = new Set<string>();
-	const visiting = new Set<string>();
-	const result: string[] = [];
-	const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const result: string[] = [];
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
-	function visit(nodeId: string): void {
-		if (visiting.has(nodeId)) {
-			throw new Error(`Circular dependency detected involving node ${nodeId}`);
-		}
+  function visit(nodeId: string): void {
+    if (visiting.has(nodeId)) {
+      throw new Error(`Circular dependency detected involving node ${nodeId}`);
+    }
 
-		if (visited.has(nodeId)) {
-			return;
-		}
+    if (visited.has(nodeId)) {
+      return;
+    }
 
-		visiting.add(nodeId);
+    visiting.add(nodeId);
 
-		const node = nodeMap.get(nodeId);
-		if (node) {
-			// Visit all input nodes first
-			for (const inputId of node.inputs) {
-				visit(inputId);
-			}
-		}
+    const node = nodeMap.get(nodeId);
+    if (node) {
+      // Visit all input nodes first
+      for (const inputId of node.inputs) {
+        visit(inputId);
+      }
+    }
 
-		visiting.delete(nodeId);
-		visited.add(nodeId);
-		result.push(nodeId);
-	}
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    result.push(nodeId);
+  }
 
-	// Visit all nodes
-	for (const node of nodes) {
-		if (!visited.has(node.id)) {
-			visit(node.id);
-		}
-	}
+  // Visit all nodes
+  for (const node of nodes) {
+    if (!visited.has(node.id)) {
+      visit(node.id);
+    }
+  }
 
-	return result;
+  return result;
 }
 
 /**
  * Build a complete render graph from XYFlow nodes and edges
  */
 export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
-	const outputNodeId = findOutputNode(nodes, edges);
+  const outputNodeId = findOutputNode(nodes, edges);
 
-	const { nodes: renderNodes, edges: renderEdges } = filterFBOCompatibleGraph(nodes, edges);
+  const { nodes: renderNodes, edges: renderEdges } = filterFBOCompatibleGraph(nodes, edges);
 
-	try {
-		const sortedNodes = topologicalSort(renderNodes);
+  try {
+    const sortedNodes = topologicalSort(renderNodes);
 
-		return {
-			nodes: renderNodes,
-			edges: renderEdges,
-			sortedNodes,
-			outputNodeId
-		};
-	} catch (error) {
-		return { nodes: [], edges: [], sortedNodes: [], outputNodeId: null };
-	}
+    return {
+      nodes: renderNodes,
+      edges: renderEdges,
+      sortedNodes,
+      outputNodeId
+    };
+  } catch (error) {
+    return { nodes: [], edges: [], sortedNodes: [], outputNodeId: null };
+  }
 }
 
 /**
  * Find nodes that need preview rendering (visible in UI)
  */
 export function findPreviewNodes(renderGraph: RenderGraph): string[] {
-	// For now, return all nodes - later we'll add visibility culling
-	return renderGraph.nodes.map((n) => n.id);
+  // For now, return all nodes - later we'll add visibility culling
+  return renderGraph.nodes.map((n) => n.id);
 }
 
 /**
  * Find the output node (connected to bg.out)
  */
 export function findOutputNode(nodes: RNode[], edges: REdge[]): string | null {
-	// Find bg.out node
-	const bgOutNode = nodes.find((node) => node.type === 'bg.out');
-	if (!bgOutNode) return null;
+  // Find bg.out node
+  const bgOutNode = nodes.find((node) => node.type === 'bg.out');
+  if (!bgOutNode) return null;
 
-	// Find edge connecting to bg.out
-	const inputEdge = edges.find((edge) => edge.target === bgOutNode.id);
-	if (!inputEdge) return null;
+  // Find edge connecting to bg.out
+  const inputEdge = edges.find((edge) => edge.target === bgOutNode.id);
+  if (!inputEdge) return null;
 
-	return inputEdge.source;
+  return inputEdge.source;
 }

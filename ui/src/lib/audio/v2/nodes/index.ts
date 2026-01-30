@@ -41,39 +41,39 @@ import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import type { AudioNodeClass } from '../interfaces/audio-nodes';
 
 const AUDIO_NODES = [
-	AddNodeV2,
-	AllpassNode,
-	BandpassNode,
-	ChuckNode,
-	CompressorNode,
-	ConvolverNodeV2,
-	CsoundNode,
-	DacNode,
-	DelayNodeV2,
-	DspNode,
-	ElementaryNode,
-	ExprNode,
-	FFTNode,
-	GainNodeV2,
-	HighpassNode,
-	HighshelfNode,
-	LowpassNode,
-	LowshelfNode,
-	MergeNode,
-	MicNode,
-	NotchNode,
-	OscNode,
-	PanNodeV2,
-	PeakingNode,
-	SigNode,
-	SplitNode,
-	SamplerNode,
-	SonicNode,
-	SoundfileNode,
-	ToneNode,
-	VdoNinjaPullNode,
-	VdoNinjaPushNode,
-	WaveShaperNodeV2
+  AddNodeV2,
+  AllpassNode,
+  BandpassNode,
+  ChuckNode,
+  CompressorNode,
+  ConvolverNodeV2,
+  CsoundNode,
+  DacNode,
+  DelayNodeV2,
+  DspNode,
+  ElementaryNode,
+  ExprNode,
+  FFTNode,
+  GainNodeV2,
+  HighpassNode,
+  HighshelfNode,
+  LowpassNode,
+  LowshelfNode,
+  MergeNode,
+  MicNode,
+  NotchNode,
+  OscNode,
+  PanNodeV2,
+  PeakingNode,
+  SigNode,
+  SplitNode,
+  SamplerNode,
+  SonicNode,
+  SoundfileNode,
+  ToneNode,
+  VdoNinjaPullNode,
+  VdoNinjaPushNode,
+  WaveShaperNodeV2
 ] as const satisfies AudioNodeClass[];
 
 /**
@@ -81,7 +81,7 @@ const AUDIO_NODES = [
  * This should be called during application initialization.
  */
 export function registerAudioNodes(): void {
-	const registry = AudioRegistry.getInstance();
+  const registry = AudioRegistry.getInstance();
 
-	AUDIO_NODES.forEach((node) => registry.register(node));
+  AUDIO_NODES.forEach((node) => registry.register(node));
 }

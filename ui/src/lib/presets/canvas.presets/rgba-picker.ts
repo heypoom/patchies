@@ -97,10 +97,10 @@ function draw() {
 draw();`;
 
 export const rgbaPickerPreset = {
-	type: 'canvas.dom' as const,
-	data: {
-		code: RGBA_PICKER_JS,
-		inletCount: 1,
-		outletCount: 1
-	}
+  type: 'canvas.dom' as const,
+  data: {
+    code: RGBA_PICKER_JS,
+    inletCount: 1,
+    outletCount: 1
+  }
 };

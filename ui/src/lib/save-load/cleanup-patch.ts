@@ -12,22 +12,22 @@ import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
  * We need to explicitly clean up all nodes before loading a new patch.
  */
 export function cleanupPatch(nodes: Node[]) {
-	const messageSystem = MessageSystem.getInstance();
-	const glSystem = GLSystem.getInstance();
-	const audioService = AudioService.getInstance();
-	const audioAnalysisSystem = AudioAnalysisSystem.getInstance();
+  const messageSystem = MessageSystem.getInstance();
+  const glSystem = GLSystem.getInstance();
+  const audioService = AudioService.getInstance();
+  const audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
-	// Clean up all nodes from all services
-	for (const node of nodes) {
-		messageSystem.unregisterNode(node.id);
-		glSystem.removeNode(node.id);
+  // Clean up all nodes from all services
+  for (const node of nodes) {
+    messageSystem.unregisterNode(node.id);
+    glSystem.removeNode(node.id);
 
-		audioService.removeNodeById(node.id);
-	}
+    audioService.removeNodeById(node.id);
+  }
 
-	// Clear edges in all systems explicitly
-	messageSystem.updateEdges([]);
-	glSystem.updateEdges([]);
-	audioService.updateEdges([]);
-	audioAnalysisSystem.updateEdges([]);
+  // Clear edges in all systems explicitly
+  messageSystem.updateEdges([]);
+  glSystem.updateEdges([]);
+  audioService.updateEdges([]);
+  audioAnalysisSystem.updateEdges([]);
 }

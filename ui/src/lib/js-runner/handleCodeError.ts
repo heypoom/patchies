@@ -2,7 +2,7 @@ import { logger } from '$lib/utils/logger';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 
 type CustomConsole = {
-	error: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
 };
 
 /**
@@ -16,19 +16,19 @@ type CustomConsole = {
  * @param wrapperOffset Additional offset for line number correction (node-specific)
  */
 export function handleCodeError(
-	error: unknown,
-	code: string,
-	nodeId: string,
-	customConsole: CustomConsole,
-	wrapperOffset: number = 0
+  error: unknown,
+  code: string,
+  nodeId: string,
+  customConsole: CustomConsole,
+  wrapperOffset: number = 0
 ): void {
-	const errorInfo = parseJSError(error, countLines(code), wrapperOffset);
+  const errorInfo = parseJSError(error, countLines(code), wrapperOffset);
 
-	if (errorInfo) {
-		logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
-		return;
-	}
+  if (errorInfo) {
+    logger.nodeError(nodeId, { lineErrors: errorInfo.lineErrors }, errorInfo.message);
+    return;
+  }
 
-	const errorMessage = error instanceof Error ? error.message : String(error);
-	customConsole.error(errorMessage);
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  customConsole.error(errorMessage);
 }

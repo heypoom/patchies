@@ -13,8 +13,8 @@ while (250::ms => now) {
 }`;
 
 export const CHUCK_DEMO_PRESETS = {
-	'bell.chuck': {
-		type: 'chuck~',
-		data: { expr: BELL_CHUCK.trim() }
-	}
+  'bell.chuck': {
+    type: 'chuck~',
+    data: { expr: BELL_CHUCK.trim() }
+  }
 };

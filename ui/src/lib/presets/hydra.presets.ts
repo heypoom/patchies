@@ -68,69 +68,69 @@ osc(100, -0.0018, 0.17)
   .out()`;
 
 type HydraNodeData = {
-	code: string;
-	messageInletCount?: number;
-	messageOutletCount?: number;
-	videoInletCount?: number;
-	videoOutletCount?: number;
-	title?: string;
+  code: string;
+  messageInletCount?: number;
+  messageOutletCount?: number;
+  videoInletCount?: number;
+  videoOutletCount?: number;
+  title?: string;
 };
 
 const defaultsOneVideoIn: HydraNodeData = {
-	code: '',
-	messageInletCount: 0,
-	messageOutletCount: 0,
-	videoInletCount: 1,
-	videoOutletCount: 1
+  code: '',
+  messageInletCount: 0,
+  messageOutletCount: 0,
+  videoInletCount: 1,
+  videoOutletCount: 1
 };
 
 const defaultsTwoVideoIn: HydraNodeData = { ...defaultsOneVideoIn, videoInletCount: 2 };
 
 export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }> = {
-	'passthru.hydra': {
-		type: 'hydra',
-		data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
-	},
-	'pipe.hydra': {
-		type: 'hydra',
-		data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
-	},
-	'diff.hydra': {
-		type: 'hydra',
-		data: { ...defaultsTwoVideoIn, code: DIFF.trim() }
-	},
-	'add.hydra': {
-		type: 'hydra',
-		data: { ...defaultsTwoVideoIn, code: ADD.trim() }
-	},
-	'sub.hydra': {
-		type: 'hydra',
-		data: { ...defaultsTwoVideoIn, code: SUB.trim() }
-	},
-	'blend.hydra': {
-		type: 'hydra',
-		data: { ...defaultsTwoVideoIn, code: BLEND.trim() }
-	},
-	'mask.hydra': {
-		type: 'hydra',
-		data: { ...defaultsTwoVideoIn, code: MASK.trim() }
-	},
-	'beans.hydra': {
-		type: 'hydra',
-		data: { ...defaultsOneVideoIn, code: BEANS.trim(), videoInletCount: 0 }
-	},
-	'filet-mignon.hydra': {
-		type: 'hydra',
-		data: { ...defaultsOneVideoIn, code: FILET_MIGNON.trim(), videoInletCount: 0 }
-	},
-	'fft.hydra': {
-		type: 'hydra',
-		data: {
-			code: HYDRA_FFT.trim(),
-			messageInletCount: 1,
-			messageOutletCount: 0,
-			videoInletCount: 0,
-			videoOutletCount: 1
-		}
-	}
+  'passthru.hydra': {
+    type: 'hydra',
+    data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
+  },
+  'pipe.hydra': {
+    type: 'hydra',
+    data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
+  },
+  'diff.hydra': {
+    type: 'hydra',
+    data: { ...defaultsTwoVideoIn, code: DIFF.trim() }
+  },
+  'add.hydra': {
+    type: 'hydra',
+    data: { ...defaultsTwoVideoIn, code: ADD.trim() }
+  },
+  'sub.hydra': {
+    type: 'hydra',
+    data: { ...defaultsTwoVideoIn, code: SUB.trim() }
+  },
+  'blend.hydra': {
+    type: 'hydra',
+    data: { ...defaultsTwoVideoIn, code: BLEND.trim() }
+  },
+  'mask.hydra': {
+    type: 'hydra',
+    data: { ...defaultsTwoVideoIn, code: MASK.trim() }
+  },
+  'beans.hydra': {
+    type: 'hydra',
+    data: { ...defaultsOneVideoIn, code: BEANS.trim(), videoInletCount: 0 }
+  },
+  'filet-mignon.hydra': {
+    type: 'hydra',
+    data: { ...defaultsOneVideoIn, code: FILET_MIGNON.trim(), videoInletCount: 0 }
+  },
+  'fft.hydra': {
+    type: 'hydra',
+    data: {
+      code: HYDRA_FFT.trim(),
+      messageInletCount: 1,
+      messageOutletCount: 0,
+      videoInletCount: 0,
+      videoOutletCount: 1
+    }
+  }
 };

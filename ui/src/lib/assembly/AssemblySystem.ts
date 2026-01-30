@@ -1,10 +1,10 @@
 import type { MachineStatus, Effect, Message, Action } from 'machine';
 import type {
-	AssemblyWorkerMessage,
-	AssemblyWorkerResponse,
-	InspectedRegister,
-	InspectedMachine,
-	MachineConfig
+  AssemblyWorkerMessage,
+  AssemblyWorkerResponse,
+  InspectedRegister,
+  InspectedMachine,
+  MachineConfig
 } from '../../workers/assembly/assemblyWorker';
 import AssemblyWorker from '../../workers/assembly/assemblyWorker?worker';
 import { memoryRegionStore, type MemoryRegion } from './memoryRegionStore';
@@ -15,376 +15,376 @@ import { memoryRegionStore, type MemoryRegion } from './memoryRegionStore';
  * within the Patchies environment. Now runs on a web worker to avoid blocking the main thread.
  */
 export class AssemblySystem {
-	public static instance: AssemblySystem | null = null;
-	private worker: Worker;
-	private initialized = false;
-	private lastId = 1;
-	private pendingRequests = new Map<
-		string,
-		{ resolve: (value: unknown) => void; reject: (error: unknown) => void }
-	>();
-	public eventBus: EventTarget | null = null;
-	public highlighters = new Map<number, (lineNo: number) => void>();
-	private highlightMaps = new Map<number, Map<number, number>>();
-	private machineColors = new Map<number, number>();
+  public static instance: AssemblySystem | null = null;
+  private worker: Worker;
+  private initialized = false;
+  private lastId = 1;
+  private pendingRequests = new Map<
+    string,
+    { resolve: (value: unknown) => void; reject: (error: unknown) => void }
+  >();
+  public eventBus: EventTarget | null = null;
+  public highlighters = new Map<number, (lineNo: number) => void>();
+  private highlightMaps = new Map<number, Map<number, number>>();
+  private machineColors = new Map<number, number>();
 
-	private constructor() {
-		this.worker = new AssemblyWorker();
-		this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
-		this.initialized = true;
-		this.eventBus = new EventTarget();
-	}
+  private constructor() {
+    this.worker = new AssemblyWorker();
+    this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
+    this.initialized = true;
+    this.eventBus = new EventTarget();
+  }
 
-	static getInstance(): AssemblySystem {
-		if (!AssemblySystem.instance) {
-			AssemblySystem.instance = new AssemblySystem();
-		}
-		return AssemblySystem.instance;
-	}
+  static getInstance(): AssemblySystem {
+    if (!AssemblySystem.instance) {
+      AssemblySystem.instance = new AssemblySystem();
+    }
+    return AssemblySystem.instance;
+  }
 
-	private handleWorkerMessage = (event: MessageEvent<AssemblyWorkerResponse>) => {
-		const { id, type } = event.data;
+  private handleWorkerMessage = (event: MessageEvent<AssemblyWorkerResponse>) => {
+    const { id, type } = event.data;
 
-		if (id && this.pendingRequests.has(id)) {
-			const { resolve, reject } = this.pendingRequests.get(id)!;
-			this.pendingRequests.delete(id);
+    if (id && this.pendingRequests.has(id)) {
+      const { resolve, reject } = this.pendingRequests.get(id)!;
+      this.pendingRequests.delete(id);
 
-			if (type === 'success') {
-				resolve(event.data.result);
-			} else if (type === 'error') {
-				reject(event.data.error);
-			}
-		}
-	};
+      if (type === 'success') {
+        resolve(event.data.result);
+      } else if (type === 'error') {
+        reject(event.data.error);
+      }
+    }
+  };
 
-	send<T extends AssemblyWorkerMessage['type']>(
-		type: T,
-		payload: Omit<Extract<AssemblyWorkerMessage, { type: T }>, 'type' | 'id'>
-	): Promise<any> {
-		const id = this.getId();
+  send<T extends AssemblyWorkerMessage['type']>(
+    type: T,
+    payload: Omit<Extract<AssemblyWorkerMessage, { type: T }>, 'type' | 'id'>
+  ): Promise<any> {
+    const id = this.getId();
 
-		return new Promise((resolve, reject) => {
-			this.pendingRequests.set(id, { resolve, reject });
+    return new Promise((resolve, reject) => {
+      this.pendingRequests.set(id, { resolve, reject });
 
-			this.worker.postMessage({
-				type,
-				id,
-				...payload
-			});
-		});
-	}
+      this.worker.postMessage({
+        type,
+        id,
+        ...payload
+      });
+    });
+  }
 
-	private getId(): string {
-		return String(this.lastId++);
-	}
+  private getId(): string {
+    return String(this.lastId++);
+  }
 
-	/**
-	 * Check if the system is properly initialized
-	 */
-	isInitialized(): boolean {
-		return this.initialized;
-	}
+  /**
+   * Check if the system is properly initialized
+   */
+  isInitialized(): boolean {
+    return this.initialized;
+  }
 
-	/**
-	 * Create a machine with a specific ID
-	 */
-	async createMachineWithId(id: number): Promise<void> {
-		await this.send('createMachineWithId', { machineId: id });
-	}
+  /**
+   * Create a machine with a specific ID
+   */
+  async createMachineWithId(id: number): Promise<void> {
+    await this.send('createMachineWithId', { machineId: id });
+  }
 
-	/**
-	 * Remove a machine by ID
-	 */
-	async removeMachine(id: number): Promise<void> {
-		await this.send('removeMachine', { machineId: id });
-		// Clean up highlight mapping
-		this.highlightMaps.delete(id);
-		// Clean up memory regions
-		this.clearMemoryRegions(id);
-		// Clean up machine color
-		this.machineColors.delete(id);
-	}
+  /**
+   * Remove a machine by ID
+   */
+  async removeMachine(id: number): Promise<void> {
+    await this.send('removeMachine', { machineId: id });
+    // Clean up highlight mapping
+    this.highlightMaps.delete(id);
+    // Clean up memory regions
+    this.clearMemoryRegions(id);
+    // Clean up machine color
+    this.machineColors.delete(id);
+  }
 
-	/**
-	 * Load assembly source code into a machine
-	 */
-	async loadProgram(machineId: number, source: string): Promise<void> {
-		await this.send('loadProgram', { machineId, source });
-		// Create highlight mapping for this machine's source code
-		this.highlightMaps.set(machineId, this.createHighlightMap(source));
-	}
+  /**
+   * Load assembly source code into a machine
+   */
+  async loadProgram(machineId: number, source: string): Promise<void> {
+    await this.send('loadProgram', { machineId, source });
+    // Create highlight mapping for this machine's source code
+    this.highlightMaps.set(machineId, this.createHighlightMap(source));
+  }
 
-	/**
-	 * Execute a number of instruction cycles
-	 */
-	async stepMachine(id: number, cycles: number = 1): Promise<void> {
-		await this.send('stepMachine', { machineId: id, cycles });
-	}
+  /**
+   * Execute a number of instruction cycles
+   */
+  async stepMachine(id: number, cycles: number = 1): Promise<void> {
+    await this.send('stepMachine', { machineId: id, cycles });
+  }
 
-	/**
-	 * Check if a machine exists
-	 */
-	async machineExists(machineId: number): Promise<boolean> {
-		return await this.send('machineExists', { machineId });
-	}
+  /**
+   * Check if a machine exists
+   */
+  async machineExists(machineId: number): Promise<boolean> {
+    return await this.send('machineExists', { machineId });
+  }
 
-	/**
-	 * Get detailed information about a specific machine
-	 */
-	async inspectMachine(machineId: number): Promise<InspectedMachine | null> {
-		return await this.send('inspectMachine', { machineId });
-	}
+  /**
+   * Get detailed information about a specific machine
+   */
+  async inspectMachine(machineId: number): Promise<InspectedMachine | null> {
+    return await this.send('inspectMachine', { machineId });
+  }
 
-	/**
-	 * Read data from a machine's memory at a specific address
-	 */
-	async readMemory(machineId: number, address: number, size: number): Promise<number[] | null> {
-		return await this.send('readMemory', { machineId, address, size });
-	}
+  /**
+   * Read data from a machine's memory at a specific address
+   */
+  async readMemory(machineId: number, address: number, size: number): Promise<number[] | null> {
+    return await this.send('readMemory', { machineId, address, size });
+  }
 
-	/**
-	 * Consume and return effects generated by a machine
-	 */
-	async consumeMachineEffects(machineId: number): Promise<Effect[]> {
-		return await this.send('consumeMachineEffects', { machineId });
-	}
+  /**
+   * Consume and return effects generated by a machine
+   */
+  async consumeMachineEffects(machineId: number): Promise<Effect[]> {
+    return await this.send('consumeMachineEffects', { machineId });
+  }
 
-	/**
-	 * Send a message directly to a machine's inbox
-	 */
-	async sendMessage(
-		machineId: number,
-		action: Action,
-		source: number,
-		inlet: number
-	): Promise<boolean> {
-		return await this.send('sendMessage', { machineId, action, source, inlet });
-	}
+  /**
+   * Send a message directly to a machine's inbox
+   */
+  async sendMessage(
+    machineId: number,
+    action: Action,
+    source: number,
+    inlet: number
+  ): Promise<boolean> {
+    return await this.send('sendMessage', { machineId, action, source, inlet });
+  }
 
-	/**
-	 * Send a 'Data' message directly to a machine's inbox
-	 */
-	async sendDataMessage(
-		machineId: number,
-		data: number | number[],
-		source: number,
-		inlet: number
-	): Promise<boolean> {
-		return await this.send('sendDataMessage', { machineId, data, source, inlet });
-	}
+  /**
+   * Send a 'Data' message directly to a machine's inbox
+   */
+  async sendDataMessage(
+    machineId: number,
+    data: number | number[],
+    source: number,
+    inlet: number
+  ): Promise<boolean> {
+    return await this.send('sendDataMessage', { machineId, data, source, inlet });
+  }
 
-	/**
-	 * Consume all outgoing messages from all machines
-	 */
-	async consumeMessages(machineId: number): Promise<Message[]> {
-		return await this.send('consumeMessages', { machineId });
-	}
+  /**
+   * Consume all outgoing messages from all machines
+   */
+  async consumeMessages(machineId: number): Promise<Message[]> {
+    return await this.send('consumeMessages', { machineId });
+  }
 
-	/**
-	 * Set machine configuration (delayMs, stepBy, isRunning)
-	 */
-	async setMachineConfig(machineId: number, config: Partial<MachineConfig>): Promise<void> {
-		await this.send('setMachineConfig', { machineId, config });
-	}
+  /**
+   * Set machine configuration (delayMs, stepBy, isRunning)
+   */
+  async setMachineConfig(machineId: number, config: Partial<MachineConfig>): Promise<void> {
+    await this.send('setMachineConfig', { machineId, config });
+  }
 
-	/**
-	 * Get machine configuration
-	 */
-	async getMachineConfig(machineId: number): Promise<MachineConfig> {
-		return await this.send('getMachineConfig', { machineId });
-	}
+  /**
+   * Get machine configuration
+   */
+  async getMachineConfig(machineId: number): Promise<MachineConfig> {
+    return await this.send('getMachineConfig', { machineId });
+  }
 
-	/**
-	 * Start automatic execution of machine
-	 */
-	async playMachine(machineId: number): Promise<void> {
-		await this.send('playMachine', { machineId });
-	}
+  /**
+   * Start automatic execution of machine
+   */
+  async playMachine(machineId: number): Promise<void> {
+    await this.send('playMachine', { machineId });
+  }
 
-	/**
-	 * Pause automatic execution of machine
-	 */
-	async pauseMachine(machineId: number): Promise<void> {
-		await this.send('pauseMachine', { machineId });
-	}
+  /**
+   * Pause automatic execution of machine
+   */
+  async pauseMachine(machineId: number): Promise<void> {
+    await this.send('pauseMachine', { machineId });
+  }
 
-	async resetMachine(machineId: number): Promise<void> {
-		await this.send('resetMachine', { machineId });
-	}
+  async resetMachine(machineId: number): Promise<void> {
+    await this.send('resetMachine', { machineId });
+  }
 
-	/**
-	 * Set a memory value with color region tracking
-	 */
-	async setMemoryValue(
-		machineId: number,
-		address: number,
-		value: number | number[],
-		color?: number
-	): Promise<void> {
-		// Set the memory value (this would need to be implemented in the worker)
-		const values = Array.isArray(value) ? value : [value];
+  /**
+   * Set a memory value with color region tracking
+   */
+  async setMemoryValue(
+    machineId: number,
+    address: number,
+    value: number | number[],
+    color?: number
+  ): Promise<void> {
+    // Set the memory value (this would need to be implemented in the worker)
+    const values = Array.isArray(value) ? value : [value];
 
-		// For now, we'll track the region in our store
-		if (color !== undefined) {
-			// Check if there's already a region at this exact address and size
-			const existingRegions = memoryRegionStore.getRegionsForMachine(machineId);
-			const existingRegion = existingRegions.find(
-				(r) => r.offset === address && r.size === values.length
-			);
+    // For now, we'll track the region in our store
+    if (color !== undefined) {
+      // Check if there's already a region at this exact address and size
+      const existingRegions = memoryRegionStore.getRegionsForMachine(machineId);
+      const existingRegion = existingRegions.find(
+        (r) => r.offset === address && r.size === values.length
+      );
 
-			if (existingRegion) {
-				// Update existing region with new color
-				memoryRegionStore.setRegion(machineId, {
-					id: existingRegion.id,
-					offset: address,
-					size: values.length,
-					color
-				});
-			} else {
-				// Create new region
-				const regionId = Date.now(); // Simple ID generation
-				memoryRegionStore.setRegion(machineId, {
-					id: regionId,
-					offset: address,
-					size: values.length,
-					color
-				});
-			}
-		}
+      if (existingRegion) {
+        // Update existing region with new color
+        memoryRegionStore.setRegion(machineId, {
+          id: existingRegion.id,
+          offset: address,
+          size: values.length,
+          color
+        });
+      } else {
+        // Create new region
+        const regionId = Date.now(); // Simple ID generation
+        memoryRegionStore.setRegion(machineId, {
+          id: regionId,
+          offset: address,
+          size: values.length,
+          color
+        });
+      }
+    }
 
-		// TODO: Implement actual memory setting in the worker
-	}
+    // TODO: Implement actual memory setting in the worker
+  }
 
-	/**
-	 * Get memory regions for a machine
-	 */
-	getMemoryRegions(machineId: number): MemoryRegion[] {
-		return memoryRegionStore.getRegionsForMachine(machineId);
-	}
+  /**
+   * Get memory regions for a machine
+   */
+  getMemoryRegions(machineId: number): MemoryRegion[] {
+    return memoryRegionStore.getRegionsForMachine(machineId);
+  }
 
-	/**
-	 * Clear memory regions for a machine
-	 */
-	clearMemoryRegions(machineId: number): void {
-		memoryRegionStore.clearMachine(machineId);
-	}
+  /**
+   * Clear memory regions for a machine
+   */
+  clearMemoryRegions(machineId: number): void {
+    memoryRegionStore.clearMachine(machineId);
+  }
 
-	/**
-	 * Set the default color for a machine
-	 */
-	setMachineColor(machineId: number, color: number): void {
-		this.machineColors.set(machineId, color);
-	}
+  /**
+   * Set the default color for a machine
+   */
+  setMachineColor(machineId: number, color: number): void {
+    this.machineColors.set(machineId, color);
+  }
 
-	/**
-	 * Get the default color for a machine
-	 */
-	getMachineColor(machineId: number): number {
-		return this.machineColors.get(machineId) ?? 0;
-	}
+  /**
+   * Get the default color for a machine
+   */
+  getMachineColor(machineId: number): number {
+    return this.machineColors.get(machineId) ?? 0;
+  }
 
-	/**
-	 * Register a line highlighter callback for a machine
-	 */
-	registerHighlighter(machineId: number, callback: (lineNo: number) => void): void {
-		this.highlighters.set(machineId, callback);
-	}
+  /**
+   * Register a line highlighter callback for a machine
+   */
+  registerHighlighter(machineId: number, callback: (lineNo: number) => void): void {
+    this.highlighters.set(machineId, callback);
+  }
 
-	/**
-	 * Unregister a line highlighter for a machine
-	 */
-	unregisterHighlighter(machineId: number): void {
-		this.highlighters.delete(machineId);
-	}
+  /**
+   * Unregister a line highlighter for a machine
+   */
+  unregisterHighlighter(machineId: number): void {
+    this.highlighters.delete(machineId);
+  }
 
-	/**
-	 * Create a mapping from program counter to source line numbers
-	 */
-	private createHighlightMap(source: string): Map<number, number> {
-		const lines = source.split('\n');
-		const mapping = new Map<number, number>();
+  /**
+   * Create a mapping from program counter to source line numbers
+   */
+  private createHighlightMap(source: string): Map<number, number> {
+    const lines = source.split('\n');
+    const mapping = new Map<number, number>();
 
-		let pc = 0;
-		let linePos = 0;
+    let pc = 0;
+    let linePos = 0;
 
-		for (const line of lines) {
-			const [opcode, ...args] = line.trim().split(' ');
-			linePos++;
+    for (const line of lines) {
+      const [opcode, ...args] = line.trim().split(' ');
+      linePos++;
 
-			// Skip comments, labels and directives
-			if (line.length === 0) continue;
-			if (opcode.endsWith(':')) continue;
-			if (opcode.startsWith('//')) continue;
-			if (opcode.startsWith(';')) continue;
-			if (opcode.startsWith('.')) continue;
+      // Skip comments, labels and directives
+      if (line.length === 0) continue;
+      if (opcode.endsWith(':')) continue;
+      if (opcode.startsWith('//')) continue;
+      if (opcode.startsWith(';')) continue;
+      if (opcode.startsWith('.')) continue;
 
-			pc++;
+      pc++;
 
-			for (const arg of args) {
-				if (arg.trim().length === 0) continue;
-				if (arg.startsWith(';')) break;
+      for (const arg of args) {
+        if (arg.trim().length === 0) continue;
+        if (arg.startsWith(';')) break;
 
-				pc++;
-			}
+        pc++;
+      }
 
-			mapping.set(pc, linePos - 1);
-		}
+      mapping.set(pc, linePos - 1);
+    }
 
-		return mapping;
-	}
+    return mapping;
+  }
 
-	/**
-	 * Trigger line highlighting for a specific machine using PC
-	 */
-	highlightLineFromPC(machineId: number, pc: number): void {
-		const highlighter = this.highlighters.get(machineId);
-		const mapping = this.highlightMaps.get(machineId);
+  /**
+   * Trigger line highlighting for a specific machine using PC
+   */
+  highlightLineFromPC(machineId: number, pc: number): void {
+    const highlighter = this.highlighters.get(machineId);
+    const mapping = this.highlightMaps.get(machineId);
 
-		if (highlighter && mapping) {
-			const lineNo = (mapping.get(pc) ?? 0) + 1;
-			highlighter(lineNo);
-		}
-	}
+    if (highlighter && mapping) {
+      const lineNo = (mapping.get(pc) ?? 0) + 1;
+      highlighter(lineNo);
+    }
+  }
 
-	/**
-	 * Trigger line highlighting for a specific machine
-	 */
-	highlightLine(machineId: number, lineNo: number): void {
-		const highlighter = this.highlighters.get(machineId);
-		if (highlighter) {
-			highlighter(lineNo);
-		}
-	}
+  /**
+   * Trigger line highlighting for a specific machine
+   */
+  highlightLine(machineId: number, lineNo: number): void {
+    const highlighter = this.highlighters.get(machineId);
+    if (highlighter) {
+      highlighter(lineNo);
+    }
+  }
 
-	/**
-	 * Dispose of the system and free resources
-	 */
-	dispose(): void {
-		if (this.worker) {
-			this.worker.terminate();
-		}
-		this.pendingRequests.clear();
-		this.highlighters.clear();
-		this.highlightMaps.clear();
-		this.machineColors.clear();
-		this.initialized = false;
-	}
+  /**
+   * Dispose of the system and free resources
+   */
+  dispose(): void {
+    if (this.worker) {
+      this.worker.terminate();
+    }
+    this.pendingRequests.clear();
+    this.highlighters.clear();
+    this.highlightMaps.clear();
+    this.machineColors.clear();
+    this.initialized = false;
+  }
 }
 
 /**
  * Get the global AssemblySystem instance
  */
 export function getAssemblySystem(): AssemblySystem {
-	return AssemblySystem.getInstance();
+  return AssemblySystem.getInstance();
 }
 
 /**
  * Dispose of the global AssemblySystem instance
  */
 export function disposeAssemblySystem(): void {
-	const instance = AssemblySystem.getInstance();
-	instance.dispose();
-	AssemblySystem.instance = null;
+  const instance = AssemblySystem.getInstance();
+  instance.dispose();
+  AssemblySystem.instance = null;
 }
 
 /**
@@ -392,15 +392,15 @@ export function disposeAssemblySystem(): void {
  * This function can be called during assembly execution
  */
 export function asmValue(
-	machineId: number,
-	address: number,
-	value: number | number[],
-	color?: number
+  machineId: number,
+  address: number,
+  value: number | number[],
+  color?: number
 ): void {
-	const system = AssemblySystem.getInstance();
-	// Use machine's default color if no color is specified
-	const finalColor = color !== undefined ? color : system.getMachineColor(machineId);
-	system.setMemoryValue(machineId, address, value, finalColor);
+  const system = AssemblySystem.getInstance();
+  // Use machine's default color if no color is specified
+  const finalColor = color !== undefined ? color : system.getMachineColor(machineId);
+  system.setMemoryValue(machineId, address, value, finalColor);
 }
 
 export type { MachineStatus, Effect, Message, InspectedMachine, InspectedRegister, MachineConfig };

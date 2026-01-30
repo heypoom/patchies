@@ -10,11 +10,11 @@ import type { ObjectMetadata } from './object-metadata';
  * Checks in order: AudioRegistry (V2 audio) → ObjectRegistry (V2 text)
  **/
 export const getCombinedMetadata = (name: string): ObjectMetadata | undefined => {
-	// Check audio registry
-	const audioMetadata = AudioRegistry.getInstance().get(name);
-	if (audioMetadata) return audioMetadata;
+  // Check audio registry
+  const audioMetadata = AudioRegistry.getInstance().get(name);
+  if (audioMetadata) return audioMetadata;
 
-	// Check text object registry
-	const objectMetadata = ObjectRegistry.getInstance().get(name);
-	if (objectMetadata) return objectMetadata;
+  // Check text object registry
+  const objectMetadata = ObjectRegistry.getInstance().get(name);
+  if (objectMetadata) return objectMetadata;
 };

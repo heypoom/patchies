@@ -32,5 +32,5 @@ You can give multiple JSON keys with different weights to create a more complex 
 }`;
 
 export const AI_TXT_PRESETS = {
-	'music-from-image.prompt': { type: 'ai.txt', data: { prompt: AI_TXT_PRESET.trim() } }
+  'music-from-image.prompt': { type: 'ai.txt', data: { prompt: AI_TXT_PRESET.trim() } }
 };

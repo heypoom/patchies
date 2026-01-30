@@ -17,48 +17,48 @@ import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descri
  * Supports cancellation via AbortSignal.
  */
 export async function resolveObjectFromPrompt(
-	prompt: string,
-	onRouterComplete?: (objectType: string) => void,
-	signal?: AbortSignal
+  prompt: string,
+  onRouterComplete?: (objectType: string) => void,
+  signal?: AbortSignal
 ): Promise<{
-	type: string;
+  type: string;
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
-	data: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
+  data: any;
 } | null> {
-	const apiKey = localStorage.getItem('gemini-api-key');
+  const apiKey = localStorage.getItem('gemini-api-key');
 
-	if (!apiKey) {
-		throw new Error('Gemini API key is not set. Please set it in the settings.');
-	}
+  if (!apiKey) {
+    throw new Error('Gemini API key is not set. Please set it in the settings.');
+  }
 
-	// Check for cancellation before starting
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const { GoogleGenAI } = await import('@google/genai');
-	const ai = new GoogleGenAI({ apiKey });
+  const { GoogleGenAI } = await import('@google/genai');
+  const ai = new GoogleGenAI({ apiKey });
 
-	// Call 1: Route to object type (lightweight)
-	const objectType = await routeToObjectType(ai, prompt, signal);
-	if (!objectType) {
-		return null;
-	}
+  // Call 1: Route to object type (lightweight)
+  const objectType = await routeToObjectType(ai, prompt, signal);
+  if (!objectType) {
+    return null;
+  }
 
-	// Check for cancellation after first call
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation after first call
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	// Report router completion to UI
-	onRouterComplete?.(objectType);
+  // Report router completion to UI
+  onRouterComplete?.(objectType);
 
-	// Call 2: Generate object config (targeted)
+  // Call 2: Generate object config (targeted)
 
-	const config = await generateObjectConfig(ai, prompt, objectType, signal);
+  const config = await generateObjectConfig(ai, prompt, objectType, signal);
 
-	return config;
+  return config;
 }
 
 /**
@@ -66,34 +66,34 @@ export async function resolveObjectFromPrompt(
  * This is a lightweight call that only includes object descriptions, not implementation details.
  */
 async function routeToObjectType(
-	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
-	prompt: string,
-	signal?: AbortSignal
+  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  prompt: string,
+  signal?: AbortSignal
 ): Promise<string | null> {
-	// Check for cancellation before starting
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const routerPrompt = buildRouterPrompt();
+  const routerPrompt = buildRouterPrompt();
 
-	const response = await ai.models.generateContent({
-		model: 'gemini-3-flash-preview',
-		contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
-	});
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
+  });
 
-	// Check for cancellation after request
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation after request
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const responseText = response.text?.trim();
-	if (!responseText) {
-		return null;
-	}
+  const responseText = response.text?.trim();
+  if (!responseText) {
+    return null;
+  }
 
-	// Response should be just the object type name
-	return responseText;
+  // Response should be just the object type name
+  return responseText;
 }
 
 /**
@@ -101,64 +101,64 @@ async function routeToObjectType(
  * This is a targeted call that includes only the relevant system prompt and API docs.
  */
 async function generateObjectConfig(
-	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
-	prompt: string,
-	objectType: string,
-	signal?: AbortSignal
+  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  prompt: string,
+  objectType: string,
+  signal?: AbortSignal
 ): Promise<{
-	type: string;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
-	data: any;
+  type: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
+  data: any;
 } | null> {
-	// Check for cancellation before starting
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const systemPrompt = buildGeneratorPrompt(objectType);
+  const systemPrompt = buildGeneratorPrompt(objectType);
 
-	const response = await ai.models.generateContent({
-		model: 'gemini-3-flash-preview',
-		contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
-	});
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
+  });
 
-	// Check for cancellation after request
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation after request
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const responseText = response.text?.trim();
-	if (!responseText) {
-		return null;
-	}
+  const responseText = response.text?.trim();
+  if (!responseText) {
+    return null;
+  }
 
-	try {
-		// Extract JSON from response (handle markdown code blocks)
-		const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-		const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+  try {
+    // Extract JSON from response (handle markdown code blocks)
+    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    const jsonText = jsonMatch ? jsonMatch[1] : responseText;
 
-		const result = JSON.parse(jsonText);
+    const result = JSON.parse(jsonText);
 
-		// Validate the result has required fields
-		if (!result.type) {
-			throw new Error('Response missing required "type" field');
-		}
+    // Validate the result has required fields
+    if (!result.type) {
+      throw new Error('Response missing required "type" field');
+    }
 
-		return {
-			type: result.type,
-			data: result.data || {}
-		};
-	} catch (error) {
-		logger.error('Failed to parse AI response:', error);
-		throw new Error('Failed to parse AI response as JSON');
-	}
+    return {
+      type: result.type,
+      data: result.data || {}
+    };
+  } catch (error) {
+    logger.error('Failed to parse AI response:', error);
+    throw new Error('Failed to parse AI response as JSON');
+  }
 }
 
 /**
  * Builds the router prompt - lightweight, only object descriptions
  */
 function buildRouterPrompt(): string {
-	return `You are an AI assistant that routes user prompts to the most appropriate object type in Patchies, a visual patching environment for creative coding.
+  return `You are an AI assistant that routes user prompts to the most appropriate object type in Patchies, a visual patching environment for creative coding.
 
 Your task: Read the user's prompt and return ONLY the object type name that best matches their intent. Return just the type name, nothing else.
 
@@ -186,7 +186,7 @@ Now, return ONLY the object type for this prompt:`;
  * Builds the generator prompt - targeted for specific object type
  */
 function buildGeneratorPrompt(objectType: string): string {
-	const basePrompt = `You are an AI assistant that generates object configurations in Patchies, a visual patching environment for creative coding.
+  const basePrompt = `You are an AI assistant that generates object configurations in Patchies, a visual patching environment for creative coding.
 
 Your task is to create a complete configuration for a "${objectType}" object based on the user's prompt.
 
@@ -207,8 +207,8 @@ RESPONSE FORMAT:
 
 `;
 
-	// Add object-specific instructions
-	const objectInstructions = getObjectSpecificInstructions(objectType);
+  // Add object-specific instructions
+  const objectInstructions = getObjectSpecificInstructions(objectType);
 
-	return basePrompt + objectInstructions;
+  return basePrompt + objectInstructions;
 }

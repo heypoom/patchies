@@ -204,10 +204,10 @@ function draw() {
 draw();`;
 
 export const virtualMidiKeyboardPreset = {
-	type: 'canvas.dom' as const,
-	data: {
-		code: VIRTUAL_MIDI_KEYBOARD_JS,
-		inletCount: 0,
-		outletCount: 1
-	}
+  type: 'canvas.dom' as const,
+  data: {
+    code: VIRTUAL_MIDI_KEYBOARD_JS,
+    inletCount: 0,
+    outletCount: 1
+  }
 };

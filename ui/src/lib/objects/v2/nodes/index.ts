@@ -22,20 +22,20 @@ import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import type { TextObjectClass } from '../interfaces/text-objects';
 
 const TEXT_OBJECTS = [
-	AdsrObject,
-	DebounceObject,
-	DelayObject,
-	FloatObject,
-	IntObject,
-	LoadbangObject,
-	MetroObject,
-	MtofObject,
-	SelectObject,
-	SpigotObject,
-	ThrottleObject,
-	TriggerObject,
-	UniqbyObject,
-	WebMidiLinkObject
+  AdsrObject,
+  DebounceObject,
+  DelayObject,
+  FloatObject,
+  IntObject,
+  LoadbangObject,
+  MetroObject,
+  MtofObject,
+  SelectObject,
+  SpigotObject,
+  ThrottleObject,
+  TriggerObject,
+  UniqbyObject,
+  WebMidiLinkObject
 ] as const satisfies TextObjectClass[];
 
 /**
@@ -43,7 +43,7 @@ const TEXT_OBJECTS = [
  * This should be called during application initialization.
  */
 export function registerTextObjects(): void {
-	const registry = ObjectRegistry.getInstance();
+  const registry = ObjectRegistry.getInstance();
 
-	TEXT_OBJECTS.forEach((object) => registry.register(object));
+  TEXT_OBJECTS.forEach((object) => registry.register(object));
 }

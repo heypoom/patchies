@@ -4,22 +4,22 @@ import { serializePatch } from './serialize-patch';
 type SaveInfo = { nodes: Node[]; edges: Edge[] };
 
 export function savePatchToLocalStorage({ name, nodes, edges }: SaveInfo & { name: string }) {
-	if (!name.trim()) return;
+  if (!name.trim()) return;
 
-	const patchJson = serializePatch({ name, nodes, edges });
-	localStorage.setItem(`patchies-patch-${name}`, patchJson);
+  const patchJson = serializePatch({ name, nodes, edges });
+  localStorage.setItem(`patchies-patch-${name}`, patchJson);
 
-	const saved = localStorage.getItem('patchies-saved-patches') || '[]';
-	let savedPatches: string[];
+  const saved = localStorage.getItem('patchies-saved-patches') || '[]';
+  let savedPatches: string[];
 
-	try {
-		savedPatches = JSON.parse(saved);
-	} catch {
-		savedPatches = [];
-	}
+  try {
+    savedPatches = JSON.parse(saved);
+  } catch {
+    savedPatches = [];
+  }
 
-	if (!savedPatches.includes(name)) {
-		savedPatches.push(name);
-		localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
-	}
+  if (!savedPatches.includes(name)) {
+    savedPatches.push(name);
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
+  }
 }

@@ -1,105 +1,105 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<title>Patchies.app - creative coding audio-visual patcher</title>
-		<style>
-			body {
-				background: #18181b;
-				width: 100%;
-				min-height: 100vh;
-				margin: 0;
-				padding: 0;
-			}
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Patchies.app - creative coding audio-visual patcher</title>
+    <style>
+      body {
+        background: #18181b;
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+      }
 
-			/* Loading indicator - shows immediately */
-			#patchies-loader {
-				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				background: #18181b;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: center;
-				z-index: 9999;
-				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-				color: #a1a1aa;
-			}
+      /* Loading indicator - shows immediately */
+      #patchies-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #18181b;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #a1a1aa;
+      }
 
-			#patchies-loader .spinner {
-				width: 48px;
-				height: 48px;
-				border: 3px solid #27272a;
-				border-top-color: #71717a;
-				border-radius: 50%;
-				animation: spin 1s linear infinite;
-				margin-bottom: 16px;
-			}
+      #patchies-loader .spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid #27272a;
+        border-top-color: #71717a;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
+      }
 
-			#patchies-loader .text {
-				font-size: 14px;
-				letter-spacing: 0.05em;
-			}
+      #patchies-loader .text {
+        font-size: 14px;
+        letter-spacing: 0.05em;
+      }
 
-			@keyframes spin {
-				to {
-					transform: rotate(360deg);
-				}
-			}
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-			/* Hide loader once app loads */
-			body.app-loaded #patchies-loader {
-				display: none;
-			}
-		</style>
-		%sveltekit.head%
-	</head>
-	<body data-sveltekit-preload-data="hover">
-		<!-- Immediate loading indicator -->
-		<div id="patchies-loader">
-			<div class="spinner"></div>
-			<div class="text">Loading Patchies...</div>
-		</div>
+      /* Hide loader once app loads */
+      body.app-loaded #patchies-loader {
+        display: none;
+      }
+    </style>
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <!-- Immediate loading indicator -->
+    <div id="patchies-loader">
+      <div class="spinner"></div>
+      <div class="text">Loading Patchies...</div>
+    </div>
 
-		<div style="display: contents">%sveltekit.body%</div>
+    <div style="display: contents">%sveltekit.body%</div>
 
-		<script>
-			// Hide loader once the actual patcher UI is loaded
-			function hideLoader() {
-				document.body.classList.add('app-loaded');
-			}
+    <script>
+      // Hide loader once the actual patcher UI is loaded
+      function hideLoader() {
+        document.body.classList.add('app-loaded');
+      }
 
-			// Wait for window load (all resources including JS bundles)
-			window.addEventListener('load', () => {
-				// Poll for actual patcher content to ensure route is loaded
-				const checkAppMounted = () => {
-					// Check for the flow-container - this is the main patcher UI container
-					// that only exists when FlowCanvasInner has actually rendered
-					const flowContainer =
-						// patcher - svelte flow
-						document.querySelector('.svelte-flow') ||
-						// secondary output screen
-						document.querySelector('canvas#output');
+      // Wait for window load (all resources including JS bundles)
+      window.addEventListener('load', () => {
+        // Poll for actual patcher content to ensure route is loaded
+        const checkAppMounted = () => {
+          // Check for the flow-container - this is the main patcher UI container
+          // that only exists when FlowCanvasInner has actually rendered
+          const flowContainer =
+            // patcher - svelte flow
+            document.querySelector('.svelte-flow') ||
+            // secondary output screen
+            document.querySelector('canvas#output');
 
-					if (flowContainer) {
-						// Patcher UI is mounted, hide loader after brief delay
-						setTimeout(hideLoader, 200);
-					} else {
-						// Not yet mounted, check again soon
-						setTimeout(checkAppMounted, 100);
-					}
-				};
+          if (flowContainer) {
+            // Patcher UI is mounted, hide loader after brief delay
+            setTimeout(hideLoader, 200);
+          } else {
+            // Not yet mounted, check again soon
+            setTimeout(checkAppMounted, 100);
+          }
+        };
 
-				checkAppMounted();
-			});
+        checkAppMounted();
+      });
 
-			// Fallback: hide after 20 seconds even if checks fail
-			setTimeout(hideLoader, 20_000);
-		</script>
-	</body>
+      // Fallback: hide after 20 seconds even if checks fail
+      setTimeout(hideLoader, 20_000);
+    </script>
+  </body>
 </html>

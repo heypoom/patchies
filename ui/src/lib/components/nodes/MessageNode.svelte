@@ -1,263 +1,263 @@
 <script lang="ts">
-	import { ChevronUp, Edit } from '@lucide/svelte/icons';
-	import { useSvelteFlow } from '@xyflow/svelte';
-	import StandardHandle from '$lib/components/StandardHandle.svelte';
-	import { onMount, onDestroy } from 'svelte';
-	import { MessageContext } from '$lib/messages/MessageContext';
-	import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-	import { match, P } from 'ts-pattern';
-	import Json5 from 'json5';
+  import { ChevronUp, Edit } from '@lucide/svelte/icons';
+  import { useSvelteFlow } from '@xyflow/svelte';
+  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { match, P } from 'ts-pattern';
+  import Json5 from 'json5';
 
-	import hljs from 'highlight.js/lib/core';
-	import javascript from 'highlight.js/lib/languages/javascript';
+  import hljs from 'highlight.js/lib/core';
+  import javascript from 'highlight.js/lib/languages/javascript';
 
-	import 'highlight.js/styles/tokyo-night-dark.css';
-	import CodeEditor from '../CodeEditor.svelte';
-	import { parseInletCount } from '$lib/utils/expr-parser';
+  import 'highlight.js/styles/tokyo-night-dark.css';
+  import CodeEditor from '../CodeEditor.svelte';
+  import { parseInletCount } from '$lib/utils/expr-parser';
 
-	hljs.registerLanguage('javascript', javascript);
+  hljs.registerLanguage('javascript', javascript);
 
-	let {
-		id: nodeId,
-		data,
-		selected
-	}: { id: string; data: { message: string }; selected: boolean } = $props();
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: { id: string; data: { message: string }; selected: boolean } = $props();
 
-	const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData } = useSvelteFlow();
 
-	const messageContext = new MessageContext(nodeId);
+  const messageContext = new MessageContext(nodeId);
 
-	let showTextInput = $state(false);
-	let msgText = $derived(data.message || '');
-	let inletValues = $state<unknown[]>([]);
+  let showTextInput = $state(false);
+  let msgText = $derived(data.message || '');
+  let inletValues = $state<unknown[]>([]);
 
-	// Number of $1-$9 placeholders in the message
-	const placeholderCount = $derived.by(() => {
-		return parseInletCount(data.message ?? '');
-	});
+  // Number of $1-$9 placeholders in the message
+  const placeholderCount = $derived.by(() => {
+    return parseInletCount(data.message ?? '');
+  });
 
-	const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
+  const CANNOT_PARSE_SYMBOL = Symbol.for('CANNOT_PARSE');
 
-	let parsedObject = $derived.by(() => {
-		// substitute $1-$9 with null for parsing/validation purposes
-		const msgWithPlaceholders = (data.message ?? '').replace(/\$([1-9])/g, 'null');
+  let parsedObject = $derived.by(() => {
+    // substitute $1-$9 with null for parsing/validation purposes
+    const msgWithPlaceholders = (data.message ?? '').replace(/\$([1-9])/g, 'null');
 
-		try {
-			return Json5.parse(msgWithPlaceholders);
-		} catch {
-			return CANNOT_PARSE_SYMBOL;
-		}
-	});
+    try {
+      return Json5.parse(msgWithPlaceholders);
+    } catch {
+      return CANNOT_PARSE_SYMBOL;
+    }
+  });
 
-	// Fast heuristics to switch syntax highlighting modes.
-	let shouldUseJsSyntax = $derived.by(() => {
-		const msg = data.message ?? '';
-		if (msg.length < 3) return false;
+  // Fast heuristics to switch syntax highlighting modes.
+  let shouldUseJsSyntax = $derived.by(() => {
+    const msg = data.message ?? '';
+    if (msg.length < 3) return false;
 
-		return msg.startsWith('{') || msg.startsWith('[') || msg.startsWith(`'`) || msg.startsWith(`"`);
-	});
+    return msg.startsWith('{') || msg.startsWith('[') || msg.startsWith(`'`) || msg.startsWith(`"`);
+  });
 
-	let highlightedHtml = $derived.by(() => {
-		if (parsedObject === CANNOT_PARSE_SYMBOL || !msgText) return '';
+  let highlightedHtml = $derived.by(() => {
+    if (parsedObject === CANNOT_PARSE_SYMBOL || !msgText) return '';
 
-		try {
-			return hljs.highlight(msgText, {
-				language: 'javascript',
-				ignoreIllegals: true
-			}).value;
-		} catch (e) {
-			return '';
-		}
-	});
+    try {
+      return hljs.highlight(msgText, {
+        language: 'javascript',
+        ignoreIllegals: true
+      }).value;
+    } catch (e) {
+      return '';
+    }
+  });
 
-	const handleMessage: MessageCallbackFn = (message, meta) => {
-		try {
-			// Handle IDs: message-in-0 (hot), message-in-1, message-in-2, etc. (cold)
-			// inlet 0 -> $1, inlet 1 -> $2, etc.
-			const inlet = meta?.inlet ?? 0;
+  const handleMessage: MessageCallbackFn = (message, meta) => {
+    try {
+      // Handle IDs: message-in-0 (hot), message-in-1, message-in-2, etc. (cold)
+      // inlet 0 -> $1, inlet 1 -> $2, etc.
+      const inlet = meta?.inlet ?? 0;
 
-			// Cold inlets (inlet >= 1): only store value, don't trigger
-			if (inlet >= 1) {
-				const nextValues = [...inletValues];
-				// inlet 1 -> $2 -> index 1, inlet 2 -> $3 -> index 2, etc.
-				nextValues[inlet] = message;
-				inletValues = nextValues;
-				return;
-			}
+      // Cold inlets (inlet >= 1): only store value, don't trigger
+      if (inlet >= 1) {
+        const nextValues = [...inletValues];
+        // inlet 1 -> $2 -> index 1, inlet 2 -> $3 -> index 2, etc.
+        nextValues[inlet] = message;
+        inletValues = nextValues;
+        return;
+      }
 
-			// Hot inlet (inlet === 0): check for special messages first (bang, set)
-			const handled = match(message)
-				.with(P.union(null, undefined, { type: 'bang' }), () => {
-					// Bang triggers without storing
-					sendMessage();
+      // Hot inlet (inlet === 0): check for special messages first (bang, set)
+      const handled = match(message)
+        .with(P.union(null, undefined, { type: 'bang' }), () => {
+          // Bang triggers without storing
+          sendMessage();
 
-					return true;
-				})
-				.with({ type: 'set', value: P.any }, ({ value }) => {
-					let newMsgText: string;
+          return true;
+        })
+        .with({ type: 'set', value: P.any }, ({ value }) => {
+          let newMsgText: string;
 
-					if (typeof value === 'string') {
-						newMsgText = value;
-					} else {
-						try {
-							newMsgText = Json5.stringify(value, null, 2);
-						} catch (e) {
-							newMsgText = String(value);
-						}
-					}
-					updateNodeData(nodeId, { message: newMsgText });
+          if (typeof value === 'string') {
+            newMsgText = value;
+          } else {
+            try {
+              newMsgText = Json5.stringify(value, null, 2);
+            } catch (e) {
+              newMsgText = String(value);
+            }
+          }
+          updateNodeData(nodeId, { message: newMsgText });
 
-					return true;
-				})
-				.otherwise(() => false);
+          return true;
+        })
+        .otherwise(() => false);
 
-			// If not a special message:
-			// - With placeholders: store value as $1 and trigger
-			// - Without placeholders: just trigger (any message acts like bang)
-			if (!handled) {
-				if (placeholderCount > 0) {
-					const nextValues = [...inletValues];
-					nextValues[0] = message; // Store as $1
-					inletValues = nextValues;
-				}
+      // If not a special message:
+      // - With placeholders: store value as $1 and trigger
+      // - Without placeholders: just trigger (any message acts like bang)
+      if (!handled) {
+        if (placeholderCount > 0) {
+          const nextValues = [...inletValues];
+          nextValues[0] = message; // Store as $1
+          inletValues = nextValues;
+        }
 
-				sendMessage();
-			}
-		} catch (error) {
-			console.error('MessageNode handleMessage error:', error);
-		}
-	};
+        sendMessage();
+      }
+    } catch (error) {
+      console.error('MessageNode handleMessage error:', error);
+    }
+  };
 
-	onMount(() => {
-		messageContext.queue.addCallback(handleMessage);
-	});
+  onMount(() => {
+    messageContext.queue.addCallback(handleMessage);
+  });
 
-	onDestroy(() => {
-		messageContext.queue.removeCallback(handleMessage);
-		messageContext.destroy();
-	});
+  onDestroy(() => {
+    messageContext.queue.removeCallback(handleMessage);
+    messageContext.destroy();
+  });
 
-	const send = (data: unknown) => messageContext.send(data);
+  const send = (data: unknown) => messageContext.send(data);
 
-	/**
-	 * Send the message to connected objects.
-	 *
-	 * Message format:
-	 * - Bare strings (e.g. `hello world`) are sent as objects with type field: `{ type: 'hello world' }`
-	 * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
-	 * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
-	 * - Numbers (e.g. `100`) are sent as numbers
-	 * - $1-$9 placeholders are substituted with values from corresponding inlets
-	 */
-	function sendMessage() {
-		let processedMsg = msgText;
+  /**
+   * Send the message to connected objects.
+   *
+   * Message format:
+   * - Bare strings (e.g. `hello world`) are sent as objects with type field: `{ type: 'hello world' }`
+   * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
+   * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
+   * - Numbers (e.g. `100`) are sent as numbers
+   * - $1-$9 placeholders are substituted with values from corresponding inlets
+   */
+  function sendMessage() {
+    let processedMsg = msgText;
 
-		// Substitute $1-$9 with inlet values
-		for (let i = 1; i <= 9; i++) {
-			const value = inletValues[i - 1];
-			if (value !== undefined) {
-				const replacement = JSON.stringify(value);
-				processedMsg = processedMsg.replaceAll(`$${i}`, replacement);
-			}
-		}
+    // Substitute $1-$9 with inlet values
+    for (let i = 1; i <= 9; i++) {
+      const value = inletValues[i - 1];
+      if (value !== undefined) {
+        const replacement = JSON.stringify(value);
+        processedMsg = processedMsg.replaceAll(`$${i}`, replacement);
+      }
+    }
 
-		// Don't send if there are still unsubstituted placeholders
-		if (/\$[1-9]/.test(processedMsg)) {
-			return;
-		}
+    // Don't send if there are still unsubstituted placeholders
+    if (/\$[1-9]/.test(processedMsg)) {
+      return;
+    }
 
-		// Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
-		try {
-			send(Json5.parse(processedMsg));
-			return;
-		} catch (e) {}
+    // Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
+    try {
+      send(Json5.parse(processedMsg));
+      return;
+    } catch (e) {}
 
-		// Bare strings are treated as symbols: { type: <string> }
-		send({ type: processedMsg });
-	}
+    // Bare strings are treated as symbols: { type: <string> }
+    send({ type: processedMsg });
+  }
 
-	const containerClass = $derived(
-		selected ? 'object-container-selected' : 'object-container-light'
-	);
+  const containerClass = $derived(
+    selected ? 'object-container-selected' : 'object-container-light'
+  );
 </script>
 
 <div class="relative">
-	<div class="group relative">
-		<div class="flex flex-col gap-2">
-			<div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-				<div></div>
-				<button
-					class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-					onclick={() => (showTextInput = !showTextInput)}
-					title="Toggle Message Input"
-				>
-					<svelte:component this={showTextInput ? ChevronUp : Edit} class="h-4 w-4 text-zinc-300" />
-				</button>
-			</div>
+  <div class="group relative">
+    <div class="flex flex-col gap-2">
+      <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+        <div></div>
+        <button
+          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          onclick={() => (showTextInput = !showTextInput)}
+          title="Toggle Message Input"
+        >
+          <svelte:component this={showTextInput ? ChevronUp : Edit} class="h-4 w-4 text-zinc-300" />
+        </button>
+      </div>
 
-			<div class="relative">
-				<!-- Inlets: message-in-0 (hot), message-in-1, message-in-2, etc. (cold) -->
-				{#each Array.from({ length: Math.max(1, placeholderCount) }) as _, index}
-					<StandardHandle
-						port="inlet"
-						type="message"
-						id={index}
-						title={placeholderCount > 0 ? `$${index + 1}` : 'bang'}
-						total={Math.max(1, placeholderCount)}
-						{index}
-						{nodeId}
-					/>
-				{/each}
+      <div class="relative">
+        <!-- Inlets: message-in-0 (hot), message-in-1, message-in-2, etc. (cold) -->
+        {#each Array.from({ length: Math.max(1, placeholderCount) }) as _, index}
+          <StandardHandle
+            port="inlet"
+            type="message"
+            id={index}
+            title={placeholderCount > 0 ? `$${index + 1}` : 'bang'}
+            total={Math.max(1, placeholderCount)}
+            {index}
+            {nodeId}
+          />
+        {/each}
 
-				<div class="relative">
-					{#if showTextInput}
-						<div
-							class={[
-								'nodrag w-full min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
-								containerClass
-							]}
-						>
-							<CodeEditor
-								value={msgText}
-								onchange={(value) => updateNodeData(nodeId, { message: value })}
-								onrun={sendMessage}
-								language={shouldUseJsSyntax ? 'javascript' : 'plain'}
-								class="message-node-code-editor rounded-lg border !border-transparent focus:outline-none"
-							/>
-						</div>
-					{:else}
-						<button
-							onclick={sendMessage}
-							class={[
-								'send-message-button rounded-lg border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
-								containerClass
-							]}
-						>
-							{#if msgText && parsedObject !== CANNOT_PARSE_SYMBOL && typeof parsedObject !== 'number'}
-								<code class="whitespace-pre">
-									{@html highlightedHtml}
-								</code>
-							{:else if msgText && typeof parsedObject === 'number'}
-								<span class="text-gray-200">{msgText}</span>
-							{:else}
-								<span class="text-purple-300">{msgText ? msgText : '<messagebox>'}</span>
-							{/if}
-						</button>
-					{/if}
-				</div>
+        <div class="relative">
+          {#if showTextInput}
+            <div
+              class={[
+                'nodrag w-full min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
+                containerClass
+              ]}
+            >
+              <CodeEditor
+                value={msgText}
+                onchange={(value) => updateNodeData(nodeId, { message: value })}
+                onrun={sendMessage}
+                language={shouldUseJsSyntax ? 'javascript' : 'plain'}
+                class="message-node-code-editor rounded-lg border !border-transparent focus:outline-none"
+              />
+            </div>
+          {:else}
+            <button
+              onclick={sendMessage}
+              class={[
+                'send-message-button rounded-lg border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+                containerClass
+              ]}
+            >
+              {#if msgText && parsedObject !== CANNOT_PARSE_SYMBOL && typeof parsedObject !== 'number'}
+                <code class="whitespace-pre">
+                  {@html highlightedHtml}
+                </code>
+              {:else if msgText && typeof parsedObject === 'number'}
+                <span class="text-gray-200">{msgText}</span>
+              {:else}
+                <span class="text-purple-300">{msgText ? msgText : '<messagebox>'}</span>
+              {/if}
+            </button>
+          {/if}
+        </div>
 
-				<StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
-			</div>
-		</div>
-	</div>
+        <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
-	:global(.message-node-code-editor .cm-content) {
-		padding: 6px 8px 7px 4px !important;
-	}
+  :global(.message-node-code-editor .cm-content) {
+    padding: 6px 8px 7px 4px !important;
+  }
 
-	.send-message-button {
-		font-family: var(--font-mono);
-	}
+  .send-message-button {
+    font-family: var(--font-mono);
+  }
 </style>

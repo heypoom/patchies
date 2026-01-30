@@ -45,10 +45,10 @@ const map = (value, start1, stop1, start2, stop2) =>
 draw()`;
 
 export const fftPreset = {
-	type: 'canvas.dom' as const,
-	data: {
-		code: FFT_JS,
-		inletCount: 1,
-		outletCount: 0
-	}
+  type: 'canvas.dom' as const,
+  data: {
+    code: FFT_JS,
+    inletCount: 1,
+    outletCount: 0
+  }
 };

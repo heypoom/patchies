@@ -9,7 +9,7 @@ const DEFAULT_POCKETBASE_INSTANCE = 'https://api.patchies.app';
 export const appHostUrl = import.meta.env.VITE_HOST_URL ?? location.origin;
 
 const pocketbaseInstanceUrl =
-	import.meta.env.VITE_POCKETBASE_INSTANCE ?? params.get('pb') ?? DEFAULT_POCKETBASE_INSTANCE;
+  import.meta.env.VITE_POCKETBASE_INSTANCE ?? params.get('pb') ?? DEFAULT_POCKETBASE_INSTANCE;
 
 export const pb = new PocketBase(pocketbaseInstanceUrl);
 
@@ -17,31 +17,31 @@ export const pb = new PocketBase(pocketbaseInstanceUrl);
 window.pb = pb;
 
 export async function createShareablePatch(
-	_name: string | null,
-	nodes: Node[],
-	edges: Edge[]
+  _name: string | null,
+  nodes: Node[],
+  edges: Edge[]
 ): Promise<string | null> {
-	const name = _name || `Shared Patch ${new Date().toLocaleDateString()}`;
+  const name = _name || `Shared Patch ${new Date().toLocaleDateString()}`;
 
-	const save = serializePatch({ name, nodes, edges });
+  const save = serializePatch({ name, nodes, edges });
 
-	try {
-		const result = await pb.collection('patches').create({
-			name,
-			patch: save,
-			public: true
-		});
+  try {
+    const result = await pb.collection('patches').create({
+      name,
+      patch: save,
+      public: true
+    });
 
-		return result.id;
-	} catch (error) {
-		console.error('[share] cannot share patch:', error);
-		return null;
-	}
+    return result.id;
+  } catch (error) {
+    console.error('[share] cannot share patch:', error);
+    return null;
+  }
 }
 
 export async function getSharedPatchData(id: string): Promise<PatchSaveFormat | null> {
-	const record = await pb.collection('patches').getOne(id);
-	if (!record.patch) return null;
+  const record = await pb.collection('patches').getOne(id);
+  if (!record.patch) return null;
 
-	return record.patch as PatchSaveFormat;
+  return record.patch as PatchSaveFormat;
 }

@@ -98,10 +98,10 @@ function draw() {
 draw()`;
 
 export const xyPadPreset = {
-	type: 'canvas.dom' as const,
-	data: {
-		code: XY_PAD_JS,
-		inletCount: 1,
-		outletCount: 1
-	}
+  type: 'canvas.dom' as const,
+  data: {
+    code: XY_PAD_JS,
+    inletCount: 1,
+    outletCount: 1
+  }
 };

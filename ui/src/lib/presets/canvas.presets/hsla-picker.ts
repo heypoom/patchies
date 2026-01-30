@@ -77,10 +77,10 @@ function draw() {
 draw()`;
 
 export const hslaPickerPreset = {
-	type: 'canvas.dom' as const,
-	data: {
-		code: HSLA_PICKER_JS,
-		inletCount: 1,
-		outletCount: 1
-	}
+  type: 'canvas.dom' as const,
+  data: {
+    code: HSLA_PICKER_JS,
+    inletCount: 1,
+    outletCount: 1
+  }
 };

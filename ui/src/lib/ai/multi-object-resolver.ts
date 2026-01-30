@@ -22,20 +22,20 @@ import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descri
 
 // Consolidated logging for AI Multi-Object debugging
 class MultiObjectLogger {
-	private logs: string[] = [];
+  private logs: string[] = [];
 
-	log(message: string, data?: unknown) {
-		if (data !== undefined) {
-			this.logs.push(`${message}: ${JSON.stringify(data, null, 2)}`);
-		} else {
-			this.logs.push(message);
-		}
-	}
+  log(message: string, data?: unknown) {
+    if (data !== undefined) {
+      this.logs.push(`${message}: ${JSON.stringify(data, null, 2)}`);
+    } else {
+      this.logs.push(message);
+    }
+  }
 
-	flush() {
-		if (this.logs.length === 0) return;
+  flush() {
+    if (this.logs.length === 0) return;
 
-		const consolidated = `
+    const consolidated = `
 ╔════════════════════════════════════════════════════════════════╗
 ║           [AI Multi-Object] Consolidated Debug Log             ║
 ╚════════════════════════════════════════════════════════════════╝
@@ -44,38 +44,38 @@ ${this.logs.join('\n\n')}
 
 ════════════════════════════════════════════════════════════════
 `;
-		console.log(consolidated);
-		this.logs = [];
-	}
+    console.log(consolidated);
+    this.logs = [];
+  }
 
-	error(message: string, error?: unknown) {
-		if (error) {
-			this.logs.push(
-				`❌ ${message}: ${error instanceof Error ? error.message : JSON.stringify(error)}`
-			);
-		} else {
-			this.logs.push(`❌ ${message}`);
-		}
-	}
+  error(message: string, error?: unknown) {
+    if (error) {
+      this.logs.push(
+        `❌ ${message}: ${error instanceof Error ? error.message : JSON.stringify(error)}`
+      );
+    } else {
+      this.logs.push(`❌ ${message}`);
+    }
+  }
 }
 
 const logger = new MultiObjectLogger();
 
 export type SimplifiedEdge = {
-	source: number; // Index of source node in nodes array
-	target: number; // Index of target node in nodes array
-	sourceHandle?: string; // e.g., 'message-out', 'audio-out', 'in-0', 'video-in-0'
-	targetHandle?: string; // e.g., 'message-in', 'audio-in', 'in-1', 'audio-in-0'
+  source: number; // Index of source node in nodes array
+  target: number; // Index of target node in nodes array
+  sourceHandle?: string; // e.g., 'message-out', 'audio-out', 'in-0', 'video-in-0'
+  targetHandle?: string; // e.g., 'message-in', 'audio-in', 'in-1', 'audio-in-0'
 };
 
 export type MultiObjectResult = {
-	nodes: Array<{
-		type: string;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
-		data: any;
-		position?: { x: number; y: number }; // Optional relative positioning
-	}>;
-	edges: SimplifiedEdge[];
+  nodes: Array<{
+    type: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
+    data: any;
+    position?: { x: number; y: number }; // Optional relative positioning
+  }>;
+  edges: SimplifiedEdge[];
 };
 
 /**
@@ -88,49 +88,49 @@ export type MultiObjectResult = {
  * Supports cancellation via AbortSignal.
  */
 export async function resolveMultipleObjectsFromPrompt(
-	prompt: string,
-	onRouterComplete?: (objectTypes: string[]) => void,
-	signal?: AbortSignal
+  prompt: string,
+  onRouterComplete?: (objectTypes: string[]) => void,
+  signal?: AbortSignal
 ): Promise<MultiObjectResult | null> {
-	const apiKey = localStorage.getItem('gemini-api-key');
+  const apiKey = localStorage.getItem('gemini-api-key');
 
-	if (!apiKey) {
-		throw new Error('Gemini API key is not set. Please set it in the settings.');
-	}
+  if (!apiKey) {
+    throw new Error('Gemini API key is not set. Please set it in the settings.');
+  }
 
-	// Check for cancellation before starting
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const { GoogleGenAI } = await import('@google/genai');
-	const ai = new GoogleGenAI({ apiKey });
+  const { GoogleGenAI } = await import('@google/genai');
+  const ai = new GoogleGenAI({ apiKey });
 
-	logger.log('📝 Starting multi-object resolution');
-	logger.log('User prompt', prompt);
+  logger.log('📝 Starting multi-object resolution');
+  logger.log('User prompt', prompt);
 
-	// Call 1: Route to object types and structure (lightweight)
-	const plan = await routeToMultiObjectPlan(ai, prompt, signal);
-	if (!plan) {
-		logger.log('⚠️ Router returned no plan');
-		logger.flush();
-		return null;
-	}
+  // Call 1: Route to object types and structure (lightweight)
+  const plan = await routeToMultiObjectPlan(ai, prompt, signal);
+  if (!plan) {
+    logger.log('⚠️ Router returned no plan');
+    logger.flush();
+    return null;
+  }
 
-	// Check for cancellation after first call
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation after first call
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	// Report router completion to UI
-	onRouterComplete?.(plan.objectTypes);
+  // Report router completion to UI
+  onRouterComplete?.(plan.objectTypes);
 
-	// Call 2: Generate full object configs (targeted)
-	const result = await generateMultiObjectConfig(ai, prompt, plan, signal);
+  // Call 2: Generate full object configs (targeted)
+  const result = await generateMultiObjectConfig(ai, prompt, plan, signal);
 
-	logger.flush();
+  logger.flush();
 
-	return result;
+  return result;
 }
 
 /**
@@ -138,57 +138,57 @@ export async function resolveMultipleObjectsFromPrompt(
  * This is a lightweight call that only includes object descriptions.
  */
 async function routeToMultiObjectPlan(
-	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
-	prompt: string,
-	signal?: AbortSignal
+  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  prompt: string,
+  signal?: AbortSignal
 ): Promise<{ objectTypes: string[]; structure: string } | null> {
-	// Check for cancellation before starting
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const routerPrompt = buildMultiObjectRouterPrompt();
+  const routerPrompt = buildMultiObjectRouterPrompt();
 
-	const response = await ai.models.generateContent({
-		model: 'gemini-3-flash-preview',
-		contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
-	});
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
+  });
 
-	// Check for cancellation after request
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation after request
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const responseText = response.text?.trim();
-	if (!responseText) {
-		logger.log('⚠️ Router response is empty');
-		return null;
-	}
+  const responseText = response.text?.trim();
+  if (!responseText) {
+    logger.log('⚠️ Router response is empty');
+    return null;
+  }
 
-	try {
-		// Extract JSON from response (handle markdown code blocks)
-		const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-		const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+  try {
+    // Extract JSON from response (handle markdown code blocks)
+    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    const jsonText = jsonMatch ? jsonMatch[1] : responseText;
 
-		const result = JSON.parse(jsonText);
+    const result = JSON.parse(jsonText);
 
-		if (!result.objectTypes || !Array.isArray(result.objectTypes)) {
-			throw new Error('Response missing required "objectTypes" array');
-		}
+    if (!result.objectTypes || !Array.isArray(result.objectTypes)) {
+      throw new Error('Response missing required "objectTypes" array');
+    }
 
-		if (!result.structure) {
-			throw new Error('Response missing required "structure" field');
-		}
+    if (!result.structure) {
+      throw new Error('Response missing required "structure" field');
+    }
 
-		logger.log('✅ [Router] Object types', result.objectTypes);
-		logger.log('✅ [Router] Connection structure', result.structure);
+    logger.log('✅ [Router] Object types', result.objectTypes);
+    logger.log('✅ [Router] Connection structure', result.structure);
 
-		return result;
-	} catch (error) {
-		logger.error('[Router] Failed to parse response', error);
-		logger.log('Raw response text', responseText);
-		throw new Error('Failed to parse routing response as JSON');
-	}
+    return result;
+  } catch (error) {
+    logger.error('[Router] Failed to parse response', error);
+    logger.log('Raw response text', responseText);
+    throw new Error('Failed to parse routing response as JSON');
+  }
 }
 
 /**
@@ -196,77 +196,77 @@ async function routeToMultiObjectPlan(
  * This is a targeted call that includes only relevant system prompts.
  */
 async function generateMultiObjectConfig(
-	ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
-	prompt: string,
-	plan: { objectTypes: string[]; structure: string },
-	signal?: AbortSignal
+  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  prompt: string,
+  plan: { objectTypes: string[]; structure: string },
+  signal?: AbortSignal
 ): Promise<MultiObjectResult | null> {
-	// Check for cancellation before starting
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const systemPrompt = buildMultiObjectGeneratorPrompt(plan.objectTypes, plan.structure);
+  const systemPrompt = buildMultiObjectGeneratorPrompt(plan.objectTypes, plan.structure);
 
-	const response = await ai.models.generateContent({
-		model: 'gemini-3-flash-preview',
-		contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
-	});
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
+  });
 
-	// Check for cancellation after request
-	if (signal?.aborted) {
-		throw new Error('Request cancelled');
-	}
+  // Check for cancellation after request
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
 
-	const responseText = response.text?.trim();
-	if (!responseText) {
-		logger.log('⚠️ Generator response is empty');
-		return null;
-	}
+  const responseText = response.text?.trim();
+  if (!responseText) {
+    logger.log('⚠️ Generator response is empty');
+    return null;
+  }
 
-	try {
-		// Extract JSON from response (handle markdown code blocks)
-		const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-		const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+  try {
+    // Extract JSON from response (handle markdown code blocks)
+    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    const jsonText = jsonMatch ? jsonMatch[1] : responseText;
 
-		const result = JSON.parse(jsonText);
+    const result = JSON.parse(jsonText);
 
-		// Validate the result has required fields
-		if (!result.nodes || !Array.isArray(result.nodes)) {
-			throw new Error('Response missing required "nodes" array');
-		}
+    // Validate the result has required fields
+    if (!result.nodes || !Array.isArray(result.nodes)) {
+      throw new Error('Response missing required "nodes" array');
+    }
 
-		if (!result.edges || !Array.isArray(result.edges)) {
-			throw new Error('Response missing required "edges" array');
-		}
+    if (!result.edges || !Array.isArray(result.edges)) {
+      throw new Error('Response missing required "edges" array');
+    }
 
-		// Validate each node has a type
-		for (const node of result.nodes) {
-			if (!node.type) {
-				throw new Error('Node missing required "type" field');
-			}
-		}
+    // Validate each node has a type
+    for (const node of result.nodes) {
+      if (!node.type) {
+        throw new Error('Node missing required "type" field');
+      }
+    }
 
-		logger.log('✅ [Generator] Successfully parsed result');
-		logger.log('✅ [Generator] Nodes created', result.nodes);
-		logger.log('✅ [Generator] Edges created', result.edges);
+    logger.log('✅ [Generator] Successfully parsed result');
+    logger.log('✅ [Generator] Nodes created', result.nodes);
+    logger.log('✅ [Generator] Edges created', result.edges);
 
-		return {
-			nodes: result.nodes,
-			edges: result.edges
-		};
-	} catch (error) {
-		logger.error('[Generator] Failed to parse response', error);
-		logger.log('Raw response text', responseText);
-		throw new Error('Failed to parse generation response as JSON');
-	}
+    return {
+      nodes: result.nodes,
+      edges: result.edges
+    };
+  } catch (error) {
+    logger.error('[Generator] Failed to parse response', error);
+    logger.log('Raw response text', responseText);
+    throw new Error('Failed to parse generation response as JSON');
+  }
 }
 
 /**
  * Builds the multi-object router prompt - lightweight, only object descriptions
  */
 function buildMultiObjectRouterPrompt(): string {
-	return `You are an AI assistant that plans multi-object configurations in Patchies, a visual patching environment for creative coding.
+  return `You are an AI assistant that plans multi-object configurations in Patchies, a visual patching environment for creative coding.
 
 Your task: Read the user's prompt and determine:
 1. Which object types are needed
@@ -321,12 +321,12 @@ Now analyze this prompt:`;
  * Builds the multi-object generator prompt - targeted for specific object types
  */
 function buildMultiObjectGeneratorPrompt(objectTypes: string[], structure: string): string {
-	// Get object-specific instructions for each type
-	const objectInstructions = objectTypes
-		.map((type) => getObjectSpecificInstructions(type))
-		.join('\n\n---\n\n');
+  // Get object-specific instructions for each type
+  const objectInstructions = objectTypes
+    .map((type) => getObjectSpecificInstructions(type))
+    .join('\n\n---\n\n');
 
-	return `You are an AI assistant that generates multiple connected object configurations in Patchies, a visual patching environment for creative coding.
+  return `You are an AI assistant that generates multiple connected object configurations in Patchies, a visual patching environment for creative coding.
 
 Your task: Create a complete multi-object configuration based on the plan.
 

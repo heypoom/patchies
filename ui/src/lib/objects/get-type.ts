@@ -9,4 +9,4 @@ import type { TextObjectV2 } from './v2/interfaces/text-objects';
  * @returns The object type identifier
  */
 export const getObjectType = <T extends TextObjectV2 | AudioNodeV2>(object: T): string =>
-	(object.constructor as unknown as { type: string }).type;
+  (object.constructor as unknown as { type: string }).type;

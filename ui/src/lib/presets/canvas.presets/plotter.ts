@@ -42,10 +42,10 @@ function draw() {
 requestAnimationFrame(draw)`;
 
 export const plotterPreset = {
-	type: 'canvas' as const,
-	data: {
-		code: PLOTTER_JS,
-		inletCount: 1,
-		outletCount: 0
-	}
+  type: 'canvas' as const,
+  data: {
+    code: PLOTTER_JS,
+    inletCount: 1,
+    outletCount: 0
+  }
 };

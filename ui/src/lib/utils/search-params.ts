@@ -1,22 +1,22 @@
 export const setSearchParam = (key: string, value: string) => {
-	const currentUrl = new URL(window.location.href);
-	const searchParams = currentUrl.searchParams;
+  const currentUrl = new URL(window.location.href);
+  const searchParams = currentUrl.searchParams;
 
-	searchParams.set(key, value);
+  searchParams.set(key, value);
 
-	window.history.pushState({}, '', currentUrl);
+  window.history.pushState({}, '', currentUrl);
 };
 
 export const getSearchParam = (key: string): string | null => {
-	const currentUrl = new URL(window.location.href);
+  const currentUrl = new URL(window.location.href);
 
-	return currentUrl.searchParams.get(key);
+  return currentUrl.searchParams.get(key);
 };
 
 export const deleteSearchParam = (key: string) => {
-	const currentUrl = new URL(window.location.href);
-	const searchParams = currentUrl.searchParams;
-	searchParams.delete(key);
+  const currentUrl = new URL(window.location.href);
+  const searchParams = currentUrl.searchParams;
+  searchParams.delete(key);
 
-	window.history.pushState({}, '', currentUrl);
+  window.history.pushState({}, '', currentUrl);
 };

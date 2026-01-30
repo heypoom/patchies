@@ -47,37 +47,37 @@ function process(inputs, outputs) {
 }`;
 
 export const JS_DSP_PRESETS = {
-	'snapshot~': {
-		type: 'dsp~',
-		data: {
-			title: 'snapshot~',
-			code: SNAPSHOT_JS_DSP,
-			messageInletCount: 1,
-			messageOutletCount: 1,
-			audioInletCount: 1,
-			audioOutletCount: 0
-		}
-	},
-	'bang~': {
-		type: 'dsp~',
-		data: {
-			title: 'bang~',
-			code: BANG_JS_DSP,
-			messageInletCount: 0,
-			messageOutletCount: 1,
-			audioInletCount: 0,
-			audioOutletCount: 0
-		}
-	},
-	'noise~': {
-		type: 'dsp~',
-		data: {
-			title: 'noise~',
-			code: NOISE_JS_DSP,
-			messageInletCount: 0,
-			messageOutletCount: 0,
-			audioInletCount: 0,
-			audioOutletCount: 1
-		}
-	}
+  'snapshot~': {
+    type: 'dsp~',
+    data: {
+      title: 'snapshot~',
+      code: SNAPSHOT_JS_DSP,
+      messageInletCount: 1,
+      messageOutletCount: 1,
+      audioInletCount: 1,
+      audioOutletCount: 0
+    }
+  },
+  'bang~': {
+    type: 'dsp~',
+    data: {
+      title: 'bang~',
+      code: BANG_JS_DSP,
+      messageInletCount: 0,
+      messageOutletCount: 1,
+      audioInletCount: 0,
+      audioOutletCount: 0
+    }
+  },
+  'noise~': {
+    type: 'dsp~',
+    data: {
+      title: 'noise~',
+      code: NOISE_JS_DSP,
+      messageInletCount: 0,
+      messageOutletCount: 0,
+      audioInletCount: 0,
+      audioOutletCount: 1
+    }
+  }
 };

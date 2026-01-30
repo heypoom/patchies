@@ -3,252 +3,252 @@ import type { SendMessageOptions } from './MessageContext';
 import { logger } from '$lib/utils/logger';
 
 export interface Message<T = unknown> {
-	data: T;
-	source: string;
+  data: T;
+  source: string;
 
-	outlet?: number;
-	inlet?: number;
+  outlet?: number;
+  inlet?: number;
 
-	inletKey?: string;
-	outletKey?: string;
+  inletKey?: string;
+  outletKey?: string;
 
-	/** Resolved inlet name from object definition (e.g. 'note', 'interval') */
-	inletName?: string;
+  /** Resolved inlet name from object definition (e.g. 'note', 'interval') */
+  inletName?: string;
 }
 
 export type MessageCallbackFn = (data: Message['data'], meta: Omit<Message, 'data'>) => void;
 
 export class MessageQueue {
-	private callbacks: MessageCallbackFn[] = [];
-	private nodeId: string;
+  private callbacks: MessageCallbackFn[] = [];
+  private nodeId: string;
 
-	constructor(nodeId: string) {
-		this.nodeId = nodeId;
-	}
+  constructor(nodeId: string) {
+    this.nodeId = nodeId;
+  }
 
-	addCallback(callback: MessageCallbackFn) {
-		this.callbacks.push(callback);
-	}
+  addCallback(callback: MessageCallbackFn) {
+    this.callbacks.push(callback);
+  }
 
-	removeCallback(callback: MessageCallbackFn) {
-		const index = this.callbacks.indexOf(callback);
+  removeCallback(callback: MessageCallbackFn) {
+    const index = this.callbacks.indexOf(callback);
 
-		if (index > -1) {
-			this.callbacks.splice(index, 1);
-		}
-	}
+    if (index > -1) {
+      this.callbacks.splice(index, 1);
+    }
+  }
 
-	sendMessage(message: Message) {
-		this.callbacks.forEach((callback) => {
-			try {
-				callback(message['data'], message);
-			} catch (error) {
-				// Route error to node's VirtualConsole
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				logger.ofNode(this.nodeId).error(`Error in recv(): ${errorMessage}`);
-			}
-		});
-	}
+  sendMessage(message: Message) {
+    this.callbacks.forEach((callback) => {
+      try {
+        callback(message['data'], message);
+      } catch (error) {
+        // Route error to node's VirtualConsole
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.ofNode(this.nodeId).error(`Error in recv(): ${errorMessage}`);
+      }
+    });
+  }
 
-	clear() {
-		this.callbacks = [];
-	}
+  clear() {
+    this.callbacks = [];
+  }
 }
 
 export class MessageSystem {
-	private static instance: MessageSystem | null = null;
-	private messageQueues = new Map<string, MessageQueue>();
-	private intervals = new Map<number, ReturnType<typeof setInterval>>();
-	private intervalCounter = 0;
-	private animationFrames = new Map<number, number>();
-	private animationFrameCounter = 0;
-	private deletedNodes = new Set<string>();
+  private static instance: MessageSystem | null = null;
+  private messageQueues = new Map<string, MessageQueue>();
+  private intervals = new Map<number, ReturnType<typeof setInterval>>();
+  private intervalCounter = 0;
+  private animationFrames = new Map<number, number>();
+  private animationFrameCounter = 0;
+  private deletedNodes = new Set<string>();
 
-	private edges: Edge[] = [];
+  private edges: Edge[] = [];
 
-	// Legacy
-	private connections = new Map<string, string[]>(); // nodeId -> array of connected nodeIds
+  // Legacy
+  private connections = new Map<string, string[]>(); // nodeId -> array of connected nodeIds
 
-	static getInstance(): MessageSystem {
-		if (!MessageSystem.instance) {
-			MessageSystem.instance = new MessageSystem();
-		}
+  static getInstance(): MessageSystem {
+    if (!MessageSystem.instance) {
+      MessageSystem.instance = new MessageSystem();
+    }
 
-		return MessageSystem.instance;
-	}
+    return MessageSystem.instance;
+  }
 
-	// Register a node for message handling
-	registerNode(nodeId: string): MessageQueue {
-		if (!this.messageQueues.has(nodeId)) {
-			this.messageQueues.set(nodeId, new MessageQueue(nodeId));
-		}
+  // Register a node for message handling
+  registerNode(nodeId: string): MessageQueue {
+    if (!this.messageQueues.has(nodeId)) {
+      this.messageQueues.set(nodeId, new MessageQueue(nodeId));
+    }
 
-		this.deletedNodes.delete(nodeId);
-		return this.messageQueues.get(nodeId)!;
-	}
+    this.deletedNodes.delete(nodeId);
+    return this.messageQueues.get(nodeId)!;
+  }
 
-	// Unregister a node and clean up
-	unregisterNode(nodeId: string) {
-		this.deletedNodes.add(nodeId);
+  // Unregister a node and clean up
+  unregisterNode(nodeId: string) {
+    this.deletedNodes.add(nodeId);
 
-		// Clear message queue
-		const queue = this.messageQueues.get(nodeId);
-		if (queue) {
-			queue.clear();
-			this.messageQueues.delete(nodeId);
-		}
+    // Clear message queue
+    const queue = this.messageQueues.get(nodeId);
+    if (queue) {
+      queue.clear();
+      this.messageQueues.delete(nodeId);
+    }
 
-		// Remove connections
-		this.connections.delete(nodeId);
+    // Remove connections
+    this.connections.delete(nodeId);
 
-		// Remove incoming connections to this node
-		for (const [, targets] of this.connections.entries()) {
-			const index = targets.indexOf(nodeId);
+    // Remove incoming connections to this node
+    for (const [, targets] of this.connections.entries()) {
+      const index = targets.indexOf(nodeId);
 
-			if (index > -1) {
-				targets.splice(index, 1);
-			}
-		}
-	}
+      if (index > -1) {
+        targets.splice(index, 1);
+      }
+    }
+  }
 
-	// Update connections based on XY Flow graph
-	updateEdges(edges: Edge[]) {
-		this.edges = edges;
+  // Update connections based on XY Flow graph
+  updateEdges(edges: Edge[]) {
+    this.edges = edges;
 
-		// Clear existing connections
-		this.connections.clear();
+    // Clear existing connections
+    this.connections.clear();
 
-		// Build new connection map using Set for O(1) deduplication
-		const connectionSets = new Map<string, Set<string>>();
-		for (const edge of edges) {
-			if (!connectionSets.has(edge.source)) {
-				connectionSets.set(edge.source, new Set());
-			}
-			connectionSets.get(edge.source)!.add(edge.target);
-		}
+    // Build new connection map using Set for O(1) deduplication
+    const connectionSets = new Map<string, Set<string>>();
+    for (const edge of edges) {
+      if (!connectionSets.has(edge.source)) {
+        connectionSets.set(edge.source, new Set());
+      }
+      connectionSets.get(edge.source)!.add(edge.target);
+    }
 
-		// Convert Sets to arrays for the connections map
-		for (const [source, targets] of connectionSets) {
-			this.connections.set(source, [...targets]);
-		}
-	}
+    // Convert Sets to arrays for the connections map
+    for (const [source, targets] of connectionSets) {
+      this.connections.set(source, [...targets]);
+    }
+  }
 
-	// Send a message from a node
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	sendMessage(fromNodeId: string, data: any, options: SendMessageOptions = {}) {
-		// Ignore messages from deleted nodes
-		if (this.deletedNodes.has(fromNodeId)) {
-			return;
-		}
+  // Send a message from a node
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sendMessage(fromNodeId: string, data: any, options: SendMessageOptions = {}) {
+    // Ignore messages from deleted nodes
+    if (this.deletedNodes.has(fromNodeId)) {
+      return;
+    }
 
-		const message: Message = { data, source: fromNodeId };
-		const connectedNodes = this.connections.get(fromNodeId) || [];
+    const message: Message = { data, source: fromNodeId };
+    const connectedNodes = this.connections.get(fromNodeId) || [];
 
-		for (const targetNodeId of connectedNodes) {
-			const targetQueue = this.messageQueues.get(targetNodeId);
-			if (!targetQueue) continue;
+    for (const targetNodeId of connectedNodes) {
+      const targetQueue = this.messageQueues.get(targetNodeId);
+      if (!targetQueue) continue;
 
-			const edges = this.edges.filter(
-				(edge) => edge.source === fromNodeId && edge.target === targetNodeId
-			);
+      const edges = this.edges.filter(
+        (edge) => edge.source === fromNodeId && edge.target === targetNodeId
+      );
 
-			for (const edge of edges) {
-				const outletKey = edge.sourceHandle ?? undefined;
-				const inletKey = edge.targetHandle ?? undefined;
+      for (const edge of edges) {
+        const outletKey = edge.sourceHandle ?? undefined;
+        const inletKey = edge.targetHandle ?? undefined;
 
-				const outlet = getHandleId(outletKey);
-				const inlet = getHandleId(inletKey);
+        const outlet = getHandleId(outletKey);
+        const inlet = getHandleId(inletKey);
 
-				// do not send message if the outlet mismatches
-				if (typeof options.to === 'number' && outlet !== options.to) {
-					continue;
-				}
+        // do not send message if the outlet mismatches
+        if (typeof options.to === 'number' && outlet !== options.to) {
+          continue;
+        }
 
-				targetQueue.sendMessage({
-					...message,
-					inlet,
-					inletKey,
-					outlet,
-					outletKey
-				});
-			}
-		}
-	}
+        targetQueue.sendMessage({
+          ...message,
+          inlet,
+          inletKey,
+          outlet,
+          outletKey
+        });
+      }
+    }
+  }
 
-	// Create an interval with automatic cleanup
-	createInterval(callback: () => void, ms: number): number {
-		const intervalId = this.intervalCounter++;
-		const timeout = setInterval(callback, ms);
-		this.intervals.set(intervalId, timeout);
+  // Create an interval with automatic cleanup
+  createInterval(callback: () => void, ms: number): number {
+    const intervalId = this.intervalCounter++;
+    const timeout = setInterval(callback, ms);
+    this.intervals.set(intervalId, timeout);
 
-		return intervalId;
-	}
+    return intervalId;
+  }
 
-	// Clear an interval
-	clearInterval(intervalId: number) {
-		const timeout = this.intervals.get(intervalId);
+  // Clear an interval
+  clearInterval(intervalId: number) {
+    const timeout = this.intervals.get(intervalId);
 
-		if (timeout !== undefined) {
-			clearInterval(timeout);
-			this.intervals.delete(intervalId);
-		}
-	}
+    if (timeout !== undefined) {
+      clearInterval(timeout);
+      this.intervals.delete(intervalId);
+    }
+  }
 
-	// Create an animation frame with automatic cleanup
-	createAnimationFrame(callback: () => void): number {
-		const animationFrameId = this.animationFrameCounter++;
-		const rafId = requestAnimationFrame(callback);
-		this.animationFrames.set(animationFrameId, rafId);
+  // Create an animation frame with automatic cleanup
+  createAnimationFrame(callback: () => void): number {
+    const animationFrameId = this.animationFrameCounter++;
+    const rafId = requestAnimationFrame(callback);
+    this.animationFrames.set(animationFrameId, rafId);
 
-		return animationFrameId;
-	}
+    return animationFrameId;
+  }
 
-	// Clear an animation frame
-	clearAnimationFrame(animationFrameId: number) {
-		const rafId = this.animationFrames.get(animationFrameId);
+  // Clear an animation frame
+  clearAnimationFrame(animationFrameId: number) {
+    const rafId = this.animationFrames.get(animationFrameId);
 
-		if (rafId !== undefined) {
-			cancelAnimationFrame(rafId);
-			this.animationFrames.delete(animationFrameId);
-		}
-	}
+    if (rafId !== undefined) {
+      cancelAnimationFrame(rafId);
+      this.animationFrames.delete(animationFrameId);
+    }
+  }
 
-	// Find nodes connected to this node with a specific outlet type
-	getConnectedSourceNodes(targetNodeId: string, sourceOutletHandle?: string): string[] {
-		return this.edges
-			.filter((edge) => {
-				return (
-					edge.target === targetNodeId &&
-					(sourceOutletHandle === undefined || edge.sourceHandle === sourceOutletHandle)
-				);
-			})
-			.map((edge) => edge.source);
-	}
+  // Find nodes connected to this node with a specific outlet type
+  getConnectedSourceNodes(targetNodeId: string, sourceOutletHandle?: string): string[] {
+    return this.edges
+      .filter((edge) => {
+        return (
+          edge.target === targetNodeId &&
+          (sourceOutletHandle === undefined || edge.sourceHandle === sourceOutletHandle)
+        );
+      })
+      .map((edge) => edge.source);
+  }
 
-	// Find edges connected from a source node to target nodes with a specific inlet key
-	getConnectedEdgesToTargetInlet(
-		sourceNodeId: string,
-		targetInletKey?: string
-	): { targetNodeId: string; inletKey: string | null | undefined }[] {
-		return this.edges
-			.filter((edge) => {
-				return (
-					edge.source === sourceNodeId &&
-					(targetInletKey === undefined || edge.targetHandle === targetInletKey)
-				);
-			})
-			.map((edge) => ({
-				targetNodeId: edge.target,
-				inletKey: edge.targetHandle ?? undefined
-			}));
-	}
+  // Find edges connected from a source node to target nodes with a specific inlet key
+  getConnectedEdgesToTargetInlet(
+    sourceNodeId: string,
+    targetInletKey?: string
+  ): { targetNodeId: string; inletKey: string | null | undefined }[] {
+    return this.edges
+      .filter((edge) => {
+        return (
+          edge.source === sourceNodeId &&
+          (targetInletKey === undefined || edge.targetHandle === targetInletKey)
+        );
+      })
+      .map((edge) => ({
+        targetNodeId: edge.target,
+        inletKey: edge.targetHandle ?? undefined
+      }));
+  }
 }
 
 export const getHandleId = (handle?: string) => {
-	const m = handle?.match(/.*-(\d)/)?.[1];
-	if (m === undefined) return;
+  const m = handle?.match(/.*-(\d)/)?.[1];
+  if (m === undefined) return;
 
-	const id = parseInt(m);
+  const id = parseInt(m);
 
-	return isNaN(id) ? undefined : id;
+  return isNaN(id) ? undefined : id;
 };

@@ -398,10 +398,10 @@ tm.draw(() => {
 })`;
 
 export const TEXTMODE_PRESETS: Record<string, { type: string; data: { code: string } }> = {
-	'digital-rain.tm': { type: 'textmode', data: { code: DIGITAL_RAIN_TM.trim() } },
-	'animated-wave.tm': { type: 'textmode', data: { code: ANIMATED_WAVE_TM.trim() } },
-	'plasma-field.tm': { type: 'textmode', data: { code: PLASMA_FIELD_TM.trim() } },
-	'rain.tm': { type: 'textmode', data: { code: RAIN_TM.trim() } },
-	'torus.tm': { type: 'textmode', data: { code: TORUS_TM.trim() } },
-	'fire.tm': { type: 'textmode', data: { code: FIRE_TM.trim() } }
+  'digital-rain.tm': { type: 'textmode', data: { code: DIGITAL_RAIN_TM.trim() } },
+  'animated-wave.tm': { type: 'textmode', data: { code: ANIMATED_WAVE_TM.trim() } },
+  'plasma-field.tm': { type: 'textmode', data: { code: PLASMA_FIELD_TM.trim() } },
+  'rain.tm': { type: 'textmode', data: { code: RAIN_TM.trim() } },
+  'torus.tm': { type: 'textmode', data: { code: TORUS_TM.trim() } },
+  'fire.tm': { type: 'textmode', data: { code: FIRE_TM.trim() } }
 };

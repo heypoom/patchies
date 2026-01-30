@@ -7,9 +7,9 @@ import { logger } from '$lib/utils/logger';
  * Callback to create a node with type, position, and optional custom data
  */
 export type CreateNodeCallback = (
-	type: string,
-	position: { x: number; y: number },
-	customData?: unknown
+  type: string,
+  position: { x: number; y: number },
+  customData?: unknown
 ) => void;
 
 /**
@@ -23,9 +23,9 @@ export type CreateNodeFromNameCallback = (name: string, position: { x: number; y
 export type ScreenToFlowPositionFn = (coords: { x: number; y: number }) => { x: number; y: number };
 
 export interface CanvasDragDropManagerConfig {
-	screenToFlowPosition: ScreenToFlowPositionFn;
-	createNode: CreateNodeCallback;
-	createNodeFromName: CreateNodeFromNameCallback;
+  screenToFlowPosition: ScreenToFlowPositionFn;
+  createNode: CreateNodeCallback;
+  createNodeFromName: CreateNodeFromNameCallback;
 }
 
 /**
@@ -34,304 +34,304 @@ export interface CanvasDragDropManagerConfig {
  * and assembly memory drops.
  */
 export class CanvasDragDropManager {
-	private screenToFlowPosition: ScreenToFlowPositionFn;
-	private createNode: CreateNodeCallback;
-	private createNodeFromName: CreateNodeFromNameCallback;
+  private screenToFlowPosition: ScreenToFlowPositionFn;
+  private createNode: CreateNodeCallback;
+  private createNodeFromName: CreateNodeFromNameCallback;
 
-	constructor(config: CanvasDragDropManagerConfig) {
-		this.screenToFlowPosition = config.screenToFlowPosition;
-		this.createNode = config.createNode;
-		this.createNodeFromName = config.createNodeFromName;
-	}
+  constructor(config: CanvasDragDropManagerConfig) {
+    this.screenToFlowPosition = config.screenToFlowPosition;
+    this.createNode = config.createNode;
+    this.createNodeFromName = config.createNodeFromName;
+  }
 
-	/**
-	 * Handle drop events on the canvas
-	 */
-	onDrop(event: DragEvent): void {
-		const type = event.dataTransfer?.getData('application/svelteflow');
-		const items = event.dataTransfer?.items;
-		const memoryData = event.dataTransfer?.getData('application/asm-memory');
-		const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
+  /**
+   * Handle drop events on the canvas
+   */
+  onDrop(event: DragEvent): void {
+    const type = event.dataTransfer?.getData('application/svelteflow');
+    const items = event.dataTransfer?.items;
+    const memoryData = event.dataTransfer?.getData('application/asm-memory');
+    const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
 
-		// Check if the drop target is within a node (to avoid duplicate handling)
-		const target = event.target as HTMLElement;
-		const isDropOnNode = target.closest('.svelte-flow__node');
+    // Check if the drop target is within a node (to avoid duplicate handling)
+    const target = event.target as HTMLElement;
+    const isDropOnNode = target.closest('.svelte-flow__node');
 
-		// If dropping VFS file on a node, let the node handle it via native drop event
-		if (vfsPath && isDropOnNode) {
-			return;
-		}
+    // If dropping VFS file on a node, let the node handle it via native drop event
+    if (vfsPath && isDropOnNode) {
+      return;
+    }
 
-		event.preventDefault();
+    event.preventDefault();
 
-		// Get accurate positioning with zoom/pan
-		const position = this.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    // Get accurate positioning with zoom/pan
+    const position = this.screenToFlowPosition({ x: event.clientX, y: event.clientY });
 
-		// Handle VFS file drops - create appropriate node based on file type
-		if (vfsPath && !isDropOnNode) {
-			this.handleVfsFileDrop(vfsPath, position);
-			return;
-		}
+    // Handle VFS file drops - create appropriate node based on file type
+    if (vfsPath && !isDropOnNode) {
+      this.handleVfsFileDrop(vfsPath, position);
+      return;
+    }
 
-		// Handle assembly memory drops - create asm.value node
-		if (memoryData && !isDropOnNode) {
-			try {
-				const data = JSON.parse(memoryData);
-				this.createNode('asm.value', position, data);
+    // Handle assembly memory drops - create asm.value node
+    if (memoryData && !isDropOnNode) {
+      try {
+        const data = JSON.parse(memoryData);
+        this.createNode('asm.value', position, data);
 
-				return;
-			} catch (error) {
-				logger.warn('Failed to parse memory drag data:', error);
-			}
-		}
+        return;
+      } catch (error) {
+        logger.warn('Failed to parse memory drag data:', error);
+      }
+    }
 
-		// Handle file drops - only if not dropping on an existing node
-		if (items && items.length > 0 && !isDropOnNode) {
-			// Filter to file items only
-			const fileItems = Array.from(items).filter((item) => item.kind === 'file');
-			if (fileItems.length > 0) {
-				this.handleFileDrops(fileItems, position);
-				return;
-			}
-		}
+    // Handle file drops - only if not dropping on an existing node
+    if (items && items.length > 0 && !isDropOnNode) {
+      // Filter to file items only
+      const fileItems = Array.from(items).filter((item) => item.kind === 'file');
+      if (fileItems.length > 0) {
+        this.handleFileDrops(fileItems, position);
+        return;
+      }
+    }
 
-		// Handle node palette drops
-		if (type) {
-			this.createNodeFromName(type, position);
-		}
-	}
+    // Handle node palette drops
+    if (type) {
+      this.createNodeFromName(type, position);
+    }
+  }
 
-	/**
-	 * Handle dragover events to set appropriate drop effect
-	 */
-	onDragOver(event: DragEvent): void {
-		event.preventDefault();
+  /**
+   * Handle dragover events to set appropriate drop effect
+   */
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
 
-		// Check what type of drag this is and set appropriate drop effect
-		const hasMemoryData = event.dataTransfer?.types.includes('application/asm-memory');
-		const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
-		const hasVfsData = event.dataTransfer?.types.includes('application/x-vfs-path');
+    // Check what type of drag this is and set appropriate drop effect
+    const hasMemoryData = event.dataTransfer?.types.includes('application/asm-memory');
+    const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
+    const hasVfsData = event.dataTransfer?.types.includes('application/x-vfs-path');
 
-		if (hasVfsData) {
-			event.dataTransfer!.dropEffect = 'copy';
-		} else if (hasMemoryData) {
-			event.dataTransfer!.dropEffect = 'copy';
-		} else if (hasSvelteFlowData) {
-			event.dataTransfer!.dropEffect = 'move';
-		} else {
-			event.dataTransfer!.dropEffect = 'move';
-		}
-	}
+    if (hasVfsData) {
+      event.dataTransfer!.dropEffect = 'copy';
+    } else if (hasMemoryData) {
+      event.dataTransfer!.dropEffect = 'copy';
+    } else if (hasSvelteFlowData) {
+      event.dataTransfer!.dropEffect = 'move';
+    } else {
+      event.dataTransfer!.dropEffect = 'move';
+    }
+  }
 
-	/**
-	 * Handle dropped files by creating appropriate nodes
-	 */
-	private async handleFileDrops(
-		items: DataTransferItem[],
-		basePosition: { x: number; y: number }
-	): Promise<void> {
-		for (let index = 0; index < items.length; index++) {
-			const item = items[index];
+  /**
+   * Handle dropped files by creating appropriate nodes
+   */
+  private async handleFileDrops(
+    items: DataTransferItem[],
+    basePosition: { x: number; y: number }
+  ): Promise<void> {
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
 
-			// Offset multiple files to avoid overlap
-			const position = {
-				x: basePosition.x + index * 20,
-				y: basePosition.y + index * 20
-			};
+      // Offset multiple files to avoid overlap
+      const position = {
+        x: basePosition.x + index * 20,
+        y: basePosition.y + index * 20
+      };
 
-			const file = item.getAsFile();
-			if (!file) continue;
+      const file = item.getAsFile();
+      if (!file) continue;
 
-			// Try to get FileSystemFileHandle for persistence (Chrome 86+)
-			let handle: FileSystemFileHandle | undefined;
+      // Try to get FileSystemFileHandle for persistence (Chrome 86+)
+      let handle: FileSystemFileHandle | undefined;
 
-			if ('getAsFileSystemHandle' in item) {
-				try {
-					type Item = DataTransferItem & {
-						getAsFileSystemHandle(): Promise<FileSystemHandle | null>;
-					};
+      if ('getAsFileSystemHandle' in item) {
+        try {
+          type Item = DataTransferItem & {
+            getAsFileSystemHandle(): Promise<FileSystemHandle | null>;
+          };
 
-					const fsHandle = await (item as Item).getAsFileSystemHandle();
+          const fsHandle = await (item as Item).getAsFileSystemHandle();
 
-					if (fsHandle?.kind === 'file') {
-						handle = fsHandle as FileSystemFileHandle;
-						logger.debug('got fs handle', handle);
-					}
-				} catch {
-					// Not supported or denied - continue without handle
-					logger.debug('fs not supported or denied');
-				}
-			}
+          if (fsHandle?.kind === 'file') {
+            handle = fsHandle as FileSystemFileHandle;
+            logger.debug('got fs handle', handle);
+          }
+        } catch {
+          // Not supported or denied - continue without handle
+          logger.debug('fs not supported or denied');
+        }
+      }
 
-			const nodeType = this.getNodeTypeFromMimeType(file.type);
+      const nodeType = this.getNodeTypeFromMimeType(file.type);
 
-			if (nodeType) {
-				logger.debug('creating node with handle', handle);
+      if (nodeType) {
+        logger.debug('creating node with handle', handle);
 
-				const customData = await this.getFileNodeData(file, nodeType, handle);
-				this.createNode(nodeType, position, customData);
-			}
-		}
-	}
+        const customData = await this.getFileNodeData(file, nodeType, handle);
+        this.createNode(nodeType, position, customData);
+      }
+    }
+  }
 
-	/**
-	 * Handle VFS file drops by creating appropriate nodes
-	 * Supports both direct VFS entries and files within linked folders
-	 */
-	private async handleVfsFileDrop(
-		vfsPath: string,
-		position: { x: number; y: number }
-	): Promise<void> {
-		const vfs = VirtualFilesystem.getInstance();
-		// Use getEntryOrLinkedFile to support files within linked folders
-		const entry = vfs.getEntryOrLinkedFile(vfsPath);
+  /**
+   * Handle VFS file drops by creating appropriate nodes
+   * Supports both direct VFS entries and files within linked folders
+   */
+  private async handleVfsFileDrop(
+    vfsPath: string,
+    position: { x: number; y: number }
+  ): Promise<void> {
+    const vfs = VirtualFilesystem.getInstance();
+    // Use getEntryOrLinkedFile to support files within linked folders
+    const entry = vfs.getEntryOrLinkedFile(vfsPath);
 
-		if (!entry) {
-			logger.warn('VFS entry not found:', vfsPath);
-			return;
-		}
+    if (!entry) {
+      logger.warn('VFS entry not found:', vfsPath);
+      return;
+    }
 
-		const nodeType = this.getNodeTypeFromMimeType(entry.mimeType);
+    const nodeType = this.getNodeTypeFromMimeType(entry.mimeType);
 
-		if (nodeType) {
-			const customData = await this.getVfsFileNodeData(vfsPath, nodeType);
-			this.createNode(nodeType, position, customData);
-		}
-	}
+    if (nodeType) {
+      const customData = await this.getVfsFileNodeData(vfsPath, nodeType);
+      this.createNode(nodeType, position, customData);
+    }
+  }
 
-	/**
-	 * Map MIME types to node types
-	 */
-	private getNodeTypeFromMimeType(mimeType: string | undefined): string | null {
-		if (!mimeType) return null;
+  /**
+   * Map MIME types to node types
+   */
+  private getNodeTypeFromMimeType(mimeType: string | undefined): string | null {
+    if (!mimeType) return null;
 
-		return match(mimeType)
-			.when(
-				(t) => t.startsWith('image/'),
-				() => 'img'
-			)
-			.when(
-				(t) => t.startsWith('video/'),
-				() => 'video'
-			)
-			.when(
-				(t) =>
-					t === 'application/javascript' ||
-					t === 'text/javascript' ||
-					t === 'application/x-javascript',
-				() => 'js'
-			)
-			.when(
-				(t) => t.startsWith('text/'),
-				() => 'markdown'
-			)
-			.when(
-				(t) => t.startsWith('audio/'),
-				() => 'soundfile~'
-			)
-			.otherwise(() => null);
-	}
+    return match(mimeType)
+      .when(
+        (t) => t.startsWith('image/'),
+        () => 'img'
+      )
+      .when(
+        (t) => t.startsWith('video/'),
+        () => 'video'
+      )
+      .when(
+        (t) =>
+          t === 'application/javascript' ||
+          t === 'text/javascript' ||
+          t === 'application/x-javascript',
+        () => 'js'
+      )
+      .when(
+        (t) => t.startsWith('text/'),
+        () => 'markdown'
+      )
+      .when(
+        (t) => t.startsWith('audio/'),
+        () => 'soundfile~'
+      )
+      .otherwise(() => null);
+  }
 
-	/**
-	 * Create appropriate data for VFS file-based nodes
-	 */
-	private async getVfsFileNodeData(vfsPath: string, nodeType: string): Promise<unknown> {
-		const vfs = VirtualFilesystem.getInstance();
+  /**
+   * Create appropriate data for VFS file-based nodes
+   */
+  private async getVfsFileNodeData(vfsPath: string, nodeType: string): Promise<unknown> {
+    const vfs = VirtualFilesystem.getInstance();
 
-		// Refactored: combine common logic for file-based text nodes
-		if (nodeType === 'markdown' || nodeType === 'js') {
-			try {
-				const file = await vfs.resolve(vfsPath);
-				const content = await file.text();
+    // Refactored: combine common logic for file-based text nodes
+    if (nodeType === 'markdown' || nodeType === 'js') {
+      try {
+        const file = await vfs.resolve(vfsPath);
+        const content = await file.text();
 
-				return {
-					...getDefaultNodeData(nodeType),
-					...(nodeType === 'markdown' && { markdown: content }),
-					...(nodeType === 'js' && { code: content })
-				};
-			} catch (error) {
-				logger.error(
-					`Failed to read VFS ${nodeType === 'markdown' ? 'markdown' : 'JavaScript'} file:`,
-					error
-				);
+        return {
+          ...getDefaultNodeData(nodeType),
+          ...(nodeType === 'markdown' && { markdown: content }),
+          ...(nodeType === 'js' && { code: content })
+        };
+      } catch (error) {
+        logger.error(
+          `Failed to read VFS ${nodeType === 'markdown' ? 'markdown' : 'JavaScript'} file:`,
+          error
+        );
 
-				return {
-					...getDefaultNodeData(nodeType),
-					...(nodeType === 'markdown' && { markdown: '// Error loading file' }),
-					...(nodeType === 'js' && { code: '// Error loading file' })
-				};
-			}
-		}
+        return {
+          ...getDefaultNodeData(nodeType),
+          ...(nodeType === 'markdown' && { markdown: '// Error loading file' }),
+          ...(nodeType === 'js' && { code: '// Error loading file' })
+        };
+      }
+    }
 
-		if (['img', 'video', 'soundfile~'].includes(nodeType)) {
-			return { ...getDefaultNodeData(nodeType), vfsPath };
-		}
+    if (['img', 'video', 'soundfile~'].includes(nodeType)) {
+      return { ...getDefaultNodeData(nodeType), vfsPath };
+    }
 
-		return getDefaultNodeData(nodeType);
-	}
+    return getDefaultNodeData(nodeType);
+  }
 
-	/**
-	 * Create appropriate data for file-based nodes
-	 */
-	private async getFileNodeData(
-		file: File,
-		nodeType: string,
-		handle?: FileSystemFileHandle
-	): Promise<unknown> {
-		const vfs = VirtualFilesystem.getInstance();
+  /**
+   * Create appropriate data for file-based nodes
+   */
+  private async getFileNodeData(
+    file: File,
+    nodeType: string,
+    handle?: FileSystemFileHandle
+  ): Promise<unknown> {
+    const vfs = VirtualFilesystem.getInstance();
 
-		return await match(nodeType)
-			.with('img', async () => {
-				const vfsPath = await vfs.storeFile(file, handle);
+    return await match(nodeType)
+      .with('img', async () => {
+        const vfsPath = await vfs.storeFile(file, handle);
 
-				return {
-					...getDefaultNodeData('img'),
-					vfsPath
-				};
-			})
-			.with('markdown', async () => {
-				try {
-					const content = await file.text();
+        return {
+          ...getDefaultNodeData('img'),
+          vfsPath
+        };
+      })
+      .with('markdown', async () => {
+        try {
+          const content = await file.text();
 
-					return { ...getDefaultNodeData('markdown'), markdown: content };
-				} catch (error) {
-					logger.error('Failed to read markdown file:', error);
+          return { ...getDefaultNodeData('markdown'), markdown: content };
+        } catch (error) {
+          logger.error('Failed to read markdown file:', error);
 
-					return {
-						...getDefaultNodeData('markdown'),
-						markdown: `Error loading file: ${file.name}`
-					};
-				}
-			})
-			.with('js', async () => {
-				try {
-					const content = await file.text();
+          return {
+            ...getDefaultNodeData('markdown'),
+            markdown: `Error loading file: ${file.name}`
+          };
+        }
+      })
+      .with('js', async () => {
+        try {
+          const content = await file.text();
 
-					return { ...getDefaultNodeData('js'), code: content };
-				} catch (error) {
-					logger.error('Failed to read JavaScript file:', error);
+          return { ...getDefaultNodeData('js'), code: content };
+        } catch (error) {
+          logger.error('Failed to read JavaScript file:', error);
 
-					return { ...getDefaultNodeData('js'), code: `// Error loading file: ${file.name}` };
-				}
-			})
-			.with('soundfile~', async () => {
-				const vfsPath = await vfs.storeFile(file, handle);
+          return { ...getDefaultNodeData('js'), code: `// Error loading file: ${file.name}` };
+        }
+      })
+      .with('soundfile~', async () => {
+        const vfsPath = await vfs.storeFile(file, handle);
 
-				return {
-					...getDefaultNodeData('soundfile~'),
-					vfsPath,
-					fileName: file.name
-				};
-			})
-			.with('video', async () => {
-				const vfsPath = await vfs.storeFile(file, handle);
+        return {
+          ...getDefaultNodeData('soundfile~'),
+          vfsPath,
+          fileName: file.name
+        };
+      })
+      .with('video', async () => {
+        const vfsPath = await vfs.storeFile(file, handle);
 
-				return {
-					...getDefaultNodeData('video'),
-					vfsPath,
-					fileName: file.name
-				};
-			})
-			.otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
-	}
+        return {
+          ...getDefaultNodeData('video'),
+          vfsPath,
+          fileName: file.name
+        };
+      })
+      .otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
+  }
 }

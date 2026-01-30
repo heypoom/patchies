@@ -12,40 +12,40 @@ export type MessageMeta = Omit<Message, 'data'>;
  * All text object classes must implement this interface.
  */
 export interface TextObjectV2 {
-	/** Unique identifier for this object instance */
-	readonly nodeId: string;
+  /** Unique identifier for this object instance */
+  readonly nodeId: string;
 
-	/** Object context for messaging and params (injected by ObjectService) */
-	readonly context: ObjectContext;
+  /** Object context for messaging and params (injected by ObjectService) */
+  readonly context: ObjectContext;
 
-	/**
-	 * Initialize the object with the given parameters.
-	 * Called after construction when creating the object.
-	 *
-	 * @param params - Array of parameters specific to the object type
-	 */
-	create?(params: unknown[]): void | Promise<void>;
+  /**
+   * Initialize the object with the given parameters.
+   * Called after construction when creating the object.
+   *
+   * @param params - Array of parameters specific to the object type
+   */
+  create?(params: unknown[]): void | Promise<void>;
 
-	/**
-	 * Clean up resources when the object is destroyed.
-	 * Called when the object is explicitly removed from the patch.
-	 */
-	destroy?(): void;
+  /**
+   * Clean up resources when the object is destroyed.
+   * Called when the object is explicitly removed from the patch.
+   */
+  destroy?(): void;
 
-	/**
-	 * Handle incoming messages from inlets.
-	 *
-	 * @param data - The message data
-	 * @param meta - Message metadata (source, inlet, outlet, etc.)
-	 */
-	onMessage?(data: unknown, meta: MessageMeta): void;
+  /**
+   * Handle incoming messages from inlets.
+   *
+   * @param data - The message data
+   * @param meta - Message metadata (source, inlet, outlet, etc.)
+   */
+  onMessage?(data: unknown, meta: MessageMeta): void;
 
-	/**
-	 * Get dynamic outlets for this instance.
-	 * Use this when outlet count depends on runtime state or creation params.
-	 * If not defined, static `outlets` from the class is used.
-	 */
-	getOutlets?(): ObjectOutlet[];
+  /**
+   * Get dynamic outlets for this instance.
+   * Use this when outlet count depends on runtime state or creation params.
+   * If not defined, static `outlets` from the class is used.
+   */
+  getOutlets?(): ObjectOutlet[];
 }
 
 /**
@@ -58,18 +58,18 @@ export type TextObjectConstructor = new (nodeId: string, context: ObjectContext)
  * Text object class type including required static properties and optional metadata.
  */
 export type TextObjectClass = {
-	/** Type identifier of the text object (e.g. `mtof` or `metro`) */
-	type: string;
+  /** Type identifier of the text object (e.g. `mtof` or `metro`) */
+  type: string;
 
-	/** Aliases for the object type (e.g. 't' for 'trigger') */
-	aliases?: string[];
+  /** Aliases for the object type (e.g. 't' for 'trigger') */
+  aliases?: string[];
 
-	/** Description of the object */
-	description?: string;
+  /** Description of the object */
+  description?: string;
 
-	/** Inlet definitions */
-	inlets?: ObjectInlet[];
+  /** Inlet definitions */
+  inlets?: ObjectInlet[];
 
-	/** Outlet definitions (used as default if instance doesn't implement getOutlets) */
-	outlets?: ObjectOutlet[];
+  /** Outlet definitions (used as default if instance doesn't implement getOutlets) */
+  outlets?: ObjectOutlet[];
 } & TextObjectConstructor;

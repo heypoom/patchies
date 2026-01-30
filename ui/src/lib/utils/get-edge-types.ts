@@ -7,106 +7,106 @@ type MinimalNode = Pick<Node, 'id' | 'type' | 'data'>;
 
 /** Visual audio nodes. */
 const AUDIO_NODES = [
-	'ai.music',
-	'ai.tts',
-	'sampler~',
-	'soundfile~',
-	'chuck~',
-	'expr~',
-	'dsp~',
-	'tone~',
-	'strudel',
-	'sonic~',
-	'video',
-	'split~',
-	'merge~',
-	'meter~',
-	'elem~',
-	'csound~',
-	'bchrn',
-	'dac~',
-	'mic~',
-	'vdo.ninja.push',
-	'vdo.ninja.pull'
+  'ai.music',
+  'ai.tts',
+  'sampler~',
+  'soundfile~',
+  'chuck~',
+  'expr~',
+  'dsp~',
+  'tone~',
+  'strudel',
+  'sonic~',
+  'video',
+  'split~',
+  'merge~',
+  'meter~',
+  'elem~',
+  'csound~',
+  'bchrn',
+  'dac~',
+  'mic~',
+  'vdo.ninja.push',
+  'vdo.ninja.pull'
 ];
 
 const isAudioObject = (node: MinimalNode): boolean => {
-	if (!node.type) return false;
+  if (!node.type) return false;
 
-	if (node.type === 'object') {
-		return !!getAudioNodeGroup(node.data.name as string);
-	}
+  if (node.type === 'object') {
+    return !!getAudioNodeGroup(node.data.name as string);
+  }
 
-	return AUDIO_NODES.includes(node.type);
+  return AUDIO_NODES.includes(node.type);
 };
 
 export const handleToPortIndex = (handle: string | null): number | null => {
-	if (!handle) return null;
+  if (!handle) return null;
 
-	const id = handle
-		.replace('message-in-', '')
-		.replace('audio-in-', '')
-		.replace('message-out-', '')
-		.replace('audio-out-', '');
+  const id = handle
+    .replace('message-in-', '')
+    .replace('audio-in-', '')
+    .replace('message-out-', '')
+    .replace('audio-out-', '');
 
-	return parseInt(id, 10);
+  return parseInt(id, 10);
 };
 
 const isAudioHandle = (node: MinimalNode, handle: string | null, isInlet: boolean): boolean => {
-	if (!handle) return false;
+  if (!handle) return false;
 
-	if (handle.startsWith('audio')) return true;
+  if (handle.startsWith('audio')) return true;
 
-	if (node.type === 'object') {
-		const data = node.data as { name: string };
-		const registry = AudioRegistry.getInstance();
+  if (node.type === 'object') {
+    const data = node.data as { name: string };
+    const registry = AudioRegistry.getInstance();
 
-		const metadata = registry.get(data.name);
-		if (!metadata) return false;
+    const metadata = registry.get(data.name);
+    if (!metadata) return false;
 
-		if (isInlet) {
-			const inletIndex = handleToPortIndex(handle);
-			if (inletIndex === null || isNaN(inletIndex)) return false;
+    if (isInlet) {
+      const inletIndex = handleToPortIndex(handle);
+      if (inletIndex === null || isNaN(inletIndex)) return false;
 
-			const inlet = metadata.inlets?.[inletIndex];
-			if (!inlet) return false;
+      const inlet = metadata.inlets?.[inletIndex];
+      if (!inlet) return false;
 
-			return inlet.type === 'signal' || (inlet.isAudioParam ?? false);
-		} else {
-			const outletIndex = handleToPortIndex(handle);
-			if (outletIndex === null || isNaN(outletIndex)) return false;
+      return inlet.type === 'signal' || (inlet.isAudioParam ?? false);
+    } else {
+      const outletIndex = handleToPortIndex(handle);
+      if (outletIndex === null || isNaN(outletIndex)) return false;
 
-			const outlet = metadata.outlets?.[outletIndex];
-			if (!outlet) return false;
+      const outlet = metadata.outlets?.[outletIndex];
+      if (!outlet) return false;
 
-			return outlet.type === 'signal';
-		}
-	}
+      return outlet.type === 'signal';
+    }
+  }
 
-	return false;
+  return false;
 };
 
 export function getEdgeTypes(
-	source: MinimalNode,
-	target: MinimalNode,
-	sourceHandle: string | null,
-	targetHandle: string | null
+  source: MinimalNode,
+  target: MinimalNode,
+  sourceHandle: string | null,
+  targetHandle: string | null
 ): PsEdgeType {
-	const sh = sourceHandle?.split('-')[0];
-	const th = targetHandle?.split('-')[0];
+  const sh = sourceHandle?.split('-')[0];
+  const th = targetHandle?.split('-')[0];
 
-	if (
-		isAudioObject(source) &&
-		isAudioObject(target) &&
-		isAudioHandle(source, sourceHandle, false) &&
-		isAudioHandle(target, targetHandle, true)
-	) {
-		return 'audio';
-	}
+  if (
+    isAudioObject(source) &&
+    isAudioObject(target) &&
+    isAudioHandle(source, sourceHandle, false) &&
+    isAudioHandle(target, targetHandle, true)
+  ) {
+    return 'audio';
+  }
 
-	if (sh === 'video' || th === 'video' || sh === 'glsl') {
-		return 'video';
-	}
+  if (sh === 'video' || th === 'video' || sh === 'glsl') {
+    return 'video';
+  }
 
-	return 'message';
+  return 'message';
 }

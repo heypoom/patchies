@@ -97,8 +97,8 @@ function draw(t) {
 }`;
 
 export const THREE_PRESETS: Record<string, { type: string; data: { code: string } }> = {
-	'video-cube.three': { type: 'three', data: { code: VIDEO_CUBE_THREE.trim() } },
-	'video-torus.three': { type: 'three', data: { code: VIDEO_TORUS_THREE.trim() } },
-	'video-sphere.three': { type: 'three', data: { code: VIDEO_SPHERE_THREE.trim() } },
-	'crate.three': { type: 'three', data: { code: CRATE_THREE.trim() } }
+  'video-cube.three': { type: 'three', data: { code: VIDEO_CUBE_THREE.trim() } },
+  'video-torus.three': { type: 'three', data: { code: VIDEO_TORUS_THREE.trim() } },
+  'video-sphere.three': { type: 'three', data: { code: VIDEO_SPHERE_THREE.trim() } },
+  'crate.three': { type: 'three', data: { code: CRATE_THREE.trim() } }
 };

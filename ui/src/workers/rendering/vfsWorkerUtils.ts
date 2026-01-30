@@ -7,8 +7,8 @@
  */
 
 type PendingVfsRequest = {
-	resolve: (url: string) => void;
-	reject: (error: Error) => void;
+  resolve: (url: string) => void;
+  reject: (error: Error) => void;
 };
 
 /** Pending VFS URL resolution requests keyed by requestId */
@@ -21,27 +21,27 @@ let requestIdCounter = 0;
  * Call this from the render worker's message handler.
  */
 export function handleVfsUrlResolved(data: {
-	requestId: string;
-	nodeId: string;
-	url?: string;
-	error?: string;
+  requestId: string;
+  nodeId: string;
+  url?: string;
+  error?: string;
 }): void {
-	const pending = pendingVfsRequests.get(data.requestId);
-	if (!pending) return;
+  const pending = pendingVfsRequests.get(data.requestId);
+  if (!pending) return;
 
-	pendingVfsRequests.delete(data.requestId);
+  pendingVfsRequests.delete(data.requestId);
 
-	if (data.error) {
-		pending.reject(new Error(data.error));
-		return;
-	}
+  if (data.error) {
+    pending.reject(new Error(data.error));
+    return;
+  }
 
-	if (data.url) {
-		pending.resolve(data.url);
-		return;
-	}
+  if (data.url) {
+    pending.resolve(data.url);
+    return;
+  }
 
-	pending.reject(new Error('Invalid VFS resolution response'));
+  pending.reject(new Error('Invalid VFS resolution response'));
 }
 
 /**
@@ -49,18 +49,18 @@ export function handleVfsUrlResolved(data: {
  * The function requests VFS resolution from the main thread.
  */
 export function createWorkerGetVfsUrl(nodeId: string): (path: string) => Promise<string> {
-	return async function getVfsUrl(path: string): Promise<string> {
-		const requestId = `vfs-${nodeId}-${++requestIdCounter}`;
+  return async function getVfsUrl(path: string): Promise<string> {
+    const requestId = `vfs-${nodeId}-${++requestIdCounter}`;
 
-		return new Promise((resolve, reject) => {
-			pendingVfsRequests.set(requestId, { resolve, reject });
+    return new Promise((resolve, reject) => {
+      pendingVfsRequests.set(requestId, { resolve, reject });
 
-			self.postMessage({
-				type: 'resolveVfsUrl',
-				requestId,
-				nodeId,
-				path
-			});
-		});
-	};
+      self.postMessage({
+        type: 'resolveVfsUrl',
+        requestId,
+        nodeId,
+        path
+      });
+    });
+  };
 }

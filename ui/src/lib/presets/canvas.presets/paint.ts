@@ -52,10 +52,10 @@ function draw() {
 draw()`;
 
 export const paintPreset = {
-	type: 'canvas.dom' as const,
-	data: {
-		code: MOUSE_PAINT_JS,
-		inletCount: 1,
-		outletCount: 0
-	}
+  type: 'canvas.dom' as const,
+  data: {
+    code: MOUSE_PAINT_JS,
+    inletCount: 1,
+    outletCount: 0
+  }
 };
