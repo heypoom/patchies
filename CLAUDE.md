@@ -54,7 +54,7 @@ bun run test             # All tests
 - Tailwind classes only (no custom CSS)
 - Zinc palette, dark theme
 - Support `class` prop for component extension
-- Icons: `@iconify/svelte` or `@lucide/svelte`
+- Icons: `@lucide/svelte`
 
 ## Node Development
 

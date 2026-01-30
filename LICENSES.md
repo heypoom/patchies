@@ -35,7 +35,6 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | @elemaudio/core                   | ^4.0.1       | MIT                    |
 | @elemaudio/web-renderer           | ^4.0.3       | MIT                    |
 | @google/genai                     | ^1.11.0      | Apache-2.0             |
-| @iconify/svelte                   | ^5.0.0       | MIT                    |
 | @lezer/generator                  | ^1.8.0       | MIT                    |
 | @lezer/highlight                  | ^1.2.1       | MIT                    |
 | @replit/codemirror-vim            | ^6.3.0       | MIT                    |
