@@ -29,9 +29,10 @@
     onShowAiPrompt?: () => void;
     onShowGeminiKeyModal?: () => void;
     onNewPatch?: () => void;
-    onOpenLeftSidebar?: () => void;
+    onToggleSidebar?: () => void;
     onSaveAsPreset?: (node: Node) => void;
     onShowHelp?: () => void;
+    onBrowseObjects?: () => void;
   }
 
   let {
@@ -44,9 +45,10 @@
     onShowAiPrompt,
     onShowGeminiKeyModal,
     onNewPatch,
-    onOpenLeftSidebar,
+    onToggleSidebar,
     onSaveAsPreset,
-    onShowHelp
+    onShowHelp,
+    onBrowseObjects
   }: Props = $props();
 
   // Get the first selected node (for save as preset)
@@ -141,9 +143,14 @@
       description: 'Show or hide the bottom toolbar'
     },
     {
-      id: 'browse-files',
-      name: 'Browse Files',
-      description: 'View files in the virtual filesystem'
+      id: 'toggle-sidebar',
+      name: 'Toggle Sidebar',
+      description: 'Manage files and presets in the sidebar'
+    },
+    {
+      id: 'browse-objects',
+      name: 'Browse Objects',
+      description: 'Open the object browser to add nodes (Ctrl+O)'
     },
     {
       id: 'save-as-preset',
@@ -315,9 +322,13 @@
         onCancel();
         onNewPatch?.();
       })
-      .with('browse-files', () => {
+      .with('toggle-sidebar', () => {
         onCancel();
-        onOpenLeftSidebar?.();
+        onToggleSidebar?.();
+      })
+      .with('browse-objects', () => {
+        onCancel();
+        onBrowseObjects?.();
       })
       .with('toggle-vim-mode', () => {
         const current = localStorage.getItem('editor.vim') === 'true';

@@ -1119,12 +1119,13 @@
             showMissingApiKeyDialog = true;
           }}
           onNewPatch={newPatch}
-          onOpenLeftSidebar={() => ($isSidebarOpen = true)}
+          onToggleSidebar={() => ($isSidebarOpen = !$isSidebarOpen)}
           onSaveAsPreset={(node) => {
             nodeToSaveAsPreset = node;
             showSavePresetDialog = true;
           }}
           onShowHelp={() => (showStartupModal = true)}
+          onBrowseObjects={() => ($isObjectBrowserOpen = true)}
         />
       {/if}
     </div>

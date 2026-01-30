@@ -10,7 +10,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 - I want to be able to resolve the content of folders anG files from many providers
   - example: some files might be resolved from a static url, while other files and folders may need to be loaded from user's filesystem
 - I want to be able to visually browse that filesystem
-  - e.g. with "Command Palette > Browse Files"
+  - e.g. with "Command Palette > Toggle Sidebar"
   - should show up in a collapsible sidebar on the left side
   - See files and directories in a tree structure
   - Be able to view files. See images and hear audio files.
@@ -81,6 +81,7 @@ I wanted the ability to persist, browse and resolve files in a virtual file syst
 ## Integration Paths
 
 - persist uploaded media in media source objects
+
   - images (`img`)
   - video (`video`)
   - sound (`soundfile~`)
@@ -182,10 +183,10 @@ class VirtualFilesystem {
 
 async function storeHandle(
   path: string,
-  handle: FileSystemFileHandle,
+  handle: FileSystemFileHandle
 ): Promise<void>;
 async function getHandle(
-  path: string,
+  path: string
 ): Promise<FileSystemFileHandle | undefined>;
 async function removeHandle(path: string): Promise<void>;
 async function getAllHandles(): Promise<Map<string, FileSystemFileHandle>>;
@@ -198,7 +199,7 @@ async function clearHandles(): Promise<void>;
 // path-utils.ts
 function generateUserPath(
   filename: string,
-  existingPaths: Set<string>,
+  existingPaths: Set<string>
 ): string {
   // Input: 'photo.jpg'
   // Output: 'user://images/photo.jpg' or 'user://images/photo-1.jpg' if collision
