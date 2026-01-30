@@ -115,7 +115,7 @@
 
 {#if !hideOnMobile}
   <div
-    class="fixed right-0 bottom-0 left-0 flex flex-col items-center gap-2 p-2 md:right-0 md:left-auto md:items-end"
+    class="bottom-safe fixed right-0 left-0 flex flex-col items-center gap-2 p-2 md:right-0 md:left-auto md:items-end"
   >
     <!-- Main toolbar row -->
     <div class="flex items-center gap-1">

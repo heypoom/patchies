@@ -130,6 +130,21 @@
   }
 }
 
+/* Safe area utilities for PWA/notched devices */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .bottom-safe {
+    bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 @layer components {
   /* Object container utility classes */
   .object-container {

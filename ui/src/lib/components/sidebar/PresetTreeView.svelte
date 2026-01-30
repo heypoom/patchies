@@ -821,7 +821,10 @@
   </div>
 
   <!-- Footer actions -->
-  <div class="flex items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
+  <div
+    class="flex items-center gap-1 border-t border-zinc-800 px-2 pt-1.5"
+    style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
+  >
     <button
       class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
       onclick={createNewLibrary}
@@ -848,7 +851,7 @@
   {@const canEdit = selectedLibrary && !selectedLibrary.readonly}
 
   <div
-    class="fixed right-0 bottom-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
+    class="bottom-safe fixed right-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
   >
     <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
       {selectedPresetPath.preset.name}

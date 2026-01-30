@@ -1261,7 +1261,7 @@
 <!-- Mobile floating toolbar -->
 {#if $isMobile && selectedFilePath}
   <div
-    class="fixed right-0 bottom-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
+    class="bottom-safe fixed right-0 left-0 flex items-center justify-center gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-2 backdrop-blur-sm"
   >
     <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
       {selectedFileEntry?.filename || selectedFilePath.split('/').pop()}
