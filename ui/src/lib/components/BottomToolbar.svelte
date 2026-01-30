@@ -207,8 +207,8 @@
               <button
                 class={menuItemClass}
                 onclick={() => {
-                  overflowOpen = false;
                   createAndCopyShareLink(nodes, edges);
+                  overflowOpen = false;
                 }}
               >
                 <Link class="h-5 w-5 text-zinc-400" />
@@ -218,8 +218,8 @@
               <button
                 class={menuItemClass}
                 onclick={() => {
-                  overflowOpen = false;
                   onCommandPalette();
+                  overflowOpen = false;
                 }}
               >
                 <Command class="h-5 w-5 text-zinc-400" />
@@ -229,8 +229,8 @@
               <button
                 class={menuItemClass}
                 onclick={() => {
-                  overflowOpen = false;
                   onNewPatch();
+                  overflowOpen = false;
                 }}
               >
                 <FilePlusCorner class="h-5 w-5 text-zinc-400" />
@@ -240,8 +240,8 @@
               <button
                 class={menuItemClass}
                 onclick={() => {
-                  overflowOpen = false;
                   showStartupModal = true;
+                  overflowOpen = false;
                 }}
               >
                 <CircleHelp class="h-5 w-5 text-zinc-400" />
@@ -291,8 +291,8 @@
               <button
                 class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                 onclick={() => {
-                  overflowOpen = false;
                   onCommandPalette();
+                  overflowOpen = false;
                 }}
               >
                 <Command class="h-4 w-4 text-zinc-400" />
