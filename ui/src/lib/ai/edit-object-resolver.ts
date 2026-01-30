@@ -12,7 +12,9 @@ import { getObjectSpecificInstructions } from './object-descriptions';
 export async function editObjectFromPrompt(
   prompt: string,
   objectType: string,
-  existingData?: Record<string, unknown>
+  existingData?: Record<string, unknown>,
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
 
@@ -23,6 +25,11 @@ export async function editObjectFromPrompt(
 
   if (!apiKey) {
     throw new Error('Gemini API key is not set. Please set it in the settings.');
+  }
+
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
   }
 
   const { GoogleGenAI } = await import('@google/genai');
@@ -39,30 +46,63 @@ export async function editObjectFromPrompt(
   }
 
   // Single call: Generate object config (we already know the type)
-  const config = await generateObjectConfig(ai, enhancedPrompt, objectType);
+  const config = await generateObjectConfig(ai, enhancedPrompt, objectType, signal, onThinking);
   return config;
 }
 
 /**
  * Generates the full object configuration for editing.
+ * Uses streaming with thinking enabled to provide real-time feedback.
  */
 async function generateObjectConfig(
   ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
   prompt: string,
-  objectType: string
+  objectType: string,
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
 } | null> {
+  // Check for cancellation before starting
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
+
   const systemPrompt = buildGeneratorPrompt(objectType);
 
-  const response = await ai.models.generateContent({
+  // Use streaming with thinking enabled for real-time feedback
+  const response = await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
-    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
+    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
+    config: {
+      thinkingConfig: {
+        includeThoughts: true
+      }
+    }
   });
 
-  const responseText = response.text?.trim();
+  let responseText = '';
+
+  for await (const chunk of response) {
+    // Check for cancellation during streaming
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought && part.text && onThinking) {
+        // Stream thinking updates to UI
+        onThinking(part.text);
+      } else if (part.text) {
+        // Accumulate final response text
+        responseText += part.text;
+      }
+    }
+  }
+
+  responseText = responseText.trim();
   if (!responseText) {
     return null;
   }

@@ -208,7 +208,15 @@
           // Pass all node data - JSON.stringify will handle serialization,
           // non-serializable objects become [object Object] which is fine
           const existingData = editingNode.data || {};
-          result = await editObjectFromPrompt(promptText, nodeType, existingData);
+          result = await editObjectFromPrompt(
+            promptText,
+            nodeType,
+            existingData,
+            abortController.signal,
+            (thought) => {
+              thinkingText = thought;
+            }
+          );
         } else {
           // Insert mode: Use two-call resolveObjectFromPrompt (routing + generation)
           // Pass callback to show object type after router completes
