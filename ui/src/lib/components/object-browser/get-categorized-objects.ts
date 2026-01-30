@@ -73,8 +73,8 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
 	'merge~': 'Audio channel merger (mono to stereo)',
 	'split~': 'Audio channel splitter (stereo to mono)',
 	'meter~': 'Audio level meter display',
-	'vdo.ninja.push': 'Push video/audio/data to VDO.Ninja room',
-	'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja room'
+	'vdo.ninja.push': 'Push video/audio/data to VDO.Ninja',
+	'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja'
 };
 
 /**
@@ -138,7 +138,7 @@ const VISUAL_NODE_CATEGORIES: Record<string, string> = {
 	'meter~': 'Audio',
 	bchrn: 'Unstable',
 	'vdo.ninja.push': 'I/O',
-	'vdo.ninja.pull': 'Video Sources'
+	'vdo.ninja.pull': 'I/O'
 };
 
 /**
