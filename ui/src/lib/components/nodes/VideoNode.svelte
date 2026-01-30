@@ -355,7 +355,7 @@
                 ].join(' ')}
               />
 
-              <div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
+              <div class="px-2 text-center font-mono text-[12px] text-zinc-400">
                 {#if errorMessage}
                   <div class="text-xs text-red-400">{errorMessage}</div>
                 {:else}

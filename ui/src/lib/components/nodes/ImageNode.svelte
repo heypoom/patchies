@@ -211,9 +211,7 @@
               <div
                 class="h-4 w-4 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"
               ></div>
-              <div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
-                Loading...
-              </div>
+              <div class="px-2 text-center font-mono text-[12px] text-zinc-400">Loading...</div>
             </div>
           {:else}
             <VfsDropZone

@@ -52,6 +52,7 @@ export class CanvasDragDropManager {
     const items = event.dataTransfer?.items;
     const memoryData = event.dataTransfer?.getData('application/asm-memory');
     const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
+    const presetData = event.dataTransfer?.getData('application/x-preset');
 
     // Check if the drop target is within a node (to avoid duplicate handling)
     const target = event.target as HTMLElement;
@@ -66,6 +67,12 @@ export class CanvasDragDropManager {
 
     // Get accurate positioning with zoom/pan
     const position = this.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+
+    // Handle preset drops - create node from preset
+    if (presetData && !isDropOnNode) {
+      this.handlePresetDrop(presetData, position);
+      return;
+    }
 
     // Handle VFS file drops - create appropriate node based on file type
     if (vfsPath && !isDropOnNode) {
@@ -111,8 +118,11 @@ export class CanvasDragDropManager {
     const hasMemoryData = event.dataTransfer?.types.includes('application/asm-memory');
     const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
     const hasVfsData = event.dataTransfer?.types.includes('application/x-vfs-path');
+    const hasPresetData = event.dataTransfer?.types.includes('application/x-preset');
 
-    if (hasVfsData) {
+    if (hasPresetData) {
+      event.dataTransfer!.dropEffect = 'copy';
+    } else if (hasVfsData) {
       event.dataTransfer!.dropEffect = 'copy';
     } else if (hasMemoryData) {
       event.dataTransfer!.dropEffect = 'copy';
@@ -120,6 +130,23 @@ export class CanvasDragDropManager {
       event.dataTransfer!.dropEffect = 'move';
     } else {
       event.dataTransfer!.dropEffect = 'move';
+    }
+  }
+
+  /**
+   * Handle preset drops from the sidebar
+   */
+  private handlePresetDrop(presetData: string, position: { x: number; y: number }): void {
+    try {
+      const { preset } = JSON.parse(presetData) as {
+        path: string[];
+        preset: { type: string; data: unknown; name: string };
+      };
+
+      // Create node with preset's type and data
+      this.createNode(preset.type, position, preset.data);
+    } catch (error) {
+      logger.warn('Failed to parse preset drag data:', error);
     }
   }
 

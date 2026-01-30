@@ -55,8 +55,8 @@
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
   import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
+  import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
-  import FileTreeView from './sidebar/FileTreeView.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events';
@@ -99,6 +99,10 @@
 
   // Dialog state for new patch confirmation
   let showNewPatchDialog = $state(false);
+
+  // Dialog state for save as preset
+  let showSavePresetDialog = $state(false);
+  let nodeToSaveAsPreset = $state<Node | null>(null);
 
   // Sidebar state
   let showSidebar = $state(false);
@@ -905,10 +909,8 @@
 </script>
 
 <div class="flow-container flex h-screen w-full">
-  <!-- File Browser Sidebar -->
-  <SidebarPanel bind:open={showSidebar}>
-    <FileTreeView />
-  </SidebarPanel>
+  <!-- Sidebar (Files / Presets) -->
+  <SidebarPanel bind:open={showSidebar} />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">
@@ -1073,6 +1075,10 @@
           }}
           onNewPatch={newPatch}
           onOpenLeftSidebar={() => (showSidebar = true)}
+          onSaveAsPreset={(node) => {
+            nodeToSaveAsPreset = node;
+            showSavePresetDialog = true;
+          }}
         />
       {/if}
     </div>
@@ -1132,6 +1138,9 @@
 
     <!-- New Patch Confirmation Dialog -->
     <NewPatchDialog bind:open={showNewPatchDialog} onConfirm={confirmNewPatch} />
+
+    <!-- Save as Preset Dialog -->
+    <SavePresetDialog bind:open={showSavePresetDialog} node={nodeToSaveAsPreset} />
   </div>
 </div>
 

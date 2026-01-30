@@ -66,7 +66,7 @@
 >
   <Icon class="h-4 w-4 text-zinc-400" />
 
-  <div class="px-2 text-center font-mono text-[12px] font-light text-zinc-400">
+  <div class="px-2 text-center font-mono text-[12px] text-zinc-400">
     <span class="text-zinc-300">double click</span> or
     <span class="text-zinc-300">drop</span><br />
     {fileType} file

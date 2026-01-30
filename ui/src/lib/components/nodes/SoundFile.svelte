@@ -261,7 +261,7 @@
                     <Volume2 class="h-4 w-4 text-zinc-500" />
 
                     <div class="text-center font-mono">
-                      <div class="max-w-[150px] truncate text-[12px] font-light text-zinc-300">
+                      <div class="max-w-[150px] truncate text-[12px] text-zinc-300">
                         {fileName}
                       </div>
                     </div>
@@ -274,7 +274,7 @@
                   >
                     <Upload class="h-3 w-3 text-zinc-400" />
 
-                    <div class="font-mono text-[12px] font-light text-zinc-400">
+                    <div class="font-mono text-[12px] text-zinc-400">
                       <span class="text-zinc-300">double click</span> or
                       <span class="text-zinc-300">drop</span>
                       sound file
