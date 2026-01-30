@@ -81,16 +81,8 @@
   const canSaveAsPreset = $derived(selectedNodeIds.length === 1);
   const canConnect = $derived(nodes.length >= 2);
 
-  // Drawer/popover states
+  // Overflow menu state
   let overflowOpen = $state(false);
-  let selectionDrawerOpen = $state(false);
-
-  // Auto-open selection drawer on mobile when selection changes
-  $effect(() => {
-    if ($isMobile && hasSelection) {
-      selectionDrawerOpen = true;
-    }
-  });
 
   const buttonClass =
     'cursor-pointer rounded bg-zinc-900/70 p-2 hover:bg-zinc-700 flex items-center justify-center';
@@ -106,23 +98,7 @@
     const ok = confirm('Delete this element?');
     if (ok) {
       onDelete();
-      selectionDrawerOpen = false;
     }
-  }
-
-  function handleCopy() {
-    onCopy();
-    selectionDrawerOpen = false;
-  }
-
-  function handlePaste() {
-    onPaste();
-    selectionDrawerOpen = false;
-  }
-
-  function handleSaveAsPreset() {
-    onSaveSelectedAsPreset();
-    selectionDrawerOpen = false;
   }
 
   function handleConnectionToggle() {
@@ -131,86 +107,45 @@
     } else {
       onEnableConnectionMode();
     }
-    selectionDrawerOpen = false;
   }
 </script>
 
 <div class="fixed right-0 bottom-0 flex flex-col items-end gap-2 p-2">
-  <!-- Selection actions drawer for mobile -->
-  {#if $isMobile && hasSelection}
-    <Drawer.Root bind:open={selectionDrawerOpen}>
-      <Drawer.Content class="bg-zinc-900">
-        <Drawer.Header class="px-4 pt-2 pb-0">
-          <Drawer.Title class="text-sm text-zinc-400">Selection Actions</Drawer.Title>
-        </Drawer.Header>
-        <div class="flex flex-col pb-6">
-          <button class={menuItemClass} onclick={handleDelete}>
-            <Trash2 class="h-5 w-5 text-red-400" />
-            <span>Delete</span>
-          </button>
-
-          {#if canCopy}
-            <button class={menuItemClass} onclick={handleCopy}>
-              <Copy class="h-5 w-5 text-zinc-400" />
-              <span>Copy</span>
-            </button>
-          {/if}
-
-          {#if canSaveAsPreset}
-            <button class={menuItemClass} onclick={handleSaveAsPreset}>
-              <Bookmark class="h-5 w-5 text-zinc-400" />
-              <span>Save as Preset</span>
-            </button>
-          {/if}
-
-          {#if canConnect}
-            <button class={menuItemClass} onclick={handleConnectionToggle}>
-              <Cable class="h-5 w-5 text-zinc-400" />
-              <span>{$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}</span>
-            </button>
-          {/if}
-        </div>
-      </Drawer.Content>
-    </Drawer.Root>
-  {/if}
-
   <!-- Main toolbar row -->
   <div class="flex items-center gap-1">
-    <!-- Desktop-only: Selection actions inline -->
-    {#if !$isMobile}
-      {#if hasSelection}
-        <button title="Delete (Del)" class={buttonClass} onclick={handleDelete}>
-          <Trash2 class="h-4 w-4 text-red-400" />
-        </button>
-      {/if}
+    <!-- Selection actions (inline for both mobile and desktop) -->
+    {#if hasSelection}
+      <button title="Delete (Del)" class={buttonClass} onclick={handleDelete}>
+        <Trash2 class="h-4 w-4 text-red-400" />
+      </button>
+    {/if}
 
-      {#if canCopy}
-        <button title="Copy" class={buttonClass} onclick={handleCopy}>
-          <Copy class={iconClass} />
-        </button>
-      {/if}
+    {#if canCopy}
+      <button title="Copy" class={buttonClass} onclick={onCopy}>
+        <Copy class={iconClass} />
+      </button>
+    {/if}
 
-      {#if canPaste}
-        <button title="Paste" class={buttonClass} onclick={handlePaste}>
-          <ClipboardPaste class={iconClass} />
-        </button>
-      {/if}
+    {#if canPaste}
+      <button title="Paste" class={buttonClass} onclick={onPaste}>
+        <ClipboardPaste class={iconClass} />
+      </button>
+    {/if}
 
-      {#if canSaveAsPreset}
-        <button title="Save as Preset" class={buttonClass} onclick={handleSaveAsPreset}>
-          <Bookmark class={iconClass} />
-        </button>
-      {/if}
+    {#if canSaveAsPreset}
+      <button title="Save as Preset" class={buttonClass} onclick={onSaveSelectedAsPreset}>
+        <Bookmark class={iconClass} />
+      </button>
+    {/if}
 
-      {#if canConnect}
-        <button
-          title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
-          class={$isConnectionMode ? activeButtonClass : buttonClass}
-          onclick={handleConnectionToggle}
-        >
-          <Cable class={iconClass} />
-        </button>
-      {/if}
+    {#if canConnect}
+      <button
+        title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
+        class={$isConnectionMode ? activeButtonClass : buttonClass}
+        onclick={handleConnectionToggle}
+      >
+        <Cable class={iconClass} />
+      </button>
     {/if}
 
     <!-- Primary actions (always visible) -->
@@ -324,32 +259,6 @@
               <CircleHelp class="h-5 w-5 text-zinc-400" />
               <span>Help / Getting Started</span>
             </button>
-
-            {#if canPaste}
-              <button
-                class={menuItemClass}
-                onclick={() => {
-                  overflowOpen = false;
-                  onPaste();
-                }}
-              >
-                <ClipboardPaste class="h-5 w-5 text-zinc-400" />
-                <span>Paste</span>
-              </button>
-            {/if}
-
-            {#if canConnect}
-              <button
-                class={menuItemClass}
-                onclick={() => {
-                  overflowOpen = false;
-                  handleConnectionToggle();
-                }}
-              >
-                <Cable class="h-5 w-5 text-zinc-400" />
-                <span>{$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}</span>
-              </button>
-            {/if}
           </div>
         </Drawer.Content>
       </Drawer.Root>
