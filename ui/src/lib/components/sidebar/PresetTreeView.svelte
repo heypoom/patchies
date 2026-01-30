@@ -44,6 +44,10 @@
   // File input for import
   let importInputRef = $state<HTMLInputElement | null>(null);
 
+  // Drag-drop state
+  let dropTargetPath = $state<string | null>(null);
+  let dragSourcePath = $state<string | null>(null);
+
   function toggleExpanded(path: string) {
     if (expandedPaths.has(path)) {
       expandedPaths.delete(path);
@@ -84,20 +88,131 @@
     return { color: typeColors[type] ?? 'text-zinc-400' };
   }
 
-  // Drag handlers for presets
-  function handlePresetDragStart(
+  // Drag handlers for presets and folders
+  function handleEntryDragStart(
     event: DragEvent,
     libraryId: string,
     path: PresetPath,
-    preset: Preset
+    entry: PresetFolderEntry,
+    isFolder: boolean
   ) {
     const fullPath = [libraryId, ...path];
-    const data = JSON.stringify({ path: fullPath, preset });
-    event.dataTransfer?.setData('application/x-preset', data);
-    event.dataTransfer?.setData('text/plain', preset.name);
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'copy';
+    const fullPathStr = pathToString(fullPath);
+    dragSourcePath = fullPathStr;
+
+    if (isFolder) {
+      // Internal move data for folders
+      const data = JSON.stringify({
+        type: 'folder',
+        libraryId,
+        path,
+        name: path[path.length - 1]
+      });
+      event.dataTransfer?.setData('application/x-preset-move', data);
+      event.dataTransfer?.setData('text/plain', path[path.length - 1]);
+    } else {
+      // Preset data - include both move data and canvas drop data
+      const preset = entry as Preset;
+      const moveData = JSON.stringify({
+        type: 'preset',
+        libraryId,
+        path,
+        name: preset.name
+      });
+      event.dataTransfer?.setData('application/x-preset-move', moveData);
+      // Also include preset data for canvas drops
+      const canvasData = JSON.stringify({ path: fullPath, preset });
+      event.dataTransfer?.setData('application/x-preset', canvasData);
+      event.dataTransfer?.setData('text/plain', preset.name);
     }
+
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'copyMove';
+    }
+  }
+
+  function handleDragEnd() {
+    dragSourcePath = null;
+    dropTargetPath = null;
+  }
+
+  // Drop target handlers
+  function handleFolderDragOver(event: DragEvent, targetPathStr: string, isEditable: boolean) {
+    if (!isEditable) return;
+
+    const hasMoveData = event.dataTransfer?.types.includes('application/x-preset-move');
+    if (!hasMoveData) return;
+
+    // Don't allow dropping on itself or its children
+    if (
+      dragSourcePath &&
+      (targetPathStr === dragSourcePath || targetPathStr.startsWith(dragSourcePath + '/'))
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    dropTargetPath = targetPathStr;
+  }
+
+  function handleFolderDragLeave(event: DragEvent) {
+    // Only clear if leaving the tree entirely
+    const relatedTarget = event.relatedTarget as HTMLElement | null;
+    if (!relatedTarget?.closest('[role="tree"]')) {
+      dropTargetPath = null;
+    }
+  }
+
+  function handleFolderDrop(
+    event: DragEvent,
+    targetLibraryId: string,
+    targetFolderPath: PresetPath
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const currentDropTarget = dropTargetPath;
+    dropTargetPath = null;
+    dragSourcePath = null;
+
+    const moveDataStr = event.dataTransfer?.getData('application/x-preset-move');
+    if (!moveDataStr) return;
+
+    try {
+      const moveData = JSON.parse(moveDataStr) as {
+        type: 'preset' | 'folder';
+        libraryId: string;
+        path: PresetPath;
+        name: string;
+      };
+
+      const success = presetLibraryStore.moveEntry(
+        moveData.libraryId,
+        moveData.path,
+        targetLibraryId,
+        targetFolderPath
+      );
+
+      if (success) {
+        toast.success(`Moved "${moveData.name}"`);
+        // Expand the target folder
+        if (currentDropTarget) {
+          expandedPaths.add(currentDropTarget);
+          expandedPaths = new Set(expandedPaths);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to parse move data:', err);
+    }
+  }
+
+  // Check if a path is the current drop target
+  function isDropTarget(pathStr: string): boolean {
+    return dropTargetPath === pathStr;
   }
 
   // Rename handlers
@@ -229,16 +344,27 @@
   {@const isRenaming = renamingPath === fullPathStr}
   {@const isCreatingFolder = creatingFolderIn === fullPathStr}
   {@const canEdit = !library.readonly}
+  {@const isDraggable = canEdit}
+  {@const isCurrentDropTarget = isDropTarget(fullPathStr)}
 
   <ContextMenu.Root>
     <ContextMenu.Trigger disabled={!canEdit} class="block w-full">
-      <div class="group flex w-full items-center text-left text-xs hover:bg-zinc-800">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="group flex w-full items-center text-left text-xs {isCurrentDropTarget
+          ? 'bg-blue-600/30'
+          : 'hover:bg-zinc-800'}"
+        ondragover={(e) => isFolder && handleFolderDragOver(e, fullPathStr, canEdit)}
+        ondragleave={handleFolderDragLeave}
+        ondrop={(e) => isFolder && handleFolderDrop(e, libraryId, entryPath)}
+      >
         <button
           class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
           style="padding-left: {paddingLeft}px"
-          draggable={!isFolder ? 'true' : 'false'}
+          draggable={isDraggable ? 'true' : 'false'}
           ondragstart={(e) =>
-            !isFolder && handlePresetDragStart(e, libraryId, entryPath, entry as Preset)}
+            isDraggable && handleEntryDragStart(e, libraryId, entryPath, entry, isFolder)}
+          ondragend={handleDragEnd}
           onclick={() => {
             if (isRenaming) return;
             if (isFolder) {
@@ -375,10 +501,20 @@
 {#snippet libraryNode(library: PresetLibrary)}
   {@const isExpanded = expandedPaths.has(library.id)}
   {@const isCreatingFolder = creatingFolderIn === library.id}
+  {@const canEdit = !library.readonly}
+  {@const isCurrentDropTarget = isDropTarget(library.id)}
 
   <ContextMenu.Root>
     <ContextMenu.Trigger class="block w-full">
-      <div class="group flex w-full items-center text-left text-xs hover:bg-zinc-800">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="group flex w-full items-center text-left text-xs {isCurrentDropTarget
+          ? 'bg-blue-600/30'
+          : 'hover:bg-zinc-800'}"
+        ondragover={(e) => handleFolderDragOver(e, library.id, canEdit)}
+        ondragleave={handleFolderDragLeave}
+        ondrop={(e) => handleFolderDrop(e, library.id, [])}
+      >
         <button
           class="flex flex-1 cursor-pointer items-center gap-1.5 py-1.5 pl-2"
           onclick={() => toggleExpanded(library.id)}

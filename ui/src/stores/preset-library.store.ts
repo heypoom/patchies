@@ -338,6 +338,90 @@ function createPresetLibraryStore() {
     getPresetByPath(path: PresetPath): Preset | undefined {
       const libs = get({ subscribe });
       return getPresetByPath(libs, path);
+    },
+
+    /**
+     * Move a preset or folder to a new location
+     * @param sourceLibraryId Source library ID
+     * @param sourcePath Path to the entry (including entry name)
+     * @param targetLibraryId Target library ID
+     * @param targetFolderPath Path to the target folder (empty for library root)
+     * @returns true if move was successful
+     */
+    moveEntry(
+      sourceLibraryId: string,
+      sourcePath: PresetPath,
+      targetLibraryId: string,
+      targetFolderPath: PresetPath
+    ): boolean {
+      const libs = get({ subscribe });
+
+      // Find source and target libraries
+      const sourceLib = libs.find((l) => l.id === sourceLibraryId);
+      const targetLib = libs.find((l) => l.id === targetLibraryId);
+
+      if (!sourceLib || !targetLib) return false;
+
+      // Cannot move from/to readonly libraries
+      if (sourceLib.readonly || targetLib.readonly) return false;
+
+      // Get the entry to move
+      let current: PresetFolder | Preset = sourceLib.presets;
+      for (let i = 0; i < sourcePath.length - 1; i++) {
+        current = (current as PresetFolder)[sourcePath[i]] as PresetFolder;
+        if (!current) return false;
+      }
+      const entryName = sourcePath[sourcePath.length - 1];
+      const entry = (current as PresetFolder)[entryName];
+      if (!entry) return false;
+
+      // Check if moving to the same location
+      const sourcePathStr = `${sourceLibraryId}/${sourcePath.join('/')}`;
+      const targetPathStr = `${targetLibraryId}/${[...targetFolderPath, entryName].join('/')}`;
+      if (sourcePathStr === targetPathStr) return false;
+
+      // Check if moving a folder into itself
+      if (!isPreset(entry)) {
+        const targetFullPath = `${targetLibraryId}/${targetFolderPath.join('/')}`;
+        const sourceFullPath = `${sourceLibraryId}/${sourcePath.join('/')}`;
+        if (targetFullPath.startsWith(sourceFullPath + '/') || targetFullPath === sourceFullPath) {
+          return false;
+        }
+      }
+
+      // Clone the entry (update name if it's a preset)
+      const clonedEntry = isPreset(entry) ? { ...entry } : cloneFolder(entry);
+
+      let success = false;
+
+      update((libraries) =>
+        libraries.map((lib) => {
+          // Handle source library - remove the entry
+          if (lib.id === sourceLibraryId && !lib.readonly) {
+            const newPresets = removeEntryAtPath(lib.presets, sourcePath);
+            // If source and target are the same library, also add the entry
+            if (sourceLibraryId === targetLibraryId) {
+              const targetPath = [...targetFolderPath, entryName];
+              const finalPresets = setEntryAtPath(newPresets, targetPath, clonedEntry);
+              success = true;
+              return { ...lib, presets: finalPresets };
+            }
+            return { ...lib, presets: newPresets };
+          }
+
+          // Handle target library (if different from source) - add the entry
+          if (lib.id === targetLibraryId && sourceLibraryId !== targetLibraryId && !lib.readonly) {
+            const targetPath = [...targetFolderPath, entryName];
+            const newPresets = setEntryAtPath(lib.presets, targetPath, clonedEntry);
+            success = true;
+            return { ...lib, presets: newPresets };
+          }
+
+          return lib;
+        })
+      );
+
+      return success;
     }
   };
 }
