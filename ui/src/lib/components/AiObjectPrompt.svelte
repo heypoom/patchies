@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { Loader, Sparkles, Edit3, Network, Minus, Maximize2 } from '@lucide/svelte/icons';
+  import {
+    Loader,
+    Sparkles,
+    Edit3,
+    Network,
+    Minus,
+    Maximize2,
+    ChevronDown,
+    ChevronUp
+  } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import { isMobile, isSidebarOpen } from '../../stores/ui.store';
   import {
@@ -41,6 +50,8 @@
   let dragOffset = $state({ x: 0, y: 0 });
   let dialogPosition = $state({ x: position.x, y: position.y });
   let isMinimized = $state(false);
+  let thinkingText = $state<string | null>(null);
+  let isPromptExpanded = $state(false);
 
   const isEditMode = $derived(editingNode !== null);
   const title = $derived(
@@ -152,6 +163,8 @@
     errorMessage = null;
     resolvedObjectType = null;
     isGeneratingConfig = false;
+    thinkingText = null;
+    isPromptExpanded = false;
     abortController = new AbortController();
     handleMinimize();
 
@@ -166,7 +179,10 @@
             resolvedObjectType = uniqueTypes.join(', ');
             isGeneratingConfig = true;
           },
-          abortController.signal
+          abortController.signal,
+          (thought) => {
+            thinkingText = thought;
+          }
         );
 
         if (result && result.nodes.length > 0) {
@@ -202,7 +218,10 @@
               resolvedObjectType = objectType;
               isGeneratingConfig = true;
             },
-            abortController.signal
+            abortController.signal,
+            (thought) => {
+              thinkingText = thought;
+            }
           );
         }
 
@@ -278,24 +297,32 @@
   {#if isMinimized && isLoading && !($isSidebarOpen && $isMobile)}
     <button
       onclick={handleRestore}
-      class="fixed top-4 right-4 z-50 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
+      class="fixed top-4 right-4 z-50 flex max-w-80 cursor-pointer flex-col gap-1 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
         ? 'border-amber-500 bg-amber-900/90 ring-2 ring-amber-500/50'
         : isMultiObjectMode
           ? 'border-blue-500 bg-blue-900/90 ring-2 ring-blue-500/50'
           : 'border-purple-500 bg-purple-900/90 ring-2 ring-purple-500/50'}"
       title="Click to restore AI prompt"
     >
-      <Loader class="h-4 w-4 animate-spin text-white" />
-      <span class="text-xs font-medium text-white">
-        {#if isEditMode}
-          Editing...
-        {:else if isGeneratingConfig}
-          Cooking {resolvedObjectType}...
-        {:else}
-          Deciding...
-        {/if}
-      </span>
-      <Maximize2 class="h-3 w-3 text-white/70" />
+      <div class="flex items-center gap-2">
+        <Loader class="h-4 w-4 animate-spin text-white" />
+        <span class="text-xs font-medium text-white">
+          {#if isEditMode}
+            Editing...
+          {:else if isGeneratingConfig}
+            Cooking {resolvedObjectType}...
+          {:else}
+            Deciding...
+          {/if}
+        </span>
+        <Maximize2 class="h-3 w-3 text-white/70" />
+      </div>
+
+      {#if thinkingText}
+        <div class="max-h-16 max-w-full overflow-hidden text-xs leading-tight text-white/70 italic">
+          {thinkingText}
+        </div>
+      {/if}
     </button>
   {/if}
 
@@ -371,19 +398,57 @@
 
     <!-- Input Area -->
     <div class="p-4">
-      <textarea
-        bind:this={promptInput}
-        bind:value={promptText}
-        onkeydown={handleKeydown}
-        placeholder={placeholderText}
-        disabled={isLoading}
-        class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {isEditMode
-          ? 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
-          : isMultiObjectMode
-            ? 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-            : 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500'} disabled:cursor-not-allowed disabled:opacity-60"
-        rows="3"
-      ></textarea>
+      {#if isLoading}
+        <!-- Collapsible prompt during loading -->
+        <button
+          onclick={() => (isPromptExpanded = !isPromptExpanded)}
+          class="flex w-full cursor-pointer items-center gap-2 rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-left text-xs text-zinc-400 transition-colors hover:bg-zinc-800"
+        >
+          {#if isPromptExpanded}
+            <ChevronUp class="h-3 w-3" />
+          {:else}
+            <ChevronDown class="h-3 w-3" />
+          {/if}
+
+          <span class="flex-1 truncate font-mono">User Prompt</span>
+        </button>
+
+        {#if isPromptExpanded}
+          <div
+            class="mt-2 rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-sm text-zinc-300"
+          >
+            {promptText}
+          </div>
+        {/if}
+
+        <!-- Prominent thinking display -->
+        {#if thinkingText}
+          <div
+            class="mt-3 max-h-48 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-sm leading-relaxed text-zinc-300"
+          >
+            {thinkingText}
+          </div>
+        {:else}
+          <div class="mt-3 flex items-center justify-center py-4 text-xs text-zinc-500">
+            <Loader class="mr-2 h-3 w-3 animate-spin" />
+            Waiting for thoughts...
+          </div>
+        {/if}
+      {:else}
+        <!-- Normal textarea when not loading -->
+        <textarea
+          bind:this={promptInput}
+          bind:value={promptText}
+          onkeydown={handleKeydown}
+          placeholder={placeholderText}
+          class="nodrag w-full resize-none rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {isEditMode
+            ? 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
+            : isMultiObjectMode
+              ? 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+              : 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500'}"
+          rows="3"
+        ></textarea>
+      {/if}
 
       {#if errorMessage}
         <div class="mt-2 rounded bg-red-900/20 px-3 py-2 font-mono text-xs text-red-300">

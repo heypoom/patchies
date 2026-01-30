@@ -90,7 +90,8 @@ export type MultiObjectResult = {
 export async function resolveMultipleObjectsFromPrompt(
   prompt: string,
   onRouterComplete?: (objectTypes: string[]) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<MultiObjectResult | null> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -126,7 +127,7 @@ export async function resolveMultipleObjectsFromPrompt(
   onRouterComplete?.(plan.objectTypes);
 
   // Call 2: Generate full object configs (targeted)
-  const result = await generateMultiObjectConfig(ai, prompt, plan, signal);
+  const result = await generateMultiObjectConfig(ai, prompt, plan, signal, onThinking);
 
   logger.flush();
 
@@ -159,7 +160,14 @@ async function routeToMultiObjectPlan(
     throw new Error('Request cancelled');
   }
 
-  const responseText = response.text?.trim();
+  // Extract text parts manually to avoid SDK warning about non-text parts (thoughtSignature)
+  const textParts = response.candidates?.[0]?.content?.parts
+    ?.filter((part) => part.text && !part.thought)
+    ?.map((part) => part.text)
+    ?.join('');
+
+  const responseText = textParts?.trim();
+
   if (!responseText) {
     logger.log('⚠️ Router response is empty');
     return null;
@@ -194,12 +202,14 @@ async function routeToMultiObjectPlan(
 /**
  * Call 2 (Multi-object): Generates full object configurations based on the plan.
  * This is a targeted call that includes only relevant system prompts.
+ * Uses streaming with thinking enabled to provide real-time feedback.
  */
 async function generateMultiObjectConfig(
   ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
   prompt: string,
   plan: { objectTypes: string[]; structure: string },
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<MultiObjectResult | null> {
   // Check for cancellation before starting
   if (signal?.aborted) {
@@ -208,17 +218,37 @@ async function generateMultiObjectConfig(
 
   const systemPrompt = buildMultiObjectGeneratorPrompt(plan.objectTypes, plan.structure);
 
-  const response = await ai.models.generateContent({
+  // Use streaming with thinking enabled for real-time feedback
+  const response = await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
-    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
+    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
+    config: {
+      thinkingConfig: {
+        includeThoughts: true
+      }
+    }
   });
 
-  // Check for cancellation after request
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
+  let responseText = '';
+
+  for await (const chunk of response) {
+    // Check for cancellation during streaming
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought && part.text && onThinking) {
+        // Stream thinking updates to UI
+        onThinking(part.text);
+      } else if (part.text) {
+        // Accumulate final response text
+        responseText += part.text;
+      }
+    }
   }
 
-  const responseText = response.text?.trim();
+  responseText = responseText.trim();
   if (!responseText) {
     logger.log('⚠️ Generator response is empty');
     return null;

@@ -19,7 +19,8 @@ import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descri
 export async function resolveObjectFromPrompt(
   prompt: string,
   onRouterComplete?: (objectType: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
 
@@ -56,7 +57,7 @@ export async function resolveObjectFromPrompt(
 
   // Call 2: Generate object config (targeted)
 
-  const config = await generateObjectConfig(ai, prompt, objectType, signal);
+  const config = await generateObjectConfig(ai, prompt, objectType, signal, onThinking);
 
   return config;
 }
@@ -87,7 +88,13 @@ async function routeToObjectType(
     throw new Error('Request cancelled');
   }
 
-  const responseText = response.text?.trim();
+  // Extract text parts manually to avoid SDK warning about non-text parts (thoughtSignature)
+  const textParts = response.candidates?.[0]?.content?.parts
+    ?.filter((part) => part.text && !part.thought)
+    ?.map((part) => part.text)
+    ?.join('');
+
+  const responseText = textParts?.trim();
   if (!responseText) {
     return null;
   }
@@ -99,12 +106,14 @@ async function routeToObjectType(
 /**
  * Call 2: Generates the full object configuration for the chosen object type.
  * This is a targeted call that includes only the relevant system prompt and API docs.
+ * Uses streaming with thinking enabled to provide real-time feedback.
  */
 async function generateObjectConfig(
   ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
   prompt: string,
   objectType: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<{
   type: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
@@ -117,17 +126,37 @@ async function generateObjectConfig(
 
   const systemPrompt = buildGeneratorPrompt(objectType);
 
-  const response = await ai.models.generateContent({
+  // Use streaming with thinking enabled for real-time feedback
+  const response = await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
-    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }]
+    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
+    config: {
+      thinkingConfig: {
+        includeThoughts: true
+      }
+    }
   });
 
-  // Check for cancellation after request
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
+  let responseText = '';
+
+  for await (const chunk of response) {
+    // Check for cancellation during streaming
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought && part.text && onThinking) {
+        // Stream thinking updates to UI
+        onThinking(part.text);
+      } else if (part.text) {
+        // Accumulate final response text
+        responseText += part.text;
+      }
+    }
   }
 
-  const responseText = response.text?.trim();
+  responseText = responseText.trim();
   if (!responseText) {
     return null;
   }
