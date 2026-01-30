@@ -23,7 +23,8 @@
     isConnecting,
     connectingFromHandleId,
     isConnectionMode,
-    isObjectBrowserOpen
+    isObjectBrowserOpen,
+    isMobile
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -1049,7 +1050,7 @@
 
         <BackgroundOutputCanvas />
 
-        <Controls class={$isBottomBarVisible ? '' : '!hidden'} />
+        <Controls class={$isBottomBarVisible && !$isMobile ? '' : '!hidden'} />
       </SvelteFlow>
 
       <!-- Command Palette -->

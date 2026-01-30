@@ -1,4 +1,23 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, readable } from 'svelte/store';
+
+// Mobile detection (768px breakpoint)
+const MOBILE_BREAKPOINT = 768;
+
+function createIsMobileStore() {
+  return readable(false, (set) => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    set(mediaQuery.matches);
+
+    const handler = (e: MediaQueryListEvent) => set(e.matches);
+    mediaQuery.addEventListener('change', handler);
+
+    return () => mediaQuery.removeEventListener('change', handler);
+  });
+}
+
+export const isMobile = createIsMobileStore();
 
 export const isBottomBarVisible = writable(true);
 export const isFpsMonitorVisible = writable(false);

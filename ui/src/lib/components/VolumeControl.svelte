@@ -65,7 +65,7 @@
     {#snippet children()}
       <button
         title="Volume Control"
-        class="flex h-6 w-6 cursor-pointer items-center justify-center rounded bg-zinc-900/70 transition-colors hover:bg-zinc-700"
+        class="flex cursor-pointer items-center justify-center rounded bg-zinc-900/70 p-2 transition-colors hover:bg-zinc-700"
         onclick={toggleMute}
         onmouseenter={() => (isHovered = true)}
         onmouseleave={() => (isHovered = false)}

@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "patchies-web",
@@ -115,6 +116,7 @@
         "tw-animate-css": "^1.3.5",
         "typescript": "^5.0.0",
         "typescript-eslint": "^8.20.0",
+        "vaul-svelte": "^1.0.0-next.7",
         "vite": "^7.0.4",
         "vite-bundle-analyzer": "^1.2.3",
         "vite-plugin-devtools-json": "^0.2.0",
@@ -2151,6 +2153,8 @@
 
     "uxn.wasm": ["uxn.wasm@0.9.0", "", {}, "sha512-iUGYUpWmcwnaAj/MYsXOCKi+Stg1ZmjCs759vwU6kI5S18X4u8T63gXncmKXbyyckMv/XfuI7ygyOzWq8KQpCQ=="],
 
+    "vaul-svelte": ["vaul-svelte@1.0.0-next.7", "", { "dependencies": { "runed": "^0.23.2", "svelte-toolbelt": "^0.7.1" }, "peerDependencies": { "svelte": "^5.0.0" } }, "sha512-7zN7Bi3dFQixvvbUJY9uGDe7Ws/dGZeBQR2pXdXmzQiakjrxBvWo0QrmsX3HK+VH+SZOltz378cmgmCS9f9rSg=="],
+
     "vega": ["vega@5.20.0", "", { "dependencies": { "vega-crossfilter": "~4.0.5", "vega-dataflow": "~5.7.3", "vega-encode": "~4.8.3", "vega-event-selector": "~2.0.6", "vega-expression": "~4.0.1", "vega-force": "~4.0.7", "vega-format": "~1.0.4", "vega-functions": "~5.12.0", "vega-geo": "~4.3.8", "vega-hierarchy": "~4.0.9", "vega-label": "~1.0.0", "vega-loader": "~4.4.0", "vega-parser": "~6.1.3", "vega-projection": "~1.4.5", "vega-regression": "~1.0.9", "vega-runtime": "~6.1.3", "vega-scale": "~7.1.1", "vega-scenegraph": "~4.9.4", "vega-statistics": "~1.7.9", "vega-time": "~2.0.4", "vega-transforms": "~4.9.3", "vega-typings": "~0.20.0", "vega-util": "~1.16.1", "vega-view": "~5.10.0", "vega-view-transforms": "~4.5.8", "vega-voronoi": "~4.1.5", "vega-wordcloud": "~4.1.3" } }, "sha512-L2hDaTH2gz9DFbu7l1B8fR637HzctViuosFCo/Db5aBe93fCJ/w/oJu+vQNfQELzfm9sntkS/+A4u+39xrDCNA=="],
 
     "vega-canvas": ["vega-canvas@1.2.7", "", {}, "sha512-OkJ9CACVcN9R5Pi9uF6MZBF06pO6qFpDYHWSKBJsdHP5o724KrsgR6UvbnXFH82FdsiTOff/HqjuaG8C7FL+9Q=="],
@@ -2558,6 +2562,10 @@
     "tailwind-variants/tailwind-merge": ["tailwind-merge@3.0.2", "", {}, "sha512-l7z+OYZ7mu3DTqrL88RiKrKIqO3NcpEO8V/Od04bNpvk0kiIFndGEoqfuzvj4yuhRkHKjRkII2z+KS2HfPcSxw=="],
 
     "topojson-client/commander": ["commander@2.20.3", "", {}, "sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ=="],
+
+    "vaul-svelte/runed": ["runed@0.23.4", "", { "dependencies": { "esm-env": "^1.0.0" }, "peerDependencies": { "svelte": "^5.7.0" } }, "sha512-9q8oUiBYeXIDLWNK5DfCWlkL0EW3oGbk845VdKlPeia28l751VpfesaB/+7pI6rnbx1I6rqoZ2fZxptOJLxILA=="],
+
+    "vaul-svelte/svelte-toolbelt": ["svelte-toolbelt@0.7.1", "", { "dependencies": { "clsx": "^2.1.1", "runed": "^0.23.2", "style-to-object": "^1.0.8" }, "peerDependencies": { "svelte": "^5.0.0" } }, "sha512-HcBOcR17Vx9bjaOceUvxkY3nGmbBmCBBbuWLLEWO6jtmWH8f/QoWmbyUfQZrpDINH39en1b8mptfPQT9VKQ1xQ=="],
 
     "vega-crossfilter/vega-util": ["vega-util@1.17.3", "", {}, "sha512-nSNpZLUrRvFo46M5OK4O6x6f08WD1yOcEzHNlqivF+sDLSsVpstaF6fdJYwrbf/debFi2L9Tkp4gZQtssup9iQ=="],
 
