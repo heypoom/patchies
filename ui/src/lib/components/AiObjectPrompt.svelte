@@ -297,7 +297,7 @@
   {#if isMinimized && isLoading && !($isSidebarOpen && $isMobile)}
     <button
       onclick={handleRestore}
-      class="fixed top-4 right-4 z-50 flex max-w-80 cursor-pointer flex-col gap-1 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
+      class="fixed top-4 right-4 z-50 flex max-w-80 cursor-pointer flex-col items-end gap-1 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
         ? 'border-amber-500 bg-amber-900/90 ring-2 ring-amber-500/50'
         : isMultiObjectMode
           ? 'border-blue-500 bg-blue-900/90 ring-2 ring-blue-500/50'
@@ -319,7 +319,9 @@
       </div>
 
       {#if thinkingText}
-        <div class="max-h-16 max-w-full overflow-hidden text-xs leading-tight text-white/70 italic">
+        <div
+          class="max-h-16 max-w-full overflow-hidden text-right text-[10px] leading-tight text-white/70 italic"
+        >
           {thinkingText}
         </div>
       {/if}
