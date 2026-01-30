@@ -19,6 +19,7 @@
     Ellipsis
   } from '@lucide/svelte/icons';
   import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Dialog from '$lib/components/ui/dialog';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Popover from '$lib/components/ui/popover';
   import { toast } from 'svelte-sonner';
@@ -78,6 +79,10 @@
   );
   let showMoveDialog = $state(false);
   let mobileMoreOpen = $state(false);
+
+  // New library dialog state
+  let showNewLibraryDialog = $state(false);
+  let newLibraryName = $state('');
 
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -158,9 +163,30 @@
     selectedPresetPath = null;
   }
 
-  // Select preset on mobile
-  function selectPresetOnMobile(libraryId: string, path: PresetPath, preset: Preset) {
+  // Select preset (works on both mobile and desktop)
+  function selectPreset(libraryId: string, path: PresetPath, preset: Preset) {
     selectedPresetPath = { libraryId, path, preset };
+  }
+
+  // Handle keyboard events for the tree
+  function handleTreeKeydown(event: KeyboardEvent) {
+    if (!selectedPresetPath) return;
+
+    // Delete or Backspace to delete selected preset
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      // Only delete if from editable library
+      const library = $presetLibraryStore.find((l) => l.id === selectedPresetPath!.libraryId);
+      if (library && !library.readonly) {
+        event.preventDefault();
+        deleteEntry(selectedPresetPath.libraryId, selectedPresetPath.path, false);
+        selectedPresetPath = null;
+      }
+    }
+
+    // Escape to deselect
+    if (event.key === 'Escape') {
+      selectedPresetPath = null;
+    }
   }
 
   function toggleExpanded(path: string) {
@@ -209,14 +235,15 @@
     libraryId: string,
     path: PresetPath,
     entry: PresetFolderEntry,
-    isFolder: boolean
+    isFolder: boolean,
+    isEditable: boolean
   ) {
     const fullPath = [libraryId, ...path];
     const fullPathStr = pathToString(fullPath);
     dragSourcePath = fullPathStr;
 
     if (isFolder) {
-      // Internal move data for folders
+      // Internal move data for folders (only for editable libraries)
       const data = JSON.stringify({
         type: 'folder',
         libraryId,
@@ -226,16 +253,21 @@
       event.dataTransfer?.setData('application/x-preset-move', data);
       event.dataTransfer?.setData('text/plain', path[path.length - 1]);
     } else {
-      // Preset data - include both move data and canvas drop data
+      // Preset data
       const preset = entry as Preset;
-      const moveData = JSON.stringify({
-        type: 'preset',
-        libraryId,
-        path,
-        name: preset.name
-      });
-      event.dataTransfer?.setData('application/x-preset-move', moveData);
-      // Also include preset data for canvas drops
+
+      // Only include move data for editable libraries
+      if (isEditable) {
+        const moveData = JSON.stringify({
+          type: 'preset',
+          libraryId,
+          path,
+          name: preset.name
+        });
+        event.dataTransfer?.setData('application/x-preset-move', moveData);
+      }
+
+      // Always include preset data for canvas drops
       const canvasData = JSON.stringify({ path: fullPath, preset });
       event.dataTransfer?.setData('application/x-preset', canvasData);
       event.dataTransfer?.setData('text/plain', preset.name);
@@ -426,12 +458,24 @@
 
   // Create new library
   function createNewLibrary() {
-    const name = prompt('Enter library name:');
-    if (name?.trim()) {
-      const id = presetLibraryStore.addLibrary(name.trim());
-      expandedPaths.add(id);
-      expandedPaths = new Set(expandedPaths);
-      toast.success(`Created library "${name.trim()}"`);
+    newLibraryName = '';
+    showNewLibraryDialog = true;
+  }
+
+  function handleCreateLibrary() {
+    if (!newLibraryName.trim()) return;
+
+    const id = presetLibraryStore.addLibrary(newLibraryName.trim());
+    expandedPaths.add(id);
+    expandedPaths = new Set(expandedPaths);
+    toast.success(`Created library "${newLibraryName.trim()}"`);
+    showNewLibraryDialog = false;
+  }
+
+  function handleNewLibraryKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleCreateLibrary();
     }
   }
 
@@ -459,7 +503,7 @@
   {@const isRenaming = renamingPath === fullPathStr}
   {@const isCreatingFolder = creatingFolderIn === fullPathStr}
   {@const canEdit = !library.readonly}
-  {@const isDraggable = canEdit}
+  {@const isDraggable = isFolder ? canEdit : true}
   {@const isCurrentDropTarget = isDropTarget(fullPathStr)}
   {@const isSelectedPreset =
     !isFolder &&
@@ -485,19 +529,19 @@
           style="padding-left: {paddingLeft}px"
           draggable={isDraggable ? 'true' : 'false'}
           ondragstart={(e) =>
-            isDraggable && handleEntryDragStart(e, libraryId, entryPath, entry, isFolder)}
+            isDraggable && handleEntryDragStart(e, libraryId, entryPath, entry, isFolder, canEdit)}
           ondragend={handleDragEnd}
           onclick={() => {
             if (isRenaming) return;
             if (isFolder) {
               toggleExpanded(fullPathStr);
-            } else if ($isMobile) {
-              // On mobile, select preset to show toolbar
+            } else {
+              // Select preset (toggle if already selected)
               const preset = entry as Preset;
               if (isSelectedPreset) {
                 selectedPresetPath = null;
               } else {
-                selectPresetOnMobile(libraryId, entryPath, preset);
+                selectPreset(libraryId, entryPath, preset);
               }
             }
           }}
@@ -774,7 +818,13 @@
   onchange={handleImportChange}
 />
 
-<div class="flex h-full flex-col" role="tree">
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+  class="flex h-full flex-col outline-none"
+  role="tree"
+  tabindex="0"
+  onkeydown={handleTreeKeydown}
+>
   <!-- Libraries -->
   <div class="flex-1 overflow-y-auto py-1 {$isMobile && selectedPresetPath ? 'pb-14' : ''}">
     {#each $presetLibraryStore as library}
@@ -893,3 +943,43 @@
   folders={moveFolderTree}
   onSelect={handleMovePreset}
 />
+
+<!-- New library dialog -->
+<Dialog.Root bind:open={showNewLibraryDialog}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>New Library</Dialog.Title>
+      <Dialog.Description>Create a new preset library to organize your presets.</Dialog.Description>
+    </Dialog.Header>
+
+    <div class="mb-2 space-y-4">
+      <div class="space-y-2">
+        <label for="library-name" class="text-sm font-medium text-zinc-300">Name</label>
+        <input
+          id="library-name"
+          type="text"
+          bind:value={newLibraryName}
+          onkeydown={handleNewLibraryKeydown}
+          class="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+          placeholder="My Library"
+        />
+      </div>
+    </div>
+
+    <Dialog.Footer class="flex gap-2">
+      <button
+        onclick={() => (showNewLibraryDialog = false)}
+        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+      >
+        Cancel
+      </button>
+      <button
+        onclick={handleCreateLibrary}
+        disabled={!newLibraryName.trim()}
+        class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Create Library
+      </button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
