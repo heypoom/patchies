@@ -31,7 +31,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import { toast } from 'svelte-sonner';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import { isMobile } from '../../../stores/ui.store';
+  import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
 
   interface TreeNode {
@@ -166,6 +166,7 @@
       vfsPath: selectedFilePath
     });
     selectedPaths = new Set();
+    $isSidebarOpen = false;
     toast.success('Added to canvas');
   }
 

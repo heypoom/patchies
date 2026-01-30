@@ -41,6 +41,19 @@ export const isConnectionMode = writable(false);
 
 export const isObjectBrowserOpen = writable(false);
 
+// Sidebar state - persisted to localStorage
+const storedSidebarOpen =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-open') : null;
+
+export const isSidebarOpen = writable(storedSidebarOpen === 'true');
+
+// Persist sidebar state to localStorage
+if (typeof localStorage !== 'undefined') {
+  isSidebarOpen.subscribe((value) => {
+    localStorage.setItem('patchies-sidebar-open', String(value));
+  });
+}
+
 // Tracks if XYFlow is actively connecting handles
 export const isConnecting = writable(false);
 

@@ -24,7 +24,8 @@
     connectingFromHandleId,
     isConnectionMode,
     isObjectBrowserOpen,
-    isMobile
+    isMobile,
+    isSidebarOpen
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -105,11 +106,6 @@
   let showSavePresetDialog = $state(false);
   let nodeToSaveAsPreset = $state<Node | null>(null);
 
-  // Sidebar state - persisted to localStorage
-  let showSidebar = $state(
-    typeof window !== 'undefined' && localStorage.getItem('patchies-sidebar-open') === 'true'
-  );
-
   // Sidebar view state - persisted to localStorage
   let sidebarView = $state<'files' | 'presets'>(
     (typeof window !== 'undefined' &&
@@ -117,10 +113,9 @@
       'files'
   );
 
-  // Persist sidebar state changes
+  // Persist sidebar view changes
   $effect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('patchies-sidebar-open', String(showSidebar));
       localStorage.setItem('patchies-sidebar-view', sidebarView);
     }
   });
@@ -259,7 +254,7 @@
     // Handle CMD+B for toggle sidebar
     else if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();
-      showSidebar = !showSidebar;
+      $isSidebarOpen = !$isSidebarOpen;
     }
     // Handle CMD+O for browse objects
     else if (event.key.toLowerCase() === 'o' && (event.metaKey || event.ctrlKey) && !isTyping) {
@@ -960,7 +955,7 @@
 
 <div class="flow-container flex h-screen w-full">
   <!-- Sidebar (Files / Presets) -->
-  <SidebarPanel bind:open={showSidebar} bind:view={sidebarView} />
+  <SidebarPanel bind:open={$isSidebarOpen} bind:view={sidebarView} />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">
@@ -999,7 +994,7 @@
     {/if}
 
     <!-- Audio Resume Hint -->
-    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal}
+    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen)}
       <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
@@ -1124,7 +1119,7 @@
             showMissingApiKeyDialog = true;
           }}
           onNewPatch={newPatch}
-          onOpenLeftSidebar={() => (showSidebar = true)}
+          onOpenLeftSidebar={() => ($isSidebarOpen = true)}
           onSaveAsPreset={(node) => {
             nodeToSaveAsPreset = node;
             showSavePresetDialog = true;
@@ -1143,7 +1138,7 @@
         {selectedEdgeIds}
         {copiedNodeData}
         {hasGeminiApiKey}
-        isLeftSidebarOpen={showSidebar}
+        isLeftSidebarOpen={$isSidebarOpen}
         bind:showStartupModal
         onDelete={deleteSelectedElements}
         onInsertObject={insertObjectWithButton}
@@ -1157,7 +1152,7 @@
         onNewPatch={newPatch}
         onLoadPatch={loadPatchById}
         onToggleLeftSidebar={() => {
-          showSidebar = !showSidebar;
+          $isSidebarOpen = !$isSidebarOpen;
         }}
         onSaveSelectedAsPreset={() => {
           if (selectedNodeIds.length === 1) {

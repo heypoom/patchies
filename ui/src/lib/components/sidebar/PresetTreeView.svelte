@@ -31,7 +31,7 @@
     PresetPath
   } from '$lib/presets/types';
   import { isPreset } from '$lib/presets/preset-utils';
-  import { isMobile } from '../../../stores/ui.store';
+  import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
 
@@ -132,6 +132,7 @@
       }
     });
     selectedPresetPath = null;
+    $isSidebarOpen = false;
     toast.success('Added to canvas');
   }
 
