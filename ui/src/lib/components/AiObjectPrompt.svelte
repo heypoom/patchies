@@ -235,10 +235,14 @@
 
   $effect(() => {
     if (open) {
-      document.addEventListener('click', handleClickOutside);
+      // Defer adding click listener to avoid catching the click that opened the dialog
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
+        clearTimeout(timeoutId);
         document.removeEventListener('click', handleClickOutside);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);

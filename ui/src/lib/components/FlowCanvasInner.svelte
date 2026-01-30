@@ -862,8 +862,8 @@
 
   function insertObjectWithButton() {
     const position = screenToFlowPosition({
-      x: Math.max(0, window.innerWidth / 2 - 200),
-      y: 50
+      x: $isMobile ? window.innerWidth / 2 : window.innerWidth / 2 - 200,
+      y: $isMobile ? window.innerHeight / 3 : 50
     });
 
     setTimeout(() => {

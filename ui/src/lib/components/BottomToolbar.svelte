@@ -110,7 +110,9 @@
   }
 </script>
 
-<div class="fixed right-0 bottom-0 flex flex-col items-end gap-2 p-2">
+<div
+  class="fixed right-0 bottom-0 left-0 flex flex-col items-center gap-2 p-2 md:right-0 md:left-auto md:items-end"
+>
   <!-- Main toolbar row -->
   <div class="flex items-center gap-1">
     <!-- Selection actions (inline for both mobile and desktop) -->
@@ -148,19 +150,6 @@
       </button>
     {/if}
 
-    <!-- Primary actions (always visible) -->
-    <button
-      title="Quick Insert Object (Enter)"
-      class={buttonClass}
-      onclick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onInsertObject();
-      }}
-    >
-      <CirclePlus class={iconClass} />
-    </button>
-
     <button
       title="Browse Objects (Cmd+O)"
       class={buttonClass}
@@ -170,10 +159,18 @@
         onBrowseObjects();
       }}
     >
-      <Search class={iconClass} />
+      <CirclePlus class={iconClass} />
     </button>
 
-    <VolumeControl />
+    {#if $isMobile && $isAiFeaturesVisible && hasGeminiApiKey}
+      <button title="AI Create/Edit" class={buttonClass} onclick={onAiInsertOrEdit}>
+        <Sparkles class={iconClass} />
+      </button>
+    {/if}
+
+    {#if !$isMobile}
+      <VolumeControl />
+    {/if}
 
     <button
       title={isLeftSidebarOpen ? 'Close Sidebar (Cmd+B)' : 'Open Sidebar (Cmd+B)'}
@@ -203,19 +200,6 @@
             <Drawer.Title class="text-sm text-zinc-400">More Actions</Drawer.Title>
           </Drawer.Header>
           <div class="flex flex-col pb-6">
-            {#if $isAiFeaturesVisible && hasGeminiApiKey}
-              <button
-                class={menuItemClass}
-                onclick={() => {
-                  overflowOpen = false;
-                  onAiInsertOrEdit();
-                }}
-              >
-                <Sparkles class="h-5 w-5 text-zinc-400" />
-                <span>AI Create/Edit</span>
-              </button>
-            {/if}
-
             <button
               class={menuItemClass}
               onclick={() => {
@@ -279,8 +263,8 @@
               <button
                 class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                 onclick={() => {
-                  overflowOpen = false;
                   onAiInsertOrEdit();
+                  overflowOpen = false;
                 }}
               >
                 <Sparkles class="h-4 w-4 text-zinc-400" />
