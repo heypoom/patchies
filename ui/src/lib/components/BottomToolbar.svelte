@@ -144,16 +144,6 @@
         </button>
       {/if}
 
-      {#if canConnect}
-        <button
-          title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
-          class={$isConnectionMode ? activeButtonClass : buttonClass}
-          onclick={handleConnectionToggle}
-        >
-          <Cable class={iconClass} />
-        </button>
-      {/if}
-
       <button
         title="Browse Objects (Cmd+O)"
         class={buttonClass}
@@ -169,6 +159,16 @@
       {#if $isMobile && $isAiFeaturesVisible && hasGeminiApiKey}
         <button title="AI Create/Edit" class={buttonClass} onclick={onAiInsertOrEdit}>
           <Sparkles class={iconClass} />
+        </button>
+      {/if}
+
+      {#if canConnect}
+        <button
+          title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
+          class={$isConnectionMode ? activeButtonClass : buttonClass}
+          onclick={handleConnectionToggle}
+        >
+          <Cable class={iconClass} />
         </button>
       {/if}
 
