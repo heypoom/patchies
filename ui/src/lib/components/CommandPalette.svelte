@@ -31,6 +31,7 @@
     onNewPatch?: () => void;
     onOpenLeftSidebar?: () => void;
     onSaveAsPreset?: (node: Node) => void;
+    onShowHelp?: () => void;
   }
 
   let {
@@ -44,7 +45,8 @@
     onShowGeminiKeyModal,
     onNewPatch,
     onOpenLeftSidebar,
-    onSaveAsPreset
+    onSaveAsPreset,
+    onShowHelp
   }: Props = $props();
 
   // Get the first selected node (for save as preset)
@@ -148,6 +150,11 @@
       name: 'Save Selected Object as Preset',
       description: 'Save the selected node as a reusable preset',
       requiresSelection: true
+    },
+    {
+      id: 'help',
+      name: 'Help / Getting Started',
+      description: 'Show the getting started guide and help documentation'
     }
   ];
 
@@ -340,6 +347,10 @@
           onCancel();
           onSaveAsPreset?.(selectedNode);
         }
+      })
+      .with('help', () => {
+        onCancel();
+        onShowHelp?.();
       })
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);

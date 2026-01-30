@@ -2,6 +2,7 @@
   import {
     Bookmark,
     CirclePlus,
+    CircleHelp,
     Command,
     Copy,
     FilePlusCorner,
@@ -313,6 +314,17 @@
               <span>New Patch</span>
             </button>
 
+            <button
+              class={menuItemClass}
+              onclick={() => {
+                overflowOpen = false;
+                showStartupModal = true;
+              }}
+            >
+              <CircleHelp class="h-5 w-5 text-zinc-400" />
+              <span>Help / Getting Started</span>
+            </button>
+
             {#if canPaste}
               <button
                 class={menuItemClass}
@@ -401,6 +413,17 @@
               <FilePlusCorner class="h-4 w-4 text-zinc-400" />
               <span>New Patch</span>
               <span class="ml-auto text-xs text-zinc-500">⌘N</span>
+            </button>
+
+            <button
+              class="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+              onclick={() => {
+                overflowOpen = false;
+                showStartupModal = true;
+              }}
+            >
+              <CircleHelp class="h-4 w-4 text-zinc-400" />
+              <span>Help / Getting Started</span>
             </button>
           </div>
         </Popover.Content>

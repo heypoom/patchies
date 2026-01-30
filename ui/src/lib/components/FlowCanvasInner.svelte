@@ -1102,6 +1102,7 @@
             nodeToSaveAsPreset = node;
             showSavePresetDialog = true;
           }}
+          onShowHelp={() => (showStartupModal = true)}
         />
       {/if}
     </div>
