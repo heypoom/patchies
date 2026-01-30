@@ -344,7 +344,10 @@
   }
 
   function triggerAiPrompt() {
-    const centerX = window.innerWidth / 2 - 192; // Half of 384px (w-96)
+    const dialogWidth = 384; // w-96
+    const sidebarWidth = $isSidebarOpen && !$isMobile ? 256 : 0; // w-64
+    const availableWidth = window.innerWidth - sidebarWidth;
+    const centerX = (availableWidth - dialogWidth) / 2;
     const centerY = window.innerHeight / 2 - 150;
 
     aiPromptPosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
@@ -1158,6 +1161,7 @@
         onSaveSelectedAsPreset={() => {
           if (selectedNodeIds.length === 1) {
             const node = nodes.find((n) => n.id === selectedNodeIds[0]);
+
             if (node) {
               nodeToSaveAsPreset = node;
               showSavePresetDialog = true;
