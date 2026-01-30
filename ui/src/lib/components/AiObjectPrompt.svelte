@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Loader, Sparkles, Edit3, Network } from '@lucide/svelte/icons';
+  import { Loader, Sparkles, Edit3, Network, Minus, Maximize2 } from '@lucide/svelte/icons';
+  import { toast } from 'svelte-sonner';
+  import { isMobile, isSidebarOpen } from '../../stores/ui.store';
   import {
     resolveObjectFromPrompt,
     editObjectFromPrompt,
@@ -38,6 +40,7 @@
   let isDragging = $state(false);
   let dragOffset = $state({ x: 0, y: 0 });
   let dialogPosition = $state({ x: position.x, y: position.y });
+  let isMinimized = $state(false);
 
   const isEditMode = $derived(editingNode !== null);
   const title = $derived(
@@ -73,6 +76,15 @@
     }
   });
 
+  function handleMinimize() {
+    isMinimized = true;
+  }
+
+  function handleRestore() {
+    isMinimized = false;
+    setTimeout(() => promptInput?.focus(), 0);
+  }
+
   function handleClose() {
     // Prevent closing while AI is generating
     if (isLoading) return;
@@ -84,6 +96,7 @@
     resolvedObjectType = null;
     isGeneratingConfig = false;
     abortController = null;
+    isMinimized = false;
     // Don't reset mode - keep user's preference
   }
 
@@ -140,6 +153,7 @@
     resolvedObjectType = null;
     isGeneratingConfig = false;
     abortController = new AbortController();
+    handleMinimize();
 
     try {
       if (isMultiObjectMode && !isEditMode) {
@@ -159,11 +173,13 @@
           if (onInsertMultipleObjects) {
             onInsertMultipleObjects(result.nodes, result.edges);
           }
+          toast.success(`Created ${result.nodes.length} objects`);
           // Reset loading state before closing so handleClose() doesn't block
           isLoading = false;
           handleClose();
         } else {
           errorMessage = 'Could not resolve objects from prompt';
+          toast.error('Could not resolve objects from prompt');
           isLoading = false;
         }
       } else {
@@ -194,20 +210,25 @@
           if (isEditMode && onEditObject) {
             // In edit mode, only update the data
             onEditObject(editingNode!.id, result.data);
+            toast.success('Object updated');
           } else {
             // In insert mode, create a new object
             onInsertObject(result.type, result.data);
+            toast.success(`Created ${result.type}`);
           }
           // Reset loading state before closing so handleClose() doesn't block
           isLoading = false;
           handleClose();
         } else {
           errorMessage = 'Could not resolve object from prompt';
+          toast.error('Could not resolve object from prompt');
           isLoading = false;
         }
       }
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      errorMessage = message;
+      toast.error(message);
       isLoading = false;
     }
   }
@@ -218,16 +239,17 @@
       handleSubmit();
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      // Prevent closing while AI is generating
-      if (!isLoading) {
+      if (isLoading) {
+        // Minimize while generating so user can work on other things
+        handleMinimize();
+      } else {
         handleClose();
       }
     } else if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
       // CMD+I (or Ctrl+I on Windows/Linux) toggles between single and multi mode
-      // Only works in insert mode (not edit mode)
-      if (!isEditMode) {
+      // Only works in insert mode (not edit mode) and when not loading
+      if (!isEditMode && !isLoading) {
         event.preventDefault();
-
         isMultiObjectMode = !isMultiObjectMode;
       }
     }
@@ -252,6 +274,31 @@
 </script>
 
 {#if open}
+  <!-- Minimized indicator (hidden when sidebar open on mobile) -->
+  {#if isMinimized && isLoading && !($isSidebarOpen && $isMobile)}
+    <button
+      onclick={handleRestore}
+      class="fixed top-4 right-4 z-50 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
+        ? 'border-amber-500 bg-amber-900/90 ring-2 ring-amber-500/50'
+        : isMultiObjectMode
+          ? 'border-blue-500 bg-blue-900/90 ring-2 ring-blue-500/50'
+          : 'border-purple-500 bg-purple-900/90 ring-2 ring-purple-500/50'}"
+      title="Click to restore AI prompt"
+    >
+      <Loader class="h-4 w-4 animate-spin text-white" />
+      <span class="text-xs font-medium text-white">
+        {#if isEditMode}
+          Editing...
+        {:else if isGeneratingConfig}
+          Cooking {resolvedObjectType}...
+        {:else}
+          Deciding...
+        {/if}
+      </span>
+      <Maximize2 class="h-3 w-3 text-white/70" />
+    </button>
+  {/if}
+
   <div
     class="ai-prompt-dialog absolute z-50 w-96 rounded-lg border {isLoading
       ? isEditMode
@@ -265,7 +312,7 @@
         : isMultiObjectMode
           ? 'ring-2 ring-blue-500/50'
           : 'ring-2 ring-purple-500/50'
-      : ''} {isDragging ? 'cursor-grabbing' : ''}"
+      : ''} {isDragging ? 'cursor-grabbing' : ''} {isMinimized ? 'hidden' : ''}"
     style="left: {dialogPosition.x}px; top: {dialogPosition.y}px;"
   >
     <!-- Header -->
@@ -289,7 +336,7 @@
         <div class="text-xs text-zinc-400">{description}</div>
       </div>
 
-      <!-- Mode Toggle (only show when not in edit mode) -->
+      <!-- Mode Toggle (only show when not in edit mode, disabled while loading) -->
       {#if !isEditMode}
         <button
           onclick={() => (isMultiObjectMode = !isMultiObjectMode)}
@@ -299,7 +346,8 @@
               isMultiObjectMode = !isMultiObjectMode;
             }
           }}
-          class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {isMultiObjectMode
+          disabled={isLoading}
+          class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 {isMultiObjectMode
             ? 'bg-blue-600 text-white'
             : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}"
           title="Toggle between single and multiple object mode"
@@ -309,6 +357,16 @@
           {isMultiObjectMode ? 'Multi' : 'Single'}
         </button>
       {/if}
+
+      <!-- Minimize button -->
+      <button
+        onclick={handleMinimize}
+        class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+        title="Minimize (Esc)"
+        aria-label="Minimize dialog"
+      >
+        <Minus class="h-4 w-4" />
+      </button>
     </div>
 
     <!-- Input Area -->
