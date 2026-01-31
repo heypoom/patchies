@@ -199,54 +199,65 @@ async function executeCode(nodeId: string, code: string) {
     globalThis.__rubyContext = ctx;
 
     // Wrap user code with helper methods that call JS functions
+    // Using correct ruby.wasm JS interop syntax: obj.method(args) or obj.call(:method, args)
+    // Note: We use "emit" instead of "send" because "send" is a Ruby built-in method
     const wrappedCode = `
+require "js"
+
+$__ctx = JS.global[:__rubyContext]
+
 # Helper methods for Patchies integration
-def send(data, to: nil)
-  JS.global[:__rubyContext][:send].call(data.to_js, { to: to }.to_js)
+# Use call(:method_name, args) syntax to invoke JS functions
+def emit(data, to: nil)
+  if to.nil?
+    $__ctx.call(:send, data)
+  else
+    $__ctx.call(:send, data, JS.eval("return { to: " + to.to_s + " }"))
+  end
 end
 
 def recv(&block)
-  # Store the callback - it will be called from JS when messages arrive
   $__recv_callback = block
-  JS.global[:__rubyContext][:onMessage].call(
-    ->(data, meta) { $__recv_callback.call(data, meta) }.to_js
-  )
+  $__ctx.call(:onMessage, proc { |data, meta|
+    $__recv_callback.call(data, meta)
+  })
 end
 
 def set_port_count(inlet_count = 1, outlet_count = 1)
-  JS.global[:__rubyContext][:setPortCount].call(inlet_count, outlet_count)
+  $__ctx.call(:setPortCount, inlet_count, outlet_count)
 end
 
 def set_title(title)
-  JS.global[:__rubyContext][:setTitle].call(title.to_s)
+  $__ctx.call(:setTitle, title.to_s)
 end
 
 def flash
-  JS.global[:__rubyContext][:flash].call
+  $__ctx.call(:flash)
 end
 
 def on_cleanup(&block)
-  JS.global[:__rubyContext][:onCleanup].call(block.to_js)
+  $__ctx.call(:onCleanup, block)
 end
 
 # Override puts to use our console
+$__console = $__ctx[:console]
 def puts(*args)
   args.each do |arg|
-    JS.global[:__rubyContext][:console][:log].call(arg.to_s)
+    $__console.call(:log, arg.to_s)
   end
   nil
 end
 
 def p(*args)
   args.each do |arg|
-    JS.global[:__rubyContext][:console][:log].call(arg.inspect)
+    $__console.call(:log, arg.inspect)
   end
   args.length == 1 ? args[0] : args
 end
 
 def warn(*args)
   args.each do |arg|
-    JS.global[:__rubyContext][:console][:warn].call(arg.to_s)
+    $__console.call(:warn, arg.to_s)
   end
   nil
 end
