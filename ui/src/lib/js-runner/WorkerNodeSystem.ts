@@ -326,17 +326,20 @@ export class WorkerNodeSystem {
     // Preprocess code (handle modules, @lib, etc.)
     const processedCode = await this.jsRunner.preprocessCode(code, {
       nodeId,
-      setLibraryName: () => {
-        // Libraries not supported in worker context - warn the user
-        this.eventBus.dispatch({
-          type: 'consoleOutput',
-          nodeId,
-          messageType: 'warn',
-          timestamp: Date.now(),
-          args: [
-            '@lib modules are not supported in worker nodes. Use a regular js node for shared libraries.'
-          ]
-        });
+      setLibraryName: (name) => {
+        // Only warn when user is trying to create a library (name is truthy)
+        // name=null means "no library" or "unregister library"
+        if (name) {
+          this.eventBus.dispatch({
+            type: 'consoleOutput',
+            nodeId,
+            messageType: 'warn',
+            timestamp: Date.now(),
+            args: [
+              '@lib modules are not supported in worker nodes. Use a regular js node for shared libraries.'
+            ]
+          });
+        }
       }
     });
 
