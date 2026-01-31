@@ -658,6 +658,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 - The `worker` node runs JavaScript in a dedicated [Web Worker thread](https://developer.mozilla.org/en-US/docs/Web/API/Worker), allowing CPU-intensive computations to run without blocking the main thread.
 - Everything in the [Patchies JavaScript Runner](#patchies-javascript-runner) is supported, except `requestAnimationFrame()` (uses 60fps setInterval as fallback), `// @lib` declaration (libraries must be created in regular `js` nodes)
+- Use `flash()` to briefly flash the node's border, useful for visual feedback when processing messages.
 - Libraries created with `// @lib` in a regular `js` node can be imported in `worker` nodes.
 
 ### `expr`: expression evaluator

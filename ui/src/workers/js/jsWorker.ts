@@ -139,10 +139,6 @@ function createWorkerContext(nodeId: string) {
     postResponse({ type: 'setRunOnMount', nodeId, runOnMount });
   };
 
-  const setHidePorts = (hidePorts: boolean) => {
-    postResponse({ type: 'setHidePorts', nodeId, hidePorts });
-  };
-
   const flash = () => {
     postResponse({ type: 'flash', nodeId });
   };
@@ -237,7 +233,6 @@ function createWorkerContext(nodeId: string) {
     setPortCount,
     setTitle,
     setRunOnMount,
-    setHidePorts,
     requestAnimationFrame,
     fft,
     llm,
@@ -318,7 +313,6 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setPortCount',
     'setRunOnMount',
     'setTitle',
-    'setHidePorts',
     'getVfsUrl',
     'flash'
   ];
@@ -337,7 +331,6 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setPortCount,
     ctx.setRunOnMount,
     ctx.setTitle,
-    ctx.setHidePorts,
     ctx.getVfsUrl,
     ctx.flash
   ];

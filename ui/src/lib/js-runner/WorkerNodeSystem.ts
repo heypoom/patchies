@@ -43,7 +43,6 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'setPortCount'; inletCount: number; outletCount: number }
   | { type: 'setTitle'; title: string }
   | { type: 'setRunOnMount'; runOnMount: boolean }
-  | { type: 'setHidePorts'; hidePorts: boolean }
   | { type: 'callbackRegistered'; callbackType: 'message' | 'interval' | 'timeout' }
   | { type: 'flash' }
   // Requests for proxied features

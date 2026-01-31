@@ -243,6 +243,7 @@ const topLevelOnlyFunctions = new Set([
 const nodeSpecificFunctions: Record<string, string[]> = {
   onCleanup: [
     'js',
+    'worker',
     'p5',
     'hydra',
     'canvas',
@@ -259,6 +260,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   ],
   fft: [
     'js',
+    'worker',
     'p5',
     'hydra',
     'canvas',
@@ -289,9 +291,10 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   ],
   setKeepAlive: ['dsp~'],
   setMouseScope: ['hydra'],
-  setRunOnMount: ['js'],
+  setRunOnMount: ['js', 'worker'],
   setTitle: [
     'js',
+    'worker',
     'p5',
     'hydra',
     'canvas',
@@ -308,6 +311,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setVideoCount: ['hydra', 'three'],
   getVfsUrl: [
     'js',
+    'worker',
     'p5',
     'hydra',
     'canvas',
@@ -320,7 +324,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'sonic~',
     'elem~'
   ],
-  flash: ['js']
+  flash: ['js', 'worker']
 };
 
 export interface PatchiesContext {
