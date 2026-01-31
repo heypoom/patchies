@@ -1,25 +1,30 @@
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions, patcherLibraryInstructions } from './shared-jsrunner';
 
 export const elemPrompt = `## elem~ Object Instructions
 
 Elementary Audio declarative DSP synthesis and processing.
 
-**CRITICAL RULES:**
+${jsRunnerInstructions}
+
+**Elem-specific CRITICAL RULES:**
 1. Use el.* primitives to build audio graphs
 2. Use core.createRef() for dynamic parameter control
 3. Render graph to outputNode: core.render(graph, outputNode)
 
-**Available Methods:**
-- setTitle(name) - Set node title
-
-${messagingInstructions}
-
-**Context:**
+**Elem-specific methods:**
 - el: Elementary library (el.sine, el.square, el.delay, el.mix, etc.)
 - core: WebRenderer instance with createRef() for reactivity
 - inputNode: GainNode for audio input
 - outputNode: GainNode for audio output (IMPORTANT: render to this)
 - node: AudioWorkletNode for Web Audio connectivity
+
+**Elem-specific gotchas:**
+- fft() is NOT available (audio node, not video)
+
+${messagingInstructions}
+
+${patcherLibraryInstructions}
 
 See Elementary docs: https://www.elementary.audio
 

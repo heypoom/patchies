@@ -1,16 +1,23 @@
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions, patcherLibraryInstructions } from './shared-jsrunner';
 
 export const sonicPrompt = `## sonic~ Object Instructions
 
 SuperCollider synthesis via SuperSonic AudioWorklet.
 
-**Available Methods:**
-- setTitle(name) - Set node title
+${jsRunnerInstructions}
+
+**Sonic-specific methods:**
 - sonic: SuperSonic instance for synth control
 - SuperSonic: Static methods (e.g., SuperSonic.osc.encode())
 - on(event, callback) - Subscribe to SuperSonic events
 
+**Sonic-specific gotchas:**
+- fft() is NOT available (audio output node, not video)
+
 ${messagingInstructions}
+
+${patcherLibraryInstructions}
 
 **Context:**
 - By default, Prophet synth is loaded

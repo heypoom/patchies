@@ -1,24 +1,31 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
+import {
+  jsRunnerInstructions,
+  esmInstructions,
+  patcherLibraryInstructions
+} from './shared-jsrunner';
 
 export const p5Prompt = `## p5 Object Instructions
 
 P5.js creative coding environment with setup() and draw() functions.
 
-**Available Methods:**
+${jsRunnerInstructions}
+${esmInstructions}
+
+**P5-specific methods:**
 - Standard P5.js: createCanvas(), background(), fill(), rect(), circle(), etc.
 - noDrag() - Disable node dragging for interactive sketches
 - noOutput() - Hide video output port
-- setTitle(name) - Set node display title
-- esm(moduleName) - Load NPM packages: await esm("three")
+
+**P5-specific gotchas:**
+- P5 has its own draw() loop - prefer that over requestAnimationFrame
 
 ${messagingInstructions}
 
 ${fftInstructions}
 
-**Patcher Libraries:**
-- Add \`// @lib geometry\` at top, export functions
-- Import elsewhere: import { createCircle } from 'geometry'
+${patcherLibraryInstructions}
 
 **Handle IDs:**
 - Video outlet: "video-out"

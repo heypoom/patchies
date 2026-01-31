@@ -1,24 +1,29 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions } from './shared-jsrunner';
 
-export const threePrompt = `## three Object Instructions
+export const threePrompt = `## three object instructions
 
 Three.js 3D graphics environment running in a Web Worker (offscreen rendering). Use for GPU-accelerated 3D scenes that chain with other video nodes.
 
-**Available Globals:**
+${jsRunnerInstructions}
+
+**Three-specific globals:**
 - THREE: Full Three.js library namespace
 - renderer: WebGLRenderer instance
 - width, height: Canvas dimensions
 - mouse: {x, y} coordinates
 
-**Control Methods:**
-- setPortCount(inlets, outlets) - Configure message ports
+**Three-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video inlets/outlets (default 1, 1)
 - getTexture(index) - Get Three.js Texture from video inlet (0-based index)
-- setTitle(name) - Set node display title
 - noDrag() - Disable node dragging
 - noOutput() - Hide video output port
 - setHidePorts(bool) - Toggle port visibility
+
+**Three-specific gotchas:**
+- Use draw(time) function for render loop instead of requestAnimationFrame
+- Runs in web worker - no direct DOM access
 
 ${messagingInstructions}
 

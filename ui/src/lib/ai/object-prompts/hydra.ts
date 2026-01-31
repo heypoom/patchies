@@ -1,16 +1,21 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const hydraPrompt = `## hydra Object Instructions
 
 Live coding video synthesis with chainable Hydra functions.
 
-**Available Methods:**
+${jsRunnerInstructions}
+
+**Hydra-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video ports (default 1, 1)
-- setTitle(name) - Set node title
 - src(s0), src(s1), etc. - Access video inputs from setVideoCount
 - out(o0), out(o1), etc. - Set outputs from setVideoCount
 - Standard Hydra: .blend(), .add(), .mult(), .diff(), .kaleid(), etc.
+
+**Hydra-specific gotchas:**
+- Hydra has its own render loop - use arrow functions for dynamic values instead of requestAnimationFrame
 
 ${messagingInstructions}
 

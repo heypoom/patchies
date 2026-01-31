@@ -1,5 +1,6 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const canvasPrompt = `## canvas Object Instructions
 
@@ -7,12 +8,17 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 
 **CRITICAL:** Use canvas.dom if you need mouse/keyboard/DOM interaction.
 
-**Available Methods:**
+${jsRunnerInstructions}
+
+**Canvas-specific methods:**
 - ctx: 2D canvas context (ctx.fillRect, ctx.arc, etc.)
 - width, height: canvas dimensions
-- noDrag(), noOutput(), setTitle(title) - Node config
+- noDrag(), noOutput() - Node config
 - setCanvasSize(w, h) - Resize canvas
-- requestAnimationFrame(cb) - Schedule draw callback
+
+**Canvas-specific gotchas:**
+- Runs in web worker - no DOM access, no mouse/keyboard events
+- Use canvas.dom for interactive sketches
 
 ${messagingInstructions}
 

@@ -1011,6 +1011,9 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 - Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
 - Use `Ctrl/Cmd + Enter` to re-evaluate the code.
 - Don't forget to connect the `dac~` object to hear the audio output.
+- Strudel runs in a separate runtime, so it does NOT use the [Patchies JavaScript Runner](#patchies-javascript-runner). Trying to call those runtime functions in Strudel will fail.
+  - `send` technically works but has very limited use case as there are no event emitters in Strudel.
+  - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
 - Messages
   - `bang` or `run`: evaluates the code and starts playback
   - string or `{type: 'set', code: '...'}`: sets the code in the editor
@@ -1019,8 +1022,6 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - `{type: 'setStyles', value: {container: 'background: transparent'}}`: sets custom styles for editor container.
     - you can apply blur and padding with CSS here.
 - Try out the [funk42 preset by froos](https://patchies.app/?id=zntnikb36c47eaw) for a more complex use of Strudel.
-- Limitations
-  - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
 - You can create multiple instances of `strudel` object, but only **one** will be playing at a time.
   - You can use the `bang` or `run` messages to switch playback between multiple Strudel objects to orchestrate them.
 - Please consider supporting the development of TidalCycles and Strudel at [OpenCollective](https://opencollective.com/tidalcycles)!

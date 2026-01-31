@@ -1,27 +1,34 @@
+import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const threeDomPrompt = `## three.dom Object Instructions
 
 Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keyboard input. Renders directly to canvas (no worker).
 
-**Available Globals:**
+${jsRunnerInstructions}
+
+**Three.dom-specific globals:**
 - THREE: Full Three.js library namespace (lazy-loaded)
 - renderer: WebGLRenderer instance
 - canvas: HTML5 Canvas element
 - width, height: Canvas dimensions
 - mouse: {x, y, down, buttons} with touch support
 
-**Control Methods:**
-- setPortCount(inlets, outlets) - Configure message ports
+**Three.dom-specific methods:**
 - setCanvasSize(w, h) - Resize canvas and renderer
-- setTitle(name) - Set node display title
 - noDrag() - Disable node dragging for interactive scenes
 - noOutput() - Hide video output port
 - setHidePorts(bool) - Toggle port visibility
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)
 - onKeyUp(event => {}) - Keyboard up events
 
+**Three.dom-specific gotchas:**
+- Use draw(time) function for render loop instead of requestAnimationFrame
+
 ${messagingInstructions}
+
+${fftInstructions}
 
 **Handle IDs:**
 - Video outlet: "video-out-0"

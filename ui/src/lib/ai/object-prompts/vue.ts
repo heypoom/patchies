@@ -1,4 +1,5 @@
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const vuePrompt = `## vue Object Instructions
 
@@ -6,12 +7,12 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 
 **Tailwind CSS is enabled by default!** Use Tailwind utility classes for styling in templates. Call \`tailwind(false)\` to disable it for better performance if not needed.
 
-**Available Context:**
+${jsRunnerInstructions}
+
+**Vue-specific methods:**
 - root: HTMLDivElement - the container element to mount your Vue app
 - width, height: Container dimensions (undefined if fluid, set after setSize)
 - setSize(w, h): Set fixed container dimensions
-- setPortCount(inlets, outlets): Configure message ports
-- setTitle(title): Set node title
 - setHidePorts(hide): Hide/show ports
 - noDrag(): Disable node dragging (useful for interactive elements)
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
@@ -25,6 +26,9 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - nextTick: DOM update timing
 - h: Render function helper
 - defineComponent: Component definition
+
+**Vue-specific gotchas:**
+- fft() is NOT available (no video pipeline)
 
 ${messagingInstructions}
 

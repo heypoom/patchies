@@ -1,20 +1,26 @@
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const tonePrompt = `## tone~ Object Instructions
 
 Tone.js synthesis and audio processing.
 
-**CRITICAL RULES:**
+${jsRunnerInstructions}
+
+**Tone-specific CRITICAL RULES:**
 1. NEVER use .toDestination() - always .connect(outputNode)
 2. Use absolute time in SECONDS (0.1, 0.5) NOT notation ('8n', '16n')
 3. ALWAYS return { cleanup: () => node.dispose() }
 4. For audio inlet: node.input.connect(inputNode) (double .input)
 
-**Available Methods:**
-- setTitle(name) - Set node title
+**Tone-specific methods:**
 - Tone: the Tone.js library
 - inputNode: GainNode for audio input (connect to it)
 - outputNode: GainNode for audio output (connect your nodes to this)
+
+**Tone-specific gotchas:**
+- fft() is NOT available (audio node, not video)
+- Use return { cleanup } instead of onCleanup for Tone.js disposal
 
 ${messagingInstructions}
 

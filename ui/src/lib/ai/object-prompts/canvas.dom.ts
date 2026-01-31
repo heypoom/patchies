@@ -1,18 +1,20 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const canvasDomPrompt = `## canvas.dom Object Instructions
 
 Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 
-**Available Methods:**
+${jsRunnerInstructions}
+
+**Canvas.dom-specific methods:**
 - ctx: 2D canvas context
 - width, height, mouse: {x, y, down, buttons}
-- noDrag(), noOutput(), setTitle(title) - Node config
+- noDrag(), noOutput() - Node config
 - setCanvasSize(w, h) - Resize canvas
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)
 - onKeyUp(event => {}) - Keyboard up events (event.key, event.code)
-- requestAnimationFrame(cb) - Schedule draw
 
 ${messagingInstructions}
 

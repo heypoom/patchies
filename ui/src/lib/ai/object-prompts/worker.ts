@@ -1,23 +1,21 @@
 import { messagingInstructions } from './shared-messaging';
+import { jsRunnerInstructions, esmInstructions, runOnMountInstructions } from './shared-jsrunner';
 
 export const workerPrompt = `## worker Object Instructions
 
 JavaScript execution in a dedicated Web Worker thread for CPU-intensive computations without blocking the main thread.
 
-**Available Methods:**
-- setTitle(name) - Set node display title
-- setRunOnMount(enabled) - Auto-run code on patch load
-- esm(moduleName) - Load NPM packages: await esm("lodash")
-- console.log() - Log to virtual console
-- setInterval(cb, ms), delay(ms) - Timing (auto-cleanup)
-- requestAnimationFrame uses 60fps setInterval as fallback (no DOM access in workers)
+${jsRunnerInstructions}
+${esmInstructions}
+${runOnMountInstructions}
 
 ${messagingInstructions}
 
-**Limitations vs regular js node:**
+**Worker-specific gotchas:**
+- requestAnimationFrame uses 60fps setInterval fallback (no DOM in workers)
+- fft() is NOT available (no main-thread audio access)
 - No \`// @lib\` declaration (cannot create libraries, but CAN import them)
 - Libraries created with \`// @lib\` in regular \`js\` nodes can be imported here
-- No direct DOM access (runs in Web Worker)
 
 **Use Cases:**
 - Heavy data processing without UI freezing
