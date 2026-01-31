@@ -24,6 +24,7 @@ import { objectPrompt } from './object';
 import { orcaPrompt } from './orca';
 import { p5Prompt } from './p5';
 import { pythonPrompt } from './python';
+import { rubyPrompt } from './ruby';
 import { samplerPrompt } from './sampler~';
 import { sliderPrompt } from './slider';
 import { soundfilePrompt } from './soundfile~';
@@ -64,6 +65,7 @@ export const objectPrompts: Record<string, string> = {
   canvas: canvasPrompt,
   strudel: strudelPrompt,
   python: pythonPrompt,
+  ruby: rubyPrompt,
   swgl: swglPrompt,
   uxn: uxnPrompt,
   asm: asmPrompt,
