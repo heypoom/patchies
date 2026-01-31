@@ -198,6 +198,14 @@ async function executeCode(nodeId: string, code: string) {
     // @ts-expect-error - dynamic global assignment
     globalThis.__rubyContext = ctx;
 
+    // Helper functions for Ruby to call (since typeof is an operator)
+    // @ts-expect-error - dynamic global assignment
+    globalThis.__rubyHelpers = {
+      typeof: (x: unknown) => typeof x,
+      isArray: (x: unknown) => Array.isArray(x),
+      isNull: (x: unknown) => x === null
+    };
+
     // Wrap user code with helper methods that call JS functions
     // Using correct ruby.wasm JS interop syntax: obj.method(args) or obj.call(:method, args)
     // Note: We use "emit" instead of "send" because "send" is a Ruby built-in method
@@ -205,6 +213,47 @@ async function executeCode(nodeId: string, code: string) {
 require "js"
 
 $__ctx = JS.global[:__rubyContext]
+$__helpers = JS.global[:__rubyHelpers]
+
+# Convert JS values to native Ruby values
+def js_to_ruby(val)
+  return nil if val.nil?
+  return val unless val.is_a?(JS::Object)
+
+  type = $__helpers.call(:typeof, val).to_s
+  case type
+  when "number"
+    str = val.to_s
+    str.include?(".") ? str.to_f : str.to_i
+  when "string"
+    val.to_s
+  when "boolean"
+    val.to_s == "true"
+  when "undefined"
+    nil
+  when "object"
+    # Check if null (typeof null === "object" in JS)
+    if $__helpers.call(:isNull, val).to_s == "true"
+      nil
+    elsif $__helpers.call(:isArray, val).to_s == "true"
+      # Convert array
+      len = val[:length].to_i
+      (0...len).map { |i| js_to_ruby(val[i]) }
+    else
+      # Convert object to hash
+      keys = JS.global[:Object].call(:keys, val)
+      len = keys[:length].to_i
+      hash = {}
+      (0...len).each do |i|
+        key = keys[i].to_s
+        hash[key] = js_to_ruby(val[key])
+      end
+      hash
+    end
+  else
+    val.to_s
+  end
+end
 
 # Helper methods for Patchies integration
 # Use call(:method_name, args) syntax to invoke JS functions
@@ -219,7 +268,10 @@ end
 def recv(&block)
   $__recv_callback = block
   $__ctx.call(:onMessage, proc { |data, meta|
-    $__recv_callback.call(data, meta)
+    # Convert JS values to native Ruby values
+    ruby_data = js_to_ruby(data)
+    ruby_meta = js_to_ruby(meta)
+    $__recv_callback.call(ruby_data, ruby_meta)
   })
 end
 
