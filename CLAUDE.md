@@ -128,6 +128,13 @@ bun run test             # All tests
 7. **For JavaScript-based nodes** (js, worker, p5, hydra, canvas, etc.): **MUST** update `src/lib/codemirror/patchies-completions.ts`:
    - Add node type to `nodeSpecificFunctions` for each API function it supports (fft, setTitle, flash, etc.)
 
+**When adding new JS API functions** (e.g., `flash()`, `llm()`, `fft()`):
+
+1. Add function definition to `patchiesAPICompletions` array in `src/lib/codemirror/patchies-completions.ts`
+2. Add function name to `topLevelOnlyFunctions` set if it should only appear at top-level (not inside callbacks)
+3. Add entry to `nodeSpecificFunctions` listing **every node type** that implements this function
+4. Implement the function in each node's runner/context (JSRunner, worker context, hydra context, etc.)
+
 **For text control objects (delay, uniqby, etc.):**
 
 1. Create class in `src/lib/objects/v2/nodes/` implementing `TextObjectV2`
