@@ -447,17 +447,16 @@ export class GLSystem {
       return this.outgoingConnectionsCache.get(nodeId)!;
     }
 
-    let hasConnections = false;
+    // Check all edges (not just FBO-filtered ones) for video connections
+    // This allows external texture nodes (webcam, img) to upload when connected
+    // to non-FBO nodes like vdo.ninja.push
+    const hasOutgoingVideoEdges = this.edges.some(
+      (edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
+    );
 
-    if (this.renderGraph) {
-      const hasOutgoingVideoEdges = this.renderGraph.edges.some(
-        (edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
-      );
+    const isOutputNode = this.renderGraph?.outputNodeId === nodeId;
 
-      const isOutputNode = this.renderGraph.outputNodeId === nodeId;
-
-      hasConnections = hasOutgoingVideoEdges || isOutputNode;
-    }
+    const hasConnections = hasOutgoingVideoEdges || isOutputNode;
 
     this.outgoingConnectionsCache.set(nodeId, hasConnections);
 
