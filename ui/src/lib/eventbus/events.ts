@@ -16,7 +16,10 @@ export type PatchiesEvent =
   | FileRelinkedEvent
   | VfsPathRenamedEvent
   | InsertVfsFileToCanvasEvent
-  | InsertPresetToCanvasEvent;
+  | InsertPresetToCanvasEvent
+  | WorkerSendMessageEvent
+  | WorkerCallbackRegisteredEvent
+  | WorkerFlashEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -149,4 +152,24 @@ export interface InsertPresetToCanvasEvent {
     name: string;
     data: unknown;
   };
+}
+
+// Worker node events - for JavaScript execution in dedicated Web Workers
+
+export interface WorkerSendMessageEvent {
+  type: 'workerSendMessage';
+  nodeId: string;
+  data: unknown;
+  options?: SendMessageOptions;
+}
+
+export interface WorkerCallbackRegisteredEvent {
+  type: 'workerCallbackRegistered';
+  nodeId: string;
+  callbackType: 'message' | 'interval' | 'timeout';
+}
+
+export interface WorkerFlashEvent {
+  type: 'workerFlash';
+  nodeId: string;
 }

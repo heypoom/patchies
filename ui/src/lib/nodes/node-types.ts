@@ -69,6 +69,7 @@ import TtsNode from '$lib/components/nodes/TtsNode.svelte';
 import VdoNinjaPushNode from '$lib/components/nodes/VdoNinjaPushNode.svelte';
 import VdoNinjaPullNode from '$lib/components/nodes/VdoNinjaPullNode.svelte';
 import PeekNode from '$lib/components/nodes/PeekNode.svelte';
+import WorkerNode from '$lib/components/nodes/WorkerNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -142,7 +143,8 @@ export const nodeTypes: Record<string, any> = {
   tts: TtsNode,
   'vdo.ninja.push': VdoNinjaPushNode,
   'vdo.ninja.pull': VdoNinjaPullNode,
-  peek: PeekNode
+  peek: PeekNode,
+  worker: WorkerNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

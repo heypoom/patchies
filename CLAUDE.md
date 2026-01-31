@@ -44,6 +44,7 @@ bun run test             # All tests
 ## Code Patterns
 
 - **Always use `ts-pattern`**, never `switch` statements. This includes:
+
   - Conditional logic based on type/mode/state
   - Dynamic CSS class selection based on variants
   - Any branching on union types or enums
@@ -51,17 +52,20 @@ bun run test             # All tests
   ```ts
   // WRONG - never use switch
   switch (mode) {
-    case 'edit': return 'bg-amber-600';
-    case 'multi': return 'bg-blue-600';
-    default: return 'bg-purple-600';
+    case "edit":
+      return "bg-amber-600";
+    case "multi":
+      return "bg-blue-600";
+    default:
+      return "bg-purple-600";
   }
 
   // RIGHT - always use ts-pattern
-  import { match } from 'ts-pattern';
+  import { match } from "ts-pattern";
   match(mode)
-    .with('edit', () => 'bg-amber-600')
-    .with('multi', () => 'bg-blue-600')
-    .otherwise(() => 'bg-purple-600');
+    .with("edit", () => "bg-amber-600")
+    .with("multi", () => "bg-blue-600")
+    .otherwise(() => "bg-purple-600");
   ```
 
 - Separate UI from business logic (manager pattern)
@@ -118,12 +122,27 @@ bun run test             # All tests
 3. Update `src/lib/nodes/defaultNodeData.ts`
 4. Update `README.md` with documentation
 5. Update `src/lib/components/object-browser/get-categorized-objects.ts` (add description + category)
+6. **MUST** update AI object prompts in `src/lib/ai/`:
+   - Add to `object-descriptions-types.ts` (OBJECT_TYPE_LIST)
+   - Create prompt file in `object-prompts/` and register in `object-prompts/index.ts`
+7. **For JavaScript-based nodes** (js, worker, p5, hydra, canvas, etc.): **MUST** update `src/lib/codemirror/patchies-completions.ts`:
+   - Add node type to `nodeSpecificFunctions` for each API function it supports (fft, setTitle, flash, etc.)
+
+**When adding new JS API functions** (e.g., `flash()`, `llm()`, `fft()`):
+
+1. Add function definition to `patchiesAPICompletions` array in `src/lib/codemirror/patchies-completions.ts`
+2. Add function name to `topLevelOnlyFunctions` set if it should only appear at top-level (not inside callbacks)
+3. Add entry to `nodeSpecificFunctions` listing **every node type** that implements this function
+4. Implement the function in each node's runner/context (JSRunner, worker context, hydra context, etc.)
 
 **For text control objects (delay, uniqby, etc.):**
 
 1. Create class in `src/lib/objects/v2/nodes/` implementing `TextObjectV2`
 2. Register in `src/lib/objects/v2/nodes/index.ts`
 3. Update `README.md` Control objects section
+4. **MUST** update AI object prompts in `src/lib/ai/`:
+   - Add to `object-descriptions-types.ts` (OBJECT_TYPE_LIST)
+   - Create prompt file in `object-prompts/` and register in `object-prompts/index.ts`
 
 ## Audio V2 Migration
 
