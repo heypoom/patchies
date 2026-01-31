@@ -111,7 +111,7 @@ export async function resolveMultipleObjectsFromPrompt(
   logger.log('User prompt', prompt);
 
   // Call 1: Route to object types and structure (lightweight)
-  const plan = await routeToMultiObjectPlan(ai, prompt, signal);
+  const plan = await routeToMultiObjectPlan(ai, prompt, signal, onThinking);
   if (!plan) {
     logger.log('⚠️ Router returned no plan');
     logger.flush();
@@ -141,7 +141,8 @@ export async function resolveMultipleObjectsFromPrompt(
 async function routeToMultiObjectPlan(
   ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
   prompt: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<{ objectTypes: string[]; structure: string } | null> {
   // Check for cancellation before starting
   if (signal?.aborted) {
@@ -150,23 +151,37 @@ async function routeToMultiObjectPlan(
 
   const routerPrompt = buildMultiObjectRouterPrompt();
 
-  const response = await ai.models.generateContent({
+  // Use streaming with thinking enabled for real-time feedback
+  const response = await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
-    contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }]
+    contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }],
+    config: {
+      thinkingConfig: {
+        includeThoughts: true
+      }
+    }
   });
 
-  // Check for cancellation after request
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
+  let responseText = '';
+
+  for await (const chunk of response) {
+    // Check for cancellation during streaming
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought && part.text && onThinking) {
+        // Stream thinking updates to UI
+        onThinking(part.text);
+      } else if (part.text) {
+        // Accumulate final response text
+        responseText += part.text;
+      }
+    }
   }
 
-  // Extract text parts manually to avoid SDK warning about non-text parts (thoughtSignature)
-  const textParts = response.candidates?.[0]?.content?.parts
-    ?.filter((part) => part.text && !part.thought)
-    ?.map((part) => part.text)
-    ?.join('');
-
-  const responseText = textParts?.trim();
+  responseText = responseText.trim();
 
   if (!responseText) {
     logger.log('⚠️ Router response is empty');
