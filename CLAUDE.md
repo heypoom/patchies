@@ -125,6 +125,8 @@ bun run test             # All tests
 6. **MUST** update AI object prompts in `src/lib/ai/`:
    - Add to `object-descriptions-types.ts` (OBJECT_TYPE_LIST)
    - Create prompt file in `object-prompts/` and register in `object-prompts/index.ts`
+7. **For JavaScript-based nodes** (js, worker, p5, hydra, canvas, etc.): **MUST** update `src/lib/codemirror/patchies-completions.ts`:
+   - Add node type to `nodeSpecificFunctions` for each API function it supports (fft, setTitle, flash, etc.)
 
 **For text control objects (delay, uniqby, etc.):**
 
