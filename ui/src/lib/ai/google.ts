@@ -54,20 +54,29 @@ export async function generateImageWithGemini(
     config: { abortSignal }
   });
 
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-
-  for (const part of parts) {
-    if (part.inlineData && part.inlineData.data) {
-      const base64Image = part.inlineData.data;
-      const blob = base64ToBlob(base64Image, 'image/png');
-      return createImageBitmap(blob);
+  // Check all candidates for an image
+  for (const candidate of response.candidates ?? []) {
+    for (const part of candidate.content?.parts ?? []) {
+      if (part.inlineData && part.inlineData.data) {
+        const base64Image = part.inlineData.data;
+        const blob = base64ToBlob(base64Image, 'image/png');
+        return createImageBitmap(blob);
+      }
     }
   }
 
   // If no image was generated, check if the AI returned a text response
-  const textResponse = parts.find((part) => 'text' in part && part.text)?.text;
-  if (textResponse) {
-    throw new Error(`AI response: ${textResponse.trim()}`);
+  const textResponses: string[] = [];
+  for (const candidate of response.candidates ?? []) {
+    for (const part of candidate.content?.parts ?? []) {
+      if ('text' in part && part.text) {
+        textResponses.push(part.text.trim());
+      }
+    }
+  }
+
+  if (textResponses.length > 0) {
+    throw new Error(`AI response: ${textResponses.join(' ')}`);
   }
 
   throw new Error('No image generated and no response from AI.');

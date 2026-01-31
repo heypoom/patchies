@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Image as ImageIcon, Loader } from '@lucide/svelte/icons';
+  import { Image as ImageIcon, Loader, CircleAlert } from '@lucide/svelte/icons';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -157,14 +157,37 @@
   {/snippet}
 
   {#snippet preview()}
-    <div class="relative">
+    <div class={['relative', !!errorMessage && 'nowheel']}>
       {#if !hasImage || isLoading}
-        <div class="pointer-events-none absolute h-full w-full">
-          <div class="flex h-full items-center justify-center">
-            <svelte:component
-              this={isLoading ? Loader : ImageIcon}
-              class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
-            />
+        <div
+          class={[
+            'absolute h-full w-full',
+            !!errorMessage && 'rounded-md border border-red-300 bg-zinc-900',
+            !errorMessage && 'pointer-events-none'
+          ]}
+        >
+          <div
+            class={[
+              'flex h-full items-center',
+              !!errorMessage ? 'justify-start' : 'justify-center'
+            ]}
+          >
+            {#if errorMessage}
+              <div class="max-h-full overflow-y-auto px-5 text-red-300">
+                <CircleAlert />
+
+                <div
+                  class="nodrag nopan nowheel mt-2 max-h-24 overflow-y-auto font-mono text-[10px]"
+                >
+                  {errorMessage}
+                </div>
+              </div>
+            {:else}
+              <svelte:component
+                this={isLoading ? Loader : ImageIcon}
+                class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
+              />
+            {/if}
           </div>
         </div>
       {/if}
@@ -216,12 +239,6 @@
         onready={() => (editorReady = true)}
         extraExtensions={[EditorView.lineWrapping]}
       />
-
-      {#if errorMessage}
-        <div class="px-4 pb-4 font-mono text-xs text-red-300">
-          {errorMessage}
-        </div>
-      {/if}
     </div>
   {/snippet}
 </ObjectPreviewLayout>
