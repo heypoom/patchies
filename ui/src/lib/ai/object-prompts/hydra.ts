@@ -1,12 +1,9 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const hydraPrompt = `## hydra Object Instructions
 
 Live coding video synthesis with chainable Hydra functions.
-
-${jsRunnerInstructions}
 
 **Hydra-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video ports (default 1, 1)

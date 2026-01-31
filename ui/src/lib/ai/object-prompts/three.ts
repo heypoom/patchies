@@ -1,12 +1,9 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
-export const threePrompt = `## three object instructions
+export const threePrompt = `## three Object Instructions
 
 Three.js 3D graphics environment running in a Web Worker (offscreen rendering). Use for GPU-accelerated 3D scenes that chain with other video nodes.
-
-${jsRunnerInstructions}
 
 **Three-specific globals:**
 - THREE: Full Three.js library namespace

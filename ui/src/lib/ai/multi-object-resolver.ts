@@ -19,6 +19,7 @@
  */
 
 import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
+import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
 
 // Consolidated logging for AI Multi-Object debugging
 class MultiObjectLogger {
@@ -366,6 +367,13 @@ Now analyze this prompt:`;
  * Builds the multi-object generator prompt - targeted for specific object types
  */
 function buildMultiObjectGeneratorPrompt(objectTypes: string[], structure: string): string {
+  // Check if any object type is JS-enabled (only inject jsRunnerInstructions once)
+  const hasJsEnabledObject = objectTypes.some((type) => JS_ENABLED_OBJECTS.has(type));
+
+  const jsInstructions = hasJsEnabledObject
+    ? `## Common JSRunner Runtime Functions (applies to: ${objectTypes.filter((t) => JS_ENABLED_OBJECTS.has(t)).join(', ')})\n\n${jsRunnerInstructions}\n\n---\n\n`
+    : '';
+
   // Get object-specific instructions for each type
   const objectInstructions = objectTypes
     .map((type) => getObjectSpecificInstructions(type))
@@ -512,7 +520,7 @@ LAYOUT EXAMPLE (top-to-bottom like Pd with generous spacing):
 
 OBJECT-SPECIFIC INSTRUCTIONS:
 
-${objectInstructions}
+${jsInstructions}${objectInstructions}
 
 Now generate the multi-object configuration.`;
 }

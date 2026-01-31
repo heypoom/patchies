@@ -1,12 +1,9 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const canvasDomPrompt = `## canvas.dom Object Instructions
 
 Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
-
-${jsRunnerInstructions}
 
 **Canvas.dom-specific methods:**
 - ctx: 2D canvas context

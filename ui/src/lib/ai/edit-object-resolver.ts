@@ -4,6 +4,7 @@
  */
 
 import { getObjectSpecificInstructions } from './object-descriptions';
+import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
 
 /**
  * Edit an existing object with a known type - skips routing, goes directly to generation.
@@ -155,8 +156,13 @@ RESPONSE FORMAT:
 
 `;
 
+  // Add JSRunner instructions once if this is a JS-enabled object
+  const jsInstructions = JS_ENABLED_OBJECTS.has(objectType)
+    ? `## Common JSRunner Runtime Functions\n\n${jsRunnerInstructions}\n\n`
+    : '';
+
   // Add object-specific instructions
   const objectInstructions = getObjectSpecificInstructions(objectType);
 
-  return basePrompt + objectInstructions;
+  return basePrompt + jsInstructions + objectInstructions;
 }

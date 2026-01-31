@@ -1,13 +1,10 @@
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const domPrompt = `## dom Object Instructions
 
 DOM manipulation node with direct JavaScript access to a root div element. Container is fluid-sized by default.
 
 **Tailwind CSS is enabled by default!** Use Tailwind utility classes for styling. Call \`tailwind(false)\` to disable it for better performance if not needed.
-
-${jsRunnerInstructions}
 
 **DOM-specific methods:**
 - root: HTMLDivElement - the container element you can manipulate

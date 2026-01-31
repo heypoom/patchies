@@ -1,12 +1,9 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const threeDomPrompt = `## three.dom Object Instructions
 
 Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keyboard input. Renders directly to canvas (no worker).
-
-${jsRunnerInstructions}
 
 **Three.dom-specific globals:**
 - THREE: Full Three.js library namespace (lazy-loaded)

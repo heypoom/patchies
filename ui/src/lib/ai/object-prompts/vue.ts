@@ -1,13 +1,10 @@
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const vuePrompt = `## vue Object Instructions
 
 Vue 3 reactive components with Composition API. Container is fluid-sized by default.
 
 **Tailwind CSS is enabled by default!** Use Tailwind utility classes for styling in templates. Call \`tailwind(false)\` to disable it for better performance if not needed.
-
-${jsRunnerInstructions}
 
 **Vue-specific methods:**
 - root: HTMLDivElement - the container element to mount your Vue app

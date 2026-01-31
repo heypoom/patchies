@@ -1,11 +1,9 @@
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions, patcherLibraryInstructions } from './shared-jsrunner';
+import { patcherLibraryInstructions } from './shared-jsrunner';
 
 export const sonicPrompt = `## sonic~ Object Instructions
 
 SuperCollider synthesis via SuperSonic AudioWorklet.
-
-${jsRunnerInstructions}
 
 **Sonic-specific methods:**
 - sonic: SuperSonic instance for synth control

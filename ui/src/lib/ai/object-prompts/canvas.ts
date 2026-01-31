@@ -1,14 +1,11 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const canvasPrompt = `## canvas Object Instructions
 
 Offscreen Canvas on web worker thread for high-performance video chaining. NO DOM access.
 
 **CRITICAL:** Use canvas.dom if you need mouse/keyboard/DOM interaction.
-
-${jsRunnerInstructions}
 
 **Canvas-specific methods:**
 - ctx: 2D canvas context (ctx.fillRect, ctx.arc, etc.)

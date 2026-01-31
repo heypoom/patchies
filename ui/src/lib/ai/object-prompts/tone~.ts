@@ -1,11 +1,8 @@
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions } from './shared-jsrunner';
 
 export const tonePrompt = `## tone~ Object Instructions
 
 Tone.js synthesis and audio processing.
-
-${jsRunnerInstructions}
 
 **Tone-specific CRITICAL RULES:**
 1. NEVER use .toDestination() - always .connect(outputNode)

@@ -1,16 +1,12 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
-import {
-  jsRunnerInstructions,
-  esmInstructions,
-  patcherLibraryInstructions
-} from './shared-jsrunner';
+import { esmInstructions, patcherLibraryInstructions } from './shared-jsrunner';
 
 export const p5Prompt = `## p5 Object Instructions
 
 P5.js creative coding environment with setup() and draw() functions.
 
-${jsRunnerInstructions}
+**Additional p5 methods:**
 ${esmInstructions}
 
 **P5-specific methods:**

@@ -1,7 +1,6 @@
 import { fftInstructions } from './shared-fft';
 import { messagingInstructions } from './shared-messaging';
 import {
-  jsRunnerInstructions,
   esmInstructions,
   runOnMountInstructions,
   patcherLibraryInstructions
@@ -11,7 +10,7 @@ export const jsPrompt = `## js Object Instructions
 
 JavaScript execution block for general-purpose logic and utilities.
 
-${jsRunnerInstructions}
+**Additional js methods:**
 ${esmInstructions}
 ${runOnMountInstructions}
 

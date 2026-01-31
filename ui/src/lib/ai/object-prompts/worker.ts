@@ -1,11 +1,11 @@
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions, esmInstructions, runOnMountInstructions } from './shared-jsrunner';
+import { esmInstructions, runOnMountInstructions } from './shared-jsrunner';
 
 export const workerPrompt = `## worker Object Instructions
 
 JavaScript execution in a dedicated Web Worker thread for CPU-intensive computations without blocking the main thread.
 
-${jsRunnerInstructions}
+**Additional worker methods:**
 ${esmInstructions}
 ${runOnMountInstructions}
 

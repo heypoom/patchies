@@ -1,8 +1,29 @@
 /**
+ * List of object types that use JSRunner and have common runtime functions.
+ * Used to inject jsRunnerInstructions once at the call site instead of in each object prompt.
+ */
+export const JS_ENABLED_OBJECTS = new Set([
+  'js',
+  'worker',
+  'p5',
+  'hydra',
+  'canvas',
+  'canvas.dom',
+  'three',
+  'three.dom',
+  'dom',
+  'vue',
+  'sonic~',
+  'tone~',
+  'elem~'
+]);
+
+/**
  * Shared JSRunner instructions for JavaScript-based objects.
- * Used by: js, worker, p5, hydra, canvas, canvas.dom, three, three.dom, dom, vue, sonic~, tone~, elem~
- *
  * These are the common runtime functions available in all JSRunner-enabled nodes.
+ *
+ * NOTE: This is injected ONCE at the resolver call site, not in individual object prompts,
+ * to avoid duplication when multiple JS-enabled objects are used together.
  */
 export const jsRunnerInstructions = `
 **Common Runtime Functions:**

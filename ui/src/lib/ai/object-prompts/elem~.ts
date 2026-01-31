@@ -1,11 +1,9 @@
 import { messagingInstructions } from './shared-messaging';
-import { jsRunnerInstructions, patcherLibraryInstructions } from './shared-jsrunner';
+import { patcherLibraryInstructions } from './shared-jsrunner';
 
 export const elemPrompt = `## elem~ Object Instructions
 
 Elementary Audio declarative DSP synthesis and processing.
-
-${jsRunnerInstructions}
 
 **Elem-specific CRITICAL RULES:**
 1. Use el.* primitives to build audio graphs
