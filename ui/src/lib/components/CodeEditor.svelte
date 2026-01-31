@@ -18,6 +18,7 @@
   import { autocompletion, acceptCompletion, completionStatus } from '@codemirror/autocomplete';
   import { indentMore } from '@codemirror/commands';
   import { search, searchKeymap } from '@codemirror/search';
+  import type { SupportedLanguage } from '$lib/codemirror/types';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
@@ -100,8 +101,6 @@
   );
 
   let languageComp = new Compartment();
-
-  type SupportedLanguage = 'javascript' | 'glsl' | 'python' | 'markdown' | 'plain' | 'assembly';
 
   let {
     value = $bindable(),

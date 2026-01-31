@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
+  import { RubyNodeSystem } from '$lib/ruby/RubyNodeSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { WorkerCallbackRegisteredEvent, WorkerFlashEvent } from '$lib/eventbus/events';
   import CodeBlockBase from './CodeBlockBase.svelte';
@@ -31,12 +31,11 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const workerSystem = WorkerNodeSystem.getInstance();
+  const rubySystem = RubyNodeSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
 
   let isRunning = $state(false);
   let isMessageCallbackActive = $state(false);
-  let isTimerCallbackActive = $state(false);
 
   const code = $derived(data.code || '');
 
@@ -66,8 +65,6 @@
 
     if (event.callbackType === 'message') {
       isMessageCallbackActive = true;
-    } else if (event.callbackType === 'interval' || event.callbackType === 'timeout') {
-      isTimerCallbackActive = true;
     }
   }
 
@@ -78,8 +75,8 @@
   }
 
   onMount(async () => {
-    // Create the worker for this node
-    await workerSystem.create(nodeId);
+    // Create the Ruby worker for this node
+    await rubySystem.create(nodeId);
 
     // Listen for EventBus events from the worker
     eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
@@ -101,25 +98,23 @@
     eventBus.removeEventListener('workerFlash', handleFlash);
 
     // Destroy the worker
-    workerSystem.destroy(nodeId);
+    rubySystem.destroy(nodeId);
   });
 
   function cleanupRunningTasks() {
-    workerSystem.cleanup(nodeId);
+    rubySystem.cleanup(nodeId);
     isMessageCallbackActive = false;
-    isTimerCallbackActive = false;
   }
 
   async function executeCode() {
     isRunning = true;
     isMessageCallbackActive = false;
-    isTimerCallbackActive = false;
 
     // Clear console in the base component
     baseRef?.clearConsole();
 
     try {
-      await workerSystem.executeCode(nodeId, code);
+      await rubySystem.executeCode(nodeId, code);
     } finally {
       isRunning = false;
     }
@@ -135,10 +130,10 @@
   onCleanup={cleanupRunningTasks}
   {isRunning}
   {isMessageCallbackActive}
-  {isTimerCallbackActive}
+  isTimerCallbackActive={false}
   supportsLibraries={false}
-  nodeLabel="worker"
-  language="javascript"
-  editorPlaceholder="Write your JavaScript code here..."
-  nodeType="worker"
+  nodeLabel="ruby"
+  language="ruby"
+  editorPlaceholder="Write your Ruby code here..."
+  nodeType="ruby"
 />
