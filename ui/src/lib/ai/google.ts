@@ -49,7 +49,7 @@ export async function generateImageWithGemini(
   contents.push({ text: prompt });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image-preview',
+    model: 'gemini-2.5-flash-image',
     contents,
     config: { abortSignal }
   });
