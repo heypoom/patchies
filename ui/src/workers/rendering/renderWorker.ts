@@ -67,6 +67,9 @@ self.onmessage = (event) => {
     })
     .with('captureWorkerVideoFrames', () => {
       handleCaptureWorkerVideoFrames(data.targetNodeId, data.sourceNodeIds);
+    })
+    .with('captureWorkerVideoFramesBatch', () => {
+      handleCaptureWorkerVideoFramesBatch(data.requests);
     });
 };
 
@@ -252,6 +255,76 @@ function handleCaptureWorkerVideoFrames(targetNodeId: string, sourceNodeIds: (st
       type: 'workerVideoFramesCaptured',
       targetNodeId,
       frames,
+      timestamp: performance.now()
+    },
+    { transfer: transferList }
+  );
+}
+
+/**
+ * Capture video frames for multiple worker nodes in a single batched request.
+ * Deduplicates source node captures to avoid redundant GPU reads.
+ *
+ * Note: Since ImageBitmaps can only be transferred once, when multiple targets
+ * request the same source, only the first target gets the original bitmap.
+ * Other targets needing the same source get null (they'll get it next frame).
+ *
+ * For true deduplication with copies, we'd need async createImageBitmap calls,
+ * which would add latency. The current approach prioritizes low latency.
+ */
+function handleCaptureWorkerVideoFramesBatch(
+  requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>
+) {
+  // Collect all unique source node IDs across all requests
+  const uniqueSourceIds = new Set<string>();
+  for (const request of requests) {
+    for (const sourceId of request.sourceNodeIds) {
+      if (sourceId) uniqueSourceIds.add(sourceId);
+    }
+  }
+
+  // Capture each unique source once (the expensive GPU read happens here)
+  const capturedBitmaps = new Map<string, ImageBitmap | null>();
+  for (const sourceId of uniqueSourceIds) {
+    capturedBitmaps.set(sourceId, fboRenderer.capturePreviewBitmap(sourceId));
+  }
+
+  // Track which bitmaps have been assigned (can only transfer each once)
+  const assignedBitmaps = new Set<ImageBitmap>();
+
+  // Build results for each target node
+  const results: Array<{ targetNodeId: string; frames: (ImageBitmap | null)[] }> = [];
+  const transferList: ImageBitmap[] = [];
+
+  for (const request of requests) {
+    const frames: (ImageBitmap | null)[] = [];
+
+    for (const sourceId of request.sourceNodeIds) {
+      if (!sourceId) {
+        frames.push(null);
+        continue;
+      }
+
+      const bitmap = capturedBitmaps.get(sourceId) ?? null;
+
+      // Only assign bitmap to first target that requests it
+      if (bitmap && !assignedBitmaps.has(bitmap)) {
+        frames.push(bitmap);
+        assignedBitmaps.add(bitmap);
+        transferList.push(bitmap);
+      } else {
+        // Bitmap already assigned to another target or was null
+        frames.push(null);
+      }
+    }
+
+    results.push({ targetNodeId: request.targetNodeId, frames });
+  }
+
+  self.postMessage(
+    {
+      type: 'workerVideoFramesCapturedBatch',
+      results,
       timestamp: performance.now()
     },
     { transfer: transferList }

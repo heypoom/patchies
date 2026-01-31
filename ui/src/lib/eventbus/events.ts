@@ -21,7 +21,8 @@ export type PatchiesEvent =
   | WorkerSendMessageEvent
   | WorkerCallbackRegisteredEvent
   | WorkerFlashEvent
-  | RequestWorkerVideoFramesEvent;
+  | RequestWorkerVideoFramesEvent
+  | RequestWorkerVideoFramesBatchEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -186,4 +187,12 @@ export interface RequestWorkerVideoFramesEvent {
   type: 'requestWorkerVideoFrames';
   nodeId: string;
   sourceNodeIds: (string | null)[];
+}
+
+export interface RequestWorkerVideoFramesBatchEvent {
+  type: 'requestWorkerVideoFramesBatch';
+  requests: Array<{
+    targetNodeId: string;
+    sourceNodeIds: (string | null)[];
+  }>;
 }

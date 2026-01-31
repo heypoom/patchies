@@ -68,8 +68,6 @@ interface WorkerVideoState {
   outletCount: number;
   sourceNodeIds: (string | null)[]; // Maps inlet index to source node ID
   hasVideoCallback: boolean;
-  animationFrameId: number | null;
-  lastFrameRequestTime: number;
 }
 
 /**
@@ -90,6 +88,10 @@ export class WorkerNodeSystem {
   private currentEdges: Array<{ source: string; target: string; targetHandle?: string | null }> =
     [];
   private static readonly VIDEO_FRAME_INTERVAL_MS = 1000 / 30; // 30fps
+
+  // Global video frame loop (single loop for all worker nodes)
+  private globalVideoLoopId: number | null = null;
+  private lastGlobalFrameTime = 0;
 
   constructor() {
     // Subscribe to FFT data updates - forward to all workers that have FFT enabled
@@ -335,9 +337,7 @@ export class WorkerNodeSystem {
         inletCount: 0,
         outletCount: 0,
         sourceNodeIds: [],
-        hasVideoCallback: false,
-        animationFrameId: null,
-        lastFrameRequestTime: 0
+        hasVideoCallback: false
       };
       this.videoStates.set(nodeId, videoState);
     }
@@ -366,7 +366,7 @@ export class WorkerNodeSystem {
     if (!videoState) return;
 
     videoState.hasVideoCallback = true;
-    this.startVideoFrameLoop(nodeId);
+    this.startGlobalVideoLoop();
 
     // Dispatch event for UI to show long-running indicator (treat as interval-like)
     this.eventBus.dispatch({
@@ -380,47 +380,79 @@ export class WorkerNodeSystem {
    * Handle manual video frame request.
    */
   private handleRequestVideoFrames(nodeId: string, _requestId: string) {
-    // Request frames immediately for manual grab
-    this.requestVideoFramesFromRenderWorker(nodeId);
-  }
-
-  /**
-   * Start the video frame capture loop for a node.
-   */
-  private startVideoFrameLoop(nodeId: string) {
-    const videoState = this.videoStates.get(nodeId);
-    if (!videoState || videoState.animationFrameId !== null) return;
-
-    const loop = () => {
-      const state = this.videoStates.get(nodeId);
-      if (!state || !state.hasVideoCallback) {
-        return;
-      }
-
-      const now = performance.now();
-      if (now - state.lastFrameRequestTime >= WorkerNodeSystem.VIDEO_FRAME_INTERVAL_MS) {
-        this.requestVideoFramesFromRenderWorker(nodeId);
-        state.lastFrameRequestTime = now;
-      }
-
-      state.animationFrameId = requestAnimationFrame(loop);
-    };
-
-    videoState.animationFrameId = requestAnimationFrame(loop);
-  }
-
-  /**
-   * Request video frames from the render worker.
-   */
-  private requestVideoFramesFromRenderWorker(nodeId: string) {
+    // Request frames immediately for manual grab (single node)
     const videoState = this.videoStates.get(nodeId);
     if (!videoState || videoState.sourceNodeIds.length === 0) return;
 
-    // Send request to GLSystem which will forward to render worker
     this.eventBus.dispatch({
       type: 'requestWorkerVideoFrames',
       nodeId,
       sourceNodeIds: videoState.sourceNodeIds
+    });
+  }
+
+  /**
+   * Start the global video frame capture loop (single loop for all nodes).
+   */
+  private startGlobalVideoLoop() {
+    // Already running
+    if (this.globalVideoLoopId !== null) return;
+
+    const loop = () => {
+      // Check if any nodes still have video callbacks
+      const nodesWithCallbacks = this.getNodesWithVideoCallbacks();
+      if (nodesWithCallbacks.length === 0) {
+        this.globalVideoLoopId = null;
+        return;
+      }
+
+      const now = performance.now();
+      if (now - this.lastGlobalFrameTime >= WorkerNodeSystem.VIDEO_FRAME_INTERVAL_MS) {
+        this.requestBatchedVideoFrames(nodesWithCallbacks);
+        this.lastGlobalFrameTime = now;
+      }
+
+      this.globalVideoLoopId = requestAnimationFrame(loop);
+    };
+
+    this.globalVideoLoopId = requestAnimationFrame(loop);
+  }
+
+  /**
+   * Get all nodes that have active video callbacks.
+   */
+  private getNodesWithVideoCallbacks(): string[] {
+    const nodes: string[] = [];
+    for (const [nodeId, state] of this.videoStates) {
+      if (state.hasVideoCallback && state.sourceNodeIds.some((id) => id !== null)) {
+        nodes.push(nodeId);
+      }
+    }
+    return nodes;
+  }
+
+  /**
+   * Request video frames for multiple nodes in a single batched request.
+   */
+  private requestBatchedVideoFrames(nodeIds: string[]) {
+    const requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }> = [];
+
+    for (const nodeId of nodeIds) {
+      const videoState = this.videoStates.get(nodeId);
+      if (videoState && videoState.sourceNodeIds.length > 0) {
+        requests.push({
+          targetNodeId: nodeId,
+          sourceNodeIds: videoState.sourceNodeIds
+        });
+      }
+    }
+
+    if (requests.length === 0) return;
+
+    // Send batched request to GLSystem which will forward to render worker
+    this.eventBus.dispatch({
+      type: 'requestWorkerVideoFramesBatch',
+      requests
     });
   }
 
@@ -574,11 +606,13 @@ export class WorkerNodeSystem {
     this.workers.delete(nodeId);
 
     // Clean up video state
-    const videoState = this.videoStates.get(nodeId);
-    if (videoState?.animationFrameId !== null) {
-      cancelAnimationFrame(videoState!.animationFrameId!);
-    }
     this.videoStates.delete(nodeId);
+
+    // Stop global loop if no more nodes have video callbacks
+    if (this.getNodesWithVideoCallbacks().length === 0 && this.globalVideoLoopId !== null) {
+      cancelAnimationFrame(this.globalVideoLoopId);
+      this.globalVideoLoopId = null;
+    }
 
     // Unregister from message system
     this.messageSystem.unregisterNode(nodeId);

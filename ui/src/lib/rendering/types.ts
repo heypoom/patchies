@@ -70,6 +70,13 @@ export type WorkerMessage =
       type: 'captureWorkerVideoFrames';
       targetNodeId: string;
       sourceNodeIds: (string | null)[];
+    }
+  | {
+      type: 'captureWorkerVideoFramesBatch';
+      requests: Array<{
+        targetNodeId: string;
+        sourceNodeIds: (string | null)[];
+      }>;
     };
 
 export type MouseScope = 'local' | 'global';
@@ -128,6 +135,14 @@ export type RenderWorkerMessage =
       type: 'workerVideoFramesCaptured';
       targetNodeId: string;
       frames: (ImageBitmap | null)[];
+      timestamp: number;
+    }
+  | {
+      type: 'workerVideoFramesCapturedBatch';
+      results: Array<{
+        targetNodeId: string;
+        frames: (ImageBitmap | null)[];
+      }>;
       timestamp: number;
     };
 

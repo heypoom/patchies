@@ -10,7 +10,10 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
-import type { RequestWorkerVideoFramesEvent } from '../eventbus/events';
+import type {
+  RequestWorkerVideoFramesEvent,
+  RequestWorkerVideoFramesBatchEvent
+} from '../eventbus/events';
 import {
   AudioAnalysisSystem,
   type AudioAnalysisPayloadWithType,
@@ -81,6 +84,16 @@ export class GLSystem {
         this.send('captureWorkerVideoFrames', {
           targetNodeId: event.nodeId,
           sourceNodeIds: event.sourceNodeIds
+        });
+      }
+    );
+
+    // Listen for batched video frame requests from WorkerNodeSystem
+    this.eventBus.addEventListener(
+      'requestWorkerVideoFramesBatch',
+      (event: RequestWorkerVideoFramesBatchEvent) => {
+        this.send('captureWorkerVideoFramesBatch', {
+          requests: event.requests
         });
       }
     );
@@ -207,6 +220,15 @@ export class GLSystem {
             data.frames,
             data.timestamp
           );
+        });
+      })
+      .with({ type: 'workerVideoFramesCapturedBatch' }, (data) => {
+        // Relay batched captured frames to WorkerNodeSystem
+        import('$lib/js-runner/WorkerNodeSystem').then(({ WorkerNodeSystem }) => {
+          const system = WorkerNodeSystem.getInstance();
+          for (const result of data.results) {
+            system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
+          }
         });
       });
   };
