@@ -34,7 +34,9 @@
     // Placeholder text for code editor
     editorPlaceholder = 'Write your code here...',
     // Node type for completions
-    nodeType = 'js'
+    nodeType = 'js',
+    // Video inlet count (optional, for worker nodes)
+    videoInletCount = 0
   }: {
     id: string;
     data: {
@@ -61,6 +63,7 @@
     language?: SupportedLanguage;
     editorPlaceholder?: string;
     nodeType?: string;
+    videoInletCount?: number;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -194,8 +197,9 @@
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;
     let inletWidth = 15;
+    const totalInlets = inletCount + videoInletCount;
 
-    return baseWidth + Math.max(Math.max(inletCount, 2), Math.max(outletCount, 2)) * inletWidth;
+    return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(outletCount, 2)) * inletWidth;
   });
 </script>
 
@@ -235,13 +239,26 @@
 
       <div class="relative">
         <div>
+          {#each Array.from({ length: videoInletCount }) as _, index (index)}
+            <StandardHandle
+              port="inlet"
+              type="video"
+              id={index}
+              title={`Video Input ${index}`}
+              total={videoInletCount + inletCount}
+              {index}
+              class="top-0"
+              {nodeId}
+            />
+          {/each}
+
           {#each Array.from({ length: inletCount }) as _, index (index)}
             <StandardHandle
               port="inlet"
-              id={index}
+              id={index + videoInletCount}
               title={`Inlet ${index}`}
-              total={inletCount}
-              {index}
+              total={videoInletCount + inletCount}
+              index={index + videoInletCount}
               class="top-0"
               {nodeId}
             />

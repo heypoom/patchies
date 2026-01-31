@@ -64,6 +64,9 @@ self.onmessage = (event) => {
     })
     .with('vfsUrlResolved', () => {
       handleVfsUrlResolved(data);
+    })
+    .with('captureWorkerVideoFrames', () => {
+      handleCaptureWorkerVideoFrames(data.targetNodeId, data.sourceNodeIds);
     });
 };
 
@@ -220,6 +223,39 @@ function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [
     nodeId,
     requestId
   });
+}
+
+/**
+ * Capture video frames from source nodes for a worker node.
+ * This captures bitmaps from each connected source and sends them back to the main thread.
+ */
+function handleCaptureWorkerVideoFrames(targetNodeId: string, sourceNodeIds: (string | null)[]) {
+  const frames: (ImageBitmap | null)[] = [];
+  const transferList: ImageBitmap[] = [];
+
+  for (const sourceNodeId of sourceNodeIds) {
+    if (!sourceNodeId) {
+      frames.push(null);
+      continue;
+    }
+
+    const bitmap = fboRenderer.capturePreviewBitmap(sourceNodeId);
+    frames.push(bitmap);
+
+    if (bitmap) {
+      transferList.push(bitmap);
+    }
+  }
+
+  self.postMessage(
+    {
+      type: 'workerVideoFramesCaptured',
+      targetNodeId,
+      frames,
+      timestamp: performance.now()
+    },
+    { transfer: transferList }
+  );
 }
 
 console.log('[render worker] initialized');

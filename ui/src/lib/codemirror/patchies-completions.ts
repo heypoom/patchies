@@ -49,8 +49,23 @@ const patchiesAPICompletions: Completion[] = [
     label: 'setVideoCount',
     type: 'function',
     detail: '(inlets?: number, outlets?: number) => void',
-    info: 'Set the number of video inlets and outlets for Hydra nodes (max 4 each). Defaults to 1 if not specified',
-    apply: 'setVideoCount(2, 1)'
+    info: 'Set the number of video inlets and outlets. For Hydra/Three max 4 each, for Worker nodes outlets not supported.',
+    apply: 'setVideoCount(1, 0)'
+  },
+  {
+    label: 'onVideoFrame',
+    type: 'function',
+    detail: '(callback: (frames, timestamp) => void) => void',
+    info: 'Register a callback to receive video frames from connected video inlets. Frames are ImageBitmap[] - call .close() when done!',
+    apply:
+      'onVideoFrame((frames, time) => {\n  // frames[0] is ImageBitmap from first video inlet\n  frames.forEach(f => f?.close())\n})'
+  },
+  {
+    label: 'getVideoFrames',
+    type: 'function',
+    detail: '() => Promise<(ImageBitmap | null)[]>',
+    info: 'Manually request current video frames from connected inlets. Returns array of ImageBitmaps - call .close() when done!',
+    apply: 'await getVideoFrames()'
   },
   {
     label: 'setMouseScope',
@@ -220,6 +235,7 @@ const topLevelOnlyFunctions = new Set([
   'onKeyDown',
   'onKeyUp',
   'onMessage',
+  'onVideoFrame',
   'recv',
   'setAudioPortCount',
   'setCanvasSize',
@@ -308,7 +324,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three',
     'three.dom'
   ],
-  setVideoCount: ['hydra', 'three'],
+  setVideoCount: ['hydra', 'three', 'worker'],
+  onVideoFrame: ['worker'],
+  getVideoFrames: ['worker'],
   getVfsUrl: [
     'js',
     'worker',

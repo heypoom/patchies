@@ -65,7 +65,12 @@ export type WorkerMessage =
   | { type: 'stopAnimation' }
   | { type: 'setPreviewEnabled'; nodeId: string; enabled: boolean }
   | { type: 'animationFrame'; outputBitmap: ImageBitmap }
-  | { type: 'updateOutput'; buffer: ArrayBuffer };
+  | { type: 'updateOutput'; buffer: ArrayBuffer }
+  | {
+      type: 'captureWorkerVideoFrames';
+      targetNodeId: string;
+      sourceNodeIds: (string | null)[];
+    };
 
 export type MouseScope = 'local' | 'global';
 
@@ -97,7 +102,7 @@ export type RenderWorkerMessage =
   | {
       type: 'setPortCount';
       nodeId: string;
-      portType: 'message';
+      portType: 'message' | 'video';
       inletCount: number;
       outletCount: number;
     }
@@ -118,7 +123,13 @@ export type RenderWorkerMessage =
   | { type: 'previewToggled'; nodeId: string; enabled: boolean }
   | { type: 'frameStats'; stats: unknown }
   | { type: 'error'; message: string }
-  | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string };
+  | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string }
+  | {
+      type: 'workerVideoFramesCaptured';
+      targetNodeId: string;
+      frames: (ImageBitmap | null)[];
+      timestamp: number;
+    };
 
 export type PreviewState = Record<string, boolean>;
 

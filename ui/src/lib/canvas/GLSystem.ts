@@ -10,6 +10,7 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
+import type { RequestWorkerVideoFramesEvent } from '../eventbus/events';
 import {
   AudioAnalysisSystem,
   type AudioAnalysisPayloadWithType,
@@ -72,6 +73,17 @@ export class GLSystem {
     this.renderWorker = new RenderWorker();
     this.renderWorker.addEventListener('message', this.handleRenderWorkerMessage.bind(this));
     this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
+
+    // Listen for video frame requests from WorkerNodeSystem
+    this.eventBus.addEventListener(
+      'requestWorkerVideoFrames',
+      (event: RequestWorkerVideoFramesEvent) => {
+        this.send('captureWorkerVideoFrames', {
+          targetNodeId: event.nodeId,
+          sourceNodeIds: event.sourceNodeIds
+        });
+      }
+    );
   }
 
   handleRenderWorkerMessage = (event: MessageEvent<RenderWorkerMessage>) => {
@@ -185,6 +197,17 @@ export class GLSystem {
       })
       .with({ type: 'resolveVfsUrl' }, async (data) => {
         this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
+      })
+      .with({ type: 'workerVideoFramesCaptured' }, (data) => {
+        // Relay captured frames to WorkerNodeSystem
+        // Import dynamically to avoid circular dependency
+        import('$lib/js-runner/WorkerNodeSystem').then(({ WorkerNodeSystem }) => {
+          WorkerNodeSystem.getInstance().deliverVideoFrames(
+            data.targetNodeId,
+            data.frames,
+            data.timestamp
+          );
+        });
       });
   };
 

@@ -24,6 +24,10 @@ interface NodeState {
   isFFTEnabled: boolean;
   fftRequestCache: Map<string, boolean>;
   fftDataCache: Map<string, { data: Uint8Array | Float32Array; timestamp: number }>;
+  // Video frame state
+  videoFrameCallback: ((frames: (ImageBitmap | null)[], timestamp: number) => void) | null;
+  pendingVideoFrameResolvers: Map<string, (frames: (ImageBitmap | null)[]) => void>;
+  videoFrameRequestIdCounter: number;
 }
 
 const nodeStates = new Map<string, NodeState>();
@@ -39,7 +43,10 @@ function getNodeState(nodeId: string): NodeState {
       delayIdCounter: 0,
       isFFTEnabled: false,
       fftRequestCache: new Map(),
-      fftDataCache: new Map()
+      fftDataCache: new Map(),
+      videoFrameCallback: null,
+      pendingVideoFrameResolvers: new Map(),
+      videoFrameRequestIdCounter: 0
     });
   }
   return nodeStates.get(nodeId)!;
@@ -222,6 +229,25 @@ function createWorkerContext(nodeId: string) {
     });
   };
 
+  // Video frame APIs
+  const setVideoCount = (inletCount = 1, outletCount = 0) => {
+    postResponse({ type: 'setVideoCount', nodeId, inletCount, outletCount });
+  };
+
+  const onVideoFrame = (callback: (frames: (ImageBitmap | null)[], timestamp: number) => void) => {
+    state.videoFrameCallback = callback;
+    postResponse({ type: 'videoFrameCallbackRegistered', nodeId });
+  };
+
+  const getVideoFrames = (): Promise<(ImageBitmap | null)[]> => {
+    const requestId = `vf-${nodeId}-${++state.videoFrameRequestIdCounter}`;
+
+    return new Promise((resolve) => {
+      state.pendingVideoFrameResolvers.set(requestId, resolve);
+      postResponse({ type: 'requestVideoFrames', nodeId, requestId });
+    });
+  };
+
   return {
     console: customConsole,
     send,
@@ -237,7 +263,10 @@ function createWorkerContext(nodeId: string) {
     fft,
     llm,
     getVfsUrl,
-    flash
+    flash,
+    setVideoCount,
+    onVideoFrame,
+    getVideoFrames
   };
 }
 
@@ -281,6 +310,10 @@ function cleanupNode(nodeId: string) {
   state.isFFTEnabled = false;
   state.fftDataCache.clear();
   state.fftRequestCache.clear();
+
+  // Clear video frame state
+  state.videoFrameCallback = null;
+  state.pendingVideoFrameResolvers.clear();
 }
 
 async function executeCode(nodeId: string, processedCode: string) {
@@ -314,7 +347,10 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setRunOnMount',
     'setTitle',
     'getVfsUrl',
-    'flash'
+    'flash',
+    'setVideoCount',
+    'onVideoFrame',
+    'getVideoFrames'
   ];
 
   const functionArgs = [
@@ -332,7 +368,10 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setRunOnMount,
     ctx.setTitle,
     ctx.getVfsUrl,
-    ctx.flash
+    ctx.flash,
+    ctx.setVideoCount,
+    ctx.onVideoFrame,
+    ctx.getVideoFrames
   ];
 
   try {
@@ -470,6 +509,37 @@ function handleFFTData(
   });
 }
 
+// Handle video frames from main thread
+function handleVideoFramesReady(
+  nodeId: string,
+  payload: { frames: (ImageBitmap | null)[]; timestamp: number }
+) {
+  const state = nodeStates.get(nodeId);
+  if (!state) return;
+
+  // Invoke callback if registered
+  if (state.videoFrameCallback) {
+    try {
+      state.videoFrameCallback(payload.frames, payload.timestamp);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      postResponse({
+        type: 'consoleOutput',
+        nodeId,
+        level: 'error',
+        args: [`Error in onVideoFrame(): ${message}`]
+      });
+    }
+  }
+
+  // Resolve any pending manual request (first one only)
+  for (const [requestId, resolver] of state.pendingVideoFrameResolvers) {
+    resolver(payload.frames);
+    state.pendingVideoFrameResolvers.delete(requestId);
+    break;
+  }
+}
+
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { nodeId } = event.data;
 
@@ -529,6 +599,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         nodeId,
         data as { analysisType: string; format: string; array: Uint8Array | Float32Array }
       );
+    })
+    .with({ type: 'videoFramesReady' }, (data) => {
+      handleVideoFramesReady(nodeId, data as { frames: (ImageBitmap | null)[]; timestamp: number });
     })
     .otherwise(() => {});
 };
