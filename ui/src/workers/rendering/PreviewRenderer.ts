@@ -523,6 +523,10 @@ export class PreviewRenderer {
   /**
    * Harvest completed video frame batches.
    * Returns array of completed batches with their ImageBitmaps.
+   *
+   * Smart cloning: When multiple targets need the same source, each gets
+   * its own bitmap created from the cached pixel data. When only one target
+   * needs a source, no cloning overhead is incurred.
    */
   harvestVideoFrameBatches(): Array<{
     targetNodeId: string;
@@ -537,31 +541,31 @@ export class PreviewRenderer {
     }> = [];
 
     const stillPending: PendingVideoFrameBatch[] = [];
-    const completedReads = new Map<PendingVideoFrameRead, ImageBitmap>();
 
+    // Store completed reads with their pixel data (not bitmap yet)
+    const completedPixelData = new Map<
+      PendingVideoFrameRead,
+      { pixels: Uint8Array; width: number; height: number }
+    >();
+
+    // First pass: check completion and extract pixel data
     for (const batch of this.pendingVideoFrameBatches) {
-      // Check if all reads for this batch are complete
-      let allComplete = true;
-
       for (const read of batch.reads) {
-        // Skip if already harvested
-        if (completedReads.has(read)) continue;
+        if (completedPixelData.has(read)) continue;
 
         const status = gl.clientWaitSync(read.sync, 0, 0);
 
         if (status === gl.TIMEOUT_EXPIRED) {
-          allComplete = false;
           continue;
         }
 
         if (status === gl.WAIT_FAILED) {
-          // Clean up failed read
           gl.deleteSync(read.sync);
           this.returnPbo(read.pbo);
           continue;
         }
 
-        // Read is complete - extract the bitmap
+        // Read is complete - extract pixels (not bitmap yet)
         gl.deleteSync(read.sync);
 
         const { pbo, width, height } = read;
@@ -574,47 +578,110 @@ export class PreviewRenderer {
 
         this.returnPbo(pbo);
 
-        // Create bitmap
-        const { canvas, ctx } = this.getCanvas(width, height);
-        const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
-        ctx.putImageData(imageData, 0, 0);
+        completedPixelData.set(read, { pixels, width, height });
+      }
+    }
 
-        completedReads.set(read, canvas.transferToImageBitmap());
+    // Count how many targets need each source (for smart cloning decision)
+    const sourceRefCounts = new Map<string, number>();
+    for (const batch of this.pendingVideoFrameBatches) {
+      const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
+      if (!allReadsComplete) continue;
+
+      for (const sourceId of batch.sourceNodeIds) {
+        if (sourceId) {
+          sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 0) + 1);
+        }
+      }
+    }
+
+    // Track bitmaps that can be reused (when only 1 target needs them)
+    const reusableBitmaps = new Map<string, ImageBitmap>();
+
+    // Second pass: build results for completed batches
+    for (const batch of this.pendingVideoFrameBatches) {
+      const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
+
+      if (!allReadsComplete) {
+        stillPending.push(batch);
+        continue;
       }
 
-      if (allComplete && batch.reads.length > 0) {
-        // Build frames array matching sourceNodeIds order
-        const frames: (ImageBitmap | null)[] = [];
-        const usedBitmaps = new Set<ImageBitmap>();
+      if (batch.reads.length === 0) {
+        continue;
+      }
 
-        for (const sourceId of batch.sourceNodeIds) {
-          if (!sourceId) {
-            frames.push(null);
-            continue;
-          }
+      // Build frames array matching sourceNodeIds order
+      const frames: (ImageBitmap | null)[] = [];
 
-          // Find the read for this source
-          const read = batch.reads.find((r) => r.sourceNodeId === sourceId);
-          const bitmap = read ? completedReads.get(read) : null;
+      for (const sourceId of batch.sourceNodeIds) {
+        if (!sourceId) {
+          frames.push(null);
+          continue;
+        }
 
-          // Only use each bitmap once (for transfer)
-          if (bitmap && !usedBitmaps.has(bitmap)) {
-            frames.push(bitmap);
-            usedBitmaps.add(bitmap);
+        const read = batch.reads.find((r) => r.sourceNodeId === sourceId);
+        if (!read) {
+          frames.push(null);
+          continue;
+        }
+
+        const pixelData = completedPixelData.get(read);
+        if (!pixelData) {
+          frames.push(null);
+          continue;
+        }
+
+        const refCount = sourceRefCounts.get(sourceId) || 0;
+
+        if (refCount === 1) {
+          // Only 1 target needs this source - create bitmap directly (no clone needed)
+          const { canvas, ctx } = this.getCanvas(pixelData.width, pixelData.height);
+          const imageData = new ImageData(
+            new Uint8ClampedArray(pixelData.pixels),
+            pixelData.width,
+            pixelData.height
+          );
+          ctx.putImageData(imageData, 0, 0);
+          frames.push(canvas.transferToImageBitmap());
+        } else {
+          // Multiple targets need this source - each gets their own bitmap
+          // Check if we already created one for reuse (first target)
+          const existing = reusableBitmaps.get(sourceId);
+          if (existing) {
+            // Create a new bitmap from pixels for this target
+            const { canvas, ctx } = this.getCanvas(pixelData.width, pixelData.height);
+            const imageData = new ImageData(
+              new Uint8ClampedArray(pixelData.pixels),
+              pixelData.width,
+              pixelData.height
+            );
+            ctx.putImageData(imageData, 0, 0);
+            frames.push(canvas.transferToImageBitmap());
           } else {
-            frames.push(null);
+            // First target - create and mark as created
+            const { canvas, ctx } = this.getCanvas(pixelData.width, pixelData.height);
+            const imageData = new ImageData(
+              new Uint8ClampedArray(pixelData.pixels),
+              pixelData.width,
+              pixelData.height
+            );
+            ctx.putImageData(imageData, 0, 0);
+            const bitmap = canvas.transferToImageBitmap();
+            reusableBitmaps.set(sourceId, bitmap);
+            frames.push(bitmap);
           }
         }
 
-        results.push({
-          targetNodeId: batch.targetNodeId,
-          frames,
-          timestamp: performance.now()
-        });
-      } else if (!allComplete) {
-        // Keep batch for next harvest
-        stillPending.push(batch);
+        // Decrement ref count
+        sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
       }
+
+      results.push({
+        targetNodeId: batch.targetNodeId,
+        frames,
+        timestamp: performance.now()
+      });
     }
 
     this.pendingVideoFrameBatches = stillPending;

@@ -488,6 +488,12 @@ export class WorkerNodeSystem {
     for (const [nodeId, videoState] of this.videoStates) {
       this.updateVideoConnectionsForNode(nodeId, videoState, edges);
     }
+
+    // Restart global loop if any nodes now have valid connections
+    // (loop may have stopped when all connections were removed)
+    if (this.getNodesWithVideoCallbacks().length > 0) {
+      this.startGlobalVideoLoop();
+    }
   }
 
   /**
