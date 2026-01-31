@@ -1921,18 +1921,21 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 - Generate text using AI language models.
 - Create dynamic content, lyrics, or procedural text.
 - Integrates with message system for interactive generation.
+- Uses the `gemini-3-flash-preview` model.
 
 ### `ai.img`: AI image generation
 
 - Generate images from text prompts using AI.
 - Create visual content programmatically.
 - Supports video chaining as texture source.
+- Uses the `gemini-2.5-flash-image` model.
 
 ### `ai.music`: AI music generation
 
 - Generate musical compositions using AI.
 - Create backing tracks, melodies, or soundscapes.
 - Outputs audio that can be processed by other objects.
+- Uses the `lyria-realtime-exp` model
 
 ### `ai.tts`: AI text-to-speech
 
