@@ -99,10 +99,6 @@
         inputImageNodeId: imageNodeId
       });
 
-      if (!image) {
-        throw new Error('Cannot generate image.');
-      }
-
       const previewBitmap = await createImageBitmap(image);
       // Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
       const flippedBitmap = await createImageBitmap(image, { imageOrientation: 'flipY' });
@@ -222,7 +218,7 @@
       />
 
       {#if errorMessage}
-        <div class="mt-2 px-2 py-1 font-mono text-xs text-red-300">
+        <div class="px-4 pb-4 font-mono text-xs text-red-300">
           {errorMessage}
         </div>
       {/if}

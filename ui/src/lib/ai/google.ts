@@ -13,7 +13,7 @@ export async function generateImageWithGemini(
     abortSignal?: AbortSignal;
     inputImageNodeId?: string;
   }
-): Promise<ImageBitmap | null> {
+): Promise<ImageBitmap> {
   const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey });
 
@@ -54,7 +54,9 @@ export async function generateImageWithGemini(
     config: { abortSignal }
   });
 
-  for (const part of response.candidates?.[0]?.content?.parts ?? []) {
+  const parts = response.candidates?.[0]?.content?.parts ?? [];
+
+  for (const part of parts) {
     if (part.inlineData && part.inlineData.data) {
       const base64Image = part.inlineData.data;
       const blob = base64ToBlob(base64Image, 'image/png');
@@ -62,7 +64,13 @@ export async function generateImageWithGemini(
     }
   }
 
-  return null;
+  // If no image was generated, check if the AI returned a text response
+  const textResponse = parts.find((part) => 'text' in part && part.text)?.text;
+  if (textResponse) {
+    throw new Error(`AI response: ${textResponse.trim()}`);
+  }
+
+  throw new Error('No image generated and no response from AI.');
 }
 
 function base64ToBlob(base64: string, mimeType: string): Blob {
