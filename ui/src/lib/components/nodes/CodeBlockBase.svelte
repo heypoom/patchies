@@ -7,6 +7,7 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type { SupportedLanguage } from '$lib/codemirror/types';
 
   let contentContainer: HTMLDivElement | null = null;
   let consoleRef: VirtualConsole | null = $state(null);
@@ -27,7 +28,13 @@
     // Library support (js only)
     supportsLibraries = false,
     // Custom label
-    nodeLabel = 'js'
+    nodeLabel = 'js',
+    // Language for code editor
+    language = 'javascript',
+    // Placeholder text for code editor
+    editorPlaceholder = 'Write your code here...',
+    // Node type for completions
+    nodeType = 'js'
   }: {
     id: string;
     data: {
@@ -51,6 +58,9 @@
     isTimerCallbackActive: boolean;
     supportsLibraries?: boolean;
     nodeLabel?: string;
+    language?: SupportedLanguage;
+    editorPlaceholder?: string;
+    nodeType?: string;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -333,9 +343,9 @@
             }
             updateNodeData(nodeId, { code: newCode });
           }}
-          language="javascript"
-          nodeType="js"
-          placeholder="Write your JavaScript code here..."
+          {language}
+          {nodeType}
+          placeholder={editorPlaceholder}
           class="nodrag h-64 w-full resize-none"
           onrun={executeCode}
           {lineErrors}

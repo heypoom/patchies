@@ -43,6 +43,14 @@ export async function loadLanguageExtension(language: string, context?: Patchies
 
       return python();
     })
+    .with('ruby', async () => {
+      const [{ StreamLanguage }, { ruby }] = await Promise.all([
+        import('@codemirror/language'),
+        import('@codemirror/legacy-modes/mode/ruby')
+      ]);
+
+      return StreamLanguage.define(ruby);
+    })
     .with('markdown', async () => {
       const { markdown } = await import('@codemirror/lang-markdown');
 

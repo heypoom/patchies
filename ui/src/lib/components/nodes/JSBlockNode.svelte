@@ -6,7 +6,7 @@
   import { match, P } from 'ts-pattern';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
-  import JSBlockBase from './JSBlockBase.svelte';
+  import CodeBlockBase from './CodeBlockBase.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -45,7 +45,7 @@
   const customConsole = createCustomConsole(nodeId);
 
   // Reference to base component for flash
-  let baseRef: JSBlockBase | null = $state(null);
+  let baseRef: CodeBlockBase | null = $state(null);
 
   const handleMessage: MessageCallbackFn = (message) => {
     try {
@@ -160,7 +160,7 @@
   }
 </script>
 
-<JSBlockBase
+<CodeBlockBase
   bind:this={baseRef}
   id={nodeId}
   {data}
@@ -173,4 +173,7 @@
   {isTimerCallbackActive}
   supportsLibraries={true}
   nodeLabel="js"
+  language="javascript"
+  editorPlaceholder="Write your JavaScript code here..."
+  nodeType="js"
 />
