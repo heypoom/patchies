@@ -212,5 +212,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       dataOnly: false
     }))
     .with('peek', () => ({ expr: '' }))
+    .with('worker', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
     .otherwise(() => ({}));
 }

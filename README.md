@@ -654,6 +654,12 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - Use `flash()` to briefly flash the node's border, useful for visual feedback when processing messages.
 - Try the `logger.js` preset which lets you log incoming messages to the console. Useful for debugging.
 
+### `worker`: JavaScript in a Web Worker thread
+
+- The `worker` node runs JavaScript in a dedicated [Web Worker thread](https://developer.mozilla.org/en-US/docs/Web/API/Worker), allowing CPU-intensive computations to run without blocking the main thread.
+- Everything in the [Patchies JavaScript Runner](#patchies-javascript-runner) is supported, except `requestAnimationFrame()` (uses 60fps setInterval as fallback), `// @lib` declaration (libraries must be created in regular `js` nodes)
+- Libraries created with `// @lib` in a regular `js` node can be imported in `worker` nodes.
+
 ### `expr`: expression evaluator
 
 <img src="./docs/images/patchies-expr-plot.png" alt="Patchies.app expression plot" width="700">
@@ -1941,7 +1947,7 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 
 Most of the JavaScript-based nodes in Patchies are using the unified JavaScript Runner (JSRunner), which is responsible for executing JavaScript code in a sandboxed environment and providing Patchies-specific features to the code.
 
-- The full features of the JavaScript Runner are available in the following objects: `js`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
+- The full features of the JavaScript Runner are available in the following objects: `js`, `worker`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
 
 - Some nodes uses _single-expression evaluation_ mode, where the expression is evaluated once for each incoming message. These nodes are `filter`, `map`, `tap` and `scan`.
   - These nodes _cannot_ use these functions: `send`, `onMessage`, `recv`, `fft`, `delay`, `onCleanup`, `setInterval`, `setTimeout` and `requestAnimationFrame`, as they are run once on each message and does not allow messaging callbacks.
