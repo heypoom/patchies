@@ -143,6 +143,10 @@ function createWorkerContext(nodeId: string) {
     postResponse({ type: 'setHidePorts', nodeId, hidePorts });
   };
 
+  const flash = () => {
+    postResponse({ type: 'flash', nodeId });
+  };
+
   // requestAnimationFrame - not available in workers, but we can use setInterval as fallback
   const requestAnimationFrame = (callback: () => void): number => {
     // Use ~60fps interval as approximation
@@ -237,7 +241,8 @@ function createWorkerContext(nodeId: string) {
     requestAnimationFrame,
     fft,
     llm,
-    getVfsUrl
+    getVfsUrl,
+    flash
   };
 }
 
@@ -314,7 +319,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setRunOnMount',
     'setTitle',
     'setHidePorts',
-    'getVfsUrl'
+    'getVfsUrl',
+    'flash'
   ];
 
   const functionArgs = [
@@ -332,7 +338,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setRunOnMount,
     ctx.setTitle,
     ctx.setHidePorts,
-    ctx.getVfsUrl
+    ctx.getVfsUrl,
+    ctx.flash
   ];
 
   try {

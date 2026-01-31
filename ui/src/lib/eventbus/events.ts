@@ -18,7 +18,8 @@ export type PatchiesEvent =
   | InsertVfsFileToCanvasEvent
   | InsertPresetToCanvasEvent
   | WorkerSendMessageEvent
-  | WorkerCallbackRegisteredEvent;
+  | WorkerCallbackRegisteredEvent
+  | WorkerFlashEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -166,4 +167,9 @@ export interface WorkerCallbackRegisteredEvent {
   type: 'workerCallbackRegistered';
   nodeId: string;
   callbackType: 'message' | 'interval' | 'timeout';
+}
+
+export interface WorkerFlashEvent {
+  type: 'workerFlash';
+  nodeId: string;
 }

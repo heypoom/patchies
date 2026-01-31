@@ -51,6 +51,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## Programming & Control Objects
 - js: JavaScript code execution
+- worker: JavaScript in Web Worker thread (non-blocking)
 - python: Python code with Pyodide
 - expr: Mathematical expression evaluator
 - asm: Virtual stack machine assembly

@@ -3,7 +3,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { WorkerCallbackRegisteredEvent } from '$lib/eventbus/events';
+  import type { WorkerCallbackRegisteredEvent, WorkerFlashEvent } from '$lib/eventbus/events';
   import JSBlockBase from './JSBlockBase.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
@@ -71,6 +71,12 @@
     }
   }
 
+  // Handle flash events from worker
+  function handleFlash(event: WorkerFlashEvent) {
+    if (event.nodeId !== nodeId) return;
+    baseRef?.flash();
+  }
+
   onMount(async () => {
     // Create the worker for this node
     await workerSystem.create(nodeId);
@@ -79,6 +85,7 @@
     eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
     eventBus.addEventListener('workerCallbackRegistered', handleCallbackRegistered);
+    eventBus.addEventListener('workerFlash', handleFlash);
 
     // Run on mount if configured
     if (data.runOnMount) {
@@ -91,6 +98,7 @@
     eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
     eventBus.removeEventListener('workerCallbackRegistered', handleCallbackRegistered);
+    eventBus.removeEventListener('workerFlash', handleFlash);
 
     // Destroy the worker
     workerSystem.destroy(nodeId);

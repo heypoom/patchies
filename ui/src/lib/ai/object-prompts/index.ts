@@ -39,6 +39,7 @@ import { labelPrompt } from './label';
 import { vuePrompt } from './vue';
 import { threePrompt } from './three';
 import { threeDomPrompt } from './three.dom';
+import { workerPrompt } from './worker';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -78,7 +79,8 @@ export const objectPrompts: Record<string, string> = {
   'elem~': elemPrompt,
   label: labelPrompt,
   three: threePrompt,
-  'three.dom': threeDomPrompt
+  'three.dom': threeDomPrompt,
+  worker: workerPrompt
 };
 
 /**

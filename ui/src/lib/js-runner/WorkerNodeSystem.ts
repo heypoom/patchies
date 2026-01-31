@@ -45,6 +45,7 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'setRunOnMount'; runOnMount: boolean }
   | { type: 'setHidePorts'; hidePorts: boolean }
   | { type: 'callbackRegistered'; callbackType: 'message' | 'interval' | 'timeout' }
+  | { type: 'flash' }
   // Requests for proxied features
   | { type: 'fftEnabled'; enabled: boolean }
   | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
@@ -158,6 +159,12 @@ export class WorkerNodeSystem {
           type: 'workerCallbackRegistered',
           nodeId,
           callbackType: event.callbackType
+        });
+      })
+      .with({ type: 'flash' }, () => {
+        this.eventBus.dispatch({
+          type: 'workerFlash',
+          nodeId
         });
       })
       // FFT proxy messages
