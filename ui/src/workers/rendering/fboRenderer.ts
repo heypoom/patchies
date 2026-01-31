@@ -1117,6 +1117,35 @@ export class FBORenderer {
     );
   }
 
+  /**
+   * Initiate async PBO reads for video frame capture.
+   * Call harvestVideoFrames() in subsequent frames to get completed results.
+   */
+  initiateVideoFrameCaptureAsync(
+    requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>
+  ): void {
+    this.previewRenderer.initiateVideoFrameBatchAsync(requests, this.fboNodes);
+  }
+
+  /**
+   * Harvest completed async video frame captures.
+   * Returns completed batches ready for transfer.
+   */
+  harvestVideoFrames(): Array<{
+    targetNodeId: string;
+    frames: (ImageBitmap | null)[];
+    timestamp: number;
+  }> {
+    return this.previewRenderer.harvestVideoFrameBatches();
+  }
+
+  /**
+   * Check if there are pending async video frame captures.
+   */
+  hasPendingVideoFrames(): boolean {
+    return this.previewRenderer.hasPendingVideoFrames();
+  }
+
   /** Update JS module in the worker's JSRunner instance */
   updateJSModule(moduleName: string, code: string | null) {
     if (code === null) {

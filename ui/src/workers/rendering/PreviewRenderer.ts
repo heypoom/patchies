@@ -17,6 +17,21 @@ interface PendingRead {
   nodeId: string;
 }
 
+interface PendingVideoFrameRead {
+  pbo: WebGLBuffer;
+  width: number;
+  height: number;
+  sync: WebGLSync;
+  sourceNodeId: string;
+}
+
+interface PendingVideoFrameBatch {
+  targetNodeId: string;
+  sourceNodeIds: (string | null)[];
+  reads: PendingVideoFrameRead[];
+  initiatedAt: number;
+}
+
 /**
  * PreviewRenderer handles GPU-to-CPU pixel readback for node previews.
  *
@@ -63,6 +78,9 @@ export class PreviewRenderer {
   // Reusable preview FBO (avoids per-frame allocation)
   private previewFbo: regl.Framebuffer2D | null = null;
   private previewTexture: regl.Texture2D | null = null;
+
+  // Video frame async read state
+  private pendingVideoFrameBatches: PendingVideoFrameBatch[] = [];
 
   constructor(
     gl: WebGL2RenderingContext,
@@ -390,6 +408,224 @@ export class PreviewRenderer {
     ctx.putImageData(imageData, 0, 0);
 
     return canvas.transferToImageBitmap();
+  }
+
+  // ===== Video Frame Async Capture =====
+
+  /**
+   * Initiate async PBO reads for a batch of video frame requests.
+   * Call harvestVideoFrameBatches() in subsequent frames to get completed results.
+   */
+  initiateVideoFrameBatchAsync(
+    requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>,
+    fboNodes: Map<string, FBONode>
+  ): void {
+    // Collect all unique source node IDs across all requests
+    const uniqueSourceIds = new Set<string>();
+    for (const request of requests) {
+      for (const sourceId of request.sourceNodeIds) {
+        if (sourceId) uniqueSourceIds.add(sourceId);
+      }
+    }
+
+    // Initiate async reads for each unique source
+    const sourceReads = new Map<string, PendingVideoFrameRead>();
+    for (const sourceId of uniqueSourceIds) {
+      const fboNode = fboNodes.get(sourceId);
+      if (!fboNode) continue;
+
+      const read = this.initiateVideoFrameRead(sourceId, fboNode.framebuffer);
+      if (read) {
+        sourceReads.set(sourceId, read);
+      }
+    }
+
+    // Create pending batches for each target
+    for (const request of requests) {
+      const reads: PendingVideoFrameRead[] = [];
+
+      for (const sourceId of request.sourceNodeIds) {
+        if (sourceId) {
+          const read = sourceReads.get(sourceId);
+          if (read) reads.push(read);
+        }
+      }
+
+      this.pendingVideoFrameBatches.push({
+        targetNodeId: request.targetNodeId,
+        sourceNodeIds: request.sourceNodeIds,
+        reads,
+        initiatedAt: performance.now()
+      });
+    }
+  }
+
+  /**
+   * Initiate a single async PBO read for video frame capture.
+   */
+  private initiateVideoFrameRead(
+    sourceNodeId: string,
+    framebuffer: regl.Framebuffer2D
+  ): PendingVideoFrameRead | null {
+    const [pw, ph] = this.previewSize;
+    const width = Math.floor(pw);
+    const height = Math.floor(ph);
+
+    if (width <= 0 || height <= 0) return null;
+
+    const [sourceWidth, sourceHeight] = this.outputSize;
+    const gl = this.gl;
+
+    this.ensurePreviewFboSize(width, height);
+
+    // Blit source to preview FBO with flip
+    const sourceFBO = getFramebuffer(framebuffer);
+    const destFBO = getFramebuffer(this.previewFbo!);
+
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
+
+    gl.blitFramebuffer(
+      0,
+      0,
+      sourceWidth,
+      sourceHeight,
+      0,
+      height,
+      width,
+      0,
+      gl.COLOR_BUFFER_BIT,
+      gl.LINEAR
+    );
+
+    // Setup PBO for async read
+    const pbo = this.getPbo();
+    const size = width * height * 4;
+
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, size, gl.STREAM_READ);
+
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, destFBO);
+
+    // This returns immediately - GPU transfer happens async
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+
+    // Create fence sync to know when read is complete
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
+
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+
+    return { pbo, width, height, sync, sourceNodeId };
+  }
+
+  /**
+   * Harvest completed video frame batches.
+   * Returns array of completed batches with their ImageBitmaps.
+   */
+  harvestVideoFrameBatches(): Array<{
+    targetNodeId: string;
+    frames: (ImageBitmap | null)[];
+    timestamp: number;
+  }> {
+    const gl = this.gl;
+    const results: Array<{
+      targetNodeId: string;
+      frames: (ImageBitmap | null)[];
+      timestamp: number;
+    }> = [];
+
+    const stillPending: PendingVideoFrameBatch[] = [];
+    const completedReads = new Map<PendingVideoFrameRead, ImageBitmap>();
+
+    for (const batch of this.pendingVideoFrameBatches) {
+      // Check if all reads for this batch are complete
+      let allComplete = true;
+
+      for (const read of batch.reads) {
+        // Skip if already harvested
+        if (completedReads.has(read)) continue;
+
+        const status = gl.clientWaitSync(read.sync, 0, 0);
+
+        if (status === gl.TIMEOUT_EXPIRED) {
+          allComplete = false;
+          continue;
+        }
+
+        if (status === gl.WAIT_FAILED) {
+          // Clean up failed read
+          gl.deleteSync(read.sync);
+          this.returnPbo(read.pbo);
+          continue;
+        }
+
+        // Read is complete - extract the bitmap
+        gl.deleteSync(read.sync);
+
+        const { pbo, width, height } = read;
+        const size = width * height * 4;
+        const pixels = new Uint8Array(size);
+
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+        gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+
+        this.returnPbo(pbo);
+
+        // Create bitmap
+        const { canvas, ctx } = this.getCanvas(width, height);
+        const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+        ctx.putImageData(imageData, 0, 0);
+
+        completedReads.set(read, canvas.transferToImageBitmap());
+      }
+
+      if (allComplete && batch.reads.length > 0) {
+        // Build frames array matching sourceNodeIds order
+        const frames: (ImageBitmap | null)[] = [];
+        const usedBitmaps = new Set<ImageBitmap>();
+
+        for (const sourceId of batch.sourceNodeIds) {
+          if (!sourceId) {
+            frames.push(null);
+            continue;
+          }
+
+          // Find the read for this source
+          const read = batch.reads.find((r) => r.sourceNodeId === sourceId);
+          const bitmap = read ? completedReads.get(read) : null;
+
+          // Only use each bitmap once (for transfer)
+          if (bitmap && !usedBitmaps.has(bitmap)) {
+            frames.push(bitmap);
+            usedBitmaps.add(bitmap);
+          } else {
+            frames.push(null);
+          }
+        }
+
+        results.push({
+          targetNodeId: batch.targetNodeId,
+          frames,
+          timestamp: performance.now()
+        });
+      } else if (!allComplete) {
+        // Keep batch for next harvest
+        stillPending.push(batch);
+      }
+    }
+
+    this.pendingVideoFrameBatches = stillPending;
+    return results;
+  }
+
+  /**
+   * Check if there are pending video frame batches.
+   */
+  hasPendingVideoFrames(): boolean {
+    return this.pendingVideoFrameBatches.length > 0;
   }
 
   // ===== Helpers =====
