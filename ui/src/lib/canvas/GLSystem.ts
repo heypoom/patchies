@@ -23,6 +23,7 @@ import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+import { ProfilingHelper } from '$lib/utils/ProfilingHelper';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -53,6 +54,9 @@ export class GLSystem {
 
   /** Cache for outgoing video connections to avoid recalculating on every frame */
   private outgoingConnectionsCache = new Map<string, boolean>();
+
+  /** Performance profiler for createImageBitmap in setBitmapSource */
+  private bitmapProfiler = new ProfilingHelper('GLSystem createImageBitmap');
 
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
@@ -471,7 +475,10 @@ export class GLSystem {
   }
 
   setBitmapSource(nodeId: string, source: ImageBitmapSource) {
+    const t0 = performance.now();
     createImageBitmap(source).then((bitmap) => {
+      const t1 = performance.now();
+      this.bitmapProfiler.record(t1 - t0);
       this.setBitmap(nodeId, bitmap);
     });
   }

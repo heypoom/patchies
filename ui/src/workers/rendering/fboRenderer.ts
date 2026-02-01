@@ -28,6 +28,7 @@ import type {
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
+import { ProfilingHelper } from '../../lib/utils/ProfilingHelper.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
 
 export class FBORenderer {
@@ -83,6 +84,9 @@ export class FBORenderer {
   private startTime: number = Date.now();
   private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
+
+  /** Performance profiler for setBitmap operations */
+  private bitmapProfiler = new ProfilingHelper('fboRenderer setBitmap');
 
   /** Shared pixel readback infrastructure */
   public pixelReadbackService: PixelReadbackService;
@@ -968,7 +972,10 @@ export class FBORenderer {
    * @param bitmap - ImageBitmap (will be flipped during upload)
    */
   setBitmap(nodeId: string, bitmap: ImageBitmap) {
+    const t0 = performance.now();
     this.videoTextures.setBitmap(nodeId, bitmap);
+    const t1 = performance.now();
+    this.bitmapProfiler.record(t1 - t0);
   }
 
   /**

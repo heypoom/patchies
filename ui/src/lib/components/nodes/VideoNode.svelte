@@ -20,6 +20,7 @@
     MediaBunnyErrorEvent,
     MediaBunnyTimeUpdateEvent
   } from '$lib/eventbus/events';
+  import { ProfilingHelper } from '$lib/utils/ProfilingHelper';
 
   // Type definitions for requestVideoFrameCallback (not yet in all TypeScript libs)
   interface VideoFrameCallbackMetadata {
@@ -101,6 +102,9 @@
   let profiler: VideoProfiler | null = null;
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  // Performance profiling for createImageBitmap
+  const bitmapProfiler = new ProfilingHelper('VideoNode createImageBitmap');
 
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
   const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
@@ -536,7 +540,10 @@
         resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
 
         // Create flipped ImageBitmap to match pipeline orientation
+        const t0 = performance.now();
         const bitmap = await createImageBitmap(resizerCanvas);
+        const t1 = performance.now();
+        bitmapProfiler.record(t1 - t0);
         await glSystem.setBitmap(nodeId, bitmap);
       }
     } else {
