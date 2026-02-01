@@ -25,8 +25,10 @@ export interface MediaBunnyPlayerConfig {
   onMetadata: (metadata: VideoMetadata) => void;
   onEnded: () => void;
   onError: (error: Error) => void;
+
   /** Called periodically with current playback time (for UI sync) */
   onTimeUpdate?: (currentTime: number) => void;
+
   /** Called when first frame is received (for timeout cancellation) */
   onFirstFrame?: () => void;
 }
