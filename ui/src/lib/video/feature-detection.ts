@@ -6,6 +6,15 @@
  * - HTMLVideoElement fallback for Firefox and older browsers
  */
 
+/**
+ * Check if the current browser is Firefox.
+ * Firefox has experimental WebCodecs support but it's significantly slower
+ * than the HTMLVideoElement fallback, so we explicitly disable it.
+ */
+function isFirefox(): boolean {
+  return typeof navigator !== 'undefined' && /Firefox/i.test(navigator.userAgent);
+}
+
 export const webCodecsSupport = {
   /**
    * MediaStreamTrackProcessor support for webcam frame extraction.
@@ -48,8 +57,11 @@ export const webCodecsSupport = {
   /**
    * Full video file WebCodecs support.
    * Requires VideoDecoder, VideoFrame, and EncodedVideoChunk.
+   * Disabled on Firefox due to poor performance (HTMLVideoElement fallback is faster).
    */
   get videoFileFull(): boolean {
+    if (isFirefox()) return false;
+
     return this.videoDecoder && this.videoFrame && this.encodedVideoChunk;
   }
 };
@@ -80,6 +92,7 @@ export async function isCodecSupported(codec: string): Promise<boolean> {
  */
 export function getWebCodecsSupportInfo(): string {
   const features = [
+    `browser: ${isFirefox() ? 'Firefox (forced fallback)' : 'other'}`,
     `webcam: ${webCodecsSupport.webcam}`,
     `videoDecoder: ${webCodecsSupport.videoDecoder}`,
     `videoFrame: ${webCodecsSupport.videoFrame}`,
