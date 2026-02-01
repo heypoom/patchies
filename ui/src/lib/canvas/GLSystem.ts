@@ -477,10 +477,11 @@ export class GLSystem {
   }
 
   /**
-   * Set a pre-flipped ImageBitmap for a node.
+   * Set an ImageBitmap for a node.
+   * The fboRenderer will Y-flip this for us.
    *
    * @param nodeId - The node ID to set the bitmap for
-   * @param bitmap - Pre-flipped ImageBitmap (created with imageOrientation: 'flipY')
+   * @param bitmap - ImageBitmap
    */
   setBitmap(nodeId: string, bitmap: ImageBitmap) {
     this.renderWorker.postMessage(
