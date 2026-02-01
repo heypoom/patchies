@@ -249,11 +249,21 @@
     }
 
     // Fuzzy search all items (only the first word/object name)
+    const query = expr.toLowerCase();
     const results = allItemsFuse.search(expr);
 
-    // Sort results with custom scoring: objects get priority over presets
-    const sortedResults = results.sort((a, b) => {
-      // First sort by type (objects first)
+    // Sort results with custom scoring: prefix matches first, then objects over presets
+    const sortedResults = results.toSorted((a, b) => {
+      const aName = a.item.name.toLowerCase();
+      const bName = b.item.name.toLowerCase();
+      const aStartsWith = aName.startsWith(query);
+      const bStartsWith = bName.startsWith(query);
+
+      // Prefix matches come first
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      // Then sort by type (objects first)
       if (a.item.type !== b.item.type) {
         return a.item.type === 'object' ? -1 : 1;
       }
