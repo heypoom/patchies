@@ -667,6 +667,13 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 
 Worker nodes can capture video frames from [connected visual nodes](#video-chaining):
 
+- **`setVideoCount(inletCount)`**: Configure the number of video inlets for receiving frames. Call this to create video ports that visual nodes can output to.
+
+  ```js
+  // Create 2 video inlets to receive from 2 sources
+  setVideoCount(2);
+  ```
+
 - **`onVideoFrame(callback, config?)`**: Register a callback that receives frames each render cycle.
 
   ```js
