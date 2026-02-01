@@ -140,6 +140,8 @@ interface DecoderState {
   // Sample queue for backpressure (store encoded samples before decoding)
   pendingSamples: MP4BoxSample[];
   sampleProcessingId: number | null;
+  extractionPaused: boolean; // Whether MP4Box extraction is paused due to backpressure
+  videoTrackId: number | null; // Track ID for resuming extraction
 
   // Playback state
   isPlaying: boolean;
@@ -170,6 +172,8 @@ let MP4BoxModule: any = null;
 const MAX_DECODE_QUEUE_SIZE = 10; // Max chunks waiting in VideoDecoder
 const MAX_PENDING_FRAMES = 30; // Max decoded frames waiting to be sent
 const SAMPLE_BATCH_SIZE = 5; // How many samples to process per tick
+const MAX_PENDING_SAMPLES = 300; // Max encoded samples (~5 seconds at 60fps) - prevents OOM
+const SAMPLE_RESUME_THRESHOLD = 100; // Resume extraction when samples drop below this
 
 function createInitialState(): DecoderState {
   return {
@@ -181,6 +185,8 @@ function createInitialState(): DecoderState {
     keyframes: [],
     pendingSamples: [],
     sampleProcessingId: null,
+    extractionPaused: false,
+    videoTrackId: null,
     isPlaying: false,
     isPaused: true,
     currentTime: 0,
@@ -229,6 +235,8 @@ async function loadFile(nodeId: string, file: File): Promise<void> {
     state.pendingFrames.forEach((f) => f.close());
     state.pendingFrames = [];
     state.keyframes = [];
+    state.extractionPaused = false;
+    state.videoTrackId = null;
 
     state.source = file;
 
@@ -400,6 +408,10 @@ function handleMP4BoxReady(nodeId: string, info: MP4BoxInfo): void {
 
   state.decoder.configure(state.decoderConfig);
 
+  // Store track ID for pausing/resuming extraction
+  state.videoTrackId = videoTrack.id;
+  state.extractionPaused = false;
+
   // Start extracting samples from video track
   state.mp4boxFile.setExtractionOptions(videoTrack.id, null, {
     nbSamples: Infinity
@@ -436,6 +448,12 @@ function handleMP4BoxSamples(nodeId: string, _trackId: number, samples: MP4BoxSa
 
     // Queue the sample for later decoding
     state.pendingSamples.push(sample);
+  }
+
+  // Pause MP4Box extraction if sample queue is getting too large (prevents OOM)
+  if (state.pendingSamples.length >= MAX_PENDING_SAMPLES && !state.extractionPaused) {
+    state.mp4boxFile?.stop();
+    state.extractionPaused = true;
   }
 
   // Start processing samples if not already running
@@ -494,6 +512,12 @@ function processSampleQueue(nodeId: string): void {
     } catch (error) {
       sendError(nodeId, `Decode error: ${error instanceof Error ? error.message : error}`);
     }
+  }
+
+  // Resume MP4Box extraction if sample queue has drained below threshold
+  if (state.extractionPaused && state.pendingSamples.length < SAMPLE_RESUME_THRESHOLD) {
+    state.mp4boxFile?.start();
+    state.extractionPaused = false;
   }
 
   // Continue processing if there are more samples
