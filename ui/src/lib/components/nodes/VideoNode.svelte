@@ -79,6 +79,11 @@
   // WebCodecs support - use when available and enabled
   let webCodecsPlayer: WebCodecsPlayer | null = null;
   let currentFile: File | null = null;
+  let webCodecsFirstFrameReceived = false;
+  let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  // How long to wait for first WebCodecs frame before falling back (ms)
+  const WEBCODECS_TIMEOUT_MS = 5000;
 
   // Video profiling
   let profiler: VideoProfiler | null = null;
@@ -211,7 +216,39 @@
   }
 
   /**
+   * Fall back from WebCodecs to HTMLVideoElement frame extraction.
+   * Called when WebCodecs fails, times out, or encounters an error.
+   */
+  function fallbackToHTMLVideo(reason: string) {
+    console.warn(`[VideoNode] Falling back to HTMLVideoElement: ${reason}`);
+
+    // Clear timeout if pending
+    if (webCodecsTimeoutId !== null) {
+      clearTimeout(webCodecsTimeoutId);
+      webCodecsTimeoutId = null;
+    }
+
+    // Clean up WebCodecs player
+    if (webCodecsPlayer) {
+      webCodecsPlayer.destroy();
+      webCodecsPlayer = null;
+    }
+
+    // Reset state
+    webCodecsFirstFrameReceived = false;
+
+    // Update profiler to show we're using fallback
+    profiler?.setPipeline('fallback');
+
+    // Start the HTMLVideoElement frame loop (only if not already running)
+    if (!bitmapFrameId && !videoFrameCallbackId) {
+      startFallbackFrameLoop();
+    }
+  }
+
+  /**
    * Initialize WebCodecsPlayer for frame extraction.
+   * Sets up a timeout to fall back if no frames are received.
    */
   function initWebCodecsPlayer(file: File) {
     // Clean up existing player
@@ -219,9 +256,32 @@
       webCodecsPlayer.destroy();
     }
 
+    // Reset state
+    webCodecsFirstFrameReceived = false;
+
+    // Set timeout for first frame - if we don't get a frame within WEBCODECS_TIMEOUT_MS, fall back
+    if (webCodecsTimeoutId !== null) {
+      clearTimeout(webCodecsTimeoutId);
+    }
+    webCodecsTimeoutId = setTimeout(() => {
+      if (!webCodecsFirstFrameReceived) {
+        fallbackToHTMLVideo(`No frames received within ${WEBCODECS_TIMEOUT_MS}ms`);
+      }
+      webCodecsTimeoutId = null;
+    }, WEBCODECS_TIMEOUT_MS);
+
     webCodecsPlayer = new WebCodecsPlayer({
       nodeId,
       onFrame: (bitmap, timestamp) => {
+        // Mark first frame received (cancels the timeout fallback)
+        if (!webCodecsFirstFrameReceived) {
+          webCodecsFirstFrameReceived = true;
+          if (webCodecsTimeoutId !== null) {
+            clearTimeout(webCodecsTimeoutId);
+            webCodecsTimeoutId = null;
+          }
+        }
+
         // Track frame for profiling
         profiler?.recordFrame(timestamp, webCodecsPlayer?.currentTime);
 
@@ -248,11 +308,7 @@
         }
       },
       onError: (err) => {
-        console.error('[VideoNode] WebCodecs error:', err);
-        // Fall back to HTMLVideoElement on error
-        if (!bitmapFrameId && !videoFrameCallbackId) {
-          startFallbackFrameLoop();
-        }
+        fallbackToHTMLVideo(`WebCodecs error: ${err.message}`);
       }
     });
 
@@ -474,6 +530,12 @@
   onDestroy(() => {
     // Clean up frame loop (handles both requestVideoFrameCallback and requestAnimationFrame)
     stopFallbackFrameLoop();
+
+    // Clean up WebCodecs timeout
+    if (webCodecsTimeoutId !== null) {
+      clearTimeout(webCodecsTimeoutId);
+      webCodecsTimeoutId = null;
+    }
 
     // Clean up stats interval
     if (statsIntervalId) {
