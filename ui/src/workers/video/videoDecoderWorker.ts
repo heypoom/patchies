@@ -130,6 +130,10 @@ interface DecoderState {
   // Keyframe index for seeking
   keyframes: KeyframeEntry[];
 
+  // Sample queue for backpressure (store encoded samples before decoding)
+  pendingSamples: MP4BoxSample[];
+  sampleProcessingId: number | null;
+
   // Playback state
   isPlaying: boolean;
   isPaused: boolean;
@@ -155,6 +159,11 @@ let MP4BoxModule: any = null;
 // Helper Functions
 // ============================================================================
 
+// Backpressure constants
+const MAX_DECODE_QUEUE_SIZE = 10; // Max chunks waiting in VideoDecoder
+const MAX_PENDING_FRAMES = 30; // Max decoded frames waiting to be sent
+const SAMPLE_BATCH_SIZE = 5; // How many samples to process per tick
+
 function createInitialState(): DecoderState {
   return {
     source: null,
@@ -163,6 +172,8 @@ function createInitialState(): DecoderState {
     decoderConfig: null,
     metadata: null,
     keyframes: [],
+    pendingSamples: [],
+    sampleProcessingId: null,
     isPlaying: false,
     isPaused: true,
     currentTime: 0,
@@ -199,12 +210,18 @@ async function loadFile(nodeId: string, file: File): Promise<void> {
     }
 
     // Clean up previous state
+    if (state.sampleProcessingId !== null) {
+      clearTimeout(state.sampleProcessingId);
+      state.sampleProcessingId = null;
+    }
     if (state.decoder) {
       state.decoder.close();
       state.decoder = null;
     }
+    state.pendingSamples = [];
     state.pendingFrames.forEach((f) => f.close());
     state.pendingFrames = [];
+    state.keyframes = [];
 
     state.source = file;
 
@@ -395,8 +412,9 @@ function handleMP4BoxReady(nodeId: string, info: MP4BoxInfo): void {
 
 function handleMP4BoxSamples(nodeId: string, _trackId: number, samples: MP4BoxSample[]): void {
   const state = decoderStates.get(nodeId);
-  if (!state || !state.decoder) return;
+  if (!state) return;
 
+  // Queue samples for processing with backpressure (don't decode immediately)
   for (let i = 0; i < samples.length; i++) {
     const sample = samples[i];
 
@@ -409,16 +427,68 @@ function handleMP4BoxSamples(nodeId: string, _trackId: number, samples: MP4BoxSa
       });
     }
 
-    // Create encoded video chunk
-    const chunk = new EncodedVideoChunk({
-      type: sample.is_sync ? 'key' : 'delta',
-      timestamp: (sample.cts / sample.timescale) * 1_000_000, // to microseconds
-      duration: (sample.duration / sample.timescale) * 1_000_000,
-      data: sample.data
-    });
+    // Queue the sample for later decoding
+    state.pendingSamples.push(sample);
+  }
 
-    // Feed to decoder
-    state.decoder.decode(chunk);
+  // Start processing samples if not already running
+  if (state.sampleProcessingId === null) {
+    processSampleQueue(nodeId);
+  }
+}
+
+/**
+ * Process queued samples with backpressure.
+ * Only feeds samples to the decoder when there's room in the queue.
+ */
+function processSampleQueue(nodeId: string): void {
+  const state = decoderStates.get(nodeId);
+  if (!state || !state.decoder) return;
+
+  // Check backpressure conditions
+  const decoderQueueFull = state.decoder.decodeQueueSize >= MAX_DECODE_QUEUE_SIZE;
+  const frameQueueFull = state.pendingFrames.length >= MAX_PENDING_FRAMES;
+
+  if (decoderQueueFull || frameQueueFull) {
+    // Wait and retry - decoder is busy
+    state.sampleProcessingId = self.setTimeout(() => {
+      state.sampleProcessingId = null;
+      processSampleQueue(nodeId);
+    }, 16) as unknown as number; // ~60fps check rate
+    return;
+  }
+
+  // Process a batch of samples
+  const samplesToProcess = Math.min(SAMPLE_BATCH_SIZE, state.pendingSamples.length);
+
+  for (let i = 0; i < samplesToProcess; i++) {
+    const sample = state.pendingSamples.shift();
+    if (!sample) break;
+
+    try {
+      // Create encoded video chunk
+      const chunk = new EncodedVideoChunk({
+        type: sample.is_sync ? 'key' : 'delta',
+        timestamp: (sample.cts / sample.timescale) * 1_000_000, // to microseconds
+        duration: (sample.duration / sample.timescale) * 1_000_000,
+        data: sample.data
+      });
+
+      // Feed to decoder
+      state.decoder.decode(chunk);
+    } catch (error) {
+      sendError(nodeId, `Decode error: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  // Continue processing if there are more samples
+  if (state.pendingSamples.length > 0) {
+    state.sampleProcessingId = self.setTimeout(() => {
+      state.sampleProcessingId = null;
+      processSampleQueue(nodeId);
+    }, 0) as unknown as number; // Process next batch immediately if queue has room
+  } else {
+    state.sampleProcessingId = null;
   }
 }
 
@@ -556,7 +626,14 @@ function seek(nodeId: string, timeSeconds: number): void {
     nearestKeyframe = state.keyframes[0];
   }
 
-  // Clear pending frames
+  // Cancel sample processing
+  if (state.sampleProcessingId !== null) {
+    clearTimeout(state.sampleProcessingId);
+    state.sampleProcessingId = null;
+  }
+
+  // Clear pending samples and frames
+  state.pendingSamples = [];
   state.pendingFrames.forEach((f) => f.close());
   state.pendingFrames = [];
 
@@ -599,6 +676,11 @@ function destroy(nodeId: string): void {
     cancelAnimationFrame(state.animationFrameId);
   }
 
+  // Cancel sample processing
+  if (state.sampleProcessingId !== null) {
+    clearTimeout(state.sampleProcessingId);
+  }
+
   // Close decoder
   if (state.decoder) {
     state.decoder.close();
@@ -606,6 +688,9 @@ function destroy(nodeId: string): void {
 
   // Close pending frames
   state.pendingFrames.forEach((f) => f.close());
+
+  // Clear pending samples
+  state.pendingSamples = [];
 
   // Remove state
   decoderStates.delete(nodeId);
