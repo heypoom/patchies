@@ -84,6 +84,11 @@
   let webCodecsFirstFrameReceived = false;
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+  // Canvas preview - used when MediaBunny is active (single source of truth)
+  let previewCanvas = $state<HTMLCanvasElement | undefined>();
+  let previewCtx: CanvasRenderingContext2D | null = null;
+  let useCanvasPreview = $state(false);
+
   // How long to wait for first WebCodecs frame before falling back (ms)
   const WEBCODECS_TIMEOUT_MS = 5000;
 
@@ -94,6 +99,13 @@
 
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
   const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
+
+  // Initialize canvas context when canvas is bound
+  $effect(() => {
+    if (previewCanvas && !previewCtx) {
+      previewCtx = previewCanvas.getContext('2d');
+    }
+  });
 
   // Use VFS media composable for file handling
   const vfsMedia = useVfsMedia({
@@ -240,8 +252,16 @@
     // Reset state
     webCodecsFirstFrameReceived = false;
 
+    // Disable canvas preview - switch back to HTMLVideoElement display
+    useCanvasPreview = false;
+
     // Update profiler to show we're using fallback
     profiler?.setPipeline('fallback');
+
+    // Resume HTMLVideoElement for display if video was playing
+    if (videoElement && !isPaused) {
+      videoElement.play();
+    }
 
     // Start the HTMLVideoElement frame loop (only if not already running)
     if (!bitmapFrameId && !videoFrameCallbackId) {
@@ -291,6 +311,13 @@
         // Track frame for profiling (MediaBunny handles queue management internally)
         profiler?.recordFrame(timestamp, mediaBunnyPlayer?.currentTime);
 
+        // Draw to preview canvas first (single source of truth for preview)
+        // Canvas is CSS-flipped to match the GL-flipped bitmap orientation
+        if (previewCanvas && previewCtx && useCanvasPreview) {
+          previewCtx.drawImage(bitmap, 0, 0, previewCanvas.width, previewCanvas.height);
+        }
+
+        // Then send to GLSystem (or close if no connections)
         if (glSystem.hasOutgoingVideoConnections(nodeId)) {
           // Transfer bitmap to render worker (ownership transferred, worker will close it)
           glSystem.setPreflippedBitmap(nodeId, bitmap);
@@ -344,64 +371,82 @@
       mediaBunnyPlayer.loadFile(file);
     }
     mediaBunnyPlayer.setLoop(data.loop ?? true);
-  }
 
-  function restartVideo() {
-    if (videoElement && isVideoLoaded) {
-      // Stop current playback tracking before restart
-      profiler?.markPlaybackStop(videoElement.currentTime);
+    // Enable canvas preview mode - MediaBunny is now the single source of truth
+    useCanvasPreview = true;
 
-      videoElement.currentTime = 0;
-      lastRecordedMediaTime = -1;
-
-      // Send bang to audio system to restart audio (sets currentTime to 0 and plays)
-      audioService.send(nodeId, 'message', { type: 'bang' });
-
-      // Restart MediaBunny player if active
-      if (mediaBunnyPlayer) {
-        mediaBunnyPlayer.seek(0);
-        mediaBunnyPlayer.play();
-      }
-
-      if (isPaused) {
-        videoElement.play();
-        isPaused = false;
-      }
-
-      // Start new playback tracking from beginning
-      profiler?.markPlaybackStart(0);
+    // Pause HTMLVideoElement since we're using canvas for display (saves resources)
+    if (videoElement) {
+      videoElement.pause();
     }
   }
 
-  function togglePause() {
-    if (videoElement && isVideoLoaded) {
+  async function restartVideo() {
+    if (!isVideoLoaded) return;
+
+    // Get current time from appropriate source
+    const currentTime = mediaBunnyPlayer?.currentTime ?? videoElement?.currentTime ?? 0;
+    profiler?.markPlaybackStop(currentTime);
+
+    lastRecordedMediaTime = -1;
+
+    // Send bang to audio system to restart audio (sets currentTime to 0 and plays)
+    audioService.send(nodeId, 'message', { type: 'bang' });
+
+    // Restart MediaBunny player if active - must await seek to avoid race condition
+    if (mediaBunnyPlayer) {
+      await mediaBunnyPlayer.seek(0);
+      mediaBunnyPlayer.play();
+      isPaused = false;
+    } else if (videoElement) {
+      // Fallback mode - use HTMLVideoElement
+      videoElement.currentTime = 0;
       if (isPaused) {
         videoElement.play();
-        audioService.send(nodeId, 'message', { type: 'play' });
-
-        // Resume MediaBunny player
-        if (mediaBunnyPlayer) {
-          mediaBunnyPlayer.play();
-        }
-
-        // Mark playback start for accurate drop detection
-        profiler?.markPlaybackStart(videoElement.currentTime);
-
         isPaused = false;
-      } else {
-        // Mark playback stop before pausing (calculates drops)
-        profiler?.markPlaybackStop(videoElement.currentTime);
-
-        videoElement.pause();
-        audioService.send(nodeId, 'message', { type: 'pause' });
-
-        // Pause MediaBunny player
-        if (mediaBunnyPlayer) {
-          mediaBunnyPlayer.pause();
-        }
-
-        isPaused = true;
       }
+    }
+
+    // Start new playback tracking from beginning
+    profiler?.markPlaybackStart(0);
+  }
+
+  function togglePause() {
+    if (!isVideoLoaded) return;
+
+    // Get current time from appropriate source
+    const currentTime = mediaBunnyPlayer?.currentTime ?? videoElement?.currentTime ?? 0;
+
+    if (isPaused) {
+      audioService.send(nodeId, 'message', { type: 'play' });
+
+      if (mediaBunnyPlayer) {
+        // MediaBunny mode - only control MediaBunny player
+        mediaBunnyPlayer.play();
+      } else if (videoElement) {
+        // Fallback mode - control HTMLVideoElement
+        videoElement.play();
+      }
+
+      // Mark playback start for accurate drop detection
+      profiler?.markPlaybackStart(currentTime);
+
+      isPaused = false;
+    } else {
+      // Mark playback stop before pausing (calculates drops)
+      profiler?.markPlaybackStop(currentTime);
+
+      audioService.send(nodeId, 'message', { type: 'pause' });
+
+      if (mediaBunnyPlayer) {
+        // MediaBunny mode - only control MediaBunny player
+        mediaBunnyPlayer.pause();
+      } else if (videoElement) {
+        // Fallback mode - control HTMLVideoElement
+        videoElement.pause();
+      }
+
+      isPaused = true;
     }
   }
 
@@ -663,9 +708,28 @@
         >
           {#if !errorMessage}
             <div class="relative">
+              <!-- Canvas preview when MediaBunny is active (single source of truth) -->
+              <!-- CSS scaleY(-1) flips to match GL-flipped bitmap, avoiding per-frame transforms -->
+              <canvas
+                bind:this={previewCanvas}
+                width={data.width || defaultPreviewWidth}
+                height={data.height || defaultPreviewHeight}
+                class="rounded-lg {vfsMedia.hasVfsPath && isVideoLoaded && useCanvasPreview
+                  ? ''
+                  : 'hidden'}"
+                style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
+                  defaultPreviewHeight}px; transform: scaleY(-1)"
+                ondragover={vfsMedia.handleDragOver}
+                ondragleave={vfsMedia.handleDragLeave}
+                ondrop={vfsMedia.handleDrop}
+              ></canvas>
+
+              <!-- Video element for fallback and metadata extraction -->
               <video
                 bind:this={videoElement}
-                class="rounded-lg object-cover {vfsMedia.hasVfsPath && isVideoLoaded
+                class="rounded-lg object-cover {vfsMedia.hasVfsPath &&
+                isVideoLoaded &&
+                !useCanvasPreview
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||

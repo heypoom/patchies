@@ -143,9 +143,9 @@
       description: 'Show or hide video/webcam performance stats (FPS, drops, pipeline)'
     },
     {
-      id: 'toggle-webcodecs',
-      name: 'Toggle WebCodecs',
-      description: `${$useWebCodecs ? 'Disable' : 'Enable'} WebCodecs for video decoding (currently ${$useWebCodecs ? 'ON' : 'OFF'})`
+      id: 'toggle-mediabunny',
+      name: 'Toggle MediaBunny',
+      description: `${$useWebCodecs ? 'Disable' : 'Enable'} MediaBunny for video decoding (currently ${$useWebCodecs ? 'ON' : 'OFF'})`
     },
     {
       id: 'set-gemini-api-key',
@@ -321,7 +321,7 @@
         toggleVideoStats();
         onCancel();
       })
-      .with('toggle-webcodecs', () => {
+      .with('toggle-mediabunny', () => {
         toggleWebCodecs();
         onCancel();
       })
