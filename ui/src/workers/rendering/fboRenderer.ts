@@ -862,7 +862,8 @@ export class FBORenderer {
 
     if (this.externalTexturesByNode.has(node.id)) {
       const tex = this.externalTexturesByNode.get(node.id)!;
-      framebuffer = this.regl.framebuffer({ color: tex });
+      // Use cached FBO instead of creating new one every frame (fixes massive leak)
+      framebuffer = this.externalFlippedFBOs.get(node.id) || null;
       sourceWidth = tex.width;
       sourceHeight = tex.height;
     } else {
@@ -990,15 +991,19 @@ export class FBORenderer {
       this.externalSourceTextures.set(nodeId, sourceTexture);
     }
 
-    // Get or create destination texture and FBO (flipped result)
+    // Get or create destination texture (flipped result)
     let destTexture = this.externalTexturesByNode.get(nodeId);
-    let destFBO = this.externalFlippedFBOs.get(nodeId);
     if (!destTexture || destTexture.width !== width || destTexture.height !== height) {
       destTexture?.destroy();
-      destFBO?.destroy();
       destTexture = this.regl.texture({ width, height });
-      destFBO = this.regl.framebuffer({ color: destTexture });
       this.externalTexturesByNode.set(nodeId, destTexture);
+    }
+
+    // Get or create destination FBO (CACHED - created once and reused)
+    let destFBO = this.externalFlippedFBOs.get(nodeId);
+    if (!destFBO || destTexture.width !== width || destTexture.height !== height) {
+      destFBO?.destroy();
+      destFBO = this.regl.framebuffer({ color: destTexture });
       this.externalFlippedFBOs.set(nodeId, destFBO);
     }
 
