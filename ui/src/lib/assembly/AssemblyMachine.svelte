@@ -69,7 +69,7 @@
     try {
       await match(message)
         .with({ type: 'bang' }, () => stepMachine())
-        .with({ type: 'set', code: P.string }, ({ code }) => {
+        .with({ type: 'setCode', code: P.string }, ({ code }) => {
           setCodeAndUpdate(code);
         })
         .with({ type: 'run' }, () => reloadProgram(true))

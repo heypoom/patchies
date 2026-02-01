@@ -50,7 +50,7 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with({ type: 'set', code: P.string }, ({ code }) => {
+        .with({ type: 'setCode', code: P.string }, ({ code }) => {
           updateNodeData(nodeId, { code });
         })
         .with({ type: 'run' }, () => {

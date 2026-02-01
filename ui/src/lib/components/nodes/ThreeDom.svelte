@@ -116,7 +116,7 @@
   const handleMessage: MessageCallbackFn = (message, _meta) => {
     try {
       match(message)
-        .with({ type: 'set', code: P.string }, ({ code }) => {
+        .with({ type: 'setCode', code: P.string }, ({ code }) => {
           setCodeAndUpdate(code);
         })
         .with({ type: 'run' }, () => {

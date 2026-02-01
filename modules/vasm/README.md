@@ -54,7 +54,7 @@ It gives you a simple stack machine with these features:
   - `Shift + Enter` in the code editor auto-runs the program.
 - Messages:
   - `bang`: step the program by one instruction
-  - `{type: 'set', code: <string>}`: load the assembly code
+  - `{type: 'setCode', code: <string>}`: load the assembly code
   - `run`: reload the program and step N times
   - `play`: start automatic clocking
   - `pause`: pause automatic clocking

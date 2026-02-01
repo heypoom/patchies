@@ -33,11 +33,11 @@ Example: how to implement `HydraNode.svelte`'s headless logic.
 class HydraNode extends PatcherNode {
   // messaging should be automatically injected into every patcher node.
   // they're auto-hooked into PatcherNode's onMessage.
-  messageContext: MessageContext
+  messageContext: MessageContext;
 
   // grab singleton instances of systems
-  glSystem = GLSystem.getInstance()
-  audioAnalysisSystem = AudioAnalysisSystem.getInstance()
+  glSystem = GLSystem.getInstance();
+  audioAnalysisSystem = AudioAnalysisSystem.getInstance();
 
   onCreate() {}
 
@@ -47,38 +47,38 @@ class HydraNode extends PatcherNode {
     const handleMessage: MessageCallbackFn = (message, meta) => {
       try {
         match(message)
-          .with({type: 'set', code: P.string}, ({code}) => {
-            this.updateNodeData({code})
-            setTimeout(() => this.updateHydra())
+          .with({ type: "setCode", code: P.string }, ({ code }) => {
+            this.updateNodeData({ code });
+            setTimeout(() => this.updateHydra());
           })
-          .with({type: 'run'}, () => {
-            this.updateHydra()
+          .with({ type: "run" }, () => {
+            this.updateHydra();
           })
           .otherwise(() => {
-            glSystem.sendMessageToNode(nodeId, {...meta, data: message})
-          })
+            glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
+          });
       } catch (error) {
-        errorMessage = error instanceof Error ? error.message : String(error)
+        errorMessage = error instanceof Error ? error.message : String(error);
       }
-    }
+    };
   }
 
   private updateHydra() {
     try {
-      this.messageContext.clearTimers()
-      this.audioAnalysisSystem.disableFFT(nodeId)
+      this.messageContext.clearTimers();
+      this.audioAnalysisSystem.disableFFT(nodeId);
 
-      const isUpdated = this.glSystem.upsertNode(nodeId, 'hydra', {code})
+      const isUpdated = this.glSystem.upsertNode(nodeId, "hydra", { code });
 
       // If the code hasn't changed, the code will not be re-run.
       // This allows us to forcibly re-run hydra to update FFT.
-      if (!isUpdated) this.glSystem.send('updateHydra', {nodeId})
+      if (!isUpdated) this.glSystem.send("updateHydra", { nodeId });
 
-      this.updateNodeData({errorMessage: null})
+      this.updateNodeData({ errorMessage: null });
     } catch (error) {
       this.updateNodeData({
         errorMessage: error instanceof Error ? error.message : String(error),
-      })
+      });
     }
   }
 }

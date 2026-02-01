@@ -922,7 +922,7 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - `puts`, `p`, `warn` - console output
 - Note: Use `emit` instead of `send` (Ruby's built-in `send` method conflicts with JS interop).
 - Control messages:
-  - `{type: 'set', code: '...'}` - update the node's code
+  - `{type: 'setCode', code: '...'}` - update the node's code
   - `{type: 'run'}` - execute the code
   - `{type: 'stop'}` - stop running tasks
 
@@ -1041,7 +1041,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
   - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
 - Messages
   - `bang` or `run`: evaluates the code and starts playback
-  - string or `{type: 'set', code: '...'}`: sets the code in the editor
+  - string or `{type: 'setCode', code: '...'}`: sets the code in the editor
   - `{type: 'setFontSize', value: 18}`: sets the font size of the editor.
   - `{type: 'setFontFamily', value: 'JetBrains Mono, monospace'}`: sets the font family of the editor. fallback is allowed.
   - `{type: 'setStyles', value: {container: 'background: transparent'}}`: sets custom styles for editor container.

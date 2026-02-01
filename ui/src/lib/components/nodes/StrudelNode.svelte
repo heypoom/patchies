@@ -49,7 +49,7 @@
         .with(P.string, (code) => {
           setCode(code);
         })
-        .with({ type: 'set', code: P.string }, ({ code }) => {
+        .with({ type: 'setCode', code: P.string }, ({ code }) => {
           setCode(code);
         })
         .with(P.union({ type: 'bang' }, { type: 'run' }), evaluate)
