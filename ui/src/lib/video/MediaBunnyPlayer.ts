@@ -188,18 +188,23 @@ export class MediaBunnyPlayer {
       const sample = await this.sink.getSample(timeSeconds);
       if (!sample) return;
 
-      this._currentTime = sample.timestamp;
+      // Cache timestamp before any operations that might close the sample
+      const timestamp = sample.timestamp;
+      this._currentTime = timestamp;
 
-      // Convert to ImageBitmap
+      // Convert to ImageBitmap with guaranteed cleanup
       const videoFrame = sample.toVideoFrame();
-      const bitmap = await createImageBitmap(videoFrame, {
-        imageOrientation: 'flipY'
-      });
-      videoFrame.close();
-      sample.close();
+      try {
+        const bitmap = await createImageBitmap(videoFrame, {
+          imageOrientation: 'flipY'
+        });
 
-      // Send to renderer
-      this.onFrame(bitmap, sample.timestamp * 1_000_000); // convert to microseconds
+        // Send to renderer
+        this.onFrame(bitmap, timestamp * 1_000_000); // convert to microseconds
+      } finally {
+        videoFrame.close();
+        sample.close();
+      }
     } catch (error) {
       console.error('[MediaBunnyPlayer] Error showing preview frame:', error);
     }
