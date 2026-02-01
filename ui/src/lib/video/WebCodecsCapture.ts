@@ -26,7 +26,6 @@ export class WebCodecsCapture {
   private nodeId: string;
   private onFrame: (bitmap: ImageBitmap) => void;
   private onError: (error: Error) => void;
-  private flipY: boolean;
 
   private worker: Worker | null = null;
   private stream: MediaStream | null = null;
