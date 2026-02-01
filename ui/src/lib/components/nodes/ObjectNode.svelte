@@ -41,9 +41,8 @@
     'slider',
     'textbox',
     'msg',
+    'peek',
     'label',
-    'keyboard',
-    'markdown',
 
     // Code objects
     'js',
@@ -52,6 +51,10 @@
     'filter',
     'tap',
     'worker',
+
+    // UI objects
+    'keyboard',
+    'markdown',
 
     // Control objects
     'print',
