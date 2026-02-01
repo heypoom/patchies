@@ -80,6 +80,7 @@
   // MediaBunny player - use when WebCodecs is available and enabled
   let mediaBunnyPlayer: MediaBunnyPlayer | null = null;
   let currentFile: File | null = null;
+  let currentSourceUrl: string | undefined = undefined; // For URL streaming
   let webCodecsFirstFrameReceived = false;
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -132,7 +133,7 @@
    * Called when VFS successfully loads a file.
    * Sets up the video element and updates node data.
    */
-  async function handleFileLoaded(file: File) {
+  async function handleFileLoaded(file: File, sourceUrl?: string) {
     try {
       if (!videoElement) {
         errorMessage = 'Video element not ready';
@@ -140,6 +141,7 @@
       }
 
       currentFile = file;
+      currentSourceUrl = sourceUrl; // Store for MediaBunny streaming
       const objectUrl = URL.createObjectURL(file);
 
       videoElement.onloadedmetadata = () => {
@@ -193,7 +195,7 @@
           // Use MediaBunny for frame extraction when supported and enabled
           if ($webCodecsEnabled && MediaBunnyPlayer.isSupported()) {
             profiler.setPipeline('webcodecs');
-            initMediaBunnyPlayer(file);
+            initMediaBunnyPlayer(file, currentSourceUrl);
           } else {
             // Fallback to HTMLVideoElement frame extraction (Firefox or disabled)
             profiler.setPipeline('fallback');
@@ -250,8 +252,10 @@
   /**
    * Initialize MediaBunnyPlayer for frame extraction.
    * Sets up a timeout to fall back if no frames are received.
+   * @param file - The video file (used for fallback and HTMLVideoElement)
+   * @param sourceUrl - If provided, stream directly from URL instead of loading file blob
    */
-  function initMediaBunnyPlayer(file: File) {
+  function initMediaBunnyPlayer(file: File, sourceUrl?: string) {
     // Clean up existing player
     if (mediaBunnyPlayer) {
       mediaBunnyPlayer.destroy();
@@ -332,7 +336,13 @@
       }
     });
 
-    mediaBunnyPlayer.loadFile(file);
+    // Use URL streaming if available (more efficient for remote files)
+    // Otherwise use file blob (which also streams lazily via BlobSource)
+    if (sourceUrl) {
+      mediaBunnyPlayer.loadUrl(sourceUrl);
+    } else {
+      mediaBunnyPlayer.loadFile(file);
+    }
     mediaBunnyPlayer.setLoop(data.loop ?? true);
   }
 

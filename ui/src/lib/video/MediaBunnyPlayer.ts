@@ -9,8 +9,8 @@
  * Replaces our custom WebCodecs + MP4Box implementation.
  */
 
-import { Input, BlobSource, VideoSampleSink, ALL_FORMATS } from 'mediabunny';
-import type { Input as InputType, InputVideoTrack } from 'mediabunny';
+import { Input, BlobSource, UrlSource, VideoSampleSink, ALL_FORMATS } from 'mediabunny';
+import type { Input as InputType, InputVideoTrack, Source } from 'mediabunny';
 
 export interface VideoMetadata {
   duration: number; // seconds
@@ -45,7 +45,8 @@ export class MediaBunnyPlayer {
   private onEnded: () => void;
   private onError: (error: Error) => void;
 
-  private input: InputType<BlobSource> | null = null;
+  // Input can use BlobSource (files) or UrlSource (remote URLs) - both stream lazily
+  private input: InputType<Source> | null = null;
   private videoTrack: InputVideoTrack | null = null;
   private sink: VideoSampleSink | null = null;
 
@@ -82,17 +83,33 @@ export class MediaBunnyPlayer {
   }
 
   /**
-   * Load a video file for playback.
+   * Load a video file for playback (streams lazily via BlobSource).
    */
   async loadFile(file: File): Promise<void> {
+    await this.loadSource(new BlobSource(file));
+  }
+
+  /**
+   * Load a video from URL for playback (streams lazily via UrlSource with range requests).
+   * This is much more efficient than fetching the whole file first.
+   */
+  async loadUrl(url: string): Promise<void> {
+    await this.loadSource(new UrlSource(url));
+  }
+
+  /**
+   * Common initialization logic for all source types.
+   * Both BlobSource and UrlSource stream lazily - only fetching bytes as needed.
+   */
+  private async loadSource(source: Source): Promise<void> {
     try {
       // Clean up previous state
       this.cleanup();
 
-      // Create MediaBunny input
+      // Create MediaBunny input with the provided source
       this.input = new Input({
         formats: ALL_FORMATS,
-        source: new BlobSource(file)
+        source
       });
 
       // Get video track
@@ -138,7 +155,7 @@ export class MediaBunnyPlayer {
       // Get first frame as preview
       await this.showPreviewFrame(0);
     } catch (error) {
-      this.onError(error instanceof Error ? error : new Error('Failed to load file'));
+      this.onError(error instanceof Error ? error : new Error('Failed to load video'));
     }
   }
 

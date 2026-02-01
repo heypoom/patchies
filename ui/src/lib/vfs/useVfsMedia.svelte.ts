@@ -19,8 +19,11 @@ export interface UseVfsMediaOptions {
   /** MIME type prefix to accept (e.g., 'image/', 'audio/', 'video/') */
   acceptMimePrefix: 'image/' | 'audio/' | 'video/';
 
-  /** Callback when a file is successfully loaded */
-  onFileLoaded: (file: File) => Promise<void>;
+  /** Callback when a file is successfully loaded.
+   * @param file - The loaded File object
+   * @param sourceUrl - If loaded from URL, the original URL for streaming (avoids fetching whole file)
+   */
+  onFileLoaded: (file: File, sourceUrl?: string) => Promise<void>;
 
   /** Callback to update node data with new vfsPath */
   updateNodeData: (data: { vfsPath?: string }) => void;
@@ -159,6 +162,10 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
       needsReselect = false;
       needsFolderRelink = false;
 
+      // Check if this is a URL entry - if so, pass the URL for streaming
+      const entry = vfs.getEntry(vfsPath);
+      const sourceUrl = entry?.provider === 'url' ? entry.url : undefined;
+
       const fileOrBlob = await vfs.resolve(vfsPath);
 
       const file =
@@ -166,7 +173,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
           ? fileOrBlob
           : new File([fileOrBlob], 'media', { type: fileOrBlob.type });
 
-      await options.onFileLoaded(file);
+      await options.onFileLoaded(file, sourceUrl);
     } catch (err) {
       logger.error('[vfs load error]', err);
 
