@@ -1,3 +1,4 @@
+import { bitmapRendererPreset } from './bitmaprenderer';
 import { fftPreset } from './fft';
 import { fractalTreePreset } from './fractal-tree';
 import { plotterPreset } from './plotter';
@@ -8,6 +9,7 @@ import { rgbaPickerPreset } from './rgba-picker';
 import { virtualMidiKeyboardPreset } from './virtual-midi-keyboard';
 
 export const CANVAS_PRESETS = {
+  bitmaprenderer: bitmapRendererPreset,
   'fft.canvas': fftPreset,
   'fractal-tree.canvas': fractalTreePreset,
   'plotter.canvas': plotterPreset,
