@@ -71,6 +71,7 @@
   let bitmapFrameId: number | undefined;
   let videoFrameCallbackId: number | undefined;
   let useVideoFrameCallback = false;
+  let lastRecordedMediaTime = -1;
 
   let resizerCanvas: OffscreenCanvas | null = null;
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
@@ -175,6 +176,7 @@
             profiler = new VideoProfiler(nodeId);
           }
           profiler.reset();
+          lastRecordedMediaTime = -1;
           profiler.setMetadata({
             width: videoWidth,
             height: videoHeight,
@@ -261,6 +263,7 @@
   function restartVideo() {
     if (videoElement && isVideoLoaded) {
       videoElement.currentTime = 0;
+      lastRecordedMediaTime = -1;
 
       // Send bang to audio system to restart audio (sets currentTime to 0 and plays)
       audioService.send(nodeId, 'message', { type: 'bang' });
@@ -345,8 +348,18 @@
   async function handleVideoFrame(_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
     if (!videoElement || !isVideoLoaded) return;
 
-    // Track frames for profiling with accurate timing from metadata
-    profiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
+    // Only record when mediaTime actually changes (deduplicate same-frame callbacks)
+    if (metadata.mediaTime !== lastRecordedMediaTime) {
+      lastRecordedMediaTime = metadata.mediaTime;
+      profiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
+
+      // Calculate actual frame rate from metadata (presentedFrames / mediaTime)
+      if (metadata.mediaTime > 0.5 && metadata.presentedFrames > 10) {
+        const calculatedFps = Math.round(metadata.presentedFrames / metadata.mediaTime);
+
+        profiler?.setMetadata({ frameRate: calculatedFps });
+      }
+    }
 
     // Only upload to GL when there are connections and video is playing
     if (!isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
@@ -369,9 +382,13 @@
     const videoReady =
       videoElement && videoElement.readyState >= 2 && !videoElement.ended && !videoElement.error;
 
-    // Track frames for profiling even without connections (to measure extraction rate)
+    // Track frames for profiling - only when currentTime changes (deduplicate)
     if (videoElement && videoReady && isVideoLoaded && !isPaused) {
-      profiler?.recordFrame(videoElement.currentTime * 1_000_000, videoElement.currentTime);
+      const currentMediaTime = videoElement.currentTime;
+      if (currentMediaTime !== lastRecordedMediaTime) {
+        lastRecordedMediaTime = currentMediaTime;
+        profiler?.recordFrame(currentMediaTime * 1_000_000, currentMediaTime);
+      }
     }
 
     // Only upload to GL when there are connections
