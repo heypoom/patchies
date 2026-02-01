@@ -1,8 +1,10 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
+  import { match, P } from 'ts-pattern';
   import { RubyNodeSystem } from '$lib/ruby/RubyNodeSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
   import type { WorkerCallbackRegisteredEvent, WorkerFlashEvent } from '$lib/eventbus/events';
   import CodeBlockBase from './CodeBlockBase.svelte';
 
@@ -33,6 +35,7 @@
 
   const rubySystem = RubyNodeSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
+  const messageSystem = MessageSystem.getInstance();
 
   let isRunning = $state(false);
   let isMessageCallbackActive = $state(false);
@@ -41,6 +44,21 @@
 
   // Reference to base component for flash
   let baseRef: CodeBlockBase | null = $state(null);
+
+  // Handle incoming messages to this node
+  const handleMessage: MessageCallbackFn = (message) => {
+    match(message)
+      .with({ type: 'set', code: P.string }, ({ code }) => {
+        updateNodeData(nodeId, { code });
+      })
+      .with({ type: 'run' }, () => {
+        executeCode();
+      })
+      .with({ type: 'stop' }, () => {
+        cleanupRunningTasks();
+      })
+      .otherwise(() => {});
+  };
 
   // Handle port count updates from worker
   function handlePortCountUpdate(event: {
@@ -78,6 +96,10 @@
     // Create the Ruby worker for this node
     await rubySystem.create(nodeId);
 
+    // Register message handler for set/run/stop commands
+    const queue = messageSystem.registerNode(nodeId);
+    queue.addCallback(handleMessage);
+
     // Listen for EventBus events from the worker
     eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
@@ -91,6 +113,10 @@
   });
 
   onDestroy(() => {
+    // Remove message handler
+    const queue = messageSystem.registerNode(nodeId);
+    queue.removeCallback(handleMessage);
+
     // Remove event listeners
     eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);

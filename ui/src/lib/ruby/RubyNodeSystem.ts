@@ -40,6 +40,12 @@ export class RubyNodeSystem {
 
     // Create message callback to forward messages to worker
     const messageCallback: MessageCallbackFn = (data, meta) => {
+      // Skip control messages handled by component
+      if (typeof data === 'object' && data !== null && 'type' in data) {
+        const controlTypes = ['set', 'run', 'stop'];
+        if (controlTypes.includes((data as { type: string }).type)) return;
+      }
+
       worker.postMessage({
         type: 'incomingMessage',
         nodeId,
