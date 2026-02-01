@@ -31,6 +31,59 @@
   import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
   import { Search } from '@lucide/svelte/icons';
 
+  // Common objects that should appear first in autocomplete
+  // Ordered by general usage frequency
+  const PRIORITY_OBJECTS = new Set([
+    // UI objects - most common entry points
+    'button',
+    'toggle',
+    'slider',
+    'textbox',
+    'msg',
+    'label',
+    'keyboard',
+    'markdown',
+
+    // Code objects
+    'js',
+    'expr',
+    'map',
+    'filter',
+    'tap',
+    'worker',
+
+    // Control objects
+    'print',
+    'send',
+    'recv',
+    'delay',
+    'metro',
+    'counter',
+
+    // Video objects
+    'p5',
+    'hydra',
+    'canvas',
+    'glsl',
+
+    // Audio objects
+    'dac~',
+    'osc~',
+    'gain~',
+    'adc~'
+  ]);
+
+  // Get priority index (lower = higher priority)
+  function getObjectPriority(name: string): number {
+    if (PRIORITY_OBJECTS.has(name)) {
+      // Return index within priority set (convert Set to array for indexOf)
+      const priorityArray = Array.from(PRIORITY_OBJECTS);
+      return priorityArray.indexOf(name);
+    }
+
+    return 1000; // Non-priority objects come last
+  }
+
   let {
     id: nodeId,
     data,
@@ -185,7 +238,12 @@
         .filter((item) => item.type === 'preset')
         .map((item) => ({ name: item.name, type: item.type }));
       return [
-        ...objects.sort((a, b) => a.name.localeCompare(b.name)),
+        // Sort objects by priority first, then alphabetically within same priority
+        ...objects.sort((a, b) => {
+          const priorityDiff = getObjectPriority(a.name) - getObjectPriority(b.name);
+          if (priorityDiff !== 0) return priorityDiff;
+          return a.name.localeCompare(b.name);
+        }),
         ...presets.sort((a, b) => a.name.localeCompare(b.name))
       ];
     }
@@ -200,8 +258,15 @@
         return a.item.type === 'object' ? -1 : 1;
       }
 
+      // For similar Fuse scores (within 0.1), prioritize common objects
+      const scoreDiff = (a.score || 0) - (b.score || 0);
+      if (Math.abs(scoreDiff) < 0.1 && a.item.type === 'object') {
+        const priorityDiff = getObjectPriority(a.item.name) - getObjectPriority(b.item.name);
+        if (priorityDiff !== 0) return priorityDiff;
+      }
+
       // Then by Fuse score (lower score = better match)
-      return (a.score || 0) - (b.score || 0);
+      return scoreDiff;
     });
 
     return sortedResults.map((result) => ({ name: result.item.name, type: result.item.type }));

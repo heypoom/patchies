@@ -242,17 +242,17 @@ export function getCategorizedObjects(includeAiFeatures: boolean = true): Catego
     objects.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // Define category order
+  // Define category order - UI, Code, Control first as they're most fundamental
   const categoryOrder = [
-    'Video',
-    'Video Sources',
-    'Audio Sources',
-    'Audio',
-    'Audio FX',
+    'UI',
     'Code',
     'Control',
+    'Video',
+    'Video Sources',
+    'Audio',
+    'Audio Sources',
+    'Audio FX',
     'I/O',
-    'UI',
     'AI',
     'Unstable'
   ];
