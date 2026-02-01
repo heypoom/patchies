@@ -155,6 +155,15 @@ export class MediaBunnyPlayer {
       // Get first frame as preview
       await this.showPreviewFrame(0);
     } catch (error) {
+      // Reset all state to avoid stale values from a partial load
+      this.input = null;
+      this.videoTrack = null;
+      this.sink = null;
+      this._isLoaded = false;
+      this._metadata = null;
+      this._currentTime = 0;
+      this._paused = true;
+
       this.onError(error instanceof Error ? error : new Error('Failed to load video'));
     }
   }
