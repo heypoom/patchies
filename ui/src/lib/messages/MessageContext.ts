@@ -9,6 +9,12 @@ export type SendMessageOptions = {
    * Number refers to the outlet index.
    */
   to?: number;
+
+  /**
+   * Target node IDs to exclude from routing (already handled via direct channels).
+   * Used internally by worker nodes to prevent duplicate messages.
+   */
+  excludeTargets?: string[];
 };
 
 export interface UserFnRunContext {
