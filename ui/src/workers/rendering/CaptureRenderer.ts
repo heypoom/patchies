@@ -284,9 +284,10 @@ export class CaptureRenderer {
     const stillPending: PendingVideoFrameBatch[] = [];
 
     // Store completed reads with their pixel data (not bitmap yet)
+    // null indicates a failed read (WAIT_FAILED) - still marked complete to avoid re-processing
     const completedPixelData = new Map<
       PendingVideoFrameRead,
-      { pixels: Uint8Array; width: number; height: number }
+      { pixels: Uint8Array; width: number; height: number } | null
     >();
 
     // First pass: check completion and extract pixel data
@@ -302,7 +303,12 @@ export class CaptureRenderer {
 
         if (status === gl.WAIT_FAILED) {
           gl.deleteSync(read.sync);
+
           this.service.returnPbo(read.pbo);
+
+          // Mark as completed (failed) so it won't be re-queued
+          completedPixelData.set(read, null);
+
           continue;
         }
 
