@@ -302,6 +302,11 @@
         });
       },
       onEnded: () => {
+        // Mark playback stop when video ends
+        if (videoElement) {
+          profiler?.markPlaybackStop(videoElement.currentTime);
+        }
+
         isPaused = true;
 
         if (videoElement) {
@@ -320,6 +325,9 @@
 
   function restartVideo() {
     if (videoElement && isVideoLoaded) {
+      // Stop current playback tracking before restart
+      profiler?.markPlaybackStop(videoElement.currentTime);
+
       videoElement.currentTime = 0;
       lastRecordedMediaTime = -1;
 
@@ -336,6 +344,9 @@
         videoElement.play();
         isPaused = false;
       }
+
+      // Start new playback tracking from beginning
+      profiler?.markPlaybackStart(0);
     }
   }
 
@@ -350,8 +361,14 @@
           webCodecsPlayer.play();
         }
 
+        // Mark playback start for accurate drop detection
+        profiler?.markPlaybackStart(videoElement.currentTime);
+
         isPaused = false;
       } else {
+        // Mark playback stop before pausing (calculates drops)
+        profiler?.markPlaybackStop(videoElement.currentTime);
+
         videoElement.pause();
         audioService.send(nodeId, 'message', { type: 'pause' });
 

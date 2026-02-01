@@ -141,11 +141,12 @@ interface DecoderState {
   // Keyframe index for seeking
   keyframes: KeyframeEntry[];
 
-  // Sample queue for backpressure (store encoded samples before decoding)
-  pendingSamples: MP4BoxSample[];
+  // Sample queue for backpressure (store metadata only - data fetched lazily)
+  pendingSamples: SampleMetadata[];
   sampleProcessingId: number | null;
   extractionPaused: boolean; // Whether MP4Box extraction is paused due to backpressure
   videoTrackId: number | null; // Track ID for resuming extraction
+  allSamplesExtracted: boolean; // True when MP4Box has given us all sample metadata
 
   // Stats tracking
   totalSamplesExtracted: number; // Total samples demuxed from file
@@ -196,6 +197,7 @@ function createInitialState(): DecoderState {
     sampleProcessingId: null,
     extractionPaused: false,
     videoTrackId: null,
+    allSamplesExtracted: false,
     totalSamplesExtracted: 0,
     peakSamples: 0,
     peakFrames: 0,
@@ -350,6 +352,20 @@ interface MP4BoxSample {
   offset: number;
 }
 
+/**
+ * Lightweight sample metadata for lazy loading.
+ * Stores timing and location info without the actual bytes.
+ */
+interface SampleMetadata {
+  is_sync: boolean;
+  cts: number;
+  dts: number;
+  duration: number;
+  timescale: number;
+  size: number;
+  offset: number; // Byte offset in file - used to fetch data on-demand
+}
+
 function handleMP4BoxReady(nodeId: string, info: MP4BoxInfo): void {
   const state = decoderStates.get(nodeId);
   if (!state) return;
@@ -445,7 +461,7 @@ function handleMP4BoxSamples(nodeId: string, _trackId: number, samples: MP4BoxSa
   const state = decoderStates.get(nodeId);
   if (!state) return;
 
-  // Queue samples for processing with backpressure (don't decode immediately)
+  // Queue sample METADATA for processing (not the actual bytes - saves RAM)
   for (let i = 0; i < samples.length; i++) {
     const sample = samples[i];
 
@@ -458,9 +474,23 @@ function handleMP4BoxSamples(nodeId: string, _trackId: number, samples: MP4BoxSa
       });
     }
 
-    // Queue the sample for later decoding
-    state.pendingSamples.push(sample);
+    // Store only metadata - NOT the data bytes (this is the key to streaming)
+    const metadata: SampleMetadata = {
+      is_sync: sample.is_sync,
+      cts: sample.cts,
+      dts: sample.dts,
+      duration: sample.duration,
+      timescale: sample.timescale,
+      size: sample.size,
+      offset: sample.offset
+    };
+    state.pendingSamples.push(metadata);
     state.totalSamplesExtracted++;
+  }
+
+  // Release sample data from MP4Box's internal buffers to free memory
+  if (state.mp4boxFile && state.videoTrackId !== null) {
+    state.mp4boxFile.releaseUsedSamples(state.videoTrackId, samples.length);
   }
 
   // Track peak samples for diagnostics
@@ -482,11 +512,11 @@ function handleMP4BoxSamples(nodeId: string, _trackId: number, samples: MP4BoxSa
 
 /**
  * Process queued samples with backpressure.
- * Only feeds samples to the decoder when there's room in the queue.
+ * Fetches sample data lazily from File to avoid loading entire video into RAM.
  */
-function processSampleQueue(nodeId: string): void {
+async function processSampleQueue(nodeId: string): Promise<void> {
   const state = decoderStates.get(nodeId);
-  if (!state || !state.decoder) return;
+  if (!state || !state.decoder || !state.source) return;
 
   // When paused, only decode enough for preview (first frame)
   // Don't keep decoding - it wastes memory
@@ -509,7 +539,7 @@ function processSampleQueue(nodeId: string): void {
     return;
   }
 
-  // Process a batch of samples
+  // Process a batch of samples - fetch data lazily from File
   const samplesToProcess = Math.min(SAMPLE_BATCH_SIZE, state.pendingSamples.length);
 
   for (let i = 0; i < samplesToProcess; i++) {
@@ -517,12 +547,16 @@ function processSampleQueue(nodeId: string): void {
     if (!sample) break;
 
     try {
+      // LAZY LOADING: Fetch sample bytes on-demand from File (not pre-loaded)
+      const sampleBlob = state.source.slice(sample.offset, sample.offset + sample.size);
+      const sampleData = await sampleBlob.arrayBuffer();
+
       // Create encoded video chunk
       const chunk = new EncodedVideoChunk({
         type: sample.is_sync ? 'key' : 'delta',
         timestamp: (sample.cts / sample.timescale) * 1_000_000, // to microseconds
         duration: (sample.duration / sample.timescale) * 1_000_000,
-        data: sample.data
+        data: sampleData
       });
 
       // Feed to decoder

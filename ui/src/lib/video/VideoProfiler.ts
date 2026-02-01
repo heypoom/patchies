@@ -51,7 +51,6 @@ export interface VideoStats {
 export class VideoProfiler {
   private nodeId: string;
   private frameTimestamps: number[] = [];
-  private lastVideoTimestamp = 0;
   private totalFrames = 0;
   private droppedFrames = 0;
   private targetFps = 30;
@@ -64,11 +63,13 @@ export class VideoProfiler {
   private height = 0;
   private codec = 'unknown';
 
+  // Playback state tracking for accurate drop detection
+  private isPlaying = false;
+  private playbackStartVideoTime = 0; // Video time when playback started
+  private framesReceivedDuringPlayback = 0; // Frames received since playback started
+
   // Rolling window for FPS calculation (1 second)
   private readonly FPS_WINDOW_MS = 1000;
-
-  // Threshold for detecting frame drops (1.5x expected frame interval)
-  private readonly DROP_THRESHOLD_FACTOR = 1.5;
 
   constructor(nodeId: string) {
     this.nodeId = nodeId;
@@ -115,11 +116,42 @@ export class VideoProfiler {
   }
 
   /**
+   * Mark playback as started. Call when video starts playing.
+   */
+  markPlaybackStart(videoTime: number): void {
+    this.isPlaying = true;
+    this.playbackStartVideoTime = videoTime;
+    this.framesReceivedDuringPlayback = 0;
+  }
+
+  /**
+   * Mark playback as paused/stopped. Updates drop count based on
+   * expected vs actual frames during playback.
+   */
+  markPlaybackStop(videoTime: number): void {
+    if (!this.isPlaying) return;
+
+    // Calculate expected frames based on elapsed video time
+    const elapsedVideoTime = videoTime - this.playbackStartVideoTime;
+    if (elapsedVideoTime > 0) {
+      const expectedFrames = Math.round(elapsedVideoTime * this.targetFps);
+      const actualFrames = this.framesReceivedDuringPlayback;
+
+      // Only count drops if we received fewer frames than expected
+      if (expectedFrames > actualFrames) {
+        this.droppedFrames += expectedFrames - actualFrames;
+      }
+    }
+
+    this.isPlaying = false;
+  }
+
+  /**
    * Record a frame delivery.
    * @param videoTimestamp The timestamp of the frame in the video (microseconds)
    * @param currentTime Current playback position in seconds
    */
-  recordFrame(videoTimestamp: number, currentTime?: number): void {
+  recordFrame(_videoTimestamp: number, currentTime?: number): void {
     const now = performance.now();
     this.frameTimestamps.push(now);
     this.totalFrames++;
@@ -128,18 +160,10 @@ export class VideoProfiler {
       this.currentTime = currentTime;
     }
 
-    // Detect drops by checking video timestamp gaps
-    if (this.lastVideoTimestamp > 0 && videoTimestamp > this.lastVideoTimestamp) {
-      const expectedInterval = 1_000_000 / this.targetFps; // in microseconds
-      const actualInterval = videoTimestamp - this.lastVideoTimestamp;
-      const expectedFrames = Math.round(actualInterval / expectedInterval);
-
-      if (expectedFrames > 1) {
-        // We skipped frames
-        this.droppedFrames += expectedFrames - 1;
-      }
+    // Only count frames during active playback for drop detection
+    if (this.isPlaying) {
+      this.framesReceivedDuringPlayback++;
     }
-    this.lastVideoTimestamp = videoTimestamp;
 
     // Clean up old timestamps outside the window
     const cutoff = now - this.FPS_WINDOW_MS;
@@ -193,12 +217,14 @@ export class VideoProfiler {
    */
   reset(): void {
     this.frameTimestamps = [];
-    this.lastVideoTimestamp = 0;
     this.totalFrames = 0;
     this.droppedFrames = 0;
     this.currentTime = 0;
     this.queueDepth = 0;
     this.workerQueues = null;
+    this.isPlaying = false;
+    this.playbackStartVideoTime = 0;
+    this.framesReceivedDuringPlayback = 0;
   }
 
   /**
