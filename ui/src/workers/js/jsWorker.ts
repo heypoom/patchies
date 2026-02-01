@@ -4,14 +4,15 @@
  */
 
 import { match } from 'ts-pattern';
-import type {
-  WorkerMessage,
-  WorkerResponse,
-  RenderConnection
-} from '$lib/js-runner/WorkerNodeSystem';
+import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/WorkerNodeSystem';
 import type { Message } from '$lib/messages/MessageSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+import {
+  createDirectChannelHandler,
+  type DirectChannelHandler,
+  type RenderConnection
+} from '../shared/directChannelHandler';
 
 // Module storage (synced from main thread)
 const modules = new Map<string, string>();
@@ -35,36 +36,52 @@ interface NodeState {
     { resolve: (frames: (ImageBitmap | null)[]) => void; reject: (err: Error) => void }
   >;
   videoFrameRequestIdCounter: number;
-  // Direct render channel state
-  renderPort: MessagePort | null;
-  renderConnections: RenderConnection[];
-  // Direct worker-to-worker channel state
-  workerPorts: Map<string, MessagePort>; // targetNodeId → port (for sending) OR sourceNodeId → port (for receiving)
-  workerConnections: RenderConnection[]; // same structure as render connections
+  // Direct channel handler (render + worker-to-worker)
+  directChannel: DirectChannelHandler;
 }
 
 const nodeStates = new Map<string, NodeState>();
 
+function createNodeState(nodeId: string): NodeState {
+  const state: Omit<NodeState, 'directChannel'> & { directChannel?: DirectChannelHandler } = {
+    intervals: [],
+    timeouts: [],
+    cleanupCallbacks: [],
+    messageCallback: null,
+    pendingDelays: new Map(),
+    delayIdCounter: 0,
+    isFFTEnabled: false,
+    fftRequestCache: new Map(),
+    fftDataCache: new Map(),
+    videoFrameCallback: null,
+    pendingVideoFrameResolvers: new Map(),
+    videoFrameRequestIdCounter: 0
+  };
+
+  // Create direct channel handler with callbacks that reference state
+  state.directChannel = createDirectChannelHandler({
+    nodeId,
+    onIncomingMessage: (data, meta) => {
+      if (state.messageCallback) {
+        state.messageCallback(data, meta);
+      }
+    },
+    onError: (message) => {
+      postResponse({
+        type: 'consoleOutput',
+        nodeId,
+        level: 'error',
+        args: [message]
+      });
+    }
+  });
+
+  return state as NodeState;
+}
+
 function getNodeState(nodeId: string): NodeState {
   if (!nodeStates.has(nodeId)) {
-    nodeStates.set(nodeId, {
-      intervals: [],
-      timeouts: [],
-      cleanupCallbacks: [],
-      messageCallback: null,
-      pendingDelays: new Map(),
-      delayIdCounter: 0,
-      isFFTEnabled: false,
-      fftRequestCache: new Map(),
-      fftDataCache: new Map(),
-      videoFrameCallback: null,
-      pendingVideoFrameResolvers: new Map(),
-      videoFrameRequestIdCounter: 0,
-      renderPort: null,
-      renderConnections: [],
-      workerPorts: new Map(),
-      workerConnections: []
-    });
+    nodeStates.set(nodeId, createNodeState(nodeId));
   }
 
   return nodeStates.get(nodeId)!;
@@ -109,56 +126,9 @@ function createWorkerContext(nodeId: string) {
       postResponse({ type: 'consoleOutput', nodeId, level: 'info', args })
   };
 
-  /** Send to render targets, returns list of target IDs that were sent to */
-  const sendToRenderTargets = (data: unknown, options?: { to?: number }): string[] => {
-    if (!state.renderPort || state.renderConnections.length === 0) return [];
-
-    const targets = state.renderConnections.filter(
-      (c) => options?.to === undefined || c.outlet === options.to
-    );
-
-    for (const target of targets) {
-      state.renderPort.postMessage({
-        fromNodeId: nodeId,
-        targetNodeId: target.targetNodeId,
-        inlet: target.inlet,
-        inletKey: target.inletKey,
-        data
-      });
-    }
-
-    return targets.map((t) => t.targetNodeId);
-  };
-
-  /** Send to worker targets, returns list of target IDs that were sent to */
-  const sendToWorkerTargets = (data: unknown, options?: { to?: number }): string[] => {
-    if (state.workerPorts.size === 0 || state.workerConnections.length === 0) return [];
-
-    const targets = state.workerConnections.filter(
-      (c) => options?.to === undefined || c.outlet === options.to
-    );
-
-    const sentTargets: string[] = [];
-    for (const target of targets) {
-      const port = state.workerPorts.get(target.targetNodeId);
-      if (port) {
-        port.postMessage({
-          fromNodeId: nodeId,
-          targetNodeId: target.targetNodeId,
-          inlet: target.inlet,
-          inletKey: target.inletKey,
-          data
-        });
-        sentTargets.push(target.targetNodeId);
-      }
-    }
-
-    return sentTargets;
-  };
-
   const send = (data: unknown, options?: { to?: number }) => {
-    const renderTargets = sendToRenderTargets(data, options);
-    const workerTargets = sendToWorkerTargets(data, options);
+    const renderTargets = state.directChannel.sendToRenderTargets(data, options);
+    const workerTargets = state.directChannel.sendToWorkerTargets(data, options);
 
     // Send via main thread, excluding targets we've already handled directly
     const excludeTargets = [...renderTargets, ...workerTargets];
@@ -661,7 +631,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       cleanupNode(nodeId);
     })
     .with({ type: 'destroy' }, () => {
+      const state = nodeStates.get(nodeId);
       cleanupNode(nodeId);
+      state?.directChannel.cleanup();
       nodeStates.delete(nodeId);
     })
     .with({ type: 'vfsUrlResolved' }, (data) => {
@@ -691,13 +663,13 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'setRenderPort' }, () => {
       const state = getNodeState(nodeId);
-      // Port comes via transfer list
-      state.renderPort = event.ports[0];
-      state.renderPort.start();
+      state.directChannel.handleSetRenderPort(event.ports[0]);
     })
     .with({ type: 'updateRenderConnections' }, (data) => {
       const state = getNodeState(nodeId);
-      state.renderConnections = (data as { connections: RenderConnection[] }).connections;
+      state.directChannel.handleUpdateRenderConnections(
+        (data as { connections: RenderConnection[] }).connections
+      );
     })
     .with({ type: 'setWorkerPort' }, (data) => {
       const state = getNodeState(nodeId);
@@ -705,42 +677,13 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         targetNodeId?: string;
         sourceNodeId?: string;
       };
-      const port = event.ports[0];
-
-      if (targetNodeId) {
-        // This is a sending port (we send TO targetNodeId)
-        state.workerPorts.set(targetNodeId, port);
-        port.start();
-      } else if (sourceNodeId) {
-        // This is a receiving port (we receive FROM sourceNodeId)
-        state.workerPorts.set(sourceNodeId, port);
-        port.onmessage = (e) => {
-          // Route incoming message to message callback
-          const { data: msgData, inlet, inletKey, fromNodeId } = e.data;
-          if (state.messageCallback) {
-            try {
-              state.messageCallback(msgData, {
-                source: fromNodeId,
-                inlet,
-                inletKey
-              });
-            } catch (error) {
-              const message = error instanceof Error ? error.message : String(error);
-              postResponse({
-                type: 'consoleOutput',
-                nodeId,
-                level: 'error',
-                args: [`Error in recv(): ${message}`]
-              });
-            }
-          }
-        };
-        port.start();
-      }
+      state.directChannel.handleSetWorkerPort(event.ports[0], targetNodeId, sourceNodeId);
     })
     .with({ type: 'updateWorkerConnections' }, (data) => {
       const state = getNodeState(nodeId);
-      state.workerConnections = (data as { connections: RenderConnection[] }).connections;
+      state.directChannel.handleUpdateWorkerConnections(
+        (data as { connections: RenderConnection[] }).connections
+      );
     })
     .otherwise(() => {});
 };
