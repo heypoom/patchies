@@ -52,6 +52,7 @@ export class DirectChannelService {
     if (!this.instance) {
       this.instance = new DirectChannelService();
     }
+
     return this.instance;
   }
 
@@ -127,6 +128,7 @@ export class DirectChannelService {
 
     // Set up worker-to-worker channels if needed
     const workerTargets = this.getWorkerTargets(nodeId);
+
     for (const targetId of workerTargets) {
       this.setupWorkerToWorkerChannel(nodeId, targetId);
     }
@@ -135,22 +137,28 @@ export class DirectChannelService {
   private hasRenderConnections(nodeId: string): boolean {
     return this.edges.some((edge) => {
       if (edge.source !== nodeId) return false;
+
       const targetType = this.nodeTypes.get(edge.target);
+
       return targetType !== undefined && RENDER_NODE_TYPES.has(targetType);
     });
   }
 
   private getWorkerTargets(nodeId: string): string[] {
     const targets: string[] = [];
+
     for (const edge of this.edges) {
       if (edge.source !== nodeId) continue;
+
       const targetType = this.nodeTypes.get(edge.target);
+
       if (targetType && WORKER_NODE_TYPES.has(targetType)) {
         if (!targets.includes(edge.target)) {
           targets.push(edge.target);
         }
       }
     }
+
     return targets;
   }
 
@@ -243,6 +251,7 @@ export class DirectChannelService {
 
   private parseHandleIndex(handle?: string | null): number {
     if (!handle) return 0;
+
     // Extract number from end of handle string (e.g., "message-out-2" → 2)
     const match = handle.match(/-(\d+)$/);
     return match ? parseInt(match[1], 10) : 0;
