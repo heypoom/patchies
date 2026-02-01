@@ -109,8 +109,9 @@ function createWorkerContext(nodeId: string) {
       postResponse({ type: 'consoleOutput', nodeId, level: 'info', args })
   };
 
-  const sendToRenderTargets = (data: unknown, options?: { to?: number }) => {
-    if (!state.renderPort || state.renderConnections.length === 0) return;
+  /** Send to render targets, returns list of target IDs that were sent to */
+  const sendToRenderTargets = (data: unknown, options?: { to?: number }): string[] => {
+    if (!state.renderPort || state.renderConnections.length === 0) return [];
 
     const targets = state.renderConnections.filter(
       (c) => options?.to === undefined || c.outlet === options.to
@@ -125,15 +126,19 @@ function createWorkerContext(nodeId: string) {
         data
       });
     }
+
+    return targets.map((t) => t.targetNodeId);
   };
 
-  const sendToWorkerTargets = (data: unknown, options?: { to?: number }) => {
-    if (state.workerPorts.size === 0 || state.workerConnections.length === 0) return;
+  /** Send to worker targets, returns list of target IDs that were sent to */
+  const sendToWorkerTargets = (data: unknown, options?: { to?: number }): string[] => {
+    if (state.workerPorts.size === 0 || state.workerConnections.length === 0) return [];
 
     const targets = state.workerConnections.filter(
       (c) => options?.to === undefined || c.outlet === options.to
     );
 
+    const sentTargets: string[] = [];
     for (const target of targets) {
       const port = state.workerPorts.get(target.targetNodeId);
       if (port) {
@@ -144,16 +149,21 @@ function createWorkerContext(nodeId: string) {
           inletKey: target.inletKey,
           data
         });
+        sentTargets.push(target.targetNodeId);
       }
     }
+
+    return sentTargets;
   };
 
   const send = (data: unknown, options?: { to?: number }) => {
-    sendToRenderTargets(data, options);
-    sendToWorkerTargets(data, options);
+    const renderTargets = sendToRenderTargets(data, options);
+    const workerTargets = sendToWorkerTargets(data, options);
 
-    // Always also send via main thread for non-direct targets
-    postResponse({ type: 'sendMessage', nodeId, data, options });
+    // Send via main thread, excluding targets we've already handled directly
+    const excludeTargets = [...renderTargets, ...workerTargets];
+
+    postResponse({ type: 'sendMessage', nodeId, data, options: { ...options, excludeTargets } });
   };
 
   const onMessage = (callback: (data: unknown, meta: Omit<Message, 'data'>) => void) => {

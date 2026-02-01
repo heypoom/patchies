@@ -143,8 +143,12 @@ export class MessageSystem {
 
     const message: Message = { data, source: fromNodeId };
     const connectedNodes = this.connections.get(fromNodeId) || [];
+    const excludeTargets = options.excludeTargets ?? [];
 
     for (const targetNodeId of connectedNodes) {
+      // Skip targets that were already handled via direct channels
+      if (excludeTargets.includes(targetNodeId)) continue;
+
       const targetQueue = this.messageQueues.get(targetNodeId);
       if (!targetQueue) continue;
 
