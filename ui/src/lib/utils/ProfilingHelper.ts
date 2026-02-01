@@ -10,10 +10,18 @@ export interface ProfilingStats {
   lastUpdate: number;
 }
 
+export interface ProfilingHistory {
+  label: string;
+  dataPoints: ProfilingStats[];
+}
+
 type StatsCallback = (stats: ProfilingStats) => void;
 
 // Global registry of all profilers
 const globalProfilers = new Set<ProfilingHelper>();
+
+// Max number of historical data points to keep
+const MAX_HISTORY_LENGTH = 30;
 
 /**
  * Helper class for accumulating and reporting performance profiling data.
@@ -26,6 +34,7 @@ export class ProfilingHelper {
   private label: string;
   private callbacks: Set<StatsCallback> = new Set();
   private latestStats: ProfilingStats | null = null;
+  private history: ProfilingStats[] = [];
   private isWorker: boolean;
 
   constructor(label: string, reportIntervalMs: number = 3000) {
@@ -34,6 +43,9 @@ export class ProfilingHelper {
     // Check if running in a worker context
     this.isWorker = typeof self !== 'undefined' && 'importScripts' in self;
     globalProfilers.add(this);
+    console.log(
+      `[ProfilingHelper] Created profiler "${label}" (isWorker: ${this.isWorker}, total profilers: ${globalProfilers.size})`
+    );
   }
 
   /**
@@ -53,6 +65,13 @@ export class ProfilingHelper {
    */
   getStats(): ProfilingStats | null {
     return this.latestStats;
+  }
+
+  /**
+   * Get historical stats.
+   */
+  getHistory(): ProfilingStats[] {
+    return this.history;
   }
 
   /**
@@ -103,6 +122,12 @@ export class ProfilingHelper {
       lastUpdate: performance.now()
     };
 
+    // Add to history
+    this.history.push(this.latestStats);
+    if (this.history.length > MAX_HISTORY_LENGTH) {
+      this.history.shift();
+    }
+
     // Notify subscribers
     this.callbacks.forEach((cb) => cb(this.latestStats!));
 
@@ -110,7 +135,8 @@ export class ProfilingHelper {
     if (this.isWorker) {
       self.postMessage({
         type: 'profiling-stats',
-        stats: this.latestStats
+        stats: this.latestStats,
+        history: this.history
       });
     }
   }

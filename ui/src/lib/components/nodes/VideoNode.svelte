@@ -104,7 +104,7 @@
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
 
   // Performance profiling for createImageBitmap
-  const bitmapProfiler = new ProfilingHelper('VideoNode createImageBitmap');
+  const fallbackResizerProfiler = new ProfilingHelper('Video::FallbackResizer createImageBitmap');
 
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
   const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
@@ -543,7 +543,7 @@
         const t0 = performance.now();
         const bitmap = await createImageBitmap(resizerCanvas);
         const t1 = performance.now();
-        bitmapProfiler.record(t1 - t0);
+        fallbackResizerProfiler.record(t1 - t0);
         await glSystem.setBitmap(nodeId, bitmap);
       }
     } else {
