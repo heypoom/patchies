@@ -30,6 +30,7 @@
   import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
   import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
   import { Search } from '@lucide/svelte/icons';
+  import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
 
   // Common objects that should appear first in autocomplete
   // Ordered by general usage frequency
@@ -249,35 +250,29 @@
     }
 
     // Fuzzy search all items (only the first word/object name)
-    const query = expr.toLowerCase();
     const results = allItemsFuse.search(expr);
 
     // Sort results with custom scoring: prefix matches first, then objects over presets
-    const sortedResults = results.toSorted((a, b) => {
-      const aName = a.item.name.toLowerCase();
-      const bName = b.item.name.toLowerCase();
-      const aStartsWith = aName.startsWith(query);
-      const bStartsWith = bName.startsWith(query);
+    const sortedResults = sortFuseResultsWithPrefixPriority(
+      results,
+      expr,
+      (item) => item.name,
+      (a, b) => {
+        // Then sort by type (objects first)
+        if (a.item.type !== b.item.type) {
+          return a.item.type === 'object' ? -1 : 1;
+        }
 
-      // Prefix matches come first
-      if (aStartsWith && !bStartsWith) return -1;
-      if (!aStartsWith && bStartsWith) return 1;
+        // For similar Fuse scores (within 0.1), prioritize common objects
+        const scoreDiff = (a.score || 0) - (b.score || 0);
+        if (Math.abs(scoreDiff) < 0.1 && a.item.type === 'object') {
+          const priorityDiff = getObjectPriority(a.item.name) - getObjectPriority(b.item.name);
+          if (priorityDiff !== 0) return priorityDiff;
+        }
 
-      // Then sort by type (objects first)
-      if (a.item.type !== b.item.type) {
-        return a.item.type === 'object' ? -1 : 1;
+        return 0; // Let default Fuse score sorting handle the rest
       }
-
-      // For similar Fuse scores (within 0.1), prioritize common objects
-      const scoreDiff = (a.score || 0) - (b.score || 0);
-      if (Math.abs(scoreDiff) < 0.1 && a.item.type === 'object') {
-        const priorityDiff = getObjectPriority(a.item.name) - getObjectPriority(b.item.name);
-        if (priorityDiff !== 0) return priorityDiff;
-      }
-
-      // Then by Fuse score (lower score = better match)
-      return scoreDiff;
-    });
+    );
 
     return sortedResults.map((result) => ({ name: result.item.name, type: result.item.type }));
   });

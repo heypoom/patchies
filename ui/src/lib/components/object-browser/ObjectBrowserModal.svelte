@@ -8,6 +8,7 @@
   import Fuse from 'fuse.js';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
+  import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
 
   let {
     open = $bindable(false),
@@ -84,23 +85,14 @@
       return allCategoriesWithPresets;
     }
 
-    const query = searchQuery.toLowerCase();
     const results = fuse.search(searchQuery);
 
     // Sort results: prefix matches first, then by Fuse score
-    const sortedResults = results.toSorted((a, b) => {
-      const aName = a.item.name.toLowerCase();
-      const bName = b.item.name.toLowerCase();
-      const aStartsWith = aName.startsWith(query);
-      const bStartsWith = bName.startsWith(query);
-
-      // Prefix matches come first
-      if (aStartsWith && !bStartsWith) return -1;
-      if (!aStartsWith && bStartsWith) return 1;
-
-      // Within same group, use Fuse score (lower is better)
-      return (a.score ?? 1) - (b.score ?? 1);
-    });
+    const sortedResults = sortFuseResultsWithPrefixPriority(
+      results,
+      searchQuery,
+      (item) => item.name
+    );
 
     const matchedObjects = new Map<string, ObjectItem[]>();
 
