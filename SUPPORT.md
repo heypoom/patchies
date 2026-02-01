@@ -107,6 +107,16 @@ Creator of Hydra, the live-codeable video synthesizer that brings shader program
 
 ---
 
+### Vanilagy
+
+**Projects:** MediaBunny, mp4-muxer, webm-muxer
+
+Creator of MediaBunny, a high-performance WebCodecs-based video decoder, and media muxing libraries for the browser.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/Vanilagy)
+
+---
+
 ### @mrdoob
 
 **Projects:** Three.js

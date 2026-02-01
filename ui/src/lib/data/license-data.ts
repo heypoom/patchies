@@ -300,6 +300,12 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/matter-js'
   },
   { name: 'memfs', version: '^4.39.0', license: 'MIT', url: 'https://npmjs.com/package/memfs' },
+  {
+    name: 'mediabunny',
+    version: '^0.1.1',
+    license: 'MPL-2.0',
+    url: 'https://github.com/Vanilagy/mediabunny'
+  },
   { name: 'meyda', version: '^5.6.3', license: 'MIT', url: 'https://npmjs.com/package/meyda' },
   { name: 'ml5', version: '^1.2.1', license: 'MIT', url: 'https://npmjs.com/package/ml5' },
   {
@@ -529,6 +535,14 @@ export const supportLinks: SupportLink[] = [
     url: 'https://ojack.xyz/',
     type: 'website',
     projects: ['Hydra']
+  },
+  {
+    name: 'Vanilagy',
+    description: 'Creator of MediaBunny WebCodecs video decoder and media muxers',
+    category: 'library',
+    url: 'https://github.com/sponsors/Vanilagy',
+    type: 'github',
+    projects: ['MediaBunny', 'mp4-muxer', 'webm-muxer']
   },
   {
     name: '@mrdoob',

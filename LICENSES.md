@@ -57,6 +57,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | lodash                            | ^4.17.21     | MIT                    |
 | marked                            | ^16.1.2      | MIT                    |
 | matter-js                         | ^0.20.0      | MIT                    |
+| mediabunny                        | ^0.1.1       | MPL-2.0                |
 | memfs                             | ^4.39.0      | MIT                    |
 | meyda                             | ^5.6.3       | MIT                    |
 | ml5                               | ^1.2.1       | MIT                    |
