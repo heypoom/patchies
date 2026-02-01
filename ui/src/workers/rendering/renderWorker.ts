@@ -10,7 +10,7 @@ const fboRenderer: FBORenderer = new FBORenderer();
 
 const mediaBunnyService = new MediaBunnyService({
   setBitmap: (nodeId, bitmap) => fboRenderer.setBitmap(nodeId, bitmap),
-  postMessage: (message) => self.postMessage(message)
+  postMessage: (message, transfer) => self.postMessage(message, { transfer: transfer ?? [] })
 });
 
 let isRunning: boolean = false;
@@ -181,6 +181,7 @@ function handleStopAnimation() {
 
 function handleSetPreviewEnabled(nodeId: string, enabled: boolean) {
   fboRenderer.setPreviewEnabled(nodeId, enabled);
+
   self.postMessage({ type: 'previewToggled', nodeId, enabled });
 }
 

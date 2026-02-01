@@ -86,14 +86,13 @@
   // MediaBunny player runs in render worker for zero main thread blocking
   let currentFile: File | null = null;
   let currentSourceUrl: string | undefined = undefined; // For URL streaming
-  let webCodecsFirstFrameReceived = false;
+  let webCodecsFirstFrameReceived = $state(false);
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
   let workerCurrentTime = 0; // Track time from worker for profiling
 
-  // Canvas preview - used when falling back to HTMLVideoElement
+  // Canvas preview
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
-  let previewCtx: CanvasRenderingContext2D | null = null;
-  let useCanvasPreview = $state(false);
+  let previewBitmapContext: ImageBitmapRenderingContext | null = null;
 
   // How long to wait for first WebCodecs frame before falling back (ms)
   const WEBCODECS_TIMEOUT_MS = 5000;
@@ -106,10 +105,14 @@
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
   const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
 
-  // Initialize canvas context when canvas is bound
+  // Initialize bitmaprenderer context when canvas is bound
   $effect(() => {
-    if (previewCanvas && !previewCtx) {
-      previewCtx = previewCanvas.getContext('2d');
+    if (previewCanvas && !previewBitmapContext) {
+      previewBitmapContext = previewCanvas.getContext('bitmaprenderer');
+
+      if (previewBitmapContext) {
+        glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+      }
     }
   });
 
@@ -159,6 +162,7 @@
 
       currentFile = file;
       currentSourceUrl = sourceUrl; // Store for MediaBunny streaming
+
       const objectUrl = URL.createObjectURL(file);
 
       videoElement.onloadedmetadata = () => {
@@ -201,11 +205,14 @@
           if (!profiler) {
             profiler = new VideoProfiler(nodeId);
           }
+
           profiler.reset();
           lastRecordedMediaTime = -1;
+
           profiler.setMetadata({
             width: videoWidth,
             height: videoHeight,
+
             // HTMLVideoElement doesn't expose frameRate directly, estimate from common values
             frameRate: 30
           });
@@ -235,6 +242,7 @@
       videoElement.load();
     } catch (error) {
       console.error('Failed to load video:', error);
+
       errorMessage = 'Failed to load video file';
       isVideoLoaded = false;
     }
@@ -259,8 +267,8 @@
     // Reset state
     webCodecsFirstFrameReceived = false;
 
-    // Disable canvas preview - switch back to HTMLVideoElement display
-    useCanvasPreview = false;
+    // Disable preview - HTMLVideoElement is visible directly
+    glSystem.setPreviewEnabled(nodeId, false);
 
     // Update profiler to show we're using fallback
     profiler?.setPipeline('fallback');
@@ -294,19 +302,12 @@
       if (!webCodecsFirstFrameReceived) {
         fallbackToHTMLVideo(`No frames received within ${WEBCODECS_TIMEOUT_MS}ms`);
       }
+
       webCodecsTimeoutId = null;
     }, WEBCODECS_TIMEOUT_MS);
 
     // Initialize MediaBunny in render worker (no main thread blocking)
     initWorkerMediaBunny(file, sourceUrl);
-
-    // Disable canvas preview - bitmap stays in worker, uploaded directly to GL
-    useCanvasPreview = false;
-
-    // Pause HTMLVideoElement since we're using GL for display (saves resources)
-    if (videoElement) {
-      videoElement.pause();
-    }
   }
 
   /**
@@ -318,6 +319,9 @@
 
     // Create player in worker
     glSystem.createMediaBunnyPlayer(nodeId);
+
+    // Enable preview - frames will be sent to bitmaprenderer context
+    glSystem.setPreviewEnabled(nodeId, true);
 
     // Load file or URL
     if (sourceUrl) {
@@ -347,6 +351,7 @@
       // Worker MediaBunny mode
       glSystem.mediaBunnySeek(nodeId, 0);
       glSystem.mediaBunnyPlay(nodeId);
+
       isPaused = false;
     } else if (videoElement) {
       // Fallback mode - use HTMLVideoElement
@@ -552,6 +557,7 @@
       clearTimeout(webCodecsTimeoutId);
       webCodecsTimeoutId = null;
     }
+
     webCodecsFirstFrameReceived = true;
 
     // Update profiler with actual video metadata
@@ -570,6 +576,7 @@
     // Cancel timeout
     if (!webCodecsFirstFrameReceived) {
       webCodecsFirstFrameReceived = true;
+
       if (webCodecsTimeoutId !== null) {
         clearTimeout(webCodecsTimeoutId);
         webCodecsTimeoutId = null;
@@ -731,16 +738,18 @@
         />
 
         <div
-          class={`rounded-lg border-1 ${selected ? 'shadow-glow-md border-zinc-400 bg-zinc-800' : 'hover:shadow-glow-sm border-transparent'}`}
+          class={`rounded-lg border-1 ${selected ? 'shadow-glow-md border-zinc-400' : 'hover:shadow-glow-sm'}`}
         >
           {#if !errorMessage}
             <div class="relative">
-              <!-- Canvas preview when MediaBunny is active (single source of truth) -->
+              <!-- Canvas preview when MediaBunny is active (worker sends frames via bitmaprenderer) -->
               <canvas
                 bind:this={previewCanvas}
                 width={data.width || defaultPreviewWidth}
                 height={data.height || defaultPreviewHeight}
-                class="rounded-lg {vfsMedia.hasVfsPath && isVideoLoaded && useCanvasPreview
+                class="rounded-lg {vfsMedia.hasVfsPath &&
+                isVideoLoaded &&
+                webCodecsFirstFrameReceived
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
@@ -750,12 +759,12 @@
                 ondrop={vfsMedia.handleDrop}
               ></canvas>
 
-              <!-- Video element for fallback and metadata extraction -->
+              <!-- Video element for fallback (when MediaBunny not active) -->
               <video
                 bind:this={videoElement}
                 class="rounded-lg object-cover {vfsMedia.hasVfsPath &&
                 isVideoLoaded &&
-                !useCanvasPreview
+                !webCodecsFirstFrameReceived
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||

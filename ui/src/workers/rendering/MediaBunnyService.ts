@@ -14,13 +14,14 @@ export interface MediaBunnyServiceConfig {
   setBitmap: (nodeId: string, bitmap: ImageBitmap) => void;
 
   /** Callback to post messages back to main thread */
-  postMessage: (message: unknown) => void;
+  postMessage: (message: unknown, transfer?: Transferable[]) => void;
 }
 
 export class MediaBunnyService {
   private players = new Map<string, MediaBunnyPlayer>();
+  private previewEnabled = new Map<string, boolean>();
   private setBitmap: (nodeId: string, bitmap: ImageBitmap) => void;
-  private postMessage: (message: unknown) => void;
+  private postMessage: (message: unknown, transfer?: Transferable[]) => void;
 
   constructor(config: MediaBunnyServiceConfig) {
     this.setBitmap = config.setBitmap;
@@ -74,6 +75,17 @@ export class MediaBunnyService {
 
         return true;
       })
+      .with('setPreviewEnabled', () => {
+        // Check if this is for a MediaBunny node
+        const nodeId = data.nodeId as string;
+
+        if (this.players.has(nodeId)) {
+          this.setPreviewEnabled(nodeId, data.enabled as boolean);
+          return true;
+        }
+
+        return false;
+      })
       .with('destroyMediaBunnyPlayer', () => {
         this.destroyPlayer(data.nodeId as string);
 
@@ -88,9 +100,19 @@ export class MediaBunnyService {
 
     const player = new MediaBunnyPlayer({
       nodeId,
-      onFrame: (bitmap) => {
-        // Direct upload to texture - no transfer needed!
+      onFrame: async (bitmap) => {
+        // Upload to GL texture
         this.setBitmap(nodeId, bitmap);
+
+        // Send preview frame if enabled
+        if (this.previewEnabled.get(nodeId)) {
+          // Create a copy for preview (original is consumed by setBitmap)
+          const previewBitmap = await createImageBitmap(bitmap);
+
+          this.postMessage({ type: 'previewFrame', nodeId, bitmap: previewBitmap }, [
+            previewBitmap
+          ]);
+        }
       },
       onMetadata: (metadata: VideoMetadata) => {
         this.postMessage({ type: 'mediaBunnyMetadata', nodeId, metadata });
@@ -154,12 +176,18 @@ export class MediaBunnyService {
     this.players.get(nodeId)?.setPlaybackRate(rate);
   }
 
+  private setPreviewEnabled(nodeId: string, enabled: boolean): void {
+    this.previewEnabled.set(nodeId, enabled);
+  }
+
   private destroyPlayer(nodeId: string): void {
     const player = this.players.get(nodeId);
 
     if (player) {
       player.destroy();
+
       this.players.delete(nodeId);
+      this.previewEnabled.delete(nodeId);
     }
   }
 
