@@ -5,6 +5,7 @@
     isAiFeaturesVisible,
     isBottomBarVisible,
     isFpsMonitorVisible,
+    isProfilingMonitorVisible,
     isConnectionMode,
     isConnecting,
     connectingFromHandleId
@@ -136,6 +137,11 @@
       id: 'toggle-fps-monitor',
       name: 'Toggle FPS Monitor',
       description: 'Show or hide the FPS monitor'
+    },
+    {
+      id: 'toggle-profiling-monitor',
+      name: 'Toggle Profiling Monitor',
+      description: 'Show or hide the performance profiling monitor'
     },
     {
       id: 'toggle-video-stats',
@@ -315,6 +321,10 @@
       })
       .with('toggle-fps-monitor', () => {
         $isFpsMonitorVisible = !$isFpsMonitorVisible;
+        onCancel();
+      })
+      .with('toggle-profiling-monitor', () => {
+        $isProfilingMonitorVisible = !$isProfilingMonitorVisible;
         onCancel();
       })
       .with('toggle-video-stats', () => {

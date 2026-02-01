@@ -21,6 +21,7 @@ export const isMobile = createIsMobileStore();
 
 export const isBottomBarVisible = writable(true);
 export const isFpsMonitorVisible = writable(false);
+export const isProfilingMonitorVisible = writable(true);
 
 // Initialize isAiFeaturesVisible from localStorage (defaults to true)
 const storedAiFeaturesVisible =
