@@ -511,7 +511,7 @@ export class GLSystem {
 
   /**
    * Register a worker's render port for direct messaging.
-   * Called by RenderChannelService when setting up a direct channel.
+   * Called by DirectChannelService when setting up a direct channel.
    */
   registerWorkerRenderPort(nodeId: string, port: MessagePort): void {
     this.renderWorker.postMessage({ type: 'registerWorkerRenderPort', nodeId }, [port]);
@@ -519,7 +519,7 @@ export class GLSystem {
 
   /**
    * Unregister a worker's render port.
-   * Called by RenderChannelService when a worker is destroyed.
+   * Called by DirectChannelService when a worker is destroyed.
    */
   unregisterWorkerRenderPort(nodeId: string): void {
     this.send('unregisterWorkerRenderPort', { nodeId });

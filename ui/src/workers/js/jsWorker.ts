@@ -38,6 +38,9 @@ interface NodeState {
   // Direct render channel state
   renderPort: MessagePort | null;
   renderConnections: RenderConnection[];
+  // Direct worker-to-worker channel state
+  workerPorts: Map<string, MessagePort>; // targetNodeId → port (for sending) OR sourceNodeId → port (for receiving)
+  workerConnections: RenderConnection[]; // same structure as render connections
 }
 
 const nodeStates = new Map<string, NodeState>();
@@ -58,9 +61,12 @@ function getNodeState(nodeId: string): NodeState {
       pendingVideoFrameResolvers: new Map(),
       videoFrameRequestIdCounter: 0,
       renderPort: null,
-      renderConnections: []
+      renderConnections: [],
+      workerPorts: new Map(),
+      workerConnections: []
     });
   }
+
   return nodeStates.get(nodeId)!;
 }
 
@@ -121,7 +127,27 @@ function createWorkerContext(nodeId: string) {
       }
     }
 
-    // Always also send via main thread for non-render targets
+    // Send directly to worker targets if available
+    if (state.workerPorts.size > 0 && state.workerConnections.length > 0) {
+      const workerTargets = state.workerConnections.filter(
+        (c) => options?.to === undefined || c.outlet === options.to
+      );
+
+      for (const target of workerTargets) {
+        const port = state.workerPorts.get(target.targetNodeId);
+        if (port) {
+          port.postMessage({
+            fromNodeId: nodeId,
+            targetNodeId: target.targetNodeId,
+            inlet: target.inlet,
+            inletKey: target.inletKey,
+            data
+          });
+        }
+      }
+    }
+
+    // Always also send via main thread for non-direct targets
     postResponse({ type: 'sendMessage', nodeId, data, options });
   };
 
@@ -657,6 +683,49 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     .with({ type: 'updateRenderConnections' }, (data) => {
       const state = getNodeState(nodeId);
       state.renderConnections = (data as { connections: RenderConnection[] }).connections;
+    })
+    .with({ type: 'setWorkerPort' }, (data) => {
+      const state = getNodeState(nodeId);
+      const { targetNodeId, sourceNodeId } = data as {
+        targetNodeId?: string;
+        sourceNodeId?: string;
+      };
+      const port = event.ports[0];
+
+      if (targetNodeId) {
+        // This is a sending port (we send TO targetNodeId)
+        state.workerPorts.set(targetNodeId, port);
+        port.start();
+      } else if (sourceNodeId) {
+        // This is a receiving port (we receive FROM sourceNodeId)
+        state.workerPorts.set(sourceNodeId, port);
+        port.onmessage = (e) => {
+          // Route incoming message to message callback
+          const { data: msgData, inlet, inletKey, fromNodeId } = e.data;
+          if (state.messageCallback) {
+            try {
+              state.messageCallback(msgData, {
+                source: fromNodeId,
+                inlet,
+                inletKey
+              });
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              postResponse({
+                type: 'consoleOutput',
+                nodeId,
+                level: 'error',
+                args: [`Error in recv(): ${message}`]
+              });
+            }
+          }
+        };
+        port.start();
+      }
+    })
+    .with({ type: 'updateWorkerConnections' }, (data) => {
+      const state = getNodeState(nodeId);
+      state.workerConnections = (data as { connections: RenderConnection[] }).connections;
     })
     .otherwise(() => {});
 };
