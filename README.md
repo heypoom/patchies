@@ -945,6 +945,12 @@ recv { |data, meta| emit(data * 2) }
 - Messages:
   - `any`: flashes the button when it receives any message, and outputs the `bang` message out.
 
+### `toggle`: a toggle button
+
+- Sends the `true` (on) and `false` (off) message when clicked.
+- Messages:
+  - `bang`: flips the state of the button
+
 ### `msg`: message object
 
 - Store and send predefined messages.
