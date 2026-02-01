@@ -28,6 +28,7 @@
 
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
+
       // Get the type folder (second element in path after library id)
       const typeFolder = path.length > 2 ? path[1] : preset.type;
       const categoryKey = `${libraryName}: ${typeFolder}`;
@@ -98,9 +99,11 @@
 
     for (const result of sortedResults) {
       const categoryTitle = result.item.categoryTitle;
+
       if (!matchedObjects.has(categoryTitle)) {
         matchedObjects.set(categoryTitle, []);
       }
+
       matchedObjects.get(categoryTitle)!.push({
         name: result.item.name,
         description: result.item.description,
@@ -110,6 +113,7 @@
 
     // When searching, order categories by which has best matches (first match position)
     const categoryOrder = new Map<string, number>();
+
     sortedResults.forEach((result, index) => {
       const cat = result.item.categoryTitle;
       if (!categoryOrder.has(cat)) {
