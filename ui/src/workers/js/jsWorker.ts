@@ -109,15 +109,35 @@ function createWorkerContext(nodeId: string) {
       postResponse({ type: 'consoleOutput', nodeId, level: 'info', args })
   };
 
-  const send = (data: unknown, options?: { to?: number }) => {
-    // Send directly to render targets if available
-    if (state.renderPort && state.renderConnections.length > 0) {
-      const renderTargets = state.renderConnections.filter(
-        (c) => options?.to === undefined || c.outlet === options.to
-      );
+  const sendToRenderTargets = (data: unknown, options?: { to?: number }) => {
+    if (!state.renderPort || state.renderConnections.length === 0) return;
 
-      for (const target of renderTargets) {
-        state.renderPort.postMessage({
+    const targets = state.renderConnections.filter(
+      (c) => options?.to === undefined || c.outlet === options.to
+    );
+
+    for (const target of targets) {
+      state.renderPort.postMessage({
+        fromNodeId: nodeId,
+        targetNodeId: target.targetNodeId,
+        inlet: target.inlet,
+        inletKey: target.inletKey,
+        data
+      });
+    }
+  };
+
+  const sendToWorkerTargets = (data: unknown, options?: { to?: number }) => {
+    if (state.workerPorts.size === 0 || state.workerConnections.length === 0) return;
+
+    const targets = state.workerConnections.filter(
+      (c) => options?.to === undefined || c.outlet === options.to
+    );
+
+    for (const target of targets) {
+      const port = state.workerPorts.get(target.targetNodeId);
+      if (port) {
+        port.postMessage({
           fromNodeId: nodeId,
           targetNodeId: target.targetNodeId,
           inlet: target.inlet,
@@ -126,26 +146,11 @@ function createWorkerContext(nodeId: string) {
         });
       }
     }
+  };
 
-    // Send directly to worker targets if available
-    if (state.workerPorts.size > 0 && state.workerConnections.length > 0) {
-      const workerTargets = state.workerConnections.filter(
-        (c) => options?.to === undefined || c.outlet === options.to
-      );
-
-      for (const target of workerTargets) {
-        const port = state.workerPorts.get(target.targetNodeId);
-        if (port) {
-          port.postMessage({
-            fromNodeId: nodeId,
-            targetNodeId: target.targetNodeId,
-            inlet: target.inlet,
-            inletKey: target.inletKey,
-            data
-          });
-        }
-      }
-    }
+  const send = (data: unknown, options?: { to?: number }) => {
+    sendToRenderTargets(data, options);
+    sendToWorkerTargets(data, options);
 
     // Always also send via main thread for non-direct targets
     postResponse({ type: 'sendMessage', nodeId, data, options });
