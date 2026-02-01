@@ -26,7 +26,10 @@ interface NodeState {
   fftDataCache: Map<string, { data: Uint8Array | Float32Array; timestamp: number }>;
   // Video frame state
   videoFrameCallback: ((frames: (ImageBitmap | null)[], timestamp: number) => void) | null;
-  pendingVideoFrameResolvers: Map<string, (frames: (ImageBitmap | null)[]) => void>;
+  pendingVideoFrameResolvers: Map<
+    string,
+    { resolve: (frames: (ImageBitmap | null)[]) => void; reject: (err: Error) => void }
+  >;
   videoFrameRequestIdCounter: number;
 }
 
@@ -242,8 +245,8 @@ function createWorkerContext(nodeId: string) {
   const getVideoFrames = (): Promise<(ImageBitmap | null)[]> => {
     const requestId = `vf-${nodeId}-${++state.videoFrameRequestIdCounter}`;
 
-    return new Promise((resolve) => {
-      state.pendingVideoFrameResolvers.set(requestId, resolve);
+    return new Promise((resolve, reject) => {
+      state.pendingVideoFrameResolvers.set(requestId, { resolve, reject });
       postResponse({ type: 'requestVideoFrames', nodeId, requestId });
     });
   };
@@ -313,6 +316,9 @@ function cleanupNode(nodeId: string) {
 
   // Clear video frame state
   state.videoFrameCallback = null;
+  for (const { reject } of state.pendingVideoFrameResolvers.values()) {
+    reject(new Error('video frames request cancelled: node cleaned up'));
+  }
   state.pendingVideoFrameResolvers.clear();
 }
 
@@ -533,8 +539,8 @@ function handleVideoFramesReady(
   }
 
   // Resolve any pending manual request (first one only)
-  for (const [requestId, resolver] of state.pendingVideoFrameResolvers) {
-    resolver(payload.frames);
+  for (const [requestId, { resolve }] of state.pendingVideoFrameResolvers) {
+    resolve(payload.frames);
     state.pendingVideoFrameResolvers.delete(requestId);
     break;
   }
