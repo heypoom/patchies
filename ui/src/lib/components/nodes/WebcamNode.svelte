@@ -182,11 +182,14 @@
   }
 
   async function uploadBitmap() {
+    // Track frames for profiling even without connections (to measure capture rate)
+    if (videoElement && isCapturing && !isPaused) {
+      profiler?.recordFrame(performance.now() * 1000);
+    }
+
+    // Only upload to GL when there are connections
     if (videoElement && isCapturing && !isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
       glSystem.setBitmapSource(nodeId, videoElement);
-
-      // Track frame for profiling
-      profiler?.recordFrame(performance.now() * 1000);
     }
 
     if (isCapturing) {

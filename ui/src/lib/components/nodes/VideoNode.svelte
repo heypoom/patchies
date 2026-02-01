@@ -14,6 +14,30 @@
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
   import { WebCodecsPlayer, VideoProfiler, type VideoStats } from '$lib/video';
 
+  // Type definitions for requestVideoFrameCallback (not yet in all TypeScript libs)
+  interface VideoFrameCallbackMetadata {
+    presentationTime: DOMHighResTimeStamp;
+    expectedDisplayTime: DOMHighResTimeStamp;
+    width: number;
+    height: number;
+    mediaTime: number;
+    presentedFrames: number;
+    processingDuration?: number;
+    captureTime?: DOMHighResTimeStamp;
+    receiveTime?: DOMHighResTimeStamp;
+    rtpTimestamp?: number;
+  }
+
+  interface HTMLVideoElementWithRVFC extends HTMLVideoElement {
+    requestVideoFrameCallback(callback: VideoFrameRequestCallback): number;
+    cancelVideoFrameCallback(handle: number): void;
+  }
+
+  type VideoFrameRequestCallback = (
+    now: DOMHighResTimeStamp,
+    metadata: VideoFrameCallbackMetadata
+  ) => void;
+
   let {
     id: nodeId,
     data,
@@ -44,7 +68,9 @@
   let isVideoLoaded = $state(false);
   let isPaused = $state(true);
   let errorMessage = $state<string | null>(null);
-  let bitmapFrameId: number;
+  let bitmapFrameId: number | undefined;
+  let videoFrameCallbackId: number | undefined;
+  let useVideoFrameCallback = false;
 
   let resizerCanvas: OffscreenCanvas | null = null;
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
@@ -163,7 +189,7 @@
           } else {
             // Fallback to HTMLVideoElement frame extraction (Firefox or disabled)
             profiler.setPipeline('fallback');
-            bitmapFrameId = requestAnimationFrame(uploadBitmap);
+            startFallbackFrameLoop();
           }
         }
       };
@@ -222,8 +248,8 @@
       onError: (err) => {
         console.error('[VideoNode] WebCodecs error:', err);
         // Fall back to HTMLVideoElement on error
-        if (!bitmapFrameId) {
-          bitmapFrameId = requestAnimationFrame(uploadBitmap);
+        if (!bitmapFrameId && !videoFrameCallbackId) {
+          startFallbackFrameLoop();
         }
       }
     });
@@ -278,10 +304,77 @@
     }
   }
 
-  async function uploadBitmap() {
+  /**
+   * Start the fallback frame loop using requestVideoFrameCallback when available,
+   * falling back to requestAnimationFrame for browsers that don't support it.
+   */
+  function startFallbackFrameLoop() {
+    // Check if requestVideoFrameCallback is supported
+    if (videoElement && 'requestVideoFrameCallback' in videoElement) {
+      useVideoFrameCallback = true;
+
+      videoFrameCallbackId = (videoElement as HTMLVideoElementWithRVFC).requestVideoFrameCallback(
+        handleVideoFrame
+      );
+    } else {
+      // Fallback to requestAnimationFrame (older browsers than baseline 2024)
+      useVideoFrameCallback = false;
+      bitmapFrameId = requestAnimationFrame(uploadBitmapRAF);
+    }
+  }
+
+  /**
+   * Stop the fallback frame loop.
+   */
+  function stopFallbackFrameLoop() {
+    if (useVideoFrameCallback && videoFrameCallbackId !== undefined && videoElement) {
+      (videoElement as HTMLVideoElementWithRVFC).cancelVideoFrameCallback(videoFrameCallbackId);
+      videoFrameCallbackId = undefined;
+    }
+
+    if (bitmapFrameId !== undefined) {
+      cancelAnimationFrame(bitmapFrameId);
+      bitmapFrameId = undefined;
+    }
+  }
+
+  /**
+   * Handle video frame callback - called when a new video frame is presented.
+   * This is more efficient than requestAnimationFrame as it syncs with actual video frames.
+   */
+  async function handleVideoFrame(_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
+    if (!videoElement || !isVideoLoaded) return;
+
+    // Track frames for profiling with accurate timing from metadata
+    profiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
+
+    // Only upload to GL when there are connections and video is playing
+    if (!isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
+      await uploadVideoFrame();
+    }
+
+    // Schedule next frame callback
+    if (isVideoLoaded) {
+      videoFrameCallbackId = (videoElement as HTMLVideoElementWithRVFC).requestVideoFrameCallback(
+        handleVideoFrame
+      );
+    }
+  }
+
+  /**
+   * Fallback frame handler using requestAnimationFrame.
+   * Less efficient as it runs at display refresh rate rather than video frame rate.
+   */
+  async function uploadBitmapRAF() {
     const videoReady =
       videoElement && videoElement.readyState >= 2 && !videoElement.ended && !videoElement.error;
 
+    // Track frames for profiling even without connections (to measure extraction rate)
+    if (videoElement && videoReady && isVideoLoaded && !isPaused) {
+      profiler?.recordFrame(videoElement.currentTime * 1_000_000, videoElement.currentTime);
+    }
+
+    // Only upload to GL when there are connections
     if (
       videoElement &&
       videoReady &&
@@ -289,44 +382,51 @@
       !isPaused &&
       glSystem.hasOutgoingVideoConnections(nodeId)
     ) {
-      const videoWidth = videoElement.videoWidth;
-      const videoHeight = videoElement.videoHeight;
-
-      // Check if we need to resize (if video is larger than our max dimensions)
-      if (videoWidth > MAX_UPLOAD_WIDTH || videoHeight > MAX_UPLOAD_HEIGHT) {
-        // Calculate scale to fit within max dimensions while preserving aspect ratio
-        const scale = Math.min(MAX_UPLOAD_WIDTH / videoWidth, MAX_UPLOAD_HEIGHT / videoHeight);
-        const scaledWidth = Math.round(videoWidth * scale);
-        const scaledHeight = Math.round(videoHeight * scale);
-
-        // Create or resize offscreen canvas if needed
-        if (
-          !resizerCanvas ||
-          resizerCanvas.width !== scaledWidth ||
-          resizerCanvas.height !== scaledHeight
-        ) {
-          resizerCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
-          resizerCtx = resizerCanvas.getContext('2d');
-        }
-
-        if (resizerCtx) {
-          resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
-
-          // Create flipped ImageBitmap to match pipeline orientation
-          const bitmap = await createImageBitmap(resizerCanvas, { imageOrientation: 'flipY' });
-          await glSystem.setPreflippedBitmap(nodeId, bitmap);
-        }
-      } else {
-        // Video is already small enough, upload directly
-        await glSystem.setBitmapSource(nodeId, videoElement);
-      }
-
-      // Track frame for profiling (use currentTime in microseconds as timestamp)
-      profiler?.recordFrame(videoElement.currentTime * 1_000_000, videoElement.currentTime);
+      await uploadVideoFrame();
     }
 
     if (isVideoLoaded) {
-      bitmapFrameId = requestAnimationFrame(uploadBitmap);
+      bitmapFrameId = requestAnimationFrame(uploadBitmapRAF);
+    }
+  }
+
+  /**
+   * Upload current video frame to the GL system.
+   * Shared between requestVideoFrameCallback and requestAnimationFrame paths.
+   */
+  async function uploadVideoFrame() {
+    if (!videoElement) return;
+
+    const videoWidth = videoElement.videoWidth;
+    const videoHeight = videoElement.videoHeight;
+
+    // Check if we need to resize (if video is larger than our max dimensions)
+    if (videoWidth > MAX_UPLOAD_WIDTH || videoHeight > MAX_UPLOAD_HEIGHT) {
+      // Calculate scale to fit within max dimensions while preserving aspect ratio
+      const scale = Math.min(MAX_UPLOAD_WIDTH / videoWidth, MAX_UPLOAD_HEIGHT / videoHeight);
+      const scaledWidth = Math.round(videoWidth * scale);
+      const scaledHeight = Math.round(videoHeight * scale);
+
+      // Create or resize offscreen canvas if needed
+      if (
+        !resizerCanvas ||
+        resizerCanvas.width !== scaledWidth ||
+        resizerCanvas.height !== scaledHeight
+      ) {
+        resizerCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
+        resizerCtx = resizerCanvas.getContext('2d');
+      }
+
+      if (resizerCtx) {
+        resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
+
+        // Create flipped ImageBitmap to match pipeline orientation
+        const bitmap = await createImageBitmap(resizerCanvas, { imageOrientation: 'flipY' });
+        await glSystem.setPreflippedBitmap(nodeId, bitmap);
+      }
+    } else {
+      // Video is already small enough, upload directly
+      await glSystem.setBitmapSource(nodeId, videoElement);
     }
   }
 
@@ -355,9 +455,8 @@
   });
 
   onDestroy(() => {
-    if (bitmapFrameId) {
-      cancelAnimationFrame(bitmapFrameId);
-    }
+    // Clean up frame loop (handles both requestVideoFrameCallback and requestAnimationFrame)
+    stopFallbackFrameLoop();
 
     // Clean up stats interval
     if (statsIntervalId) {
