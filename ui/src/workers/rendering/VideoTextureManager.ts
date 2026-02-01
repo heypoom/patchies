@@ -86,6 +86,7 @@ export class VideoTextureManager {
     // Blit with Y flip: swap srcY0 and srcY1 to flip vertically
     this.gl.bindFramebuffer(this.gl.READ_FRAMEBUFFER, getFramebuffer(sourceFBO));
     this.gl.bindFramebuffer(this.gl.DRAW_FRAMEBUFFER, getFramebuffer(destFBO!));
+
     this.gl.blitFramebuffer(
       0,
       height, // srcY0 = height (top)
@@ -98,6 +99,7 @@ export class VideoTextureManager {
       this.gl.COLOR_BUFFER_BIT,
       this.gl.NEAREST
     );
+
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 
     // Clean up temporary source FBO (texture is kept)
