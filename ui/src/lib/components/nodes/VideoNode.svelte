@@ -337,10 +337,6 @@
   async function restartVideo() {
     if (!isVideoLoaded) return;
 
-    // Get current time from appropriate source
-    const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
-    profiler?.markPlaybackStop(currentTime);
-
     lastRecordedMediaTime = -1;
 
     // Send bang to audio system to restart audio (sets currentTime to 0 and plays)
@@ -608,6 +604,10 @@
     if (event.nodeId !== nodeId) return;
 
     workerCurrentTime = event.currentTime;
+
+    // Notify profiler of frame delivery for FPS tracking
+    // MediaBunnyPlayer sends timeUpdate for each displayed frame
+    profiler?.recordFrame(event.currentTime * 1_000_000, event.currentTime);
   }
 
   onMount(async () => {
