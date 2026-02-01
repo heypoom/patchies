@@ -22,7 +22,12 @@ export type PatchiesEvent =
   | WorkerCallbackRegisteredEvent
   | WorkerFlashEvent
   | RequestWorkerVideoFramesEvent
-  | RequestWorkerVideoFramesBatchEvent;
+  | RequestWorkerVideoFramesBatchEvent
+  | MediaBunnyMetadataEvent
+  | MediaBunnyFirstFrameEvent
+  | MediaBunnyTimeUpdateEvent
+  | MediaBunnyEndedEvent
+  | MediaBunnyErrorEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -197,4 +202,41 @@ export interface RequestWorkerVideoFramesBatchEvent {
     sourceNodeIds: (string | null)[];
     resolution?: [number, number];
   }>;
+}
+
+// MediaBunny Worker events - for video playback in render worker
+
+export interface MediaBunnyMetadataEvent {
+  type: 'mediaBunnyMetadata';
+  nodeId: string;
+  metadata: {
+    duration: number;
+    width: number;
+    height: number;
+    frameRate: number;
+    codec: string;
+    hasAudio: boolean;
+  };
+}
+
+export interface MediaBunnyFirstFrameEvent {
+  type: 'mediaBunnyFirstFrame';
+  nodeId: string;
+}
+
+export interface MediaBunnyTimeUpdateEvent {
+  type: 'mediaBunnyTimeUpdate';
+  nodeId: string;
+  currentTime: number;
+}
+
+export interface MediaBunnyEndedEvent {
+  type: 'mediaBunnyEnded';
+  nodeId: string;
+}
+
+export interface MediaBunnyErrorEvent {
+  type: 'mediaBunnyError';
+  nodeId: string;
+  error: string;
 }

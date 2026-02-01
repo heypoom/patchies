@@ -144,7 +144,23 @@ export type RenderWorkerMessage =
         frames: (ImageBitmap | null)[];
       }>;
       timestamp: number;
-    };
+    }
+  | {
+      type: 'mediaBunnyMetadata';
+      nodeId: string;
+      metadata: {
+        duration: number;
+        width: number;
+        height: number;
+        frameRate: number;
+        codec: string;
+        hasAudio: boolean;
+      };
+    }
+  | { type: 'mediaBunnyFirstFrame'; nodeId: string }
+  | { type: 'mediaBunnyTimeUpdate'; nodeId: string; currentTime: number }
+  | { type: 'mediaBunnyEnded'; nodeId: string }
+  | { type: 'mediaBunnyError'; nodeId: string; error: string };
 
 export type PreviewState = Record<string, boolean>;
 

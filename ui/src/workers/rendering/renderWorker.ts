@@ -4,8 +4,14 @@ import type { RenderGraph } from '../../lib/rendering/types.js';
 import { FBORenderer } from './fboRenderer.js';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem.js';
 import { handleVfsUrlResolved } from './vfsWorkerUtils.js';
+import { MediaBunnyService } from './MediaBunnyService.js';
 
 const fboRenderer: FBORenderer = new FBORenderer();
+
+const mediaBunnyService = new MediaBunnyService({
+  setBitmap: (nodeId, bitmap) => fboRenderer.setBitmap(nodeId, bitmap),
+  postMessage: (message, transfer) => self.postMessage(message, { transfer: transfer ?? [] })
+});
 
 let isRunning: boolean = false;
 
@@ -14,6 +20,11 @@ const workerRenderPorts = new Map<string, MessagePort>();
 
 self.onmessage = (event) => {
   const { type, ...data } = event.data;
+
+  // Route MediaBunny messages to dedicated service
+  if (mediaBunnyService.handleMessage(type, data)) {
+    return;
+  }
 
   match(type)
     .with('buildRenderGraph', () => handleBuildRenderGraph(data.graph))
@@ -170,6 +181,7 @@ function handleStopAnimation() {
 
 function handleSetPreviewEnabled(nodeId: string, enabled: boolean) {
   fboRenderer.setPreviewEnabled(nodeId, enabled);
+
   self.postMessage({ type: 'previewToggled', nodeId, enabled });
 }
 

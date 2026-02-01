@@ -231,6 +231,40 @@ export class GLSystem {
             system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
           }
         });
+      })
+      // MediaBunny events from worker
+      .with({ type: 'mediaBunnyMetadata' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyMetadata',
+          nodeId: data.nodeId,
+          metadata: data.metadata
+        });
+      })
+      .with({ type: 'mediaBunnyFirstFrame' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyFirstFrame',
+          nodeId: data.nodeId
+        });
+      })
+      .with({ type: 'mediaBunnyTimeUpdate' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyTimeUpdate',
+          nodeId: data.nodeId,
+          currentTime: data.currentTime
+        });
+      })
+      .with({ type: 'mediaBunnyEnded' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyEnded',
+          nodeId: data.nodeId
+        });
+      })
+      .with({ type: 'mediaBunnyError' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyError',
+          nodeId: data.nodeId,
+          error: data.error
+        });
       });
   };
 
@@ -437,25 +471,19 @@ export class GLSystem {
   }
 
   setBitmapSource(nodeId: string, source: ImageBitmapSource) {
-    // Create flipped bitmap asynchronously without blocking
-    // createImageBitmap is GPU-accelerated and returns quickly
-    createImageBitmap(source, { imageOrientation: 'flipY' }).then((bitmap) => {
-      this.setPreflippedBitmap(nodeId, bitmap);
+    createImageBitmap(source).then((bitmap) => {
+      this.setBitmap(nodeId, bitmap);
     });
   }
 
   /**
-   * Set a pre-flipped ImageBitmap for a node.
-   *
-   * IMPORTANT: The bitmap MUST be created with { imageOrientation: 'flipY' }
-   * to match the pipeline's standard screen coordinates (Y-down, top-left origin).
-   *
-   * If you have a non-flipped source, use setBitmapSource() instead.
+   * Set an ImageBitmap for a node.
+   * The fboRenderer will Y-flip this for us.
    *
    * @param nodeId - The node ID to set the bitmap for
-   * @param bitmap - Pre-flipped ImageBitmap (created with imageOrientation: 'flipY')
+   * @param bitmap - ImageBitmap
    */
-  setPreflippedBitmap(nodeId: string, bitmap: ImageBitmap) {
+  setBitmap(nodeId: string, bitmap: ImageBitmap) {
     this.renderWorker.postMessage(
       {
         type: 'setBitmap',
@@ -538,4 +566,59 @@ export class GLSystem {
 
     this.renderWorker.postMessage(payloadWithType, { transfer: [payloadWithType.array.buffer] });
   };
+
+  // ============================================
+  // MediaBunny Worker API
+  // ============================================
+
+  /** Create a MediaBunnyPlayer in the worker for a node */
+  createMediaBunnyPlayer(nodeId: string): void {
+    this.send('createMediaBunnyPlayer', { nodeId });
+  }
+
+  /** Load a video file into the worker's MediaBunnyPlayer */
+  loadMediaBunnyFile(nodeId: string, file: File): void {
+    // File can be sent via postMessage (cloned, blob data is shared)
+    this.renderWorker.postMessage({ type: 'loadMediaBunnyFile', nodeId, file });
+  }
+
+  /** Load a video URL into the worker's MediaBunnyPlayer */
+  loadMediaBunnyUrl(nodeId: string, url: string): void {
+    this.send('loadMediaBunnyUrl', { nodeId, url });
+  }
+
+  /** Start playback */
+  mediaBunnyPlay(nodeId: string): void {
+    this.send('mediaBunnyPlay', { nodeId });
+  }
+
+  /** Pause playback */
+  mediaBunnyPause(nodeId: string): void {
+    this.send('mediaBunnyPause', { nodeId });
+  }
+
+  /** Seek to time */
+  mediaBunnySeek(nodeId: string, time: number): void {
+    this.send('mediaBunnySeek', { nodeId, time });
+  }
+
+  /** Restart video from beginning (atomic seek + play) */
+  mediaBunnyRestart(nodeId: string): void {
+    this.send('mediaBunnyRestart', { nodeId });
+  }
+
+  /** Set loop mode */
+  mediaBunnySetLoop(nodeId: string, loop: boolean): void {
+    this.send('mediaBunnySetLoop', { nodeId, loop });
+  }
+
+  /** Set playback rate */
+  mediaBunnySetPlaybackRate(nodeId: string, rate: number): void {
+    this.send('mediaBunnySetPlaybackRate', { nodeId, rate });
+  }
+
+  /** Destroy the MediaBunnyPlayer for a node */
+  destroyMediaBunnyPlayer(nodeId: string): void {
+    this.send('destroyMediaBunnyPlayer', { nodeId });
+  }
 }
