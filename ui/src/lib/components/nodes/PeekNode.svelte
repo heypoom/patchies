@@ -128,7 +128,7 @@
 
     <div
       class={[
-        'max-w-[300px] min-w-[60px] rounded-lg border px-3 py-2 font-mono text-xs text-zinc-200',
+        'nowheel max-w-[300px] min-w-[60px] rounded-lg border px-3 py-2 font-mono text-xs text-zinc-200',
         containerClass
       ]}
     >
