@@ -360,13 +360,14 @@ ${code}
 
     const result = await rubyVM.evalAsync(wrappedCode);
 
-    // Log result if it's not nil
+    // Log result if it's not nil/undefined
     if (result !== undefined && result !== null) {
       try {
         const jsResult = result.toJS?.() ?? result.toString();
         if (jsResult !== null && jsResult !== undefined && jsResult !== 'nil') {
-          // Don't log nil results
-          if (String(jsResult) !== 'nil') {
+          const strResult = String(jsResult);
+          // Don't log nil or undefined results
+          if (strResult !== 'nil' && strResult !== 'undefined') {
             ctx.console.log(jsResult);
           }
         }

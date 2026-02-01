@@ -175,7 +175,7 @@ export class RubyNodeSystem {
           nodeId,
           messageType: 'log',
           timestamp: Date.now(),
-          args: ['Initializing Ruby VM...']
+          args: ['[ruby] setting up']
         });
       })
       .with({ type: 'vmReady' }, () => {
@@ -187,7 +187,7 @@ export class RubyNodeSystem {
           nodeId,
           messageType: 'log',
           timestamp: Date.now(),
-          args: ['Ruby VM ready']
+          args: ['[ruby] ready']
         });
       })
       .with({ type: 'consoleOutput' }, ({ level, args }) => {
