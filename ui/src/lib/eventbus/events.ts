@@ -187,6 +187,7 @@ export interface RequestWorkerVideoFramesEvent {
   type: 'requestWorkerVideoFrames';
   nodeId: string;
   sourceNodeIds: (string | null)[];
+  resolution?: [number, number];
 }
 
 export interface RequestWorkerVideoFramesBatchEvent {
@@ -194,5 +195,6 @@ export interface RequestWorkerVideoFramesBatchEvent {
   requests: Array<{
     targetNodeId: string;
     sourceNodeIds: (string | null)[];
+    resolution?: [number, number];
   }>;
 }

@@ -83,7 +83,8 @@ export class GLSystem {
       (event: RequestWorkerVideoFramesEvent) => {
         this.send('captureWorkerVideoFrames', {
           targetNodeId: event.nodeId,
-          sourceNodeIds: event.sourceNodeIds
+          sourceNodeIds: event.sourceNodeIds,
+          resolution: event.resolution
         });
       }
     );

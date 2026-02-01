@@ -104,64 +104,80 @@ export class CaptureRenderer {
    * Supports both FBO nodes (p5, hydra, glsl) and external texture nodes (img, webcam).
    */
   initiateVideoFrameBatchAsync(
-    requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>,
+    requests: Array<{
+      targetNodeId: string;
+      sourceNodeIds: (string | null)[];
+      resolution?: [number, number];
+    }>,
     fboNodes: Map<string, FBONode>,
     externalTextures?: Map<string, regl.Texture2D>
   ): void {
-    // Collect all unique source node IDs across all requests
-    const uniqueSourceIds = new Set<string>();
-    for (const request of requests) {
-      for (const sourceId of request.sourceNodeIds) {
-        if (sourceId) uniqueSourceIds.add(sourceId);
-      }
-    }
-
     // Track temporary FBOs created for external textures (need cleanup after read)
     const tempFbos: regl.Framebuffer2D[] = [];
 
-    // Initiate async reads for each unique source
-    const sourceReads = new Map<string, PendingVideoFrameRead>();
-    for (const sourceId of uniqueSourceIds) {
-      // Check external textures first (img, webcam nodes)
-      const externalTexture = externalTextures?.get(sourceId);
-      if (externalTexture) {
-        // Create a temporary framebuffer wrapping the texture
-        const tempFbo = this.regl.framebuffer({ color: externalTexture });
-        tempFbos.push(tempFbo);
+    // Validate resolution tuple - must have exactly 2 positive numbers
+    const isValidResolution = (res?: [number, number]): res is [number, number] =>
+      Array.isArray(res) && res.length === 2 && res[0] > 0 && res[1] > 0;
 
-        const read = this.initiateVideoFrameRead(sourceId, tempFbo, [
-          externalTexture.width,
-          externalTexture.height
-        ]);
-        if (read) {
-          sourceReads.set(sourceId, read);
-        }
-        continue;
-      }
+    // Cache reads by (sourceId + resolution) to deduplicate when possible
+    // Key format: "sourceId:widthxheight" or "sourceId:default"
+    const readCache = new Map<string, PendingVideoFrameRead>();
 
-      // Fall back to FBO nodes (p5, hydra, glsl, etc.)
-      const fboNode = fboNodes.get(sourceId);
-      if (!fboNode) continue;
+    const getCacheKey = (sourceId: string, resolution?: [number, number]) =>
+      resolution ? `${sourceId}:${resolution[0]}x${resolution[1]}` : `${sourceId}:default`;
 
-      const read = this.initiateVideoFrameRead(sourceId, fboNode.framebuffer);
-      if (read) {
-        sourceReads.set(sourceId, read);
-      }
-    }
-
-    // Clean up temporary FBOs (reads have been initiated, FBO is no longer needed)
-    for (const fbo of tempFbos) {
-      fbo.destroy();
-    }
-
-    // Create pending batches for each target
+    // Process each request
     for (const request of requests) {
       const reads: PendingVideoFrameRead[] = [];
+      const validResolution = isValidResolution(request.resolution)
+        ? request.resolution
+        : undefined;
 
       for (const sourceId of request.sourceNodeIds) {
-        if (sourceId) {
-          const read = sourceReads.get(sourceId);
-          if (read) reads.push(read);
+        if (!sourceId) continue;
+
+        const cacheKey = getCacheKey(sourceId, validResolution);
+
+        // Check if we already have a read for this source at this resolution
+        const cachedRead = readCache.get(cacheKey);
+        if (cachedRead) {
+          reads.push(cachedRead);
+          continue;
+        }
+
+        // Check external textures first (img, webcam nodes)
+        const externalTexture = externalTextures?.get(sourceId);
+        if (externalTexture) {
+          // Create a temporary framebuffer wrapping the texture
+          const tempFbo = this.regl.framebuffer({ color: externalTexture });
+          tempFbos.push(tempFbo);
+
+          const read = this.initiateVideoFrameRead(
+            sourceId,
+            tempFbo,
+            [externalTexture.width, externalTexture.height],
+            validResolution
+          );
+          if (read) {
+            readCache.set(cacheKey, read);
+            reads.push(read);
+          }
+          continue;
+        }
+
+        // Fall back to FBO nodes (p5, hydra, glsl, etc.)
+        const fboNode = fboNodes.get(sourceId);
+        if (!fboNode) continue;
+
+        const read = this.initiateVideoFrameRead(
+          sourceId,
+          fboNode.framebuffer,
+          undefined,
+          validResolution
+        );
+        if (read) {
+          readCache.set(cacheKey, read);
+          reads.push(read);
         }
       }
 
@@ -172,17 +188,27 @@ export class CaptureRenderer {
         initiatedAt: performance.now()
       });
     }
+
+    // Clean up temporary FBOs (reads have been initiated, FBO is no longer needed)
+    for (const fbo of tempFbos) {
+      fbo.destroy();
+    }
   }
 
   /**
    * Initiate a single async PBO read for video frame capture.
+   * @param sourceNodeId - ID of the source node
+   * @param framebuffer - Source framebuffer to read from
+   * @param customSourceSize - Optional source dimensions (for external textures)
+   * @param customOutputSize - Optional output resolution (for custom capture size)
    */
   private initiateVideoFrameRead(
     sourceNodeId: string,
     framebuffer: regl.Framebuffer2D,
-    customSourceSize?: [number, number]
+    customSourceSize?: [number, number],
+    customOutputSize?: [number, number]
   ): PendingVideoFrameRead | null {
-    const [pw, ph] = this.service.previewSize;
+    const [pw, ph] = customOutputSize ?? this.service.previewSize;
     const width = Math.floor(pw);
     const height = Math.floor(ph);
 

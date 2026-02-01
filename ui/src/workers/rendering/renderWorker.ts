@@ -66,7 +66,7 @@ self.onmessage = (event) => {
       handleVfsUrlResolved(data);
     })
     .with('captureWorkerVideoFrames', () => {
-      handleCaptureWorkerVideoFrames(data.targetNodeId, data.sourceNodeIds);
+      handleCaptureWorkerVideoFrames(data.targetNodeId, data.sourceNodeIds, data.resolution);
     })
     .with('captureWorkerVideoFramesBatch', () => {
       handleCaptureWorkerVideoFramesBatch(data.requests);
@@ -259,7 +259,11 @@ function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [
  * Capture video frames from source nodes for a worker node.
  * This captures bitmaps from each connected source and sends them back to the main thread.
  */
-function handleCaptureWorkerVideoFrames(targetNodeId: string, sourceNodeIds: (string | null)[]) {
+function handleCaptureWorkerVideoFrames(
+  targetNodeId: string,
+  sourceNodeIds: (string | null)[],
+  resolution?: [number, number]
+) {
   const frames: (ImageBitmap | null)[] = [];
   const transferList: ImageBitmap[] = [];
 
@@ -269,7 +273,7 @@ function handleCaptureWorkerVideoFrames(targetNodeId: string, sourceNodeIds: (st
       continue;
     }
 
-    const bitmap = fboRenderer.capturePreviewBitmap(sourceNodeId);
+    const bitmap = fboRenderer.capturePreviewBitmap(sourceNodeId, resolution);
     frames.push(bitmap);
 
     if (bitmap) {
@@ -298,7 +302,11 @@ function handleCaptureWorkerVideoFrames(targetNodeId: string, sourceNodeIds: (st
  * 3. Completed frames are sent via workerVideoFramesCapturedBatch message
  */
 function handleCaptureWorkerVideoFramesBatch(
-  requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>
+  requests: Array<{
+    targetNodeId: string;
+    sourceNodeIds: (string | null)[];
+    resolution?: [number, number];
+  }>
 ) {
   // Initiate async captures - results will be harvested in the render loop
   fboRenderer.initiateVideoFrameCaptureAsync(requests);

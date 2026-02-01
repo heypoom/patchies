@@ -233,21 +233,33 @@ function createWorkerContext(nodeId: string) {
   };
 
   // Video frame APIs
+  interface VideoFrameConfig {
+    resolution?: [number, number];
+  }
+
   const setVideoCount = (inletCount = 1, outletCount = 0) => {
     postResponse({ type: 'setVideoCount', nodeId, inletCount, outletCount });
   };
 
-  const onVideoFrame = (callback: (frames: (ImageBitmap | null)[], timestamp: number) => void) => {
+  const onVideoFrame = (
+    callback: (frames: (ImageBitmap | null)[], timestamp: number) => void,
+    config?: VideoFrameConfig
+  ) => {
     state.videoFrameCallback = callback;
-    postResponse({ type: 'videoFrameCallbackRegistered', nodeId });
+    postResponse({ type: 'videoFrameCallbackRegistered', nodeId, resolution: config?.resolution });
   };
 
-  const getVideoFrames = (): Promise<(ImageBitmap | null)[]> => {
+  const getVideoFrames = (config?: VideoFrameConfig): Promise<(ImageBitmap | null)[]> => {
     const requestId = `vf-${nodeId}-${++state.videoFrameRequestIdCounter}`;
 
     return new Promise((resolve, reject) => {
       state.pendingVideoFrameResolvers.set(requestId, { resolve, reject });
-      postResponse({ type: 'requestVideoFrames', nodeId, requestId });
+      postResponse({
+        type: 'requestVideoFrames',
+        nodeId,
+        requestId,
+        resolution: config?.resolution
+      });
     });
   };
 

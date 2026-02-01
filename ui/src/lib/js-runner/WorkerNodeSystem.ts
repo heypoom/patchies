@@ -54,8 +54,8 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string }
   // Video frame APIs
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
-  | { type: 'videoFrameCallbackRegistered' }
-  | { type: 'requestVideoFrames'; requestId: string }
+  | { type: 'videoFrameCallbackRegistered'; resolution?: [number, number] }
+  | { type: 'requestVideoFrames'; requestId: string; resolution?: [number, number] }
 );
 
 interface WorkerInstance {
@@ -68,6 +68,7 @@ interface WorkerVideoState {
   outletCount: number;
   sourceNodeIds: (string | null)[]; // Maps inlet index to source node ID
   hasVideoCallback: boolean;
+  resolution?: [number, number]; // Custom capture resolution
 }
 
 /**
@@ -219,11 +220,11 @@ export class WorkerNodeSystem {
       .with({ type: 'setVideoCount' }, (event) => {
         this.handleSetVideoCount(nodeId, event.inletCount, event.outletCount);
       })
-      .with({ type: 'videoFrameCallbackRegistered' }, () => {
-        this.handleVideoFrameCallbackRegistered(nodeId);
+      .with({ type: 'videoFrameCallbackRegistered' }, (event) => {
+        this.handleVideoFrameCallbackRegistered(nodeId, event.resolution);
       })
-      .with({ type: 'requestVideoFrames' }, () => {
-        this.handleRequestVideoFrames(nodeId);
+      .with({ type: 'requestVideoFrames' }, (event) => {
+        this.handleRequestVideoFrames(nodeId, event.resolution);
       })
       .otherwise(() => {});
   }
@@ -363,7 +364,7 @@ export class WorkerNodeSystem {
    * Handle video frame callback registration - start frame capture loop.
    * Initializes videoState if absent (handles registration before setVideoCount).
    */
-  private handleVideoFrameCallbackRegistered(nodeId: string) {
+  private handleVideoFrameCallbackRegistered(nodeId: string, resolution?: [number, number]) {
     let videoState = this.videoStates.get(nodeId);
 
     if (!videoState) {
@@ -379,6 +380,7 @@ export class WorkerNodeSystem {
     }
 
     videoState.hasVideoCallback = true;
+    videoState.resolution = resolution;
     this.startGlobalVideoLoop();
 
     // Dispatch event for UI to show long-running indicator (treat as interval-like)
@@ -392,7 +394,7 @@ export class WorkerNodeSystem {
   /**
    * Handle manual video frame request.
    */
-  private handleRequestVideoFrames(nodeId: string) {
+  private handleRequestVideoFrames(nodeId: string, resolution?: [number, number]) {
     // Request frames immediately for manual grab (single node)
     const videoState = this.videoStates.get(nodeId);
     if (!videoState || videoState.sourceNodeIds.length === 0) return;
@@ -400,7 +402,8 @@ export class WorkerNodeSystem {
     this.eventBus.dispatch({
       type: 'requestWorkerVideoFrames',
       nodeId,
-      sourceNodeIds: videoState.sourceNodeIds
+      sourceNodeIds: videoState.sourceNodeIds,
+      resolution
     });
   }
 
@@ -448,14 +451,19 @@ export class WorkerNodeSystem {
    * Request video frames for multiple nodes in a single batched request.
    */
   private requestBatchedVideoFrames(nodeIds: string[]) {
-    const requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }> = [];
+    const requests: Array<{
+      targetNodeId: string;
+      sourceNodeIds: (string | null)[];
+      resolution?: [number, number];
+    }> = [];
 
     for (const nodeId of nodeIds) {
       const videoState = this.videoStates.get(nodeId);
       if (videoState && videoState.sourceNodeIds.length > 0) {
         requests.push({
           targetNodeId: nodeId,
-          sourceNodeIds: videoState.sourceNodeIds
+          sourceNodeIds: videoState.sourceNodeIds,
+          resolution: videoState.resolution
         });
       }
     }

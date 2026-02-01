@@ -1147,7 +1147,11 @@ export class FBORenderer {
    * Call harvestVideoFrames() in subsequent frames to get completed results.
    */
   initiateVideoFrameCaptureAsync(
-    requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>
+    requests: Array<{
+      targetNodeId: string;
+      sourceNodeIds: (string | null)[];
+      resolution?: [number, number];
+    }>
   ): void {
     this.captureRenderer.initiateVideoFrameBatchAsync(
       requests,
