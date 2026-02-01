@@ -93,6 +93,7 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
           inletKey: target.inletKey,
           data
         });
+
         sentTargets.push(target.targetNodeId);
       }
     }
@@ -102,6 +103,7 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
 
   function handleSetRenderPort(port: MessagePort): void {
     renderPort = port;
+
     port.start();
   }
 
@@ -129,6 +131,7 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
           });
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
+
           onError(`Error in recv(): ${message}`);
         }
       };
