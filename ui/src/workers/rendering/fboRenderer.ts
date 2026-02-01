@@ -28,6 +28,7 @@ import type {
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
+import { VideoTextureManager } from './VideoTextureManager.js';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -47,17 +48,8 @@ export class FBORenderer {
   // example: {'glsl-0': {'sliderValue': 0.5}}
   public uniformDataByNode: Map<string, Map<string, unknown>> = new Map();
 
-  /** Mapping of nodeID to persistent textures (flipped to match GL coordinates) */
-  public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
-
-  /** Mapping of nodeID to source textures (raw bitmap, not flipped) */
-  private externalSourceTextures: Map<string, regl.Texture2D> = new Map();
-
-  /** Mapping of nodeID to FBOs for flipped textures */
-  private externalFlippedFBOs: Map<string, regl.Framebuffer2D> = new Map();
-
-  /** Pending bitmaps to close on next frame (prevents closing before texture upload completes) */
-  private pendingBitmapsToClose: Map<string, ImageBitmap> = new Map();
+  /** Video texture manager for external bitmap sources */
+  public videoTextures: VideoTextureManager;
 
   /** Mapping of analyzer object's node id -> analysis type -> texture */
   public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
@@ -132,6 +124,9 @@ export class FBORenderer {
     // Create renderers that use the shared service
     this.previewRenderer = new PreviewRenderer(this.pixelReadbackService);
     this.captureRenderer = new CaptureRenderer(this.pixelReadbackService);
+
+    // Create video texture manager
+    this.videoTextures = new VideoTextureManager(this.regl, this.gl);
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -860,10 +855,10 @@ export class FBORenderer {
     let sourceWidth = renderWidth;
     let sourceHeight = renderHeight;
 
-    if (this.externalTexturesByNode.has(node.id)) {
-      const tex = this.externalTexturesByNode.get(node.id)!;
+    if (this.videoTextures.has(node.id)) {
+      const tex = this.videoTextures.getDestinationTexture(node.id)!;
       // Use cached FBO instead of creating new one every frame (fixes massive leak)
-      framebuffer = this.externalFlippedFBOs.get(node.id) || null;
+      framebuffer = this.videoTextures.getDestinationFBO(node.id) || null;
       sourceWidth = tex.width;
       sourceHeight = tex.height;
     } else {
@@ -929,8 +924,8 @@ export class FBORenderer {
       const inputFBO = this.fboNodes.get(sourceNodeId);
 
       // If there exists an external texture for an input node, use it.
-      if (this.externalTexturesByNode.has(sourceNodeId)) {
-        textureMap.set(inletIndex, this.externalTexturesByNode.get(sourceNodeId)!);
+      if (this.videoTextures.has(sourceNodeId)) {
+        textureMap.set(inletIndex, this.videoTextures.getDestinationTexture(sourceNodeId)!);
         continue;
       }
 
@@ -973,70 +968,7 @@ export class FBORenderer {
    * @param bitmap - ImageBitmap (will be flipped during upload)
    */
   setBitmap(nodeId: string, bitmap: ImageBitmap) {
-    // Close the PREVIOUS bitmap for this node (safe - texture upload already completed)
-    const pendingBitmap = this.pendingBitmapsToClose.get(nodeId);
-    if (pendingBitmap) {
-      pendingBitmap.close();
-    }
-
-    const gl = this.gl;
-    const width = bitmap.width;
-    const height = bitmap.height;
-
-    // Get or create source texture (raw bitmap, not flipped)
-    let sourceTexture = this.externalSourceTextures.get(nodeId);
-    if (!sourceTexture || sourceTexture.width !== width || sourceTexture.height !== height) {
-      sourceTexture?.destroy();
-      sourceTexture = this.regl.texture({ width, height });
-      this.externalSourceTextures.set(nodeId, sourceTexture);
-    }
-
-    // Get or create destination texture (flipped result)
-    let destTexture = this.externalTexturesByNode.get(nodeId);
-    if (!destTexture || destTexture.width !== width || destTexture.height !== height) {
-      destTexture?.destroy();
-      destTexture = this.regl.texture({ width, height });
-      this.externalTexturesByNode.set(nodeId, destTexture);
-    }
-
-    // Get or create destination FBO (CACHED - created once and reused)
-    let destFBO = this.externalFlippedFBOs.get(nodeId);
-    if (!destFBO || destTexture.width !== width || destTexture.height !== height) {
-      destFBO?.destroy();
-      destFBO = this.regl.framebuffer({ color: destTexture });
-      this.externalFlippedFBOs.set(nodeId, destFBO);
-    }
-
-    // Upload bitmap to source texture
-    // @ts-expect-error -- regl types are imprecise for ImageBitmap
-    sourceTexture({ data: bitmap });
-
-    // Create temporary FBO for reading from source texture
-    const sourceFBO = this.regl.framebuffer({ color: sourceTexture });
-
-    // Blit with Y flip: swap srcY0 and srcY1 to flip vertically
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFBO));
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(destFBO!));
-    gl.blitFramebuffer(
-      0,
-      height, // srcY0 = height (top)
-      width,
-      0, // srcY1 = 0 (bottom) - swapped to flip
-      0,
-      0,
-      width,
-      height,
-      gl.COLOR_BUFFER_BIT,
-      gl.NEAREST
-    );
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    // Clean up temporary source FBO (texture is kept)
-    sourceFBO.destroy();
-
-    // Queue THIS bitmap to be closed on the NEXT frame
-    // This ensures the texture upload is complete before we release the bitmap
-    this.pendingBitmapsToClose.set(nodeId, bitmap);
+    this.videoTextures.setBitmap(nodeId, bitmap);
   }
 
   /**
@@ -1047,33 +979,7 @@ export class FBORenderer {
    * and we don't want to remove persistent textures when reconstructing.
    **/
   removeBitmap(nodeId: string) {
-    // Clean up destination texture
-    const texture = this.externalTexturesByNode.get(nodeId);
-    if (texture) {
-      texture.destroy();
-      this.externalTexturesByNode.delete(nodeId);
-    }
-
-    // Clean up destination FBO
-    const fbo = this.externalFlippedFBOs.get(nodeId);
-    if (fbo) {
-      fbo.destroy();
-      this.externalFlippedFBOs.delete(nodeId);
-    }
-
-    // Clean up source texture
-    const sourceTexture = this.externalSourceTextures.get(nodeId);
-    if (sourceTexture) {
-      sourceTexture.destroy();
-      this.externalSourceTextures.delete(nodeId);
-    }
-
-    // Also clean up any pending bitmap for this node
-    const pendingBitmap = this.pendingBitmapsToClose.get(nodeId);
-    if (pendingBitmap) {
-      pendingBitmap.close();
-      this.pendingBitmapsToClose.delete(nodeId);
-    }
+    this.videoTextures.removeBitmap(nodeId);
   }
 
   /**
@@ -1199,17 +1105,19 @@ export class FBORenderer {
    * This is a synchronous capture for on-demand use (export, Gemini, etc.)
    */
   capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
-    const externalTexture = this.externalTexturesByNode.get(nodeId);
+    const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
     if (externalTexture) {
-      const sourceFbo = this.regl.framebuffer({ color: externalTexture });
-      const bitmap = this.captureRenderer.capturePreviewBitmapSync(
-        sourceFbo,
-        externalTexture.width,
-        externalTexture.height,
-        customSize
-      );
-      sourceFbo.destroy();
-      return bitmap;
+      // Use cached FBO to avoid creating/destroying on every capture
+      const sourceFbo = this.videoTextures.getDestinationFBO(nodeId);
+      if (sourceFbo) {
+        const bitmap = this.captureRenderer.capturePreviewBitmapSync(
+          sourceFbo,
+          externalTexture.width,
+          externalTexture.height,
+          customSize
+        );
+        return bitmap;
+      }
     }
 
     const fboNode = this.fboNodes.get(nodeId);
@@ -1238,7 +1146,7 @@ export class FBORenderer {
     this.captureRenderer.initiateVideoFrameBatchAsync(
       requests,
       this.fboNodes,
-      this.externalTexturesByNode
+      this.videoTextures.destinationTextures
     );
   }
 
