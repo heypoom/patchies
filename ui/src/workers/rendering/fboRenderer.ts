@@ -1124,7 +1124,11 @@ export class FBORenderer {
   initiateVideoFrameCaptureAsync(
     requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>
   ): void {
-    this.previewRenderer.initiateVideoFrameBatchAsync(requests, this.fboNodes);
+    this.previewRenderer.initiateVideoFrameBatchAsync(
+      requests,
+      this.fboNodes,
+      this.externalTexturesByNode
+    );
   }
 
   /**

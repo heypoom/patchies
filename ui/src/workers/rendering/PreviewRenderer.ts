@@ -415,10 +415,13 @@ export class PreviewRenderer {
   /**
    * Initiate async PBO reads for a batch of video frame requests.
    * Call harvestVideoFrameBatches() in subsequent frames to get completed results.
+   *
+   * Supports both FBO nodes (p5, hydra, glsl) and external texture nodes (img, webcam).
    */
   initiateVideoFrameBatchAsync(
     requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>,
-    fboNodes: Map<string, FBONode>
+    fboNodes: Map<string, FBONode>,
+    externalTextures?: Map<string, regl.Texture2D>
   ): void {
     // Collect all unique source node IDs across all requests
     const uniqueSourceIds = new Set<string>();
@@ -428,9 +431,30 @@ export class PreviewRenderer {
       }
     }
 
+    // Track temporary FBOs created for external textures (need cleanup after read)
+    const tempFbos: regl.Framebuffer2D[] = [];
+
     // Initiate async reads for each unique source
     const sourceReads = new Map<string, PendingVideoFrameRead>();
     for (const sourceId of uniqueSourceIds) {
+      // Check external textures first (img, webcam nodes)
+      const externalTexture = externalTextures?.get(sourceId);
+      if (externalTexture) {
+        // Create a temporary framebuffer wrapping the texture
+        const tempFbo = this.regl.framebuffer({ color: externalTexture });
+        tempFbos.push(tempFbo);
+
+        const read = this.initiateVideoFrameRead(sourceId, tempFbo, [
+          externalTexture.width,
+          externalTexture.height
+        ]);
+        if (read) {
+          sourceReads.set(sourceId, read);
+        }
+        continue;
+      }
+
+      // Fall back to FBO nodes (p5, hydra, glsl, etc.)
       const fboNode = fboNodes.get(sourceId);
       if (!fboNode) continue;
 
@@ -438,6 +462,11 @@ export class PreviewRenderer {
       if (read) {
         sourceReads.set(sourceId, read);
       }
+    }
+
+    // Clean up temporary FBOs (reads have been initiated, FBO is no longer needed)
+    for (const fbo of tempFbos) {
+      fbo.destroy();
     }
 
     // Create pending batches for each target
@@ -462,10 +491,14 @@ export class PreviewRenderer {
 
   /**
    * Initiate a single async PBO read for video frame capture.
+   * @param sourceNodeId - ID of the source node
+   * @param framebuffer - Source framebuffer to read from
+   * @param customSourceSize - Optional custom source dimensions (for external textures)
    */
   private initiateVideoFrameRead(
     sourceNodeId: string,
-    framebuffer: regl.Framebuffer2D
+    framebuffer: regl.Framebuffer2D,
+    customSourceSize?: [number, number]
   ): PendingVideoFrameRead | null {
     const [pw, ph] = this.previewSize;
     const width = Math.floor(pw);
@@ -473,7 +506,7 @@ export class PreviewRenderer {
 
     if (width <= 0 || height <= 0) return null;
 
-    const [sourceWidth, sourceHeight] = this.outputSize;
+    const [sourceWidth, sourceHeight] = customSourceSize ?? this.outputSize;
     const gl = this.gl;
 
     this.ensurePreviewFboSize(width, height);
