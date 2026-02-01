@@ -663,6 +663,40 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - Use `flash()` to briefly flash the node's border, useful for visual feedback when processing messages.
 - Libraries created with `// @lib` in a regular `js` node can be imported in `worker` nodes.
 
+#### Video Frame Capture
+
+Worker nodes can capture video frames from [connected visual nodes](#video-chaining):
+
+- **`onVideoFrame(callback, config?)`**: Register a callback that receives frames each render cycle.
+
+  ```js
+  onVideoFrame((frames, timestamp) => {
+    // frames is an array of ImageBitmap (or null if source unavailable)
+    // timestamp is performance.now() when the frame was captured
+    const [frame] = frames;
+    if (frame) {
+      // Process the frame...
+    }
+  });
+
+  // With custom resolution (default is preview size)
+  onVideoFrame(callback, { resolution: [640, 480] });
+  ```
+
+- **`getVideoFrames(config?)`**: One-shot async capture, returns a Promise.
+
+  ```js
+  const frames = await getVideoFrames();
+  const [frame] = frames;
+
+  // With custom resolution
+  const frames = await getVideoFrames({ resolution: [1920, 1080] });
+  ```
+
+Both methods accept an optional config object with:
+
+- `resolution?: [width, height]` - Capture at a specific resolution instead of the default preview size. Useful for high-res exports or lower-res processing.
+
 ### `expr`: expression evaluator
 
 <img src="./docs/images/patchies-expr-plot.png" alt="Patchies.app expression plot" width="700">
