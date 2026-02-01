@@ -13,7 +13,13 @@
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
   import { VideoProfiler, type VideoStats } from '$lib/video';
-  import { MediaBunnyPlayer } from '$lib/video/MediaBunnyPlayer';
+  import type {
+    MediaBunnyMetadataEvent,
+    MediaBunnyFirstFrameEvent,
+    MediaBunnyEndedEvent,
+    MediaBunnyErrorEvent,
+    MediaBunnyTimeUpdateEvent
+  } from '$lib/eventbus/events';
 
   // Type definitions for requestVideoFrameCallback (not yet in all TypeScript libs)
   interface VideoFrameCallbackMetadata {
@@ -77,25 +83,17 @@
   let resizerCanvas: OffscreenCanvas | null = null;
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
 
-  // MediaBunny player - use when WebCodecs is available and enabled
-  let mediaBunnyPlayer: MediaBunnyPlayer | null = null;
+  // MediaBunny player runs in render worker for zero main thread blocking
   let currentFile: File | null = null;
   let currentSourceUrl: string | undefined = undefined; // For URL streaming
   let webCodecsFirstFrameReceived = false;
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let workerCurrentTime = 0; // Track time from worker for profiling
 
-  // Canvas preview - used when MediaBunny is active (single source of truth)
+  // Canvas preview - used when falling back to HTMLVideoElement
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewCtx: CanvasRenderingContext2D | null = null;
   let useCanvasPreview = $state(false);
-
-  // Performance profiling
-  const PROFILE_ENABLED = true;
-  const PROFILE_LOG_INTERVAL = 60;
-  let profileFrameCount = 0;
-  let profileTotalCanvasTime = 0;
-  let profileTotalGLTime = 0;
-  let profileTotalCallbackTime = 0;
 
   // How long to wait for first WebCodecs frame before falling back (ms)
   const WEBCODECS_TIMEOUT_MS = 5000;
@@ -139,10 +137,8 @@
           videoElement.loop = shouldLoop;
         }
 
-        // Update MediaBunny player loop setting
-        if (mediaBunnyPlayer) {
-          mediaBunnyPlayer.setLoop(shouldLoop);
-        }
+        // Update worker MediaBunny player loop setting
+        glSystem.mediaBunnySetLoop(nodeId, shouldLoop);
       })
       .with(P.string, (path) => vfsMedia.loadFromPath(path))
       .with({ type: 'load', url: P.string }, ({ url }) => vfsMedia.loadFromUrl(url))
@@ -215,7 +211,11 @@
           });
 
           // Use MediaBunny for frame extraction when supported and enabled
-          if ($webCodecsEnabled && MediaBunnyPlayer.isSupported()) {
+          // Check WebCodecs support directly (avoid importing MediaBunnyPlayer to main thread)
+          const webCodecsSupported =
+            typeof VideoDecoder !== 'undefined' && typeof VideoFrame !== 'undefined';
+
+          if ($webCodecsEnabled && webCodecsSupported) {
             profiler.setPipeline('webcodecs');
             initMediaBunnyPlayer(file, currentSourceUrl);
           } else {
@@ -247,16 +247,13 @@
   function fallbackToHTMLVideo(reason: string) {
     console.warn(`[VideoNode] Falling back to HTMLVideoElement: ${reason}`);
 
+    // Clean up worker MediaBunny player
+    glSystem.destroyMediaBunnyPlayer(nodeId);
+
     // Clear timeout if pending
     if (webCodecsTimeoutId !== null) {
       clearTimeout(webCodecsTimeoutId);
       webCodecsTimeoutId = null;
-    }
-
-    // Clean up MediaBunny player
-    if (mediaBunnyPlayer) {
-      mediaBunnyPlayer.destroy();
-      mediaBunnyPlayer = null;
     }
 
     // Reset state
@@ -280,17 +277,12 @@
   }
 
   /**
-   * Initialize MediaBunnyPlayer for frame extraction.
-   * Sets up a timeout to fall back if no frames are received.
+   * Initialize MediaBunnyPlayer in the render worker.
+   * Sets up a timeout to fall back to HTMLVideoElement if no frames are received.
    * @param file - The video file (used for fallback and HTMLVideoElement)
    * @param sourceUrl - If provided, stream directly from URL instead of loading file blob
    */
   function initMediaBunnyPlayer(file: File, sourceUrl?: string) {
-    // Clean up existing player
-    if (mediaBunnyPlayer) {
-      mediaBunnyPlayer.destroy();
-    }
-
     // Reset state
     webCodecsFirstFrameReceived = false;
 
@@ -305,128 +297,44 @@
       webCodecsTimeoutId = null;
     }, WEBCODECS_TIMEOUT_MS);
 
-    mediaBunnyPlayer = new MediaBunnyPlayer({
-      nodeId,
-      onFrame: (bitmap, timestamp) => {
-        const callbackStart = PROFILE_ENABLED ? performance.now() : 0;
+    // Initialize MediaBunny in render worker (no main thread blocking)
+    initWorkerMediaBunny(file, sourceUrl);
 
-        // Mark first frame received (cancels the timeout fallback)
-        if (!webCodecsFirstFrameReceived) {
-          webCodecsFirstFrameReceived = true;
+    // Disable canvas preview - bitmap stays in worker, uploaded directly to GL
+    useCanvasPreview = false;
 
-          if (webCodecsTimeoutId !== null) {
-            clearTimeout(webCodecsTimeoutId);
-            webCodecsTimeoutId = null;
-          }
-        }
-
-        // Track frame for profiling (MediaBunny handles queue management internally)
-        profiler?.recordFrame(timestamp, mediaBunnyPlayer?.currentTime);
-
-        // Draw to preview canvas first (single source of truth for preview)
-        // Canvas is CSS-flipped to match the GL-flipped bitmap orientation
-        let canvasTime = 0;
-        if (previewCanvas && previewCtx && useCanvasPreview) {
-          const canvasStart = performance.now();
-          previewCtx.drawImage(bitmap, 0, 0, previewCanvas.width, previewCanvas.height);
-          canvasTime = performance.now() - canvasStart;
-        }
-
-        // Then send to GLSystem (or close if no connections)
-        let glTime = 0;
-        const glStart = performance.now();
-        if (glSystem.hasOutgoingVideoConnections(nodeId)) {
-          // Transfer bitmap to render worker (ownership transferred, worker will close it)
-          glSystem.setPreflippedBitmap(nodeId, bitmap);
-        } else {
-          // No connections - close bitmap immediately to prevent memory leak
-          bitmap.close();
-        }
-        glTime = performance.now() - glStart;
-
-        // Profile logging
-        if (PROFILE_ENABLED) {
-          const callbackTime = performance.now() - callbackStart;
-          profileTotalCanvasTime += canvasTime;
-          profileTotalGLTime += glTime;
-          profileTotalCallbackTime += callbackTime;
-          profileFrameCount++;
-
-          if (profileFrameCount >= PROFILE_LOG_INTERVAL) {
-            console.log(
-              `[VideoNode Profile] Avg over ${profileFrameCount} frames: ` +
-                `canvas=${(profileTotalCanvasTime / profileFrameCount).toFixed(2)}ms, ` +
-                `GL=${(profileTotalGLTime / profileFrameCount).toFixed(2)}ms, ` +
-                `total=${(profileTotalCallbackTime / profileFrameCount).toFixed(2)}ms`
-            );
-            profileFrameCount = 0;
-            profileTotalCanvasTime = 0;
-            profileTotalGLTime = 0;
-            profileTotalCallbackTime = 0;
-          }
-        }
-      },
-      onMetadata: (metadata) => {
-        // Metadata received means MediaBunny loaded successfully - cancel the timeout
-        // (first frame only arrives during playback, but metadata comes immediately)
-        if (webCodecsTimeoutId !== null) {
-          clearTimeout(webCodecsTimeoutId);
-          webCodecsTimeoutId = null;
-        }
-
-        webCodecsFirstFrameReceived = true; // Prevent any race conditions
-
-        // Update profiler with actual video metadata
-        profiler?.setMetadata({
-          frameRate: metadata.frameRate,
-          duration: metadata.duration,
-          width: metadata.width,
-          height: metadata.height,
-          codec: metadata.codec
-        });
-      },
-      onEnded: () => {
-        // Mark playback stop when video ends
-        if (videoElement) {
-          profiler?.markPlaybackStop(videoElement.currentTime);
-        }
-
-        isPaused = true;
-
-        if (videoElement) {
-          videoElement.pause();
-          videoElement.currentTime = 0;
-        }
-      },
-      onError: (err) => {
-        fallbackToHTMLVideo(`MediaBunny error: ${err.message}`);
-      }
-    });
-
-    // Use URL streaming if available (more efficient for remote files)
-    // Otherwise use file blob (which also streams lazily via BlobSource)
-    if (sourceUrl) {
-      mediaBunnyPlayer.loadUrl(sourceUrl);
-    } else {
-      mediaBunnyPlayer.loadFile(file);
-    }
-
-    mediaBunnyPlayer.setLoop(data.loop ?? true);
-
-    // Enable canvas preview mode - MediaBunny is now the single source of truth
-    useCanvasPreview = true;
-
-    // Pause HTMLVideoElement since we're using canvas for display (saves resources)
+    // Pause HTMLVideoElement since we're using GL for display (saves resources)
     if (videoElement) {
       videoElement.pause();
     }
+  }
+
+  /**
+   * Initialize MediaBunny in render worker (new, non-blocking approach).
+   */
+  function initWorkerMediaBunny(file: File, sourceUrl?: string) {
+    // Clean up existing player
+    glSystem.destroyMediaBunnyPlayer(nodeId);
+
+    // Create player in worker
+    glSystem.createMediaBunnyPlayer(nodeId);
+
+    // Load file or URL
+    if (sourceUrl) {
+      glSystem.loadMediaBunnyUrl(nodeId, sourceUrl);
+    } else {
+      glSystem.loadMediaBunnyFile(nodeId, file);
+    }
+
+    // Set loop mode
+    glSystem.mediaBunnySetLoop(nodeId, data.loop ?? true);
   }
 
   async function restartVideo() {
     if (!isVideoLoaded) return;
 
     // Get current time from appropriate source
-    const currentTime = mediaBunnyPlayer?.currentTime ?? videoElement?.currentTime ?? 0;
+    const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
     profiler?.markPlaybackStop(currentTime);
 
     lastRecordedMediaTime = -1;
@@ -434,11 +342,11 @@
     // Send bang to audio system to restart audio (sets currentTime to 0 and plays)
     audioService.send(nodeId, 'message', { type: 'bang' });
 
-    // Restart MediaBunny player if active - must await seek to avoid race condition
-    if (mediaBunnyPlayer) {
-      await mediaBunnyPlayer.seek(0);
-
-      mediaBunnyPlayer.play();
+    // Restart based on current mode
+    if (webCodecsFirstFrameReceived) {
+      // Worker MediaBunny mode
+      glSystem.mediaBunnySeek(nodeId, 0);
+      glSystem.mediaBunnyPlay(nodeId);
       isPaused = false;
     } else if (videoElement) {
       // Fallback mode - use HTMLVideoElement
@@ -458,14 +366,14 @@
     if (!isVideoLoaded) return;
 
     // Get current time from appropriate source
-    const currentTime = mediaBunnyPlayer?.currentTime ?? videoElement?.currentTime ?? 0;
+    const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
 
     if (isPaused) {
       audioService.send(nodeId, 'message', { type: 'play' });
 
-      if (mediaBunnyPlayer) {
-        // MediaBunny mode - only control MediaBunny player
-        mediaBunnyPlayer.play();
+      if (webCodecsFirstFrameReceived) {
+        // Worker MediaBunny mode
+        glSystem.mediaBunnyPlay(nodeId);
       } else if (videoElement) {
         // Fallback mode - control HTMLVideoElement
         videoElement.play();
@@ -481,9 +389,9 @@
 
       audioService.send(nodeId, 'message', { type: 'pause' });
 
-      if (mediaBunnyPlayer) {
-        // MediaBunny mode - only control MediaBunny player
-        mediaBunnyPlayer.pause();
+      if (webCodecsFirstFrameReceived) {
+        // Worker MediaBunny mode
+        glSystem.mediaBunnyPause(nodeId);
       } else if (videoElement) {
         // Fallback mode - control HTMLVideoElement
         videoElement.pause();
@@ -635,6 +543,68 @@
     }
   }
 
+  // Event handlers for worker MediaBunny
+  function handleWorkerMetadata(event: MediaBunnyMetadataEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    // Cancel timeout - metadata means successful load
+    if (webCodecsTimeoutId !== null) {
+      clearTimeout(webCodecsTimeoutId);
+      webCodecsTimeoutId = null;
+    }
+    webCodecsFirstFrameReceived = true;
+
+    // Update profiler with actual video metadata
+    profiler?.setMetadata({
+      frameRate: event.metadata.frameRate,
+      duration: event.metadata.duration,
+      width: event.metadata.width,
+      height: event.metadata.height,
+      codec: event.metadata.codec
+    });
+  }
+
+  function handleWorkerFirstFrame(event: MediaBunnyFirstFrameEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    // Cancel timeout
+    if (!webCodecsFirstFrameReceived) {
+      webCodecsFirstFrameReceived = true;
+      if (webCodecsTimeoutId !== null) {
+        clearTimeout(webCodecsTimeoutId);
+        webCodecsTimeoutId = null;
+      }
+    }
+  }
+
+  function handleWorkerEnded(event: MediaBunnyEndedEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    // Mark playback stop
+    if (videoElement) {
+      profiler?.markPlaybackStop(videoElement.currentTime);
+    }
+
+    isPaused = true;
+
+    if (videoElement) {
+      videoElement.pause();
+      videoElement.currentTime = 0;
+    }
+  }
+
+  function handleWorkerError(event: MediaBunnyErrorEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    fallbackToHTMLVideo(`Worker MediaBunny error: ${event.error}`);
+  }
+
+  function handleWorkerTimeUpdate(event: MediaBunnyTimeUpdateEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    workerCurrentTime = event.currentTime;
+  }
+
   onMount(async () => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
@@ -646,6 +616,13 @@
 
     // Initialize profiler
     profiler = new VideoProfiler(nodeId);
+
+    // Listen for worker MediaBunny events
+    glSystem.eventBus.addEventListener('mediaBunnyMetadata', handleWorkerMetadata);
+    glSystem.eventBus.addEventListener('mediaBunnyFirstFrame', handleWorkerFirstFrame);
+    glSystem.eventBus.addEventListener('mediaBunnyEnded', handleWorkerEnded);
+    glSystem.eventBus.addEventListener('mediaBunnyError', handleWorkerError);
+    glSystem.eventBus.addEventListener('mediaBunnyTimeUpdate', handleWorkerTimeUpdate);
 
     // Update stats periodically when visible
     statsIntervalId = setInterval(() => {
@@ -676,11 +653,15 @@
       statsIntervalId = null;
     }
 
-    // Clean up MediaBunny player
-    if (mediaBunnyPlayer) {
-      mediaBunnyPlayer.destroy();
-      mediaBunnyPlayer = null;
-    }
+    // Clean up worker MediaBunny player
+    glSystem.destroyMediaBunnyPlayer(nodeId);
+
+    // Remove worker event listeners
+    glSystem.eventBus.removeEventListener('mediaBunnyMetadata', handleWorkerMetadata);
+    glSystem.eventBus.removeEventListener('mediaBunnyFirstFrame', handleWorkerFirstFrame);
+    glSystem.eventBus.removeEventListener('mediaBunnyEnded', handleWorkerEnded);
+    glSystem.eventBus.removeEventListener('mediaBunnyError', handleWorkerError);
+    glSystem.eventBus.removeEventListener('mediaBunnyTimeUpdate', handleWorkerTimeUpdate);
 
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();

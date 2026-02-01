@@ -231,6 +231,40 @@ export class GLSystem {
             system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
           }
         });
+      })
+      // MediaBunny events from worker
+      .with({ type: 'mediaBunnyMetadata' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyMetadata',
+          nodeId: data.nodeId,
+          metadata: data.metadata
+        });
+      })
+      .with({ type: 'mediaBunnyFirstFrame' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyFirstFrame',
+          nodeId: data.nodeId
+        });
+      })
+      .with({ type: 'mediaBunnyTimeUpdate' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyTimeUpdate',
+          nodeId: data.nodeId,
+          currentTime: data.currentTime
+        });
+      })
+      .with({ type: 'mediaBunnyEnded' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyEnded',
+          nodeId: data.nodeId
+        });
+      })
+      .with({ type: 'mediaBunnyError' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'mediaBunnyError',
+          nodeId: data.nodeId,
+          error: data.error
+        });
       });
   };
 
@@ -538,4 +572,54 @@ export class GLSystem {
 
     this.renderWorker.postMessage(payloadWithType, { transfer: [payloadWithType.array.buffer] });
   };
+
+  // ============================================
+  // MediaBunny Worker API
+  // ============================================
+
+  /** Create a MediaBunnyPlayer in the worker for a node */
+  createMediaBunnyPlayer(nodeId: string): void {
+    this.send('createMediaBunnyPlayer', { nodeId });
+  }
+
+  /** Load a video file into the worker's MediaBunnyPlayer */
+  loadMediaBunnyFile(nodeId: string, file: File): void {
+    // File can be sent via postMessage (cloned, blob data is shared)
+    this.renderWorker.postMessage({ type: 'loadMediaBunnyFile', nodeId, file });
+  }
+
+  /** Load a video URL into the worker's MediaBunnyPlayer */
+  loadMediaBunnyUrl(nodeId: string, url: string): void {
+    this.send('loadMediaBunnyUrl', { nodeId, url });
+  }
+
+  /** Start playback */
+  mediaBunnyPlay(nodeId: string): void {
+    this.send('mediaBunnyPlay', { nodeId });
+  }
+
+  /** Pause playback */
+  mediaBunnyPause(nodeId: string): void {
+    this.send('mediaBunnyPause', { nodeId });
+  }
+
+  /** Seek to time */
+  mediaBunnySeek(nodeId: string, time: number): void {
+    this.send('mediaBunnySeek', { nodeId, time });
+  }
+
+  /** Set loop mode */
+  mediaBunnySetLoop(nodeId: string, loop: boolean): void {
+    this.send('mediaBunnySetLoop', { nodeId, loop });
+  }
+
+  /** Set playback rate */
+  mediaBunnySetPlaybackRate(nodeId: string, rate: number): void {
+    this.send('mediaBunnySetPlaybackRate', { nodeId, rate });
+  }
+
+  /** Destroy the MediaBunnyPlayer for a node */
+  destroyMediaBunnyPlayer(nodeId: string): void {
+    this.send('destroyMediaBunnyPlayer', { nodeId });
+  }
 }

@@ -27,6 +27,10 @@ export interface MediaBunnyPlayerConfig {
   onMetadata: (metadata: VideoMetadata) => void;
   onEnded: () => void;
   onError: (error: Error) => void;
+  /** Called periodically with current playback time (for UI sync) */
+  onTimeUpdate?: (currentTime: number) => void;
+  /** Called when first frame is received (for timeout cancellation) */
+  onFirstFrame?: () => void;
 }
 
 /** Buffered frame ready for display */
@@ -51,6 +55,9 @@ export class MediaBunnyPlayer {
   private onMetadata: (metadata: VideoMetadata) => void;
   private onEnded: () => void;
   private onError: (error: Error) => void;
+  private onTimeUpdate?: (currentTime: number) => void;
+  private onFirstFrame?: () => void;
+  private firstFrameSent = false;
 
   // Input can use BlobSource (files) or UrlSource (remote URLs) - both stream lazily
   private input: InputType<Source> | null = null;
@@ -80,6 +87,8 @@ export class MediaBunnyPlayer {
     this.onMetadata = config.onMetadata;
     this.onEnded = config.onEnded;
     this.onError = config.onError;
+    this.onTimeUpdate = config.onTimeUpdate;
+    this.onFirstFrame = config.onFirstFrame;
   }
 
   /**
@@ -207,6 +216,12 @@ export class MediaBunnyPlayer {
 
         // Send to renderer
         this.onFrame(bitmap, timestamp * 1_000_000); // convert to microseconds
+
+        // Notify first frame
+        if (!this.firstFrameSent) {
+          this.firstFrameSent = true;
+          this.onFirstFrame?.();
+        }
       } finally {
         videoFrame.close();
         sample.close();
@@ -415,6 +430,15 @@ export class MediaBunnyPlayer {
     if (frame) {
       this._currentTime = frame.timestamp;
       this.onFrame(frame.bitmap, frame.timestamp * 1_000_000); // convert to microseconds
+
+      // Notify first frame
+      if (!this.firstFrameSent) {
+        this.firstFrameSent = true;
+        this.onFirstFrame?.();
+      }
+
+      // Notify time update
+      this.onTimeUpdate?.(this._currentTime);
     }
   }
 
