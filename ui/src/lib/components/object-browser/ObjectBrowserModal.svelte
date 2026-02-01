@@ -84,10 +84,27 @@
       return allCategoriesWithPresets;
     }
 
+    const query = searchQuery.toLowerCase();
     const results = fuse.search(searchQuery);
+
+    // Sort results: prefix matches first, then by Fuse score
+    const sortedResults = results.toSorted((a, b) => {
+      const aName = a.item.name.toLowerCase();
+      const bName = b.item.name.toLowerCase();
+      const aStartsWith = aName.startsWith(query);
+      const bStartsWith = bName.startsWith(query);
+
+      // Prefix matches come first
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      // Within same group, use Fuse score (lower is better)
+      return (a.score ?? 1) - (b.score ?? 1);
+    });
+
     const matchedObjects = new Map<string, ObjectItem[]>();
 
-    for (const result of results) {
+    for (const result of sortedResults) {
       const categoryTitle = result.item.categoryTitle;
       if (!matchedObjects.has(categoryTitle)) {
         matchedObjects.set(categoryTitle, []);
@@ -99,12 +116,26 @@
       });
     }
 
+    // When searching, order categories by which has best matches (first match position)
+    const categoryOrder = new Map<string, number>();
+    sortedResults.forEach((result, index) => {
+      const cat = result.item.categoryTitle;
+      if (!categoryOrder.has(cat)) {
+        categoryOrder.set(cat, index);
+      }
+    });
+
     return allCategoriesWithPresets
       .map((cat) => ({
         ...cat,
         objects: matchedObjects.get(cat.title) || []
       }))
-      .filter((cat) => cat.objects.length > 0);
+      .filter((cat) => cat.objects.length > 0)
+      .toSorted((a, b) => {
+        const aOrder = categoryOrder.get(a.title) ?? Infinity;
+        const bOrder = categoryOrder.get(b.title) ?? Infinity;
+        return aOrder - bOrder;
+      });
   });
 
   function handleClose() {
