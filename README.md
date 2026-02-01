@@ -921,6 +921,10 @@ Try out my [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg) to
   - `flash` - flash the node
   - `puts`, `p`, `warn` - console output
 - Note: Use `emit` instead of `send` (Ruby's built-in `send` method conflicts with JS interop).
+- Control messages:
+  - `{type: 'set', code: '...'}` - update the node's code
+  - `{type: 'run'}` - execute the code
+  - `{type: 'stop'}` - stop running tasks
 
 ```ruby
 # Example: double incoming numbers
