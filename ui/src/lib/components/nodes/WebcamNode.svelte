@@ -9,6 +9,7 @@
   import { match, P } from 'ts-pattern';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { WebCodecsCapture } from '$lib/video/WebCodecsCapture';
 
   let {
     id: nodeId,
@@ -28,6 +29,10 @@
   let isPaused = $state(false);
   let errorMessage = $state<string | null>(null);
   let bitmapFrameId: number;
+
+  // WebCodecs support detection
+  const useWebCodecs = WebCodecsCapture.isSupported();
+  let webCodecsCapture: WebCodecsCapture | null = null;
 
   const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
@@ -52,19 +57,49 @@
         audio: false
       });
 
-      if (videoElement) {
-        videoElement.srcObject = stream;
-        await videoElement.play();
+      if (useWebCodecs) {
+        // Use WebCodecs path for better performance
+        webCodecsCapture = new WebCodecsCapture({
+          nodeId,
+          onFrame: (bitmap) => {
+            if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+              glSystem.setPreflippedBitmap(nodeId, bitmap);
+            }
+          },
+          onError: (err) => {
+            errorMessage = err.message;
+          }
+        });
+
+        await webCodecsCapture.start(stream);
+
         isCapturing = true;
         errorMessage = null;
 
-        // Start uploading frames
-        bitmapFrameId = requestAnimationFrame(uploadBitmap);
+        // Still show preview in the video element
+        if (videoElement) {
+          videoElement.srcObject = stream;
 
-        // Handle stream ending
-        stream.getVideoTracks()[0].onended = () => {
-          stopCapture();
-        };
+          await videoElement.play();
+        }
+      } else {
+        // Fallback to HTMLVideoElement path (Firefox)
+        if (videoElement) {
+          videoElement.srcObject = stream;
+
+          await videoElement.play();
+
+          isCapturing = true;
+          errorMessage = null;
+
+          // Start uploading frames
+          bitmapFrameId = requestAnimationFrame(uploadBitmap);
+
+          // Handle stream ending
+          stream.getVideoTracks()[0].onended = () => {
+            stopCapture();
+          };
+        }
       }
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : 'Failed to access webcam';
@@ -73,6 +108,12 @@
   }
 
   async function stopCapture() {
+    // Stop WebCodecs capture if active
+    if (webCodecsCapture) {
+      webCodecsCapture.stop();
+      webCodecsCapture = null;
+    }
+
     if (videoElement?.srcObject) {
       const stream = videoElement.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
@@ -89,6 +130,16 @@
     if (!isCapturing) return;
 
     isPaused = !isPaused;
+
+    // Handle WebCodecs pause/resume
+    if (webCodecsCapture) {
+      if (isPaused) {
+        webCodecsCapture.pause();
+      } else {
+        webCodecsCapture.resume();
+      }
+    }
+
     if (videoElement) {
       if (isPaused) {
         videoElement.pause();

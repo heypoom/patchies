@@ -11,6 +11,7 @@
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
+  import { WebCodecsPlayer } from '$lib/video/WebCodecsPlayer';
 
   let {
     id: nodeId,
@@ -47,6 +48,11 @@
   let resizerCanvas: OffscreenCanvas | null = null;
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
 
+  // WebCodecs support - use when available for better performance
+  const useWebCodecs = WebCodecsPlayer.isSupported();
+  let webCodecsPlayer: WebCodecsPlayer | null = null;
+  let currentFile: File | null = null;
+
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
   const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
 
@@ -72,6 +78,11 @@
         if (videoElement) {
           videoElement.loop = shouldLoop;
         }
+
+        // Update WebCodecs player loop setting
+        if (webCodecsPlayer) {
+          webCodecsPlayer.setLoop(shouldLoop);
+        }
       })
       .with(P.string, (path) => vfsMedia.loadFromPath(path))
       .with({ type: 'load', url: P.string }, ({ url }) => vfsMedia.loadFromUrl(url))
@@ -90,6 +101,7 @@
         return;
       }
 
+      currentFile = file;
       const objectUrl = URL.createObjectURL(file);
 
       videoElement.onloadedmetadata = () => {
@@ -126,7 +138,14 @@
           audioService.send(nodeId, 'file', file);
 
           vfsMedia.markLoaded();
-          bitmapFrameId = requestAnimationFrame(uploadBitmap);
+
+          // Use WebCodecs for frame extraction when supported
+          if (useWebCodecs) {
+            initWebCodecsPlayer(file);
+          } else {
+            // Fallback to HTMLVideoElement frame extraction (Firefox)
+            bitmapFrameId = requestAnimationFrame(uploadBitmap);
+          }
         }
       };
 
@@ -144,12 +163,59 @@
     }
   }
 
+  /**
+   * Initialize WebCodecsPlayer for frame extraction.
+   */
+  function initWebCodecsPlayer(file: File) {
+    // Clean up existing player
+    if (webCodecsPlayer) {
+      webCodecsPlayer.destroy();
+    }
+
+    webCodecsPlayer = new WebCodecsPlayer({
+      nodeId,
+      onFrame: (bitmap) => {
+        if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+          glSystem.setPreflippedBitmap(nodeId, bitmap);
+        }
+      },
+      onMetadata: (metadata) => {
+        console.log(
+          `[VideoNode] WebCodecs metadata: ${metadata.width}x${metadata.height}, ${metadata.duration}s`
+        );
+      },
+      onEnded: () => {
+        isPaused = true;
+        if (videoElement) {
+          videoElement.pause();
+          videoElement.currentTime = 0;
+        }
+      },
+      onError: (err) => {
+        console.error('[VideoNode] WebCodecs error:', err);
+        // Fall back to HTMLVideoElement on error
+        if (!bitmapFrameId) {
+          bitmapFrameId = requestAnimationFrame(uploadBitmap);
+        }
+      }
+    });
+
+    webCodecsPlayer.loadFile(file);
+    webCodecsPlayer.setLoop(data.loop ?? true);
+  }
+
   function restartVideo() {
     if (videoElement && isVideoLoaded) {
       videoElement.currentTime = 0;
 
       // Send bang to audio system to restart audio (sets currentTime to 0 and plays)
       audioService.send(nodeId, 'message', { type: 'bang' });
+
+      // Restart WebCodecs player if active
+      if (webCodecsPlayer) {
+        webCodecsPlayer.seek(0);
+        webCodecsPlayer.play();
+      }
 
       if (isPaused) {
         videoElement.play();
@@ -163,10 +229,22 @@
       if (isPaused) {
         videoElement.play();
         audioService.send(nodeId, 'message', { type: 'play' });
+
+        // Resume WebCodecs player
+        if (webCodecsPlayer) {
+          webCodecsPlayer.play();
+        }
+
         isPaused = false;
       } else {
         videoElement.pause();
         audioService.send(nodeId, 'message', { type: 'pause' });
+
+        // Pause WebCodecs player
+        if (webCodecsPlayer) {
+          webCodecsPlayer.pause();
+        }
+
         isPaused = true;
       }
     }
@@ -238,6 +316,12 @@
   onDestroy(() => {
     if (bitmapFrameId) {
       cancelAnimationFrame(bitmapFrameId);
+    }
+
+    // Clean up WebCodecs player
+    if (webCodecsPlayer) {
+      webCodecsPlayer.destroy();
+      webCodecsPlayer = null;
     }
 
     messageContext?.queue.removeCallback(handleMessage);

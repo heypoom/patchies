@@ -53,6 +53,7 @@
         "meyda": "^5.6.3",
         "ml5": "^1.2.1",
         "mode-watcher": "^1.1.0",
+        "mp4box": "^2.3.0",
         "mqtt": "^5.14.1",
         "ohash": "^2.0.11",
         "overtype": "^1.1.1",
@@ -89,6 +90,7 @@
         "@tailwindcss/typography": "^0.5.15",
         "@tailwindcss/vite": "^4.0.0",
         "@types/audioworklet": "^0.0.82",
+        "@types/dom-mediacapture-transform": "^0.1.11",
         "@types/lodash": "^4.17.20",
         "@types/matter-js": "^0.20.0",
         "@types/meyda": "^5.3.0",
@@ -887,6 +889,10 @@
     "@types/d3-zoom": ["@types/d3-zoom@3.0.8", "", { "dependencies": { "@types/d3-interpolate": "*", "@types/d3-selection": "*" } }, "sha512-iqMC4/YlFCSlO8+2Ii1GGGliCAY4XdeG748w5vQUbevlbDu0zSjH/+jojorQVBK/se0j6DUFNPBGSqD3YWYnDw=="],
 
     "@types/deep-eql": ["@types/deep-eql@4.0.2", "", {}, "sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw=="],
+
+    "@types/dom-mediacapture-transform": ["@types/dom-mediacapture-transform@0.1.11", "", { "dependencies": { "@types/dom-webcodecs": "*" } }, "sha512-Y2p+nGf1bF2XMttBnsVPHUWzRRZzqUoJAKmiP10b5umnO6DDrWI0BrGDJy1pOHoOULVmGSfFNkQrAlC5dcj6nQ=="],
+
+    "@types/dom-webcodecs": ["@types/dom-webcodecs@0.1.18", "", {}, "sha512-vAvE8C9DGWR+tkb19xyjk1TSUlJ7RUzzp4a9Anu7mwBT+fpyePWK1UxmH14tMO5zHmrnrRIMg5NutnnDztLxgg=="],
 
     "@types/emscripten": ["@types/emscripten@0.0.34", "", {}, "sha512-QSb9ojDincskc+uKMI0KXp8e1NALFINCrMlp8VGKGcTSxeEyRTTKyjWw75NYrCZHUsVEEEpr1tYHpbtaC++/sQ=="],
 
@@ -1753,6 +1759,8 @@
     "mode-watcher": ["mode-watcher@1.1.0", "", { "dependencies": { "runed": "^0.25.0", "svelte-toolbelt": "^0.7.1" }, "peerDependencies": { "svelte": "^5.27.0" } }, "sha512-mUT9RRGPDYenk59qJauN1rhsIMKBmWA3xMF+uRwE8MW/tjhaDSCCARqkSuDTq8vr4/2KcAxIGVjACxTjdk5C3g=="],
 
     "mortice": ["mortice@3.3.1", "", { "dependencies": { "abort-error": "^1.0.0", "it-queue": "^1.1.0", "main-event": "^1.0.0" } }, "sha512-t3oESfijIPGsmsdLEKjF+grHfrbnKSXflJtgb1wY14cjxZpS6GnhHRXTxxzCAoCCnq1YYfpEPwY3gjiCPhOufQ=="],
+
+    "mp4box": ["mp4box@2.3.0", "", {}, "sha512-nnABYbdh4UguEYyV+uRwQBi1tbb8kXka2Fx9yKzmDKAeh8gkvRKYxoK1XDd8GQIjSfN4rvsXrW1CBo4yRQJZDA=="],
 
     "mqtt": ["mqtt@5.14.1", "", { "dependencies": { "@types/readable-stream": "^4.0.21", "@types/ws": "^8.18.1", "commist": "^3.2.0", "concat-stream": "^2.0.0", "debug": "^4.4.1", "help-me": "^5.0.0", "lru-cache": "^10.4.3", "minimist": "^1.2.8", "mqtt-packet": "^9.0.2", "number-allocator": "^1.0.14", "readable-stream": "^4.7.0", "rfdc": "^1.4.1", "socks": "^2.8.6", "split2": "^4.2.0", "worker-timers": "^8.0.23", "ws": "^8.18.3" }, "bin": { "mqtt_pub": "build/bin/pub.js", "mqtt_sub": "build/bin/sub.js", "mqtt": "build/bin/mqtt.js" } }, "sha512-NxkPxE70Uq3Ph7goefQa7ggSsVzHrayCD0OyxlJgITN/EbzlZN+JEPmaAZdxP1LsIT5FamDyILoQTF72W7Nnbw=="],
 
