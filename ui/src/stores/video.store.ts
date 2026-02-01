@@ -70,10 +70,6 @@ export function toggleVideoStats(): boolean {
 // Expose toggles to window for easy console access
 if (typeof window !== 'undefined') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).toggleWebCodecs = toggleWebCodecs;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).toggleVideoStats = toggleVideoStats;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).getWebCodecsStatus = () => ({
     enabled: webCodecsSupport.videoFileFull,
     webcamSupported: webCodecsSupport.webcamFull,

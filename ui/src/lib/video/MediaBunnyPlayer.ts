@@ -38,6 +38,13 @@ interface BufferedFrame {
 // How many frames to buffer ahead
 const FRAME_BUFFER_SIZE = 10;
 
+// Profiling
+const PROFILE_ENABLED = true;
+const PROFILE_LOG_INTERVAL = 60; // Log every N frames
+let profileFrameCount = 0;
+let profileTotalDecodeTime = 0;
+let profileTotalBitmapTime = 0;
+
 export class MediaBunnyPlayer {
   private nodeId: string;
   private onFrame: (bitmap: ImageBitmap, timestamp: number) => void;
@@ -195,9 +202,8 @@ export class MediaBunnyPlayer {
       // Convert to ImageBitmap with guaranteed cleanup
       const videoFrame = sample.toVideoFrame();
       try {
-        const bitmap = await createImageBitmap(videoFrame, {
-          imageOrientation: 'flipY'
-        });
+        // Skip flipY here - let CSS/GL handle it (flipY in createImageBitmap is slow ~11ms)
+        const bitmap = await createImageBitmap(videoFrame);
 
         // Send to renderer
         this.onFrame(bitmap, timestamp * 1_000_000); // convert to microseconds
@@ -263,11 +269,33 @@ export class MediaBunnyPlayer {
 
         try {
           // Convert to ImageBitmap
+          const decodeStart = PROFILE_ENABLED ? performance.now() : 0;
           const videoFrame = sample.toVideoFrame();
-          const bitmap = await createImageBitmap(videoFrame, {
-            imageOrientation: 'flipY'
-          });
+          const decodeEnd = PROFILE_ENABLED ? performance.now() : 0;
+
+          const bitmapStart = PROFILE_ENABLED ? performance.now() : 0;
+          // Skip flipY here - let CSS/GL handle it (flipY in createImageBitmap is slow ~11ms)
+          const bitmap = await createImageBitmap(videoFrame);
+          const bitmapEnd = PROFILE_ENABLED ? performance.now() : 0;
           videoFrame.close();
+
+          // Profile logging
+          if (PROFILE_ENABLED) {
+            profileTotalDecodeTime += decodeEnd - decodeStart;
+            profileTotalBitmapTime += bitmapEnd - bitmapStart;
+            profileFrameCount++;
+
+            if (profileFrameCount >= PROFILE_LOG_INTERVAL) {
+              console.log(
+                `[MediaBunny Profile] Avg over ${profileFrameCount} frames: ` +
+                  `toVideoFrame=${(profileTotalDecodeTime / profileFrameCount).toFixed(2)}ms, ` +
+                  `createImageBitmap=${(profileTotalBitmapTime / profileFrameCount).toFixed(2)}ms`
+              );
+              profileFrameCount = 0;
+              profileTotalDecodeTime = 0;
+              profileTotalBitmapTime = 0;
+            }
+          }
 
           // Add to buffer
           this.frameBuffer.push({

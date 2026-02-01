@@ -89,6 +89,14 @@
   let previewCtx: CanvasRenderingContext2D | null = null;
   let useCanvasPreview = $state(false);
 
+  // Performance profiling
+  const PROFILE_ENABLED = true;
+  const PROFILE_LOG_INTERVAL = 60;
+  let profileFrameCount = 0;
+  let profileTotalCanvasTime = 0;
+  let profileTotalGLTime = 0;
+  let profileTotalCallbackTime = 0;
+
   // How long to wait for first WebCodecs frame before falling back (ms)
   const WEBCODECS_TIMEOUT_MS = 5000;
 
@@ -124,6 +132,7 @@
       .with({ type: 'pause' }, () => togglePause())
       .with({ type: 'loop', value: P.optional(P.boolean) }, ({ value }) => {
         const shouldLoop = value ?? true;
+
         updateNode(nodeId, { data: { ...data, loop: shouldLoop } });
 
         if (videoElement) {
@@ -163,6 +172,7 @@
 
           // Scale down for preview while maintaining aspect ratio
           const aspectRatio = videoWidth / videoHeight;
+
           let previewWidth = defaultPreviewWidth;
           let previewHeight = defaultPreviewWidth / aspectRatio;
 
@@ -298,6 +308,8 @@
     mediaBunnyPlayer = new MediaBunnyPlayer({
       nodeId,
       onFrame: (bitmap, timestamp) => {
+        const callbackStart = PROFILE_ENABLED ? performance.now() : 0;
+
         // Mark first frame received (cancels the timeout fallback)
         if (!webCodecsFirstFrameReceived) {
           webCodecsFirstFrameReceived = true;
@@ -313,17 +325,45 @@
 
         // Draw to preview canvas first (single source of truth for preview)
         // Canvas is CSS-flipped to match the GL-flipped bitmap orientation
+        let canvasTime = 0;
         if (previewCanvas && previewCtx && useCanvasPreview) {
+          const canvasStart = performance.now();
           previewCtx.drawImage(bitmap, 0, 0, previewCanvas.width, previewCanvas.height);
+          canvasTime = performance.now() - canvasStart;
         }
 
         // Then send to GLSystem (or close if no connections)
+        let glTime = 0;
+        const glStart = performance.now();
         if (glSystem.hasOutgoingVideoConnections(nodeId)) {
           // Transfer bitmap to render worker (ownership transferred, worker will close it)
           glSystem.setPreflippedBitmap(nodeId, bitmap);
         } else {
           // No connections - close bitmap immediately to prevent memory leak
           bitmap.close();
+        }
+        glTime = performance.now() - glStart;
+
+        // Profile logging
+        if (PROFILE_ENABLED) {
+          const callbackTime = performance.now() - callbackStart;
+          profileTotalCanvasTime += canvasTime;
+          profileTotalGLTime += glTime;
+          profileTotalCallbackTime += callbackTime;
+          profileFrameCount++;
+
+          if (profileFrameCount >= PROFILE_LOG_INTERVAL) {
+            console.log(
+              `[VideoNode Profile] Avg over ${profileFrameCount} frames: ` +
+                `canvas=${(profileTotalCanvasTime / profileFrameCount).toFixed(2)}ms, ` +
+                `GL=${(profileTotalGLTime / profileFrameCount).toFixed(2)}ms, ` +
+                `total=${(profileTotalCallbackTime / profileFrameCount).toFixed(2)}ms`
+            );
+            profileFrameCount = 0;
+            profileTotalCanvasTime = 0;
+            profileTotalGLTime = 0;
+            profileTotalCallbackTime = 0;
+          }
         }
       },
       onMetadata: (metadata) => {
@@ -370,6 +410,7 @@
     } else {
       mediaBunnyPlayer.loadFile(file);
     }
+
     mediaBunnyPlayer.setLoop(data.loop ?? true);
 
     // Enable canvas preview mode - MediaBunny is now the single source of truth
@@ -396,11 +437,13 @@
     // Restart MediaBunny player if active - must await seek to avoid race condition
     if (mediaBunnyPlayer) {
       await mediaBunnyPlayer.seek(0);
+
       mediaBunnyPlayer.play();
       isPaused = false;
     } else if (videoElement) {
       // Fallback mode - use HTMLVideoElement
       videoElement.currentTime = 0;
+
       if (isPaused) {
         videoElement.play();
         isPaused = false;
@@ -528,8 +571,10 @@
     // Track frames for profiling - only when currentTime changes (deduplicate)
     if (videoElement && videoReady && isVideoLoaded && !isPaused) {
       const currentMediaTime = videoElement.currentTime;
+
       if (currentMediaTime !== lastRecordedMediaTime) {
         lastRecordedMediaTime = currentMediaTime;
+
         profiler?.recordFrame(currentMediaTime * 1_000_000, currentMediaTime);
       }
     }
@@ -593,6 +638,7 @@
   onMount(async () => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
+
     glSystem.upsertNode(nodeId, 'img', {});
 
     // Create audio object for video
@@ -709,7 +755,6 @@
           {#if !errorMessage}
             <div class="relative">
               <!-- Canvas preview when MediaBunny is active (single source of truth) -->
-              <!-- CSS scaleY(-1) flips to match GL-flipped bitmap, avoiding per-frame transforms -->
               <canvas
                 bind:this={previewCanvas}
                 width={data.width || defaultPreviewWidth}
@@ -718,7 +763,7 @@
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
-                  defaultPreviewHeight}px; transform: scaleY(-1)"
+                  defaultPreviewHeight}px"
                 ondragover={vfsMedia.handleDragOver}
                 ondragleave={vfsMedia.handleDragLeave}
                 ondrop={vfsMedia.handleDrop}
