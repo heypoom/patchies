@@ -416,6 +416,7 @@ export class PreviewRenderer {
    * Initiate async PBO reads for a batch of video frame requests.
    * Call harvestVideoFrameBatches() in subsequent frames to get completed results.
    *
+   * Used by worker nodes for `onVideoFrame()` and `getVideoFrames()` APIs.
    * Supports both FBO nodes (p5, hydra, glsl) and external texture nodes (img, webcam).
    */
   initiateVideoFrameBatchAsync(
@@ -556,6 +557,8 @@ export class PreviewRenderer {
   /**
    * Harvest completed video frame batches.
    * Returns array of completed batches with their ImageBitmaps.
+   *
+   * Used by worker nodes for `onVideoFrame()` and `getVideoFrames()` APIs.
    *
    * Smart cloning: When multiple targets need the same source, each gets
    * its own bitmap created from the cached pixel data. When only one target
