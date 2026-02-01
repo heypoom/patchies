@@ -115,6 +115,7 @@
     "machine": "./src/assets/vasm",
     "marked": "^16.1.2",
     "matter-js": "^0.20.0",
+    "mediabunny": "^1.31.0",
     "memfs": "^4.39.0",
     "meyda": "^5.6.3",
     "ml5": "^1.2.1",

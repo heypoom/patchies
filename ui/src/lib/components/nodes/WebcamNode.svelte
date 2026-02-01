@@ -92,7 +92,11 @@
             profiler?.recordFrame(performance.now() * 1000);
 
             if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+              // Transfer bitmap to render worker (ownership transferred, worker will close it)
               glSystem.setPreflippedBitmap(nodeId, bitmap);
+            } else {
+              // No connections - close bitmap immediately to prevent memory leak
+              bitmap.close();
             }
           },
           onError: (err) => {

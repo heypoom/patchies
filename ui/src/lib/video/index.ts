@@ -7,5 +7,9 @@
 
 export { webCodecsSupport, isCodecSupported, getWebCodecsSupportInfo } from './feature-detection';
 export { WebCodecsCapture, type WebCodecsCaptureConfig } from './WebCodecsCapture';
-export { WebCodecsPlayer, type WebCodecsPlayerConfig, type VideoMetadata } from './WebCodecsPlayer';
+export {
+  MediaBunnyPlayer,
+  type VideoMetadata,
+  type MediaBunnyPlayerConfig
+} from './MediaBunnyPlayer';
 export { VideoProfiler, type VideoStats, type WorkerQueueStats } from './VideoProfiler';

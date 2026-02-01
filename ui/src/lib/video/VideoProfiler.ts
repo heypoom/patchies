@@ -8,9 +8,12 @@
  * - Queue depth (pending frames)
  */
 
-import type { WorkerQueueStats } from '$workers/video/videoDecoderWorker';
-
-export type { WorkerQueueStats };
+/** Legacy type for worker queue stats (kept for API compatibility) */
+export interface WorkerQueueStats {
+  pendingSamples: number;
+  decodeQueueSize: number;
+  pendingFrames: number;
+}
 
 export interface VideoStats {
   /** Current frames per second (rolling average over 1 second) */

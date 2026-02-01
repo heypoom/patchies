@@ -50,6 +50,9 @@ export class FBORenderer {
   /** Mapping of nodeID to persistent textures */
   public externalTexturesByNode: Map<string, regl.Texture2D> = new Map();
 
+  /** Pending bitmaps to close on next frame (prevents closing before texture upload completes) */
+  private pendingBitmapsToClose: Map<string, ImageBitmap> = new Map();
+
   /** Mapping of analyzer object's node id -> analysis type -> texture */
   public fftTexturesByAnalyzer: Map<string, Map<AudioAnalysisType, regl.Texture2D>> = new Map();
 
@@ -969,6 +972,12 @@ export class FBORenderer {
    * @param bitmap - Pre-flipped ImageBitmap
    */
   setBitmap(nodeId: string, bitmap: ImageBitmap) {
+    // Close the PREVIOUS bitmap for this node (safe - texture upload already completed)
+    const pendingBitmap = this.pendingBitmapsToClose.get(nodeId);
+    if (pendingBitmap) {
+      pendingBitmap.close();
+    }
+
     const texture = this.externalTexturesByNode.get(nodeId);
 
     // Either update the existing texture or create a new one.
@@ -977,6 +986,10 @@ export class FBORenderer {
     const nextTexture = texture ? texture({ data: bitmap }) : this.regl.texture({ data: bitmap });
 
     this.externalTexturesByNode.set(nodeId, nextTexture);
+
+    // Queue THIS bitmap to be closed on the NEXT frame
+    // This ensures the texture upload is complete before we release the bitmap
+    this.pendingBitmapsToClose.set(nodeId, bitmap);
   }
 
   /**
@@ -992,6 +1005,13 @@ export class FBORenderer {
 
     texture.destroy();
     this.externalTexturesByNode.delete(nodeId);
+
+    // Also clean up any pending bitmap for this node
+    const pendingBitmap = this.pendingBitmapsToClose.get(nodeId);
+    if (pendingBitmap) {
+      pendingBitmap.close();
+      this.pendingBitmapsToClose.delete(nodeId);
+    }
   }
 
   /**

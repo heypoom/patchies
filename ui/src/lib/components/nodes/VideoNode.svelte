@@ -12,7 +12,8 @@
   import { webCodecsEnabled, showVideoStats } from '../../../stores/video.store';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
-  import { WebCodecsPlayer, VideoProfiler, type VideoStats } from '$lib/video';
+  import { VideoProfiler, type VideoStats } from '$lib/video';
+  import { MediaBunnyPlayer } from '$lib/video/MediaBunnyPlayer';
 
   // Type definitions for requestVideoFrameCallback (not yet in all TypeScript libs)
   interface VideoFrameCallbackMetadata {
@@ -76,8 +77,8 @@
   let resizerCanvas: OffscreenCanvas | null = null;
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
 
-  // WebCodecs support - use when available and enabled
-  let webCodecsPlayer: WebCodecsPlayer | null = null;
+  // MediaBunny player - use when WebCodecs is available and enabled
+  let mediaBunnyPlayer: MediaBunnyPlayer | null = null;
   let currentFile: File | null = null;
   let webCodecsFirstFrameReceived = false;
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -116,9 +117,9 @@
           videoElement.loop = shouldLoop;
         }
 
-        // Update WebCodecs player loop setting
-        if (webCodecsPlayer) {
-          webCodecsPlayer.setLoop(shouldLoop);
+        // Update MediaBunny player loop setting
+        if (mediaBunnyPlayer) {
+          mediaBunnyPlayer.setLoop(shouldLoop);
         }
       })
       .with(P.string, (path) => vfsMedia.loadFromPath(path))
@@ -189,10 +190,10 @@
             frameRate: 30
           });
 
-          // Use WebCodecs for frame extraction when supported and enabled
-          if ($webCodecsEnabled) {
+          // Use MediaBunny for frame extraction when supported and enabled
+          if ($webCodecsEnabled && MediaBunnyPlayer.isSupported()) {
             profiler.setPipeline('webcodecs');
-            initWebCodecsPlayer(file);
+            initMediaBunnyPlayer(file);
           } else {
             // Fallback to HTMLVideoElement frame extraction (Firefox or disabled)
             profiler.setPipeline('fallback');
@@ -216,8 +217,8 @@
   }
 
   /**
-   * Fall back from WebCodecs to HTMLVideoElement frame extraction.
-   * Called when WebCodecs fails, times out, or encounters an error.
+   * Fall back from MediaBunny to HTMLVideoElement frame extraction.
+   * Called when MediaBunny fails, times out, or encounters an error.
    */
   function fallbackToHTMLVideo(reason: string) {
     console.warn(`[VideoNode] Falling back to HTMLVideoElement: ${reason}`);
@@ -228,10 +229,10 @@
       webCodecsTimeoutId = null;
     }
 
-    // Clean up WebCodecs player
-    if (webCodecsPlayer) {
-      webCodecsPlayer.destroy();
-      webCodecsPlayer = null;
+    // Clean up MediaBunny player
+    if (mediaBunnyPlayer) {
+      mediaBunnyPlayer.destroy();
+      mediaBunnyPlayer = null;
     }
 
     // Reset state
@@ -247,13 +248,13 @@
   }
 
   /**
-   * Initialize WebCodecsPlayer for frame extraction.
+   * Initialize MediaBunnyPlayer for frame extraction.
    * Sets up a timeout to fall back if no frames are received.
    */
-  function initWebCodecsPlayer(file: File) {
+  function initMediaBunnyPlayer(file: File) {
     // Clean up existing player
-    if (webCodecsPlayer) {
-      webCodecsPlayer.destroy();
+    if (mediaBunnyPlayer) {
+      mediaBunnyPlayer.destroy();
     }
 
     // Reset state
@@ -270,9 +271,9 @@
       webCodecsTimeoutId = null;
     }, WEBCODECS_TIMEOUT_MS);
 
-    webCodecsPlayer = new WebCodecsPlayer({
+    mediaBunnyPlayer = new MediaBunnyPlayer({
       nodeId,
-      onFrame: (bitmap, timestamp, queueStats) => {
+      onFrame: (bitmap, timestamp) => {
         // Mark first frame received (cancels the timeout fallback)
         if (!webCodecsFirstFrameReceived) {
           webCodecsFirstFrameReceived = true;
@@ -283,12 +284,15 @@
           }
         }
 
-        // Track frame for profiling with queue stats for diagnostics
-        profiler?.recordFrame(timestamp, webCodecsPlayer?.currentTime);
-        profiler?.setWorkerQueues(queueStats);
+        // Track frame for profiling (MediaBunny handles queue management internally)
+        profiler?.recordFrame(timestamp, mediaBunnyPlayer?.currentTime);
 
         if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+          // Transfer bitmap to render worker (ownership transferred, worker will close it)
           glSystem.setPreflippedBitmap(nodeId, bitmap);
+        } else {
+          // No connections - close bitmap immediately to prevent memory leak
+          bitmap.close();
         }
       },
       onMetadata: (metadata) => {
@@ -315,12 +319,12 @@
         }
       },
       onError: (err) => {
-        fallbackToHTMLVideo(`WebCodecs error: ${err.message}`);
+        fallbackToHTMLVideo(`MediaBunny error: ${err.message}`);
       }
     });
 
-    webCodecsPlayer.loadFile(file);
-    webCodecsPlayer.setLoop(data.loop ?? true);
+    mediaBunnyPlayer.loadFile(file);
+    mediaBunnyPlayer.setLoop(data.loop ?? true);
   }
 
   function restartVideo() {
@@ -334,10 +338,10 @@
       // Send bang to audio system to restart audio (sets currentTime to 0 and plays)
       audioService.send(nodeId, 'message', { type: 'bang' });
 
-      // Restart WebCodecs player if active
-      if (webCodecsPlayer) {
-        webCodecsPlayer.seek(0);
-        webCodecsPlayer.play();
+      // Restart MediaBunny player if active
+      if (mediaBunnyPlayer) {
+        mediaBunnyPlayer.seek(0);
+        mediaBunnyPlayer.play();
       }
 
       if (isPaused) {
@@ -356,9 +360,9 @@
         videoElement.play();
         audioService.send(nodeId, 'message', { type: 'play' });
 
-        // Resume WebCodecs player
-        if (webCodecsPlayer) {
-          webCodecsPlayer.play();
+        // Resume MediaBunny player
+        if (mediaBunnyPlayer) {
+          mediaBunnyPlayer.play();
         }
 
         // Mark playback start for accurate drop detection
@@ -372,9 +376,9 @@
         videoElement.pause();
         audioService.send(nodeId, 'message', { type: 'pause' });
 
-        // Pause WebCodecs player
-        if (webCodecsPlayer) {
-          webCodecsPlayer.pause();
+        // Pause MediaBunny player
+        if (mediaBunnyPlayer) {
+          mediaBunnyPlayer.pause();
         }
 
         isPaused = true;
@@ -562,10 +566,10 @@
       statsIntervalId = null;
     }
 
-    // Clean up WebCodecs player
-    if (webCodecsPlayer) {
-      webCodecsPlayer.destroy();
-      webCodecsPlayer = null;
+    // Clean up MediaBunny player
+    if (mediaBunnyPlayer) {
+      mediaBunnyPlayer.destroy();
+      mediaBunnyPlayer = null;
     }
 
     messageContext?.queue.removeCallback(handleMessage);
@@ -664,26 +668,11 @@
                       ? 'text-green-400'
                       : 'text-yellow-400'}"
                   >
-                    {videoStats.pipeline.toUpperCase()}
+                    {videoStats.pipeline === 'webcodecs' ? 'MEDIABUNNY' : 'FALLBACK'}
                   </div>
                   <div>{videoStats.fps}/{Math.round(videoStats.targetFps)} FPS</div>
                   <div>Dropped: {videoStats.droppedFrames}</div>
                   <div>{videoStats.width}x{videoStats.height}</div>
-                  {#if videoStats.workerQueues}
-                    {@const q = videoStats.workerQueues}
-                    <div class="text-cyan-300">
-                      Samples: {q.pendingSamples}
-                      {#if q.extractionPaused}<span class="text-red-400"> PAUSED</span>{/if}
-                    </div>
-                    <div class="text-cyan-300">Decode Q: {q.decodeQueueSize}</div>
-                    <div class="text-cyan-300">Frames: {q.pendingFrames}</div>
-                    <div class="text-zinc-500">
-                      Peak: {q.peakSamples}/{q.peakFrames}
-                    </div>
-                    <div class="text-zinc-500">Total: {q.totalSamplesExtracted}</div>
-                  {:else}
-                    <div>Queue: {videoStats.queueDepth}</div>
-                  {/if}
                   {#if videoStats.codec !== 'unknown'}
                     <div class="text-zinc-400">{videoStats.codec}</div>
                   {/if}
