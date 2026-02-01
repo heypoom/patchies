@@ -153,13 +153,5 @@ export const JS_PRESETS: Record<
   'pipe-msg.js': {
     type: 'js',
     data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
-  },
-  'add.js': {
-    type: 'js',
-    data: { code: ADD_JS, showConsole: false, runOnMount: true }
-  },
-  'add-cold.js': {
-    type: 'js',
-    data: { code: ADD_COLD_JS, showConsole: false, runOnMount: true }
   }
 };
