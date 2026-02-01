@@ -302,6 +302,7 @@
     if (webCodecsTimeoutId !== null) {
       clearTimeout(webCodecsTimeoutId);
     }
+
     webCodecsTimeoutId = setTimeout(() => {
       if (!webCodecsFirstFrameReceived) {
         fallbackToHTMLVideo(`No frames received within ${WEBCODECS_TIMEOUT_MS}ms`);
@@ -544,6 +545,7 @@
         const bitmap = await createImageBitmap(resizerCanvas);
         const t1 = performance.now();
         fallbackResizerProfiler.record(t1 - t0);
+
         await glSystem.setBitmap(nodeId, bitmap);
       }
     } else {

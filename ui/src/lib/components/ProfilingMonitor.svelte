@@ -18,10 +18,6 @@
 
   function setupProfilers() {
     const profilers = getAllProfilers();
-    console.log(
-      '[ProfilingMonitor] setupProfilers - found profilers:',
-      profilers.map((p) => p.getLabel())
-    );
 
     profilers.forEach((profiler) => {
       const label = profiler.getLabel();
@@ -105,8 +101,9 @@
 
   onMount(() => {
     setupProfilers();
+
     // Periodically check for new profilers
-    updateInterval = setInterval(setupProfilers, 1000);
+    updateInterval = setInterval(setupProfilers, 3000);
 
     // Listen for profiling stats from worker threads
     const handleWorkerMessage = (event: MessageEvent) => {

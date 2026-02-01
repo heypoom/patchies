@@ -71,7 +71,7 @@ export class ProfilingHelper {
    * Get historical stats.
    */
   getHistory(): ProfilingStats[] {
-    return this.history;
+    return [...this.history];
   }
 
   /**
