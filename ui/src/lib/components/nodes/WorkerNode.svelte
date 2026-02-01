@@ -3,7 +3,11 @@
   import { onMount, onDestroy } from 'svelte';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { WorkerCallbackRegisteredEvent, WorkerFlashEvent } from '$lib/eventbus/events';
+  import type {
+    WorkerCallbackRegisteredEvent,
+    WorkerFlashEvent,
+    NodeRunOnMountUpdateEvent
+  } from '$lib/eventbus/events';
   import CodeBlockBase from './CodeBlockBase.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
@@ -77,6 +81,12 @@
     baseRef?.flash();
   }
 
+  // Handle runOnMount updates from worker
+  function handleRunOnMountUpdate(event: NodeRunOnMountUpdateEvent) {
+    if (event.nodeId !== nodeId) return;
+    updateNodeData(nodeId, { runOnMount: event.runOnMount });
+  }
+
   onMount(async () => {
     // Create the worker for this node
     await workerSystem.create(nodeId);
@@ -84,6 +94,7 @@
     // Listen for EventBus events from the worker
     eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
+    eventBus.addEventListener('nodeRunOnMountUpdate', handleRunOnMountUpdate);
     eventBus.addEventListener('workerCallbackRegistered', handleCallbackRegistered);
     eventBus.addEventListener('workerFlash', handleFlash);
 
@@ -97,6 +108,7 @@
     // Remove event listeners
     eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
+    eventBus.removeEventListener('nodeRunOnMountUpdate', handleRunOnMountUpdate);
     eventBus.removeEventListener('workerCallbackRegistered', handleCallbackRegistered);
     eventBus.removeEventListener('workerFlash', handleFlash);
 

@@ -7,6 +7,7 @@ export type PatchiesEvent =
   | PyodideSendMessageEvent
   | NodePortCountUpdateEvent
   | NodeTitleUpdateEvent
+  | NodeRunOnMountUpdateEvent
   | NodeHidePortsUpdateEvent
   | NodeDragEnabledUpdateEvent
   | NodeVideoOutputEnabledUpdateEvent
@@ -67,6 +68,12 @@ export interface NodeTitleUpdateEvent {
   type: 'nodeTitleUpdate';
   nodeId: string;
   title: string;
+}
+
+export interface NodeRunOnMountUpdateEvent {
+  type: 'nodeRunOnMountUpdate';
+  nodeId: string;
+  runOnMount: boolean;
 }
 
 export interface NodeHidePortsUpdateEvent {

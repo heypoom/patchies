@@ -153,6 +153,13 @@ export class WorkerNodeSystem {
           title: event.title
         });
       })
+      .with({ type: 'setRunOnMount' }, (event) => {
+        this.eventBus.dispatch({
+          type: 'nodeRunOnMountUpdate',
+          nodeId,
+          runOnMount: event.runOnMount
+        });
+      })
       .with({ type: 'callbackRegistered' }, (event) => {
         this.eventBus.dispatch({
           type: 'workerCallbackRegistered',
