@@ -5,8 +5,6 @@
  * - Streaming support for large files
  * - Intelligent prefetching and caching
  * - Automatic seeking to keyframes
- *
- * Replaces our custom WebCodecs + MP4Box implementation.
  */
 
 import { Input, BlobSource, UrlSource, VideoSampleSink, ALL_FORMATS } from 'mediabunny';
