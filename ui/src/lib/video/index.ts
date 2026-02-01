@@ -8,4 +8,4 @@
 export { webCodecsSupport, isCodecSupported, getWebCodecsSupportInfo } from './feature-detection';
 export { WebCodecsCapture, type WebCodecsCaptureConfig } from './WebCodecsCapture';
 export { WebCodecsPlayer, type WebCodecsPlayerConfig, type VideoMetadata } from './WebCodecsPlayer';
-export { VideoProfiler, type VideoStats } from './VideoProfiler';
+export { VideoProfiler, type VideoStats, type WorkerQueueStats } from './VideoProfiler';

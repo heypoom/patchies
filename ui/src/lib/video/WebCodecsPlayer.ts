@@ -12,15 +12,16 @@ import { webCodecsSupport } from './feature-detection';
 import type {
   VideoDecoderWorkerMessage,
   VideoDecoderWorkerResponse,
-  VideoMetadata
+  VideoMetadata,
+  WorkerQueueStats
 } from '$workers/video/videoDecoderWorker';
 import VideoDecoderWorker from '$workers/video/videoDecoderWorker?worker';
 
-export type { VideoMetadata };
+export type { VideoMetadata, WorkerQueueStats };
 
 export interface WebCodecsPlayerConfig {
   nodeId: string;
-  onFrame: (bitmap: ImageBitmap, timestamp: number) => void;
+  onFrame: (bitmap: ImageBitmap, timestamp: number, queueStats: WorkerQueueStats) => void;
   onMetadata: (metadata: VideoMetadata) => void;
   onEnded: () => void;
   onError: (error: Error) => void;
@@ -28,7 +29,7 @@ export interface WebCodecsPlayerConfig {
 
 export class WebCodecsPlayer {
   private nodeId: string;
-  private onFrame: (bitmap: ImageBitmap, timestamp: number) => void;
+  private onFrame: (bitmap: ImageBitmap, timestamp: number, queueStats: WorkerQueueStats) => void;
   private onMetadata: (metadata: VideoMetadata) => void;
   private onEnded: () => void;
   private onError: (error: Error) => void;
@@ -135,7 +136,7 @@ export class WebCodecsPlayer {
 
       case 'frameReady':
         this._currentTime = message.currentTime;
-        this.onFrame(message.bitmap, message.timestamp);
+        this.onFrame(message.bitmap, message.timestamp, message.queueStats);
         break;
 
       case 'seeked':

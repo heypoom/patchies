@@ -70,6 +70,12 @@ export type VideoDecoderWorkerMessage =
       nodeId: string;
     };
 
+export interface WorkerQueueStats {
+  pendingSamples: number; // Encoded samples waiting to be decoded
+  decodeQueueSize: number; // Chunks in VideoDecoder queue
+  pendingFrames: number; // Decoded frames waiting to be sent
+}
+
 export type VideoDecoderWorkerResponse =
   | {
       type: 'frameReady';
@@ -77,6 +83,7 @@ export type VideoDecoderWorkerResponse =
       bitmap: ImageBitmap;
       timestamp: number; // microseconds
       currentTime: number; // seconds
+      queueStats: WorkerQueueStats; // Queue depths for diagnostics
     }
   | {
       type: 'metadata';
@@ -445,6 +452,14 @@ function processSampleQueue(nodeId: string): void {
   const state = decoderStates.get(nodeId);
   if (!state || !state.decoder) return;
 
+  // When paused, only decode enough for preview (first frame)
+  // Don't keep decoding - it wastes memory
+  if (state.isPaused && state.pendingFrames.length > 0) {
+    // Already have preview frame, stop processing until playback resumes
+    state.sampleProcessingId = null;
+    return;
+  }
+
   // Check backpressure conditions
   const decoderQueueFull = state.decoder.decodeQueueSize >= MAX_DECODE_QUEUE_SIZE;
   const frameQueueFull = state.pendingFrames.length >= MAX_PENDING_FRAMES;
@@ -499,17 +514,27 @@ function handleDecodedFrame(nodeId: string, frame: VideoFrame): void {
     return;
   }
 
-  // Always queue frames
-  state.pendingFrames.push(frame);
-
-  // If paused, send first frame as preview only
+  // If paused, only keep first frame as preview - close all others immediately
   if (!state.isPlaying || state.isPaused) {
-    if (state.pendingFrames.length === 1) {
-      // Send first frame as preview (don't close it)
+    if (state.pendingFrames.length === 0) {
+      // Keep first frame as preview
+      state.pendingFrames.push(frame);
       sendFrameToMain(nodeId, frame);
+    } else {
+      // Already have preview, close this frame immediately to prevent memory leak
+      frame.close();
     }
     return;
   }
+
+  // During playback, enforce hard cap on pending frames to prevent memory explosion
+  if (state.pendingFrames.length >= MAX_PENDING_FRAMES) {
+    // Drop oldest frames to make room (close them to free memory)
+    const frameToDrop = state.pendingFrames.shift();
+    frameToDrop?.close();
+  }
+
+  state.pendingFrames.push(frame);
 
   // During playback, process frame queue
   processFrameQueue(nodeId);
@@ -540,7 +565,12 @@ async function sendFrameToMain(
         nodeId,
         bitmap,
         timestamp: frame.timestamp ?? 0,
-        currentTime
+        currentTime,
+        queueStats: {
+          pendingSamples: state.pendingSamples.length,
+          decodeQueueSize: state.decoder?.decodeQueueSize ?? 0,
+          pendingFrames: state.pendingFrames.length
+        }
       },
       [bitmap]
     );
@@ -590,6 +620,11 @@ function play(nodeId: string): void {
   state.isPlaying = true;
   state.isPaused = false;
   state.lastFrameTime = performance.now();
+
+  // Resume sample processing (was paused to save memory)
+  if (state.pendingSamples.length > 0 && state.sampleProcessingId === null) {
+    processSampleQueue(nodeId);
+  }
 
   processFrameQueue(nodeId);
 }

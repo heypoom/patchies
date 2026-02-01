@@ -272,18 +272,20 @@
 
     webCodecsPlayer = new WebCodecsPlayer({
       nodeId,
-      onFrame: (bitmap, timestamp) => {
+      onFrame: (bitmap, timestamp, queueStats) => {
         // Mark first frame received (cancels the timeout fallback)
         if (!webCodecsFirstFrameReceived) {
           webCodecsFirstFrameReceived = true;
+
           if (webCodecsTimeoutId !== null) {
             clearTimeout(webCodecsTimeoutId);
             webCodecsTimeoutId = null;
           }
         }
 
-        // Track frame for profiling
+        // Track frame for profiling with queue stats for diagnostics
         profiler?.recordFrame(timestamp, webCodecsPlayer?.currentTime);
+        profiler?.setWorkerQueues(queueStats);
 
         if (glSystem.hasOutgoingVideoConnections(nodeId)) {
           glSystem.setPreflippedBitmap(nodeId, bitmap);
@@ -647,9 +649,20 @@
                   >
                     {videoStats.pipeline.toUpperCase()}
                   </div>
-                  <div>{videoStats.fps}/{videoStats.targetFps} FPS</div>
+                  <div>{videoStats.fps}/{Math.round(videoStats.targetFps)} FPS</div>
                   <div>Dropped: {videoStats.droppedFrames}</div>
                   <div>{videoStats.width}x{videoStats.height}</div>
+                  {#if videoStats.workerQueues}
+                    <div class="text-cyan-300">
+                      Samples: {videoStats.workerQueues.pendingSamples}
+                    </div>
+                    <div class="text-cyan-300">
+                      Decode Q: {videoStats.workerQueues.decodeQueueSize}
+                    </div>
+                    <div class="text-cyan-300">Frames: {videoStats.workerQueues.pendingFrames}</div>
+                  {:else}
+                    <div>Queue: {videoStats.queueDepth}</div>
+                  {/if}
                   {#if videoStats.codec !== 'unknown'}
                     <div class="text-zinc-400">{videoStats.codec}</div>
                   {/if}

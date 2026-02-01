@@ -8,6 +8,10 @@
  * - Queue depth (pending frames)
  */
 
+import type { WorkerQueueStats } from '$workers/video/videoDecoderWorker';
+
+export type { WorkerQueueStats };
+
 export interface VideoStats {
   /** Current frames per second (rolling average over 1 second) */
   fps: number;
@@ -27,8 +31,11 @@ export interface VideoStats {
   /** Video duration in seconds */
   duration: number;
 
-  /** Pending frames in queue (worker-reported) */
+  /** Pending frames in queue (worker-reported, legacy) */
   queueDepth: number;
+
+  /** Detailed worker queue stats (WebCodecs only) */
+  workerQueues: WorkerQueueStats | null;
 
   /** Whether using WebCodecs or HTMLVideoElement fallback */
   pipeline: 'webcodecs' | 'fallback';
@@ -51,6 +58,7 @@ export class VideoProfiler {
   private currentTime = 0;
   private duration = 0;
   private queueDepth = 0;
+  private workerQueues: WorkerQueueStats | null = null;
   private pipeline: 'webcodecs' | 'fallback' = 'webcodecs';
   private width = 0;
   private height = 0;
@@ -95,6 +103,15 @@ export class VideoProfiler {
    */
   setQueueDepth(depth: number): void {
     this.queueDepth = depth;
+  }
+
+  /**
+   * Set detailed worker queue stats (WebCodecs only).
+   */
+  setWorkerQueues(stats: WorkerQueueStats): void {
+    this.workerQueues = stats;
+    // Also update legacy queueDepth for compatibility
+    this.queueDepth = stats.pendingFrames;
   }
 
   /**
@@ -163,6 +180,7 @@ export class VideoProfiler {
       currentTime: this.currentTime,
       duration: this.duration,
       queueDepth: this.queueDepth,
+      workerQueues: this.workerQueues,
       pipeline: this.pipeline,
       width: this.width,
       height: this.height,
@@ -180,6 +198,7 @@ export class VideoProfiler {
     this.droppedFrames = 0;
     this.currentTime = 0;
     this.queueDepth = 0;
+    this.workerQueues = null;
   }
 
   /**
@@ -189,11 +208,20 @@ export class VideoProfiler {
     const stats = this.getStats();
     const lines = [
       `${stats.pipeline.toUpperCase()}`,
-      `${stats.fps}/${stats.targetFps} FPS`,
+      `${stats.fps}/${Math.round(stats.targetFps)} FPS`,
       `Dropped: ${stats.droppedFrames}`,
-      `Queue: ${stats.queueDepth}`,
       `${stats.width}x${stats.height}`
     ];
+
+    // Show detailed queue stats for WebCodecs
+    if (stats.workerQueues) {
+      const q = stats.workerQueues;
+      lines.push(`Samples: ${q.pendingSamples}`);
+      lines.push(`Decode Q: ${q.decodeQueueSize}`);
+      lines.push(`Frames: ${q.pendingFrames}`);
+    } else {
+      lines.push(`Queue: ${stats.queueDepth}`);
+    }
 
     if (stats.codec !== 'unknown') {
       lines.push(stats.codec);
