@@ -6,12 +6,22 @@
 import { match } from 'ts-pattern';
 import type { Message } from '$lib/messages/MessageSystem';
 
+import {
+  createDirectChannelHandler,
+  type DirectChannelHandler,
+  type RenderConnection
+} from '../shared/directChannelHandler';
+
 // Message types sent from main thread to worker
 export type RubyWorkerMessage = { nodeId: string } & (
   | { type: 'executeCode'; code: string }
   | { type: 'incomingMessage'; data: unknown; meta: Omit<Message, 'data'> }
   | { type: 'cleanup' }
   | { type: 'destroy' }
+  | { type: 'setRenderPort' }
+  | { type: 'updateRenderConnections'; connections: RenderConnection[] }
+  | { type: 'setWorkerPort'; targetNodeId?: string; sourceNodeId?: string }
+  | { type: 'updateWorkerConnections'; connections: RenderConnection[] }
 );
 
 // Message types sent from worker to main thread
@@ -21,7 +31,7 @@ export type RubyWorkerResponse = { nodeId: string } & (
   | { type: 'vmReady' }
   | { type: 'executionComplete'; success: boolean; error?: string }
   | { type: 'consoleOutput'; level: 'log' | 'warn' | 'error' | 'debug' | 'info'; args: unknown[] }
-  | { type: 'sendMessage'; data: unknown; options?: { to?: number } }
+  | { type: 'sendMessage'; data: unknown; options?: { to?: number; excludeTargets?: string[] } }
   | { type: 'setPortCount'; inletCount: number; outletCount: number }
   | { type: 'setTitle'; title: string }
   | { type: 'callbackRegistered'; callbackType: 'message' }
@@ -46,16 +56,40 @@ let vmInitPromise: Promise<void> | null = null;
 interface NodeState {
   messageCallback: ((data: unknown, meta: Omit<Message, 'data'>) => void) | null;
   cleanupCallbacks: (() => void)[];
+  directChannel: DirectChannelHandler;
 }
 
 const nodeStates = new Map<string, NodeState>();
 
+function createNodeState(nodeId: string): NodeState {
+  const state: Omit<NodeState, 'directChannel'> & { directChannel?: DirectChannelHandler } = {
+    messageCallback: null,
+    cleanupCallbacks: []
+  };
+
+  state.directChannel = createDirectChannelHandler({
+    nodeId,
+    onIncomingMessage: (data, meta) => {
+      if (state.messageCallback) {
+        state.messageCallback(data, meta);
+      }
+    },
+    onError: (message) => {
+      postResponse({
+        type: 'consoleOutput',
+        nodeId,
+        level: 'error',
+        args: [message]
+      });
+    }
+  });
+
+  return state as NodeState;
+}
+
 function getNodeState(nodeId: string): NodeState {
   if (!nodeStates.has(nodeId)) {
-    nodeStates.set(nodeId, {
-      messageCallback: null,
-      cleanupCallbacks: []
-    });
+    nodeStates.set(nodeId, createNodeState(nodeId));
   }
   return nodeStates.get(nodeId)!;
 }
@@ -127,7 +161,13 @@ function createWorkerContext(nodeId: string) {
   };
 
   const send = (data: unknown, options?: { to?: number }) => {
-    postResponse({ type: 'sendMessage', nodeId, data, options });
+    const renderTargets = state.directChannel.sendToRenderTargets(data, options);
+    const workerTargets = state.directChannel.sendToWorkerTargets(data, options);
+
+    // Send via main thread, excluding targets we've already handled directly
+    const excludeTargets = [...renderTargets, ...workerTargets];
+
+    postResponse({ type: 'sendMessage', nodeId, data, options: { ...options, excludeTargets } });
   };
 
   const onMessage = (callback: (data: unknown, meta: Omit<Message, 'data'>) => void) => {
@@ -372,8 +412,26 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
       cleanupNode(nodeId);
     })
     .with({ type: 'destroy' }, () => {
+      const state = nodeStates.get(nodeId);
       cleanupNode(nodeId);
+      state?.directChannel.cleanup();
       nodeStates.delete(nodeId);
+    })
+    .with({ type: 'setRenderPort' }, () => {
+      const state = getNodeState(nodeId);
+      state.directChannel.handleSetRenderPort(event.ports[0]);
+    })
+    .with({ type: 'updateRenderConnections' }, ({ connections }) => {
+      const state = getNodeState(nodeId);
+      state.directChannel.handleUpdateRenderConnections(connections);
+    })
+    .with({ type: 'setWorkerPort' }, ({ targetNodeId, sourceNodeId }) => {
+      const state = getNodeState(nodeId);
+      state.directChannel.handleSetWorkerPort(event.ports[0], targetNodeId, sourceNodeId);
+    })
+    .with({ type: 'updateWorkerConnections' }, ({ connections }) => {
+      const state = getNodeState(nodeId);
+      state.directChannel.handleUpdateWorkerConnections(connections);
     })
     .otherwise(() => {});
 };

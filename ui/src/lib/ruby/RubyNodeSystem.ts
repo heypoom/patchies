@@ -1,4 +1,5 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { match } from 'ts-pattern';
 import type { RubyWorkerMessage, RubyWorkerResponse } from '../../workers/ruby/rubyWorker';
@@ -65,6 +66,9 @@ export class RubyNodeSystem {
     };
 
     this.workers.set(nodeId, instance);
+
+    // Register with DirectChannelService for direct render/worker messaging
+    DirectChannelService.getInstance().registerWorker(nodeId, worker);
 
     // Set up message handler
     worker.onmessage = (event: MessageEvent<RubyWorkerResponse>) => {
@@ -142,6 +146,9 @@ export class RubyNodeSystem {
     const queue = this.messageSystem.registerNode(nodeId);
     queue.removeCallback(instance.messageCallback);
 
+    // Unregister from DirectChannelService
+    DirectChannelService.getInstance().unregisterWorker(nodeId);
+
     // Send destroy message and terminate worker
     instance.worker.postMessage({
       type: 'destroy',
@@ -202,8 +209,11 @@ export class RubyNodeSystem {
         });
       })
       .with({ type: 'sendMessage' }, ({ data, options }) => {
-        // Send message through MessageSystem
-        this.messageSystem.sendMessage(nodeId, data, options ?? {});
+        // Send message through MessageSystem (excludeTargets are handled by direct channels)
+        this.messageSystem.sendMessage(nodeId, data, {
+          to: options?.to,
+          excludeTargets: options?.excludeTargets
+        });
       })
       .with({ type: 'setPortCount' }, ({ inletCount, outletCount }) => {
         this.eventBus.dispatch({

@@ -23,7 +23,7 @@ export interface DirectConnection {
 const RENDER_NODE_TYPES = new Set(['canvas', 'three', 'hydra', 'textmode']);
 
 /** Worker node types that have their own Web Worker */
-const WORKER_NODE_TYPES = new Set(['worker']);
+const WORKER_NODE_TYPES = new Set(['worker', 'ruby']);
 
 export class DirectChannelService {
   private static instance: DirectChannelService;
