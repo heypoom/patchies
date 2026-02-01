@@ -20,7 +20,9 @@ export type PatchiesEvent =
   | InsertPresetToCanvasEvent
   | WorkerSendMessageEvent
   | WorkerCallbackRegisteredEvent
-  | WorkerFlashEvent;
+  | WorkerFlashEvent
+  | RequestWorkerVideoFramesEvent
+  | RequestWorkerVideoFramesBatchEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -179,4 +181,20 @@ export interface WorkerCallbackRegisteredEvent {
 export interface WorkerFlashEvent {
   type: 'workerFlash';
   nodeId: string;
+}
+
+export interface RequestWorkerVideoFramesEvent {
+  type: 'requestWorkerVideoFrames';
+  nodeId: string;
+  sourceNodeIds: (string | null)[];
+  resolution?: [number, number];
+}
+
+export interface RequestWorkerVideoFramesBatchEvent {
+  type: 'requestWorkerVideoFramesBatch';
+  requests: Array<{
+    targetNodeId: string;
+    sourceNodeIds: (string | null)[];
+    resolution?: [number, number];
+  }>;
 }

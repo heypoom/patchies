@@ -7,8 +7,10 @@ import type {
   RenderFunction,
   UserParam
 } from '../../lib/rendering/types';
-import { DEFAULT_OUTPUT_SIZE, WEBGL_EXTENSIONS } from '$lib/canvas/constants';
+import { DEFAULT_OUTPUT_SIZE, WEBGL_EXTENSIONS, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
+import { CaptureRenderer } from './CaptureRenderer';
 import { match, P } from 'ts-pattern';
 import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
@@ -81,8 +83,14 @@ export class FBORenderer {
   private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
 
+  /** Shared pixel readback infrastructure */
+  public pixelReadbackService: PixelReadbackService;
+
   /** Preview renderer with async PBO reads */
   public previewRenderer: PreviewRenderer;
+
+  /** Capture renderer for video frames and sync captures */
+  public captureRenderer: CaptureRenderer;
 
   constructor() {
     const [width, height] = this.outputSize;
@@ -97,7 +105,24 @@ export class FBORenderer {
       data: new Uint8Array([0, 0, 0, 0])
     });
 
-    this.previewRenderer = new PreviewRenderer(this.gl, this.regl, this.profiler, this.outputSize);
+    // Calculate preview size from output size
+    const previewSize: [number, number] = [
+      Math.floor(this.outputSize[0] / PREVIEW_SCALE_FACTOR),
+      Math.floor(this.outputSize[1] / PREVIEW_SCALE_FACTOR)
+    ];
+
+    // Create shared pixel readback service
+    this.pixelReadbackService = new PixelReadbackService(
+      this.gl,
+      this.regl,
+      this.profiler,
+      this.outputSize,
+      previewSize
+    );
+
+    // Create renderers that use the shared service
+    this.previewRenderer = new PreviewRenderer(this.pixelReadbackService);
+    this.captureRenderer = new CaptureRenderer(this.pixelReadbackService);
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -908,7 +933,7 @@ export class FBORenderer {
   }
 
   async setPreviewSize(width: number, height: number) {
-    this.previewRenderer.setPreviewSize(width, height);
+    this.pixelReadbackService.setPreviewSize(width, height);
     await this.buildFBOs(this.renderGraph!);
   }
 
@@ -923,8 +948,8 @@ export class FBORenderer {
     this.offscreenCanvas.width = width;
     this.offscreenCanvas.height = height;
 
-    // Update preview renderer's output size reference
-    this.previewRenderer.setOutputSize(this.outputSize);
+    // Update pixel readback service's output size reference
+    this.pixelReadbackService.setOutputSize(this.outputSize);
   }
 
   /**
@@ -1095,7 +1120,7 @@ export class FBORenderer {
     const externalTexture = this.externalTexturesByNode.get(nodeId);
     if (externalTexture) {
       const sourceFbo = this.regl.framebuffer({ color: externalTexture });
-      const bitmap = this.previewRenderer.capturePreviewBitmapSync(
+      const bitmap = this.captureRenderer.capturePreviewBitmapSync(
         sourceFbo,
         externalTexture.width,
         externalTexture.height,
@@ -1109,12 +1134,49 @@ export class FBORenderer {
     if (!fboNode) return null;
 
     const [sourceWidth, sourceHeight] = this.outputSize;
-    return this.previewRenderer.capturePreviewBitmapSync(
+    return this.captureRenderer.capturePreviewBitmapSync(
       fboNode.framebuffer,
       sourceWidth,
       sourceHeight,
       customSize
     );
+  }
+
+  /**
+   * Initiate async PBO reads for video frame capture.
+   * Call harvestVideoFrames() in subsequent frames to get completed results.
+   */
+  initiateVideoFrameCaptureAsync(
+    requests: Array<{
+      targetNodeId: string;
+      sourceNodeIds: (string | null)[];
+      resolution?: [number, number];
+    }>
+  ): void {
+    this.captureRenderer.initiateVideoFrameBatchAsync(
+      requests,
+      this.fboNodes,
+      this.externalTexturesByNode
+    );
+  }
+
+  /**
+   * Harvest completed async video frame captures.
+   * Returns completed batches ready for transfer.
+   */
+  harvestVideoFrames(): Array<{
+    targetNodeId: string;
+    frames: (ImageBitmap | null)[];
+    timestamp: number;
+  }> {
+    return this.captureRenderer.harvestVideoFrameBatches();
+  }
+
+  /**
+   * Check if there are pending async video frame captures.
+   */
+  hasPendingVideoFrames(): boolean {
+    return this.captureRenderer.hasPendingVideoFrames();
   }
 
   /** Update JS module in the worker's JSRunner instance */

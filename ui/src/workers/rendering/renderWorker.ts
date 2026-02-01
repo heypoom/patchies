@@ -64,6 +64,12 @@ self.onmessage = (event) => {
     })
     .with('vfsUrlResolved', () => {
       handleVfsUrlResolved(data);
+    })
+    .with('captureWorkerVideoFrames', () => {
+      handleCaptureWorkerVideoFrames(data.targetNodeId, data.sourceNodeIds, data.resolution);
+    })
+    .with('captureWorkerVideoFramesBatch', () => {
+      handleCaptureWorkerVideoFramesBatch(data.requests);
     });
 };
 
@@ -113,6 +119,33 @@ function handleStartAnimation() {
 
       for (const [nodeId, bitmap] of previewBitmaps) {
         self.postMessage({ type: 'previewFrame', nodeId, bitmap }, { transfer: [bitmap] });
+      }
+    }
+
+    // Harvest any completed async video frame captures
+    if (fboRenderer.hasPendingVideoFrames()) {
+      const completedBatches = fboRenderer.harvestVideoFrames();
+
+      if (completedBatches.length > 0) {
+        // Collect all bitmaps for transfer
+        const transferList: ImageBitmap[] = [];
+        for (const batch of completedBatches) {
+          for (const frame of batch.frames) {
+            if (frame) transferList.push(frame);
+          }
+        }
+
+        self.postMessage(
+          {
+            type: 'workerVideoFramesCapturedBatch',
+            results: completedBatches.map((b) => ({
+              targetNodeId: b.targetNodeId,
+              frames: b.frames
+            })),
+            timestamp: performance.now()
+          },
+          { transfer: transferList }
+        );
       }
     }
 
@@ -220,6 +253,63 @@ function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [
     nodeId,
     requestId
   });
+}
+
+/**
+ * Capture video frames from source nodes for a worker node.
+ * This captures bitmaps from each connected source and sends them back to the main thread.
+ */
+function handleCaptureWorkerVideoFrames(
+  targetNodeId: string,
+  sourceNodeIds: (string | null)[],
+  resolution?: [number, number]
+) {
+  const frames: (ImageBitmap | null)[] = [];
+  const transferList: ImageBitmap[] = [];
+
+  for (const sourceNodeId of sourceNodeIds) {
+    if (!sourceNodeId) {
+      frames.push(null);
+      continue;
+    }
+
+    const bitmap = fboRenderer.capturePreviewBitmap(sourceNodeId, resolution);
+    frames.push(bitmap);
+
+    if (bitmap) {
+      transferList.push(bitmap);
+    }
+  }
+
+  self.postMessage(
+    {
+      type: 'workerVideoFramesCaptured',
+      targetNodeId,
+      frames,
+      timestamp: performance.now()
+    },
+    { transfer: transferList }
+  );
+}
+
+/**
+ * Capture video frames for multiple worker nodes in a single batched request.
+ * Uses async PBO reads to avoid blocking the GPU pipeline.
+ *
+ * Flow:
+ * 1. Initiate async PBO reads for all unique source nodes
+ * 2. Results are harvested in the render loop when GPU is done
+ * 3. Completed frames are sent via workerVideoFramesCapturedBatch message
+ */
+function handleCaptureWorkerVideoFramesBatch(
+  requests: Array<{
+    targetNodeId: string;
+    sourceNodeIds: (string | null)[];
+    resolution?: [number, number];
+  }>
+) {
+  // Initiate async captures - results will be harvested in the render loop
+  fboRenderer.initiateVideoFrameCaptureAsync(requests);
 }
 
 console.log('[render worker] initialized');

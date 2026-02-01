@@ -6,8 +6,10 @@
   import type {
     WorkerCallbackRegisteredEvent,
     WorkerFlashEvent,
-    NodeRunOnMountUpdateEvent
+    NodeRunOnMountUpdateEvent,
+    NodePortCountUpdateEvent
   } from '$lib/eventbus/events';
+  import { match } from 'ts-pattern';
   import CodeBlockBase from './CodeBlockBase.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
@@ -24,6 +26,7 @@
       runOnMount?: boolean;
       inletCount?: number;
       outletCount?: number;
+      videoInletCount?: number;
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
@@ -48,13 +51,24 @@
   let baseRef: CodeBlockBase | null = $state(null);
 
   // Handle port count updates from worker
-  function handlePortCountUpdate(event: {
-    nodeId: string;
-    inletCount: number;
-    outletCount: number;
-  }) {
+  function handlePortCountUpdate(event: NodePortCountUpdateEvent) {
     if (event.nodeId !== nodeId) return;
-    updateNodeData(nodeId, { inletCount: event.inletCount, outletCount: event.outletCount });
+
+    match(event)
+      .with({ portType: 'message' }, (m) => {
+        updateNodeData(nodeId, {
+          inletCount: m.inletCount,
+          outletCount: m.outletCount
+        });
+      })
+      .with({ portType: 'video' }, (m) => {
+        updateNodeData(nodeId, {
+          videoInletCount: m.inletCount
+          // Note: worker nodes don't support video outlets (only inputs for processing)
+        });
+      })
+      .exhaustive();
+
     updateNodeInternals(nodeId);
   }
 
@@ -153,4 +167,5 @@
   language="javascript"
   editorPlaceholder="Write your JavaScript code here..."
   nodeType="worker"
+  videoInletCount={data.videoInletCount ?? 0}
 />

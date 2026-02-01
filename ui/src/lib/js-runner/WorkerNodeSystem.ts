@@ -23,6 +23,8 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
   | { type: 'llmConfig'; requestId: string; apiKey?: string; imageBase64?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
+  // Video frame delivery
+  | { type: 'videoFramesReady'; frames: (ImageBitmap | null)[]; timestamp: number }
 );
 
 // Message types sent from worker to main thread
@@ -50,11 +52,23 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
   | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string }
+  // Video frame APIs
+  | { type: 'setVideoCount'; inletCount: number; outletCount: number }
+  | { type: 'videoFrameCallbackRegistered'; resolution?: [number, number] }
+  | { type: 'requestVideoFrames'; requestId: string; resolution?: [number, number] }
 );
 
 interface WorkerInstance {
   worker: Worker;
   messageCallback: MessageCallbackFn;
+}
+
+interface WorkerVideoState {
+  inletCount: number;
+  outletCount: number;
+  sourceNodeIds: (string | null)[]; // Maps inlet index to source node ID
+  hasVideoCallback: boolean;
+  resolution?: [number, number]; // Custom capture resolution
 }
 
 /**
@@ -69,6 +83,16 @@ export class WorkerNodeSystem {
   private jsRunner = JSRunner.getInstance();
   private audioAnalysis = AudioAnalysisSystem.getInstance();
   private workers = new Map<string, WorkerInstance>();
+
+  // Video frame state tracking
+  private videoStates = new Map<string, WorkerVideoState>();
+  private currentEdges: Array<{ source: string; target: string; targetHandle?: string | null }> =
+    [];
+  private static readonly VIDEO_FRAME_INTERVAL_MS = 1000 / 30; // 30fps
+
+  // Global video frame loop (single loop for all worker nodes)
+  private globalVideoLoopId: number | null = null;
+  private lastGlobalFrameTime = 0;
 
   constructor() {
     // Subscribe to FFT data updates - forward to all workers that have FFT enabled
@@ -192,6 +216,16 @@ export class WorkerNodeSystem {
       .with({ type: 'llmRequest' }, (event) => {
         this.handleLLMRequest(nodeId, worker, event.requestId, event.prompt, event.imageNodeId);
       })
+      // Video frame APIs
+      .with({ type: 'setVideoCount' }, (event) => {
+        this.handleSetVideoCount(nodeId, event.inletCount, event.outletCount);
+      })
+      .with({ type: 'videoFrameCallbackRegistered' }, (event) => {
+        this.handleVideoFrameCallbackRegistered(nodeId, event.resolution);
+      })
+      .with({ type: 'requestVideoFrames' }, (event) => {
+        this.handleRequestVideoFrames(nodeId, event.resolution);
+      })
       .otherwise(() => {});
   }
 
@@ -293,6 +327,214 @@ export class WorkerNodeSystem {
     }
   }
 
+  /**
+   * Handle setVideoCount from worker - update video port count and dispatch event.
+   */
+  private handleSetVideoCount(nodeId: string, inletCount: number, outletCount: number) {
+    // Initialize or update video state, preserving any existing hasVideoCallback
+    let videoState = this.videoStates.get(nodeId);
+    if (!videoState) {
+      videoState = {
+        inletCount: 0,
+        outletCount: 0,
+        sourceNodeIds: [],
+        hasVideoCallback: false
+      };
+      this.videoStates.set(nodeId, videoState);
+    }
+
+    // Update counts but preserve hasVideoCallback (may have been set before setVideoCount was called)
+    videoState.inletCount = inletCount;
+    videoState.outletCount = outletCount;
+
+    // Update connections from stored edges (handles case where edges existed before setVideoCount was called)
+    this.updateVideoConnectionsForNode(nodeId, videoState, this.currentEdges);
+
+    // Dispatch event for UI to update ports
+    this.eventBus.dispatch({
+      type: 'nodePortCountUpdate',
+      portType: 'video',
+      nodeId,
+      inletCount,
+      outletCount
+    });
+  }
+
+  /**
+   * Handle video frame callback registration - start frame capture loop.
+   * Initializes videoState if absent (handles registration before setVideoCount).
+   */
+  private handleVideoFrameCallbackRegistered(nodeId: string, resolution?: [number, number]) {
+    let videoState = this.videoStates.get(nodeId);
+
+    if (!videoState) {
+      // Initialize videoState with defaults - setVideoCount will update counts later
+      videoState = {
+        inletCount: 0,
+        outletCount: 0,
+        sourceNodeIds: [],
+        hasVideoCallback: false
+      };
+
+      this.videoStates.set(nodeId, videoState);
+    }
+
+    videoState.hasVideoCallback = true;
+    videoState.resolution = resolution;
+    this.startGlobalVideoLoop();
+
+    // Dispatch event for UI to show long-running indicator (treat as interval-like)
+    this.eventBus.dispatch({
+      type: 'workerCallbackRegistered',
+      nodeId,
+      callbackType: 'interval'
+    });
+  }
+
+  /**
+   * Handle manual video frame request.
+   */
+  private handleRequestVideoFrames(nodeId: string, resolution?: [number, number]) {
+    // Request frames immediately for manual grab (single node)
+    const videoState = this.videoStates.get(nodeId);
+    if (!videoState || videoState.sourceNodeIds.length === 0) return;
+
+    this.eventBus.dispatch({
+      type: 'requestWorkerVideoFrames',
+      nodeId,
+      sourceNodeIds: videoState.sourceNodeIds,
+      resolution
+    });
+  }
+
+  /**
+   * Start the global video frame capture loop (single loop for all nodes).
+   */
+  private startGlobalVideoLoop() {
+    // Already running
+    if (this.globalVideoLoopId !== null) return;
+
+    const loop = () => {
+      // Check if any nodes still have video callbacks
+      const nodesWithCallbacks = this.getNodesWithVideoCallbacks();
+      if (nodesWithCallbacks.length === 0) {
+        this.globalVideoLoopId = null;
+        return;
+      }
+
+      const now = performance.now();
+      if (now - this.lastGlobalFrameTime >= WorkerNodeSystem.VIDEO_FRAME_INTERVAL_MS) {
+        this.requestBatchedVideoFrames(nodesWithCallbacks);
+        this.lastGlobalFrameTime = now;
+      }
+
+      this.globalVideoLoopId = requestAnimationFrame(loop);
+    };
+
+    this.globalVideoLoopId = requestAnimationFrame(loop);
+  }
+
+  /**
+   * Get all nodes that have active video callbacks.
+   */
+  private getNodesWithVideoCallbacks(): string[] {
+    const nodes: string[] = [];
+    for (const [nodeId, state] of this.videoStates) {
+      if (state.hasVideoCallback && state.sourceNodeIds.some((id) => id !== null)) {
+        nodes.push(nodeId);
+      }
+    }
+    return nodes;
+  }
+
+  /**
+   * Request video frames for multiple nodes in a single batched request.
+   */
+  private requestBatchedVideoFrames(nodeIds: string[]) {
+    const requests: Array<{
+      targetNodeId: string;
+      sourceNodeIds: (string | null)[];
+      resolution?: [number, number];
+    }> = [];
+
+    for (const nodeId of nodeIds) {
+      const videoState = this.videoStates.get(nodeId);
+      if (videoState && videoState.sourceNodeIds.length > 0) {
+        requests.push({
+          targetNodeId: nodeId,
+          sourceNodeIds: videoState.sourceNodeIds,
+          resolution: videoState.resolution
+        });
+      }
+    }
+
+    if (requests.length === 0) return;
+
+    // Send batched request to GLSystem which will forward to render worker
+    this.eventBus.dispatch({
+      type: 'requestWorkerVideoFramesBatch',
+      requests
+    });
+  }
+
+  /**
+   * Deliver captured video frames to a worker node.
+   * Called by GLSystem when frames are received from render worker.
+   */
+  deliverVideoFrames(nodeId: string, frames: (ImageBitmap | null)[], timestamp: number) {
+    const instance = this.workers.get(nodeId);
+    if (!instance) return;
+
+    instance.worker.postMessage(
+      {
+        type: 'videoFramesReady',
+        nodeId,
+        frames,
+        timestamp
+      } satisfies WorkerMessage,
+      { transfer: frames.filter((f): f is ImageBitmap => f !== null) }
+    );
+  }
+
+  /**
+   * Update video connections based on current edges.
+   * Called when edges change to keep source node mappings up to date.
+   */
+  updateVideoConnections(
+    edges: Array<{ source: string; target: string; targetHandle?: string | null }>
+  ) {
+    // Store edges for later use when video states are created
+    this.currentEdges = edges;
+
+    for (const [nodeId, videoState] of this.videoStates) {
+      this.updateVideoConnectionsForNode(nodeId, videoState, edges);
+    }
+
+    // Restart global loop if any nodes now have valid connections
+    // (loop may have stopped when all connections were removed)
+    if (this.getNodesWithVideoCallbacks().length > 0) {
+      this.startGlobalVideoLoop();
+    }
+  }
+
+  /**
+   * Update video connections for a specific node.
+   */
+  private updateVideoConnectionsForNode(
+    nodeId: string,
+    videoState: WorkerVideoState,
+    edges: Array<{ source: string; target: string; targetHandle?: string | null }>
+  ) {
+    const sourceNodeIds: (string | null)[] = new Array(videoState.inletCount).fill(null);
+
+    for (let i = 0; i < videoState.inletCount; i++) {
+      const edge = edges.find((e) => e.target === nodeId && e.targetHandle === `video-in-${i}`);
+      sourceNodeIds[i] = edge?.source ?? null;
+    }
+
+    videoState.sourceNodeIds = sourceNodeIds;
+  }
+
   async create(nodeId: string): Promise<void> {
     if (this.workers.has(nodeId)) return;
 
@@ -389,6 +631,15 @@ export class WorkerNodeSystem {
     instance.worker.terminate();
 
     this.workers.delete(nodeId);
+
+    // Clean up video state
+    this.videoStates.delete(nodeId);
+
+    // Stop global loop if no more nodes have video callbacks
+    if (this.getNodesWithVideoCallbacks().length === 0 && this.globalVideoLoopId !== null) {
+      cancelAnimationFrame(this.globalVideoLoopId);
+      this.globalVideoLoopId = null;
+    }
 
     // Unregister from message system
     this.messageSystem.unregisterNode(nodeId);

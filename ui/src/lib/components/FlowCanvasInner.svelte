@@ -62,6 +62,7 @@
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events';
+  import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
 
   import { toast } from 'svelte-sonner';
   import { initializeVFS, VirtualFilesystem } from '$lib/vfs';
@@ -79,6 +80,7 @@
   let audioService = AudioService.getInstance();
   let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
   let eventBus = PatchiesEventBus.getInstance();
+  let workerNodeSystem = WorkerNodeSystem.getInstance();
 
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -200,6 +202,7 @@
     glSystem.updateEdges(edges);
     audioService.updateEdges(edges);
     audioAnalysisSystem.updateEdges(edges);
+    workerNodeSystem.updateVideoConnections(edges);
   });
 
   // Update visible nodes for preview culling when viewport or nodes change
