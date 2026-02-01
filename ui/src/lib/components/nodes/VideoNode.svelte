@@ -410,12 +410,12 @@
       useVideoFrameCallback = true;
 
       videoFrameCallbackId = (videoElement as HTMLVideoElementWithRVFC).requestVideoFrameCallback(
-        handleVideoFrame
+        handleFallbackVideoFrame
       );
     } else {
       // Fallback to requestAnimationFrame (older browsers than baseline 2024)
       useVideoFrameCallback = false;
-      bitmapFrameId = requestAnimationFrame(uploadBitmapRAF);
+      bitmapFrameId = requestAnimationFrame(uploadFallbackBitmapRAF);
     }
   }
 
@@ -438,7 +438,10 @@
    * Handle video frame callback - called when a new video frame is presented.
    * This is more efficient than requestAnimationFrame as it syncs with actual video frames.
    */
-  async function handleVideoFrame(_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
+  async function handleFallbackVideoFrame(
+    _now: DOMHighResTimeStamp,
+    metadata: VideoFrameCallbackMetadata
+  ) {
     if (!videoElement || !isVideoLoaded) return;
 
     // Only record when mediaTime actually changes (deduplicate same-frame callbacks)
@@ -456,13 +459,13 @@
 
     // Only upload to GL when there are connections and video is playing
     if (!isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
-      await uploadVideoFrame();
+      await uploadFallbackVideoFrame();
     }
 
     // Schedule next frame callback
     if (isVideoLoaded) {
       videoFrameCallbackId = (videoElement as HTMLVideoElementWithRVFC).requestVideoFrameCallback(
-        handleVideoFrame
+        handleFallbackVideoFrame
       );
     }
   }
@@ -471,7 +474,7 @@
    * Fallback frame handler using requestAnimationFrame.
    * Less efficient as it runs at display refresh rate rather than video frame rate.
    */
-  async function uploadBitmapRAF() {
+  async function uploadFallbackBitmapRAF() {
     const videoReady =
       videoElement && videoElement.readyState >= 2 && !videoElement.ended && !videoElement.error;
 
@@ -494,11 +497,11 @@
       !isPaused &&
       glSystem.hasOutgoingVideoConnections(nodeId)
     ) {
-      await uploadVideoFrame();
+      await uploadFallbackVideoFrame();
     }
 
     if (isVideoLoaded) {
-      bitmapFrameId = requestAnimationFrame(uploadBitmapRAF);
+      bitmapFrameId = requestAnimationFrame(uploadFallbackBitmapRAF);
     }
   }
 
@@ -506,7 +509,7 @@
    * Upload current video frame to the GL system.
    * Shared between requestVideoFrameCallback and requestAnimationFrame paths.
    */
-  async function uploadVideoFrame() {
+  async function uploadFallbackVideoFrame() {
     if (!videoElement) return;
 
     const videoWidth = videoElement.videoWidth;
