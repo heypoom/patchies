@@ -101,6 +101,13 @@ export class MediaBunnyPlayer {
         throw new Error('No video track found in file');
       }
 
+      // Check if codec is supported by the browser's WebCodecs
+      const canDecode = await this.videoTrack.canDecode();
+
+      if (!canDecode) {
+        throw new Error(`Unsupported video codec: ${this.videoTrack.codec ?? 'unknown'}`);
+      }
+
       // Create sample sink for decoding
       this.sink = new VideoSampleSink(this.videoTrack);
 
@@ -246,6 +253,9 @@ export class MediaBunnyPlayer {
     } catch (error) {
       if (!signal.aborted) {
         console.error('[MediaBunnyPlayer] Buffering error:', error);
+
+        // Propagate fatal decode errors to trigger fallback
+        this.onError(error instanceof Error ? error : new Error('Decode failed'));
       }
     } finally {
       this.isBuffering = false;

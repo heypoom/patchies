@@ -97,6 +97,7 @@ export class WebCodecsCapture {
       };
     } catch (error) {
       this.onError(error instanceof Error ? error : new Error('Failed to start capture'));
+
       this.cleanup();
     }
   }

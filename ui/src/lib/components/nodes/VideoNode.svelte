@@ -296,6 +296,15 @@
         }
       },
       onMetadata: (metadata) => {
+        // Metadata received means MediaBunny loaded successfully - cancel the timeout
+        // (first frame only arrives during playback, but metadata comes immediately)
+        if (webCodecsTimeoutId !== null) {
+          clearTimeout(webCodecsTimeoutId);
+          webCodecsTimeoutId = null;
+        }
+
+        webCodecsFirstFrameReceived = true; // Prevent any race conditions
+
         // Update profiler with actual video metadata
         profiler?.setMetadata({
           frameRate: metadata.frameRate,
