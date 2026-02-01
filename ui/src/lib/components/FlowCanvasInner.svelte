@@ -63,6 +63,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
+  import { RenderChannelService } from '$lib/messages/RenderChannelService';
 
   import { toast } from 'svelte-sonner';
   import { initializeVFS, VirtualFilesystem } from '$lib/vfs';
@@ -81,6 +82,7 @@
   let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
   let eventBus = PatchiesEventBus.getInstance();
   let workerNodeSystem = WorkerNodeSystem.getInstance();
+  let renderChannelService = RenderChannelService.getInstance();
 
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -203,6 +205,16 @@
     audioService.updateEdges(edges);
     audioAnalysisSystem.updateEdges(edges);
     workerNodeSystem.updateVideoConnections(edges);
+    renderChannelService.updateEdges(edges);
+  });
+
+  // Keep RenderChannelService informed of node types for direct messaging
+  $effect(() => {
+    renderChannelService.updateNodeTypes(
+      nodes
+        .filter((n): n is typeof n & { type: string } => n.type !== undefined)
+        .map((n) => ({ id: n.id, type: n.type }))
+    );
   });
 
   // Update visible nodes for preview culling when viewport or nodes change

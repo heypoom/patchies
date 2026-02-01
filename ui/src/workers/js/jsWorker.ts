@@ -4,7 +4,11 @@
  */
 
 import { match } from 'ts-pattern';
-import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/WorkerNodeSystem';
+import type {
+  WorkerMessage,
+  WorkerResponse,
+  RenderConnection
+} from '$lib/js-runner/WorkerNodeSystem';
 import type { Message } from '$lib/messages/MessageSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
@@ -31,6 +35,9 @@ interface NodeState {
     { resolve: (frames: (ImageBitmap | null)[]) => void; reject: (err: Error) => void }
   >;
   videoFrameRequestIdCounter: number;
+  // Direct render channel state
+  renderPort: MessagePort | null;
+  renderConnections: RenderConnection[];
 }
 
 const nodeStates = new Map<string, NodeState>();
@@ -49,7 +56,9 @@ function getNodeState(nodeId: string): NodeState {
       fftDataCache: new Map(),
       videoFrameCallback: null,
       pendingVideoFrameResolvers: new Map(),
-      videoFrameRequestIdCounter: 0
+      videoFrameRequestIdCounter: 0,
+      renderPort: null,
+      renderConnections: []
     });
   }
   return nodeStates.get(nodeId)!;
@@ -95,6 +104,24 @@ function createWorkerContext(nodeId: string) {
   };
 
   const send = (data: unknown, options?: { to?: number }) => {
+    // Send directly to render targets if available
+    if (state.renderPort && state.renderConnections.length > 0) {
+      const renderTargets = state.renderConnections.filter(
+        (c) => options?.to === undefined || c.outlet === options.to
+      );
+
+      for (const target of renderTargets) {
+        state.renderPort.postMessage({
+          fromNodeId: nodeId,
+          targetNodeId: target.targetNodeId,
+          inlet: target.inlet,
+          inletKey: target.inletKey,
+          data
+        });
+      }
+    }
+
+    // Always also send via main thread for non-render targets
     postResponse({ type: 'sendMessage', nodeId, data, options });
   };
 
@@ -620,6 +647,16 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'videoFramesReady' }, (data) => {
       handleVideoFramesReady(nodeId, data as { frames: (ImageBitmap | null)[]; timestamp: number });
+    })
+    .with({ type: 'setRenderPort' }, () => {
+      const state = getNodeState(nodeId);
+      // Port comes via transfer list
+      state.renderPort = event.ports[0];
+      state.renderPort.start();
+    })
+    .with({ type: 'updateRenderConnections' }, (data) => {
+      const state = getNodeState(nodeId);
+      state.renderConnections = (data as { connections: RenderConnection[] }).connections;
     })
     .otherwise(() => {});
 };

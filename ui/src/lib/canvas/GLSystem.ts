@@ -509,6 +509,22 @@ export class GLSystem {
     return hasConnections;
   }
 
+  /**
+   * Register a worker's render port for direct messaging.
+   * Called by RenderChannelService when setting up a direct channel.
+   */
+  registerWorkerRenderPort(nodeId: string, port: MessagePort): void {
+    this.renderWorker.postMessage({ type: 'registerWorkerRenderPort', nodeId }, [port]);
+  }
+
+  /**
+   * Unregister a worker's render port.
+   * Called by RenderChannelService when a worker is destroyed.
+   */
+  unregisterWorkerRenderPort(nodeId: string): void {
+    this.send('unregisterWorkerRenderPort', { nodeId });
+  }
+
   /** Callback for when AudioAnalysisSystem has FFT data ready */
   sendFFTDataToWorker: OnFFTReadyCallback = (payload) => {
     const node = this.nodes.find((n) => n.id === payload.nodeId);

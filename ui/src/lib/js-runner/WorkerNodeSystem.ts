@@ -10,7 +10,16 @@ import {
 } from '$lib/audio/AudioAnalysisSystem';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { capturePreviewFrame, bitmapToBase64Image } from '$lib/ai/google';
+import { RenderChannelService } from '$lib/messages/RenderChannelService';
 import JsWorker from '../../workers/js/jsWorker?worker';
+
+/** Render connection for direct worker→render messaging */
+export interface RenderConnection {
+  outlet: number;
+  targetNodeId: string;
+  inlet: number;
+  inletKey?: string;
+}
 
 // Message types sent from main thread to worker
 export type WorkerMessage = { nodeId: string } & (
@@ -25,6 +34,9 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   // Video frame delivery
   | { type: 'videoFramesReady'; frames: (ImageBitmap | null)[]; timestamp: number }
+  // Direct render channel (port transferred via transfer list)
+  | { type: 'setRenderPort' }
+  | { type: 'updateRenderConnections'; connections: RenderConnection[] }
 );
 
 // Message types sent from worker to main thread
@@ -563,6 +575,9 @@ export class WorkerNodeSystem {
 
     // Sync existing modules to worker
     this.syncModulesToWorker(nodeId, worker);
+
+    // Register with RenderChannelService for direct render messaging
+    RenderChannelService.getInstance().registerWorker(nodeId, worker);
   }
 
   async executeCode(nodeId: string, code: string): Promise<void> {
@@ -643,6 +658,9 @@ export class WorkerNodeSystem {
 
     // Unregister from message system
     this.messageSystem.unregisterNode(nodeId);
+
+    // Unregister from RenderChannelService
+    RenderChannelService.getInstance().unregisterWorker(nodeId);
   }
 
   has(nodeId: string): boolean {

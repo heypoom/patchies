@@ -9,6 +9,9 @@ const fboRenderer: FBORenderer = new FBORenderer();
 
 let isRunning: boolean = false;
 
+/** Map of source worker nodeId → MessagePort for direct messaging */
+const workerRenderPorts = new Map<string, MessagePort>();
+
 self.onmessage = (event) => {
   const { type, ...data } = event.data;
 
@@ -70,6 +73,12 @@ self.onmessage = (event) => {
     })
     .with('captureWorkerVideoFramesBatch', () => {
       handleCaptureWorkerVideoFramesBatch(data.requests);
+    })
+    .with('registerWorkerRenderPort', () => {
+      handleRegisterWorkerRenderPort(data.nodeId, event.ports[0]);
+    })
+    .with('unregisterWorkerRenderPort', () => {
+      handleUnregisterWorkerRenderPort(data.nodeId);
     });
 };
 
@@ -310,6 +319,38 @@ function handleCaptureWorkerVideoFramesBatch(
 ) {
   // Initiate async captures - results will be harvested in the render loop
   fboRenderer.initiateVideoFrameCaptureAsync(requests);
+}
+
+/**
+ * Register a MessagePort from a worker node for direct messaging.
+ * Messages received on this port are routed directly to FBORenderer.
+ */
+function handleRegisterWorkerRenderPort(nodeId: string, port: MessagePort) {
+  workerRenderPorts.set(nodeId, port);
+
+  port.onmessage = (e) => {
+    const { targetNodeId, inlet, inletKey, data, fromNodeId } = e.data;
+
+    fboRenderer.sendMessageToNode(targetNodeId, {
+      data,
+      source: fromNodeId,
+      inlet,
+      inletKey
+    });
+  };
+
+  port.start();
+}
+
+/**
+ * Unregister a worker's render port when the worker is destroyed.
+ */
+function handleUnregisterWorkerRenderPort(nodeId: string) {
+  const port = workerRenderPorts.get(nodeId);
+  if (port) {
+    port.close();
+    workerRenderPorts.delete(nodeId);
+  }
 }
 
 console.log('[render worker] initialized');
