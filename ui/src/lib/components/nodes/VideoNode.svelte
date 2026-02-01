@@ -653,13 +653,17 @@
                   <div>Dropped: {videoStats.droppedFrames}</div>
                   <div>{videoStats.width}x{videoStats.height}</div>
                   {#if videoStats.workerQueues}
+                    {@const q = videoStats.workerQueues}
                     <div class="text-cyan-300">
-                      Samples: {videoStats.workerQueues.pendingSamples}
+                      Samples: {q.pendingSamples}
+                      {#if q.extractionPaused}<span class="text-red-400"> PAUSED</span>{/if}
                     </div>
-                    <div class="text-cyan-300">
-                      Decode Q: {videoStats.workerQueues.decodeQueueSize}
+                    <div class="text-cyan-300">Decode Q: {q.decodeQueueSize}</div>
+                    <div class="text-cyan-300">Frames: {q.pendingFrames}</div>
+                    <div class="text-zinc-500">
+                      Peak: {q.peakSamples}/{q.peakFrames}
                     </div>
-                    <div class="text-cyan-300">Frames: {videoStats.workerQueues.pendingFrames}</div>
+                    <div class="text-zinc-500">Total: {q.totalSamplesExtracted}</div>
                   {:else}
                     <div>Queue: {videoStats.queueDepth}</div>
                   {/if}

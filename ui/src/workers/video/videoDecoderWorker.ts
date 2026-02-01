@@ -74,6 +74,10 @@ export interface WorkerQueueStats {
   pendingSamples: number; // Encoded samples waiting to be decoded
   decodeQueueSize: number; // Chunks in VideoDecoder queue
   pendingFrames: number; // Decoded frames waiting to be sent
+  extractionPaused: boolean; // Whether MP4Box is paused due to backpressure
+  totalSamplesExtracted: number; // Total samples demuxed from file
+  peakSamples: number; // High water mark for pendingSamples
+  peakFrames: number; // High water mark for pendingFrames
 }
 
 export type VideoDecoderWorkerResponse =
@@ -143,6 +147,11 @@ interface DecoderState {
   extractionPaused: boolean; // Whether MP4Box extraction is paused due to backpressure
   videoTrackId: number | null; // Track ID for resuming extraction
 
+  // Stats tracking
+  totalSamplesExtracted: number; // Total samples demuxed from file
+  peakSamples: number; // High water mark for pendingSamples
+  peakFrames: number; // High water mark for pendingFrames
+
   // Playback state
   isPlaying: boolean;
   isPaused: boolean;
@@ -187,6 +196,9 @@ function createInitialState(): DecoderState {
     sampleProcessingId: null,
     extractionPaused: false,
     videoTrackId: null,
+    totalSamplesExtracted: 0,
+    peakSamples: 0,
+    peakFrames: 0,
     isPlaying: false,
     isPaused: true,
     currentTime: 0,
@@ -448,6 +460,12 @@ function handleMP4BoxSamples(nodeId: string, _trackId: number, samples: MP4BoxSa
 
     // Queue the sample for later decoding
     state.pendingSamples.push(sample);
+    state.totalSamplesExtracted++;
+  }
+
+  // Track peak samples for diagnostics
+  if (state.pendingSamples.length > state.peakSamples) {
+    state.peakSamples = state.pendingSamples.length;
   }
 
   // Pause MP4Box extraction if sample queue is getting too large (prevents OOM)
@@ -560,6 +578,11 @@ function handleDecodedFrame(nodeId: string, frame: VideoFrame): void {
 
   state.pendingFrames.push(frame);
 
+  // Track peak frames for diagnostics
+  if (state.pendingFrames.length > state.peakFrames) {
+    state.peakFrames = state.pendingFrames.length;
+  }
+
   // During playback, process frame queue
   processFrameQueue(nodeId);
 }
@@ -593,7 +616,11 @@ async function sendFrameToMain(
         queueStats: {
           pendingSamples: state.pendingSamples.length,
           decodeQueueSize: state.decoder?.decodeQueueSize ?? 0,
-          pendingFrames: state.pendingFrames.length
+          pendingFrames: state.pendingFrames.length,
+          extractionPaused: state.extractionPaused,
+          totalSamplesExtracted: state.totalSamplesExtracted,
+          peakSamples: state.peakSamples,
+          peakFrames: state.peakFrames
         }
       },
       [bitmap]
