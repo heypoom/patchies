@@ -85,9 +85,11 @@ function initializeLibraries(): PresetLibrary[] {
   const stored = loadFromStorage();
 
   if (stored && stored.length > 0) {
-    // Ensure built-in library is always present and up-to-date
-    const hasBuiltin = stored.some((lib) => lib.id === BUILTIN_LIBRARY_ID);
-    if (!hasBuiltin) {
+    // Always replace built-in library with fresh version to pick up changes
+    const builtinIndex = stored.findIndex((lib) => lib.id === BUILTIN_LIBRARY_ID);
+    if (builtinIndex >= 0) {
+      stored[builtinIndex] = createBuiltinLibrary();
+    } else {
       stored.unshift(createBuiltinLibrary());
     }
 
