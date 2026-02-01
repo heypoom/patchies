@@ -10,6 +10,7 @@
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { WebCodecsCapture } from '$lib/video/WebCodecsCapture';
+  import { getWebCodecsSupportInfo } from '$lib/video/feature-detection';
 
   let {
     id: nodeId,
@@ -33,6 +34,11 @@
   // WebCodecs support detection
   const useWebCodecs = WebCodecsCapture.isSupported();
   let webCodecsCapture: WebCodecsCapture | null = null;
+
+  // Debug: log WebCodecs support on load
+  console.log(
+    `[WebcamNode] WebCodecs supported: ${useWebCodecs}, details: ${getWebCodecsSupportInfo()}`
+  );
 
   const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
@@ -59,6 +65,7 @@
 
       if (useWebCodecs) {
         // Use WebCodecs path for better performance
+        console.log('[WebcamNode] Using WebCodecs path (MediaStreamTrackProcessor)');
         webCodecsCapture = new WebCodecsCapture({
           nodeId,
           onFrame: (bitmap) => {
@@ -84,6 +91,7 @@
         }
       } else {
         // Fallback to HTMLVideoElement path (Firefox)
+        console.log('[WebcamNode] Using HTMLVideoElement fallback path');
         if (videoElement) {
           videoElement.srcObject = stream;
 

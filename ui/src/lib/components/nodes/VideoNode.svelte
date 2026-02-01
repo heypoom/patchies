@@ -179,10 +179,8 @@
           glSystem.setPreflippedBitmap(nodeId, bitmap);
         }
       },
-      onMetadata: (metadata) => {
-        console.log(
-          `[VideoNode] WebCodecs metadata: ${metadata.width}x${metadata.height}, ${metadata.duration}s`
-        );
+      onMetadata: () => {
+        // Metadata received - video is ready for playback
       },
       onEnded: () => {
         isPaused = true;

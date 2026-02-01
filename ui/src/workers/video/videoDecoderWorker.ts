@@ -147,6 +147,10 @@ interface DecoderState {
 
 const decoderStates = new Map<string, DecoderState>();
 
+// Store MP4Box module reference for use in callbacks
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let MP4BoxModule: any = null;
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -205,12 +209,15 @@ async function loadFile(nodeId: string, file: File): Promise<void> {
     state.source = file;
 
     // Dynamic import of MP4Box (will be added as dependency)
-    const MP4Box = await import('mp4box');
-    state.mp4boxFile = MP4Box.createFile();
+    MP4BoxModule = await import('mp4box');
+    state.mp4boxFile = MP4BoxModule.createFile();
+
+    let extractionSetUp = false;
 
     // Set up MP4Box callbacks
     state.mp4boxFile.onReady = (info: MP4BoxInfo) => {
       handleMP4BoxReady(nodeId, info);
+      extractionSetUp = true;
     };
 
     state.mp4boxFile.onSamples = (trackId: number, _ref: unknown, samples: MP4BoxSample[]) => {
@@ -225,11 +232,29 @@ async function loadFile(nodeId: string, file: File): Promise<void> {
     const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
     let offset = 0;
 
-    while (offset < file.size) {
+    // First pass: load enough to get metadata (moov box triggers onReady)
+    while (offset < file.size && !extractionSetUp) {
       const chunk = file.slice(offset, offset + CHUNK_SIZE);
       const buffer = await chunk.arrayBuffer();
 
       // MP4Box requires fileStart property on the buffer
+      (buffer as ArrayBufferWithFileStart).fileStart = offset;
+      state.mp4boxFile.appendBuffer(buffer);
+
+      offset += CHUNK_SIZE;
+    }
+
+    // Now extraction is set up. Seek to beginning to re-process with extraction enabled.
+    const seekResult = state.mp4boxFile.seek(0, true);
+
+    // Re-read entire file from the seek offset (usually 0) with extraction now enabled
+    const rereadOffset = seekResult?.offset ?? 0;
+    offset = rereadOffset;
+
+    while (offset < file.size) {
+      const chunk = file.slice(offset, offset + CHUNK_SIZE);
+      const buffer = await chunk.arrayBuffer();
+
       (buffer as ArrayBufferWithFileStart).fileStart = offset;
       state.mp4boxFile.appendBuffer(buffer);
 
@@ -309,12 +334,38 @@ function handleMP4BoxReady(nodeId: string, info: MP4BoxInfo): void {
     hasAudio: !!audioTrack
   };
 
+  // Get codec description (avcC/hvcC box) from the track
+  // This is required for H.264/H.265 decoding
+  let description: Uint8Array | undefined;
+  try {
+    const trak = state.mp4boxFile.getTrackById(videoTrack.id);
+    if (trak) {
+      const entry = trak.mdia?.minf?.stbl?.stsd?.entries?.[0];
+      // Look for avcC (H.264) or hvcC (H.265) or vpcC (VP9) box
+      const codecBox = entry?.avcC || entry?.hvcC || entry?.vpcC;
+      if (codecBox && MP4BoxModule) {
+        // Use MP4Box's DataStream to serialize the codec config box
+        const stream = new MP4BoxModule.DataStream(
+          undefined,
+          0,
+          MP4BoxModule.DataStream.BIG_ENDIAN
+        );
+        codecBox.write(stream);
+        // Skip the box header (8 bytes: 4 for size + 4 for type)
+        description = new Uint8Array(stream.buffer, 8);
+      }
+    }
+  } catch {
+    // Could not extract codec description - some codecs may not need it
+  }
+
   // Configure video decoder
   state.decoderConfig = {
     codec: videoTrack.codec,
     codedWidth: videoTrack.video?.width ?? 0,
     codedHeight: videoTrack.video?.height ?? 0,
-    hardwareAcceleration: 'prefer-hardware'
+    hardwareAcceleration: 'prefer-hardware',
+    description
   };
 
   // Create decoder
@@ -330,6 +381,9 @@ function handleMP4BoxReady(nodeId: string, info: MP4BoxInfo): void {
     nbSamples: Infinity
   });
   state.mp4boxFile.start();
+
+  // Flush to trigger sample extraction (all data was already appended)
+  state.mp4boxFile.flush();
 
   // Send metadata to main thread
   sendResponse({
@@ -375,30 +429,32 @@ function handleDecodedFrame(nodeId: string, frame: VideoFrame): void {
     return;
   }
 
-  // If not playing, just store the first frame for preview
-  if (!state.isPlaying || state.isPaused) {
-    // Close any existing pending frames except the last one
-    while (state.pendingFrames.length > 0) {
-      const oldFrame = state.pendingFrames.shift();
-      oldFrame?.close();
-    }
-    state.pendingFrames.push(frame);
+  // Always queue frames
+  state.pendingFrames.push(frame);
 
-    // Send the frame as preview
-    sendFrameToMain(nodeId, frame);
+  // If paused, send first frame as preview only
+  if (!state.isPlaying || state.isPaused) {
+    if (state.pendingFrames.length === 1) {
+      // Send first frame as preview (don't close it)
+      sendFrameToMain(nodeId, frame);
+    }
     return;
   }
 
-  // During playback, queue frames
-  state.pendingFrames.push(frame);
-
-  // Process frame queue in playback loop
+  // During playback, process frame queue
   processFrameQueue(nodeId);
 }
 
-async function sendFrameToMain(nodeId: string, frame: VideoFrame): Promise<void> {
+async function sendFrameToMain(
+  nodeId: string,
+  frame: VideoFrame,
+  closeAfter = false
+): Promise<void> {
   const state = decoderStates.get(nodeId);
-  if (!state) return;
+  if (!state) {
+    if (closeAfter) frame.close();
+    return;
+  }
 
   try {
     // Create ImageBitmap with flipY for GPU texture
@@ -422,6 +478,11 @@ async function sendFrameToMain(nodeId: string, frame: VideoFrame): Promise<void>
     state.currentTime = currentTime;
   } catch (error) {
     sendError(nodeId, `Failed to create bitmap: ${error}`);
+  } finally {
+    // Close the frame after bitmap is created
+    if (closeAfter) {
+      frame.close();
+    }
   }
 }
 
@@ -436,8 +497,8 @@ function processFrameQueue(nodeId: string): void {
   if (elapsed >= frameInterval && state.pendingFrames.length > 0) {
     const frame = state.pendingFrames.shift();
     if (frame) {
-      sendFrameToMain(nodeId, frame);
-      frame.close();
+      // Pass closeAfter=true so frame is closed after bitmap is created
+      sendFrameToMain(nodeId, frame, true);
     }
     state.lastFrameTime = now;
   }
