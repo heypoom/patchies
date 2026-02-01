@@ -9,6 +9,12 @@
     isConnecting,
     connectingFromHandleId
   } from '../../stores/ui.store';
+  import {
+    useWebCodecs,
+    showVideoStats,
+    toggleWebCodecs,
+    toggleVideoStats
+  } from '../../stores/video.store';
   import type { Node, Edge } from '@xyflow/svelte';
   import { IpcSystem } from '$lib/canvas/IpcSystem';
   import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
@@ -130,6 +136,16 @@
       id: 'toggle-fps-monitor',
       name: 'Toggle FPS Monitor',
       description: 'Show or hide the FPS monitor'
+    },
+    {
+      id: 'toggle-video-stats',
+      name: 'Toggle Video Stats Overlay',
+      description: 'Show or hide video/webcam performance stats (FPS, drops, pipeline)'
+    },
+    {
+      id: 'toggle-webcodecs',
+      name: 'Toggle WebCodecs',
+      description: `${$useWebCodecs ? 'Disable' : 'Enable'} WebCodecs for video decoding (currently ${$useWebCodecs ? 'ON' : 'OFF'})`
     },
     {
       id: 'set-gemini-api-key',
@@ -299,6 +315,14 @@
       })
       .with('toggle-fps-monitor', () => {
         $isFpsMonitorVisible = !$isFpsMonitorVisible;
+        onCancel();
+      })
+      .with('toggle-video-stats', () => {
+        toggleVideoStats();
+        onCancel();
+      })
+      .with('toggle-webcodecs', () => {
+        toggleWebCodecs();
         onCancel();
       })
       .with('toggle-ai-features', () => {

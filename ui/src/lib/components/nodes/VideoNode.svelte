@@ -9,9 +9,10 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { match, P } from 'ts-pattern';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { webCodecsEnabled, showVideoStats } from '../../../stores/video.store';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
-  import { WebCodecsPlayer } from '$lib/video/WebCodecsPlayer';
+  import { WebCodecsPlayer, VideoProfiler, type VideoStats } from '$lib/video';
 
   let {
     id: nodeId,
@@ -48,10 +49,14 @@
   let resizerCanvas: OffscreenCanvas | null = null;
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
 
-  // WebCodecs support - use when available for better performance
-  const useWebCodecs = WebCodecsPlayer.isSupported();
+  // WebCodecs support - use when available and enabled
   let webCodecsPlayer: WebCodecsPlayer | null = null;
   let currentFile: File | null = null;
+
+  // Video profiling
+  let profiler: VideoProfiler | null = null;
+  let videoStats = $state<VideoStats | null>(null);
+  let statsIntervalId: ReturnType<typeof setInterval> | null = null;
 
   const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
   const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
@@ -139,11 +144,25 @@
 
           vfsMedia.markLoaded();
 
-          // Use WebCodecs for frame extraction when supported
-          if (useWebCodecs) {
+          // Initialize profiler
+          if (!profiler) {
+            profiler = new VideoProfiler(nodeId);
+          }
+          profiler.reset();
+          profiler.setMetadata({
+            width: videoWidth,
+            height: videoHeight,
+            // HTMLVideoElement doesn't expose frameRate directly, estimate from common values
+            frameRate: 30
+          });
+
+          // Use WebCodecs for frame extraction when supported and enabled
+          if ($webCodecsEnabled) {
+            profiler.setPipeline('webcodecs');
             initWebCodecsPlayer(file);
           } else {
-            // Fallback to HTMLVideoElement frame extraction (Firefox)
+            // Fallback to HTMLVideoElement frame extraction (Firefox or disabled)
+            profiler.setPipeline('fallback');
             bitmapFrameId = requestAnimationFrame(uploadBitmap);
           }
         }
@@ -174,16 +193,27 @@
 
     webCodecsPlayer = new WebCodecsPlayer({
       nodeId,
-      onFrame: (bitmap) => {
+      onFrame: (bitmap, timestamp) => {
+        // Track frame for profiling
+        profiler?.recordFrame(timestamp, webCodecsPlayer?.currentTime);
+
         if (glSystem.hasOutgoingVideoConnections(nodeId)) {
           glSystem.setPreflippedBitmap(nodeId, bitmap);
         }
       },
-      onMetadata: () => {
-        // Metadata received - video is ready for playback
+      onMetadata: (metadata) => {
+        // Update profiler with actual video metadata
+        profiler?.setMetadata({
+          frameRate: metadata.frameRate,
+          duration: metadata.duration,
+          width: metadata.width,
+          height: metadata.height,
+          codec: metadata.codec
+        });
       },
       onEnded: () => {
         isPaused = true;
+
         if (videoElement) {
           videoElement.pause();
           videoElement.currentTime = 0;
@@ -290,6 +320,9 @@
         // Video is already small enough, upload directly
         await glSystem.setBitmapSource(nodeId, videoElement);
       }
+
+      // Track frame for profiling (use currentTime in microseconds as timestamp)
+      profiler?.recordFrame(videoElement.currentTime * 1_000_000, videoElement.currentTime);
     }
 
     if (isVideoLoaded) {
@@ -305,6 +338,16 @@
     // Create audio object for video
     audioService.createNode(nodeId, 'soundfile~', []);
 
+    // Initialize profiler
+    profiler = new VideoProfiler(nodeId);
+
+    // Update stats periodically when visible
+    statsIntervalId = setInterval(() => {
+      if ($showVideoStats && profiler) {
+        videoStats = profiler.getStats();
+      }
+    }, 200);
+
     // If we have a VFS path, try to load from it
     if (data.vfsPath) {
       await vfsMedia.loadFromVfsPath(data.vfsPath);
@@ -314,6 +357,12 @@
   onDestroy(() => {
     if (bitmapFrameId) {
       cancelAnimationFrame(bitmapFrameId);
+    }
+
+    // Clean up stats interval
+    if (statsIntervalId) {
+      clearInterval(statsIntervalId);
+      statsIntervalId = null;
     }
 
     // Clean up WebCodecs player
@@ -393,17 +442,42 @@
           class={`rounded-lg border-1 ${selected ? 'shadow-glow-md border-zinc-400 bg-zinc-800' : 'hover:shadow-glow-sm border-transparent'}`}
         >
           {#if !errorMessage}
-            <video
-              bind:this={videoElement}
-              class="rounded-lg object-cover {vfsMedia.hasVfsPath && isVideoLoaded ? '' : 'hidden'}"
-              style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
-                defaultPreviewHeight}px"
-              muted
-              loop={data.loop ?? true}
-              ondragover={vfsMedia.handleDragOver}
-              ondragleave={vfsMedia.handleDragLeave}
-              ondrop={vfsMedia.handleDrop}
-            ></video>
+            <div class="relative">
+              <video
+                bind:this={videoElement}
+                class="rounded-lg object-cover {vfsMedia.hasVfsPath && isVideoLoaded
+                  ? ''
+                  : 'hidden'}"
+                style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
+                  defaultPreviewHeight}px"
+                muted
+                loop={data.loop ?? true}
+                ondragover={vfsMedia.handleDragOver}
+                ondragleave={vfsMedia.handleDragLeave}
+                ondrop={vfsMedia.handleDrop}
+              ></video>
+
+              <!-- Video stats overlay -->
+              {#if $showVideoStats && videoStats && isVideoLoaded}
+                <div
+                  class="pointer-events-none absolute top-1 left-1 rounded bg-black/70 px-1.5 py-1 font-mono text-[10px] leading-tight text-white"
+                >
+                  <div
+                    class="font-bold {videoStats.pipeline === 'webcodecs'
+                      ? 'text-green-400'
+                      : 'text-yellow-400'}"
+                  >
+                    {videoStats.pipeline.toUpperCase()}
+                  </div>
+                  <div>{videoStats.fps}/{videoStats.targetFps} FPS</div>
+                  <div>Dropped: {videoStats.droppedFrames}</div>
+                  <div>{videoStats.width}x{videoStats.height}</div>
+                  {#if videoStats.codec !== 'unknown'}
+                    <div class="text-zinc-400">{videoStats.codec}</div>
+                  {/if}
+                </div>
+              {/if}
+            </div>
           {/if}
 
           {#if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
