@@ -1,14 +1,15 @@
 import { writable, derived } from 'svelte/store';
-import { webCodecsSupport } from '$lib/video/feature-detection';
+import { webCodecsSupport, isFirefox } from '$lib/video/feature-detection';
 
 // WebCodecs toggle - can be disabled for testing/comparison
 const storedUseWebCodecs =
   typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-use-webcodecs') : null;
 
-// Default to true if browser supports it, unless explicitly disabled
-export const useWebCodecs = writable(
-  storedUseWebCodecs === null ? true : storedUseWebCodecs === 'true'
-);
+// Default to true on Chrome/Safari/Edge, false on Firefox (slower performance)
+// Users can manually toggle to test Firefox's experimental WebCodecs
+const defaultValue = storedUseWebCodecs === null ? !isFirefox() : storedUseWebCodecs === 'true';
+
+export const useWebCodecs = writable(defaultValue);
 
 // Persist to localStorage
 if (typeof localStorage !== 'undefined') {
