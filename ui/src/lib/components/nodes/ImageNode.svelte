@@ -84,8 +84,8 @@
     });
 
     // Flip when creating bitmap since ImageBitmap doesn't respect flipY in regl
-    const source = await createImageBitmap(img, { imageOrientation: 'flipY' });
-    glSystem.setPreflippedBitmap(node.id, source);
+    const source = await createImageBitmap(img);
+    glSystem.setBitmap(node.id, source);
     hasImage = true;
     vfsMedia.markLoaded();
 

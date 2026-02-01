@@ -2,7 +2,6 @@
  * Video Frame Worker
  *
  * Processes VideoFrames from MediaStreamTrackProcessor (webcam capture).
- * Converts VideoFrames to ImageBitmaps with flipY for GPU texture upload.
  *
  * This worker offloads frame processing from the main thread for better performance.
  */
@@ -18,11 +17,6 @@ export type VideoFrameWorkerMessage =
       type: 'processFrame';
       nodeId: string;
       frame: VideoFrame;
-    }
-  | {
-      type: 'setConfig';
-      nodeId: string;
-      flipY: boolean;
     }
   | {
       type: 'destroy';
@@ -47,27 +41,12 @@ export type VideoFrameWorkerResponse =
     };
 
 // ============================================================================
-// Worker State
-// ============================================================================
-
-interface NodeConfig {
-  flipY: boolean;
-}
-
-const nodeConfigs = new Map<string, NodeConfig>();
-
-// ============================================================================
 // Frame Processing
 // ============================================================================
 
 async function processFrame(nodeId: string, frame: VideoFrame): Promise<void> {
   try {
-    const config = nodeConfigs.get(nodeId) ?? { flipY: true };
-
-    // Create ImageBitmap from VideoFrame with flipY for GPU orientation
-    const bitmap = await createImageBitmap(frame, {
-      imageOrientation: config.flipY ? 'flipY' : 'none'
-    });
+    const bitmap = await createImageBitmap(frame);
 
     // CRITICAL: Close the VideoFrame to release GPU memory
     frame.close();
@@ -94,17 +73,12 @@ async function processFrame(nodeId: string, frame: VideoFrame): Promise<void> {
   }
 }
 
-function setConfig(nodeId: string, flipY: boolean): void {
-  nodeConfigs.set(nodeId, { flipY });
-}
-
 function destroy(nodeId: string): void {
-  nodeConfigs.delete(nodeId);
-
   const response: VideoFrameWorkerResponse = {
     type: 'destroyed',
     nodeId
   };
+
   self.postMessage(response);
 }
 
@@ -118,9 +92,6 @@ self.onmessage = (event: MessageEvent<VideoFrameWorkerMessage>) => {
   match(message)
     .with({ type: 'processFrame' }, ({ nodeId, frame }) => {
       processFrame(nodeId, frame);
-    })
-    .with({ type: 'setConfig' }, ({ nodeId, flipY }) => {
-      setConfig(nodeId, flipY);
     })
     .with({ type: 'destroy' }, ({ nodeId }) => {
       destroy(nodeId);

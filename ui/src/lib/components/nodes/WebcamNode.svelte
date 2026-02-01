@@ -93,7 +93,7 @@
 
             if (glSystem.hasOutgoingVideoConnections(nodeId)) {
               // Transfer bitmap to render worker (ownership transferred, worker will close it)
-              glSystem.setPreflippedBitmap(nodeId, bitmap);
+              glSystem.setBitmap(nodeId, bitmap);
             } else {
               // No connections - close bitmap immediately to prevent memory leak
               bitmap.close();

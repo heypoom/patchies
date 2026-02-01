@@ -536,8 +536,8 @@
         resizerCtx.drawImage(videoElement, 0, 0, scaledWidth, scaledHeight);
 
         // Create flipped ImageBitmap to match pipeline orientation
-        const bitmap = await createImageBitmap(resizerCanvas, { imageOrientation: 'flipY' });
-        await glSystem.setPreflippedBitmap(nodeId, bitmap);
+        const bitmap = await createImageBitmap(resizerCanvas);
+        await glSystem.setBitmap(nodeId, bitmap);
       }
     } else {
       // Video is already small enough, upload directly

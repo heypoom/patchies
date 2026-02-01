@@ -73,14 +73,6 @@ export class WebCodecsCapture {
         this.onError(new Error(`Worker error: ${e.message}`));
       };
 
-      // Configure the worker
-      const configMessage: VideoFrameWorkerMessage = {
-        type: 'setConfig',
-        nodeId: this.nodeId,
-        flipY: this.flipY
-      };
-      this.worker.postMessage(configMessage);
-
       // Create MediaStreamTrackProcessor to get VideoFrames
       this.processor = new MediaStreamTrackProcessor({ track: videoTrack });
       this.reader = this.processor.readable.getReader();
