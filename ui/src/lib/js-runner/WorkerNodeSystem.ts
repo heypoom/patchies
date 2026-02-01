@@ -330,7 +330,7 @@ export class WorkerNodeSystem {
    * Handle setVideoCount from worker - update video port count and dispatch event.
    */
   private handleSetVideoCount(nodeId: string, inletCount: number, outletCount: number) {
-    // Initialize or update video state
+    // Initialize or update video state, preserving any existing hasVideoCallback
     let videoState = this.videoStates.get(nodeId);
     if (!videoState) {
       videoState = {
@@ -342,6 +342,7 @@ export class WorkerNodeSystem {
       this.videoStates.set(nodeId, videoState);
     }
 
+    // Update counts but preserve hasVideoCallback (may have been set before setVideoCount was called)
     videoState.inletCount = inletCount;
     videoState.outletCount = outletCount;
 
@@ -360,10 +361,22 @@ export class WorkerNodeSystem {
 
   /**
    * Handle video frame callback registration - start frame capture loop.
+   * Initializes videoState if absent (handles registration before setVideoCount).
    */
   private handleVideoFrameCallbackRegistered(nodeId: string) {
-    const videoState = this.videoStates.get(nodeId);
-    if (!videoState) return;
+    let videoState = this.videoStates.get(nodeId);
+
+    if (!videoState) {
+      // Initialize videoState with defaults - setVideoCount will update counts later
+      videoState = {
+        inletCount: 0,
+        outletCount: 0,
+        sourceNodeIds: [],
+        hasVideoCallback: false
+      };
+
+      this.videoStates.set(nodeId, videoState);
+    }
 
     videoState.hasVideoCallback = true;
     this.startGlobalVideoLoop();
