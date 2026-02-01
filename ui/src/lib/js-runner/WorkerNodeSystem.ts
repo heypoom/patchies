@@ -222,8 +222,8 @@ export class WorkerNodeSystem {
       .with({ type: 'videoFrameCallbackRegistered' }, () => {
         this.handleVideoFrameCallbackRegistered(nodeId);
       })
-      .with({ type: 'requestVideoFrames' }, (event) => {
-        this.handleRequestVideoFrames(nodeId, event.requestId);
+      .with({ type: 'requestVideoFrames' }, () => {
+        this.handleRequestVideoFrames(nodeId);
       })
       .otherwise(() => {});
   }
@@ -392,7 +392,7 @@ export class WorkerNodeSystem {
   /**
    * Handle manual video frame request.
    */
-  private handleRequestVideoFrames(nodeId: string, _requestId: string) {
+  private handleRequestVideoFrames(nodeId: string) {
     // Request frames immediately for manual grab (single node)
     const videoState = this.videoStates.get(nodeId);
     if (!videoState || videoState.sourceNodeIds.length === 0) return;

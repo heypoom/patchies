@@ -1,8 +1,7 @@
 import type regl from 'regl';
 import type { FBONode, PreviewState } from '../../lib/rendering/types';
-import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { getFramebuffer } from './utils';
-import type { RenderingProfiler } from './RenderingProfiler';
+import type { PixelReadbackService } from './PixelReadbackService';
 import {
   DEFAULT_PREVIEW_MAX_FPS_CAP,
   DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT,
@@ -17,44 +16,26 @@ interface PendingRead {
   nodeId: string;
 }
 
-interface PendingVideoFrameRead {
-  pbo: WebGLBuffer;
-  width: number;
-  height: number;
-  sync: WebGLSync;
-  sourceNodeId: string;
-}
-
-interface PendingVideoFrameBatch {
-  targetNodeId: string;
-  sourceNodeIds: (string | null)[];
-  reads: PendingVideoFrameRead[];
-  initiatedAt: number;
-}
-
 /**
- * PreviewRenderer handles GPU-to-CPU pixel readback for node previews.
+ * PreviewRenderer handles periodic GPU-to-CPU pixel readback for node preview thumbnails.
  *
  * Uses PBO (Pixel Buffer Object) async reads with frame rate limiting:
- * - Previews update at ~40fps
- * - Batch all preview reads in one frame, retrieve results 2+ frames later
+ * - Previews update at configurable fps (default ~40fps)
+ * - Batch preview reads in one frame, retrieve results 2+ frames later
  * - Non-blocking retrieval: skip if GPU isn't ready yet
  *
  * This eliminates GPU stalls from readPixels while keeping previews responsive.
+ *
+ * Uses shared PixelReadbackService for PBO pool, canvas cache, and intermediate FBO.
  */
 export class PreviewRenderer {
+  private service: PixelReadbackService;
   private gl: WebGL2RenderingContext;
-  private regl: regl.Regl;
-  private profiler: RenderingProfiler;
 
   // Preview state
   private previewState: PreviewState = {};
   private previewRoundRobinIndex = 0;
   private visibleNodes: Set<string> = new Set();
-
-  // Size configuration
-  public outputSize: [number, number];
-  public previewSize: [number, number];
 
   // Throttling configuration
   public maxPreviewsPerFrame = DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT;
@@ -65,57 +46,13 @@ export class PreviewRenderer {
   private lastPreviewTime = 0;
 
   // PBO async read state
-  private pboPool: WebGLBuffer[] = [];
   private pendingReads: PendingRead[] = [];
   private pendingNodeIds: Set<string> = new Set(); // Track nodes with in-flight reads
 
-  // Canvas cache for ImageBitmap creation
-  private canvasCache = new Map<
-    string,
-    { canvas: OffscreenCanvas; ctx: OffscreenCanvasRenderingContext2D }
-  >();
-
-  // Reusable preview FBO (avoids per-frame allocation)
-  private previewFbo: regl.Framebuffer2D | null = null;
-  private previewTexture: regl.Texture2D | null = null;
-
-  // Video frame async read state
-  private pendingVideoFrameBatches: PendingVideoFrameBatch[] = [];
-
-  constructor(
-    gl: WebGL2RenderingContext,
-    reglInstance: regl.Regl,
-    profiler: RenderingProfiler,
-    outputSize: [number, number]
-  ) {
-    this.gl = gl;
-    this.regl = reglInstance;
-    this.profiler = profiler;
-    this.outputSize = outputSize;
-    this.previewSize = [
-      Math.floor(outputSize[0] / PREVIEW_SCALE_FACTOR),
-      Math.floor(outputSize[1] / PREVIEW_SCALE_FACTOR)
-    ];
-    this.createPreviewFbo();
+  constructor(service: PixelReadbackService) {
+    this.service = service;
+    this.gl = service.gl;
   }
-
-  private createPreviewFbo(): void {
-    const [width, height] = this.previewSize;
-
-    this.previewTexture = this.regl.texture({
-      width,
-      height,
-      wrapS: 'clamp',
-      wrapT: 'clamp'
-    });
-
-    this.previewFbo = this.regl.framebuffer({
-      color: this.previewTexture,
-      depthStencil: false
-    });
-  }
-
-  // ===== Public API =====
 
   setPreviewEnabled(nodeId: string, enabled: boolean): void {
     this.previewState[nodeId] = enabled;
@@ -142,28 +79,19 @@ export class PreviewRenderer {
     this.visibleNodes = nodeIds;
   }
 
-  setPreviewSize(width: number, height: number): void {
-    this.previewSize = [width, height];
-    this.previewFbo?.destroy();
-    this.previewTexture?.destroy();
-    this.createPreviewFbo();
-  }
-
-  setOutputSize(outputSize: [number, number]): void {
-    this.outputSize = outputSize;
-  }
-
   removeNode(nodeId: string): void {
     delete this.previewState[nodeId];
+
     this.pendingNodeIds.delete(nodeId);
 
     // Clean up any pending reads for this node
     this.pendingReads = this.pendingReads.filter((p) => {
       if (p.nodeId === nodeId) {
         this.gl.deleteSync(p.sync);
-        this.returnPbo(p.pbo);
+        this.service.returnPbo(p.pbo);
         return false;
       }
+
       return true;
     });
   }
@@ -242,7 +170,7 @@ export class PreviewRenderer {
         console.warn(`[PreviewRenderer]: clientWaitSync failed for node ${nodeId}`);
 
         gl.deleteSync(sync);
-        this.returnPbo(pbo);
+        this.service.returnPbo(pbo);
         this.pendingNodeIds.delete(nodeId);
         continue;
       }
@@ -256,17 +184,19 @@ export class PreviewRenderer {
 
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
 
-      const start = this.profiler.isEnabled ? performance.now() : 0;
+      const start = this.service.profiler.isEnabled ? performance.now() : 0;
+
       gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
-      if (this.profiler.isEnabled) {
-        this.profiler.recordReglRead(performance.now() - start);
+
+      if (this.service.profiler.isEnabled) {
+        this.service.profiler.recordReglRead(performance.now() - start);
       }
 
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-      this.returnPbo(pbo);
+      this.service.returnPbo(pbo);
 
       // Create bitmap
-      const { canvas, ctx } = this.getCanvas(width, height);
+      const { canvas, ctx } = this.service.getCanvas(width, height);
 
       const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
       ctx.putImageData(imageData, 0, 0);
@@ -289,20 +219,20 @@ export class PreviewRenderer {
     framebuffer: regl.Framebuffer2D,
     customSize?: [number, number]
   ): void {
-    const [pw, ph] = customSize ?? this.previewSize;
+    const [pw, ph] = customSize ?? this.service.previewSize;
     const width = Math.floor(pw);
     const height = Math.floor(ph);
 
     if (width <= 0 || height <= 0) return;
 
-    const [sourceWidth, sourceHeight] = this.outputSize;
+    const [sourceWidth, sourceHeight] = this.service.outputSize;
     const gl = this.gl;
 
-    this.ensurePreviewFboSize(width, height);
+    this.service.ensureIntermediateFboSize(width, height);
 
-    // Blit source to preview FBO with flip
+    // Blit source to intermediate FBO with flip
     const sourceFBO = getFramebuffer(framebuffer);
-    const destFBO = getFramebuffer(this.previewFbo!);
+    const destFBO = getFramebuffer(this.service.getIntermediateFbo());
 
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
@@ -321,7 +251,7 @@ export class PreviewRenderer {
     );
 
     // Setup PBO for async read
-    const pbo = this.getPbo();
+    const pbo = this.service.getPbo();
     const size = width * height * 4;
 
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
@@ -341,394 +271,6 @@ export class PreviewRenderer {
 
     this.pendingReads.push({ pbo, width, height, sync, nodeId });
     this.pendingNodeIds.add(nodeId);
-  }
-
-  // ===== PBO Pool =====
-
-  private getPbo(): WebGLBuffer {
-    if (this.pboPool.length > 0) {
-      return this.pboPool.pop()!;
-    }
-
-    return this.gl.createBuffer()!;
-  }
-
-  private returnPbo(pbo: WebGLBuffer): void {
-    this.pboPool.push(pbo);
-  }
-
-  // ===== Sync Capture (for on-demand use) =====
-
-  /**
-   * Synchronous single-node preview capture.
-   * Used for on-demand captures (e.g., export, Gemini).
-   */
-  capturePreviewBitmapSync(
-    framebuffer: regl.Framebuffer2D,
-    sourceWidth: number,
-    sourceHeight: number,
-    customSize?: [number, number]
-  ): ImageBitmap {
-    const [pw, ph] = customSize ?? this.previewSize;
-    const width = Math.floor(pw);
-    const height = Math.floor(ph);
-
-    const { canvas, ctx } = this.getCanvas(width, height);
-
-    this.ensurePreviewFboSize(width, height);
-
-    const gl = this.gl;
-    const sourceFBO = getFramebuffer(framebuffer);
-    const destFBO = getFramebuffer(this.previewFbo!);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
-
-    gl.blitFramebuffer(
-      0,
-      0,
-      sourceWidth,
-      sourceHeight,
-      0,
-      height,
-      width,
-      0,
-      gl.COLOR_BUFFER_BIT,
-      gl.LINEAR
-    );
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, destFBO);
-
-    const pixels = this.timedSyncRead(width, height);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-
-    const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
-    ctx.putImageData(imageData, 0, 0);
-
-    return canvas.transferToImageBitmap();
-  }
-
-  // ===== Video Frame Async Capture =====
-
-  /**
-   * Initiate async PBO reads for a batch of video frame requests.
-   * Call harvestVideoFrameBatches() in subsequent frames to get completed results.
-   *
-   * Used by worker nodes for `onVideoFrame()` and `getVideoFrames()` APIs.
-   * Supports both FBO nodes (p5, hydra, glsl) and external texture nodes (img, webcam).
-   */
-  initiateVideoFrameBatchAsync(
-    requests: Array<{ targetNodeId: string; sourceNodeIds: (string | null)[] }>,
-    fboNodes: Map<string, FBONode>,
-    externalTextures?: Map<string, regl.Texture2D>
-  ): void {
-    // Collect all unique source node IDs across all requests
-    const uniqueSourceIds = new Set<string>();
-    for (const request of requests) {
-      for (const sourceId of request.sourceNodeIds) {
-        if (sourceId) uniqueSourceIds.add(sourceId);
-      }
-    }
-
-    // Track temporary FBOs created for external textures (need cleanup after read)
-    const tempFbos: regl.Framebuffer2D[] = [];
-
-    // Initiate async reads for each unique source
-    const sourceReads = new Map<string, PendingVideoFrameRead>();
-    for (const sourceId of uniqueSourceIds) {
-      // Check external textures first (img, webcam nodes)
-      const externalTexture = externalTextures?.get(sourceId);
-      if (externalTexture) {
-        // Create a temporary framebuffer wrapping the texture
-        const tempFbo = this.regl.framebuffer({ color: externalTexture });
-        tempFbos.push(tempFbo);
-
-        const read = this.initiateVideoFrameRead(sourceId, tempFbo, [
-          externalTexture.width,
-          externalTexture.height
-        ]);
-        if (read) {
-          sourceReads.set(sourceId, read);
-        }
-        continue;
-      }
-
-      // Fall back to FBO nodes (p5, hydra, glsl, etc.)
-      const fboNode = fboNodes.get(sourceId);
-      if (!fboNode) continue;
-
-      const read = this.initiateVideoFrameRead(sourceId, fboNode.framebuffer);
-      if (read) {
-        sourceReads.set(sourceId, read);
-      }
-    }
-
-    // Clean up temporary FBOs (reads have been initiated, FBO is no longer needed)
-    for (const fbo of tempFbos) {
-      fbo.destroy();
-    }
-
-    // Create pending batches for each target
-    for (const request of requests) {
-      const reads: PendingVideoFrameRead[] = [];
-
-      for (const sourceId of request.sourceNodeIds) {
-        if (sourceId) {
-          const read = sourceReads.get(sourceId);
-          if (read) reads.push(read);
-        }
-      }
-
-      this.pendingVideoFrameBatches.push({
-        targetNodeId: request.targetNodeId,
-        sourceNodeIds: request.sourceNodeIds,
-        reads,
-        initiatedAt: performance.now()
-      });
-    }
-  }
-
-  /**
-   * Initiate a single async PBO read for video frame capture.
-   * @param sourceNodeId - ID of the source node
-   * @param framebuffer - Source framebuffer to read from
-   * @param customSourceSize - Optional custom source dimensions (for external textures)
-   */
-  private initiateVideoFrameRead(
-    sourceNodeId: string,
-    framebuffer: regl.Framebuffer2D,
-    customSourceSize?: [number, number]
-  ): PendingVideoFrameRead | null {
-    const [pw, ph] = this.previewSize;
-    const width = Math.floor(pw);
-    const height = Math.floor(ph);
-
-    if (width <= 0 || height <= 0) return null;
-
-    const [sourceWidth, sourceHeight] = customSourceSize ?? this.outputSize;
-    const gl = this.gl;
-
-    this.ensurePreviewFboSize(width, height);
-
-    // Blit source to preview FBO with flip
-    const sourceFBO = getFramebuffer(framebuffer);
-    const destFBO = getFramebuffer(this.previewFbo!);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
-
-    gl.blitFramebuffer(
-      0,
-      0,
-      sourceWidth,
-      sourceHeight,
-      0,
-      height,
-      width,
-      0,
-      gl.COLOR_BUFFER_BIT,
-      gl.LINEAR
-    );
-
-    // Setup PBO for async read
-    const pbo = this.getPbo();
-    const size = width * height * 4;
-
-    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
-    gl.bufferData(gl.PIXEL_PACK_BUFFER, size, gl.STREAM_READ);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, destFBO);
-
-    // This returns immediately - GPU transfer happens async
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
-
-    // Create fence sync to know when read is complete
-    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)!;
-
-    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-
-    return { pbo, width, height, sync, sourceNodeId };
-  }
-
-  /**
-   * Harvest completed video frame batches.
-   * Returns array of completed batches with their ImageBitmaps.
-   *
-   * Used by worker nodes for `onVideoFrame()` and `getVideoFrames()` APIs.
-   *
-   * Smart cloning: When multiple targets need the same source, each gets
-   * its own bitmap created from the cached pixel data. When only one target
-   * needs a source, no cloning overhead is incurred.
-   */
-  harvestVideoFrameBatches(): Array<{
-    targetNodeId: string;
-    frames: (ImageBitmap | null)[];
-    timestamp: number;
-  }> {
-    const gl = this.gl;
-    const results: Array<{
-      targetNodeId: string;
-      frames: (ImageBitmap | null)[];
-      timestamp: number;
-    }> = [];
-
-    const stillPending: PendingVideoFrameBatch[] = [];
-
-    // Store completed reads with their pixel data (not bitmap yet)
-    const completedPixelData = new Map<
-      PendingVideoFrameRead,
-      { pixels: Uint8Array; width: number; height: number }
-    >();
-
-    // First pass: check completion and extract pixel data
-    for (const batch of this.pendingVideoFrameBatches) {
-      for (const read of batch.reads) {
-        if (completedPixelData.has(read)) continue;
-
-        const status = gl.clientWaitSync(read.sync, 0, 0);
-
-        if (status === gl.TIMEOUT_EXPIRED) {
-          continue;
-        }
-
-        if (status === gl.WAIT_FAILED) {
-          gl.deleteSync(read.sync);
-          this.returnPbo(read.pbo);
-          continue;
-        }
-
-        // Read is complete - extract pixels (not bitmap yet)
-        gl.deleteSync(read.sync);
-
-        const { pbo, width, height } = read;
-        const size = width * height * 4;
-        const pixels = new Uint8Array(size);
-
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
-        gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
-        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-
-        this.returnPbo(pbo);
-
-        completedPixelData.set(read, { pixels, width, height });
-      }
-    }
-
-    // Count how many targets need each source (for smart cloning decision)
-    const sourceRefCounts = new Map<string, number>();
-    for (const batch of this.pendingVideoFrameBatches) {
-      const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
-      if (!allReadsComplete) continue;
-
-      for (const sourceId of batch.sourceNodeIds) {
-        if (sourceId) {
-          sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 0) + 1);
-        }
-      }
-    }
-
-    // Track bitmaps that can be reused (when only 1 target needs them)
-    const reusableBitmaps = new Map<string, ImageBitmap>();
-
-    // Second pass: build results for completed batches
-    for (const batch of this.pendingVideoFrameBatches) {
-      const allReadsComplete = batch.reads.every((r) => completedPixelData.has(r));
-
-      if (!allReadsComplete) {
-        stillPending.push(batch);
-        continue;
-      }
-
-      if (batch.reads.length === 0) {
-        continue;
-      }
-
-      // Build frames array matching sourceNodeIds order
-      const frames: (ImageBitmap | null)[] = [];
-
-      for (const sourceId of batch.sourceNodeIds) {
-        if (!sourceId) {
-          frames.push(null);
-          continue;
-        }
-
-        const read = batch.reads.find((r) => r.sourceNodeId === sourceId);
-        if (!read) {
-          frames.push(null);
-          continue;
-        }
-
-        const pixelData = completedPixelData.get(read);
-        if (!pixelData) {
-          frames.push(null);
-          continue;
-        }
-
-        const refCount = sourceRefCounts.get(sourceId) || 0;
-
-        if (refCount === 1) {
-          // Only 1 target needs this source - create bitmap directly (no clone needed)
-          const { canvas, ctx } = this.getCanvas(pixelData.width, pixelData.height);
-          const imageData = new ImageData(
-            new Uint8ClampedArray(pixelData.pixels),
-            pixelData.width,
-            pixelData.height
-          );
-          ctx.putImageData(imageData, 0, 0);
-          frames.push(canvas.transferToImageBitmap());
-        } else {
-          // Multiple targets need this source - each gets their own bitmap
-          // Check if we already created one for reuse (first target)
-          const existing = reusableBitmaps.get(sourceId);
-          if (existing) {
-            // Create a new bitmap from pixels for this target
-            const { canvas, ctx } = this.getCanvas(pixelData.width, pixelData.height);
-            const imageData = new ImageData(
-              new Uint8ClampedArray(pixelData.pixels),
-              pixelData.width,
-              pixelData.height
-            );
-            ctx.putImageData(imageData, 0, 0);
-            frames.push(canvas.transferToImageBitmap());
-          } else {
-            // First target - create and mark as created
-            const { canvas, ctx } = this.getCanvas(pixelData.width, pixelData.height);
-            const imageData = new ImageData(
-              new Uint8ClampedArray(pixelData.pixels),
-              pixelData.width,
-              pixelData.height
-            );
-            ctx.putImageData(imageData, 0, 0);
-            const bitmap = canvas.transferToImageBitmap();
-            reusableBitmaps.set(sourceId, bitmap);
-            frames.push(bitmap);
-          }
-        }
-
-        // Decrement ref count
-        sourceRefCounts.set(sourceId, (sourceRefCounts.get(sourceId) || 1) - 1);
-      }
-
-      results.push({
-        targetNodeId: batch.targetNodeId,
-        frames,
-        timestamp: performance.now()
-      });
-    }
-
-    this.pendingVideoFrameBatches = stillPending;
-    return results;
-  }
-
-  /**
-   * Check if there are pending video frame batches.
-   */
-  hasPendingVideoFrames(): boolean {
-    return this.pendingVideoFrameBatches.length > 0;
   }
 
   // ===== Helpers =====
@@ -756,65 +298,7 @@ export class PreviewRenderer {
     return selected;
   }
 
-  private getCanvas(
-    width: number,
-    height: number
-  ): { canvas: OffscreenCanvas; ctx: OffscreenCanvasRenderingContext2D } {
-    const key = `${width}x${height}`;
-    let cached = this.canvasCache.get(key);
-
-    if (!cached) {
-      const canvas = new OffscreenCanvas(width, height);
-      const ctx = canvas.getContext('2d')!;
-
-      cached = { canvas, ctx };
-      this.canvasCache.set(key, cached);
-    }
-
-    return cached;
-  }
-
-  private ensurePreviewFboSize(width: number, height: number): void {
-    if (
-      this.previewTexture &&
-      this.previewTexture.width === width &&
-      this.previewTexture.height === height
-    ) {
-      return;
-    }
-
-    this.previewFbo?.destroy();
-    this.previewTexture?.destroy();
-
-    this.previewTexture = this.regl.texture({
-      width,
-      height,
-      wrapS: 'clamp',
-      wrapT: 'clamp'
-    });
-
-    this.previewFbo = this.regl.framebuffer({
-      color: this.previewTexture,
-      depthStencil: false
-    });
-  }
-
-  private timedSyncRead(width: number, height: number): Uint8Array {
-    const size = width * height * 4;
-    const pixels = new Uint8Array(size);
-
-    if (!this.profiler.isEnabled) {
-      this.gl.readPixels(0, 0, width, height, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixels);
-      return pixels;
-    }
-
-    const start = performance.now();
-
-    this.gl.readPixels(0, 0, width, height, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixels);
-    this.profiler.recordReglRead(performance.now() - start);
-
-    return pixels;
-  }
+  // ===== Cleanup =====
 
   destroy(): void {
     // Clean up pending reads
@@ -825,30 +309,5 @@ export class PreviewRenderer {
 
     this.pendingReads = [];
     this.pendingNodeIds.clear();
-
-    // Clean up pending video frame batches
-    // Note: Multiple batches can share the same reads, so we deduplicate first
-    const cleanedReads = new Set<PendingVideoFrameRead>();
-    for (const batch of this.pendingVideoFrameBatches) {
-      for (const read of batch.reads) {
-        if (!cleanedReads.has(read)) {
-          cleanedReads.add(read);
-          this.gl.deleteSync(read.sync);
-          this.gl.deleteBuffer(read.pbo);
-        }
-      }
-    }
-
-    this.pendingVideoFrameBatches = [];
-
-    // Clean up PBO pool
-    for (const pbo of this.pboPool) {
-      this.gl.deleteBuffer(pbo);
-    }
-
-    this.pboPool = [];
-
-    this.previewFbo?.destroy();
-    this.previewTexture?.destroy();
   }
 }
