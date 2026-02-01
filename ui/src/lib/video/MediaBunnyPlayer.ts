@@ -172,6 +172,7 @@ export class MediaBunnyPlayer {
       await this.showPreviewFrame(0);
     } catch (error) {
       // Reset all state to avoid stale values from a partial load
+      this.input?.dispose();
       this.input = null;
       this.videoTrack = null;
       this.sink = null;
@@ -525,10 +526,13 @@ export class MediaBunnyPlayer {
     this.stopBuffering();
     this.clearBuffer();
 
-    // MediaBunny handles cleanup internally
+    // Dispose Input to cancel ongoing reads, close decoders, and free resources
+    this.input?.dispose();
+    this.input = null;
+
+    // VideoSampleSink and InputVideoTrack are owned by Input and cleaned up via dispose()
     this.sink = null;
     this.videoTrack = null;
-    this.input = null;
   }
 
   /**
