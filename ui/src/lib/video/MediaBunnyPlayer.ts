@@ -43,7 +43,7 @@ interface BufferedFrame {
 const FRAME_BUFFER_SIZE = 10;
 
 // Profiling
-const PROFILE_ENABLED = true;
+const PROFILE_ENABLED = false;
 const PROFILE_LOG_INTERVAL = 60; // Log every N frames
 let profileFrameCount = 0;
 let profileTotalDecodeTime = 0;
@@ -289,6 +289,7 @@ export class MediaBunnyPlayer {
           const decodeEnd = PROFILE_ENABLED ? performance.now() : 0;
 
           const bitmapStart = PROFILE_ENABLED ? performance.now() : 0;
+
           // Skip flipY here - let CSS/GL handle it (flipY in createImageBitmap is slow ~11ms)
           const bitmap = await createImageBitmap(videoFrame);
           const bitmapEnd = PROFILE_ENABLED ? performance.now() : 0;

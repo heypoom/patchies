@@ -9,6 +9,8 @@ import { match } from 'ts-pattern';
 
 import { MediaBunnyPlayer, type VideoMetadata } from '../../lib/video/MediaBunnyPlayer.js';
 
+import { logger } from '$lib/utils/logger';
+
 export interface MediaBunnyServiceConfig {
   /** Callback to upload bitmap to GL texture */
   setBitmap: (nodeId: string, bitmap: ImageBitmap) => void;
@@ -143,7 +145,7 @@ export class MediaBunnyService {
     const player = this.players.get(nodeId);
 
     if (!player) {
-      console.warn(`[MediaBunnyService] No player for node ${nodeId}`);
+      logger.warn(`[MediaBunnyService] No player for node ${nodeId}`);
       return;
     }
 
@@ -154,7 +156,7 @@ export class MediaBunnyService {
     const player = this.players.get(nodeId);
 
     if (!player) {
-      console.warn(`[MediaBunnyService] No player for node ${nodeId}`);
+      logger.warn(`[MediaBunnyService] No player for node ${nodeId}`);
       return;
     }
 
@@ -173,28 +175,29 @@ export class MediaBunnyService {
     await this.players.get(nodeId)?.seek(timeSeconds);
   }
 
-  private restart(nodeId: string): void {
+  private async restart(nodeId: string): Promise<void> {
     const player = this.players.get(nodeId);
+
     if (!player) {
-      console.warn(`[MediaBunnyService] No player found for restart: ${nodeId}`);
+      logger.warn(`[MediaBunnyService] No player found for restart: ${nodeId}`);
       return;
     }
 
-    // Async operation - pause, seek to 0, then play
-    (async () => {
-      try {
-        player.pause();
-        await player.seek(0);
-        player.play();
-      } catch (error) {
-        console.error(`[MediaBunnyService] Error restarting player ${nodeId}:`, error);
-        this.postMessage({
-          type: 'mediaBunnyError',
-          nodeId,
-          error: error instanceof Error ? error.message : 'Unknown restart error'
-        });
-      }
-    })();
+    try {
+      player.pause();
+
+      await player.seek(0);
+
+      player.play();
+    } catch (error) {
+      logger.error(`[MediaBunnyService] Error restarting player ${nodeId}:`, error);
+
+      this.postMessage({
+        type: 'mediaBunnyError',
+        nodeId,
+        error: error instanceof Error ? error.message : 'Unknown restart error'
+      });
+    }
   }
 
   private setLoop(nodeId: string, loop: boolean): void {
