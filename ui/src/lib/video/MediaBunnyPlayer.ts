@@ -475,6 +475,11 @@ export class MediaBunnyPlayer {
     // Show preview frame at seek position
     await this.showPreviewFrame(timeSeconds);
 
+    // Force exact time when seeking to beginning (keyframe may not be at 0)
+    if (timeSeconds === 0) {
+      this._currentTime = 0;
+    }
+
     if (wasPlaying) {
       this.playbackStartTime = performance.now();
       this.playbackStartVideoTime = this._currentTime;

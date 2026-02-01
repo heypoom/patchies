@@ -608,6 +608,11 @@ export class GLSystem {
     this.send('mediaBunnySeek', { nodeId, time });
   }
 
+  /** Restart video from beginning (atomic seek + play) */
+  mediaBunnyRestart(nodeId: string): void {
+    this.send('mediaBunnyRestart', { nodeId });
+  }
+
   /** Set loop mode */
   mediaBunnySetLoop(nodeId: string, loop: boolean): void {
     this.send('mediaBunnySetLoop', { nodeId, loop });

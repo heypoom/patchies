@@ -348,10 +348,8 @@
 
     // Restart based on current mode
     if (webCodecsFirstFrameReceived) {
-      // Worker MediaBunny mode
-      glSystem.mediaBunnySeek(nodeId, 0);
-      glSystem.mediaBunnyPlay(nodeId);
-
+      // Worker MediaBunny mode - use atomic restart
+      glSystem.mediaBunnyRestart(nodeId);
       isPaused = false;
     } else if (videoElement) {
       // Fallback mode - use HTMLVideoElement

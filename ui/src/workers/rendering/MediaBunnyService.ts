@@ -65,6 +65,11 @@ export class MediaBunnyService {
 
         return true;
       })
+      .with('mediaBunnyRestart', () => {
+        this.restart(data.nodeId as string);
+
+        return true;
+      })
       .with('mediaBunnySetLoop', () => {
         this.setLoop(data.nodeId as string, data.loop as boolean);
 
@@ -166,6 +171,30 @@ export class MediaBunnyService {
 
   private async seek(nodeId: string, timeSeconds: number): Promise<void> {
     await this.players.get(nodeId)?.seek(timeSeconds);
+  }
+
+  private restart(nodeId: string): void {
+    const player = this.players.get(nodeId);
+    if (!player) {
+      console.warn(`[MediaBunnyService] No player found for restart: ${nodeId}`);
+      return;
+    }
+
+    // Async operation - pause, seek to 0, then play
+    (async () => {
+      try {
+        player.pause();
+        await player.seek(0);
+        player.play();
+      } catch (error) {
+        console.error(`[MediaBunnyService] Error restarting player ${nodeId}:`, error);
+        this.postMessage({
+          type: 'mediaBunnyError',
+          nodeId,
+          error: error instanceof Error ? error.message : 'Unknown restart error'
+        });
+      }
+    })();
   }
 
   private setLoop(nodeId: string, loop: boolean): void {
