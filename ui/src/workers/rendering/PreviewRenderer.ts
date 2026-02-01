@@ -790,6 +790,21 @@ export class PreviewRenderer {
     this.pendingReads = [];
     this.pendingNodeIds.clear();
 
+    // Clean up pending video frame batches
+    // Note: Multiple batches can share the same reads, so we deduplicate first
+    const cleanedReads = new Set<PendingVideoFrameRead>();
+    for (const batch of this.pendingVideoFrameBatches) {
+      for (const read of batch.reads) {
+        if (!cleanedReads.has(read)) {
+          cleanedReads.add(read);
+          this.gl.deleteSync(read.sync);
+          this.gl.deleteBuffer(read.pbo);
+        }
+      }
+    }
+
+    this.pendingVideoFrameBatches = [];
+
     // Clean up PBO pool
     for (const pbo of this.pboPool) {
       this.gl.deleteBuffer(pbo);
