@@ -13,6 +13,17 @@ export function isFirefox(): boolean {
   return typeof navigator !== 'undefined' && /Firefox/i.test(navigator.userAgent);
 }
 
+/**
+ * Check if the current browser is Safari.
+ */
+export function isSafari(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    /Safari/i.test(navigator.userAgent) &&
+    !/Chrome/i.test(navigator.userAgent)
+  );
+}
+
 export const webCodecsSupport = {
   /**
    * MediaStreamTrackProcessor support for webcam frame extraction.
