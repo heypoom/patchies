@@ -1,4 +1,4 @@
-const PASSTHRU = `setVideoCount(1)
+const PIPE = `setVideoCount(1)
 src(s0).out(o0)`;
 
 const DIFF = `setVideoCount(2)
@@ -87,13 +87,9 @@ const defaultsOneVideoIn: HydraNodeData = {
 const defaultsTwoVideoIn: HydraNodeData = { ...defaultsOneVideoIn, videoInletCount: 2 };
 
 export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }> = {
-  'passthru.hydra': {
-    type: 'hydra',
-    data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
-  },
   'pipe.hydra': {
     type: 'hydra',
-    data: { ...defaultsOneVideoIn, code: PASSTHRU.trim() }
+    data: { ...defaultsOneVideoIn, code: PIPE.trim() }
   },
   'diff.hydra': {
     type: 'hydra',

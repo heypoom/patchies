@@ -82,34 +82,6 @@ for (let i = 0; i < s; i++) {
 
 send(curve)`;
 
-const ADD_JS = `let a = 1
-let b = 2
-
-setPortCount(2)
-setRunOnMount(true)
-
-recv((m, {inlet}) => {
-  if (inlet == 0) a = m  
-  if (inlet == 1) b = m
-
-  send(a + b)
-})`;
-
-const ADD_COLD_JS = `let a = 1
-let b = 2
-
-setPortCount(2)
-setRunOnMount(true)
-
-recv((m, {inlet}) => {
-  if (inlet == 0) {
-    a = m
-    send(a + b)
-  }
-
-  if (inlet == 1) b = m
-})`;
-
 export const JS_PRESETS: Record<
   string,
   { type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
@@ -150,7 +122,7 @@ export const JS_PRESETS: Record<
     type: 'js',
     data: { code: WAVESHAPER_DISTORTION_JS, showConsole: false, runOnMount: false }
   },
-  'pipe-msg.js': {
+  'pipe.js': {
     type: 'js',
     data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
   }
