@@ -19,7 +19,6 @@ export interface WebCodecsCaptureConfig {
   nodeId: string;
   onFrame: (bitmap: ImageBitmap) => void;
   onError: (error: Error) => void;
-  flipY?: boolean;
 }
 
 export class WebCodecsCapture {
@@ -45,7 +44,6 @@ export class WebCodecsCapture {
     this.nodeId = config.nodeId;
     this.onFrame = config.onFrame;
     this.onError = config.onError;
-    this.flipY = config.flipY ?? true;
   }
 
   /**
