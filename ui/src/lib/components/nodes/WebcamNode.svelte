@@ -12,6 +12,30 @@
   import { webCodecsWebcamEnabled, showVideoStats } from '../../../stores/video.store';
   import { WebCodecsCapture, VideoProfiler, type VideoStats } from '$lib/video';
 
+  // Type definitions for requestVideoFrameCallback (not yet in all TypeScript libs)
+  interface VideoFrameCallbackMetadata {
+    presentationTime: DOMHighResTimeStamp;
+    expectedDisplayTime: DOMHighResTimeStamp;
+    width: number;
+    height: number;
+    mediaTime: number;
+    presentedFrames: number;
+    processingDuration?: number;
+    captureTime?: DOMHighResTimeStamp;
+    receiveTime?: DOMHighResTimeStamp;
+    rtpTimestamp?: number;
+  }
+
+  interface HTMLVideoElementWithRVFC extends HTMLVideoElement {
+    requestVideoFrameCallback(callback: VideoFrameRequestCallback): number;
+    cancelVideoFrameCallback(handle: number): void;
+  }
+
+  type VideoFrameRequestCallback = (
+    now: DOMHighResTimeStamp,
+    metadata: VideoFrameCallbackMetadata
+  ) => void;
+
   let {
     id: nodeId,
     data,
@@ -29,7 +53,9 @@
   let isCapturing = $state(false);
   let isPaused = $state(false);
   let errorMessage = $state<string | null>(null);
-  let bitmapFrameId: number;
+  let bitmapFrameId: number | undefined;
+  let videoFrameCallbackId: number | undefined;
+  let useVideoFrameCallback = false;
 
   // WebCodecs support - use when available and enabled
   let webCodecsCapture: WebCodecsCapture | null = null;
@@ -128,8 +154,8 @@
           isCapturing = true;
           errorMessage = null;
 
-          // Start uploading frames
-          bitmapFrameId = requestAnimationFrame(uploadBitmap);
+          // Start the fallback frame loop
+          startFallbackFrameLoop();
 
           // Handle stream ending
           stream.getVideoTracks()[0].onended = () => {
@@ -157,8 +183,40 @@
     }
 
     isCapturing = false;
-    if (bitmapFrameId) {
+    stopFallbackFrameLoop();
+  }
+
+  /**
+   * Start the fallback frame loop using requestVideoFrameCallback when available,
+   * falling back to requestAnimationFrame for browsers that don't support it.
+   */
+  function startFallbackFrameLoop() {
+    // Check if requestVideoFrameCallback is supported
+    if (videoElement && 'requestVideoFrameCallback' in videoElement) {
+      useVideoFrameCallback = true;
+
+      videoFrameCallbackId = (videoElement as HTMLVideoElementWithRVFC).requestVideoFrameCallback(
+        handleFallbackVideoFrame
+      );
+    } else {
+      // Fallback to requestAnimationFrame (older browsers than baseline 2024)
+      useVideoFrameCallback = false;
+      bitmapFrameId = requestAnimationFrame(uploadBitmapRAF);
+    }
+  }
+
+  /**
+   * Stop the fallback frame loop.
+   */
+  function stopFallbackFrameLoop() {
+    if (useVideoFrameCallback && videoFrameCallbackId !== undefined && videoElement) {
+      (videoElement as HTMLVideoElementWithRVFC).cancelVideoFrameCallback(videoFrameCallbackId);
+      videoFrameCallbackId = undefined;
+    }
+
+    if (bitmapFrameId !== undefined) {
       cancelAnimationFrame(bitmapFrameId);
+      bitmapFrameId = undefined;
     }
   }
 
@@ -185,7 +243,45 @@
     }
   }
 
-  async function uploadBitmap() {
+  /**
+   * Handle video frame callback - called when a new video frame is presented.
+   * This is more efficient than requestAnimationFrame as it syncs with actual video frames.
+   */
+  async function handleFallbackVideoFrame(
+    _now: DOMHighResTimeStamp,
+    metadata: VideoFrameCallbackMetadata
+  ) {
+    if (!videoElement || !isCapturing) return;
+
+    // Track frames for profiling using mediaTime
+    if (!isPaused) {
+      profiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
+
+      // Calculate actual frame rate from metadata (presentedFrames / mediaTime)
+      if (metadata.mediaTime > 0.5 && metadata.presentedFrames > 10) {
+        const calculatedFps = Math.round(metadata.presentedFrames / metadata.mediaTime);
+        profiler?.setMetadata({ frameRate: calculatedFps });
+      }
+    }
+
+    // Only upload to GL when there are connections and not paused
+    if (!isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
+      glSystem.setBitmapSource(nodeId, videoElement);
+    }
+
+    // Schedule next frame callback
+    if (isCapturing) {
+      videoFrameCallbackId = (videoElement as HTMLVideoElementWithRVFC).requestVideoFrameCallback(
+        handleFallbackVideoFrame
+      );
+    }
+  }
+
+  /**
+   * Fallback frame handler using requestAnimationFrame.
+   * Less efficient as it runs at display refresh rate rather than video frame rate.
+   */
+  async function uploadBitmapRAF() {
     // Track frames for profiling even without connections (to measure capture rate)
     if (videoElement && isCapturing && !isPaused) {
       profiler?.recordFrame(performance.now() * 1000);
@@ -197,7 +293,7 @@
     }
 
     if (isCapturing) {
-      bitmapFrameId = requestAnimationFrame(uploadBitmap);
+      bitmapFrameId = requestAnimationFrame(uploadBitmapRAF);
     }
   }
 
