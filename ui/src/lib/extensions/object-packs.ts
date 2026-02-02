@@ -36,6 +36,13 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['filter', 'map', 'tap', 'scan', 'select', 'uniq', 'uniqby', 'expr']
   },
   {
+    id: 'ui',
+    name: 'User Interface',
+    description: 'Interface building components',
+    icon: 'Layout',
+    objects: ['dom', 'vue', 'markdown', 'link', 'iframe']
+  },
+  {
     id: 'media',
     name: 'Media',
     description: 'Source and sinks for video and audio',
@@ -110,13 +117,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'Low-level audio signal processing',
     icon: 'Activity',
     objects: ['elem~', 'expr~', 'dsp~']
-  },
-  {
-    id: 'ui',
-    name: 'User Interface',
-    description: 'Interface building components',
-    icon: 'Layout',
-    objects: ['dom', 'vue', 'markdown', 'link', 'iframe']
   },
   {
     id: 'networking',
