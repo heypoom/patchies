@@ -63,11 +63,23 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 <img src="./docs/images/patchies-browse-objects.png" alt="Patchies.app browse objects modal" width="700">
 
-Use `Ctrl/Cmd + O` or the search icon button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
+- Use `Ctrl/Cmd + O` or the search icon button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
+- See all objects organized by category (_Video_, _Audio_, _Code_, _Control_, _UI_, etc.), with searchable names and brief descriptions.
+- You can also browse _object presets_ here.
+  - Presets are pre-configured objects that helps you get started quickly.
+  - Click to insert an object or preset -- pick one at random and play with it!
+  - You can manage your own presets in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas.
 
-See all 100+ objects organized by category (_Video_, _Audio_, _Code_, _Control_, _UI_, etc.), with searchable names and brief descriptions.
+### Object and Preset Packs
 
-You can also browse _object presets_ here. Presets are pre-configured objects that helps you get started quickly. Click to insert an object or preset -- pick one at random and play with it!
+- By default, Patchies only shows you a few objects and presets.
+- Press `Ctrl/CMD > B > Packs` to enable more of them for your use cases.
+- Object packs are curated groups of related objects organized by use-cases.
+  - Enable or disable packs to customize what appears in the Object Browser based on your workflow.
+- Preset packs are collections of pre-configured object presets grouped by use-case.
+  - Each preset is a ready-to-use object with code already written for common tasks.
+- Press the "all" button to enable everything Patchies has to offer.
+- Preset packs requires their objects to be enabled.
 
 ### Modifying Objects
 

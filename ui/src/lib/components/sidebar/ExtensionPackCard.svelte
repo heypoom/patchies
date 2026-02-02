@@ -1,7 +1,9 @@
 <script lang="ts">
   import {
     Box,
+    Camera,
     Palette,
+    Shapes,
     AudioLines,
     SlidersHorizontal,
     Music,
@@ -12,6 +14,7 @@
     Brain,
     Cpu,
     Code,
+    FlaskConical,
     ChevronDown,
     Check
   } from '@lucide/svelte/icons';
@@ -33,7 +36,9 @@
   const IconComponent = $derived(
     match(pack.icon)
       .with('Box', () => Box)
+      .with('Camera', () => Camera)
       .with('Palette', () => Palette)
+      .with('Shapes', () => Shapes)
       .with('AudioLines', () => AudioLines)
       .with('SlidersHorizontal', () => SlidersHorizontal)
       .with('Music', () => Music)
@@ -44,6 +49,7 @@
       .with('Brain', () => Brain)
       .with('Cpu', () => Cpu)
       .with('Code', () => Code)
+      .with('FlaskConical', () => FlaskConical)
       .otherwise(() => Box)
   );
 </script>

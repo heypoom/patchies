@@ -12,28 +12,25 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['js', 'msg', 'button', 'toggle', 'slider', 'peek', 'label']
   },
   {
-    id: 'visual',
-    name: 'Visual',
-    description: 'Graphics, shaders, and video processing',
+    id: 'media',
+    name: 'Media',
+    description: 'Video and image sources & sinks',
+    icon: 'Camera',
+    objects: ['webcam', 'video', 'img', 'screen', 'bg.out']
+  },
+  {
+    id: '2d',
+    name: '2D Graphics',
+    description: 'Canvas and text-based drawing',
     icon: 'Palette',
-    objects: [
-      'p5',
-      'hydra',
-      'glsl',
-      'swgl',
-      'canvas',
-      'canvas.dom',
-      'three',
-      'three.dom',
-      'textmode',
-      'textmode.dom',
-      'webcam',
-      'video',
-      'img',
-      'screen',
-      'bg.out',
-      'bchrn'
-    ]
+    objects: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom']
+  },
+  {
+    id: 'video-synthesis',
+    name: 'Video Synths',
+    description: 'Hydra, shaders and 3D graphics',
+    icon: 'Shapes',
+    objects: ['hydra', 'three', 'three.dom', 'glsl', 'swgl']
   },
   {
     id: 'audio',
@@ -152,5 +149,12 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'Obscure VMs and languages',
     icon: 'Cpu',
     objects: ['uxn', 'asm', 'asm.mem']
+  },
+  {
+    id: 'experimental',
+    name: 'Experimental',
+    description: 'Unstable or work-in-progress nodes',
+    icon: 'FlaskConical',
+    objects: ['bchrn']
   }
 ];
