@@ -65,7 +65,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'fft~',
       'meter~',
       'merge~',
-      'split~'
+      'split~',
+      'tts'
     ]
   },
   {
@@ -114,18 +115,14 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Networking',
     description: 'External communication and I/O',
     icon: 'Wifi',
-    objects: [
-      'netsend',
-      'netrecv',
-      'mqtt',
-      'sse',
-      'midi.in',
-      'midi.out',
-      'tts',
-      'vdo.ninja.push',
-      'vdo.ninja.pull',
-      'webmidilink'
-    ]
+    objects: ['netsend', 'netrecv', 'mqtt', 'sse', 'vdo.ninja.push', 'vdo.ninja.pull']
+  },
+  {
+    id: 'midi',
+    name: 'MIDI',
+    description: 'MIDI input and output',
+    icon: 'Piano',
+    objects: ['midi.in', 'midi.out', 'webmidilink']
   },
   {
     id: 'ai',

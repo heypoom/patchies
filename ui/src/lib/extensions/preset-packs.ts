@@ -15,18 +15,18 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
   },
   {
     id: 'midi',
-    name: 'MIDI Presets',
-    description: 'MIDI routing and control utilities',
+    name: 'MIDI Scripts',
+    description: 'JS scripts for automating MIDI',
     icon: 'Music',
-    requiredObjects: ['js', 'midi.in', 'canvas.dom'],
-    presets: ['midi-adsr-gain.js', 'midi-control-router.js', 'midi.keyboard']
+    requiredObjects: ['js'],
+    presets: ['midi-adsr-gain.js', 'midi-control-router.js']
   },
   {
     id: 'audio-synthesis',
-    name: 'Audio Synthesis',
-    description: 'Sound design utilities',
+    name: 'Synthesis Scripts',
+    description: 'JS scripts for sound design',
     icon: 'AudioLines',
-    requiredObjects: ['js', 'osc~'],
+    requiredObjects: ['js'],
     presets: ['sawtooth-harmonics.js', 'waveshaper-distortion.js']
   },
   {
@@ -49,7 +49,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'hsla.picker',
       'rgba.picker',
       'plotter.canvas',
-      'particle.canvas'
+      'particle.canvas',
+      'midi.keyboard'
     ]
   },
   {

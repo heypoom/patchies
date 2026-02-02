@@ -40,6 +40,32 @@
   );
   const missingObjects = $derived(pack.requiredObjects.filter((obj) => !$enabledObjects.has(obj)));
 
+  // Find which object packs contain the missing objects (and aren't already enabled)
+  const missingPacks = $derived.by(() => {
+    const packsNeeded = new Map<string, (typeof BUILT_IN_PACKS)[0]>();
+
+    for (const obj of missingObjects) {
+      const containingPack = BUILT_IN_PACKS.find((p) => p.objects.includes(obj));
+      if (containingPack && !$enabledPackIds.includes(containingPack.id)) {
+        packsNeeded.set(containingPack.id, containingPack);
+      }
+    }
+
+    return Array.from(packsNeeded.values());
+  });
+
+  function enableMissingPacks() {
+    enabledPackIds.update((ids) => {
+      const newIds = [...ids];
+      for (const p of missingPacks) {
+        if (!newIds.includes(p.id)) {
+          newIds.push(p.id);
+        }
+      }
+      return newIds;
+    });
+  }
+
   const IconComponent = $derived(
     match(pack.icon)
       .with('Sparkles', () => Sparkles)
@@ -98,13 +124,23 @@
           {pack.name}
         </span>
         <span class="text-[10px] text-zinc-600">({pack.presets.length})</span>
-        {#if isPartial && enabled}
-          <Tooltip.Root>
+        {#if isPartial && enabled && missingPacks.length > 0}
+          <Tooltip.Root disableHoverableContent={false} delayDuration={100}>
             <Tooltip.Trigger>
-              <AlertTriangle class="h-3 w-3 text-amber-500" />
+              <AlertTriangle class="h-3 w-3 cursor-pointer text-amber-500" />
             </Tooltip.Trigger>
-            <Tooltip.Content>
-              <p>Some required objects are disabled</p>
+            <Tooltip.Content side="top" class="p-2">
+              <div class="flex flex-col gap-1.5">
+                <p class="text-[10px]">
+                  Requires: {missingPacks.map((p) => p.name).join(', ')}
+                </p>
+                <button
+                  onclick={enableMissingPacks}
+                  class="cursor-pointer rounded bg-amber-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-amber-500"
+                >
+                  Enable
+                </button>
+              </div>
             </Tooltip.Content>
           </Tooltip.Root>
         {/if}
@@ -146,10 +182,16 @@
 
   {#if expanded}
     <div class="border-t border-zinc-800/50 px-2 py-1.5">
-      <!-- Missing objects warning -->
-      {#if missingObjects.length > 0}
+      <!-- Missing packs warning -->
+      {#if missingPacks.length > 0}
         <div class="mb-1.5 text-[9px] text-amber-500/80">
-          Requires: {missingObjects.join(', ')}
+          Requires: {missingPacks.map((p) => p.name).join(', ')}.
+          <button
+            onclick={enableMissingPacks}
+            class="cursor-pointer underline underline-offset-2 hover:text-amber-400"
+          >
+            Enable them.
+          </button>
         </div>
       {/if}
 
