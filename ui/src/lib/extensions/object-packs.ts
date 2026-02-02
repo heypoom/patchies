@@ -9,14 +9,14 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Starters',
     description: 'Core building blocks everyone needs',
     icon: 'Box',
-    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'textbox', 'peek', 'label', 'bg.out']
+    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'textbox', 'peek', 'label']
   },
   {
     id: 'media',
     name: 'Media',
-    description: 'Video, image and audio sources',
+    description: 'Source and sinks for video and audio',
     icon: 'Camera',
-    objects: ['webcam', 'video', 'img', 'screen', 'mic~', 'soundfile~']
+    objects: ['webcam', 'video', 'img', 'screen', 'mic~', 'soundfile~', 'bg.out']
   },
   {
     id: '2d',
