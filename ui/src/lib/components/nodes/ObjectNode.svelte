@@ -29,6 +29,7 @@
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
   import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
   import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
+  import { enabledObjects } from '../../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
 
@@ -145,10 +146,14 @@
 
     const items: Array<{ name: string; type: 'object' | 'preset'; libraryName?: string }> = [];
 
-    // Add regular objects, filtering AI objects if AI features are disabled
+    // Add regular objects, filtering by AI features and enabled extensions
     Array.from(combinedObjectNames).forEach((name) => {
       // Filter out AI objects if AI features are disabled
       if (!$isAiFeaturesVisible && name.startsWith('ai.')) {
+        return;
+      }
+      // Filter by enabled extensions
+      if (!$enabledObjects.has(name)) {
         return;
       }
       items.push({ name, type: 'object' });

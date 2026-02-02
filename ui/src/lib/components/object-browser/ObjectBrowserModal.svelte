@@ -8,6 +8,7 @@
   import Fuse from 'fuse.js';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
+  import { enabledObjects } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
 
   let {
@@ -19,8 +20,8 @@
   let expandedCategories = $state<Set<string>>(new Set());
   let showPresets = $state(true);
 
-  // Get all categorized objects, filtering AI features based on the store
-  const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible));
+  // Get all categorized objects, filtering AI features and by enabled extensions
+  const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible, $enabledObjects));
 
   // Get preset categories grouped by library and type
   const presetCategories = $derived.by((): CategoryGroup[] => {
