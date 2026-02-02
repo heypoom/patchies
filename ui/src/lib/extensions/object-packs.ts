@@ -48,7 +48,9 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'fft~',
       'meter~',
       'merge~',
-      'split~'
+      'split~',
+      'adsr',
+      'mtof'
     ]
   },
   {
@@ -107,9 +109,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'throttle',
       'debounce',
       'loadbang',
-      'uniqby',
-      'adsr',
-      'mtof'
+      'uniqby'
     ]
   },
   {
