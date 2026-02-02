@@ -23,12 +23,15 @@
   // Get all categorized objects, filtering AI features and by enabled extensions
   const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible, $enabledObjects));
 
-  // Get preset categories grouped by library and type
+  // Get preset categories grouped by library and type (filtered by enabled extensions)
   const presetCategories = $derived.by((): CategoryGroup[] => {
     const presetsByCategory = new Map<string, ObjectItem[]>();
 
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
+
+      // Filter presets by enabled object types
+      if (!$enabledObjects.has(preset.type)) continue;
 
       // Get the type folder (second element in path after library id)
       const typeFolder = path.length > 2 ? path[1] : preset.type;

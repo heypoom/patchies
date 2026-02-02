@@ -143,11 +143,18 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts']
   },
   {
+    id: 'programming',
+    name: 'Programming',
+    description: 'Alternative scripting languages',
+    icon: 'Code',
+    objects: ['ruby', 'python', 'worker']
+  },
+  {
     id: 'esoteric',
     name: 'Esoteric',
-    description: 'Alternative languages and VMs',
+    description: 'Obscure VMs and languages',
     icon: 'Cpu',
-    objects: ['uxn', 'asm', 'asm.mem', 'ruby', 'python', 'worker']
+    objects: ['uxn', 'asm', 'asm.mem']
   }
 ];
 

@@ -159,8 +159,11 @@
       items.push({ name, type: 'object' });
     });
 
-    // Add presets from all libraries
+    // Add presets from all libraries (filtered by enabled object types)
     for (const fp of $flattenedPresets) {
+      // Only show presets whose type is enabled
+      if (!$enabledObjects.has(fp.preset.type)) continue;
+
       items.push({
         name: fp.preset.name,
         type: 'preset',
