@@ -6,14 +6,27 @@
   let {
     pack,
     enabled,
-    onToggle
+    onToggle,
+    searchQuery = ''
   }: {
     pack: ExtensionPack;
     enabled: boolean;
     onToggle: () => void;
+    searchQuery?: string;
   } = $props();
 
-  let expanded = $state(false);
+  // Check if any objects match the search query
+  const matchingObjects = $derived.by(() => {
+    if (!searchQuery.trim()) return new Set<string>();
+    const query = searchQuery.toLowerCase();
+    return new Set(pack.objects.filter((obj) => obj.toLowerCase().includes(query)));
+  });
+
+  const hasObjectMatches = $derived(matchingObjects.size > 0);
+
+  // Auto-expand when objects match, allow manual toggle otherwise
+  let manualExpanded = $state(false);
+  const expanded = $derived(hasObjectMatches || manualExpanded);
 
   const IconComponent = $derived(getPackIcon(pack.icon));
 </script>
@@ -65,7 +78,7 @@
 
   <!-- Expandable object list -->
   <button
-    onclick={() => (expanded = !expanded)}
+    onclick={() => (manualExpanded = !manualExpanded)}
     class="flex w-full cursor-pointer items-center justify-between border-t border-zinc-800/50 px-2 py-1 text-[10px] text-zinc-500 hover:text-zinc-400"
   >
     <span>{pack.description}</span>
@@ -77,7 +90,14 @@
     <div class="border-t border-zinc-800/50 px-2 py-1.5">
       <div class="flex flex-wrap gap-0.5">
         {#each pack.objects as obj}
-          <span class="rounded bg-zinc-800 px-1 py-0.5 font-mono text-[9px] text-zinc-400">
+          <span
+            class={[
+              'rounded px-1 py-0.5 font-mono text-[9px]',
+              matchingObjects.has(obj)
+                ? 'bg-yellow-500/30 text-yellow-300'
+                : 'bg-zinc-800 text-zinc-400'
+            ]}
+          >
             {obj}
           </span>
         {/each}

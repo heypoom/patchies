@@ -8,14 +8,27 @@
   let {
     pack,
     enabled,
-    onToggle
+    onToggle,
+    searchQuery = ''
   }: {
     pack: PresetPack;
     enabled: boolean;
     onToggle: () => void;
+    searchQuery?: string;
   } = $props();
 
-  let expanded = $state(false);
+  // Check if any presets match the search query
+  const matchingPresets = $derived.by(() => {
+    if (!searchQuery.trim()) return new Set<string>();
+    const query = searchQuery.toLowerCase();
+    return new Set(pack.presets.filter((preset) => preset.toLowerCase().includes(query)));
+  });
+
+  const hasPresetMatches = $derived(matchingPresets.size > 0);
+
+  // Auto-expand when presets match, allow manual toggle otherwise
+  let manualExpanded = $state(false);
+  const expanded = $derived(hasPresetMatches || manualExpanded);
 
   // Check availability based on required objects
   const hasAllRequiredObjects = $derived(
@@ -146,7 +159,7 @@
 
   <!-- Expandable details -->
   <button
-    onclick={() => (expanded = !expanded)}
+    onclick={() => (manualExpanded = !manualExpanded)}
     class="flex w-full cursor-pointer items-center justify-between border-t border-zinc-800/50 px-2 py-1 text-[10px] text-zinc-500 hover:text-zinc-400"
   >
     <span>{pack.description}</span>
@@ -171,7 +184,14 @@
       <!-- Preset list -->
       <div class="flex flex-wrap gap-0.5">
         {#each pack.presets as preset}
-          <span class="rounded bg-zinc-800 px-1 py-0.5 font-mono text-[9px] text-zinc-400">
+          <span
+            class={[
+              'rounded px-1 py-0.5 font-mono text-[9px]',
+              matchingPresets.has(preset)
+                ? 'bg-yellow-500/30 text-yellow-300'
+                : 'bg-zinc-800 text-zinc-400'
+            ]}
+          >
             {preset}
           </span>
         {/each}

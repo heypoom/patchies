@@ -71,7 +71,7 @@
       <input
         type="text"
         bind:value={searchQuery}
-        placeholder="Search packs..."
+        placeholder="Search packs, objects & presets..."
         class="w-full rounded border border-zinc-700 bg-zinc-900 py-1.5 pr-6 pl-7 text-[11px] text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600"
       />
       {#if searchQuery}
@@ -121,6 +121,7 @@
               {pack}
               enabled={isPackEnabled(pack.id, $enabledPackIds)}
               onToggle={() => togglePack(pack.id)}
+              {searchQuery}
             />
           {/each}
         </div>
@@ -161,6 +162,7 @@
               {pack}
               enabled={isPresetPackEnabled(pack.id, $enabledPresetPackIds)}
               onToggle={() => togglePresetPack(pack.id)}
+              {searchQuery}
             />
           {/each}
         </div>
