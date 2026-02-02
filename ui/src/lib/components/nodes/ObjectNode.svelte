@@ -201,15 +201,15 @@
     }
 
     // Add presets from all libraries
-    // Presets are ONLY visible if explicitly enabled via preset packs
+    // Presets are ONLY visible if their object type is enabled AND (for built-in) the preset pack is enabled
     for (const fp of $flattenedPresets) {
-      // For built-in presets: only show if enabled in preset packs
-      if (fp.libraryName === 'Built-in' && !$enabledPresets.has(fp.preset.name)) {
+      // Always require the object type to be enabled
+      if (!$enabledObjects.has(fp.preset.type)) {
         continue;
       }
 
-      // For user presets: only show if their object type is enabled
-      if (fp.libraryName !== 'Built-in' && !$enabledObjects.has(fp.preset.type)) {
+      // For built-in presets: also require the preset to be in an enabled preset pack
+      if (fp.libraryName === 'Built-in' && !$enabledPresets.has(fp.preset.name)) {
         continue;
       }
 

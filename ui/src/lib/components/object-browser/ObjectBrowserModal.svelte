@@ -54,13 +54,13 @@
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
 
-      // For built-in presets: only show if enabled in preset packs
-      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) {
+      // Always require the object type to be enabled
+      if (!$enabledObjects.has(preset.type)) {
         continue;
       }
 
-      // For user presets: only show if their object type is enabled
-      if (libraryName !== 'Built-in' && !$enabledObjects.has(preset.type)) {
+      // For built-in presets: also require the preset to be in an enabled preset pack
+      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) {
         continue;
       }
 
