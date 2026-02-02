@@ -892,6 +892,7 @@ This allows you to set up multiple values before triggering a computation. Use [
   - `noDrag()` disables dragging the node.
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - See the [Vue.js documentation](https://vuejs.org/guide/introduction.html) to learn how Vue works.
+- The vue component is mounted under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
 
 ### `dom`: create user interfaces with Vanilla JS
 
@@ -902,6 +903,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 - You can call these methods in your `dom` code:
   - `noDrag()` disables dragging the node.
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+- The `root` element runs under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
 
 ### `uxn`: Uxn virtual machine
 
