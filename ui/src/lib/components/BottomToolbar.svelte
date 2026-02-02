@@ -152,7 +152,7 @@
       {/if}
 
       <button
-        title="Browse Objects (Cmd+O)"
+        title="Browse Objects (Ctrl/Cmd+O)"
         class={buttonClass}
         onclick={(e) => {
           e.preventDefault();
@@ -206,7 +206,7 @@
       {/if}
 
       <button
-        title={isLeftSidebarOpen ? 'Close Sidebar (Cmd+B)' : 'Open Sidebar (Cmd+B)'}
+        title={isLeftSidebarOpen ? 'Close Sidebar (Ctrl/Cmd+B)' : 'Open Sidebar (Ctrl/Cmd+B)'}
         class={buttonClass}
         onclick={(e) => {
           e.preventDefault();
