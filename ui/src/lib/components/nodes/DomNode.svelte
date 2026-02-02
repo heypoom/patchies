@@ -211,7 +211,7 @@
           : selected
             ? 'shadow-glow-md ring ring-zinc-400'
             : 'hover:shadow-glow-sm',
-        dragEnabled ? '' : 'nodrag'
+        dragEnabled ? '' : 'nodrag nowheel nopan'
       ]}
       style={containerWidth !== undefined && containerHeight !== undefined
         ? `width: ${containerWidth}px; height: ${containerHeight}px;`
