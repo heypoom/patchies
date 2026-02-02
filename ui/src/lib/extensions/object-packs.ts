@@ -70,16 +70,16 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     icon: 'AudioLines',
     objects: [
       'dac~',
-      'sampler~',
-      'osc~',
-      'sig~',
       'gain~',
-      'pan~',
-      'add~',
-      'fft~',
+      'osc~',
+      'sampler~',
       'meter~',
-      'merge~',
+      'sig~',
+      'pan~',
+      '+~',
+      'fft~',
       'split~',
+      'merge~',
       'adsr',
       'mtof'
     ]
