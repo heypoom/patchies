@@ -140,11 +140,11 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'tts']
   },
   {
-    id: 'programming',
-    name: 'Programming',
-    description: 'Alternative scripting languages',
+    id: 'scripting',
+    name: 'Scripting',
+    description: 'Scripting languages and workers',
     icon: 'Code',
-    objects: ['ruby', 'python', 'worker']
+    objects: ['worker', 'ruby', 'python']
   },
   {
     id: 'low-level',
