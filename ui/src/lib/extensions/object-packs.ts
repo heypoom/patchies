@@ -148,9 +148,9 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['ruby', 'python', 'worker']
   },
   {
-    id: 'esoteric',
-    name: 'Esoteric',
-    description: 'Obscure VMs and languages',
+    id: 'low-level',
+    name: 'Low Level',
+    description: 'Low level virtual machines',
     icon: 'Cpu',
     objects: ['uxn', 'asm', 'asm.mem']
   },
