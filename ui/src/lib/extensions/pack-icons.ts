@@ -2,9 +2,11 @@ import {
   Box,
   ArrowRightLeft,
   Camera,
+  Clock,
   Palette,
   Shapes,
   AudioLines,
+  AudioWaveform,
   SlidersHorizontal,
   Music,
   Activity,
@@ -29,9 +31,11 @@ export function getPackIcon(iconName: string) {
     .with('Box', () => Box)
     .with('ArrowRightLeft', () => ArrowRightLeft)
     .with('Camera', () => Camera)
+    .with('Clock', () => Clock)
     .with('Palette', () => Palette)
     .with('Shapes', () => Shapes)
     .with('AudioLines', () => AudioLines)
+    .with('AudioWaveform', () => AudioWaveform)
     .with('SlidersHorizontal', () => SlidersHorizontal)
     .with('Music', () => Music)
     .with('Activity', () => Activity)

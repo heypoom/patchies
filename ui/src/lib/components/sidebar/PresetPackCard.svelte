@@ -1,21 +1,7 @@
 <script lang="ts">
-  import {
-    Sparkles,
-    Palette,
-    AudioLines,
-    Music,
-    GitBranch,
-    Layout,
-    Wifi,
-    Brain,
-    Cpu,
-    Code,
-    ChevronDown,
-    Check,
-    AlertTriangle
-  } from '@lucide/svelte/icons';
-  import { match } from 'ts-pattern';
+  import { ChevronDown, Check, AlertTriangle } from '@lucide/svelte/icons';
   import type { PresetPack } from '../../../stores/extensions.store';
+  import { getPackIcon } from '../../extensions/pack-icons';
   import { enabledObjects, enabledPackIds, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import * as Tooltip from '../ui/tooltip';
 
@@ -66,20 +52,7 @@
     });
   }
 
-  const IconComponent = $derived(
-    match(pack.icon)
-      .with('Sparkles', () => Sparkles)
-      .with('Palette', () => Palette)
-      .with('AudioLines', () => AudioLines)
-      .with('Music', () => Music)
-      .with('GitBranch', () => GitBranch)
-      .with('Layout', () => Layout)
-      .with('Wifi', () => Wifi)
-      .with('Brain', () => Brain)
-      .with('Cpu', () => Cpu)
-      .with('Code', () => Code)
-      .otherwise(() => Sparkles)
-  );
+  const IconComponent = $derived(getPackIcon(pack.icon));
 
   // Determine visual state
   const isUnavailable = $derived(!hasAnyRequiredObjects);
