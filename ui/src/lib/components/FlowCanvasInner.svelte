@@ -26,7 +26,8 @@
     isObjectBrowserOpen,
     isMobile,
     isSidebarOpen,
-    sidebarView
+    sidebarView,
+    patchObjectTypes
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -202,6 +203,21 @@
         .filter((n): n is typeof n & { type: string } => n.type !== undefined)
         .map((n) => ({ id: n.id, type: n.type }))
     );
+  });
+
+  // Update patchObjectTypes store for components outside the flow context (e.g., ObjectBrowserModal)
+  $effect(() => {
+    const types = new Set<string>();
+
+    for (const node of nodes) {
+      if (node.type === 'object' && node.data?.name) {
+        types.add(node.data.name as string);
+      } else if (node.type && node.type !== 'object') {
+        types.add(node.type);
+      }
+    }
+
+    patchObjectTypes.set(types);
   });
 
   // Update visible nodes for preview culling when viewport or nodes change

@@ -7,6 +7,7 @@ export interface ObjectItem {
   name: string;
   description: string;
   category: string;
+  priority?: 'normal' | 'low';
 }
 
 export interface CategoryGroup {
@@ -128,10 +129,13 @@ function getObjectDescription(name: string): string {
  *
  * @param includeAiFeatures - Whether to include AI-related objects (default: true)
  * @param enabledObjects - Optional set of enabled object names. If provided, only these objects are included.
+ * @param patchObjectTypes - Optional set of object types in the current patch. Objects in the patch
+ *                           but not enabled will be included with low priority.
  */
 export function getCategorizedObjects(
   includeAiFeatures: boolean = true,
-  enabledObjects?: Set<string>
+  enabledObjects?: Set<string>,
+  patchObjectTypes?: Set<string>
 ): CategoryGroup[] {
   const seenNames = new Set<string>();
   const packObjects = new Map<string, ObjectItem[]>();
@@ -172,8 +176,11 @@ export function getCategorizedObjects(
     // Skip AI objects if disabled
     if (!includeAiFeatures && name.startsWith('ai.')) continue;
 
-    // Skip if not in enabled objects
-    if (enabledObjects && !enabledObjects.has(name)) continue;
+    const isEnabled = !enabledObjects || enabledObjects.has(name);
+    const isInPatch = patchObjectTypes?.has(name) ?? false;
+
+    // Skip if not enabled AND not in current patch
+    if (!isEnabled && !isInPatch) continue;
 
     const pack = objectToPackMap.get(name);
     if (!pack) continue; // Object not in any pack
@@ -182,13 +189,20 @@ export function getCategorizedObjects(
     objects.push({
       name,
       description: getObjectDescription(name),
-      category: pack.name
+      category: pack.name,
+      priority: isEnabled ? 'normal' : 'low'
     });
   }
 
-  // Sort objects within each pack
+  // Sort objects within each pack: normal priority first, then alphabetically
   for (const objects of packObjects.values()) {
-    objects.sort((a, b) => a.name.localeCompare(b.name));
+    objects.sort((a, b) => {
+      // Low priority items come last
+      if (a.priority !== b.priority) {
+        return a.priority === 'normal' ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
   }
 
   // Build result in pack order

@@ -14,7 +14,7 @@
     type ObjectItem
   } from './get-categorized-objects';
   import Fuse from 'fuse.js';
-  import { isAiFeaturesVisible } from '../../../stores/ui.store';
+  import { isAiFeaturesVisible, patchObjectTypes } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
   import { enabledObjects, enabledPresets, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
@@ -40,9 +40,13 @@
   let hasInitialized = $state(false);
 
   // Get all categorized objects, filtering AI features and by enabled extensions
-  const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible, $enabledObjects));
+  // Objects in the current patch but not enabled are included as low priority
+  const allCategories = $derived(
+    getCategorizedObjects($isAiFeaturesVisible, $enabledObjects, $patchObjectTypes)
+  );
 
   // Get preset categories grouped by library and type (filtered by enabled extensions)
+  // Presets for objects in the current patch but not enabled are included as low priority
   const presetCategories = $derived.by((): CategoryGroup[] => {
     const presetsByCategory = new Map<string, ObjectItem[]>();
     const categoryIconMap = new Map<string, string>(); // Track icon for each category
@@ -50,11 +54,16 @@
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
 
-      // Filter presets by enabled object types
-      if (!$enabledObjects.has(preset.type)) continue;
+      const isEnabled = $enabledObjects.has(preset.type);
+      const isInPatch = $patchObjectTypes.has(preset.type);
 
-      // Filter built-in presets by enabled preset packs
-      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) continue;
+      // Skip if type not enabled AND not in current patch
+      if (!isEnabled && !isInPatch) continue;
+
+      // Filter built-in presets by enabled preset packs (unless the type is in the patch)
+      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name) && !isInPatch) {
+        continue;
+      }
 
       // Get the type folder (second element in path after library id)
       const typeFolder = path.length > 2 ? path[1] : preset.type;
@@ -70,13 +79,19 @@
       presetsByCategory.get(categoryKey)!.push({
         name: preset.name,
         description: preset.description || `Preset using ${preset.type}`,
-        category: categoryKey
+        category: categoryKey,
+        priority: isEnabled ? 'normal' : 'low'
       });
     }
 
-    // Sort presets within each category alphabetically
+    // Sort presets within each category: normal priority first, then alphabetically
     for (const presets of presetsByCategory.values()) {
-      presets.sort((a, b) => a.name.localeCompare(b.name));
+      presets.sort((a, b) => {
+        if (a.priority !== b.priority) {
+          return a.priority === 'normal' ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name);
+      });
     }
 
     // Sort categories alphabetically
@@ -119,11 +134,18 @@
 
     const results = fuse.search(searchQuery);
 
-    // Sort results: prefix matches first, then by Fuse score
+    // Sort results: prefix matches first, then by priority, then by Fuse score
     const sortedResults = sortFuseResultsWithPrefixPriority(
       results,
       searchQuery,
-      (item) => item.name
+      (item) => item.name,
+      (a, b) => {
+        // Low priority items always come last
+        if (a.item.priority !== b.item.priority) {
+          return a.item.priority === 'normal' ? -1 : 1;
+        }
+        return 0;
+      }
     );
 
     const matchedObjects = new Map<string, ObjectItem[]>();
@@ -138,7 +160,8 @@
       matchedObjects.get(categoryTitle)!.push({
         name: result.item.name,
         description: result.item.description,
-        category: result.item.category
+        category: result.item.category,
+        priority: result.item.priority
       });
     }
 
@@ -361,21 +384,28 @@
                   <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                     {#each category.objects as object (object.name)}
                       {@const isPreset = category.title.includes(': ')}
+                      {@const isLowPriority = object.priority === 'low'}
                       <button
                         onclick={() => handleSelectObject(object.name)}
                         class={[
                           'flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
                           isPreset
                             ? 'border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
-                            : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800'
+                            : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
+                          isLowPriority && 'opacity-50'
                         ]}
                       >
-                        <span
-                          class={[
-                            'font-mono text-sm',
-                            isPreset ? 'text-zinc-300' : 'text-zinc-200'
-                          ]}>{object.name}</span
-                        >
+                        <div class="flex items-center gap-1.5">
+                          <span
+                            class={[
+                              'font-mono text-sm',
+                              isPreset ? 'text-zinc-300' : 'text-zinc-200'
+                            ]}>{object.name}</span
+                          >
+                          {#if isLowPriority}
+                            <span class="text-[10px] text-zinc-600">(disabled)</span>
+                          {/if}
+                        </div>
                         <span class="line-clamp-2 text-xs text-zinc-500">{object.description}</span>
                       </button>
                     {/each}

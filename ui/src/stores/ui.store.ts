@@ -76,3 +76,7 @@ export const shouldShowHandles = derived(
   [isConnectionMode, isConnecting],
   ([$isConnectionMode, $isConnecting]) => $isConnectionMode || $isConnecting
 );
+
+// Track object types used in the current patch
+// This allows components outside the SvelteFlow context to see what objects are in the patch
+export const patchObjectTypes = writable<Set<string>>(new Set());
