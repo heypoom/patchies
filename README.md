@@ -624,6 +624,17 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `play`: play the video
   - `pause`: pause the video
   - `{type: 'loop', value: false}`: do not loop the video
+- See [performance notes on video](#performance-notes-on-webcam-and-video) for info on performance and profiling.
+
+### `webcam`: capture from webcam
+
+- Capture live video from your webcam/camera.
+- Supports video chaining - can be used as a texture source for other objects.
+- Messages
+  - `bang`: start webcam capture
+  - `pause`: toggle pause/resume capture
+  - `{type: 'size', width: 1920, height: 1080}`: set the capture resolution (requests ideal resolution, actual resolution may vary based on camera capabilities)
+- See [performance notes on webcam](#performance-notes-on-webcam-and-video) for info on performance and profiling.
 
 ### `iframe`: embed web content
 
@@ -2259,3 +2270,15 @@ It creates a shader graph that streams the low-resolution preview onto the previ
   - The copying of the pixels from CPU to GPU is way slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
   - If you don't connect its video outlet to another video object, we don't perform the bitmap copy so the performance overhead is minimal.
 - Use these only when you need instant FFT reactivity, mouse interactivity, or DOM access.
+
+### Performance notes on `webcam` and `video`
+
+- On Chromium browsers (e.g. Google Chrome, Edge) where certain Web APIs are supported, we use these optimized pipelines to speed up `webcam` and `video` objects.
+  - `webcam` uses [MediaStreamTrackProcessor](https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrackProcessor)
+  - `video` uses [MediaBunny](https://mediabunny.dev) which uses [WebCodecs](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API)
+- `Ctrl/Cmd+K > Toggle Video Stats Overlay` to show/hide the video stats overlay.
+  - This shows which pipeline is being used and the FPS, dropped frames, resolution and codec.
+- `Ctrl/Cmd+K > Toggle MediaBunny` switches between MediaBunny and HTMLVideoElement implementations on `video` object.
+  - This lets you toggle between `MediaStreamTrackProcessor` and `HTMLVideoElement` implementations on `webcam` object. You have to reload the page after toggling.
+  - The `MediaBunny/MediaStreamTrackProcessor` pipeline is faster on Chromium browsers, but significantly slower on Firefox and Safari.
+  - You can still toggle it manually to test if it might be faster on your browser.
