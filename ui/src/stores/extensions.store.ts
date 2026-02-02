@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 
+// Types
 export interface ExtensionPack {
   id: string;
   name: string;
@@ -8,155 +9,26 @@ export interface ExtensionPack {
   objects: string[];
 }
 
-/**
- * Built-in extension packs organized by persona/use-case
- */
-export const BUILT_IN_PACKS: ExtensionPack[] = [
-  {
-    id: 'essentials',
-    name: 'Essentials',
-    description: 'Core building blocks everyone needs',
-    icon: 'Sparkles',
-    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'peek', 'label', 'print']
-  },
-  {
-    id: 'visual',
-    name: 'Visual',
-    description: 'Graphics, shaders, and video processing',
-    icon: 'Palette',
-    objects: [
-      'p5',
-      'hydra',
-      'glsl',
-      'swgl',
-      'canvas',
-      'canvas.dom',
-      'three',
-      'three.dom',
-      'textmode',
-      'textmode.dom',
-      'webcam',
-      'video',
-      'img',
-      'screen',
-      'bg.out',
-      'bchrn'
-    ]
-  },
-  {
-    id: 'audio',
-    name: 'Audio',
-    description: 'Sound synthesis and effects',
-    icon: 'AudioLines',
-    objects: [
-      'osc~',
-      'sig~',
-      'gain~',
-      'pan~',
-      'delay~',
-      'lowpass~',
-      'highpass~',
-      'bandpass~',
-      'notch~',
-      'lowshelf~',
-      'highshelf~',
-      'peaking~',
-      'allpass~',
-      'compressor~',
-      'waveshaper~',
-      'convolver~',
-      'add~',
-      'dac~',
-      'mic~',
-      'soundfile~',
-      'sampler~',
-      'fft~',
-      'meter~',
-      'merge~',
-      'split~'
-    ]
-  },
-  {
-    id: 'livecoding',
-    name: 'Livecoding',
-    description: 'Music livecoding languages',
-    icon: 'Music',
-    objects: ['strudel', 'chuck~', 'csound~', 'sonic~', 'elem~', 'tone~', 'dsp~', 'expr~', 'orca']
-  },
-  {
-    id: 'dataflow',
-    name: 'Data Flow',
-    description: 'Functional message processing',
-    icon: 'GitBranch',
-    objects: [
-      'filter',
-      'map',
-      'tap',
-      'scan',
-      'uniq',
-      'expr',
-      'trigger',
-      'select',
-      'spigot',
-      'float',
-      'int',
-      'metro',
-      'delay',
-      'throttle',
-      'debounce',
-      'loadbang',
-      'uniqby',
-      'adsr',
-      'mtof'
-    ]
-  },
-  {
-    id: 'ui',
-    name: 'UI Controls',
-    description: 'Interface building components',
-    icon: 'Layout',
-    objects: ['dom', 'vue', 'keyboard', 'textbox', 'markdown', 'link', 'iframe']
-  },
-  {
-    id: 'networking',
-    name: 'Networking',
-    description: 'External communication and I/O',
-    icon: 'Wifi',
-    objects: [
-      'netsend',
-      'netrecv',
-      'mqtt',
-      'sse',
-      'midi.in',
-      'midi.out',
-      'tts',
-      'vdo.ninja.push',
-      'vdo.ninja.pull',
-      'webmidilink'
-    ]
-  },
-  {
-    id: 'ai',
-    name: 'AI',
-    description: 'AI-powered generation nodes',
-    icon: 'Brain',
-    objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts']
-  },
-  {
-    id: 'programming',
-    name: 'Programming',
-    description: 'Alternative scripting languages',
-    icon: 'Code',
-    objects: ['ruby', 'python', 'worker']
-  },
-  {
-    id: 'esoteric',
-    name: 'Esoteric',
-    description: 'Obscure VMs and languages',
-    icon: 'Cpu',
-    objects: ['uxn', 'asm', 'asm.mem']
-  }
-];
+export interface PresetPack {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // lucide icon name
+  requiredObjects: string[]; // Object types needed (filters pack visibility)
+  presets: string[]; // Preset names to enable
+}
+
+// Re-export pack definitions from extracted files
+export { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
+export { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
+
+// Import for internal use
+import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
+import { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
+
+// ============================================================================
+// Object Packs Store
+// ============================================================================
 
 const STORAGE_KEY = 'patchies:enabled-packs';
 const DEFAULT_ENABLED_PACKS = ['essentials'];
@@ -177,7 +49,7 @@ function getInitialEnabledPacks(): string[] {
 }
 
 /**
- * Store of enabled pack IDs
+ * Store of enabled object pack IDs
  */
 export const enabledPackIds = writable<string[]>(getInitialEnabledPacks());
 
@@ -220,14 +92,14 @@ export function togglePack(packId: string): void {
 }
 
 /**
- * Enable all packs
+ * Enable all object packs
  */
 export function enableAllPacks(): void {
   enabledPackIds.set(BUILT_IN_PACKS.map((p) => p.id));
 }
 
 /**
- * Disable all packs (except essentials for safety)
+ * Disable all object packs (except essentials for safety)
  */
 export function disableAllPacks(): void {
   enabledPackIds.set(['essentials']);
@@ -238,4 +110,119 @@ export function disableAllPacks(): void {
  */
 export function isPackEnabled(packId: string, enabledIds: string[]): boolean {
   return enabledIds.includes(packId);
+}
+
+// ============================================================================
+// Preset Packs Store
+// ============================================================================
+
+const PRESET_STORAGE_KEY = 'patchies:enabled-preset-packs';
+const DEFAULT_ENABLED_PRESET_PACKS = ['starter'];
+
+function getInitialEnabledPresetPacks(): string[] {
+  if (typeof localStorage === 'undefined') return DEFAULT_ENABLED_PRESET_PACKS;
+
+  const stored = localStorage.getItem(PRESET_STORAGE_KEY);
+  if (!stored) return DEFAULT_ENABLED_PRESET_PACKS;
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // Invalid JSON, use defaults
+  }
+  return DEFAULT_ENABLED_PRESET_PACKS;
+}
+
+/**
+ * Store of enabled preset pack IDs
+ */
+export const enabledPresetPackIds = writable<string[]>(getInitialEnabledPresetPacks());
+
+// Persist to localStorage
+if (typeof localStorage !== 'undefined') {
+  enabledPresetPackIds.subscribe((ids) => {
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(ids));
+  });
+}
+
+/**
+ * Derived set of all enabled preset names
+ * Filters by both enabled preset packs AND enabled objects (dependencies)
+ */
+export const enabledPresets = derived(
+  [enabledPresetPackIds, enabledObjects],
+  ([$enabledPresetPackIds, $enabledObjects]) => {
+    const presets = new Set<string>();
+
+    for (const packId of $enabledPresetPackIds) {
+      const pack = BUILT_IN_PRESET_PACKS.find((p) => p.id === packId);
+      if (!pack) continue;
+
+      // Only include presets if at least one required object is enabled
+      // (partial availability - we filter unavailable, don't block entirely)
+      const hasAnyRequiredObject = pack.requiredObjects.some((obj) => $enabledObjects.has(obj));
+      if (!hasAnyRequiredObject) continue;
+
+      for (const preset of pack.presets) {
+        presets.add(preset);
+      }
+    }
+
+    return presets;
+  }
+);
+
+/**
+ * Toggle a preset pack on/off
+ */
+export function togglePresetPack(packId: string): void {
+  enabledPresetPackIds.update((ids) => {
+    if (ids.includes(packId)) {
+      return ids.filter((id) => id !== packId);
+    } else {
+      return [...ids, packId];
+    }
+  });
+}
+
+/**
+ * Enable all preset packs
+ */
+export function enableAllPresetPacks(): void {
+  enabledPresetPackIds.set(BUILT_IN_PRESET_PACKS.map((p) => p.id));
+}
+
+/**
+ * Disable all preset packs (except starter for safety)
+ */
+export function disableAllPresetPacks(): void {
+  enabledPresetPackIds.set(['starter']);
+}
+
+/**
+ * Check if a preset pack is enabled
+ */
+export function isPresetPackEnabled(packId: string, enabledIds: string[]): boolean {
+  return enabledIds.includes(packId);
+}
+
+/**
+ * Check if a preset pack has all its required objects enabled
+ */
+export function isPresetPackFullyAvailable(
+  pack: PresetPack,
+  enabledObjectsSet: Set<string>
+): boolean {
+  return pack.requiredObjects.every((obj) => enabledObjectsSet.has(obj));
+}
+
+/**
+ * Check if a preset pack has at least some of its required objects enabled
+ */
+export function isPresetPackPartiallyAvailable(
+  pack: PresetPack,
+  enabledObjectsSet: Set<string>
+): boolean {
+  return pack.requiredObjects.some((obj) => enabledObjectsSet.has(obj));
 }

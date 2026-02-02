@@ -1,13 +1,20 @@
 <script lang="ts">
   import ExtensionPackCard from './ExtensionPackCard.svelte';
+  import PresetPackCard from './PresetPackCard.svelte';
   import {
     BUILT_IN_PACKS,
+    BUILT_IN_PRESET_PACKS,
     enabledPackIds,
+    enabledPresetPackIds,
     enabledObjects,
     togglePack,
+    togglePresetPack,
     enableAllPacks,
+    enableAllPresetPacks,
     disableAllPacks,
-    isPackEnabled
+    disableAllPresetPacks,
+    isPackEnabled,
+    isPresetPackEnabled
   } from '../../../stores/extensions.store';
 
   // Total number of unique objects across all packs
@@ -22,43 +29,89 @@
   });
 
   const enabledCount = $derived($enabledObjects.size);
-  const allEnabled = $derived($enabledPackIds.length === BUILT_IN_PACKS.length);
+  const allObjectPacksEnabled = $derived($enabledPackIds.length === BUILT_IN_PACKS.length);
+  const allPresetPacksEnabled = $derived(
+    $enabledPresetPackIds.length === BUILT_IN_PRESET_PACKS.length
+  );
 </script>
 
 <div class="flex h-full flex-col">
-  <!-- Header with stats -->
-  <div class="border-b border-zinc-800 px-2 py-2">
-    <div class="flex items-center justify-between">
-      <span class="text-[10px] text-zinc-500">
-        <span class="text-zinc-300">{enabledCount}</span>/{totalObjectCount} objects
-      </span>
-
-      {#if allEnabled}
-        <button
-          onclick={disableAllPacks}
-          class="cursor-pointer rounded px-1.5 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-        >
-          Reset
-        </button>
-      {:else}
-        <button
-          onclick={enableAllPacks}
-          class="cursor-pointer rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-200 hover:bg-zinc-600"
-        >
-          Enable All
-        </button>
-      {/if}
-    </div>
-  </div>
-
   <!-- Pack list -->
-  <div class="flex-1 space-y-1.5 overflow-y-auto p-2">
-    {#each BUILT_IN_PACKS as pack (pack.id)}
-      <ExtensionPackCard
-        {pack}
-        enabled={isPackEnabled(pack.id, $enabledPackIds)}
-        onToggle={() => togglePack(pack.id)}
-      />
-    {/each}
+  <div class="flex-1 space-y-4 overflow-y-auto p-2">
+    <!-- Object Packs Section -->
+    <div>
+      <div class="mb-2 flex items-center justify-between">
+        <span class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+          Object Packs
+        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-zinc-600">
+            {enabledCount}/{totalObjectCount}
+          </span>
+          {#if allObjectPacksEnabled}
+            <button
+              onclick={disableAllPacks}
+              class="cursor-pointer rounded px-1.5 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+            >
+              Reset
+            </button>
+          {:else}
+            <button
+              onclick={enableAllPacks}
+              class="cursor-pointer rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-200 hover:bg-zinc-600"
+            >
+              All
+            </button>
+          {/if}
+        </div>
+      </div>
+      <div class="space-y-1.5">
+        {#each BUILT_IN_PACKS as pack (pack.id)}
+          <ExtensionPackCard
+            {pack}
+            enabled={isPackEnabled(pack.id, $enabledPackIds)}
+            onToggle={() => togglePack(pack.id)}
+          />
+        {/each}
+      </div>
+    </div>
+
+    <!-- Preset Packs Section -->
+    <div>
+      <div class="mb-2 flex items-center justify-between">
+        <span class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+          Preset Packs
+        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-zinc-600">
+            {$enabledPresetPackIds.length}/{BUILT_IN_PRESET_PACKS.length}
+          </span>
+          {#if allPresetPacksEnabled}
+            <button
+              onclick={disableAllPresetPacks}
+              class="cursor-pointer rounded px-1.5 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+            >
+              Reset
+            </button>
+          {:else}
+            <button
+              onclick={enableAllPresetPacks}
+              class="cursor-pointer rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-200 hover:bg-zinc-600"
+            >
+              All
+            </button>
+          {/if}
+        </div>
+      </div>
+      <div class="space-y-1.5">
+        {#each BUILT_IN_PRESET_PACKS as pack (pack.id)}
+          <PresetPackCard
+            {pack}
+            enabled={isPresetPackEnabled(pack.id, $enabledPresetPackIds)}
+            onToggle={() => togglePresetPack(pack.id)}
+          />
+        {/each}
+      </div>
+    </div>
   </div>
 </div>

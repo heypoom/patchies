@@ -28,7 +28,7 @@
   import Fuse from 'fuse.js';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
-  import { enabledObjects, BUILT_IN_PACKS } from '../../../stores/extensions.store';
+  import { enabledObjects, enabledPresets, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
 
@@ -61,7 +61,7 @@
 
   let searchQuery = $state('');
   let expandedCategories = $state<Set<string>>(new Set());
-  let showPresets = $state(false);
+  let showPresets = $state(true);
   let hasInitialized = $state(false);
 
   // Get all categorized objects, filtering AI features and by enabled extensions
@@ -77,6 +77,9 @@
 
       // Filter presets by enabled object types
       if (!$enabledObjects.has(preset.type)) continue;
+
+      // Filter built-in presets by enabled preset packs
+      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) continue;
 
       // Get the type folder (second element in path after library id)
       const typeFolder = path.length > 2 ? path[1] : preset.type;

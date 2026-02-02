@@ -29,7 +29,7 @@
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
   import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
   import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
-  import { enabledObjects } from '../../../stores/extensions.store';
+  import { enabledObjects, enabledPresets } from '../../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
 
@@ -159,10 +159,13 @@
       items.push({ name, type: 'object' });
     });
 
-    // Add presets from all libraries (filtered by enabled object types)
+    // Add presets from all libraries (filtered by enabled object types and preset packs)
     for (const fp of $flattenedPresets) {
       // Only show presets whose type is enabled
       if (!$enabledObjects.has(fp.preset.type)) continue;
+
+      // Filter built-in presets by enabled preset packs
+      if (fp.libraryName === 'Built-in' && !$enabledPresets.has(fp.preset.name)) continue;
 
       items.push({
         name: fp.preset.name,
