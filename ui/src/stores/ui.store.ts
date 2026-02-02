@@ -47,10 +47,22 @@ const storedSidebarOpen =
 
 export const isSidebarOpen = writable(storedSidebarOpen === 'true');
 
+// Sidebar view state - persisted to localStorage
+export type SidebarView = 'files' | 'presets' | 'packs';
+
+const storedSidebarView =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;
+
+export const sidebarView = writable<SidebarView>((storedSidebarView as SidebarView) || 'files');
+
 // Persist sidebar state to localStorage
 if (typeof localStorage !== 'undefined') {
   isSidebarOpen.subscribe((value) => {
     localStorage.setItem('patchies-sidebar-open', String(value));
+  });
+
+  sidebarView.subscribe((value) => {
+    localStorage.setItem('patchies-sidebar-view', value);
   });
 }
 
@@ -64,3 +76,7 @@ export const shouldShowHandles = derived(
   [isConnectionMode, isConnecting],
   ([$isConnectionMode, $isConnecting]) => $isConnectionMode || $isConnecting
 );
+
+// Track object types used in the current patch
+// This allows components outside the SvelteFlow context to see what objects are in the patch
+export const patchObjectTypes = writable<Set<string>>(new Set());

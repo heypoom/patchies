@@ -25,7 +25,9 @@
     isConnectionMode,
     isObjectBrowserOpen,
     isMobile,
-    isSidebarOpen
+    isSidebarOpen,
+    sidebarView,
+    patchObjectTypes
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -109,20 +111,6 @@
   // Dialog state for save as preset
   let showSavePresetDialog = $state(false);
   let nodeToSaveAsPreset = $state<Node | null>(null);
-
-  // Sidebar view state - persisted to localStorage
-  let sidebarView = $state<'files' | 'presets'>(
-    (typeof window !== 'undefined' &&
-      (localStorage.getItem('patchies-sidebar-view') as 'files' | 'presets')) ||
-      'files'
-  );
-
-  // Persist sidebar view changes
-  $effect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('patchies-sidebar-view', sidebarView);
-    }
-  });
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -215,6 +203,21 @@
         .filter((n): n is typeof n & { type: string } => n.type !== undefined)
         .map((n) => ({ id: n.id, type: n.type }))
     );
+  });
+
+  // Update patchObjectTypes store for components outside the flow context (e.g., ObjectBrowserModal)
+  $effect(() => {
+    const types = new Set<string>();
+
+    for (const node of nodes) {
+      if (node.type === 'object' && node.data?.name) {
+        types.add(node.data.name as string);
+      } else if (node.type && node.type !== 'object') {
+        types.add(node.type);
+      }
+    }
+
+    patchObjectTypes.set(types);
   });
 
   // Update visible nodes for preview culling when viewport or nodes change
@@ -976,7 +979,7 @@
 
 <div class="flow-container flex h-screen w-full">
   <!-- Sidebar (Files / Presets) -->
-  <SidebarPanel bind:open={$isSidebarOpen} bind:view={sidebarView} />
+  <SidebarPanel bind:open={$isSidebarOpen} bind:view={$sidebarView} />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">

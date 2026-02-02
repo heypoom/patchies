@@ -28,7 +28,12 @@
   import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
   import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
-  import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
+  import {
+    isAiFeaturesVisible,
+    isObjectBrowserOpen,
+    patchObjectTypes
+  } from '../../../stores/ui.store';
+  import { enabledObjects, enabledPresets } from '../../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
 
@@ -57,7 +62,6 @@
     'markdown',
 
     // Control objects
-    'print',
     'send',
     'recv',
     'delay',
@@ -137,29 +141,83 @@
     return lookup;
   });
 
-  // Combine all searchable items (objects + presets) with metadata
+  // Combine all searchable items (objects + shorthands + presets) with metadata
+  // Objects in the current patch but not enabled are included as low priority
   const allSearchableItems = $derived.by(() => {
     const objectDefNames = getObjectNames();
     const visualNodeList = nodeNames.filter((name) => name !== 'object' && name !== 'asm.value');
     const combinedObjectNames = new Set([...visualNodeList, ...objectDefNames]);
 
-    const items: Array<{ name: string; type: 'object' | 'preset'; libraryName?: string }> = [];
+    const items: Array<{
+      name: string;
+      type: 'object' | 'preset';
+      libraryName?: string;
+      priority: 'normal' | 'low';
+    }> = [];
+    const addedNames = new Set<string>();
 
-    // Add regular objects, filtering AI objects if AI features are disabled
+    // Add regular objects, filtering by AI features and enabled extensions
+    // Objects in the current patch are included even if not enabled (as low priority)
     Array.from(combinedObjectNames).forEach((name) => {
       // Filter out AI objects if AI features are disabled
       if (!$isAiFeaturesVisible && name.startsWith('ai.')) {
         return;
       }
-      items.push({ name, type: 'object' });
+
+      const isEnabled = $enabledObjects.has(name);
+      const isInPatch = $patchObjectTypes.has(name);
+
+      // Skip if not enabled AND not in current patch
+      if (!isEnabled && !isInPatch) {
+        return;
+      }
+
+      items.push({
+        name,
+        type: 'object',
+        priority: isEnabled ? 'normal' : 'low'
+      });
+      addedNames.add(name);
     });
 
+    // Add shorthands (filtered by whether target nodeType is enabled or in patch)
+    const shorthandRegistry = ObjectShorthandRegistry.getInstance();
+    for (const shorthand of shorthandRegistry.getShorthandsWithMetadata()) {
+      // Skip if already added as a regular object
+      if (addedNames.has(shorthand.name)) continue;
+
+      const isEnabled = $enabledObjects.has(shorthand.nodeType);
+      const isInPatch = $patchObjectTypes.has(shorthand.nodeType);
+
+      // Skip if not enabled AND not in current patch
+      if (!isEnabled && !isInPatch) continue;
+
+      items.push({
+        name: shorthand.name,
+        type: 'object',
+        priority: isEnabled ? 'normal' : 'low'
+      });
+      addedNames.add(shorthand.name);
+    }
+
     // Add presets from all libraries
+    // Presets are ONLY visible if their object type is enabled AND (for built-in) the preset pack is enabled
     for (const fp of $flattenedPresets) {
+      // Always require the object type to be enabled
+      if (!$enabledObjects.has(fp.preset.type)) {
+        continue;
+      }
+
+      // For built-in presets: also require the preset to be in an enabled preset pack
+      if (fp.libraryName === 'Built-in' && !$enabledPresets.has(fp.preset.name)) {
+        continue;
+      }
+
       items.push({
         name: fp.preset.name,
         type: 'preset',
-        libraryName: fp.libraryName
+        libraryName: fp.libraryName,
+        priority: 'normal'
       });
     }
 
@@ -237,19 +295,26 @@
     if (!expr.trim()) {
       const objects = allSearchableItems
         .filter((item) => item.type === 'object')
-        .map((item) => ({ name: item.name, type: item.type }));
+        .map((item) => ({ name: item.name, type: item.type, priority: item.priority }));
       const presets = allSearchableItems
         .filter((item) => item.type === 'preset')
-        .map((item) => ({ name: item.name, type: item.type }));
-      return [
-        // Sort objects by priority first, then alphabetically within same priority
-        ...objects.sort((a, b) => {
+        .map((item) => ({ name: item.name, type: item.type, priority: item.priority }));
+
+      // Sort: normal priority first, then by object priority, then alphabetically
+      const sortItems = (
+        items: Array<{ name: string; type: 'object' | 'preset'; priority: 'normal' | 'low' }>
+      ) =>
+        items.sort((a, b) => {
+          // Low priority items always come last
+          if (a.priority !== b.priority) {
+            return a.priority === 'normal' ? -1 : 1;
+          }
           const priorityDiff = getObjectPriority(a.name) - getObjectPriority(b.name);
           if (priorityDiff !== 0) return priorityDiff;
           return a.name.localeCompare(b.name);
-        }),
-        ...presets.sort((a, b) => a.name.localeCompare(b.name))
-      ];
+        });
+
+      return [...sortItems(objects), ...sortItems(presets)];
     }
 
     // Fuzzy search all items (only the first word/object name)
@@ -261,6 +326,11 @@
       expr,
       (item) => item.name,
       (a, b) => {
+        // Low priority items always come last
+        if (a.item.priority !== b.item.priority) {
+          return a.item.priority === 'normal' ? -1 : 1;
+        }
+
         // Then sort by type (objects first)
         if (a.item.type !== b.item.type) {
           return a.item.type === 'object' ? -1 : 1;
@@ -277,7 +347,11 @@
       }
     );
 
-    return sortedResults.map((result) => ({ name: result.item.name, type: result.item.type }));
+    return sortedResults.map((result) => ({
+      name: result.item.name,
+      type: result.item.type,
+      priority: result.item.priority
+    }));
   });
 
   function enterEditingMode() {
@@ -537,7 +611,11 @@
       });
   }
 
-  function selectSuggestion(suggestion: { name: string; type: 'object' | 'preset' }) {
+  function selectSuggestion(suggestion: {
+    name: string;
+    type: 'object' | 'preset';
+    priority: 'normal' | 'low';
+  }) {
     expr = suggestion.name;
     showAutocomplete = false;
     exitEditingMode(true);
@@ -773,7 +851,8 @@
                             'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
                             index === selectedSuggestion
                               ? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
-                              : 'border-transparent text-zinc-300 hover:bg-zinc-800/80'
+                              : 'border-transparent text-zinc-300 hover:bg-zinc-800/80',
+                            suggestion.priority === 'low' && 'opacity-50'
                           ]}
                         >
                           <span class="font-mono">{suggestion.name}</span>
@@ -784,6 +863,10 @@
                             {#if preset}
                               <span class="text-[10px] text-zinc-500">{preset.preset.type}</span>
                             {/if}
+                          {/if}
+
+                          {#if suggestion.priority === 'low'}
+                            <span class="text-[10px] text-zinc-600">(disabled)</span>
                           {/if}
                         </button>
                       {/each}

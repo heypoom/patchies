@@ -61,13 +61,30 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 ### Browsing Objects
 
-<img src="./docs/images/patchies-browse-objects.png" alt="Patchies.app browse objects modal" width="700">
+<img src="./docs/images/object-browser.webp" alt="Patchies.app browse objects modal" width="700">
 
-Use `Ctrl/Cmd + O` or the search icon button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
+- Use `Ctrl/Cmd + O` or the search icon button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
+- See all objects and presets organized by [packs](#object-and-preset-packs), with searchable names and descriptions.
+- Presets are pre-configured objects that helps you get started quickly.
+  - Manage your own presets in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas.
+- Click to insert an object or preset -- pick one at random and play with it!
 
-See all 100+ objects organized by category (_Video_, _Audio_, _Code_, _Control_, _UI_, etc.), with searchable names and brief descriptions.
+### Object and Preset Packs
 
-You can also browse _object presets_ here. Presets are pre-configured objects that helps you get started quickly. Click to insert an object or preset -- pick one at random and play with it!
+<img src="./docs/images/object-packs.webp" alt="Patchies.app objects packs" width="700">
+
+- By default, Patchies only shows you a few objects and presets.
+- Press `Ctrl/Cmd + B > Packs` to show more of them to match your use cases.
+- Object packs are curated groups of related objects organized by their use cases.
+- Enable or disable packs to customize what appears in the object browser and quick insert menu.
+
+<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
+
+- Preset packs are collections of pre-configured object presets grouped by use-case.
+  - Each preset is a ready-to-use object with code already written for common tasks.
+- Search for packs by its name, description, its objects or its presets.
+- Press the "all" button to enable everything Patchies has to offer.
+- Preset packs requires their objects to be enabled.
 
 ### Modifying Objects
 

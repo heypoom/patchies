@@ -46,6 +46,30 @@ export class ObjectShorthandRegistry {
   }
 
   /**
+   * Get all shorthands with their metadata (for filtering by enabled objects).
+   * Returns array of { name, nodeType, description } for each shorthand alias.
+   */
+  public getShorthandsWithMetadata(): Array<{
+    name: string;
+    nodeType: string;
+    description?: string;
+  }> {
+    const result: Array<{ name: string; nodeType: string; description?: string }> = [];
+
+    this.shorthands.forEach((shorthand) => {
+      for (const name of shorthand.names) {
+        result.push({
+          name,
+          nodeType: shorthand.nodeType,
+          description: shorthand.description
+        });
+      }
+    });
+
+    return result;
+  }
+
+  /**
    * Try to transform an expression into a visual node.
    * Returns the node type and data if matched, null otherwise.
    *

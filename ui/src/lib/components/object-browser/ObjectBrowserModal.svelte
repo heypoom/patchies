@@ -1,14 +1,33 @@
 <script lang="ts">
-  import { ChevronDown, Search, SearchX, X, Eye, EyeOff } from '@lucide/svelte/icons';
+  import {
+    ChevronDown,
+    Search,
+    SearchX,
+    X,
+    Bookmark,
+    ChevronRight,
+    Package
+  } from '@lucide/svelte/icons';
   import {
     getCategorizedObjects,
     type CategoryGroup,
     type ObjectItem
   } from './get-categorized-objects';
   import Fuse from 'fuse.js';
-  import { isAiFeaturesVisible } from '../../../stores/ui.store';
+  import { isAiFeaturesVisible, patchObjectTypes } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
+  import { enabledObjects, enabledPresets, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
+  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import { getPackIcon } from '$lib/extensions/pack-icons';
+
+  function openPacks() {
+    $sidebarView = 'packs';
+    $isSidebarOpen = true;
+    open = false;
+  }
+
+  const getIconComponent = getPackIcon;
 
   let {
     open = $bindable(false),
@@ -18,16 +37,32 @@
   let searchQuery = $state('');
   let expandedCategories = $state<Set<string>>(new Set());
   let showPresets = $state(true);
+  let hasInitialized = $state(false);
 
-  // Get all categorized objects, filtering AI features based on the store
-  const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible));
+  // Get all categorized objects, filtering AI features and by enabled extensions
+  // Objects in the current patch but not enabled are included as low priority
+  const allCategories = $derived(
+    getCategorizedObjects($isAiFeaturesVisible, $enabledObjects, $patchObjectTypes)
+  );
 
   // Get preset categories grouped by library and type
+  // Presets are ONLY visible if explicitly enabled via preset packs
   const presetCategories = $derived.by((): CategoryGroup[] => {
     const presetsByCategory = new Map<string, ObjectItem[]>();
+    const categoryIconMap = new Map<string, string>(); // Track icon for each category
 
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
+
+      // Always require the object type to be enabled
+      if (!$enabledObjects.has(preset.type)) {
+        continue;
+      }
+
+      // For built-in presets: also require the preset to be in an enabled preset pack
+      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) {
+        continue;
+      }
 
       // Get the type folder (second element in path after library id)
       const typeFolder = path.length > 2 ? path[1] : preset.type;
@@ -35,12 +70,16 @@
 
       if (!presetsByCategory.has(categoryKey)) {
         presetsByCategory.set(categoryKey, []);
+        // Look up icon from pack for this object type
+        const pack = BUILT_IN_PACKS.find((p) => p.objects.includes(preset.type));
+        categoryIconMap.set(categoryKey, pack?.icon || 'Package');
       }
 
       presetsByCategory.get(categoryKey)!.push({
         name: preset.name,
         description: preset.description || `Preset using ${preset.type}`,
-        category: categoryKey
+        category: categoryKey,
+        priority: 'normal'
       });
     }
 
@@ -51,8 +90,10 @@
 
     // Sort categories alphabetically
     const sortedCategories = Array.from(presetsByCategory.keys()).sort();
+
     return sortedCategories.map((category) => ({
       title: category,
+      icon: categoryIconMap.get(category) || 'Package',
       objects: presetsByCategory.get(category)!
     }));
   });
@@ -88,11 +129,18 @@
 
     const results = fuse.search(searchQuery);
 
-    // Sort results: prefix matches first, then by Fuse score
+    // Sort results: prefix matches first, then by priority, then by Fuse score
     const sortedResults = sortFuseResultsWithPrefixPriority(
       results,
       searchQuery,
-      (item) => item.name
+      (item) => item.name,
+      (a, b) => {
+        // Low priority items always come last
+        if (a.item.priority !== b.item.priority) {
+          return a.item.priority === 'normal' ? -1 : 1;
+        }
+        return 0;
+      }
     );
 
     const matchedObjects = new Map<string, ObjectItem[]>();
@@ -107,7 +155,8 @@
       matchedObjects.get(categoryTitle)!.push({
         name: result.item.name,
         description: result.item.description,
-        category: result.item.category
+        category: result.item.category,
+        priority: result.item.priority
       });
     }
 
@@ -154,20 +203,20 @@
     expandedCategories = newExpanded;
   }
 
-  // Initialize with all categories expanded
+  // Initialize with all categories expanded (only once per open)
   $effect(() => {
-    if (open && expandedCategories.size === 0) {
+    if (open && !hasInitialized) {
       expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
+      hasInitialized = true;
+    } else if (!open) {
+      hasInitialized = false;
     }
   });
 
-  // Auto-expand categories when searching
+  // Auto-expand categories when searching (only when search is active)
   $effect(() => {
     if (searchQuery.trim() && filteredCategories.length > 0) {
       expandedCategories = new Set(filteredCategories.map((cat) => cat.title));
-    } else if (!searchQuery.trim()) {
-      // Expand all when search is cleared
-      expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
     }
   });
 
@@ -229,7 +278,7 @@
 
       <!-- Search bar -->
       <div class="border-b border-zinc-800 px-4 py-3 sm:px-6">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div class="relative flex-1">
             <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
@@ -249,19 +298,32 @@
             {/if}
           </div>
 
-          <!-- Presets toggle -->
-          <button
-            onclick={() => (showPresets = !showPresets)}
-            class={[
-              'flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors',
-              showPresets
-                ? 'border-zinc-600 bg-zinc-800 text-zinc-300'
-                : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
-            ]}
-          >
-            {#if showPresets}<Eye class="h-4 w-4" />{:else}<EyeOff class="h-4 w-4" />{/if}
-            <span>Presets</span>
-          </button>
+          <!-- Filter buttons -->
+          <div class="flex gap-2">
+            <!-- Packs button (navigates to sidebar) -->
+            <button
+              onclick={openPacks}
+              class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm leading-[36px] text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400 sm:flex-none"
+            >
+              <Package class="h-4 w-4" />
+              <span>Packs</span>
+              <ChevronRight class="-ml-0.5 h-3.5 w-3.5" />
+            </button>
+
+            <!-- Presets toggle -->
+            <button
+              onclick={() => (showPresets = !showPresets)}
+              class={[
+                'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors sm:flex-none',
+                showPresets
+                  ? 'border-violet-500/30 bg-violet-500/10 text-violet-300'
+                  : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+              ]}
+            >
+              <Bookmark class="h-4 w-4" />
+              <span>Presets</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -278,21 +340,32 @@
           <div class="space-y-4">
             {#each filteredCategories as category (category.title)}
               {@const isCategoryPreset = category.title.includes(': ')}
+              {@const IconComponent = getIconComponent(category.icon)}
               <div>
                 <!-- Category header -->
                 <button
                   onclick={() => toggleCategory(category.title)}
                   class="mb-2 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left transition-colors hover:bg-zinc-900"
                 >
-                  <span
-                    class={[
-                      'text-sm font-medium',
-                      isCategoryPreset ? 'text-zinc-500' : 'text-zinc-400'
-                    ]}
-                  >
-                    {category.title}
-                    <span class="text-zinc-600">({category.objects.length})</span>
-                  </span>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class={[
+                        'flex h-6 w-6 shrink-0 items-center justify-center rounded',
+                        isCategoryPreset ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-800 text-zinc-400'
+                      ]}
+                    >
+                      <IconComponent class="h-3.5 w-3.5" />
+                    </div>
+                    <span
+                      class={[
+                        'text-sm font-medium',
+                        isCategoryPreset ? 'text-zinc-500' : 'text-zinc-300'
+                      ]}
+                    >
+                      {category.title}
+                    </span>
+                    <span class="text-xs text-zinc-600">({category.objects.length})</span>
+                  </div>
                   <ChevronDown
                     class={[
                       'h-4 w-4 text-zinc-500 transition-transform',
@@ -306,28 +379,46 @@
                   <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                     {#each category.objects as object (object.name)}
                       {@const isPreset = category.title.includes(': ')}
+                      {@const isLowPriority = object.priority === 'low'}
                       <button
                         onclick={() => handleSelectObject(object.name)}
                         class={[
                           'flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
                           isPreset
                             ? 'border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
-                            : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800'
+                            : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
+                          isLowPriority && 'opacity-50'
                         ]}
                       >
-                        <span
-                          class={[
-                            'font-mono text-sm',
-                            isPreset ? 'text-zinc-300' : 'text-zinc-200'
-                          ]}>{object.name}</span
-                        >
+                        <div class="flex items-center gap-1.5">
+                          <span
+                            class={[
+                              'font-mono text-sm',
+                              isPreset ? 'text-zinc-300' : 'text-zinc-200'
+                            ]}>{object.name}</span
+                          >
+                        </div>
+
                         <span class="line-clamp-2 text-xs text-zinc-500">{object.description}</span>
+
+                        {#if isLowPriority}
+                          <span class="font-mono text-[10px] text-zinc-600">disabled</span>
+                        {/if}
                       </button>
                     {/each}
                   </div>
                 {/if}
               </div>
             {/each}
+
+            <!-- CTA to enable more packs -->
+            <button
+              onclick={openPacks}
+              class="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 py-6 text-zinc-500 transition-colors hover:border-zinc-600 hover:bg-zinc-900/50 hover:text-zinc-400"
+            >
+              <Package class="h-5 w-5" />
+              <span>Enable more object packs</span>
+            </button>
           </div>
         {/if}
       </div>
