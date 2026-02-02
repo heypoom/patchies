@@ -72,12 +72,18 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 ### Object and Preset Packs
 
+<img src="./docs/images/object-packs.webp" alt="Patchies.app objects packs" width="700">
+
 - By default, Patchies only shows you a few objects and presets.
-- Press `Ctrl/CMD > B > Packs` to enable more of them for your use cases.
-- Object packs are curated groups of related objects organized by use-cases.
-  - Enable or disable packs to customize what appears in the Object Browser based on your workflow.
+- Press `Ctrl/Cmd + B > Packs` to show more of them to match your use cases.
+- Object packs are curated groups of related objects organized by their use cases.
+- Enable or disable packs to customize what appears in the object browser and quick insert menu.
+
+<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
+
 - Preset packs are collections of pre-configured object presets grouped by use-case.
   - Each preset is a ready-to-use object with code already written for common tasks.
+- Search for packs by its name, description, its objects or its presets.
 - Press the "all" button to enable everything Patchies has to offer.
 - Preset packs requires their objects to be enabled.
 
