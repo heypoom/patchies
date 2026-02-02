@@ -119,25 +119,6 @@
               >
             </span>
           </li>
-
-          <li class="flex items-start gap-2">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-
-            <span>
-              Browse Objects
-              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl + O</kbd>,
-            </span>
-
-            <span>
-              Sidebar
-              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl + B</kbd>,
-            </span>
-
-            <span>
-              Commands
-              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl + K</kbd>.
-            </span>
-          </li>
         </ul>
       </div>
 
