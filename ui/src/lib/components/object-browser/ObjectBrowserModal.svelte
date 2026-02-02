@@ -45,8 +45,8 @@
     getCategorizedObjects($isAiFeaturesVisible, $enabledObjects, $patchObjectTypes)
   );
 
-  // Get preset categories grouped by library and type (filtered by enabled extensions)
-  // Presets for objects in the current patch but not enabled are included as low priority
+  // Get preset categories grouped by library and type
+  // Presets are ONLY visible if explicitly enabled via preset packs
   const presetCategories = $derived.by((): CategoryGroup[] => {
     const presetsByCategory = new Map<string, ObjectItem[]>();
     const categoryIconMap = new Map<string, string>(); // Track icon for each category
@@ -54,14 +54,13 @@
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
 
-      const isEnabled = $enabledObjects.has(preset.type);
-      const isInPatch = $patchObjectTypes.has(preset.type);
+      // For built-in presets: only show if enabled in preset packs
+      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name)) {
+        continue;
+      }
 
-      // Skip if type not enabled AND not in current patch
-      if (!isEnabled && !isInPatch) continue;
-
-      // Filter built-in presets by enabled preset packs (unless the type is in the patch)
-      if (libraryName === 'Built-in' && !$enabledPresets.has(preset.name) && !isInPatch) {
+      // For user presets: only show if their object type is enabled
+      if (libraryName !== 'Built-in' && !$enabledObjects.has(preset.type)) {
         continue;
       }
 
@@ -80,22 +79,18 @@
         name: preset.name,
         description: preset.description || `Preset using ${preset.type}`,
         category: categoryKey,
-        priority: isEnabled ? 'normal' : 'low'
+        priority: 'normal'
       });
     }
 
-    // Sort presets within each category: normal priority first, then alphabetically
+    // Sort presets within each category alphabetically
     for (const presets of presetsByCategory.values()) {
-      presets.sort((a, b) => {
-        if (a.priority !== b.priority) {
-          return a.priority === 'normal' ? -1 : 1;
-        }
-        return a.name.localeCompare(b.name);
-      });
+      presets.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     // Sort categories alphabetically
     const sortedCategories = Array.from(presetsByCategory.keys()).sort();
+
     return sortedCategories.map((category) => ({
       title: category,
       icon: categoryIconMap.get(category) || 'Package',

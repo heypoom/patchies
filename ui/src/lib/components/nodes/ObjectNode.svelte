@@ -200,17 +200,16 @@
       addedNames.add(shorthand.name);
     }
 
-    // Add presets from all libraries (filtered by enabled object types and preset packs)
-    // Presets for objects in current patch are included even if not enabled
+    // Add presets from all libraries
+    // Presets are ONLY visible if explicitly enabled via preset packs
     for (const fp of $flattenedPresets) {
-      const isEnabled = $enabledObjects.has(fp.preset.type);
-      const isInPatch = $patchObjectTypes.has(fp.preset.type);
+      // For built-in presets: only show if enabled in preset packs
+      if (fp.libraryName === 'Built-in' && !$enabledPresets.has(fp.preset.name)) {
+        continue;
+      }
 
-      // Skip if type not enabled AND not in current patch
-      if (!isEnabled && !isInPatch) continue;
-
-      // Filter built-in presets by enabled preset packs (unless the type is in the patch)
-      if (fp.libraryName === 'Built-in' && !$enabledPresets.has(fp.preset.name) && !isInPatch) {
+      // For user presets: only show if their object type is enabled
+      if (fp.libraryName !== 'Built-in' && !$enabledObjects.has(fp.preset.type)) {
         continue;
       }
 
@@ -218,7 +217,7 @@
         name: fp.preset.name,
         type: 'preset',
         libraryName: fp.libraryName,
-        priority: isEnabled ? 'normal' : 'low'
+        priority: 'normal'
       });
     }
 
