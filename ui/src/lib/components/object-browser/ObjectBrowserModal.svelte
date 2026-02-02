@@ -28,7 +28,7 @@
   import Fuse from 'fuse.js';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
-  import { enabledObjects } from '../../../stores/extensions.store';
+  import { enabledObjects, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
 
@@ -62,6 +62,7 @@
   let searchQuery = $state('');
   let expandedCategories = $state<Set<string>>(new Set());
   let showPresets = $state(false);
+  let hasInitialized = $state(false);
 
   // Get all categorized objects, filtering AI features and by enabled extensions
   const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible, $enabledObjects));
@@ -69,6 +70,7 @@
   // Get preset categories grouped by library and type (filtered by enabled extensions)
   const presetCategories = $derived.by((): CategoryGroup[] => {
     const presetsByCategory = new Map<string, ObjectItem[]>();
+    const categoryIconMap = new Map<string, string>(); // Track icon for each category
 
     for (const flatPreset of $flattenedPresets) {
       const { preset, libraryName, path } = flatPreset;
@@ -82,6 +84,9 @@
 
       if (!presetsByCategory.has(categoryKey)) {
         presetsByCategory.set(categoryKey, []);
+        // Look up icon from pack for this object type
+        const pack = BUILT_IN_PACKS.find((p) => p.objects.includes(preset.type));
+        categoryIconMap.set(categoryKey, pack?.icon || 'Package');
       }
 
       presetsByCategory.get(categoryKey)!.push({
@@ -100,7 +105,7 @@
     const sortedCategories = Array.from(presetsByCategory.keys()).sort();
     return sortedCategories.map((category) => ({
       title: category,
-      icon: 'Package', // Default icon for presets
+      icon: categoryIconMap.get(category) || 'Package',
       objects: presetsByCategory.get(category)!
     }));
   });
@@ -202,20 +207,20 @@
     expandedCategories = newExpanded;
   }
 
-  // Initialize with all categories expanded
+  // Initialize with all categories expanded (only once per open)
   $effect(() => {
-    if (open && expandedCategories.size === 0) {
+    if (open && !hasInitialized) {
       expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
+      hasInitialized = true;
+    } else if (!open) {
+      hasInitialized = false;
     }
   });
 
-  // Auto-expand categories when searching
+  // Auto-expand categories when searching (only when search is active)
   $effect(() => {
     if (searchQuery.trim() && filteredCategories.length > 0) {
       expandedCategories = new Set(filteredCategories.map((cat) => cat.title));
-    } else if (!searchQuery.trim()) {
-      // Expand all when search is cleared
-      expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
     }
   });
 
