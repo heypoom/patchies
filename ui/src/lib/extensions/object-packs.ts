@@ -9,14 +9,14 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Starters',
     description: 'Core building blocks everyone needs',
     icon: 'Box',
-    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'peek', 'label']
+    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'peek', 'label', 'bg.out']
   },
   {
     id: 'media',
     name: 'Media',
-    description: 'Video and image sources & sinks',
+    description: 'Video, image and audio sources',
     icon: 'Camera',
-    objects: ['webcam', 'video', 'img', 'screen', 'bg.out']
+    objects: ['webcam', 'video', 'img', 'screen', 'mic~', 'soundfile~']
   },
   {
     id: '2d',
@@ -35,23 +35,20 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'audio',
     name: 'Audio',
-    description: 'Sound synthesis and I/O',
+    description: 'Operators for working with audio',
     icon: 'AudioLines',
     objects: [
+      'dac~',
+      'sampler~',
       'osc~',
       'sig~',
       'gain~',
       'pan~',
       'add~',
-      'dac~',
-      'mic~',
-      'soundfile~',
-      'sampler~',
       'fft~',
       'meter~',
       'merge~',
-      'split~',
-      'tts'
+      'split~'
     ]
   },
   {
@@ -75,11 +72,18 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     ]
   },
   {
-    id: 'livecoding',
-    name: 'Livecoding',
-    description: 'Music livecoding languages',
+    id: 'music',
+    name: 'Music',
+    description: 'Composition and audio synthesis',
     icon: 'Music',
-    objects: ['strudel', 'chuck~', 'csound~', 'sonic~', 'elem~', 'tone~', 'dsp~', 'expr~', 'orca']
+    objects: ['strudel', 'orca', 'sonic~', 'chuck~', 'csound~', 'tone~']
+  },
+  {
+    id: 'dsp',
+    name: 'DSP',
+    description: 'Low-level signal processing',
+    icon: 'Activity',
+    objects: ['elem~', 'expr~', 'dsp~']
   },
   {
     id: 'dataflow',
@@ -134,7 +138,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'AI',
     description: 'AI-powered generation nodes',
     icon: 'Brain',
-    objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts']
+    objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'tts']
   },
   {
     id: 'programming',
