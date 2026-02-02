@@ -2,6 +2,7 @@
   import { ChevronDown, Check } from '@lucide/svelte/icons';
   import type { ExtensionPack } from '../../../stores/extensions.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
+  import * as Tooltip from '../ui/tooltip';
 
   let {
     pack,
@@ -62,23 +63,37 @@
     </div>
 
     <!-- Toggle button -->
-    <button
-      onclick={onToggle}
-      disabled={locked}
-      class={[
-        'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-        locked
-          ? 'cursor-not-allowed border-green-600 bg-green-600/20 text-green-400'
-          : enabled
+    {#if locked}
+      <Tooltip.Root delayDuration={100}>
+        <Tooltip.Trigger>
+          <div
+            class="flex h-5 w-5 shrink-0 cursor-not-allowed items-center justify-center rounded border border-green-600 bg-green-600/20 text-green-400"
+          >
+            <Check class="h-3 w-3" />
+          </div>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="left" class="max-w-48 p-2">
+          <p class="text-[10px]">
+            Starter objects are always enabled to ensure basic functionality.
+          </p>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    {:else}
+      <button
+        onclick={onToggle}
+        class={[
+          'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
+          enabled
             ? 'cursor-pointer border-green-600 bg-green-600/20 text-green-400 hover:bg-green-600/30'
             : 'cursor-pointer border-zinc-700 bg-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
-      ]}
-      title={locked ? 'Always enabled' : enabled ? 'Disable pack' : 'Enable pack'}
-    >
-      {#if enabled || locked}
-        <Check class="h-3 w-3" />
-      {/if}
-    </button>
+        ]}
+        title={enabled ? 'Disable pack' : 'Enable pack'}
+      >
+        {#if enabled}
+          <Check class="h-3 w-3" />
+        {/if}
+      </button>
+    {/if}
   </div>
 
   <!-- Expandable object list -->

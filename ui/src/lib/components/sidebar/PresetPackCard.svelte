@@ -136,31 +136,44 @@
     </div>
 
     <!-- Toggle button -->
-    <button
-      onclick={onToggle}
-      disabled={locked || isUnavailable}
-      class={[
-        'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-        locked
-          ? 'cursor-not-allowed border-green-600 bg-green-600/20 text-green-400'
-          : isUnavailable
+    {#if locked}
+      <Tooltip.Root delayDuration={100}>
+        <Tooltip.Trigger>
+          <div
+            class="flex h-5 w-5 shrink-0 cursor-not-allowed items-center justify-center rounded border border-green-600 bg-green-600/20 text-green-400"
+          >
+            <Check class="h-3 w-3" />
+          </div>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="left" class="max-w-48 p-2">
+          <p class="text-[10px]">
+            Starter presets are always enabled to ensure basic functionality.
+          </p>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    {:else}
+      <button
+        onclick={onToggle}
+        disabled={isUnavailable}
+        class={[
+          'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
+          isUnavailable
             ? 'cursor-not-allowed border-zinc-800 bg-zinc-800/50 text-zinc-700'
             : enabled
               ? 'cursor-pointer border-green-600 bg-green-600/20 text-green-400 hover:bg-green-600/30'
               : 'cursor-pointer border-zinc-700 bg-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
-      ]}
-      title={locked
-        ? 'Always enabled'
-        : isUnavailable
+        ]}
+        title={isUnavailable
           ? 'Enable required object packs first'
           : enabled
             ? 'Disable pack'
             : 'Enable pack'}
-    >
-      {#if (enabled && !isUnavailable) || locked}
-        <Check class="h-3 w-3" />
-      {/if}
-    </button>
+      >
+        {#if enabled && !isUnavailable}
+          <Check class="h-3 w-3" />
+        {/if}
+      </button>
+    {/if}
   </div>
 
   <!-- Expandable details -->
