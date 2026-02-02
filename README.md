@@ -69,23 +69,6 @@ Playing around with demos first is a nice way to get inspirations and see what P
   - Manage your own presets in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas.
 - Click to insert an object or preset -- pick one at random and play with it!
 
-### Object and Preset Packs
-
-<img src="./docs/images/object-packs.webp" alt="Patchies.app objects packs" width="700">
-
-- By default, Patchies only shows you a few objects and presets.
-- Press `Ctrl/Cmd + B > Packs` to show more of them to match your use cases.
-- Object packs are curated groups of related objects organized by their use cases.
-- Enable or disable packs to customize what appears in the object browser and quick insert menu.
-
-<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
-
-- Preset packs are collections of pre-configured object presets grouped by use-case.
-  - Each preset is a ready-to-use object with code already written for common tasks.
-- Search for packs by its name, description, its objects or its presets.
-- Press the "all" button to enable everything Patchies has to offer.
-- Preset packs requires their objects to be enabled.
-
 ### Modifying Objects
 
 <img src="./docs/images/patchies-select-object.png" alt="Patchies.app selecting objects" width="700">
@@ -102,13 +85,13 @@ Playing around with demos first is a nice way to get inspirations and see what P
 - Click on `Edit Code` button to open the code editor.
 - `Shift + Enter` when in a code editor re-runs the code. This helps you to make changes to the code and see the results right away.
 
-### Keyboard Shortcuts
+## Keyboard Shortcuts
 
 <img src="./docs/images/patchies-shortcuts.png" alt="Patchies.app shortcuts" width="700">
 
 Patchies is designed to be keyboard-first so you can get in the flow. Go to "Help > Shortcuts" to see the full list of keyboard shortcuts.
 
-### Connecting Objects
+## Connecting Objects
 
 [standard-connect.webm](https://github.com/user-attachments/assets/f44fb610-6030-4b4c-ad72-eb91481abd50)
 
@@ -136,9 +119,61 @@ To use this feature:
 5. Repeat the connections as many time as you wish.
 6. Click the _easy connect_ button again to stop connecting.
 
-### Sharing Links
+## Sharing Links
 
 To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
+
+## Object and Preset Packs
+
+<img src="./docs/images/object-packs.webp" alt="Patchies.app objects packs" width="700">
+
+- By default, Patchies only shows you a few objects and presets.
+- Press `Ctrl/Cmd + B > Packs` to show more of them to match your use cases.
+- Object packs are curated groups of related objects organized by their use cases.
+- Enable or disable packs to customize what appears in the object browser and quick insert menu.
+
+<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
+
+- Preset packs are collections of pre-configured object presets grouped by use-case.
+  - Each preset is a ready-to-use object with code already written for common tasks.
+- Search for packs by its name, description, its objects or its presets.
+- Press the "all" button to enable everything Patchies has to offer.
+- Preset packs requires their objects to be enabled.
+
+## Files
+
+<img src="./docs/images/files-sidebar.webp" alt="Patchies.app files sidebar" width="700">
+
+The Files panel in the sidebar lets you work with virtual files in your patches.
+
+- Use `Ctrl/Cmd + B > Files` to show the files panel
+- **Linking Folders** (Chromium browsers only): Click the folder icon to link a local folder. This gives your patch read access to files in that folder, useful for loading images, audio samples, or data files.
+- **Adding Files**: You can add files to your patch in two ways:
+  - **Drop into file tree**: Drag files from your system into the Files panel to add them as linked files
+  - **Drop into patcher**: Drag files directly onto the canvas to create virtual files that are embedded in your patch
+- **Virtual Files**: Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
+- **URLs**: You can store URLs as virtual files by using the "add link" button.
+- **Accessing Files in Code**: Use `getVfsUrl(filename)` to get a URL for any file in the virtual filesystem:
+
+```javascript
+const imageUrl = getVfsUrl("myimage.png");
+loadImage(imageUrl);
+```
+
+### Presets
+
+<img src="./docs/images/presets-sidebar.webp" alt="Patchies.app presets sidebar" width="700">
+
+Presets are saved configurations of objects that you can reuse across patches.
+
+- Use `Ctrl/Cmd + B > Presets` to show the presets panel
+- **Browsing Presets**: Open the Presets panel in the sidebar to browse available presets. Presets are organized into libraries and can be filtered by category.
+- **Saving Presets**: Select an object and click the bookmark button to save it as a preset.
+- **Preset Libraries**: You can create custom libraries to organize your presets:
+  - **Create**: Click the "+" button to create a new library
+  - **Import/Export**: Libraries can be imported and exported as files for sharing
+  - **Folders**: Use folders within libraries to organize presets by category or project
+- **Built-in Presets**: Patchies includes preset packs with ready-to-use objects for common tasks like utilities, effects, and visualizations.
 
 ## Supporting Open Source
 
