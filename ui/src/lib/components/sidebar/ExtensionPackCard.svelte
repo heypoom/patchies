@@ -1,25 +1,7 @@
 <script lang="ts">
-  import {
-    Box,
-    Camera,
-    Palette,
-    Shapes,
-    AudioLines,
-    SlidersHorizontal,
-    Music,
-    GitBranch,
-    Layout,
-    Wifi,
-    Piano,
-    Brain,
-    Cpu,
-    Code,
-    FlaskConical,
-    ChevronDown,
-    Check
-  } from '@lucide/svelte/icons';
-  import { match } from 'ts-pattern';
+  import { ChevronDown, Check } from '@lucide/svelte/icons';
   import type { ExtensionPack } from '../../../stores/extensions.store';
+  import { getPackIcon } from '$lib/extensions/pack-icons';
 
   let {
     pack,
@@ -33,25 +15,7 @@
 
   let expanded = $state(false);
 
-  const IconComponent = $derived(
-    match(pack.icon)
-      .with('Box', () => Box)
-      .with('Camera', () => Camera)
-      .with('Palette', () => Palette)
-      .with('Shapes', () => Shapes)
-      .with('AudioLines', () => AudioLines)
-      .with('SlidersHorizontal', () => SlidersHorizontal)
-      .with('Music', () => Music)
-      .with('GitBranch', () => GitBranch)
-      .with('Layout', () => Layout)
-      .with('Wifi', () => Wifi)
-      .with('Piano', () => Piano)
-      .with('Brain', () => Brain)
-      .with('Cpu', () => Cpu)
-      .with('Code', () => Code)
-      .with('FlaskConical', () => FlaskConical)
-      .otherwise(() => Box)
-  );
+  const IconComponent = $derived(getPackIcon(pack.icon));
 </script>
 
 <div

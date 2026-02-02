@@ -12,6 +12,20 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['js', 'msg', 'button', 'toggle', 'slider', 'textbox', 'peek', 'label']
   },
   {
+    id: 'control',
+    name: 'Control',
+    description: 'Control flow and timing',
+    icon: 'GitBranch',
+    objects: ['trigger', 'select', 'spigot', 'metro', 'delay', 'throttle', 'debounce', 'loadbang']
+  },
+  {
+    id: 'transform',
+    name: 'Transforms',
+    description: 'Functional data transformation',
+    icon: 'ArrowRightLeft',
+    objects: ['filter', 'map', 'tap', 'scan', 'uniq', 'uniqby', 'expr', 'float', 'int']
+  },
+  {
     id: 'media',
     name: 'Media',
     description: 'Source and sinks for video and audio',
@@ -86,31 +100,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'Low-level signal processing',
     icon: 'Activity',
     objects: ['elem~', 'expr~', 'dsp~']
-  },
-  {
-    id: 'dataflow',
-    name: 'Data Flow',
-    description: 'Functional message processing',
-    icon: 'GitBranch',
-    objects: [
-      'filter',
-      'map',
-      'tap',
-      'scan',
-      'uniq',
-      'expr',
-      'trigger',
-      'select',
-      'spigot',
-      'float',
-      'int',
-      'metro',
-      'delay',
-      'throttle',
-      'debounce',
-      'loadbang',
-      'uniqby'
-    ]
   },
   {
     id: 'ui',

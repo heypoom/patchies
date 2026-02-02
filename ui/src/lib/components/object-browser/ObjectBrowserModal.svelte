@@ -6,20 +6,8 @@
     X,
     Bookmark,
     ChevronRight,
-    // Icons matching BUILT_IN_PACKS in extensions.store.ts
-    Sparkles,
-    Palette,
-    AudioLines,
-    Music,
-    GitBranch,
-    Layout,
-    Wifi,
-    Brain,
-    Cpu,
-    Code,
     Package
   } from '@lucide/svelte/icons';
-  import { match } from 'ts-pattern';
   import {
     getCategorizedObjects,
     type CategoryGroup,
@@ -31,6 +19,7 @@
   import { enabledObjects, enabledPresets, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import { getPackIcon } from '$lib/extensions/pack-icons';
 
   function openPacks() {
     $sidebarView = 'packs';
@@ -38,21 +27,7 @@
     open = false;
   }
 
-  // Maps icon names from BUILT_IN_PACKS to lucide components
-  function getIconComponent(iconName: string) {
-    return match(iconName)
-      .with('Sparkles', () => Sparkles)
-      .with('Palette', () => Palette)
-      .with('AudioLines', () => AudioLines)
-      .with('Music', () => Music)
-      .with('GitBranch', () => GitBranch)
-      .with('Layout', () => Layout)
-      .with('Wifi', () => Wifi)
-      .with('Brain', () => Brain)
-      .with('Cpu', () => Cpu)
-      .with('Code', () => Code)
-      .otherwise(() => Package);
-  }
+  const getIconComponent = getPackIcon;
 
   let {
     open = $bindable(false),
