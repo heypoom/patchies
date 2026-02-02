@@ -1,6 +1,7 @@
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import { nodeNames } from '$lib/nodes/node-types';
+import { BUILT_IN_PACKS, type ExtensionPack } from '../../../stores/extensions.store';
 
 export interface ObjectItem {
   name: string;
@@ -10,6 +11,7 @@ export interface ObjectItem {
 
 export interface CategoryGroup {
   title: string;
+  icon: string; // lucide icon name
   objects: ObjectItem[];
 }
 
@@ -80,78 +82,50 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
 };
 
 /**
- * Category mapping for visual nodes
+ * Build a reverse lookup from object name to its pack
  */
-const VISUAL_NODE_CATEGORIES: Record<string, string> = {
-  p5: 'Video',
-  hydra: 'Video',
-  glsl: 'Video',
-  swgl: 'Video',
-  textmode: 'Video',
-  'textmode.dom': 'Video',
-  three: 'Video',
-  'three.dom': 'Video',
-  canvas: 'Video',
-  'canvas.dom': 'Video',
-  dom: 'UI',
-  vue: 'UI',
-  'bg.out': 'Video',
-  webcam: 'Video Sources',
-  screen: 'Video Sources',
-  video: 'Video Sources',
-  img: 'Video Sources',
-  button: 'UI',
-  toggle: 'UI',
-  slider: 'UI',
-  keyboard: 'UI',
-  textbox: 'UI',
-  msg: 'UI',
-  label: 'UI',
-  markdown: 'UI',
-  js: 'Code',
-  python: 'Code',
-  expr: 'Code',
-  filter: 'Code',
-  map: 'Code',
-  tap: 'Code',
-  scan: 'Code',
-  uniq: 'Code',
-  peek: 'Code',
-  worker: 'Code',
-  ruby: 'Code',
-  'ai.txt': 'AI',
-  'ai.img': 'AI',
-  'ai.music': 'AI',
-  'ai.tts': 'AI',
-  'midi.in': 'I/O',
-  'midi.out': 'I/O',
-  netsend: 'I/O',
-  netrecv: 'I/O',
-  mqtt: 'I/O',
-  sse: 'I/O',
-  tts: 'I/O',
-  asm: 'Code',
-  'asm.mem': 'Code',
-  orca: 'Audio',
-  strudel: 'Audio',
-  uxn: 'Code',
-  iframe: 'Code',
-  link: 'UI',
-  'merge~': 'Audio FX',
-  'split~': 'Audio FX',
-  'meter~': 'Audio',
-  bchrn: 'Unstable',
-  'vdo.ninja.push': 'I/O',
-  'vdo.ninja.pull': 'I/O'
-};
+function buildObjectToPackMap(): Map<string, ExtensionPack> {
+  const map = new Map<string, ExtensionPack>();
+  for (const pack of BUILT_IN_PACKS) {
+    for (const obj of pack.objects) {
+      map.set(obj, pack);
+    }
+  }
+  return map;
+}
+
+const objectToPackMap = buildObjectToPackMap();
 
 /**
- * Audio node categories based on group classification
+ * Get the description for an object from various sources
  */
-const AUDIO_CODE_NODES = ['chuck~', 'tone~', 'dsp~', 'elem~', 'csound~', 'expr~', 'sonic~'];
+function getObjectDescription(name: string): string {
+  // Check manual descriptions first
+  if (VISUAL_NODE_DESCRIPTIONS[name]) {
+    return VISUAL_NODE_DESCRIPTIONS[name];
+  }
+
+  // Check audio registry
+  const audioRegistry = AudioRegistry.getInstance();
+  const audioNode = audioRegistry.get(name);
+  if (audioNode?.description) {
+    return audioNode.description;
+  }
+
+  // Check object registry
+  const objectRegistry = ObjectRegistry.getInstance();
+  const textObject = objectRegistry.get(name);
+  if (textObject?.description) {
+    return textObject.description;
+  }
+
+  return `${name} node`;
+}
 
 /**
- * Get all objects categorized by type
+ * Get all objects categorized by extension pack
+ * Uses BUILT_IN_PACKS as the single source of truth for categorization
+ *
  * @param includeAiFeatures - Whether to include AI-related objects (default: true)
  * @param enabledObjects - Optional set of enabled object names. If provided, only these objects are included.
  */
@@ -159,121 +133,75 @@ export function getCategorizedObjects(
   includeAiFeatures: boolean = true,
   enabledObjects?: Set<string>
 ): CategoryGroup[] {
-  const allObjects: ObjectItem[] = [];
   const seenNames = new Set<string>();
+  const packObjects = new Map<string, ObjectItem[]>();
+
+  // Initialize empty arrays for each pack
+  for (const pack of BUILT_IN_PACKS) {
+    packObjects.set(pack.id, []);
+  }
 
   const audioRegistry = AudioRegistry.getInstance();
   const objectRegistry = ObjectRegistry.getInstance();
 
-  // Get audio nodes from AudioRegistry (excluding headless nodes)
-  const audioNodeTypes = audioRegistry.getVisibleNodeTypes();
-  for (const nodeType of audioNodeTypes) {
-    if (seenNames.has(nodeType)) continue;
-    seenNames.add(nodeType);
+  // Collect all available object names
+  const allObjectNames = new Set<string>();
 
-    const nodeClass = audioRegistry.get(nodeType);
-    if (!nodeClass) continue;
-
-    let category = '';
-    if (AUDIO_CODE_NODES.includes(nodeType)) {
-      category = 'Audio';
-    } else if (nodeClass.group === 'sources') {
-      category = 'Audio Sources';
-    } else if (nodeClass.group === 'processors') {
-      category = 'Audio FX';
-    } else if (nodeClass.group === 'destinations') {
-      category = 'Audio';
-    }
-
-    allObjects.push({
-      name: nodeType,
-      description: nodeClass.description || `${nodeType} audio node`,
-      category
-    });
+  // From audio registry
+  for (const nodeType of audioRegistry.getVisibleNodeTypes()) {
+    allObjectNames.add(nodeType);
   }
 
-  // Get text objects from ObjectRegistry (primary types only, no aliases)
-  const textObjectTypes = objectRegistry.getPrimaryObjectTypes();
-  for (const objectType of textObjectTypes) {
-    if (seenNames.has(objectType)) continue;
-    seenNames.add(objectType);
-
-    const objectClass = objectRegistry.get(objectType);
-    if (!objectClass) continue;
-
-    allObjects.push({
-      name: objectType,
-      description: objectClass.description || `${objectType} control object`,
-      category: 'Control'
-    });
+  // From object registry
+  for (const objectType of objectRegistry.getPrimaryObjectTypes()) {
+    allObjectNames.add(objectType);
   }
 
-  // Get visual nodes
+  // From node names
   for (const nodeName of nodeNames) {
-    // Skip 'object' and 'asm.value' as they're not user-facing
-    if (nodeName === 'object' || nodeName === 'asm.value') continue;
+    if (nodeName !== 'object' && nodeName !== 'asm.value') {
+      allObjectNames.add(nodeName);
+    }
+  }
 
-    // Skip if already added from registries
-    if (seenNames.has(nodeName)) continue;
-    seenNames.add(nodeName);
+  // Categorize each object by its pack
+  for (const name of allObjectNames) {
+    if (seenNames.has(name)) continue;
+    seenNames.add(name);
 
-    const category = VISUAL_NODE_CATEGORIES[nodeName];
-    if (!category) continue;
+    // Skip AI objects if disabled
+    if (!includeAiFeatures && name.startsWith('ai.')) continue;
 
-    allObjects.push({
-      name: nodeName,
-      description: VISUAL_NODE_DESCRIPTIONS[nodeName] || `${nodeName} node`,
-      category
+    // Skip if not in enabled objects
+    if (enabledObjects && !enabledObjects.has(name)) continue;
+
+    const pack = objectToPackMap.get(name);
+    if (!pack) continue; // Object not in any pack
+
+    const objects = packObjects.get(pack.id)!;
+    objects.push({
+      name,
+      description: getObjectDescription(name),
+      category: pack.name
     });
   }
 
-  // Filter out AI objects if AI features are disabled
-  let filteredObjects = includeAiFeatures
-    ? allObjects
-    : allObjects.filter((obj) => !obj.name.startsWith('ai.'));
-
-  // Filter by enabled objects if provided
-  if (enabledObjects) {
-    filteredObjects = filteredObjects.filter((obj) => enabledObjects.has(obj.name));
-  }
-
-  // Group objects by category
-  const categoryMap = new Map<string, ObjectItem[]>();
-  for (const obj of filteredObjects) {
-    if (!categoryMap.has(obj.category)) {
-      categoryMap.set(obj.category, []);
-    }
-    categoryMap.get(obj.category)!.push(obj);
-  }
-
-  // Sort objects within each category
-  for (const objects of categoryMap.values()) {
+  // Sort objects within each pack
+  for (const objects of packObjects.values()) {
     objects.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // Define category order - UI, Code, Control first as they're most fundamental
-  const categoryOrder = [
-    'UI',
-    'Code',
-    'Control',
-    'Video',
-    'Video Sources',
-    'Audio',
-    'Audio Sources',
-    'Audio FX',
-    'I/O',
-    'AI',
-    'Unstable'
-  ];
-
-  // Build final category groups in order
+  // Build result in pack order
   const result: CategoryGroup[] = [];
 
-  for (const title of categoryOrder) {
-    const objects = categoryMap.get(title);
-
-    if (objects && objects.length > 0) {
-      result.push({ title, objects });
+  for (const pack of BUILT_IN_PACKS) {
+    const objects = packObjects.get(pack.id)!;
+    if (objects.length > 0) {
+      result.push({
+        title: pack.name,
+        icon: pack.icon,
+        objects
+      });
     }
   }
 

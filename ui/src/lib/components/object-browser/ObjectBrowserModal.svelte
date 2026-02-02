@@ -1,5 +1,25 @@
 <script lang="ts">
-  import { ChevronDown, Search, SearchX, X, Eye, EyeOff } from '@lucide/svelte/icons';
+  import {
+    ChevronDown,
+    Search,
+    SearchX,
+    X,
+    Eye,
+    EyeOff,
+    // Icons matching BUILT_IN_PACKS in extensions.store.ts
+    Sparkles,
+    Palette,
+    AudioLines,
+    Music,
+    GitBranch,
+    Layout,
+    Wifi,
+    Brain,
+    Cpu,
+    Code,
+    Package
+  } from '@lucide/svelte/icons';
+  import { match } from 'ts-pattern';
   import {
     getCategorizedObjects,
     type CategoryGroup,
@@ -10,6 +30,22 @@
   import { flattenedPresets } from '../../../stores/preset-library.store';
   import { enabledObjects } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
+
+  // Maps icon names from BUILT_IN_PACKS to lucide components
+  function getIconComponent(iconName: string) {
+    return match(iconName)
+      .with('Sparkles', () => Sparkles)
+      .with('Palette', () => Palette)
+      .with('AudioLines', () => AudioLines)
+      .with('Music', () => Music)
+      .with('GitBranch', () => GitBranch)
+      .with('Layout', () => Layout)
+      .with('Wifi', () => Wifi)
+      .with('Brain', () => Brain)
+      .with('Cpu', () => Cpu)
+      .with('Code', () => Code)
+      .otherwise(() => Package);
+  }
 
   let {
     open = $bindable(false),
@@ -57,6 +93,7 @@
     const sortedCategories = Array.from(presetsByCategory.keys()).sort();
     return sortedCategories.map((category) => ({
       title: category,
+      icon: 'Package', // Default icon for presets
       objects: presetsByCategory.get(category)!
     }));
   });
@@ -282,21 +319,32 @@
           <div class="space-y-4">
             {#each filteredCategories as category (category.title)}
               {@const isCategoryPreset = category.title.includes(': ')}
+              {@const IconComponent = getIconComponent(category.icon)}
               <div>
                 <!-- Category header -->
                 <button
                   onclick={() => toggleCategory(category.title)}
                   class="mb-2 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left transition-colors hover:bg-zinc-900"
                 >
-                  <span
-                    class={[
-                      'text-sm font-medium',
-                      isCategoryPreset ? 'text-zinc-500' : 'text-zinc-400'
-                    ]}
-                  >
-                    {category.title}
-                    <span class="text-zinc-600">({category.objects.length})</span>
-                  </span>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class={[
+                        'flex h-6 w-6 shrink-0 items-center justify-center rounded',
+                        isCategoryPreset ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-800 text-zinc-400'
+                      ]}
+                    >
+                      <IconComponent class="h-3.5 w-3.5" />
+                    </div>
+                    <span
+                      class={[
+                        'text-sm font-medium',
+                        isCategoryPreset ? 'text-zinc-500' : 'text-zinc-300'
+                      ]}
+                    >
+                      {category.title}
+                    </span>
+                    <span class="text-xs text-zinc-600">({category.objects.length})</span>
+                  </div>
                   <ChevronDown
                     class={[
                       'h-4 w-4 text-zinc-500 transition-transform',
