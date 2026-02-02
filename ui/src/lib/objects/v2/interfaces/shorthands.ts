@@ -12,6 +12,9 @@ export interface ObjectShorthand {
   /** Names that trigger this shorthand (e.g. ['msg', 'm']) */
   names: string[];
 
+  /** The target node type this shorthand creates (for filtering by enabled objects) */
+  nodeType: string;
+
   /** Description for autocomplete UI */
   description?: string;
 

@@ -5,11 +5,11 @@ import type { ExtensionPack } from '../../stores/extensions.store';
  */
 export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
-    id: 'essentials',
-    name: 'Essentials',
+    id: 'starters',
+    name: 'Starters',
     description: 'Core building blocks everyone needs',
-    icon: 'Sparkles',
-    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'peek', 'label', 'print']
+    icon: 'Box',
+    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'peek', 'label']
   },
   {
     id: 'visual',
@@ -38,25 +38,13 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'audio',
     name: 'Audio',
-    description: 'Sound synthesis and effects',
+    description: 'Sound synthesis and I/O',
     icon: 'AudioLines',
     objects: [
       'osc~',
       'sig~',
       'gain~',
       'pan~',
-      'delay~',
-      'lowpass~',
-      'highpass~',
-      'bandpass~',
-      'notch~',
-      'lowshelf~',
-      'highshelf~',
-      'peaking~',
-      'allpass~',
-      'compressor~',
-      'waveshaper~',
-      'convolver~',
       'add~',
       'dac~',
       'mic~',
@@ -67,6 +55,26 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'merge~',
       'split~',
       'tts'
+    ]
+  },
+  {
+    id: 'audio-filters',
+    name: 'Audio Filters',
+    description: 'Filters and effects processing',
+    icon: 'SlidersHorizontal',
+    objects: [
+      'lowpass~',
+      'highpass~',
+      'bandpass~',
+      'notch~',
+      'lowshelf~',
+      'highshelf~',
+      'peaking~',
+      'allpass~',
+      'delay~',
+      'compressor~',
+      'waveshaper~',
+      'convolver~'
     ]
   },
   {

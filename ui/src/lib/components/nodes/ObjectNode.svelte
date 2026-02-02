@@ -58,7 +58,6 @@
     'markdown',
 
     // Control objects
-    'print',
     'send',
     'recv',
     'delay',
@@ -138,13 +137,14 @@
     return lookup;
   });
 
-  // Combine all searchable items (objects + presets) with metadata
+  // Combine all searchable items (objects + shorthands + presets) with metadata
   const allSearchableItems = $derived.by(() => {
     const objectDefNames = getObjectNames();
     const visualNodeList = nodeNames.filter((name) => name !== 'object' && name !== 'asm.value');
     const combinedObjectNames = new Set([...visualNodeList, ...objectDefNames]);
 
     const items: Array<{ name: string; type: 'object' | 'preset'; libraryName?: string }> = [];
+    const addedNames = new Set<string>();
 
     // Add regular objects, filtering by AI features and enabled extensions
     Array.from(combinedObjectNames).forEach((name) => {
@@ -157,7 +157,21 @@
         return;
       }
       items.push({ name, type: 'object' });
+      addedNames.add(name);
     });
+
+    // Add shorthands (filtered by whether target nodeType is enabled)
+    const shorthandRegistry = ObjectShorthandRegistry.getInstance();
+    for (const shorthand of shorthandRegistry.getShorthandsWithMetadata()) {
+      // Skip if already added as a regular object
+      if (addedNames.has(shorthand.name)) continue;
+
+      // Only show shorthand if its target nodeType is enabled
+      if (!$enabledObjects.has(shorthand.nodeType)) continue;
+
+      items.push({ name: shorthand.name, type: 'object' });
+      addedNames.add(shorthand.name);
+    }
 
     // Add presets from all libraries (filtered by enabled object types and preset packs)
     for (const fp of $flattenedPresets) {

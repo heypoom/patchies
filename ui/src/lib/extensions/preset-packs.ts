@@ -8,8 +8,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
   {
     id: 'starter',
     name: 'Starter Presets',
-    description: 'Essential presets for getting started',
-    icon: 'Sparkles',
+    description: 'Essentials for getting started',
+    icon: 'Boxes',
     requiredObjects: ['js'],
     presets: ['logger.js']
   },

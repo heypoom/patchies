@@ -1,12 +1,14 @@
 <script lang="ts">
   import {
-    Sparkles,
+    Box,
     Palette,
     AudioLines,
+    SlidersHorizontal,
     Music,
     GitBranch,
     Layout,
     Wifi,
+    Piano,
     Brain,
     Cpu,
     Code,
@@ -30,17 +32,19 @@
 
   const IconComponent = $derived(
     match(pack.icon)
-      .with('Sparkles', () => Sparkles)
+      .with('Box', () => Box)
       .with('Palette', () => Palette)
       .with('AudioLines', () => AudioLines)
+      .with('SlidersHorizontal', () => SlidersHorizontal)
       .with('Music', () => Music)
       .with('GitBranch', () => GitBranch)
       .with('Layout', () => Layout)
       .with('Wifi', () => Wifi)
+      .with('Piano', () => Piano)
       .with('Brain', () => Brain)
       .with('Cpu', () => Cpu)
       .with('Code', () => Code)
-      .otherwise(() => Sparkles)
+      .otherwise(() => Box)
   );
 </script>
 

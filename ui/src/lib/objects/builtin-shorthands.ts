@@ -8,6 +8,7 @@ import type { ObjectShorthand } from './v2/interfaces/shorthands';
 export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['msg', 'm'],
+    nodeType: 'msg',
     description: 'Message object',
     transform: (expr, name) => ({
       nodeType: 'msg',
@@ -16,6 +17,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['label'],
+    nodeType: 'label',
     description: 'Text label',
     transform: (expr, name) => ({
       nodeType: 'label',
@@ -24,6 +26,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['link'],
+    nodeType: 'link',
     description: 'URL link',
     transform: (expr, name) => {
       const url = expr.replace(name, '').trim() || 'https://example.com';
@@ -35,6 +38,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['expr'],
+    nodeType: 'expr',
     description: 'Expression evaluator',
     transform: (expr, name) => ({
       nodeType: 'expr',
@@ -43,6 +47,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['filter'],
+    nodeType: 'filter',
     description: 'Filter messages with JS condition',
     transform: (expr, name) => ({
       nodeType: 'filter',
@@ -51,6 +56,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['map'],
+    nodeType: 'map',
     description: 'Transform messages with JS expression',
     transform: (expr, name) => ({
       nodeType: 'map',
@@ -59,6 +65,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['tap'],
+    nodeType: 'tap',
     description: 'Execute side effects and pass through',
     transform: (expr, name) => ({
       nodeType: 'tap',
@@ -67,6 +74,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['scan'],
+    nodeType: 'scan',
     description: 'Accumulate values with stateful scanning',
     transform: (expr, name) => ({
       nodeType: 'scan',
@@ -75,6 +83,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['peek'],
+    nodeType: 'peek',
     description: 'Display received values',
     transform: (expr, name) => ({
       nodeType: 'peek',
@@ -83,6 +92,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['expr~'],
+    nodeType: 'expr~',
     description: 'Audio-rate expression',
     transform: (expr, name) => ({
       nodeType: 'expr~',
@@ -91,6 +101,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['netsend'],
+    nodeType: 'netsend',
     description: 'Network message sender',
     transform: (expr, name) => ({
       nodeType: 'netsend',
@@ -99,6 +110,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['netrecv'],
+    nodeType: 'netrecv',
     description: 'Network message receiver',
     transform: (expr, name) => ({
       nodeType: 'netrecv',
@@ -107,6 +119,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['slider'],
+    nodeType: 'slider',
     description: 'Integer slider',
     transform: (expr, name) => {
       const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
@@ -118,6 +131,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['fslider'],
+    nodeType: 'slider',
     description: 'Float slider',
     transform: (expr, name) => {
       const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
@@ -129,6 +143,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['vslider'],
+    nodeType: 'slider',
     description: 'Vertical integer slider',
     transform: (expr, name) => {
       const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
@@ -140,6 +155,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['vfslider'],
+    nodeType: 'slider',
     description: 'Vertical float slider',
     transform: (expr, name) => {
       const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
@@ -151,6 +167,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['keyboard'],
+    nodeType: 'keyboard',
     description: 'Keyboard input',
     transform: (expr, name) => {
       const keybindPart = expr.replace(name, '').trim();
@@ -166,6 +183,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['iframe'],
+    nodeType: 'iframe',
     description: 'Embedded web content',
     transform: (expr, name) => {
       let url = expr.replace(name, '').trim();
@@ -181,6 +199,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   },
   {
     names: ['sse'],
+    nodeType: 'sse',
     description: 'Server-Sent Events source',
     transform: (expr, name) => {
       let url = expr.replace(name, '').trim();
