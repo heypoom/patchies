@@ -3,8 +3,7 @@
   import FileTreeView from './FileTreeView.svelte';
   import PresetTreeView from './PresetTreeView.svelte';
   import ExtensionsView from './ExtensionsView.svelte';
-
-  export type SidebarView = 'files' | 'presets' | 'extensions';
+  import type { SidebarView } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
@@ -17,7 +16,7 @@
   const views: { id: SidebarView; icon: typeof Folder; title: string }[] = [
     { id: 'files', icon: Folder, title: 'Files' },
     { id: 'presets', icon: Bookmark, title: 'Presets' },
-    { id: 'extensions', icon: Package, title: 'Extensions' }
+    { id: 'packs', icon: Package, title: 'Packs' }
   ];
 </script>
 
@@ -55,7 +54,7 @@
         <FileTreeView />
       {:else if view === 'presets'}
         <PresetTreeView />
-      {:else if view === 'extensions'}
+      {:else if view === 'packs'}
         <ExtensionsView />
       {/if}
     </div>

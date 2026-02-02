@@ -4,8 +4,8 @@
     Search,
     SearchX,
     X,
-    Eye,
-    EyeOff,
+    Bookmark,
+    ChevronRight,
     // Icons matching BUILT_IN_PACKS in extensions.store.ts
     Sparkles,
     Palette,
@@ -30,6 +30,13 @@
   import { flattenedPresets } from '../../../stores/preset-library.store';
   import { enabledObjects } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
+  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+
+  function openPacks() {
+    $sidebarView = 'packs';
+    $isSidebarOpen = true;
+    open = false;
+  }
 
   // Maps icon names from BUILT_IN_PACKS to lucide components
   function getIconComponent(iconName: string) {
@@ -54,7 +61,7 @@
 
   let searchQuery = $state('');
   let expandedCategories = $state<Set<string>>(new Set());
-  let showPresets = $state(true);
+  let showPresets = $state(false);
 
   // Get all categorized objects, filtering AI features and by enabled extensions
   const allCategories = $derived(getCategorizedObjects($isAiFeaturesVisible, $enabledObjects));
@@ -270,7 +277,7 @@
 
       <!-- Search bar -->
       <div class="border-b border-zinc-800 px-4 py-3 sm:px-6">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div class="relative flex-1">
             <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
@@ -290,19 +297,32 @@
             {/if}
           </div>
 
-          <!-- Presets toggle -->
-          <button
-            onclick={() => (showPresets = !showPresets)}
-            class={[
-              'flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors',
-              showPresets
-                ? 'border-zinc-600 bg-zinc-800 text-zinc-300'
-                : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
-            ]}
-          >
-            {#if showPresets}<Eye class="h-4 w-4" />{:else}<EyeOff class="h-4 w-4" />{/if}
-            <span>Presets</span>
-          </button>
+          <!-- Filter buttons -->
+          <div class="flex gap-2">
+            <!-- Packs button (navigates to sidebar) -->
+            <button
+              onclick={openPacks}
+              class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm leading-[36px] text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400 sm:flex-none"
+            >
+              <Package class="h-4 w-4" />
+              <span>Packs</span>
+              <ChevronRight class="-ml-0.5 h-3.5 w-3.5" />
+            </button>
+
+            <!-- Presets toggle -->
+            <button
+              onclick={() => (showPresets = !showPresets)}
+              class={[
+                'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors sm:flex-none',
+                showPresets
+                  ? 'border-violet-500/30 bg-violet-500/10 text-violet-300'
+                  : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+              ]}
+            >
+              <Bookmark class="h-4 w-4" />
+              <span>Presets</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -380,6 +400,15 @@
                 {/if}
               </div>
             {/each}
+
+            <!-- CTA to enable more packs -->
+            <button
+              onclick={openPacks}
+              class="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-700 py-6 text-zinc-500 transition-colors hover:border-zinc-600 hover:bg-zinc-900/50 hover:text-zinc-400"
+            >
+              <Package class="h-5 w-5" />
+              <span>Enable more object packs</span>
+            </button>
           </div>
         {/if}
       </div>

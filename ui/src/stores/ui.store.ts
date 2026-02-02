@@ -47,10 +47,22 @@ const storedSidebarOpen =
 
 export const isSidebarOpen = writable(storedSidebarOpen === 'true');
 
+// Sidebar view state - persisted to localStorage
+export type SidebarView = 'files' | 'presets' | 'packs';
+
+const storedSidebarView =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;
+
+export const sidebarView = writable<SidebarView>((storedSidebarView as SidebarView) || 'files');
+
 // Persist sidebar state to localStorage
 if (typeof localStorage !== 'undefined') {
   isSidebarOpen.subscribe((value) => {
     localStorage.setItem('patchies-sidebar-open', String(value));
+  });
+
+  sidebarView.subscribe((value) => {
+    localStorage.setItem('patchies-sidebar-view', value);
   });
 }
 

@@ -25,7 +25,8 @@
     isConnectionMode,
     isObjectBrowserOpen,
     isMobile,
-    isSidebarOpen
+    isSidebarOpen,
+    sidebarView
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -109,20 +110,6 @@
   // Dialog state for save as preset
   let showSavePresetDialog = $state(false);
   let nodeToSaveAsPreset = $state<Node | null>(null);
-
-  // Sidebar view state - persisted to localStorage
-  let sidebarView = $state<'files' | 'presets'>(
-    (typeof window !== 'undefined' &&
-      (localStorage.getItem('patchies-sidebar-view') as 'files' | 'presets')) ||
-      'files'
-  );
-
-  // Persist sidebar view changes
-  $effect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('patchies-sidebar-view', sidebarView);
-    }
-  });
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -976,7 +963,7 @@
 
 <div class="flow-container flex h-screen w-full">
   <!-- Sidebar (Files / Presets) -->
-  <SidebarPanel bind:open={$isSidebarOpen} bind:view={sidebarView} />
+  <SidebarPanel bind:open={$isSidebarOpen} bind:view={$sidebarView} />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">
