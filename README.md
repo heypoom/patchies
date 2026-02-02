@@ -153,12 +153,7 @@ The Files panel in the sidebar lets you work with virtual files in your patches.
   - **Drop into patcher**: Drag files directly onto the canvas to create virtual files that are embedded in your patch
 - **Virtual Files**: Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
 - **URLs**: You can store URLs as virtual files by using the "add link" button.
-- **Accessing Files in Code**: Use `getVfsUrl(filename)` to get a URL for any file in the virtual filesystem:
-
-```javascript
-const imageUrl = getVfsUrl("myimage.png");
-loadImage(imageUrl);
-```
+- See [loading files from the virtual filesystem](#loading-files-from-the-virtual-filesystem) for how to use virtual files in your objects.
 
 ### Presets
 
