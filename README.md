@@ -2276,6 +2276,7 @@ It creates a shader graph that streams the low-resolution preview onto the previ
 - On Chromium browsers (e.g. Google Chrome, Edge) where certain Web APIs are supported, we use these optimized pipelines to speed up `webcam` and `video` objects.
   - `webcam` uses [MediaStreamTrackProcessor](https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrackProcessor)
   - `video` uses [MediaBunny](https://mediabunny.dev) which uses [WebCodecs](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API)
+- The HTMLVideoElement pipeline uses [requestVideoFrameCallback](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback) for both `webcam` and `video` objects to only run when the video frame is sent to the compositor.
 - `Ctrl/Cmd+K > Toggle Video Stats Overlay` to show/hide the video stats overlay.
   - This shows which pipeline is being used and the FPS, dropped frames, resolution and codec.
 - `Ctrl/Cmd+K > Toggle MediaBunny` switches between MediaBunny and HTMLVideoElement implementations on `video` object.
