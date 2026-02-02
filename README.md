@@ -64,7 +64,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 <img src="./docs/images/object-browser.webp" alt="Patchies.app browse objects modal" width="700">
 
 - Use `Ctrl/Cmd + O` or the add button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
-- See all objects and presets organized by [packs](#object-and-preset-packs), with searchable names and descriptions.
+- See all objects and presets organized by [packs](#packs-panel), with searchable names and descriptions.
 - Presets are pre-configured objects that helps you get started quickly.
   - Manage your own presets in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas.
 - Click to insert an object or preset -- pick one at random and play with it!
