@@ -121,7 +121,7 @@ To use this feature:
 
 ## Sharing Links
 
-To create shareable links, click on the "Share Link" button on the bottom right. You can also use "Share Patch" from the command palette.
+To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be triggered from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
 
 ## Object and Preset Packs
 
