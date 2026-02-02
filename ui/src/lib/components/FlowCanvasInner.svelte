@@ -1077,6 +1077,7 @@
         class="bg-zinc-900"
         snapGrid={[5, 5]}
         proOptions={{ hideAttribution: true }}
+        clickConnect={$isConnectionMode}
         {isValidConnection}
         onconnectstart={(event, params) => {
           isConnecting.set(true);
