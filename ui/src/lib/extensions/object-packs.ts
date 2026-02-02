@@ -7,23 +7,33 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'starters',
     name: 'Starters',
-    description: 'Core building blocks everyone needs',
+    description: 'Building blocks everyone needs',
     icon: 'Box',
     objects: ['js', 'msg', 'button', 'toggle', 'slider', 'textbox', 'peek', 'label']
   },
   {
     id: 'control',
     name: 'Control',
-    description: 'Control flow and timing',
+    description: 'When and where messages go',
     icon: 'GitBranch',
-    objects: ['trigger', 'select', 'spigot', 'metro', 'delay', 'throttle', 'debounce', 'loadbang']
+    objects: [
+      'loadbang',
+      'metro',
+      'trigger',
+      'spigot',
+      'delay',
+      'throttle',
+      'debounce',
+      'float',
+      'int'
+    ]
   },
   {
     id: 'transform',
     name: 'Transforms',
-    description: 'Functional data transformation',
+    description: 'Process and filter messages',
     icon: 'ArrowRightLeft',
-    objects: ['filter', 'map', 'tap', 'scan', 'uniq', 'uniqby', 'expr', 'float', 'int']
+    objects: ['filter', 'map', 'tap', 'scan', 'select', 'uniq', 'uniqby', 'expr']
   },
   {
     id: 'media',
