@@ -123,14 +123,14 @@ To use this feature:
 
 To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be triggered from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
 
-## Object and Preset Packs
+## Packs Panel
 
 <img src="./docs/images/object-packs.webp" alt="Patchies.app objects packs" width="700">
 
 - By default, Patchies only shows you a few objects and presets.
-- Press `Ctrl/Cmd + B > Packs` to show more of them to match your use cases.
-- Object packs are curated groups of related objects organized by their use cases.
+- Press `Ctrl/Cmd + B > Packs` to select **object packs** and **preset packs**, to grab objects and presets matching your use cases.
 - Enable or disable packs to customize what appears in the object browser and quick insert menu.
+- Object packs are curated groups of related objects organized by their use cases.
 
 <img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
 
@@ -140,22 +140,22 @@ To create shareable links, click on three dots on the bottom right, then "Share 
 - Press the "all" button to enable everything Patchies has to offer.
 - Preset packs requires their objects to be enabled.
 
-## Files
+## Files Panel
 
 <img src="./docs/images/files-sidebar.webp" alt="Patchies.app files sidebar" width="700">
 
 The Files panel in the sidebar lets you work with virtual files in your patches.
 
 - Use `Ctrl/Cmd + B > Files` to show the files panel
-- **Linking Folders** (Chromium browsers only): Click the folder icon to link a local folder. This gives your patch read access to files in that folder, useful for loading images, audio samples, or data files.
 - **Adding Files**: You can add files to your patch in two ways:
   - **Drop into file tree**: Drag files from your system into the Files panel to add them as linked files
   - **Drop into patcher**: Drag files directly onto the canvas to create virtual files that are embedded in your patch
+- **Linking Folders**: Click the folder icon to link a local folder. This gives your patch read access to files in that folder, useful for loading images, audio samples, or data files. Chromium browsers only.
 - **Virtual Files**: Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
 - **URLs**: You can store URLs as virtual files by using the "add link" button.
 - See [loading files from the virtual filesystem](#loading-files-from-the-virtual-filesystem) for how to use virtual files in your objects.
 
-### Presets
+### Presets Panel
 
 <img src="./docs/images/presets-sidebar.webp" alt="Patchies.app presets sidebar" width="700">
 
