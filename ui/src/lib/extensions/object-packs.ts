@@ -113,7 +113,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   },
   {
     id: 'ui',
-    name: 'UI Controls',
+    name: 'User Interface',
     description: 'Interface building components',
     icon: 'Layout',
     objects: ['dom', 'vue', 'markdown', 'link', 'iframe']
