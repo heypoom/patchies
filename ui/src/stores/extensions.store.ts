@@ -31,7 +31,8 @@ import { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
 // ============================================================================
 
 const STORAGE_KEY = 'patchies:enabled-packs';
-const DEFAULT_ENABLED_PACKS = ['essentials'];
+const DEFAULT_ENABLED_PACKS = ['starters'];
+const LOCKED_PACKS = ['starters']; // Always enabled, cannot be disabled
 
 function getInitialEnabledPacks(): string[] {
   if (typeof localStorage === 'undefined') return DEFAULT_ENABLED_PACKS;
@@ -79,9 +80,18 @@ export const enabledObjects = derived(enabledPackIds, ($enabledPackIds) => {
 });
 
 /**
- * Toggle a pack on/off
+ * Check if a pack is locked (always enabled)
+ */
+export function isPackLocked(packId: string): boolean {
+  return LOCKED_PACKS.includes(packId);
+}
+
+/**
+ * Toggle a pack on/off (locked packs cannot be toggled)
  */
 export function togglePack(packId: string): void {
+  if (isPackLocked(packId)) return;
+
   enabledPackIds.update((ids) => {
     if (ids.includes(packId)) {
       return ids.filter((id) => id !== packId);
@@ -99,10 +109,10 @@ export function enableAllPacks(): void {
 }
 
 /**
- * Disable all object packs (except essentials for safety)
+ * Disable all object packs (except starters for safety)
  */
 export function disableAllPacks(): void {
-  enabledPackIds.set(['essentials']);
+  enabledPackIds.set(DEFAULT_ENABLED_PACKS);
 }
 
 /**
@@ -117,7 +127,8 @@ export function isPackEnabled(packId: string, enabledIds: string[]): boolean {
 // ============================================================================
 
 const PRESET_STORAGE_KEY = 'patchies:enabled-preset-packs';
-const DEFAULT_ENABLED_PRESET_PACKS = ['starter'];
+const DEFAULT_ENABLED_PRESET_PACKS = ['starters'];
+const LOCKED_PRESET_PACKS = ['starters']; // Always enabled, cannot be disabled
 
 function getInitialEnabledPresetPacks(): string[] {
   if (typeof localStorage === 'undefined') return DEFAULT_ENABLED_PRESET_PACKS;
@@ -174,9 +185,18 @@ export const enabledPresets = derived(
 );
 
 /**
- * Toggle a preset pack on/off
+ * Check if a preset pack is locked (always enabled)
+ */
+export function isPresetPackLocked(packId: string): boolean {
+  return LOCKED_PRESET_PACKS.includes(packId);
+}
+
+/**
+ * Toggle a preset pack on/off (locked packs cannot be toggled)
  */
 export function togglePresetPack(packId: string): void {
+  if (isPresetPackLocked(packId)) return;
+
   enabledPresetPackIds.update((ids) => {
     if (ids.includes(packId)) {
       return ids.filter((id) => id !== packId);
@@ -197,7 +217,7 @@ export function enableAllPresetPacks(): void {
  * Disable all preset packs (except starter for safety)
  */
 export function disableAllPresetPacks(): void {
-  enabledPresetPackIds.set(['starter']);
+  enabledPresetPackIds.set(DEFAULT_ENABLED_PRESET_PACKS);
 }
 
 /**

@@ -15,7 +15,9 @@
     disableAllPacks,
     disableAllPresetPacks,
     isPackEnabled,
-    isPresetPackEnabled
+    isPresetPackEnabled,
+    isPackLocked,
+    isPresetPackLocked
   } from '../../../stores/extensions.store';
 
   let searchQuery = $state('');
@@ -122,6 +124,7 @@
               enabled={isPackEnabled(pack.id, $enabledPackIds)}
               onToggle={() => togglePack(pack.id)}
               {searchQuery}
+              locked={isPackLocked(pack.id)}
             />
           {/each}
         </div>
@@ -163,6 +166,7 @@
               enabled={isPresetPackEnabled(pack.id, $enabledPresetPackIds)}
               onToggle={() => togglePresetPack(pack.id)}
               {searchQuery}
+              locked={isPresetPackLocked(pack.id)}
             />
           {/each}
         </div>

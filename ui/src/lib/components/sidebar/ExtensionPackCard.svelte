@@ -7,12 +7,14 @@
     pack,
     enabled,
     onToggle,
-    searchQuery = ''
+    searchQuery = '',
+    locked = false
   }: {
     pack: ExtensionPack;
     enabled: boolean;
     onToggle: () => void;
     searchQuery?: string;
+    locked?: boolean;
   } = $props();
 
   // Check if any objects match the search query
@@ -62,15 +64,18 @@
     <!-- Toggle button -->
     <button
       onclick={onToggle}
+      disabled={locked}
       class={[
-        'flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded border transition-colors',
-        enabled
-          ? 'border-green-600 bg-green-600/20 text-green-400 hover:bg-green-600/30'
-          : 'border-zinc-700 bg-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
+        'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
+        locked
+          ? 'cursor-not-allowed border-green-600 bg-green-600/20 text-green-400'
+          : enabled
+            ? 'cursor-pointer border-green-600 bg-green-600/20 text-green-400 hover:bg-green-600/30'
+            : 'cursor-pointer border-zinc-700 bg-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
       ]}
-      title={enabled ? 'Disable pack' : 'Enable pack'}
+      title={locked ? 'Always enabled' : enabled ? 'Disable pack' : 'Enable pack'}
     >
-      {#if enabled}
+      {#if enabled || locked}
         <Check class="h-3 w-3" />
       {/if}
     </button>

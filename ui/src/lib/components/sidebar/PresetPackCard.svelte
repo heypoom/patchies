@@ -9,12 +9,14 @@
     pack,
     enabled,
     onToggle,
-    searchQuery = ''
+    searchQuery = '',
+    locked = false
   }: {
     pack: PresetPack;
     enabled: boolean;
     onToggle: () => void;
     searchQuery?: string;
+    locked?: boolean;
   } = $props();
 
   // Check if any presets match the search query
@@ -136,22 +138,26 @@
     <!-- Toggle button -->
     <button
       onclick={onToggle}
-      disabled={isUnavailable}
+      disabled={locked || isUnavailable}
       class={[
         'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-        isUnavailable
-          ? 'cursor-not-allowed border-zinc-800 bg-zinc-800/50 text-zinc-700'
-          : enabled
-            ? 'cursor-pointer border-green-600 bg-green-600/20 text-green-400 hover:bg-green-600/30'
-            : 'cursor-pointer border-zinc-700 bg-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
+        locked
+          ? 'cursor-not-allowed border-green-600 bg-green-600/20 text-green-400'
+          : isUnavailable
+            ? 'cursor-not-allowed border-zinc-800 bg-zinc-800/50 text-zinc-700'
+            : enabled
+              ? 'cursor-pointer border-green-600 bg-green-600/20 text-green-400 hover:bg-green-600/30'
+              : 'cursor-pointer border-zinc-700 bg-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
       ]}
-      title={isUnavailable
-        ? 'Enable required object packs first'
-        : enabled
-          ? 'Disable pack'
-          : 'Enable pack'}
+      title={locked
+        ? 'Always enabled'
+        : isUnavailable
+          ? 'Enable required object packs first'
+          : enabled
+            ? 'Disable pack'
+            : 'Enable pack'}
     >
-      {#if enabled && !isUnavailable}
+      {#if (enabled && !isUnavailable) || locked}
         <Check class="h-3 w-3" />
       {/if}
     </button>

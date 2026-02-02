@@ -6,7 +6,7 @@ import type { PresetPack } from '../../stores/extensions.store';
  */
 export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
   {
-    id: 'starter',
+    id: 'starters',
     name: 'Starter Presets',
     description: 'Essentials for getting started',
     icon: 'Boxes',
@@ -158,9 +158,9 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: ['sonic-prophet', 'sonic-tb303', 'sonic-sample-loop', 'sonic-multi-synth']
   },
   {
-    id: 'textmode-demos',
-    name: 'Textmode Demos',
-    description: 'ASCII art and character graphics',
+    id: 'ascii-art-demos',
+    name: 'ASCII Art Demos',
+    description: 'ASCII art built with textmode.js',
     icon: 'Type',
     requiredObjects: ['textmode'],
     presets: [
