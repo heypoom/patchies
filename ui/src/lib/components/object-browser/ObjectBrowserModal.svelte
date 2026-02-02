@@ -402,11 +402,13 @@
                               isPreset ? 'text-zinc-300' : 'text-zinc-200'
                             ]}>{object.name}</span
                           >
-                          {#if isLowPriority}
-                            <span class="text-[10px] text-zinc-600">(disabled)</span>
-                          {/if}
                         </div>
+
                         <span class="line-clamp-2 text-xs text-zinc-500">{object.description}</span>
+
+                        {#if isLowPriority}
+                          <span class="font-mono text-[10px] text-zinc-600">disabled</span>
+                        {/if}
                       </button>
                     {/each}
                   </div>
