@@ -112,11 +112,11 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['strudel', 'orca', 'sonic~', 'chuck~', 'csound~', 'tone~']
   },
   {
-    id: 'dsp',
-    name: 'DSP',
-    description: 'Low-level audio signal processing',
-    icon: 'Activity',
-    objects: ['elem~', 'expr~', 'dsp~']
+    id: 'midi',
+    name: 'MIDI',
+    description: 'MIDI input and output',
+    icon: 'Piano',
+    objects: ['midi.in', 'midi.out', 'webmidilink']
   },
   {
     id: 'networking',
@@ -126,11 +126,18 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['netsend', 'netrecv', 'mqtt', 'sse', 'vdo.ninja.push', 'vdo.ninja.pull']
   },
   {
-    id: 'midi',
-    name: 'MIDI',
-    description: 'MIDI input and output',
-    icon: 'Piano',
-    objects: ['midi.in', 'midi.out', 'webmidilink']
+    id: 'scripting',
+    name: 'Scripting',
+    description: 'Scripting languages and workers',
+    icon: 'Code',
+    objects: ['worker', 'ruby', 'python']
+  },
+  {
+    id: 'dsp',
+    name: 'DSP',
+    description: 'Low-level audio signal processing',
+    icon: 'Activity',
+    objects: ['elem~', 'expr~', 'dsp~']
   },
   {
     id: 'ai',
@@ -138,13 +145,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'AI-powered generation nodes',
     icon: 'Brain',
     objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'tts']
-  },
-  {
-    id: 'scripting',
-    name: 'Scripting',
-    description: 'Scripting languages and workers',
-    icon: 'Code',
-    objects: ['worker', 'ruby', 'python']
   },
   {
     id: 'low-level',
