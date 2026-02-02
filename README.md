@@ -168,7 +168,7 @@ Presets are saved configurations of objects that you can reuse across patches.
   - **Create**: Click the "+" button to create a new library
   - **Import/Export**: Libraries can be imported and exported as files for sharing
   - **Folders**: Use folders within libraries to organize presets by category or project
-- **Built-in Presets**: Patchies includes preset packs with ready-to-use objects for common tasks like utilities, effects, and visualizations.
+- **Built-in Presets**: Patchies includes [preset packs](#packs-panel) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
 
 ## Supporting Open Source
 
