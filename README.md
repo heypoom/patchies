@@ -97,7 +97,6 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 - Click and drag on an object's handle all the way to the other object's handle to connect them together.
 - A handle looks like circle grey, blue, orange or purple dots at the top or bottom of objects.
-- Alternatively, click on two handles consecutively to connect them together.
 - When connecting, the starting handle will highlight to show where you're connecting from.
 - When connecting, all [invalid connection targets](#connection-rules) will be dimmed.
 
