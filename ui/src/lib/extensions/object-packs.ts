@@ -107,7 +107,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'dsp',
     name: 'DSP',
-    description: 'Low-level signal processing',
+    description: 'Low-level audio signal processing',
     icon: 'Activity',
     objects: ['elem~', 'expr~', 'dsp~']
   },
