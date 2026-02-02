@@ -47,7 +47,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Media',
     description: 'Source and sinks for video and audio',
     icon: 'Camera',
-    objects: ['webcam', 'video', 'img', 'screen', 'mic~', 'soundfile~', 'bg.out']
+    objects: ['webcam', 'video', 'img', 'screen', 'mic~', 'soundfile~', 'dac~', 'bg.out']
   },
   {
     id: '2d',
@@ -69,7 +69,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'Operators for working with audio',
     icon: 'AudioLines',
     objects: [
-      'dac~',
       'gain~',
       'osc~',
       'sampler~',
