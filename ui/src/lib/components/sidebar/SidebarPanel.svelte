@@ -8,10 +8,12 @@
 
   let {
     open = $bindable(false),
-    view = $bindable<SidebarView>('files')
+    view = $bindable<SidebarView>('files'),
+    onSavePatch
   }: {
     open: boolean;
     view?: SidebarView;
+    onSavePatch?: () => void;
   } = $props();
 
   const views: { id: SidebarView; icon: typeof Folder; title: string }[] = [
@@ -59,7 +61,7 @@
       {:else if view === 'packs'}
         <ExtensionsView />
       {:else if view === 'saves'}
-        <SavesTreeView />
+        <SavesTreeView {onSavePatch} />
       {/if}
     </div>
   </div>

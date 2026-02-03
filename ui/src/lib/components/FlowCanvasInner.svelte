@@ -983,7 +983,11 @@
 
 <div class="flow-container flex h-screen w-full">
   <!-- Sidebar (Files / Presets) -->
-  <SidebarPanel bind:open={$isSidebarOpen} bind:view={$sidebarView} />
+  <SidebarPanel
+    bind:open={$isSidebarOpen}
+    bind:view={$sidebarView}
+    onSavePatch={() => (showSavePatchModal = true)}
+  />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">

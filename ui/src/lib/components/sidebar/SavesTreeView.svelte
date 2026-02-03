@@ -7,7 +7,8 @@
     Upload,
     Play,
     Search,
-    Link
+    Link,
+    Save
   } from '@lucide/svelte/icons';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -16,6 +17,8 @@
   import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { migratePatch } from '$lib/migration';
   import { createAndCopyShareLink } from '$lib/save-load/share';
+
+  let { onSavePatch }: { onSavePatch?: () => void } = $props();
 
   // Load saved patches from localStorage
   function loadSavedPatches(): string[] {
@@ -436,6 +439,14 @@
     class="sticky bottom-0 flex items-center gap-1 border-t border-zinc-800 bg-zinc-950 px-2 pt-1.5"
     style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
   >
+    <button
+      class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+      onclick={() => onSavePatch?.()}
+      title="Save Patch"
+    >
+      <Save class="h-3.5 w-3.5" />
+      <span>Save</span>
+    </button>
     <button
       class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
       onclick={handleImportClick}
