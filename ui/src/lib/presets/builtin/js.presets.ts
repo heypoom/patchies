@@ -53,9 +53,6 @@ setInterval(() => {
   if (i > 100) i=0
 }, 1000)`;
 
-const MIDI_CONTROL_ROUTER_JS = `setPortCount(1, 3)
-recv(m => send(m.value, {to: m.control}))`;
-
 const PIPE_MESSAGE_JS = `setRunOnMount(true)
 
 recv(m => send(m))`;
@@ -109,10 +106,6 @@ export const JS_PRESETS: Record<
   'midi-adsr-gain.js': {
     type: 'js',
     data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: true }
-  },
-  'midi-control-router.js': {
-    type: 'js',
-    data: { code: MIDI_CONTROL_ROUTER_JS, showConsole: false, runOnMount: true }
   },
   'sawtooth-harmonics.js': {
     type: 'js',
