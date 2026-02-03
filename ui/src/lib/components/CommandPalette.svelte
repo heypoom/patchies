@@ -96,8 +96,8 @@
     },
     {
       id: 'new-patch',
-      name: 'New Patch (!!)',
-      description: 'Remove all nodes and edges from the canvas. All unsaved changes will be lost!'
+      name: 'New Patch',
+      description: 'Create a new patch. All unsaved changes will be lost.'
     },
     {
       id: 'enter-fullscreen',

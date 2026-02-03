@@ -128,14 +128,32 @@ To create shareable links, click on three dots on the bottom right, then "Share 
 <img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
 
 - By default, Patchies only shows you a few objects and presets.
-- Press `Ctrl/Cmd + B > Packs` to select **object packs** and **preset packs**, to grab objects and presets matching your use cases.
-- Enable or disable packs to customize what appears in the object browser and quick insert menu.
+- `Ctrl/Cmd + B > Packs` lets you pick and choose **object packs** and **preset packs**, to tailor the shown objects and presets matching your use cases.
+  - This changes what objects and presets show up in the object browser and quick insert menu.
 - Object packs are curated groups of related objects organized by their use cases.
 - Preset packs are collections of pre-configured object presets grouped by use-case.
   - Each preset is a ready-to-use object with code already written for common tasks.
   - To use a preset, its object must be enabled. A warning tooltip will let you enable the necessary object packs.
 - Search for packs by its name, description, its objects or its presets.
 - Press the "all" button to enable all objects or preset packs.
+
+## Manage Saves
+
+<img src="./docs/images/saves-sidebar.webp" alt="Patchies.app saves sidebar" width="700">
+
+The Saves panel in the sidebar lets you manage your locally saved patches.
+
+- `Ctrl/Cmd + B > Saves` to show the saves panel
+- Saves are organized into folders and can be filtered by name.
+- Hover over a save to load, rename and delete patches.
+- Right click on a save or folder to show a context menu.
+  - Folder Actions: create subfolder, move, rename and delete
+  - Save Actions: load, share link, export as JSON, move, rename and delete
+- Use the bottom bar to create a new folder, save patch as a new save, and import patch from JSON files.
+- Use these shortcuts to save your patches (also available in `Ctrl/Cmd + K` command palette):
+  - `Ctrl/Cmd + S` to save the current patch.
+  - `Ctrl/Cmd + Shift + S` to save the patch as a different save.
+  - `Ctrl/Cmd + N` to create new patch.
 
 ## Manage Files
 
@@ -158,7 +176,7 @@ The Files panel in the sidebar lets you work with virtual files in your patches.
 
 Presets are saved configurations of objects that you can reuse across patches.
 
-- Use `Ctrl/Cmd + B > Presets` to browse and manage your presets.
+- `Ctrl/Cmd + B > Presets` to browse and manage your presets.
 - Presets are organized into libraries and can be filtered by category.
 - Select an object and click the bookmark button to save it as a preset.
 - You can create your own preset libraries to organize your presets:
