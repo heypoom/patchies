@@ -326,11 +326,19 @@
       !isTyping
     ) {
       event.preventDefault();
+
+      // No-op if patch is completely empty
+      if (nodes.length === 0 && edges.length === 0) return;
+
       showSavePatchModal = true;
     }
     // Handle CMD+S for save (quick save if named, otherwise show modal)
     else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();
+
+      // No-op if patch is completely empty
+      if (nodes.length === 0 && edges.length === 0) return;
+
       quickSave();
     } else if (
       event.key.toLowerCase() === 'enter' &&
