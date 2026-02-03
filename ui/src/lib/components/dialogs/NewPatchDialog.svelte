@@ -24,9 +24,10 @@
       <p class="text-sm text-zinc-300">
         Are you sure you want to create a new patch? All unsaved changes will be lost!
       </p>
+
       <p class="text-xs text-zinc-400">
-        💡 Tip: Use <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl+K</kbd>
-        → "Save Patch" or "Share Patch Link" to save your current work before creating a new patch.
+        💡 Use <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl/Cmd + S</kbd>
+        to save current patch.
       </p>
     </div>
     <Dialog.Footer class="flex gap-2">
@@ -40,7 +41,7 @@
         onclick={handleConfirm}
         class="flex-1 cursor-pointer rounded bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500"
       >
-        Delete & Create New
+        New Patch
       </button>
     </Dialog.Footer>
   </Dialog.Content>
