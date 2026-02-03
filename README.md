@@ -170,7 +170,7 @@ The Files panel in the sidebar lets you work with virtual files in your patches.
 - You can store URLs as virtual files by using the "add link" button.
 - See [loading files from the virtual filesystem](#loading-files-from-the-virtual-filesystem) for how to use virtual files in your objects.
 
-### Manage Presets
+## Manage Presets
 
 <img src="./docs/images/presets-sidebar.webp" alt="Patchies.app presets sidebar" width="700">
 
