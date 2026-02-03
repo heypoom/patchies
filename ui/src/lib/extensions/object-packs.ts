@@ -16,17 +16,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Control',
     description: 'When and where messages go',
     icon: 'GitBranch',
-    objects: [
-      'loadbang',
-      'metro',
-      'trigger',
-      'spigot',
-      'delay',
-      'throttle',
-      'debounce',
-      'float',
-      'int'
-    ]
+    objects: ['loadbang', 'metro', 'trigger', 'spigot', 'delay', 'throttle', 'debounce', 'f', 'i']
   },
   {
     id: 'transform',
