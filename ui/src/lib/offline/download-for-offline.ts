@@ -6,13 +6,26 @@ export interface OfflineDownloadProgress {
   error?: string;
 }
 
-const OFFLINE_RESOURCES = {
+// Local WASM/heavy assets (relative to origin)
+const LOCAL_RESOURCES = [
+  // WebChuck
+  '/webchuck/webchuck.js',
+  '/webchuck/webchuck.wasm',
+  // Pyodide (Python)
+  '/assets/pyodide.js',
+  '/assets/pyodide.asm.js',
+  '/assets/pyodide.asm.wasm',
+  '/assets/python_stdlib.zip',
+  '/assets/pyodide-lock.json'
+];
+
+// CDN-hosted resources
+const CDN_RESOURCES = {
   ruby: [
     'https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@2.8.1/dist/browser/+esm',
     'https://cdn.jsdelivr.net/npm/@ruby/4.0-wasm-wasi@2.8.1/dist/ruby+stdlib.wasm'
   ],
   supersonic: [
-    // Core packages - these will trigger caching of additional resources
     'https://unpkg.com/supersonic-scsynth-core@0.25.5/package.json',
     'https://unpkg.com/supersonic-scsynth-samples@0.25.5/package.json',
     'https://unpkg.com/supersonic-scsynth-synthdefs@0.25.5/package.json'
@@ -33,10 +46,11 @@ export async function downloadForOffline(
   onProgress?: (progress: OfflineDownloadProgress) => void
 ): Promise<void> {
   const allUrls = [
-    ...OFFLINE_RESOURCES.ruby,
-    ...OFFLINE_RESOURCES.supersonic,
-    ...OFFLINE_RESOURCES.strudel,
-    ...OFFLINE_RESOURCES.vdoninja
+    ...LOCAL_RESOURCES,
+    ...CDN_RESOURCES.ruby,
+    ...CDN_RESOURCES.supersonic,
+    ...CDN_RESOURCES.strudel,
+    ...CDN_RESOURCES.vdoninja
   ];
 
   let completed = 0;
@@ -77,9 +91,10 @@ export async function downloadForOffline(
 
 export function getOfflineResourceCount(): number {
   return (
-    OFFLINE_RESOURCES.ruby.length +
-    OFFLINE_RESOURCES.supersonic.length +
-    OFFLINE_RESOURCES.strudel.length +
-    OFFLINE_RESOURCES.vdoninja.length
+    LOCAL_RESOURCES.length +
+    CDN_RESOURCES.ruby.length +
+    CDN_RESOURCES.supersonic.length +
+    CDN_RESOURCES.strudel.length +
+    CDN_RESOURCES.vdoninja.length
   );
 }

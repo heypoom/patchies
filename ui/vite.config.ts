@@ -60,7 +60,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Exclude large JS chunks from precaching - they'll be runtime cached instead
+        // Only precache small static assets - WASM/JS are runtime cached on first use
         globPatterns: ['**/*.{css,html,svg,png,ico,woff,woff2}'],
 
         // Allow large WASM files to be precached
@@ -80,6 +80,25 @@ export default defineConfig({
             options: {
               cacheName: 'app-js-cache',
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              networkTimeoutSeconds: 3
+            }
+          },
+          // WASM files - CacheFirst (hashed filenames provide cache busting)
+          {
+            urlPattern: /.*\.wasm$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'wasm-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
+          // Local JSON files (patch data, sample maps, etc.)
+          {
+            urlPattern: /\.(json)$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'json-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 7 },
               networkTimeoutSeconds: 3
             }
           },
