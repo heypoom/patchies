@@ -8,7 +8,8 @@
     Play,
     Search,
     Link,
-    Save
+    Save,
+    History
   } from '@lucide/svelte/icons';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -48,6 +49,10 @@
   let showDeleteDialog = $state(false);
   let patchToDelete = $state<string | null>(null);
 
+  // Load confirmation dialog
+  let showLoadDialog = $state(false);
+  let patchToLoad = $state<string | null>(null);
+
   // Selected patch for mobile actions
   let selectedPatch = $state<string | null>(null);
 
@@ -56,11 +61,21 @@
     savedPatches = loadSavedPatches();
   }
 
-  // Load a patch
-  function loadPatch(patchName: string) {
-    const patchData = localStorage.getItem(`patchies-patch-${patchName}`);
+  // Confirm load (shows dialog)
+  function confirmLoad(patchName: string) {
+    patchToLoad = patchName;
+    showLoadDialog = true;
+  }
+
+  // Load a patch (called after confirmation)
+  function loadPatch() {
+    if (!patchToLoad) return;
+
+    const patchData = localStorage.getItem(`patchies-patch-${patchToLoad}`);
     if (!patchData) {
       toast.error('Patch not found');
+      patchToLoad = null;
+      showLoadDialog = false;
       return;
     }
 
@@ -77,6 +92,9 @@
       console.error('Error loading patch:', error);
       toast.error('Failed to load patch');
     }
+
+    patchToLoad = null;
+    showLoadDialog = false;
   }
 
   // Start renaming
@@ -277,7 +295,7 @@
 
     if (event.key === 'Enter' && selectedPatch) {
       event.preventDefault();
-      loadPatch(selectedPatch);
+      confirmLoad(selectedPatch);
     }
   }
 </script>
@@ -327,6 +345,7 @@
       {#each filteredPatches as patchName (patchName)}
         {@const isRenaming = renamingPatch === patchName}
         {@const isSelected = selectedPatch === patchName}
+        {@const isAutosave = patchName === 'autosave'}
 
         <ContextMenu.Root>
           <ContextMenu.Trigger class="block w-full">
@@ -337,15 +356,21 @@
                 : 'hover:bg-zinc-800'}"
               onclick={() => {
                 if (isRenaming) return;
-                if ($isMobile) {
-                  selectedPatch = isSelected ? null : patchName;
-                } else {
-                  loadPatch(patchName);
-                }
+                // Always toggle selection on click (consistent with PresetTreeView)
+                selectedPatch = isSelected ? null : patchName;
               }}
-              ondblclick={() => !$isMobile && loadPatch(patchName)}
+              ondblclick={() => {
+                if (isRenaming) return;
+                confirmLoad(patchName);
+              }}
             >
-              <FileJson class="h-4 w-4 shrink-0 text-blue-400" />
+              {#if isAutosave}
+                <span title="Auto-saved patch - automatically saved as you work">
+                  <History class="h-4 w-4 shrink-0 text-emerald-400" />
+                </span>
+              {:else}
+                <FileJson class="h-4 w-4 shrink-0 text-blue-400" />
+              {/if}
 
               {#if isRenaming}
                 <!-- svelte-ignore a11y_autofocus -->
@@ -367,6 +392,16 @@
               <!-- Desktop hover actions -->
               {#if !$isMobile && !isRenaming}
                 <div class="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                  <button
+                    class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-blue-400"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      confirmLoad(patchName);
+                    }}
+                    title="Load patch"
+                  >
+                    <Play class="h-3.5 w-3.5" />
+                  </button>
                   <button
                     class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
                     onclick={(e) => {
@@ -403,7 +438,7 @@
           </ContextMenu.Trigger>
 
           <ContextMenu.Content class="w-48">
-            <ContextMenu.Item onclick={() => loadPatch(patchName)}>
+            <ContextMenu.Item onclick={() => confirmLoad(patchName)}>
               <Play class="mr-2 h-4 w-4" />
               Load
             </ContextMenu.Item>
@@ -472,7 +507,7 @@
       <button
         class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
         onclick={() => {
-          if (selectedPatch) loadPatch(selectedPatch);
+          if (selectedPatch) confirmLoad(selectedPatch);
         }}
         title="Load"
       >
@@ -521,6 +556,42 @@
     </div>
   </div>
 {/if}
+
+<!-- Load confirmation dialog -->
+<Dialog.Root bind:open={showLoadDialog}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Load Patch</Dialog.Title>
+      <Dialog.Description>
+        Loading "{patchToLoad}" will replace your current patch.
+      </Dialog.Description>
+    </Dialog.Header>
+
+    <div
+      class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
+    >
+      Any unsaved changes will be lost.
+    </div>
+
+    <Dialog.Footer class="flex gap-2">
+      <button
+        onclick={() => {
+          showLoadDialog = false;
+          patchToLoad = null;
+        }}
+        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+      >
+        Cancel
+      </button>
+      <button
+        onclick={loadPatch}
+        class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+      >
+        Load
+      </button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <!-- Delete confirmation dialog -->
 <Dialog.Root bind:open={showDeleteDialog}>
