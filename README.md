@@ -64,7 +64,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 <img src="./docs/images/object-browser.webp" alt="Patchies.app browse objects modal" width="700">
 
 - Use `Ctrl/Cmd + O` or the add button on the bottom right to open the object browser: a searchable, categorized view of objects and presets in Patchies.
-- Objects and presets are grouped by [packs](#object-packs--preset-packs), with searchable names and descriptions.
+- Objects and presets are grouped by [packs](#manage-packs), with searchable names and descriptions.
 - Presets are pre-made objects that helps you get started quickly.
   - [Manage your own presets](#manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas. You can make your own presets too.
 - Click to insert an object or preset -- pick one at random and see what it can do 🧪
@@ -123,12 +123,12 @@ To use this feature:
 
 To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be done from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
 
-## Object Packs & Preset Packs
+## Manage Packs
 
 <img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
 
 - By default, Patchies only shows you a few objects and presets.
-- `Ctrl/Cmd + B > Packs` lets you pick and choose **object packs** and **preset packs**, to tailor the shown objects and presets matching your use cases.
+- `Ctrl/Cmd + B > Packs` lets you pick and choose **object packs** and **preset packs**, to tailor the shown objects and presets for your use cases.
   - This changes what objects and presets show up in the object browser and quick insert menu.
 - Object packs are curated groups of related objects organized by their use cases.
 - Preset packs are collections of pre-configured object presets grouped by use-case.
@@ -182,7 +182,7 @@ Presets are saved configurations of objects that you can reuse across patches.
 - You can create your own preset libraries to organize your presets:
   - Libraries can be imported and exported as files for sharing
   - Use folders within libraries to organize presets by category or project
-- Patchies includes [preset packs](#object-packs--preset-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
+- Patchies includes [preset packs](#manage-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
 
 ## Supporting Open Source
 
