@@ -86,7 +86,7 @@
     },
     {
       keys: ['Shift', 'Enter'],
-      description: 'Run the code in the code editor within the selected object',
+      description: 'Run the code in the editor',
       category: 'keyboard'
     },
     {
