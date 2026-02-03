@@ -9,12 +9,7 @@
     isConnecting,
     connectingFromHandleId
   } from '../../stores/ui.store';
-  import {
-    useWebCodecs,
-    showVideoStats,
-    toggleWebCodecs,
-    toggleVideoStats
-  } from '../../stores/video.store';
+  import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import type { Node, Edge } from '@xyflow/svelte';
   import { IpcSystem } from '$lib/canvas/IpcSystem';
   import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
@@ -72,13 +67,7 @@
   let resultsContainer: HTMLDivElement | undefined = $state();
   let ipcSystem = IpcSystem.getInstance();
 
-  type StageName =
-    | 'commands'
-    | 'save-name'
-    | 'load-list'
-    | 'delete-list'
-    | 'rename-list'
-    | 'rename-name';
+  type StageName = 'commands' | 'delete-list' | 'rename-list' | 'rename-name';
 
   // Multi-stage state
   let stage = $state<StageName>('commands');
@@ -206,8 +195,6 @@
   // Focus input when stage changes
   $effect(() => {
     if (
-      stage === 'save-name' ||
-      stage === 'load-list' ||
       stage === 'delete-list' ||
       stage === 'rename-list' ||
       stage === 'rename-name' ||
@@ -249,7 +236,7 @@
         const maxIndex =
           stage === 'commands'
             ? filteredCommands.length - 1
-            : stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
+            : stage === 'delete-list' || stage === 'rename-list'
               ? filteredPatches.length - 1
               : 0;
         selectedIndex = Math.min(selectedIndex + 1, maxIndex);
@@ -270,16 +257,6 @@
     if (stage === 'commands' && filteredCommands.length > 0) {
       const selectedCommand = filteredCommands[selectedIndex];
       executeCommand(selectedCommand.id);
-    } else if (stage === 'save-name' && patchName.trim()) {
-      // remove any URL params related to shared patches
-      deleteSearchParam('id');
-      deleteSearchParam('src');
-
-      savePatchToLocalStorage({ name: patchName, nodes, edges });
-      onCancel();
-    } else if (stage === 'load-list' && filteredPatches.length > 0) {
-      const selectedPatch = filteredPatches[selectedIndex];
-      loadFromLocalStorage(selectedPatch);
     } else if (stage === 'delete-list' && filteredPatches.length > 0) {
       const selectedPatch = filteredPatches[selectedIndex];
       deleteFromLocalStorage(selectedPatch);
@@ -574,9 +551,10 @@
     const maxIndex =
       stage === 'commands'
         ? filteredCommands.length - 1
-        : stage === 'load-list' || stage === 'delete-list' || stage === 'rename-list'
+        : stage === 'delete-list' || stage === 'rename-list'
           ? filteredPatches.length - 1
           : 0;
+
     selectedIndex = Math.min(selectedIndex, Math.max(0, maxIndex));
   });
 
@@ -601,30 +579,6 @@
         type="text"
         placeholder="Search commands..."
         class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-      />
-    </div>
-  {:else if stage === 'save-name'}
-    <div class="border-b border-zinc-700 p-3">
-      <div class="mb-2 text-xs text-zinc-400">What is the name of the patch?</div>
-      <input
-        bind:this={searchInput}
-        bind:value={patchName}
-        onkeydown={handleKeydown}
-        type="text"
-        placeholder="Enter patch name..."
-        class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
-      />
-    </div>
-  {:else if stage === 'load-list'}
-    <div class="border-b border-zinc-700 p-3">
-      <div class="mb-2 text-xs text-zinc-400">Select a patch to load:</div>
-      <input
-        bind:this={searchInput}
-        bind:value={searchQuery}
-        onkeydown={handleKeydown}
-        type="text"
-        placeholder="Search patches..."
-        class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
       />
     </div>
   {:else if stage === 'delete-list'}
@@ -682,31 +636,6 @@
           <div class="text-xs text-zinc-400">{command.description}</div>
         </div>
       {/each}
-    {:else if stage === 'save-name'}
-      <!-- Show current input preview -->
-      {#if patchName.trim()}
-        <div class="px-3 py-2 text-xs text-zinc-400">
-          Will save as: <span class="text-zinc-200">{patchName}</span>
-        </div>
-      {/if}
-    {:else if stage === 'load-list'}
-      {#if filteredPatches.length === 0}
-        <div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
-      {:else}
-        {#each filteredPatches as patch, index (patch)}
-          <div
-            class="cursor-pointer px-3 py-2 {index === selectedIndex
-              ? 'bg-zinc-600/50'
-              : 'hover:bg-zinc-700'}"
-            onclick={(e) => handleItemClick(index, e)}
-            onkeydown={(e) => e.key === 'Enter' && handleItemClick(index)}
-            role="button"
-            tabindex="-1"
-          >
-            <div class="font-mono text-sm text-zinc-200">{patch}</div>
-          </div>
-        {/each}
-      {/if}
     {:else if stage === 'delete-list'}
       {#if filteredPatches.length === 0}
         <div class="px-3 py-2 text-xs text-zinc-400">No saved patches found</div>
@@ -759,10 +688,6 @@
   <div class="border-t border-zinc-700 px-3 py-2 text-xs text-zinc-500">
     {#if stage === 'commands'}
       ↑↓ Navigate • Enter Select • Esc Cancel
-    {:else if stage === 'save-name'}
-      Enter Save • Esc Back
-    {:else if stage === 'load-list'}
-      ↑↓ Navigate • Enter Load • Esc Back
     {:else if stage === 'delete-list'}
       ↑↓ Navigate • Enter Delete • Esc Back
     {:else if stage === 'rename-list'}
