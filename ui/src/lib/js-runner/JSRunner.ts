@@ -3,6 +3,7 @@ import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
 import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
+import { handleCodeError } from './handleCodeError';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -315,6 +316,14 @@ export class JSRunner {
     const messageSystemContext = skipMessageContext
       ? JSRunner.noopMessageContext
       : this.setupRunnerMessageContext(nodeId);
+
+    // Set up error handler for recv() callbacks
+    if (!skipMessageContext) {
+      const messageContext = this.getMessageContext(nodeId);
+      messageContext.onCallbackError = (error) => {
+        handleCodeError(error, code, nodeId, customConsole);
+      };
+    }
 
     const functionParams = [
       'console',

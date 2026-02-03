@@ -75,6 +75,9 @@ export class MessageContext {
   public onTimeoutCallbackRegistered = () => {};
   public onAnimationFrameCallbackRegistered = () => {};
 
+  /** Error handler for user code errors (set by JSRunner) */
+  public onCallbackError: ((error: unknown) => void) | null = null;
+
   // Cache for lazy-loaded AudioAnalysisSystem (only loaded in browser, not workers)
   private static audioAnalysisSystemPromise: Promise<
     typeof import('$lib/audio/AudioAnalysisSystem')
@@ -98,7 +101,24 @@ export class MessageContext {
   }
 
   messageCallbackHandler: MessageCallbackFn = (data, meta) => {
-    this.messageCallback?.(data, meta);
+    const handleError = (error: unknown) => {
+      if (this.onCallbackError) {
+        this.onCallbackError(error);
+      } else {
+        logger.warn('Error in recv() handler:', error);
+      }
+    };
+
+    try {
+      const result = this.messageCallback?.(data, meta) as unknown;
+
+      // Handle async callbacks that return a promise
+      if (result instanceof Promise) {
+        result.catch(handleError);
+      }
+    } catch (error) {
+      handleError(error);
+    }
   };
 
   send(data: unknown, options: SendMessageOptions = {}) {
