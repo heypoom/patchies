@@ -989,6 +989,7 @@
     localStorage.removeItem('patchies-patch-autosave');
     isBackgroundOutputCanvasEnabled.set(false);
     currentPatchName.set(null); // Clear current patch name for new patch
+    deleteSearchParam('id'); // Clear shared patch URL since we're starting fresh
     showNewPatchDialog = false;
   }
 

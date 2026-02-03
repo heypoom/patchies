@@ -41,6 +41,7 @@
   import { type PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { migratePatch } from '$lib/migration';
   import { createAndCopyShareLink } from '$lib/save-load/share';
+  import { deleteSearchParam } from '$lib/utils/search-params';
 
   let { onSavePatch }: { onSavePatch?: () => void } = $props();
 
@@ -222,6 +223,7 @@
       const migrated = migratePatch(parsed) as PatchSaveFormat;
       localStorage.setItem('patchies-patch-autosave', JSON.stringify(migrated));
       currentPatchName.set(patchToLoad === 'autosave' ? null : patchToLoad);
+      deleteSearchParam('id'); // Clear shared patch URL since we're loading a different patch
       window.location.reload();
     } catch (error) {
       console.error('Error loading patch:', error);
