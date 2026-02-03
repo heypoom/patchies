@@ -64,7 +64,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 <img src="./docs/images/object-browser.webp" alt="Patchies.app browse objects modal" width="700">
 
 - Use `Ctrl/Cmd + O` or the add button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
-- See all objects and presets organized by [packs](#packs-panel), with searchable names and descriptions.
+- See all objects and presets organized by [packs](#object-packs--preset-packs), with searchable names and descriptions.
 - Presets are pre-configured objects that helps you get started quickly.
   - Manage your own presets in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas.
 - Click to insert an object or preset -- pick one at random and play with it!
@@ -123,24 +123,21 @@ To use this feature:
 
 To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be triggered from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
 
-## Packs Panel
+## Object Packs & Preset Packs
 
-<img src="./docs/images/object-packs.webp" alt="Patchies.app objects packs" width="700">
+<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
 
 - By default, Patchies only shows you a few objects and presets.
 - Press `Ctrl/Cmd + B > Packs` to select **object packs** and **preset packs**, to grab objects and presets matching your use cases.
 - Enable or disable packs to customize what appears in the object browser and quick insert menu.
 - Object packs are curated groups of related objects organized by their use cases.
-
-<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
-
 - Preset packs are collections of pre-configured object presets grouped by use-case.
   - Each preset is a ready-to-use object with code already written for common tasks.
 - Search for packs by its name, description, its objects or its presets.
 - Press the "all" button to enable everything Patchies has to offer.
 - Preset packs requires their objects to be enabled.
 
-## Files Panel
+## Manage Files
 
 <img src="./docs/images/files-sidebar.webp" alt="Patchies.app files sidebar" width="700">
 
@@ -155,7 +152,7 @@ The Files panel in the sidebar lets you work with virtual files in your patches.
 - **URLs**: You can store URLs as virtual files by using the "add link" button.
 - See [loading files from the virtual filesystem](#loading-files-from-the-virtual-filesystem) for how to use virtual files in your objects.
 
-### Presets Panel
+### Manage Presets
 
 <img src="./docs/images/presets-sidebar.webp" alt="Patchies.app presets sidebar" width="700">
 
@@ -168,7 +165,7 @@ Presets are saved configurations of objects that you can reuse across patches.
   - **Create**: Click the "+" button to create a new library
   - **Import/Export**: Libraries can be imported and exported as files for sharing
   - **Folders**: Use folders within libraries to organize presets by category or project
-- **Built-in Presets**: Patchies includes [preset packs](#packs-panel) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
+- **Built-in Presets**: Patchies includes [preset packs](#object-packs--preset-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
 
 ## Supporting Open Source
 
