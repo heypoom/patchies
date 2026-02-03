@@ -4,7 +4,7 @@ import { match, P } from 'ts-pattern';
  * Message type specifiers for filtering and routing messages.
  *
  * bang: matches { type: 'bang' }
- * symbol: matches objects with a `type` key OR typeof === 'symbol'
+ * symbol: matches strings, JS symbols, or objects with a `type` key (Max convention)
  * any: matches anything
  * list: matches arrays (Array.isArray)
  * object: matches plain objects (not arrays, not null)
@@ -15,6 +15,7 @@ import { match, P } from 'ts-pattern';
 export type MessageType =
   | 'bang'
   | 'symbol'
+  | 'string'
   | 'any'
   | 'list'
   | 'object'
@@ -32,13 +33,15 @@ const ABBREVIATION_MAP: Record<string, MessageType> = {
   o: 'object',
   n: 'number',
   f: 'float',
-  i: 'integer'
+  i: 'integer',
+  str: 'string'
 };
 
 /** All valid message type full names */
 const ALL_MESSAGE_TYPES: MessageType[] = [
   'bang',
   'symbol',
+  'string',
   'any',
   'list',
   'object',
@@ -87,9 +90,10 @@ export function matchesMessageType(type: MessageType, value: unknown): boolean {
     .with('any', () => true)
     .with(P.union('number', 'float'), () => typeof value === 'number')
     .with('symbol', () => {
-      // real JS symbols
-      if (typeof value === 'symbol') return true;
+      // strings and JS symbols (Max convention: symbol = all text data)
+      if (typeof value === 'string' || typeof value === 'symbol') return true;
 
+      // also match objects with a `type` key (typed messages)
       return (
         typeof value === 'object' &&
         value !== null &&
@@ -97,6 +101,7 @@ export function matchesMessageType(type: MessageType, value: unknown): boolean {
         typeof (value as Record<string, unknown>).type === 'string'
       );
     })
+    .with('string', () => typeof value === 'string')
     .with('list', () => Array.isArray(value))
     .with('object', () => typeof value === 'object' && value !== null && !Array.isArray(value))
     .with('integer', () => typeof value === 'number' && Number.isInteger(value))

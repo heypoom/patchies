@@ -17,7 +17,7 @@ import {
  *
  * Type specifiers:
  *   b -> bang: always sends { type: 'bang' }
- *   s -> symbol: passes objects with `type` key or JS symbols
+ *   s -> symbol/string: passes symbols and strings (Max convention)
  *   a -> any: passes input unchanged
  *   l -> list: passes arrays
  *   o -> object: passes plain objects (not arrays)
