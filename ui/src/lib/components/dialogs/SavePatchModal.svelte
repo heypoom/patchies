@@ -5,17 +5,16 @@
   import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
   import type { Node, Edge } from '@xyflow/svelte';
   import { deleteSearchParam } from '$lib/utils/search-params';
+  import { currentPatchName as currentPatchNameStore } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
     nodes,
-    edges,
-    currentPatchName = ''
+    edges
   }: {
     open: boolean;
     nodes: Node[];
     edges: Edge[];
-    currentPatchName?: string;
   } = $props();
 
   // Form state
@@ -25,7 +24,7 @@
   $effect(() => {
     if (open) {
       // Pre-fill with current patch name if available, otherwise suggest a name
-      patchName = currentPatchName || generateDefaultName();
+      patchName = $currentPatchNameStore || generateDefaultName();
     }
   });
 
@@ -50,8 +49,13 @@
     deleteSearchParam('id');
     deleteSearchParam('src');
 
-    savePatchToLocalStorage({ name: patchName.trim(), nodes, edges });
-    toast.success(`Saved "${patchName.trim()}"`);
+    const name = patchName.trim();
+    savePatchToLocalStorage({ name, nodes, edges });
+
+    // Update the current patch name store
+    currentPatchNameStore.set(name);
+
+    toast.success(`Saved patch as "${name}"`);
     open = false;
   }
 

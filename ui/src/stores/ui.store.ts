@@ -80,3 +80,21 @@ export const shouldShowHandles = derived(
 // Track object types used in the current patch
 // This allows components outside the SvelteFlow context to see what objects are in the patch
 export const patchObjectTypes = writable<Set<string>>(new Set());
+
+// Current patch name - tracks which patch is currently being edited
+// null = untitled/new patch, string = named patch
+const storedCurrentPatchName =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-current-patch-name') : null;
+
+export const currentPatchName = writable<string | null>(storedCurrentPatchName);
+
+// Persist current patch name to localStorage
+if (typeof localStorage !== 'undefined') {
+  currentPatchName.subscribe((value) => {
+    if (value) {
+      localStorage.setItem('patchies-current-patch-name', value);
+    } else {
+      localStorage.removeItem('patchies-current-patch-name');
+    }
+  });
+}

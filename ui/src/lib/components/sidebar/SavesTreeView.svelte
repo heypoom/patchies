@@ -15,7 +15,7 @@
   import LoadPatchDialog from '$lib/components/dialogs/LoadPatchDialog.svelte';
   import DeletePatchDialog from '$lib/components/dialogs/DeletePatchDialog.svelte';
   import { toast } from 'svelte-sonner';
-  import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
+  import { isMobile, isSidebarOpen, currentPatchName } from '../../../stores/ui.store';
   import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { migratePatch } from '$lib/migration';
   import { createAndCopyShareLink } from '$lib/save-load/share';
@@ -88,6 +88,11 @@
 
       // Save to autosave slot and reload
       localStorage.setItem('patchies-patch-autosave', JSON.stringify(migrated));
+
+      // Set the current patch name (persisted to localStorage, survives reload)
+      // Don't set for autosave - that's not a "named" patch
+      currentPatchName.set(patchToLoad === 'autosave' ? null : patchToLoad);
+
       window.location.reload();
     } catch (error) {
       console.error('Error loading patch:', error);
@@ -347,12 +352,15 @@
         {@const isRenaming = renamingPatch === patchName}
         {@const isSelected = selectedPatch === patchName}
         {@const isAutosave = patchName === 'autosave'}
+        {@const isActive = $currentPatchName === patchName}
 
         <ContextMenu.Root>
           <ContextMenu.Trigger class="block w-full">
             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
             <div
-              class="group flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-xs {isSelected
+              class="group flex w-full cursor-pointer items-center gap-2 py-1.5 pr-3 text-left text-xs {isActive
+                ? 'border-l-2 border-blue-500 pl-2.5'
+                : 'pl-3'} {isSelected
                 ? 'bg-blue-900/40 hover:bg-blue-900/50'
                 : 'hover:bg-zinc-800'}"
               onclick={() => {
@@ -364,6 +372,8 @@
                 if (isRenaming) return;
                 confirmLoad(patchName);
               }}
+              role="tabpanel"
+              tabindex="0"
             >
               {#if isAutosave}
                 <span title="Auto-saved patch - automatically saved as you work">
@@ -478,10 +488,10 @@
     <button
       class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
       onclick={() => onSavePatch?.()}
-      title="Save Patch"
+      title="Save Patch As"
     >
       <Save class="h-3.5 w-3.5" />
-      <span>Save</span>
+      <span>Save As</span>
     </button>
     <button
       class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"

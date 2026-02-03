@@ -51,7 +51,8 @@
     onLoadPatch,
     onToggleLeftSidebar,
     onSaveSelectedAsPreset,
-    onSavePatch,
+    onQuickSave,
+    onSaveAs,
     onOpenSaves
   }: {
     nodes: Node[];
@@ -79,7 +80,8 @@
     onLoadPatch: (patchId: string) => void | Promise<void>;
     onToggleLeftSidebar: () => void;
     onSaveSelectedAsPreset: () => void;
-    onSavePatch: () => void;
+    onQuickSave: () => void;
+    onSaveAs: () => void;
     onOpenSaves: () => void;
   } = $props();
 
@@ -278,11 +280,22 @@
                 class={menuItemClass}
                 onclick={() => {
                   overflowOpen = false;
-                  onSavePatch();
+                  onQuickSave();
                 }}
               >
                 <Save class="h-5 w-5 text-zinc-400" />
-                <span>Save Patch</span>
+                <span>Save</span>
+              </button>
+
+              <button
+                class={menuItemClass}
+                onclick={() => {
+                  overflowOpen = false;
+                  onSaveAs();
+                }}
+              >
+                <Save class="h-5 w-5 text-zinc-400" />
+                <span>Save As...</span>
               </button>
 
               <button
@@ -366,12 +379,24 @@
                 class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                 onclick={() => {
                   overflowOpen = false;
-                  onSavePatch();
+                  onQuickSave();
                 }}
               >
                 <Save class="h-4 w-4 text-zinc-400" />
-                <span>Save Patch</span>
+                <span>Save</span>
                 <span class="ml-auto text-xs text-zinc-500">⌘S</span>
+              </button>
+
+              <button
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                onclick={() => {
+                  overflowOpen = false;
+                  onSaveAs();
+                }}
+              >
+                <Save class="h-4 w-4 text-zinc-400" />
+                <span>Save As...</span>
+                <span class="ml-auto text-xs text-zinc-500">⇧⌘S</span>
               </button>
 
               <button
