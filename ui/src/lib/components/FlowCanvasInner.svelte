@@ -61,6 +61,7 @@
   import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
   import SavePatchModal from './dialogs/SavePatchModal.svelte';
+  import LoadSharedPatchDialog from './dialogs/LoadSharedPatchDialog.svelte';
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
@@ -116,6 +117,10 @@
 
   // Dialog state for save patch modal
   let showSavePatchModal = $state(false);
+
+  // Dialog state for loading shared patch from URL
+  let showLoadSharedPatchDialog = $state(false);
+  let pendingSharedPatch = $state<PatchSaveFormat | null>(null);
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -564,6 +569,7 @@
     const src = params.get('src');
     const id = params.get('id');
 
+    // For ?src= parameter, load directly (external URL - no confirmation for now)
     if (src) {
       showStartupModal = false;
       await loadPatchFromUrlParam(src);
@@ -571,24 +577,7 @@
       return;
     }
 
-    if (id) {
-      showStartupModal = false;
-      isLoadingFromUrl = true;
-
-      try {
-        const save = await getSharedPatchData(id);
-        deleteSearchParam('id');
-
-        if (save) await restorePatchFromSave(save);
-      } catch (err) {
-        urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
-      } finally {
-        isLoadingFromUrl = false;
-      }
-
-      return;
-    }
-
+    // Always load autosave first (so user has their content if they cancel shared patch load)
     try {
       const save = localStorage.getItem('patchies-patch-autosave');
 
@@ -597,6 +586,29 @@
         if (parsed) await restorePatchFromSave(parsed);
       }
     } catch {}
+
+    // For ?id= parameter, fetch shared patch and show confirmation dialog
+    if (id) {
+      showStartupModal = false;
+      isLoadingFromUrl = true;
+
+      try {
+        const save = await getSharedPatchData(id);
+
+        if (save) {
+          // Store pending patch and show confirmation dialog
+          pendingSharedPatch = save;
+          showLoadSharedPatchDialog = true;
+        } else {
+          deleteSearchParam('id');
+        }
+      } catch (err) {
+        urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
+        deleteSearchParam('id');
+      } finally {
+        isLoadingFromUrl = false;
+      }
+    }
   }
 
   // Drag-drop manager (initialized lazily after screenToFlowPosition is available)
@@ -980,6 +992,30 @@
     showNewPatchDialog = false;
   }
 
+  async function confirmLoadSharedPatch() {
+    if (!pendingSharedPatch) return;
+
+    deleteSearchParam('id');
+
+    // Load the shared patch
+    await restorePatchFromSave(pendingSharedPatch);
+
+    // Clear current patch name to prevent accidentally overwriting user's saved patches
+    currentPatchName.set(null);
+
+    pendingSharedPatch = null;
+
+    // Re-focus the view on the new content
+    await tick();
+    fitView();
+  }
+
+  function cancelLoadSharedPatch() {
+    // Remove the URL parameter but keep user's current autosave
+    deleteSearchParam('id');
+    pendingSharedPatch = null;
+  }
+
   function resumeAudio() {
     const audioContext = audioService.getAudioContext();
 
@@ -1275,6 +1311,14 @@
 
     <!-- Save Patch Modal -->
     <SavePatchModal bind:open={showSavePatchModal} {nodes} {edges} />
+
+    <!-- Load Shared Patch Confirmation Dialog -->
+    <LoadSharedPatchDialog
+      bind:open={showLoadSharedPatchDialog}
+      patchName={pendingSharedPatch?.name ?? null}
+      onConfirm={confirmLoadSharedPatch}
+      onCancel={cancelLoadSharedPatch}
+    />
   </div>
 </div>
 
