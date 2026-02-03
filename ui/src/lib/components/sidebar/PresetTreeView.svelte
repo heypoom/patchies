@@ -176,6 +176,7 @@
     if (event.key === 'Delete' || event.key === 'Backspace') {
       // Only delete if from editable library
       const library = $presetLibraryStore.find((l) => l.id === selectedPresetPath!.libraryId);
+
       if (library && !library.readonly) {
         event.preventDefault();
         deleteEntry(selectedPresetPath.libraryId, selectedPresetPath.path, false);
@@ -300,9 +301,11 @@
 
     event.preventDefault();
     event.stopPropagation();
+
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
+
     dropTargetPath = targetPathStr;
   }
 
@@ -346,6 +349,7 @@
 
       if (success) {
         toast.success(`Moved "${moveData.name}"`);
+
         // Expand the target folder
         if (currentDropTarget) {
           expandedPaths.add(currentDropTarget);
@@ -371,9 +375,11 @@
   function handleRenameKeydown(event: KeyboardEvent, libraryId: string, entryPath: PresetPath) {
     if (event.key === 'Enter') {
       event.preventDefault();
+
       if (renameInputValue.trim()) {
         presetLibraryStore.renameEntry(libraryId, entryPath, renameInputValue.trim());
       }
+
       renamingPath = null;
     } else if (event.key === 'Escape') {
       renamingPath = null;
@@ -389,12 +395,15 @@
   function handleNewFolderKeydown(event: KeyboardEvent, libraryId: string, parentPath: PresetPath) {
     if (event.key === 'Enter') {
       event.preventDefault();
+
       if (newFolderName.trim()) {
         presetLibraryStore.createFolder(libraryId, parentPath, newFolderName.trim());
+
         // Expand the parent
         expandedPaths.add(pathToString([libraryId, ...parentPath]));
         expandedPaths = new Set(expandedPaths);
       }
+
       creatingFolderIn = null;
     } else if (event.key === 'Escape') {
       creatingFolderIn = null;
@@ -408,6 +417,7 @@
     } else {
       presetLibraryStore.removePreset(libraryId, entryPath);
     }
+
     toast.success(`Deleted ${isFolder ? 'folder' : 'preset'}`);
   }
 
@@ -418,11 +428,14 @@
 
     const blob = new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `${exported.name.toLowerCase().replace(/\s+/g, '-')}-presets.json`;
     a.click();
+
     URL.revokeObjectURL(url);
+
     toast.success(`Exported "${exported.name}"`);
   }
 
