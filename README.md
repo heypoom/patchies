@@ -133,9 +133,9 @@ To create shareable links, click on three dots on the bottom right, then "Share 
 - Object packs are curated groups of related objects organized by their use cases.
 - Preset packs are collections of pre-configured object presets grouped by use-case.
   - Each preset is a ready-to-use object with code already written for common tasks.
+  - To use a preset, its object must be enabled. A warning tooltip will let you enable the necessary object packs.
 - Search for packs by its name, description, its objects or its presets.
-- Press the "all" button to enable everything Patchies has to offer.
-- Preset packs requires their objects to be enabled.
+- Press the "all" button to enable all objects or preset packs.
 
 ## Manage Files
 
@@ -2147,7 +2147,7 @@ These functions are available in all JSRunner-enabled nodes:
 
 <img src="./docs/images/canvas-vfs.webp" alt="Patchies.app virtual filesystem with canvas demo" width="700">
 
-- Use `await getVfsUrl(...)` to load files from the virtual filesystem (VFS) as blob urls. This lets you use images, videos, fonts, 3D models and other assets that you've uploaded to your patch.
+- Use `await getVfsUrl(...)` to load files from the [virtual filesystem](#manage-files) as blob urls. This lets you use images, videos, fonts, 3D models and other assets that you've [uploaded](#manage-files) to your patch.
 - Use the "Open Sidebar" button on the bottom right side, or `Ctrl/Cmd + K > Toggle Sidebar` to toggle the sidebar.
   - This lets you manage the virtual filesystem by e.g. creating folders, adding linked folders, uploading files, adding file by urls.
   - You can drag files from the file tree to the canvas, or into the supported nodes.
