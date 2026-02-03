@@ -1,5 +1,6 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import { serializePatch } from './serialize-patch';
+import { addSavedPatch } from '../../stores/ui.store';
 
 type SaveInfo = { nodes: Node[]; edges: Edge[] };
 
@@ -9,17 +10,6 @@ export function savePatchToLocalStorage({ name, nodes, edges }: SaveInfo & { nam
   const patchJson = serializePatch({ name, nodes, edges });
   localStorage.setItem(`patchies-patch-${name}`, patchJson);
 
-  const saved = localStorage.getItem('patchies-saved-patches') || '[]';
-  let savedPatches: string[];
-
-  try {
-    savedPatches = JSON.parse(saved);
-  } catch {
-    savedPatches = [];
-  }
-
-  if (!savedPatches.includes(name)) {
-    savedPatches.push(name);
-    localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
-  }
+  // Update the reactive store (also persists to localStorage)
+  addSavedPatch(name);
 }

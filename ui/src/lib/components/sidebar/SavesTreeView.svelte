@@ -15,31 +15,26 @@
   import LoadPatchDialog from '$lib/components/dialogs/LoadPatchDialog.svelte';
   import DeletePatchDialog from '$lib/components/dialogs/DeletePatchDialog.svelte';
   import { toast } from 'svelte-sonner';
-  import { isMobile, isSidebarOpen, currentPatchName } from '../../../stores/ui.store';
+  import {
+    isMobile,
+    isSidebarOpen,
+    currentPatchName,
+    savedPatches,
+    addSavedPatch,
+    removeSavedPatch,
+    renameSavedPatch
+  } from '../../../stores/ui.store';
   import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { migratePatch } from '$lib/migration';
   import { createAndCopyShareLink } from '$lib/save-load/share';
 
   let { onSavePatch }: { onSavePatch?: () => void } = $props();
 
-  // Load saved patches from localStorage
-  function loadSavedPatches(): string[] {
-    if (typeof window === 'undefined') return [];
-    try {
-      const saved = localStorage.getItem('patchies-saved-patches');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch {}
-    return [];
-  }
-
-  let savedPatches = $state(loadSavedPatches());
   let searchQuery = $state('');
 
   // Filtered patches based on search
   const filteredPatches = $derived(
-    savedPatches.filter((name) => name.toLowerCase().includes(searchQuery.toLowerCase()))
+    $savedPatches.filter((name) => name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Renaming state
@@ -56,11 +51,6 @@
 
   // Selected patch for mobile actions
   let selectedPatch = $state<string | null>(null);
-
-  // Refresh patches list
-  function refreshPatches() {
-    savedPatches = loadSavedPatches();
-  }
 
   // Confirm load (shows dialog)
   function confirmLoad(patchName: string) {
@@ -132,7 +122,7 @@
     }
 
     // Check if name already exists
-    if (savedPatches.includes(newName)) {
+    if ($savedPatches.includes(newName)) {
       toast.error('A patch with this name already exists');
       return;
     }
@@ -152,13 +142,8 @@
       // Remove old patch data
       localStorage.removeItem(`patchies-patch-${renamingPatch}`);
 
-      // Update saved patches list
-      const index = savedPatches.indexOf(renamingPatch);
-      if (index !== -1) {
-        savedPatches[index] = newName;
-        localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
-        savedPatches = [...savedPatches];
-      }
+      // Update saved patches list via store
+      renameSavedPatch(renamingPatch, newName);
 
       toast.success(`Renamed to "${newName}"`);
     } catch (error) {
@@ -182,9 +167,13 @@
     try {
       localStorage.removeItem(`patchies-patch-${patchToDelete}`);
 
-      const filtered = savedPatches.filter((name) => name !== patchToDelete);
-      localStorage.setItem('patchies-saved-patches', JSON.stringify(filtered));
-      savedPatches = filtered;
+      // Clear current patch name if we're deleting the active patch
+      if ($currentPatchName === patchToDelete) {
+        currentPatchName.set(null);
+      }
+
+      // Update via store
+      removeSavedPatch(patchToDelete);
 
       toast.success(`Deleted "${patchToDelete}"`);
     } catch (error) {
@@ -264,7 +253,7 @@
       // Ensure unique name
       let finalName = baseName;
       let counter = 1;
-      while (savedPatches.includes(finalName)) {
+      while ($savedPatches.includes(finalName)) {
         finalName = `${baseName}-${counter}`;
         counter++;
       }
@@ -272,9 +261,8 @@
       // Save the patch
       localStorage.setItem(`patchies-patch-${finalName}`, text);
 
-      // Update the list
-      savedPatches = [...savedPatches, finalName];
-      localStorage.setItem('patchies-saved-patches', JSON.stringify(savedPatches));
+      // Update the list via store (also persists to localStorage)
+      addSavedPatch(finalName);
 
       toast.success(`Imported "${finalName}"`);
     } catch (err) {

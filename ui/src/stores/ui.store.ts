@@ -98,3 +98,47 @@ if (typeof localStorage !== 'undefined') {
     }
   });
 }
+
+// Saved patches list - reactive store for sidebar
+function loadSavedPatchesFromStorage(): string[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const saved = localStorage.getItem('patchies-saved-patches');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+export const savedPatches = writable<string[]>(loadSavedPatchesFromStorage());
+
+// Helper to add a patch to the list (called by savePatchToLocalStorage)
+export function addSavedPatch(name: string) {
+  savedPatches.update((patches) => {
+    if (patches.includes(name)) return patches;
+    const updated = [...patches, name];
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+    return updated;
+  });
+}
+
+// Helper to remove a patch from the list
+export function removeSavedPatch(name: string) {
+  savedPatches.update((patches) => {
+    const filtered = patches.filter((p) => p !== name);
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(filtered));
+    return filtered;
+  });
+}
+
+// Helper to rename a patch in the list
+export function renameSavedPatch(oldName: string, newName: string) {
+  savedPatches.update((patches) => {
+    const index = patches.indexOf(oldName);
+    if (index === -1) return patches;
+    const updated = [...patches];
+    updated[index] = newName;
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+    return updated;
+  });
+}
