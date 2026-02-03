@@ -995,7 +995,7 @@
   async function confirmLoadSharedPatch() {
     if (!pendingSharedPatch) return;
 
-    deleteSearchParam('id');
+    // Keep the ?id= param in URL so users can easily copy/share the link
 
     // Load the shared patch
     await restorePatchFromSave(pendingSharedPatch);
@@ -1011,8 +1011,8 @@
   }
 
   function cancelLoadSharedPatch() {
-    // Remove the URL parameter but keep user's current autosave
-    deleteSearchParam('id');
+    // Keep the ?id= param in URL so users can easily copy/share the link
+    // Their autosave is already loaded, so they keep their content
     pendingSharedPatch = null;
   }
 
