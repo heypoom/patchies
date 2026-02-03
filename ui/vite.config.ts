@@ -60,11 +60,19 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Only precache small static assets - WASM/JS are runtime cached on first use
-        globPatterns: ['**/*.{css,html,svg,png,ico,woff,woff2}'],
-
-        // Allow large WASM files to be precached
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
+        // Only precache essential small assets for first paint
+        globPatterns: ['**/*.{css,svg,png,ico,woff,woff2}'],
+        // Exclude heavy files - they'll be runtime cached on first use
+        globIgnores: [
+          '**/node_modules/**',
+          '**/*.js',
+          '**/*.wasm',
+          '**/*.zip',
+          '**/*.json',
+          '**/webchuck/**',
+          '**/assets/**',
+          '**/workers/**'
+        ],
 
         // Skip waiting ensures new service worker activates immediately
         skipWaiting: true,
@@ -81,6 +89,25 @@ export default defineConfig({
               cacheName: 'app-js-cache',
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
               networkTimeoutSeconds: 3
+            }
+          },
+          // Static /lib/ files (p5 compat, etc.) - NetworkFirst since no hash in filename
+          {
+            urlPattern: /\/lib\/.*\.js$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'static-lib-cache',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              networkTimeoutSeconds: 3
+            }
+          },
+          // Pyodide assets - CacheFirst
+          {
+            urlPattern: /\/assets\/(pyodide|python_stdlib).*$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'pyodide-cache',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 }
             }
           },
           // WASM files - CacheFirst (hashed filenames provide cache busting)

@@ -11,12 +11,19 @@ const LOCAL_RESOURCES = [
   // WebChuck
   '/webchuck/webchuck.js',
   '/webchuck/webchuck.wasm',
+  '/webchuck/wc-bundle.js',
+
   // Pyodide (Python)
   '/assets/pyodide.js',
   '/assets/pyodide.asm.js',
   '/assets/pyodide.asm.wasm',
   '/assets/python_stdlib.zip',
-  '/assets/pyodide-lock.json'
+  '/assets/pyodide-lock.json',
+
+  // P5 compatibility layer
+  '/lib/p5/compat/preload.js',
+  '/lib/p5/compat/shapes.js',
+  '/lib/p5/compat/data.js'
 ];
 
 // CDN-hosted resources
@@ -73,7 +80,11 @@ export async function downloadForOffline(
     });
 
     try {
-      await fetch(url, { cache: 'reload' }); // Force fetch to populate cache
+      // Normal fetch - service worker will intercept and cache via runtimeCaching rules
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`Failed to fetch: ${url} (${response.status})`);
+      }
       completed++;
     } catch (e) {
       console.warn(`Failed to cache: ${url}`, e);
