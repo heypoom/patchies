@@ -47,14 +47,14 @@ Playing around with demos first is a nice way to get inspirations and see what P
 - Click on the "demos" tab to view the list of demos you can play with
 - Use the mouse to pan the canvas.
 - Use the scroll wheel to zoom the canvas.
-- You can always go back to this dialog by clicking the three dots on the bottom right, then `Help / Getting Started`.
+- You can always go back to this dialog by using the three dots on the bottom right, then `Help / Getting Started`.
 
 ## Creating Objects
 
 <img src="./docs/images/patchies-insert-object-with-enter.png" alt="Patchies.app orca node" width="700">
 
 - Press `Enter` to create a new object.
-- Type to search for object name. Try `hydra` or `glsl` or `p5`.
+- Type to search for object and preset names. Try `button` or `textbox` or `logger.js`.
 - `Arrow Up/Down` navigates the list.
 - `Enter` inserts the object.
 - `Esc` closes the menu.
@@ -63,11 +63,11 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 <img src="./docs/images/object-browser.webp" alt="Patchies.app browse objects modal" width="700">
 
-- Use `Ctrl/Cmd + O` or the add button on the bottom right to open the **Object Browser** - a searchable, categorized view of all available objects in Patchies.
-- See all objects and presets organized by [packs](#object-packs--preset-packs), with searchable names and descriptions.
-- Presets are pre-configured objects that helps you get started quickly.
-  - [Manage your own presets](#manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas.
-- Click to insert an object or preset -- pick one at random and play with it!
+- Use `Ctrl/Cmd + O` or the add button on the bottom right to open the object browser: a searchable, categorized view of objects and presets in Patchies.
+- Objects and presets are grouped by [packs](#object-packs--preset-packs), with searchable names and descriptions.
+- Presets are pre-made objects that helps you get started quickly.
+  - [Manage your own presets](#manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas. You can make your own presets too.
+- Click to insert an object or preset -- pick one at random and see what it can do 🧪
 
 ### Modifying Objects
 
@@ -76,13 +76,13 @@ Playing around with demos first is a nice way to get inspirations and see what P
 - Click on an object to select it. The outline color should change when an object is selected.
 - Once selected, drag the object to move it around.
   - If you can't drag an object, click on the **title** on the top-left of an object and drag it instead.
-  - `Delete` to delete an object.
+  - `Delete/Backspace` to delete an object.
   - `Ctrl + C/V` to copy and paste an object, or use the "copy/paste" button.
 - When hovering the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
 
 <img src="./docs/images/patchies-edit-code.png" alt="Patchies.app editing code" width="700">
 
-- Click on `Edit Code` button to open the code editor.
+- Click on the `Edit Code` icon button to open the code editor.
 - `Shift + Enter` when in a code editor re-runs the code. This helps you to make changes to the code and see the results right away.
 
 ## Keyboard Shortcuts
@@ -104,11 +104,11 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 [easy-connect.webm](https://github.com/user-attachments/assets/00c8c9f5-e3c0-4ca0-9601-6e3b678886ba)
 
-Use the _easy connect_ button to make the handles big and easy to touch, for these use cases:
+Use the _easy connect_ button to make the handles big and easy to touch, when:
 
 1. You are using touch devices like a mobile phone or tablet.
 2. You cannot locate the tiny object handles or drag across them.
-3. You want to quickly connect many handles together by tap or click.
+3. You want to connect many handles together by tap or click.
 
 To use this feature:
 
@@ -148,8 +148,8 @@ The Files panel in the sidebar lets you work with virtual files in your patches.
   - **Drop into file tree**: Drag files from your system into the Files panel to add them as linked files
   - **Drop into patcher**: Drag files directly onto the canvas to create virtual files that are embedded in your patch
 - **Linking Folders**: Click the folder icon to link a local folder. This gives your patch read access to files in that folder, useful for loading images, audio samples, or data files. Chromium browsers only.
-- **Virtual Files**: Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
-- **URLs**: You can store URLs as virtual files by using the "add link" button.
+- Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
+- You can store URLs as virtual files by using the "add link" button.
 - See [loading files from the virtual filesystem](#loading-files-from-the-virtual-filesystem) for how to use virtual files in your objects.
 
 ### Manage Presets
@@ -158,14 +158,13 @@ The Files panel in the sidebar lets you work with virtual files in your patches.
 
 Presets are saved configurations of objects that you can reuse across patches.
 
-- Use `Ctrl/Cmd + B > Presets` to show the presets panel
-- **Browsing Presets**: Open the Presets panel in the sidebar to browse available presets. Presets are organized into libraries and can be filtered by category.
-- **Saving Presets**: Select an object and click the bookmark button to save it as a preset.
-- **Preset Libraries**: You can create custom libraries to organize your presets:
-  - **Create**: Click the "+" button to create a new library
-  - **Import/Export**: Libraries can be imported and exported as files for sharing
-  - **Folders**: Use folders within libraries to organize presets by category or project
-- **Built-in Presets**: Patchies includes [preset packs](#object-packs--preset-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
+- Use `Ctrl/Cmd + B > Presets` to browse and manage your presets.
+- Presets are organized into libraries and can be filtered by category.
+- Select an object and click the bookmark button to save it as a preset.
+- You can create your own preset libraries to organize your presets:
+  - Libraries can be imported and exported as files for sharing
+  - Use folders within libraries to organize presets by category or project
+- Patchies includes [preset packs](#object-packs--preset-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
 
 ## Supporting Open Source
 
