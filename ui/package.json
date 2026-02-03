@@ -65,7 +65,9 @@
     "vite": "^7.0.4",
     "vite-bundle-analyzer": "^1.2.3",
     "vite-plugin-devtools-json": "^0.2.0",
+    "vite-plugin-pwa": "^0.21.1",
     "vite-plugin-top-level-await": "^1.6.0",
+    "@vite-pwa/sveltekit": "^1.1.0",
     "vite-plugin-wasm": "^3.5.0",
     "vitest": "^3.2.4",
     "vitest-browser-svelte": "^0.1.0"
