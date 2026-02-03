@@ -727,16 +727,6 @@
               >
                 <Play class="h-3.5 w-3.5" />
               </button>
-              <button
-                class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  exportPatch(node.path);
-                }}
-                title="Export"
-              >
-                <Download class="h-3.5 w-3.5" />
-              </button>
             {:else}
               <button
                 class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
