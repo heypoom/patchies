@@ -1811,6 +1811,8 @@ You can send messages to control Csound instruments:
 - When you first create a `netsend` or `netrecv` object, it will attach a `room` parameter to your URL.
   - You must have the same `?room=` parameter to be able to connect to each other.
   - If you load someone's patch, you can remove the `room` parameter to generate a different room to use.
+- To set the room id manually, go to `Ctrl/Cmd + K > Set room for netsend/netrecv`.
+  - This lets you connect with other users who use the same room id.
 - Use the "Share Link" button (or `Ctrl/Cmd + K > Share Patch Link`) to share the patch with friends.
   - It will automatically add the `room` parameter to your shared link, letting you connect with friends.
 - Behind the scenes, this uses [Trystero](https://github.com/dmotz/trystero) and [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API), leveraging public relay servers for peer-to-peer mesh discovery.

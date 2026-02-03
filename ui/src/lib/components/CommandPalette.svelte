@@ -17,7 +17,7 @@
   import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
   import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { createAndCopyShareLink } from '$lib/save-load/share';
-  import { deleteSearchParam } from '$lib/utils/search-params';
+  import { deleteSearchParam, getSearchParam, setSearchParam } from '$lib/utils/search-params';
   import { migratePatch } from '$lib/migration';
 
   interface Props {
@@ -67,7 +67,7 @@
   let resultsContainer: HTMLDivElement | undefined = $state();
   let ipcSystem = IpcSystem.getInstance();
 
-  type StageName = 'commands' | 'delete-list' | 'rename-list' | 'rename-name';
+  type StageName = 'commands' | 'delete-list' | 'rename-list' | 'rename-name' | 'set-room';
 
   // Multi-stage state
   let stage = $state<StageName>('commands');
@@ -75,6 +75,7 @@
   let patchName = $state('');
   let savedPatches = $state<string[]>([]);
   let selectedPatchToRename = $state('');
+  let roomName = $state('');
 
   // Base commands for stage 1
   const commands = [
@@ -171,6 +172,11 @@
       id: 'help',
       name: 'Help / Getting Started',
       description: 'Show the getting started guide and help documentation'
+    },
+    {
+      id: 'set-room',
+      name: 'Set room for netsend/netrecv',
+      description: 'Set a custom room ID for P2P communication between patches'
     }
   ];
 
@@ -198,7 +204,8 @@
       stage === 'delete-list' ||
       stage === 'rename-list' ||
       stage === 'rename-name' ||
-      stage === 'commands'
+      stage === 'commands' ||
+      stage === 'set-room'
     ) {
       setTimeout(() => {
         searchInput?.focus();
@@ -269,6 +276,8 @@
       selectedIndex = 0;
     } else if (stage === 'rename-name' && patchName.trim()) {
       renamePatch();
+    } else if (stage === 'set-room' && roomName.trim()) {
+      setRoom();
     }
   }
 
@@ -373,6 +382,10 @@
       .with('help', () => {
         onCancel();
         onShowHelp?.();
+      })
+      .with('set-room', () => {
+        roomName = getSearchParam('room') || '';
+        nextStage('set-room');
       })
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);
@@ -515,6 +528,17 @@
     }
   }
 
+  function setRoom() {
+    if (!roomName.trim()) {
+      onCancel();
+      return;
+    }
+
+    setSearchParam('room', roomName.trim());
+    onCancel();
+    window.location.reload();
+  }
+
   function scrollToSelectedItem() {
     if (!resultsContainer) return;
 
@@ -617,6 +641,18 @@
         class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
       />
     </div>
+  {:else if stage === 'set-room'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="mb-2 text-xs text-zinc-400">Enter room ID for netsend/netrecv:</div>
+      <input
+        bind:this={searchInput}
+        bind:value={roomName}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="Enter room ID..."
+        class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
   {/if}
 
   <!-- Results List -->
@@ -681,6 +717,16 @@
           >"
         </div>
       {/if}
+    {:else if stage === 'set-room'}
+      <!-- Show room info -->
+      <div class="px-3 py-2 text-xs text-zinc-400">
+        {#if roomName.trim()}
+          Room ID: <span class="font-mono text-green-300">{roomName}</span>
+          <div class="mt-1 text-zinc-500">Page will reload to join this room.</div>
+        {:else}
+          Enter a room ID to connect with other users
+        {/if}
+      </div>
     {/if}
   </div>
 
@@ -694,6 +740,8 @@
       ↑↓ Navigate • Enter Rename • Esc Back
     {:else if stage === 'rename-name'}
       Enter Rename • Esc Back
+    {:else if stage === 'set-room'}
+      Enter Set Room • Esc Back
     {/if}
   </div>
 </div>
