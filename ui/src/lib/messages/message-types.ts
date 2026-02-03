@@ -34,6 +34,8 @@ const ABBREVIATION_MAP: Record<string, MessageType> = {
   n: 'number',
   f: 'float',
   i: 'integer',
+  t: 'string',
+  text: 'string',
   str: 'string'
 };
 
