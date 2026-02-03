@@ -6,10 +6,12 @@
     Command,
     Copy,
     FilePlusCorner,
+    FolderOpen,
     PanelLeftOpen,
     PanelLeftClose,
     Link,
     Loader,
+    Save,
     Search,
     Sparkles,
     Trash2,
@@ -48,7 +50,9 @@
     onNewPatch,
     onLoadPatch,
     onToggleLeftSidebar,
-    onSaveSelectedAsPreset
+    onSaveSelectedAsPreset,
+    onSavePatch,
+    onOpenSaves
   }: {
     nodes: Node[];
     edges: Edge[];
@@ -75,6 +79,8 @@
     onLoadPatch: (patchId: string) => void | Promise<void>;
     onToggleLeftSidebar: () => void;
     onSaveSelectedAsPreset: () => void;
+    onSavePatch: () => void;
+    onOpenSaves: () => void;
   } = $props();
 
   const hasSelection = $derived(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0);
@@ -271,6 +277,28 @@
               <button
                 class={menuItemClass}
                 onclick={() => {
+                  overflowOpen = false;
+                  onSavePatch();
+                }}
+              >
+                <Save class="h-5 w-5 text-zinc-400" />
+                <span>Save Patch</span>
+              </button>
+
+              <button
+                class={menuItemClass}
+                onclick={() => {
+                  overflowOpen = false;
+                  onOpenSaves();
+                }}
+              >
+                <FolderOpen class="h-5 w-5 text-zinc-400" />
+                <span>Load Patch</span>
+              </button>
+
+              <button
+                class={menuItemClass}
+                onclick={() => {
                   showStartupModal = true;
                   overflowOpen = false;
                 }}
@@ -332,6 +360,29 @@
                 <FilePlusCorner class="h-4 w-4 text-zinc-400" />
                 <span>New Patch</span>
                 <span class="ml-auto text-xs text-zinc-500">⌘N</span>
+              </button>
+
+              <button
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                onclick={() => {
+                  overflowOpen = false;
+                  onSavePatch();
+                }}
+              >
+                <Save class="h-4 w-4 text-zinc-400" />
+                <span>Save Patch</span>
+                <span class="ml-auto text-xs text-zinc-500">⌘S</span>
+              </button>
+
+              <button
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                onclick={() => {
+                  overflowOpen = false;
+                  onOpenSaves();
+                }}
+              >
+                <FolderOpen class="h-4 w-4 text-zinc-400" />
+                <span>Load Patch</span>
               </button>
 
               <button

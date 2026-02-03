@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { X, Folder, Bookmark, Package } from '@lucide/svelte/icons';
+  import { X, Folder, Bookmark, Package, Save } from '@lucide/svelte/icons';
   import FileTreeView from './FileTreeView.svelte';
   import PresetTreeView from './PresetTreeView.svelte';
   import ExtensionsView from './ExtensionsView.svelte';
+  import SavesTreeView from './SavesTreeView.svelte';
   import type { SidebarView } from '../../../stores/ui.store';
 
   let {
@@ -16,6 +17,7 @@
   const views: { id: SidebarView; icon: typeof Folder; title: string }[] = [
     { id: 'files', icon: Folder, title: 'Files' },
     { id: 'presets', icon: Bookmark, title: 'Presets' },
+    { id: 'saves', icon: Save, title: 'Saves' },
     { id: 'packs', icon: Package, title: 'Packs' }
   ];
 </script>
@@ -56,6 +58,8 @@
         <PresetTreeView />
       {:else if view === 'packs'}
         <ExtensionsView />
+      {:else if view === 'saves'}
+        <SavesTreeView />
       {/if}
     </div>
   </div>

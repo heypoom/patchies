@@ -39,6 +39,8 @@
     onSaveAsPreset?: (node: Node) => void;
     onShowHelp?: () => void;
     onBrowseObjects?: () => void;
+    onSavePatch?: () => void;
+    onLoadPatch?: () => void;
   }
 
   let {
@@ -54,7 +56,9 @@
     onToggleSidebar,
     onSaveAsPreset,
     onShowHelp,
-    onBrowseObjects
+    onBrowseObjects,
+    onSavePatch,
+    onLoadPatch
   }: Props = $props();
 
   // Get the first selected node (for save as preset)
@@ -301,8 +305,14 @@
     match(commandId)
       .with('export-patch', () => saveToFile())
       .with('import-patch', () => loadFromFile())
-      .with('save-patch', () => nextStage('save-name'))
-      .with('load-patch', () => nextStage('load-list'))
+      .with('save-patch', () => {
+        onCancel();
+        onSavePatch?.();
+      })
+      .with('load-patch', () => {
+        onCancel();
+        onLoadPatch?.();
+      })
       .with('delete-patch', () => nextStage('delete-list'))
       .with('rename-patch', () => nextStage('rename-list'))
       .with('set-gemini-api-key', () => {

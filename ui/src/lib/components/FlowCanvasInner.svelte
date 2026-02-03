@@ -59,6 +59,7 @@
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
   import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
+  import SavePatchModal from './dialogs/SavePatchModal.svelte';
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
@@ -111,6 +112,10 @@
   // Dialog state for save as preset
   let showSavePresetDialog = $state(false);
   let nodeToSaveAsPreset = $state<Node | null>(null);
+
+  // Dialog state for save patch modal
+  let showSavePatchModal = $state(false);
+  let currentPatchName = $state('');
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -308,12 +313,10 @@
 
       triggerAiPrompt();
     }
-    // Handle CMD+S for manual save
+    // Handle CMD+S for save patch modal
     else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();
-      // Save to autosave slot
-      const patchJson = serializePatch({ name: 'autosave', nodes, edges });
-      localStorage.setItem('patchies-patch-autosave', patchJson);
+      showSavePatchModal = true;
     } else if (
       event.key.toLowerCase() === 'enter' &&
       !showCommandPalette &&
@@ -1152,6 +1155,11 @@
           }}
           onShowHelp={() => (showStartupModal = true)}
           onBrowseObjects={() => ($isObjectBrowserOpen = true)}
+          onSavePatch={() => (showSavePatchModal = true)}
+          onLoadPatch={() => {
+            $isSidebarOpen = true;
+            $sidebarView = 'saves';
+          }}
         />
       {/if}
     </div>
@@ -1191,6 +1199,11 @@
             }
           }
         }}
+        onSavePatch={() => (showSavePatchModal = true)}
+        onOpenSaves={() => {
+          $isSidebarOpen = true;
+          $sidebarView = 'saves';
+        }}
       />
     {/if}
 
@@ -1224,6 +1237,9 @@
 
     <!-- Save as Preset Dialog -->
     <SavePresetDialog bind:open={showSavePresetDialog} node={nodeToSaveAsPreset} />
+
+    <!-- Save Patch Modal -->
+    <SavePatchModal bind:open={showSavePatchModal} {nodes} {edges} {currentPatchName} />
   </div>
 </div>
 
