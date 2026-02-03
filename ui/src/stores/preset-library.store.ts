@@ -4,7 +4,6 @@ import type {
   PresetFolder,
   Preset,
   PresetPath,
-  FlattenedPreset,
   PresetLibraryExport
 } from '$lib/presets/types';
 import {
@@ -87,6 +86,7 @@ function initializeLibraries(): PresetLibrary[] {
   if (stored && stored.length > 0) {
     // Always replace built-in library with fresh version to pick up changes
     const builtinIndex = stored.findIndex((lib) => lib.id === BUILTIN_LIBRARY_ID);
+
     if (builtinIndex >= 0) {
       stored[builtinIndex] = createBuiltinLibrary();
     } else {
@@ -112,7 +112,7 @@ function initializeLibraries(): PresetLibrary[] {
  * Create the preset library store
  */
 function createPresetLibraryStore() {
-  const { subscribe, set, update } = writable<PresetLibrary[]>(initializeLibraries());
+  const { subscribe, update } = writable<PresetLibrary[]>(initializeLibraries());
 
   // Auto-save to localStorage on changes
   subscribe((libraries) => {

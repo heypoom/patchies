@@ -1,27 +1,68 @@
 <script lang="ts">
-  import { X, Folder, Bookmark, Package } from '@lucide/svelte/icons';
+  import { X, Folder, Bookmark, Package, Save } from '@lucide/svelte/icons';
   import FileTreeView from './FileTreeView.svelte';
   import PresetTreeView from './PresetTreeView.svelte';
   import ExtensionsView from './ExtensionsView.svelte';
+  import SavesTreeView from './SavesTreeView.svelte';
   import type { SidebarView } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
-    view = $bindable<SidebarView>('files')
+    view = $bindable<SidebarView>('files'),
+    onSavePatch
   }: {
     open: boolean;
     view?: SidebarView;
+    onSavePatch?: () => void;
   } = $props();
 
   const views: { id: SidebarView; icon: typeof Folder; title: string }[] = [
     { id: 'files', icon: Folder, title: 'Files' },
     { id: 'presets', icon: Bookmark, title: 'Presets' },
+    { id: 'saves', icon: Save, title: 'Saves' },
     { id: 'packs', icon: Package, title: 'Packs' }
   ];
+
+  const MIN_WIDTH = 180;
+  const MAX_WIDTH = 400;
+  const DEFAULT_WIDTH = 256;
+
+  let width = $state(DEFAULT_WIDTH);
+  let isDragging = $state(false);
+
+  function handlePointerDown(e: PointerEvent) {
+    e.preventDefault();
+    isDragging = true;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+  }
+
+  function handlePointerMove(e: PointerEvent) {
+    if (!isDragging) return;
+    const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+    width = newWidth;
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    if (!isDragging) return;
+    isDragging = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+
+    const target = e.target as HTMLElement;
+    target.releasePointerCapture(e.pointerId);
+  }
 </script>
 
 {#if open}
-  <div class="flex h-full w-full shrink-0 flex-col border-r border-zinc-700 bg-zinc-950 sm:w-64">
+  <div
+    class="relative flex h-full w-full shrink-0 flex-col border-r border-zinc-700 bg-zinc-950"
+    style:--sidebar-width="{width}px"
+    class:sm:w-[var(--sidebar-width)]={true}
+  >
     <!-- Header with view switcher -->
     <div class="flex items-center justify-between border-b border-zinc-700 px-2 py-1.5">
       <!-- View switcher icons -->
@@ -56,7 +97,22 @@
         <PresetTreeView />
       {:else if view === 'packs'}
         <ExtensionsView />
+      {:else if view === 'saves'}
+        <SavesTreeView {onSavePatch} />
       {/if}
     </div>
+
+    <!-- Resize handle (desktop only) -->
+    <div
+      class="absolute top-0 right-0 hidden h-full w-1 cursor-col-resize hover:bg-zinc-600 sm:block {isDragging
+        ? 'bg-zinc-500'
+        : ''}"
+      onpointerdown={handlePointerDown}
+      onpointermove={handlePointerMove}
+      onpointerup={handlePointerUp}
+      role="separator"
+      aria-orientation="vertical"
+      tabindex="-1"
+    ></div>
   </div>
 {/if}

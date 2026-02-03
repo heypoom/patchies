@@ -77,7 +77,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 - Once selected, drag the object to move it around.
   - If you can't drag an object, click on the **title** on the top-left of an object and drag it instead.
   - `Delete/Backspace` to delete an object.
-  - `Ctrl + C/V` to copy and paste an object, or use the "copy/paste" button.
+  - `Ctrl/Cmd + C/V` to copy and paste an object, or use the "copy/paste" button.
 - When hovering the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
 
 <img src="./docs/images/patchies-edit-code.png" alt="Patchies.app editing code" width="700">
@@ -121,21 +121,39 @@ To use this feature:
 
 ## Sharing Links
 
-To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be triggered from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
+To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be done from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
 
 ## Object Packs & Preset Packs
 
 <img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
 
 - By default, Patchies only shows you a few objects and presets.
-- Press `Ctrl/Cmd + B > Packs` to select **object packs** and **preset packs**, to grab objects and presets matching your use cases.
-- Enable or disable packs to customize what appears in the object browser and quick insert menu.
+- `Ctrl/Cmd + B > Packs` lets you pick and choose **object packs** and **preset packs**, to tailor the shown objects and presets matching your use cases.
+  - This changes what objects and presets show up in the object browser and quick insert menu.
 - Object packs are curated groups of related objects organized by their use cases.
 - Preset packs are collections of pre-configured object presets grouped by use-case.
   - Each preset is a ready-to-use object with code already written for common tasks.
   - To use a preset, its object must be enabled. A warning tooltip will let you enable the necessary object packs.
 - Search for packs by its name, description, its objects or its presets.
 - Press the "all" button to enable all objects or preset packs.
+
+## Manage Saves
+
+<img src="./docs/images/saves-sidebar.webp" alt="Patchies.app saves sidebar" width="700">
+
+The Saves panel in the sidebar lets you manage your locally saved patches.
+
+- `Ctrl/Cmd + B > Saves` to show the saves panel
+- Saves are organized into folders and can be filtered by name.
+- Hover over a save to load, rename and delete patches.
+- Right click on a save or folder to show a context menu.
+  - Folder Actions: create subfolder, move, rename and delete
+  - Save Actions: load, share link, export as JSON, move, rename and delete
+- Use the bottom bar to create a new folder, save patch as a new save, and import patch from JSON files.
+- Use these shortcuts to save and create patches:
+  - `Ctrl/Cmd + S` to save the current patch.
+  - `Ctrl/Cmd + Shift + S` to save the patch as a different save.
+  - `Ctrl/Cmd + N` to create new patch.
 
 ## Manage Files
 
@@ -158,7 +176,7 @@ The Files panel in the sidebar lets you work with virtual files in your patches.
 
 Presets are saved configurations of objects that you can reuse across patches.
 
-- Use `Ctrl/Cmd + B > Presets` to browse and manage your presets.
+- `Ctrl/Cmd + B > Presets` to browse and manage your presets.
 - Presets are organized into libraries and can be filtered by category.
 - Select an object and click the bookmark button to save it as a preset.
 - You can create your own preset libraries to organize your presets:
@@ -342,7 +360,7 @@ When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch bet
 Here's how to set it up:
 
 1. Create a separate API key that has strict budget limits.
-2. Press `Cmd/Ctrl + I`.
+2. Press `Ctrl/Cmd + I`.
 3. Enter your API Key and hit `Save & Continue`.
 4. Use `Ctrl/Cmd + I` or the _sparkles_ button on the bottom right to generate.
 
@@ -2291,7 +2309,7 @@ AI is 100% optional and _opt-in_ with Patchies.
 
 Don't want AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
 
-In particular, this will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also disables the experimental `Cmd/Ctrl + I` AI object insertion shortcut.
+In particular, this will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also disables the experimental `Ctrl/Cmd + I` AI object insertion shortcut.
 
 ## Rendering Pipeline
 

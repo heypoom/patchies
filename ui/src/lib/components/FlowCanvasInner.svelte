@@ -27,7 +27,8 @@
     isMobile,
     isSidebarOpen,
     sidebarView,
-    patchObjectTypes
+    patchObjectTypes,
+    currentPatchName
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -59,6 +60,7 @@
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
   import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
+  import SavePatchModal from './dialogs/SavePatchModal.svelte';
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
@@ -111,6 +113,9 @@
   // Dialog state for save as preset
   let showSavePresetDialog = $state(false);
   let nodeToSaveAsPreset = $state<Node | null>(null);
+
+  // Dialog state for save patch modal
+  let showSavePatchModal = $state(false);
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -308,12 +313,20 @@
 
       triggerAiPrompt();
     }
-    // Handle CMD+S for manual save
+    // Handle CMD+Shift+S for Save As (always shows modal)
+    else if (
+      event.key.toLowerCase() === 's' &&
+      (event.metaKey || event.ctrlKey) &&
+      event.shiftKey &&
+      !isTyping
+    ) {
+      event.preventDefault();
+      showSavePatchModal = true;
+    }
+    // Handle CMD+S for save (quick save if named, otherwise show modal)
     else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();
-      // Save to autosave slot
-      const patchJson = serializePatch({ name: 'autosave', nodes, edges });
-      localStorage.setItem('patchies-patch-autosave', patchJson);
+      quickSave();
     } else if (
       event.key.toLowerCase() === 'enter' &&
       !showCommandPalette &&
@@ -336,6 +349,25 @@
 
     commandPalettePosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
     showCommandPalette = true;
+  }
+
+  /**
+   * Quick save: if patch has a name, save directly; otherwise show Save modal
+   */
+  function quickSave() {
+    const name = $currentPatchName;
+
+    if (name) {
+      // Remove any URL params related to shared patches
+      deleteSearchParam('id');
+      deleteSearchParam('src');
+
+      // Silent save - no toast for quick save to existing name
+      savePatchToLocalStorage({ name, nodes, edges });
+    } else {
+      // No current patch name, show the Save modal
+      showSavePatchModal = true;
+    }
   }
 
   /**
@@ -944,6 +976,7 @@
 
     localStorage.removeItem('patchies-patch-autosave');
     isBackgroundOutputCanvasEnabled.set(false);
+    currentPatchName.set(null); // Clear current patch name for new patch
     showNewPatchDialog = false;
   }
 
@@ -980,7 +1013,11 @@
 
 <div class="flow-container flex h-screen w-full">
   <!-- Sidebar (Files / Presets) -->
-  <SidebarPanel bind:open={$isSidebarOpen} bind:view={$sidebarView} />
+  <SidebarPanel
+    bind:open={$isSidebarOpen}
+    bind:view={$sidebarView}
+    onSavePatch={() => (showSavePatchModal = true)}
+  />
 
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">
@@ -1152,6 +1189,11 @@
           }}
           onShowHelp={() => (showStartupModal = true)}
           onBrowseObjects={() => ($isObjectBrowserOpen = true)}
+          onSavePatch={() => (showSavePatchModal = true)}
+          onLoadPatch={() => {
+            $isSidebarOpen = true;
+            $sidebarView = 'saves';
+          }}
         />
       {/if}
     </div>
@@ -1191,6 +1233,12 @@
             }
           }
         }}
+        onQuickSave={quickSave}
+        onSaveAs={() => (showSavePatchModal = true)}
+        onOpenSaves={() => {
+          $isSidebarOpen = true;
+          $sidebarView = 'saves';
+        }}
       />
     {/if}
 
@@ -1224,6 +1272,9 @@
 
     <!-- Save as Preset Dialog -->
     <SavePresetDialog bind:open={showSavePresetDialog} node={nodeToSaveAsPreset} />
+
+    <!-- Save Patch Modal -->
+    <SavePatchModal bind:open={showSavePatchModal} {nodes} {edges} />
   </div>
 </div>
 
