@@ -49,10 +49,45 @@ const CDN_RESOURCES = {
   vdoninja: ['https://cdn.jsdelivr.net/gh/steveseguin/ninjasdk@latest/vdoninja-sdk.min.js']
 };
 
+/** Discover app JS files from the current document */
+function discoverAppScripts(): string[] {
+  const scripts = new Set<string>();
+
+  // Get all script tags with src
+  document.querySelectorAll('script[src]').forEach((script) => {
+    const src = script.getAttribute('src');
+    if (src) {
+      scripts.add(src);
+    }
+  });
+
+  // Get all modulepreload links (SvelteKit preloads chunks this way)
+  document.querySelectorAll('link[rel="modulepreload"]').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (href) {
+      scripts.add(href);
+    }
+  });
+
+  // Get stylesheets too
+  document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (href) {
+      scripts.add(href);
+    }
+  });
+
+  return Array.from(scripts);
+}
+
 export async function downloadForOffline(
   onProgress?: (progress: OfflineDownloadProgress) => void
 ): Promise<void> {
+  // Discover app scripts dynamically
+  const appScripts = discoverAppScripts();
+
   const allUrls = [
+    ...appScripts,
     ...LOCAL_RESOURCES,
     ...CDN_RESOURCES.ruby,
     ...CDN_RESOURCES.supersonic,
@@ -100,12 +135,14 @@ export async function downloadForOffline(
   });
 }
 
+/** Returns estimated count (actual count includes dynamically discovered scripts) */
 export function getOfflineResourceCount(): number {
   return (
     LOCAL_RESOURCES.length +
     CDN_RESOURCES.ruby.length +
     CDN_RESOURCES.supersonic.length +
     CDN_RESOURCES.strudel.length +
-    CDN_RESOURCES.vdoninja.length
+    CDN_RESOURCES.vdoninja.length +
+    20 // Estimated app scripts
   );
 }
