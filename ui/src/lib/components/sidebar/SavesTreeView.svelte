@@ -12,7 +12,8 @@
     History
   } from '@lucide/svelte/icons';
   import * as ContextMenu from '$lib/components/ui/context-menu';
-  import * as Dialog from '$lib/components/ui/dialog';
+  import LoadPatchDialog from '$lib/components/dialogs/LoadPatchDialog.svelte';
+  import DeletePatchDialog from '$lib/components/dialogs/DeletePatchDialog.svelte';
   import { toast } from 'svelte-sonner';
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
@@ -557,68 +558,6 @@
   </div>
 {/if}
 
-<!-- Load confirmation dialog -->
-<Dialog.Root bind:open={showLoadDialog}>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header>
-      <Dialog.Title>Load Patch</Dialog.Title>
-      <Dialog.Description>
-        Loading "{patchToLoad}" will replace your current patch.
-      </Dialog.Description>
-    </Dialog.Header>
+<LoadPatchDialog bind:open={showLoadDialog} patchName={patchToLoad} onConfirm={loadPatch} />
 
-    <div
-      class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
-    >
-      Any unsaved changes will be lost.
-    </div>
-
-    <Dialog.Footer class="flex gap-2">
-      <button
-        onclick={() => {
-          showLoadDialog = false;
-          patchToLoad = null;
-        }}
-        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-      >
-        Cancel
-      </button>
-      <button
-        onclick={loadPatch}
-        class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-      >
-        Load
-      </button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
-
-<!-- Delete confirmation dialog -->
-<Dialog.Root bind:open={showDeleteDialog}>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header>
-      <Dialog.Title>Delete Patch</Dialog.Title>
-      <Dialog.Description>
-        Are you sure you want to delete "{patchToDelete}"? This action cannot be undone.
-      </Dialog.Description>
-    </Dialog.Header>
-
-    <Dialog.Footer class="flex gap-2">
-      <button
-        onclick={() => {
-          showDeleteDialog = false;
-          patchToDelete = null;
-        }}
-        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-      >
-        Cancel
-      </button>
-      <button
-        onclick={deletePatch}
-        class="flex-1 cursor-pointer rounded bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500"
-      >
-        Delete
-      </button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+<DeletePatchDialog bind:open={showDeleteDialog} patchName={patchToDelete} onConfirm={deletePatch} />
