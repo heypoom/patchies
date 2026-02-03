@@ -50,7 +50,7 @@
     },
     {
       keys: ['Ctrl', 'K'],
-      description: 'Open the command palette to search for commands',
+      description: 'Open the command palette',
       category: 'keyboard'
     },
     {
@@ -60,7 +60,7 @@
     },
     {
       keys: ['Ctrl', 'O'],
-      description: 'Browse all objects with search and categories',
+      description: 'Browse all objects',
       category: 'keyboard'
     },
     {
@@ -71,7 +71,7 @@
     },
     {
       keys: ['Ctrl', 'S'],
-      description: 'Save the patch to local storage',
+      description: 'Save the patch',
       category: 'keyboard'
     },
     {
@@ -81,7 +81,7 @@
     },
     {
       keys: ['Ctrl', 'N'],
-      description: 'Create a new empty patch',
+      description: 'Create a new patch',
       category: 'keyboard'
     },
     {
