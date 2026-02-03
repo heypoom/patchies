@@ -288,8 +288,9 @@
     else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();
 
-      // Respect the "Hide AI features" setting
+      // When AI features are hidden, fallback to browse objects (Ctrl+O behavior)
       if (!$isAiFeaturesVisible) {
+        $isObjectBrowserOpen = true;
         return;
       }
 
