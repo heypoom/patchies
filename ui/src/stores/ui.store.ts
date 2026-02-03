@@ -100,6 +100,7 @@ if (typeof localStorage !== 'undefined') {
 }
 
 // Saved patches list - reactive store for sidebar
+// Patches can have paths like "folder/subfolder/patch-name"
 function loadSavedPatchesFromStorage(): string[] {
   if (typeof localStorage === 'undefined') return [];
   try {
@@ -110,7 +111,26 @@ function loadSavedPatchesFromStorage(): string[] {
   }
 }
 
+// Saved folders list - tracks empty folders (folders with patches are implied)
+function loadSavedFoldersFromStorage(): string[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const saved = localStorage.getItem('patchies-saved-folders');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
 export const savedPatches = writable<string[]>(loadSavedPatchesFromStorage());
+export const savedFolders = writable<string[]>(loadSavedFoldersFromStorage());
+
+// Persist folders to localStorage
+if (typeof localStorage !== 'undefined') {
+  savedFolders.subscribe((folders) => {
+    localStorage.setItem('patchies-saved-folders', JSON.stringify(folders));
+  });
+}
 
 // Helper to add a patch to the list (called by savePatchToLocalStorage)
 export function addSavedPatch(name: string) {
@@ -119,6 +139,14 @@ export function addSavedPatch(name: string) {
     const updated = [...patches, name];
     localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
     return updated;
+  });
+}
+
+// Helper to add a folder
+export function addSavedFolder(path: string) {
+  savedFolders.update((folders) => {
+    if (folders.includes(path)) return folders;
+    return [...folders, path];
   });
 }
 
@@ -131,6 +159,33 @@ export function removeSavedPatch(name: string) {
   });
 }
 
+// Helper to remove a folder and all its contents
+export function removeSavedFolder(folderPath: string) {
+  const prefix = folderPath + '/';
+
+  // Remove the folder itself
+  savedFolders.update((folders) =>
+    folders.filter((f) => f !== folderPath && !f.startsWith(prefix))
+  );
+
+  // Remove all patches in the folder
+  savedPatches.update((patches) => {
+    const filtered = patches.filter((p) => !p.startsWith(prefix));
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(filtered));
+    return filtered;
+  });
+
+  // Also remove localStorage entries for those patches
+  if (typeof localStorage !== 'undefined') {
+    const patches = loadSavedPatchesFromStorage();
+    for (const p of patches) {
+      if (p.startsWith(prefix)) {
+        localStorage.removeItem(`patchies-patch-${p}`);
+      }
+    }
+  }
+}
+
 // Helper to rename a patch in the list
 export function renameSavedPatch(oldName: string, newName: string) {
   savedPatches.update((patches) => {
@@ -141,4 +196,107 @@ export function renameSavedPatch(oldName: string, newName: string) {
     localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
     return updated;
   });
+}
+
+// Helper to rename a folder and update all children paths
+export function renameSavedFolder(oldPath: string, newPath: string) {
+  const oldPrefix = oldPath + '/';
+  const newPrefix = newPath + '/';
+
+  // Update folder paths
+  savedFolders.update((folders) =>
+    folders.map((f) => {
+      if (f === oldPath) return newPath;
+      if (f.startsWith(oldPrefix)) return newPrefix + f.slice(oldPrefix.length);
+      return f;
+    })
+  );
+
+  // Update patch paths and their localStorage keys
+  savedPatches.update((patches) => {
+    const updated = patches.map((p) => {
+      if (p.startsWith(oldPrefix)) {
+        const newName = newPrefix + p.slice(oldPrefix.length);
+        // Move localStorage entry
+        if (typeof localStorage !== 'undefined') {
+          const data = localStorage.getItem(`patchies-patch-${p}`);
+          if (data) {
+            localStorage.setItem(`patchies-patch-${newName}`, data);
+            localStorage.removeItem(`patchies-patch-${p}`);
+          }
+        }
+        return newName;
+      }
+      return p;
+    });
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+    return updated;
+  });
+}
+
+// Helper to move a patch to a new folder
+export function moveSavedPatch(oldPath: string, newPath: string) {
+  // Move localStorage entry
+  if (typeof localStorage !== 'undefined') {
+    const data = localStorage.getItem(`patchies-patch-${oldPath}`);
+    if (data) {
+      localStorage.setItem(`patchies-patch-${newPath}`, data);
+      localStorage.removeItem(`patchies-patch-${oldPath}`);
+    }
+  }
+
+  // Update patch list
+  savedPatches.update((patches) => {
+    const updated = patches.map((p) => (p === oldPath ? newPath : p));
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+    return updated;
+  });
+}
+
+// Helper to move a folder and all its contents
+export function moveSavedFolder(oldPath: string, newPath: string) {
+  const oldPrefix = oldPath + '/';
+  const newPrefix = newPath + '/';
+
+  // Update folder paths
+  savedFolders.update((folders) =>
+    folders.map((f) => {
+      if (f === oldPath) return newPath;
+      if (f.startsWith(oldPrefix)) return newPrefix + f.slice(oldPrefix.length);
+      return f;
+    })
+  );
+
+  // Update patch paths and their localStorage keys
+  savedPatches.update((patches) => {
+    const updated = patches.map((p) => {
+      if (p.startsWith(oldPrefix)) {
+        const newName = newPrefix + p.slice(oldPrefix.length);
+        // Move localStorage entry
+        if (typeof localStorage !== 'undefined') {
+          const data = localStorage.getItem(`patchies-patch-${p}`);
+          if (data) {
+            localStorage.setItem(`patchies-patch-${newName}`, data);
+            localStorage.removeItem(`patchies-patch-${p}`);
+          }
+        }
+        return newName;
+      }
+      return p;
+    });
+    localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+    return updated;
+  });
+}
+
+// Get the base name from a path (e.g., "folder/patch" -> "patch")
+export function getSaveBaseName(path: string): string {
+  const parts = path.split('/');
+  return parts[parts.length - 1];
+}
+
+// Get the parent folder from a path (e.g., "folder/patch" -> "folder", "patch" -> "")
+export function getSaveParentFolder(path: string): string {
+  const lastSlash = path.lastIndexOf('/');
+  return lastSlash === -1 ? '' : path.slice(0, lastSlash);
 }
