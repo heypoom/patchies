@@ -74,7 +74,8 @@ function createNodeState(nodeId: string): NodeState {
         state.messageCallback(data, meta);
       }
     },
-    onError: (message) => {
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error);
       postResponse({
         type: 'consoleOutput',
         nodeId,
@@ -96,6 +97,37 @@ function getNodeState(nodeId: string): NodeState {
 
 function postResponse(response: RubyWorkerResponse) {
   self.postMessage(response);
+}
+
+/**
+ * Safely invokes a callback, handling both sync and async errors.
+ * Used for recv() handlers and other user callbacks.
+ */
+function invokeCallbackSafely(
+  nodeId: string,
+  callback: () => unknown,
+  errorPrefix = 'Error in recv()'
+): void {
+  const handleError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    postResponse({
+      type: 'consoleOutput',
+      nodeId,
+      level: 'error',
+      args: [`${errorPrefix}: ${message}`]
+    });
+  };
+
+  try {
+    const result = callback();
+
+    // Handle async callbacks that return a promise
+    if (result instanceof Promise) {
+      result.catch(handleError);
+    }
+  } catch (error) {
+    handleError(error);
+  }
 }
 
 /**
@@ -396,17 +428,7 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
       if (state?.messageCallback) {
-        try {
-          state.messageCallback(data, meta);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          postResponse({
-            type: 'consoleOutput',
-            nodeId,
-            level: 'error',
-            args: [`Error in recv(): ${message}`]
-          });
-        }
+        invokeCallbackSafely(nodeId, () => state.messageCallback!(data, meta));
       }
     })
     .with({ type: 'cleanup' }, () => {

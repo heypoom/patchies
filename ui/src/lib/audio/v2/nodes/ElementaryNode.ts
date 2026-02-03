@@ -209,6 +209,12 @@ export class ElementaryNode implements AudioNodeV2 {
   private handleMessageInlet(message: unknown): void {
     if (!this.recvCallback) return;
 
+    const handleError = (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      this.customConsole.error(`Error in recv(): ${errorMessage}`);
+    };
+
     try {
       // Type guard to ensure messageData has the expected structure
       if (
@@ -218,12 +224,15 @@ export class ElementaryNode implements AudioNodeV2 {
         'meta' in message
       ) {
         const data = message as { message: unknown; meta: unknown };
+        const result = this.recvCallback(data.message, data.meta) as unknown;
 
-        this.recvCallback(data.message, data.meta);
+        // Handle async callbacks that return a promise
+        if (result instanceof Promise) {
+          result.catch(handleError);
+        }
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.customConsole.error(`Error in recv(): ${errorMessage}`);
+      handleError(error);
     }
   }
 

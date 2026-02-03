@@ -10,6 +10,7 @@
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { JSRunner } from '$lib/js-runner/JSRunner';
+  import { handleCodeError } from '$lib/js-runner/handleCodeError';
 
   let {
     id: nodeId,
@@ -70,7 +71,7 @@
       return Boolean(result);
     } catch (error) {
       hasError = true;
-      customConsole.error(error instanceof Error ? error.message : String(error));
+      handleCodeError(error, code, nodeId, customConsole);
       return false; // On error, let the value through
     }
   }
@@ -136,12 +137,13 @@
     expr = data.expr;
 
     if (expr.trim()) {
+      const code = `return (${expr})`;
       try {
-        new Function('$1', '$2', `return (${expr})`);
+        new Function('$1', '$2', code);
         hasError = false;
       } catch (error) {
         hasError = true;
-        customConsole.error(error instanceof Error ? error.message : String(error));
+        handleCodeError(error, code, nodeId, customConsole);
       }
     } else {
       hasError = false;

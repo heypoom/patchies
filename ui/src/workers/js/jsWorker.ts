@@ -38,6 +38,8 @@ interface NodeState {
   videoFrameRequestIdCounter: number;
   // Direct channel handler (render + worker-to-worker)
   directChannel: DirectChannelHandler;
+  // Store the executed code for error reporting with line numbers
+  code: string | null;
 }
 
 const nodeStates = new Map<string, NodeState>();
@@ -55,7 +57,8 @@ function createNodeState(nodeId: string): NodeState {
     fftDataCache: new Map(),
     videoFrameCallback: null,
     pendingVideoFrameResolvers: new Map(),
-    videoFrameRequestIdCounter: 0
+    videoFrameRequestIdCounter: 0,
+    code: null
   };
 
   // Create direct channel handler with callbacks that reference state
@@ -66,13 +69,19 @@ function createNodeState(nodeId: string): NodeState {
         state.messageCallback(data, meta);
       }
     },
-    onError: (message) => {
-      postResponse({
-        type: 'consoleOutput',
-        nodeId,
-        level: 'error',
-        args: [message]
-      });
+    onError: (error) => {
+      // Use handleCodeError for line number extraction if code is available
+      if (state.code) {
+        handleCodeError(nodeId, state.code, error);
+      } else {
+        const message = error instanceof Error ? error.message : String(error);
+        postResponse({
+          type: 'consoleOutput',
+          nodeId,
+          level: 'error',
+          args: [message]
+        });
+      }
     }
   });
 
@@ -374,6 +383,10 @@ function cleanupNode(nodeId: string) {
 
 async function executeCode(nodeId: string, processedCode: string) {
   const ctx = createWorkerContext(nodeId);
+  const state = getNodeState(nodeId);
+
+  // Store code for error reporting with line numbers in recv() callbacks
+  state.code = processedCode;
 
   const moduleProviderUrl = 'https://esm.sh/';
 
@@ -438,6 +451,40 @@ async function executeCode(nodeId: string, processedCode: string) {
     handleCodeError(nodeId, processedCode, error);
     const message = error instanceof Error ? error.message : String(error);
     postResponse({ type: 'executionComplete', nodeId, success: false, error: message });
+  }
+}
+
+/**
+ * Safely invokes a callback, handling both sync and async errors.
+ * Uses handleCodeError for line number extraction when code is available.
+ */
+function invokeCallbackSafely(nodeId: string, callback: () => unknown): void {
+  const state = nodeStates.get(nodeId);
+
+  const handleError = (error: unknown) => {
+    // Use handleCodeError for line number extraction if code is available
+    if (state?.code) {
+      handleCodeError(nodeId, state.code, error);
+    } else {
+      const message = error instanceof Error ? error.message : String(error);
+      postResponse({
+        type: 'consoleOutput',
+        nodeId,
+        level: 'error',
+        args: [message]
+      });
+    }
+  };
+
+  try {
+    const result = callback();
+
+    // Handle async callbacks that return a promise
+    if (result instanceof Promise) {
+      result.catch(handleError);
+    }
+  } catch (error) {
+    handleError(error);
   }
 }
 
@@ -575,17 +622,9 @@ function handleVideoFramesReady(
 
   // Invoke callback if registered
   if (state.videoFrameCallback) {
-    try {
-      state.videoFrameCallback(payload.frames, payload.timestamp);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      postResponse({
-        type: 'consoleOutput',
-        nodeId,
-        level: 'error',
-        args: [`Error in onVideoFrame(): ${message}`]
-      });
-    }
+    invokeCallbackSafely(nodeId, () =>
+      state.videoFrameCallback!(payload.frames, payload.timestamp)
+    );
   }
 
   // Resolve any pending manual request (first one only)
@@ -607,17 +646,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
       if (state?.messageCallback) {
-        try {
-          state.messageCallback(data, meta);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          postResponse({
-            type: 'consoleOutput',
-            nodeId,
-            level: 'error',
-            args: [`Error in recv(): ${message}`]
-          });
-        }
+        invokeCallbackSafely(nodeId, () => state.messageCallback!(data, meta));
       }
     })
     .with({ type: 'updateModule' }, ({ moduleName, code }) => {

@@ -11,6 +11,7 @@
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { JSRunner } from '$lib/js-runner/JSRunner';
+  import { handleCodeError } from '$lib/js-runner/handleCodeError';
 
   type SendFn = (msg: unknown, options?: { to?: number }) => void;
 
@@ -67,13 +68,13 @@
   ): Promise<{ success: true; result: unknown } | { success: false }> {
     if (!expr.trim()) return { success: true, result: values[0] };
 
+    const code = `return (${expr})`;
+
     try {
       const extraContext: Record<string, unknown> = {};
       for (let i = 0; i < 9; i++) {
         extraContext[`$${i + 1}`] = values[i];
       }
-
-      const code = `return (${expr})`;
 
       const result = await jsRunner.executeJavaScript(nodeId, code, {
         customConsole,
@@ -85,7 +86,8 @@
       return { success: true, result };
     } catch (error) {
       hasError = true;
-      customConsole.error(error instanceof Error ? error.message : String(error));
+      handleCodeError(error, code, nodeId, customConsole);
+
       return { success: false };
     }
   }
@@ -131,18 +133,22 @@
     if (expr.trim()) {
       // Only do syntax validation - don't execute with undefined values
       // Runtime errors (like accessing .type on undefined) are expected and OK
+      const code = `return (${expr})`;
+
       try {
-        new Function('$1', '$2', '$3', '$4', '$5', '$6', '$7', '$8', '$9', `return (${expr})`);
+        new Function('$1', '$2', '$3', '$4', '$5', '$6', '$7', '$8', '$9', code);
+
         hasError = false;
       } catch (error) {
         hasError = true;
-        customConsole.error(error instanceof Error ? error.message : String(error));
+        handleCodeError(error, code, nodeId, customConsole);
       }
     } else {
       hasError = false;
     }
 
     const newInletCount = parseInletCount(data.expr || '');
+
     if (newInletCount !== inletValues.length) {
       inletValues = new Array(newInletCount).fill(undefined);
       populatedInlets = new Set();

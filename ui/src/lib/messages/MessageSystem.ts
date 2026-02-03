@@ -39,13 +39,21 @@ export class MessageQueue {
   }
 
   sendMessage(message: Message) {
+    const handleError = (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.ofNode(this.nodeId).error(`Error in recv(): ${errorMessage}`);
+    };
+
     this.callbacks.forEach((callback) => {
       try {
-        callback(message['data'], message);
+        const result = callback(message['data'], message) as unknown;
+
+        // Handle async callbacks that return a promise
+        if (result instanceof Promise) {
+          result.catch(handleError);
+        }
       } catch (error) {
-        // Route error to node's VirtualConsole
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.ofNode(this.nodeId).error(`Error in recv(): ${errorMessage}`);
+        handleError(error);
       }
     });
   }

@@ -19,7 +19,7 @@ export interface IncomingMessageMeta {
 export interface DirectChannelConfig {
   nodeId: string;
   onIncomingMessage: (data: unknown, meta: IncomingMessageMeta) => void;
-  onError: (message: string) => void;
+  onError: (error: unknown) => void;
 }
 
 export interface DirectChannelHandler {
@@ -124,15 +124,18 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
         const { data: msgData, inlet, inletKey, fromNodeId } = e.data;
 
         try {
-          onIncomingMessage(msgData, {
+          const result = onIncomingMessage(msgData, {
             source: fromNodeId,
             inlet,
             inletKey
-          });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          }) as unknown;
 
-          onError(`Error in recv(): ${message}`);
+          // Handle async callbacks that return a promise
+          if (result instanceof Promise) {
+            result.catch(onError);
+          }
+        } catch (error) {
+          onError(error);
         }
       };
 
