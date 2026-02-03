@@ -106,6 +106,11 @@
     // Flash takes top priority
     if (isFlashing) return 'border-zinc-300';
 
+    // Error state - show red border when there are errors
+    if (lineErrors) {
+      return selected ? 'border-red-500' : 'border-red-400';
+    }
+
     // Prioritize showing emerald if there are active timers (stoppable state)
     if (isLongRunningTaskActive && selected) return 'border-emerald-300';
     if (isLongRunningTaskActive) return 'border-emerald-500';
