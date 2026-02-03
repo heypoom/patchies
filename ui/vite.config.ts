@@ -7,7 +7,11 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+
+// @ts-expect-error -- no typedef
 import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
+
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -32,7 +36,137 @@ export default defineConfig({
     tailwindcss(),
     sveltekit(),
     devtoolsJson(),
-    viteStaticCopyPyodide()
+    viteStaticCopyPyodide(),
+    SvelteKitPWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'Patchies',
+        short_name: 'Patchies',
+        description: 'Visual programming environment for audio-visual patches',
+        theme_color: '#080809',
+        background_color: '#080809',
+        display: 'standalone',
+        icons: [
+          {
+            src: '/favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml'
+          },
+          {
+            src: '/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png'
+          }
+        ]
+      },
+      workbox: {
+        // Exclude large JS chunks from precaching - they'll be runtime cached instead
+        globPatterns: ['**/*.{css,html,svg,png,ico,woff,woff2}'],
+
+        // Allow large WASM files to be precached
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
+
+        // Skip waiting ensures new service worker activates immediately
+        skipWaiting: true,
+
+        // Claim clients immediately so updates take effect right away
+        clientsClaim: true,
+
+        runtimeCaching: [
+          // App JS chunks - use NetworkFirst so fresh code is always fetched when online
+          {
+            urlPattern: /\/_app\/immutable\/.*\.js$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'app-js-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              networkTimeoutSeconds: 3
+            }
+          },
+          // Google Fonts
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }
+            }
+          },
+          // Pyodide WASM
+          {
+            urlPattern: /.*pyodide.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'pyodide-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
+          // WebChuck
+          {
+            urlPattern: /.*webchuck.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'webchuck-cache',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
+          // Ruby WASM (lazy-cache on first use)
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/@ruby\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ruby-wasm-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
+          // SuperSonic assets (lazy-cache on first use)
+          {
+            urlPattern: /^https:\/\/unpkg\.com\/supersonic-scsynth.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'supersonic-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
+          // Strudel samples from GitHub
+          {
+            urlPattern:
+              /^https:\/\/raw\.githubusercontent\.com\/.*(dough-samples|todepond\/samples).*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'strudel-samples-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
+          // VDO.Ninja SDK
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/gh\/steveseguin\/ninjasdk.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'vdoninja-cache',
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
+          // esm.sh for dynamic npm imports (StaleWhileRevalidate for flexibility)
+          {
+            urlPattern: /^https:\/\/esm\.sh\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'esm-sh-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 }
+            }
+          }
+        ]
+      }
+    })
   ],
   optimizeDeps: {
     exclude: [

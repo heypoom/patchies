@@ -19,6 +19,10 @@
   import { createAndCopyShareLink } from '$lib/save-load/share';
   import { deleteSearchParam, getSearchParam, setSearchParam } from '$lib/utils/search-params';
   import { migratePatch } from '$lib/migration';
+  import {
+    downloadForOffline,
+    type OfflineDownloadProgress
+  } from '$lib/offline/download-for-offline';
 
   interface Props {
     position: { x: number; y: number };
@@ -67,7 +71,13 @@
   let resultsContainer: HTMLDivElement | undefined = $state();
   let ipcSystem = IpcSystem.getInstance();
 
-  type StageName = 'commands' | 'delete-list' | 'rename-list' | 'rename-name' | 'set-room';
+  type StageName =
+    | 'commands'
+    | 'delete-list'
+    | 'rename-list'
+    | 'rename-name'
+    | 'set-room'
+    | 'offline-download';
 
   // Multi-stage state
   let stage = $state<StageName>('commands');
@@ -76,6 +86,12 @@
   let savedPatches = $state<string[]>([]);
   let selectedPatchToRename = $state('');
   let roomName = $state('');
+  let offlineProgress = $state<OfflineDownloadProgress>({
+    current: 0,
+    total: 0,
+    currentItem: '',
+    status: 'idle'
+  });
 
   // Base commands for stage 1
   const commands = [
@@ -177,6 +193,11 @@
       id: 'set-room',
       name: 'Set room for netsend/netrecv',
       description: 'Set a custom room ID for P2P communication between patches'
+    },
+    {
+      id: 'prepare-offline',
+      name: 'Prepare for Offline',
+      description: 'Download heavy assets (Ruby WASM, SuperSonic, Strudel samples) for offline use'
     }
   ];
 
@@ -387,6 +408,10 @@
         roomName = getSearchParam('room') || '';
         nextStage('set-room');
       })
+      .with('prepare-offline', () => {
+        nextStage('offline-download');
+        startOfflineDownload();
+      })
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);
       });
@@ -539,6 +564,27 @@
     window.location.reload();
   }
 
+  async function startOfflineDownload() {
+    offlineProgress = {
+      current: 0,
+      total: 0,
+      currentItem: '',
+      status: 'downloading'
+    };
+
+    try {
+      await downloadForOffline((progress) => {
+        offlineProgress = progress;
+      });
+    } catch (e) {
+      offlineProgress = {
+        ...offlineProgress,
+        status: 'error',
+        error: e instanceof Error ? e.message : 'Unknown error'
+      };
+    }
+  }
+
   function scrollToSelectedItem() {
     if (!resultsContainer) return;
 
@@ -653,6 +699,11 @@
         class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
       />
     </div>
+  {:else if stage === 'offline-download'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="text-sm font-medium text-zinc-200">Preparing for Offline</div>
+      <div class="mt-1 text-xs text-zinc-400">Downloading assets for airplane mode...</div>
+    </div>
   {/if}
 
   <!-- Results List -->
@@ -727,6 +778,38 @@
           Enter a room ID to connect with other users
         {/if}
       </div>
+    {:else if stage === 'offline-download'}
+      <div class="px-3 py-4">
+        {#if offlineProgress.status === 'downloading'}
+          <div class="mb-2 flex items-center justify-between text-xs text-zinc-400">
+            <span>Downloading {offlineProgress.current}/{offlineProgress.total}</span>
+            <span class="font-mono text-zinc-500"
+              >{Math.round((offlineProgress.current / offlineProgress.total) * 100) || 0}%</span
+            >
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-zinc-700">
+            <div
+              class="h-full bg-green-500 transition-all duration-300"
+              style="width: {(offlineProgress.current / offlineProgress.total) * 100 || 0}%"
+            ></div>
+          </div>
+          {#if offlineProgress.currentItem}
+            <div class="mt-2 truncate font-mono text-xs text-zinc-500">
+              {offlineProgress.currentItem}
+            </div>
+          {/if}
+        {:else if offlineProgress.status === 'complete'}
+          <div class="flex items-center gap-2 text-sm text-green-400">
+            <span>All assets downloaded for offline use</span>
+          </div>
+          <div class="mt-2 text-xs text-zinc-500">
+            You can now use Patchies without an internet connection.
+          </div>
+        {:else if offlineProgress.status === 'error'}
+          <div class="text-sm text-red-400">Download failed</div>
+          <div class="mt-1 text-xs text-zinc-500">{offlineProgress.error}</div>
+        {/if}
+      </div>
     {/if}
   </div>
 
@@ -742,6 +825,12 @@
       Enter Rename • Esc Back
     {:else if stage === 'set-room'}
       Enter Set Room • Esc Back
+    {:else if stage === 'offline-download'}
+      {#if offlineProgress.status === 'complete' || offlineProgress.status === 'error'}
+        Esc Close
+      {:else}
+        Downloading...
+      {/if}
     {/if}
   </div>
 </div>
