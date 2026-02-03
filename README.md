@@ -184,6 +184,14 @@ Presets are saved configurations of objects that you can reuse across patches.
   - Use folders within libraries to organize presets by category or project
 - Patchies includes [preset packs](#manage-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
 
+## Offline Usage
+
+Patchies can be used even when you don't have an internet connection. Simply visit `https://patchies.app` as usual on your browser, and it will continue to work even when there is no internet.
+
+To ensure most features are available when you are offline, use `Ctrl/Cmd + K > Prepare for Offline` to download as much assets for offline use as possible. This lets you pre-cache most objects into disk.
+
+Behind the scenes, this uses [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API), [Vite PWA for SvelteKit](https://github.com/vite-pwa/sveltekit) and [Workbox](https://web.dev/learn/pwa/workbox)
+
 ## Supporting Open Source
 
 <img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
