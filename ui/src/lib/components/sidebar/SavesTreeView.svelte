@@ -670,6 +670,7 @@
         ondragleave={handleDragLeave}
         ondrop={(e) => node.isFolder && handleDrop(e, node.path)}
         role="treeitem"
+        aria-selected={isSelected}
         tabindex="0"
       >
         {#if node.isFolder}
@@ -690,7 +691,7 @@
           {/if}
         {:else if isAutosave}
           <span class="w-4"></span>
-          <History class="h-4 w-4 shrink-0 text-emerald-400" title="Auto-saved patch" />
+          <History class="h-4 w-4 shrink-0 text-emerald-400" />
         {:else}
           <span class="w-4"></span>
           <FileJson class="h-4 w-4 shrink-0 text-blue-400" />
