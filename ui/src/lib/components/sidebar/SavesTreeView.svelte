@@ -492,7 +492,7 @@
   }
 
   // Build folder tree for picker
-  const moveFolderTree = $derived((): FolderNode[] => {
+  const moveFolderTree = $derived.by((): FolderNode[] => {
     const rootNode: FolderNode = {
       id: '',
       name: 'Saves (root)',
