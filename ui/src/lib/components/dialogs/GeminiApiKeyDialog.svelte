@@ -41,7 +41,9 @@
     $isAiFeaturesVisible = false;
     open = false;
 
-    toast.success('All AI features hidden. Use "Ctrl+K > Toggle AI Features" to re-enable them.');
+    toast.success(
+      'All AI features hidden. Use "Ctrl/Cmd + K > Toggle AI Features" to re-enable them.'
+    );
   }
 
   // Reset state when dialog opens

@@ -71,7 +71,17 @@
     },
     {
       keys: ['Ctrl', 'S'],
-      description: 'Manually save patch to browser storage',
+      description: 'Save the patch to local storage',
+      category: 'keyboard'
+    },
+    {
+      keys: ['Ctrl', 'Shift', 'S'],
+      description: 'Save the patch as a different save',
+      category: 'keyboard'
+    },
+    {
+      keys: ['Ctrl', 'N'],
+      description: 'Create a new empty patch',
       category: 'keyboard'
     },
     {

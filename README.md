@@ -77,7 +77,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 - Once selected, drag the object to move it around.
   - If you can't drag an object, click on the **title** on the top-left of an object and drag it instead.
   - `Delete/Backspace` to delete an object.
-  - `Ctrl + C/V` to copy and paste an object, or use the "copy/paste" button.
+  - `Ctrl/Cmd + C/V` to copy and paste an object, or use the "copy/paste" button.
 - When hovering the mouse over an object, you'll see floating icon buttons such as "edit code" and "play/stop" on the top right.
 
 <img src="./docs/images/patchies-edit-code.png" alt="Patchies.app editing code" width="700">
@@ -121,7 +121,7 @@ To use this feature:
 
 ## Sharing Links
 
-To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be triggered from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
+To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be done from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
 
 ## Object Packs & Preset Packs
 
@@ -150,7 +150,7 @@ The Saves panel in the sidebar lets you manage your locally saved patches.
   - Folder Actions: create subfolder, move, rename and delete
   - Save Actions: load, share link, export as JSON, move, rename and delete
 - Use the bottom bar to create a new folder, save patch as a new save, and import patch from JSON files.
-- Use these shortcuts to save your patches (also available in `Ctrl/Cmd + K` command palette):
+- Use these shortcuts to save and create patches:
   - `Ctrl/Cmd + S` to save the current patch.
   - `Ctrl/Cmd + Shift + S` to save the patch as a different save.
   - `Ctrl/Cmd + N` to create new patch.
@@ -360,7 +360,7 @@ When the AI object insert prompt is open, press `Ctrl/Cmd+I` again to switch bet
 Here's how to set it up:
 
 1. Create a separate API key that has strict budget limits.
-2. Press `Cmd/Ctrl + I`.
+2. Press `Ctrl/Cmd + I`.
 3. Enter your API Key and hit `Save & Continue`.
 4. Use `Ctrl/Cmd + I` or the _sparkles_ button on the bottom right to generate.
 
@@ -2309,7 +2309,7 @@ AI is 100% optional and _opt-in_ with Patchies.
 
 Don't want AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
 
-In particular, this will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also disables the experimental `Cmd/Ctrl + I` AI object insertion shortcut.
+In particular, this will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also disables the experimental `Ctrl/Cmd + I` AI object insertion shortcut.
 
 ## Rendering Pipeline
 
