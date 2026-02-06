@@ -1,10 +1,12 @@
+import { pushState } from '$app/navigation';
+
 export const setSearchParam = (key: string, value: string) => {
   const currentUrl = new URL(window.location.href);
   const searchParams = currentUrl.searchParams;
 
   searchParams.set(key, value);
 
-  window.history.pushState({}, '', currentUrl);
+  pushState(currentUrl, {});
 };
 
 export const getSearchParam = (key: string): string | null => {
@@ -18,5 +20,5 @@ export const deleteSearchParam = (key: string) => {
   const searchParams = currentUrl.searchParams;
   searchParams.delete(key);
 
-  window.history.pushState({}, '', currentUrl);
+  pushState(currentUrl, {});
 };
