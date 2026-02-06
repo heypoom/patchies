@@ -1,7 +1,14 @@
 <script lang="ts">
-  import { Info, Keyboard, MousePointer } from '@lucide/svelte/icons';
+  import { Keyboard, MousePointer } from '@lucide/svelte/icons';
+  import { onMount } from 'svelte';
 
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
+
+  let isMac = $state(false);
+
+  onMount(() => {
+    isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+  });
 
   interface Shortcut {
     keys: string[];
@@ -106,6 +113,8 @@
     }
   ];
 
+  const transformKey = (key: string) => (isMac && key === 'Ctrl' ? 'Cmd' : key);
+
   const mouseShortcuts = $derived(
     shortcuts.filter((s) => s.category === 'mouse' && (!s.requiresAi || $isAiFeaturesVisible))
   );
@@ -138,7 +147,9 @@
           <span class="text-sm text-zinc-300">{shortcut.description}</span>
           <div class="flex gap-1.5">
             {#each shortcut.keys as key}
-              <kbd class="rounded bg-zinc-700 px-2 py-1 font-mono text-xs text-zinc-200">{key}</kbd>
+              <kbd class="rounded bg-zinc-700 px-2 py-1 font-mono text-xs text-zinc-200"
+                >{transformKey(key)}</kbd
+              >
             {/each}
           </div>
         </div>
@@ -160,22 +171,13 @@
           <span class="text-sm text-zinc-300">{shortcut.description}</span>
           <div class="flex gap-1.5">
             {#each shortcut.keys as key}
-              <kbd class="rounded bg-zinc-700 px-2 py-1 font-mono text-xs text-zinc-200">{key}</kbd>
+              <kbd class="rounded bg-zinc-700 px-2 py-1 font-mono text-xs text-zinc-200"
+                >{transformKey(key)}</kbd
+              >
             {/each}
           </div>
         </div>
       {/each}
-    </div>
-  </div>
-
-  <!-- Additional note -->
-  <div class="rounded-lg bg-zinc-800/50 p-4">
-    <div class="flex items-start gap-2">
-      <Info class="mt-0.5 h-4 w-4 text-blue-400" />
-      <p class="text-sm text-zinc-300">
-        On macOS, use <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Cmd</kbd>
-        instead of <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Ctrl</kbd>
-      </p>
     </div>
   </div>
 </div>

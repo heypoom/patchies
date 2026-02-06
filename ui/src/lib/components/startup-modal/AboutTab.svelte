@@ -1,14 +1,23 @@
 <script lang="ts">
-  import { BookOpen, CircleDot, Github, Info } from '@lucide/svelte/icons';
+  import {
+    BookOpen,
+    CircleDot,
+    CirclePlus,
+    Github,
+    Info,
+    PanelLeftOpen
+  } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
 
   import demoImage from '$lib/images/startup-modal.webp';
   import type { Tab } from './types';
 
   let showOnStartup = $state(true);
+  let isMac = $state(false);
   let { setTab }: { setTab: (tab: Tab) => void } = $props();
 
   onMount(() => {
+    isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
     // Load the current setting from localStorage
     const setting = localStorage.getItem('patchies-show-startup-modal');
     showOnStartup = setting !== 'false'; // Default to true if not set
@@ -30,12 +39,12 @@
   <div class="space-y-4">
     <!-- Header -->
     <div>
-      <h1 id="modal-title" class="text-2xl font-semibold text-zinc-100">Patchies</h1>
+      <h1 id="modal-title" class="text-xl font-semibold text-zinc-100">Patchies</h1>
     </div>
 
     <!-- Description -->
     <div class="space-y-4 text-zinc-300">
-      <p>
+      <p class="text-sm">
         Patchies is a patcher for things that runs on the web. Patch together <a
           class="text-orange-300"
           href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
@@ -52,7 +61,7 @@
           href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#message-passing"
           target="_blank">computational</a
         >
-        objects like
+        objects e.g.
         <a
           class="text-orange-300"
           href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#p5-creates-a-p5js-sketch"
@@ -87,35 +96,55 @@
           class="text-orange-300"
           href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#glsl-creates-a-glsl-fragment-shader"
           target="_blank">GLSL</a
-        >,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-objects"
-          target="_blank">Web Audio</a
-        > and more.
+        >, etc.
       </p>
 
       <div class="rounded-lg bg-zinc-800/50 p-4">
-        <ul class="space-y-2 text-sm">
-          <li class="flex items-start gap-2">
+        <ul class="space-y-2 text-xs">
+          <li class="hidden items-start gap-2 sm:flex">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
-              >Insert an object with <kbd
-                class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Enter</kbd
+              >Insert object: <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+                >Enter</kbd
+              >
+            </span>
+          </li>
+
+          <li class="hidden items-start gap-2 sm:flex">
+            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
+            <span
+              >Browse objects: <CirclePlus class="inline h-4 w-4" /> /
+              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+                >{isMac ? 'Cmd' : 'Ctrl'} + O</kbd
+              >
+            </span>
+          </li>
+
+          <li class="flex items-start gap-2 sm:hidden">
+            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
+            <span>Browse objects: <CirclePlus class="inline h-4 w-4" /> </span>
+          </li>
+
+          <li class="hidden items-start gap-2 sm:flex">
+            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
+            <span
+              >Open sidebar: <PanelLeftOpen class="inline h-4 w-4" /> /
+              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+                >{isMac ? 'Cmd' : 'Ctrl'} + B</kbd
               >
             </span>
           </li>
 
           <li class="flex items-start gap-2">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span>Connect nodes by dragging between their handles</span>
+            <span>Connect nodes: drag between handles</span>
           </li>
 
           <li class="flex items-start gap-2">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
-              >Run code in editor with <kbd
-                class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd
+              >Run code in editor: <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+                >Shift + Enter</kbd
               >
             </span>
           </li>
@@ -151,7 +180,7 @@
           class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
         >
           <Github class="h-4 w-4" />
-          GitHub Repository
+          GitHub
         </a>
         <a
           href="https://github.com/heypoom/patchies/blob/main/README.md"
