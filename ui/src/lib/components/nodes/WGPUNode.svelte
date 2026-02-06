@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Loader, Play, Terminal, X } from '@lucide/svelte/icons';
+  import { Code, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -40,8 +40,6 @@
   let isDispatching = $state(false);
   let hasCompileError = $state(false);
   let hasCompiledSuccessfully = $state(false);
-
-  const isRunning = $derived(isCompiling || isDispatching);
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);
@@ -224,12 +222,6 @@
     contentWidth = contentContainer.offsetWidth;
   }
 
-  const minContainerWidth = $derived.by(() => {
-    const baseWidth = 70;
-    const inletWidth = 15;
-    return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(totalOutlets, 2)) * inletWidth;
-  });
-
   onMount(async () => {
     system = WebGPUComputeSystem.getInstance();
     const supported = await system.init();
@@ -285,30 +277,6 @@
         >
           <button
             class="rounded p-1 hover:bg-zinc-700"
-            onclick={compileShader}
-            disabled={isRunning}
-            title="Compile shader"
-          >
-            {#if isCompiling}
-              <Loader class="h-4 w-4 animate-spin text-pink-400" />
-            {:else}
-              <Play class="h-4 w-4 text-zinc-300" />
-            {/if}
-          </button>
-
-          <button
-            class="rounded p-1 hover:bg-zinc-700"
-            onclick={() => {
-              updateNodeData(nodeId, { showConsole: !data.showConsole });
-              setTimeout(() => updateContentWidth(), 10);
-            }}
-            title="Console"
-          >
-            <Terminal class="h-4 w-4 text-zinc-300" />
-          </button>
-
-          <button
-            class="rounded p-1 hover:bg-zinc-700"
             onclick={() => (showEditor = !showEditor)}
             title="Edit code"
           >
@@ -357,49 +325,19 @@
           {/each}
         </div>
 
-        {#if data.showConsole}
-          <VirtualConsole
-            bind:this={consoleRef}
-            {nodeId}
-            {borderColor}
-            {selected}
-            onrun={compileShader}
-            {isRunning}
-            onResize={updateContentWidth}
-            initialHeight={data.consoleHeight}
-            initialWidth={data.consoleWidth}
-            onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
-            onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
-          />
-        {:else}
-          <button
-            class={[
-              'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
-              isRunning ? 'cursor-not-allowed' : 'cursor-pointer',
-              borderColor,
-              selected ? 'shadow-glow-md bg-zinc-800' : 'hover:shadow-glow-sm bg-zinc-900'
-            ]}
-            style={`min-width: ${minContainerWidth}px`}
-            onclick={compileShader}
-            disabled={isRunning}
-            aria-label="Run shader"
-          >
-            {#if isRunning}
-              <Loader class="h-4 w-4 animate-spin opacity-30" />
-            {:else}
-              <Play class="h-4 w-4" />
-            {/if}
-          </button>
-
-          <div
-            class={[
-              'pointer-events-none absolute mt-1 ml-1 w-fit min-w-[200px] font-mono text-[8px] text-zinc-300 opacity-0',
-              selected ? '' : 'group-hover:opacity-100'
-            ]}
-          >
-            <div>click to compile</div>
-          </div>
-        {/if}
+        <VirtualConsole
+          bind:this={consoleRef}
+          {nodeId}
+          {borderColor}
+          {selected}
+          onrun={compileShader}
+          isRunning={hasCompiledSuccessfully}
+          onResize={updateContentWidth}
+          initialHeight={data.consoleHeight}
+          initialWidth={data.consoleWidth}
+          onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
+          onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
+        />
 
         <!-- Outlet handles -->
         <div>
