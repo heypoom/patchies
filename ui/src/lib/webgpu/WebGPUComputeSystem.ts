@@ -1,5 +1,6 @@
 import type { ToWorker, FromWorker, CompileResult, DispatchResult } from './types';
 import WebGPUWorker from '$workers/webgpu/webgpuComputeWorker?worker';
+import { DirectChannelService } from '$lib/messages/DirectChannelService';
 
 type PendingCallback = {
   resolve: (value: any) => void;
@@ -15,6 +16,10 @@ export class WebGPUComputeSystem {
 
   // Pending callbacks keyed by `${type}:${nodeId}`
   private pendingCallbacks = new Map<string, PendingCallback>();
+
+  // Track which nodeIds have been registered with DirectChannelService
+  private registeredNodes = new Set<string>();
+  private directChannelService = DirectChannelService.getInstance();
 
   static getInstance(): WebGPUComputeSystem {
     if (!WebGPUComputeSystem.instance) {
@@ -117,11 +122,25 @@ export class WebGPUComputeSystem {
   async compile(nodeId: string, code: string): Promise<CompileResult> {
     if (!this.worker) return { error: 'WebGPU worker not initialized' };
 
+    // Register with DirectChannelService on first compile
+    this.registerNode(nodeId);
+
     return new Promise<CompileResult>((resolve) => {
       const key = `compile:${nodeId}`;
       this.pendingCallbacks.set(key, { resolve, reject: () => resolve({ error: 'Worker error' }) });
       this.postMessage({ type: 'compile', nodeId, code });
     });
+  }
+
+  /**
+   * Register this node's worker with DirectChannelService for direct channel support.
+   * The shared worker handles multiple nodeIds internally.
+   */
+  private registerNode(nodeId: string): void {
+    if (!this.worker || this.registeredNodes.has(nodeId)) return;
+
+    this.directChannelService.registerWorker(nodeId, this.worker);
+    this.registeredNodes.add(nodeId);
   }
 
   setBuffer(nodeId: string, binding: number, data: ArrayBuffer): void {
@@ -160,6 +179,12 @@ export class WebGPUComputeSystem {
     this.postMessage({ type: 'destroy', nodeId });
     this.pendingCallbacks.delete(`compile:${nodeId}`);
     this.pendingCallbacks.delete(`dispatch:${nodeId}`);
+
+    // Unregister from DirectChannelService
+    if (this.registeredNodes.has(nodeId)) {
+      this.directChannelService.unregisterWorker(nodeId);
+      this.registeredNodes.delete(nodeId);
+    }
   }
 
   isSupported(): boolean {

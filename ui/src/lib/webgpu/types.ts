@@ -46,6 +46,14 @@ export type TypedArrayConstructor =
   | Uint32ArrayConstructor
   | Int32ArrayConstructor;
 
+// Direct channel connection info
+export interface DirectConnection {
+  outlet: number;
+  targetNodeId: string;
+  inlet: number;
+  inletKey?: string;
+}
+
 // Main -> Worker messages
 export type ToWorker =
   | { type: 'init' }
@@ -55,7 +63,12 @@ export type ToWorker =
   | { type: 'setOutputSize'; nodeId: string; size: number }
   | { type: 'setDispatchCount'; nodeId: string; count: [number, number, number] }
   | { type: 'dispatch'; nodeId: string; dispatchCount?: [number, number, number] }
-  | { type: 'destroy'; nodeId: string };
+  | { type: 'destroy'; nodeId: string }
+  // Direct channel messages
+  | { type: 'setRenderPort'; nodeId: string }
+  | { type: 'setWorkerPort'; nodeId: string; targetNodeId?: string; sourceNodeId?: string }
+  | { type: 'updateRenderConnections'; nodeId: string; connections: DirectConnection[] }
+  | { type: 'updateWorkerConnections'; nodeId: string; connections: DirectConnection[] };
 
 // Worker -> Main messages
 export type FromWorker =

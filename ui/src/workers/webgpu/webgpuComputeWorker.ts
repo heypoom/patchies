@@ -1,5 +1,9 @@
-import type { ToWorker, FromWorker } from '$lib/webgpu/types';
+import type { ToWorker, FromWorker, DirectConnection } from '$lib/webgpu/types';
 import { match } from 'ts-pattern';
+import {
+  createDirectChannelHandler,
+  type DirectChannelHandler
+} from '../shared/directChannelHandler';
 
 interface NodeState {
   pipeline: GPUComputePipeline | null;
@@ -12,6 +16,7 @@ interface NodeState {
   code: string;
   outputSize: number | null; // explicit output buffer size in elements (not bytes)
   dispatchCount: [number, number, number] | null; // explicit dispatch workgroup count
+  directChannel: DirectChannelHandler;
 }
 
 let device: GPUDevice | null = null;
@@ -43,6 +48,22 @@ function reply(message: FromWorker, transfer?: Transferable[]) {
 function getOrCreateState(nodeId: string): NodeState {
   let state = nodeStates.get(nodeId);
   if (!state) {
+    // Create direct channel handler for this node
+    const directChannel = createDirectChannelHandler({
+      nodeId,
+      onIncomingMessage: (data, meta) => {
+        // Handle incoming messages from other workers
+        // For wgpu nodes, we could handle bang messages or buffer data
+        if (data === 'bang') {
+          handleDispatch(nodeId);
+        }
+      },
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        reply({ type: 'error', nodeId, message });
+      }
+    });
+
     state = {
       pipeline: null,
       buffers: new Map(),
@@ -53,7 +74,8 @@ function getOrCreateState(nodeId: string): NodeState {
       workgroupSize: [64, 1, 1],
       code: '',
       outputSize: null,
-      dispatchCount: null
+      dispatchCount: null,
+      directChannel
     };
 
     nodeStates.set(nodeId, state);
@@ -342,6 +364,12 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
       readback.destroy();
       outputs[bindingIdx] = copy;
       transfers.push(copy);
+
+      // Send output via direct channels (as Float32Array for compatibility)
+      // Use the binding number as the outlet index
+      const typedArray = new Float32Array(copy);
+      state.directChannel.sendToRenderTargets(typedArray, { to: bindingIdx });
+      state.directChannel.sendToWorkerTargets(typedArray, { to: bindingIdx });
     }
 
     reply(
@@ -368,6 +396,7 @@ function handleDestroy(nodeId: string) {
     for (const buf of state.buffers.values()) {
       buf.destroy();
     }
+    state.directChannel.cleanup();
     nodeStates.delete(nodeId);
   }
 }
@@ -404,6 +433,23 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
     })
     .with({ type: 'destroy' }, ({ nodeId }) => {
       handleDestroy(nodeId);
+    })
+    // Direct channel handlers
+    .with({ type: 'setRenderPort' }, ({ nodeId }) => {
+      const state = getOrCreateState(nodeId);
+      state.directChannel.handleSetRenderPort(event.ports[0]);
+    })
+    .with({ type: 'setWorkerPort' }, ({ nodeId, targetNodeId, sourceNodeId }) => {
+      const state = getOrCreateState(nodeId);
+      state.directChannel.handleSetWorkerPort(event.ports[0], targetNodeId, sourceNodeId);
+    })
+    .with({ type: 'updateRenderConnections' }, ({ nodeId, connections }) => {
+      const state = getOrCreateState(nodeId);
+      state.directChannel.handleUpdateRenderConnections(connections);
+    })
+    .with({ type: 'updateWorkerConnections' }, ({ nodeId, connections }) => {
+      const state = getOrCreateState(nodeId);
+      state.directChannel.handleUpdateWorkerConnections(connections);
     })
     .otherwise(() => {});
 };
