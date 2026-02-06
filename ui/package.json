@@ -86,6 +86,7 @@
     "@elemaudio/core": "^4.0.1",
     "@elemaudio/web-renderer": "^4.0.3",
     "@google/genai": "^1.11.0",
+    "@iizukak/codemirror-lang-wgsl": "^0.3.0",
     "@lezer/generator": "^1.8.0",
     "@lezer/highlight": "^1.2.1",
     "@replit/codemirror-vim": "^6.3.0",

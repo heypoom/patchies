@@ -18,6 +18,7 @@
         "@elemaudio/core": "^4.0.1",
         "@elemaudio/web-renderer": "^4.0.3",
         "@google/genai": "^1.11.0",
+        "@iizukak/codemirror-lang-wgsl": "^0.3.0",
         "@lezer/generator": "^1.8.0",
         "@lezer/highlight": "^1.2.1",
         "@replit/codemirror-vim": "^6.3.0",
@@ -579,6 +580,8 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
+
+    "@iizukak/codemirror-lang-wgsl": ["@iizukak/codemirror-lang-wgsl@0.3.0", "", { "dependencies": { "@codemirror/language": "6.x", "@lezer/highlight": "1.x", "@lezer/lr": "^1.x", "codemirror": "6.x" } }, "sha512-Hv957EXK8CzJvoAlKLtHBfC3BIiqFlTBu/0znBgSYhooDBZBpZQEKp1zgr3OYbg03CG1mRJmrypO/HQXB3xavA=="],
 
     "@img/sharp-darwin-arm64": ["@img/sharp-darwin-arm64@0.33.5", "", { "optionalDependencies": { "@img/sharp-libvips-darwin-arm64": "1.0.4" }, "os": "darwin", "cpu": "arm64" }, "sha512-UT4p+iz/2H4twwAoLCqfA9UH5pI6DggwKEGuaPy7nCVQ8ZsiY5PIcrRvD1DzuY3qYL07NtIQcWnBSY/heikIFQ=="],
 

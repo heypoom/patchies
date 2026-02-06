@@ -79,7 +79,8 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   'split~': 'Audio channel splitter (stereo to mono)',
   'meter~': 'Audio level meter display',
   'vdo.ninja.push': 'Push video/audio/data to VDO.Ninja',
-  'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja'
+  'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja',
+  wgpu: 'WebGPU compute shaders for parallel data processing'
 };
 
 /**

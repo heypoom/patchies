@@ -71,6 +71,7 @@ import VdoNinjaPullNode from '$lib/components/nodes/VdoNinjaPullNode.svelte';
 import PeekNode from '$lib/components/nodes/PeekNode.svelte';
 import WorkerNode from '$lib/components/nodes/WorkerNode.svelte';
 import RubyNode from '$lib/components/nodes/RubyNode.svelte';
+import WGPUNode from '$lib/components/nodes/WGPUNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -146,7 +147,8 @@ export const nodeTypes: Record<string, any> = {
   'vdo.ninja.pull': VdoNinjaPullNode,
   peek: PeekNode,
   worker: WorkerNode,
-  ruby: RubyNode
+  ruby: RubyNode,
+  'wgpu.compute': WGPUNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

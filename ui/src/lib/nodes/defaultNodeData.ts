@@ -21,6 +21,7 @@ import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
 import { DEFAULT_ASSEMBLY_CODE } from '$lib/assembly/constants';
 import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
+import { DEFAULT_WGSL_CODE } from '$lib/webgpu/constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -214,5 +215,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('peek', () => ({ expr: '' }))
     .with('worker', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
     .with('ruby', () => ({ code: 'puts "Hello, Ruby!"', showConsole: true }))
+    .with('wgpu.compute', () => ({ code: DEFAULT_WGSL_CODE, showConsole: true }))
     .otherwise(() => ({}));
 }
