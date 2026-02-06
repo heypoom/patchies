@@ -170,7 +170,7 @@ const patchiesAPICompletions: Completion[] = [
     label: 'noInteract',
     type: 'function',
     detail: '() => void',
-    info: 'Disable all interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel',
+    info: 'Disable all canvas interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel',
     apply: 'noInteract()'
   },
   {
