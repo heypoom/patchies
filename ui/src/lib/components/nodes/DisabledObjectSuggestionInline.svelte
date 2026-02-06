@@ -21,7 +21,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="mt-1 min-w-64 rounded-md border border-dashed border-zinc-700 bg-zinc-900 p-3 shadow-xl"
+  class="mt-2 mb-1 min-w-64 rounded-md border border-dashed border-zinc-700 bg-zinc-900 p-3 shadow-xl"
   onmousedown={(e) => e.preventDefault()}
 >
   <p class="mb-2 text-xs text-zinc-400">

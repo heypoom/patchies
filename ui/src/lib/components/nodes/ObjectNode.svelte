@@ -44,6 +44,7 @@
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
+  import ObjectSuggestionDropdown from './ObjectSuggestionDropdown.svelte';
 
   // Common objects that should appear first in autocomplete
   // Ordered by general usage frequency
@@ -879,57 +880,14 @@
             {#if showAutocomplete && (filteredSuggestions.length > 0 || suggestedDisabledObject)}
               <div class="nopan nodrag nowheel absolute top-full left-0 z-50 flex flex-col">
                 {#if filteredSuggestions.length > 0}
-                  <div class="flex">
-                    <div
-                      class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900 shadow-xl"
-                    >
-                      <!-- Results List -->
-                      <div
-                        bind:this={resultsContainer}
-                        class="max-h-60 overflow-y-auto rounded-t-md"
-                      >
-                        {#each filteredSuggestions as suggestion, index}
-                          <button
-                            type="button"
-                            onclick={() => selectSuggestion(suggestion)}
-                            onmouseenter={() => (selectedSuggestion = index)}
-                            class={[
-                              'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
-                              index === selectedSuggestion
-                                ? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
-                                : 'border-transparent text-zinc-300 hover:bg-zinc-800/80',
-                              suggestion.priority === 'low' && 'opacity-50'
-                            ]}
-                          >
-                            <span class="font-mono">{suggestion.name}</span>
-
-                            {#if suggestion.type === 'preset'}
-                              {@const preset = presetLookup.get(suggestion.name)}
-
-                              {#if preset}
-                                <span class="text-[10px] text-zinc-500">{preset.preset.type}</span>
-                              {/if}
-                            {/if}
-
-                            {#if suggestion.priority === 'low'}
-                              <span class="text-[10px] text-zinc-600">(disabled)</span>
-                            {/if}
-                          </button>
-                        {/each}
-                      </div>
-
-                      <!-- Footer with keyboard hints -->
-                      <div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
-                        <span>↑↓ navigate • Enter select • Esc cancel</span>
-                      </div>
-                    </div>
-
-                    <div class="mt-2 ml-3 min-w-48 font-mono">
-                      <div class="text-xs">
-                        {selectedDescription}
-                      </div>
-                    </div>
-                  </div>
+                  <ObjectSuggestionDropdown
+                    suggestions={filteredSuggestions}
+                    bind:selectedIndex={selectedSuggestion}
+                    {presetLookup}
+                    description={selectedDescription}
+                    onSelect={selectSuggestion}
+                    bind:resultsContainerRef={resultsContainer}
+                  />
                 {:else if suggestedDisabledObject}
                   <DisabledObjectSuggestionInline
                     name={suggestedDisabledObject.name}
