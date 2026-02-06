@@ -130,9 +130,8 @@
           `Output binding ${bindingNum} (${bindingInfo?.name ?? '?'}): ${typedArray.length} elements`
         );
 
-        const outletIndex = outputBindings.findIndex((b) => b.binding === bindingNum);
-        if (outletIndex >= 0) {
-          messageContext.send(typedArray, { to: outletIndex });
+        if (bindingInfo) {
+          messageContext.send(typedArray, { to: bindingNum });
         }
       }
     } catch (e) {
@@ -272,28 +271,28 @@
       <div class="relative">
         <!-- Inlet handles -->
         <div>
+          <StandardHandle
+            port="inlet"
+            type="message"
+            id="bang"
+            title="bang (dispatch)"
+            index={0}
+            total={totalInlets}
+            class="top-0"
+            {nodeId}
+          />
           {#each inputBindings as binding, i}
             <StandardHandle
               port="inlet"
               type="message"
               id={`in-${binding.binding}`}
               title={`${binding.name} (${binding.type})`}
-              index={i}
+              index={i + 1}
               total={totalInlets}
               class="top-0"
               {nodeId}
             />
           {/each}
-          <StandardHandle
-            port="inlet"
-            type="message"
-            id="bang"
-            title="bang (dispatch)"
-            index={inputBindings.length}
-            total={totalInlets}
-            class="top-0"
-            {nodeId}
-          />
         </div>
 
         {#if data.showConsole}
