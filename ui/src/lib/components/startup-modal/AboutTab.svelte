@@ -116,7 +116,7 @@
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
               >Browse objects: <CirclePlus class="inline h-4 w-4" />
-              <span class="hidden sm:inline">
+              <span class="hidden md:inline">
                 /
                 <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
                   >{isMac ? 'Cmd' : 'Ctrl'} + O</kbd
@@ -134,7 +134,7 @@
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
               >Open sidebar: <PanelLeftOpen class="inline h-4 w-4" />
-              <span class="hidden sm:inline">
+              <span class="hidden md:inline">
                 /
                 <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
                   >{isMac ? 'Cmd' : 'Ctrl'} + B</kbd
@@ -157,7 +157,7 @@
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
               >Run code in editor: <Play class="inline h-4 w-4" />
-              <span class="hidden sm:inline">
+              <span class="hidden md:inline">
                 /
 
                 <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd>
