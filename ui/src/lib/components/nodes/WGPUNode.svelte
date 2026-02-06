@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, X, Settings } from '@lucide/svelte/icons';
+  import { Code, Loader, RefreshCw, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -60,6 +60,12 @@
   // Total inlet count: 1 bang inlet + uniform bindings + input bindings
   const totalInlets = $derived(1 + uniformBindings.length + inputBindings.length);
   const totalOutlets = $derived(outputBindings.length);
+
+  const minContainerWidth = $derived.by(() => {
+    const baseWidth = 70;
+    const inletWidth = 15;
+    return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(totalOutlets, 2)) * inletWidth;
+  });
 
   // Track previous binding count to detect handle changes
   let prevInputCount = $state(0);
@@ -329,6 +335,16 @@
         >
           <button
             class="rounded p-1 hover:bg-zinc-700"
+            onclick={() => {
+              updateNodeData(nodeId, { showConsole: !data.showConsole });
+              setTimeout(() => updateContentWidth(), 10);
+            }}
+            title="Console"
+          >
+            <Terminal class="h-4 w-4 text-zinc-300" />
+          </button>
+          <button
+            class="rounded p-1 hover:bg-zinc-700"
             onclick={() => (sidebarView = sidebarView === 'settings' ? null : 'settings')}
             title="Settings"
           >
@@ -384,19 +400,42 @@
           {/each}
         </div>
 
-        <VirtualConsole
-          bind:this={consoleRef}
-          {nodeId}
-          {borderColor}
-          {selected}
-          onrun={compileShader}
-          isRunning={hasCompiledSuccessfully}
-          onResize={updateContentWidth}
-          initialHeight={data.consoleHeight}
-          initialWidth={data.consoleWidth}
-          onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
-          onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
-        />
+        {#if data.showConsole}
+          <VirtualConsole
+            bind:this={consoleRef}
+            {nodeId}
+            {borderColor}
+            {selected}
+            onrun={compileShader}
+            isRunning={hasCompiledSuccessfully}
+            onResize={updateContentWidth}
+            initialHeight={data.consoleHeight}
+            initialWidth={data.consoleWidth}
+            onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
+            onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
+          />
+        {:else}
+          <button
+            class={[
+              'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
+              isCompiling ? 'cursor-not-allowed' : 'cursor-pointer',
+              borderColor,
+              selected ? 'shadow-glow-md bg-zinc-800' : 'hover:shadow-glow-sm bg-zinc-900'
+            ]}
+            style={`min-width: ${minContainerWidth}px`}
+            onclick={compileShader}
+            aria-disabled={isCompiling}
+            aria-label="Recompile shader"
+          >
+            <div class={isCompiling ? 'animate-spin opacity-30' : ''}>
+              {#if isCompiling}
+                <Loader size="16px" />
+              {:else}
+                <RefreshCw size="16px" />
+              {/if}
+            </div>
+          </button>
+        {/if}
 
         <!-- Outlet handles -->
         <div>
@@ -440,6 +479,7 @@
               placeholder={inferredOutputSize ? `auto (${inferredOutputSize})` : 'auto'}
               onchange={(e) => {
                 const value = e.currentTarget.value;
+
                 if (value === '') {
                   updateNodeData(nodeId, { outputSize: undefined });
                 } else {
@@ -463,15 +503,19 @@
                   onchange={(e) => {
                     const value = e.currentTarget.value;
                     const current = data.dispatchCount ?? [1, 1, 1];
+
                     if (value === '') {
                       // If all empty, clear dispatchCount
                       const newCount = [...current] as [number, number, number];
                       newCount[i] = 1;
+
                       const allDefault = newCount.every((v) => v === 1);
+
                       updateNodeData(nodeId, { dispatchCount: allDefault ? undefined : newCount });
                     } else {
                       const newCount = [...current] as [number, number, number];
                       newCount[i] = parseInt(value);
+
                       updateNodeData(nodeId, { dispatchCount: newCount });
                     }
                   }}
@@ -500,9 +544,7 @@
       <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
         <CodeEditor
           value={code}
-          onchange={(newCode) => {
-            updateNodeData(nodeId, { code: newCode });
-          }}
+          onchange={(newCode) => updateNodeData(nodeId, { code: newCode })}
           language="wgsl"
           placeholder="Write your WGSL compute shader here..."
           class="nodrag h-64 w-full resize-none"
