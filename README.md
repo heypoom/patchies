@@ -65,6 +65,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 - Use `Ctrl/Cmd + O` or the add button on the bottom right to open the object browser: a searchable, categorized view of objects and presets in Patchies.
 - Objects and presets are grouped by [packs](#manage-packs), with searchable names and descriptions.
+  - Use the [packs sidebar](#manage-packs) to enable object and preset packs. If you search for disabled objects, a suggestion to enable relevant packs will also be shown.
 - Presets are pre-made objects that helps you get started quickly.
   - [Manage your own presets](#manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas. You can make your own presets too.
 - Click to insert an object or preset -- pick one at random and see what it can do 🧪
