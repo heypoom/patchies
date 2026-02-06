@@ -16,10 +16,18 @@
   import Fuse from 'fuse.js';
   import { isAiFeaturesVisible, patchObjectTypes } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
-  import { enabledObjects, enabledPresets, BUILT_IN_PACKS } from '../../../stores/extensions.store';
+  import {
+    enabledObjects,
+    enabledPresets,
+    enabledPackIds,
+    BUILT_IN_PACKS,
+    togglePack
+  } from '../../../stores/extensions.store';
+  import { VISUAL_NODE_DESCRIPTIONS } from './get-categorized-objects';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
+  import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
 
   function openPacks() {
     $sidebarView = 'packs';
@@ -43,6 +51,48 @@
   // Objects in the current patch but not enabled are included as low priority
   const allCategories = $derived(
     getCategorizedObjects($isAiFeaturesVisible, $enabledObjects, $patchObjectTypes)
+  );
+
+  // Build list of disabled objects with their pack info for suggestion feature
+  interface DisabledObjectInfo {
+    name: string;
+    description: string;
+    packId: string;
+    packName: string;
+    packIcon: string;
+  }
+
+  const disabledObjects = $derived.by((): DisabledObjectInfo[] => {
+    const result: DisabledObjectInfo[] = [];
+
+    for (const pack of BUILT_IN_PACKS) {
+      // Skip enabled packs
+      if ($enabledPackIds.includes(pack.id)) continue;
+
+      for (const objName of pack.objects) {
+        // Skip AI objects if AI features are hidden
+        if (!$isAiFeaturesVisible && objName.startsWith('ai.')) continue;
+
+        result.push({
+          name: objName,
+          description: VISUAL_NODE_DESCRIPTIONS[objName] || `${objName} node`,
+          packId: pack.id,
+          packName: pack.name,
+          packIcon: pack.icon
+        });
+      }
+    }
+
+    return result;
+  });
+
+  // Fuse instance for searching disabled objects
+  const disabledObjectsFuse = $derived(
+    new Fuse(disabledObjects, {
+      keys: ['name', 'description'],
+      threshold: 0.3,
+      includeScore: true
+    })
   );
 
   // Get preset categories grouped by library and type
@@ -182,6 +232,27 @@
         return aOrder - bOrder;
       });
   });
+
+  // Find matching disabled objects when search has no results
+  const suggestedDisabledObject = $derived.by((): DisabledObjectInfo | null => {
+    if (!searchQuery.trim()) return null;
+    if (filteredCategories.length > 0) return null;
+
+    const results = disabledObjectsFuse.search(searchQuery);
+    if (results.length === 0) return null;
+
+    // Return the best match
+    return results[0].item;
+  });
+
+  function enablePackAndSelect(packId: string, objectName: string) {
+    togglePack(packId);
+
+    // Small delay to let the store update, then select the object
+    setTimeout(() => {
+      handleSelectObject(objectName);
+    }, 50);
+  }
 
   function handleClose() {
     open = false;
@@ -333,7 +404,30 @@
           <div class="flex h-full items-center justify-center text-zinc-500">
             <div class="text-center">
               <SearchX class="mx-auto mb-2 h-12 w-12" />
-              <p>No objects found</p>
+              <p class="mb-6">No enabled objects found for "{searchQuery}"</p>
+
+              {#if suggestedDisabledObject}
+                <DisabledObjectSuggestion
+                  name={suggestedDisabledObject.name}
+                  packName={suggestedDisabledObject.packName}
+                  packIcon={suggestedDisabledObject.packIcon}
+                  onBrowsePacks={openPacks}
+                  onEnableAndAdd={() => {
+                    enablePackAndSelect(
+                      suggestedDisabledObject.packId,
+                      suggestedDisabledObject.name
+                    );
+                  }}
+                />
+              {:else}
+                <button
+                  onclick={openPacks}
+                  class="mx-auto flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800"
+                >
+                  <Package class="h-4 w-4" />
+                  <span>Browse Packs</span>
+                </button>
+              {/if}
             </div>
           </div>
         {:else}
