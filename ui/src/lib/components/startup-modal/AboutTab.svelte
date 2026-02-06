@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     BookOpen,
+    Cable,
     CircleDot,
     CirclePlus,
     Command,
@@ -102,7 +103,7 @@
       </p>
 
       <div class="rounded-lg bg-zinc-800/50 p-4">
-        <ul class="grid gap-2 text-xs md:grid-cols-2">
+        <ul class="grid gap-2 text-xs sm:grid-cols-2">
           <li class="hidden items-start gap-2 sm:flex">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
@@ -125,9 +126,14 @@
             </span>
           </li>
 
-          <li class="flex items-start gap-2">
+          <li class="hidden items-start gap-2 md:flex">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span>Connect nodes: drag between handles</span>
+          </li>
+
+          <li class="flex items-start gap-2 md:hidden">
+            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
+            <span>Connect nodes: <Cable class="inline h-4 w-4" /></span>
           </li>
 
           <li class="flex items-start gap-2">
