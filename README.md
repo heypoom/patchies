@@ -390,7 +390,7 @@ These objects support video chaining and can be connected to create complex visu
 - **Note**: Patchies uses P5.js v2.x with backward compatibility libraries for v1 features. All existing P5.js v1 sketches should work without modification.
 
 - You can call these special methods in your sketch:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control). You **must** call one of these (typically `noInteract()`) if you want to add interactivity to your sketch, such as adding sliders or mousePressed events.
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control). You **must** call one of these (typically `noInteract()`) if you want to add interactivity to your sketch, such as adding sliders or mousePressed events.
   - `noOutput()` hides the video output port (the orange outlet at the bottom). This is useful when creating interface widgets that don't need to be part of the video chain.
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
@@ -489,7 +489,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
 
 - You can call these special methods in your canvas code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
   - `noOutput()` hides the video output port. Useful when creating interface widgets or tools that don't need to be part of the video processing chain.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
@@ -511,7 +511,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - Use `onKeyDown(callback)` and `onKeyUp(callback)` to register keyboard event handlers. Events are trapped and won't leak to xyflow (e.g., pressing Delete won't delete the node).
   - Full DOM and browser API access (e.g. `document` and `window`)
   - Use `setCanvasSize(width, height)` to dynamically resize the canvas resolution (e.g., `setCanvasSize(500, 500)`).
-  - Otherwise, the API remains the same as `canvas`: [Interaction Control](#interaction-control) (`noDrag()`, `noPan()`, `noWheel()`, `noInteract()`), `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](#patchies-javascript-runner) functions.
+  - Otherwise, the API remains the same as `canvas`: [Canvas Interaction Control](#canvas-interaction-control) (`noDrag()`, `noPan()`, `noWheel()`, `noInteract()`), `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](#patchies-javascript-runner) functions.
 
 - When to use `canvas.dom` instead of `canvas`:
   - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual.
@@ -543,7 +543,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `textmode.dom`: Runs on the main thread. Supports [mouse](https://code.textmode.art/docs/events.html#mouse-events), [touch](https://code.textmode.art/docs/events.html#touch-events) and [keyboard](https://code.textmode.art/docs/events.html#keyboard-events) interactivity. Supports [video and images](https://code.textmode.art/docs/loadables.html). Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
 
 - You can call these special methods in your textmode code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
@@ -633,7 +633,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `onKeyUp(callback)` receives keyup events
 
 - You can call these special methods in both `three` and `three.dom`:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
@@ -938,7 +938,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `vue` code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - See the [Vue.js documentation](https://vuejs.org/guide/introduction.html) to learn how Vue works.
 - The vue component is mounted under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
@@ -950,7 +950,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `dom` code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - The `root` element runs under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
 
@@ -2119,16 +2119,16 @@ These functions are available in all JSRunner-enabled nodes:
   - Example: `const response = await llm("Describe this image")`
   - Options: `{ imageNodeId?: string, abortSignal?: AbortSignal }` - pass `imageNodeId` to include a visual node's output as image context.
 
-### Interaction Control
+### Canvas Interaction Control
 
-Visual nodes (`p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `vue`, `dom`) provide these methods to control how interactions behave inside the node:
+Visual objects (`p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `vue`, `dom`) provide these methods to control how canvas interactions behave inside the node:
 
-- **`noDrag()`** - Disables dragging the node when clicking/touching inside it. Use this when you need mouse/touch interactivity (e.g., sliders, buttons, drawing).
-- **`noPan()`** - Disables panning the canvas when dragging inside the node. Useful for nodes where you want internal drag behavior without moving the canvas view.
-- **`noWheel()`** - Disables wheel zoom when scrolling inside the node. Useful for scrollable content or nodes that respond to wheel events.
-- **`noInteract()`** - Convenience method that calls all three: `noDrag()`, `noPan()`, and `noWheel()`. Use this for fully mouse-interactive nodes.
+- **`noDrag()`** - Disables dragging the object when clicking/touching inside it. Use this when you need mouse/touch interactivity (e.g., sliders, buttons, drawing).
+- **`noPan()`** - Disables panning the canvas when dragging inside the object. Useful for objects where you want internal drag behavior without moving the canvas view.
+- **`noWheel()`** - Disables wheel zoom when scrolling inside the object. Useful for scrollable content or objects that respond to wheel events.
+- **`noInteract()`** - Convenience method that calls all three: `noDrag()`, `noPan()`, and `noWheel()`. Use this for fully mouse-interactive objects.
 
-Call these in your setup code (e.g., in P5's `setup()` function, or at the top level for other nodes). You can still drag the node by its title bar even when `noDrag()` is enabled.
+Call these in your setup code (e.g., in P5's `setup()` function, or at the top level for other objects). You can still drag the object by its title bar even when `noDrag()` is enabled.
 
 ### Importing JavaScript packages from NPM
 

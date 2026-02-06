@@ -187,25 +187,12 @@ export class CanvasRenderer {
           this.onMessage = callback;
         },
 
-        noDrag: () => {
-          this.setInteraction('drag', false);
-        },
-
-        noPan: () => {
-          this.setInteraction('pan', false);
-        },
-
-        noWheel: () => {
-          this.setInteraction('wheel', false);
-        },
-
-        noInteract: () => {
-          this.setInteraction('interact', false);
-        },
-
-        noOutput: () => {
-          this.setVideoOutputEnabled(false);
-        }
+        // Interaction control methods
+        noDrag: () => this.setInteraction('drag', false),
+        noPan: () => this.setInteraction('pan', false),
+        noWheel: () => this.setInteraction('wheel', false),
+        noInteract: () => this.setInteraction('interact', false),
+        noOutput: () => this.setVideoOutputEnabled(false)
       };
 
       const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
