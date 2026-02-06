@@ -3,9 +3,11 @@
     BookOpen,
     CircleDot,
     CirclePlus,
+    Command,
     Github,
     Info,
-    PanelLeftOpen
+    PanelLeftOpen,
+    Play
   } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
 
@@ -100,38 +102,26 @@
       </p>
 
       <div class="rounded-lg bg-zinc-800/50 p-4">
-        <ul class="space-y-2 text-xs">
+        <ul class="grid gap-2 text-xs md:grid-cols-2">
           <li class="hidden items-start gap-2 sm:flex">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
-              >Insert object: <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+              >Add object: <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
                 >Enter</kbd
               >
             </span>
           </li>
 
-          <li class="hidden items-start gap-2 sm:flex">
+          <li class="flex items-start gap-2">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
-              >Browse objects: <CirclePlus class="inline h-4 w-4" /> /
-              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-                >{isMac ? 'Cmd' : 'Ctrl'} + O</kbd
-              >
-            </span>
-          </li>
-
-          <li class="flex items-start gap-2 sm:hidden">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span>Browse objects: <CirclePlus class="inline h-4 w-4" /> </span>
-          </li>
-
-          <li class="hidden items-start gap-2 sm:flex">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span
-              >Open sidebar: <PanelLeftOpen class="inline h-4 w-4" /> /
-              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-                >{isMac ? 'Cmd' : 'Ctrl'} + B</kbd
-              >
+              >Browse objects: <CirclePlus class="inline h-4 w-4" />
+              <span class="hidden sm:inline">
+                /
+                <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+                  >{isMac ? 'Cmd' : 'Ctrl'} + O</kbd
+                >
+              </span>
             </span>
           </li>
 
@@ -143,9 +133,35 @@
           <li class="flex items-start gap-2">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
             <span
-              >Run code in editor: <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-                >Shift + Enter</kbd
+              >Open sidebar: <PanelLeftOpen class="inline h-4 w-4" />
+              <span class="hidden sm:inline">
+                /
+                <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+                  >{isMac ? 'Cmd' : 'Ctrl'} + B</kbd
+                >
+              </span>
+            </span>
+          </li>
+
+          <li class="hidden items-start gap-2 sm:flex">
+            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
+            <span
+              >Command palette:
+              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
+                >{isMac ? 'Cmd' : 'Ctrl'} + K</kbd
               >
+            </span>
+          </li>
+
+          <li class="flex items-start gap-2">
+            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
+            <span
+              >Run code in editor: <Play class="inline h-4 w-4" />
+              <span class="hidden sm:inline">
+                /
+
+                <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd>
+              </span>
             </span>
           </li>
         </ul>
