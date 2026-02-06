@@ -190,6 +190,16 @@
       <h2 class="text-sm font-semibold text-zinc-200">Resources</h2>
       <div class="flex gap-4">
         <a
+          href="https://github.com/heypoom/patchies/blob/main/README.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
+        >
+          <BookOpen class="h-4 w-4" />
+          Guide & Docs
+        </a>
+
+        <a
           href="https://github.com/heypoom/patchies"
           target="_blank"
           rel="noopener noreferrer"
@@ -197,15 +207,6 @@
         >
           <Github class="h-4 w-4" />
           GitHub
-        </a>
-        <a
-          href="https://github.com/heypoom/patchies/blob/main/README.md"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
-        >
-          <BookOpen class="h-4 w-4" />
-          Documentation
         </a>
       </div>
     </div>
