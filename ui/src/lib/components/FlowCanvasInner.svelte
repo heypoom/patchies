@@ -53,6 +53,7 @@
   import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
   import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
   import { Toaster } from '$lib/components/ui/sonner';
+  import { cleanupInvalidEdges } from '$lib/utils/edge-cleanup';
   import {
     isAudioParamInlet,
     isValidConnectionBetweenHandles
@@ -922,6 +923,13 @@
     // Update node counter based on loaded nodes
     if (migrated.nodes.length > 0) {
       nodeIdCounter = getNodeIdCounterFromSave(migrated.nodes);
+    }
+
+    // Wait for nodes to render, then clean up any invalid edges
+    await tick();
+    const result = cleanupInvalidEdges(edges, nodes);
+    if (result.removedCount > 0) {
+      edges = result.edges;
     }
 
     // Immediately save migrated patch to autosave so reloads don't break
