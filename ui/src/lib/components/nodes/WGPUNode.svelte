@@ -8,7 +8,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import { match, P } from 'ts-pattern';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { parseWGSL } from '$lib/webgpu/wgsl-parser';
+  import { parseWGSL, serializeStructToBuffer } from '$lib/webgpu/wgsl-parser';
   import { WebGPUComputeSystem } from '$lib/webgpu/WebGPUComputeSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
@@ -36,7 +36,12 @@
   let messageContext: MessageContext;
   let consoleRef: VirtualConsole | null = $state(null);
   let isSupported = $state<boolean | null>(null);
-  let isRunning = $state(false);
+  let isCompiling = $state(false);
+  let isDispatching = $state(false);
+  let hasCompileError = $state(false);
+  let hasCompiledSuccessfully = $state(false);
+
+  const isRunning = $derived(isCompiling || isDispatching);
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);
@@ -46,30 +51,41 @@
   const parseResult = $derived(parseWGSL(code));
   const inputBindings = $derived(parseResult.inputs);
   const outputBindings = $derived(parseResult.outputs);
+  const uniformBindings = $derived(parseResult.uniforms);
 
-  // Total inlet count: input bindings + 1 bang inlet
-  const totalInlets = $derived(inputBindings.length + 1);
+  // Total inlet count: 1 bang inlet + uniform bindings + input bindings
+  const totalInlets = $derived(1 + uniformBindings.length + inputBindings.length);
   const totalOutlets = $derived(outputBindings.length);
 
   // Track previous binding count to detect handle changes
   let prevInputCount = $state(0);
   let prevOutputCount = $state(0);
+  let prevUniformCount = $state(0);
 
   $effect(() => {
     const newInputCount = inputBindings.length;
     const newOutputCount = outputBindings.length;
+    const newUniformCount = uniformBindings.length;
 
-    if (newInputCount !== prevInputCount || newOutputCount !== prevOutputCount) {
+    if (
+      newInputCount !== prevInputCount ||
+      newOutputCount !== prevOutputCount ||
+      newUniformCount !== prevUniformCount
+    ) {
       prevInputCount = newInputCount;
       prevOutputCount = newOutputCount;
+      prevUniformCount = newUniformCount;
       updateNodeInternals(nodeId);
     }
   });
 
   const borderColor = $derived.by(() => {
-    if (isRunning && selected) return 'border-pink-300';
-    if (isRunning) return 'border-pink-500';
+    if (hasCompileError && selected) return 'border-red-400';
+    if (hasCompileError) return 'border-red-500';
+    if (hasCompiledSuccessfully && selected) return 'border-emerald-300';
+    if (hasCompiledSuccessfully) return 'border-emerald-500';
     if (selected) return 'border-zinc-400';
+
     return 'border-zinc-600';
   });
 
@@ -86,18 +102,22 @@
   async function compileShader() {
     if (!system || !isSupported) return;
 
-    isRunning = true;
+    isCompiling = true;
     consoleRef?.clearConsole();
 
     try {
       const result = await system.compile(nodeId, code);
       if (result.error) {
+        hasCompileError = true;
+        hasCompiledSuccessfully = false;
         logToConsole('error', result.error);
       } else {
+        hasCompileError = false;
+        hasCompiledSuccessfully = true;
         logToConsole('log', 'Shader compiled successfully.');
       }
     } finally {
-      isRunning = false;
+      isCompiling = false;
     }
   }
 
@@ -107,6 +127,7 @@
       return;
     }
 
+    isDispatching = true;
     try {
       const result = await system.dispatch(nodeId);
       if (result.error) {
@@ -122,13 +143,8 @@
       for (const [bindingStr, buffer] of Object.entries(result.outputs)) {
         const bindingNum = Number(bindingStr);
         const bindingInfo = outputBindings.find((b) => b.binding === bindingNum);
-        const ArrayCtor = bindingInfo?.arrayConstructor ?? Float32Array;
-        const typedArray = new ArrayCtor(buffer);
-
-        logToConsole(
-          'log',
-          `Output binding ${bindingNum} (${bindingInfo?.name ?? '?'}): ${typedArray.length} elements`
-        );
+        const ArrayConstructor = bindingInfo?.arrayConstructor ?? Float32Array;
+        const typedArray = new ArrayConstructor(buffer);
 
         if (bindingInfo) {
           messageContext.send(typedArray, { to: bindingNum });
@@ -136,6 +152,8 @@
       }
     } catch (e) {
       logToConsole('error', `Dispatch failed: ${e}`);
+    } finally {
+      isDispatching = false;
     }
   }
 
@@ -145,6 +163,25 @@
     // Bang inlet or "bang" string message
     if (inletKey === 'message-in-bang' || message === 'bang') {
       handleDispatch().catch((e) => logToConsole('error', `Dispatch error: ${e}`));
+      return;
+    }
+
+    // Uniform inlet (message-in-uniform-{binding})
+    if (inletKey.startsWith('message-in-uniform-')) {
+      const bindingNum = parseInt(inletKey.replace('message-in-uniform-', ''), 10);
+      const uniformBinding = uniformBindings.find((u) => u.binding === bindingNum);
+
+      if (!isNaN(bindingNum) && system && uniformBinding?.struct) {
+        // Handle JSON object for struct uniforms
+        if (typeof message === 'object' && message !== null && !ArrayBuffer.isView(message)) {
+          const bufferData = serializeStructToBuffer(
+            message as Record<string, number>,
+            uniformBinding.struct
+          );
+
+          system.setUniform(nodeId, bindingNum, bufferData);
+        }
+      }
       return;
     }
 
@@ -248,6 +285,19 @@
         >
           <button
             class="rounded p-1 hover:bg-zinc-700"
+            onclick={compileShader}
+            disabled={isRunning}
+            title="Compile shader"
+          >
+            {#if isCompiling}
+              <Loader class="h-4 w-4 animate-spin text-pink-400" />
+            {:else}
+              <Play class="h-4 w-4 text-zinc-300" />
+            {/if}
+          </button>
+
+          <button
+            class="rounded p-1 hover:bg-zinc-700"
             onclick={() => {
               updateNodeData(nodeId, { showConsole: !data.showConsole });
               setTimeout(() => updateContentWidth(), 10);
@@ -281,13 +331,25 @@
             class="top-0"
             {nodeId}
           />
+          {#each uniformBindings as uniform, i}
+            <StandardHandle
+              port="inlet"
+              type="message"
+              id={`uniform-${uniform.binding}`}
+              title={`${uniform.name} (${uniform.structName})`}
+              index={i + 1}
+              total={totalInlets}
+              class="top-0"
+              {nodeId}
+            />
+          {/each}
           {#each inputBindings as binding, i}
             <StandardHandle
               port="inlet"
               type="message"
               id={`in-${binding.binding}`}
               title={`${binding.name} (${binding.type})`}
-              index={i + 1}
+              index={i + 1 + uniformBindings.length}
               total={totalInlets}
               class="top-0"
               {nodeId}
@@ -319,12 +381,14 @@
             ]}
             style={`min-width: ${minContainerWidth}px`}
             onclick={compileShader}
-            aria-disabled={isRunning}
+            disabled={isRunning}
             aria-label="Run shader"
           >
-            <div class={[isRunning ? 'animate-spin opacity-30' : '']}>
-              <svelte:component this={isRunning ? Loader : Play} size="16px" />
-            </div>
+            {#if isRunning}
+              <Loader class="h-4 w-4 animate-spin opacity-30" />
+            {:else}
+              <Play class="h-4 w-4" />
+            {/if}
           </button>
 
           <div

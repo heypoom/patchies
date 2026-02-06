@@ -9,10 +9,35 @@ export interface WGSLBinding {
   componentsPerElement: number; // vec4 = 4, scalar = 1
 }
 
+export interface WGSLStructField {
+  name: string;
+  type: string;
+  offset: number;
+  size: number;
+  alignment: number;
+}
+
+export interface WGSLStruct {
+  name: string;
+  fields: WGSLStructField[];
+  size: number;
+  alignment: number;
+}
+
+export interface WGSLUniformBinding {
+  group: number;
+  binding: number;
+  name: string;
+  structName: string;
+  struct: WGSLStruct | null;
+}
+
 export interface WGSLParseResult {
   bindings: WGSLBinding[];
   inputs: WGSLBinding[]; // accessMode === 'read'
   outputs: WGSLBinding[]; // accessMode === 'read_write'
+  uniforms: WGSLUniformBinding[];
+  structs: Map<string, WGSLStruct>;
   workgroupSize: [number, number, number] | null;
 }
 
@@ -26,6 +51,7 @@ export type ToWorker =
   | { type: 'init' }
   | { type: 'compile'; nodeId: string; code: string }
   | { type: 'setBuffer'; nodeId: string; binding: number; data: ArrayBuffer }
+  | { type: 'setUniform'; nodeId: string; binding: number; data: ArrayBuffer }
   | { type: 'dispatch'; nodeId: string; dispatchCount?: [number, number, number] }
   | { type: 'destroy'; nodeId: string };
 

@@ -1,16 +1,22 @@
 import type { ToWorker, FromWorker } from '$lib/webgpu/types';
+import { match } from 'ts-pattern';
 
 interface NodeState {
   pipeline: GPUComputePipeline | null;
   buffers: Map<number, GPUBuffer>;
   inputData: Map<number, ArrayBuffer>;
+  uniformData: Map<number, ArrayBuffer>;
   bindingAccessModes: Map<number, 'read' | 'read_write'>;
+  uniformBindings: Set<number>;
   workgroupSize: [number, number, number];
   code: string;
 }
 
 let device: GPUDevice | null = null;
 const nodeStates = new Map<string, NodeState>();
+
+// Track last active node for uncaptured error reporting
+let lastActiveNodeId: string | null = null;
 
 // Pipeline cache keyed by shader code hash
 const pipelineCache = new Map<string, GPUComputePipeline>();
@@ -39,7 +45,9 @@ function getOrCreateState(nodeId: string): NodeState {
       pipeline: null,
       buffers: new Map(),
       inputData: new Map(),
+      uniformData: new Map(),
       bindingAccessModes: new Map(),
+      uniformBindings: new Set(),
       workgroupSize: [64, 1, 1],
       code: ''
     };
@@ -68,6 +76,13 @@ async function handleInit() {
       device = null;
     });
 
+    // Forward uncaptured errors to the last active node's virtual console
+    device.onuncapturederror = (event) => {
+      if (lastActiveNodeId) {
+        reply({ type: 'error', nodeId: lastActiveNodeId, message: event.error.message });
+      }
+    };
+
     reply({ type: 'ready', supported: true });
   } catch {
     reply({ type: 'ready', supported: false });
@@ -87,6 +102,9 @@ async function handleCompile(nodeId: string, code: string) {
     let pipeline = pipelineCache.get(hash);
 
     if (!pipeline) {
+      // Push error scope to capture validation errors during pipeline creation
+      device.pushErrorScope('validation');
+
       const shaderModule = device.createShaderModule({ code });
 
       // Check for compilation errors
@@ -94,6 +112,7 @@ async function handleCompile(nodeId: string, code: string) {
       const errors = info.messages.filter((m) => m.type === 'error');
 
       if (errors.length > 0) {
+        await device.popErrorScope(); // Clear the error scope
         const errorText = errors.map((e) => `Line ${e.lineNum}: ${e.message}`).join('\n');
         reply({ type: 'compiled', nodeId, error: errorText });
         return;
@@ -104,6 +123,13 @@ async function handleCompile(nodeId: string, code: string) {
         compute: { module: shaderModule, entryPoint: 'main' }
       });
 
+      // Check for validation errors (e.g., workgroup size limits)
+      const validationError = await device.popErrorScope();
+      if (validationError) {
+        reply({ type: 'compiled', nodeId, error: validationError.message });
+        return;
+      }
+
       pipelineCache.set(hash, pipeline);
     }
 
@@ -113,9 +139,16 @@ async function handleCompile(nodeId: string, code: string) {
     // Parse binding access modes from code
     const bindingRegex = /@group\((\d+)\)\s*@binding\((\d+)\)\s*var<storage,\s*(read|read_write)>/g;
     state.bindingAccessModes.clear();
+    state.uniformBindings.clear();
     let m;
     while ((m = bindingRegex.exec(code)) !== null) {
       state.bindingAccessModes.set(parseInt(m[2]), m[3] as 'read' | 'read_write');
+    }
+
+    // Parse uniform bindings
+    const uniformRegex = /@group\((\d+)\)\s*@binding\((\d+)\)\s*var<uniform>/g;
+    while ((m = uniformRegex.exec(code)) !== null) {
+      state.uniformBindings.add(parseInt(m[2]));
     }
 
     // Parse workgroup size
@@ -137,6 +170,11 @@ async function handleCompile(nodeId: string, code: string) {
 function handleSetBuffer(nodeId: string, binding: number, data: ArrayBuffer) {
   const state = getOrCreateState(nodeId);
   state.inputData.set(binding, data);
+}
+
+function handleSetUniform(nodeId: string, binding: number, data: ArrayBuffer) {
+  const state = getOrCreateState(nodeId);
+  state.uniformData.set(binding, data);
 }
 
 async function handleDispatch(nodeId: string, dispatchCount?: [number, number, number]) {
@@ -162,7 +200,22 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
     const entries: GPUBindGroupEntry[] = [];
     const outputBindings: number[] = [];
 
-    // Collect all bindings and sort them
+    // Create uniform buffers first
+    for (const [bindingIdx, uniformData] of state.uniformData) {
+      const size = Math.max(uniformData.byteLength, 16); // Minimum 16 bytes for uniform buffers
+      const gpuBuffer = device.createBuffer({
+        size,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Uint8Array(gpuBuffer.getMappedRange()).set(new Uint8Array(uniformData));
+      gpuBuffer.unmap();
+
+      state.buffers.set(bindingIdx, gpuBuffer);
+      entries.push({ binding: bindingIdx, resource: { buffer: gpuBuffer } });
+    }
+
+    // Collect all storage bindings and sort them
     const allBindings = [...state.bindingAccessModes.entries()].sort(([a], [b]) => a - b);
 
     for (const [bindingIdx, accessMode] of allBindings) {
@@ -224,6 +277,9 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
     // Calculate dispatch count if not provided
     const actualDispatch = dispatchCount ?? calculateDispatchCount(state);
 
+    // Push error scope to capture validation errors
+    device.pushErrorScope('validation');
+
     // Run compute pass
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginComputePass();
@@ -245,6 +301,13 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
     }
 
     device.queue.submit([commandEncoder.finish()]);
+
+    // Check for validation errors
+    const validationError = await device.popErrorScope();
+    if (validationError) {
+      reply({ type: 'error', nodeId, message: validationError.message });
+      return;
+    }
 
     // Read output data
     const outputs: Record<number, ArrayBuffer> = {};
@@ -288,21 +351,29 @@ function handleDestroy(nodeId: string) {
 self.onmessage = async (event: MessageEvent<ToWorker>) => {
   const msg = event.data;
 
-  switch (msg.type) {
-    case 'init':
-      await handleInit();
-      break;
-    case 'compile':
-      await handleCompile(msg.nodeId, msg.code);
-      break;
-    case 'setBuffer':
-      handleSetBuffer(msg.nodeId, msg.binding, msg.data);
-      break;
-    case 'dispatch':
-      await handleDispatch(msg.nodeId, msg.dispatchCount);
-      break;
-    case 'destroy':
-      handleDestroy(msg.nodeId);
-      break;
+  // Track active node for uncaptured error reporting
+  if ('nodeId' in msg) {
+    lastActiveNodeId = msg.nodeId;
   }
+
+  await match(msg)
+    .with({ type: 'init' }, async () => {
+      await handleInit();
+    })
+    .with({ type: 'compile' }, async ({ nodeId, code }) => {
+      await handleCompile(nodeId, code);
+    })
+    .with({ type: 'setBuffer' }, ({ nodeId, binding, data }) => {
+      handleSetBuffer(nodeId, binding, data);
+    })
+    .with({ type: 'setUniform' }, ({ nodeId, binding, data }) => {
+      handleSetUniform(nodeId, binding, data);
+    })
+    .with({ type: 'dispatch' }, async ({ nodeId, dispatchCount }) => {
+      await handleDispatch(nodeId, dispatchCount);
+    })
+    .with({ type: 'destroy' }, ({ nodeId }) => {
+      handleDestroy(nodeId);
+    })
+    .otherwise(() => {});
 };

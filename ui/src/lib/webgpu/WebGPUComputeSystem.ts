@@ -126,6 +126,11 @@ export class WebGPUComputeSystem {
     this.postMessage({ type: 'setBuffer', nodeId, binding, data: copy }, [copy]);
   }
 
+  setUniform(nodeId: string, binding: number, data: ArrayBuffer): void {
+    const copy = data.slice(0);
+    this.postMessage({ type: 'setUniform', nodeId, binding, data: copy }, [copy]);
+  }
+
   async dispatch(
     nodeId: string,
     dispatchCount?: [number, number, number]
