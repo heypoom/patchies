@@ -215,6 +215,9 @@ export class TextmodeRenderer {
         // VFS URL resolution (worker -> main thread -> object URL)
         getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
 
+        // Worker-specific send override (JSRunner defaults use worker-local MessageSystem which has no edges)
+        send: this.sendMessage.bind(this),
+
         onMessage: (callback: MessageCallbackFn) => {
           this.onMessage = callback;
         },
