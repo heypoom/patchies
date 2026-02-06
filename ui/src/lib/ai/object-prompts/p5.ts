@@ -12,6 +12,9 @@ ${esmInstructions}
 **P5-specific methods:**
 - Standard P5.js: createCanvas(), background(), fill(), rect(), circle(), etc.
 - noDrag() - Disable node dragging for interactive sketches
+- noPan() - Disable canvas panning when interacting
+- noWheel() - Disable wheel zoom when interacting
+- noInteract() - Disable all interactions (drag, pan, wheel)
 - noOutput() - Hide video output port
 
 **P5-specific gotchas:**

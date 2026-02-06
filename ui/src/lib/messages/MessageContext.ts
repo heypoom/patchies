@@ -36,8 +36,17 @@ export interface UserFnRunContext {
   /** Schedules requestAnimationFrame with cleanup. */
   requestAnimationFrame: (callback: () => void) => number;
 
-  /** Disables dragging in canvas. */
+  /** Disables dragging the node when interacting with the canvas. */
   noDrag: () => void;
+
+  /** Disables panning the canvas when interacting with the node. */
+  noPan: () => void;
+
+  /** Disables wheel zoom when interacting with the node. */
+  noWheel: () => void;
+
+  /** Disables all interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel. */
+  noInteract: () => void;
 
   /** Hides the video output port in canvas/p5 nodes. */
   noOutput?: () => void;
@@ -227,6 +236,9 @@ export class MessageContext {
       requestAnimationFrame: this.createRequestAnimationFrameFunction(),
       onCleanup: this.createOnCleanupFunction(),
       noDrag: () => {},
+      noPan: () => {},
+      noWheel: () => {},
+      noInteract: () => {},
       ...(fft && { fft })
     };
   }

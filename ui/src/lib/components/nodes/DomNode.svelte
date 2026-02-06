@@ -56,6 +56,8 @@
 
   let rootContainer = $state<HTMLDivElement | undefined>();
   let dragEnabled = $state(true);
+  let panEnabled = $state(true);
+  let wheelEnabled = $state(true);
   let editorReady = $state(false);
 
   const { updateNodeData } = useSvelteFlow();
@@ -123,8 +125,10 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
-    // Reset drag state
+    // Reset interaction state
     dragEnabled = true;
+    panEnabled = true;
+    wheelEnabled = true;
 
     try {
       // Create isolated shadow DOM container with Tailwind (enabled by default)
@@ -150,6 +154,17 @@
           setSize,
           noDrag: () => {
             dragEnabled = false;
+          },
+          noPan: () => {
+            panEnabled = false;
+          },
+          noWheel: () => {
+            wheelEnabled = false;
+          },
+          noInteract: () => {
+            dragEnabled = false;
+            panEnabled = false;
+            wheelEnabled = false;
           },
           tailwind: container.tailwind
         }
@@ -211,7 +226,9 @@
           : selected
             ? 'shadow-glow-md ring ring-zinc-400'
             : 'hover:shadow-glow-sm',
-        dragEnabled ? '' : 'nodrag nowheel nopan'
+        !dragEnabled && 'nodrag',
+        !panEnabled && 'nopan',
+        !wheelEnabled && 'nowheel'
       ]}
       style={containerWidth !== undefined && containerHeight !== undefined
         ? `width: ${containerWidth}px; height: ${containerHeight}px;`

@@ -14,7 +14,7 @@ Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keybo
 
 **Three.dom-specific methods:**
 - setCanvasSize(w, h) - Resize canvas and renderer
-- noDrag() - Disable node dragging for interactive scenes
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noOutput() - Hide video output port
 - setHidePorts(bool) - Toggle port visibility
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)

@@ -9,7 +9,7 @@ export type PatchiesEvent =
   | NodeTitleUpdateEvent
   | NodeRunOnMountUpdateEvent
   | NodeHidePortsUpdateEvent
-  | NodeDragEnabledUpdateEvent
+  | NodeInteractionUpdateEvent
   | NodeVideoOutputEnabledUpdateEvent
   | NodeMouseScopeUpdateEvent
   | NodeReplaceEvent
@@ -89,10 +89,13 @@ export interface NodeHidePortsUpdateEvent {
   hidePorts: boolean;
 }
 
-export interface NodeDragEnabledUpdateEvent {
-  type: 'nodeDragEnabledUpdate';
+export type NodeInteractionMode = 'drag' | 'pan' | 'wheel' | 'interact';
+
+export interface NodeInteractionUpdateEvent {
+  type: 'nodeInteractionUpdate';
   nodeId: string;
-  dragEnabled: boolean;
+  mode: NodeInteractionMode;
+  enabled: boolean;
 }
 
 export interface NodeVideoOutputEnabledUpdateEvent {

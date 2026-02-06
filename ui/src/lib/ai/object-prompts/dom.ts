@@ -11,7 +11,7 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 - width, height: Container dimensions (undefined if fluid, set after setSize)
 - setSize(w, h): Set fixed container dimensions
 - setHidePorts(hide): Hide/show ports
-- noDrag(): Disable node dragging (useful for interactive elements)
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 **DOM-specific gotchas:**

@@ -277,13 +277,11 @@ This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, B
 To use video chaining:
 
 - Try out the presets to get started quickly.
-
   - Pipe presets (e.g. `pipe.hydra`, `pipe.gl`) simply passes the visual through without any changes. This is the best starting point for chaining.
   - Hydra has many presets that perform image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two visual inputs, see [hydra section](#hydra-creates-a-hydra-video-synthesizer).
   - Check out the docs of [each visual objects](#list-of-objects) for more fun presets you can use.
 
 - The visual object should have at least one visual inlets and/or outlets, i.e. orange circles on the top and bottom.
-
   - Inlets provides visual into the object, while outlets outputs visual from the object.
   - In `hydra`, you can call `setVideoCount(ins = 1, outs = 1)` to specify how many visual inlets and outlets you want. See [hydra section](#hydra-creates-a-hydra-video-synthesizer) for more details.
   - For chaining `glsl` objects, you can dynamically create sampler2D uniforms. See [glsl section](#glsl-creates-a-glsl-fragment-shader) for more details.
@@ -291,7 +289,6 @@ To use video chaining:
 - The visual object should have code that takes in a visual source, does something, and outputs visual. See the above presets for examples.
 
 - Connect the orange inlets of a source object to the orange outlets of a target object.
-
   - Try connecting the orange visual outlet of `p5` to an orange visual inlet of a `pipe.hydra` preset, and then connect the `hydra` object to a `pipe.gl` preset. You should see the output of the `p5` object being passed through `hydra` and `glsl` objects without modification.
 
 - Getting lag and slow patches? See the [Rendering Pipeline](#rendering-pipeline) section on how to avoid lag.
@@ -317,7 +314,6 @@ If you don't have an idea where to start, why not build your own drum machine? [
 If you have used an audio patcher before (e.g. Pd, Max, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
 - Use these objects as audio sources: `osc~`, `sig~`, `mic~`, `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, `sonic~`
-
   - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
   - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
 
@@ -394,14 +390,11 @@ These objects support video chaining and can be connected to create complex visu
 - **Note**: Patchies uses P5.js v2.x with backward compatibility libraries for v1 features. All existing P5.js v1 sketches should work without modification.
 
 - You can call these special methods in your sketch:
-
-  - `noDrag()` disables dragging the whole canvas. You **must** call this method if you want to add interactivity to your sketch, such as adding sliders or mousePressed events. You can call it in your `setup()` function.
-    - When `noDrag()` is enabled, you can still drag the "p5" title to move the whole object around.
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control). You **must** call one of these (typically `noInteract()`) if you want to add interactivity to your sketch, such as adding sliders or mousePressed events.
   - `noOutput()` hides the video output port (the orange outlet at the bottom). This is useful when creating interface widgets that don't need to be part of the video chain.
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
-
   - Try out [ML5.js](https://ml5js.org) for machine learning and [Matter.js](https://brm.io/matter-js) for physics simulation. They play well with P5.js.
 
 - You can import shared JavaScript libraries across multiple `p5` objects, see [sharing JavaScript across multiple `js` blocks](#sharing-javascript-across-multiple-js-blocks).
@@ -496,8 +489,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
 
 - You can call these special methods in your canvas code:
-
-  - `noDrag()` disables dragging the node. This allows you to add mouse or touch interactivity to your canvas without accidentally moving the node.
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
   - `noOutput()` hides the video output port. Useful when creating interface widgets or tools that don't need to be part of the video processing chain.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
@@ -515,22 +507,19 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 > ✨ Try this patch out [in the app](https://patchies.app/?id=izs6hjxchit2zad)!
 
 - Same as `canvas` but runs directly on the main thread instead of on the [rendering pipeline thread](#rendering-pipeline), and comes with some additional features:
-
   - Use `mouse` object with properties: `x`, `y`, `down`, `buttons` to get current mouse position and state.
   - Use `onKeyDown(callback)` and `onKeyUp(callback)` to register keyboard event handlers. Events are trapped and won't leak to xyflow (e.g., pressing Delete won't delete the node).
   - Full DOM and browser API access (e.g. `document` and `window`)
   - Use `setCanvasSize(width, height)` to dynamically resize the canvas resolution (e.g., `setCanvasSize(500, 500)`).
-  - Otherwise, the API remains the same as `canvas`: `noDrag()`, `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](#patchies-javascript-runner) functions.
+  - Otherwise, the API remains the same as `canvas`: [Interaction Control](#interaction-control) (`noDrag()`, `noPan()`, `noWheel()`, `noInteract()`), `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](#patchies-javascript-runner) functions.
 
 - When to use `canvas.dom` instead of `canvas`:
-
   - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual.
   - Mouse interactivity: use `mouse.x`, `mouse.y`, `mouse.down` for interactive sketches.
   - Keyboard interactivity: use `onKeyDown()` and `onKeyUp()` for keyboard-controlled widgets.
   - DOM access: use `document`, `window` and other browser APIs when needed.
 
 - Try out these fun and useful presets for inspirations on widgets and interactive controls:
-
   - `particle.canvas` adds a particle canvas that reacts to your mouse inputs.
   - `xy-pad.canvas` adds an X-Y pad that you can send `[x, y]` coordinates into to set the position of the crosshair. It also sends `[x, y]` coordinates to the message outlet when you drag on it.
   - `rgba.picker` and `hsla.picker` lets you pick colors and sends them as outputs: `[r, g, b, a]` and `[h, s, l, a]` respectively.
@@ -550,13 +539,11 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 [Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
 
 - There are two flavors of textmode objects with a few differences:
-
   - `textmode`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Features such as mouse interactivity, images/videos and fonts are NOT supported.
   - `textmode.dom`: Runs on the main thread. Supports [mouse](https://code.textmode.art/docs/events.html#mouse-events), [touch](https://code.textmode.art/docs/events.html#touch-events) and [keyboard](https://code.textmode.art/docs/events.html#keyboard-events) interactivity. Supports [video and images](https://code.textmode.art/docs/loadables.html). Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
 
 - You can call these special methods in your textmode code:
-
-  - `noDrag()` disables dragging the node.
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
@@ -611,7 +598,6 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - [Three.js](https://threejs.org) is a powerful 3D graphics library for WebGL. Create 3D scenes, animations, and interactive visualizations in the browser.
 
 - There are two flavors of three objects with a few differences:
-
   - `three`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Can take
   - `three.dom`: Runs on the main thread. Supports interactivity via OrbitControls or custom handlers. Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
 
@@ -638,31 +624,26 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   ```
 
 - You can call these special methods in the `three` object only:
-
   - `getTexture(inlet): THREE.Texture` gets the video input as Three.js texture. Only works with
   - `setVideoCount(ins, outs)` sets the number of video inlets and outlets (for video chaining).
 
 - You can call these special methods in the `three.dom` object only:
-
   - `setCanvasSize(width, height)` resizes the output canvas size
   - `onKeyDown(callback)` receives keydown events
   - `onKeyUp(callback)` receives keyup events
 
 - You can call these special methods in both `three` and `three.dom`:
-
-  - `noDrag()` disables dragging the node.
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - As well as these variables:
-
   - `mouse.x` and `mouse.y` provides mouse position
   - `width` and `height` provides output size
 
 - The Three.js context provides these variables:
-
   - `THREE`: the Three.js library
   - `renderer: WebGLRenderer`: the WebGL renderer from Three.js
 
@@ -957,7 +938,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `vue` code:
-  - `noDrag()` disables dragging the node.
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - See the [Vue.js documentation](https://vuejs.org/guide/introduction.html) to learn how Vue works.
 - The vue component is mounted under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
@@ -969,7 +950,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `dom` code:
-  - `noDrag()` disables dragging the node.
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Interaction Control](#interaction-control).
   - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - The `root` element runs under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
 
@@ -992,13 +973,11 @@ This allows you to set up multiple values before triggering a computation. Use [
 > ✨ Try this patch out [in the app](https://patchies.app/?id=z7rtmujmtvbv0e0)! Code is by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html). If you like their tutorial, please go [support](https://compudanzas.net/support.html) them!
 
 - Write and assemble your own Uxntal programs directly in the editor!
-
   - "Edit Code" button opens the Uxntal assembly code editor.
   - Press `Shift + Enter` or click "Assemble & Load" to compile and run your code.
   - Assembler errors are displayed below the node.
 
 - Messages
-
   - `string`
     - If starts with `http://` or `https://`, loads ROM from URL.
     - Otherwise, it treats the string as Uxntal code to assemble and load.
@@ -1009,7 +988,6 @@ This allows you to set up multiple values before triggering a computation. Use [
   - Outputs string messages from console device
 
 - Auto-loading behavior:
-
   - On object mount, if code is provided (and no URL/ROM), the code is assembled and loaded automatically.
   - On object mount, if URL is provided (and no code/ROM), the ROM is loaded from the URL automatically.
 
@@ -1699,7 +1677,7 @@ recv((note) => {
     "note",
     note,
     "release",
-    2
+    2,
   );
 });
 ```
@@ -1720,7 +1698,7 @@ sonic.send(
   "buf",
   0,
   "rate",
-  1
+  1,
 );
 ```
 
@@ -1754,7 +1732,7 @@ let [rate, setRate] = core.createRef(
   {
     value: 440,
   },
-  []
+  [],
 );
 
 recv((freq) => setRate({ value: freq }));
@@ -1974,7 +1952,6 @@ netrecv((data, peerId) => {
 Stream audio, video and messages over WebRTC using [VDO.Ninja](https://vdo.ninja). These nodes enable real-time collaboration and remote audio/video streaming between Patchies instances, OBS instances or with VDO.Ninja web clients.
 
 - `vdo.ninja.push`: Push audio, video, and messages to a VDO.Ninja room
-
   - **Inlets:**
     - Message inlet: send data to peers, or control commands
     - Video inlet: video signal to stream (hidden in data-only mode)
@@ -2007,7 +1984,6 @@ Stream audio, video and messages over WebRTC using [VDO.Ninja](https://vdo.ninja
     | `{type: 'error', message}`    | Connection or streaming error   |
 
 - `vdo.ninja.pull`: Pull audio, video, and messages from a VDO.Ninja room
-
   - **Inlets:**
     - Message inlet: control commands
   - **Outlets:**
@@ -2120,7 +2096,6 @@ These functions are available in all JSRunner-enabled nodes:
 - **Console**: Use `console.log()` to log messages to the virtual console (not the browser console).
 
 - **Timers with auto-cleanup**:
-
   - `setInterval(callback, ms)` runs a callback every `ms` milliseconds. Automatically cleaned up on unmount or code re-execution.
   - `setTimeout(callback, ms)` runs a callback after `ms` milliseconds. Automatically cleaned up on unmount or code re-execution.
   - `delay(ms)` returns a Promise that resolves after `ms` milliseconds. If you stop the `js` object while awaiting `delay(ms)`, the promise rejects and code execution stops.
@@ -2144,10 +2119,20 @@ These functions are available in all JSRunner-enabled nodes:
   - Example: `const response = await llm("Describe this image")`
   - Options: `{ imageNodeId?: string, abortSignal?: AbortSignal }` - pass `imageNodeId` to include a visual node's output as image context.
 
+### Interaction Control
+
+Visual nodes (`p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `vue`, `dom`) provide these methods to control how interactions behave inside the node:
+
+- **`noDrag()`** - Disables dragging the node when clicking/touching inside it. Use this when you need mouse/touch interactivity (e.g., sliders, buttons, drawing).
+- **`noPan()`** - Disables panning the canvas when dragging inside the node. Useful for nodes where you want internal drag behavior without moving the canvas view.
+- **`noWheel()`** - Disables wheel zoom when scrolling inside the node. Useful for scrollable content or nodes that respond to wheel events.
+- **`noInteract()`** - Convenience method that calls all three: `noDrag()`, `noPan()`, and `noWheel()`. Use this for fully mouse-interactive nodes.
+
+Call these in your setup code (e.g., in P5's `setup()` function, or at the top level for other nodes). You can still drag the node by its title bar even when `noDrag()` is enabled.
+
 ### Importing JavaScript packages from NPM
 
 - You can import any JavaScript package by using the `npm:` prefix in the import statement.
-
   - This uses [esm.sh](https://esm.sh) under the hood to load the package from NPM.
   - This gets translated into top-level dynamic imports behind the scenes.
   - `import * as X` is not yet supported.
@@ -2241,7 +2226,6 @@ Supported objects are `glsl`, `swgl`, as well as any objects using the unified [
 You can call the `fft()` function to get the audio analysis data in any objects using the unified [JavaScript Runner](#patchies-javascript-runner).
 
 - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
-
   - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-fft-code) for why this is needed and how to convert existing code.
 
 - `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
@@ -2249,13 +2233,11 @@ You can call the `fft()` function to get the audio analysis data in any objects 
 - Try out the `fft.hydra` preset for Hydra.
 - Try out the `fft.p5`, `fft-sm.p5` and `rms.p5` presets for P5.js.
 - Try out the `fft.canvas` preset for HTML5 canvas with **instant audio reactivity**.
-
   - The `fft.canvas` preset uses `canvas.dom` (main thread), giving you the same tight audio reactivity as `p5`.
   - For audio-reactive visuals, use `canvas.dom` or `p5` for best results.
   - The worker-based `canvas` node has slight FFT delay but won't slow down your patch when chained with other visual objects.
 
 - The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
-
   - raw frequency bins: `fft().a`
   - bass energy as float (between 0 - 1): `fft().getEnergy('bass') / 255`. You can use these frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`.
   - energy between any frequency range as float (between 0 - 1): `fft().getEnergy(40, 200) / 255`
@@ -2264,7 +2246,6 @@ You can call the `fft()` function to get the audio analysis data in any objects 
   - spectral centroid as float: `fft().centroid`
 
 - Where to call `fft()`:
-
   - `p5`: call in your `draw` function.
   - `canvas` and `canvas.dom`: call in your `draw` function that are gated by `requestAnimationFrame`
   - `js`: call in your `setInterval` or `requestAnimationFrame` callback
@@ -2285,13 +2266,11 @@ You can call the `fft()` function to get the audio analysis data in any objects 
 ### Convert existing P5 and Hydra FFT code
 
 - Q: Why not just use standard Hydra and P5.js audio reactivity APIs like `a.fft[0]` and `p5.FFT()`?
-
   - A: The reason is that the `p5-sound` and `a.fft` APIs only lets you access microphones and audio files. In contrast, Patchies lets you FFT any dynamic audio sources 😊
   - You can FFT analyze your own audio pipelines like your web audio graph, and other live audio coding environment like Strudel and ChucK.
   - It makes the API exactly the same between Hydra and P5.js. No need to juggle two.
 
 - Converting Hydra's [Audio Reactivity](https://hydra.ojack.xyz/hydra-docs-v2/docs/learning/sequencing-and-interactivity/audio/#audio-reactivity) API into Patchies:
-
   - Replace `a.fft[0]` with `fft().a[0]` (un-normalized int8 values from 0 - 255)
   - Replace `a.fft[0]` with `fft().f[0]` (normalized float values from 0 - 1)
   - Instead of `a.setBins(32)`, change the fft bins in the `fft~` object instead e.g. `fft~ 32`

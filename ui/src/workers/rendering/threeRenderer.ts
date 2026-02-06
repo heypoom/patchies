@@ -180,8 +180,8 @@ export class ThreeRenderer {
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
 
-    // Reset drag and video output state
-    this.setDragEnabled(true);
+    // Reset interaction and video output state
+    this.setInteraction('interact', true);
     this.setVideoOutputEnabled(true);
 
     // Cancel any existing animation frame
@@ -244,7 +244,19 @@ export class ThreeRenderer {
         getTexture: this.getTexture.bind(this),
 
         noDrag: () => {
-          this.setDragEnabled(false);
+          this.setInteraction('drag', false);
+        },
+
+        noPan: () => {
+          this.setInteraction('pan', false);
+        },
+
+        noWheel: () => {
+          this.setInteraction('wheel', false);
+        },
+
+        noInteract: () => {
+          this.setInteraction('interact', false);
         },
 
         noOutput: () => {
@@ -385,11 +397,12 @@ export class ThreeRenderer {
     });
   }
 
-  setDragEnabled(dragEnabled: boolean) {
+  setInteraction(mode: 'drag' | 'pan' | 'wheel' | 'interact', enabled: boolean) {
     self.postMessage({
-      type: 'setDragEnabled',
+      type: 'setInteraction',
       nodeId: this.config.nodeId,
-      dragEnabled
+      mode,
+      enabled
     });
   }
 

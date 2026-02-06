@@ -8,7 +8,8 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 **Canvas.dom-specific methods:**
 - ctx: 2D canvas context
 - width, height, mouse: {x, y, down, buttons}
-- noDrag(), noOutput() - Node config
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noOutput() - Hide video output
 - setCanvasSize(w, h) - Resize canvas
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)
 - onKeyUp(event => {}) - Keyboard up events (event.key, event.code)

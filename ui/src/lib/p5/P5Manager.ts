@@ -308,6 +308,9 @@ export class P5Manager {
       extraContext: {
         sketch,
         noDrag: config.messageContext?.noDrag,
+        noPan: config.messageContext?.noPan,
+        noWheel: config.messageContext?.noWheel,
+        noInteract: config.messageContext?.noInteract,
         noOutput: config.messageContext?.noOutput,
         setHidePorts: config.setHidePorts
       }

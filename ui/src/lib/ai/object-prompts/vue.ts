@@ -11,7 +11,7 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - width, height: Container dimensions (undefined if fluid, set after setSize)
 - setSize(w, h): Set fixed container dimensions
 - setHidePorts(hide): Hide/show ports
-- noDrag(): Disable node dragging (useful for interactive elements)
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
 **Vue 3 APIs (auto-imported):**

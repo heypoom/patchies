@@ -180,11 +180,12 @@ export class GLSystem {
           hidePorts: data.hidePorts
         });
       })
-      .with({ type: 'setDragEnabled' }, (data) => {
+      .with({ type: 'setInteraction' }, (data) => {
         this.eventBus.dispatch({
-          type: 'nodeDragEnabledUpdate',
+          type: 'nodeInteractionUpdate',
           nodeId: data.nodeId,
-          dragEnabled: data.dragEnabled
+          mode: data.mode,
+          enabled: data.enabled
         });
       })
       .with({ type: 'setVideoOutputEnabled' }, (data) => {

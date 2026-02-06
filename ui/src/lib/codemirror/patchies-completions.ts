@@ -149,8 +149,29 @@ const patchiesAPICompletions: Completion[] = [
     label: 'noDrag',
     type: 'function',
     detail: '() => void',
-    info: 'Disable dragging interaction in canvas nodes',
+    info: 'Disable dragging the node when interacting with the canvas',
     apply: 'noDrag()'
+  },
+  {
+    label: 'noPan',
+    type: 'function',
+    detail: '() => void',
+    info: 'Disable panning the canvas when interacting with the node',
+    apply: 'noPan()'
+  },
+  {
+    label: 'noWheel',
+    type: 'function',
+    detail: '() => void',
+    info: 'Disable wheel zoom when interacting with the node',
+    apply: 'noWheel()'
+  },
+  {
+    label: 'noInteract',
+    type: 'function',
+    detail: '() => void',
+    info: 'Disable all interactions (drag, pan, wheel) - convenience for noDrag + noPan + noWheel',
+    apply: 'noInteract()'
   },
   {
     label: 'noOutput',
@@ -230,7 +251,10 @@ const patchiesAPICompletions: Completion[] = [
 // Setup functions that should only appear at top-level (not in function bodies)
 const topLevelOnlyFunctions = new Set([
   'noDrag',
+  'noInteract',
   'noOutput',
+  'noPan',
+  'noWheel',
   'onCleanup',
   'onKeyDown',
   'onKeyUp',
@@ -246,6 +270,18 @@ const topLevelOnlyFunctions = new Set([
   'setRunOnMount',
   'setVideoCount'
 ]);
+
+const MOUSE_INTERACTION_JS_NODES = [
+  'p5',
+  'canvas',
+  'canvas.dom',
+  'textmode',
+  'textmode.dom',
+  'three',
+  'three.dom',
+  'vue',
+  'dom'
+];
 
 // Node-specific functions - only show in certain node types
 //
@@ -288,7 +324,10 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three.dom',
     'tone~'
   ],
-  noDrag: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
+  noDrag: MOUSE_INTERACTION_JS_NODES,
+  noPan: MOUSE_INTERACTION_JS_NODES,
+  noWheel: MOUSE_INTERACTION_JS_NODES,
+  noInteract: MOUSE_INTERACTION_JS_NODES,
   noOutput: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom', 'three', 'three.dom'],
   onKeyDown: ['canvas.dom', 'three.dom'],
   onKeyUp: ['canvas.dom', 'three.dom'],

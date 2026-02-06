@@ -14,6 +14,8 @@
     showConsoleButton = false,
     previewCanvas = $bindable<HTMLCanvasElement>(),
     nodrag = false,
+    nopan = false,
+    nowheel = false,
     tabindex,
 
     width,
@@ -38,6 +40,8 @@
     showConsoleButton?: boolean;
     previewCanvas?: HTMLCanvasElement;
     nodrag?: boolean;
+    nopan?: boolean;
+    nowheel?: boolean;
     tabindex?: number;
 
     width?: string | number;
@@ -51,6 +55,17 @@
     console?: Snippet;
     editorReady?: boolean;
   } = $props();
+
+  // Build the interaction class string based on individual flags
+  const interactionClass = $derived.by(() => {
+    if (!nodrag && !nopan && !nowheel) return 'cursor-grab';
+
+    const classes: string[] = ['cursor-default'];
+    if (nodrag) classes.push('nodrag');
+    if (nopan) classes.push('nopan');
+    if (nowheel) classes.push('nowheel');
+    return classes.join(' ');
+  });
 </script>
 
 <ObjectPreviewLayout
@@ -77,7 +92,7 @@
           : selected
             ? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
             : 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
-        nodrag ? 'nodrag nopan nowheel cursor-default' : 'cursor-grab'
+        interactionClass
       ]}
       {tabindex}
       width={typeof width === 'number' ? width : undefined}

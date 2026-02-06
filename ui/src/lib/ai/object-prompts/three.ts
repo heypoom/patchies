@@ -14,7 +14,7 @@ Three.js 3D graphics environment running in a Web Worker (offscreen rendering). 
 **Three-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video inlets/outlets (default 1, 1)
 - getTexture(index) - Get Three.js Texture from video inlet (0-based index)
-- noDrag() - Disable node dragging
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noOutput() - Hide video output port
 - setHidePorts(bool) - Toggle port visibility
 

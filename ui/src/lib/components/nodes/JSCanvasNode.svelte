@@ -14,7 +14,7 @@
     NodePortCountUpdateEvent,
     NodeTitleUpdateEvent,
     NodeHidePortsUpdateEvent,
-    NodeDragEnabledUpdateEvent,
+    NodeInteractionUpdateEvent,
     NodeVideoOutputEnabledUpdateEvent,
     ConsoleOutputEvent
   } from '$lib/eventbus/events';
@@ -62,6 +62,8 @@
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
   let dragEnabled = $state(true);
+  let panEnabled = $state(true);
+  let wheelEnabled = $state(true);
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
 
@@ -110,9 +112,16 @@
     updateNodeData(nodeId, { hidePorts: e.hidePorts });
   }
 
-  function handleDragEnabledUpdate(e: NodeDragEnabledUpdateEvent) {
+  function handleInteractionUpdate(e: NodeInteractionUpdateEvent) {
     if (e.nodeId !== nodeId) return;
-    dragEnabled = e.dragEnabled;
+    if (e.mode === 'drag') dragEnabled = e.enabled;
+    else if (e.mode === 'pan') panEnabled = e.enabled;
+    else if (e.mode === 'wheel') wheelEnabled = e.enabled;
+    else if (e.mode === 'interact') {
+      dragEnabled = e.enabled;
+      panEnabled = e.enabled;
+      wheelEnabled = e.enabled;
+    }
   }
 
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
@@ -153,7 +162,7 @@
     glEventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
     glEventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
     glEventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
-    glEventBus.addEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+    glEventBus.addEventListener('nodeInteractionUpdate', handleInteractionUpdate);
     glEventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
 
     // Listen for console output events to capture lineErrors
@@ -179,7 +188,7 @@
       glEventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
       glEventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
       glEventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
-      glEventBus.removeEventListener('nodeDragEnabledUpdate', handleDragEnabledUpdate);
+      glEventBus.removeEventListener('nodeInteractionUpdate', handleInteractionUpdate);
       glEventBus.removeEventListener(
         'nodeVideoOutputEnabledUpdate',
         handleVideoOutputEnabledUpdate
@@ -229,6 +238,8 @@
   onrun={updateCanvas}
   bind:previewCanvas
   nodrag={!dragEnabled}
+  nopan={!panEnabled}
+  nowheel={!wheelEnabled}
   width={outputWidth}
   height={outputHeight}
   style={`width: ${previewWidth}px; height: ${previewHeight}px;`}

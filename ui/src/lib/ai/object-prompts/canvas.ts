@@ -10,7 +10,8 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 **Canvas-specific methods:**
 - ctx: 2D canvas context (ctx.fillRect, ctx.arc, etc.)
 - width, height: canvas dimensions
-- noDrag(), noOutput() - Node config
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noOutput() - Hide video output
 - setCanvasSize(w, h) - Resize canvas
 
 **Canvas-specific gotchas:**

@@ -47,6 +47,8 @@
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
   let enableDrag = $state(true);
+  let enablePan = $state(true);
+  let enableWheel = $state(true);
   let videoOutputEnabled = $state(true);
   let errorMessage = $state<string | null>(null);
   let editorReady = $state(false);
@@ -175,8 +177,10 @@
   }
 
   async function updateSketch({ onMount = false }: { onMount?: boolean } = {}) {
-    // re-enable drag on update. nodrag() must be called on setup().
+    // re-enable interactions on update. noDrag()/noPan()/noWheel() must be called on setup().
     enableDrag = true;
+    enablePan = true;
+    enableWheel = true;
     videoOutputEnabled = true;
 
     // Clear previous error state at the start of each run
@@ -197,6 +201,17 @@
             ...messageContext.getContext(),
             noDrag: () => {
               enableDrag = false;
+            },
+            noPan: () => {
+              enablePan = false;
+            },
+            noWheel: () => {
+              enableWheel = false;
+            },
+            noInteract: () => {
+              enableDrag = false;
+              enablePan = false;
+              enableWheel = false;
             },
             noOutput: () => {
               videoOutputEnabled = false;
@@ -277,7 +292,14 @@
         bind:this={containerElement}
         class={[
           'rounded-md border bg-transparent',
-          enableDrag ? 'cursor-grab' : 'nodrag cursor-default',
+          enableDrag && enablePan && enableWheel
+            ? 'cursor-grab'
+            : [
+                'cursor-default',
+                !enableDrag && 'nodrag',
+                !enablePan && 'nopan',
+                !enableWheel && 'nowheel'
+              ],
           errorMessage
             ? 'border-red-500 [&>canvas]:rounded-[7px]'
             : selected
