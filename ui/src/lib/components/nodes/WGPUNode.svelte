@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, X } from '@lucide/svelte/icons';
+  import { Code, X, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -24,6 +24,8 @@
       showConsole?: boolean;
       consoleHeight?: number;
       consoleWidth?: number;
+      outputSize?: number;
+      dispatchCount?: [number, number, number];
     };
     selected: boolean;
   } = $props();
@@ -43,7 +45,11 @@
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);
-  let showEditor = $state(false);
+  let sidebarView = $state<'code' | 'settings' | null>(null);
+
+  // Inferred values from last dispatch (for placeholder display)
+  let inferredOutputSize = $state<number | null>(null);
+  let inferredDispatch = $state<[number, number, number] | null>(null);
 
   const code = $derived(data.code || '');
   const parseResult = $derived(parseWGSL(code));
@@ -133,6 +139,14 @@
         return;
       }
 
+      // Store inferred values for placeholder display
+      if (result.actualOutputSize !== undefined) {
+        inferredOutputSize = result.actualOutputSize;
+      }
+      if (result.actualDispatch !== undefined) {
+        inferredDispatch = result.actualDispatch;
+      }
+
       if (!result.outputs || Object.keys(result.outputs).length === 0) {
         logToConsole('warn', 'Dispatch completed but no outputs produced.');
         return;
@@ -206,13 +220,21 @@
       return;
     }
 
-    // setCode / run messages
+    // setCode / run / settings messages
     match(message)
       .with({ type: 'setCode', code: P.string }, ({ code }) => {
         updateNodeData(nodeId, { code });
       })
       .with({ type: 'run' }, () => {
         compileShader();
+      })
+      .with({ type: 'setOutputSize', size: P.number }, ({ size }) => {
+        updateNodeData(nodeId, { outputSize: size });
+      })
+      .with({ type: 'setDispatchCount', count: P.array(P.number) }, ({ count }) => {
+        if (count.length >= 3) {
+          updateNodeData(nodeId, { dispatchCount: [count[0], count[1], count[2]] });
+        }
       })
       .otherwise(() => {});
   };
@@ -222,32 +244,62 @@
     contentWidth = contentContainer.offsetWidth;
   }
 
-  onMount(async () => {
-    system = WebGPUComputeSystem.getInstance();
-    const supported = await system.init();
-    isSupported = supported;
+  function applySettings() {
+    if (!system || !isSupported) return;
+    if (data.outputSize !== undefined) {
+      system.setOutputSize(nodeId, data.outputSize);
+    }
+    if (data.dispatchCount !== undefined) {
+      system.setDispatchCount(nodeId, data.dispatchCount);
+    }
+  }
 
-    messageContext = new MessageContext(nodeId);
-    messageContext.queue.addCallback(handleMessage);
+  // Sync settings to system when they change
+  $effect(() => {
+    if (data.outputSize !== undefined && system && isSupported) {
+      system.setOutputSize(nodeId, data.outputSize);
+    }
+  });
 
-    updateContentWidth();
+  $effect(() => {
+    if (data.dispatchCount !== undefined && system && isSupported) {
+      system.setDispatchCount(nodeId, data.dispatchCount);
+    }
+  });
 
-    const resizeObserver = new ResizeObserver(() => {
+  onMount(() => {
+    let resizeObserver: ResizeObserver | null = null;
+
+    (async () => {
+      system = WebGPUComputeSystem.getInstance();
+      const supported = await system.init();
+      isSupported = supported;
+
+      messageContext = new MessageContext(nodeId);
+      messageContext.queue.addCallback(handleMessage);
+
       updateContentWidth();
-    });
 
-    if (contentContainer) {
-      resizeObserver.observe(contentContainer);
-    }
+      resizeObserver = new ResizeObserver(() => {
+        updateContentWidth();
+      });
 
-    if (!supported) {
-      logToConsole('error', 'WebGPU is not supported in this browser.');
-      return () => resizeObserver.disconnect();
-    }
+      if (contentContainer) {
+        resizeObserver.observe(contentContainer);
+      }
 
-    await compileShader();
+      if (!supported) {
+        logToConsole('error', 'WebGPU is not supported in this browser.');
+        return;
+      }
 
-    return () => resizeObserver.disconnect();
+      await compileShader();
+      applySettings();
+    })();
+
+    return () => {
+      resizeObserver?.disconnect();
+    };
   });
 
   onDestroy(() => {
@@ -273,11 +325,18 @@
         </div>
 
         <div
-          class="flex items-center transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover/header:opacity-100"
+          class="flex items-center gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover/header:opacity-100"
         >
           <button
             class="rounded p-1 hover:bg-zinc-700"
-            onclick={() => (showEditor = !showEditor)}
+            onclick={() => (sidebarView = sidebarView === 'settings' ? null : 'settings')}
+            title="Settings"
+          >
+            <Settings class="h-4 w-4 text-zinc-300" />
+          </button>
+          <button
+            class="rounded p-1 hover:bg-zinc-700"
+            onclick={() => (sidebarView = sidebarView === 'code' ? null : 'code')}
             title="Edit code"
           >
             <Code class="h-4 w-4 text-zinc-300" />
@@ -358,11 +417,82 @@
     </div>
   </div>
 
+  <!-- Settings panel -->
+  {#if sidebarView === 'settings'}
+    <div class="absolute" style="left: {contentWidth + 10}px; top: 0">
+      <div class="nodrag rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl">
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-xs font-medium text-zinc-400">Settings</span>
+          <button onclick={() => (sidebarView = null)} class="rounded p-0.5 hover:bg-zinc-700">
+            <X class="h-3 w-3 text-zinc-400" />
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
+            <label class="mb-1 block text-xs text-zinc-500">Output Size (elements)</label>
+
+            <input
+              type="number"
+              class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200"
+              value={data.outputSize ?? ''}
+              placeholder={inferredOutputSize ? `auto (${inferredOutputSize})` : 'auto'}
+              onchange={(e) => {
+                const value = e.currentTarget.value;
+                if (value === '') {
+                  updateNodeData(nodeId, { outputSize: undefined });
+                } else {
+                  updateNodeData(nodeId, { outputSize: parseInt(value) });
+                }
+              }}
+            />
+          </div>
+
+          <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
+            <label class="mb-1 block text-xs text-zinc-500">Dispatch Count (x, y, z)</label>
+
+            <div class="flex gap-1">
+              {#each [0, 1, 2] as i}
+                <input
+                  type="number"
+                  class="w-14 rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200"
+                  value={data.dispatchCount?.[i] ?? ''}
+                  placeholder={inferredDispatch ? String(inferredDispatch[i]) : ['x', 'y', 'z'][i]}
+                  onchange={(e) => {
+                    const value = e.currentTarget.value;
+                    const current = data.dispatchCount ?? [1, 1, 1];
+                    if (value === '') {
+                      // If all empty, clear dispatchCount
+                      const newCount = [...current] as [number, number, number];
+                      newCount[i] = 1;
+                      const allDefault = newCount.every((v) => v === 1);
+                      updateNodeData(nodeId, { dispatchCount: allDefault ? undefined : newCount });
+                    } else {
+                      const newCount = [...current] as [number, number, number];
+                      newCount[i] = parseInt(value);
+                      updateNodeData(nodeId, { dispatchCount: newCount });
+                    }
+                  }}
+                />
+              {/each}
+            </div>
+          </div>
+
+          <div class="text-xs text-zinc-500">
+            Workgroup: {parseResult.workgroupSize?.join('×') ?? 'unknown'}
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- Code editor (absolute, to the right of content) -->
-  {#if showEditor}
+  {#if sidebarView === 'code'}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+        <button onclick={() => (sidebarView = null)} class="rounded p-1 hover:bg-zinc-700">
           <X class="h-4 w-4 text-zinc-300" />
         </button>
       </div>

@@ -52,6 +52,8 @@ export type ToWorker =
   | { type: 'compile'; nodeId: string; code: string }
   | { type: 'setBuffer'; nodeId: string; binding: number; data: ArrayBuffer }
   | { type: 'setUniform'; nodeId: string; binding: number; data: ArrayBuffer }
+  | { type: 'setOutputSize'; nodeId: string; size: number }
+  | { type: 'setDispatchCount'; nodeId: string; count: [number, number, number] }
   | { type: 'dispatch'; nodeId: string; dispatchCount?: [number, number, number] }
   | { type: 'destroy'; nodeId: string };
 
@@ -59,7 +61,13 @@ export type ToWorker =
 export type FromWorker =
   | { type: 'ready'; supported: boolean }
   | { type: 'compiled'; nodeId: string; error?: string }
-  | { type: 'result'; nodeId: string; outputs: Record<number, ArrayBuffer> }
+  | {
+      type: 'result';
+      nodeId: string;
+      outputs: Record<number, ArrayBuffer>;
+      actualDispatch: [number, number, number];
+      actualOutputSize: number;
+    }
   | { type: 'error'; nodeId: string; message: string };
 
 export interface CompileResult {
@@ -69,4 +77,6 @@ export interface CompileResult {
 export interface DispatchResult {
   outputs?: Record<number, ArrayBuffer>;
   error?: string;
+  actualDispatch?: [number, number, number];
+  actualOutputSize?: number;
 }

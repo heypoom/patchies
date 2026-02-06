@@ -10,6 +10,8 @@ interface NodeState {
   uniformBindings: Set<number>;
   workgroupSize: [number, number, number];
   code: string;
+  outputSize: number | null; // explicit output buffer size in elements (not bytes)
+  dispatchCount: [number, number, number] | null; // explicit dispatch workgroup count
 }
 
 let device: GPUDevice | null = null;
@@ -49,8 +51,11 @@ function getOrCreateState(nodeId: string): NodeState {
       bindingAccessModes: new Map(),
       uniformBindings: new Set(),
       workgroupSize: [64, 1, 1],
-      code: ''
+      code: '',
+      outputSize: null,
+      dispatchCount: null
     };
+
     nodeStates.set(nodeId, state);
   }
   return state;
@@ -177,6 +182,16 @@ function handleSetUniform(nodeId: string, binding: number, data: ArrayBuffer) {
   state.uniformData.set(binding, data);
 }
 
+function handleSetOutputSize(nodeId: string, size: number) {
+  const state = getOrCreateState(nodeId);
+  state.outputSize = size;
+}
+
+function handleSetDispatchCount(nodeId: string, count: [number, number, number]) {
+  const state = getOrCreateState(nodeId);
+  state.dispatchCount = count;
+}
+
 async function handleDispatch(nodeId: string, dispatchCount?: [number, number, number]) {
   if (!device) {
     reply({ type: 'error', nodeId, message: 'WebGPU device not available' });
@@ -199,6 +214,7 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
     // Create GPU buffers from input data
     const entries: GPUBindGroupEntry[] = [];
     const outputBindings: number[] = [];
+    let maxOutputSize = 0; // Track output size in elements
 
     // Create uniform buffers first
     for (const [bindingIdx, uniformData] of state.uniformData) {
@@ -227,12 +243,16 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
       if (inputData) {
         size = inputData.byteLength;
       } else if (isOutput) {
-        // For outputs without input data, infer size from the largest input
-        const maxInputSize = Math.max(
-          ...Array.from(state.inputData.values()).map((d) => d.byteLength),
-          256
-        );
-        size = maxInputSize;
+        // For outputs without input data, use explicit outputSize or infer from largest input
+        if (state.outputSize !== null) {
+          size = state.outputSize * 4; // outputSize is in elements, convert to bytes (assume f32)
+        } else {
+          const maxInputSize = Math.max(
+            ...Array.from(state.inputData.values()).map((d) => d.byteLength),
+            256
+          );
+          size = maxInputSize;
+        }
       } else {
         // Read-only binding with no data - create empty buffer
         size = 256;
@@ -257,6 +277,7 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
 
       if (isOutput) {
         outputBindings.push(bindingIdx);
+        maxOutputSize = Math.max(maxOutputSize, size / 4); // Track size in elements
       }
     }
 
@@ -274,8 +295,8 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
       entries
     });
 
-    // Calculate dispatch count if not provided
-    const actualDispatch = dispatchCount ?? calculateDispatchCount(state);
+    // Calculate dispatch count: use param > stored state > auto-calculate
+    const actualDispatch = dispatchCount ?? state.dispatchCount ?? calculateDispatchCount(state);
 
     // Push error scope to capture validation errors
     device.pushErrorScope('validation');
@@ -323,7 +344,10 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
       transfers.push(copy);
     }
 
-    reply({ type: 'result', nodeId, outputs }, transfers);
+    reply(
+      { type: 'result', nodeId, outputs, actualDispatch, actualOutputSize: maxOutputSize },
+      transfers
+    );
   } catch (e) {
     reply({ type: 'error', nodeId, message: String(e) });
   }
@@ -368,6 +392,12 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
     })
     .with({ type: 'setUniform' }, ({ nodeId, binding, data }) => {
       handleSetUniform(nodeId, binding, data);
+    })
+    .with({ type: 'setOutputSize' }, ({ nodeId, size }) => {
+      handleSetOutputSize(nodeId, size);
+    })
+    .with({ type: 'setDispatchCount' }, ({ nodeId, count }) => {
+      handleSetDispatchCount(nodeId, count);
     })
     .with({ type: 'dispatch' }, async ({ nodeId, dispatchCount }) => {
       await handleDispatch(nodeId, dispatchCount);

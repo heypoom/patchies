@@ -83,7 +83,11 @@ export class WebGPUComputeSystem {
           const key = `dispatch:${msg.nodeId}`;
           const cb = this.pendingCallbacks.get(key);
           if (cb) {
-            cb.resolve({ outputs: msg.outputs } satisfies DispatchResult);
+            cb.resolve({
+              outputs: msg.outputs,
+              actualDispatch: msg.actualDispatch,
+              actualOutputSize: msg.actualOutputSize
+            } satisfies DispatchResult);
             this.pendingCallbacks.delete(key);
           }
           break;
@@ -129,6 +133,14 @@ export class WebGPUComputeSystem {
   setUniform(nodeId: string, binding: number, data: ArrayBuffer): void {
     const copy = data.slice(0);
     this.postMessage({ type: 'setUniform', nodeId, binding, data: copy }, [copy]);
+  }
+
+  setOutputSize(nodeId: string, size: number): void {
+    this.postMessage({ type: 'setOutputSize', nodeId, size });
+  }
+
+  setDispatchCount(nodeId: string, count: [number, number, number]): void {
+    this.postMessage({ type: 'setDispatchCount', nodeId, count });
   }
 
   async dispatch(
