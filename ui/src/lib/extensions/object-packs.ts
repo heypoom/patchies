@@ -119,7 +119,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Scripting',
     description: 'Scripting languages and workers',
     icon: 'Code',
-    objects: ['worker', 'ruby', 'python', 'wgpu']
+    objects: ['worker', 'ruby', 'python', 'wgpu.compute']
   },
   {
     id: 'dsp',

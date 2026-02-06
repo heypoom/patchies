@@ -55,7 +55,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - ruby: Ruby code with ruby.wasm
 - python: Python code with Pyodide
 - expr: Mathematical expression evaluator
-- wgpu: WebGPU compute shaders (WGSL) for parallel data processing
+- wgpu.compute: WebGPU compute shaders (WGSL) for parallel data processing
 - asm: Virtual stack machine assembly
 - uxn: Uxn virtual machine (Uxntal)
 

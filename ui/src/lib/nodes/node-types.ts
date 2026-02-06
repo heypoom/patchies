@@ -148,7 +148,7 @@ export const nodeTypes: Record<string, any> = {
   peek: PeekNode,
   worker: WorkerNode,
   ruby: RubyNode,
-  wgpu: WGPUNode
+  'wgpu.compute': WGPUNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

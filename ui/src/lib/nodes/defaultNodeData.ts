@@ -215,6 +215,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('peek', () => ({ expr: '' }))
     .with('worker', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
     .with('ruby', () => ({ code: 'puts "Hello, Ruby!"', showConsole: true }))
-    .with('wgpu', () => ({ code: DEFAULT_WGSL_CODE, showConsole: true }))
+    .with('wgpu.compute', () => ({ code: DEFAULT_WGSL_CODE, showConsole: true }))
     .otherwise(() => ({}));
 }
