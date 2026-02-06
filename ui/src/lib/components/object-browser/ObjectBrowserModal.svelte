@@ -23,11 +23,14 @@
     BUILT_IN_PACKS,
     togglePack
   } from '../../../stores/extensions.store';
-  import { VISUAL_NODE_DESCRIPTIONS } from './get-categorized-objects';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
+  import {
+    useDisabledObjectSuggestion,
+    type DisabledObjectInfo
+  } from '$lib/composables/useDisabledObjectSuggestion.svelte';
 
   function openPacks() {
     $sidebarView = 'packs';
@@ -53,46 +56,10 @@
     getCategorizedObjects($isAiFeaturesVisible, $enabledObjects, $patchObjectTypes)
   );
 
-  // Build list of disabled objects with their pack info for suggestion feature
-  interface DisabledObjectInfo {
-    name: string;
-    description: string;
-    packId: string;
-    packName: string;
-    packIcon: string;
-  }
-
-  const disabledObjects = $derived.by((): DisabledObjectInfo[] => {
-    const result: DisabledObjectInfo[] = [];
-
-    for (const pack of BUILT_IN_PACKS) {
-      // Skip enabled packs
-      if ($enabledPackIds.includes(pack.id)) continue;
-
-      for (const objName of pack.objects) {
-        // Skip AI objects if AI features are hidden
-        if (!$isAiFeaturesVisible && objName.startsWith('ai.')) continue;
-
-        result.push({
-          name: objName,
-          description: VISUAL_NODE_DESCRIPTIONS[objName] || `${objName} node`,
-          packId: pack.id,
-          packName: pack.name,
-          packIcon: pack.icon
-        });
-      }
-    }
-
-    return result;
-  });
-
-  // Fuse instance for searching disabled objects
-  const disabledObjectsFuse = $derived(
-    new Fuse(disabledObjects, {
-      keys: ['name', 'description'],
-      threshold: 0.3,
-      includeScore: true
-    })
+  // Composable for searching disabled objects
+  const { searchDisabledObject } = useDisabledObjectSuggestion(
+    () => $enabledPackIds,
+    () => $isAiFeaturesVisible
   );
 
   // Get preset categories grouped by library and type
@@ -238,11 +205,7 @@
     if (!searchQuery.trim()) return null;
     if (filteredCategories.length > 0) return null;
 
-    const results = disabledObjectsFuse.search(searchQuery);
-    if (results.length === 0) return null;
-
-    // Return the best match
-    return results[0].item;
+    return searchDisabledObject(searchQuery);
   });
 
   function enablePackAndSelect(packId: string, objectName: string) {

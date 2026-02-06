@@ -33,9 +33,17 @@
     isObjectBrowserOpen,
     patchObjectTypes
   } from '../../../stores/ui.store';
-  import { enabledObjects, enabledPresets } from '../../../stores/extensions.store';
+  import {
+    enabledObjects,
+    enabledPresets,
+    enabledPackIds,
+    togglePack
+  } from '../../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
+  import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
+  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
 
   // Common objects that should appear first in autocomplete
   // Ordered by general usage frequency
@@ -234,6 +242,12 @@
     });
   });
 
+  // Composable for searching disabled objects
+  const { searchDisabledObject } = useDisabledObjectSuggestion(
+    () => $enabledPackIds,
+    () => $isAiFeaturesVisible
+  );
+
   // Get object definition for current name (if it exists)
   const objectMeta = $derived.by(() => {
     if (!expr || expr.trim() === '') return null;
@@ -353,6 +367,33 @@
       priority: result.item.priority
     }));
   });
+
+  // Find matching disabled objects when autocomplete has no results
+  // Requires at least 3 characters to avoid noisy suggestions
+  const suggestedDisabledObject = $derived.by(() => {
+    if (!isEditing) return null;
+    if (!expr.trim()) return null;
+    if (expr.trim().length < 3) return null; // Minimum 3 chars to reduce noise
+    if (expr.includes(' ')) return null; // User is typing parameters
+    if (filteredSuggestions.length > 0) return null;
+
+    return searchDisabledObject(expr);
+  });
+
+  function enablePackFromSuggestion(packId: string, objectName: string) {
+    togglePack(packId);
+    // Set the expression and exit editing mode after pack is enabled
+    setTimeout(() => {
+      expr = objectName;
+      exitEditingMode(true);
+    }, 50);
+  }
+
+  function openPacksBrowser() {
+    $sidebarView = 'packs';
+    $isSidebarOpen = true;
+    exitEditingMode(false);
+  }
 
   function enterEditingMode() {
     // For objects with dynamic outlets, use the stored expr directly
@@ -556,7 +597,8 @@
 
   function handleInput() {
     if (isEditing) {
-      showAutocomplete = filteredSuggestions.length > 0;
+      // Keep autocomplete visible - template handles showing suggestions or disabled object hint
+      showAutocomplete = true;
       selectedSuggestion = 0;
     }
   }
@@ -594,8 +636,8 @@
         if (filteredSuggestions[selectedSuggestion]) {
           expr = filteredSuggestions[selectedSuggestion].name;
           showAutocomplete = false;
-          exitEditingMode(true);
         }
+        exitEditingMode(true);
       })
       .with('Tab', () => {
         event.preventDefault();
@@ -834,56 +876,74 @@
             </div>
 
             <!-- Autocomplete dropdown -->
-            {#if showAutocomplete && filteredSuggestions.length > 0}
+            {#if showAutocomplete && (filteredSuggestions.length > 0 || suggestedDisabledObject)}
               <div class="nopan nodrag nowheel absolute top-full left-0 z-50 flex flex-col">
-                <div class="flex">
-                  <div
-                    class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900 shadow-xl"
-                  >
-                    <!-- Results List -->
-                    <div bind:this={resultsContainer} class="max-h-60 overflow-y-auto rounded-t-md">
-                      {#each filteredSuggestions as suggestion, index}
-                        <button
-                          type="button"
-                          onclick={() => selectSuggestion(suggestion)}
-                          onmouseenter={() => (selectedSuggestion = index)}
-                          class={[
-                            'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
-                            index === selectedSuggestion
-                              ? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
-                              : 'border-transparent text-zinc-300 hover:bg-zinc-800/80',
-                            suggestion.priority === 'low' && 'opacity-50'
-                          ]}
-                        >
-                          <span class="font-mono">{suggestion.name}</span>
+                {#if filteredSuggestions.length > 0}
+                  <div class="flex">
+                    <div
+                      class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900 shadow-xl"
+                    >
+                      <!-- Results List -->
+                      <div
+                        bind:this={resultsContainer}
+                        class="max-h-60 overflow-y-auto rounded-t-md"
+                      >
+                        {#each filteredSuggestions as suggestion, index}
+                          <button
+                            type="button"
+                            onclick={() => selectSuggestion(suggestion)}
+                            onmouseenter={() => (selectedSuggestion = index)}
+                            class={[
+                              'w-full cursor-pointer border-l-2 px-3 py-2 text-left font-mono text-xs transition-colors',
+                              index === selectedSuggestion
+                                ? 'border-zinc-400 bg-zinc-700/40 text-zinc-100'
+                                : 'border-transparent text-zinc-300 hover:bg-zinc-800/80',
+                              suggestion.priority === 'low' && 'opacity-50'
+                            ]}
+                          >
+                            <span class="font-mono">{suggestion.name}</span>
 
-                          {#if suggestion.type === 'preset'}
-                            {@const preset = presetLookup.get(suggestion.name)}
+                            {#if suggestion.type === 'preset'}
+                              {@const preset = presetLookup.get(suggestion.name)}
 
-                            {#if preset}
-                              <span class="text-[10px] text-zinc-500">{preset.preset.type}</span>
+                              {#if preset}
+                                <span class="text-[10px] text-zinc-500">{preset.preset.type}</span>
+                              {/if}
                             {/if}
-                          {/if}
 
-                          {#if suggestion.priority === 'low'}
-                            <span class="text-[10px] text-zinc-600">(disabled)</span>
-                          {/if}
-                        </button>
-                      {/each}
+                            {#if suggestion.priority === 'low'}
+                              <span class="text-[10px] text-zinc-600">(disabled)</span>
+                            {/if}
+                          </button>
+                        {/each}
+                      </div>
+
+                      <!-- Footer with keyboard hints -->
+                      <div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
+                        <span>↑↓ navigate • Enter select • Esc cancel</span>
+                      </div>
                     </div>
 
-                    <!-- Footer with keyboard hints -->
-                    <div class="rounded-b-md border-zinc-700 px-2 py-1 text-[8px] text-zinc-600">
-                      <span>↑↓ navigate • Enter select • Esc cancel</span>
+                    <div class="mt-2 ml-3 min-w-48 font-mono">
+                      <div class="text-xs">
+                        {selectedDescription}
+                      </div>
                     </div>
                   </div>
-
-                  <div class="mt-2 ml-3 min-w-48 font-mono">
-                    <div class="text-xs">
-                      {selectedDescription}
-                    </div>
-                  </div>
-                </div>
+                {:else if suggestedDisabledObject}
+                  <DisabledObjectSuggestionInline
+                    name={suggestedDisabledObject.name}
+                    packName={suggestedDisabledObject.packName}
+                    packIcon={suggestedDisabledObject.packIcon}
+                    onBrowsePacks={openPacksBrowser}
+                    onEnableAndAdd={() => {
+                      enablePackFromSuggestion(
+                        suggestedDisabledObject.packId,
+                        suggestedDisabledObject.name
+                      );
+                    }}
+                  />
+                {/if}
 
                 <!-- Browse objects link -->
                 <button
