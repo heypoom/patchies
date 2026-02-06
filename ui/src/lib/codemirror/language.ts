@@ -51,6 +51,11 @@ export async function loadLanguageExtension(language: string, context?: Patchies
 
       return StreamLanguage.define(ruby);
     })
+    .with('wgsl', async () => {
+      const { wgsl } = await import('@iizukak/codemirror-lang-wgsl');
+
+      return wgsl();
+    })
     .with('markdown', async () => {
       const { markdown } = await import('@codemirror/lang-markdown');
 

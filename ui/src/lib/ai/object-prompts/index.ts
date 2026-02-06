@@ -40,6 +40,7 @@ import { labelPrompt } from './label';
 import { vuePrompt } from './vue';
 import { threePrompt } from './three';
 import { threeDomPrompt } from './three.dom';
+import { wgpuPrompt } from './wgpu';
 import { workerPrompt } from './worker';
 
 /**
@@ -82,6 +83,7 @@ export const objectPrompts: Record<string, string> = {
   label: labelPrompt,
   three: threePrompt,
   'three.dom': threeDomPrompt,
+  wgpu: wgpuPrompt,
   worker: workerPrompt
 };
 
