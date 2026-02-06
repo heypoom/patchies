@@ -3,6 +3,7 @@ import WebGPUWorker from '$workers/webgpu/webgpuComputeWorker?worker';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 
 type PendingCallback = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- to fix
   resolve: (value: any) => void;
   reject: (error: Error) => void;
 };
