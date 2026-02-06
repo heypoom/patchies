@@ -77,7 +77,7 @@
           : selected
             ? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
             : 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
-        nodrag ? 'nodrag cursor-default' : 'cursor-grab'
+        nodrag ? 'nodrag nopan nowheel cursor-default' : 'cursor-grab'
       ]}
       {tabindex}
       width={typeof width === 'number' ? width : undefined}
