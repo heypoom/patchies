@@ -128,12 +128,12 @@
 
           <li class="hidden items-start gap-2 md:flex">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span>Connect nodes: drag between handles</span>
+            <span>Connect objects: drag between handles</span>
           </li>
 
           <li class="flex items-start gap-2 md:hidden">
             <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span>Connect nodes: <Cable class="inline h-4 w-4" /></span>
+            <span>Connect objects: <Cable class="inline h-4 w-4" /></span>
           </li>
 
           <li class="flex items-start gap-2">
