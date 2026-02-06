@@ -45,10 +45,10 @@ export function useDisabledObjectSuggestion(
     return result;
   });
 
-  // Fuse instance for searching disabled objects
+  // Fuse instance for searching disabled objects (by name only)
   const fuse = $derived(
     new Fuse(disabledObjects, {
-      keys: ['name', 'description'],
+      keys: ['name'],
       threshold: 0.3,
       includeScore: true
     })
