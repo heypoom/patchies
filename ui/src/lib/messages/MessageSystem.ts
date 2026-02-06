@@ -168,6 +168,11 @@ export class MessageSystem {
         const outletKey = edge.sourceHandle ?? undefined;
         const inletKey = edge.targetHandle ?? undefined;
 
+        // Skip video and audio outlet edges — messages should only route through message outlets
+        if (outletKey && (outletKey.startsWith('video-') || outletKey.startsWith('audio-'))) {
+          continue;
+        }
+
         const outlet = getHandleId(outletKey);
         const inlet = getHandleId(inletKey);
 
