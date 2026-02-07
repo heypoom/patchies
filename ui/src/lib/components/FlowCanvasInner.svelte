@@ -1132,10 +1132,10 @@
         <div
           class="flex items-center gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100"
         >
-          <span>Help patch for <strong>{$helpModeObject}</strong> — changes won't be saved</span>
+          <span>Help for <strong>{$helpModeObject}</strong>. Changes won't be saved.</span>
 
           <button
-            class="rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
+            class="cursor-pointer rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
             onclick={() => {
               helpModeObject.set(null);
               window.history.pushState({}, '', window.location.pathname);

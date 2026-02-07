@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Search, ExternalLink, List, CircleQuestionMark } from '@lucide/svelte/icons';
+  import { Search, ExternalLink, ArrowLeft, CircleQuestionMark, Play } from '@lucide/svelte/icons';
   import { objectSchemas, type ObjectSchema } from '$lib/objects/schemas';
-  import { TRIGGER_TYPE_SPECS } from '$lib/objects/schemas/trigger';
+  import TriggerTypeSpecifiers from './TriggerTypeSpecifiers.svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { useObjectHelp } from '$lib/composables/useObjectHelp.svelte';
 
@@ -48,19 +48,14 @@
     );
   });
 
-  function openHelpPatch(objectType: string) {
-    window.location.href = `?help=${encodeURIComponent(objectType)}`;
+  function getHelpPatchUrl(objectType: string) {
+    return `?help=${encodeURIComponent(objectType)}`;
   }
 
   function viewObject(objectType: string) {
     manualViewingObject = objectType;
     browseModeOverride = false;
     searchQuery = '';
-  }
-
-  function goBack() {
-    manualViewingObject = null;
-    browseModeOverride = false;
   }
 
   function showBrowseMode() {
@@ -76,10 +71,10 @@
       <div class="flex items-center gap-2">
         <button
           onclick={showBrowseMode}
-          class="rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+          class="cursor-pointer rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
           title="Browse all objects"
         >
-          <List class="h-4 w-4" />
+          <ArrowLeft class="h-4 w-4" />
         </button>
 
         <span class="font-mono text-sm text-zinc-200">{currentSchema.type}</span>
@@ -89,14 +84,27 @@
         </span>
       </div>
 
-      <a
-        href="/docs/{currentSchema.type}"
-        target="_blank"
-        class="rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-        title="Open full documentation (shareable link)"
-      >
-        <ExternalLink class="h-4 w-4" />
-      </a>
+      <div class="flex items-center gap-1">
+        {#if helpContent.hasHelpPatch}
+          <a
+            href={getHelpPatchUrl(currentSchema.type)}
+            target="_blank"
+            class="rounded p-1 text-zinc-500 transition-colors hover:bg-blue-500/20 hover:text-blue-300"
+            title="Open help patch"
+          >
+            <Play class="h-4 w-4" />
+          </a>
+        {/if}
+
+        <a
+          href="/docs/{currentSchema.type}"
+          target="_blank"
+          class="rounded p-1 text-zinc-500 transition-colors hover:bg-green-500/20 hover:text-green-300"
+          title="Open full documentation (shareable link)"
+        >
+          <ExternalLink class="h-4 w-4" />
+        </a>
+      </div>
     </div>
 
     <div class="flex-1 overflow-y-auto p-4">
@@ -140,31 +148,14 @@
 
       <!-- Special: trigger type specifiers -->
       {#if currentSchema.type === 'trigger'}
-        <div class="mb-4">
-          <h3 class="mb-2 text-xs font-medium tracking-wider text-zinc-500 uppercase">
-            Type Specifiers
-          </h3>
-          <p class="mb-2 text-[11px] text-zinc-400">
-            Outlets are created based on type specifiers. Use shorthand or full names:
-          </p>
-          <div class="grid grid-cols-2 gap-1.5">
-            {#each Object.entries(TRIGGER_TYPE_SPECS) as [short, spec]}
-              <div class="rounded border border-zinc-800 bg-zinc-900/50 px-2 py-1.5">
-                <div class="flex items-center gap-1.5">
-                  <span class={['font-mono text-xs', spec.color]}>{short}</span>
-                  <span class="text-[10px] text-zinc-500">({spec.name})</span>
-                </div>
-                <div class="mt-0.5 text-[10px] text-zinc-500">{spec.description}</div>
-              </div>
-            {/each}
-          </div>
-        </div>
+        <TriggerTypeSpecifiers />
       {/if}
 
       <!-- Tags -->
       {#if currentSchema.tags && currentSchema.tags.length > 0}
         <div class="mb-4">
           <h3 class="mb-2 text-xs font-medium tracking-wider text-zinc-500 uppercase">Tags</h3>
+
           <div class="flex flex-wrap gap-1">
             {#each currentSchema.tags as tag}
               <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">{tag}</span>
@@ -186,13 +177,14 @@
 
       <!-- Open help patch button (only if patch exists) -->
       {#if helpContent.hasHelpPatch}
-        <button
-          onclick={() => openHelpPatch(currentSchema.type)}
-          class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition-colors hover:bg-blue-500/20"
+        <a
+          href={getHelpPatchUrl(currentSchema.type)}
+          target="_blank"
+          class="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition-colors hover:bg-blue-500/20"
         >
-          <ExternalLink class="h-3.5 w-3.5" />
+          <Play class="h-3.5 w-3.5" />
           Open Help Patch
-        </button>
+        </a>
       {/if}
     </div>
   {:else}
