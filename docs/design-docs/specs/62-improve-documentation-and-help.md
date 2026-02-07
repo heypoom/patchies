@@ -107,6 +107,11 @@ export const myObjectSchema: ObjectSchema = {
 };
 ```
 
+**Dynamic ports**:
+
+For objects with fully dynamic inlets/outlets (e.g., `p5`, `js`, `worker` that use `setPortCount()`),
+leave `inlets: []` and `outlets: []` empty. Document port behavior in the markdown prose instead.
+
 ### Step 2: Register the Schema
 
 Edit `ui/src/lib/objects/schemas/index.ts`:
