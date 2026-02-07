@@ -131,25 +131,11 @@ See [video documentation](https://patchies.app/docs/objects/video) for details a
 
 ### `webcam`: capture from webcam
 
-- Capture live video from your webcam/camera.
-- Supports video chaining - can be used as a texture source for other objects.
-- Messages
-  - `bang`: start webcam capture
-  - `pause`: toggle pause/resume capture
-  - `{type: 'size', width: 1920, height: 1080}`: set the capture resolution (requests ideal resolution, actual resolution may vary based on camera capabilities)
-- See [performance notes on webcam](#performance-notes-on-webcam-and-video) for info on performance and profiling.
+See [webcam documentation](https://patchies.app/docs/objects/webcam) for details, messages, and performance notes.
 
 ### `iframe`: embed web content
 
-- Embed external web pages and interactive web content in your patches.
-- Resizable iframe with customizable URL.
-- Hit `Enter` and type `iframe <url>` to create an iframe with a pre-filled URL. Example: `iframe example.com`
-- Messages:
-  - `{type: 'load', url: 'https://...'}`: loads the webpage from the given URL.
-  - Any other messages are sent to the iframe via `postMessage`. Use this for communication protocols like [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) that rely on postMessage.
-- The message outlet outputs any `postMessage` events received from the iframe. This allows bidirectional communication between your patch and embedded web content.
-- Double-click to enter a URL when no content is loaded.
-- The iframe is sandboxed for security.
+See [iframe documentation](https://patchies.app/docs/objects/iframe) for details, messages, and use cases.
 
 ### `bg.out`: background output
 

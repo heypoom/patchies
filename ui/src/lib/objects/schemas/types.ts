@@ -6,35 +6,61 @@
  * - Inlet/outlet tooltips
  * - Help sidebar content
  * - Static /docs pages
- * - ts-pattern message validation
+ * - ts-pattern message validation (via TypeBox schemas)
  */
 
+import { type TSchema, type Static } from '@sinclair/typebox';
+import { Value } from '@sinclair/typebox/value';
+import { P } from 'ts-pattern';
+
 /**
- * Defines an inlet message that an object accepts.
+ * A message schema with TypeBox type and description.
  */
-export interface InletSchema {
-  /** Unique identifier for this inlet message (e.g., 'bang', 'set', 'start') */
-  id: string;
+export interface MessageSchema<T extends TSchema = TSchema> {
+  /** TypeBox schema for runtime validation and type inference */
+  schema: T;
 
   /** Human-readable description shown in tooltips and docs */
   description: string;
 
-  /** Optional argument names for messages that take parameters */
-  args?: string[];
-
-  /** Example usage */
+  /** Optional example of the message */
   example?: string;
 }
 
 /**
- * Defines an outlet message that an object emits.
+ * Defines an inlet that an object accepts messages on.
+ */
+export interface InletSchema {
+  /** Unique identifier for this inlet (e.g., 'message', 'data', 'trigger') */
+  id: string;
+
+  /** Human-readable description shown in tooltips */
+  description: string;
+
+  /** Message types this inlet accepts */
+  messages?: MessageSchema[];
+}
+
+/**
+ * Defines an outlet that an object emits messages from.
  */
 export interface OutletSchema {
   /** Unique identifier for this outlet (e.g., '0', '1', 'out') */
   id: string;
 
-  /** Human-readable description shown in tooltips and docs */
+  /** Human-readable description shown in tooltips */
   description: string;
+
+  /** Message types this outlet emits */
+  messages?: MessageSchema[];
+}
+
+/**
+ * Helper to create a ts-pattern matcher from a TypeBox schema.
+ * Usage: match(msg).with(schema(BangMessage), () => ...)
+ */
+export function schema<T extends TSchema>(s: T) {
+  return P.when((val): val is Static<T> => Value.Check(s, val));
 }
 
 /**

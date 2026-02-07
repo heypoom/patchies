@@ -10,6 +10,7 @@
   } from '@lucide/svelte/icons';
   import { objectSchemas, type ObjectSchema } from '$lib/objects/schemas';
   import TriggerTypeSpecifiers from './TriggerTypeSpecifiers.svelte';
+  import PortCard from '$lib/components/docs/PortCard.svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { useObjectHelp } from '$lib/composables/useObjectHelp.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -173,15 +174,7 @@
           <h3 class="mb-2 text-xs font-medium tracking-wider text-zinc-500 uppercase">Inlets</h3>
           <div class="space-y-2">
             {#each currentSchema.inlets as inlet}
-              <div class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-2">
-                <div class="font-mono text-xs text-zinc-200">{inlet.id}</div>
-                <div class="mt-0.5 text-[11px] text-zinc-400">{inlet.description}</div>
-                {#if inlet.args}
-                  <div class="mt-1 text-[10px] text-zinc-500">
-                    Args: <span class="font-mono">{inlet.args.join(', ')}</span>
-                  </div>
-                {/if}
-              </div>
+              <PortCard port={inlet} compact />
             {/each}
           </div>
         </div>
@@ -193,10 +186,7 @@
           <h3 class="mb-2 text-xs font-medium tracking-wider text-zinc-500 uppercase">Outlets</h3>
           <div class="space-y-2">
             {#each currentSchema.outlets as outlet}
-              <div class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-2">
-                <div class="font-mono text-xs text-zinc-200">{outlet.id}</div>
-                <div class="mt-0.5 text-[11px] text-zinc-400">{outlet.description}</div>
-              </div>
+              <PortCard port={outlet} compact />
             {/each}
           </div>
         </div>

@@ -6,7 +6,8 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { webcamMessages } from '$lib/objects/schemas';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { webCodecsWebcamEnabled, showVideoStats } from '../../../stores/video.store';
@@ -73,9 +74,9 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with({ type: 'bang' }, () => startCapture())
-      .with({ type: 'pause' }, () => togglePause())
-      .with({ type: 'size', width: P.number, height: P.number }, ({ width, height }) => {
+      .with(webcamMessages.bang, () => startCapture())
+      .with(webcamMessages.pause, () => togglePause())
+      .with(webcamMessages.size, ({ width, height }) => {
         updateNodeData(nodeId, { width, height });
       })
       .otherwise(() => {});

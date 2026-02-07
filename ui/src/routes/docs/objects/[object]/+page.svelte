@@ -2,6 +2,7 @@
   import { marked } from '$lib/objects/fetch-object-help';
   import { ExternalLink } from '@lucide/svelte/icons';
   import { TRIGGER_TYPE_SPECS } from '$lib/objects/schemas/trigger';
+  import PortCard from '$lib/components/docs/PortCard.svelte';
 
   let { data } = $props();
 
@@ -42,17 +43,9 @@
   {#if data.schema.inlets.length > 0}
     <section class="mb-6">
       <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">Inlets</h2>
-      <div class="space-y-2">
+      <div class="space-y-4">
         {#each data.schema.inlets as inlet}
-          <div class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-            <div class="font-mono text-sm text-zinc-200">{inlet.id}</div>
-            <div class="mt-1 text-sm text-zinc-400">{inlet.description}</div>
-            {#if inlet.args}
-              <div class="mt-2 text-xs text-zinc-500">
-                Args: <span class="font-mono">{inlet.args.join(', ')}</span>
-              </div>
-            {/if}
-          </div>
+          <PortCard port={inlet} />
         {/each}
       </div>
     </section>
@@ -62,12 +55,9 @@
   {#if data.schema.outlets.length > 0 && !data.schema.hasDynamicOutlets}
     <section class="mb-6">
       <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">Outlets</h2>
-      <div class="space-y-2">
+      <div class="space-y-4">
         {#each data.schema.outlets as outlet}
-          <div class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-            <div class="font-mono text-sm text-zinc-200">{outlet.id}</div>
-            <div class="mt-1 text-sm text-zinc-400">{outlet.description}</div>
-          </div>
+          <PortCard port={outlet} />
         {/each}
       </div>
     </section>

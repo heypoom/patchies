@@ -1,4 +1,7 @@
 export * from './types';
+export * from './utils';
+export * from './helpers';
+export * from './common';
 export * from './trigger';
 export * from './p5';
 export * from './hydra';
@@ -9,6 +12,8 @@ export * from './textmode';
 export * from './three';
 export * from './img';
 export * from './video';
+export * from './webcam';
+export * from './iframe';
 
 import type { ObjectSchemaRegistry } from './types';
 import { triggerSchema } from './trigger';
@@ -21,6 +26,8 @@ import { textmodeSchema, textmodeDomSchema } from './textmode';
 import { threeSchema, threeDomSchema } from './three';
 import { imgSchema } from './img';
 import { videoSchema } from './video';
+import { webcamSchema } from './webcam';
+import { iframeSchema } from './iframe';
 
 /**
  * Registry of all object schemas.
@@ -39,7 +46,9 @@ export const objectSchemas: ObjectSchemaRegistry = {
   three: threeSchema,
   'three.dom': threeDomSchema,
   img: imgSchema,
-  video: videoSchema
+  video: videoSchema,
+  webcam: webcamSchema,
+  iframe: iframeSchema
 };
 
 /**
