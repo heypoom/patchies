@@ -1,4 +1,5 @@
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
+import { normalizeMessageType } from '$lib/messages/message-types';
 
 import type { ObjectShorthand } from './v2/interfaces/shorthands';
 
@@ -6,6 +7,31 @@ import type { ObjectShorthand } from './v2/interfaces/shorthands';
  * Default built-in shorthands.
  */
 export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
+  // Trigger object - sends messages through multiple outlets right-to-left
+  {
+    names: ['trigger', 't'],
+    nodeType: 'trigger',
+    description: 'Send messages through multiple outlets in right-to-left order',
+    transform: (expr, name) => {
+      const parts = expr.trim().split(/\s+/);
+      const typeSpecs = parts.slice(1);
+
+      // Filter to only valid type specifiers
+      const validTypes = typeSpecs.filter((t) => normalizeMessageType(t) !== undefined);
+
+      // Default to two bang outlets if no valid types specified
+      const types = validTypes.length > 0 ? validTypes : ['b', 'b'];
+
+      return {
+        nodeType: 'trigger',
+        data: {
+          types,
+          shorthand: name === 't',
+          showHelp: false
+        }
+      };
+    }
+  },
   // Legacy alias: dac~ → out~ (for backwards compatibility)
   {
     names: ['dac~'],

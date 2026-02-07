@@ -72,6 +72,7 @@ import PeekNode from '$lib/components/nodes/PeekNode.svelte';
 import WorkerNode from '$lib/components/nodes/WorkerNode.svelte';
 import RubyNode from '$lib/components/nodes/RubyNode.svelte';
 import WGPUNode from '$lib/components/nodes/WGPUNode.svelte';
+import TriggerNode from '$lib/components/nodes/TriggerNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -148,7 +149,8 @@ export const nodeTypes: Record<string, any> = {
   peek: PeekNode,
   worker: WorkerNode,
   ruby: RubyNode,
-  'wgpu.compute': WGPUNode
+  'wgpu.compute': WGPUNode,
+  trigger: TriggerNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

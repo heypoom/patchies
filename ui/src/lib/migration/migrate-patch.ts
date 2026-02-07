@@ -5,6 +5,7 @@ import { migration003 } from './migrations/003-mic-dac-node-types';
 import { migration004 } from './migrations/004-soundfile-vfs-migration';
 import { migration005 } from './migrations/005-chuck-node-audio-inlet';
 import { migration006 } from './migrations/006-dac-to-out';
+import { migration007 } from './migrations/007-trigger-to-visual-node';
 
 /**
  * All migrations in order. Each migration upgrades from version N-1 to N.
@@ -16,7 +17,8 @@ const migrations: Migration[] = [
   migration003,
   migration004,
   migration005,
-  migration006
+  migration006,
+  migration007
 ];
 
 /**

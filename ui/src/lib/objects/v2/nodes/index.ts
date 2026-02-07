@@ -13,7 +13,6 @@ import { MtofObject } from './MtofObject';
 import { SelectObject } from './SelectObject';
 import { SpigotObject } from './SpigotObject';
 import { ThrottleObject } from './ThrottleObject';
-import { TriggerObject } from './TriggerObject';
 import { UniqbyObject } from './UniqbyObject';
 import { WebMidiLinkObject } from './WebMidiLinkObject';
 
@@ -33,7 +32,6 @@ const TEXT_OBJECTS = [
   SelectObject,
   SpigotObject,
   ThrottleObject,
-  TriggerObject,
   UniqbyObject,
   WebMidiLinkObject
 ] as const satisfies TextObjectClass[];

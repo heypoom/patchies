@@ -1,0 +1,324 @@
+<script lang="ts">
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { match } from 'ts-pattern';
+  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { CircleQuestionMark } from '@lucide/svelte/icons';
+  import TriggerHelpPanel from './TriggerHelpPanel.svelte';
+  import {
+    normalizeMessageType,
+    getTypedOutput,
+    type MessageType
+  } from '$lib/messages/message-types';
+
+  let {
+    id: nodeId,
+    data,
+    selected
+  }: {
+    id: string;
+    data: {
+      types: string[];
+      shorthand: boolean;
+      showHelp?: boolean;
+    };
+    selected: boolean;
+  } = $props();
+
+  const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  let messageContext: MessageContext;
+  let isEditing = $state(false);
+  let editValue = $state('');
+  let inputElement = $state<HTMLInputElement>();
+  let nodeElement = $state<HTMLDivElement>();
+  let contentWidth = $state(0);
+  let contentContainer = $state<HTMLDivElement>();
+
+  // Normalize types to full MessageType names for processing
+  const normalizedTypes = $derived.by((): MessageType[] => {
+    return data.types
+      .map((t) => normalizeMessageType(t))
+      .filter((t): t is MessageType => t !== undefined);
+  });
+
+  // Display name based on shorthand flag
+  const displayName = $derived(data.shorthand ? 't' : 'trigger');
+
+  // Container styling
+  const containerClass = $derived(
+    selected
+      ? 'border-zinc-400 bg-zinc-800/80 shadow-glow-md'
+      : 'border-zinc-700 bg-zinc-900/80 hover:shadow-glow-sm'
+  );
+
+  // Type specifier metadata - single source of truth for tooltips, colors, and help panel
+  // Note: hoverColor must be full class name for Tailwind to detect at build time
+  const TYPE_SPECS = {
+    b: {
+      name: 'bang',
+      desc: 'Always outputs a bang, regardless of input',
+      color: 'text-orange-400',
+      hoverColor: 'hover:text-orange-400'
+    },
+    a: {
+      name: 'any',
+      desc: 'Passes input through unchanged',
+      color: 'text-green-400',
+      hoverColor: 'hover:text-green-400'
+    },
+    s: {
+      name: 'symbol',
+      desc: 'Passes thru symbols or strings',
+      color: 'text-blue-400',
+      hoverColor: 'hover:text-blue-400'
+    },
+    t: {
+      name: 'text',
+      desc: 'Passes through strings',
+      color: 'text-blue-400',
+      hoverColor: 'hover:text-blue-400'
+    },
+    l: {
+      name: 'list',
+      desc: 'Passes through arrays',
+      color: 'text-purple-400',
+      hoverColor: 'hover:text-purple-400'
+    },
+    n: {
+      name: 'number',
+      desc: 'Passes through numbers',
+      color: 'text-yellow-400',
+      hoverColor: 'hover:text-yellow-400'
+    },
+    f: {
+      name: 'float',
+      desc: 'Passes through floating-point numbers',
+      color: 'text-yellow-400',
+      hoverColor: 'hover:text-yellow-400'
+    },
+    i: {
+      name: 'int',
+      desc: 'Passes through integers only',
+      color: 'text-amber-400',
+      hoverColor: 'hover:text-amber-400'
+    },
+    o: {
+      name: 'object',
+      desc: 'Passes through plain objects',
+      color: 'text-cyan-400',
+      hoverColor: 'hover:text-cyan-400'
+    }
+  } as const;
+
+  const getTypeSpec = (type: string) =>
+    TYPE_SPECS[type as keyof typeof TYPE_SPECS] ?? {
+      name: type,
+      desc: 'Unknown type',
+      color: 'text-zinc-400',
+      hoverColor: 'hover:text-zinc-400'
+    };
+
+  // Handle incoming messages - fire outlets right-to-left
+  const handleMessage: MessageCallbackFn = (message, meta) => {
+    if (meta?.inlet !== undefined && meta.inlet !== 0) return;
+
+    // Fire outputs right-to-left (highest outlet index first)
+    for (let i = normalizedTypes.length - 1; i >= 0; i--) {
+      const output = getTypedOutput(normalizedTypes[i], message);
+      if (output !== undefined) {
+        messageContext.send(output, { to: i });
+      }
+    }
+  };
+
+  function enterEditingMode() {
+    editValue = data.types.join(' ');
+    isEditing = true;
+    setTimeout(() => inputElement?.focus(), 10);
+  }
+
+  function exitEditingMode(save: boolean = true) {
+    isEditing = false;
+
+    if (save && editValue.trim()) {
+      const newTypes = editValue
+        .trim()
+        .split(/\s+/)
+        .filter((t) => normalizeMessageType(t) !== undefined);
+
+      if (newTypes.length > 0) {
+        updateNodeData(nodeId, { types: newTypes });
+        setTimeout(() => updateNodeInternals(nodeId), 10);
+      }
+    }
+
+    setTimeout(() => nodeElement?.focus(), 0);
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (!isEditing) return;
+
+    match(event.key)
+      .with('Enter', () => {
+        event.preventDefault();
+        exitEditingMode(true);
+      })
+      .with('Escape', () => {
+        event.preventDefault();
+        exitEditingMode(false);
+      });
+  }
+
+  function handleBlur() {
+    if (!isEditing) return;
+    setTimeout(() => exitEditingMode(true), 100);
+  }
+
+  function handleDoubleClick() {
+    if (!isEditing) {
+      enterEditingMode();
+    }
+  }
+
+  function toggleHelp() {
+    updateNodeData(nodeId, { showHelp: !data.showHelp });
+  }
+
+  function updateContentWidth() {
+    if (!contentContainer) return;
+
+    contentWidth = contentContainer.offsetWidth;
+  }
+
+  onMount(() => {
+    messageContext = new MessageContext(nodeId);
+    messageContext.queue.addCallback(handleMessage);
+    updateContentWidth();
+  });
+
+  onDestroy(() => {
+    messageContext.queue.removeCallback(handleMessage);
+    messageContext.destroy();
+  });
+
+  // Calculate minimum width based on outlet count
+  const minWidthStyle = $derived.by(() => {
+    const maxPorts = Math.max(1, data.types.length);
+    if (maxPorts <= 2) return '';
+    const minWidth = maxPorts * 24;
+    return `min-width: ${minWidth}px`;
+  });
+</script>
+
+<div class="relative flex gap-x-3">
+  <div class="group relative">
+    <div class="flex flex-col gap-2" bind:this={contentContainer}>
+      <!-- Help button above node -->
+      <div class="absolute -top-7 right-0 flex items-center">
+        <button
+          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          onclick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleHelp();
+          }}
+          title="Show help"
+        >
+          <CircleQuestionMark class="h-4 w-4 text-zinc-300" />
+        </button>
+      </div>
+
+      <div class="relative">
+        <!-- Single inlet -->
+        <StandardHandle
+          port="inlet"
+          type="message"
+          title="Input - any message triggers outputs"
+          total={1}
+          index={0}
+          class="top-0"
+          {nodeId}
+        />
+
+        {#if isEditing}
+          <!-- Editing mode -->
+          <div class={['w-fit rounded-lg border', containerClass]} style={minWidthStyle}>
+            <input
+              bind:this={inputElement}
+              bind:value={editValue}
+              onblur={handleBlur}
+              onkeydown={handleKeydown}
+              placeholder="b b"
+              class="nodrag bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
+            />
+          </div>
+        {:else}
+          <!-- Display mode -->
+          <div
+            bind:this={nodeElement}
+            class={['w-fit cursor-pointer rounded-lg border px-3 py-2', containerClass]}
+            style={minWidthStyle}
+            ondblclick={handleDoubleClick}
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
+          >
+            <div class="flex items-center gap-1.5 font-mono text-xs">
+              <span class="text-zinc-200">{displayName}</span>
+
+              {#each data.types as type, index (index)}
+                {@const spec = getTypeSpec(type)}
+
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <span
+                      class={[
+                        'cursor-pointer text-zinc-400 underline-offset-2 hover:underline',
+                        spec.hoverColor
+                      ]}
+                    >
+                      {type}
+                    </span>
+                  </Tooltip.Trigger>
+
+                  <Tooltip.Content>
+                    <p class="font-semibold">{spec.name}</p>
+                    <p class="text-xs text-zinc-600">{spec.desc}</p>
+                    <p class="mt-1 text-xs text-zinc-800">Outlet {index} (fires right-to-left)</p>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Dynamic outlets based on types -->
+        {#each data.types as type, index (index)}
+          {@const spec = getTypeSpec(type)}
+          <StandardHandle
+            port="outlet"
+            type="message"
+            id={index}
+            title={`${spec.name} output`}
+            total={data.types.length}
+            {index}
+            class="bottom-0"
+            {nodeId}
+          />
+        {/each}
+      </div>
+    </div>
+  </div>
+
+  <!-- Help side panel -->
+  {#if data.showHelp}
+    <div class="absolute" style="left: {contentWidth + 6}px">
+      <TriggerHelpPanel onClose={toggleHelp} />
+    </div>
+  {/if}
+</div>
