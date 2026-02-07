@@ -133,7 +133,7 @@
       port="inlet"
       type="message"
       id={index}
-      title={index === 0 ? `$${index + 1} (hot)` : `$${index + 1}`}
+      title={index === 0 ? `$${index + 1} (hot)` : `$${index + 1} (cold)`}
       total={inletCount}
       {index}
       class="top-0"
