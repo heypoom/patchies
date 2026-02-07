@@ -131,4 +131,8 @@ export class OscNode implements AudioNodeV2 {
 
     return `waveform:${this.audioNode.type}`;
   }
+
+  getIconParamIndex(): number {
+    return 1; // type param at index 1
+  }
 }

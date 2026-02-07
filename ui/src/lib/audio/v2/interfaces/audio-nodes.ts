@@ -121,4 +121,14 @@ export interface AudioNodeV2 {
    * @returns An icon identifier string, or undefined if no dynamic icon
    */
   getIcon?(): string | undefined;
+
+  /**
+   * Get the parameter index that the icon represents.
+   *
+   * Optional: when defined, the parameter at this index will be hidden from display
+   * since the icon already conveys that information visually.
+   *
+   * @returns The parameter index, or undefined if the icon doesn't replace a param
+   */
+  getIconParamIndex?(): number | undefined;
 }
