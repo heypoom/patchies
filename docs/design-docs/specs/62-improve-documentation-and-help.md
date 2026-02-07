@@ -120,7 +120,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
 };
 ```
 
-### Step 3: Create Markdown Documentation (Optional but Recommended)
+### Step 3: Create Markdown Documentation
 
 Create `ui/static/content/objects/<object>.md`:
 
@@ -142,7 +142,7 @@ Send a message to the inlet to trigger the behavior...
 - [metro](./metro) - for timing
 ```
 
-### Step 4: Create Help Patch (Optional, Lower Priority)
+### Step 4: Create Help Patch (Manual)
 
 Create `ui/static/help-patches/<object>.json`:
 
@@ -150,6 +150,8 @@ Create `ui/static/help-patches/<object>.json`:
 2. Use "Save" to get the JSON
 3. Copy the JSON to `static/help-patches/<object>.json`
 4. The patch loads via `?help=<object>` in read-only mode
+
+This will be done by the user, so don't do this for them.
 
 ### Step 5: Verify
 
