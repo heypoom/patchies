@@ -451,11 +451,12 @@
         <!-- Dynamic outlets based on types -->
         {#each data.types as type, index (index)}
           {@const spec = getTypeSpec(type)}
+
           <StandardHandle
             port="outlet"
             type="message"
             id={index}
-            title={`${spec.name} output`}
+            title={`${spec.name} output ${index}`}
             total={data.types.length}
             {index}
             class="bottom-0"
