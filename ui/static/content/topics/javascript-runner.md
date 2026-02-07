@@ -71,7 +71,7 @@ Requires a Gemini API key set in settings: `Ctrl/Cmd + K > Gemini`
 
 ## Importing NPM Packages
 
-Use the `npm:` prefix in import statements:
+Use the `npm:` prefix in import statements (uses [esm.sh](https://esm.sh) under the hood). Note: `import * as X` is not yet supported.
 
 ```javascript
 import Matter from "npm:matter-js";
@@ -91,7 +91,15 @@ const { uniq } = await esm("lodash-es");
 
 ## Virtual Filesystem
 
-Use `await getVfsUrl(path)` to load files from the virtual filesystem:
+![Virtual filesystem with canvas demo](/content/images/canvas-vfs.webp)
+
+Use `await getVfsUrl(path)` to load files from the virtual filesystem. This lets you use images, videos, fonts, 3D models and other assets that you've uploaded to your patch.
+
+**Managing Files**: Use the "Open Sidebar" button on the bottom right, or `Ctrl/Cmd + K > Toggle Sidebar` to:
+
+- Create folders and linked folders
+- Upload files or add files by URL
+- Drag files from the file tree to the canvas or into supported nodes
 
 ```javascript
 // In p5:
@@ -107,11 +115,15 @@ const url = await getVfsUrl("user://data.json");
 const data = await fetch(url);
 ```
 
+To get the underlying file Blob, use `await fetch(await getVfsUrl(...))`.
+
 VFS paths use the `user://` prefix for user-uploaded files. Object URLs are automatically cleaned up when the node is destroyed.
 
 ## Shared Libraries
 
-Share code across multiple `js` blocks using the `// @lib <name>` comment:
+![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
+
+Share code across multiple `js` blocks using the `// @lib <name>` comment. This turns the object into a library object, shown by the package icon:
 
 ```javascript
 // In a js node with "// @lib utils" at the top:

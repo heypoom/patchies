@@ -398,7 +398,7 @@ See [p5 documentation](https://patchies.app/docs/objects/p5) for details, exampl
   - full hydra synth is available as `h`
   - outputs are available as `o0`, `o1`, `o2`, and `o3`.
   - `mouse.x` and `mouse.y` provide real-time mouse coordinates (scope depends on `setMouseScope`)
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - Try out these presets to get you started:
   - `pipe.hydra`: passes the image through without any changes
   - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
@@ -473,10 +473,10 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 - You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
 
 - You can call these special methods in your canvas code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
   - `noOutput()` hides the video output port. Useful when creating interface widgets or tools that don't need to be part of the video processing chain.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - This runs on the [rendering pipeline](#rendering-pipeline) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on web workers. This means:
   - Pro: It can chain with other visual objects (`glsl`, `hydra`, etc.) without lag. You can draw animations using the canvas API and output it at 60fps.
@@ -495,7 +495,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - Use `onKeyDown(callback)` and `onKeyUp(callback)` to register keyboard event handlers. Events are trapped and won't leak to xyflow (e.g., pressing Delete won't delete the node).
   - Full DOM and browser API access (e.g. `document` and `window`)
   - Use `setCanvasSize(width, height)` to dynamically resize the canvas resolution (e.g., `setCanvasSize(500, 500)`).
-  - Otherwise, the API remains the same as `canvas`: [Canvas Interaction Control](#canvas-interaction-control) (`noDrag()`, `noPan()`, `noWheel()`, `noInteract()`), `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](#patchies-javascript-runner) functions.
+  - Otherwise, the API remains the same as `canvas`: [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction) (`noDrag()`, `noPan()`, `noWheel()`, `noInteract()`), `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) functions.
 
 - When to use `canvas.dom` instead of `canvas`:
   - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual.
@@ -527,11 +527,11 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `textmode.dom`: Runs on the main thread. Supports [mouse](https://code.textmode.art/docs/events.html#mouse-events), [touch](https://code.textmode.art/docs/events.html#touch-events) and [keyboard](https://code.textmode.art/docs/events.html#keyboard-events) interactivity. Supports [video and images](https://code.textmode.art/docs/loadables.html). Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
 
 - You can call these special methods in your textmode code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - The textmode instance is exposed as `tm` in your code:
 
@@ -617,11 +617,11 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
   - `onKeyUp(callback)` receives keyup events
 
 - You can call these special methods in both `three` and `three.dom`:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
   - `noOutput()` hides the video output port.
   - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
   - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 - As well as these variables:
   - `mouse.x` and `mouse.y` provides mouse position
@@ -692,7 +692,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 ### `js`: A JavaScript code block
 
 - A general-purpose JavaScript code block for scripting and automation.
-- See [Patchies JavaScript Runner](#patchies-javascript-runner) for the full list of available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.) and features (NPM imports, VFS, shared libraries).
+- See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for the full list of available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.) and features (NPM imports, VFS, shared libraries).
 - You can also use these special methods exclusive to `js` object:
   - Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
   - Use `flash()` to briefly flash the node's border, useful for visual feedback when processing messages.
@@ -701,7 +701,7 @@ Supported uniform types are `bool` (boolean), `int` (number), `float` (floating 
 ### `worker`: JavaScript in a Web Worker thread
 
 - The `worker` node runs JavaScript in a dedicated [Web Worker thread](https://developer.mozilla.org/en-US/docs/Web/API/Worker), allowing CPU-intensive computations to run without blocking the main thread.
-- Everything in the [Patchies JavaScript Runner](#patchies-javascript-runner) is supported, except `requestAnimationFrame()` (uses 60fps setInterval as fallback), `// @lib` declaration (libraries must be created in regular `js` nodes)
+- Everything in the [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) is supported, except `requestAnimationFrame()` (uses 60fps setInterval as fallback), `// @lib` declaration (libraries must be created in regular `js` nodes)
 - You can also use these special methods exclusive to `worker` object:
   - Use `setRunOnMount(true)` to run the code automatically when the object is created. By default, the code only runs when you hit the "Play" button.
   - Use `flash()` to briefly flash the node's border, useful for visual feedback when processing messages.
@@ -818,7 +818,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 
 - Transform incoming messages using JavaScript expressions. The result of the expression is sent to the outlet.
 - Use `$1` to `$9` variables like in `expr` to reference inlet values.
-- Unlike `expr` which uses expr-eval, `map` uses full JavaScript, giving you access to all JS features and some of the [runner context](#patchies-javascript-runner) (e.g. `esm()` for NPM imports, `llm()`, etc.).
+- Unlike `expr` which uses expr-eval, `map` uses full JavaScript, giving you access to all JS features and some of the [runner context](https://patchies.app/docs/javascript-runner) (e.g. `esm()` for NPM imports, `llm()`, etc.).
 
   ```js
   // Add 1 to the incoming value (same as expr $1 + 1)
@@ -952,8 +952,8 @@ The trigger ensures the value reaches the cold inlet (`$2`) before the bang trig
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `vue` code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
+  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - See the [Vue.js documentation](https://vuejs.org/guide/introduction.html) to learn how Vue works.
 - The vue component is mounted under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
 
@@ -964,8 +964,8 @@ The trigger ensures the value reaches the cold inlet (`$2`) before the bang trig
 - TailwindCSS is enabled by default for styling.
   - Call `tailwind(false)` to disable TailwindCSS if you prefer to use your own styles.
 - You can call these methods in your `dom` code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control).
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
+  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 - The `root` element runs under an open [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API) to isolate the DOM tree from the rest of the page.
 
 ### `uxn`: Uxn virtual machine
@@ -1197,7 +1197,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 - Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
 - Use `Ctrl/Cmd + Enter` to re-evaluate the code.
 - Don't forget to connect the `out~` object to hear the audio output.
-- Strudel runs in a separate runtime, so it does NOT use the [Patchies JavaScript Runner](#patchies-javascript-runner). Trying to call those runtime functions in Strudel will fail.
+- Strudel runs in a separate runtime, so it does NOT use the [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner). Trying to call those runtime functions in Strudel will fail.
   - `send` technically works but has very limited use case as there are no event emitters in Strudel.
   - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
 - Messages
@@ -1577,7 +1577,7 @@ const process = (inputs, outputs) => {
 };
 ```
 
-> **Note:** `dsp~` does not use [Patchies' JavaScript Runner](#patchies-javascript-runner). It runs in an AudioWorklet (separate thread) which doesn't have access to `window`, DOM APIs, or timing functions like `setTimeout`/`delay`/`setInterval`/`requestAnimationFrame`. This is necessary for real-time audio processing (~345 calls/sec at 44.1kHz).
+> **Note:** `dsp~` does not use [Patchies' JavaScript Runner](https://patchies.app/docs/javascript-runner). It runs in an AudioWorklet (separate thread) which doesn't have access to `window`, DOM APIs, or timing functions like `setTimeout`/`delay`/`setInterval`/`requestAnimationFrame`. This is necessary for real-time audio processing (~345 calls/sec at 44.1kHz).
 
 In addition to the value inlets, we also have messaging capabilities:
 
@@ -1636,7 +1636,7 @@ The Tone.js context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-In addition to the audio processing capabilities, `tone~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+In addition to the audio processing capabilities, `tone~` also supports messaging. See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 Try out these presets:
 
@@ -1682,7 +1682,7 @@ The `sonic~` context provides:
 
 Available events: `'ready'`, `'loading:start'`, `'loading:complete'`, `'error'`, `'message'`
 
-In addition to the synthesis capabilities, `sonic~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+In addition to the synthesis capabilities, `sonic~` also supports messaging. See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 Load and play a synth:
 
@@ -1744,7 +1744,7 @@ The `elem~` context gives you these variables:
 - `inputNode`: GainNode from Web Audio API for receiving audio input from other nodes
 - `outputNode`: GainNode from Web Audio API for sending audio output to connected nodes
 
-In addition to the audio processing capabilities, `elem~` also supports messaging. See [Patchies JavaScript Runner](#patchies-javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
+In addition to the audio processing capabilities, `elem~` also supports messaging. See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for available functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
 Here's how to create a simple phasor:
 
@@ -2104,82 +2104,6 @@ With that in mind, use "CMD + K > Set Gemini API Key" to set your Gemini API key
 - Perfect for documentation, instructions, or dynamic text display.
 - Supports full Markdown syntax including links and formatting.
 
-## Patchies JavaScript Runner
-
-Most of the JavaScript-based nodes in Patchies are using the unified JavaScript Runner (JSRunner), which is responsible for executing JavaScript code in a sandboxed environment and providing Patchies-specific features to the code.
-
-- The full features of the JavaScript Runner are available in the following objects: `js`, `worker`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
-
-- Some nodes uses _single-expression evaluation_ mode, where the expression is evaluated once for each incoming message. These nodes are `filter`, `map`, `tap` and `scan`.
-  - These nodes _cannot_ use these functions: `send`, `onMessage`, `recv`, `fft`, `delay`, `onCleanup`, `setInterval`, `setTimeout` and `requestAnimationFrame`, as they are run once on each message and does not allow messaging callbacks.
-
-### Common Runtime Functions
-
-These functions are available in all JSRunner-enabled nodes:
-
-- **Console**: Use `console.log()` to log messages to the virtual console (not the browser console).
-
-- **Timers with auto-cleanup**:
-  - `setInterval(callback, ms)` runs a callback every `ms` milliseconds. Automatically cleaned up on unmount or code re-execution.
-  - `setTimeout(callback, ms)` runs a callback after `ms` milliseconds. Automatically cleaned up on unmount or code re-execution.
-  - `delay(ms)` returns a Promise that resolves after `ms` milliseconds. If you stop the `js` object while awaiting `delay(ms)`, the promise rejects and code execution stops.
-  - `requestAnimationFrame(callback)` schedules a callback for the next animation frame. Automatically cleaned up on unmount or code re-execution.
-  - Do not use `window.setInterval`, `window.setTimeout`, or `window.requestAnimationFrame` as they will not clean up automatically.
-
-- **Custom cleanup**: Use `onCleanup(callback)` to register a cleanup callback that runs when the node is unmounted or code is re-executed. Useful for disconnecting resources, unsubscribing from events, or any custom cleanup logic.
-
-- **Message passing**: Use `send(message)` and `recv(callback)` to communicate with other nodes. See [Message Passing](#message-passing) for details.
-
-- **Port configuration**: Use `setPortCount(inletCount, outletCount)` to set the number of message inlets and outlets. Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
-
-- **Node title**: Use `setTitle(title)` to set the display title of the node.
-
-- **Async helpers**: Top-level `await` is supported. Use `await delay(ms)` to pause execution for `ms` milliseconds.
-
-- **Audio analysis**: Use `fft()` to get audio frequency analysis data from a connected `fft~` node's message inlet. See [Audio Analysis](#audio-analysis) for details.
-
-- **LLM integration**: Use `await llm(prompt, options?)` to call Google's Gemini API from your code.
-  - Requires a Gemini API key set in settings: `Ctrl/Cmd + K > Gemini`
-  - Example: `const response = await llm("Describe this image")`
-  - Options: `{ imageNodeId?: string, abortSignal?: AbortSignal }` - pass `imageNodeId` to include a visual node's output as image context.
-
-### Canvas Interaction Control
-
-Visual objects (`p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `vue`, `dom`) provide these methods to control how canvas interactions behave inside the node:
-
-- **`noDrag()`** - Disables dragging the object when clicking/touching inside it. Use this when you need mouse/touch interactivity (e.g., sliders, buttons, drawing).
-- **`noPan()`** - Disables panning the canvas when dragging inside the object. Useful for objects where you want internal drag behavior without moving the canvas view.
-- **`noWheel()`** - Disables wheel zoom when scrolling inside the object. Useful for scrollable content or objects that respond to wheel events.
-- **`noInteract()`** - Convenience method that calls all three: `noDrag()`, `noPan()`, and `noWheel()`. Use this for fully mouse-interactive objects.
-
-Call these in your setup code (e.g., in P5's `setup()` function, or at the top level for other objects). You can still drag the object by its title bar even when `noDrag()` is enabled.
-
-### Importing JavaScript packages from NPM
-
-- You can import any JavaScript package by using the `npm:` prefix in the import statement.
-  - This uses [esm.sh](https://esm.sh) under the hood to load the package from NPM.
-  - This gets translated into top-level dynamic imports behind the scenes.
-  - `import * as X` is not yet supported.
-
-  ```js
-  import Matter from "npm:matter-js";
-  import { uniq } from "npm:lodash-es";
-
-  console.log(Matter); // Matter.js library
-  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
-  ```
-
-- Alternatively, write the dynamic import yourself:
-
-  ```js
-  const { uniq } = await import("https://esm.sh/lodash-es");
-  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
-
-  // or use a shorthand `await esm()` function that does the same thing
-  const { uniq } = await esm("lodash-es");
-  console.log(uniq([1, 1, 2, 2, 3, 3])); // [1, 2, 3]
-  ```
-
 ### Loading files from the virtual filesystem
 
 <img src="./docs/images/canvas-vfs.webp" alt="Patchies.app virtual filesystem with canvas demo" width="700">
@@ -2237,7 +2161,7 @@ The `fft~` audio object gives you an array of frequency bins that you can use to
 
 First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
 
-Supported objects are `glsl`, `swgl`, as well as any objects using the unified [JavaScript Runner](#patchies-javascript-runner), such as `canvas.dom`, `hydra` and many more.
+Supported objects are `glsl`, `swgl`, as well as any objects using the unified [JavaScript Runner](https://patchies.app/docs/javascript-runner), such as `canvas.dom`, `hydra` and many more.
 
 ### Usage with GLSL
 
@@ -2247,7 +2171,7 @@ Supported objects are `glsl`, `swgl`, as well as any objects using the unified [
 
 ### Usage with JavaScript-based objects
 
-You can call the `fft()` function to get the audio analysis data in any objects using the unified [JavaScript Runner](#patchies-javascript-runner).
+You can call the `fft()` function to get the audio analysis data in any objects using the unified [JavaScript Runner](https://patchies.app/docs/javascript-runner).
 
 - **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
   - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-fft-code) for why this is needed and how to convert existing code.

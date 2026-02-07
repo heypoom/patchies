@@ -24,13 +24,13 @@
   <div class="mx-auto max-w-2xl px-4 py-8">
     <!-- Header -->
     <header class="mb-8">
-      <a
-        href="/"
-        class="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+      <button
+        onclick={() => history.back()}
+        class="mb-4 inline-flex cursor-pointer items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
       >
         <ArrowLeft class="h-4 w-4" />
-        Back to Patchies
-      </a>
+        Back
+      </button>
     </header>
 
     <!-- Prose documentation from markdown -->
