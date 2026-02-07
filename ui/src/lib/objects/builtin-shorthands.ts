@@ -10,7 +10,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['dac~'],
     nodeType: 'out~',
-    description: 'Audio output (alias for out~)',
+    description: 'Audio output to speakers (alias for out~)',
     transform: () => ({
       nodeType: 'out~',
       data: { deviceId: '' }
