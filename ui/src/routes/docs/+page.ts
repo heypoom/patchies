@@ -121,8 +121,8 @@ export const load: PageLoad = async ({ fetch }) => {
     Promise.all(objectPromises)
   ]);
 
-  index.topics = topics.filter((t): t is DocItem => t !== null);
-  index.objects = objects.filter((o): o is DocItem => o !== null);
+  index.topics = topics.filter((t) => t !== null);
+  index.objects = objects.filter((o) => o !== null);
 
   return { index };
 };
