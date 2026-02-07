@@ -9,6 +9,14 @@
   let manualViewingObject = $state<string | null>(null);
   let browseModeOverride = $state(false); // When true, show list even if node is selected
 
+  // Reset browse mode when a new node is selected on canvas
+  $effect(() => {
+    if ($selectedNodeInfo) {
+      browseModeOverride = false;
+      manualViewingObject = null;
+    }
+  });
+
   // Auto-show help for selected node, or use manual selection
   const viewingObject = $derived.by((): string | null => {
     if (browseModeOverride) return null;
