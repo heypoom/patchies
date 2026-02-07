@@ -20,7 +20,7 @@
     { key: 'a', label: 'a', desc: 'any (pass through)' },
     { key: 's', label: 's', desc: 'symbol/string' },
     { key: 't', label: 't', desc: 'text (string only)' },
-    { key: 'n', label: 'n/f', desc: 'number/float' },
+    { key: 'n', label: 'n/f', desc: 'number' },
     { key: 'i', label: 'i', desc: 'integer' },
     { key: 'l', label: 'l', desc: 'list/array' },
     { key: 'o', label: 'o', desc: 'object' }
@@ -46,8 +46,8 @@
   <div class="mb-3">
     <h4 class="mb-1 font-medium text-zinc-200">Why right-to-left?</h4>
     <p class="text-zinc-400">
-      We need to set up values <em>before</em> triggering an action. Right-to-left firing ensures downstream
-      nodes receive data in the correct order.
+      We need to set up values <em>before</em> triggering an action, for objects with hot-cold
+      inlets like <em>expr</em> and <em>map</em>.
     </p>
   </div>
 
