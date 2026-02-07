@@ -26,7 +26,7 @@
   <div class="mx-auto flex max-w-5xl gap-8 px-4 py-8">
     <!-- Sidebar -->
     <aside class="hidden w-56 shrink-0 md:block">
-      <div class="sticky top-8">
+      <div class="sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto">
         <a
           href="/"
           class="mb-6 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
