@@ -137,9 +137,14 @@
   });
 
   // Combined categories: objects first, then presets
-  const allCategoriesWithPresets = $derived(
-    showPresets ? [...allCategories, ...presetCategories] : allCategories
-  );
+  // Also, hide presets in help mode.
+  const allCategoriesWithPresets = $derived.by(() => {
+    if (showPresets && browserMode !== 'help') {
+      return [...allCategories, ...presetCategories];
+    }
+
+    return allCategories;
+  });
 
   // Create Fuse instance for fuzzy search - update when categories change
   const fuse = $derived(
@@ -365,14 +370,17 @@
               <ChevronRight class="-ml-0.5 h-3.5 w-3.5" />
             </button>
 
-            <!-- Presets toggle -->
+            <!-- Presets toggle (disabled in help mode) -->
             <button
               onclick={() => (showPresets = !showPresets)}
+              disabled={browserMode === 'help'}
               class={[
-                'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors sm:flex-none',
-                showPresets
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+                'flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors sm:flex-none',
+                browserMode === 'help'
+                  ? 'cursor-not-allowed border-zinc-800 bg-zinc-900/50 text-zinc-600'
+                  : showPresets
+                    ? 'cursor-pointer border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    : 'cursor-pointer border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
               ]}
             >
               <Bookmark class="h-4 w-4" />
