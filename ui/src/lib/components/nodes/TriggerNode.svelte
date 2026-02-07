@@ -115,13 +115,26 @@
     }
   } as const;
 
-  const getTypeSpec = (type: string) =>
-    TYPE_SPECS[type as keyof typeof TYPE_SPECS] ?? {
+  const getTypeSpec = (type: string) => {
+    // First try direct key lookup (short form like 'b')
+    if (type in TYPE_SPECS) {
+      return TYPE_SPECS[type as keyof typeof TYPE_SPECS];
+    }
+
+    // Then try matching by name (full form like 'bang')
+    const lowerType = type.toLowerCase();
+    const entry = Object.entries(TYPE_SPECS).find(([, spec]) => spec.name === lowerType);
+    if (entry) {
+      return entry[1];
+    }
+
+    return {
       name: type,
       desc: 'Unknown type',
       color: 'text-zinc-400',
       hoverColor: 'hover:text-zinc-400'
     };
+  };
 
   // Handle incoming messages - fire outlets right-to-left
   const handleMessage: MessageCallbackFn = (message, meta) => {
