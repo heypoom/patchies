@@ -1258,7 +1258,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 
 <img src="./docs/images/chuck-fft.webp" alt="Patchies.app chuck fft demo" width="700">
 
-> ✨ Try this patch out [in the app](https://patchies.app/?id=5g8j4qkgu22e27c)! You can use ChucK for audio analysis and applying filters as it receives audio inputs and can emit events and global variables.
+> You can use ChucK for audio analysis and applying filters as it receives audio inputs and can emit events and global variables.
 
 - Messages: global variables and events
   - The [above demo patch](https://patchies.app/?id=2nyuznzjgbp2j0a) shows how global variables lets you control ChucK programs with Patchies messages.
