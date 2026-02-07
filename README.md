@@ -21,7 +21,7 @@ Patchies lets you use the audio, visual and computational tools and libraries th
 - Connect to the outside world with [MIDI](#midi--network-objects), [MQTT](#mqtt-mqtt-client), [SSE](#sse-server-sent-events), [WebRTC](#netsend-and-netrecv-send-and-receive-messages-over-network), [Iframe](#iframe-embed-web-content) and [VDO.Ninja](#vdoninja-send-and-receive-audio-video-and-messages-over-webrtc).
 - Manage [data and control flow](#programming--control-objects) with [js](#js-a-javascript-code-block), [expr](#expr-expression-evaluator), [filter](#filter-conditional-message-passing), [map](#map-transform-messages-with-javascript), [iframe](#iframe-embed-web-content), [spigot](#control-objects), [trigger](#trigger-sends-messages-in-right-to-left-order), select, metro and more.
 - Use [built-in widgets](#interface--control-objects) or make your own with [Vue.js](#vue-create-user-interfaces-with-vue), [DOM API](#dom-create-user-interfaces-with-vanilla-js), [Tailwind](https://tailwindcss.com) or any library you like.
-- Use any [third party JavaScript library](#importing-javascript-packages-from-npm) via [esm.sh](https://esm.sh).
+- Use any [third party JavaScript library](https://patchies.app/docs/javascript-runner) via [esm.sh](https://esm.sh).
 
 ## ...by patching them together ✨
 
