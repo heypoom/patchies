@@ -500,46 +500,61 @@
                       {@const isLowPriority = object.priority === 'low'}
                       {@const objectHasHelp = hasHelp(object.name)}
 
+                      {@const noHelpAvailable = browserMode === 'help' && !objectHasHelp}
                       <div class="group relative">
                         <button
                           onclick={() => {
+                            if (noHelpAvailable) return;
                             if (browserMode === 'help') {
                               openHelp(object.name);
                             } else {
                               handleSelectObject(object.name);
                             }
                           }}
+                          disabled={noHelpAvailable}
                           class={[
-                            'flex w-full cursor-pointer flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
-                            browserMode === 'help'
-                              ? 'border-blue-500/30 bg-blue-500/5 hover:border-blue-500/50 hover:bg-blue-500/10'
-                              : isPreset
-                                ? 'border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
-                                : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
-                            isLowPriority && 'opacity-50'
+                            'flex w-full flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
+                            noHelpAvailable
+                              ? 'cursor-not-allowed border-zinc-800/50 bg-zinc-900/30 opacity-40'
+                              : browserMode === 'help'
+                                ? 'cursor-pointer border-blue-500/30 bg-blue-500/5 hover:border-blue-500/50 hover:bg-blue-500/10'
+                                : isPreset
+                                  ? 'cursor-pointer border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
+                                  : 'cursor-pointer border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
+                            isLowPriority && !noHelpAvailable && 'opacity-50'
                           ]}
                         >
                           <div class="flex items-center gap-1.5">
                             {#if browserMode === 'help'}
-                              <CircleQuestionMark class="h-3.5 w-3.5 text-blue-500" />
+                              <CircleQuestionMark
+                                class={[
+                                  'h-3.5 w-3.5',
+                                  noHelpAvailable ? 'text-zinc-600' : 'text-blue-500'
+                                ]}
+                              />
                             {/if}
                             <span
                               class={[
                                 'font-mono text-sm',
-                                browserMode === 'help'
-                                  ? 'text-blue-200'
-                                  : isPreset
-                                    ? 'text-zinc-300'
-                                    : 'text-zinc-200'
+                                noHelpAvailable
+                                  ? 'text-zinc-600'
+                                  : browserMode === 'help'
+                                    ? 'text-blue-200'
+                                    : isPreset
+                                      ? 'text-zinc-300'
+                                      : 'text-zinc-200'
                               ]}>{object.name}</span
                             >
                           </div>
 
-                          <span class="line-clamp-2 text-xs text-zinc-500"
-                            >{object.description}</span
+                          <span
+                            class={[
+                              'line-clamp-2 text-xs',
+                              noHelpAvailable ? 'text-zinc-700' : 'text-zinc-500'
+                            ]}>{object.description}</span
                           >
 
-                          {#if isLowPriority}
+                          {#if isLowPriority && !noHelpAvailable}
                             <span class="font-mono text-[10px] text-zinc-600">disabled</span>
                           {/if}
                         </button>
