@@ -93,24 +93,7 @@ See [p5 documentation](https://patchies.app/docs/objects/p5) for details, exampl
 
 ### `hydra`: creates a Hydra video synthesizer
 
-- [Hydra](https://hydra.ojack.xyz) is a live coding video synthesizer created by [Olivia Jack](https://ojack.xyz). You can use it to create all kinds of video effects.
-- See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
-- Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
-  - Use the "shuffle" button on the editor to get code samples you can use. You can copy it into Patchies. Check the license terms first.
-- You can call these special methods in your Hydra code:
-  - `setVideoCount(ins = 1, outs = 1)` creates the specified number of Hydra source ports.
-  - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two visual inlets.
-  - `setMouseScope('global' | 'local')` sets mouse tracking scope. `'local'` (default) tracks mouse within the canvas preview, `'global'` tracks mouse across the entire screen using screen coordinates.
-  - full hydra synth is available as `h`
-  - outputs are available as `o0`, `o1`, `o2`, and `o3`.
-  - `mouse.x` and `mouse.y` provide real-time mouse coordinates (scope depends on `setMouseScope`)
-  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
-- Try out these presets to get you started:
-  - `pipe.hydra`: passes the image through without any changes
-  - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`: perform image operations (difference, addition, subtraction, blending, masking) on two video inputs
-  - `filet-mignon.hydra`: example Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl). Licensed under CC BY-NC-SA 4.0.
-- Try out [this demo](https://patchies.app/?id=qbnonbgwyvzov2c) which uses P5.js with Hydra to create a random walk shader
-- Check out [Olivia Jack's website](https://ojack.xyz/) to learn more about her work!
+See [hydra documentation](https://patchies.app/docs/objects/hydra) for details, examples, and presets.
 
 ### `glsl`: creates a GLSL fragment shader
 
