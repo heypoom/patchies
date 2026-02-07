@@ -38,6 +38,9 @@
   let nodeElement = $state<HTMLDivElement>();
   let contentWidth = $state(0);
   let contentContainer = $state<HTMLDivElement>();
+  let showAutocomplete = $state(false);
+  let selectedSuggestion = $state(0);
+  let resultsContainer = $state<HTMLDivElement>();
 
   // Normalize types to full MessageType names for processing
   const normalizedTypes = $derived.by((): MessageType[] => {
@@ -136,6 +139,44 @@
     };
   };
 
+  // Generate autocomplete items: all shorthands first, then all full names
+  const allTypeItems = [
+    // Shorthands first
+    ...Object.entries(TYPE_SPECS).map(([short, spec]) => ({
+      value: short,
+      label: short,
+      desc: spec.desc,
+      color: spec.color
+    })),
+
+    // Full names second
+    ...Object.entries(TYPE_SPECS).map(([, spec]) => ({
+      value: spec.name,
+      label: spec.name,
+      desc: spec.desc,
+      color: spec.color
+    }))
+  ];
+
+  // Get current word being typed (last word after space)
+  const currentWord = $derived.by(() => {
+    const parts = editValue.split(/\s+/);
+    return parts[parts.length - 1] || '';
+  });
+
+  // Filter suggestions based on current word
+  const filteredSuggestions = $derived.by(() => {
+    if (!isEditing || !showAutocomplete) return [];
+
+    const word = currentWord.toLowerCase();
+    if (!word) return allTypeItems;
+
+    return allTypeItems.filter(
+      (item) =>
+        item.value.toLowerCase().startsWith(word) || item.label.toLowerCase().startsWith(word)
+    );
+  });
+
   // Handle incoming messages - fire outlets right-to-left
   const handleMessage: MessageCallbackFn = (message, meta) => {
     if (meta?.inlet !== undefined && meta.inlet !== 0) return;
@@ -152,11 +193,14 @@
   function enterEditingMode() {
     editValue = data.types.join(' ');
     isEditing = true;
+    showAutocomplete = true;
+    selectedSuggestion = 0;
     setTimeout(() => inputElement?.focus(), 10);
   }
 
   function exitEditingMode(save: boolean = true) {
     isEditing = false;
+    showAutocomplete = false;
 
     if (save && editValue.trim()) {
       const newTypes = editValue
@@ -173,18 +217,70 @@
     setTimeout(() => nodeElement?.focus(), 0);
   }
 
+  function selectSuggestion(suggestion: (typeof allTypeItems)[0]) {
+    // Replace the current word with the selected suggestion
+    const parts = editValue.split(/\s+/);
+    parts[parts.length - 1] = suggestion.value;
+    editValue = parts.join(' ');
+    showAutocomplete = true;
+    selectedSuggestion = 0;
+    inputElement?.focus();
+  }
+
+  function scrollToSelectedItem() {
+    if (!resultsContainer) return;
+    const selectedElement = resultsContainer.children[selectedSuggestion] as HTMLElement;
+    if (!selectedElement) return;
+
+    const containerRect = resultsContainer.getBoundingClientRect();
+    const elementRect = selectedElement.getBoundingClientRect();
+
+    if (elementRect.bottom > containerRect.bottom) {
+      selectedElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    } else if (elementRect.top < containerRect.top) {
+      selectedElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     if (!isEditing) return;
 
     match(event.key)
+      .with('ArrowDown', () => {
+        if (!showAutocomplete || filteredSuggestions.length === 0) return;
+        event.preventDefault();
+        selectedSuggestion = Math.min(selectedSuggestion + 1, filteredSuggestions.length - 1);
+        scrollToSelectedItem();
+      })
+      .with('ArrowUp', () => {
+        if (!showAutocomplete || filteredSuggestions.length === 0) return;
+        event.preventDefault();
+        selectedSuggestion = Math.max(selectedSuggestion - 1, 0);
+        scrollToSelectedItem();
+      })
+      .with('Tab', () => {
+        if (showAutocomplete && filteredSuggestions[selectedSuggestion]) {
+          event.preventDefault();
+          selectSuggestion(filteredSuggestions[selectedSuggestion]);
+        }
+      })
       .with('Enter', () => {
         event.preventDefault();
+        if (showAutocomplete && filteredSuggestions[selectedSuggestion]) {
+          selectSuggestion(filteredSuggestions[selectedSuggestion]);
+          showAutocomplete = false;
+        }
         exitEditingMode(true);
       })
       .with('Escape', () => {
         event.preventDefault();
         exitEditingMode(false);
       });
+  }
+
+  function handleInput() {
+    showAutocomplete = true;
+    selectedSuggestion = 0;
   }
 
   function handleBlur() {
@@ -277,10 +373,40 @@
               bind:value={editValue}
               onblur={handleBlur}
               onkeydown={handleKeydown}
+              oninput={handleInput}
               placeholder="b b"
               class="nodrag bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
             />
           </div>
+
+          <!-- Autocomplete dropdown -->
+          {#if showAutocomplete && filteredSuggestions.length > 0}
+            <div
+              bind:this={resultsContainer}
+              class="nopan nodrag nowheel absolute top-full left-0 z-50 mt-1 max-h-48 w-fit min-w-40 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg"
+            >
+              {#each filteredSuggestions as suggestion, index}
+                <button
+                  type="button"
+                  class={[
+                    'flex w-full cursor-pointer flex-col px-3 py-1.5 text-left',
+                    index === selectedSuggestion ? 'bg-zinc-800' : 'hover:bg-zinc-800'
+                  ]}
+                  onmousedown={(e) => {
+                    e.preventDefault();
+                    selectSuggestion(suggestion);
+                  }}
+                  onmouseenter={() => (selectedSuggestion = index)}
+                >
+                  <span class={['font-mono text-[10px]', suggestion.color]}>
+                    {suggestion.label}
+                  </span>
+
+                  <span class="text-[8px] text-zinc-500">{suggestion.desc}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
         {:else}
           <!-- Display mode -->
           <div
