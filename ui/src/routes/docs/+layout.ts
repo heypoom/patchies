@@ -1,5 +1,6 @@
 import type { LayoutLoad } from './$types';
 import { objectSchemas } from '$lib/objects/schemas';
+import { topicOrder } from './docs-nav';
 
 interface DocItem {
   slug: string;
@@ -12,28 +13,23 @@ interface DocsIndex {
   objects: DocItem[];
 }
 
-// Topic categories for organization
-const TOPIC_CATEGORIES: Record<string, string[]> = {
-  'Getting Started': ['getting-started', 'creating-objects', 'keyboard-shortcuts'],
-  Connections: ['connecting-objects', 'connection-rules', 'message-passing'],
-  'Audio & Video': ['audio-chaining', 'video-chaining'],
-  Scripting: ['javascript-runner', 'canvas-interaction'],
-  'Sidebar Features': ['manage-saves', 'manage-presets', 'manage-files', 'manage-packs'],
-  Other: ['sharing-links', 'ai-features', 'offline-usage', 'supporting-open-source']
-};
-
-// Invert the mapping for lookup
+// Invert the mapping for lookup (topic slug -> category)
 function buildTopicCategoryMap(): Record<string, string> {
   const map: Record<string, string> = {};
-  for (const [category, topics] of Object.entries(TOPIC_CATEGORIES)) {
+
+  for (const [category, topics] of Object.entries(topicOrder)) {
     for (const topic of topics) {
       map[topic] = category;
     }
   }
+
   return map;
 }
 
 const topicCategoryMap = buildTopicCategoryMap();
+
+// Derive topic slugs from topicOrder
+const topicSlugs = Object.values(topicOrder).flat();
 
 /**
  * Extract title from markdown content (first # heading)
@@ -55,28 +51,6 @@ export const load: LayoutLoad = async ({ fetch }) => {
     topics: [],
     objects: []
   };
-
-  // Known topic slugs (we'll fetch each to get the title)
-  const topicSlugs = [
-    'getting-started',
-    'creating-objects',
-    'keyboard-shortcuts',
-    'connecting-objects',
-    'connection-rules',
-    'message-passing',
-    'audio-chaining',
-    'video-chaining',
-    'javascript-runner',
-    'canvas-interaction',
-    'ai-features',
-    'manage-saves',
-    'manage-presets',
-    'manage-files',
-    'manage-packs',
-    'sharing-links',
-    'offline-usage',
-    'supporting-open-source'
-  ];
 
   // Get all object slugs from the schema registry
   const objectSlugs = Object.keys(objectSchemas);

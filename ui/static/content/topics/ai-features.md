@@ -1,4 +1,4 @@
-# AI Features
+# AI Create & Edit
 
 > **Caution**: These features are experimental and have a _very high_ chance of corrupting and destroying your code and patches without any way to restore it. Try it on an empty patch or backup your objects.
 

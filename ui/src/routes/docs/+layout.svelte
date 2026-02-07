@@ -1,20 +1,40 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { ArrowLeft, BookOpen, Box } from '@lucide/svelte/icons';
-  import { categoryOrder } from './docs-nav';
+  import { categoryOrder, topicOrder } from './docs-nav';
 
   let { data, children } = $props();
 
-  // Group topics by category
+  // Group topics by category and sort by topicOrder
   const topicsByCategory = $derived(() => {
     const groups = new Map<string, typeof data.index.topics>();
+
     for (const topic of data.index.topics) {
       const category = topic.category ?? 'Other';
+
       if (!groups.has(category)) {
         groups.set(category, []);
       }
+
       groups.get(category)!.push(topic);
     }
+
+    // Sort topics within each category by topicOrder
+    for (const [category, topics] of groups) {
+      const order = topicOrder[category] ?? [];
+
+      topics.sort((a, b) => {
+        const aIndex = order.indexOf(a.slug);
+        const bIndex = order.indexOf(b.slug);
+
+        // Items not in order go to end
+        const aPos = aIndex === -1 ? Infinity : aIndex;
+        const bPos = bIndex === -1 ? Infinity : bIndex;
+
+        return aPos - bPos;
+      });
+    }
+
     return groups;
   });
 
