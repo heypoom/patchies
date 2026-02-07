@@ -119,6 +119,42 @@
     color: #93c5fd;
   }
 
+  /* Tables */
+  .prose-markdown table,
+  .prose-markdown-sm table {
+    width: 100%;
+    font-size: var(--prose-base);
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  .prose-markdown th,
+  .prose-markdown-sm th {
+    text-align: left;
+    font-weight: 600;
+    color: #e4e4e7;
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid #3f3f46;
+    background: #27272a;
+  }
+
+  .prose-markdown td,
+  .prose-markdown-sm td {
+    padding: 0.5rem 0.75rem;
+    color: #a1a1aa;
+    border-bottom: 1px solid #27272a;
+  }
+
+  .prose-markdown tr:last-child td,
+  .prose-markdown-sm tr:last-child td {
+    border-bottom: none;
+  }
+
+  .prose-markdown tbody tr:hover,
+  .prose-markdown-sm tbody tr:hover {
+    background: #27272a40;
+  }
+
   /* highlight.js syntax theme */
   .prose-markdown .hljs-keyword,
   .prose-markdown .hljs-selector-tag,
