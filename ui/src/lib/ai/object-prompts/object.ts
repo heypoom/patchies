@@ -80,20 +80,12 @@ EXAMPLE - Oscillator (one message inlet, one audio outlet):
 \`\`\`
 Connections: message-in-0 receives frequency, audio-out-0 outputs oscillator signal
 
-CRITICAL: dac~ (Digital-to-Analog Converter - Speaker Output):
-\`\`\`json
-{
-  "type": "object",
-  "data": {
-    "expr": "dac~",
-    "name": "dac~",
-    "params": []
-  }
-}
-\`\`\`
-- dac~ has ONLY ONE audio inlet: "audio-in-0"
+CRITICAL: out~ (Audio Output - Speaker Output):
+- out~ is a DEDICATED node type (NOT created via "object")
+- Use directly: { "type": "out~", "data": { "deviceId": "" } }
+- out~ has ONLY ONE audio inlet: "audio-in-0"
 - MULTIPLE audio sources CAN and SHOULD connect to the SAME "audio-in-0" handle
 - Web Audio automatically sums/mixes multiple connections to the same inlet
-- Example: 6 drum sounds → all connect to dac~ with targetHandle: "audio-in-0"
-- DO NOT create separate dac~ nodes for each source
+- Example: 6 drum sounds → all connect to out~ with targetHandle: "audio-in-0"
+- DO NOT create separate out~ nodes for each source
 - DO NOT try to connect to "audio-in-1", "audio-in-2", etc. (they don't exist!)`;

@@ -9,7 +9,7 @@ import { ChuckNode } from './ChuckNode';
 import { CompressorNode } from './CompressorNode';
 import { ConvolverNodeV2 } from './ConvolverNode';
 import { CsoundNode } from './CsoundNode';
-import { DacNode } from './DacNode';
+import { AudioOutputNode } from './AudioOutputNode';
 import { DelayNodeV2 } from './DelayNode';
 import { DspNode } from './DspNode';
 import { ElementaryNode } from './ElementaryNode';
@@ -48,7 +48,6 @@ const AUDIO_NODES = [
   CompressorNode,
   ConvolverNodeV2,
   CsoundNode,
-  DacNode,
   DelayNodeV2,
   DspNode,
   ElementaryNode,
@@ -63,6 +62,7 @@ const AUDIO_NODES = [
   MicNode,
   NotchNode,
   OscNode,
+  AudioOutputNode,
   PanNodeV2,
   PeakingNode,
   SigNode,

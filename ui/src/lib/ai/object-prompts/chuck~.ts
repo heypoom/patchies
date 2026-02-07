@@ -7,7 +7,7 @@ CRITICAL RULES:
 2. Use Ctrl/Cmd + Enter to replace most recent shred
 3. Use Ctrl/Cmd + \\ to add new shred
 4. Use Ctrl/Cmd + Backspace to remove shred
-5. MUST connect to dac~ for audio output
+5. MUST connect to out~ for audio output
 
 Available:
 - Full ChucK language

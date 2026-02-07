@@ -16,7 +16,7 @@ export const canAudioNodeConnect = (sourceType: string, targetType: string): boo
 
   return (
     match({ source, target })
-      // Destinations are input-only (e.g. dac~) and must never act as a source.
+      // Destinations are input-only (e.g. out~) and must never act as a source.
       .with({ source: 'destinations' }, () => false)
       .with({ source: 'sources', target: 'sources' }, () => false)
       .with({ source: 'sources', target: 'processors' }, () => true)

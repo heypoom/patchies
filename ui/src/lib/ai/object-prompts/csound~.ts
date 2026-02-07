@@ -5,7 +5,7 @@ Csound sound and music computing system.
 CRITICAL RULES:
 1. Write Csound orchestra and score code
 2. WARNING: Only ONE csound~ per patch (known bug)
-3. MUST connect to dac~ for audio output
+3. MUST connect to out~ for audio output
 4. Use instr/endin blocks for instruments
 
 Messages:

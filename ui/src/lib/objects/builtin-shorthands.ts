@@ -6,6 +6,16 @@ import type { ObjectShorthand } from './v2/interfaces/shorthands';
  * Default built-in shorthands.
  */
 export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
+  // Legacy alias: dac~ → out~ (for backwards compatibility)
+  {
+    names: ['dac~'],
+    nodeType: 'out~',
+    description: 'Audio output (alias for out~)',
+    transform: () => ({
+      nodeType: 'out~',
+      data: { deviceId: '' }
+    })
+  },
   {
     names: ['msg', 'm'],
     nodeType: 'msg',

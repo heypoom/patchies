@@ -24,7 +24,7 @@ const AUDIO_NODES = [
   'elem~',
   'csound~',
   'bchrn',
-  'dac~',
+  'out~',
   'mic~',
   'vdo.ninja.push',
   'vdo.ninja.pull'

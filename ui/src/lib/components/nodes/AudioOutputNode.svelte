@@ -4,7 +4,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { DacNode, type DacSettings } from '$lib/audio/v2/nodes/DacNode';
+  import { AudioOutputNode, type AudioOutputSettings } from '$lib/audio/v2/nodes/AudioOutputNode';
   import {
     audioOutputDevices,
     enumerateAudioDevices,
@@ -17,20 +17,20 @@
     selected
   }: {
     id: string;
-    data: DacSettings;
+    data: AudioOutputSettings;
     selected: boolean;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
   let audioService = AudioService.getInstance();
   let showSettings = $state(false);
-  let dacNode: DacNode | null = $state(null);
+  let audioOutputNode: AudioOutputNode | null = $state(null);
 
   // Local form state
   let deviceId = $state(data.deviceId ?? '');
 
   // Check browser capabilities - only Chrome 110+ supports AudioContext.setSinkId
-  const supportsDeviceSelection = DacNode.supportsOutputDeviceSelection;
+  const supportsDeviceSelection = AudioOutputNode.supportsOutputDeviceSelection;
 
   const containerClass = $derived.by(() => {
     return selected ? 'object-container-selected' : 'object-container';
@@ -42,14 +42,14 @@
       await enumerateAudioDevices();
     }
 
-    const node = await audioService.createNode(nodeId, 'dac~');
+    const node = await audioService.createNode(nodeId, 'out~');
 
-    if (node && node instanceof DacNode) {
-      dacNode = node;
+    if (node && node instanceof AudioOutputNode) {
+      audioOutputNode = node;
 
       // Apply saved settings
       if (data.deviceId) {
-        dacNode.updateSettings({ deviceId: data.deviceId });
+        audioOutputNode.updateSettings({ deviceId: data.deviceId });
       }
     }
   });
@@ -59,10 +59,10 @@
   });
 
   function applySettings() {
-    if (!dacNode) return;
+    if (!audioOutputNode) return;
 
     const settings = { deviceId };
-    dacNode.updateSettings(settings);
+    audioOutputNode.updateSettings(settings);
     updateNodeData(nodeId, settings);
   }
 
@@ -117,7 +117,7 @@
           <div class="flex items-center justify-center gap-2">
             <Volume2 class="h-4 w-4 text-zinc-500" />
 
-            <div class="font-mono text-xs text-zinc-300">dac~</div>
+            <div class="font-mono text-xs text-zinc-300">out~</div>
           </div>
         </button>
       </div>

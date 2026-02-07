@@ -4,7 +4,7 @@ Load and play audio files with transport controls.
 
 CRITICAL RULES:
 1. No code needed - file loading object
-2. Connect to dac~ to hear audio
+2. Connect to out~ to hear audio
 3. Supports audio chaining as source
 
 HANDLE IDS (Auto-generated - CRITICAL):

@@ -192,7 +192,7 @@ export class AudioService {
         this.outGain.connect(this.getAudioContext().destination);
       }
 
-      // Connect destination nodes (i.e. dac~) to device outputs
+      // Connect destination nodes (i.e. out~) to device outputs
       for (const node of this.nodesById.values()) {
         const group = this.registry.get(getObjectType(node))?.group;
 
@@ -260,7 +260,7 @@ export class AudioService {
       logger.error(`cannot create node ${nodeType}`, error);
     }
 
-    // Connect destination nodes (dac~) to output
+    // Connect destination nodes (out~) to output
     const group = NodeClass.group;
     if (this.outGain && group === 'destinations') {
       try {

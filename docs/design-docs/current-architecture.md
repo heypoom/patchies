@@ -236,7 +236,7 @@ getOutputGain(): number
 
 **Supported Node Types**:
 
-- Basic: `osc~`, `gain~`, `dac~`, `+~`, `mic~`
+- Basic: `osc~`, `gain~`, `out~`, `+~`, `mic~`
 - Filters: `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`
 - Effects: `compressor~`, `delay~`, `pan~`, `convolver~`, `waveshaper~`
 - Analysis: `fft~`
