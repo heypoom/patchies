@@ -81,12 +81,14 @@
           </button>
 
           {#if guidesExpanded}
-            <nav class="space-y-3">
+            <nav class="mt-4 space-y-3">
               {#each categoryOrder as category}
                 {@const topics = topicsByCategory().get(category)}
+
                 {#if topics && topics.length > 0}
                   <div>
                     <div class="mb-1 text-xs text-zinc-600">{category}</div>
+
                     <ul class="space-y-0.5">
                       {#each topics as topic}
                         {@const isActive = currentPath === `/docs/${topic.slug}`}
