@@ -113,64 +113,7 @@ See [textmode documentation](https://patchies.app/docs/objects/textmode) for det
 
 ### `three` and `three.dom`: creates Three.js 3D graphics
 
-<img src="./docs/images/threejs-torus.webp" alt="Patchies.app three.js torus demo" width="700">
-
-> ✨ Try this patch out [in the app](https://patchies.app/?id=1c484xkin7p7p2r)! It shows how you can use 2D textures from other objects in Three.js.
-
-- [Three.js](https://threejs.org) is a powerful 3D graphics library for WebGL. Create 3D scenes, animations, and interactive visualizations in the browser.
-
-- There are two flavors of three objects with a few differences:
-  - `three`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Can take
-  - `three.dom`: Runs on the main thread. Supports interactivity via OrbitControls or custom handlers. Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
-
-- The `draw()` function should be defined to draw every frame:
-
-  ```js
-  const { Scene, PerspectiveCamera, BoxGeometry, Mesh, MeshNormalMaterial } =
-    THREE;
-
-  const scene = new Scene();
-  const camera = new PerspectiveCamera(75, width / height, 0.1, 1000);
-  camera.position.z = 2;
-
-  const geometry = new BoxGeometry(1, 1, 1);
-  const material = new MeshNormalMaterial();
-  const cube = new Mesh(geometry, material);
-  scene.add(cube);
-
-  function draw() {
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-    renderer.render(scene, camera);
-  }
-  ```
-
-- You can call these special methods in the `three` object only:
-  - `getTexture(inlet): THREE.Texture` gets the video input as Three.js texture. Only works with
-  - `setVideoCount(ins, outs)` sets the number of video inlets and outlets (for video chaining).
-
-- You can call these special methods in the `three.dom` object only:
-  - `setCanvasSize(width, height)` resizes the output canvas size
-  - `onKeyDown(callback)` receives keydown events
-  - `onKeyUp(callback)` receives keyup events
-
-- You can call these special methods in both `three` and `three.dom`:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
-  - `noOutput()` hides the video output port.
-  - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
-  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
-
-- As well as these variables:
-  - `mouse.x` and `mouse.y` provides mouse position
-  - `width` and `height` provides output size
-
-- The Three.js context provides these variables:
-  - `THREE`: the Three.js library
-  - `renderer: WebGLRenderer`: the WebGL renderer from Three.js
-
-- See the [Three.js documentation](https://threejs.org/docs) and [examples](https://threejs.org/examples) for more inspiration.
-- Please consider supporting [mrdoob on GitHub Sponsors](https://github.com/sponsors/mrdoob)!
+See [three documentation](https://patchies.app/docs/objects/three) for details and differences between variants.
 
 ### `bchrn`: render the Winamp Milkdrop visualizer (Butterchurn)
 
@@ -1691,133 +1634,12 @@ See the following example:
 
 ## Audio Analysis
 
-<img src="./docs/images/patchies-audio-reactive.png" alt="Patchies.app audio reactive" width="700">
-
-> ✨ Try this patch out [in the app](https://patchies.app/?id=sgov4pl7f9ku4h7)!
-
-The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch.
-
-First, create a `fft~` object. Set the bin size (e.g. `fft~ 1024`). Then, connect the purple "analyzer" outlet to the visual object's inlet.
-
-Supported objects are `glsl`, `swgl`, as well as any objects using the unified [JavaScript Runner](https://patchies.app/docs/javascript-runner), such as `canvas.dom`, `hydra` and many more.
-
-### Usage with GLSL
-
-- Create a `sampler2D` GLSL uniform inlet and connect the purple "analyzer" outlet of `fft~` to it.
-- Hit `Enter` to insert object, and try out the `fft-freq.gl` and `fft-waveform.gl` presets for working code samples.
-- To get the waveform (time-domain analysis) instead of the frequency analysis, you must name the uniform as exactly `uniform sampler2D waveTexture;`. Using other uniform names will give you frequency analysis.
-
-### Usage with JavaScript-based objects
-
-You can call the `fft()` function to get the audio analysis data in any objects using the unified [JavaScript Runner](https://patchies.app/docs/javascript-runner).
-
-- **IMPORTANT**: Patchies does NOT use standard audio reactivity APIs in Hydra and P5.js. Instead, you must use the `fft()` function to get the audio analysis data.
-  - See the below section on [Converting existing P5 and Hydra audio code](#convert-existing-p5-and-hydra-fft-code) for why this is needed and how to convert existing code.
-
-- `fft()` defaults to waveform (time-domain analysis). You can also call `fft({type: 'wave'})` to be explicit.
-- `fft({type: 'freq'})` gives you frequency spectrum analysis.
-- Try out the `fft.hydra` preset for Hydra.
-- Try out the `fft.p5`, `fft-sm.p5` and `rms.p5` presets for P5.js.
-- Try out the `fft.canvas` preset for HTML5 canvas with **instant audio reactivity**.
-  - The `fft.canvas` preset uses `canvas.dom` (main thread), giving you the same tight audio reactivity as `p5`.
-  - For audio-reactive visuals, use `canvas.dom` or `p5` for best results.
-  - The worker-based `canvas` node has slight FFT delay but won't slow down your patch when chained with other visual objects.
-
-- The `fft()` function returns the `FFTAnalysis` class instance which contains helpful properties and methods:
-  - raw frequency bins: `fft().a`
-  - bass energy as float (between 0 - 1): `fft().getEnergy('bass') / 255`. You can use these frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`.
-  - energy between any frequency range as float (between 0 - 1): `fft().getEnergy(40, 200) / 255`
-  - rms as float: `fft().rms`
-  - average as float: `fft().avg`
-  - spectral centroid as float: `fft().centroid`
-
-- Where to call `fft()`:
-  - `p5`: call in your `draw` function.
-  - `canvas` and `canvas.dom`: call in your `draw` function that are gated by `requestAnimationFrame`
-  - `js`: call in your `setInterval` or `requestAnimationFrame` callback
-
-    ```js
-    setInterval(() => {
-      let a = fft().a;
-    }, 1000);
-    ```
-
-  - `hydra`: call inside arrow functions for dynamic parameters
-
-    ```js
-    let a = () => fft().getEnergy("bass") / 255;
-    src(s0).repeat(5, 3, a, () => a() * 2);
-    ```
-
-### Convert existing P5 and Hydra FFT code
-
-- Q: Why not just use standard Hydra and P5.js audio reactivity APIs like `a.fft[0]` and `p5.FFT()`?
-  - A: The reason is that the `p5-sound` and `a.fft` APIs only lets you access microphones and audio files. In contrast, Patchies lets you FFT any dynamic audio sources 😊
-  - You can FFT analyze your own audio pipelines like your web audio graph, and other live audio coding environment like Strudel and ChucK.
-  - It makes the API exactly the same between Hydra and P5.js. No need to juggle two.
-
-- Converting Hydra's [Audio Reactivity](https://hydra.ojack.xyz/hydra-docs-v2/docs/learning/sequencing-and-interactivity/audio/#audio-reactivity) API into Patchies:
-  - Replace `a.fft[0]` with `fft().a[0]` (un-normalized int8 values from 0 - 255)
-  - Replace `a.fft[0]` with `fft().f[0]` (normalized float values from 0 - 1)
-  - Instead of `a.setBins(32)`, change the fft bins in the `fft~` object instead e.g. `fft~ 32`
-  - Instead of `a.show()`, use the below presets to visualize fft bins.
-  - Using the value to control a variable:
-
-    ```diff
-
-      - osc(10, 0, () => a.fft[0]*4)
-      + osc(10, 0, () => fft().f[0]*4)
-        .out()
-    ```
-
-- Converting P5's [p5.sound](https://p5js.org/reference/p5.sound/) API into Patchies:
-  - Replace `p5.Amplitude` with `fft().rms` (rms as float between 0-1)
-  - Replace `p5.FFT` with `fft()`
-  - Replace `fft.analyze()` with nothing - `fft()` is always up to date.
-  - Replace `fft.waveform()` with `fft({ format: 'float' }).a`, as P5's waveform returns a value between -1 and 1. Using `format: 'float'` gives you Float32Array.
-  - Replace `fft.getEnergy('bass')` with `fft().getEnergy('bass') / 255` (normalize to 0-1)
-  - Replace `fft.getCentroid()` with `fft().centroid`
+See [Audio Reactivity](https://patchies.app/docs/audio-reactivity) for FFT usage, presets, and converting existing P5/Hydra code.
 
 ## Disabling AI features
 
-AI is 100% optional and _opt-in_ with Patchies.
-
-Don't want AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
-
-In particular, this will hide all AI-related objects and features, such as `ai.txt`, `ai.img`, `ai.tts` and `ai.music`. It also disables the experimental `Ctrl/Cmd + I` AI object insertion shortcut.
+See [AI Features](https://patchies.app/docs/ai-features) for setup, modes, and how to opt out.
 
 ## Rendering Pipeline
 
-> [!TIP]
-> Use objects that run on the rendering pipeline e.g. `hydra`, `glsl`, `swgl`, `canvas`, `textmode`, `three` and `img` to reduce lag.
-
-Behind the scenes, the [video chaining](#video-chaining) feature constructs a _rendering pipeline_ based on the use of [framebuffer objects](https://www.khronos.org/opengl/wiki/Framebuffer_Object) (FBOs), which lets visual objects copy data to one another on a framebuffer level, with no back-and-forth CPU-GPU transfers needed. The pipeline makes use of Web Workers, WebGL2, [Regl](https://github.com/regl-project/regl) and OffscreenCanvas (for `canvas`).
-
-It creates a shader graph that streams the low-resolution preview onto the preview panel, while the full-resolution rendering happens in the frame buffer objects. This is much more efficient than rendering everything on the main thread or using HTML5 canvases.
-
-**Objects on the rendering pipeline (web worker thread):**
-
-- `hydra`, `glsl`, `swgl`, `canvas`, `textmode`, `three` and `img` run entirely on the web worker thread and are very performant when using [chaining multiple video objects together](#video-chaining), as it does not require CPU-to-GPU pixel copy.
-
-**Objects on the main thread:**
-
-- `p5`, `canvas.dom`, `textmode.dom`, `three.dom` and `bchrn` runs on the main thread.
-- If these objects are connected to video outlets, at each frame we create an image bitmap on the main thread, then transfer it to the web worker thread for rendering.
-  - Try connecting `canvas.dom` to `bg.out`, your FPS will drop around 10FPS - 20FPS. Use "CMD+K > Toggle FPS Monitor" to verify.
-  - Try connecting `canvas` to `bg.out`, your FPS will not drop at all.
-  - The copying of the pixels from CPU to GPU is way slower than using FBOs and can cause lag if you have many main-thread visual objects in your patch.
-  - If you don't connect its video outlet to another video object, we don't perform the bitmap copy so the performance overhead is minimal.
-- Use these only when you need instant FFT reactivity, mouse interactivity, or DOM access.
-
-### Performance notes on `webcam` and `video`
-
-- On Chromium browsers (e.g. Google Chrome, Edge) where certain Web APIs are supported, we use these optimized pipelines to speed up `webcam` and `video` objects.
-  - `webcam` uses [MediaStreamTrackProcessor](https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrackProcessor)
-  - `video` uses [MediaBunny](https://mediabunny.dev) which uses [WebCodecs](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API)
-- The HTMLVideoElement pipeline uses [requestVideoFrameCallback](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback) for both `webcam` and `video` objects to only run when the video frame is sent to the compositor.
-- `Ctrl/Cmd+K > Toggle Video Stats Overlay` to show/hide the video stats overlay.
-  - This shows which pipeline is being used and the FPS, dropped frames, resolution and codec.
-- `Ctrl/Cmd+K > Toggle MediaBunny` switches between MediaBunny and HTMLVideoElement implementations on `video` object.
-  - This lets you toggle between `MediaStreamTrackProcessor` and `HTMLVideoElement` implementations on `webcam` object. You have to reload the page after toggling.
-  - The `MediaBunny/MediaStreamTrackProcessor` pipeline is faster on Chromium browsers, but significantly slower on Firefox and Safari.
-  - You can still toggle it manually to test if it might be faster on your browser.
+See [Rendering Pipeline](https://patchies.app/docs/rendering-pipeline) for performance details and webcam/video optimization.

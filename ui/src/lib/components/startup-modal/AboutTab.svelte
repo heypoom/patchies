@@ -1,18 +1,9 @@
 <script lang="ts">
-  import {
-    BookOpen,
-    Cable,
-    CircleDot,
-    CirclePlus,
-    Command,
-    Github,
-    Info,
-    PanelLeftOpen,
-    Play
-  } from '@lucide/svelte/icons';
+  import { BookOpen, Github, Info } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
 
   import demoImage from '$lib/images/startup-modal.webp';
+  import QuickTips from './QuickTips.svelte';
   import type { Tab } from './types';
 
   let showOnStartup = $state(true);
@@ -102,89 +93,28 @@
         >, etc.
       </p>
 
-      <div class="rounded-lg bg-zinc-800/50 p-4">
-        <ul class="grid gap-2 text-xs sm:grid-cols-2">
-          <li class="hidden items-start gap-2 sm:flex">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span
-              >Add object: <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-                >Enter</kbd
-              >
-            </span>
+      <QuickTips {isMac} />
+
+      <div class="space-y-2">
+        <h3 class="text-sm font-medium text-zinc-200">New to Patchies?</h3>
+        <ul class="space-y-1.5 text-sm text-zinc-300">
+          <li>
+            <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
+              >Browse demos</a
+            > for inspiration.
           </li>
-
-          <li class="flex items-start gap-2">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span
-              >Browse objects: <CirclePlus class="inline h-4 w-4" />
-              <span class="hidden md:inline">
-                /
-                <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-                  >{isMac ? 'Cmd' : 'Ctrl'} + O</kbd
-                >
-              </span>
-            </span>
+          <li>
+            <a href="/docs" target="_blank" class="text-orange-300 hover:underline"
+              >Read the guides</a
+            > to learn the basics.
           </li>
-
-          <li class="hidden items-start gap-2 md:flex">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span>Connect objects: drag between handles</span>
-          </li>
-
-          <li class="flex items-start gap-2 md:hidden">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span>Connect objects: <Cable class="inline h-4 w-4" /></span>
-          </li>
-
-          <li class="flex items-start gap-2">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span
-              >Open sidebar: <PanelLeftOpen class="inline h-4 w-4" />
-              <span class="hidden md:inline">
-                /
-                <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-                  >{isMac ? 'Cmd' : 'Ctrl'} + B</kbd
-                >
-              </span>
-            </span>
-          </li>
-
-          <li class="hidden items-start gap-2 sm:flex">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span
-              >Command palette:
-              <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-                >{isMac ? 'Cmd' : 'Ctrl'} + K</kbd
-              >
-            </span>
-          </li>
-
-          <li class="flex items-start gap-2">
-            <CircleDot class="mt-0.5 h-4 w-4 text-orange-500" />
-            <span
-              >Run code in editor: <Play class="inline h-4 w-4" />
-              <span class="hidden md:inline">
-                /
-
-                <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd>
-              </span>
-            </span>
+          <li>
+            Explore the
+            <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('thanks')}
+              >creative coding libraries</a
+            > it builds on.
           </li>
         </ul>
-      </div>
-
-      <!-- License Link -->
-      <div>
-        <p class="text-sm text-zinc-300">
-          New to Patchies? Check out the
-          <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
-            >demos tab</a
-          >
-          to get some inspirations! Patchies is open source and built upon many
-          <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('thanks')}
-            >amazing creative coding libraries</a
-          >
-        </p>
       </div>
     </div>
   </div>
