@@ -330,6 +330,7 @@
   const minWidthStyle = $derived.by(() => {
     const maxPorts = Math.max(1, data.types.length);
     if (maxPorts <= 2) return '';
+
     const minWidth = maxPorts * 24;
     return `min-width: ${minWidth}px`;
   });

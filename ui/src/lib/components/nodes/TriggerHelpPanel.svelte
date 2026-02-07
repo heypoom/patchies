@@ -8,18 +8,22 @@
     b: { color: 'text-orange-400' },
     a: { color: 'text-green-400' },
     s: { color: 'text-blue-400' },
+    t: { color: 'text-blue-400' },
     n: { color: 'text-yellow-400' },
     i: { color: 'text-amber-400' },
-    l: { color: 'text-purple-400' }
+    l: { color: 'text-purple-400' },
+    o: { color: 'text-cyan-400' }
   } as const;
 
   const HELP_TYPES = [
     { key: 'b', label: 'b', desc: 'bang (always fires)' },
     { key: 'a', label: 'a', desc: 'any (pass through)' },
     { key: 's', label: 's', desc: 'symbol/string' },
+    { key: 't', label: 't', desc: 'text (string only)' },
     { key: 'n', label: 'n/f', desc: 'number/float' },
     { key: 'i', label: 'i', desc: 'integer' },
-    { key: 'l', label: 'l', desc: 'list/array' }
+    { key: 'l', label: 'l', desc: 'list/array' },
+    { key: 'o', label: 'o', desc: 'object' }
   ] as const;
 </script>
 
