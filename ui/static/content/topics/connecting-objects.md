@@ -5,7 +5,6 @@ To connect objects, click and drag on an object's handle all the way to the othe
 - A handle looks like circle grey, blue, orange or purple dots at the top or bottom of objects
 - When connecting, the starting handle will highlight to show where you're connecting from
 - When connecting, all invalid connection targets will be dimmed
-- On mobile or want to connect to multiple objects at once? See [Easy Connect](#easy-connect)!
 
 ## Easy Connect
 
