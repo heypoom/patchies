@@ -20,7 +20,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
       const validTypes = typeSpecs.filter((t) => normalizeMessageType(t) !== undefined);
 
       // Default to two bang outlets if no valid types specified
-      const types = validTypes.length > 0 ? validTypes : ['b', 'b'];
+      const types = validTypes.length > 0 ? validTypes : ['b', 'n'];
 
       return {
         nodeType: 'trigger',
