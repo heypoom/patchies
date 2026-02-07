@@ -1,4 +1,5 @@
 import type { LayoutLoad } from './$types';
+import { objectSchemas } from '$lib/objects/schemas';
 
 interface DocItem {
   slug: string;
@@ -17,9 +18,8 @@ const TOPIC_CATEGORIES: Record<string, string[]> = {
   Connections: ['connecting-objects', 'connection-rules', 'message-passing'],
   'Audio & Video': ['audio-chaining', 'video-chaining'],
   Scripting: ['javascript-runner', 'canvas-interaction'],
-  'AI Features': ['ai-features'],
-  'Managing Projects': ['manage-saves', 'manage-presets', 'manage-files', 'manage-packs'],
-  'Sharing & Misc': ['sharing-links', 'offline-usage', 'supporting-open-source']
+  'Sidebar Features': ['manage-saves', 'manage-presets', 'manage-files', 'manage-packs'],
+  Other: ['sharing-links', 'ai-features', 'offline-usage', 'supporting-open-source']
 };
 
 // Invert the mapping for lookup
@@ -78,8 +78,8 @@ export const load: LayoutLoad = async ({ fetch }) => {
     'supporting-open-source'
   ];
 
-  // Known object slugs
-  const objectSlugs = ['p5', 'trigger'];
+  // Get all object slugs from the schema registry
+  const objectSlugs = Object.keys(objectSchemas);
 
   // Fetch topics
   const topicPromises = topicSlugs.map(async (slug) => {

@@ -1,4 +1,4 @@
-# Manage Presets
+# Presets
 
 ![Presets sidebar](/content/images/presets-sidebar.webp)
 
@@ -25,5 +25,5 @@ Patchies includes [preset packs](/docs/manage-packs) with ready-to-use objects f
 
 ## See Also
 
-- [Manage Packs](/docs/manage-packs)
+- [Packs](/docs/manage-packs)
 - [Creating Objects](/docs/creating-objects)

@@ -5,6 +5,7 @@ export * from './hydra';
 export * from './glsl';
 export * from './canvas';
 export * from './swgl';
+export * from './textmode';
 
 import type { ObjectSchemaRegistry } from './types';
 import { triggerSchema } from './trigger';
@@ -13,6 +14,7 @@ import { hydraSchema } from './hydra';
 import { glslSchema } from './glsl';
 import { canvasSchema, canvasDomSchema } from './canvas';
 import { swglSchema } from './swgl';
+import { textmodeSchema, textmodeDomSchema } from './textmode';
 
 /**
  * Registry of all object schemas.
@@ -25,7 +27,9 @@ export const objectSchemas: ObjectSchemaRegistry = {
   glsl: glslSchema,
   canvas: canvasSchema,
   'canvas.dom': canvasDomSchema,
-  swgl: swglSchema
+  swgl: swglSchema,
+  textmode: textmodeSchema,
+  'textmode.dom': textmodeDomSchema
 };
 
 /**

@@ -6,5 +6,5 @@ Shared links contain your entire patch encoded in the URL, making it easy to sha
 
 ## See Also
 
-- [Manage Saves](/docs/manage-saves)
+- [Saves](/docs/manage-saves)
 - [Getting Started](/docs/getting-started)

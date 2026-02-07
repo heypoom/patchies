@@ -13,4 +13,4 @@ Patchies uses [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API
 ## See Also
 
 - [Getting Started](/docs/getting-started)
-- [Manage Saves](/docs/manage-saves)
+- [Saves](/docs/manage-saves)

@@ -1,4 +1,4 @@
-# Manage Saves
+# Saves
 
 ![Saves sidebar](/content/images/saves-sidebar.webp)
 

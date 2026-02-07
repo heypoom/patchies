@@ -4,7 +4,6 @@ export const categoryOrder = [
   'Connections',
   'Audio & Video',
   'Scripting',
-  'AI Features',
-  'Managing Projects',
-  'Sharing & Misc'
+  'Sidebar Features',
+  'Other'
 ];

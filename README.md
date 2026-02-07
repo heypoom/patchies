@@ -63,14 +63,14 @@ See [patchies.app/docs](https://patchies.app/docs) for full documentation. Quick
 
 ### Workspace
 
-| Topic                                                      | Description                |
-| ---------------------------------------------------------- | -------------------------- |
-| [Manage Packs](https://patchies.app/docs/manage-packs)     | Enable object/preset packs |
-| [Manage Saves](https://patchies.app/docs/manage-saves)     | Save and load patches      |
-| [Manage Files](https://patchies.app/docs/manage-files)     | Virtual filesystem         |
-| [Manage Presets](https://patchies.app/docs/manage-presets) | Create/organize presets    |
-| [Sharing Links](https://patchies.app/docs/sharing-links)   | Share patches via URL      |
-| [Offline Usage](https://patchies.app/docs/offline-usage)   | Use without internet       |
+| Topic                                                    | Description                |
+| -------------------------------------------------------- | -------------------------- |
+| [Packs](https://patchies.app/docs/manage-packs)          | Enable object/preset packs |
+| [Saves](https://patchies.app/docs/manage-saves)          | Save and load patches      |
+| [Files](https://patchies.app/docs/manage-files)          | Virtual filesystem         |
+| [Presets](https://patchies.app/docs/manage-presets)      | Create/organize presets    |
+| [Sharing Links](https://patchies.app/docs/sharing-links) | Share patches via URL      |
+| [Offline Usage](https://patchies.app/docs/offline-usage) | Use without internet       |
 
 ### Advanced
 
@@ -109,62 +109,7 @@ See [canvas documentation](https://patchies.app/docs/objects/canvas) for details
 
 ### `textmode` and `textmode.dom`: creates ASCII/text-mode graphics
 
-<img src="./docs/images/textmode.webp" alt="Patchies.app textmode.js demo" width="700">
-
-> ✨ Try this patch out [in the app](https://patchies.app/?id=3hd88qv62h4zltq)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
-
-[Textmode.js](https://code.textmode.art) is a library for creating ASCII art and text-mode graphics in the browser using WebGL2. Perfect for creating retro-style visuals, text animations, and creative coding with characters.
-
-- There are two flavors of textmode objects with a few differences:
-  - `textmode`: Runs on the [rendering pipeline](#rendering-pipeline) and is performant when chaining to other video nodes. Features such as mouse interactivity, images/videos and fonts are NOT supported.
-  - `textmode.dom`: Runs on the main thread. Supports [mouse](https://code.textmode.art/docs/events.html#mouse-events), [touch](https://code.textmode.art/docs/events.html#touch-events) and [keyboard](https://code.textmode.art/docs/events.html#keyboard-events) interactivity. Supports [video and images](https://code.textmode.art/docs/loadables.html). Slower when chaining to other video nodes as it requires CPU-to-GPU pixel copy.
-
-- You can call these special methods in your textmode code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
-  - `noOutput()` hides the video output port.
-  - `setHidePorts(true | false)` sets whether to hide inlets and outlets.
-  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
-
-- The textmode instance is exposed as `tm` in your code:
-
-  ```ts
-  tm.setup(() => {
-    tm.fontSize(16);
-    tm.frameRate(60);
-  });
-
-  tm.draw(() => {
-    tm.background(0, 0, 0, 0);
-
-    const halfCols = tm.grid.cols / 2;
-    const halfRows = tm.grid.rows / 2;
-
-    for (let y = -halfRows; y < halfRows; y++) {
-      for (let x = -halfCols; x < halfCols; x++) {
-        const dist = Math.sqrt(x * x + y * y);
-        const wave = Math.sin(dist * 0.2 - tm.frameCount * 0.1);
-
-        tm.push();
-        tm.translate(x, y, 0);
-        tm.char(wave > 0.5 ? "▓" : wave > 0 ? "▒" : "░");
-        tm.charColor(0, 150 + wave * 100, 255);
-        tm.point();
-        tm.pop();
-      }
-    }
-  });
-  ```
-
-> [!CAUTION]
-> If you create too many `textmode` or `textmode.dom` objects, your browser will crash with `Too many active WebGL contexts. Oldest context will be lost`. It seems like textmode might not be sharing the WebGL contexts across `TextModifier` instances.
-
-- You can use the [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.js) plugin to apply image filters, e.g. `tm.layers.base.filter('brightness', 1.3)`
-
-- Try these presets for more quick examples: `digital-rain.tm`, `animated-wave.tm`, `plasma-field.tm`, `rain.tm`, `torus.tm` and `fire.tm`
-
-- See the [Textmode.js documentation](https://code.textmode.art/docs/introduction.html) to learn how to use the library.
-- Please consider supporting [@humanbydefinition](https://code.textmode.art/docs/support.html) who maintains textmode.js!
+See [textmode documentation](https://patchies.app/docs/objects/textmode) for details, presets, and differences between variants.
 
 ### `three` and `three.dom`: creates Three.js 3D graphics
 

@@ -1,4 +1,4 @@
-# Manage Files
+# Files
 
 ![Files sidebar](/content/images/files-sidebar.webp)
 
@@ -34,4 +34,4 @@ See [JavaScript Runner - Virtual Filesystem](/docs/javascript-runner#virtual-fil
 ## See Also
 
 - [JavaScript Runner](/docs/javascript-runner)
-- [Manage Saves](/docs/manage-saves)
+- [Saves](/docs/manage-saves)

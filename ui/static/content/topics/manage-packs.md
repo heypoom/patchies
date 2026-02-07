@@ -1,4 +1,4 @@
-# Manage Packs
+# Packs
 
 ![Packs search](/content/images/packs-search.webp)
 
@@ -23,4 +23,4 @@ Preset packs are collections of pre-configured object presets grouped by use-cas
 ## See Also
 
 - [Creating Objects](/docs/creating-objects)
-- [Manage Presets](/docs/manage-presets)
+- [Presets](/docs/manage-presets)
