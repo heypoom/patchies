@@ -1,18 +1,29 @@
 <script lang="ts">
-  import { Search, ExternalLink, ArrowLeft, CircleQuestionMark, Play } from '@lucide/svelte/icons';
+  import {
+    Search,
+    ExternalLink,
+    ArrowLeft,
+    CircleQuestionMark,
+    Play,
+    Lock,
+    LockOpen
+  } from '@lucide/svelte/icons';
   import { objectSchemas, type ObjectSchema } from '$lib/objects/schemas';
   import TriggerTypeSpecifiers from './TriggerTypeSpecifiers.svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { useObjectHelp } from '$lib/composables/useObjectHelp.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let searchQuery = $state('');
 
   let manualViewingObject = $state<string | null>(null);
   let browseModeOverride = $state(false); // When true, show list even if node is selected
+  let isLocked = $state(false); // When true, don't auto-switch on node selection
+  let lastViewedType = $state<string | null>(null); // Persists across deselection
 
-  // Reset browse mode when a new node is selected on canvas
+  // Reset browse mode when a new node is selected on canvas (unless locked)
   $effect(() => {
-    if ($selectedNodeInfo) {
+    if ($selectedNodeInfo && !isLocked) {
       browseModeOverride = false;
       manualViewingObject = null;
     }
@@ -23,7 +34,21 @@
     if (browseModeOverride) return null;
     if (manualViewingObject) return manualViewingObject;
 
-    return $selectedNodeInfo?.type ?? null;
+    // When locked, stay on the last viewed object
+    if (isLocked && lastViewedType) return lastViewedType;
+    if ($selectedNodeInfo?.type) return $selectedNodeInfo.type;
+
+    // When deselected, keep showing the last viewed object
+    if (lastViewedType) return lastViewedType;
+
+    return null;
+  });
+
+  // Track last viewed type for persistence
+  $effect(() => {
+    if (viewingObject) {
+      lastViewedType = viewingObject;
+    }
   });
 
   // Fetch help content reactively
@@ -89,6 +114,30 @@
       </div>
 
       <div class="flex items-center gap-1">
+        <!-- Lock toggle -->
+        <Tooltip.Root delayDuration={100}>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (isLocked = !isLocked)}
+              class={[
+                'cursor-pointer rounded p-1 transition-colors',
+                isLocked
+                  ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+                  : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+              ]}
+            >
+              {#if isLocked}
+                <Lock class="h-4 w-4" />
+              {:else}
+                <LockOpen class="h-4 w-4" />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="bottom">
+            {isLocked ? 'Unlock (auto-follow selection)' : 'Lock (stay on this object)'}
+          </Tooltip.Content>
+        </Tooltip.Root>
+
         {#if helpContent.hasHelpPatch}
           <a
             href={getHelpPatchUrl(currentSchema.type)}
