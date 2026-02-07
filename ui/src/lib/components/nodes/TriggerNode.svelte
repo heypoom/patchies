@@ -100,7 +100,7 @@
     },
     f: {
       name: 'float',
-      desc: 'Passes through floating-point numbers',
+      desc: 'Passes through numbers',
       color: 'text-yellow-400',
       hoverColor: 'hover:text-yellow-400'
     },
