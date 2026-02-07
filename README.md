@@ -12,12 +12,12 @@ Try it out at [patchies.app](https://patchies.app) - it's open source and free t
 
 Patchies lets you use the audio, visual and computational tools and libraries that you know (and love!), together in one place. For example:
 
-- Create interactive graphics with [P5.js](https://p5js.org), [Three.js](https://threejs.org), [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [Textmode.js](https://code.textmode.art)
-- Synthesize and process video with [Hydra](https://hydra.ojack.xyz) and [GLSL shaders](https://www.shadertoy.com)
-- Live code music with [Strudel](https://strudel.cc), [ChucK](https://chuck.cs.princeton.edu/webchuck), [SuperSonic](https://sonic-pi.net/supersonic/demo.html) and [Orca](https://github.com/hundredrabbits/Orca)
-- Synthesize and process audio with [Web Audio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) nodes, [Tone.js](https://tonejs.github.io) and [Elementary Audio](https://www.elementary.audio)
-- Run programs and games on the [Uxn](https://wiki.xxiivv.com/site/uxn.html) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) assembly.
-- Compute like a caveman with [stack machine assembly](./modules/vasm/README.md), or like a wizard with [Ruby](https://ruby.github.io/ruby.wasm/) and [Python](https://pyodide.org)
+- Create interactive graphics with [P5.js](#p5-creates-a-p5js-sketch), [Three.js](#three-and-threedom-creates-threejs-3d-graphics), [HTML5 Canvas](#canvasdom-creates-a-javascript-canvas-main-thread) and [Textmode.js](#textmode-and-textmodedom-creates-asciitext-mode-graphics)
+- Synthesize and process video with [Hydra](#hydra-creates-a-hydra-video-synthesizer) and [GLSL shaders](#glsl-creates-a-glsl-fragment-shader)
+- Live code music with [Strudel](#strudel-strudel-music-environment), [ChucK](#chuck-creates-a-chuck-audio-programming-environment), [SuperSonic](#sonic-supercollider-synthesis-engine) and [Orca](#orca-orca-livecoding-sequencer)
+- Synthesize and process audio with [Web Audio](#audio-objects) nodes, [Tone.js](#tone-tonejs-synthesis-and-processing) and [Elementary Audio](#elem-elementary-audio-synthesis-and-processing)
+- Run programs and games on the [Uxn](#uxn-uxn-virtual-machine) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) assembly.
+- Compute like a caveman with [stack machine assembly](./modules/vasm/README.md), or like a wizard with [Ruby](#ruby-creates-a-ruby-code-environment) and [Python](#python-creates-a-python-code-environment)
 - Connect to the outside world with [MIDI](#midi--network-objects), [MQTT](#mqtt-mqtt-client), [SSE](#sse-server-sent-events), [WebRTC](#netsend-and-netrecv-send-and-receive-messages-over-network), [Iframe](#iframe-embed-web-content) and [VDO.Ninja](#vdoninja-send-and-receive-audio-video-and-messages-over-webrtc).
 - Manage [data and control flow](#programming--control-objects) with [js](#js-a-javascript-code-block), [expr](#expr-expression-evaluator), [filter](#filter-conditional-message-passing), [map](#map-transform-messages-with-javascript), [iframe](#iframe-embed-web-content), [spigot](#control-objects), [trigger](#trigger-sends-messages-in-right-to-left-order), select, metro and more.
 - Use [built-in widgets](#interface--control-objects) or make your own with [Vue.js](#vue-create-user-interfaces-with-vue), [DOM API](#dom-create-user-interfaces-with-vanilla-js), [Tailwind](https://tailwindcss.com) or any library you like.
