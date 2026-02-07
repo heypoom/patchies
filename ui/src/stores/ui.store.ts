@@ -22,6 +22,17 @@ export const isMobile = createIsMobileStore();
 export const isBottomBarVisible = writable(true);
 export const isFpsMonitorVisible = writable(false);
 
+// Help mode - when viewing a help patch (read-only, no autosave)
+// Stores the object name being helped, or null if not in help mode
+export const helpModeObject = writable<string | null>(null);
+
+// Derived: true when in help mode
+export const isHelpMode = derived(helpModeObject, ($obj) => $obj !== null);
+
+// Selected node info - shared from FlowCanvas for context-sensitive help sidebar
+// Updated by FlowCanvasInner when selection changes
+export const selectedNodeInfo = writable<{ type: string; id: string } | null>(null);
+
 // Initialize isAiFeaturesVisible from localStorage (defaults to true)
 const storedAiFeaturesVisible =
   typeof localStorage !== 'undefined' ? localStorage.getItem('ai-features-visible') : null;
@@ -48,12 +59,33 @@ const storedSidebarOpen =
 export const isSidebarOpen = writable(storedSidebarOpen === 'true');
 
 // Sidebar view state - persisted to localStorage
-export type SidebarView = 'files' | 'presets' | 'packs' | 'saves';
+export type SidebarView = 'files' | 'presets' | 'packs' | 'saves' | 'help';
 
 const storedSidebarView =
   typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;
 
 export const sidebarView = writable<SidebarView>((storedSidebarView as SidebarView) || 'files');
+
+// Sidebar width - persisted to localStorage
+const SIDEBAR_DEFAULT_WIDTH = 256;
+const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MAX_WIDTH = 400;
+
+function loadSidebarWidth(): number {
+  if (typeof localStorage === 'undefined') return SIDEBAR_DEFAULT_WIDTH;
+
+  const stored = localStorage.getItem('patchies-sidebar-width');
+  if (!stored) return SIDEBAR_DEFAULT_WIDTH;
+
+  const parsed = parseInt(stored, 10);
+  if (isNaN(parsed) || parsed < SIDEBAR_MIN_WIDTH || parsed > SIDEBAR_MAX_WIDTH) {
+    return SIDEBAR_DEFAULT_WIDTH;
+  }
+
+  return parsed;
+}
+
+export const sidebarWidth = writable<number>(loadSidebarWidth());
 
 // Persist sidebar state to localStorage
 if (typeof localStorage !== 'undefined') {
@@ -63,6 +95,10 @@ if (typeof localStorage !== 'undefined') {
 
   sidebarView.subscribe((value) => {
     localStorage.setItem('patchies-sidebar-view', value);
+  });
+
+  sidebarWidth.subscribe((value) => {
+    localStorage.setItem('patchies-sidebar-width', String(value));
   });
 }
 
@@ -116,6 +152,7 @@ function loadSavedFoldersFromStorage(): string[] {
   if (typeof localStorage === 'undefined') return [];
   try {
     const saved = localStorage.getItem('patchies-saved-folders');
+
     return saved ? JSON.parse(saved) : [];
   } catch {
     return [];
@@ -229,7 +266,9 @@ export function renameSavedFolder(oldPath: string, newPath: string) {
       }
       return p;
     });
+
     localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+
     return updated;
   });
 }

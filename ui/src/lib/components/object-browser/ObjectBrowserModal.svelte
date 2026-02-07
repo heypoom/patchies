@@ -6,7 +6,8 @@
     X,
     Bookmark,
     ChevronRight,
-    Package
+    Package,
+    CircleHelp
   } from '@lucide/svelte/icons';
   import {
     getCategorizedObjects,
@@ -31,6 +32,9 @@
     useDisabledObjectSuggestion,
     type DisabledObjectInfo
   } from '$lib/composables/useDisabledObjectSuggestion.svelte';
+  import { objectSchemas } from '$lib/objects/schemas';
+
+  type BrowserMode = 'insert' | 'help';
 
   function openPacks() {
     $sidebarView = 'packs';
@@ -49,6 +53,19 @@
   let expandedCategories = $state<Set<string>>(new Set());
   let showPresets = $state(true);
   let hasInitialized = $state(false);
+  let browserMode = $state<BrowserMode>('insert');
+
+  // Check if an object has help available
+  function hasHelp(objectName: string): boolean {
+    // Check if schema exists or if help patch file exists
+    // For now, just check schema registry
+    return objectName in objectSchemas;
+  }
+
+  // Open help for an object
+  function openHelp(objectName: string) {
+    window.location.href = `?help=${encodeURIComponent(objectName)}`;
+  }
 
   // Get all categorized objects, filtering AI features and by enabled extensions
   // Objects in the current patch but not enabled are included as low priority
@@ -334,6 +351,33 @@
 
           <!-- Filter buttons -->
           <div class="flex gap-2">
+            <!-- Mode toggle (Insert/Help) -->
+            <div class="flex overflow-hidden rounded-lg border border-zinc-700">
+              <button
+                onclick={() => (browserMode = 'insert')}
+                class={[
+                  'flex cursor-pointer items-center gap-1.5 px-3 text-sm leading-[36px] transition-colors',
+                  browserMode === 'insert'
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+                ]}
+              >
+                Insert
+              </button>
+              <button
+                onclick={() => (browserMode = 'help')}
+                class={[
+                  'flex cursor-pointer items-center gap-1.5 px-3 text-sm leading-[36px] transition-colors',
+                  browserMode === 'help'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+                ]}
+              >
+                <CircleHelp class="h-4 w-4" />
+                Help
+              </button>
+            </div>
+
             <!-- Packs button (navigates to sidebar) -->
             <button
               onclick={openPacks}
@@ -437,31 +481,66 @@
                     {#each category.objects as object (object.name)}
                       {@const isPreset = category.title.includes(': ')}
                       {@const isLowPriority = object.priority === 'low'}
-                      <button
-                        onclick={() => handleSelectObject(object.name)}
-                        class={[
-                          'flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
-                          isPreset
-                            ? 'border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
-                            : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
-                          isLowPriority && 'opacity-50'
-                        ]}
-                      >
-                        <div class="flex items-center gap-1.5">
-                          <span
-                            class={[
-                              'font-mono text-sm',
-                              isPreset ? 'text-zinc-300' : 'text-zinc-200'
-                            ]}>{object.name}</span
+                      {@const objectHasHelp = hasHelp(object.name)}
+
+                      <div class="group relative">
+                        <button
+                          onclick={() => {
+                            if (browserMode === 'help') {
+                              openHelp(object.name);
+                            } else {
+                              handleSelectObject(object.name);
+                            }
+                          }}
+                          class={[
+                            'flex w-full cursor-pointer flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
+                            browserMode === 'help'
+                              ? 'border-blue-500/30 bg-blue-500/5 hover:border-blue-500/50 hover:bg-blue-500/10'
+                              : isPreset
+                                ? 'border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
+                                : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
+                            isLowPriority && 'opacity-50'
+                          ]}
+                        >
+                          <div class="flex items-center gap-1.5">
+                            {#if browserMode === 'help'}
+                              <CircleHelp class="h-3.5 w-3.5 text-blue-400" />
+                            {/if}
+                            <span
+                              class={[
+                                'font-mono text-sm',
+                                browserMode === 'help'
+                                  ? 'text-blue-200'
+                                  : isPreset
+                                    ? 'text-zinc-300'
+                                    : 'text-zinc-200'
+                              ]}>{object.name}</span
+                            >
+                          </div>
+
+                          <span class="line-clamp-2 text-xs text-zinc-500"
+                            >{object.description}</span
                           >
-                        </div>
 
-                        <span class="line-clamp-2 text-xs text-zinc-500">{object.description}</span>
+                          {#if isLowPriority}
+                            <span class="font-mono text-[10px] text-zinc-600">disabled</span>
+                          {/if}
+                        </button>
 
-                        {#if isLowPriority}
-                          <span class="font-mono text-[10px] text-zinc-600">disabled</span>
+                        <!-- Help icon on hover (only in insert mode, desktop only) -->
+                        {#if browserMode === 'insert' && objectHasHelp}
+                          <button
+                            onclick={(e) => {
+                              e.stopPropagation();
+                              openHelp(object.name);
+                            }}
+                            class="absolute top-2 right-2 hidden rounded p-1 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 hover:text-zinc-300 sm:block"
+                            title="Open help for {object.name}"
+                          >
+                            <CircleHelp class="h-4 w-4" />
+                          </button>
                         {/if}
-                      </button>
+                      </div>
                     {/each}
                   </div>
                 {/if}

@@ -1,0 +1,67 @@
+{
+  "name": "trigger-help",
+  "version": "7",
+  "timestamp": 0,
+  "nodes": [
+    {
+      "id": "metro-1",
+      "type": "text",
+      "position": { "x": 100, "y": 50 },
+      "data": { "text": "metro 500", "title": "Click to start" }
+    },
+    {
+      "id": "trigger-1",
+      "type": "text",
+      "position": { "x": 100, "y": 150 },
+      "data": { "text": "trigger b b b", "title": "Outputs right-to-left" }
+    },
+    {
+      "id": "print-1",
+      "type": "text",
+      "position": { "x": 0, "y": 280 },
+      "data": { "text": "print first" }
+    },
+    {
+      "id": "print-2",
+      "type": "text",
+      "position": { "x": 120, "y": 280 },
+      "data": { "text": "print second" }
+    },
+    {
+      "id": "print-3",
+      "type": "text",
+      "position": { "x": 240, "y": 280 },
+      "data": { "text": "print third" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "metro-1",
+      "target": "trigger-1",
+      "sourceHandle": "message-out",
+      "targetHandle": "message-in"
+    },
+    {
+      "id": "e2",
+      "source": "trigger-1",
+      "target": "print-3",
+      "sourceHandle": "out-0",
+      "targetHandle": "message-in"
+    },
+    {
+      "id": "e3",
+      "source": "trigger-1",
+      "target": "print-2",
+      "sourceHandle": "out-1",
+      "targetHandle": "message-in"
+    },
+    {
+      "id": "e4",
+      "source": "trigger-1",
+      "target": "print-1",
+      "sourceHandle": "out-2",
+      "targetHandle": "message-in"
+    }
+  ]
+}

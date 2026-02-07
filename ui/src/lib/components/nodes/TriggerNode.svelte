@@ -7,12 +7,17 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CircleQuestionMark } from '@lucide/svelte/icons';
-  import TriggerHelpPanel from './TriggerHelpPanel.svelte';
+  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import {
     normalizeMessageType,
     getTypedOutput,
     type MessageType
   } from '$lib/messages/message-types';
+  import {
+    TRIGGER_TYPE_SPECS,
+    getTriggerTypeSpec,
+    type TriggerTypeKey
+  } from '$lib/objects/schemas/trigger';
 
   let {
     id: nodeId,
@@ -23,7 +28,6 @@
     data: {
       types: string[];
       shorthand: boolean;
-      showHelp?: boolean;
     };
     selected: boolean;
   } = $props();
@@ -36,8 +40,6 @@
   let editValue = $state('');
   let inputElement = $state<HTMLInputElement>();
   let nodeElement = $state<HTMLDivElement>();
-  let contentWidth = $state(0);
-  let contentContainer = $state<HTMLDivElement>();
   let showAutocomplete = $state(false);
   let selectedSuggestion = $state(0);
   let resultsContainer = $state<HTMLDivElement>();
@@ -59,101 +61,34 @@
       : 'border-zinc-700 bg-zinc-900/80 hover:shadow-glow-sm'
   );
 
-  // Type specifier metadata - single source of truth for tooltips, colors, and help panel
+  // Type specifier metadata imported from centralized schema
   // Note: hoverColor must be full class name for Tailwind to detect at build time
-  const TYPE_SPECS = {
-    b: {
-      name: 'bang',
-      desc: 'Always outputs a bang, regardless of input',
-      color: 'text-orange-400',
-      hoverColor: 'hover:text-orange-400'
-    },
-    a: {
-      name: 'any',
-      desc: 'Passes input through unchanged',
-      color: 'text-green-400',
-      hoverColor: 'hover:text-green-400'
-    },
-    s: {
-      name: 'symbol',
-      desc: 'Passes thru symbols or strings',
-      color: 'text-blue-400',
-      hoverColor: 'hover:text-blue-400'
-    },
-    t: {
-      name: 'text',
-      desc: 'Passes through strings',
-      color: 'text-blue-400',
-      hoverColor: 'hover:text-blue-400'
-    },
-    l: {
-      name: 'list',
-      desc: 'Passes through arrays',
-      color: 'text-purple-400',
-      hoverColor: 'hover:text-purple-400'
-    },
-    n: {
-      name: 'number',
-      desc: 'Passes through numbers',
-      color: 'text-yellow-400',
-      hoverColor: 'hover:text-yellow-400'
-    },
-    f: {
-      name: 'float',
-      desc: 'Passes through numbers',
-      color: 'text-yellow-400',
-      hoverColor: 'hover:text-yellow-400'
-    },
-    i: {
-      name: 'int',
-      desc: 'Passes through integers only',
-      color: 'text-amber-400',
-      hoverColor: 'hover:text-amber-400'
-    },
-    o: {
-      name: 'object',
-      desc: 'Passes through plain objects',
-      color: 'text-cyan-400',
-      hoverColor: 'hover:text-cyan-400'
-    }
-  } as const;
-
   const getTypeSpec = (type: string) => {
-    // First try direct key lookup (short form like 'b')
-    if (type in TYPE_SPECS) {
-      return TYPE_SPECS[type as keyof typeof TYPE_SPECS];
-    }
-
-    // Then try matching by name (full form like 'bang')
-    const lowerType = type.toLowerCase();
-    const entry = Object.entries(TYPE_SPECS).find(([, spec]) => spec.name === lowerType);
-    if (entry) {
-      return entry[1];
-    }
+    const spec = getTriggerTypeSpec(type);
 
     return {
-      name: type,
-      desc: 'Unknown type',
-      color: 'text-zinc-400',
-      hoverColor: 'hover:text-zinc-400'
+      name: spec.name,
+      desc: spec.description,
+      color: spec.color,
+      hoverColor: spec.hoverColor
     };
   };
 
   // Generate autocomplete items: all shorthands first, then all full names
   const allTypeItems = [
     // Shorthands first
-    ...Object.entries(TYPE_SPECS).map(([short, spec]) => ({
+    ...Object.entries(TRIGGER_TYPE_SPECS).map(([short, spec]) => ({
       value: short,
       label: short,
-      desc: spec.desc,
+      desc: spec.description,
       color: spec.color
     })),
 
     // Full names second
-    ...Object.entries(TYPE_SPECS).map(([, spec]) => ({
+    ...Object.entries(TRIGGER_TYPE_SPECS).map(([, spec]) => ({
       value: spec.name,
       label: spec.name,
-      desc: spec.desc,
+      desc: spec.description,
       color: spec.color
     }))
   ];
@@ -294,31 +229,14 @@
     }
   }
 
-  function toggleHelp() {
-    updateNodeData(nodeId, { showHelp: !data.showHelp });
-  }
-
-  function updateContentWidth() {
-    if (!contentContainer) return;
-
-    contentWidth = contentContainer.offsetWidth;
+  function openHelp() {
+    isSidebarOpen.set(true);
+    sidebarView.set('help');
   }
 
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
-    updateContentWidth();
-  });
-
-  // Update content width when editing state, value, or types change
-  $effect(() => {
-    // Track dependencies
-    void isEditing;
-    void editValue;
-    void data.types;
-
-    // Use requestAnimationFrame to ensure DOM has updated
-    requestAnimationFrame(updateContentWidth);
   });
 
   onDestroy(() => {
@@ -338,7 +256,7 @@
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
-    <div class="flex flex-col gap-2" bind:this={contentContainer}>
+    <div class="flex flex-col gap-2">
       <!-- Help button above node -->
       <div class="absolute -top-7 right-0 flex items-center">
         <button
@@ -346,7 +264,7 @@
           onclick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleHelp();
+            openHelp();
           }}
           title="Show help"
         >
@@ -466,11 +384,4 @@
       </div>
     </div>
   </div>
-
-  <!-- Help side panel -->
-  {#if data.showHelp}
-    <div class="absolute" style="left: {contentWidth + 6}px">
-      <TriggerHelpPanel onClose={toggleHelp} />
-    </div>
-  {/if}
 </div>

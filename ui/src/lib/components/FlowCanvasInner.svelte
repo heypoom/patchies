@@ -28,7 +28,9 @@
     isSidebarOpen,
     sidebarView,
     patchObjectTypes,
-    currentPatchName
+    currentPatchName,
+    helpModeObject,
+    selectedNodeInfo
   } from '../../stores/ui.store';
   import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
@@ -159,14 +161,21 @@
   useOnSelectionChange(({ nodes, edges }) => {
     selectedNodeIds = nodes.map((node) => node.id);
     selectedEdgeIds = edges.map((edge) => edge.id);
+
+    // Sync selected node to store for context-sensitive help sidebar
+    if (nodes.length === 1 && nodes[0].type) {
+      selectedNodeInfo.set({ type: nodes[0].type, id: nodes[0].id });
+    } else {
+      selectedNodeInfo.set(null);
+    }
   });
 
   function performAutosave() {
     const embedParam = getSearchParam('embed');
     const isEmbed = embedParam === 'true' || embedParam === '1';
 
-    // do not autosave when in embed mode
-    if (isEmbed) {
+    // do not autosave when in embed mode or help mode
+    if (isEmbed || $helpModeObject) {
       return;
     }
 
@@ -577,6 +586,15 @@
     const params = new URLSearchParams(window.location.search);
     const src = params.get('src');
     const id = params.get('id');
+    const help = params.get('help');
+
+    // For ?help= parameter, load help patch (read-only mode)
+    if (help) {
+      showStartupModal = false;
+      helpModeObject.set(help);
+      await loadPatchFromUrlParam(`/help-patches/${help}.json`);
+      return;
+    }
 
     // For ?src= parameter, load directly (external URL - no confirmation for now)
     if (src) {
@@ -1103,6 +1121,28 @@
             title="Dismiss"
           >
             ×
+          </button>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Help Mode Banner -->
+    {#if $helpModeObject}
+      <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+        <div
+          class="flex items-center gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100"
+        >
+          <span>Help patch for <strong>{$helpModeObject}</strong> — changes won't be saved</span>
+
+          <button
+            class="rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
+            onclick={() => {
+              helpModeObject.set(null);
+              window.history.pushState({}, '', window.location.pathname);
+              window.location.reload();
+            }}
+          >
+            Exit Help
           </button>
         </div>
       </div>

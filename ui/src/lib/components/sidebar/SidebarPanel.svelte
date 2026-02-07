@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { X, Folder, Bookmark, Package, Save } from '@lucide/svelte/icons';
+  import { X, Folder, Bookmark, Package, Save, CircleQuestionMark } from '@lucide/svelte/icons';
+
   import FileTreeView from './FileTreeView.svelte';
   import PresetTreeView from './PresetTreeView.svelte';
   import ExtensionsView from './ExtensionsView.svelte';
   import SavesTreeView from './SavesTreeView.svelte';
-  import type { SidebarView } from '../../../stores/ui.store';
+  import HelpView from './HelpView.svelte';
+
+  import { sidebarWidth, type SidebarView } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
@@ -20,14 +23,13 @@
     { id: 'files', icon: Folder, title: 'Files' },
     { id: 'presets', icon: Bookmark, title: 'Presets' },
     { id: 'saves', icon: Save, title: 'Saves' },
-    { id: 'packs', icon: Package, title: 'Packs' }
+    { id: 'packs', icon: Package, title: 'Packs' },
+    { id: 'help', icon: CircleQuestionMark, title: 'Help' }
   ];
 
   const MIN_WIDTH = 180;
-  const MAX_WIDTH = 400;
-  const DEFAULT_WIDTH = 256;
+  const MAX_WIDTH = 600;
 
-  let width = $state(DEFAULT_WIDTH);
   let isDragging = $state(false);
 
   function handlePointerDown(e: PointerEvent) {
@@ -43,7 +45,7 @@
   function handlePointerMove(e: PointerEvent) {
     if (!isDragging) return;
     const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
-    width = newWidth;
+    sidebarWidth.set(newWidth);
   }
 
   function handlePointerUp(e: PointerEvent) {
@@ -60,7 +62,7 @@
 {#if open}
   <div
     class="relative flex h-full w-full shrink-0 flex-col border-r border-zinc-700 bg-zinc-950"
-    style:--sidebar-width="{width}px"
+    style:--sidebar-width="{$sidebarWidth}px"
     class:sm:w-[var(--sidebar-width)]={true}
   >
     <!-- Header with view switcher -->
@@ -99,6 +101,8 @@
         <ExtensionsView />
       {:else if view === 'saves'}
         <SavesTreeView {onSavePatch} />
+      {:else if view === 'help'}
+        <HelpView />
       {/if}
     </div>
 

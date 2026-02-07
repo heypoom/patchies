@@ -92,7 +92,9 @@
             // patcher - svelte flow
             document.querySelector('.svelte-flow') ||
             // secondary output screen
-            document.querySelector('canvas#output');
+            document.querySelector('canvas#output') ||
+            // documentation (/docs/)
+            document.querySelector('.patchies-docs');
 
           if (flowContainer) {
             // Patcher UI is mounted, hide loader after brief delay
