@@ -214,6 +214,17 @@
     updateContentWidth();
   });
 
+  // Update content width when editing state, value, or types change
+  $effect(() => {
+    // Track dependencies
+    void isEditing;
+    void editValue;
+    void data.types;
+
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(updateContentWidth);
+  });
+
   onDestroy(() => {
     messageContext.queue.removeCallback(handleMessage);
     messageContext.destroy();
