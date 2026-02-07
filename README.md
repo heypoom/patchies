@@ -37,30 +37,65 @@ This lets you visually see the program's core composition and its in-between res
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
-## Getting Started
+## Documentation
 
-<img src="./docs/images/demos-modal.webp" alt="Patchies.app demo modal" width="700">
+See [patchies.app/docs](https://patchies.app/docs) for full documentation. Quick links:
 
-Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand.
+### Getting Started
 
-- Go to [patchies.app](https://patchies.app)
-- Click on the "demos" tab to view the list of demos you can play with
-- Use the mouse to pan the canvas.
-- Use the scroll wheel to zoom the canvas.
-- You can always go back to this dialog by using the three dots on the bottom right, then `Help / Getting Started`.
+| Topic                                                              | Description               |
+| ------------------------------------------------------------------ | ------------------------- |
+| [Getting Started](https://patchies.app/docs/getting-started)       | First steps with Patchies |
+| [Creating Objects](https://patchies.app/docs/creating-objects)     | Insert and modify objects |
+| [Keyboard Shortcuts](https://patchies.app/docs/keyboard-shortcuts) | Essential shortcuts       |
+| [Connecting Objects](https://patchies.app/docs/connecting-objects) | Connect handles together  |
+| [Connection Rules](https://patchies.app/docs/connection-rules)     | What can connect to what  |
 
-## Creating Objects
+### Core Concepts
 
-<img src="./docs/images/patchies-insert-object-with-enter.png" alt="Patchies.app orca node" width="700">
+| Topic                                                              | Description               |
+| ------------------------------------------------------------------ | ------------------------- |
+| [Message Passing](https://patchies.app/docs/message-passing)       | Send data between objects |
+| [Video Chaining](https://patchies.app/docs/video-chaining)         | Chain visual effects      |
+| [Audio Chaining](https://patchies.app/docs/audio-chaining)         | Chain audio processing    |
+| [JavaScript Runner](https://patchies.app/docs/javascript-runner)   | JSRunner API reference    |
+| [Canvas Interaction](https://patchies.app/docs/canvas-interaction) | Mouse/touch control       |
 
-- Press `Enter` to create a new object.
-- Type to search for object and preset names. Try `button` or `textbox` or `logger.js`.
-- By default, only a few objects and presets is added. To add more, see [packs section](#manage-packs).
-- `Arrow Up/Down` navigates the list.
-- `Enter` inserts the object.
-- `Esc` closes the menu.
+### Workspace
 
-### Browsing Objects
+| Topic                                                      | Description                |
+| ---------------------------------------------------------- | -------------------------- |
+| [Manage Packs](https://patchies.app/docs/manage-packs)     | Enable object/preset packs |
+| [Manage Saves](https://patchies.app/docs/manage-saves)     | Save and load patches      |
+| [Manage Files](https://patchies.app/docs/manage-files)     | Virtual filesystem         |
+| [Manage Presets](https://patchies.app/docs/manage-presets) | Create/organize presets    |
+| [Sharing Links](https://patchies.app/docs/sharing-links)   | Share patches via URL      |
+| [Offline Usage](https://patchies.app/docs/offline-usage)   | Use without internet       |
+
+### Advanced
+
+| Topic                                                                      | Description              |
+| -------------------------------------------------------------------------- | ------------------------ |
+| [AI Features](https://patchies.app/docs/ai-features)                       | Generate objects with AI |
+| [Supporting Open Source](https://patchies.app/docs/supporting-open-source) | Credits and sponsors     |
+
+## List of objects
+
+Here are the non-exhaustive list of objects that we have in Patchies.
+
+### Visual & Creative Coding Objects
+
+These objects support video chaining and can be connected to create complex visual effects:
+
+### `p5`: creates a P5.js sketch
+
+See [p5 documentation](https://patchies.app/docs/objects/p5) for details, examples, and interactive demos.
+
+### `hydra`: creates a Hydra video synthesizer
+
+- [Hydra](https://hydra.ojack.xyz) is a live coding video synthesizer created by [Olivia Jack](https://ojack.xyz). You can use it to create all kinds of video effects.
+- See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use hydra.
+- Try out the standalone editor at [Hydra](https://hydra.ojack.xyz) to see how Hydra works.
 
 <img src="./docs/images/object-browser.webp" alt="Patchies.app browse objects modal" width="700">
 
