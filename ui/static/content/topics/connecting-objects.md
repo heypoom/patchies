@@ -2,6 +2,8 @@
 
 To connect objects, click and drag on an object's handle all the way to the other object's handle.
 
+<video src="/content/videos/standard-connect.webm" autoplay loop muted playsinline></video>
+
 - A handle looks like circle grey, blue, orange or purple dots at the top or bottom of objects
 - When connecting, the starting handle will highlight to show where you're connecting from
 - When connecting, all invalid connection targets will be dimmed
@@ -13,6 +15,8 @@ Use the _easy connect_ button to make the handles big and easy to touch, when:
 1. You are using touch devices like a mobile phone or tablet
 2. You cannot locate the tiny object handles or drag across them
 3. You want to connect many handles together by tap or click
+
+<video src="/content/videos/easy-connect.webm" autoplay loop muted playsinline></video>
 
 To use this feature:
 
