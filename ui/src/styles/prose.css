@@ -87,13 +87,21 @@
   }
 
   .prose-markdown ul,
+  .prose-markdown-sm ul {
+    font-size: var(--prose-base);
+    color: #a1a1aa;
+    padding-left: 0.8rem;
+    margin-bottom: 1rem;
+    list-style-type: disc;
+  }
+
   .prose-markdown ol,
-  .prose-markdown-sm ul,
   .prose-markdown-sm ol {
     font-size: var(--prose-base);
     color: #a1a1aa;
-    padding-left: 1.5rem;
+    padding-left: 0.8rem;
     margin-bottom: 1rem;
+    list-style-type: decimal;
   }
 
   .prose-markdown li,
