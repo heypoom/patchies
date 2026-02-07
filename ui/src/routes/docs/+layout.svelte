@@ -1,9 +1,12 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { ArrowLeft, BookOpen, Box } from '@lucide/svelte/icons';
+  import { ArrowLeft, BookOpen, Box, ChevronDown, ChevronRight } from '@lucide/svelte/icons';
   import { categoryOrder, topicOrder } from './docs-nav';
 
   let { data, children } = $props();
+
+  let guidesExpanded = $state(true);
+  let objectsExpanded = $state(true);
 
   // Group topics by category and sort by topicOrder
   const topicsByCategory = $derived(() => {
@@ -64,70 +67,86 @@
 
         <!-- Topics Section -->
         <div class="mb-6">
-          <div
-            class="mb-4 flex items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase"
+          <button
+            onclick={() => (guidesExpanded = !guidesExpanded)}
+            class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
           >
+            {#if guidesExpanded}
+              <ChevronDown class="h-3.5 w-3.5" />
+            {:else}
+              <ChevronRight class="h-3.5 w-3.5" />
+            {/if}
             <BookOpen class="h-3.5 w-3.5" />
             Guides
-          </div>
+          </button>
 
-          <nav class="space-y-3">
-            {#each categoryOrder as category}
-              {@const topics = topicsByCategory().get(category)}
-              {#if topics && topics.length > 0}
-                <div>
-                  <div class="mb-1 text-xs text-zinc-600">{category}</div>
-                  <ul class="space-y-0.5">
-                    {#each topics as topic}
-                      {@const isActive = currentPath === `/docs/${topic.slug}`}
-                      <li>
-                        <a
-                          href="/docs/{topic.slug}"
-                          class={[
-                            'block rounded px-2 py-1 text-sm transition-colors',
-                            isActive
-                              ? 'bg-zinc-800 text-zinc-100'
-                              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                          ]}
-                        >
-                          {topic.title}
-                        </a>
-                      </li>
-                    {/each}
-                  </ul>
-                </div>
-              {/if}
-            {/each}
-          </nav>
+          {#if guidesExpanded}
+            <nav class="space-y-3">
+              {#each categoryOrder as category}
+                {@const topics = topicsByCategory().get(category)}
+                {#if topics && topics.length > 0}
+                  <div>
+                    <div class="mb-1 text-xs text-zinc-600">{category}</div>
+                    <ul class="space-y-0.5">
+                      {#each topics as topic}
+                        {@const isActive = currentPath === `/docs/${topic.slug}`}
+                        <li>
+                          <a
+                            href="/docs/{topic.slug}"
+                            class={[
+                              'block rounded px-2 py-1 text-sm transition-colors',
+                              isActive
+                                ? 'bg-zinc-800 text-zinc-100'
+                                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                            ]}
+                          >
+                            {topic.title}
+                          </a>
+                        </li>
+                      {/each}
+                    </ul>
+                  </div>
+                {/if}
+              {/each}
+            </nav>
+          {/if}
         </div>
 
         <!-- Objects Section -->
         <div>
-          <div
-            class="mb-4 flex items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase"
+          <button
+            onclick={() => (objectsExpanded = !objectsExpanded)}
+            class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
           >
+            {#if objectsExpanded}
+              <ChevronDown class="h-3.5 w-3.5" />
+            {:else}
+              <ChevronRight class="h-3.5 w-3.5" />
+            {/if}
             <Box class="h-3.5 w-3.5" />
             Objects
-          </div>
+          </button>
 
-          <ul class="space-y-0.5">
-            {#each data.index.objects as object}
-              {@const isActive = currentPath === `/docs/objects/${object.slug}`}
-              <li>
-                <a
-                  href="/docs/objects/{object.slug}"
-                  class={[
-                    'block rounded px-2 py-1 font-mono text-sm transition-colors',
-                    isActive
-                      ? 'bg-zinc-800 text-zinc-100'
-                      : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                  ]}
-                >
-                  {object.slug}
-                </a>
-              </li>
-            {/each}
-          </ul>
+          {#if objectsExpanded}
+            <ul class="space-y-0.5">
+              {#each data.index.objects as object}
+                {@const isActive = currentPath === `/docs/objects/${object.slug}`}
+                <li>
+                  <a
+                    href="/docs/objects/{object.slug}"
+                    class={[
+                      'block rounded px-2 py-1 font-mono text-sm transition-colors',
+                      isActive
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                    ]}
+                  >
+                    {object.slug}
+                  </a>
+                </li>
+              {/each}
+            </ul>
+          {/if}
         </div>
       </div>
     </aside>

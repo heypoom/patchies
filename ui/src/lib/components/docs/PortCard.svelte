@@ -26,6 +26,7 @@
     >
       <div>
         <div class={['font-mono text-zinc-200', compact ? 'text-xs' : 'text-sm']}>{port.id}</div>
+
         <div class={['text-zinc-400', compact ? 'mt-0.5 text-[11px]' : 'mt-1 text-sm']}>
           {port.description}
         </div>
@@ -36,7 +37,11 @@
     </button>
     {#if isOpen}
       <div class={['border-t border-zinc-800', compact ? 'p-2 pt-0' : 'p-3 pt-0']}>
-        <MessageTable messages={port.messages} class={compact ? 'mt-2 text-[11px]' : 'mt-3'} />
+        <MessageTable
+          messages={port.messages ?? []}
+          class={compact ? 'mt-2 text-[11px]' : 'mt-3'}
+          {compact}
+        />
       </div>
     {/if}
   {:else}

@@ -260,20 +260,27 @@
       target.closest('.cm-content') ||
       target.contentEditable === 'true' ||
       // Allow text selection in virtual console
-      target.closest('[role="log"]');
+      target.closest('[role="log"]') ||
+      // Allow copy in sidebar
+      target.closest('[data-sidebar]');
 
     const hasNodeSelected = selectedNodeIds.length > 0;
 
     // Handle CTRL+C for copy
+    // Skip if there's text selected (user wants to copy text, not nodes)
+    const hasTextSelection = window.getSelection()?.toString().trim();
+
     if (
       event.key.toLowerCase() === 'c' &&
       (event.metaKey || event.ctrlKey) &&
       !isTyping &&
-      hasNodeSelected
+      hasNodeSelected &&
+      !hasTextSelection
     ) {
       event.preventDefault();
       copySelectedNodes();
     }
+
     // Handle CTRL+V for paste
     else if (event.key.toLowerCase() === 'v' && (event.metaKey || event.ctrlKey) && !isTyping) {
       event.preventDefault();

@@ -38,7 +38,7 @@ export const webcamSchema: ObjectSchema = {
         },
         {
           schema: Size,
-          description: 'Set capture resolution (requested as ideal, actual may vary)'
+          description: 'Set capture resolution'
         }
       ]
     }
