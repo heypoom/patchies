@@ -45,6 +45,7 @@
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
   import ObjectSuggestionDropdown from './ObjectSuggestionDropdown.svelte';
+  import { getIconById } from '$lib/components/icons';
 
   // Common objects that should appear first in autocomplete
   // Ordered by general usage frequency
@@ -563,6 +564,7 @@
     if (!getAudioObjectNames().includes(name)) return false;
 
     syncAudioService(name, params);
+    objectInstanceVersion++;
 
     return true;
   }
@@ -722,6 +724,7 @@
 
     if (getAudioObjectNames().includes(data.name)) {
       syncAudioService(data.name, data.params);
+      objectInstanceVersion++;
     }
 
     // Create V2 text object if applicable
@@ -835,6 +838,30 @@
 
     return null;
   });
+
+  // Get dynamic icon for audio nodes that support it (e.g., oscillator waveform icons)
+  const dynamicIconComponent = $derived.by(() => {
+    // Re-evaluate when params change or when audio node is created
+    void data.params;
+    void objectInstanceVersion;
+
+    const audioNode = audioService.getNodeById(nodeId);
+    if (!audioNode?.getIcon) return null;
+
+    const iconId = audioNode.getIcon();
+    if (!iconId) return null;
+
+    return getIconById(iconId);
+  });
+
+  // Get the param index that the icon represents (to hide it from display)
+  const iconParamIndex = $derived.by(() => {
+    void data.params;
+    void objectInstanceVersion;
+
+    const audioNode = audioService.getNodeById(nodeId);
+    return audioNode?.getIconParamIndex?.() ?? null;
+  });
 </script>
 
 <div class="relative">
@@ -926,7 +953,7 @@
               tabindex="0"
               onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
             >
-              <div class="font-mono text-xs">
+              <div class="flex items-center gap-1.5 font-mono text-xs">
                 <span class={[!getCombinedMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
                   >{data.name}</span
                 >
@@ -936,7 +963,28 @@
                   <span class="text-zinc-400">{rawParamsFromExpr}</span>
                 {:else}
                   {#each data.params as param, index}
-                    {#if !isUnmodifiableType(inlets[index]?.type)}
+                    {#if index === iconParamIndex && dynamicIconComponent}
+                      <!-- Render icon in place of the param text -->
+                      {@const IconComponent = dynamicIconComponent}
+                      <Tooltip.Root>
+                        <Tooltip.Trigger class="flex">
+                          <div
+                            class={[
+                              'inline-flex cursor-pointer justify-end text-zinc-400 underline-offset-2',
+                              getInletTypeHoverClass(index)
+                            ]}
+                          >
+                            <IconComponent class="h-3.5 w-3.5" />
+                          </div>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>{getInletHint(index)}</p>
+                          {#if inlets[index]?.description}
+                            <p class="text-xs text-zinc-500">{inlets[index].description}</p>
+                          {/if}
+                        </Tooltip.Content>
+                      </Tooltip.Root>
+                    {:else if !isUnmodifiableType(inlets[index]?.type)}
                       <Tooltip.Root>
                         <Tooltip.Trigger>
                           <span

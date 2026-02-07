@@ -58,6 +58,7 @@ export class OscNode implements AudioNodeV2 {
   audioNode: OscillatorNode;
 
   private audioContext: AudioContext;
+  private isCustomWave = false;
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -90,6 +91,7 @@ export class OscNode implements AudioNodeV2 {
       })
       .with(['type', P.string], ([, type]) => {
         this.audioNode.type = type as OscillatorType;
+        this.isCustomWave = false;
       })
       .with(['type', [PeriodicWavePart, PeriodicWavePart]], ([, waveParts]) => {
         const [real, imag] = waveParts;
@@ -108,6 +110,7 @@ export class OscNode implements AudioNodeV2 {
         });
 
         this.audioNode.setPeriodicWave(wave);
+        this.isCustomWave = true;
       });
   }
 
@@ -119,5 +122,17 @@ export class OscNode implements AudioNodeV2 {
     }
 
     this.audioNode.disconnect();
+  }
+
+  getIcon(): string {
+    if (this.isCustomWave) {
+      return 'waveform:custom';
+    }
+
+    return `waveform:${this.audioNode.type}`;
+  }
+
+  getIconParamIndex(): number {
+    return 1; // type param at index 1
   }
 }
