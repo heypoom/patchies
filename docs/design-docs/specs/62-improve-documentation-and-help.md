@@ -244,3 +244,52 @@ interface OutletSchema {
 | Object browser    | `ui/src/lib/components/object-browser/ObjectBrowserModal.svelte` |
 | Object docs route | `ui/src/routes/docs/objects/[object]/+page.svelte`               |
 | Topic docs route  | `ui/src/routes/docs/[topic]/+page.svelte`                        |
+
+---
+
+## Lessons Learned (p5 Migration)
+
+Issues encountered during the first object migration from README.md:
+
+### 1. Markdown Syntax Highlighting
+
+`marked` v16 changed its API. Don't use `marked.setOptions({ highlight })`. Instead:
+
+```ts
+import { Marked } from "marked";
+import { markedHighlight } from "marked-highlight";
+import hljs from "highlight.js/lib/core";
+
+export const marked = new Marked(
+  markedHighlight({
+    highlight(code, lang) {
+      return hljs.highlight(code, { language: lang }).value;
+    },
+  })
+);
+```
+
+### 2. Migration Strategy
+
+- **MOVE** assets (images), don't copy or symlink — goal is to migrate away from README.md
+- Images go to `ui/static/content/images/`
+- After migration, replace README section with link to docs URL
+
+### 3. Content Verification Checklist
+
+Before deleting README content, verify the new docs include:
+
+- [ ] Images and screenshots
+- [ ] Example patch links (most important for engagement!)
+- [ ] All external links (tutorials, references, creator credits)
+- [ ] Donation/support links for open source projects
+- [ ] See Also section linking to related objects
+
+### 4. Shared Prose Styles
+
+Prose styles live in `ui/src/styles/prose.css` (imported in app.css):
+
+- `.prose-markdown` — full size for docs pages
+- `.prose-markdown-sm` — 73% scale for help sidebar
+
+Don't duplicate these styles in components.

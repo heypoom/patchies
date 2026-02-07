@@ -105,18 +105,6 @@
           </div>
         </section>
       {/if}
-
-      <!-- Tags -->
-      {#if data.schema.tags && data.schema.tags.length > 0}
-        <section class="mb-6">
-          <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">Tags</h2>
-          <div class="flex flex-wrap gap-2">
-            {#each data.schema.tags as tag}
-              <span class="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400">{tag}</span>
-            {/each}
-          </div>
-        </section>
-      {/if}
     {/if}
 
     <!-- Prose documentation from markdown -->
@@ -137,6 +125,18 @@
           Open Help Patch
         </button>
       </div>
+    {/if}
+
+    <!-- Tags -->
+    {#if data.schema.tags && data.schema.tags.length > 0}
+      <section class="mb-6">
+        <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">Tags</h2>
+        <div class="flex flex-wrap gap-2">
+          {#each data.schema.tags as tag}
+            <span class="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400">{tag}</span>
+          {/each}
+        </div>
+      </section>
     {/if}
   </div>
 </div>

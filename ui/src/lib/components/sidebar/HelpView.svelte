@@ -155,19 +155,6 @@
         <TriggerTypeSpecifiers />
       {/if}
 
-      <!-- Tags -->
-      {#if currentSchema.tags && currentSchema.tags.length > 0}
-        <div class="mb-4">
-          <h3 class="mb-2 text-xs font-medium tracking-wider text-zinc-500 uppercase">Tags</h3>
-
-          <div class="flex flex-wrap gap-1">
-            {#each currentSchema.tags as tag}
-              <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">{tag}</span>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
       <!-- Prose documentation from markdown -->
       {#if helpContent.htmlContent}
         <div class="mb-4 border-t border-zinc-800 pt-4">
@@ -189,6 +176,19 @@
           <Play class="h-3.5 w-3.5" />
           Open Help Patch
         </a>
+      {/if}
+
+      <!-- Tags -->
+      {#if currentSchema.tags && currentSchema.tags.length > 0}
+        <div class="mb-4">
+          <h3 class="mb-2 text-xs font-medium tracking-wider text-zinc-500 uppercase">Tags</h3>
+
+          <div class="flex flex-wrap gap-1">
+            {#each currentSchema.tags as tag}
+              <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">{tag}</span>
+            {/each}
+          </div>
+        </div>
       {/if}
     </div>
   {:else}
