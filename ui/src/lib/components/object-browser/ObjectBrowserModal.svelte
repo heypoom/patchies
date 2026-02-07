@@ -361,31 +361,43 @@
           <!-- Filter buttons -->
           <div class="flex gap-2">
             <!-- Packs button (navigates to sidebar) -->
-            <button
-              onclick={openPacks}
-              class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm leading-[36px] text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400 sm:flex-none"
-            >
-              <Package class="h-4 w-4" />
-              <span>Packs</span>
-              <ChevronRight class="-ml-0.5 h-3.5 w-3.5" />
-            </button>
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger>
+                <button
+                  onclick={openPacks}
+                  class="flex h-[38px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400 sm:flex-none"
+                >
+                  <Package class="h-4 w-4" />
+                  <span>Packs</span>
+                  <ChevronRight class="-ml-0.5 h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">Enable or disable object packs</Tooltip.Content>
+            </Tooltip.Root>
 
             <!-- Presets toggle (disabled in help mode) -->
-            <button
-              onclick={() => (showPresets = !showPresets)}
-              disabled={browserMode === 'help'}
-              class={[
-                'flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors sm:flex-none',
-                browserMode === 'help'
-                  ? 'cursor-not-allowed border-zinc-800 bg-zinc-900/50 text-zinc-600'
-                  : showPresets
-                    ? 'cursor-pointer border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                    : 'cursor-pointer border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
-              ]}
-            >
-              <Bookmark class="h-4 w-4" />
-              <span>Presets</span>
-            </button>
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger>
+                <button
+                  onclick={() => (showPresets = !showPresets)}
+                  disabled={browserMode === 'help'}
+                  class={[
+                    'flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm transition-colors sm:flex-none',
+                    browserMode === 'help'
+                      ? 'cursor-not-allowed border-zinc-800 bg-zinc-900/50 text-zinc-600'
+                      : showPresets
+                        ? 'cursor-pointer border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                        : 'cursor-pointer border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+                  ]}
+                >
+                  <Bookmark class="h-4 w-4" />
+                  <span>Presets</span>
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">
+                {browserMode === 'help' ? 'Presets hidden in help mode' : 'Show saved presets?'}
+              </Tooltip.Content>
+            </Tooltip.Root>
 
             <!-- Help mode toggle -->
             <Tooltip.Root delayDuration={100}>
