@@ -24,11 +24,10 @@
   interface Props {
     topics: Topic[];
     objects: ObjectItem[];
+    visible?: boolean;
   }
 
-  let { topics, objects }: Props = $props();
-
-  let visible = $state(true);
+  let { topics, objects, visible = $bindable(true) }: Props = $props();
   let guidesExpanded = $state(true);
   let objectsExpanded = $state(true);
 
