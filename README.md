@@ -17,7 +17,7 @@ Patchies lets you use the audio, visual and computational tools and libraries th
 - Live code music with [Strudel](#strudel-strudel-music-environment), [ChucK](#chuck-creates-a-chuck-audio-programming-environment), [SuperSonic](#sonic-supercollider-synthesis-engine) and [Orca](#orca-orca-livecoding-sequencer)
 - Synthesize and process audio with [Web Audio](#audio-objects) nodes, [Tone.js](#tone-tonejs-synthesis-and-processing) and [Elementary Audio](#elem-elementary-audio-synthesis-and-processing)
 - Run programs and games on the [Uxn](#uxn-uxn-virtual-machine) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) assembly.
-- Compute like a caveman with [stack machine assembly](./modules/vasm/README.md), or like a wizard with [Ruby](#ruby-creates-a-ruby-code-environment) and [Python](#python-creates-a-python-code-environment)
+- Compute like a caveman with [stack machine assembly](#asm-virtual-stack-machine-assembly-interpreter), or like a wizard with [Ruby](#ruby-creates-a-ruby-code-environment) and [Python](#python-creates-a-python-code-environment)
 - Connect to the outside world with [MIDI](#midi--network-objects), [MQTT](#mqtt-mqtt-client), [SSE](#sse-server-sent-events), [WebRTC](#netsend-and-netrecv-send-and-receive-messages-over-network), [Iframe](#iframe-embed-web-content) and [VDO.Ninja](#vdoninja-send-and-receive-audio-video-and-messages-over-webrtc).
 - Manage [data and control flow](#programming--control-objects) with [js](#js-a-javascript-code-block), [expr](#expr-expression-evaluator), [filter](#filter-conditional-message-passing), [map](#map-transform-messages-with-javascript), [iframe](#iframe-embed-web-content), [spigot](#control-objects), [trigger](#trigger-sends-messages-in-right-to-left-order), select, metro and more.
 - Use [built-in widgets](#interface--control-objects) or make your own with [Vue.js](#vue-create-user-interfaces-with-vue), [DOM API](#dom-create-user-interfaces-with-vanilla-js), [Tailwind](https://tailwindcss.com) or any library you like.
@@ -933,6 +933,36 @@ This allows you to set up multiple values before triggering a computation. Use [
 - Optional expression to peek at specific fields: `peek $1.type` or click the code icon to add an expression.
 - Use `$1` to reference the incoming message (e.g., `$1.x`, `$1.data.name`).
 
+### `trigger`: sends messages in right-to-left order
+
+The `trigger` object (shorthand: `t`) is essential for controlling message order and working with hot/cold inlets. It sends messages through multiple outlets in **right-to-left order**.
+
+**Usage:** `trigger <type1> <type2> ...` or `t <type1> <type2> ...`
+
+**Type specifiers:**
+
+- `b` or `bang`: Always sends `{type: 'bang'}`
+- `a` or `any`: Passes the input unchanged
+- `n` or `f` or `number` or `float`: Passes only if input is a number
+- `l` or `list`: Passes only if input is an array
+- `o` or `object`: Passes only if input is a plain object (not array)
+- `s` or `symbol`: Passes only if input is a string, an object with a `type` key, or a js `Symbol` object
+- `t`, `text`, `str` or `string`: Passes only if input is a string
+
+**Example:** `t b n` creates two outlets. When it receives the number `42`:
+
+1. First, outlet 1 (right) sends `42`
+2. Then, outlet 0 (left) sends `{type: 'bang'}`
+
+This right-to-left order is crucial for setting up cold inlets before triggering hot inlets. For example, to properly update an `expr $1 + $2` object:
+
+```text
+[slider] ──┬──► [t b a] ──► outlet 0 (bang) ──► expr inlet 0 (hot, triggers output)
+           │           └──► outlet 1 (value) ──► expr inlet 1 (cold, stores value)
+```
+
+The trigger ensures the value reaches the cold inlet (`$2`) before the bang triggers the hot inlet (`$1`).
+
 ### `vue`: create user interfaces with Vue
 
 - Build custom UI components using [Vue.js 3](https://vuejs.org) with the Composition API.
@@ -1304,42 +1334,11 @@ These objects run on _control rate_, which means they process messages (control 
 - `delay`: Message delay (not audio)
 - `debounce`: Waits for quiet period before emitting last value (e.g., `debounce 100`)
 - `throttle`: Rate limits messages to at most one per time period (e.g., `throttle 100`)
-- `trigger` (alias `t`): Send [messages through multiple outlets](#trigger-sends-messages-in-right-to-left-order) in right-to-left order
 - `adsr`: [ADSR envelope generator](#adsr-adsr-envelope-generator)
 - `spigot`: Message gate that allows or blocks data based on a condition
 - `uniqby`: Filter consecutive duplicates by a specific key (e.g., `uniqby id` or `uniqby user.name`)
 - `webmidilink`: Converts `midi.in` messages to [WebMIDILink](https://www.g200kg.com/en/docs/webmidilink) link level 0 formats. Connect this to [iframe](#iframe-embed-web-content) to send MIDI messages to WebMIDILink-enabled iframes.
   - see [this demo](https://patchies.app/?id=x7q9819cn6zplpk) from @kijjaz on using `webmidilink` to make smooth jazz with SpessaSynth. click on the iframe to play sound.
-
-#### `trigger`: sends messages in right-to-left order
-
-The `trigger` object (shorthand: `t`) is essential for controlling message order and working with hot/cold inlets. It sends messages through multiple outlets in **right-to-left order**.
-
-**Usage:** `trigger <type1> <type2> ...` or `t <type1> <type2> ...`
-
-**Type specifiers:**
-
-- `b` or `bang`: Always sends `{type: 'bang'}`
-- `a` or `any`: Passes the input unchanged
-- `n` or `f` or `number` or `float`: Passes only if input is a number
-- `l` or `list`: Passes only if input is an array
-- `o` or `object`: Passes only if input is a plain object (not array)
-- `s` or `symbol`: Passes only if input is a string, an object with a `type` key, or a js `Symbol` object
-- `t`, `text`, `str` or `string`: Passes only if input is a string
-
-**Example:** `t b n` creates two outlets. When it receives the number `42`:
-
-1. First, outlet 1 (right) sends `42`
-2. Then, outlet 0 (left) sends `{type: 'bang'}`
-
-This right-to-left order is crucial for setting up cold inlets before triggering hot inlets. For example, to properly update an `expr $1 + $2` object:
-
-```text
-[slider] ──┬──► [t b a] ──► outlet 0 (bang) ──► expr inlet 0 (hot, triggers output)
-           │           └──► outlet 1 (value) ──► expr inlet 1 (cold, stores value)
-```
-
-The trigger ensures the value reaches the cold inlet (`$2`) before the bang triggers the hot inlet (`$1`).
 
 ### `adsr`: ADSR envelope generator
 

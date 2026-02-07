@@ -54,6 +54,7 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   tap: 'Execute side effects and pass messages through',
   scan: 'Accumulate values with stateful scanning',
   uniq: 'Filter consecutive duplicate values',
+  trigger: 'Send messages through multiple outlets in right-to-left order',
   peek: 'Display latest received value',
   worker: 'JavaScript execution in dedicated Web Worker thread',
   ruby: 'Ruby code execution with ruby.wasm',
