@@ -185,26 +185,26 @@ Topic pages support:
 
 ### Existing Topics
 
-| Topic                    | Description                          |
-| ------------------------ | ------------------------------------ |
-| `getting-started`        | First steps with Patchies            |
-| `creating-objects`       | Insert and modify objects            |
-| `keyboard-shortcuts`     | Essential shortcuts                  |
-| `connecting-objects`     | Connect handles, easy connect        |
-| `connection-rules`       | What can connect to what             |
-| `message-passing`        | Send data between objects            |
-| `video-chaining`         | Chain visual effects                 |
-| `audio-chaining`         | Chain audio processing               |
-| `javascript-runner`      | JSRunner API reference               |
-| `canvas-interaction`     | noDrag/noPan/noWheel/noInteract      |
-| `manage-packs`           | Enable object/preset packs           |
-| `manage-saves`           | Save and load patches                |
-| `manage-files`           | Virtual filesystem                   |
-| `manage-presets`         | Create/organize presets              |
-| `sharing-links`          | Share patches via URL                |
-| `offline-usage`          | Use without internet                 |
-| `ai-features`            | Generate objects with AI             |
-| `supporting-open-source` | Credits and sponsors                 |
+| Topic                    | Description                     |
+| ------------------------ | ------------------------------- |
+| `getting-started`        | First steps with Patchies       |
+| `creating-objects`       | Insert and modify objects       |
+| `keyboard-shortcuts`     | Essential shortcuts             |
+| `connecting-objects`     | Connect handles, easy connect   |
+| `connection-rules`       | What can connect to what        |
+| `message-passing`        | Send data between objects       |
+| `video-chaining`         | Chain visual effects            |
+| `audio-chaining`         | Chain audio processing          |
+| `javascript-runner`      | JSRunner API reference          |
+| `canvas-interaction`     | noDrag/noPan/noWheel/noInteract |
+| `manage-packs`           | Enable object/preset packs      |
+| `manage-saves`           | Save and load patches           |
+| `manage-files`           | Virtual filesystem              |
+| `manage-presets`         | Create/organize presets         |
+| `sharing-links`          | Share patches via URL           |
+| `offline-usage`          | Use without internet            |
+| `ai-features`            | Generate objects with AI        |
+| `supporting-open-source` | Credits and sponsors            |
 
 ---
 
@@ -281,7 +281,7 @@ export const marked = new Marked(
     highlight(code, lang) {
       return hljs.highlight(code, { language: lang }).value;
     },
-  })
+  }),
 );
 ```
 
@@ -309,3 +309,13 @@ Prose styles live in `ui/src/styles/prose.css` (imported in app.css):
 - `.prose-markdown-sm` — 73% scale for help sidebar
 
 Don't duplicate these styles in components.
+
+### 5. Don't Forget Schema Registration
+
+When migrating object docs, **always** complete these steps together:
+
+1. Create `ui/src/lib/objects/schemas/<object>.ts`
+2. Register in `ui/src/lib/objects/schemas/index.ts`
+3. Create `ui/static/content/objects/<object>.md`
+
+The markdown alone is not enough — without the schema, the object won't appear in help mode and the help sidebar won't show structured info.

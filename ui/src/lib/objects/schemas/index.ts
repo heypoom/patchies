@@ -1,10 +1,12 @@
 export * from './types';
 export * from './trigger';
 export * from './p5';
+export * from './hydra';
 
 import type { ObjectSchemaRegistry } from './types';
 import { triggerSchema } from './trigger';
 import { p5Schema } from './p5';
+import { hydraSchema } from './hydra';
 
 /**
  * Registry of all object schemas.
@@ -12,7 +14,8 @@ import { p5Schema } from './p5';
  */
 export const objectSchemas: ObjectSchemaRegistry = {
   trigger: triggerSchema,
-  p5: p5Schema
+  p5: p5Schema,
+  hydra: hydraSchema
 };
 
 /**
