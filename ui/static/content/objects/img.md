@@ -1,24 +1,10 @@
 The `img` object loads and displays images from URLs or local files.
 
-## Getting Started
+## How to use
 
-Create an `img` object and send it a URL to load an image:
+Create an `img` object and send it a URL to load an image, e.g. `https://example.com/image.png`.
 
-```
-https://example.com/image.png
-```
-
-Or use a file from the [virtual filesystem](/docs/manage-files) with the `user://` prefix.
-
-## Video Chaining
-
-The `img` object runs on the [rendering pipeline](/docs/rendering-pipeline) and can be used as a texture source for other visual objects like `glsl`, `hydra`, and `shader` without performance overhead.
-
-## Messages
-
-| Message | Description |
-|---------|-------------|
-| `string` | Load image from the given URL |
+You can use a file from the [virtual filesystem](/docs/manage-files) e.g. `user://cats/kitten.png`.
 
 ## See Also
 
