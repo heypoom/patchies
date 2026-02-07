@@ -15,10 +15,13 @@
 export interface InletSchema {
   /** Unique identifier for this inlet message (e.g., 'bang', 'set', 'start') */
   id: string;
+
   /** Human-readable description shown in tooltips and docs */
   description: string;
+
   /** Optional argument names for messages that take parameters */
   args?: string[];
+
   /** Example usage */
   example?: string;
 }
@@ -29,6 +32,7 @@ export interface InletSchema {
 export interface OutletSchema {
   /** Unique identifier for this outlet (e.g., '0', '1', 'out') */
   id: string;
+
   /** Human-readable description shown in tooltips and docs */
   description: string;
 }
@@ -39,16 +43,22 @@ export interface OutletSchema {
 export interface ObjectSchema {
   /** Object type name (e.g., 'trigger', 'metro', 'mqtt') */
   type: string;
+
   /** Category for organization (e.g., 'control', 'audio', 'network') */
   category: string;
+
   /** Short description shown in object browser */
   description: string;
+
   /** Inlet definitions */
   inlets: InletSchema[];
+
   /** Outlet definitions */
   outlets: OutletSchema[];
+
   /** Optional tags for search */
   tags?: string[];
+
   /** Whether this object has dynamic outlets (like trigger) */
   hasDynamicOutlets?: boolean;
 }
