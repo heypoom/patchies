@@ -7,7 +7,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { CircleQuestionMark } from '@lucide/svelte/icons';
-  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import {
     normalizeMessageType,
     getTypedOutput,
@@ -232,6 +232,7 @@
   function openHelp() {
     isSidebarOpen.set(true);
     sidebarView.set('help');
+    selectedNodeInfo.set({ type: 'trigger', id: nodeId });
   }
 
   onMount(() => {

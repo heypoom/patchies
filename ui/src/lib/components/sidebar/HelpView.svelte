@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, ExternalLink, List, Link, CircleQuestionMark } from '@lucide/svelte/icons';
+  import { Search, ExternalLink, List, CircleQuestionMark } from '@lucide/svelte/icons';
   import { objectSchemas, type ObjectSchema } from '$lib/objects/schemas';
   import { TRIGGER_TYPE_SPECS } from '$lib/objects/schemas/trigger';
   import { selectedNodeInfo } from '../../../stores/ui.store';
@@ -95,7 +95,7 @@
         class="rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
         title="Open full documentation (shareable link)"
       >
-        <Link class="h-4 w-4" />
+        <ExternalLink class="h-4 w-4" />
       </a>
     </div>
 
@@ -188,10 +188,10 @@
       {#if helpContent.hasHelpPatch}
         <button
           onclick={() => openHelpPatch(currentSchema.type)}
-          class="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition-colors hover:bg-blue-500/20"
+          class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition-colors hover:bg-blue-500/20"
         >
           <ExternalLink class="h-3.5 w-3.5" />
-          Open Interactive Help Patch
+          Open Help Patch
         </button>
       {/if}
     </div>

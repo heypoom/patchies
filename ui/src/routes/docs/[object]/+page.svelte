@@ -131,10 +131,10 @@
       <div class="border-t border-zinc-800 pt-6">
         <button
           onclick={openHelpPatch}
-          class="inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm text-blue-300 transition-colors hover:bg-blue-500/20"
+          class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm text-blue-300 transition-colors hover:bg-blue-500/20"
         >
           <ExternalLink class="h-4 w-4" />
-          Open Interactive Help Patch
+          Open Help Patch
         </button>
       </div>
     {/if}
