@@ -7,7 +7,7 @@
     Bookmark,
     ChevronRight,
     Package,
-    CircleHelp
+    CircleQuestionMark
   } from '@lucide/svelte/icons';
   import {
     getCategorizedObjects,
@@ -33,6 +33,7 @@
     type DisabledObjectInfo
   } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { objectSchemas } from '$lib/objects/schemas';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   type BrowserMode = 'insert' | 'help';
 
@@ -354,33 +355,6 @@
 
           <!-- Filter buttons -->
           <div class="flex gap-2">
-            <!-- Mode toggle (Insert/Help) -->
-            <div class="flex overflow-hidden rounded-lg border border-zinc-700">
-              <button
-                onclick={() => (browserMode = 'insert')}
-                class={[
-                  'flex cursor-pointer items-center gap-1.5 px-3 text-sm leading-[36px] transition-colors',
-                  browserMode === 'insert'
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'bg-zinc-900 text-zinc-500 hover:text-zinc-400'
-                ]}
-              >
-                Insert
-              </button>
-              <button
-                onclick={() => (browserMode = 'help')}
-                class={[
-                  'flex cursor-pointer items-center gap-1.5 px-3 text-sm leading-[36px] transition-colors',
-                  browserMode === 'help'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-zinc-900 text-zinc-500 hover:text-zinc-400'
-                ]}
-              >
-                <CircleHelp class="h-4 w-4" />
-                Help
-              </button>
-            </div>
-
             <!-- Packs button (navigates to sidebar) -->
             <button
               onclick={openPacks}
@@ -397,13 +371,33 @@
               class={[
                 'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors sm:flex-none',
                 showPresets
-                  ? 'border-violet-500/30 bg-violet-500/10 text-violet-300'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                   : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
               ]}
             >
               <Bookmark class="h-4 w-4" />
               <span>Presets</span>
             </button>
+
+            <!-- Help mode toggle -->
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger>
+                <button
+                  onclick={() => (browserMode = browserMode === 'help' ? 'insert' : 'help')}
+                  class={[
+                    'flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg border transition-colors',
+                    browserMode === 'help'
+                      ? 'border-blue-500/50 bg-blue-500/20 text-blue-300'
+                      : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
+                  ]}
+                >
+                  <CircleQuestionMark class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">
+                {browserMode === 'help' ? 'Help mode (click to insert)' : 'Browse help'}
+              </Tooltip.Content>
+            </Tooltip.Root>
           </div>
         </div>
       </div>
@@ -507,7 +501,7 @@
                         >
                           <div class="flex items-center gap-1.5">
                             {#if browserMode === 'help'}
-                              <CircleHelp class="h-3.5 w-3.5 text-blue-400" />
+                              <CircleQuestionMark class="h-3.5 w-3.5 text-blue-500" />
                             {/if}
                             <span
                               class={[
@@ -540,7 +534,7 @@
                             class="absolute top-2 right-2 hidden rounded p-1 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 hover:text-zinc-300 sm:block"
                             title="Open help for {object.name}"
                           >
-                            <CircleHelp class="h-4 w-4" />
+                            <CircleQuestionMark class="h-4 w-4" />
                           </button>
                         {/if}
                       </div>
