@@ -1,0 +1,162 @@
+/* Prose styles for markdown content (docs, help sidebar) */
+/* Use prose-markdown for full size, prose-markdown-sm for compact (73% scale) */
+
+@layer components {
+  .prose-markdown {
+    --prose-scale: 1;
+    --prose-base: calc(0.9375rem * var(--prose-scale));
+    --prose-code: calc(0.875rem * var(--prose-scale));
+    --prose-h1: calc(1.5rem * var(--prose-scale));
+    --prose-h2: calc(0.875rem * var(--prose-scale));
+    --prose-h3: calc(1rem * var(--prose-scale));
+  }
+
+  .prose-markdown-sm {
+    --prose-scale: 0.73;
+    --prose-base: calc(0.9375rem * var(--prose-scale));
+    --prose-code: calc(0.875rem * var(--prose-scale));
+    --prose-h1: calc(1.5rem * var(--prose-scale));
+    --prose-h2: calc(0.875rem * var(--prose-scale));
+    --prose-h3: calc(1rem * var(--prose-scale));
+  }
+
+  .prose-markdown h1,
+  .prose-markdown-sm h1 {
+    font-size: var(--prose-h1);
+    font-weight: 700;
+    color: #e4e4e7;
+    margin-bottom: 1rem;
+  }
+
+  .prose-markdown h2,
+  .prose-markdown-sm h2 {
+    font-size: var(--prose-h2);
+    font-weight: 600;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .prose-markdown h3,
+  .prose-markdown-sm h3 {
+    font-size: var(--prose-h3);
+    font-weight: 500;
+    color: #a1a1aa;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .prose-markdown p,
+  .prose-markdown-sm p {
+    font-size: var(--prose-base);
+    color: #a1a1aa;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  .prose-markdown code,
+  .prose-markdown-sm code {
+    font-family: ui-monospace, monospace;
+    font-size: var(--prose-code);
+    background: #27272a;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    color: #e4e4e7;
+  }
+
+  .prose-markdown pre,
+  .prose-markdown-sm pre {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+
+  .prose-markdown pre code,
+  .prose-markdown-sm pre code {
+    background: transparent;
+    padding: 0;
+    font-size: var(--prose-code);
+  }
+
+  .prose-markdown ul,
+  .prose-markdown ol,
+  .prose-markdown-sm ul,
+  .prose-markdown-sm ol {
+    font-size: var(--prose-base);
+    color: #a1a1aa;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .prose-markdown li,
+  .prose-markdown-sm li {
+    margin-bottom: 0.5rem;
+  }
+
+  .prose-markdown strong,
+  .prose-markdown-sm strong {
+    color: #e4e4e7;
+    font-weight: 600;
+  }
+
+  .prose-markdown a,
+  .prose-markdown-sm a {
+    color: #60a5fa;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .prose-markdown a:hover,
+  .prose-markdown-sm a:hover {
+    color: #93c5fd;
+  }
+
+  /* highlight.js syntax theme */
+  .prose-markdown .hljs-keyword,
+  .prose-markdown .hljs-selector-tag,
+  .prose-markdown .hljs-built_in,
+  .prose-markdown-sm .hljs-keyword,
+  .prose-markdown-sm .hljs-selector-tag,
+  .prose-markdown-sm .hljs-built_in {
+    color: #c084fc;
+  }
+
+  .prose-markdown .hljs-string,
+  .prose-markdown .hljs-attr,
+  .prose-markdown-sm .hljs-string,
+  .prose-markdown-sm .hljs-attr {
+    color: #4ade80;
+  }
+
+  .prose-markdown .hljs-number,
+  .prose-markdown .hljs-literal,
+  .prose-markdown-sm .hljs-number,
+  .prose-markdown-sm .hljs-literal {
+    color: #fb923c;
+  }
+
+  .prose-markdown .hljs-function,
+  .prose-markdown .hljs-title,
+  .prose-markdown-sm .hljs-function,
+  .prose-markdown-sm .hljs-title {
+    color: #60a5fa;
+  }
+
+  .prose-markdown .hljs-comment,
+  .prose-markdown-sm .hljs-comment {
+    color: #71717a;
+    font-style: italic;
+  }
+
+  .prose-markdown .hljs-variable,
+  .prose-markdown .hljs-params,
+  .prose-markdown-sm .hljs-variable,
+  .prose-markdown-sm .hljs-params {
+    color: #e4e4e7;
+  }
+}
