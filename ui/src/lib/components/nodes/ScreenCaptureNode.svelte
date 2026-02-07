@@ -5,7 +5,8 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
 
   let { id: nodeId, selected }: { id: string; selected: boolean } = $props();
@@ -24,7 +25,7 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with({ type: 'bang' }, () => startCapture())
+      .with(messages.bang, () => startCapture())
       .otherwise(() => {});
   };
 

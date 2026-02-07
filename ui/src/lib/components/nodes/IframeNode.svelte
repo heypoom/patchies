@@ -5,7 +5,8 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { iframeMessages } from '$lib/objects/schemas';
   import { shouldShowHandles, isConnecting } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { IframePostMessageEvent } from '$lib/eventbus/events';
@@ -42,9 +43,7 @@
 
   const handleMessage: MessageCallbackFn = (m) => {
     match(m)
-      .with({ type: 'load', url: P.string }, ({ url }) => {
-        loadUrl(url);
-      })
+      .with(iframeMessages.loadUrl, ({ url }) => loadUrl(url))
       .otherwise((data) => {
         // Forward other messages into the iframe via postMessage
         iframeRef?.contentWindow?.postMessage(data, '*');
