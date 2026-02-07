@@ -55,6 +55,7 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 - Press `Enter` to create a new object.
 - Type to search for object and preset names. Try `button` or `textbox` or `logger.js`.
+- By default, only a few objects and presets is added. To add more, see [packs section](#manage-packs).
 - `Arrow Up/Down` navigates the list.
 - `Enter` inserts the object.
 - `Esc` closes the menu.
@@ -65,10 +66,10 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 - Use `Ctrl/Cmd + O` or the add button on the bottom right to open the object browser: a searchable, categorized view of objects and presets in Patchies.
 - Objects and presets are grouped by [packs](#manage-packs), with searchable names and descriptions.
-  - Use the [packs sidebar](#manage-packs) to enable object and preset packs. If you search for disabled objects, a suggestion to enable relevant packs will also be shown.
-- Presets are pre-made objects that helps you get started quickly.
-  - [Manage your own presets](#manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas. You can make your own presets too.
 - Click to insert an object or preset -- pick one at random and see what it can do 🧪
+- Presets are pre-made objects that helps you get started quickly.
+  - You can [manage your own presets](#manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas. You can make your own presets too.
+- Use the [packs panel](#manage-packs) to add object and preset packs. If you search for disabled objects, a suggestion to enable relevant packs will also be shown.
 
 ### Modifying Objects
 
@@ -100,108 +101,11 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 - A handle looks like circle grey, blue, orange or purple dots at the top or bottom of objects.
 - When connecting, the starting handle will highlight to show where you're connecting from.
 - When connecting, all [invalid connection targets](#connection-rules) will be dimmed.
-
-### Easy Connect
-
-[easy-connect.webm](https://github.com/user-attachments/assets/00c8c9f5-e3c0-4ca0-9601-6e3b678886ba)
-
-Use the _easy connect_ button to make the handles big and easy to touch, when:
-
-1. You are using touch devices like a mobile phone or tablet.
-2. You cannot locate the tiny object handles or drag across them.
-3. You want to connect many handles together by tap or click.
-
-To use this feature:
-
-1. Locate the cable button on your toolbar, that's _easy connect_.
-2. Tap on a big handle to start the connection.
-3. It highlights your starting handle and dim any invalid connection targets.
-4. Tap on another big handle to connect the two handles together.
-5. Repeat the connections as many time as you wish.
-6. Click the _easy connect_ button again to stop connecting.
+- On mobile or want to connect to multiple objects at once? See [easy connect](#easy-connect)!
 
 ## Sharing Links
 
 To create shareable links, click on three dots on the bottom right, then "Share Patch Link". This can also be done from the command palette with `Ctrl/Cmd + K > Share Patch Link`.
-
-## Manage Packs
-
-<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
-
-- By default, Patchies only shows you a few objects and presets.
-- `Ctrl/Cmd + B > Packs` lets you pick and choose **object packs** and **preset packs**, to tailor the shown objects and presets for your use cases.
-  - This changes what objects and presets show up in the object browser and quick insert menu.
-- Object packs are curated groups of related objects organized by their use cases.
-- Preset packs are collections of pre-configured object presets grouped by use-case.
-  - Each preset is a ready-to-use object with code already written for common tasks.
-  - To use a preset, its object must be enabled. A warning tooltip will let you enable the necessary object packs.
-- Search for packs by its name, description, its objects or its presets.
-- Press the "all" button to enable all objects or preset packs.
-
-## Manage Saves
-
-<img src="./docs/images/saves-sidebar.webp" alt="Patchies.app saves sidebar" width="700">
-
-The Saves panel in the sidebar lets you manage your locally saved patches.
-
-- `Ctrl/Cmd + B > Saves` to show the saves panel
-- Saves are organized into folders and can be filtered by name.
-- Hover over a save to load, rename and delete patches.
-- Right click on a save or folder to show a context menu.
-  - Folder Actions: create subfolder, move, rename and delete
-  - Save Actions: load, share link, export as JSON, move, rename and delete
-- Use the bottom bar to create a new folder, save patch as a new save, and import patch from JSON files.
-- Use these shortcuts to save and create patches:
-  - `Ctrl/Cmd + S` to save the current patch.
-  - `Ctrl/Cmd + Shift + S` to save the patch as a different save.
-  - `Ctrl/Cmd + N` to create new patch.
-
-## Manage Files
-
-<img src="./docs/images/files-sidebar.webp" alt="Patchies.app files sidebar" width="700">
-
-The Files panel in the sidebar lets you work with virtual files in your patches.
-
-- Use `Ctrl/Cmd + B > Files` to show the files panel
-- **Adding Files**: You can add files to your patch in two ways:
-  - **Drop into file tree**: Drag files from your system into the Files panel to add them as linked files
-  - **Drop into patcher**: Drag files directly onto the canvas to create virtual files that are embedded in your patch
-- **Linking Folders**: Click the folder icon to link a local folder. This gives your patch read access to files in that folder, useful for loading images, audio samples, or data files. Chromium browsers only.
-- Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
-- You can store URLs as virtual files by using the "add link" button.
-- See [loading files from the virtual filesystem](#loading-files-from-the-virtual-filesystem) for how to use virtual files in your objects.
-
-## Manage Presets
-
-<img src="./docs/images/presets-sidebar.webp" alt="Patchies.app presets sidebar" width="700">
-
-Presets are saved configurations of objects that you can reuse across patches.
-
-- `Ctrl/Cmd + B > Presets` to browse and manage your presets.
-- Presets are organized into libraries and can be filtered by category.
-- Select an object and click the bookmark button to save it as a preset.
-- You can create your own preset libraries to organize your presets:
-  - Libraries can be imported and exported as files for sharing
-  - Use folders within libraries to organize presets by category or project
-- Patchies includes [preset packs](#manage-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
-
-## Offline Usage
-
-Patchies can be used even when you don't have an internet connection. Simply visit `https://patchies.app` as usual on your browser, and it will continue to work even when there is no internet.
-
-To ensure most features are available when you are offline, use `Ctrl/Cmd + K > Prepare for Offline` to download as much assets for offline use as possible. This lets you pre-cache most objects into disk.
-
-Behind the scenes, this uses [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API), [Vite PWA for SvelteKit](https://github.com/vite-pwa/sveltekit) and [Workbox](https://web.dev/learn/pwa/workbox)
-
-## Supporting Open Source
-
-<img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
-
-Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](LICENSES.md) for detailed information about all third-party libraries used.
-
-If you enjoy using Patchies, please consider [supporting the open source creators](SUPPORT.md) who made it possible. You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
-
-Special thanks to [the amazing people](SUPPORT.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
 
 ## Message Passing
 
@@ -323,6 +227,104 @@ If you have used an audio patcher before (e.g. Pd, Max, FL Studio Patcher, Bitwi
 - Use `out~` to output audio to your speakers.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
+
+### Easy Connect
+
+[easy-connect.webm](https://github.com/user-attachments/assets/00c8c9f5-e3c0-4ca0-9601-6e3b678886ba)
+
+Use the _easy connect_ button to make the handles big and easy to touch, when:
+
+1. You are using touch devices like a mobile phone or tablet.
+2. You cannot locate the tiny object handles or drag across them.
+3. You want to connect many handles together by tap or click.
+
+To use this feature:
+
+1. Locate the cable button on your toolbar, that's _easy connect_.
+2. Tap on a big handle to start the connection.
+3. It highlights your starting handle and dim any invalid connection targets.
+4. Tap on another big handle to connect the two handles together.
+5. Repeat the connections as many time as you wish.
+6. Click the _easy connect_ button again to stop connecting.
+
+## Manage Packs
+
+<img src="./docs/images/packs-search.webp" alt="Patchies.app packs search" width="700">
+
+- By default, Patchies only shows you a few objects and presets.
+- `Ctrl/Cmd + B > Packs` lets you pick and choose **object packs** and **preset packs**, to tailor the shown objects and presets for your use cases.
+  - This changes what objects and presets show up in the object browser and quick insert menu.
+- Object packs are curated groups of related objects organized by their use cases.
+- Preset packs are collections of pre-configured object presets grouped by use-case.
+  - Each preset is a ready-to-use object with code already written for common tasks.
+  - To use a preset, its object must be enabled. A warning tooltip will let you enable the necessary object packs.
+- Search for packs by its name, description, its objects or its presets.
+- Press the "all" button to enable all objects or preset packs.
+
+## Manage Saves
+
+<img src="./docs/images/saves-sidebar.webp" alt="Patchies.app saves sidebar" width="700">
+
+The Saves panel in the sidebar lets you manage your locally saved patches.
+
+- `Ctrl/Cmd + B > Saves` to show the saves panel
+- Saves are organized into folders and can be filtered by name.
+- Hover over a save to load, rename and delete patches.
+- Right click on a save or folder to show a context menu.
+  - Folder Actions: create subfolder, move, rename and delete
+  - Save Actions: load, share link, export as JSON, move, rename and delete
+- Use the bottom bar to create a new folder, save patch as a new save, and import patch from JSON files.
+- Use these shortcuts to save and create patches:
+  - `Ctrl/Cmd + S` to save the current patch.
+  - `Ctrl/Cmd + Shift + S` to save the patch as a different save.
+  - `Ctrl/Cmd + N` to create new patch.
+
+## Manage Files
+
+<img src="./docs/images/files-sidebar.webp" alt="Patchies.app files sidebar" width="700">
+
+The Files panel in the sidebar lets you work with virtual files in your patches.
+
+- Use `Ctrl/Cmd + B > Files` to show the files panel
+- **Adding Files**: You can add files to your patch in two ways:
+  - **Drop into file tree**: Drag files from your system into the Files panel to add them as linked files
+  - **Drop into patcher**: Drag files directly onto the canvas to create virtual files that are embedded in your patch
+- **Linking Folders**: Click the folder icon to link a local folder. This gives your patch read access to files in that folder, useful for loading images, audio samples, or data files. Chromium browsers only.
+- Files dropped into the patcher become virtual files stored within the patch itself. These files persist when you save or share the patch.
+- You can store URLs as virtual files by using the "add link" button.
+- See [loading files from the virtual filesystem](#loading-files-from-the-virtual-filesystem) for how to use virtual files in your objects.
+
+## Manage Presets
+
+<img src="./docs/images/presets-sidebar.webp" alt="Patchies.app presets sidebar" width="700">
+
+Presets are saved configurations of objects that you can reuse across patches.
+
+- `Ctrl/Cmd + B > Presets` to browse and manage your presets.
+- Presets are organized into libraries and can be filtered by category.
+- Select an object and click the bookmark button to save it as a preset.
+- You can create your own preset libraries to organize your presets:
+  - Libraries can be imported and exported as files for sharing
+  - Use folders within libraries to organize presets by category or project
+- Patchies includes [preset packs](#manage-packs) with ready-to-use objects for common tasks like utilities, effects, and visualizations.
+
+## Offline Usage
+
+Patchies can be used even when you don't have an internet connection. Simply visit `https://patchies.app` as usual on your browser, and it will continue to work even when there is no internet.
+
+To ensure most features are available when you are offline, use `Ctrl/Cmd + K > Prepare for Offline` to download as much assets for offline use as possible. This lets you pre-cache most objects into disk.
+
+Behind the scenes, this uses [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API), [Vite PWA for SvelteKit](https://github.com/vite-pwa/sveltekit) and [Workbox](https://web.dev/learn/pwa/workbox)
+
+## Supporting Open Source
+
+<img src="./docs/images/patchies-thanks-modal.webp" alt="Please support open source" width="700">
+
+Patchies is licensed under [AGPL-3.0](LICENSE) and builds upon many amazing open source projects. See the [complete licenses and attributions](LICENSES.md) for detailed information about all third-party libraries used.
+
+If you enjoy using Patchies, please consider [supporting the open source creators](SUPPORT.md) who made it possible. You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
+
+Special thanks to [the amazing people](SUPPORT.md#special-thanks) who helped bring Patchies to life through their continuous support, feedback, and encouragement.
 
 ## Connection Rules
 
