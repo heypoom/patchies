@@ -97,47 +97,7 @@ See [hydra documentation](https://patchies.app/docs/objects/hydra) for details, 
 
 ### `glsl`: creates a GLSL fragment shader
 
-<img src="./docs/images/patchies-glsl-sdf.png" alt="Patchies.app GLSL shader with SDF" width="700">
-
-> ✨ Try this patch out [in the app](https://patchies.app/?id=3k3qnwk022tfj7e). Shader is from @dtinth's talk, [the power of signed distance functions](https://dt.in.th/SDFTalk)!
-
-- GLSL is a shading language used in OpenGL. You can use it to create complex visual effects and animations.
-- You can use video chaining by connecting any visual objects (e.g. `p5`, `hydra`, `glsl`, `swgl`, `bchrn`, `ai.img` or `canvas`) to the GLSL object via `sampler2D` video inlets.
-- You can create any number of GLSL uniform inlets by defining them in your GLSL code.
-  - For example, if you define `uniform float iMix;`, it will create a float inlet for you to send values to.
-  - If you define the uniform as `sampler2D` such as `uniform sampler2D iChannel0;`, it will create an orange video inlet for you to connect video sources to.
-- See [Shadertoy](https://www.shadertoy.com) for examples of GLSL shaders.
-- All shaders on the Shadertoy website are automatically compatible with `glsl`, as they accept the same uniforms.
-- **Mouse Interaction**: If your shader uses the `iMouse` uniform (vec4), mouse interaction is automatically enabled:
-  - `iMouse.xy`: current mouse position or last click position
-  - `iMouse.zw`: drag start position (positive when mouse down, negative when mouse up)
-    - When dragging (mouse down): `iMouse.zw > 0` contains ongoing drag start position
-    - When released (mouse up): `iMouse.zw < 0` (use `abs()` to get last drag start position)
-  - When `iMouse` is detected in your code, the node becomes interactive (drag is disabled to allow mouse input)
-- I recommend playing with [The Book of Shaders](https://thebookofshaders.com) to learn the GLSL basics!
-- Try these presets for GLSL to get you started:
-  - `red.gl`: solid red color
-  - `pipe.gl`: passes the image through without any changes
-  - `mix.gl`: mixes two video inputs
-  - `overlay.gl`: put the second video input on top of the first one
-  - `fft-freq.gl`: visualizes the frequency spectrum from audio input
-  - `fft-waveform.gl`: visualizes the audio waveform from audio input
-  - `switcher.gl`: switches between six video inputs by sending an int message of 0 - 5.
-
-#### Message Passing with GLSL
-
-You can send messages into the GLSL uniforms to set the uniform values in real-time. First, create a GLSL uniform using the standard GLSL syntax, which adds two dynamic inlets to the GLSL object.
-
-```glsl
-uniform float iMix;
-uniform vec2 iFoo;
-```
-
-You can now send a message of value `0.5` to `iMix`, and send `[0.0, 0.0]` to `iFoo`. When you send messages to these inlets, it will set the internal GLSL uniform values for the object. The type of the message must match the type of the uniform, otherwise the message will not be sent.
-
-If you want to set a default uniform value for when the patch gets loaded, use the `loadbang` object connected to a `msg` object or a slider. `loadbang` sends a `bang` message when the patch is loaded, which you can use to trigger a `msg` object or a `slider` to send the default value to the GLSL uniform inlet.
-
-Supported uniform types are `bool` (boolean), `int` (number), `float` (floating point number), `vec2`, `vec3`, and `vec4` (arrays of 2, 3, or 4 numbers).
+See [glsl documentation](https://patchies.app/docs/objects/glsl) for details, uniforms, and presets.
 
 ### `swgl`: creates a SwissGL shader
 
