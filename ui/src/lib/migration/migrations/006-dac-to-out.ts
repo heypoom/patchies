@@ -19,10 +19,7 @@ export const migration006: Migration = {
 
     const migratedNodes = patch.nodes.map((node) => {
       if (node.type === 'dac~') {
-        return {
-          ...node,
-          type: 'out~'
-        };
+        return { ...node, type: 'out~' };
       }
 
       return node;
