@@ -7,6 +7,8 @@ export * from './canvas';
 export * from './swgl';
 export * from './textmode';
 export * from './three';
+export * from './img';
+export * from './video';
 
 import type { ObjectSchemaRegistry } from './types';
 import { triggerSchema } from './trigger';
@@ -17,6 +19,8 @@ import { canvasSchema, canvasDomSchema } from './canvas';
 import { swglSchema } from './swgl';
 import { textmodeSchema, textmodeDomSchema } from './textmode';
 import { threeSchema, threeDomSchema } from './three';
+import { imgSchema } from './img';
+import { videoSchema } from './video';
 
 /**
  * Registry of all object schemas.
@@ -33,7 +37,9 @@ export const objectSchemas: ObjectSchemaRegistry = {
   textmode: textmodeSchema,
   'textmode.dom': textmodeDomSchema,
   three: threeSchema,
-  'three.dom': threeDomSchema
+  'three.dom': threeDomSchema,
+  img: imgSchema,
+  video: videoSchema
 };
 
 /**

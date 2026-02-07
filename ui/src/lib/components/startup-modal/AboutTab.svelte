@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BookOpen, Github, Info } from '@lucide/svelte/icons';
+  import { BookOpen, Github, Heart, Info, Play } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
 
   import demoImage from '$lib/images/startup-modal.webp';
@@ -93,29 +93,42 @@
         >, etc.
       </p>
 
-      <QuickTips {isMac} />
+      <!-- Getting Started -->
+      <div class="rounded-lg bg-zinc-800/50 p-4">
+        <h3 class="mb-3 text-xs font-medium text-zinc-200">New to Patchies?</h3>
 
-      <div class="space-y-2">
-        <h3 class="text-sm font-medium text-zinc-200">New to Patchies?</h3>
-        <ul class="space-y-1.5 text-sm text-zinc-300">
-          <li>
-            <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
-              >Browse demos</a
-            > for inspiration.
+        <ul class="grid gap-x-6 gap-y-2 text-sm text-zinc-300 sm:grid-cols-2">
+          <li class="flex items-start gap-2">
+            <Play class="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+            <span>
+              <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
+                >Browse demos</a
+              > for inspiration.
+            </span>
           </li>
-          <li>
-            <a href="/docs" target="_blank" class="text-orange-300 hover:underline"
-              >Read the guides</a
-            > to learn the basics.
-          </li>
-          <li>
-            Explore the
-            <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('thanks')}
-              >creative coding libraries</a
-            > it builds on.
+
+          <li class="flex items-start gap-2">
+            <BookOpen class="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+            <span>
+              <a href="/docs" target="_blank" class="text-orange-300 hover:underline"
+                >Read the guides</a
+              > to learn the basics.
+            </span>
           </li>
         </ul>
       </div>
+
+      <!-- Shortcuts -->
+      <QuickTips {isMac} />
+
+      <!-- Open Source -->
+      <p class="flex items-center gap-1.5 text-xs text-zinc-500">
+        <Heart class="h-3.5 w-3.5" />
+        Patchies is built on
+        <a href="#!" class="text-zinc-400 hover:underline" onclick={() => setTab('thanks')}
+          >amazing open source libraries.</a
+        >
+      </p>
     </div>
   </div>
 

@@ -123,22 +123,11 @@ See [three documentation](https://patchies.app/docs/objects/three) for details a
 
 ### `img`: display images
 
-- Load and display images from URLs or local files.
-- Supports video chaining - can be used as texture sources for other visual objects.
-- Messages
-  - `string`: load the image from the given url.
+See [img documentation](https://patchies.app/docs/objects/img) for details.
 
 ### `video`: display videos
 
-- Load and display images from URLs or local files.
-- Supports audio and video chaining - can be used as texture and audio sources for other objects.
-- Messages
-  - `bang`: restart the video
-  - `string`: load the video from the given url.
-  - `play`: play the video
-  - `pause`: pause the video
-  - `{type: 'loop', value: false}`: do not loop the video
-- See [performance notes on video](#performance-notes-on-webcam-and-video) for info on performance and profiling.
+See [video documentation](https://patchies.app/docs/objects/video) for details and performance notes.
 
 ### `webcam`: capture from webcam
 
