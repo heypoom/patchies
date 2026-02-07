@@ -164,7 +164,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       noiseSuppression: true,
       autoGainControl: true
     }))
-    .with('dac~', () => ({ deviceId: '' }))
+    .with('out~', () => ({ deviceId: '' }))
     .with('meter~', () => ({ smoothing: 0.8, peakHold: true, style: 'bar' }))
     .with('keyboard', () => ({ keybind: '', mode: 'all', trigger: 'keydown', repeat: false }))
     .with('sampler~', () => ({

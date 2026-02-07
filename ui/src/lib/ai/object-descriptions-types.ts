@@ -10,7 +10,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## Audio I/O (Dedicated node types)
 - mic~: Audio input from microphone
-- dac~: Audio output to speakers/headphones
+- out~: Audio output to speakers/headphones
 - meter~: Visual audio level meter
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with triggering

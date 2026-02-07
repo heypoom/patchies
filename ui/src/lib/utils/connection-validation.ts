@@ -100,7 +100,7 @@ export function isValidConnectionBetweenHandles(
     return isSourceVideo && isTargetVideo;
   }
 
-  // Target audio inlets (e.g. dac~) must be connected to audio outputs/sources
+  // Target audio inlets (e.g. out~) must be connected to audio outputs/sources
   if (isTargetAudioInlet) {
     return isSourceAudio;
   }

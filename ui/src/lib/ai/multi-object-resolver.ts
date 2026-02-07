@@ -9,7 +9,7 @@
  *
  * Handle ID patterns:
  * - Simple nodes (slider, button, toggle, msg, orca): "message-in", "message-out"
- * - Audio objects (dac~, tone~, sampler~): indexed like "audio-in-0", "message-in-1"
+ * - Audio objects (out~, tone~, sampler~): indexed like "audio-in-0", "message-in-1"
  * - Multi-outlet nodes (Hydra with setVideoCount(2,1)): "video-out-0", "video-out-1"
  * - GLSL nodes: "video-out-out" (type="video" with id="out" → type-portDir-id pattern)
  * - IMPORTANT: Some nodes have SINGLE outlets despite multiple uses:
@@ -355,10 +355,10 @@ User: "808 drum machine with kick and snare"
 Response:
 {
   "objectTypes": ["button", "button", "tone~", "tone~", "object"],
-  "structure": "Two buttons trigger two tone~ drum sounds (kick and snare), both connect to object (dac~) for speaker output"
+  "structure": "Two buttons trigger two tone~ drum sounds (kick and snare), both connect to object (out~) for speaker output"
 }
 
-IMPORTANT: For audio output to speakers, use "object" type (which will create dac~), NOT "dac~" as a direct type.
+IMPORTANT: For audio output to speakers, use "object" type (which will create out~), NOT "out~" as a direct type.
 
 Now analyze this prompt:`;
 }
@@ -412,7 +412,7 @@ IMPORTANT RULES:
    - Message inlets (when setPortCount(n) where n > 0): ALWAYS indexed as "message-in-0", "message-in-1", etc.
    - CRITICAL: Even with setPortCount(1), use "message-in-0" (NOT "message-in")
    - Example: button → tone~ with setPortCount(1): targetHandle: "message-in-0"
-   - Example: tone~ → dac~: sourceHandle: "audio-out", targetHandle: "audio-in-0"
+   - Example: tone~ → out~: sourceHandle: "audio-out", targetHandle: "audio-in-0"
    
    BACKGROUND OUTPUT (bg.out):
    - Has one video inlet with explicit id="0": generates "video-in-0"
@@ -439,24 +439,24 @@ IMPORTANT RULES:
      * Consult HANDLE_IDS.md for specific audio object patterns
    
    CRITICAL: Audio Objects via "object" Node Type
-   - Audio processing objects (dac~, gain~, osc~, filter~, etc.) are NOT direct node types
+   - Audio processing objects (out~, gain~, osc~, filter~, etc.) are NOT direct node types
    - To create them, use type: "object" with data: { expr: "objectName", name: "objectName", params: [] }
-   - Example dac~ node: { "type": "object", "data": { "expr": "dac~", "name": "dac~", "params": [] } }
+   - Example out~ node: { "type": "object", "data": { "expr": "out~", "name": "out~", "params": [] } }
    - Example gain~ node: { "type": "object", "data": { "expr": "gain~ 0.5", "name": "gain~", "params": [0.5] } }
    - These objects generate handles like "audio-in-0", "audio-out-0" (indexed)
    
-   CRITICAL: dac~ (Digital-to-Analog Converter - speakers output)
-   - dac~ created as: { "type": "object", "data": { "expr": "dac~", "name": "dac~", "params": [] } }
-   - dac~ has ONLY ONE audio inlet: "audio-in-0"
+   CRITICAL: out~ (Digital-to-Analog Converter - speakers output)
+   - out~ created as: { "type": "object", "data": { "expr": "out~", "name": "out~", "params": [] } }
+   - out~ has ONLY ONE audio inlet: "audio-in-0"
    - MULTIPLE audio sources CAN and SHOULD connect to the SAME "audio-in-0" handle
    - Web Audio automatically sums/mixes multiple connections to the same inlet
-   - Example: 6 drum sounds → all connect to dac~ with targetHandle: "audio-in-0"
-   - DO NOT create separate dac~ nodes for each source
+   - Example: 6 drum sounds → all connect to out~ with targetHandle: "audio-in-0"
+   - DO NOT create separate out~ nodes for each source
    - DO NOT try to connect to "audio-in-1", "audio-in-2", etc. (they don't exist!)
    - Pattern for multi-source audio output:
-     * drum1 → dac~ (targetHandle: "audio-in-0")
-     * drum2 → dac~ (targetHandle: "audio-in-0")
-     * drum3 → dac~ (targetHandle: "audio-in-0")
+     * drum1 → out~ (targetHandle: "audio-in-0")
+     * drum2 → out~ (targetHandle: "audio-in-0")
+     * drum3 → out~ (targetHandle: "audio-in-0")
      * All sounds will be mixed and output to speakers
    
    SPECIAL DYNAMIC NODES: GLSLCanvasNode, P5Node, HydraNode

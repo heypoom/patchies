@@ -211,7 +211,7 @@ HANDLE IDS (for connections):
 
 ✅ **Right**:
 ```
-Connect to dac~ for audio output.
+Connect to out~ for audio output.
 Messages can be sent to control playback.
 ```
 

@@ -85,7 +85,7 @@
     'glsl',
 
     // Audio objects
-    'dac~',
+    'out~',
     'osc~',
     'gain~',
     'adc~'
@@ -163,6 +163,7 @@
       type: 'object' | 'preset';
       libraryName?: string;
       priority: 'normal' | 'low';
+      description?: string;
     }> = [];
     const addedNames = new Set<string>();
 
@@ -205,7 +206,8 @@
       items.push({
         name: shorthand.name,
         type: 'object',
-        priority: isEnabled ? 'normal' : 'low'
+        priority: isEnabled ? 'normal' : 'low',
+        description: shorthand.description
       });
       addedNames.add(shorthand.name);
     }
@@ -311,14 +313,29 @@
     if (!expr.trim()) {
       const objects = allSearchableItems
         .filter((item) => item.type === 'object')
-        .map((item) => ({ name: item.name, type: item.type, priority: item.priority }));
+        .map((item) => ({
+          name: item.name,
+          type: item.type,
+          priority: item.priority,
+          description: item.description
+        }));
       const presets = allSearchableItems
         .filter((item) => item.type === 'preset')
-        .map((item) => ({ name: item.name, type: item.type, priority: item.priority }));
+        .map((item) => ({
+          name: item.name,
+          type: item.type,
+          priority: item.priority,
+          description: item.description
+        }));
 
       // Sort: normal priority first, then by object priority, then alphabetically
       const sortItems = (
-        items: Array<{ name: string; type: 'object' | 'preset'; priority: 'normal' | 'low' }>
+        items: Array<{
+          name: string;
+          type: 'object' | 'preset';
+          priority: 'normal' | 'low';
+          description?: string;
+        }>
       ) =>
         items.sort((a, b) => {
           // Low priority items always come last
@@ -366,7 +383,8 @@
     return sortedResults.map((result) => ({
       name: result.item.name,
       type: result.item.type,
-      priority: result.item.priority
+      priority: result.item.priority,
+      description: result.item.description
     }));
   });
 
@@ -660,6 +678,7 @@
     name: string;
     type: 'object' | 'preset';
     priority: 'normal' | 'low';
+    description?: string;
   }) {
     expr = suggestion.name;
     showAutocomplete = false;
@@ -823,6 +842,11 @@
     }
 
     if (current.type === 'object') {
+      // Use shorthand description if available (from registry)
+      if (current.description) {
+        return current.description;
+      }
+
       const metadata = getCombinedMetadata(current.name);
 
       if (metadata) {

@@ -43,7 +43,7 @@ interface ExtensionsState {
 | --------------- | ------------------------------------------------------------ | ----------------------------------- |
 | **Essentials**  | js, msg, button, toggle, slider, print                       | Core building blocks everyone needs |
 | **Visual**      | p5, hydra, glsl, canvas, three, webcam, video, img, screen   | Graphics & video processing         |
-| **Audio**       | osc~, gain~, filters, delay~, dac~, mic~, soundfile~, meter~ | Sound synthesis & effects           |
+| **Audio**       | osc~, gain~, filters, delay~, out~, mic~, soundfile~, meter~ | Sound synthesis & effects           |
 | **Livecoding**  | strudel, chuck~, csound~, sonic~, elem~, orca                | Music livecoding languages          |
 | **Data Flow**   | filter, map, tap, scan, uniq, expr, trigger, select          | Functional data processing          |
 | **UI Controls** | dom, vue, keyboard, textbox, label, markdown                 | Interface building                  |

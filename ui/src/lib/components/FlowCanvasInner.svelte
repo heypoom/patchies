@@ -741,7 +741,7 @@
 
   /**
    * Create a node from an object name (handles both visual nodes and textual objects).
-   * Textual objects (like dac~, expr, adsr) are created as 'object' nodes.
+   * Textual objects (like out~, expr, adsr) are created as 'object' nodes.
    * Visual nodes (like p5, hydra, glsl) are created with their actual type.
    */
   function createNodeFromName(name: string, position: { x: number; y: number }) {

@@ -6,7 +6,7 @@ Strudel live music coding based on TidalCycles.
 
 **CRITICAL RULES:**
 1. Use Strudel mini-notation: sound("bd sd, hh*4"), note("<c3 eb3 g3>")
-2. MUST connect to dac~ to hear audio
+2. MUST connect to out~ to hear audio
 3. Only ONE strudel plays at a time
 4. Use Ctrl/Cmd+Enter in editor to re-evaluate
 

@@ -315,12 +315,12 @@ If you don't have an idea where to start, why not build your own drum machine? [
 If you have used an audio patcher before (e.g. Pd, Max, FL Studio Patcher, Bitwig Studio's Grid), the idea is similar.
 
 - Use these objects as audio sources: `osc~`, `sig~`, `mic~`, `strudel`, `chuck~`, `ai.tts`, `ai.music`, `soundfile~`, `sampler~`, `video`, `dsp~`, `tone~`, `elem~`, `sonic~`
-  - **VERY IMPORTANT!**: you must connect your audio sources to `dac~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `dac~`. Use `gain~` to control the volume.
+  - **VERY IMPORTANT!**: you must connect your audio sources to `out~` to hear the audio output, otherwise you will hear nothing. Audio sources do not output audio unless connected to `out~`. Use `gain~` to control the volume.
   - See the documentation on [audio objects](#audio--music-objects) for more details on how these work.
 
 - Use these objects to process audio: `gain~`, `fft~`, `+~`, `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`, `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`, `expr~`, `dsp~`, `tone~`, `elem~`, `sonic~`.
 
-- Use `dac~` to output audio to your speakers.
+- Use `out~` to output audio to your speakers.
 
 - Use the `fft~` object to analyze the frequency spectrum of the audio signal. See the [Audio Analysis](#audio-analysis) section on how to use FFT with your visual objects.
 
@@ -1183,7 +1183,7 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 - See the [Strudel workshop](https://strudel.cc/workshop/getting-started) to learn how to use Strudel.
 - Check out the [Strudel showcase](https://strudel.cc/intro/showcase) to get inspirations with how people use Strudel.
 - Use `Ctrl/Cmd + Enter` to re-evaluate the code.
-- Don't forget to connect the `dac~` object to hear the audio output.
+- Don't forget to connect the `out~` object to hear the audio output.
 - Strudel runs in a separate runtime, so it does NOT use the [Patchies JavaScript Runner](#patchies-javascript-runner). Trying to call those runtime functions in Strudel will fail.
   - `send` technically works but has very limited use case as there are no event emitters in Strudel.
   - `recv` only works with a few functions, e.g. `setcpm` right now. Try `recv(setcpm)` to automate the cpm value.
@@ -1254,10 +1254,10 @@ The `msg` object follows the Max and Pd convention of **hot** and **cold** inlet
 
 <img src="./docs/images/audio-io-settings.webp" alt="Patchies.app audio input output settings" width="700">
 
-> Tip: you can configure audio devices and its settings by using the settings button on mic~ and dac~
+> Tip: you can configure audio devices and its settings by using the settings button on mic~ and out~
 
 - `mic~`: Capture audio from microphone input
-- `dac~`: Send audio to speakers
+- `out~`: Send audio to speakers
 - `meter~`: Visual audio level meter that shows the loudness of the audio source.
 - `soundfile~`: Load and play audio files with transport controls
   - Double click or drop file into `soundfile~` to load it.

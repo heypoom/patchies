@@ -1,25 +1,25 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
-export interface DacSettings {
+export interface AudioOutputSettings {
   deviceId: string;
 }
 
-export const DEFAULT_DAC_SETTINGS: DacSettings = {
+export const DEFAULT_AUDIO_OUTPUT_SETTINGS: AudioOutputSettings = {
   deviceId: ''
 };
 
 /**
- * DacNode implements the dac~ (digital-to-analog converter) audio node.
+ * AudioOutputNode implements the out~ (audio output) node.
  * Routes audio signals to the computer's audio output (speakers/headphones).
  *
- * Each dac~ creates its own gain node that automatically connects to the shared
- * outGain, allowing multiple dac~ nodes to exist in a patch.
+ * Each out~ creates its own gain node that automatically connects to the shared
+ * outGain, allowing multiple out~ nodes to exist in a patch.
  */
-export class DacNode implements AudioNodeV2 {
-  static type = 'dac~';
+export class AudioOutputNode implements AudioNodeV2 {
+  static type = 'out~';
   static group: AudioNodeGroup = 'destinations';
-  static description = 'Send sounds to speakers';
+  static description = 'Audio output to speakers';
 
   static inlets: ObjectInlet[] = [
     { name: 'in', type: 'signal', description: 'Audio signal to output' }
@@ -31,7 +31,7 @@ export class DacNode implements AudioNodeV2 {
   audioNode: GainNode;
 
   private audioContext: AudioContext;
-  settings: DacSettings = { ...DEFAULT_DAC_SETTINGS };
+  settings: AudioOutputSettings = { ...DEFAULT_AUDIO_OUTPUT_SETTINGS };
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -48,7 +48,7 @@ export class DacNode implements AudioNodeV2 {
    * Note: Firefox does NOT support AudioContext.setSinkId, only HTMLMediaElement.setSinkId.
    * So output device selection for Web Audio only works in Chrome/Edge.
    */
-  async updateSettings(newSettings: Partial<DacSettings>): Promise<void> {
+  async updateSettings(newSettings: Partial<AudioOutputSettings>): Promise<void> {
     this.settings = { ...this.settings, ...newSettings };
 
     if (!newSettings.deviceId) return;

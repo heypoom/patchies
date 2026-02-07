@@ -22,7 +22,7 @@ Migrate V1 audio nodes (defined in `AudioSystem.ts`) to V2 (self-contained class
 - ✅ Phase 4: `tone~`, `elem~` (Manager-based nodes with async library code execution)
 - ✅ Phase 5: `chuck~` (renamed from `chuck`, manager-based with WebChucK integration)
 - ✅ Phase 6: `csound~` (final manager-based node with Csound browser integration)
-- ✅ Simple nodes: `osc~`, `gain~`, `dac~`, `sig~`, `+~`, `pan~`, `delay~`, `lowpass~`–`peaking~`
+- ✅ Simple nodes: `osc~`, `gain~`, `out~`, `sig~`, `+~`, `pan~`, `delay~`, `lowpass~`–`peaking~`
 
 ## V2 Node Template (Minimal)
 
