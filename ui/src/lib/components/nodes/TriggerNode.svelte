@@ -375,7 +375,7 @@
               onblur={handleBlur}
               onkeydown={handleKeydown}
               oninput={handleInput}
-              placeholder="b b"
+              placeholder="b n"
               class="nodrag bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
             />
           </div>
