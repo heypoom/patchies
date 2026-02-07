@@ -117,51 +117,9 @@ See [glsl documentation](https://patchies.app/docs/objects/glsl) for details, un
 - See the [SwissGL examples](https://google.github.io/swissgl) for some inspirations on how to use SwissGL.
   - Right now, we haven't hooked the mouse and camera to SwissGL yet, so a lot of what you see in the SwissGL demo won't work in Patchies yet. PRs are welcome!
 
-### `canvas`: creates a JavaScript canvas (offscreen)
+### `canvas` and `canvas.dom`: JavaScript canvas graphics
 
-- You can use [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to create custom graphics and animations. The rendering context is exposed as `ctx` in the JavaScript code, so you can use methods like `ctx.fill()` to draw on the canvas.
-
-- You can call these special methods in your canvas code:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction).
-  - `noOutput()` hides the video output port. Useful when creating interface widgets or tools that don't need to be part of the video processing chain.
-  - `fft()` for audio analysis, see [Audio Analysis](#audio-analysis).
-  - See [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
-
-- This runs on the [rendering pipeline](#rendering-pipeline) using [OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) on web workers. This means:
-  - Pro: It can chain with other visual objects (`glsl`, `hydra`, etc.) without lag. You can draw animations using the canvas API and output it at 60fps.
-  - Pro: It's fast as it doesn't block the main thread. You can do complex animations and computations there.
-  - Con: You cannot use DOM APIs like `document` or `window`
-  - Con: `fft~` inputs has very high delay due to worker message passing
-
-### `canvas.dom`: creates a JavaScript canvas (main thread)
-
-<img src="./docs/images/patchies-canvas-dom-widgets.png" alt="Patchies.app canvas.dom widgets" width="700">
-
-> ✨ Try this patch out [in the app](https://patchies.app/?id=izs6hjxchit2zad)!
-
-- Same as `canvas` but runs directly on the main thread instead of on the [rendering pipeline thread](#rendering-pipeline), and comes with some additional features:
-  - Use `mouse` object with properties: `x`, `y`, `down`, `buttons` to get current mouse position and state.
-  - Use `onKeyDown(callback)` and `onKeyUp(callback)` to register keyboard event handlers. Events are trapped and won't leak to xyflow (e.g., pressing Delete won't delete the node).
-  - Full DOM and browser API access (e.g. `document` and `window`)
-  - Use `setCanvasSize(width, height)` to dynamically resize the canvas resolution (e.g., `setCanvasSize(500, 500)`).
-  - Otherwise, the API remains the same as `canvas`: [Canvas Interaction Control](https://patchies.app/docs/canvas-interaction) (`noDrag()`, `noPan()`, `noWheel()`, `noInteract()`), `noOutput()`, `fft()`, plus all [Patchies JavaScript Runner](https://patchies.app/docs/javascript-runner) functions.
-
-- When to use `canvas.dom` instead of `canvas`:
-  - Instant FFT reactivity: no worker message passing delay, perfect for tight audio-reactive visual.
-  - Mouse interactivity: use `mouse.x`, `mouse.y`, `mouse.down` for interactive sketches.
-  - Keyboard interactivity: use `onKeyDown()` and `onKeyUp()` for keyboard-controlled widgets.
-  - DOM access: use `document`, `window` and other browser APIs when needed.
-
-- Try out these fun and useful presets for inspirations on widgets and interactive controls:
-  - `particle.canvas` adds a particle canvas that reacts to your mouse inputs.
-  - `xy-pad.canvas` adds an X-Y pad that you can send `[x, y]` coordinates into to set the position of the crosshair. It also sends `[x, y]` coordinates to the message outlet when you drag on it.
-  - `rgba.picker` and `hsla.picker` lets you pick colors and sends them as outputs: `[r, g, b, a]` and `[h, s, l, a]` respectively.
-  - `keyboard.example` demonstrates keyboard event handling with `onKeyDown()` and `onKeyUp()` callbacks.
-  - `fft.canvas` preset takes in analysis output from `fft~` object and does a FFT plot, similar to `fft.p5` but even faster.
-
-- Performance trade-offs:
-  - When using [video chaining](#video-chaining), to output the canvas content to the video outlet, it drastically slow down the browser by a huge margin as it needs to copy each frame to the [rendering pipeline](#rendering-pipeline).
-  - It runs on main thread, so heavy computation can affect UI responsiveness.
+See [canvas documentation](https://patchies.app/docs/objects/canvas) for details, presets, and when to use each variant.
 
 ### `textmode` and `textmode.dom`: creates ASCII/text-mode graphics
 
