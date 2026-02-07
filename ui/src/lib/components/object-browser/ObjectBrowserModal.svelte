@@ -25,7 +25,7 @@
     togglePack
   } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
-  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
   import {
@@ -62,9 +62,12 @@
     return objectName in objectSchemas;
   }
 
-  // Open help for an object
+  // Open help for an object in sidebar
   function openHelp(objectName: string) {
-    window.location.href = `?help=${encodeURIComponent(objectName)}`;
+    $isSidebarOpen = true;
+    $sidebarView = 'help';
+    $selectedNodeInfo = { type: objectName, id: 'browser' };
+    open = false;
   }
 
   // Get all categorized objects, filtering AI features and by enabled extensions

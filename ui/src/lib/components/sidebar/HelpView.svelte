@@ -6,6 +6,7 @@
   import { useObjectHelp } from '$lib/composables/useObjectHelp.svelte';
 
   let searchQuery = $state('');
+
   let manualViewingObject = $state<string | null>(null);
   let browseModeOverride = $state(false); // When true, show list even if node is selected
 
@@ -27,11 +28,6 @@
 
   // Fetch help content reactively
   const helpContent = useObjectHelp(() => viewingObject);
-
-  // Track if we're showing auto-selected vs manual
-  const isAutoSelected = $derived(
-    $selectedNodeInfo?.type === viewingObject && !manualViewingObject
-  );
 
   // Get schema for currently viewing object
   const currentSchema = $derived.by((): ObjectSchema | null => {
