@@ -383,26 +383,7 @@ These objects support video chaining and can be connected to create complex visu
 
 ### `p5`: creates a P5.js sketch
 
-<img src="./docs/images/patt-compressed.webp" alt="Patt Vira's P5 Sketches" width="700">
-
-> ✨ Try this patch out [in the app](https://patchies.app/?id=9r2t5vizvv6xyou). The sketches are [Patt Vira](https://pattvira.com)'s [DESSINS Géométriques](https://www.pattvira.com/coding-tutorials/v/dessins-geometriques) and [Interactive Truchet Tiles](https://www.pattvira.com/coding-tutorials/v/interactive-truchet-tiles) tutorials. Her [YouTube tutorials](https://www.youtube.com/@pattvira) are helpful for getting familiar with P5 and for daily inspirations.
-
-- P5.js is a JavaScript library for creative coding. It provides a simple way to create graphics and animations, but you can do very complex things with it.
-- Read the [P5.js documentation](https://p5js.org/reference) to see how P5 works.
-- See the [P5.js tutorials](https://p5js.org/tutorials) and [OpenProcessing](https://www.openprocessing.org) for more inspirations.
-- **Note**: Patchies uses P5.js v2.x with backward compatibility libraries for v1 features. All existing P5.js v1 sketches should work without modification.
-
-- You can call these special methods in your sketch:
-  - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - See [Canvas Interaction Control](#canvas-interaction-control). You **must** call one of these (typically `noInteract()`) if you want to add interactivity to your sketch, such as adding sliders or mousePressed events.
-  - `noOutput()` hides the video output port (the orange outlet at the bottom). This is useful when creating interface widgets that don't need to be part of the video chain.
-  - See [Patchies JavaScript Runner](#patchies-javascript-runner) for more functions (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
-
-- You can use any third-party packages you want in your sketch, see [importing JavaScript packages from NPM](#importing-javascript-packages-from-npm).
-  - Try out [ML5.js](https://ml5js.org) for machine learning and [Matter.js](https://brm.io/matter-js) for physics simulation. They play well with P5.js.
-
-- You can import shared JavaScript libraries across multiple `p5` objects, see [sharing JavaScript across multiple `js` blocks](#sharing-javascript-across-multiple-js-blocks).
-  - Try out this [Matter.js example](https://patchies.app/?id=08wca4jzuz5wpng) from Daniel Shiffman's [The Nature of Code](https://natureofcode.com) that creates a simple physics simulation. In this example, the code for the Boundary and Box class is separated into shared library objects. You can [purchase the book](https://natureofcode.com/) to support Daniel's amazing educational work!
-- Please consider supporting the [Processing Foundation](https://processingfoundation.org/donate) who maintains p5.js!
+See [p5 documentation](https://patchies.app/docs/objects/p5) for details, examples, and interactive demos.
 
 ### `hydra`: creates a Hydra video synthesizer
 
