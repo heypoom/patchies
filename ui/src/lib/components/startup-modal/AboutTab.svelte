@@ -41,31 +41,15 @@
       <p class="text-sm">
         Patchies is a patcher for things that runs on the web. Patch together <a
           class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#audio-chaining"
+          href="/docs/audio-chaining"
           target="_blank">audio</a
         >,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#video-chaining"
-          target="_blank">visual</a
-        >
+        <a class="text-orange-300" href="/docs/video-chaining" target="_blank">visual</a>
         and
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#message-passing"
-          target="_blank">computational</a
-        >
+        <a class="text-orange-300" href="/docs/message-passing" target="_blank">computational</a>
         objects e.g.
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#p5-creates-a-p5js-sketch"
-          target="_blank">P5</a
-        >,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#hydra-creates-a-hydra-video-synthesizer"
-          target="_blank">Hydra</a
-        >,
+        <a class="text-orange-300" href="/docs/objects/p5" target="_blank">P5</a>,
+        <a class="text-orange-300" href="/docs/objects/hydra" target="_blank">Hydra</a>,
         <a
           class="text-orange-300"
           href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#strudel-strudel-music-environment"
@@ -86,11 +70,7 @@
           href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#tone-tonejs-synthesis-and-processing"
           target="_blank">Tone.js</a
         >,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#glsl-creates-a-glsl-fragment-shader"
-          target="_blank">GLSL</a
-        >, etc.
+        <a class="text-orange-300" href="/docs/objects/glsl" target="_blank">GLSL</a>, etc.
       </p>
 
       <!-- Getting Started -->
@@ -111,7 +91,7 @@
             <BookOpen class="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
             <span>
               <a href="/docs" target="_blank" class="text-orange-300 hover:underline"
-                >Read the guides</a
+                >Read the guide</a
               > to learn the basics.
             </span>
           </li>
