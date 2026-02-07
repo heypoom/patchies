@@ -13,6 +13,7 @@
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { useObjectHelp } from '$lib/composables/useObjectHelp.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { enabledObjects } from '../../../stores/extensions.store';
 
   let searchQuery = $state('');
 
@@ -60,8 +61,10 @@
     return objectSchemas[viewingObject] ?? null;
   });
 
-  // Get all available schemas as an array
-  const allSchemas = $derived(Object.values(objectSchemas));
+  // Get all available schemas as an array, filtered by enabled object packs
+  const allSchemas = $derived(
+    Object.values(objectSchemas).filter((schema) => $enabledObjects.has(schema.type))
+  );
 
   // Filter schemas by search query
   const filteredSchemas = $derived.by(() => {

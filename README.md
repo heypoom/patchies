@@ -101,21 +101,7 @@ See [glsl documentation](https://patchies.app/docs/objects/glsl) for details, un
 
 ### `swgl`: creates a SwissGL shader
 
-- [SwissGL](https://github.com/google/swissgl) is a wrapper for WebGL2 to create shaders in very few lines of code. See the [API docs](https://github.com/google/swissgl/blob/main/docs/API.md) for full reference. Here is how to make a simple animated mesh:
-
-  ```js
-  function render({ t }) {
-    glsl({
-      t,
-      Mesh: [10, 10],
-      VP: `XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1`,
-      FP: `UV,0.5,1`,
-    });
-  }
-  ```
-
-- See the [SwissGL examples](https://google.github.io/swissgl) for some inspirations on how to use SwissGL.
-  - Right now, we haven't hooked the mouse and camera to SwissGL yet, so a lot of what you see in the SwissGL demo won't work in Patchies yet. PRs are welcome!
+See [swgl documentation](https://patchies.app/docs/objects/swgl) for details and examples.
 
 ### `canvas` and `canvas.dom`: JavaScript canvas graphics
 

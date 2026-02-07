@@ -4,6 +4,7 @@ export * from './p5';
 export * from './hydra';
 export * from './glsl';
 export * from './canvas';
+export * from './swgl';
 
 import type { ObjectSchemaRegistry } from './types';
 import { triggerSchema } from './trigger';
@@ -11,6 +12,7 @@ import { p5Schema } from './p5';
 import { hydraSchema } from './hydra';
 import { glslSchema } from './glsl';
 import { canvasSchema, canvasDomSchema } from './canvas';
+import { swglSchema } from './swgl';
 
 /**
  * Registry of all object schemas.
@@ -22,7 +24,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   hydra: hydraSchema,
   glsl: glslSchema,
   canvas: canvasSchema,
-  'canvas.dom': canvasDomSchema
+  'canvas.dom': canvasDomSchema,
+  swgl: swglSchema
 };
 
 /**
