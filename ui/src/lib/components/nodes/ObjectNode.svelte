@@ -45,6 +45,7 @@
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
   import ObjectSuggestionDropdown from './ObjectSuggestionDropdown.svelte';
+  import { getIconById } from '$lib/components/icons';
 
   // Common objects that should appear first in autocomplete
   // Ordered by general usage frequency
@@ -835,6 +836,20 @@
 
     return null;
   });
+
+  // Get dynamic icon for audio nodes that support it (e.g., oscillator waveform icons)
+  const dynamicIconComponent = $derived.by(() => {
+    // Re-evaluate when params change (waveform type may have changed)
+    void data.params;
+
+    const audioNode = audioService.getNodeById(nodeId);
+    if (!audioNode?.getIcon) return null;
+
+    const iconId = audioNode.getIcon();
+    if (!iconId) return null;
+
+    return getIconById(iconId);
+  });
 </script>
 
 <div class="relative">
@@ -926,7 +941,11 @@
               tabindex="0"
               onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
             >
-              <div class="font-mono text-xs">
+              <div class="flex items-center gap-1.5 font-mono text-xs">
+                {#if dynamicIconComponent}
+                  {@const IconComponent = dynamicIconComponent}
+                  <IconComponent class="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                {/if}
                 <span class={[!getCombinedMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
                   >{data.name}</span
                 >

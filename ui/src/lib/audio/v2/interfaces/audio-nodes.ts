@@ -111,4 +111,14 @@ export interface AudioNodeV2 {
    * Optional: if not implemented, AudioService will use the default implementation.
    */
   destroy?(): void;
+
+  /**
+   * Get a dynamic icon identifier for this node based on its current state.
+   *
+   * Optional: used for nodes that have state-dependent icons (e.g., oscillator waveform type).
+   * The returned string should be a recognized icon type that can be mapped to a component.
+   *
+   * @returns An icon identifier string, or undefined if no dynamic icon
+   */
+  getIcon?(): string | undefined;
 }
