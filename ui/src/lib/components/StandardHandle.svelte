@@ -16,6 +16,9 @@
     class?: string;
     nodeId: string;
     isAudioParam?: boolean;
+
+    /** Hot inlet indicator (Max/Pd style) - shows a ring around the handle */
+    isHot?: boolean;
   }
 
   let {
@@ -27,7 +30,8 @@
     index,
     class: className = '',
     nodeId,
-    isAudioParam = false
+    isAudioParam = false,
+    isHot = false
   }: Props = $props();
 
   // Construct the handle ID based on the specification
@@ -107,8 +111,9 @@
     const connectionModeClass = $isConnectionMode ? 'connection-mode-active' : '';
     const dimClass = shouldDim ? 'handle-dimmed' : '';
     const sourceHighlightClass = isSourceHandle ? 'handle-source' : '';
+    const hotClass = isHot ? 'handle-hot' : '';
 
-    return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${sourceHighlightClass} ${className}`;
+    return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${sourceHighlightClass} ${hotClass} ${className}`;
   });
 </script>
 
@@ -179,5 +184,10 @@
     50% {
       box-shadow: 0 0 16px 5px rgba(255, 255, 255, 0.95);
     }
+  }
+
+  /* Hot inlet indicator (Max/Pd style) - subtle hover */
+  :global(.svelte-flow__handle.handle-hot:hover) {
+    box-shadow: 0 0 0 2px rgba(255, 165, 45, 0.4);
   }
 </style>

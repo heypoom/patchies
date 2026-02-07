@@ -133,11 +133,12 @@
       port="inlet"
       type="message"
       id={index}
-      title={`$${index + 1}`}
+      title={index === 0 ? `$${index + 1} (hot)` : `$${index + 1}`}
       total={inletCount}
       {index}
       class="top-0"
       {nodeId}
+      isHot={index === 0}
     />
   {/each}
 {/snippet}
