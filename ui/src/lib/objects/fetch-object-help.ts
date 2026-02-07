@@ -1,4 +1,25 @@
-import { marked } from 'marked';
+import { Marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+
+// Register only the languages we need for help docs
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('js', javascript);
+
+// Create and export a marked instance with syntax highlighting
+export const marked = new Marked(
+  markedHighlight({
+    emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(code, { language: lang }).value;
+      }
+      return hljs.highlightAuto(code).value;
+    }
+  })
+);
 
 export interface ObjectHelpContent {
   markdown: string | null;

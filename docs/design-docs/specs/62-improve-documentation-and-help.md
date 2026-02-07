@@ -158,8 +158,32 @@ This will be done by the user, so don't do this for them.
 1. Open object browser, enable Help mode (? button)
 2. Your object should NOT be greyed out
 3. Click it → sidebar shows schema info + markdown prose
-4. Visit `/docs/<object>` → static page renders correctly
+4. Visit `/docs/objects/<object>` → static page renders correctly
 5. If help patch exists: "Open Help Patch" button appears
+
+---
+
+## Topic Documentation
+
+For general documentation (not object-specific), create topic pages at `/docs/<topic>`.
+
+### Adding a Topic Page
+
+1. Create `ui/static/content/topics/<topic>.md` with your content
+2. Visit `/docs/<topic>` to view
+
+Topic pages support:
+
+- Full markdown with syntax-highlighted code blocks
+- Links to object docs: `[p5](/docs/objects/p5)`
+- Links to other topics: `[JavaScript Runner](/docs/javascript-runner)`
+
+### Existing Topics
+
+| Topic                | Description                          |
+| -------------------- | ------------------------------------ |
+| `javascript-runner`  | JSRunner API reference               |
+| `canvas-interaction` | noDrag/noPan/noWheel/noInteract docs |
 
 ---
 
@@ -208,8 +232,10 @@ interface OutletSchema {
 | Schema types      | `ui/src/lib/objects/schemas/types.ts`                            |
 | Schema files      | `ui/src/lib/objects/schemas/<object>.ts`                         |
 | Schema registry   | `ui/src/lib/objects/schemas/index.ts`                            |
-| Markdown docs     | `ui/static/content/objects/<object>.md`                          |
+| Object markdown   | `ui/static/content/objects/<object>.md`                          |
+| Topic markdown    | `ui/static/content/topics/<topic>.md`                            |
 | Help patches      | `ui/static/help-patches/<object>.json`                           |
 | Help sidebar      | `ui/src/lib/components/sidebar/HelpView.svelte`                  |
 | Object browser    | `ui/src/lib/components/object-browser/ObjectBrowserModal.svelte` |
-| Static docs route | `ui/src/routes/docs/[object]/+page.svelte`                       |
+| Object docs route | `ui/src/routes/docs/objects/[object]/+page.svelte`               |
+| Topic docs route  | `ui/src/routes/docs/[topic]/+page.svelte`                        |

@@ -117,6 +117,7 @@
     "lodash": "^4.17.21",
     "machine": "./src/assets/vasm",
     "marked": "^16.1.2",
+    "marked-highlight": "^2.2.3",
     "matter-js": "^0.20.0",
     "mediabunny": "^1.31.0",
     "memfs": "^4.39.0",

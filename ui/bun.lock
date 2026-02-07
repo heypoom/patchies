@@ -49,6 +49,7 @@
         "lodash": "^4.17.21",
         "machine": "./src/assets/vasm",
         "marked": "^16.1.2",
+        "marked-highlight": "^2.2.3",
         "matter-js": "^0.20.0",
         "mediabunny": "^1.31.0",
         "memfs": "^4.39.0",
@@ -2062,6 +2063,8 @@
     "markdown-actions": ["markdown-actions@1.1.2", "", {}, "sha512-U7rmgTvUP3neh3XaVblikslRWWhfpzF2SiI1A6z3az7IpYuAiVvdqtZrFCArV22TSj2Ht+r0ResohlsJ8/ntbw=="],
 
     "marked": ["marked@16.1.2", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-rNQt5EvRinalby7zJZu/mB+BvaAY2oz3wCuCjt1RDrWNpS1Pdf9xqMOeC9Hm5adBdcV/3XZPJpG58eT+WBc0XQ=="],
+
+    "marked-highlight": ["marked-highlight@2.2.3", "", { "peerDependencies": { "marked": ">=4 <18" } }, "sha512-FCfZRxW/msZAiasCML4isYpxyQWKEEx44vOgdn5Kloae+Qc3q4XR7WjpKKf8oMLk7JP9ZCRd2vhtclJFdwxlWQ=="],
 
     "math-intrinsics": ["math-intrinsics@1.1.0", "", {}, "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g=="],
 

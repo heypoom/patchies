@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { marked } from 'marked';
+  import { marked } from '$lib/objects/fetch-object-help';
   import { ArrowLeft, ExternalLink } from '@lucide/svelte/icons';
   import { TRIGGER_TYPE_SPECS } from '$lib/objects/schemas/trigger';
 
@@ -121,7 +121,7 @@
 
     <!-- Prose documentation from markdown -->
     {#if htmlContent}
-      <section class="prose-docs mb-8">
+      <section class="prose-markdown mb-8">
         {@html htmlContent}
       </section>
     {/if}
@@ -140,79 +140,3 @@
     {/if}
   </div>
 </div>
-
-<style>
-  .prose-docs :global(h1) {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #e4e4e7;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-  }
-
-  .prose-docs :global(h2) {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #71717a;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .prose-docs :global(h3) {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #a1a1aa;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .prose-docs :global(p) {
-    font-size: 0.9375rem;
-    color: #a1a1aa;
-    line-height: 1.7;
-    margin-bottom: 1rem;
-  }
-
-  .prose-docs :global(code) {
-    font-family: ui-monospace, monospace;
-    font-size: 0.875rem;
-    background: #27272a;
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-    color: #e4e4e7;
-  }
-
-  .prose-docs :global(pre) {
-    background: #18181b;
-    border: 1px solid #27272a;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin: 1rem 0;
-    overflow-x: auto;
-  }
-
-  .prose-docs :global(pre code) {
-    background: transparent;
-    padding: 0;
-    font-size: 0.875rem;
-  }
-
-  .prose-docs :global(ul),
-  .prose-docs :global(ol) {
-    font-size: 0.9375rem;
-    color: #a1a1aa;
-    padding-left: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .prose-docs :global(li) {
-    margin-bottom: 0.5rem;
-  }
-
-  .prose-docs :global(strong) {
-    color: #e4e4e7;
-    font-weight: 600;
-  }
-</style>

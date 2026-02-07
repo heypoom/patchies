@@ -101,7 +101,7 @@
         {/if}
 
         <a
-          href="/docs/{currentSchema.type}"
+          href="/docs/objects/{currentSchema.type}"
           target="_blank"
           class="rounded p-1 text-zinc-500 transition-colors hover:bg-green-500/20 hover:text-green-300"
           title="Open full documentation (shareable link)"
@@ -171,7 +171,7 @@
       <!-- Prose documentation from markdown -->
       {#if helpContent.htmlContent}
         <div class="mb-4 border-t border-zinc-800 pt-4">
-          <div class="prose-help">
+          <div class="prose-markdown-sm">
             {@html helpContent.htmlContent}
           </div>
         </div>
@@ -257,78 +257,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .prose-help :global(h1) {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #e4e4e7;
-    margin-bottom: 0.75rem;
-  }
-
-  .prose-help :global(h2) {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #a1a1aa;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .prose-help :global(h3) {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    color: #a1a1aa;
-    margin-top: 0.75rem;
-    margin-bottom: 0.375rem;
-  }
-
-  .prose-help :global(p) {
-    font-size: 0.6875rem;
-    color: #a1a1aa;
-    line-height: 1.5;
-    margin-bottom: 0.5rem;
-  }
-
-  .prose-help :global(code) {
-    font-family: ui-monospace, monospace;
-    font-size: 0.625rem;
-    background: #27272a;
-    padding: 0.125rem 0.25rem;
-    border-radius: 0.25rem;
-    color: #e4e4e7;
-  }
-
-  .prose-help :global(pre) {
-    background: #18181b;
-    border: 1px solid #27272a;
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    overflow-x: auto;
-  }
-
-  .prose-help :global(pre code) {
-    background: transparent;
-    padding: 0;
-    font-size: 0.625rem;
-  }
-
-  .prose-help :global(ul),
-  .prose-help :global(ol) {
-    font-size: 0.6875rem;
-    color: #a1a1aa;
-    padding-left: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .prose-help :global(li) {
-    margin-bottom: 0.25rem;
-  }
-
-  .prose-help :global(strong) {
-    color: #e4e4e7;
-    font-weight: 600;
-  }
-</style>
