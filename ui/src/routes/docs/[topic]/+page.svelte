@@ -4,19 +4,11 @@
   let { data } = $props();
 
   const htmlContent = $derived(marked.parse(data.markdown) as string);
-
-  // Convert topic slug to title (e.g., "javascript-runner" -> "JavaScript Runner")
-  const title = $derived(
-    data.topic
-      .split('-')
-      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
-  );
 </script>
 
 <svelte:head>
-  <title>{title} - Patchies Documentation</title>
-  <meta name="description" content="Patchies documentation: {title}" />
+  <title>{data.title} | Patchies</title>
+  <meta name="description" content="Patchies documentation: {data.title}" />
 </svelte:head>
 
 <!-- Prose documentation from markdown -->

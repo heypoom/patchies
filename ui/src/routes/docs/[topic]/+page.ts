@@ -9,6 +9,21 @@ export const entries: EntryGenerator = () => {
   return topics.map((topic) => ({ topic }));
 };
 
+/**
+ * Extract title from markdown content (first # heading)
+ */
+function extractTitle(markdown: string, fallbackSlug: string): string {
+  const match = markdown.match(/^#\s+(.+)$/m);
+  if (match) {
+    return match[1].trim();
+  }
+  // Fallback: convert slug to title
+  return fallbackSlug
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export const load: PageLoad = async ({ params, fetch }) => {
   const topic = params.topic;
 
@@ -22,9 +37,11 @@ export const load: PageLoad = async ({ params, fetch }) => {
   }
 
   const markdown = await res.text();
+  const title = extractTitle(markdown, topic);
 
   return {
     topic,
+    title,
     markdown
   };
 };

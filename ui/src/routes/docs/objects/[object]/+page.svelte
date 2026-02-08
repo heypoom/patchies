@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-  <title>{data.objectType} - Patchies Documentation</title>
+  <title>{data.objectType} | Patchies</title>
   <meta
     name="description"
     content={data.schema?.description ?? `Documentation for ${data.objectType} object in Patchies`}
