@@ -7,7 +7,12 @@ export const recvVdoSchema: ObjectSchema = {
   type: 'recv.vdo',
   category: 'visual',
   description: 'Receive video from a named channel for wireless routing',
-  inlets: [],
+  inlets: [
+    {
+      id: 'channel',
+      description: 'Channel name (string)'
+    }
+  ],
   outlets: [
     {
       id: 'video',

@@ -1220,7 +1220,7 @@ export class FBORenderer {
 
         threeRenderer.handleMessage(message);
       })
-      .with(P.union('glsl', 'img', 'bg.out'), () => {})
+      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
       .exhaustive();
   }
 

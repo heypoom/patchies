@@ -11,6 +11,10 @@ export const sendVdoSchema: ObjectSchema = {
     {
       id: 'video',
       description: 'Video input to broadcast on the channel'
+    },
+    {
+      id: 'channel',
+      description: 'Channel name (string)'
     }
   ],
   outlets: [],
