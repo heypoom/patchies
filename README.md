@@ -33,22 +33,10 @@ Patchies is designed to mix textual coding and visual patching, using the best o
 
 If you haven't used a patching environment before, patching is a _visual_ way to program by connecting objects together. Each object does something e.g. generate sound, generate visual, compute some values. You connect the output of one object to the input of another object to create a flow of data.
 
-This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](#message-passing), [Video Chaining](#video-chaining) and [Audio Chaining](#audio-chaining). They're heavily inspired by tools like Max, Pd, TouchDesigner and VVVV.
+This lets you visually see the program's core composition and its in-between results such as audio, video and message flows, while using tools you're already familiar with that lets you do a lot with a bit of code. This is done through [Message Passing](https://patchies.app/docs/message-passing), [Video Chaining](https://patchies.app/docs/video-chaining) and [Audio Chaining](https://patchies.app/docs/audio-chaining). They're heavily inspired by tools like Max, Pd, TouchDesigner and VVVV.
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
 ## Guides & Objects
 
 See [patchies.app/docs](https://patchies.app/docs) for the usage guides, references and list of objects.
-
-## Audio Analysis
-
-See [Audio Reactivity](https://patchies.app/docs/audio-reactivity) for FFT usage, presets, and converting existing P5/Hydra code.
-
-## Disabling AI features
-
-See [AI Features](https://patchies.app/docs/ai-features) for setup, modes, and how to opt out.
-
-## Rendering Pipeline
-
-See [Rendering Pipeline](https://patchies.app/docs/rendering-pipeline) for performance details and webcam/video optimization.
