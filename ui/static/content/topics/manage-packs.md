@@ -22,5 +22,5 @@ Preset packs are collections of pre-configured object presets grouped by use-cas
 
 ## See Also
 
-- [Creating Objects](/docs/creating-objects)
+- [Adding Objects](/docs/adding-objects)
 - [Presets](/docs/manage-presets)

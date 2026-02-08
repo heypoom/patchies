@@ -28,5 +28,4 @@ Some objects have interactive help patches that demonstrate usage. Click **Open 
 
 ## See Also
 
-- [Creating Objects](/docs/creating-objects)
-- [Browsing Objects](/docs/browsing-objects)
+- [Adding Objects](/docs/adding-objects)

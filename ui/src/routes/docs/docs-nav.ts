@@ -12,8 +12,7 @@ export const categoryOrder = [
 export const topicOrder: Record<string, string[]> = {
   'Getting Started': [
     'getting-started',
-    'creating-objects',
-    'browsing-objects',
+    'adding-objects',
     'modifying-objects',
     'keyboard-shortcuts'
   ],

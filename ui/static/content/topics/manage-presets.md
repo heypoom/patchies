@@ -26,4 +26,4 @@ Patchies includes [preset packs](/docs/manage-packs) with ready-to-use objects f
 ## See Also
 
 - [Packs](/docs/manage-packs)
-- [Creating Objects](/docs/creating-objects)
+- [Adding Objects](/docs/adding-objects)

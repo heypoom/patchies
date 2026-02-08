@@ -5,14 +5,13 @@
  * Maps topic slugs to their actual titles extracted from markdown files.
  */
 export const TOPIC_TITLES: Record<string, string> = {
+  'adding-objects': 'Adding Objects',
   'ai-features': 'AI Create & Edit',
   'audio-chaining': 'Audio Chaining',
   'audio-reactivity': 'Audio Reactivity',
-  'browsing-objects': 'Browsing Objects',
   'canvas-interaction': 'Canvas Interaction Control',
   'connecting-objects': 'Connecting Objects',
   'connection-rules': 'Connection Rules',
-  'creating-objects': 'Creating Objects',
   'getting-started': 'Getting Started',
   'hot-cold-inlets': 'Hot and Cold Inlets',
   'in-app-help': 'Help',

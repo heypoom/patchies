@@ -6,5 +6,5 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to "Hel
 
 ## See Also
 
-- [Creating Objects](/docs/creating-objects)
+- [Adding Objects](/docs/adding-objects)
 - [Getting Started](/docs/getting-started)

@@ -12,6 +12,6 @@ Playing around with demos first is a nice way to get inspirations and see what P
 
 ## See Also
 
-- [Creating Objects](/docs/creating-objects)
+- [Adding Objects](/docs/adding-objects)
 - [Keyboard Shortcuts](/docs/keyboard-shortcuts)
 - [Connecting Objects](/docs/connecting-objects)
