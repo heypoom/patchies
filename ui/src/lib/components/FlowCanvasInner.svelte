@@ -1118,7 +1118,7 @@
   <!-- Main content area -->
   <div class="relative flex flex-1 flex-col">
     <!-- URL Loading Indicator -->
-    {#if isLoadingFromUrl}
+    {#if isLoadingFromUrl && !($isMobile && $isSidebarOpen)}
       <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
@@ -1133,7 +1133,7 @@
     {/if}
 
     <!-- URL Loading Error -->
-    {#if urlLoadError}
+    {#if urlLoadError && !($isMobile && $isSidebarOpen)}
       <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
@@ -1152,7 +1152,7 @@
     {/if}
 
     <!-- Help Mode / Read-Only Mode Banner -->
-    {#if $helpModeObject || isReadOnlyMode}
+    {#if ($helpModeObject || isReadOnlyMode) && !($isMobile && $isSidebarOpen)}
       <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100"
@@ -1192,7 +1192,7 @@
     {/if}
 
     <!-- Connection Mode Indicator -->
-    {#if $isConnectionMode}
+    {#if $isConnectionMode && !($isMobile && $isSidebarOpen)}
       <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
