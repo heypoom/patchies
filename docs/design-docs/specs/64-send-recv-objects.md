@@ -223,16 +223,28 @@ When a send/recv node is deleted:
    - `updateEdges()` merges virtual edges from AudioChannelRegistry with real edges
    - Virtual edges enable wireless audio routing between send~/recv~ pairs
 
-### Phase 4: Video (`send.vdo` / `recv.vdo`)
+### Phase 4: Video (`send.vdo` / `recv.vdo`) ✅ COMPLETE
 
-1. **Add AudioChannelRegistry**
-   - `videoChannels` map
-   - `getVideoVirtualEdges()` method
+1. **Create VideoChannelRegistry** (`src/workers/rendering/VideoChannelRegistry.ts`) ✅
+   - Separate singleton in render worker (no main thread state needed)
+   - `subscribe(channel, nodeId, role: 'send' | 'recv')`
+   - `unsubscribe(channel, nodeId)` / `unsubscribeAll(nodeId)`
+   - `getVirtualEdges()` - returns RenderEdge[] for fboRenderer
 
-2. **Create video nodes**
-   - `SendVideoNode` (send.vdo) - video inlet, registers as sender
-   - `RecvVideoNode` (recv.vdo) - video outlet, passes through FBO
-   - Set `shorthand: true` with aliases `sv` / `rv`
+2. **Create video node components** ✅
+   - `SendVideoNode.svelte` - video inlet, registers with GLSystem as 'send.vdo'
+   - `RecvVideoNode.svelte` - video outlet, registers with GLSystem as 'recv.vdo'
+   - Visual styling matches ObjectNode exactly (double-click to edit channel)
+   - Schemas in `src/lib/objects/schemas/` with aliases `sv` / `rv`
 
-3. **Integrate with GLSystem / fboRenderer**
-   - Merge virtual edges in render graph topology
+3. **Integrate with fboRenderer** (`src/workers/rendering/fboRenderer.ts`) ✅
+   - `buildFBOs()` registers send.vdo/recv.vdo nodes with VideoChannelRegistry
+   - Virtual edges merged into render graph before topology sort
+   - `applyVirtualEdgesToNodes()` updates inletMap for proper texture routing
+   - Passthrough renderer copies input texture to output FBO
+
+4. **Update types and registration** ✅
+   - Added send.vdo/recv.vdo to RenderNode type and FBO_COMPATIBLE_TYPES
+   - Registered in node-types.ts and defaultNodeData.ts
+   - Added to Video Synths pack in object-packs.ts
+   - Documentation in `static/content/objects/`

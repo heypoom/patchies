@@ -83,7 +83,9 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   'meter~': 'Audio level meter display',
   'vdo.ninja.push': 'Push video/audio/data to VDO.Ninja',
   'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja',
-  wgpu: 'WebGPU compute shaders for parallel data processing'
+  wgpu: 'WebGPU compute shaders for parallel data processing',
+  'send.vdo': 'Send video frames to a named channel',
+  'recv.vdo': 'Receive video frames from a named channel'
 };
 
 /**

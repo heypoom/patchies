@@ -29,6 +29,7 @@ import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
+import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -93,6 +94,12 @@ export class FBORenderer {
   /** Capture renderer for video frames and sync captures */
   public captureRenderer: CaptureRenderer;
 
+  /** Video channel registry for send.vdo/recv.vdo wireless routing */
+  public videoChannelRegistry = VideoChannelRegistry.getInstance();
+
+  /** Reusable passthrough draw command for video routing nodes */
+  private passthroughDraw: regl.DrawCommand | null = null;
+
   constructor() {
     const [width, height] = this.outputSize;
 
@@ -127,6 +134,37 @@ export class FBORenderer {
 
     // Create video texture manager
     this.videoTextures = new VideoTextureManager(this.regl, this.gl);
+
+    // Create passthrough draw command for video routing nodes
+    this.passthroughDraw = this.regl({
+      vert: `
+        precision mediump float;
+        attribute vec2 position;
+        varying vec2 uv;
+        void main() {
+          uv = position * 0.5 + 0.5;
+          gl_Position = vec4(position, 0, 1);
+        }
+      `,
+      frag: `
+        precision mediump float;
+        varying vec2 uv;
+        uniform sampler2D inputTexture;
+        void main() {
+          gl_FragColor = texture2D(inputTexture, uv);
+        }
+      `,
+      attributes: {
+        position: [-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]
+      },
+      uniforms: {
+        inputTexture: this.regl.prop<{ inputTexture: regl.Texture2D }, 'inputTexture'>(
+          'inputTexture'
+        )
+      },
+      count: 6,
+      framebuffer: this.regl.prop<{ framebuffer: regl.Framebuffer2D }, 'framebuffer'>('framebuffer')
+    });
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -145,13 +183,41 @@ export class FBORenderer {
         fboNode.texture.destroy();
         fboNode.cleanup?.();
         this.fboNodes.delete(nodeId);
+
+        // Unsubscribe removed nodes from video channels
+        this.videoChannelRegistry.unsubscribeAll(nodeId);
       }
     }
 
     this.cleanupExpensiveTextmodeRenderers(newNodeIds);
 
-    this.renderGraph = renderGraph;
-    this.outputNodeId = renderGraph.outputNodeId;
+    // Register send.vdo/recv.vdo nodes with video channel registry
+    // Unsubscribe first to clean up stale subscriptions when channel names change
+    for (const node of renderGraph.nodes) {
+      match(node)
+        .with({ type: 'send.vdo' }, (n) => {
+          this.videoChannelRegistry.unsubscribeAll(n.id);
+          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'send');
+        })
+        .with({ type: 'recv.vdo' }, (n) => {
+          this.videoChannelRegistry.unsubscribeAll(n.id);
+          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'recv');
+        })
+        .otherwise(() => {});
+    }
+
+    // Merge virtual edges from video channels into the render graph
+    const virtualEdges = this.videoChannelRegistry.getVirtualEdges();
+    const mergedGraph: RenderGraph = {
+      ...renderGraph,
+      edges: [...renderGraph.edges, ...virtualEdges]
+    };
+
+    // Update node relationships with virtual edges
+    this.applyVirtualEdgesToNodes(mergedGraph);
+
+    this.renderGraph = mergedGraph;
+    this.outputNodeId = mergedGraph.outputNodeId;
 
     for (const node of renderGraph.nodes) {
       // Check if we can reuse an existing FBO for this node.
@@ -214,6 +280,8 @@ export class FBORenderer {
         .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
         .with({ type: 'img' }, () => this.createEmptyRenderer())
         .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
+        .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
+        .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
         .exhaustive();
 
       // If the renderer function is null, we skip defining this node.
@@ -250,6 +318,73 @@ export class FBORenderer {
   // Some nodes are externally managed, e.g. the texture will be uploaded on it.
   createEmptyRenderer() {
     return { render: () => {}, cleanup: () => {} };
+  }
+
+  /**
+   * Apply virtual edges to nodes by updating their inputs, outputs, and inletMap.
+   * This ensures virtual edges from send.vdo/recv.vdo are properly connected.
+   */
+  private applyVirtualEdgesToNodes(graph: RenderGraph): void {
+    const nodeMap = new Map(graph.nodes.map((n) => [n.id, n]));
+
+    for (const edge of graph.edges) {
+      // Skip if this edge was already processed (non-virtual edges are pre-processed)
+      if (!edge.id.startsWith('virtual-video-')) continue;
+
+      const sourceNode = nodeMap.get(edge.source);
+      const targetNode = nodeMap.get(edge.target);
+
+      if (sourceNode && targetNode) {
+        // Add to inputs/outputs if not already present
+        if (!sourceNode.outputs.includes(edge.target)) {
+          sourceNode.outputs.push(edge.target);
+        }
+        if (!targetNode.inputs.includes(edge.source)) {
+          targetNode.inputs.push(edge.source);
+        }
+
+        // Parse inlet index from target handle (e.g., "video-in-0" -> 0)
+        if (edge.targetHandle?.startsWith('video-in')) {
+          const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
+          if (inletMatch) {
+            const inletIndex = parseInt(inletMatch[1], 10);
+            targetNode.inletMap.set(inletIndex, edge.source);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Create a passthrough renderer for video routing nodes (send.vdo, recv.vdo).
+   * Copies input texture from inlet 0 to the output framebuffer.
+   */
+  createPassthroughRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): { render: RenderFunction; cleanup: () => void } {
+    const nodeId = node.id;
+
+    return {
+      render: () => {
+        // Get input texture from inlet 0
+        const sourceNodeId = node.inletMap.get(0);
+        if (!sourceNodeId) return;
+
+        const sourceFbo = this.fboNodes.get(sourceNodeId);
+        if (!sourceFbo) return;
+
+        // Blit input texture to output framebuffer
+        this.passthroughDraw?.({
+          inputTexture: sourceFbo.texture,
+          framebuffer
+        });
+      },
+      cleanup: () => {
+        // Unsubscribe from video channel when node is destroyed
+        this.videoChannelRegistry.unsubscribeAll(nodeId);
+      }
+    };
   }
 
   async createHydraRenderer(
@@ -1091,7 +1226,7 @@ export class FBORenderer {
 
         threeRenderer.handleMessage(message);
       })
-      .with(P.union('glsl', 'img', 'bg.out'), () => {})
+      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
       .exhaustive();
   }
 

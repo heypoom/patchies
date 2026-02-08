@@ -22,9 +22,11 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Processing: gain~, pan~, delay~, compressor~, waveshaper~, convolver~
   * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
   * Synthesis: osc~ (oscillator), sig~ (signal)
-  * Control: mtof, loadbang, metro, adsr, send, recv
+  * Control: mtof, loadbang, metro, adsr, send, recv, send~, recv~
     * send: send messages to a named channel
     * recv: receive messages from a named channel
+    * send~: send audio to a named channel (wireless audio routing)
+    * recv~: receive audio from a named channel (wireless audio routing)
   * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "gain~ 0.5" } })
 
 ## Visual & Creative Coding Objects
@@ -83,4 +85,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## Media Input
 - webcam: Webcam video input
-- screen: Screen capture`;
+- screen: Screen capture
+
+## Video Routing
+- send.vdo: Send video frames to a named channel (wireless video routing)
+- recv.vdo: Receive video frames from a named channel (wireless video routing)`;

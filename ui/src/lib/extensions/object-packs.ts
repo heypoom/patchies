@@ -49,7 +49,18 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Media',
     description: 'Source and sinks for video and audio',
     icon: 'Camera',
-    objects: ['webcam', 'video', 'img', 'screen', 'mic~', 'soundfile~', 'out~', 'bg.out']
+    objects: [
+      'webcam',
+      'video',
+      'img',
+      'screen',
+      'mic~',
+      'soundfile~',
+      'out~',
+      'bg.out',
+      'send.vdo',
+      'recv.vdo'
+    ]
   },
   {
     id: '2d',

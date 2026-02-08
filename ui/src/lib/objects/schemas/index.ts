@@ -68,6 +68,8 @@ export * from './adsr';
 export * from './asm';
 export * from './wgpu-compute';
 export * from './bg-out';
+export * from './send-vdo';
+export * from './recv-vdo';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
@@ -140,6 +142,8 @@ import { adsrSchema } from './adsr';
 import { asmSchema } from './asm';
 import { wgpuComputeSchema } from './wgpu-compute';
 import { bgOutSchema } from './bg-out';
+import { sendVdoSchema } from './send-vdo';
+import { recvVdoSchema } from './recv-vdo';
 
 // V2 Audio Node imports (source of truth for audio objects)
 import { AddNodeV2 } from '$lib/audio/v2/nodes/AddNode';
@@ -251,6 +255,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   asm: asmSchema,
   'wgpu.compute': wgpuComputeSchema,
   'bg.out': bgOutSchema,
+  'send.vdo': sendVdoSchema,
+  'recv.vdo': recvVdoSchema,
 
   // Audio objects (generated from V2 nodes - single source of truth)
   'gain~': schemaFromNode(GainNodeV2, 'audio'),
