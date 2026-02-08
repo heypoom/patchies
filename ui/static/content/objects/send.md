@@ -12,17 +12,14 @@ Create `send foo` and `recv foo` anywhere in your patch. Messages sent to the in
 
 ## JavaScript API
 
-From `js`, `worker`, or other JavaScript-enabled objects:
+From `js`, `worker`, or other JavaScript-enabled objects, you can receive messages sent from `send`:
 
 ```javascript
-// Send to named channel
-send({ x: 100, y: 200 }, { channel: 'position' });
-
-// Receive from named channel
-recv((data) => console.log(data), { channel: 'position' });
+// Receive from named channels
+recv((data) => console.log(data), { channel: 'foo' });
 ```
 
-Both visual objects and JavaScript code can share the same channels.
+Both visual objects and JavaScript code can share the same channels. See the [JavaScript Runner](/docs/javascript-runner) page for more on the API.
 
 ## See Also
 

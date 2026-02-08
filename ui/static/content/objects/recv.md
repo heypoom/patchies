@@ -12,21 +12,14 @@ Create `recv foo` to listen for messages from any `send foo` objects in your pat
 
 ## JavaScript API
 
-From `js`, `worker`, or other JavaScript-enabled objects:
+From `js`, `worker`, or other JavaScript-enabled objects, you can send messages to `recv`:
 
 ```javascript
-// Receive from named channel
-recv((data, meta) => {
-  console.log(data);           // the message
-  console.log(meta.channel);   // 'position'
-  console.log(meta.source);    // sender's node ID
-}, { channel: 'position' });
-
-// Send to named channel
-send({ x: 100, y: 200 }, { channel: 'position' });
+// Send to named channels
+send('foobar', { channel: 'foo' });
 ```
 
-Both visual objects and JavaScript code can share the same channels.
+Both visual objects and JavaScript code can share the same channels. See the [JavaScript Runner](/docs/javascript-runner) page for more on the API.
 
 ## See Also
 
