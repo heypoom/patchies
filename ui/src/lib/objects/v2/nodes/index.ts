@@ -15,6 +15,8 @@ import { SpigotObject } from './SpigotObject';
 import { ThrottleObject } from './ThrottleObject';
 import { UniqbyObject } from './UniqbyObject';
 import { WebMidiLinkObject } from './WebMidiLinkObject';
+import { SendObject } from './SendObject';
+import { RecvObject } from './RecvObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
@@ -33,7 +35,9 @@ const TEXT_OBJECTS = [
   SpigotObject,
   ThrottleObject,
   UniqbyObject,
-  WebMidiLinkObject
+  WebMidiLinkObject,
+  SendObject,
+  RecvObject
 ] as const satisfies TextObjectClass[];
 
 /**
