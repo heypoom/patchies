@@ -8,7 +8,7 @@ Patchies is licensed under [AGPL-3.0](https://github.com/nicepatch/patchies/blob
 
 If you enjoy using Patchies, please consider supporting the open source creators who made it possible.
 
-You can view the list of creators to sponsor in-app by going to the "thanks" tab in the help dialog.
+You can view the list of creators to sponsor in-app by going to [Help > Thanks](/?startup=thanks).
 
 ## Licenses and Attributions
 
