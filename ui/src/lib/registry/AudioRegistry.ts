@@ -12,10 +12,18 @@ export class AudioRegistry {
 
   /**
    * Register a node type with its constructor.
+   * Also registers any aliases defined on the node class.
    * @param constructor - The node class with static `type` and `group` properties
    */
   register(constructor: AudioNodeClass): void {
     this.registry.set(constructor.type, constructor);
+
+    // Also register under aliases
+    if (constructor.aliases) {
+      for (const alias of constructor.aliases) {
+        this.registry.set(alias, constructor);
+      }
+    }
   }
 
   /**

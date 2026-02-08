@@ -1,7 +1,7 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messages/MessageSystem';
-import { ChannelRegistry } from '$lib/messages/ChannelRegistry';
+import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { match } from 'ts-pattern';
 import { JSRunner } from './JSRunner';
 import {
@@ -102,7 +102,7 @@ export class WorkerNodeSystem {
 
   private eventBus = PatchiesEventBus.getInstance();
   private messageSystem = MessageSystem.getInstance();
-  private channelRegistry = ChannelRegistry.getInstance();
+  private channelRegistry = MessageChannelRegistry.getInstance();
   private jsRunner = JSRunner.getInstance();
   private audioAnalysis = AudioAnalysisSystem.getInstance();
   private workers = new Map<string, WorkerInstance>();
@@ -456,7 +456,7 @@ export class WorkerNodeSystem {
     this.workerChannelSubscriptions.get(nodeId)!.add(channel);
 
     // Subscribe to ChannelRegistry - forward messages to worker
-    this.channelRegistry.subscribeMessage(channel, nodeId, (data, sourceNodeId) => {
+    this.channelRegistry.subscribe(channel, nodeId, (data, sourceNodeId) => {
       worker.postMessage({
         type: 'channelMessage',
         nodeId,
@@ -475,7 +475,7 @@ export class WorkerNodeSystem {
 
     if (subscriptions) {
       for (const channel of subscriptions) {
-        this.channelRegistry.unsubscribeMessage(channel, nodeId);
+        this.channelRegistry.unsubscribe(channel, nodeId);
       }
 
       this.workerChannelSubscriptions.delete(nodeId);
@@ -486,7 +486,7 @@ export class WorkerNodeSystem {
    * Handle worker unsubscribing from a named channel (on code re-execution).
    */
   private handleUnsubscribeChannel(nodeId: string, channel: string) {
-    this.channelRegistry.unsubscribeMessage(channel, nodeId);
+    this.channelRegistry.unsubscribe(channel, nodeId);
 
     const subscriptions = this.workerChannelSubscriptions.get(nodeId);
     if (subscriptions) {

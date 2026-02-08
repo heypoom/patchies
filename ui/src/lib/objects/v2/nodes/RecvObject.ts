@@ -4,7 +4,10 @@ import { match } from 'ts-pattern';
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
-import { ChannelRegistry, type MessageChannelCallback } from '$lib/messages/ChannelRegistry';
+import {
+  MessageChannelRegistry,
+  type MessageChannelCallback
+} from '$lib/messages/MessageChannelRegistry';
 
 /**
  * RecvObject receives messages from a named channel.
@@ -36,14 +39,14 @@ export class RecvObject implements TextObjectV2 {
 
   readonly nodeId: string;
   readonly context: ObjectContext;
-  private channelRegistry: ChannelRegistry;
+  private channelRegistry: MessageChannelRegistry;
   private currentChannel: string = '';
   private channelCallback: MessageChannelCallback;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
     this.context = context;
-    this.channelRegistry = ChannelRegistry.getInstance();
+    this.channelRegistry = MessageChannelRegistry.getInstance();
 
     // Create callback that forwards messages to outlet
     this.channelCallback = (message: unknown) => {
@@ -72,11 +75,11 @@ export class RecvObject implements TextObjectV2 {
   private subscribeToChannel(channel: string): void {
     // Unsubscribe from old channel
     if (this.currentChannel) {
-      this.channelRegistry.unsubscribeMessage(this.currentChannel, this.nodeId);
+      this.channelRegistry.unsubscribe(this.currentChannel, this.nodeId);
     }
 
     // Subscribe to new channel
-    this.channelRegistry.subscribeMessage(channel, this.nodeId, this.channelCallback);
+    this.channelRegistry.subscribe(channel, this.nodeId, this.channelCallback);
     this.currentChannel = channel;
   }
 
@@ -92,7 +95,7 @@ export class RecvObject implements TextObjectV2 {
 
   destroy(): void {
     if (this.currentChannel) {
-      this.channelRegistry.unsubscribeMessage(this.currentChannel, this.nodeId);
+      this.channelRegistry.unsubscribe(this.currentChannel, this.nodeId);
     }
   }
 }

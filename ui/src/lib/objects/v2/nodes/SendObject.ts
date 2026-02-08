@@ -4,7 +4,7 @@ import { match } from 'ts-pattern';
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
-import { ChannelRegistry } from '$lib/messages/ChannelRegistry';
+import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 
 /**
  * SendObject broadcasts messages to a named channel.
@@ -37,12 +37,12 @@ export class SendObject implements TextObjectV2 {
 
   readonly nodeId: string;
   readonly context: ObjectContext;
-  private channelRegistry: ChannelRegistry;
+  private channelRegistry: MessageChannelRegistry;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
     this.context = context;
-    this.channelRegistry = ChannelRegistry.getInstance();
+    this.channelRegistry = MessageChannelRegistry.getInstance();
   }
 
   private getChannel(): string {
