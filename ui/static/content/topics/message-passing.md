@@ -65,6 +65,36 @@ Use `setPortCount(inletCount, outletCount)` to set the exact number of message i
 setPortCount(2, 1); // 2 message inlets, 1 message outlet
 ```
 
+## Named Channels (Wireless Messaging)
+
+Connect distant objects without visual cables using named channels.
+
+### Visual Objects
+
+Create `send foo` and `recv foo` objects anywhere in your patch. Messages sent to the `send` inlet appear at matching `recv` outlets:
+
+```text
+[button] → [send foo]     ...     [recv foo] → [peek]
+```
+
+### JavaScript API
+
+Use the `channel` option with `send()` and `recv()`:
+
+```javascript
+// Send to a named channel
+send({ x: 100 }, { channel: 'position' });
+
+// Receive from a named channel
+recv((data, meta) => {
+  console.log(data);           // the message
+  console.log(meta.channel);   // 'position'
+  console.log(meta.source);    // sender's node ID
+}, { channel: 'position' });
+```
+
+Visual objects and JavaScript code are interoperable on the same channel - a `send foo` object broadcasts to both `recv foo` objects and `recv(callback, { channel: 'foo' })` listeners.
+
 ## See Also
 
 - [JavaScript Runner](/docs/javascript-runner) - Full API reference

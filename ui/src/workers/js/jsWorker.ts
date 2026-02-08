@@ -23,23 +23,31 @@ interface NodeState {
   timeouts: number[];
   cleanupCallbacks: (() => void)[];
   messageCallback: ((data: unknown, meta: Omit<Message, 'data'>) => void) | null;
-  /** Named channel callbacks for recv(cb, { channel }) */
+
+  /** Named channel callbacks for recv(callback, { channel }) */
   channelCallbacks: Map<string, (data: unknown, meta: Omit<Message, 'data'>) => void>;
+
   pendingDelays: Map<number, { timeoutId: number; reject: (err: Error) => void }>;
   delayIdCounter: number;
-  // FFT state
+
+  // FFT states
   isFFTEnabled: boolean;
   fftRequestCache: Map<string, boolean>;
   fftDataCache: Map<string, { data: Uint8Array | Float32Array; timestamp: number }>;
+
   // Video frame state
   videoFrameCallback: ((frames: (ImageBitmap | null)[], timestamp: number) => void) | null;
+
   pendingVideoFrameResolvers: Map<
     string,
     { resolve: (frames: (ImageBitmap | null)[]) => void; reject: (err: Error) => void }
   >;
+
   videoFrameRequestIdCounter: number;
+
   // Direct channel handler (render + worker-to-worker)
   directChannel: DirectChannelHandler;
+
   // Store the executed code for error reporting with line numbers
   code: string | null;
 }
