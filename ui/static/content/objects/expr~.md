@@ -50,9 +50,9 @@ one inlet controlling frequency. Connect a `slider 1 880` to control it.
 
 ## Example Patches
 
-- [scales](https://patchies.app/?id=tfjdf019hjyxmeu) by @kijjaz
-  ([alt: sleep](https://patchies.app/?id=xhdtrqenaf6ur81))
-- [kicks](https://patchies.app/?id=y1kbx9b2s903nlj) by @dtinth
+- [scales](/?id=tfjdf019hjyxmeu) by @kijjaz
+  ([alt: sleep](/?id=xhdtrqenaf6ur81))
+- [kicks](/?id=y1kbx9b2s903nlj) by @dtinth
 
 ## See Also
 

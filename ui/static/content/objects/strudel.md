@@ -3,7 +3,7 @@ Create expressive, dynamic music pieces and complex audio patterns.
 
 ![Patchies Strudel demo](/content/images/strudel-haunted.webp)
 
-> Try this patch [in the app](https://patchies.app/?id=rtjfuwsnvame8bb)!
+> Try this patch [in the app](/?id=rtjfuwsnvame8bb)!
 
 ## Getting Started
 
@@ -31,7 +31,7 @@ Use `bang` or `run` messages to switch playback between them.
 
 ## Examples
 
-Try [funk42 preset by froos](https://patchies.app/?id=zntnikb36c47eaw) for a
+Try [funk42 preset by froos](/?id=zntnikb36c47eaw) for a
 more complex use of Strudel.
 
 Please consider supporting TidalCycles and Strudel at

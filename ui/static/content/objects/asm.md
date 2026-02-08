@@ -164,7 +164,7 @@ int main() {
 }
 ```
 
-Try the [example assembly patch](https://patchies.app/?id=6pyirxuw3cqvwhg).
+Try the [example assembly patch](/?id=6pyirxuw3cqvwhg).
 
 ## See Also
 

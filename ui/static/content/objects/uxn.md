@@ -28,7 +28,7 @@ Supports video chaining - connect the video outlet to other visual objects
 
 ![Patchies Uxn Compudanzas](/content/images/patchies-uxn-compudanzas.png)
 
-> Try this patch [in the app](https://patchies.app/?id=z7rtmujmtvbv0e0)!
+> Try this patch [in the app](/?id=z7rtmujmtvbv0e0)!
 > Code by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html).
 
 - **Edit Code**: Opens the Uxntal assembly code editor

@@ -2,7 +2,7 @@ The `textmode` object creates ASCII art and text-mode graphics using [textmode.j
 
 ![Textmode demo](/content/images/textmode.webp)
 
-> ✨ [Try this patch](https://patchies.app/?id=3hd88qv62h4zltq)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
+> ✨ [Try this patch](/?id=3hd88qv62h4zltq)! Code sample and library by [@humanbydefinition](https://github.com/humanbydefinition)
 
 ## Getting Started
 

@@ -157,6 +157,7 @@
   let showAudioHint = $state(audioService.getAudioContext().state === 'suspended');
   let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
   let startupInitialTab = $state<'about' | 'demos' | 'shortcuts' | 'thanks'>('about');
+  let isReadOnlyMode = $state(false);
 
   // Mobile connection mode state - simplified to just toggle connection mode
   useOnSelectionChange(({ nodes, edges }) => {
@@ -173,10 +174,10 @@
 
   function performAutosave() {
     const embedParam = getSearchParam('embed');
-    const isEmbed = embedParam === 'true' || embedParam === '1';
+    const isEmbed = embedParam === 'true';
 
-    // do not autosave when in embed mode or help mode
-    if (isEmbed || $helpModeObject) {
+    // do not autosave when in embed mode, help mode, or read-only mode
+    if (isEmbed || $helpModeObject || isReadOnlyMode) {
       return;
     }
 
@@ -605,6 +606,12 @@
     const src = params.get('src');
     const id = params.get('id');
     const help = params.get('help');
+    const readonly = params.get('readonly');
+
+    // Check for ?readonly=true parameter (enables read-only mode without help context)
+    if (readonly === 'true') {
+      isReadOnlyMode = true;
+    }
 
     // For ?help= parameter, load help patch (read-only mode)
     if (help) {
@@ -1144,13 +1151,19 @@
       </div>
     {/if}
 
-    <!-- Help Mode Banner -->
-    {#if $helpModeObject}
+    <!-- Help Mode / Read-Only Mode Banner -->
+    {#if $helpModeObject || isReadOnlyMode}
       <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100"
         >
-          <span>Help for <strong>{$helpModeObject}</strong>. Changes won't be saved.</span>
+          <span>
+            {#if $helpModeObject}
+              Help for <strong>{$helpModeObject}</strong>. Changes won't be saved.
+            {:else}
+              Read-only mode. Changes won't be saved.
+            {/if}
+          </span>
 
           <button
             class="cursor-pointer rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
@@ -1160,7 +1173,7 @@
               window.location.reload();
             }}
           >
-            Exit Help
+            {$helpModeObject ? 'Exit Help' : 'Exit'}
           </button>
         </div>
       </div>

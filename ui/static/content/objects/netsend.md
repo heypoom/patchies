@@ -2,7 +2,7 @@ Send messages across the network.
 
 ![Patchies netsend/netrecv demo](/content/images/irc-netrecv.webp)
 
-> Try this patch [in the app](https://patchies.app/?id=pdfb7c8skxk4qw4s)!
+> Try this patch [in the app](/?id=pdfb7c8skxk4qw4s)!
 > Chat over the network - click "Share Link" and send to a friend!
 
 ## Usage
