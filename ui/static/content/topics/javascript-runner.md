@@ -1,14 +1,16 @@
-# Patchies JavaScript Runner
+# JavaScript Runner
 
-Most JavaScript-based nodes in Patchies use the unified JavaScript Runner (JSRunner), which executes code in a sandboxed environment with Patchies-specific features.
+Most JavaScript-based objects in Patchies use the unified JavaScript Runner (JSRunner), which executes code in a sandboxed environment with Patchies-specific features.
 
-## Supported Nodes
+## Supported objects
 
-Full JSRunner features are available in: `js`, `worker`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
+Full JSRunner features are available in these objects: `js`, `worker`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
 
-Some nodes use _single-expression evaluation_ mode (`filter`, `map`, `tap`, `scan`) where the expression is evaluated once per message. These cannot use messaging callbacks like `send`, `recv`, `onCleanup`, timers, etc.
+### Expression objects
 
-## Common Runtime Functions
+Some expression-like objects use _single-expression evaluation_ (e.g. `filter`, `map`, `tap`, `scan`) where the expression is evaluated once per message. These cannot use messaging callbacks like `send`, `recv`, `onCleanup`, timers, etc.
+
+## Common runtime functions
 
 ### Console
 
@@ -16,7 +18,7 @@ Use `console.log()` to log messages to the virtual console (not the browser cons
 
 ### Timers (auto-cleanup)
 
-All timers are automatically cleaned up when the node is unmounted or code is re-executed:
+All timers are automatically cleaned up when the object is unmounted or code is re-executed:
 
 - `setInterval(callback, ms)` - runs callback every `ms` milliseconds
 - `setTimeout(callback, ms)` - runs callback after `ms` milliseconds
@@ -27,7 +29,7 @@ All timers are automatically cleaned up when the node is unmounted or code is re
 
 ### Custom Cleanup
 
-Use `onCleanup(callback)` to register cleanup logic that runs when the node is unmounted or code is re-executed. Useful for disconnecting resources or unsubscribing from events.
+Use `onCleanup(callback)` to register cleanup logic that runs when the object is unmounted or code is re-executed. Useful for disconnecting resources or unsubscribing from events.
 
 ### Message Passing
 
@@ -41,9 +43,9 @@ Use `meta.inlet` in the `recv` callback to distinguish which inlet the message c
 
 - `setPortCount(inletCount, outletCount)` - set the number of message inlets and outlets
 
-### Node Title
+### object Title
 
-- `setTitle(title)` - set the display title of the node
+- `setTitle(title)` - set the display title of the object
 
 ### Async Support
 
@@ -51,7 +53,7 @@ Top-level `await` is supported. Use `await delay(ms)` to pause execution.
 
 ### Audio Analysis
 
-Use `fft()` to get audio frequency data from a connected `fft~` node. See [Audio Reactivity](/docs/audio-reactivity) for details.
+Use `fft()` to get audio frequency data from a connected `fft~` object. See [Audio Reactivity](/docs/audio-reactivity) for details.
 
 ### LLM Integration
 
@@ -62,7 +64,7 @@ const response = await llm("Describe this image");
 
 // With options
 const response = await llm("What's in this frame?", {
-  imageNodeId: "node-123",  // include visual node output as context
+  imageobjectId: "object-123",  // include visual object output as context
   abortSignal: controller.signal
 });
 ```
@@ -99,7 +101,7 @@ Use `await getVfsUrl(path)` to load files from the virtual filesystem. This lets
 
 - Create folders and linked folders
 - Upload files or add files by URL
-- Drag files from the file tree to the canvas or into supported nodes
+- Drag files from the file tree to the canvas or into supported objects
 
 ```javascript
 // In p5:
@@ -117,7 +119,7 @@ const data = await fetch(url);
 
 To get the underlying file Blob, use `await fetch(await getVfsUrl(...))`.
 
-VFS paths use the `user://` prefix for user-uploaded files. Object URLs are automatically cleaned up when the node is destroyed.
+VFS paths use the `user://` prefix for user-uploaded files. Object URLs are automatically cleaned up when the object is destroyed.
 
 ## Shared Libraries
 
@@ -126,11 +128,11 @@ VFS paths use the `user://` prefix for user-uploaded files. Object URLs are auto
 Share code across multiple `js` blocks using the `// @lib <name>` comment. This turns the object into a library object, shown by the package icon:
 
 ```javascript
-// In a js node with "// @lib utils" at the top:
+// In a js object with "// @lib utils" at the top:
 export const rand = () => Math.random();
 export class Vector { /* ... */ }
 
-// In other nodes:
+// In other objects:
 import { rand, Vector } from 'utils';
 ```
 
@@ -138,6 +140,6 @@ Note: Constants are NOT shared across objects. Each object has its own isolated 
 
 ## See Also
 
-- [Canvas Interaction Control](/docs/canvas-interaction)
+- [Canvas Interaction](/docs/canvas-interaction)
 - [Audio Reactivity](/docs/audio-reactivity)
 - [Message Passing](/docs/message-passing)

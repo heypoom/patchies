@@ -1,4 +1,4 @@
-# Canvas Interaction Control
+# Canvas Interaction
 
 Visual objects provide methods to control how mouse/touch interactions behave inside the node. By default, interactions pass through to the canvas for panning and dragging. Use these methods to capture interactions for your own UI.
 
