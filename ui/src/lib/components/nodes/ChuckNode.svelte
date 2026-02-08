@@ -176,7 +176,7 @@
           <!-- Replace button -->
           <button
             onclick={handleReplace}
-            class={['rounded p-1 hover:bg-zinc-700', isReplaceDisabled && 'opacity-50']}
+            class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
             title="Replace (Cmd+Enter)"
             disabled={isReplaceDisabled}
           >
@@ -186,7 +186,7 @@
           <!-- Add shred button -->
           <button
             onclick={handleAddShred}
-            class="rounded p-1 hover:bg-zinc-700"
+            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
             title="Add Shred (Cmd+\)"
             disabled={!data.expr.trim()}
           >
@@ -196,7 +196,7 @@
           <!-- Remove button -->
           <button
             onclick={removeChuckCode}
-            class="rounded p-1 hover:bg-zinc-700"
+            class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
             title="Remove (Cmd+Backspace)"
             disabled={shreds.length === 0}
           >
@@ -205,7 +205,7 @@
         </div>
 
         <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
           onclick={() => (showSettings = !showSettings)}
           title="Settings"
         >
