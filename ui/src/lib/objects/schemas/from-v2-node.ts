@@ -8,6 +8,7 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectInlet, ObjectOutlet } from '../v2/object-metadata';
 import type { ObjectSchema, InletSchema, OutletSchema, MessageSchema } from './types';
+import { sym } from './helpers';
 
 /**
  * Convert ObjectDataType to a TypeBox schema.
@@ -41,7 +42,7 @@ function dataTypeToSchema(type: string | undefined, inlet: ObjectInlet): Message
     case 'bool':
       return { schema: Type.Boolean(), description };
     case 'bang':
-      return { schema: Type.Literal('bang'), description };
+      return { schema: sym('bang'), description };
     case 'int[]':
       return { schema: Type.Array(Type.Integer()), description };
     case 'float[]':

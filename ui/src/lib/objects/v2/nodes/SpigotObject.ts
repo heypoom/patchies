@@ -4,6 +4,7 @@ import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 import { match, P } from 'ts-pattern';
+import { Bang } from '$lib/objects/schemas/common';
 
 /**
  * SpigotObject acts as a gate that allows or blocks messages.
@@ -27,7 +28,7 @@ export class SpigotObject implements TextObjectV2 {
       defaultValue: false,
       messages: [
         { schema: Type.Boolean(), description: 'Truthy allows data, falsey blocks data' },
-        { schema: Type.Literal('bang'), description: 'Bang toggles gate state' }
+        { schema: Bang, description: 'Bang toggles gate state' }
       ]
     }
   ];
