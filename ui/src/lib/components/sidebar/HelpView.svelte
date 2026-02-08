@@ -259,7 +259,7 @@
         <input
           type="text"
           bind:value={searchQuery}
-          placeholder="Search help..."
+          placeholder="Search object help..."
           class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-1.5 pr-3 pl-8 text-xs text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600"
         />
       </div>
