@@ -1,4 +1,5 @@
 import { categoryOrder, topicOrder } from '../../routes/docs/docs-nav';
+import { TOPIC_TITLES } from './topic-titles-manifest';
 
 export interface TopicMeta {
   slug: string;
@@ -6,13 +7,17 @@ export interface TopicMeta {
   category: string;
 }
 
-// Build topic metadata from the navigation config
-// Titles are derived from slugs (will be replaced with actual titles when fetched)
+// Fallback for slugs not in the manifest
 function slugToTitle(slug: string): string {
   return slug
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+// Get title from manifest or fall back to slug conversion
+function getTopicTitle(slug: string): string {
+  return TOPIC_TITLES[slug] ?? slugToTitle(slug);
 }
 
 // Build category lookup map
@@ -26,10 +31,10 @@ for (const [category, topics] of Object.entries(topicOrder)) {
 // All topic slugs in order
 export const topicSlugs = Object.values(topicOrder).flat();
 
-// Topic metadata with default titles (from slug)
+// Topic metadata with titles from manifest
 export const topicMetas: TopicMeta[] = topicSlugs.map((slug) => ({
   slug,
-  title: slugToTitle(slug),
+  title: getTopicTitle(slug),
   category: topicCategoryMap[slug] ?? 'Other'
 }));
 

@@ -110,6 +110,7 @@
   // Get schema for currently viewing object
   const currentSchema = $derived.by((): ObjectSchema | null => {
     if (!viewingObject) return null;
+
     return objectSchemas[viewingObject] ?? null;
   });
 
@@ -143,6 +144,7 @@
     if (!searchQuery.trim()) return topicMetas;
 
     const query = searchQuery.toLowerCase();
+
     return topicMetas.filter(
       (topic) =>
         topic.slug.toLowerCase().includes(query) ||
@@ -463,7 +465,7 @@
                         {#each categoryTopics as topic}
                           <button
                             onclick={() => viewTopic(topic.slug)}
-                            class="flex w-full cursor-pointer items-center rounded px-2 py-1 text-left text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                            class="flex w-full cursor-pointer items-center rounded px-2 py-1 text-left font-mono text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
                           >
                             {topic.title}
                           </button>
