@@ -25,8 +25,10 @@ import { orcaPrompt } from './orca';
 import { p5Prompt } from './p5';
 import { pythonPrompt } from './python';
 import { recvPrompt } from './recv';
+import { recvVdoPrompt } from './recv.vdo';
 import { rubyPrompt } from './ruby';
 import { sendPrompt } from './send';
+import { sendVdoPrompt } from './send.vdo';
 import { samplerPrompt } from './sampler~';
 import { sliderPrompt } from './slider';
 import { soundfilePrompt } from './soundfile~';
@@ -88,7 +90,9 @@ export const objectPrompts: Record<string, string> = {
   wgpu: wgpuPrompt,
   worker: workerPrompt,
   send: sendPrompt,
-  recv: recvPrompt
+  recv: recvPrompt,
+  'send.vdo': sendVdoPrompt,
+  'recv.vdo': recvVdoPrompt
 };
 
 /**

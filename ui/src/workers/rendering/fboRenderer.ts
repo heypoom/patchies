@@ -192,12 +192,18 @@ export class FBORenderer {
     this.cleanupExpensiveTextmodeRenderers(newNodeIds);
 
     // Register send.vdo/recv.vdo nodes with video channel registry
+    // Unsubscribe first to clean up stale subscriptions when channel names change
     for (const node of renderGraph.nodes) {
-      if (node.type === 'send.vdo') {
-        this.videoChannelRegistry.subscribe(node.data.channel, node.id, 'send');
-      } else if (node.type === 'recv.vdo') {
-        this.videoChannelRegistry.subscribe(node.data.channel, node.id, 'recv');
-      }
+      match(node)
+        .with({ type: 'send.vdo' }, (n) => {
+          this.videoChannelRegistry.unsubscribeAll(n.id);
+          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'send');
+        })
+        .with({ type: 'recv.vdo' }, (n) => {
+          this.videoChannelRegistry.unsubscribeAll(n.id);
+          this.videoChannelRegistry.subscribe(n.data.channel, n.id, 'recv');
+        })
+        .otherwise(() => {});
     }
 
     // Merge virtual edges from video channels into the render graph
