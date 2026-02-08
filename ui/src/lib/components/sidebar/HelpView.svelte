@@ -22,6 +22,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { enabledObjects } from '../../../stores/extensions.store';
   import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
+  import { helpViewStore } from '../../../stores/help-view.store';
 
   // Build object order map from packs for sorting
   const objectOrderMap = new Map<string, number>();
@@ -37,11 +38,14 @@
   let manualViewingObject = $state<string | null>(null);
   let manualViewingTopic = $state<string | null>(null);
   let browseModeOverride = $state(false); // When true, show list even if node is selected
-  let isLocked = $state(false); // When true, don't auto-switch on node selection
-  let lastViewedType = $state<string | null>(null); // Persists across deselection
-  let lastViewedTopic = $state<string | null>(null); // Persists topic across deselection
-  let guidesExpanded = $state(false);
-  let objectsExpanded = $state(true);
+
+  // Persisted state from store
+  const persistedState = $derived($helpViewStore);
+  const isLocked = $derived(persistedState.isLocked);
+  const lastViewedType = $derived(persistedState.lastViewedType);
+  const lastViewedTopic = $derived(persistedState.lastViewedTopic);
+  const guidesExpanded = $derived(persistedState.guidesExpanded);
+  const objectsExpanded = $derived(persistedState.objectsExpanded);
 
   // Reset browse mode when a new node is selected on canvas (unless locked)
   $effect(() => {
@@ -85,15 +89,13 @@
   // Track last viewed type/topic for persistence
   $effect(() => {
     if (viewingObject) {
-      lastViewedType = viewingObject;
-      lastViewedTopic = null; // Clear topic when viewing object
+      helpViewStore.setLastViewedType(viewingObject);
     }
   });
 
   $effect(() => {
     if (viewingTopic) {
-      lastViewedTopic = viewingTopic;
-      lastViewedType = null; // Clear object when viewing topic
+      helpViewStore.setLastViewedTopic(viewingTopic);
     }
   });
 
@@ -217,7 +219,7 @@
         <Tooltip.Root delayDuration={100}>
           <Tooltip.Trigger>
             <button
-              onclick={() => (isLocked = !isLocked)}
+              onclick={() => helpViewStore.setLocked(!isLocked)}
               class={[
                 'cursor-pointer rounded p-1 transition-colors',
                 isLocked
@@ -283,7 +285,7 @@
         <Tooltip.Root delayDuration={100}>
           <Tooltip.Trigger>
             <button
-              onclick={() => (isLocked = !isLocked)}
+              onclick={() => helpViewStore.setLocked(!isLocked)}
               class={[
                 'cursor-pointer rounded p-1 transition-colors',
                 isLocked
@@ -430,7 +432,7 @@
         {#if filteredTopics.length > 0}
           <div class="mb-3">
             <button
-              onclick={() => (guidesExpanded = !guidesExpanded)}
+              onclick={() => helpViewStore.setGuidesExpanded(!guidesExpanded)}
               class="mb-1 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
             >
               {#if guidesExpanded}
@@ -473,7 +475,7 @@
         {#if filteredSchemas.length > 0}
           <div>
             <button
-              onclick={() => (objectsExpanded = !objectsExpanded)}
+              onclick={() => helpViewStore.setObjectsExpanded(!objectsExpanded)}
               class="mb-1 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
             >
               {#if objectsExpanded}

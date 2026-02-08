@@ -72,6 +72,7 @@ bun run test             # All tests
 - TypeScript for all code
 - Svelte 5: `$state`, `$props`, `$effect`, `$derived` (no `on:click`, use `onclick`)
 - Prefer editing existing files
+- **Persistence**: Never store localStorage keys or persistence logic in components. Create a dedicated store in `src/stores/` (see `preset-library.store.ts` or `help-view.store.ts` for pattern)
 
 ## Styling
 
