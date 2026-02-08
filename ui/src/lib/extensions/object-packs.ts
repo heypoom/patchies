@@ -81,6 +81,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'fft~',
       'split~',
       'merge~',
+      'send~',
+      'recv~',
       'adsr',
       'mtof'
     ]

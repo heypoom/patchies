@@ -7,6 +7,7 @@ import { validateGroupConnection } from './audio-helpers';
 import { logger } from '$lib/utils/logger';
 import { getAudioParamValue, setAudioParamValue } from './audio-param-helpers';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { AudioChannelRegistry } from '../AudioChannelRegistry';
 import { TimeScheduler } from '../TimeScheduler';
 import { isScheduledMessage } from '../time-scheduling-types';
 import { registerAudioNodes } from './nodes';
@@ -22,6 +23,9 @@ export class AudioService {
 
   /** Reference to registry of audio nodes */
   registry = AudioRegistry.getInstance();
+
+  /** Reference to audio channel registry for virtual edges */
+  private channelRegistry = AudioChannelRegistry.getInstance();
 
   /** Mapping of active audio nodes */
   private nodesById: Map<string, AudioNodeV2> = new Map();
@@ -172,10 +176,15 @@ export class AudioService {
 
   /**
    * Update audio connections based on object graph's edges.
+   * Merges real edges with virtual edges from send~/recv~ channels.
    */
   updateEdges(edges: Edge[]): void {
-    // Store edges for late-arriving nodes
-    this.currentEdges = edges;
+    // Merge real edges with virtual edges from audio channels
+    const virtualEdges = this.channelRegistry.getVirtualEdges();
+    const allEdges = [...edges, ...virtualEdges];
+
+    // Store edges for late-arriving nodes (include virtual edges)
+    this.currentEdges = allEdges;
 
     try {
       // Disconnect all existing connections
@@ -205,7 +214,7 @@ export class AudioService {
         }
       }
 
-      for (const edge of edges) {
+      for (const edge of allEdges) {
         this.connectByEdge(edge);
       }
     } catch (error) {

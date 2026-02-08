@@ -2,7 +2,7 @@ import type { AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { logger } from '$lib/utils/logger';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
-import { ChannelRegistry } from './ChannelRegistry';
+import { MessageChannelRegistry } from './MessageChannelRegistry';
 
 export type SendMessageOptions = {
   /**
@@ -95,7 +95,7 @@ export class MessageContext {
 
   /** Named channel subscriptions for recv({ channel }) */
   private channelSubscriptions: Set<string> = new Set();
-  private channelRegistry = ChannelRegistry.getInstance();
+  private channelRegistry = MessageChannelRegistry.getInstance();
 
   public onSend: UserFnRunContext['send'] = () => {};
   public onMessageCallbackRegistered = () => {};
@@ -207,7 +207,7 @@ export class MessageContext {
       }
     };
 
-    this.channelRegistry.subscribeMessage(channel, this.nodeId, wrappedCallback);
+    this.channelRegistry.subscribe(channel, this.nodeId, wrappedCallback);
     this.channelSubscriptions.add(channel);
   }
 
@@ -216,7 +216,7 @@ export class MessageContext {
    */
   clearChannelSubscriptions(): void {
     for (const channel of this.channelSubscriptions) {
-      this.channelRegistry.unsubscribeMessage(channel, this.nodeId);
+      this.channelRegistry.unsubscribe(channel, this.nodeId);
     }
 
     this.channelSubscriptions.clear();

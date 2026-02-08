@@ -35,6 +35,8 @@ import { ToneNode } from './ToneNode';
 import { VdoNinjaPullNode } from './VdoNinjaNode';
 import { VdoNinjaPushNode } from './VdoNinjaPushNode';
 import { WaveShaperNodeV2 } from './WaveShaperNode';
+import { SendAudioNode } from './SendAudioNode';
+import { RecvAudioNode } from './RecvAudioNode';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -73,7 +75,9 @@ const AUDIO_NODES = [
   ToneNode,
   VdoNinjaPullNode,
   VdoNinjaPushNode,
-  WaveShaperNodeV2
+  WaveShaperNodeV2,
+  SendAudioNode,
+  RecvAudioNode
 ] as const satisfies AudioNodeClass[];
 
 /**

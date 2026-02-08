@@ -26,6 +26,9 @@ export type AudioNodeClass = {
 
   /** If true, the node is hidden from object browser and autocomplete */
   headless?: boolean;
+
+  /** Aliases for the node type (e.g. 's~' for 'send~') */
+  aliases?: string[];
 } & ObjectMetadata &
   AudioNodeConstructor;
 

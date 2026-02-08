@@ -159,6 +159,19 @@ bun run test             # All tests
 
 **No manager names in AudioService**: If adding `if (nodeType === 'xyz~')`, add a method to the node class instead.
 
+### New Audio Node Checklist
+
+**ALWAYS complete ALL these steps when creating a new V2 audio node:**
+
+1. Create node class in `src/lib/audio/v2/nodes/` implementing `AudioNodeV2`
+2. Register in `src/lib/audio/v2/nodes/index.ts` (add to imports AND `AUDIO_NODES` array)
+3. **MUST** add documentation in `ui/static/content/objects/{nodename}.md` (e.g., `send~.md`)
+4. **MUST** add to object schemas in `src/lib/objects/schemas/index.ts`:
+   - Import the node class
+   - Add entry like `'send~': schemaFromNode(SendAudioNode, 'audio'),`
+5. Add to `src/lib/extensions/object-packs.ts` in the appropriate pack (usually Audio)
+6. If node has aliases, add `static aliases = ['s~']` to node class
+
 ## Testing
 
 - **Unit**: Business logic, utilities, pure functions
