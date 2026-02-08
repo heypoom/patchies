@@ -6,7 +6,6 @@
     Download,
     Upload,
     Play,
-    Search,
     Link,
     Save,
     History,
@@ -17,6 +16,7 @@
     ChevronDown,
     Move
   } from '@lucide/svelte/icons';
+  import SearchBar from './SearchBar.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import LoadPatchDialog from '$lib/components/dialogs/LoadPatchDialog.svelte';
   import DeletePatchDialog from '$lib/components/dialogs/DeletePatchDialog.svelte';
@@ -845,17 +845,7 @@
   ondrop={(e) => handleDrop(e, null)}
 >
   <!-- Search bar -->
-  <div class="border-b border-zinc-800 px-2 py-2">
-    <div class="relative">
-      <Search class="absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-zinc-500" />
-      <input
-        type="text"
-        bind:value={searchQuery}
-        placeholder="Search saves..."
-        class="w-full rounded border border-zinc-700 bg-zinc-900 py-1.5 pr-6 pl-7 text-[11px] text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600"
-      />
-    </div>
-  </div>
+  <SearchBar bind:value={searchQuery} placeholder="Search saves..." />
 
   <!-- Tree content -->
   <div

@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    Search,
     ExternalLink,
     ArrowLeft,
     CircleQuestionMark,
@@ -11,6 +10,7 @@
     ChevronDown,
     ChevronRight
   } from '@lucide/svelte/icons';
+  import SearchBar from './SearchBar.svelte';
   import { objectSchemas, type ObjectSchema } from '$lib/objects/schemas';
   import TriggerTypeSpecifiers from './TriggerTypeSpecifiers.svelte';
   import PortCard from '$lib/components/docs/PortCard.svelte';
@@ -414,17 +414,7 @@
       </div>
     {/if}
 
-    <div class="border-b border-zinc-800 p-3">
-      <div class="relative">
-        <Search class="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
-        <input
-          type="text"
-          bind:value={searchQuery}
-          placeholder="Search guides and objects..."
-          class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-1.5 pr-3 pl-8 text-xs text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600"
-        />
-      </div>
-    </div>
+    <SearchBar bind:value={searchQuery} placeholder="Search guides and objects..." />
 
     <div class="flex-1 overflow-y-auto p-2">
       {#if filteredTopics.length === 0 && filteredSchemas.length === 0}

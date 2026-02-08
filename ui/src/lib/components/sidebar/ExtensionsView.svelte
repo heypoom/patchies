@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Search, X } from '@lucide/svelte/icons';
   import ExtensionPackCard from './ExtensionPackCard.svelte';
+  import SearchBar from './SearchBar.svelte';
   import PresetPackCard from './PresetPackCard.svelte';
   import {
     BUILT_IN_PACKS,
@@ -67,25 +67,7 @@
 
 <div class="flex h-full flex-col">
   <!-- Search bar -->
-  <div class="border-b border-zinc-800 p-2">
-    <div class="relative">
-      <Search class="absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2 text-zinc-500" />
-      <input
-        type="text"
-        bind:value={searchQuery}
-        placeholder="Search packs, objects & presets..."
-        class="w-full rounded border border-zinc-700 bg-zinc-900 py-1.5 pr-6 pl-7 text-[11px] text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600"
-      />
-      {#if searchQuery}
-        <button
-          onclick={() => (searchQuery = '')}
-          class="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-zinc-500 hover:text-zinc-300"
-        >
-          <X class="h-3 w-3" />
-        </button>
-      {/if}
-    </div>
-  </div>
+  <SearchBar bind:value={searchQuery} placeholder="Search packs, objects & presets..." />
 
   <!-- Pack list -->
   <div class="flex-1 space-y-4 overflow-y-auto p-2">
