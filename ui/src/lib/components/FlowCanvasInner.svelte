@@ -156,6 +156,7 @@
   let urlLoadError = $state<string | null>(null);
   let showAudioHint = $state(audioService.getAudioContext().state === 'suspended');
   let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
+  let startupInitialTab = $state<'about' | 'demos' | 'shortcuts' | 'thanks'>('about');
 
   // Mobile connection mode state - simplified to just toggle connection mode
   useOnSelectionChange(({ nodes, edges }) => {
@@ -538,7 +539,17 @@
     const params = new URLSearchParams(window.location.search);
     const isLoadingFromUrlParam = params.has('src') || params.has('id');
 
-    if (!isLoadingFromUrlParam) {
+    // Check for ?startup= param to force-open startup modal at a specific tab
+    const startupParam = params.get('startup');
+    if (startupParam) {
+      const validTabs = ['about', 'demos', 'shortcuts', 'thanks'] as const;
+      if (validTabs.includes(startupParam as (typeof validTabs)[number])) {
+        startupInitialTab = startupParam as (typeof validTabs)[number];
+        showStartupModal = true;
+        // Clean up the URL param after using it
+        deleteSearchParam('startup');
+      }
+    } else if (!isLoadingFromUrlParam) {
       const showStartupSetting = localStorage.getItem('patchies-show-startup-modal');
       // Default to true if not set (first time users), or respect user's preference
       if (showStartupSetting === null || showStartupSetting === 'true') {
@@ -1309,6 +1320,7 @@
         {hasGeminiApiKey}
         isLeftSidebarOpen={$isSidebarOpen}
         bind:showStartupModal
+        {startupInitialTab}
         onDelete={deleteSelectedElements}
         onInsertObject={insertObjectWithButton}
         onBrowseObjects={() => ($isObjectBrowserOpen = true)}

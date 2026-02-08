@@ -8,10 +8,22 @@
 
   let {
     open = $bindable(false),
+    initialTab = 'about' as Tab,
     onLoadPatch
-  }: { open?: boolean; onLoadPatch?: (patchId: string) => Promise<void> } = $props();
+  }: {
+    open?: boolean;
+    initialTab?: Tab;
+    onLoadPatch?: (patchId: string) => Promise<void>;
+  } = $props();
 
-  let activeTab = $state<Tab>('about');
+  let activeTab = $state<Tab>(initialTab);
+
+  // Reset to initialTab when modal opens with a different initialTab
+  $effect(() => {
+    if (open && initialTab) {
+      activeTab = initialTab;
+    }
+  });
 
   function handleClose() {
     open = false;

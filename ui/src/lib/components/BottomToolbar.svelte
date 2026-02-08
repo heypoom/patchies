@@ -34,6 +34,8 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Drawer from '$lib/components/ui/drawer';
 
+  import type { Tab } from './startup-modal/types';
+
   let {
     nodes,
     edges,
@@ -42,6 +44,7 @@
     copiedNodeData,
     hasGeminiApiKey,
     showStartupModal = $bindable(false),
+    startupInitialTab = 'about' as Tab,
     isLeftSidebarOpen = false,
     onDelete,
     onInsertObject,
@@ -71,6 +74,7 @@
     }> | null;
     hasGeminiApiKey: boolean;
     showStartupModal: boolean;
+    startupInitialTab?: Tab;
     isLeftSidebarOpen: boolean;
     onDelete: () => void;
     onInsertObject: () => void;
@@ -438,4 +442,8 @@
   </div>
 {/if}
 
-<StartupModal bind:open={showStartupModal} onLoadPatch={async (patchId) => onLoadPatch(patchId)} />
+<StartupModal
+  bind:open={showStartupModal}
+  initialTab={startupInitialTab}
+  onLoadPatch={async (patchId) => onLoadPatch(patchId)}
+/>
