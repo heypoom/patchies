@@ -15,6 +15,8 @@ export type RenderNode = {
   | { type: 'three'; data: { code: string } }
   | { type: 'img'; data: unknown }
   | { type: 'bg.out'; data: unknown }
+  | { type: 'send.vdo'; data: { channel: string } }
+  | { type: 'recv.vdo'; data: { channel: string } }
 );
 
 export interface RenderEdge {
@@ -177,7 +179,9 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'canvas',
   'textmode',
   'three',
-  'img'
+  'img',
+  'send.vdo',
+  'recv.vdo'
 ];
 
 export const isFBOCompatible = (nodeType?: string): nodeType is RenderNode['type'] =>

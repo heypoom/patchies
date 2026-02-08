@@ -73,6 +73,8 @@ import WorkerNode from '$lib/components/nodes/WorkerNode.svelte';
 import RubyNode from '$lib/components/nodes/RubyNode.svelte';
 import WGPUNode from '$lib/components/nodes/WGPUNode.svelte';
 import TriggerNode from '$lib/components/nodes/TriggerNode.svelte';
+import SendVideoNode from '$lib/components/nodes/SendVideoNode.svelte';
+import RecvVideoNode from '$lib/components/nodes/RecvVideoNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -150,7 +152,9 @@ export const nodeTypes: Record<string, any> = {
   worker: WorkerNode,
   ruby: RubyNode,
   'wgpu.compute': WGPUNode,
-  trigger: TriggerNode
+  trigger: TriggerNode,
+  'send.vdo': SendVideoNode,
+  'recv.vdo': RecvVideoNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];
