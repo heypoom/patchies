@@ -1,6 +1,6 @@
 # Hot and Cold Inlets
 
-Objects with multiple inlets in Patchies follow the **Max/MSP and Pure Data convention** of hot and cold inlets.
+Objects with multiple inlets in Patchies uses the concept of hot and cold inlets found in [Max](https://docs.cycling74.com/userguide/objects/#inlets-and-outlets) and [Pd](https://msp.ucsd.edu/Pd_documentation/resources/chapter2.htm#s2.4.3). The goal is to give us more control over when to evaluate and send the stored messages.
 
 ## The Concept
 

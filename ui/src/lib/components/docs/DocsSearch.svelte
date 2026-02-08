@@ -89,6 +89,18 @@
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
   });
+
+  function handleSelect() {
+    open = false;
+    searchQuery = '';
+  }
+
+  // Clear search when dialog closes (escape, click outside)
+  $effect(() => {
+    if (!open && searchQuery) {
+      searchQuery = '';
+    }
+  });
 </script>
 
 <!-- Search trigger button -->
@@ -121,7 +133,7 @@
         {#each filteredResults.topics as topic (topic.slug)}
           <Command.LinkItem
             href={topic.href}
-            onSelect={() => (open = false)}
+            onSelect={handleSelect}
             class="flex items-center gap-2"
           >
             <BookOpen class="h-4 w-4 text-zinc-500" />
@@ -139,7 +151,7 @@
         {#each filteredResults.objects as item (item.slug)}
           <Command.LinkItem
             href={item.href}
-            onSelect={() => (open = false)}
+            onSelect={handleSelect}
             class="flex items-center gap-2"
           >
             <Box class="h-4 w-4 text-zinc-500" />
