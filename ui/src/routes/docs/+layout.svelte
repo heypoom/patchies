@@ -1,5 +1,6 @@
 <script lang="ts">
   import DocsSidebar from '$lib/components/docs/DocsSidebar.svelte';
+  import DocsNavigation from '$lib/components/docs/DocsNavigation.svelte';
 
   let { data, children } = $props();
 
@@ -21,6 +22,7 @@
     <!-- Main content -->
     <main class="min-w-0 flex-1">
       {@render children()}
+      <DocsNavigation topics={data.index.topics} objects={data.index.objects} />
     </main>
   </div>
 </div>
