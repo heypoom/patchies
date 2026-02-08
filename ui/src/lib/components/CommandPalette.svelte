@@ -198,6 +198,11 @@
       id: 'prepare-offline',
       name: 'Prepare for Offline',
       description: 'Download heavy assets (Ruby WASM, SuperSonic, Strudel samples) for offline use'
+    },
+    {
+      id: 'clear-cache',
+      name: 'Clear Cache',
+      description: 'Fix stale app issues by clearing all caches and unregistering service workers'
     }
   ];
 
@@ -412,6 +417,10 @@
         nextStage('offline-download');
         startOfflineDownload();
       })
+      .with('clear-cache', async () => {
+        onCancel();
+        await clearCacheAndServiceWorker();
+      })
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);
       });
@@ -562,6 +571,31 @@
     setSearchParam('room', roomName.trim());
     onCancel();
     window.location.reload();
+  }
+
+  async function clearCacheAndServiceWorker() {
+    try {
+      // Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((r) => r.unregister()));
+        console.log(`[clear-cache] Unregistered ${registrations.length} service worker(s)`);
+      }
+
+      // Clear all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+        console.log(`[clear-cache] Deleted ${cacheNames.length} cache(s)`);
+      }
+
+      // Force reload to get fresh content
+      alert('Cache cleared! The page will now reload.');
+      window.location.reload();
+    } catch (error) {
+      console.error('[clear-cache] Error:', error);
+      alert(`Failed to clear cache: ${error}`);
+    }
   }
 
   async function startOfflineDownload() {
