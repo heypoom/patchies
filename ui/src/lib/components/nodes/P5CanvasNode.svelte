@@ -247,7 +247,9 @@
 
   function measureWidth(timeout: number) {
     setTimeout(() => {
-      previewContainerWidth = Math.max(measureElement.clientWidth, containerElement.clientWidth);
+      if (measureElement) {
+        previewContainerWidth = Math.max(measureElement.clientWidth, containerElement.clientWidth);
+      }
     }, timeout);
   }
 
