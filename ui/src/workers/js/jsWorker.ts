@@ -23,6 +23,8 @@ interface NodeState {
   timeouts: number[];
   cleanupCallbacks: (() => void)[];
   messageCallback: ((data: unknown, meta: Omit<Message, 'data'>) => void) | null;
+  /** Named channel callbacks for recv(cb, { channel }) */
+  channelCallbacks: Map<string, (data: unknown, meta: Omit<Message, 'data'>) => void>;
   pendingDelays: Map<number, { timeoutId: number; reject: (err: Error) => void }>;
   delayIdCounter: number;
   // FFT state
@@ -50,6 +52,7 @@ function createNodeState(nodeId: string): NodeState {
     timeouts: [],
     cleanupCallbacks: [],
     messageCallback: null,
+    channelCallbacks: new Map(),
     pendingDelays: new Map(),
     delayIdCounter: 0,
     isFFTEnabled: false,
@@ -135,7 +138,13 @@ function createWorkerContext(nodeId: string) {
       postResponse({ type: 'consoleOutput', nodeId, level: 'info', args })
   };
 
-  const send = (data: unknown, options?: { to?: number }) => {
+  const send = (data: unknown, options?: { to?: number; channel?: string }) => {
+    // If channel is specified, route via main thread's ChannelRegistry
+    if (options?.channel) {
+      postResponse({ type: 'sendToChannel', nodeId, data, channel: options.channel });
+      return;
+    }
+
     const renderTargets = state.directChannel.sendToRenderTargets(data, options);
     const workerTargets = state.directChannel.sendToWorkerTargets(data, options);
 
@@ -145,8 +154,19 @@ function createWorkerContext(nodeId: string) {
     postResponse({ type: 'sendMessage', nodeId, data, options: { ...options, excludeTargets } });
   };
 
-  const onMessage = (callback: (data: unknown, meta: Omit<Message, 'data'>) => void) => {
-    state.messageCallback = callback;
+  const onMessage = (
+    callback: (data: unknown, meta: Omit<Message, 'data'>) => void,
+    options?: { channel?: string }
+  ) => {
+    if (options?.channel) {
+      // Channel-based receiving - store callback and notify main thread to subscribe
+      state.channelCallbacks.set(options.channel, callback);
+      postResponse({ type: 'subscribeChannel', nodeId, channel: options.channel });
+    } else {
+      // Edge-based receiving
+      state.messageCallback = callback;
+    }
+    // Always notify that a callback was registered (for border color indicator)
     postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'message' });
   };
 
@@ -367,6 +387,12 @@ function cleanupNode(nodeId: string) {
 
   // Clear message callback
   state.messageCallback = null;
+
+  // Clear channel subscriptions - notify main thread to unsubscribe
+  for (const channel of state.channelCallbacks.keys()) {
+    postResponse({ type: 'unsubscribeChannel', nodeId, channel });
+  }
+  state.channelCallbacks.clear();
 
   // Clear FFT state
   state.isFFTEnabled = false;
@@ -647,6 +673,19 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const state = nodeStates.get(nodeId);
       if (state?.messageCallback) {
         invokeCallbackSafely(nodeId, () => state.messageCallback!(data, meta));
+      }
+    })
+    .with({ type: 'channelMessage' }, (msg) => {
+      const { channel, data, sourceNodeId } = msg as {
+        channel: string;
+        data: unknown;
+        sourceNodeId: string;
+      };
+      const state = nodeStates.get(nodeId);
+      const callback = state?.channelCallbacks.get(channel);
+      if (callback) {
+        const meta = { source: sourceNodeId, channel };
+        invokeCallbackSafely(nodeId, () => callback(data, meta));
       }
     })
     .with({ type: 'updateModule' }, ({ moduleName, code }) => {
