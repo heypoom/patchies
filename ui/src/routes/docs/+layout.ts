@@ -1,6 +1,7 @@
 import type { LayoutLoad } from './$types';
 import { objectSchemas } from '$lib/objects/schemas';
 import { topicOrder } from './docs-nav';
+import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
 
 export const prerender = true;
 
@@ -32,6 +33,22 @@ const topicCategoryMap = buildTopicCategoryMap();
 
 // Derive topic slugs from topicOrder
 const topicSlugs = Object.values(topicOrder).flat();
+
+// Build object order map from packs (pack order -> object order within pack)
+function buildObjectOrderMap(): Map<string, number> {
+  const map = new Map<string, number>();
+  let index = 0;
+
+  for (const pack of BUILT_IN_PACKS) {
+    for (const obj of pack.objects) {
+      map.set(obj, index++);
+    }
+  }
+
+  return map;
+}
+
+const objectOrderMap = buildObjectOrderMap();
 
 /**
  * Extract title from markdown content (first # heading)
@@ -98,7 +115,16 @@ export const load: LayoutLoad = async ({ fetch }) => {
   ]);
 
   index.topics = topics.filter((t) => t !== null);
-  index.objects = objects.filter((o) => o !== null);
+
+  // Sort objects by pack order (objects not in packs go to the end)
+  index.objects = objects
+    .filter((o) => o !== null)
+    .sort((a, b) => {
+      const aOrder = objectOrderMap.get(a.slug) ?? Infinity;
+      const bOrder = objectOrderMap.get(b.slug) ?? Infinity;
+
+      return aOrder - bOrder;
+    });
 
   return { index };
 };

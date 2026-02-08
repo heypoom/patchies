@@ -21,6 +21,16 @@
   import type { TopicMeta } from '$lib/docs/topic-index';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { enabledObjects } from '../../../stores/extensions.store';
+  import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
+
+  // Build object order map from packs for sorting
+  const objectOrderMap = new Map<string, number>();
+  let orderIndex = 0;
+  for (const pack of BUILT_IN_PACKS) {
+    for (const obj of pack.objects) {
+      objectOrderMap.set(obj, orderIndex++);
+    }
+  }
 
   let searchQuery = $state('');
 
@@ -103,9 +113,15 @@
     return objectSchemas[viewingObject] ?? null;
   });
 
-  // Get all available schemas as an array, filtered by enabled object packs
+  // Get all available schemas as an array, filtered by enabled object packs and sorted by pack order
   const allSchemas = $derived(
-    Object.values(objectSchemas).filter((schema) => $enabledObjects.has(schema.type))
+    Object.values(objectSchemas)
+      .filter((schema) => $enabledObjects.has(schema.type))
+      .sort((a, b) => {
+        const aOrder = objectOrderMap.get(a.type) ?? Infinity;
+        const bOrder = objectOrderMap.get(b.type) ?? Infinity;
+        return aOrder - bOrder;
+      })
   );
 
   // Filter schemas by search query

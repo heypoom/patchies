@@ -64,7 +64,19 @@
       body.app-loaded #patchies-loader {
         display: none;
       }
+
+      /* Docs pages don't need loader */
+      html.no-loader #patchies-loader {
+        display: none;
+      }
     </style>
+
+    <script>
+      // Runs synchronously before body is parsed - no loader flash for docs
+      if (location.pathname.startsWith('/docs/')) {
+        document.documentElement.classList.add('no-loader');
+      }
+    </script>
   </head>
   <body data-sveltekit-preload-data="hover">
     <!-- Immediate loading indicator -->
@@ -79,11 +91,6 @@
       // Hide loader once the actual patcher UI is loaded
       function hideLoader() {
         document.body.classList.add('app-loaded');
-      }
-
-      // Docs pages are prerendered - no need for spinner
-      if (window.location.pathname.startsWith('/docs/')) {
-        hideLoader();
       }
 
       // Wait for window load (all resources including JS bundles)
