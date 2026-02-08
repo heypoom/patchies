@@ -100,7 +100,7 @@
   showPauseButton={true}
   {selected}
   {editorReady}
-  {errorMessage}
+  hasError={errorMessage !== null}
   bind:previewCanvas
 >
   {#snippet topHandle()}

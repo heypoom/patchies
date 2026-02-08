@@ -53,6 +53,9 @@
       .otherwise(() => 'none');
   });
 
+  // Type helper to access properties from the discriminated union
+  const midiData = $derived(data as Record<string, unknown>);
+
   type MidiOutMessage =
     | { type: 'bang' }
     | ({ type: 'send' } & MIDIOutputConfig)
@@ -303,7 +306,7 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={data.note || 60}
+                    value={(midiData.note as number) || 60}
                     onchange={(e) =>
                       updateNodeData(nodeId, {
                         note: parseInt((e.target as HTMLInputElement).value)
@@ -317,7 +320,7 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={data.velocity || 127}
+                    value={(midiData.velocity as number) || 127}
                     onchange={(e) =>
                       updateNodeData(nodeId, {
                         velocity: parseInt((e.target as HTMLInputElement).value)
@@ -334,7 +337,7 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={data.control || 1}
+                    value={(midiData.control as number) || 1}
                     onchange={(e) =>
                       updateNodeData(nodeId, {
                         control: parseInt((e.target as HTMLInputElement).value)
@@ -348,7 +351,7 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={data.value || 64}
+                    value={(midiData.value as number) || 64}
                     onchange={(e) =>
                       updateNodeData(nodeId, {
                         value: parseInt((e.target as HTMLInputElement).value)
@@ -364,7 +367,7 @@
                   min="0"
                   max="127"
                   class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                  value={data.program || 1}
+                  value={(midiData.program as number) || 1}
                   onchange={(e) =>
                     updateNodeData(nodeId, {
                       program: parseInt((e.target as HTMLInputElement).value)

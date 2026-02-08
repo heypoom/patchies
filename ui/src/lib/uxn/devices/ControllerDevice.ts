@@ -43,6 +43,9 @@ export class ControllerDevice {
     } else {
       this.state &= ~mask;
     }
+
+    if (!this.emu.uxn) return;
+
     this.emu.uxn.dev[0x82] = this.state;
     if (mask || event.type == 'keydown') {
       this.emu.uxn.eval(peek16(this.emu.uxn.dev, 0x80));
@@ -75,6 +78,7 @@ export class ControllerDevice {
     }
 
     let charCode = 0;
+
     if (event.type == 'keydown') {
       this.state |= mask;
       if (key === 'Escape') {
@@ -90,16 +94,25 @@ export class ControllerDevice {
           Backspace: 8,
           Delete: 127
         };
+
         charCode = specialKeyMap[key] || 0;
       }
-      this.emu.uxn.dev[0x83] = charCode;
+
+      if (this.emu.uxn) {
+        this.emu.uxn.dev[0x83] = charCode;
+      }
     } else {
       this.state &= ~mask;
     }
+
+    if (!this.emu.uxn) return;
+
     this.emu.uxn.dev[0x82] = this.state;
+
     if (mask || event.type == 'keydown') {
       this.emu.uxn.eval(peek16(this.emu.uxn.dev, 0x80));
     }
+
     if (event.type == 'keydown') {
       this.emu.uxn.dev[0x83] = 0;
     }

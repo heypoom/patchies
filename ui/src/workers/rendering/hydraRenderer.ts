@@ -143,7 +143,7 @@ export class HydraRenderer {
     const [hydraWidth, hydraHeight] = this.hydra.synth.resolution;
     const [outputWidth, outputHeight] = this.renderer.outputSize;
 
-    if (!gl) return;
+    if (!gl || !hydraFramebuffer) return;
 
     const sourceFBO = getFramebuffer(hydraFramebuffer);
     const destPreviewFBO = getFramebuffer(this.framebuffer);

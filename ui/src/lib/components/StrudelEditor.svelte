@@ -78,19 +78,10 @@
     // Load all required Strudel modules (including superdough)
     const [strudelCore, strudelDraw, strudelTranspiler, strudelWebaudio, strudelCodemirror] =
       await Promise.all([
-        // @ts-expect-error -- no typedef
         import('@strudel/core'),
-
-        // @ts-expect-error -- no typedef
         import('@strudel/draw'),
-
-        // @ts-expect-error -- no typedef
         import('@strudel/transpiler'),
-
-        // @ts-expect-error -- no typedef
         import('@strudel/webaudio'),
-
-        // @ts-expect-error -- no typedef
         import('@strudel/codemirror')
       ]);
 

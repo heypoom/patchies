@@ -233,8 +233,8 @@
             showConsole = true;
 
             // Update line errors for code highlighting
-            if (errorData.lineErrors) {
-              lineErrors = errorData.lineErrors;
+            if (errorData.lineErrors && Object.keys(errorData.lineErrors).length > 0) {
+              lineErrors = errorData.lineErrors as Record<number, string[]>;
               logger.nodeError(nodeId, { lineErrors: errorData.lineErrors }, errorData.message);
             } else {
               logger.nodeError(nodeId, errorData.message);

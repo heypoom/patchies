@@ -213,7 +213,9 @@
       <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
         <div class="space-y-4">
           <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">MIDI Device</label>
+
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={deviceId}
@@ -247,19 +249,23 @@
           </div>
 
           <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Message Types</label>
+
             <div class="space-y-1">
-              {#each ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend'] as msgType}
+              {#each ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend'] as msgType (msgType)}
+                {@const typedMsgType = msgType as EventType}
+
                 <label class="flex items-center">
                   <input
                     type="checkbox"
                     class="mr-2 h-3 w-3"
-                    checked={events.includes(msgType)}
+                    checked={events.includes(typedMsgType)}
                     onchange={(e) => {
                       const checked = (e.target as HTMLInputElement).checked;
                       const newTypes = checked
-                        ? [...events, msgType as EventType]
-                        : events.filter((t) => t !== msgType);
+                        ? [...events, typedMsgType]
+                        : events.filter((t) => t !== typedMsgType);
                       updateNodeData(nodeId, { events: newTypes });
                     }}
                   />

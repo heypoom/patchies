@@ -7,6 +7,7 @@ import type { UxnEmulator } from '../UxnEmulator';
 
 function parse_buttons(buttons: number): number {
   let state = 0;
+
   if (buttons & 0x1) state |= 0x1;
   if (buttons & 0x2) state |= 0x4;
   if (buttons & 0x4) state |= 0x2;
@@ -22,16 +23,22 @@ export class MouseDevice {
   }
 
   private mouse_down(state: number): void {
+    if (!this.emu.uxn) return;
+
     this.emu.uxn.dev[0x96] = state;
     this.emu.uxn.eval(peek16(this.emu.uxn.dev, 0x90));
   }
 
   private mouse_up(state: number): void {
+    if (!this.emu.uxn) return;
+
     this.emu.uxn.dev[0x96] = state;
     this.emu.uxn.eval(peek16(this.emu.uxn.dev, 0x90));
   }
 
   private mouse_move(x: number, y: number): void {
+    if (!this.emu.uxn) return;
+
     poke16(this.emu.uxn.dev, 0x92, x);
     poke16(this.emu.uxn.dev, 0x94, y);
 
@@ -55,6 +62,8 @@ export class MouseDevice {
   }
 
   on_scroll(event: WheelEvent): void {
+    if (!this.emu.uxn) return;
+
     if (event.deltaY < 0) {
       poke16(this.emu.uxn.dev, 0x9c, 0xffff);
     } else {

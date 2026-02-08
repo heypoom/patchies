@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { filterFBOCompatibleGraph, topologicalSort, buildRenderGraph } from './graphUtils.js';
+import type { RenderNode } from './types.js';
 
 describe('Graph Utils', () => {
   it('should filter FBO-compatible nodes', () => {
@@ -24,10 +25,31 @@ describe('Graph Utils', () => {
   });
 
   it('should topologically sort nodes', () => {
-    const nodes = [
-      { id: 'n1', type: 'glsl', inputs: [], outputs: ['n2'], inletMap: new Map(), data: {} },
-      { id: 'n2', type: 'glsl', inputs: ['n1'], outputs: ['n3'], inletMap: new Map(), data: {} },
-      { id: 'n3', type: 'glsl', inputs: ['n2'], outputs: [], inletMap: new Map(), data: {} }
+    const nodes: RenderNode[] = [
+      {
+        id: 'n1',
+        type: 'glsl',
+        inputs: [],
+        outputs: ['n2'],
+        inletMap: new Map(),
+        data: { code: '', glUniformDefs: [] }
+      },
+      {
+        id: 'n2',
+        type: 'glsl',
+        inputs: ['n1'],
+        outputs: ['n3'],
+        inletMap: new Map(),
+        data: { code: '', glUniformDefs: [] }
+      },
+      {
+        id: 'n3',
+        type: 'glsl',
+        inputs: ['n2'],
+        outputs: [],
+        inletMap: new Map(),
+        data: { code: '', glUniformDefs: [] }
+      }
     ];
 
     const sorted = topologicalSort(nodes);
@@ -35,9 +57,23 @@ describe('Graph Utils', () => {
   });
 
   it('should detect circular dependencies', () => {
-    const nodes = [
-      { id: 'n1', type: 'glsl', inputs: ['n2'], outputs: ['n2'], inletMap: new Map(), data: {} },
-      { id: 'n2', type: 'glsl', inputs: ['n1'], outputs: ['n1'], inletMap: new Map(), data: {} }
+    const nodes: RenderNode[] = [
+      {
+        id: 'n1',
+        type: 'glsl',
+        inputs: ['n2'],
+        outputs: ['n2'],
+        inletMap: new Map(),
+        data: { code: '', glUniformDefs: [] }
+      },
+      {
+        id: 'n2',
+        type: 'glsl',
+        inputs: ['n1'],
+        outputs: ['n1'],
+        inletMap: new Map(),
+        data: { code: '', glUniformDefs: [] }
+      }
     ];
 
     expect(() => topologicalSort(nodes)).toThrow('Circular dependency');

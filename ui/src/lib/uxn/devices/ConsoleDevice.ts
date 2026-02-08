@@ -23,6 +23,8 @@ export class ConsoleDevice {
   }
 
   input(char: number, type: number): void {
+    if (!this.emu.uxn) return;
+
     this.emu.uxn.dev[0x12] = char;
     this.emu.uxn.dev[0x17] = type;
     if (this.vector) {
@@ -64,6 +66,8 @@ export class ConsoleDevice {
   }
 
   deo(addr: number): void {
+    if (!this.emu.uxn) return;
+
     switch (addr) {
       case 0x10:
       case 0x11:

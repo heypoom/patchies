@@ -96,7 +96,7 @@
         {:else if activeTab === 'demos'}
           <ExamplesTab {onLoadPatch} />
         {:else if activeTab === 'thanks'}
-          <ThanksTab setTab={(tab) => (activeTab = tab)} />
+          <ThanksTab />
         {:else if activeTab === 'shortcuts'}
           <ShortcutsTab />
         {/if}

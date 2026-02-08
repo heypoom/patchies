@@ -54,13 +54,13 @@
       return { success: true, result: input };
     }
 
+    const code = `return (${expr})`;
+
     try {
       const extraContext: Record<string, unknown> = {
         $1: accumulator,
         $2: input
       };
-
-      const code = `return (${expr})`;
 
       const result = await jsRunner.executeJavaScript(nodeId, code, {
         customConsole,

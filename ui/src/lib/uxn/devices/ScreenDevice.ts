@@ -92,15 +92,19 @@ export class ScreenDevice {
   }
 
   update_palette(): void {
+    if (!this.emu.uxn) return;
+
     const r = (this.emu.uxn.dev[0x8] << 8) | this.emu.uxn.dev[0x9];
     const g = (this.emu.uxn.dev[0xa] << 8) | this.emu.uxn.dev[0xb];
     const b = (this.emu.uxn.dev[0xc] << 8) | this.emu.uxn.dev[0xd];
+
     for (let i = 0, sft = 12; i < 4; ++i, sft -= 4) {
       const cr = (r >> sft) & 0xf;
       const cg = (g >> sft) & 0xf;
       const cb = (b >> sft) & 0xf;
       this.palette[i] = [cr | (cr << 4), cg | (cg << 4), cb | (cb << 4)];
     }
+
     this.repaint = 1;
   }
 
@@ -108,10 +112,12 @@ export class ScreenDevice {
     width = clamp(width, 8, 0x800);
     height = clamp(height, 8, 0x800);
     scale = clamp(scale, 1, 3);
+
     /* on rescale */
     const length = width * height * 4 * scale * scale;
     this.pixels = new Uint8ClampedArray(length);
     this.scale = scale;
+
     /* on resize */
     if (this.width != width || this.height != height) {
       const layerLength = MAR2(width) * MAR2(height);
@@ -120,12 +126,15 @@ export class ScreenDevice {
       this.width = width;
       this.height = height;
     }
+
     this.repaint = 1;
     console.log(`Resize requested: ${width}x${height}`);
+
     if (this.displayctx) {
       this.displayctx.canvas.width = width;
       this.displayctx.canvas.height = height;
     }
+
     this.set_zoom(this.zoom);
   }
 
@@ -171,11 +180,13 @@ export class ScreenDevice {
       case 0x2d:
         return this.rA;
       default:
-        return this.emu.uxn.dev[addr];
+        return this.emu.uxn?.dev[addr] ?? 0;
     }
   }
 
   deo(addr: number): void {
+    if (!this.emu.uxn) return;
+
     switch (addr) {
       case 0x21:
         this.vector = (this.emu.uxn.dev[0x20] << 8) | this.emu.uxn.dev[0x21];

@@ -12,6 +12,8 @@ export class SystemDevice {
   }
 
   private expansion(addr: number): void {
+    if (!this.emu.uxn) return;
+
     const operation = this.emu.uxn.ram[addr];
     const length = peek16(this.emu.uxn.ram, addr + 1);
     // fill
@@ -49,6 +51,8 @@ export class SystemDevice {
   }
 
   private metadata(address: number): void {
+    if (!this.emu.uxn) return;
+
     // For Patchies: log metadata instead of displaying in DOM
     let str = '';
     if (!this.emu.uxn.ram[address++]) {
@@ -61,6 +65,8 @@ export class SystemDevice {
   }
 
   deo(addr: number): void {
+    if (!this.emu.uxn) return;
+
     switch (addr) {
       case 0x07:
         this.metadata(peek16(this.emu.uxn.dev, 0x06));

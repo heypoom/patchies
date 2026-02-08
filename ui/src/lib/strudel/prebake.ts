@@ -72,15 +72,20 @@ export async function prebake() {
   const maxPan = noteToMidi('C8');
   const panwidth = (pan: number, width: number) => pan * width + (1 - width) / 2;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Pattern.prototype.piano = function (this: any) {
-    return this.fmap((v: unknown) => ({ ...v, clip: (v as Record<string, unknown>).clip ?? 1 })) // set clip if not already set..
+    return this.fmap((v: unknown) => {
+      const rec = v as Record<string, unknown>;
+      return { ...rec, clip: rec.clip ?? 1 };
+    }) // set clip if not already set..
       .s('piano')
       .release(0.1)
       .fmap((value: unknown) => {
         const midi = valueToMidi(value);
+        const rec = value as Record<string, unknown>;
         // pan by pitch
         const pan = panwidth(Math.min(Math.round(midi) / maxPan, 1), 0.5);
-        return { ...value, pan: ((value as Record<string, unknown>).pan || 1) * pan };
+        return { ...rec, pan: ((rec.pan as number) || 1) * pan };
       });
   };
 }

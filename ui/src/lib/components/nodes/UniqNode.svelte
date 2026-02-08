@@ -53,13 +53,13 @@
       return previous === current;
     }
 
+    const code = `return (${expr})`;
+
     try {
       const extraContext: Record<string, unknown> = {
         $1: previous,
         $2: current
       };
-
-      const code = `return (${expr})`;
 
       const result = await jsRunner.executeJavaScript(nodeId, code, {
         customConsole,
