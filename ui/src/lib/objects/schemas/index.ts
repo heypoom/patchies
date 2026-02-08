@@ -171,6 +171,8 @@ import { UniqbyObject } from '$lib/objects/v2/nodes/UniqbyObject';
 import { WebMidiLinkObject } from '$lib/objects/v2/nodes/WebMidiLinkObject';
 import { SendObject } from '$lib/objects/v2/nodes/SendObject';
 import { RecvObject } from '$lib/objects/v2/nodes/RecvObject';
+import { SendAudioNode } from '$lib/audio/v2/nodes/SendAudioNode';
+import { RecvAudioNode } from '$lib/audio/v2/nodes/RecvAudioNode';
 
 /**
  * Registry of all object schemas.
@@ -270,6 +272,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'split~': schemaFromNode(SplitNode, 'audio'),
   'merge~': schemaFromNode(MergeNode, 'audio'),
   '+~': schemaFromNode(AddNodeV2, 'audio'),
+  'send~': schemaFromNode(SendAudioNode, 'audio'),
+  'recv~': schemaFromNode(RecvAudioNode, 'audio'),
 
   // Control objects (generated from V2 nodes - single source of truth)
   mtof: schemaFromNode(MtofObject, 'control'),
