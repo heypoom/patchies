@@ -2,6 +2,7 @@ import type { AudioAnalysisProps } from '$lib/audio/AudioAnalysisSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { logger } from '$lib/utils/logger';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
+import { ChannelRegistry } from './ChannelRegistry';
 
 export type SendMessageOptions = {
   /**
@@ -15,14 +16,28 @@ export type SendMessageOptions = {
    * Used internally by worker nodes to prevent duplicate messages.
    */
   excludeTargets?: string[];
+
+  /**
+   * Named channel to send message to (bypasses edge-based routing).
+   * When specified, message is broadcast to all recv() listeners on this channel.
+   */
+  channel?: string;
+};
+
+export type RecvChannelOptions = {
+  /**
+   * Named channel to receive messages from.
+   * When specified, receives messages from send() calls with matching channel.
+   */
+  channel: string;
 };
 
 export interface UserFnRunContext {
-  /** Sends messages. */
+  /** Sends messages. With { channel } option, broadcasts to named channel instead of edges. */
   send: (data: unknown, options?: SendMessageOptions) => void;
 
-  /** Receives messages. */
-  onMessage: (callback: MessageCallbackFn) => void;
+  /** Receives messages. With { channel } option, receives from named channel instead of edges. */
+  onMessage: (callback: MessageCallbackFn, options?: RecvChannelOptions) => void;
 
   /** Schedules setInterval with cleanup. */
   setInterval: (callback: () => void, ms: number) => number;
@@ -78,6 +93,10 @@ export class MessageContext {
     new Map();
   private delayIdCounter = 0;
 
+  /** Named channel subscriptions for recv({ channel }) */
+  private channelSubscriptions: Set<string> = new Set();
+  private channelRegistry = ChannelRegistry.getInstance();
+
   public onSend: UserFnRunContext['send'] = () => {};
   public onMessageCallbackRegistered = () => {};
   public onIntervalCallbackRegistered = () => {};
@@ -131,25 +150,86 @@ export class MessageContext {
   };
 
   send(data: unknown, options: SendMessageOptions = {}) {
-    this.messageSystem.sendMessage(this.nodeId, data, options);
+    // If channel is specified, broadcast via ChannelRegistry instead of edge-based routing
+    if (options.channel) {
+      this.channelRegistry.broadcast(options.channel, data, this.nodeId);
+    } else {
+      this.messageSystem.sendMessage(this.nodeId, data, options);
+    }
+
     this.onSend(data, options);
   }
 
-  // Create the onMessage function for this node
+  /**
+   * Create the onMessage/recv function for this node.
+   * - onMessage(callback) - receives via connected edges
+   * - onMessage(callback, { channel: 'foo' }) - receives from named channel
+   */
   createOnMessageFunction() {
-    return (callback: MessageCallbackFn) => {
-      // Always update the callback - this allows re-registering
-      this.messageCallback = callback;
+    return (callback: MessageCallbackFn, options?: RecvChannelOptions) => {
+      if (options?.channel) {
+        // Channel-based receiving - subscribe to ChannelRegistry
+        this.subscribeToChannel(options.channel, callback);
+      } else {
+        // Edge-based receiving - update the callback
+        this.messageCallback = callback;
+      }
+      // Always notify that a callback was registered (for border color indicator)
       this.onMessageCallbackRegistered();
     };
+  }
+
+  /**
+   * Subscribe to a named channel for receiving messages.
+   */
+  private subscribeToChannel(channel: string, callback: MessageCallbackFn): void {
+    // Wrap callback to convert ChannelRegistry's (message, sourceNodeId) to MessageCallbackFn's (data, meta)
+    const wrappedCallback = (message: unknown, sourceNodeId: string) => {
+      const handleError = (error: unknown) => {
+        if (this.onCallbackError) {
+          this.onCallbackError(error);
+        } else {
+          logger.warn(`Error in recv() handler for channel "${channel}":`, error);
+        }
+      };
+
+      try {
+        // Construct meta object compatible with MessageCallbackFn
+        const meta = { source: sourceNodeId, channel };
+        const result = callback(message, meta) as unknown;
+
+        // Handle async callbacks that return a promise
+        if (result instanceof Promise) {
+          result.catch(handleError);
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    };
+
+    this.channelRegistry.subscribeMessage(channel, this.nodeId, wrappedCallback);
+    this.channelSubscriptions.add(channel);
+  }
+
+  /**
+   * Unsubscribe from all channel subscriptions (called during cleanup)
+   */
+  clearChannelSubscriptions(): void {
+    for (const channel of this.channelSubscriptions) {
+      this.channelRegistry.unsubscribeMessage(channel, this.nodeId);
+    }
+
+    this.channelSubscriptions.clear();
   }
 
   // Create the interval function for this node
   createSetIntervalFunction() {
     return (callback: () => void, ms: number) => {
       const intervalId = this.messageSystem.createInterval(callback, ms);
+
       this.intervals.push(intervalId);
       this.onIntervalCallbackRegistered();
+
       return intervalId;
     };
   }
@@ -161,10 +241,13 @@ export class MessageContext {
         // Remove from tracking array since it fired
         const index = this.timeouts.indexOf(timeoutId);
         if (index > -1) this.timeouts.splice(index, 1);
+
         callback();
       }, ms);
+
       this.timeouts.push(timeoutId);
       this.onTimeoutCallbackRegistered();
+
       return timeoutId;
     };
   }
@@ -173,8 +256,10 @@ export class MessageContext {
   createRequestAnimationFrameFunction() {
     return (callback: () => void) => {
       const animationFrameId = this.messageSystem.createAnimationFrame(callback);
+
       this.animationFrames.push(animationFrameId);
       this.onAnimationFrameCallbackRegistered();
+
       return animationFrameId;
     };
   }
@@ -191,10 +276,12 @@ export class MessageContext {
     return (ms: number): Promise<void> => {
       return new Promise((resolve, reject) => {
         const delayId = this.delayIdCounter++;
+
         const timeoutId = window.setTimeout(() => {
           this.pendingDelays.delete(delayId);
           resolve();
         }, ms);
+
         this.pendingDelays.set(delayId, { timeoutId, reject });
         this.onTimeoutCallbackRegistered();
       });
@@ -273,6 +360,9 @@ export class MessageContext {
     }
 
     this.animationFrames = [];
+
+    // Clear channel subscriptions (so recv({channel}) is cleaned up on code re-execution)
+    this.clearChannelSubscriptions();
   }
 
   // Run all user-registered cleanup callbacks
@@ -302,6 +392,7 @@ export class MessageContext {
   destroy() {
     this.runCleanupCallbacks();
     this.clearTimers();
+    this.clearChannelSubscriptions();
     this.queue.removeCallback(this.messageCallbackHandler.bind(this));
 
     // Unregister the node

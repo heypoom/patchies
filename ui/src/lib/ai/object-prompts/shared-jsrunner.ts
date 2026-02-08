@@ -35,6 +35,11 @@ export const jsRunnerInstructions = `
 - onCleanup(cb) - Register cleanup callback for unmount/re-execution
 - await llm(prompt, options?) - Call Gemini API (requires API key in settings)
   * Options: { imageNodeId?: string, abortSignal?: AbortSignal }
+
+**Named Channels (wireless messaging):**
+- send(data, { channel: 'name' }) - Broadcast to all listeners on channel
+- recv(cb, { channel: 'name' }) - Receive from channel (cb receives data, meta with source/channel)
+- Works with visual send/recv objects on same channel
 `.trim();
 
 /**

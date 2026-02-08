@@ -66,6 +66,8 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   'midi.out': 'MIDI output device sender',
   netsend: 'Network message sender via WebSocket',
   netrecv: 'Network message receiver via WebSocket',
+  send: 'Send messages to a named channel',
+  recv: 'Receive messages from a named channel',
   mqtt: 'MQTT pub/sub client for IoT messaging',
   sse: 'Server-Sent Events (EventSource) receiver',
   tts: 'Text-to-speech using Web Speech API',

@@ -154,30 +154,41 @@ When a send/recv node is deleted:
 
 ## Implementation Plan
 
-### Phase 1: Message (`send` / `recv`)
+### Phase 1: Message (`send` / `recv`) ✅ COMPLETE
 
-1. **Create ChannelRegistry** (`src/lib/messages/ChannelRegistry.ts`)
+1. **Create ChannelRegistry** (`src/lib/messages/ChannelRegistry.ts`) ✅
    - Singleton with `messageChannels` map
-   - `subscribe(channel, nodeId, role, type)`
-   - `unsubscribe(channel, nodeId, type)`
-   - `broadcast(channel, message)` - delivers to all receivers
+   - `subscribeMessage(channel, nodeId, callback)`
+   - `unsubscribeMessage(channel, nodeId)`
+   - `broadcast(channel, message, sourceNodeId)` - delivers to all receivers
 
-2. **Create visual objects**
-   - `SendNode.svelte` - inlet only, calls `ChannelRegistry.broadcast()` on message
-   - `RecvNode.svelte` - outlet only, registers as receiver, fires on broadcast
-   - Register in `node-types.ts`, `defaultNodeData.ts`
-   - Add to `get-categorized-objects.ts` with descriptions
-   - Set `shorthand: true` with aliases `s` / `r`
+2. **Create V2 text objects** ✅
+   - `SendObject.ts` - message + channel inlets, calls `ChannelRegistry.broadcast()`
+   - `RecvObject.ts` - channel inlet + outlet, subscribes on create, fires on broadcast
+   - Registered in `src/lib/objects/v2/nodes/index.ts`
+   - Added to Control pack in `object-packs.ts`
+   - Static `aliases` property for `s` / `r` shorthands
 
-3. **JavaScript API**
-   - Update `send()` in JSRunner to accept `{ channel: string }` option
-   - Update `recv()` in JSRunner to accept `{ channel: string }` option
-   - Same for worker context, hydra context, etc.
+3. **Cleanup** ✅
+   - `RecvObject.destroy()` calls `ChannelRegistry.unsubscribeMessage()`
 
-4. **Cleanup**
-   - On node delete, call `ChannelRegistry.unsubscribe()`
+### Phase 2: JavaScript API
 
-### Phase 2: Audio (`send~` / `recv~`)
+1. **Update JSRunner**
+   - Add `send(message, { channel: string })` overload
+   - Add `recv(callback, { channel: string })` for channel subscriptions
+   - Cleanup subscriptions on node destroy
+
+2. **Update other contexts**
+   - Worker context (`DirectChannelService` integration)
+   - Hydra context
+   - P5 context
+   - Canvas context
+
+3. **Update completions**
+   - Add channel option to `patchies-completions.ts`
+
+### Phase 3: Audio (`send~` / `recv~`)
 
 1. **Extend ChannelRegistry**
    - Add `audioChannels` map
@@ -191,7 +202,7 @@ When a send/recv node is deleted:
 3. **Integrate with AudioService**
    - Merge virtual edges in `updateEdges()`
 
-### Phase 3: Video (`send.vdo` / `recv.vdo`)
+### Phase 4: Video (`send.vdo` / `recv.vdo`)
 
 1. **Extend ChannelRegistry**
    - Add `videoChannels` map

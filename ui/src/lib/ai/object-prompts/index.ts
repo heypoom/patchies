@@ -24,7 +24,9 @@ import { objectPrompt } from './object';
 import { orcaPrompt } from './orca';
 import { p5Prompt } from './p5';
 import { pythonPrompt } from './python';
+import { recvPrompt } from './recv';
 import { rubyPrompt } from './ruby';
+import { sendPrompt } from './send';
 import { samplerPrompt } from './sampler~';
 import { sliderPrompt } from './slider';
 import { soundfilePrompt } from './soundfile~';
@@ -84,7 +86,9 @@ export const objectPrompts: Record<string, string> = {
   three: threePrompt,
   'three.dom': threeDomPrompt,
   wgpu: wgpuPrompt,
-  worker: workerPrompt
+  worker: workerPrompt,
+  send: sendPrompt,
+  recv: recvPrompt
 };
 
 /**

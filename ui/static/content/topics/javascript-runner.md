@@ -39,6 +39,24 @@ Use `onCleanup(callback)` to register cleanup logic that runs when the object is
 
 Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
 
+### Named Channels
+
+Send and receive messages wirelessly using named channels:
+
+```javascript
+// Send to a named channel (broadcasts to all listeners)
+send({ x: 100 }, { channel: 'position' });
+
+// Receive from a named channel
+recv((data, meta) => {
+  console.log(data);           // the message
+  console.log(meta.channel);   // 'position'
+  console.log(meta.source);    // sender's node ID
+}, { channel: 'position' });
+```
+
+Named channels work across `js`, `worker`, and visual `send`/`recv` objects. This enables wireless communication without visual connections.
+
 ### Port Configuration
 
 - `setPortCount(inletCount, outletCount)` - set the number of message inlets and outlets

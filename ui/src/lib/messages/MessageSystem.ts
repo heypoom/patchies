@@ -14,6 +14,9 @@ export interface Message<T = unknown> {
 
   /** Resolved inlet name from object definition (e.g. 'note', 'interval') */
   inletName?: string;
+
+  /** Named channel if message came from channel-based send/recv */
+  channel?: string;
 }
 
 export type MessageCallbackFn = (data: Message['data'], meta: Omit<Message, 'data'>) => void;

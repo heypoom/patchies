@@ -6,7 +6,7 @@
 
 - **CRITICAL**: Never start dev server manually. User will start if needed.
 - **CRITICAL**: Never git commit or push for the user unless explicitly asked to do so. Wait for user review.
-- Before implementing: update relevant spec files in `docs/design-docs/specs/`
+- Before implementing: update relevant spec files in `docs/design-docs/specs/`. Make sure specs are prefixed with numbers e.g. `50-foo-bar.md` and in the title too `# 50. Foo Bar`
 - If asked explicitly to commit, write clear, short and concise commit messages.
 
 ## Core Stack
@@ -44,7 +44,6 @@ bun run test             # All tests
 ## Code Patterns
 
 - **Always use `ts-pattern`**, never `switch` statements. This includes:
-
   - Conditional logic based on type/mode/state
   - Dynamic CSS class selection based on variants
   - Any branching on union types or enums
@@ -121,7 +120,7 @@ bun run test             # All tests
 1. Create component in `src/lib/components/nodes/`
 2. Update `src/lib/nodes/node-types.ts`
 3. Update `src/lib/nodes/defaultNodeData.ts`
-4. Update `README.md` with documentation
+4. Update the documentation and object schema (for visual objects)
 5. Update `src/lib/components/object-browser/get-categorized-objects.ts` (add description + category)
 6. **MUST** update AI object prompts in `src/lib/ai/`:
    - Add to `object-descriptions-types.ts` (OBJECT_TYPE_LIST)
@@ -140,8 +139,9 @@ bun run test             # All tests
 
 1. Create class in `src/lib/objects/v2/nodes/` implementing `TextObjectV2`
 2. Register in `src/lib/objects/v2/nodes/index.ts`
-3. Update `README.md` Control objects section
-4. **MUST** update AI object prompts in `src/lib/ai/`:
+3. Update the documentation
+4. Make sure the node class contains a `messages` field, not just `type` in inlets and outlet definitions.
+5. **MUST** update AI object prompts in `src/lib/ai/`:
    - Add to `object-descriptions-types.ts` (OBJECT_TYPE_LIST)
    - Create prompt file in `object-prompts/` and register in `object-prompts/index.ts`
 

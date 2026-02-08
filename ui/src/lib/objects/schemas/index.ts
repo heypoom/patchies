@@ -169,6 +169,8 @@ import { SpigotObject } from '$lib/objects/v2/nodes/SpigotObject';
 import { ThrottleObject } from '$lib/objects/v2/nodes/ThrottleObject';
 import { UniqbyObject } from '$lib/objects/v2/nodes/UniqbyObject';
 import { WebMidiLinkObject } from '$lib/objects/v2/nodes/WebMidiLinkObject';
+import { SendObject } from '$lib/objects/v2/nodes/SendObject';
+import { RecvObject } from '$lib/objects/v2/nodes/RecvObject';
 
 /**
  * Registry of all object schemas.
@@ -275,7 +277,9 @@ export const objectSchemas: ObjectSchemaRegistry = {
   throttle: schemaFromNode(ThrottleObject, 'control'),
   spigot: schemaFromNode(SpigotObject, 'control'),
   uniqby: schemaFromNode(UniqbyObject, 'control'),
-  webmidilink: schemaFromNode(WebMidiLinkObject, 'control')
+  webmidilink: schemaFromNode(WebMidiLinkObject, 'control'),
+  send: schemaFromNode(SendObject, 'control'),
+  recv: schemaFromNode(RecvObject, 'control')
 };
 
 /**

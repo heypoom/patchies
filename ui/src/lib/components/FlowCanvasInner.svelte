@@ -47,6 +47,7 @@
   import { migratePatch } from '$lib/migration';
   import { getSharedPatchData } from '$lib/api/pb';
   import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
+  import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
   import BackgroundPattern from './BackgroundPattern.svelte';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
@@ -164,7 +165,15 @@
 
     // Sync selected node to store for context-sensitive help sidebar
     if (nodes.length === 1 && nodes[0].type) {
-      selectedNodeInfo.set({ type: nodes[0].type, id: nodes[0].id });
+      // For "object" nodes, extract the actual object name from data.expr
+      const nodeType = nodes[0].type;
+
+      const resolvedType =
+        nodeType === 'object' && nodes[0].data?.expr
+          ? getObjectNameFromExpr(nodes[0].data.expr as string)
+          : nodeType;
+
+      selectedNodeInfo.set({ type: resolvedType, id: nodes[0].id });
     } else {
       selectedNodeInfo.set(null);
     }

@@ -1,6 +1,7 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messages/MessageSystem';
+import { ChannelRegistry } from '$lib/messages/ChannelRegistry';
 import { match } from 'ts-pattern';
 import { JSRunner } from './JSRunner';
 import {
@@ -40,6 +41,8 @@ export type WorkerMessage = { nodeId: string } & (
   // Direct worker-to-worker channel (port transferred via transfer list)
   | { type: 'setWorkerPort'; targetNodeId?: string; sourceNodeId?: string }
   | { type: 'updateWorkerConnections'; connections: RenderConnection[] }
+  // Named channel messages
+  | { type: 'channelMessage'; channel: string; data: unknown; sourceNodeId: string }
 );
 
 // Message types sent from worker to main thread
@@ -71,6 +74,10 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
   | { type: 'videoFrameCallbackRegistered'; resolution?: [number, number] }
   | { type: 'requestVideoFrames'; requestId: string; resolution?: [number, number] }
+  // Named channel APIs
+  | { type: 'sendToChannel'; channel: string; data: unknown }
+  | { type: 'subscribeChannel'; channel: string }
+  | { type: 'unsubscribeChannel'; channel: string }
 );
 
 interface WorkerInstance {
@@ -95,9 +102,13 @@ export class WorkerNodeSystem {
 
   private eventBus = PatchiesEventBus.getInstance();
   private messageSystem = MessageSystem.getInstance();
+  private channelRegistry = ChannelRegistry.getInstance();
   private jsRunner = JSRunner.getInstance();
   private audioAnalysis = AudioAnalysisSystem.getInstance();
   private workers = new Map<string, WorkerInstance>();
+
+  /** Track channel subscriptions per worker for cleanup */
+  private workerChannelSubscriptions = new Map<string, Set<string>>();
 
   // Video frame state tracking
   private videoStates = new Map<string, WorkerVideoState>();
@@ -240,6 +251,16 @@ export class WorkerNodeSystem {
       })
       .with({ type: 'requestVideoFrames' }, (event) => {
         this.handleRequestVideoFrames(nodeId, event.resolution);
+      })
+      // Named channel APIs
+      .with({ type: 'sendToChannel' }, (event) => {
+        this.channelRegistry.broadcast(event.channel, event.data, nodeId);
+      })
+      .with({ type: 'subscribeChannel' }, (event) => {
+        this.handleSubscribeChannel(nodeId, worker, event.channel);
+      })
+      .with({ type: 'unsubscribeChannel' }, (event) => {
+        this.handleUnsubscribeChannel(nodeId, event.channel);
       })
       .otherwise(() => {});
   }
@@ -423,6 +444,57 @@ export class WorkerNodeSystem {
   }
 
   /**
+   * Handle worker subscribing to a named channel.
+   * Subscribes to ChannelRegistry and forwards messages to the worker.
+   */
+  private handleSubscribeChannel(nodeId: string, worker: Worker, channel: string) {
+    // Track subscription for cleanup
+    if (!this.workerChannelSubscriptions.has(nodeId)) {
+      this.workerChannelSubscriptions.set(nodeId, new Set());
+    }
+
+    this.workerChannelSubscriptions.get(nodeId)!.add(channel);
+
+    // Subscribe to ChannelRegistry - forward messages to worker
+    this.channelRegistry.subscribeMessage(channel, nodeId, (data, sourceNodeId) => {
+      worker.postMessage({
+        type: 'channelMessage',
+        nodeId,
+        channel,
+        data,
+        sourceNodeId
+      });
+    });
+  }
+
+  /**
+   * Clean up channel subscriptions for a worker node.
+   */
+  private cleanupWorkerChannelSubscriptions(nodeId: string) {
+    const subscriptions = this.workerChannelSubscriptions.get(nodeId);
+
+    if (subscriptions) {
+      for (const channel of subscriptions) {
+        this.channelRegistry.unsubscribeMessage(channel, nodeId);
+      }
+
+      this.workerChannelSubscriptions.delete(nodeId);
+    }
+  }
+
+  /**
+   * Handle worker unsubscribing from a named channel (on code re-execution).
+   */
+  private handleUnsubscribeChannel(nodeId: string, channel: string) {
+    this.channelRegistry.unsubscribeMessage(channel, nodeId);
+
+    const subscriptions = this.workerChannelSubscriptions.get(nodeId);
+    if (subscriptions) {
+      subscriptions.delete(channel);
+    }
+  }
+
+  /**
    * Start the global video frame capture loop (single loop for all nodes).
    */
   private startGlobalVideoLoop() {
@@ -432,12 +504,14 @@ export class WorkerNodeSystem {
     const loop = () => {
       // Check if any nodes still have video callbacks
       const nodesWithCallbacks = this.getNodesWithVideoCallbacks();
+
       if (nodesWithCallbacks.length === 0) {
         this.globalVideoLoopId = null;
         return;
       }
 
       const now = performance.now();
+
       if (now - this.lastGlobalFrameTime >= WorkerNodeSystem.VIDEO_FRAME_INTERVAL_MS) {
         this.requestBatchedVideoFrames(nodesWithCallbacks);
         this.lastGlobalFrameTime = now;
@@ -454,11 +528,13 @@ export class WorkerNodeSystem {
    */
   private getNodesWithVideoCallbacks(): string[] {
     const nodes: string[] = [];
+
     for (const [nodeId, state] of this.videoStates) {
       if (state.hasVideoCallback && state.sourceNodeIds.some((id) => id !== null)) {
         nodes.push(nodeId);
       }
     }
+
     return nodes;
   }
 
@@ -474,6 +550,7 @@ export class WorkerNodeSystem {
 
     for (const nodeId of nodeIds) {
       const videoState = this.videoStates.get(nodeId);
+
       if (videoState && videoState.sourceNodeIds.length > 0) {
         requests.push({
           targetNodeId: nodeId,
@@ -646,6 +723,7 @@ export class WorkerNodeSystem {
       type: 'destroy',
       nodeId
     } satisfies WorkerMessage);
+
     instance.worker.terminate();
 
     this.workers.delete(nodeId);
@@ -662,6 +740,9 @@ export class WorkerNodeSystem {
     // Unregister from message system
     this.messageSystem.unregisterNode(nodeId);
 
+    // Clean up channel subscriptions
+    this.cleanupWorkerChannelSubscriptions(nodeId);
+
     // Unregister from DirectChannelService
     DirectChannelService.getInstance().unregisterWorker(nodeId);
   }
@@ -674,6 +755,7 @@ export class WorkerNodeSystem {
     if (!this.instance) {
       this.instance = new WorkerNodeSystem();
     }
+
     return this.instance;
   }
 }
