@@ -8,19 +8,19 @@ These methods are available in: `p5`, `canvas`, `canvas.dom`, `textmode`, `textm
 
 ## Methods
 
-### `noDrag()`
+`noDrag()`
 
 Disables dragging the object when clicking/touching inside it. Use this when you need mouse/touch interactivity like sliders, buttons, or drawing.
 
-### `noPan()`
+`noPan()`
 
 Disables panning the canvas when dragging inside the object. Useful for objects with internal drag behavior that shouldn't move the canvas view.
 
-### `noWheel()`
+`noWheel()`
 
 Disables wheel zoom when scrolling inside the object. Useful for scrollable content or objects that respond to wheel events.
 
-### `noInteract()`
+`noInteract()`
 
 Convenience method that calls all three: `noDrag()`, `noPan()`, and `noWheel()`. Use this for fully interactive objects.
 

@@ -17,7 +17,7 @@ Libraries created with `// @lib` in a regular `js` node can be imported in
 
 Worker nodes can capture video frames from connected visual nodes:
 
-### `setVideoCount(inletCount)`
+`setVideoCount(inletCount)`
 
 Configure the number of video inlets for receiving frames.
 
@@ -26,7 +26,7 @@ Configure the number of video inlets for receiving frames.
 setVideoCount(2);
 ```
 
-### `onVideoFrame(callback, config?)`
+`onVideoFrame(callback, config?)`
 
 Register a callback that receives frames each render cycle.
 
@@ -43,7 +43,7 @@ onVideoFrame((frames, timestamp) => {
 onVideoFrame(callback, { resolution: [640, 480] });
 ```
 
-### `getVideoFrames(config?)`
+`getVideoFrames(config?)`
 
 One-shot async capture, returns a Promise.
 
