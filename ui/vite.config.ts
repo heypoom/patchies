@@ -80,31 +80,10 @@ export default defineConfig({
         // Claim clients immediately so updates take effect right away
         clientsClaim: true,
 
-        // Use NetworkFirst for navigations so prerendered pages work
-        // (don't always fall back to / which breaks docs)
-        navigateFallback: null,
+        // Don't intercept /docs/ navigations - let them load prerendered HTML directly
+        navigateFallbackDenylist: [/^\/docs\//],
 
         runtimeCaching: [
-          // HTML pages - NetworkFirst for fresh content when online, cache for offline
-          {
-            urlPattern: /\.html$/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'html-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              networkTimeoutSeconds: 3
-            }
-          },
-          // Navigation requests (pages without extension)
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'pages-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              networkTimeoutSeconds: 3
-            }
-          },
           // Markdown content files for docs (offline documentation)
           {
             urlPattern: /\/content\/.*\.md$/i,
