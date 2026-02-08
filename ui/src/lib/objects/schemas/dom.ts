@@ -1,0 +1,27 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from './types';
+
+/**
+ * Schema for the dom (vanilla JS DOM) object.
+ */
+export const domSchema: ObjectSchema = {
+  type: 'dom',
+  category: 'programming',
+  description: 'Build custom UI components using vanilla JavaScript and DOM API',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Data input via recv() callback',
+      messages: [{ schema: Type.Any(), description: 'Data received via recv() callback' }]
+    }
+  ],
+  outlets: [
+    {
+      id: 'message',
+      description: 'Output from send() calls',
+      messages: [{ schema: Type.Any(), description: 'Data sent via send() function' }]
+    }
+  ],
+  tags: ['programming', 'dom', 'ui', 'interface', 'vanilla'],
+  hasDynamicOutlets: true
+};

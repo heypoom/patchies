@@ -7,6 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { imgMessages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
@@ -50,8 +51,8 @@
   const handleMessage: MessageCallbackFn = (m) => {
     match(m)
       .with(P.string, vfsMedia.loadFromPath)
-      .with({ type: 'load', url: P.string }, ({ url }) => vfsMedia.loadFromUrl(url))
-      .with({ type: 'load', path: P.string }, ({ path }) => vfsMedia.loadFromPath(path));
+      .with(imgMessages.loadUrl, ({ url }) => vfsMedia.loadFromUrl(url))
+      .with(imgMessages.loadPath, ({ path }) => vfsMedia.loadFromPath(path));
   };
 
   async function displayImage(file: File) {

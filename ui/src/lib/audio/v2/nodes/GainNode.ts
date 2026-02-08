@@ -1,3 +1,5 @@
+import { Type } from '@sinclair/typebox';
+
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
@@ -8,27 +10,32 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 export class GainNodeV2 implements AudioNodeV2 {
   static type = 'gain~';
   static group: AudioNodeGroup = 'processors';
-  static description = 'Controls audio volume/amplitude';
+  static description = 'Amplify or attenuate audio signals';
+  static tags = ['audio', 'gain', 'volume', 'amplifier'];
 
   static inlets: ObjectInlet[] = [
     {
       name: 'in',
       type: 'signal',
-      description: 'Audio signal input'
+      description: 'Audio input'
     },
     {
       name: 'gain',
       type: 'float',
-      description: 'Gain value (0-1 for attenuation, >1 for amplification)',
+      description: 'Gain control',
       defaultValue: 1.0,
       isAudioParam: true,
-      maxPrecision: 3
+      maxPrecision: 3,
+      messages: [
+        {
+          schema: Type.Number(),
+          description: 'Gain value (1 = unity, >1 = amplify, <1 = attenuate)'
+        }
+      ]
     }
   ];
 
-  static outlets: ObjectOutlet[] = [
-    { name: 'out', type: 'signal', description: 'Processed audio output' }
-  ];
+  static outlets: ObjectOutlet[] = [{ name: 'out', type: 'signal', description: 'Audio output' }];
 
   readonly nodeId: string;
   audioNode: GainNode;

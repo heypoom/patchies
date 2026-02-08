@@ -1,3 +1,5 @@
+import { Type } from '@sinclair/typebox';
+
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
@@ -9,19 +11,29 @@ import { match, P } from 'ts-pattern';
 export class SpigotObject implements TextObjectV2 {
   static type = 'spigot';
   static description = 'Message gate that allows or blocks data based on condition';
+  static tags = ['control', 'gate', 'switch', 'filter'];
 
   static inlets: ObjectInlet[] = [
-    { name: 'data', type: 'message', description: 'Data to pass through when allowed.' },
+    {
+      name: 'data',
+      type: 'message',
+      description: 'Data input',
+      messages: [{ schema: Type.Any(), description: 'Data to pass through when allowed' }]
+    },
     {
       name: 'control',
       type: 'message',
-      description: 'Truthy allows data, falsey blocks data. Bang toggles.',
-      defaultValue: false
+      description: 'Gate control',
+      defaultValue: false,
+      messages: [
+        { schema: Type.Boolean(), description: 'Truthy allows data, falsey blocks data' },
+        { schema: Type.Literal('bang'), description: 'Bang toggles gate state' }
+      ]
     }
   ];
 
   static outlets: ObjectOutlet[] = [
-    { name: 'out', type: 'message', description: 'output when spigot is open' }
+    { name: 'out', type: 'message', description: 'Output when spigot is open' }
   ];
 
   readonly nodeId: string;

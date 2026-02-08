@@ -6,8 +6,8 @@ export type LoadFromUrlResult =
 
 export async function loadPatchFromUrl(url: string): Promise<LoadFromUrlResult> {
   try {
-    // Validate URL format
-    const urlObj = new URL(url);
+    // Handle relative URLs by using current origin as base
+    const urlObj = new URL(url, window.location.origin);
 
     if (urlObj.protocol !== 'https:' && urlObj.protocol !== 'http:') {
       return {
@@ -16,7 +16,7 @@ export async function loadPatchFromUrl(url: string): Promise<LoadFromUrlResult> 
       };
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(urlObj.href, {
       method: 'GET',
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(10000)

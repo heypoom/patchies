@@ -13,5 +13,9 @@
   });
 </script>
 
+<svelte:head>
+  <title>Patchies</title>
+</svelte:head>
+
 <ModeWatcher />
 {@render children()}

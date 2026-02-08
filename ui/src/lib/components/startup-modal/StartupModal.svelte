@@ -57,7 +57,8 @@
             {#each tabs as tab (tab)}
               <button
                 onclick={() => (activeTab = tab)}
-                class="flex-shrink-0 pb-3 text-sm font-medium transition-colors {activeTab === tab
+                class="flex-shrink-0 cursor-pointer pb-3 text-sm font-medium transition-colors {activeTab ===
+                tab
                   ? 'border-b-2 border-orange-500 text-orange-500'
                   : 'text-zinc-400 hover:text-zinc-200'}"
               >

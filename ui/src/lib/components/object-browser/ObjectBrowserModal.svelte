@@ -6,7 +6,8 @@
     X,
     Bookmark,
     ChevronRight,
-    Package
+    Package,
+    CircleQuestionMark
   } from '@lucide/svelte/icons';
   import {
     getCategorizedObjects,
@@ -24,13 +25,17 @@
     togglePack
   } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
-  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
   import {
     useDisabledObjectSuggestion,
     type DisabledObjectInfo
   } from '$lib/composables/useDisabledObjectSuggestion.svelte';
+  import { objectSchemas } from '$lib/objects/schemas';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+
+  type BrowserMode = 'insert' | 'help';
 
   function openPacks() {
     $sidebarView = 'packs';
@@ -49,6 +54,22 @@
   let expandedCategories = $state<Set<string>>(new Set());
   let showPresets = $state(true);
   let hasInitialized = $state(false);
+  let browserMode = $state<BrowserMode>('insert');
+
+  // Check if an object has help available
+  function hasHelp(objectName: string): boolean {
+    // Check if schema exists or if help patch file exists
+    // For now, just check schema registry
+    return objectName in objectSchemas;
+  }
+
+  // Open help for an object in sidebar
+  function openHelp(objectName: string) {
+    $isSidebarOpen = true;
+    $sidebarView = 'help';
+    $selectedNodeInfo = { type: objectName, id: 'browser' };
+    open = false;
+  }
 
   // Get all categorized objects, filtering AI features and by enabled extensions
   // Objects in the current patch but not enabled are included as low priority
@@ -116,9 +137,14 @@
   });
 
   // Combined categories: objects first, then presets
-  const allCategoriesWithPresets = $derived(
-    showPresets ? [...allCategories, ...presetCategories] : allCategories
-  );
+  // Also, hide presets in help mode.
+  const allCategoriesWithPresets = $derived.by(() => {
+    if (showPresets && browserMode !== 'help') {
+      return [...allCategories, ...presetCategories];
+    }
+
+    return allCategories;
+  });
 
   // Create Fuse instance for fuzzy search - update when categories change
   const fuse = $derived(
@@ -335,28 +361,63 @@
           <!-- Filter buttons -->
           <div class="flex gap-2">
             <!-- Packs button (navigates to sidebar) -->
-            <button
-              onclick={openPacks}
-              class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm leading-[36px] text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400 sm:flex-none"
-            >
-              <Package class="h-4 w-4" />
-              <span>Packs</span>
-              <ChevronRight class="-ml-0.5 h-3.5 w-3.5" />
-            </button>
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger>
+                <button
+                  onclick={openPacks}
+                  class="flex h-[38px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400 sm:flex-none"
+                >
+                  <Package class="h-4 w-4" />
+                  <span>Packs</span>
+                  <ChevronRight class="-ml-0.5 h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">Enable or disable object packs</Tooltip.Content>
+            </Tooltip.Root>
 
-            <!-- Presets toggle -->
-            <button
-              onclick={() => (showPresets = !showPresets)}
-              class={[
-                'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 text-sm leading-[36px] transition-colors sm:flex-none',
-                showPresets
-                  ? 'border-violet-500/30 bg-violet-500/10 text-violet-300'
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
-              ]}
-            >
-              <Bookmark class="h-4 w-4" />
-              <span>Presets</span>
-            </button>
+            <!-- Presets toggle (disabled in help mode) -->
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger>
+                <button
+                  onclick={() => (showPresets = !showPresets)}
+                  disabled={browserMode === 'help'}
+                  class={[
+                    'flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm transition-colors sm:flex-none',
+                    browserMode === 'help'
+                      ? 'cursor-not-allowed border-zinc-800 bg-zinc-900/50 text-zinc-600'
+                      : showPresets
+                        ? 'cursor-pointer border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                        : 'cursor-pointer border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400'
+                  ]}
+                >
+                  <Bookmark class="h-4 w-4" />
+                  <span>Presets</span>
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">
+                {browserMode === 'help' ? 'Presets hidden in help mode' : 'Show saved presets?'}
+              </Tooltip.Content>
+            </Tooltip.Root>
+
+            <!-- Help mode toggle -->
+            <Tooltip.Root delayDuration={100}>
+              <Tooltip.Trigger>
+                <button
+                  onclick={() => (browserMode = browserMode === 'help' ? 'insert' : 'help')}
+                  class={[
+                    'flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg border transition-colors',
+                    browserMode === 'help'
+                      ? 'border-blue-500/50 bg-blue-500/20 text-blue-300'
+                      : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400'
+                  ]}
+                >
+                  <CircleQuestionMark class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">
+                {browserMode === 'help' ? 'Help mode (click to insert)' : 'Browse help'}
+              </Tooltip.Content>
+            </Tooltip.Root>
           </div>
         </div>
       </div>
@@ -437,31 +498,81 @@
                     {#each category.objects as object (object.name)}
                       {@const isPreset = category.title.includes(': ')}
                       {@const isLowPriority = object.priority === 'low'}
-                      <button
-                        onclick={() => handleSelectObject(object.name)}
-                        class={[
-                          'flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
-                          isPreset
-                            ? 'border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
-                            : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
-                          isLowPriority && 'opacity-50'
-                        ]}
-                      >
-                        <div class="flex items-center gap-1.5">
+                      {@const objectHasHelp = hasHelp(object.name)}
+
+                      {@const noHelpAvailable = browserMode === 'help' && !objectHasHelp}
+                      <div class="group relative">
+                        <button
+                          onclick={() => {
+                            if (noHelpAvailable) return;
+                            if (browserMode === 'help') {
+                              openHelp(object.name);
+                            } else {
+                              handleSelectObject(object.name);
+                            }
+                          }}
+                          disabled={noHelpAvailable}
+                          class={[
+                            'flex w-full flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
+                            noHelpAvailable
+                              ? 'cursor-not-allowed border-zinc-800/50 bg-zinc-900/30 opacity-40'
+                              : browserMode === 'help'
+                                ? 'cursor-pointer border-blue-500/30 bg-blue-500/5 hover:border-blue-500/50 hover:bg-blue-500/10'
+                                : isPreset
+                                  ? 'cursor-pointer border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-800/70'
+                                  : 'cursor-pointer border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800',
+                            isLowPriority && !noHelpAvailable && 'opacity-50'
+                          ]}
+                        >
+                          <div class="flex items-center gap-1.5">
+                            {#if browserMode === 'help'}
+                              <CircleQuestionMark
+                                class={[
+                                  'h-3.5 w-3.5',
+                                  noHelpAvailable ? 'text-zinc-600' : 'text-blue-500'
+                                ]}
+                              />
+                            {/if}
+                            <span
+                              class={[
+                                'font-mono text-sm',
+                                noHelpAvailable
+                                  ? 'text-zinc-600'
+                                  : browserMode === 'help'
+                                    ? 'text-blue-200'
+                                    : isPreset
+                                      ? 'text-zinc-300'
+                                      : 'text-zinc-200'
+                              ]}>{object.name}</span
+                            >
+                          </div>
+
                           <span
                             class={[
-                              'font-mono text-sm',
-                              isPreset ? 'text-zinc-300' : 'text-zinc-200'
-                            ]}>{object.name}</span
+                              'line-clamp-2 text-xs',
+                              noHelpAvailable ? 'text-zinc-700' : 'text-zinc-500'
+                            ]}>{object.description}</span
                           >
-                        </div>
 
-                        <span class="line-clamp-2 text-xs text-zinc-500">{object.description}</span>
+                          {#if isLowPriority && !noHelpAvailable}
+                            <span class="font-mono text-[10px] text-zinc-600">disabled</span>
+                          {/if}
+                        </button>
 
-                        {#if isLowPriority}
-                          <span class="font-mono text-[10px] text-zinc-600">disabled</span>
+                        <!-- Help icon on hover (only in insert mode, desktop only) -->
+                        {#if browserMode === 'insert' && objectHasHelp}
+                          <button
+                            onclick={(e) => {
+                              e.stopPropagation();
+                              openHelp(object.name);
+                            }}
+                            class="absolute top-2 right-2 hidden rounded p-1 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 hover:text-zinc-300 sm:block"
+                            title="Open help for {object.name}"
+                          >
+                            <CircleQuestionMark class="h-4 w-4" />
+                          </button>
                         {/if}
-                      </button>
+                      </div>
                     {/each}
                   </div>
                 {/if}

@@ -171,7 +171,7 @@
     {
       id: 'toggle-sidebar',
       name: 'Toggle Sidebar',
-      description: 'Manage files and presets in the sidebar'
+      description: 'Files and presets in the sidebar'
     },
     {
       id: 'browse-objects',

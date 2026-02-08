@@ -8,6 +8,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { match, P } from 'ts-pattern';
+  import { videoMessages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { webCodecsEnabled, showVideoStats } from '../../../stores/video.store';
   import { useVfsMedia } from '$lib/vfs';
@@ -129,9 +130,9 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with({ type: 'bang' }, () => restartVideo())
-      .with({ type: 'pause' }, () => togglePause())
-      .with({ type: 'loop', value: P.optional(P.boolean) }, ({ value }) => {
+      .with(videoMessages.bang, () => restartVideo())
+      .with(videoMessages.pause, () => togglePause())
+      .with(videoMessages.loop, ({ value }) => {
         const shouldLoop = value ?? true;
 
         updateNode(nodeId, { data: { ...data, loop: shouldLoop } });
@@ -144,8 +145,8 @@
         glSystem.mediaBunnySetLoop(nodeId, shouldLoop);
       })
       .with(P.string, (path) => vfsMedia.loadFromPath(path))
-      .with({ type: 'load', url: P.string }, ({ url }) => vfsMedia.loadFromUrl(url))
-      .with({ type: 'load', path: P.string }, ({ path }) => vfsMedia.loadFromPath(path))
+      .with(videoMessages.loadUrl, ({ url }) => vfsMedia.loadFromUrl(url))
+      .with(videoMessages.loadPath, ({ path }) => vfsMedia.loadFromPath(path))
       .otherwise(() => {});
   };
 

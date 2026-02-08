@@ -1,3 +1,5 @@
+import { Type } from '@sinclair/typebox';
+
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
@@ -9,13 +11,24 @@ import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 export class MtofObject implements TextObjectV2 {
   static type = 'mtof';
   static description = 'Converts MIDI note values to frequency float values';
+  static tags = ['control', 'midi', 'frequency', 'conversion'];
 
   static inlets: ObjectInlet[] = [
-    { name: 'note', type: 'float', description: 'MIDI note value (0-127)' }
+    {
+      name: 'note',
+      type: 'float',
+      description: 'MIDI note input',
+      messages: [
+        {
+          schema: Type.Number({ minimum: 0, maximum: 127 }),
+          description: 'MIDI note value (0-127)'
+        }
+      ]
+    }
   ];
 
   static outlets: ObjectOutlet[] = [
-    { name: 'frequency', type: 'float', description: 'Frequency in Hz' }
+    { name: 'frequency', type: 'float', description: 'Frequency output in Hz' }
   ];
 
   readonly nodeId: string;
