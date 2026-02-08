@@ -17,13 +17,6 @@ export class ChannelRegistry {
 
   private messageChannels = new Map<string, MessageChannelData>();
 
-  static getInstance(): ChannelRegistry {
-    if (!ChannelRegistry.instance) {
-      ChannelRegistry.instance = new ChannelRegistry();
-    }
-    return ChannelRegistry.instance;
-  }
-
   /**
    * Subscribe a recv node to a message channel
    */
@@ -31,6 +24,7 @@ export class ChannelRegistry {
     if (!this.messageChannels.has(channel)) {
       this.messageChannels.set(channel, { receivers: new Map() });
     }
+
     this.messageChannels.get(channel)!.receivers.set(nodeId, callback);
   }
 
@@ -78,5 +72,13 @@ export class ChannelRegistry {
    */
   hasReceivers(channel: string): boolean {
     return (this.messageChannels.get(channel)?.receivers.size ?? 0) > 0;
+  }
+
+  static getInstance(): ChannelRegistry {
+    if (!ChannelRegistry.instance) {
+      ChannelRegistry.instance = new ChannelRegistry();
+    }
+
+    return ChannelRegistry.instance;
   }
 }
