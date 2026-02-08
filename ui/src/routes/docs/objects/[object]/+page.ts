@@ -1,7 +1,12 @@
 import { error } from '@sveltejs/kit';
 import { objectSchemas } from '$lib/objects/schemas';
 import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
-import type { PageLoad } from './$types';
+import type { PageLoad, EntryGenerator } from './$types';
+
+// Generate entries for prerendering all object pages
+export const entries: EntryGenerator = () => {
+  return Object.keys(objectSchemas).map((object) => ({ object }));
+};
 
 export const load: PageLoad = async ({ params, fetch }) => {
   const objectType = params.object;

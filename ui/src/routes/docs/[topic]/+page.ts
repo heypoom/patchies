@@ -1,5 +1,13 @@
 import { error } from '@sveltejs/kit';
-import type { PageLoad } from './$types';
+import type { PageLoad, EntryGenerator } from './$types';
+import { topicOrder } from '../docs-nav';
+
+// Generate entries for prerendering all topic pages
+export const entries: EntryGenerator = () => {
+  const topics = Object.values(topicOrder).flat();
+
+  return topics.map((topic) => ({ topic }));
+};
 
 export const load: PageLoad = async ({ params, fetch }) => {
   const topic = params.topic;

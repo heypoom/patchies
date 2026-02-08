@@ -300,6 +300,7 @@
         <a
           href="/docs"
           class="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-zinc-700 py-2 text-xs text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400"
+          target="_blank"
         >
           <ExternalLink class="h-3.5 w-3.5" />
           Getting Started
