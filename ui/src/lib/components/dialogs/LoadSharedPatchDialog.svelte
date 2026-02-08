@@ -4,11 +4,13 @@
   let {
     open = $bindable(false),
     patchName,
+    isReadOnly = false,
     onConfirm,
     onCancel
   }: {
     open: boolean;
     patchName: string | null;
+    isReadOnly?: boolean;
     onConfirm: () => void;
     onCancel: () => void;
   } = $props();
@@ -37,11 +39,13 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    <div
-      class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
-    >
-      This will replace your current patch. Any unsaved changes will be lost.
-    </div>
+    {#if !isReadOnly}
+      <div
+        class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
+      >
+        This will replace your current patch. Any unsaved changes will be lost.
+      </div>
+    {/if}
 
     <Dialog.Footer class="flex gap-2">
       <button

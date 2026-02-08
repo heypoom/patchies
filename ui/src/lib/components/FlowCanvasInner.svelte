@@ -1405,6 +1405,7 @@
     <LoadSharedPatchDialog
       bind:open={showLoadSharedPatchDialog}
       patchName={pendingSharedPatch?.name ?? null}
+      isReadOnly={isReadOnlyMode}
       onConfirm={confirmLoadSharedPatch}
       onCancel={cancelLoadSharedPatch}
     />
