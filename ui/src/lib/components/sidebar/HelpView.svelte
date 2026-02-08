@@ -79,6 +79,7 @@
   // Track which topic is being viewed
   const viewingTopic = $derived.by((): string | null => {
     if (browseModeOverride) return null;
+    if (manualViewingObject) return null; // Object takes precedence
     if (manualViewingTopic) return manualViewingTopic;
 
     // When locked on a topic, stay on it
