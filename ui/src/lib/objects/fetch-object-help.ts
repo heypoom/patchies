@@ -2,6 +2,7 @@ import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
+import { HELP_PATCHES_AVAILABLE } from './help-patches-manifest';
 
 // Register only the languages we need for help docs
 hljs.registerLanguage('javascript', javascript);
@@ -40,18 +41,16 @@ export async function fetchObjectHelp(
   objectType: string,
   customFetch: FetchFn = fetch
 ): Promise<ObjectHelpContent> {
-  const [markdownRes, helpPatchRes] = await Promise.all([
-    customFetch(`/content/objects/${objectType}.md`)
-      .then((res) => (res.ok ? res.text() : null))
-      .catch(() => null),
-    customFetch(`/help-patches/${objectType}.json`, { method: 'HEAD' })
-      .then((res) => res.ok)
-      .catch(() => false)
-  ]);
+  // Check manifest instead of making HEAD request (avoids 404 errors)
+  const hasHelpPatch = HELP_PATCHES_AVAILABLE.has(objectType);
+
+  const markdownRes = await customFetch(`/content/objects/${objectType}.md`)
+    .then((res) => (res.ok ? res.text() : null))
+    .catch(() => null);
 
   return {
     markdown: markdownRes,
     htmlContent: markdownRes ? (marked.parse(markdownRes) as string) : null,
-    hasHelpPatch: helpPatchRes
+    hasHelpPatch
   };
 }

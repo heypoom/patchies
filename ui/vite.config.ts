@@ -12,6 +12,7 @@ import topLevelAwait from 'vite-plugin-top-level-await';
 import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
 
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import { helpPatchesManifest } from './vite-plugin-help-patches-manifest';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -30,6 +31,7 @@ export function viteStaticCopyPyodide() {
 
 export default defineConfig({
   plugins: [
+    helpPatchesManifest(),
     wasm(),
     topLevelAwait(),
     bundleAudioWorkletPlugin(),
