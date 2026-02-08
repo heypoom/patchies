@@ -12,15 +12,15 @@ Try it out at [patchies.app](https://patchies.app) - it's open source and free t
 
 Patchies lets you use the audio, visual and computational tools and libraries that you know (and love!), together in one place. For example:
 
-- Create interactive graphics with [P5.js](#p5-creates-a-p5js-sketch), [Three.js](#three-and-threedom-creates-threejs-3d-graphics), [HTML5 Canvas](#canvasdom-creates-a-javascript-canvas-main-thread) and [Textmode.js](#textmode-and-textmodedom-creates-asciitext-mode-graphics)
-- Synthesize and process video with [Hydra](#hydra-creates-a-hydra-video-synthesizer) and [GLSL shaders](#glsl-creates-a-glsl-fragment-shader)
-- Live code music with [Strudel](#strudel-strudel-music-environment), [ChucK](#chuck-creates-a-chuck-audio-programming-environment), [SuperSonic](#sonic-supercollider-synthesis-engine) and [Orca](#orca-orca-livecoding-sequencer)
-- Synthesize and process audio with [Web Audio](#audio-objects) nodes, [Tone.js](#tone-tonejs-synthesis-and-processing) and [Elementary Audio](#elem-elementary-audio-synthesis-and-processing)
-- Run programs and games on the [Uxn](#uxn-uxn-virtual-machine) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) assembly.
-- Compute like a caveman with [stack machine assembly](#asm-virtual-stack-machine-assembly-interpreter), or like a wizard with [Ruby](#ruby-creates-a-ruby-code-environment) and [Python](#python-creates-a-python-code-environment)
-- Connect to the outside world with [MIDI](#midi--network-objects), [MQTT](#mqtt-mqtt-client), [SSE](#sse-server-sent-events), [WebRTC](#netsend-and-netrecv-send-and-receive-messages-over-network), [Iframe](#iframe-embed-web-content) and [VDO.Ninja](#vdoninja-send-and-receive-audio-video-and-messages-over-webrtc).
-- Manage [data and control flow](#programming--control-objects) with [js](#js-a-javascript-code-block), [expr](#expr-expression-evaluator), [filter](#filter-conditional-message-passing), [map](#map-transform-messages-with-javascript), [iframe](#iframe-embed-web-content), [spigot](#control-objects), [trigger](#trigger-sends-messages-in-right-to-left-order), select, metro and more.
-- Use [built-in widgets](#interface--control-objects) or make your own with [Vue.js](#vue-create-user-interfaces-with-vue), [DOM API](#dom-create-user-interfaces-with-vanilla-js), [Tailwind](https://tailwindcss.com) or any library you like.
+- Create interactive graphics with [P5.js](https://patchies.app/docs/objects/p5), [Three.js](https://patchies.app/docs/objects/three), [HTML5 Canvas](https://patchies.app/docs/objects/canvas) and [Textmode.js](https://patchies.app/docs/objects/textmode)
+- Synthesize and process video with [Hydra](https://patchies.app/docs/objects/hydra) and [GLSL shaders](https://patchies.app/docs/objects/glsl)
+- Live code music with [Strudel](https://patchies.app/docs/objects/strudel), [ChucK](https://patchies.app/docs/objects/chuck~), [SuperSonic](https://patchies.app/docs/objects/sonic~) and [Orca](https://patchies.app/docs/objects/orca)
+- Synthesize and process audio with [Web Audio](https://patchies.app/docs/audio-chaining) nodes, [Tone.js](https://patchies.app/docs/objects/tone~) and [Elementary Audio](https://patchies.app/docs/objects/elem~)
+- Run programs and games on the [Uxn](https://patchies.app/docs/objects/uxn) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) assembly.
+- Compute like a caveman with [stack machine assembly](https://patchies.app/docs/objects/asm), or like a wizard with [Ruby](https://patchies.app/docs/objects/ruby) and [Python](https://patchies.app/docs/objects/python)
+- Connect to the outside world with [MIDI](https://patchies.app/docs/objects/midi.in), [MQTT](https://patchies.app/docs/objects/mqtt), [SSE](https://patchies.app/docs/objects/sse), [WebRTC](https://patchies.app/docs/objects/netsend), [Iframe](https://patchies.app/docs/objects/iframe) and [VDO.Ninja](https://patchies.app/docs/objects/vdo.ninja.push).
+- Manage [data and control flow](https://patchies.app/docs/message-passing) with [js](https://patchies.app/docs/objects/js), [expr](https://patchies.app/docs/objects/expr), [filter](https://patchies.app/docs/objects/filter), [map](https://patchies.app/docs/objects/map), [iframe](https://patchies.app/docs/objects/iframe), spigot, [trigger](https://patchies.app/docs/objects/trigger), select, metro and more.
+- Use built-in widgets or make your own with [Vue.js](https://patchies.app/docs/objects/vue), [DOM API](https://patchies.app/docs/objects/dom), [Tailwind](https://tailwindcss.com) or any library you like.
 - Use any [third party JavaScript library](https://patchies.app/docs/javascript-runner) via [esm.sh](https://esm.sh).
 
 ## ...by patching them together ✨
