@@ -29,10 +29,24 @@ Try out the presets to get started quickly:
 - Connect the orange outlet of a source object to the orange inlet of a target object
   - Try connecting `p5` → `pipe.hydra` → `pipe.gl` to see visual passthrough in action
 
+## Wireless Video Routing
+
+Connect distant visual objects without cables using named channels.
+
+Create [`send.vdo <channel>`](/docs/objects/send.vdo) and [`recv.vdo <channel>`](/docs/objects/recv.vdo) objects anywhere in your patch. Video frames sent to `send.vdo` appear at matching `recv.vdo` outlets:
+
+```text
+[p5] → [send.vdo main]     ...     [recv.vdo main] → [bg.out]
+```
+
+This is useful for organizing complex video routing or sending video across different parts of a large patch.
+
 ## See Also
 
 - [p5](/docs/objects/p5) - P5.js sketches
 - [hydra](/docs/objects/hydra) - Hydra video synthesizer
 - [glsl](/docs/objects/glsl) - GLSL shaders
+- [send.vdo](/docs/objects/send.vdo) - Send video to named channel
+- [recv.vdo](/docs/objects/recv.vdo) - Receive video from named channel
 - [Audio Chaining](/docs/audio-chaining)
 - [Connection Rules](/docs/connection-rules)

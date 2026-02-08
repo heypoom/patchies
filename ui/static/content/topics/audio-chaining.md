@@ -44,8 +44,22 @@ Use `out~` to output audio to your speakers.
 
 Use `fft~` to analyze the frequency spectrum. See [Audio Reactivity](/docs/audio-reactivity) for using FFT with visual objects.
 
+## Wireless Audio Routing
+
+Connect distant audio objects without cables using named channels.
+
+Create [`send~ <channel>`](/docs/objects/send~) and [`recv~ <channel>`](/docs/objects/recv~) objects anywhere in your patch. Audio sent to `send~` appears at matching `recv~` outlets:
+
+```text
+[osc~ 440] → [send~ synth]     ...     [recv~ synth] → [gain~ 0.5] → [out~]
+```
+
+This is useful for organizing complex audio routing or sending audio across different parts of a large patch.
+
 ## See Also
 
 - [Video Chaining](/docs/video-chaining)
 - [Connection Rules](/docs/connection-rules)
 - [Audio Reactivity](/docs/audio-reactivity)
+- [send~](/docs/objects/send~) - Send audio to named channel
+- [recv~](/docs/objects/recv~) - Receive audio from named channel

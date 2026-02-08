@@ -71,7 +71,7 @@ Connect distant objects without visual cables using named channels.
 
 ### Visual Objects
 
-Create `send foo` and `recv foo` objects anywhere in your patch. Messages sent to the `send` inlet appear at matching `recv` outlets:
+Create [`send <channel>`](/docs/objects/send) and [`recv <channel>`](/docs/objects/recv) objects anywhere in your patch. Messages sent to the `send` inlet appear at matching `recv` outlets:
 
 ```text
 [button] → [send foo]     ...     [recv foo] → [peek]
