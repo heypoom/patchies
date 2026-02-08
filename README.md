@@ -27,7 +27,7 @@ Patchies lets you use the audio, visual and computational tools and libraries th
 
 <img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="700">
 
-> Try out [the above demo](/?id=f4tvzfxk1qr4xr2) which uses P5.js with Hydra to create a random walk shader.
+> Try out [the above demo](https://patchies.app/?id=ng7a8mcxobde7kv&readonly=true) which uses P5.js with Hydra to create a random walk shader.
 
 Patchies is designed to mix textual coding and visual patching, using the best of both worlds. Instead of writing long chunks of code or patching together a huge web of small objects, Patchies encourages you to write small and compact programs and patch 'em together.
 
