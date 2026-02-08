@@ -104,10 +104,12 @@
       <!-- Open Source -->
       <p class="flex items-center gap-1.5 text-xs text-zinc-500">
         <Heart class="h-3.5 w-3.5" />
-        Patchies is built on
-        <a href="#!" class="text-zinc-400 hover:underline" onclick={() => setTab('thanks')}
-          >amazing open source libraries.</a
-        >
+        <span>
+          Patchies is built on
+          <a href="#!" class="text-zinc-400 hover:underline" onclick={() => setTab('thanks')}
+            >amazing open source libraries.</a
+          >
+        </span>
       </p>
     </div>
   </div>
