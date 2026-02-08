@@ -9,6 +9,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
+  import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -27,6 +28,7 @@
 
   // Get flow utilities to update node data
   const { updateNodeData } = useSvelteFlow();
+  const { warnIfNoAudioConnection } = useAudioOutletWarning(nodeId);
 
   let strudelEditor: StrudelEditor | null = null;
   let messageContext: MessageContext;
@@ -130,6 +132,9 @@
       // Clear previous errors on new evaluation
       consoleRef?.clearConsole();
       hasError = false;
+
+      // Warn if audio outlet is not connected
+      warnIfNoAudioConnection();
 
       try {
         strudelEditor.editor.evaluate();
