@@ -37,6 +37,8 @@ This lets you visually see the program's core composition and its in-between res
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
-## Guides & Objects
+## Get Started
 
-See [patchies.app/docs](https://patchies.app/docs) for the usage guides, references and list of objects.
+No installation needed. Open [patchies.app](https://patchies.app) and start patching.
+
+New to Patchies? Check out the [documentation](https://patchies.app/docs) for guides and object references.
