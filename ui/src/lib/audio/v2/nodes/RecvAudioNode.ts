@@ -11,7 +11,7 @@ import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
 export class RecvAudioNode implements AudioNodeV2 {
   static type = 'recv~';
   static aliases = ['r~'];
-  static group: AudioNodeGroup = 'sources';
+  static group: AudioNodeGroup = 'processors';
   static description = 'Receive audio from a named channel';
   static tags = ['audio', 'routing', 'channel', 'wireless'];
 

@@ -198,19 +198,30 @@ When a send/recv node is deleted:
    - `send.md` / `recv.md` - Object documentation
    - `shared-jsrunner.ts` - AI prompts updated
 
-### Phase 3: Audio (`send~` / `recv~`)
+### Phase 3: Audio (`send~` / `recv~`) ✅ COMPLETE
 
-1. **Extend ChannelRegistry**
-   - Add `audioChannels` map
-   - Add `getAudioVirtualEdges()` method
+1. **Create AudioChannelRegistry** (`src/lib/audio/AudioChannelRegistry.ts`) ✅
+   - Separate singleton from MessageChannelRegistry (cleaner separation of concerns)
+   - `subscribe(channel, nodeId, role: 'send' | 'recv')`
+   - `unsubscribe(channel, nodeId)`
+   - `getVirtualEdges()` - returns Edge[] for AudioService
 
-2. **Create audio nodes** (V2 pattern)
-   - `SendAudioNode` - audio inlet, registers as sender
-   - `RecvAudioNode` - audio outlet, pass-through GainNode
-   - Set `shorthand: true` with aliases `s~` / `r~`
+2. **Rename ChannelRegistry to MessageChannelRegistry** ✅
+   - Cleaner naming: `subscribe()` / `unsubscribe()` instead of `subscribeMessage()` / `unsubscribeMessage()`
+   - Updated all consumers: MessageContext, WorkerNodeSystem, SendObject, RecvObject
 
-3. **Integrate with AudioService**
-   - Merge virtual edges in `updateEdges()`
+3. **Create audio nodes** (V2 pattern) ✅
+   - `SendAudioNode` (`src/lib/audio/v2/nodes/SendAudioNode.ts`) - audio inlet, registers as sender
+   - `RecvAudioNode` (`src/lib/audio/v2/nodes/RecvAudioNode.ts`) - audio outlet, pass-through GainNode
+   - Static `aliases` property for `s~` / `r~` shorthands
+
+4. **Add aliases support to AudioRegistry** ✅
+   - Added `aliases?: string[]` to `AudioNodeClass` interface
+   - `register()` now also registers nodes under their aliases
+
+5. **Integrate with AudioService** ✅
+   - `updateEdges()` merges virtual edges from AudioChannelRegistry with real edges
+   - Virtual edges enable wireless audio routing between send~/recv~ pairs
 
 ### Phase 4: Video (`send.vdo` / `recv.vdo`)
 
