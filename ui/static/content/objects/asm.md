@@ -15,7 +15,7 @@ small assembly programs to interact with the world.
 
 ## Documentation
 
-See the [assembly module documentation](https://github.com/poom/patchies/blob/main/modules/vasm/README.md)
+See the [assembly module documentation](https://github.com/heypoom/patchies/blob/main/modules/vasm/README.md)
 for full instruction sets and syntax.
 
 ## Example
