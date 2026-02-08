@@ -38,6 +38,8 @@ export default defineConfig({
     devtoolsJson(),
     viteStaticCopyPyodide(),
     SvelteKitPWA({
+      // EMERGENCY: Unregister broken service worker and clear caches
+      selfDestroying: true,
       registerType: 'autoUpdate',
       manifest: {
         name: 'Patchies',
