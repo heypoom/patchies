@@ -51,7 +51,7 @@ Top-level `await` is supported. Use `await delay(ms)` to pause execution.
 
 ### Audio Analysis
 
-Use `fft()` to get audio frequency data from a connected `fft~` node. See [Audio Analysis](/docs/audio-analysis) for details.
+Use `fft()` to get audio frequency data from a connected `fft~` node. See [Audio Reactivity](/docs/audio-reactivity) for details.
 
 ### LLM Integration
 
@@ -139,5 +139,5 @@ Note: Constants are NOT shared across objects. Each object has its own isolated 
 ## See Also
 
 - [Canvas Interaction Control](/docs/canvas-interaction)
-- [Audio Analysis](/docs/audio-analysis)
+- [Audio Reactivity](/docs/audio-reactivity)
 - [Message Passing](/docs/message-passing)

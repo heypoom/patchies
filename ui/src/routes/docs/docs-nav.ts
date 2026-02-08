@@ -10,8 +10,14 @@ export const categoryOrder = [
 
 // Topic order within each category
 export const topicOrder: Record<string, string[]> = {
-  'Getting Started': ['getting-started', 'creating-objects', 'keyboard-shortcuts'],
-  Connections: ['connecting-objects', 'message-passing'],
+  'Getting Started': [
+    'getting-started',
+    'creating-objects',
+    'browsing-objects',
+    'modifying-objects',
+    'keyboard-shortcuts'
+  ],
+  Connections: ['connecting-objects', 'message-passing', 'hot-cold-inlets'],
   'Audio & Video': ['audio-chaining', 'video-chaining', 'audio-reactivity', 'connection-rules'],
   Scripting: ['javascript-runner', 'canvas-interaction'],
   'Sidebar Features': ['manage-saves', 'manage-presets', 'manage-files', 'manage-packs'],

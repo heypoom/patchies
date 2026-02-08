@@ -7,8 +7,8 @@
     --prose-base: calc(0.9375rem * var(--prose-scale));
     --prose-code: calc(0.875rem * var(--prose-scale));
     --prose-h1: calc(1.5rem * var(--prose-scale));
-    --prose-h2: calc(0.875rem * var(--prose-scale));
-    --prose-h3: calc(1rem * var(--prose-scale));
+    --prose-h2: calc(1.125rem * var(--prose-scale));
+    --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
   .prose-markdown-sm {
@@ -16,8 +16,8 @@
     --prose-base: calc(0.9375rem * var(--prose-scale));
     --prose-code: calc(0.875rem * var(--prose-scale));
     --prose-h1: calc(1.5rem * var(--prose-scale));
-    --prose-h2: calc(0.875rem * var(--prose-scale));
-    --prose-h3: calc(1rem * var(--prose-scale));
+    --prose-h2: calc(1.125rem * var(--prose-scale));
+    --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
   .prose-markdown h1,
@@ -32,9 +32,7 @@
   .prose-markdown-sm h2 {
     font-size: var(--prose-h2);
     font-weight: 600;
-    color: #71717a;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    color: #d4d4d8;
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
   }
@@ -43,7 +41,9 @@
   .prose-markdown-sm h3 {
     font-size: var(--prose-h3);
     font-weight: 500;
-    color: #a1a1aa;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin-top: 1rem;
     margin-bottom: 0.5rem;
   }

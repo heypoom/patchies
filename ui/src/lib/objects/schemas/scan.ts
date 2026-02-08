@@ -14,7 +14,7 @@ export const scanMessages = {
 export const scanSchema: ObjectSchema = {
   type: 'scan',
   category: 'programming',
-  description: 'Accumulate values over time like RxJS scan ($1=acc, $2=input)',
+  description: 'Accumulate values over time ($1=acc, $2=input)',
   inlets: [
     {
       id: 'input',

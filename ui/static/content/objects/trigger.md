@@ -31,4 +31,5 @@ The trigger ensures the value reaches the cold inlet (`$2`) before the bang trig
 
 ## See Also
 
+- [Hot and Cold Inlets](/docs/hot-cold-inlets) - why right-to-left order matters
 - [Message Passing](/docs/message-passing) - how messages flow between objects

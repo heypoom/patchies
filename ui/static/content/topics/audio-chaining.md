@@ -42,10 +42,10 @@ Use these objects to process audio:
 
 Use `out~` to output audio to your speakers.
 
-Use `fft~` to analyze the frequency spectrum. See [Audio Analysis](/docs/audio-analysis) for using FFT with visual objects.
+Use `fft~` to analyze the frequency spectrum. See [Audio Reactivity](/docs/audio-reactivity) for using FFT with visual objects.
 
 ## See Also
 
 - [Video Chaining](/docs/video-chaining)
 - [Connection Rules](/docs/connection-rules)
-- [Audio Analysis](/docs/audio-analysis)
+- [Audio Reactivity](/docs/audio-reactivity)

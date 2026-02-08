@@ -61,6 +61,13 @@ export * from './sonic';
 export * from './csound';
 export * from './dsp';
 export * from './expr-audio';
+export * from './osc';
+export * from './waveshaper';
+export * from './convolver';
+export * from './adsr';
+export * from './asm';
+export * from './wgpu-compute';
+export * from './bg-out';
 
 import type { ObjectSchemaRegistry } from './types';
 import { triggerSchema } from './trigger';
@@ -122,6 +129,13 @@ import { sonicSchema } from './sonic';
 import { csoundSchema } from './csound';
 import { dspSchema } from './dsp';
 import { exprAudioSchema } from './expr-audio';
+import { oscSchema } from './osc';
+import { waveshaperSchema } from './waveshaper';
+import { convolverSchema } from './convolver';
+import { adsrSchema } from './adsr';
+import { asmSchema } from './asm';
+import { wgpuComputeSchema } from './wgpu-compute';
+import { bgOutSchema } from './bg-out';
 
 /**
  * Registry of all object schemas.
@@ -189,7 +203,14 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'sonic~': sonicSchema,
   'csound~': csoundSchema,
   'dsp~': dspSchema,
-  'expr~': exprAudioSchema
+  'expr~': exprAudioSchema,
+  'osc~': oscSchema,
+  'waveshaper~': waveshaperSchema,
+  'convolver~': convolverSchema,
+  adsr: adsrSchema,
+  asm: asmSchema,
+  'wgpu.compute': wgpuComputeSchema,
+  'bg.out': bgOutSchema
 };
 
 /**

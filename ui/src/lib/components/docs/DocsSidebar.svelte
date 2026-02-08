@@ -10,6 +10,7 @@
     PanelLeftClose
   } from '@lucide/svelte/icons';
   import { categoryOrder, topicOrder } from '../../../routes/docs/docs-nav';
+  import DocsSearch from './DocsSearch.svelte';
 
   interface Topic {
     slug: string;
@@ -19,6 +20,7 @@
 
   interface ObjectItem {
     slug: string;
+    title?: string;
   }
 
   interface Props {
@@ -30,8 +32,21 @@
   let { topics, objects, visible = $bindable(true) }: Props = $props();
   let guidesExpanded = $state(true);
   let objectsExpanded = $state(true);
+  let sidebarContainer: HTMLDivElement | undefined = $state();
 
   const currentPath = $derived($page.url.pathname);
+
+  // Auto-scroll to active item on mount/navigation
+  $effect(() => {
+    if (!sidebarContainer || !currentPath) return;
+
+    // Use tick to ensure DOM is updated
+    requestAnimationFrame(() => {
+      const activeItem = sidebarContainer?.querySelector('[data-active="true"]');
+
+      activeItem?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  });
 
   const topicsByCategory = $derived(() => {
     const groups = new Map<string, Topic[]>();
@@ -83,7 +98,10 @@
   class:opacity-0={!visible}
   class:overflow-hidden={!visible}
 >
-  <div class="sticky top-8 max-h-[calc(100vh-4rem)] w-56 overflow-y-auto">
+  <div
+    bind:this={sidebarContainer}
+    class="sticky top-8 max-h-[calc(100vh-4rem)] w-56 overflow-y-auto"
+  >
     <div class="mb-6 flex items-center justify-between">
       <a
         href="/"
@@ -103,10 +121,15 @@
 
     <a
       href="/docs"
-      class="mb-6 block text-lg font-bold text-zinc-100 transition-colors hover:text-white"
+      class="mb-4 block text-lg font-bold text-zinc-100 transition-colors hover:text-white"
     >
       Documentation
     </a>
+
+    <!-- Search -->
+    <div class="mb-6">
+      <DocsSearch {topics} {objects} />
+    </div>
 
     <!-- Topics Section -->
     <div class="mb-6">
@@ -138,6 +161,7 @@
                     <li>
                       <a
                         href="/docs/{topic.slug}"
+                        data-active={isActive}
                         class={[
                           'block rounded px-2 py-1 text-sm transition-colors',
                           isActive
@@ -179,6 +203,7 @@
             <li>
               <a
                 href="/docs/objects/{object.slug}"
+                data-active={isActive}
                 class={[
                   'block rounded px-2 py-1 font-mono text-sm transition-colors',
                   isActive
