@@ -25,9 +25,9 @@ describe('Graph Utils', () => {
 
   it('should topologically sort nodes', () => {
     const nodes = [
-      { id: 'n1', type: 'glsl', inputs: [], outputs: ['n2'], data: {} },
-      { id: 'n2', type: 'glsl', inputs: ['n1'], outputs: ['n3'], data: {} },
-      { id: 'n3', type: 'glsl', inputs: ['n2'], outputs: [], data: {} }
+      { id: 'n1', type: 'glsl', inputs: [], outputs: ['n2'], inletMap: new Map(), data: {} },
+      { id: 'n2', type: 'glsl', inputs: ['n1'], outputs: ['n3'], inletMap: new Map(), data: {} },
+      { id: 'n3', type: 'glsl', inputs: ['n2'], outputs: [], inletMap: new Map(), data: {} }
     ];
 
     const sorted = topologicalSort(nodes);
@@ -36,8 +36,8 @@ describe('Graph Utils', () => {
 
   it('should detect circular dependencies', () => {
     const nodes = [
-      { id: 'n1', type: 'glsl', inputs: ['n2'], outputs: ['n2'], data: {} },
-      { id: 'n2', type: 'glsl', inputs: ['n1'], outputs: ['n1'], data: {} }
+      { id: 'n1', type: 'glsl', inputs: ['n2'], outputs: ['n2'], inletMap: new Map(), data: {} },
+      { id: 'n2', type: 'glsl', inputs: ['n1'], outputs: ['n1'], inletMap: new Map(), data: {} }
     ];
 
     expect(() => topologicalSort(nodes)).toThrow('Circular dependency');

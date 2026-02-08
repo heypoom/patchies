@@ -118,6 +118,7 @@ export type RenderWorkerMessage =
   | { type: 'setDragEnabled'; nodeId: string; dragEnabled: boolean }
   | { type: 'setVideoOutputEnabled'; nodeId: string; videoOutputEnabled: boolean }
   | { type: 'setMouseScope'; nodeId: string; scope: MouseScope }
+  | { type: 'setInteraction'; nodeId: string; mode: string; enabled: boolean }
   | {
       type: 'previewFrameCaptured';
       success: boolean;

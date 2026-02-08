@@ -57,6 +57,8 @@ export class MergeNode implements AudioNodeV2 {
     sourceHandle?: string,
     targetHandle?: string
   ): void {
+    if (!source.audioNode) return;
+
     // For merge~, targetHandle indicates which input channel to connect to
     if (targetHandle) {
       const inputIndex = handleToPortIndex(targetHandle);

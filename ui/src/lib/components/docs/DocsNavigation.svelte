@@ -93,20 +93,23 @@
 
     {#if nextItem()}
       {@const next = nextItem()}
-      <a
-        href={next.href}
-        class="group flex min-w-0 flex-1 flex-col items-end rounded-lg border border-zinc-800 p-4 text-right transition-colors hover:border-zinc-700 hover:bg-zinc-900 sm:items-end"
-      >
-        <span class="mb-1 flex items-center gap-1 text-xs text-zinc-500">
-          Next
-          <ChevronRight class="h-3 w-3" />
-        </span>
-        <span
-          class="truncate text-sm font-medium text-zinc-300 transition-colors group-hover:text-zinc-100"
+
+      {#if next}
+        <a
+          href={next.href}
+          class="group flex min-w-0 flex-1 flex-col items-end rounded-lg border border-zinc-800 p-4 text-right transition-colors hover:border-zinc-700 hover:bg-zinc-900 sm:items-end"
         >
-          {next.title}
-        </span>
-      </a>
+          <span class="mb-1 flex items-center gap-1 text-xs text-zinc-500">
+            Next
+            <ChevronRight class="h-3 w-3" />
+          </span>
+          <span
+            class="truncate text-sm font-medium text-zinc-300 transition-colors group-hover:text-zinc-100"
+          >
+            {next.title}
+          </span>
+        </a>
+      {/if}
     {:else}
       <div class="hidden flex-1 sm:block"></div>
     {/if}

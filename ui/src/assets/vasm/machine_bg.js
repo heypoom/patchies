@@ -1,3 +1,4 @@
+// @ts-nocheck - Auto-generated WASM binding file
 let wasm;
 export function __wbg_set_wasm(val) {
   wasm = val;

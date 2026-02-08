@@ -79,7 +79,7 @@ export function generateUserPath(
   const base = getBasename(filename);
 
   // Determine the prefix - either the target folder or default user://
-  let prefix = VFS_PREFIXES.USER;
+  let prefix: string = VFS_PREFIXES.USER;
   if (targetFolder) {
     // Ensure the folder ends with /
     prefix = targetFolder.endsWith('/') ? targetFolder : `${targetFolder}/`;
