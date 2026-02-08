@@ -374,7 +374,7 @@
         <a
           href={getHelpPatchUrl(currentSchema.type)}
           target="_blank"
-          class="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition-colors hover:bg-blue-500/20"
+          class="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition-colors hover:bg-blue-500/20"
         >
           <Play class="h-3.5 w-3.5" />
           Open Help Patch
