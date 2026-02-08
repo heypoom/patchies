@@ -10,6 +10,7 @@
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { keymap } from '@codemirror/view';
   import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
+  import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
 
   let {
     id: nodeId,
@@ -29,6 +30,7 @@
   let audioService = AudioService.getInstance();
 
   const { updateNodeData } = useSvelteFlow();
+  const { warnIfNoOutletConnection } = useAudioOutletWarning(nodeId);
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
@@ -81,8 +83,17 @@
 
   const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
 
-  const handleAddShred = () => send('add', data.expr);
-  const handleReplace = () => send('replace', data.expr);
+  const handleAddShred = () => {
+    warnIfNoOutletConnection();
+
+    send('add', data.expr);
+  };
+
+  const handleReplace = () => {
+    warnIfNoOutletConnection();
+
+    send('replace', data.expr);
+  };
 
   function subscribeShredsStore() {
     const chuckNode = audioService.getNodeById(nodeId) as ChuckNode | undefined;

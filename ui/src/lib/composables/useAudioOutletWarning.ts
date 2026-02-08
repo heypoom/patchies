@@ -14,6 +14,12 @@ export function useAudioOutletWarning(nodeId: string) {
     return edges.some((edge) => edge.source === nodeId && edge.sourceHandle === 'audio-out');
   }
 
+  function hasAnyOutletConnection(): boolean {
+    const edges = getEdges();
+
+    return edges.some((edge) => edge.source === nodeId);
+  }
+
   function warnIfNoAudioConnection() {
     if (!hasAudioOutletConnection()) {
       toast.warning('Audio outlet not connected', {
@@ -22,8 +28,22 @@ export function useAudioOutletWarning(nodeId: string) {
     }
   }
 
+  /**
+   * Warn only if no outlets (audio or message) are connected.
+   * Use for nodes like ChucK that can be used for analysis (message output only).
+   */
+  function warnIfNoOutletConnection() {
+    if (!hasAnyOutletConnection()) {
+      toast.warning('No outlets connected', {
+        description: 'Connect an audio or message outlet to use output.'
+      });
+    }
+  }
+
   return {
     hasAudioOutletConnection,
-    warnIfNoAudioConnection
+    hasAnyOutletConnection,
+    warnIfNoAudioConnection,
+    warnIfNoOutletConnection
   };
 }

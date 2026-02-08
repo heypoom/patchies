@@ -9,6 +9,7 @@
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { match, P } from 'ts-pattern';
   import type { CsoundNode } from '$lib/audio/v2/nodes/CsoundNode';
+  import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
 
   let {
     id: nodeId,
@@ -28,6 +29,7 @@
   let audioService = AudioService.getInstance();
 
   const { updateNodeData } = useSvelteFlow();
+  const { warnIfNoAudioConnection } = useAudioOutletWarning(nodeId);
 
   const getCsoundNode = () => audioService.getNodeById(nodeId) as CsoundNode | undefined;
 
@@ -45,6 +47,8 @@
   const runCsoundCode = (code: string) => {
     const csoundNode = getCsoundNode();
     if (!csoundNode) return;
+
+    warnIfNoAudioConnection();
 
     csoundNode.resume();
     isPlaying = true;
