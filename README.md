@@ -372,33 +372,7 @@ This allows you to set up multiple values before triggering a computation. Use [
 
 ### `trigger`: sends messages in right-to-left order
 
-The `trigger` object (shorthand: `t`) is essential for controlling message order and working with hot/cold inlets. It sends messages through multiple outlets in **right-to-left order**.
-
-**Usage:** `trigger <type1> <type2> ...` or `t <type1> <type2> ...`
-
-**Type specifiers:**
-
-- `b` or `bang`: Always sends `{type: 'bang'}`
-- `a` or `any`: Passes the input unchanged
-- `n` or `f` or `number` or `float`: Passes only if input is a number
-- `l` or `list`: Passes only if input is an array
-- `o` or `object`: Passes only if input is a plain object (not array)
-- `s` or `symbol`: Passes only if input is a string, an object with a `type` key, or a js `Symbol` object
-- `t`, `text`, `str` or `string`: Passes only if input is a string
-
-**Example:** `t b n` creates two outlets. When it receives the number `42`:
-
-1. First, outlet 1 (right) sends `42`
-2. Then, outlet 0 (left) sends `{type: 'bang'}`
-
-This right-to-left order is crucial for setting up cold inlets before triggering hot inlets. For example, to properly update an `expr $1 + $2` object:
-
-```text
-[slider] ──┬──► [t b a] ──► outlet 0 (bang) ──► expr inlet 0 (hot, triggers output)
-           │           └──► outlet 1 (value) ──► expr inlet 1 (cold, stores value)
-```
-
-The trigger ensures the value reaches the cold inlet (`$2`) before the bang triggers the hot inlet (`$1`).
+See [trigger documentation](https://patchies.app/docs/objects/trigger) for type specifiers, examples, and hot/cold inlet patterns.
 
 ### `vue`: create user interfaces with Vue
 
@@ -552,72 +526,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
 ### `button`: a simple button
 
-- Sends the `bang` message when clicked.
-- Messages:
-  - `any`: flashes the button when it receives any message, and outputs the `bang` message out.
+See [button documentation](https://patchies.app/docs/objects/button) for details.
 
 ### `toggle`: a toggle button
 
-- Sends the `true` (on) and `false` (off) message when clicked.
-- Messages:
-  - `bang`: flips the state of the button
+See [toggle documentation](https://patchies.app/docs/objects/toggle) for details.
 
 ### `msg`: message object
 
-- Store and send predefined messages.
-- Click to send the stored message to connected objects.
-- Good for triggering sequences or sending configuration data.
-- You can hit `Enter` and type `m <message>` to create a `msg` object with the given message.
-  - Example: `m start` creates a `msg` object that sends `start` when clicked.
-- Message format:
-  - Bare strings (e.g. `hello` or `start`) are sent as **objects with type field**: i.e. `{type: 'hello'}` or `{type: 'start'}`
-  - Quoted strings (e.g. `"hello"`) are sent as **JS strings**: `"hello"`
-  - Numbers (e.g. `100`) are sent as **numbers**: `100`
-  - JSON objects (e.g. `{foo: 'bar'}`) are sent **as-is**: `{foo: 'bar'}`
-  - You can use the [JSON5 syntax](https://json5.org) to create the JSON objects.
-- Examples
-  - `bang` sends `{type: 'bang'}` object - this is what `button` does when you click it
-  - `start` sends `{type: 'start'}` object
-  - `'hello world'` or `"hello world"` sends the string `'hello world'`
-  - `100` sends the number `100`
-  - `{x: 1, y: 2}` sends the object `{x: 1, y: 2}`
-- Messages:
-  - `bang`: outputs the message without storing a new value
-  - `{type: 'set', value: <value>}`: sets the message without triggering output
-
-#### Placeholders and hot/cold inlets
-
-You can use placeholders from `$1` - `$9` to send messages with stored variables. This is very helpful if you have a message like `{type: 'noteOn', note: $1, velocity: 100}` and you need the note to be dynamic.
-
-<img src="./docs/images/message-placeholder.webp" alt="Patchies.app message box placeholders" width="700">
-
-The `msg` object follows the Max and Pd convention of **hot** and **cold** inlets:
-
-- **No placeholders**: A single inlet that triggers output on any message (bang or value).
-- **1 placeholder (`$1`)**: A single hot inlet. Sending a value stores it as `$1` and triggers output. Sending a bang triggers output with the current stored value.
-- **2+ placeholders (`$1`, `$2`, etc.)**: First inlet is hot (`$1`), rest are cold (`$2`, `$3`, etc.). Cold inlets store values without triggering. Send values to cold inlets first, then trigger via the hot inlet. Use [the trigger object](#trigger-sends-messages-in-right-to-left-order) to do this.
+See [msg documentation](https://patchies.app/docs/objects/msg) for message format, placeholders, and hot/cold inlets.
 
 ### `slider`: numerical value slider
 
-- Continuous value control with customizable range.
-- Perfect for real-time parameter adjustment.
-- Outputs numeric values that can control other objects.
-- Hit `Enter` and type in these short commands to create sliders with specific ranges:
-  - `slider <min> <max>`: integer slider control. example: `slider 0 100`
-  - `fslider <min> <max>`: floating-point slider control. example: `fslider 0.0 1.0`. `fslider` defaults to `-1.0` to `1.0` range if no arguments are given.
-  - `vslider <min> <max>`: vertical integer slider control. example: `vslider -50 50`
-  - `vfslider <min> <max>`: vertical floating-point slider control. example: `vfslider -1.0 1.0`. `vfslider` defaults to `-1.0` to `1.0` range if no arguments are given.
-- Messages:
-  - `bang`: outputs the current slider value
-  - `number`: sets the slider to the given number within the range and outputs the value
-- When a patch is loaded, the slider will output its current value automatically 100ms after the patch loads.
+See [slider documentation](https://patchies.app/docs/objects/slider) for shorthand commands and messages.
 
 ### `textbox`: multi-line text input
 
-- Create a multi-line textbox for user input.
-- Messages:
-  - `bang`: outputs the current text
-  - `string`: sets the text to the given string
+See [textbox documentation](https://patchies.app/docs/objects/textbox) for details.
 
 ### Audio & Music Objects
 
