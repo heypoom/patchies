@@ -45,13 +45,12 @@ Try out these presets to get started:
 
 ## Audio Reactivity
 
-Use the `fft()` function to get audio analysis data. See the [Audio Reactivity](/docs/audio-reactivity) topic for details.
+Patchies does NOT use standard Hydra audio reactivity APIs like `a.fft[0]`.
 
-**Important**: Patchies does NOT use standard Hydra audio reactivity APIs like `a.fft[0]`. Instead, use `fft()` inside arrow functions:
+Instead, use `fft()` inside arrow functions to get the FFT data. Hydra **must** be connected to a [fft~](/docs/objects/fft~) object. See the [Audio Reactivity](/docs/audio-reactivity) topic.
 
 ```javascript
-osc(() => fft(0) * 60)
-  .out()
+osc(() => fft().getEnergy('bass') / 255).out()
 ```
 
 ## Resources
