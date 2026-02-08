@@ -172,21 +172,31 @@ When a send/recv node is deleted:
 3. **Cleanup** ✅
    - `RecvObject.destroy()` calls `ChannelRegistry.unsubscribeMessage()`
 
-### Phase 2: JavaScript API
+### Phase 2: JavaScript API ✅ COMPLETE
 
-1. **Update JSRunner**
-   - Add `send(message, { channel: string })` overload
-   - Add `recv(callback, { channel: string })` for channel subscriptions
-   - Cleanup subscriptions on node destroy
+1. **Update MessageContext** (`src/lib/messages/MessageContext.ts`) ✅
+   - `send(data, { channel })` broadcasts via ChannelRegistry
+   - `recv(callback, { channel })` subscribes to ChannelRegistry
+   - `clearChannelSubscriptions()` cleans up on code re-execution
+   - Channel subscriptions tracked in `channelSubscriptions` Set
 
-2. **Update other contexts**
-   - Worker context (`DirectChannelService` integration)
-   - Hydra context
-   - P5 context
-   - Canvas context
+2. **Update Worker context** (`src/workers/js/jsWorker.ts`) ✅
+   - `send(data, { channel })` posts `sendToChannel` to main thread
+   - `recv(callback, { channel })` posts `subscribeChannel` to main thread
+   - `channelCallbacks` Map tracks per-channel callbacks
+   - Cleanup posts `unsubscribeChannel` on code re-execution
 
-3. **Update completions**
-   - Add channel option to `patchies-completions.ts`
+3. **Update WorkerNodeSystem** (`src/lib/js-runner/WorkerNodeSystem.ts`) ✅
+   - Handles `sendToChannel` → broadcasts via ChannelRegistry
+   - Handles `subscribeChannel` → subscribes and forwards `channelMessage` to worker
+   - Handles `unsubscribeChannel` → cleans up subscription
+   - `workerChannelSubscriptions` Map tracks subscriptions per worker for cleanup
+
+4. **Update documentation** ✅
+   - `javascript-runner.md` - Added Named Channels section
+   - `message-passing.md` - Added Named Channels section
+   - `send.md` / `recv.md` - Object documentation
+   - `shared-jsrunner.ts` - AI prompts updated
 
 ### Phase 3: Audio (`send~` / `recv~`)
 
