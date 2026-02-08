@@ -18,6 +18,7 @@
     FolderInput,
     Ellipsis
   } from '@lucide/svelte/icons';
+  import SearchBar from './SearchBar.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Dialog from '$lib/components/ui/dialog';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -50,6 +51,60 @@
   }
 
   let expandedPaths = $state(loadExpandedPaths());
+  let searchQuery = $state('');
+
+  // Search result type for flat display
+  type SearchResult = {
+    libraryId: string;
+    library: PresetLibrary;
+    path: PresetPath;
+    name: string;
+    preset: Preset;
+  };
+
+  // Flatten and filter presets for search
+  const searchResults = $derived.by((): SearchResult[] => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+
+    const results: SearchResult[] = [];
+
+    function collectPresets(
+      libraryId: string,
+      library: PresetLibrary,
+      folder: PresetFolder,
+      currentPath: PresetPath
+    ) {
+      for (const [name, entry] of Object.entries(folder)) {
+        if (isPreset(entry)) {
+          // It's a preset - check if name matches
+          if (name.toLowerCase().includes(query)) {
+            results.push({
+              libraryId,
+              library,
+              path: [...currentPath, name],
+              name,
+              preset: entry
+            });
+          }
+        } else {
+          // It's a folder - recurse
+          collectPresets(libraryId, library, entry as PresetFolder, [...currentPath, name]);
+        }
+      }
+    }
+
+    for (const library of $presetLibraryStore) {
+      collectPresets(library.id, library, library.presets, []);
+    }
+
+    // Sort: user libraries first (readonly=false), built-in last (readonly=true)
+    return results.sort((a, b) => {
+      if (a.library.readonly === b.library.readonly) return 0;
+
+      return a.library.readonly ? 1 : -1;
+    });
+  });
 
   // Persist expanded paths changes
   $effect(() => {
@@ -826,11 +881,64 @@
   tabindex="0"
   onkeydown={handleTreeKeydown}
 >
+  <!-- Search bar -->
+  <SearchBar bind:value={searchQuery} placeholder="Search presets..." />
+
   <!-- Libraries -->
   <div class="flex-1 overflow-y-auto py-1 {$isMobile && selectedPresetPath ? 'pb-14' : ''}">
-    {#each $presetLibraryStore as library}
-      {@render libraryNode(library)}
-    {/each}
+    {#if searchQuery.trim()}
+      <!-- Flat search results -->
+      {#if searchResults.length === 0}
+        <div class="px-4 py-8 text-center text-xs text-zinc-500">
+          No presets matching "{searchQuery}"
+        </div>
+      {:else}
+        {#each searchResults as result}
+          {@const isSelected =
+            selectedPresetPath &&
+            selectedPresetPath.libraryId === result.libraryId &&
+            selectedPresetPath.path.join('/') === result.path.join('/')}
+
+          {@const typeIcon = getPresetTypeIcon(result.preset.type)}
+
+          <button
+            class="flex w-full cursor-pointer items-center gap-1.5 py-1 pl-2 text-left text-xs {isSelected
+              ? 'bg-blue-900/40 hover:bg-blue-900/50'
+              : 'hover:bg-zinc-800'}"
+            draggable="true"
+            ondragstart={(e) =>
+              handleEntryDragStart(
+                e,
+                result.libraryId,
+                result.path,
+                result.preset,
+                false,
+                !result.library.readonly
+              )}
+            ondragend={handleDragEnd}
+            onclick={() => {
+              if (isSelected) {
+                selectedPresetPath = null;
+              } else {
+                selectPreset(result.libraryId, result.path, result.preset);
+              }
+            }}
+          >
+            <Blocks class="h-3.5 w-3.5 shrink-0 {typeIcon.color}" />
+            <span class="truncate font-mono text-zinc-300">{result.name}</span>
+            <span class="ml-auto truncate pr-2 text-[10px] text-zinc-600">
+              {result.library.name}{result.path.length > 1
+                ? '/' + result.path.slice(0, -1).join('/')
+                : ''}
+            </span>
+          </button>
+        {/each}
+      {/if}
+    {:else}
+      {#each $presetLibraryStore as library}
+        {@render libraryNode(library)}
+      {/each}
+    {/if}
   </div>
 
   <!-- Footer actions -->

@@ -24,6 +24,7 @@
     FolderInput,
     Ellipsis
   } from '@lucide/svelte/icons';
+  import SearchBar from './SearchBar.svelte';
   import { VirtualFilesystem, getLocalProvider, guessMimeType } from '$lib/vfs';
   import { parseVFSPath, isVFSFolder, isLocalFolder, type VFSEntry } from '$lib/vfs/types';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -65,6 +66,83 @@
   }
 
   let expandedPaths = $state(loadExpandedPaths());
+  let searchQuery = $state('');
+
+  // Search result type for flat display
+  type FileSearchResult = {
+    path: string;
+    name: string;
+    entry?: VFSEntry;
+    isLinked?: boolean;
+    linkedHandle?: FileSystemHandle;
+  };
+
+  // Flatten and filter files for search (including linked folder contents)
+  const searchResults = $derived.by((): FileSearchResult[] => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    const results: FileSearchResult[] = [];
+
+    // Search through VFS entries
+    for (const [path, entry] of $vfsEntries) {
+      // Skip folders, only show files
+      if (isVFSFolder(entry)) continue;
+
+      const parsed = parseVFSPath(path);
+      if (!parsed) continue;
+
+      const filename = parsed.segments[parsed.segments.length - 1] || '';
+      if (filename.toLowerCase().includes(query)) {
+        results.push({
+          path,
+          name: filename,
+          entry
+        });
+      }
+    }
+
+    // Search through linked folder contents (only root-level linked folders to avoid duplicates)
+    // Root linked folders are direct children of user:// (e.g., user://my-folder, not user://my-folder/subdir)
+    for (const [folderPath, contents] of localFolderContents) {
+      // Only process if this is a root linked folder (no nested slashes after user://)
+      const pathAfterPrefix = folderPath.replace('user://', '');
+
+      if (!pathAfterPrefix.includes('/')) {
+        collectLinkedFiles(folderPath, contents, query, results);
+      }
+    }
+
+    return results;
+  });
+
+  // Recursively collect files from linked folder contents
+  function collectLinkedFiles(
+    parentPath: string,
+    contents: Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>,
+    query: string,
+    results: FileSearchResult[]
+  ) {
+    for (const item of contents) {
+      const itemPath = `${parentPath}/${item.name}`;
+
+      if (item.kind === 'file') {
+        if (item.name.toLowerCase().includes(query)) {
+          results.push({
+            path: itemPath,
+            name: item.name,
+            isLinked: true,
+            linkedHandle: item.handle
+          });
+        }
+      } else {
+        // Check if we have cached contents for this subdirectory
+        const subdirContents = localFolderContents.get(itemPath);
+        if (subdirContents) {
+          collectLinkedFiles(itemPath, subdirContents, query, results);
+        }
+      }
+    }
+  }
 
   // Persist expanded paths changes
   $effect(() => {
@@ -1242,20 +1320,57 @@
   {/if}
 {/snippet}
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div
-  class="py-2 outline-none {dropTargetPath === 'user://' &&
-  (!tree.children || tree.children.size === 0)
-    ? 'bg-blue-600/30'
-    : ''} {$isMobile && selectedFilePath ? 'pb-14' : ''}"
-  tabindex="0"
-  role="tree"
-  onkeydown={handleKeydown}
-  ondragover={handleTreeDragOver}
-  ondragleave={handleFolderDragLeave}
-  ondrop={handleFolderDrop}
->
-  {@render treeNode(tree)}
+<div class="flex h-full flex-col">
+  <!-- Search bar -->
+  <SearchBar bind:value={searchQuery} placeholder="Search files..." />
+
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
+    class="flex-1 overflow-y-auto py-2 outline-none {dropTargetPath === 'user://' &&
+    (!tree.children || tree.children.size === 0)
+      ? 'bg-blue-600/30'
+      : ''} {$isMobile && selectedFilePath ? 'pb-14' : ''}"
+    tabindex="0"
+    role="tree"
+    onkeydown={handleKeydown}
+    ondragover={handleTreeDragOver}
+    ondragleave={handleFolderDragLeave}
+    ondrop={handleFolderDrop}
+  >
+    {#if searchQuery.trim()}
+      <!-- Flat search results -->
+      {#if searchResults.length === 0}
+        <div class="px-4 py-8 text-center text-xs text-zinc-500">
+          No files matching "{searchQuery}"
+        </div>
+      {:else}
+        {#each searchResults as result}
+          {@const isSelected = selectedPaths.has(result.path)}
+          {@const mimeType = result.entry ? result.entry.mimeType : guessMimeType(result.name)}
+          {@const fileIcon = getFileIcon(mimeType)}
+          <button
+            class="flex w-full cursor-pointer items-center gap-1.5 py-1 pl-2 text-left text-xs {isSelected
+              ? 'bg-blue-900/40 hover:bg-blue-900/50'
+              : 'hover:bg-zinc-800'}"
+            draggable="true"
+            ondragstart={(e) => {
+              e.dataTransfer?.setData('application/x-vfs-path', result.path);
+              e.dataTransfer?.setData('text/plain', result.path);
+              if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = result.isLinked ? 'copy' : 'copyMove';
+              }
+            }}
+            onclick={() => toggleSelected(result.path)}
+          >
+            <fileIcon.icon class="h-3.5 w-3.5 shrink-0 {fileIcon.color}" />
+            <span class="truncate font-mono text-zinc-300">{result.name}</span>
+          </button>
+        {/each}
+      {/if}
+    {:else}
+      {@render treeNode(tree)}
+    {/if}
+  </div>
 </div>
 
 <!-- Mobile floating toolbar -->
