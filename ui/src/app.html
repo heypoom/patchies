@@ -81,6 +81,11 @@
         document.body.classList.add('app-loaded');
       }
 
+      // Docs pages are prerendered - no need for spinner
+      if (window.location.pathname.startsWith('/docs/')) {
+        hideLoader();
+      }
+
       // Wait for window load (all resources including JS bundles)
       window.addEventListener('load', () => {
         // Poll for actual patcher content to ensure route is loaded
