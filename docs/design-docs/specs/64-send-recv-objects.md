@@ -225,13 +225,13 @@ When a send/recv node is deleted:
 
 ### Phase 4: Video (`send.vdo` / `recv.vdo`)
 
-1. **Extend ChannelRegistry**
-   - Add `videoChannels` map
-   - Add `getVideoVirtualEdges()` method
+1. **Add AudioChannelRegistry**
+   - `videoChannels` map
+   - `getVideoVirtualEdges()` method
 
 2. **Create video nodes**
-   - `SendVdoNode` - video inlet, registers as sender
-   - `RecvVdoNode` - video outlet, passes through FBO
+   - `SendVideoNode` (send.vdo) - video inlet, registers as sender
+   - `RecvVideoNode` (recv.vdo) - video outlet, passes through FBO
    - Set `shorthand: true` with aliases `sv` / `rv`
 
 3. **Integrate with GLSystem / fboRenderer**
