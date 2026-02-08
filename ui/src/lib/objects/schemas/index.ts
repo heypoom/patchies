@@ -68,6 +68,31 @@ export * from './adsr';
 export * from './asm';
 export * from './wgpu-compute';
 export * from './bg-out';
+export * from './gain';
+export * from './lowpass';
+export * from './highpass';
+export * from './bandpass';
+export * from './allpass';
+export * from './notch';
+export * from './lowshelf';
+export * from './highshelf';
+export * from './peaking';
+export * from './compressor';
+export * from './pan';
+export * from './delay-audio';
+export * from './sig';
+export * from './fft';
+export * from './mic';
+export * from './out';
+export * from './split';
+export * from './merge';
+export * from './add';
+export * from './mtof';
+export * from './debounce';
+export * from './throttle';
+export * from './spigot';
+export * from './uniqby';
+export * from './webmidilink';
 
 import type { ObjectSchemaRegistry } from './types';
 import { triggerSchema } from './trigger';
@@ -136,6 +161,31 @@ import { adsrSchema } from './adsr';
 import { asmSchema } from './asm';
 import { wgpuComputeSchema } from './wgpu-compute';
 import { bgOutSchema } from './bg-out';
+import { gainSchema } from './gain';
+import { lowpassSchema } from './lowpass';
+import { highpassSchema } from './highpass';
+import { bandpassSchema } from './bandpass';
+import { allpassSchema } from './allpass';
+import { notchSchema } from './notch';
+import { lowshelfSchema } from './lowshelf';
+import { highshelfSchema } from './highshelf';
+import { peakingSchema } from './peaking';
+import { compressorSchema } from './compressor';
+import { panSchema } from './pan';
+import { delayAudioSchema } from './delay-audio';
+import { sigSchema } from './sig';
+import { fftSchema } from './fft';
+import { micSchema } from './mic';
+import { outSchema } from './out';
+import { splitSchema } from './split';
+import { mergeSchema } from './merge';
+import { addSchema } from './add';
+import { mtofSchema } from './mtof';
+import { debounceSchema } from './debounce';
+import { throttleSchema } from './throttle';
+import { spigotSchema } from './spigot';
+import { uniqbySchema } from './uniqby';
+import { webmidilinkSchema } from './webmidilink';
 
 /**
  * Registry of all object schemas.
@@ -210,7 +260,32 @@ export const objectSchemas: ObjectSchemaRegistry = {
   adsr: adsrSchema,
   asm: asmSchema,
   'wgpu.compute': wgpuComputeSchema,
-  'bg.out': bgOutSchema
+  'bg.out': bgOutSchema,
+  'gain~': gainSchema,
+  'lowpass~': lowpassSchema,
+  'highpass~': highpassSchema,
+  'bandpass~': bandpassSchema,
+  'allpass~': allpassSchema,
+  'notch~': notchSchema,
+  'lowshelf~': lowshelfSchema,
+  'highshelf~': highshelfSchema,
+  'peaking~': peakingSchema,
+  'compressor~': compressorSchema,
+  'pan~': panSchema,
+  'delay~': delayAudioSchema,
+  'sig~': sigSchema,
+  'fft~': fftSchema,
+  'mic~': micSchema,
+  'out~': outSchema,
+  'split~': splitSchema,
+  'merge~': mergeSchema,
+  '+~': addSchema,
+  mtof: mtofSchema,
+  debounce: debounceSchema,
+  throttle: throttleSchema,
+  spigot: spigotSchema,
+  uniqby: uniqbySchema,
+  webmidilink: webmidilinkSchema
 };
 
 /**
