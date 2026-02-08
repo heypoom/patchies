@@ -21,10 +21,11 @@ The Help panel in the sidebar provides quick reference for any object in your pa
 
 Some objects have interactive help patches that demonstrate usage. Click **Open Help Patch** to load an example you can play with.
 
-## Quick Access
+## Object Browser Help
 
-- Right-click any object and select **Help** from the context menu
-- In the Object Browser, click the **?** icon on any object card
+![Object browser help modal](/content/images/object-browser-help.webp)
+
+Enable the **?** help toggle to browse object documentation in the sidebar instead of inserting.
 
 ## See Also
 

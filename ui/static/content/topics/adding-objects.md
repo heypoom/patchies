@@ -20,7 +20,6 @@ There are two ways to add objects to your canvas: quick add and the object brows
 - Objects and presets are grouped by [packs](/docs/manage-packs), with searchable names and descriptions
 - Click to insert an object or preset — pick one at random and see what it can do!
 - If you search for disabled objects, a suggestion to enable relevant packs will appear
-- `Help` button opens the in-app object references in the sidebar for the clicked object.
 
 ## Presets
 

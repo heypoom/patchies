@@ -4,7 +4,7 @@ export const categoryOrder = [
   'Connections',
   'Audio & Video',
   'Scripting',
-  'Sidebar Features',
+  'Sidebar',
   'Other'
 ];
 
@@ -19,13 +19,7 @@ export const topicOrder: Record<string, string[]> = {
   Connections: ['connecting-objects', 'message-passing', 'hot-cold-inlets'],
   'Audio & Video': ['audio-chaining', 'video-chaining', 'audio-reactivity', 'connection-rules'],
   Scripting: ['javascript-runner', 'canvas-interaction'],
-  'Sidebar Features': [
-    'manage-saves',
-    'manage-presets',
-    'manage-files',
-    'manage-packs',
-    'in-app-help'
-  ],
+  Sidebar: ['manage-saves', 'manage-presets', 'manage-files', 'manage-packs', 'in-app-help'],
   Other: [
     'sharing-links',
     'offline-usage',
