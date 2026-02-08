@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { match } from 'ts-pattern';
 
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
@@ -64,7 +65,7 @@ export class RecvObject implements TextObjectV2 {
   }
 
   private getChannel(): string {
-    const channel = this.context.getParam(0);
+    const channel = this.context.getParam('channel');
     return typeof channel === 'string' && channel.length > 0 ? channel : 'foo';
   }
 
@@ -80,11 +81,13 @@ export class RecvObject implements TextObjectV2 {
   }
 
   onMessage(data: unknown, meta: MessageMeta): void {
-    if (meta.inletName === 'channel') {
-      if (typeof data === 'string' || typeof data === 'number') {
-        this.context.setParam(0, String(data));
-      }
-    }
+    match(meta.inletName)
+      .with('channel', () => {
+        if (typeof data === 'string' || typeof data === 'number') {
+          this.context.setParam('channel', String(data));
+        }
+      })
+      .otherwise(() => {});
   }
 
   destroy(): void {
