@@ -42,7 +42,9 @@ export default defineConfig({
     devtoolsJson(),
     viteStaticCopyPyodide(),
     SvelteKitPWA({
-      registerType: 'autoUpdate',
+      // HOTFIX: Self-destroying SW to clean up aggressive caching issues
+      // This generates a SW that unregisters itself and clears all caches
+      selfDestroying: true,
       manifest: {
         name: 'Patchies',
         short_name: 'Patchies',

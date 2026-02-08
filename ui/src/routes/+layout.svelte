@@ -1,16 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { ModeWatcher } from 'mode-watcher';
+  import { unregisterAllServiceWorkers } from '$lib/service-worker/unregister';
+
   import '../app.css';
 
   let { children } = $props();
 
-  onMount(async () => {
-    if ('serviceWorker' in navigator) {
-      const { registerSW } = await import('virtual:pwa-register');
-      registerSW({ immediate: true });
-    }
-  });
+  // HOTFIX: Unregister all service workers to fix aggressive caching issues
+  onMount(() => unregisterAllServiceWorkers());
 </script>
 
 <svelte:head>
