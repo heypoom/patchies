@@ -166,6 +166,10 @@ Document store with auto-generated IDs and simple querying.
 | `count {collection}`              | Count documents in collection         |
 | `drop {collection}`               | Delete entire collection              |
 
+### Collection Auto-Creation
+
+Collections are created automatically on first `insert`. No explicit `createCollection` needed.
+
 ### Query Syntax (v1)
 
 Simple object matching - document must contain all query fields with equal values:
@@ -246,6 +250,7 @@ interface KV {
   keys(): Promise<string[]>;
   clear(): Promise<void>;
   has(key: string): Promise<boolean>;
+  store(name: string): KV; // Get named store instance
 }
 
 // Usage
@@ -269,6 +274,7 @@ interface DB {
   delete(collection: string, id: string): Promise<boolean>;
   count(collection: string): Promise<number>;
   drop(collection: string): Promise<void>;
+  store(name: string): DB; // Get named store instance
 }
 
 // Usage
@@ -280,18 +286,24 @@ await db.delete("notes", id);
 
 ### Named Stores in JSRunner
 
-For named stores, use the store name as argument:
+Use `kv.store()` and `db.store()` to access named stores:
 
 ```javascript
-// In node settings or via runtime config
-// kv("mystore") and db("mydb") for named stores
-
-// Default (unnamed) uses node's internal store
+// Default kv/db use the node's internal store (scoped by nodeId)
 await kv.set("key", value);
+await db.insert("notes", { text: "hello" });
 
-// Named store (if node is configured as [kv mystore])
-// Same kv/db objects, but backed by named store
+// Named stores - shared across nodes with same name
+const shared = kv.store("mystore");
+await shared.set("key", value);
+await shared.get("key");
+
+const sharedDb = db.store("mydb");
+await sharedDb.insert("notes", { text: "hello" });
+await sharedDb.find("notes");
 ```
+
+The `store()` method returns a new KV/DB instance bound to that store name.
 
 ## Lifecycle & Cleanup
 
