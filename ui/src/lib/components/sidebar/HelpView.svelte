@@ -42,8 +42,7 @@
   // Persisted state from store
   const persistedState = $derived($helpViewStore);
   const isLocked = $derived(persistedState.isLocked);
-  const lastViewedType = $derived(persistedState.lastViewedType);
-  const lastViewedTopic = $derived(persistedState.lastViewedTopic);
+  const lastViewed = $derived(persistedState.lastViewed);
   const guidesExpanded = $derived(persistedState.guidesExpanded);
   const objectsExpanded = $derived(persistedState.objectsExpanded);
 
@@ -62,15 +61,17 @@
     if (manualViewingTopic) return null; // Topic takes precedence
     if (manualViewingObject) return manualViewingObject;
 
-    // When locked on a topic, don't show object
-    if (isLocked && lastViewedTopic) return null;
+    // When locked, stay on the persisted item
+    if (isLocked) {
+      if (lastViewed?.type === 'topic') return null;
+      if (lastViewed?.type === 'object') return lastViewed.object;
+    }
 
-    // When locked, stay on the last viewed object
-    if (isLocked && lastViewedType) return lastViewedType;
+    // Selected node takes precedence over persisted state
     if ($selectedNodeInfo?.type) return $selectedNodeInfo.type;
 
-    // When deselected, keep showing the last viewed object
-    if (lastViewedType) return lastViewedType;
+    // Fallback to persisted state when nothing is selected
+    if (lastViewed?.type === 'object') return lastViewed.object;
 
     return null;
   });
@@ -81,21 +82,23 @@
     if (manualViewingTopic) return manualViewingTopic;
 
     // When locked on a topic, stay on it
-    if (isLocked && lastViewedTopic) return lastViewedTopic;
+    if (isLocked && lastViewed?.type === 'topic') return lastViewed.topic;
+
+    // Selected node takes precedence - don't show topic
+    if ($selectedNodeInfo?.type) return null;
+
+    // Fallback to persisted topic when nothing is selected
+    if (lastViewed?.type === 'topic') return lastViewed.topic;
 
     return null;
   });
 
-  // Track last viewed type/topic for persistence
-  $effect(() => {
-    if (viewingObject) {
-      helpViewStore.setLastViewedType(viewingObject);
-    }
-  });
-
+  // Track last viewed for persistence
   $effect(() => {
     if (viewingTopic) {
-      helpViewStore.setLastViewedTopic(viewingTopic);
+      helpViewStore.setLastViewed({ type: 'topic', topic: viewingTopic });
+    } else if (viewingObject) {
+      helpViewStore.setLastViewed({ type: 'object', object: viewingObject });
     }
   });
 

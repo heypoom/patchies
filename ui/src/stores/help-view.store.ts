@@ -2,17 +2,20 @@ import { writable } from 'svelte/store';
 
 const STORAGE_KEY = 'patchies:help-view-state';
 
+export type LastViewed =
+  | { type: 'topic'; topic: string }
+  | { type: 'object'; object: string }
+  | null;
+
 export interface HelpViewState {
-  lastViewedType: string | null;
-  lastViewedTopic: string | null;
+  lastViewed: LastViewed;
   guidesExpanded: boolean;
   objectsExpanded: boolean;
   isLocked: boolean;
 }
 
 const defaultState: HelpViewState = {
-  lastViewedType: null,
-  lastViewedTopic: null,
+  lastViewed: null,
   guidesExpanded: false,
   objectsExpanded: true,
   isLocked: false
@@ -26,8 +29,7 @@ function loadFromStorage(): HelpViewState {
     if (!stored) return defaultState;
     const parsed = JSON.parse(stored);
     return {
-      lastViewedType: parsed.lastViewedType ?? null,
-      lastViewedTopic: parsed.lastViewedTopic ?? null,
+      lastViewed: parsed.lastViewed ?? null,
       guidesExpanded: parsed.guidesExpanded ?? false,
       objectsExpanded: parsed.objectsExpanded ?? true,
       isLocked: parsed.isLocked ?? false
@@ -61,12 +63,8 @@ function createHelpViewStore() {
     set,
     update,
 
-    setLastViewedType(type: string | null) {
-      update((s) => ({ ...s, lastViewedType: type, lastViewedTopic: null }));
-    },
-
-    setLastViewedTopic(topic: string | null) {
-      update((s) => ({ ...s, lastViewedTopic: topic, lastViewedType: null }));
+    setLastViewed(lastViewed: LastViewed) {
+      update((s) => ({ ...s, lastViewed }));
     },
 
     setGuidesExpanded(expanded: boolean) {
