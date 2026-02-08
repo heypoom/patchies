@@ -214,15 +214,7 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
-          port="inlet"
-          type="message"
-          id={nodeId}
-          total={1}
-          index={0}
-          class="nodrag !-top-2"
-          {nodeId}
-        />
+        <StandardHandle port="inlet" type="message" id={nodeId} total={1} index={0} {nodeId} />
 
         <div
           bind:this={editorContainer}
@@ -254,14 +246,7 @@
           </div>
         </div>
 
-        <StandardHandle
-          port="outlet"
-          type="audio"
-          total={1}
-          index={0}
-          class="!-bottom-2"
-          {nodeId}
-        />
+        <StandardHandle port="outlet" type="audio" total={1} index={0} {nodeId} />
       </div>
     </div>
   </div>
