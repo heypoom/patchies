@@ -1,3 +1,5 @@
+import type { TSchema } from '@sinclair/typebox';
+
 /**
  * Data types for node inlets/outlets.
  */
@@ -13,7 +15,22 @@ export type ObjectDataType =
   | 'int[]'
   | 'float[]'
   | 'analysis'
-  | 'marker';
+  | 'marker'
+  | 'symbol';
+
+/**
+ * Message schema definition with TypeBox for validation.
+ */
+export interface InletMessage<T extends TSchema = TSchema> {
+  /** TypeBox schema for runtime validation and type inference */
+  schema: T;
+
+  /** Human-readable description shown in tooltips and docs */
+  description: string;
+
+  /** Optional example of the message */
+  example?: string;
+}
 
 /**
  * Inlet definition for a node.
@@ -22,6 +39,12 @@ export interface ObjectInlet {
   name?: string;
   type?: ObjectDataType;
   description?: string;
+
+  /**
+   * TypeBox message schemas for rich validation and documentation.
+   * When provided, these are used for docs generation and validation.
+   */
+  messages?: InletMessage[];
 
   /** Does this inlet represent an audio parameter in the audio node? **/
   isAudioParam?: boolean;
@@ -58,6 +81,11 @@ export interface ObjectOutlet {
   name?: string;
   type?: ObjectDataType;
   description?: string;
+
+  /**
+   * TypeBox message schemas for documentation.
+   */
+  messages?: InletMessage[];
 }
 
 /**

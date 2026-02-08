@@ -68,33 +68,12 @@ export * from './adsr';
 export * from './asm';
 export * from './wgpu-compute';
 export * from './bg-out';
-export * from './gain';
-export * from './lowpass';
-export * from './highpass';
-export * from './bandpass';
-export * from './allpass';
-export * from './notch';
-export * from './lowshelf';
-export * from './highshelf';
-export * from './peaking';
-export * from './compressor';
-export * from './pan';
-export * from './delay-audio';
-export * from './sig';
-export * from './fft';
-export * from './mic';
-export * from './out';
-export * from './split';
-export * from './merge';
-export * from './add';
-export * from './mtof';
-export * from './debounce';
-export * from './throttle';
-export * from './spigot';
-export * from './uniqby';
-export * from './webmidilink';
+export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
+import { schemaFromNode } from './from-v2-node';
+
+// Manual schema imports (for visual/UI objects that don't have V2 classes)
 import { triggerSchema } from './trigger';
 import { p5Schema } from './p5';
 import { hydraSchema } from './hydra';
@@ -161,37 +140,44 @@ import { adsrSchema } from './adsr';
 import { asmSchema } from './asm';
 import { wgpuComputeSchema } from './wgpu-compute';
 import { bgOutSchema } from './bg-out';
-import { gainSchema } from './gain';
-import { lowpassSchema } from './lowpass';
-import { highpassSchema } from './highpass';
-import { bandpassSchema } from './bandpass';
-import { allpassSchema } from './allpass';
-import { notchSchema } from './notch';
-import { lowshelfSchema } from './lowshelf';
-import { highshelfSchema } from './highshelf';
-import { peakingSchema } from './peaking';
-import { compressorSchema } from './compressor';
-import { panSchema } from './pan';
-import { delayAudioSchema } from './delay-audio';
-import { sigSchema } from './sig';
-import { fftSchema } from './fft';
-import { micSchema } from './mic';
-import { outSchema } from './out';
-import { splitSchema } from './split';
-import { mergeSchema } from './merge';
-import { addSchema } from './add';
-import { mtofSchema } from './mtof';
-import { debounceSchema } from './debounce';
-import { throttleSchema } from './throttle';
-import { spigotSchema } from './spigot';
-import { uniqbySchema } from './uniqby';
-import { webmidilinkSchema } from './webmidilink';
+
+// V2 Audio Node imports (source of truth for audio objects)
+import { AddNodeV2 } from '$lib/audio/v2/nodes/AddNode';
+import { AllpassNode } from '$lib/audio/v2/nodes/AllpassNode';
+import { BandpassNode } from '$lib/audio/v2/nodes/BandpassNode';
+import { CompressorNode } from '$lib/audio/v2/nodes/CompressorNode';
+import { DelayNodeV2 } from '$lib/audio/v2/nodes/DelayNode';
+import { FFTNode } from '$lib/audio/v2/nodes/FFTNode';
+import { GainNodeV2 } from '$lib/audio/v2/nodes/GainNode';
+import { HighpassNode } from '$lib/audio/v2/nodes/HighpassNode';
+import { HighshelfNode } from '$lib/audio/v2/nodes/HighshelfNode';
+import { LowpassNode } from '$lib/audio/v2/nodes/LowpassNode';
+import { LowshelfNode } from '$lib/audio/v2/nodes/LowshelfNode';
+import { MergeNode } from '$lib/audio/v2/nodes/MergeNode';
+import { MicNode } from '$lib/audio/v2/nodes/MicNode';
+import { NotchNode } from '$lib/audio/v2/nodes/NotchNode';
+import { AudioOutputNode } from '$lib/audio/v2/nodes/AudioOutputNode';
+import { PanNodeV2 } from '$lib/audio/v2/nodes/PanNode';
+import { PeakingNode } from '$lib/audio/v2/nodes/PeakingNode';
+import { SigNode } from '$lib/audio/v2/nodes/SigNode';
+import { SplitNode } from '$lib/audio/v2/nodes/SplitNode';
+
+// V2 Text Object imports (source of truth for control objects)
+import { DebounceObject } from '$lib/objects/v2/nodes/DebounceObject';
+import { MtofObject } from '$lib/objects/v2/nodes/MtofObject';
+import { SpigotObject } from '$lib/objects/v2/nodes/SpigotObject';
+import { ThrottleObject } from '$lib/objects/v2/nodes/ThrottleObject';
+import { UniqbyObject } from '$lib/objects/v2/nodes/UniqbyObject';
+import { WebMidiLinkObject } from '$lib/objects/v2/nodes/WebMidiLinkObject';
 
 /**
  * Registry of all object schemas.
- * Add new schemas here as they are created.
+ *
+ * Manual schemas are used for visual/UI objects.
+ * V2 node classes are used as source of truth for audio and control objects.
  */
 export const objectSchemas: ObjectSchemaRegistry = {
+  // Visual/UI objects (manual schemas)
   trigger: triggerSchema,
   p5: p5Schema,
   hydra: hydraSchema,
@@ -261,31 +247,35 @@ export const objectSchemas: ObjectSchemaRegistry = {
   asm: asmSchema,
   'wgpu.compute': wgpuComputeSchema,
   'bg.out': bgOutSchema,
-  'gain~': gainSchema,
-  'lowpass~': lowpassSchema,
-  'highpass~': highpassSchema,
-  'bandpass~': bandpassSchema,
-  'allpass~': allpassSchema,
-  'notch~': notchSchema,
-  'lowshelf~': lowshelfSchema,
-  'highshelf~': highshelfSchema,
-  'peaking~': peakingSchema,
-  'compressor~': compressorSchema,
-  'pan~': panSchema,
-  'delay~': delayAudioSchema,
-  'sig~': sigSchema,
-  'fft~': fftSchema,
-  'mic~': micSchema,
-  'out~': outSchema,
-  'split~': splitSchema,
-  'merge~': mergeSchema,
-  '+~': addSchema,
-  mtof: mtofSchema,
-  debounce: debounceSchema,
-  throttle: throttleSchema,
-  spigot: spigotSchema,
-  uniqby: uniqbySchema,
-  webmidilink: webmidilinkSchema
+
+  // Audio objects (generated from V2 nodes - single source of truth)
+  'gain~': schemaFromNode(GainNodeV2, 'audio'),
+  'lowpass~': schemaFromNode(LowpassNode, 'audio'),
+  'highpass~': schemaFromNode(HighpassNode, 'audio'),
+  'bandpass~': schemaFromNode(BandpassNode, 'audio'),
+  'allpass~': schemaFromNode(AllpassNode, 'audio'),
+  'notch~': schemaFromNode(NotchNode, 'audio'),
+  'lowshelf~': schemaFromNode(LowshelfNode, 'audio'),
+  'highshelf~': schemaFromNode(HighshelfNode, 'audio'),
+  'peaking~': schemaFromNode(PeakingNode, 'audio'),
+  'compressor~': schemaFromNode(CompressorNode, 'audio'),
+  'pan~': schemaFromNode(PanNodeV2, 'audio'),
+  'delay~': schemaFromNode(DelayNodeV2, 'audio'),
+  'sig~': schemaFromNode(SigNode, 'audio'),
+  'fft~': schemaFromNode(FFTNode, 'audio'),
+  'mic~': schemaFromNode(MicNode, 'audio'),
+  'out~': schemaFromNode(AudioOutputNode, 'audio'),
+  'split~': schemaFromNode(SplitNode, 'audio'),
+  'merge~': schemaFromNode(MergeNode, 'audio'),
+  '+~': schemaFromNode(AddNodeV2, 'audio'),
+
+  // Control objects (generated from V2 nodes - single source of truth)
+  mtof: schemaFromNode(MtofObject, 'control'),
+  debounce: schemaFromNode(DebounceObject, 'control'),
+  throttle: schemaFromNode(ThrottleObject, 'control'),
+  spigot: schemaFromNode(SpigotObject, 'control'),
+  uniqby: schemaFromNode(UniqbyObject, 'control'),
+  webmidilink: schemaFromNode(WebMidiLinkObject, 'control')
 };
 
 /**

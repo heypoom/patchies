@@ -6,35 +6,50 @@
     CircleQuestionMark,
     Play,
     Lock,
-    LockOpen
+    LockOpen,
+    BookOpen,
+    ChevronDown,
+    ChevronRight
   } from '@lucide/svelte/icons';
   import { objectSchemas, type ObjectSchema } from '$lib/objects/schemas';
   import TriggerTypeSpecifiers from './TriggerTypeSpecifiers.svelte';
   import PortCard from '$lib/components/docs/PortCard.svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { useObjectHelp } from '$lib/composables/useObjectHelp.svelte';
+  import { useTopicHelp } from '$lib/composables/useTopicHelp.svelte';
+  import { topicMetas, categoryOrder } from '$lib/docs/topic-index';
+  import type { TopicMeta } from '$lib/docs/topic-index';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { enabledObjects } from '../../../stores/extensions.store';
 
   let searchQuery = $state('');
 
   let manualViewingObject = $state<string | null>(null);
+  let manualViewingTopic = $state<string | null>(null);
   let browseModeOverride = $state(false); // When true, show list even if node is selected
   let isLocked = $state(false); // When true, don't auto-switch on node selection
   let lastViewedType = $state<string | null>(null); // Persists across deselection
+  let lastViewedTopic = $state<string | null>(null); // Persists topic across deselection
+  let guidesExpanded = $state(false);
+  let objectsExpanded = $state(true);
 
   // Reset browse mode when a new node is selected on canvas (unless locked)
   $effect(() => {
     if ($selectedNodeInfo && !isLocked) {
       browseModeOverride = false;
       manualViewingObject = null;
+      manualViewingTopic = null;
     }
   });
 
   // Auto-show help for selected node, or use manual selection
   const viewingObject = $derived.by((): string | null => {
     if (browseModeOverride) return null;
+    if (manualViewingTopic) return null; // Topic takes precedence
     if (manualViewingObject) return manualViewingObject;
+
+    // When locked on a topic, don't show object
+    if (isLocked && lastViewedTopic) return null;
 
     // When locked, stay on the last viewed object
     if (isLocked && lastViewedType) return lastViewedType;
@@ -46,15 +61,41 @@
     return null;
   });
 
-  // Track last viewed type for persistence
+  // Track which topic is being viewed
+  const viewingTopic = $derived.by((): string | null => {
+    if (browseModeOverride) return null;
+    if (manualViewingTopic) return manualViewingTopic;
+
+    // When locked on a topic, stay on it
+    if (isLocked && lastViewedTopic) return lastViewedTopic;
+
+    return null;
+  });
+
+  // Track last viewed type/topic for persistence
   $effect(() => {
     if (viewingObject) {
       lastViewedType = viewingObject;
+      lastViewedTopic = null; // Clear topic when viewing object
+    }
+  });
+
+  $effect(() => {
+    if (viewingTopic) {
+      lastViewedTopic = viewingTopic;
+      lastViewedType = null; // Clear object when viewing topic
     }
   });
 
   // Fetch help content reactively
   const helpContent = useObjectHelp(() => viewingObject);
+  const topicContent = useTopicHelp(() => viewingTopic);
+
+  // Get current topic meta
+  const currentTopicMeta = $derived.by((): TopicMeta | null => {
+    if (!viewingTopic) return null;
+    return topicMetas.find((t) => t.slug === viewingTopic) ?? null;
+  });
 
   // Get schema for currently viewing object
   const currentSchema = $derived.by((): ObjectSchema | null => {
@@ -81,12 +122,47 @@
     );
   });
 
+  // Filter topics by search query
+  const filteredTopics = $derived.by(() => {
+    if (!searchQuery.trim()) return topicMetas;
+
+    const query = searchQuery.toLowerCase();
+    return topicMetas.filter(
+      (topic) =>
+        topic.slug.toLowerCase().includes(query) ||
+        topic.title.toLowerCase().includes(query) ||
+        topic.category.toLowerCase().includes(query)
+    );
+  });
+
+  // Group filtered topics by category
+  const filteredTopicsByCategory = $derived.by(() => {
+    const groups = new Map<string, TopicMeta[]>();
+
+    for (const category of categoryOrder) {
+      const categoryTopics = filteredTopics.filter((t) => t.category === category);
+      if (categoryTopics.length > 0) {
+        groups.set(category, categoryTopics);
+      }
+    }
+
+    return groups;
+  });
+
   function getHelpPatchUrl(objectType: string) {
     return `?help=${encodeURIComponent(objectType)}`;
   }
 
   function viewObject(objectType: string) {
     manualViewingObject = objectType;
+    manualViewingTopic = null;
+    browseModeOverride = false;
+    searchQuery = '';
+  }
+
+  function viewTopic(topicSlug: string) {
+    manualViewingTopic = topicSlug;
+    manualViewingObject = null;
     browseModeOverride = false;
     searchQuery = '';
   }
@@ -94,11 +170,78 @@
   function showBrowseMode() {
     browseModeOverride = true;
     manualViewingObject = null;
+    manualViewingTopic = null;
   }
 </script>
 
 <div class="flex h-full flex-col">
-  {#if currentSchema}
+  {#if currentTopicMeta}
+    <!-- Topic documentation view -->
+    <div class="flex items-center justify-between border-b border-zinc-800 px-3 py-2">
+      <div class="flex items-center gap-2">
+        <button
+          onclick={showBrowseMode}
+          class="cursor-pointer rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+          title="Browse all help"
+        >
+          <ArrowLeft class="h-4 w-4" />
+        </button>
+
+        <span class="text-sm text-zinc-200">{topicContent.title ?? currentTopicMeta.title}</span>
+
+        <span class="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-300">
+          {currentTopicMeta.category}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <!-- Lock toggle -->
+        <Tooltip.Root delayDuration={100}>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (isLocked = !isLocked)}
+              class={[
+                'cursor-pointer rounded p-1 transition-colors',
+                isLocked
+                  ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+                  : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+              ]}
+            >
+              {#if isLocked}
+                <Lock class="h-4 w-4" />
+              {:else}
+                <LockOpen class="h-4 w-4" />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="bottom">
+            {isLocked ? 'Unlock (auto-follow selection)' : 'Lock (stay on this guide)'}
+          </Tooltip.Content>
+        </Tooltip.Root>
+
+        <a
+          href="/docs/{currentTopicMeta.slug}"
+          target="_blank"
+          class="rounded p-1 text-zinc-500 transition-colors hover:bg-green-500/20 hover:text-green-300"
+          title="Open full documentation (shareable link)"
+        >
+          <ExternalLink class="h-4 w-4" />
+        </a>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4">
+      {#if topicContent.htmlContent}
+        <div class="prose-markdown-sm">
+          {@html topicContent.htmlContent}
+        </div>
+      {:else if topicContent.loading}
+        <div class="text-center text-xs text-zinc-500">Loading...</div>
+      {:else}
+        <div class="text-center text-xs text-zinc-500">No content available.</div>
+      {/if}
+    </div>
+  {:else if currentSchema}
     <!-- Object documentation view -->
     <div class="flex items-center justify-between border-b border-zinc-800 px-3 py-2">
       <div class="flex items-center gap-2">
@@ -259,14 +402,14 @@
         <input
           type="text"
           bind:value={searchQuery}
-          placeholder="Search object help..."
+          placeholder="Search guides and objects..."
           class="w-full rounded-lg border border-zinc-700 bg-zinc-900 py-1.5 pr-3 pl-8 text-xs text-zinc-200 placeholder-zinc-500 outline-none focus:border-zinc-600"
         />
       </div>
     </div>
 
     <div class="flex-1 overflow-y-auto p-2">
-      {#if filteredSchemas.length === 0}
+      {#if filteredTopics.length === 0 && filteredSchemas.length === 0}
         <div class="py-8 text-center text-xs text-zinc-500">
           {#if searchQuery}
             No help found for "{searchQuery}"
@@ -275,35 +418,98 @@
           {/if}
         </div>
       {:else}
-        <div class="space-y-1">
-          {#each filteredSchemas as schema}
+        <!-- Guides Section -->
+        {#if filteredTopics.length > 0}
+          <div class="mb-3">
             <button
-              onclick={() => viewObject(schema.type)}
-              class="flex w-full cursor-pointer items-start gap-2 rounded-lg p-2 text-left transition-colors hover:bg-zinc-800"
+              onclick={() => (guidesExpanded = !guidesExpanded)}
+              class="mb-1 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
             >
-              <CircleQuestionMark class="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" />
-
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs text-zinc-200">{schema.type}</span>
-                  <span class="rounded bg-zinc-800 px-1 py-0.5 text-[9px] text-zinc-500">
-                    {schema.category}
-                  </span>
-                </div>
-                <p class="mt-0.5 line-clamp-1 text-[11px] text-zinc-500">{schema.description}</p>
-              </div>
+              {#if guidesExpanded}
+                <ChevronDown class="h-3.5 w-3.5" />
+              {:else}
+                <ChevronRight class="h-3.5 w-3.5" />
+              {/if}
+              <BookOpen class="h-3.5 w-3.5" />
+              Guides
             </button>
-          {/each}
-        </div>
 
-        <!-- Getting Started link -->
+            {#if guidesExpanded}
+              <div class="ml-1 space-y-2 pt-1">
+                {#each categoryOrder as category}
+                  {@const categoryTopics = filteredTopicsByCategory.get(category)}
+
+                  {#if categoryTopics && categoryTopics.length > 0}
+                    <div>
+                      <div class="mb-0.5 px-1 text-[10px] text-zinc-600">{category}</div>
+
+                      <div class="space-y-0.5">
+                        {#each categoryTopics as topic}
+                          <button
+                            onclick={() => viewTopic(topic.slug)}
+                            class="flex w-full cursor-pointer items-center rounded px-2 py-1 text-left text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                          >
+                            {topic.title}
+                          </button>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Objects Section -->
+        {#if filteredSchemas.length > 0}
+          <div>
+            <button
+              onclick={() => (objectsExpanded = !objectsExpanded)}
+              class="mb-1 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
+            >
+              {#if objectsExpanded}
+                <ChevronDown class="h-3.5 w-3.5" />
+              {:else}
+                <ChevronRight class="h-3.5 w-3.5" />
+              {/if}
+              <CircleQuestionMark class="h-3.5 w-3.5" />
+              Objects
+            </button>
+
+            {#if objectsExpanded}
+              <div class="space-y-0.5 pt-1">
+                {#each filteredSchemas as schema}
+                  <button
+                    onclick={() => viewObject(schema.type)}
+                    class="flex w-full cursor-pointer items-start rounded px-2 py-1.5 text-left transition-colors hover:bg-zinc-800"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs text-zinc-200">{schema.type}</span>
+                        <span class="rounded bg-zinc-800 px-1 py-0.5 text-[9px] text-zinc-500">
+                          {schema.category}
+                        </span>
+                      </div>
+                      <p class="mt-0.5 line-clamp-1 text-[11px] text-zinc-500">
+                        {schema.description}
+                      </p>
+                    </div>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Full docs link -->
         <a
           href="/docs"
           class="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-zinc-700 py-2 text-xs text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400"
           target="_blank"
         >
           <ExternalLink class="h-3.5 w-3.5" />
-          Getting Started
+          Full Documentation
         </a>
       {/if}
     </div>
