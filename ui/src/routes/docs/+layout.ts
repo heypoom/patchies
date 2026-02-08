@@ -2,6 +2,8 @@ import type { LayoutLoad } from './$types';
 import { objectSchemas } from '$lib/objects/schemas';
 import { topicOrder } from './docs-nav';
 
+export const prerender = true;
+
 interface DocItem {
   slug: string;
   title: string;

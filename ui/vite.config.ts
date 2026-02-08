@@ -60,8 +60,8 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Only precache essential small assets for first paint
-        globPatterns: ['**/*.{css,svg,png,ico,woff,woff2}'],
+        // Precache essential small assets + docs HTML pages for offline
+        globPatterns: ['**/*.{html,css,svg,png,ico,woff,woff2}'],
         // Exclude heavy files - they'll be runtime cached on first use
         globIgnores: [
           '**/node_modules/**',
@@ -80,7 +80,40 @@ export default defineConfig({
         // Claim clients immediately so updates take effect right away
         clientsClaim: true,
 
+        // Use NetworkFirst for navigations so prerendered pages work
+        // (don't always fall back to / which breaks docs)
+        navigateFallback: null,
+
         runtimeCaching: [
+          // HTML pages - NetworkFirst for fresh content when online, cache for offline
+          {
+            urlPattern: /\.html$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              networkTimeoutSeconds: 3
+            }
+          },
+          // Navigation requests (pages without extension)
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              networkTimeoutSeconds: 3
+            }
+          },
+          // Markdown content files for docs (offline documentation)
+          {
+            urlPattern: /\/content\/.*\.md$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'docs-content-cache',
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          },
           // App JS chunks - use NetworkFirst so fresh code is always fetched when online
           {
             urlPattern: /\/_app\/immutable\/.*\.js$/i,
