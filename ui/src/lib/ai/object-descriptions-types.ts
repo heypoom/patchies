@@ -22,7 +22,9 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Processing: gain~, pan~, delay~, compressor~, waveshaper~, convolver~
   * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
   * Synthesis: osc~ (oscillator), sig~ (signal)
-  * Control: mtof, loadbang, metro, adsr
+  * Control: mtof, loadbang, metro, adsr, send, recv
+    * send: send messages to a named channel
+    * recv: receive messages from a named channel
   * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "gain~ 0.5" } })
 
 ## Visual & Creative Coding Objects
