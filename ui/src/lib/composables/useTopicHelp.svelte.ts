@@ -1,4 +1,5 @@
 import { fetchTopicHelp } from '$lib/docs/fetch-topic-help';
+import { addTargetBlankToLinks } from '$lib/objects/fetch-object-help';
 
 /**
  * Composable for fetching topic help content reactively.
@@ -22,7 +23,7 @@ export function useTopicHelp(getTopicSlug: () => string | null) {
     loading = true;
 
     fetchTopicHelp(topicSlug).then((content) => {
-      htmlContent = content.htmlContent;
+      htmlContent = content.htmlContent ? addTargetBlankToLinks(content.htmlContent) : null;
       title = content.title;
       loading = false;
     });

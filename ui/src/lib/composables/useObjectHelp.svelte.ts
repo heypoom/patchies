@@ -1,4 +1,4 @@
-import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
+import { fetchObjectHelp, addTargetBlankToLinks } from '$lib/objects/fetch-object-help';
 
 /**
  * Composable for fetching object help content reactively.
@@ -23,7 +23,7 @@ export function useObjectHelp(getObjectType: () => string | null) {
     hasHelpPatch = false;
 
     fetchObjectHelp(objectType).then((content) => {
-      htmlContent = content.htmlContent;
+      htmlContent = content.htmlContent ? addTargetBlankToLinks(content.htmlContent) : null;
       hasHelpPatch = content.hasHelpPatch;
       loading = false;
     });

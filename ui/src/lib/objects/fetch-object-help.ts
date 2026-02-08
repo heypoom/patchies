@@ -22,6 +22,14 @@ export const marked = new Marked(
   })
 );
 
+/**
+ * Post-process HTML to add target="_blank" to all links.
+ * Use this for embedded contexts like HelpView sidebar where links should open in new tabs.
+ */
+export function addTargetBlankToLinks(html: string): string {
+  return html.replace(/<a\s+href="/g, '<a target="_blank" rel="noopener noreferrer" href="');
+}
+
 export interface ObjectHelpContent {
   markdown: string | null;
   htmlContent: string | null;
