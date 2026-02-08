@@ -31,44 +31,43 @@ All objects have `shorthand: true` in their definition (like the `trigger` objec
 - **Follows conventions** - `~` suffix for audio matches Max/PD tradition
 - **Simpler implementation** - no dynamic port visibility or type flags
 
-## Architecture: Virtual Edges
+## Architecture: ChannelRegistry
 
-Named channels work by generating **virtual edges** that each routing system consumes alongside real edges.
+Central singleton that manages named channel subscriptions and routing.
 
 ```txt
-ChannelRegistry (new singleton)
-├── audioChannels: Map<channel, {senders: Set<nodeId>, receivers: Set<nodeId>}>
+ChannelRegistry (new singleton in src/lib/messages/)
 ├── messageChannels: Map<channel, {senders: Set<nodeId>, receivers: Set<nodeId>}>
+├── audioChannels: Map<channel, {senders: Set<nodeId>, receivers: Set<nodeId>}>
 ├── videoChannels: Map<channel, {senders: Set<nodeId>, receivers: Set<nodeId>}>
 │
-├── subscribe(channel, nodeId, role: 'send' | 'recv', type: 'audio' | 'message' | 'video')
+├── subscribe(channel, nodeId, role: 'send' | 'recv', type)
 ├── unsubscribe(channel, nodeId, type)
 │
-├── getAudioVirtualEdges() → Edge[]
-├── getMessageVirtualEdges() → Edge[]
-└── getVideoVirtualEdges() → Edge[]
+├── broadcast(channel, message, type: 'message')  // Direct delivery for messages
+├── getAudioVirtualEdges() → Edge[]               // Virtual edges for audio
+└── getVideoVirtualEdges() → Edge[]               // Virtual edges for video
 ```
 
-### Integration with Existing Systems
+### Routing Approaches by Type
 
-Each system merges virtual edges with real edges:
+**Messages: Direct Broadcast**
 
-```ts
-// In AudioService.updateEdges()
-const allEdges = [...realEdges, ...ChannelRegistry.getAudioVirtualEdges()];
+- `send` node / JS `send()` calls `ChannelRegistry.broadcast(channel, message)`
+- ChannelRegistry looks up all receivers and delivers directly
+- No virtual edges needed - simpler and more direct
 
-// In MessageSystem
-const allEdges = [...realEdges, ...ChannelRegistry.getMessageVirtualEdges()];
+**Audio & Video: Virtual Edges**
 
-// In GLSystem / fboRenderer
-const allEdges = [...realEdges, ...ChannelRegistry.getVideoVirtualEdges()];
-```
+- ChannelRegistry generates virtual edges for send→recv pairs
+- AudioService / GLSystem merge virtual edges with real edges
+- Existing connection logic handles the actual routing
 
 ### Fan-out Behavior
 
 When multiple receivers listen to the same channel:
 
-- **Messages**: Broadcast to all receivers
+- **Messages**: Broadcast to all receivers (direct delivery)
 - **Audio**: Web Audio default behavior (signal summing)
 - **Video**: Same frame reference sent to all receivers
 
@@ -80,13 +79,14 @@ When multiple receivers listen to the same channel:
 ┌─────────────┐          ┌─────────────┐
 │  send foo   │          │  recv foo   │
 ├─────────────┤          ├─────────────┤
-│ ● message  │  ~~~~>   │  message ● │
+│ ● inlet     │  ~~~~>   │   outlet ● │
 └─────────────┘          └─────────────┘
 ```
 
-- Single message inlet/outlet
-- Routes through MessageSystem
+- `send`: Single message inlet, no outlet
+- `recv`: Single message outlet, no inlet (hot - fires immediately when message arrives)
 - Channel name from first argument
+- Routes via `ChannelRegistry.broadcast()`
 
 ### Audio: `send~` / `recv~`
 
@@ -149,3 +149,58 @@ When a send/recv node is deleted:
 
 - **Channel namespacing**: Currently global. Could add subpatch-local channels later (e.g., `---foo` prefix like Max)
 - **Channel inspection**: UI to show all active channels and their subscribers
+
+---
+
+## Implementation Plan
+
+### Phase 1: Message (`send` / `recv`)
+
+1. **Create ChannelRegistry** (`src/lib/messages/ChannelRegistry.ts`)
+   - Singleton with `messageChannels` map
+   - `subscribe(channel, nodeId, role, type)`
+   - `unsubscribe(channel, nodeId, type)`
+   - `broadcast(channel, message)` - delivers to all receivers
+
+2. **Create visual objects**
+   - `SendNode.svelte` - inlet only, calls `ChannelRegistry.broadcast()` on message
+   - `RecvNode.svelte` - outlet only, registers as receiver, fires on broadcast
+   - Register in `node-types.ts`, `defaultNodeData.ts`
+   - Add to `get-categorized-objects.ts` with descriptions
+   - Set `shorthand: true` with aliases `s` / `r`
+
+3. **JavaScript API**
+   - Update `send()` in JSRunner to accept `{ channel: string }` option
+   - Update `recv()` in JSRunner to accept `{ channel: string }` option
+   - Same for worker context, hydra context, etc.
+
+4. **Cleanup**
+   - On node delete, call `ChannelRegistry.unsubscribe()`
+
+### Phase 2: Audio (`send~` / `recv~`)
+
+1. **Extend ChannelRegistry**
+   - Add `audioChannels` map
+   - Add `getAudioVirtualEdges()` method
+
+2. **Create audio nodes** (V2 pattern)
+   - `SendAudioNode` - audio inlet, registers as sender
+   - `RecvAudioNode` - audio outlet, pass-through GainNode
+   - Set `shorthand: true` with aliases `s~` / `r~`
+
+3. **Integrate with AudioService**
+   - Merge virtual edges in `updateEdges()`
+
+### Phase 3: Video (`send.vdo` / `recv.vdo`)
+
+1. **Extend ChannelRegistry**
+   - Add `videoChannels` map
+   - Add `getVideoVirtualEdges()` method
+
+2. **Create video nodes**
+   - `SendVdoNode` - video inlet, registers as sender
+   - `RecvVdoNode` - video outlet, passes through FBO
+   - Set `shorthand: true` with aliases `sv` / `rv`
+
+3. **Integrate with GLSystem / fboRenderer**
+   - Merge virtual edges in render graph topology
