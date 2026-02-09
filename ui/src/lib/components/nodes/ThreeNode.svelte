@@ -8,7 +8,7 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import { threeMessages } from '$lib/objects/schemas/three';
+  import { messages } from '$lib/objects/schemas/common';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import type {
@@ -157,10 +157,10 @@
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       match(message)
-        .with(threeMessages.setCode, ({ code }) => {
+        .with(messages.setCodeMessage, ({ code }) => {
           setCodeAndUpdate(code);
         })
-        .with(threeMessages.run, () => {
+        .with(messages.run, () => {
           updateThree();
         })
         .otherwise(() => {

@@ -7,7 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import { scanMessages } from '$lib/objects/schemas/scan';
+  import { messages } from '$lib/objects/schemas/common';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -84,7 +84,7 @@
     // Inlet 1: reset accumulator
     if (inlet === 1) {
       match(message)
-        .with(scanMessages.bang, () => {
+        .with(messages.bang, () => {
           // Reset to initial value
           accumulator = data.initialValue ?? 0;
           hasReceivedFirstValue = false;
@@ -99,7 +99,7 @@
 
     // Inlet 0: process input
     const inputValue = match(message)
-      .with(scanMessages.bang, () => accumulator) // bang re-sends current accumulator
+      .with(messages.bang, () => accumulator) // bang re-sends current accumulator
       .otherwise((value) => value);
 
     // First value initializes the accumulator if no initial value set

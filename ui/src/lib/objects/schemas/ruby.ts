@@ -1,19 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { schema } from './types';
-import { msg, sym } from './helpers';
-
-// Ruby-specific message schemas
-const SetCode = msg('setCode', { code: Type.String() });
-const Run = sym('run');
-const Stop = sym('stop');
-
-/** Pre-wrapped matchers for use with ts-pattern */
-export const rubyMessages = {
-  setCode: schema(SetCode),
-  run: schema(Run),
-  stop: schema(Stop)
-};
+import { Run, Stop, SetCodeMessage } from './common';
 
 /**
  * Schema for the ruby (Ruby code environment) object.
@@ -27,7 +14,7 @@ export const rubySchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages and data input',
       messages: [
-        { schema: SetCode, description: 'Update the code' },
+        { schema: SetCodeMessage, description: 'Update the code' },
         { schema: Run, description: 'Execute the code' },
         { schema: Stop, description: 'Stop running tasks' },
         { schema: Type.Any(), description: 'Data received via recv block' }

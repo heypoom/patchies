@@ -1,12 +1,10 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { msg, sym } from './helpers';
-import { Bang, messages } from './common';
+import { msg } from './helpers';
+import { Bang, Run, messages, SetCodeMessage } from './common';
 
 // Strudel-specific message schemas
-const Run = sym('run');
-const SetCode = msg('setCode', { code: Type.String() });
 const SetFontSize = msg('setFontSize', { value: Type.Number() });
 const SetFontFamily = msg('setFontFamily', { value: Type.String() });
 const SetStyles = msg('setStyles', {
@@ -17,8 +15,6 @@ const SetStyles = msg('setStyles', {
 export const strudelMessages = {
   ...messages,
   string: schema(Type.String()),
-  run: schema(Run),
-  setCode: schema(SetCode),
   setFontSize: schema(SetFontSize),
   setFontFamily: schema(SetFontFamily),
   setStyles: schema(SetStyles)
@@ -39,7 +35,7 @@ export const strudelSchema: ObjectSchema = {
         { schema: Bang, description: 'Evaluate code and start playback' },
         { schema: Run, description: 'Evaluate code and start playback' },
         { schema: Type.String(), description: 'Set the code in the editor' },
-        { schema: SetCode, description: 'Set the code in the editor' },
+        { schema: SetCodeMessage, description: 'Set the code in the editor' },
         { schema: SetFontSize, description: 'Set editor font size' },
         { schema: SetFontFamily, description: 'Set editor font family' },
         { schema: SetStyles, description: 'Set custom styles for editor container' }

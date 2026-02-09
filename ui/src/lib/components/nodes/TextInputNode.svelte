@@ -6,7 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
-  import { textboxMessages } from '$lib/objects/schemas';
+  import { messages } from '$lib/objects/schemas/common';
 
   let { id: nodeId, data }: { id: string; data: { text: string } } = $props();
 
@@ -24,10 +24,10 @@
       .with(P.string, (text) => {
         setText(text);
       })
-      .with(textboxMessages.bang, () => {
+      .with(messages.bang, () => {
         messageContext.send(text);
       })
-      .with(textboxMessages.clear, () => {
+      .with(messages.clear, () => {
         setText('');
       });
   };

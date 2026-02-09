@@ -1,19 +1,5 @@
-import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { schema } from './types';
-import { msg, sym } from './helpers';
-import { Bang, messages } from './common';
-
-// Canvas-specific message schemas
-const SetCode = msg('setCode', { code: Type.String() });
-const Run = sym('run');
-
-/** Pre-wrapped matchers for use with ts-pattern */
-export const canvasMessages = {
-  ...messages,
-  setCode: schema(SetCode),
-  run: schema(Run)
-};
+import { Run, SetCodeMessage } from './common';
 
 /**
  * Schema for the canvas (offscreen JavaScript canvas) object.
@@ -27,7 +13,7 @@ export const canvasSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages',
       messages: [
-        { schema: SetCode, description: 'Set the code in the editor' },
+        { schema: SetCodeMessage, description: 'Set the code in the editor' },
         { schema: Run, description: 'Evaluate code and update visuals' }
       ]
     }
@@ -49,7 +35,7 @@ export const canvasDomSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages',
       messages: [
-        { schema: SetCode, description: 'Set the code in the editor' },
+        { schema: SetCodeMessage, description: 'Set the code in the editor' },
         { schema: Run, description: 'Evaluate code and update visuals' }
       ]
     }

@@ -1,21 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { schema } from './types';
-import { msg, sym } from './helpers';
-import { Bang, messages } from './common';
-
-// Vue-specific message schemas
-const SetCode = msg('setCode', { code: Type.String() });
-const Run = sym('run');
-const Stop = sym('stop');
-
-/** Pre-wrapped matchers for use with ts-pattern */
-export const vueMessages = {
-  ...messages,
-  setCode: schema(SetCode),
-  run: schema(Run),
-  stop: schema(Stop)
-};
+import { Run, Stop, SetCodeMessage } from './common';
 
 /**
  * Schema for the vue (Vue.js UI) object.
@@ -29,7 +14,7 @@ export const vueSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages and data input',
       messages: [
-        { schema: SetCode, description: 'Set the code in the editor' },
+        { schema: SetCodeMessage, description: 'Set the code in the editor' },
         { schema: Run, description: 'Execute the code' },
         { schema: Stop, description: 'Stop running code' },
         { schema: Type.Any(), description: 'Data received via recv() callback' }

@@ -1,12 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { schema } from './types';
-import { Bang, messages } from './common';
-
-/** Pre-wrapped matchers for use with ts-pattern */
-export const scanMessages = {
-  ...messages
-};
+import { Bang } from './common';
 
 /**
  * Schema for the scan (stateful accumulation) object.

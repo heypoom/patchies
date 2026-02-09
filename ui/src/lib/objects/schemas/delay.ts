@@ -1,12 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { schema } from './types';
-import { Bang, Stop, Clear, messages } from './common';
-
-/** Pre-wrapped matchers for use with ts-pattern */
-export const delayMessages = {
-  ...messages
-};
+import { Bang, Clear } from './common';
 
 /**
  * Schema for the delay (message delay) object.

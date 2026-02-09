@@ -7,7 +7,7 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import { canvasMessages } from '$lib/objects/schemas/canvas';
+  import { messages } from '$lib/objects/schemas';
   import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { shouldShowHandles } from '../../../stores/ui.store';
@@ -113,10 +113,10 @@
   const handleMessage: MessageCallbackFn = (message, _meta) => {
     try {
       match(message)
-        .with(canvasMessages.setCode, ({ code }) => {
+        .with(messages.setCode, ({ code }) => {
           setCodeAndUpdate(code);
         })
-        .with(canvasMessages.run, () => {
+        .with(messages.run, () => {
           runCode();
         })
         .otherwise(() => {

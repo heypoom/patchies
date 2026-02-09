@@ -1,11 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { Bang, messages, Start, Stop, Toggle } from './common';
-
-/** Pre-wrapped matchers for use with ts-pattern */
-export const keyboardMessages = {
-  ...messages
-};
+import { Bang, Start, Stop, Toggle } from './common';
 
 /**
  * Schema for the keyboard (keyboard input listener) object.

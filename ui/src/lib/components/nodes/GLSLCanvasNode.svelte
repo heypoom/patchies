@@ -6,7 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import { match } from 'ts-pattern';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { glslMessages } from '$lib/objects/schemas/glsl';
+  import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
@@ -88,10 +88,10 @@
       }
 
       match(message)
-        .with(glslMessages.setCode, ({ code }) => {
+        .with(messages.setCodeMessage, ({ code }) => {
           updateNodeData(nodeId, { code });
         })
-        .with(glslMessages.run, () => {
+        .with(messages.run, () => {
           updateShader();
         });
     } catch (error) {

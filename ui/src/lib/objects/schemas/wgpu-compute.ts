@@ -1,19 +1,15 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { msg, sym } from './helpers';
-import { Bang, Run, messages } from './common';
+import { msg } from './helpers';
+import { Bang, Run, messages, SetCodeMessage } from './common';
 
 // WebGPU compute-specific message schemas
-const SetCode = msg('setCode', { code: Type.String() });
-const LocalRun = sym('run');
 const SetOutputSize = msg('setOutputSize', { size: Type.Number() });
 const SetDispatchCount = msg('setDispatchCount', { count: Type.Array(Type.Number()) });
 
 export const wgpuComputeMessages = {
   ...messages,
-  setCode: schema(SetCode),
-  run: schema(LocalRun),
   setOutputSize: schema(SetOutputSize),
   setDispatchCount: schema(SetDispatchCount)
 };
@@ -32,7 +28,7 @@ export const wgpuComputeSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Trigger computation' },
         { schema: Run, description: 'Compile the shader' },
-        { schema: SetCode, description: 'Update shader code' },
+        { schema: SetCodeMessage, description: 'Update shader code' },
         { schema: Type.Any(), description: 'Typed array input data' }
       ]
     }
