@@ -34,5 +34,4 @@ pub const STACK_END: u16 = MEMORY_SIZE - 1;
 // - Outlet 2: 0x1400 - 0x15FF
 // - Outlet 3: 0x1600 - 0x17FF
 pub const MAPPED_START: u16 = 0x1000;
-pub const MAPPED_SIZE: u16 = 0xEFFF; // Virtual, no hard limit
 pub const MAPPED_END: u16 = 0xFFFF;
