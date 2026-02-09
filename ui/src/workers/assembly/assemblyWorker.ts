@@ -148,9 +148,31 @@ class AssemblyWorkerController {
     }
   }
 
+  // Track logged bounds errors to avoid flooding (reset on new machine creation)
+  private loggedBoundsErrors = new Set<string>();
+
   readMemory(machineId: number, address: number, size: number): number[] | null {
+    // Memory bounds check (MEMORY_SIZE = 0x1000 = 4096)
+    const MEMORY_SIZE = 0x1000;
+
+    if (address < 0 || size < 0 || address + size > MEMORY_SIZE) {
+      // Only log each unique error once
+      const errorKey = `${machineId}:${address}:${size}`;
+
+      if (!this.loggedBoundsErrors.has(errorKey)) {
+        this.loggedBoundsErrors.add(errorKey);
+
+        console.warn(
+          `[assemblyWorker] readMemory bounds error: address=${address}, size=${size}, max=${MEMORY_SIZE} (further errors suppressed)`
+        );
+      }
+
+      return null;
+    }
+
     try {
       const result = this.controller?.read_mem(machineId, address, size);
+
       return result === null ? null : result;
     } catch {
       return null;

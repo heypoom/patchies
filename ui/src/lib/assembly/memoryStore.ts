@@ -1,9 +1,15 @@
 import { writable, derived, get } from 'svelte/store';
 import { AssemblySystem } from './AssemblySystem';
 
+// Memory layout constants (must match vasm segments.rs)
+export const MEMORY_SIZE = 0x1000; // 4096 u16 values (8KB)
+
 // Default offset is the start of the RAM segment (0x340 in new 8KB layout)
 export const DEFAULT_PAGE_OFFSET = 0x0340;
 export const DEFAULT_PAGE_SIZE = 64;
+
+// Maximum valid page (0-indexed, so pages 0 to MAX_VALID_PAGE are valid)
+export const MAX_VALID_PAGE = Math.floor(MEMORY_SIZE / DEFAULT_PAGE_SIZE) - 1; // 63
 
 export interface MemoryPageConfig {
   page: number;
@@ -44,7 +50,15 @@ export const memoryActions = {
   setConfig(machineId: number, config: Partial<MemoryPageConfig>) {
     memoryPageConfig.update((configs) => {
       const existing = configs[machineId] || { page: DEFAULT_PAGE };
-      configs[machineId] = { ...existing, ...config };
+
+      // Clamp page to valid range
+      const page =
+        config.page !== undefined
+          ? Math.max(0, Math.min(config.page, MAX_VALID_PAGE))
+          : existing.page;
+
+      configs[machineId] = { ...existing, ...config, page };
+
       return configs;
     });
 
@@ -54,17 +68,23 @@ export const memoryActions = {
 
   // Set page for a machine
   setPage(machineId: number, page: number) {
-    this.setConfig(machineId, { page });
+    // Clamp to valid range
+    const clampedPage = Math.max(0, Math.min(page, MAX_VALID_PAGE));
+
+    this.setConfig(machineId, { page: clampedPage });
   },
 
   // Navigate to next page
   nextPage(machineId: number) {
     memoryPageConfig.update((configs) => {
       const currentPage = getCurrentPage(configs, machineId);
-      const newPage = Math.min(currentPage + 1, 1000); // Max page limit
+      const newPage = Math.min(currentPage + 1, MAX_VALID_PAGE);
+
       configs[machineId] = { ...configs[machineId], page: newPage };
+
       return configs;
     });
+
     this.loadMemoryPage(machineId);
   },
 
@@ -73,9 +93,12 @@ export const memoryActions = {
     memoryPageConfig.update((configs) => {
       const currentPage = getCurrentPage(configs, machineId);
       const newPage = Math.max(currentPage - 1, 0);
+
       configs[machineId] = { ...configs[machineId], page: newPage };
+
       return configs;
     });
+
     this.loadMemoryPage(machineId);
   },
 
@@ -88,9 +111,37 @@ export const memoryActions = {
   async loadMemoryPage(machineId: number) {
     const configs = get(memoryPageConfig);
 
-    const page = getCurrentPage(configs, machineId);
+    let page = getCurrentPage(configs, machineId);
     const size = getPageSize(configs, machineId);
+
+    // Bounds check: clamp page to valid range
+    if (page > MAX_VALID_PAGE) {
+      console.warn(
+        `Memory page ${page} out of bounds (max: ${MAX_VALID_PAGE}), resetting to default`
+      );
+
+      page = DEFAULT_PAGE;
+
+      // Update the stored config to the valid page
+      memoryPageConfig.update((c) => {
+        c[machineId] = { ...c[machineId], page };
+        return c;
+      });
+    }
+
     const offset = pageToOffset(page, size);
+
+    // Additional safety check: ensure offset + size doesn't exceed memory
+    if (offset + size > MEMORY_SIZE) {
+      console.error(`Memory read would exceed bounds: offset=${offset}, size=${size}`);
+
+      memoryPages.update((pages) => {
+        pages[machineId] = [];
+        return pages;
+      });
+
+      return;
+    }
 
     try {
       const assemblySystem = AssemblySystem.getInstance();
@@ -102,6 +153,7 @@ export const memoryActions = {
       });
     } catch (error) {
       console.error(`Failed to load memory for machine ${machineId}:`, error);
+
       memoryPages.update((pages) => {
         pages[machineId] = [];
         return pages;
@@ -118,11 +170,13 @@ export const memoryActions = {
   clearMachine(machineId: number) {
     memoryPageConfig.update((configs) => {
       delete configs[machineId];
+
       return configs;
     });
 
     memoryPages.update((pages) => {
       delete pages[machineId];
+
       return pages;
     });
   }
@@ -142,6 +196,7 @@ export const getMemoryRange = (machineId: number) =>
   derived(memoryPageConfig, ($config) => {
     const config = $config[machineId] || { page: DEFAULT_PAGE, size: DEFAULT_PAGE_SIZE };
     const offset = pageToOffset(config.page, config.size);
+
     return {
       start: offset,
       end: offset + (config.size || DEFAULT_PAGE_SIZE),
