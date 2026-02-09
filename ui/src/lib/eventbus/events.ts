@@ -27,7 +27,8 @@ export type PatchiesEvent =
   | MediaBunnyFirstFrameEvent
   | MediaBunnyTimeUpdateEvent
   | MediaBunnyEndedEvent
-  | MediaBunnyErrorEvent;
+  | MediaBunnyErrorEvent
+  | AsmMachineStateChangedEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -242,4 +243,11 @@ export interface MediaBunnyErrorEvent {
   type: 'mediaBunnyError';
   nodeId: string;
   error: string;
+}
+
+// Assembly machine events
+
+export interface AsmMachineStateChangedEvent {
+  type: 'asmMachineStateChanged';
+  machineId: number;
 }

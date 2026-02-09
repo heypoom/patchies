@@ -14,6 +14,9 @@
   import { memoryActions } from './memoryStore';
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
   import { logger } from '$lib/utils/logger';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+
+  const eventBus = PatchiesEventBus.getInstance();
 
   let {
     id: nodeId,
@@ -413,6 +416,9 @@
         clearInterval(updateInterval);
         updateMachineConfig({ isRunning: false });
       }
+
+      // Notify listeners that machine state has changed
+      eventBus.dispatch({ type: 'asmMachineStateChanged', machineId });
     } catch (error) {
       // Log errors for debugging but don't spam the UI
       logger.warn(`[asm ${machineId}] syncMachineState error:`, error);
