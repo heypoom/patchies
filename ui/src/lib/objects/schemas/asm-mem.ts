@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { sym, msg } from './helpers';
+import { msg } from './helpers';
 import { Bang, Reset, messages } from './common';
 
 // asm.mem-specific message schemas
