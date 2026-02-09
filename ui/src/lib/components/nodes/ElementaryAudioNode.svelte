@@ -2,6 +2,7 @@
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import SimpleDspLayout from './SimpleDspLayout.svelte';
@@ -57,7 +58,7 @@
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     match(message)
-      .with({ type: 'run' }, () => runElementary())
+      .with(messages.run, () => runElementary())
       .with(P.any, () => {
         if (meta?.inlet === undefined) return;
 

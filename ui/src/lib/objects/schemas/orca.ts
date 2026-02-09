@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { messages } from './common';
+import { Bang, messages } from './common';
 
 // Orca-specific message schemas
 const SetValue = msg('set', { value: Type.String() });
@@ -26,7 +26,19 @@ export const orcaSchema: ObjectSchema = {
   type: 'orca',
   category: 'audio',
   description: 'Orca livecoding sequencer - esoteric programming language for procedural sequences',
-  inlets: [],
+  inlets: [
+    {
+      id: 'message',
+      description: 'Control messages',
+      messages: [
+        { schema: SetValue, description: 'Set the grid content' },
+        { schema: Bang, description: 'Toggle play/pause' },
+        { schema: Play, description: 'Start playback' },
+        { schema: Stop, description: 'Stop playback' },
+        { schema: SetBpm, description: 'Set tempo in BPM' }
+      ]
+    }
+  ],
   outlets: [
     {
       id: 'message',

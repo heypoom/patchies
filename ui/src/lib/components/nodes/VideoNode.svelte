@@ -7,7 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
   import { videoMessages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { webCodecsEnabled, showVideoStats } from '../../../stores/video.store';
@@ -144,7 +144,7 @@
         // Update worker MediaBunny player loop setting
         glSystem.mediaBunnySetLoop(nodeId, shouldLoop);
       })
-      .with(P.string, (path) => vfsMedia.loadFromPath(path))
+      .with(videoMessages.string, (path) => vfsMedia.loadFromPath(path))
       .with(videoMessages.loadUrl, ({ url }) => vfsMedia.loadFromUrl(url))
       .with(videoMessages.loadPath, ({ path }) => vfsMedia.loadFromPath(path))
       .otherwise(() => {});

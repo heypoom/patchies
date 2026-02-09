@@ -4,7 +4,8 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { ttsMessages } from '$lib/objects/schemas';
   import * as Popover from '$lib/components/ui/popover';
   import * as Command from '$lib/components/ui/command';
 
@@ -142,31 +143,31 @@
 
   function handleMessage(msg: unknown) {
     match(msg)
-      .with({ type: 'setVoice', value: P.string }, (m) => {
+      .with(ttsMessages.setVoice, (m) => {
         setVoice(m.value);
       })
-      .with({ type: 'setRate', value: P.number }, (m) => {
+      .with(ttsMessages.setRate, (m) => {
         updateNodeData(nodeId, { rate: Math.max(0.1, Math.min(10, m.value)) });
       })
-      .with({ type: 'setPitch', value: P.number }, (m) => {
+      .with(ttsMessages.setPitch, (m) => {
         updateNodeData(nodeId, { pitch: Math.max(0, Math.min(2, m.value)) });
       })
-      .with({ type: 'setVolume', value: P.number }, (m) => {
+      .with(ttsMessages.setVolume, (m) => {
         updateNodeData(nodeId, { volume: Math.max(0, Math.min(1, m.value)) });
       })
-      .with({ type: 'stop' }, () => {
+      .with(ttsMessages.stop, () => {
         speechSynthesis.cancel();
       })
-      .with({ type: 'pause' }, () => {
+      .with(ttsMessages.pause, () => {
         speechSynthesis.pause();
       })
-      .with({ type: 'resume' }, () => {
+      .with(ttsMessages.resume, () => {
         speechSynthesis.resume();
       })
-      .with(P.string, (text) => {
+      .with(ttsMessages.string, (text) => {
         speak(text);
       })
-      .with(P.number, (num) => {
+      .with(ttsMessages.number, (num) => {
         speak(String(num));
       })
       .otherwise(() => {

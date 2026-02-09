@@ -26,7 +26,9 @@ export const ttsMessages = {
   resume: schema(Resume),
   start: schema(Start),
   end: schema(End),
-  error: schema(Error)
+  error: schema(Error),
+  string: schema(Type.String()),
+  number: schema(Type.Number())
 };
 
 /**

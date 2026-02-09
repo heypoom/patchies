@@ -27,7 +27,12 @@ export const aiTxtSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Text prompts',
-      messages: [{ schema: Type.String(), description: 'Text prompt for generation' }]
+      messages: [
+        { schema: Type.String(), description: 'Text prompt - sets prompt and generates' },
+        { schema: Generate, description: 'Set prompt and generate text' },
+        { schema: SetPrompt, description: 'Set prompt without generating' },
+        { schema: Bang, description: 'Generate text with current prompt' }
+      ]
     }
   ],
   outlets: [

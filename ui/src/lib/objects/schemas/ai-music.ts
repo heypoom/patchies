@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg } from './helpers';
-import { messages } from './common';
+import { Bang, Play, Pause, messages } from './common';
 
 // AI music-specific message schemas
 const AddPrompt = msg('addPrompt', { prompt: Type.String(), weight: Type.Number() });
@@ -33,8 +33,19 @@ export const aiMusicSchema: ObjectSchema = {
   inlets: [
     {
       id: 'message',
-      description: 'Music prompts',
-      messages: [{ schema: Type.String(), description: 'Text prompt for music generation' }]
+      description: 'Music prompts and controls',
+      messages: [
+        { schema: Type.String(), description: 'Text prompt or JSON5 weighted prompts' },
+        { schema: Bang, description: 'Toggle play/pause' },
+        { schema: Play, description: 'Start playback' },
+        { schema: Pause, description: 'Pause playback' },
+        { schema: AddPrompt, description: 'Add a weighted prompt' },
+        { schema: DeletePrompt, description: 'Remove a prompt' },
+        { schema: SetPrompts, description: 'Set all prompts at once' },
+        { schema: SetBPM, description: 'Set beats per minute' },
+        { schema: SetScale, description: 'Set musical scale' },
+        { schema: SetConfig, description: 'Set generation config' }
+      ]
     }
   ],
   outlets: [],

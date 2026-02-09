@@ -22,7 +22,8 @@ export const aiTtsMessages = {
   setVoice: schema(SetVoice),
   setRate: schema(SetRate),
   setPitch: schema(SetPitch),
-  setVolume: schema(SetVolume)
+  setVolume: schema(SetVolume),
+  string: schema(Type.String())
 };
 
 /**
