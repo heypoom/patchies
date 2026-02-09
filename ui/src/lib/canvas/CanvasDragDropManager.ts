@@ -207,7 +207,7 @@ export class CanvasDragDropManager {
         }
       }
 
-      const nodeType = this.getNodeTypeFromMimeType(file.type);
+      const nodeType = this.getNodeTypeFromFile(file);
 
       if (nodeType) {
         logger.debug('creating node with handle', handle);
@@ -241,6 +241,29 @@ export class CanvasDragDropManager {
       const customData = await this.getVfsFileNodeData(vfsPath, nodeType);
       this.createNode(nodeType, position, customData);
     }
+  }
+
+  /**
+   * Get node type from file, checking both MIME type and extension
+   */
+  private getNodeTypeFromFile(file: File): string | null {
+    // First try MIME type
+    const fromMime = this.getNodeTypeFromMimeType(file.type);
+    if (fromMime) return fromMime;
+
+    // Fall back to extension-based detection for custom types
+    return this.getNodeTypeFromExtension(file.name);
+  }
+
+  /**
+   * Map file extensions to node types (for types browsers don't recognize)
+   */
+  private getNodeTypeFromExtension(filename: string): string | null {
+    const ext = filename.split('.').pop()?.toLowerCase();
+
+    return match(ext)
+      .with('rom', () => 'uxn')
+      .otherwise(() => null);
   }
 
   /**
