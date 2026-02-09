@@ -1,5 +1,10 @@
 import { match } from 'ts-pattern';
 import type { MachineStatus, Effect, Message, Controller, Port, Action } from 'machine';
+import {
+  ASM_MEMORY_SIZE,
+  ASM_DEFAULT_DELAY_MS,
+  ASM_DEFAULT_STEP_BY
+} from '$lib/assembly/constants';
 
 // Define types that are serialized from Rust but not exported in TypeScript
 export interface InspectedRegister {
@@ -152,10 +157,7 @@ class AssemblyWorkerController {
   private loggedBoundsErrors = new Set<string>();
 
   readMemory(machineId: number, address: number, size: number): number[] | null {
-    // Memory bounds check (MEMORY_SIZE = 0x1000 = 4096)
-    const MEMORY_SIZE = 0x1000;
-
-    if (address < 0 || size < 0 || address + size > MEMORY_SIZE) {
+    if (address < 0 || size < 0 || address + size > ASM_MEMORY_SIZE) {
       // Only log each unique error once
       const errorKey = `${machineId}:${address}:${size}`;
 
@@ -163,7 +165,7 @@ class AssemblyWorkerController {
         this.loggedBoundsErrors.add(errorKey);
 
         console.warn(
-          `[assemblyWorker] readMemory bounds error: address=${address}, size=${size}, max=${MEMORY_SIZE} (further errors suppressed)`
+          `[assemblyWorker] readMemory bounds error: address=${address}, size=${size}, max=${ASM_MEMORY_SIZE} (further errors suppressed)`
         );
       }
 
@@ -230,8 +232,8 @@ class AssemblyWorkerController {
   setMachineConfig(machineId: number, config: Partial<MachineConfig>): void {
     const currentConfig = this.machineConfigs.get(machineId) || {
       isRunning: false,
-      delayMs: 100,
-      stepBy: 1
+      delayMs: ASM_DEFAULT_DELAY_MS,
+      stepBy: ASM_DEFAULT_STEP_BY
     };
 
     const newConfig = { ...currentConfig, ...config };

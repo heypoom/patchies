@@ -12,6 +12,7 @@
   import MachineStateViewer from './MachineStateViewer.svelte';
   import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
   import { memoryActions } from './memoryStore';
+  import { ASM_DEFAULT_DELAY_MS, ASM_DEFAULT_STEP_BY } from './constants';
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
   import { logger } from '$lib/utils/logger';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
@@ -54,7 +55,11 @@
 
   // Use node data as single source of truth for machine config
   const machineConfig = $derived(
-    data.machineConfig || { isRunning: false, delayMs: 100, stepBy: 1 }
+    data.machineConfig || {
+      isRunning: false,
+      delayMs: ASM_DEFAULT_DELAY_MS,
+      stepBy: ASM_DEFAULT_STEP_BY
+    }
   );
 
   let previewContainerWidth = $state(0);
