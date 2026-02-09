@@ -42,6 +42,7 @@ export const csoundSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Resume or re-eval Csound code' },
         { schema: Play, description: 'Resume playback' },
+        { schema: Resume, description: 'Resume playback' },
         { schema: Pause, description: 'Pause playback' },
         { schema: Stop, description: 'Stop playback' },
         { schema: Reset, description: 'Reset the Csound instance' },
