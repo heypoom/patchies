@@ -106,7 +106,7 @@
 
   <!-- Mobile sidebar -->
   <aside class="fixed inset-0 z-50 overflow-y-auto bg-zinc-950 p-6 pb-20 md:hidden">
-    <div class="mb-6">
+    <div class="mb-3">
       <a
         href="/"
         class="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
@@ -116,15 +116,8 @@
       </a>
     </div>
 
-    <a
-      href="/docs"
-      class="mb-4 block text-lg font-bold text-zinc-100 transition-colors hover:text-white"
-    >
-      Documentation
-    </a>
-
     <!-- Search -->
-    <div class="mb-6">
+    <div class="mb-5">
       <DocsSearch {topics} {objects} />
     </div>
 
@@ -247,125 +240,121 @@
   class:opacity-0={!visible}
   class:overflow-hidden={!visible}
 >
-  <div
-    bind:this={sidebarContainer}
-    class="sticky top-8 max-h-[calc(100vh-4rem)] w-56 overflow-y-auto"
-  >
-    <div class="mb-6 flex items-center justify-between">
-      <a
-        href="/"
-        class="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
-      >
-        <ArrowLeft class="h-4 w-4" />
-        Back to Patchies
-      </a>
-      <button
-        onclick={() => (visible = false)}
-        class="cursor-pointer rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-        title="Hide sidebar"
-      >
-        <PanelLeftClose class="h-4 w-4" />
-      </button>
+  <div class="sticky top-8 flex max-h-[calc(100vh-4rem)] w-56 flex-col">
+    <!-- Sticky header -->
+    <div class="shrink-0 bg-zinc-950 pb-4">
+      <div class="mb-4 flex items-center justify-between">
+        <a
+          href="/"
+          class="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+        >
+          <ArrowLeft class="h-4 w-4" />
+          Back to Patchies
+        </a>
+        <button
+          onclick={() => (visible = false)}
+          class="cursor-pointer rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+          title="Hide sidebar"
+        >
+          <PanelLeftClose class="h-4 w-4" />
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="mb-2">
+        <DocsSearch {topics} {objects} />
+      </div>
     </div>
 
-    <a
-      href="/docs"
-      class="mb-4 block text-lg font-bold text-zinc-100 transition-colors hover:text-white"
-    >
-      Documentation
-    </a>
+    <!-- Scrollable content -->
+    <div bind:this={sidebarContainer} class="min-h-0 flex-1 overflow-y-auto">
+      <!-- Topics Section -->
+      <div class="mb-6">
+        <button
+          onclick={() => (guidesExpanded = !guidesExpanded)}
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
+        >
+          {#if guidesExpanded}
+            <ChevronDown class="h-3.5 w-3.5" />
+          {:else}
+            <ChevronRight class="h-3.5 w-3.5" />
+          {/if}
+          <BookOpen class="h-3.5 w-3.5" />
+          Guides
+        </button>
 
-    <!-- Search -->
-    <div class="mb-6">
-      <DocsSearch {topics} {objects} />
-    </div>
-
-    <!-- Topics Section -->
-    <div class="mb-6">
-      <button
-        onclick={() => (guidesExpanded = !guidesExpanded)}
-        class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
-      >
         {#if guidesExpanded}
-          <ChevronDown class="h-3.5 w-3.5" />
-        {:else}
-          <ChevronRight class="h-3.5 w-3.5" />
+          <nav class="mt-4 space-y-3">
+            {#each categoryOrder as category}
+              {@const categoryTopics = topicsByCategory().get(category)}
+
+              {#if categoryTopics && categoryTopics.length > 0}
+                <div>
+                  <div class="mb-1 text-xs text-zinc-600">{category}</div>
+
+                  <ul class="space-y-0.5">
+                    {#each categoryTopics as topic}
+                      {@const isActive = currentPath === `/docs/${topic.slug}`}
+                      <li>
+                        <a
+                          href="/docs/{topic.slug}"
+                          data-active={isActive}
+                          class={[
+                            'block rounded px-2 py-1 text-sm transition-colors',
+                            isActive
+                              ? 'bg-zinc-800 text-zinc-100'
+                              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                          ]}
+                        >
+                          {topic.title}
+                        </a>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
+            {/each}
+          </nav>
         {/if}
-        <BookOpen class="h-3.5 w-3.5" />
-        Guides
-      </button>
+      </div>
 
-      {#if guidesExpanded}
-        <nav class="mt-4 space-y-3">
-          {#each categoryOrder as category}
-            {@const categoryTopics = topicsByCategory().get(category)}
+      <!-- Objects Section -->
+      <div>
+        <button
+          onclick={() => (objectsExpanded = !objectsExpanded)}
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
+        >
+          {#if objectsExpanded}
+            <ChevronDown class="h-3.5 w-3.5" />
+          {:else}
+            <ChevronRight class="h-3.5 w-3.5" />
+          {/if}
+          <Box class="h-3.5 w-3.5" />
+          Objects
+        </button>
 
-            {#if categoryTopics && categoryTopics.length > 0}
-              <div>
-                <div class="mb-1 text-xs text-zinc-600">{category}</div>
-
-                <ul class="space-y-0.5">
-                  {#each categoryTopics as topic}
-                    {@const isActive = currentPath === `/docs/${topic.slug}`}
-                    <li>
-                      <a
-                        href="/docs/{topic.slug}"
-                        data-active={isActive}
-                        class={[
-                          'block rounded px-2 py-1 text-sm transition-colors',
-                          isActive
-                            ? 'bg-zinc-800 text-zinc-100'
-                            : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                        ]}
-                      >
-                        {topic.title}
-                      </a>
-                    </li>
-                  {/each}
-                </ul>
-              </div>
-            {/if}
-          {/each}
-        </nav>
-      {/if}
-    </div>
-
-    <!-- Objects Section -->
-    <div>
-      <button
-        onclick={() => (objectsExpanded = !objectsExpanded)}
-        class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
-      >
         {#if objectsExpanded}
-          <ChevronDown class="h-3.5 w-3.5" />
-        {:else}
-          <ChevronRight class="h-3.5 w-3.5" />
+          <ul class="space-y-0.5">
+            {#each objects as object}
+              {@const isActive = currentPath === `/docs/objects/${object.slug}`}
+              <li>
+                <a
+                  href="/docs/objects/{object.slug}"
+                  data-active={isActive}
+                  class={[
+                    'block rounded px-2 py-1 font-mono text-sm transition-colors',
+                    isActive
+                      ? 'bg-zinc-800 text-zinc-100'
+                      : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                  ]}
+                >
+                  {object.slug}
+                </a>
+              </li>
+            {/each}
+          </ul>
         {/if}
-        <Box class="h-3.5 w-3.5" />
-        Objects
-      </button>
-
-      {#if objectsExpanded}
-        <ul class="space-y-0.5">
-          {#each objects as object}
-            {@const isActive = currentPath === `/docs/objects/${object.slug}`}
-            <li>
-              <a
-                href="/docs/objects/{object.slug}"
-                data-active={isActive}
-                class={[
-                  'block rounded px-2 py-1 font-mono text-sm transition-colors',
-                  isActive
-                    ? 'bg-zinc-800 text-zinc-100'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                ]}
-              >
-                {object.slug}
-              </a>
-            </li>
-          {/each}
-        </ul>
-      {/if}
+      </div>
     </div>
   </div>
 </aside>
