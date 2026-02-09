@@ -110,6 +110,7 @@
 
   // Dialog state for missing API key
   let showMissingApiKeyDialog = $state(false);
+  let pendingApiKeyCallback = $state<(() => void) | null>(null);
 
   // Dialog state for new patch confirmation
   let showNewPatchDialog = $state(false);
@@ -430,6 +431,15 @@
   function onGeminiApiKeySaved() {
     hasGeminiApiKey = true;
 
+    // If there's a pending callback (e.g., from PatchToPromptDialog), call it
+    if (pendingApiKeyCallback) {
+      const callback = pendingApiKeyCallback;
+      pendingApiKeyCallback = null;
+      callback();
+      return;
+    }
+
+    // Default behavior: trigger AI prompt
     // If a single node is selected, edit it; otherwise create new
     if (selectedNodeIds.length === 1) {
       aiEditingNodeId = selectedNodeIds[0];
@@ -438,6 +448,11 @@
     }
 
     triggerAiPrompt();
+  }
+
+  function handlePatchToPromptRequestApiKey(onKeyReady: () => void) {
+    pendingApiKeyCallback = onKeyReady;
+    showMissingApiKeyDialog = true;
   }
 
   function triggerAiPrompt() {
@@ -1421,6 +1436,7 @@
       {nodes}
       {edges}
       patchName={$currentPatchName ?? undefined}
+      onRequestApiKey={handlePatchToPromptRequestApiKey}
     />
   </div>
 </div>

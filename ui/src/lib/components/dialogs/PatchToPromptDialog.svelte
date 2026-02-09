@@ -1,25 +1,35 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Dices, Copy, Download, Pencil, Check, Lock } from '@lucide/svelte/icons';
+  import { Dices, Copy, Download, Pencil, Lock, Sparkles, Loader2 } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import type { Node, Edge } from '@xyflow/svelte';
-  import { cleanPatch, buildDirectTemplate, getRandomPrompt } from '$lib/ai/patch-to-prompt';
+  import {
+    cleanPatch,
+    buildDirectTemplate,
+    getRandomPrompt,
+    refineSpec,
+    hasGeminiApiKey
+  } from '$lib/ai/patch-to-prompt';
 
   let {
     open = $bindable(false),
     nodes,
     edges,
-    patchName
+    patchName,
+    onRequestApiKey
   }: {
     open: boolean;
     nodes: Node[];
     edges: Edge[];
     patchName?: string;
+    onRequestApiKey?: (onKeyReady: () => void) => void;
   } = $props();
 
   let steeringPrompt = $state('');
   let generatedPrompt = $state('');
   let isEditing = $state(false);
+  let isRefining = $state(false);
+  let isRefined = $state(false);
 
   // Generate prompt whenever inputs change
   $effect(() => {
@@ -79,11 +89,46 @@
     toast.success(`Downloaded ${filename}`);
   }
 
+  async function doRefine() {
+    if (isRefining) return;
+
+    isRefining = true;
+
+    try {
+      const cleanedPatch = cleanPatch(nodes, edges);
+      const refined = await refineSpec(cleanedPatch, {
+        patchName,
+        steeringPrompt
+      });
+
+      generatedPrompt = refined;
+      isRefined = true;
+      isEditing = false; // Lock editing after refinement
+      toast.success('Specification refined with AI');
+    } catch (error) {
+      console.error('Refine failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to refine specification');
+    } finally {
+      isRefining = false;
+    }
+  }
+
+  function handleRefine() {
+    if (!hasGeminiApiKey()) {
+      // Request API key, then refine when ready
+      onRequestApiKey?.(() => doRefine());
+      return;
+    }
+
+    doRefine();
+  }
+
   // Reset state when dialog opens
   $effect(() => {
     if (open) {
       steeringPrompt = '';
       isEditing = false;
+      isRefined = false;
     }
   });
 </script>
@@ -127,21 +172,45 @@
       <!-- Generated prompt preview -->
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-zinc-300">Generated Prompt</span>
-
-          <button
-            onclick={toggleEdit}
-            title={isEditing ? 'Lock editing' : 'Unlock editing'}
-            class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-          >
-            {#if isEditing}
-              <Lock class="h-3 w-3" />
-              <span>Lock</span>
-            {:else}
-              <Pencil class="h-3 w-3" />
-              <span>Edit</span>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-zinc-300">Generated Prompt</span>
+            {#if isRefined}
+              <span class="rounded bg-purple-600/20 px-1.5 py-0.5 text-xs text-purple-300">
+                AI Refined
+              </span>
             {/if}
-          </button>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button
+              onclick={handleRefine}
+              disabled={isRefining}
+              title="Refine with AI"
+              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-purple-400 transition-colors hover:bg-purple-900/30 hover:text-purple-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {#if isRefining}
+                <Loader2 class="h-3 w-3 animate-spin" />
+                <span>Refining...</span>
+              {:else}
+                <Sparkles class="h-3 w-3" />
+                <span>Refine</span>
+              {/if}
+            </button>
+
+            <button
+              onclick={toggleEdit}
+              title={isEditing ? 'Lock editing' : 'Unlock editing'}
+              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+            >
+              {#if isEditing}
+                <Lock class="h-3 w-3" />
+                <span>Lock</span>
+              {:else}
+                <Pencil class="h-3 w-3" />
+                <span>Edit</span>
+              {/if}
+            </button>
+          </div>
         </div>
 
         <textarea

@@ -28,3 +28,5 @@ export {
 } from './template-builder';
 
 export { EXAMPLE_PROMPTS, getRandomPrompt } from './example-prompts';
+
+export { refineSpec, hasGeminiApiKey, type RefineOptions } from './spec-refiner';

@@ -169,7 +169,7 @@ src/lib/ai/patch-to-prompt/
   patch-transformer.ts     # Clean patch JSON
   context-injector.ts      # Gather object descriptions
   template-builder.ts      # Assemble direct template
-  spec-cleaner.ts          # LLM refinement (optional)
+  spec-refiner.ts          # LLM refinement (optional) - uses Gemini
   example-prompts.ts       # Pool for dice button
   index.ts                 # Main exports
 
@@ -351,58 +351,59 @@ The oscillator produces a sine wave that plays through the speakers.
 
 ## Implementation Plan
 
-### Phase 1: Core Utilities
+### Phase 1: Core Utilities ✅
 
-1. **patch-transformer.ts**
+1. **patch-transformer.ts** ✅
    - `cleanPatch(nodes, edges)` → `CleanedPatch`
    - Strip visual-only fields
    - Generate metadata (counts, types)
 
-2. **context-injector.ts**
+2. **context-injector.ts** ✅
    - `getContextForTypes(types: string[])` → object descriptions
    - Reuse `getObjectSpecificInstructions` from multi-object-resolver
 
-3. **template-builder.ts**
+3. **template-builder.ts** ✅
    - `buildDirectTemplate(patch, steering, context)` → string
    - Markdown formatted output
 
-4. **example-prompts.ts**
+4. **example-prompts.ts** ✅
    - Array of example steering prompts
    - `getRandomPrompt()` function
 
-### Phase 2: UI
+### Phase 2: UI ✅
 
-5. **PatchToPromptDialog.svelte**
+5. **PatchToPromptDialog.svelte** ✅
    - Steering input with dice button
    - Preview area (read-only/editable toggle)
    - Copy/download buttons
    - Wire up to template builder
 
-6. **Command palette integration**
-   - Add "Generate Implementation Prompt" command
+6. **Command palette integration** ✅
+   - Add "Patch to Prompt" command
    - Opens dialog with current patch
 
-### Phase 3: AI Refinement
+### Phase 3: AI Refinement ✅
 
-7. **spec-cleaner.ts**
-   - `refineWithGemini(template, steering)` → refined spec
-   - Streaming response for better UX
+7. **spec-refiner.ts** ✅
+   - `refineSpec(patch, options)` → refined spec
+   - Uses Gemini 2.0 Flash model
    - Error handling for missing API key
 
-8. **Update dialog**
-   - Add "Clean up with AI" button
-   - Loading state during generation
-   - Display refined result
+8. **Update dialog** ✅
+   - Added "Refine" button with Sparkles icon
+   - Loading state during generation (spinner)
+   - "AI Refined" badge when refinement is complete
+   - Opens GeminiApiKeyDialog if no API key is set
 
-### Phase 4: Polish
+### Phase 4: Polish (TODO)
 
 9. **Size management**
    - Detect oversized prompts
    - Implement trimming strategies
 
 10. **UX refinements**
-    - Toast on copy success
-    - Filename with patch name if available
+    - Toast on copy success ✅
+    - Filename with patch name if available ✅
     - Keyboard shortcuts (Cmd+C to copy)
 
 ## Example Steering Prompts (for dice button)
