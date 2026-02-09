@@ -38,4 +38,4 @@ API keys are stored in localStorage as `gemini-api-key` and there is a risk of y
 ## See Also
 
 - [Adding Objects](/docs/adding-objects)
-- [Getting Started](/docs/getting-started)
+- [Demos](/docs/demos)

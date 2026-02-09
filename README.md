@@ -41,4 +41,4 @@ This lets you visually see the program's core composition and its in-between res
 
 No installation needed. Open [patchies.app](https://patchies.app) and start patching. Use the [demos tab](https://patchies.app/?startup=demos) to get some inspirations.
 
-New to Patchies? Check out the [docs](https://patchies.app/docs/getting-started) for guides and object references.
+New to Patchies? Check out the [docs](https://patchies.app/docs/adding-objects) for guides and object references.

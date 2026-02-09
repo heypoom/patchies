@@ -7,4 +7,4 @@ Patchies is designed to be keyboard-first so you can get in the flow. Go to [Hel
 ## See Also
 
 - [Adding Objects](/docs/adding-objects)
-- [Getting Started](/docs/getting-started)
+- [Demos](/docs/demos)

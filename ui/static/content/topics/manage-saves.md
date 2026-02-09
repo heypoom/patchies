@@ -48,4 +48,4 @@ Use the bottom bar to:
 ## See Also
 
 - [Sharing Links](/docs/sharing-links)
-- [Getting Started](/docs/getting-started)
+- [Demos](/docs/demos)

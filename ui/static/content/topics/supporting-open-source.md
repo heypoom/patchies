@@ -20,4 +20,4 @@ Special thanks to [the amazing people](/?startup=thanks) who helped bring Patchi
 
 ## See Also
 
-- [Getting Started](/docs/getting-started)
+- [Demos](/docs/demos)

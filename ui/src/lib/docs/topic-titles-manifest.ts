@@ -12,7 +12,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'canvas-interaction': 'Canvas Interaction',
   'connecting-objects': 'Connecting Objects',
   'connection-rules': 'Connection Rules',
-  'getting-started': 'Getting Started',
+  demos: 'Demos',
   'hot-cold-inlets': 'Hot and Cold Inlets',
   'in-app-help': 'Help',
   'javascript-runner': 'JavaScript Runner',

@@ -7,4 +7,4 @@ Shared links contain your entire patch encoded in the URL, making it easy to sha
 ## See Also
 
 - [Saves](/docs/manage-saves)
-- [Getting Started](/docs/getting-started)
+- [Demos](/docs/demos)
