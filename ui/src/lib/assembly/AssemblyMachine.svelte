@@ -70,6 +70,42 @@
     updateNodeData(nodeId, { showMemoryViewer: !data.showMemoryViewer });
 
   const handleMessage: MessageCallbackFn = async (message, meta) => {
+    const sendDataAndStep = async (m: number | number[]) => {
+      if (meta.inlet === undefined) return;
+
+      const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
+      let source = 0;
+
+      if (parseInt(sourceIdStr) >= 0) {
+        source = parseInt(sourceIdStr);
+      }
+
+      await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
+
+      // Run until the machine blocks (reactive dataflow mode)
+      const MAX_CYCLES = 10_000;
+      let cyclesRun = 0;
+
+      while (cyclesRun < MAX_CYCLES) {
+        await assemblySystem.stepMachine(machineId, 100);
+        cyclesRun += 100;
+
+        const state = await assemblySystem.inspectMachine(machineId);
+        if (!state) break;
+
+        // Stop when machine reaches a blocking state
+        if (
+          state.status === 'Awaiting' ||
+          state.status === 'Halted' ||
+          state.status === 'Sleeping'
+        ) {
+          break;
+        }
+      }
+
+      await syncMachineState();
+    };
+
     try {
       await match(message)
         .with(asmMessages.bang, () => stepMachine())
@@ -82,38 +118,8 @@
         .with(asmMessages.step, () => stepMachine())
         .with(asmMessages.setDelayMs, ({ value }) => updateMachineConfig({ delayMs: value }))
         .with(asmMessages.setStepBy, ({ value }) => updateMachineConfig({ stepBy: value }))
-        .with(asmMessages.numberArray, async (m) => {
-          if (meta.inlet === undefined) return;
-
-          const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
-          let source = 0;
-
-          if (parseInt(sourceIdStr) >= 0) {
-            source = parseInt(sourceIdStr);
-          }
-
-          await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
-
-          // Step the machine so it can process the received message
-          await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
-          await syncMachineState();
-        })
-        .with(asmMessages.number, async (m) => {
-          if (meta.inlet === undefined) return;
-
-          const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
-          let source = 0;
-
-          if (parseInt(sourceIdStr) >= 0) {
-            source = parseInt(sourceIdStr);
-          }
-
-          await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
-
-          // Step the machine so it can process the received message
-          await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
-          await syncMachineState();
-        })
+        .with(asmMessages.numberArray, sendDataAndStep)
+        .with(asmMessages.number, sendDataAndStep)
         .otherwise(() => {
           // Unknown message type
         });
