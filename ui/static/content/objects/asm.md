@@ -10,9 +10,92 @@ small assembly programs to interact with the world.
 
 ## Instructions
 
-Over 50 stack machine assembly instructions:
+Stack effects are shown as `( before -- after )` where the rightmost value is the top of the stack.
 
-`noop` | `push` | `pop` | `load_string` | `load` | `store` | `write` | `read` | `dup` | `swap` | `over` | `rotate` | `nip` | `tuck` | `pick` | `inc` | `dec` | `add` | `sub` | `mul` | `div` | `mod` | `jump` | `jump_zero` | `jump_not_zero` | `equal` | `not_equal` | `less_than` | `less_than_or_equal` | `greater_than` | `greater_than_or_equal` | `print` | `call` | `return` | `send` | `receive` | `and` | `or` | `xor` | `not` | `left_shift` | `right_shift` | `sleep_tick` | `sleep_ms` | `halt` | `eof`
+### STACK OPERATIONS
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `noop` | `( -- )` | No operation |
+| `push <n>` | `( -- n )` | Push value onto stack |
+| `pop` | `( a -- )` | Remove top value |
+| `dup` | `( a -- a a )` | Duplicate top value |
+| `swap` | `( a b -- b a )` | Swap top two values |
+| `over` | `( a b -- a b a )` | Copy second value to top |
+| `rotate` | `( a b c -- b c a )` | Rotate top three values |
+| `nip` | `( a b -- b )` | Remove second value |
+| `tuck` | `( a b -- b a b )` | Copy top value below second |
+| `pick <n>` | `( -- v )` | Copy nth value to top (0=dup, 1=over) |
+
+### ARITHMETIC
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `add` | `( a b -- a+b )` | Addition |
+| `sub` | `( a b -- a-b )` | Subtraction |
+| `mul` | `( a b -- a*b )` | Multiplication |
+| `div` | `( a b -- a/b )` | Integer division |
+| `mod` | `( a b -- a%b )` | Modulo |
+| `inc` | `( a -- a+1 )` | Increment by 1 |
+| `dec` | `( a -- a-1 )` | Decrement by 1 (min 0) |
+
+### COMPARISON
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `equal` | `( a b -- flag )` | 1 if a == b, else 0 |
+| `not_equal` | `( a b -- flag )` | 1 if a != b, else 0 |
+| `less_than` | `( a b -- flag )` | 1 if a < b, else 0 |
+| `less_than_or_equal` | `( a b -- flag )` | 1 if a <= b, else 0 |
+| `greater_than` | `( a b -- flag )` | 1 if a > b, else 0 |
+| `greater_than_or_equal` | `( a b -- flag )` | 1 if a >= b, else 0 |
+
+### BITWISE
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `and` | `( a b -- a&b )` | Bitwise AND |
+| `or` | `( a b -- a\|b )` | Bitwise OR |
+| `xor` | `( a b -- a^b )` | Bitwise XOR |
+| `not` | `( a -- ~a )` | Bitwise NOT |
+| `left_shift` | `( a b -- a<<b )` | Left shift a by b bits |
+| `right_shift` | `( a b -- a>>b )` | Right shift a by b bits |
+
+### CONTROL FLOW
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `jump <addr>` | `( -- )` | Unconditional jump to address/label |
+| `jump_zero <addr>` | `( a -- )` | Jump if top value is 0 |
+| `jump_not_zero <addr>` | `( a -- )` | Jump if top value is not 0 |
+| `call <addr>` | `( -- )` | Push PC to call stack and jump |
+| `return` | `( -- )` | Pop call stack and jump back |
+| `halt` | `( -- )` | Stop program execution |
+
+### MEMORY
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `load <addr>` | `( -- v )` | Push value at address onto stack |
+| `store <addr>` | `( v -- )` | Pop value and store at address |
+| `read <n>` | `( addr -- v1..vn )` | Pop address, push n values from memory |
+| `write <n>` | `( v1..vn addr -- )` | Pop address, write n values to memory |
+| `load_string <addr>` | `( -- bytes.. )` | Push null-terminated string bytes |
+
+### I/O
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `send <port> <n>` | `( v1..vn -- )` | Send n values to outlet port (0-3) |
+| `receive` | `( -- v )` | Wait for input, push received value |
+| `print` | `( bytes.. -- )` | Pop string bytes until null, print to console |
+
+### TIMING
+
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `sleep_tick <n>` | `( -- )` | Pause for n clock ticks |
+| `sleep_ms <n>` | `( -- )` | Pause for n milliseconds |
 
 ## Syntax
 
