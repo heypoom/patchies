@@ -15,8 +15,8 @@ export const ASM_MAX_CELL_VALUE = 0xffff;
 // Memory size (must match vasm segments.rs)
 export const ASM_MEMORY_SIZE = 0x1000; // 4096 u16 values (8KB)
 
-// Memory page settings
-export const ASM_DEFAULT_PAGE_OFFSET = 0x0340; // Start of RAM segment in new 8KB layout
+// Memory page settings (must match vasm segments.rs)
+export const ASM_DEFAULT_PAGE_OFFSET = 0x0340; // STACK_START in Rust - start of RAM segment
 export const ASM_DEFAULT_PAGE_SIZE = 64;
 export const ASM_MAX_VALID_PAGE = Math.floor(ASM_MEMORY_SIZE / ASM_DEFAULT_PAGE_SIZE) - 1; // 63
 
