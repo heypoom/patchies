@@ -78,27 +78,31 @@
           musicManager.setPrompts(data.prompts);
           prompts = musicManager.getPrompts();
         })
-        .with(
-          {
-            type: P.union(
-              'temperature',
-              'topK',
-              'seed',
-              'guidance',
-              'bpm',
-              'density',
-              'brightness'
-            ),
-            value: P.number
-          },
-          ({ type, value }) => {
-            musicManager.updateConfig({ [type]: value });
-          }
-        )
-        .with({ type: 'scale', value: P.string }, ({ value }) => {
+        .with(aiMusicMessages.setBPM, ({ value }) => {
+          musicManager.updateConfig({ bpm: value });
+        })
+        .with(aiMusicMessages.setTemperature, ({ value }) => {
+          musicManager.updateConfig({ temperature: value });
+        })
+        .with(aiMusicMessages.setTopK, ({ value }) => {
+          musicManager.updateConfig({ topK: value });
+        })
+        .with(aiMusicMessages.setSeed, ({ value }) => {
+          musicManager.updateConfig({ seed: value });
+        })
+        .with(aiMusicMessages.setGuidance, ({ value }) => {
+          musicManager.updateConfig({ guidance: value });
+        })
+        .with(aiMusicMessages.setDensity, ({ value }) => {
+          musicManager.updateConfig({ density: value });
+        })
+        .with(aiMusicMessages.setBrightness, ({ value }) => {
+          musicManager.updateConfig({ brightness: value });
+        })
+        .with(aiMusicMessages.setScale, ({ value }) => {
           musicManager.updateConfig({ scale: value as Scale });
         })
-        .with({ type: 'config', config: P.any }, ({ config }) => {
+        .with(aiMusicMessages.setConfig, ({ config }) => {
           if (config) {
             musicManager.updateConfig(config as LiveMusicGenerationConfig);
           }
