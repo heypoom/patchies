@@ -16,7 +16,7 @@ From `js`, `worker`, or other JavaScript-enabled objects, you can send messages 
 
 ```javascript
 // Send to named channels
-send('foobar', { channel: 'foo' });
+send('foobar', { to: 'foo' });
 ```
 
 Both visual objects and JavaScript code can share the same channels. See the [JavaScript Runner](/docs/javascript-runner) page for more on the API.

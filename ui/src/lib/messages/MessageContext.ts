@@ -6,22 +6,17 @@ import { MessageChannelRegistry } from './MessageChannelRegistry';
 
 export type SendMessageOptions = {
   /**
-   * Which outlet to send the message to?
-   * Number refers to the outlet index.
+   * Where to send the message.
+   * - Number: outlet index (0, 1, 2...) - routes via connected edges
+   * - String: channel name - broadcasts to all recv() listeners on this channel
    */
-  to?: number;
+  to?: number | string;
 
   /**
    * Target node IDs to exclude from routing (already handled via direct channels).
    * Used internally by worker nodes to prevent duplicate messages.
    */
   excludeTargets?: string[];
-
-  /**
-   * Named channel to send message to (bypasses edge-based routing).
-   * When specified, message is broadcast to all recv() listeners on this channel.
-   */
-  channel?: string;
 };
 
 export type RecvChannelOptions = {
@@ -29,14 +24,14 @@ export type RecvChannelOptions = {
    * Named channel to receive messages from.
    * When specified, receives messages from send() calls with matching channel.
    */
-  channel: string;
+  from: string;
 };
 
 export interface UserFnRunContext {
-  /** Sends messages. With { channel } option, broadcasts to named channel instead of edges. */
+  /** Sends messages. With { to: 'channel' } (string), broadcasts to named channel instead of edges. */
   send: (data: unknown, options?: SendMessageOptions) => void;
 
-  /** Receives messages. With { channel } option, receives from named channel instead of edges. */
+  /** Receives messages. With { from: 'channel' }, receives from named channel instead of edges. */
   onMessage: (callback: MessageCallbackFn, options?: RecvChannelOptions) => void;
 
   /** Schedules setInterval with cleanup. */
@@ -150,9 +145,9 @@ export class MessageContext {
   };
 
   send(data: unknown, options: SendMessageOptions = {}) {
-    // If channel is specified, broadcast via ChannelRegistry instead of edge-based routing
-    if (options.channel) {
-      this.channelRegistry.broadcast(options.channel, data, this.nodeId);
+    // If `to` is a string, it's a channel name - broadcast via ChannelRegistry
+    if (typeof options.to === 'string') {
+      this.channelRegistry.broadcast(options.to, data, this.nodeId);
     } else {
       this.messageSystem.sendMessage(this.nodeId, data, options);
     }
@@ -163,13 +158,13 @@ export class MessageContext {
   /**
    * Create the onMessage/recv function for this node.
    * - onMessage(callback) - receives via connected edges
-   * - onMessage(callback, { channel: 'foo' }) - receives from named channel
+   * - onMessage(callback, { from: 'channelName' }) - receives from named channel
    */
   createOnMessageFunction() {
     return (callback: MessageCallbackFn, options?: RecvChannelOptions) => {
-      if (options?.channel) {
+      if (options?.from) {
         // Channel-based receiving - subscribe to ChannelRegistry
-        this.subscribeToChannel(options.channel, callback);
+        this.subscribeToChannel(options.from, callback);
       } else {
         // Edge-based receiving - update the callback
         this.messageCallback = callback;

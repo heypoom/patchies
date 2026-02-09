@@ -152,6 +152,11 @@ export class MessageSystem {
       return;
     }
 
+    // String `to` means channel-based routing - handled by ChannelRegistry, not edges
+    if (typeof options.to === 'string') {
+      return;
+    }
+
     const message: Message = { data, source: fromNodeId };
     const connectedNodes = this.connections.get(fromNodeId) || [];
     const excludeTargets = options.excludeTargets ?? [];

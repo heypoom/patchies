@@ -146,30 +146,38 @@ function createWorkerContext(nodeId: string) {
       postResponse({ type: 'consoleOutput', nodeId, level: 'info', args })
   };
 
-  const send = (data: unknown, options?: { to?: number; channel?: string }) => {
-    // If channel is specified, route via main thread's ChannelRegistry
-    if (options?.channel) {
-      postResponse({ type: 'sendToChannel', nodeId, data, channel: options.channel });
+  const send = (data: unknown, options?: { to?: number | string }) => {
+    // If `to` is a string, it's a channel name - route via main thread's ChannelRegistry
+    if (typeof options?.to === 'string') {
+      postResponse({ type: 'sendToChannel', nodeId, data, channel: options.to });
       return;
     }
 
-    const renderTargets = state.directChannel.sendToRenderTargets(data, options);
-    const workerTargets = state.directChannel.sendToWorkerTargets(data, options);
+    // At this point, `to` is number | undefined (edge-based routing)
+    // TODO(Poom): support using named channels for direct channel comunication
+    const edgeOptions = options as { to?: number } | undefined;
+    const renderTargets = state.directChannel.sendToRenderTargets(data, edgeOptions);
+    const workerTargets = state.directChannel.sendToWorkerTargets(data, edgeOptions);
 
     // Send via main thread, excluding targets we've already handled directly
     const excludeTargets = [...renderTargets, ...workerTargets];
 
-    postResponse({ type: 'sendMessage', nodeId, data, options: { ...options, excludeTargets } });
+    postResponse({
+      type: 'sendMessage',
+      nodeId,
+      data,
+      options: { ...edgeOptions, excludeTargets }
+    });
   };
 
   const onMessage = (
     callback: (data: unknown, meta: Omit<Message, 'data'>) => void,
-    options?: { channel?: string }
+    options?: { from?: string }
   ) => {
-    if (options?.channel) {
+    if (options?.from) {
       // Channel-based receiving - store callback and notify main thread to subscribe
-      state.channelCallbacks.set(options.channel, callback);
-      postResponse({ type: 'subscribeChannel', nodeId, channel: options.channel });
+      state.channelCallbacks.set(options.from, callback);
+      postResponse({ type: 'subscribeChannel', nodeId, channel: options.from });
     } else {
       // Edge-based receiving
       state.messageCallback = callback;

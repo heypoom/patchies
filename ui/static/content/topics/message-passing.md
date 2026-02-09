@@ -79,21 +79,28 @@ Create [`send <channel>`](/docs/objects/send) and [`recv <channel>`](/docs/objec
 
 ### JavaScript API
 
-Use the `channel` option with `send()` and `recv()`:
+Use `send()` with a string `to` option for channel routing, and `recv()` with `from`:
 
 ```javascript
 // Send to a named channel
-send({ x: 100 }, { channel: 'position' });
+send({ x: 100 }, { to: 'position' });
 
 // Receive from a named channel
 recv((data, meta) => {
   console.log(data);           // the message
   console.log(meta.channel);   // 'position'
   console.log(meta.source);    // sender's node ID
-}, { channel: 'position' });
+}, { from: 'position' });
 ```
 
-Visual objects and JavaScript code are interoperable on the same channel - a `send foo` object broadcasts to both `recv foo` objects and `recv(callback, { channel: 'foo' })` listeners.
+The `to` option is overloaded - a number routes to an outlet index, a string broadcasts to a channel:
+
+```javascript
+send(data, { to: 0 });          // send via outlet 0 (edge-based)
+send(data, { to: 'position' }); // broadcast to 'position' channel
+```
+
+Visual objects and JavaScript code are interoperable on the same channel - a `send foo` object broadcasts to both `recv foo` objects and `recv(callback, { from: 'foo' })` listeners.
 
 ## See Also
 

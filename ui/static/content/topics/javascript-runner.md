@@ -45,15 +45,17 @@ Send and receive messages wirelessly using named channels:
 
 ```javascript
 // Send to a named channel (broadcasts to all listeners)
-send({ x: 100 }, { channel: 'position' });
+send({ x: 100 }, { to: 'position' });
 
 // Receive from a named channel
 recv((data, meta) => {
   console.log(data);           // the message
   console.log(meta.channel);   // 'position'
   console.log(meta.source);    // sender's node ID
-}, { channel: 'position' });
+}, { from: 'position' });
 ```
+
+The `to` option is overloaded - a number routes to an outlet, a string broadcasts to a channel.
 
 Named channels work across `js`, `worker`, and visual `send`/`recv` objects. This enables wireless communication without visual connections.
 
