@@ -5,7 +5,8 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { asmMessages } from '$lib/objects/schemas/asm';
   import { AssemblySystem } from './AssemblySystem';
   import AssemblyEditor from './AssemblyEditor.svelte';
   import MachineStateViewer from './MachineStateViewer.svelte';
@@ -68,23 +69,29 @@
   const handleMessage: MessageCallbackFn = async (message, meta) => {
     try {
       await match(message)
-        .with({ type: 'bang' }, () => stepMachine())
-        .with({ type: 'setCode', value: P.string }, ({ value }) => {
-          setCodeAndUpdate(value);
+        .with(asmMessages.bang, () => stepMachine())
+        .with(asmMessages.setCode, ({ value }) => setCodeAndUpdate(value))
+        .with(asmMessages.run, () => reloadProgram(true))
+        .with(asmMessages.play, () => playMachine())
+        .with(asmMessages.pause, () => pauseMachine())
+        .with(asmMessages.toggle, () => togglePlayPause())
+        .with(asmMessages.reset, () => resetMachine())
+        .with(asmMessages.step, () => stepMachine())
+        .with(asmMessages.setDelayMs, ({ value }) => updateMachineConfig({ delayMs: value }))
+        .with(asmMessages.setStepBy, ({ value }) => updateMachineConfig({ stepBy: value }))
+        .with(asmMessages.numberArray, async (m) => {
+          if (meta.inlet === undefined) return;
+
+          const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
+          let source = 0;
+
+          if (parseInt(sourceIdStr) >= 0) {
+            source = parseInt(sourceIdStr);
+          }
+
+          await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
         })
-        .with({ type: 'run' }, () => reloadProgram(true))
-        .with({ type: 'play' }, () => playMachine())
-        .with({ type: 'pause' }, () => pauseMachine())
-        .with({ type: 'toggle' }, () => togglePlayPause())
-        .with({ type: 'reset' }, () => resetMachine())
-        .with({ type: 'step' }, () => stepMachine())
-        .with({ type: 'setDelayMs', value: P.number }, ({ value }) =>
-          updateMachineConfig({ delayMs: value })
-        )
-        .with({ type: 'setStepBy', value: P.number }, ({ value }) =>
-          updateMachineConfig({ stepBy: value })
-        )
-        .with(P.union(P.number, P.array(P.number)), async (m) => {
+        .with(asmMessages.number, async (m) => {
           if (meta.inlet === undefined) return;
 
           const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
