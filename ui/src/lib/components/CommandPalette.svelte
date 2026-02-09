@@ -186,7 +186,7 @@
     },
     {
       id: 'help',
-      name: 'Help / Getting Started',
+      name: 'Getting Started',
       description: 'Show the getting started guide and help documentation'
     },
     {

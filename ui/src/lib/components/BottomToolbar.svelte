@@ -329,7 +329,7 @@
                 }}
               >
                 <CircleHelp class="h-5 w-5 text-zinc-400" />
-                <span>Help / Getting Started</span>
+                <span>Getting Started</span>
               </button>
             </div>
           </Drawer.Content>
@@ -432,7 +432,7 @@
                 }}
               >
                 <CircleHelp class="h-4 w-4 text-zinc-400" />
-                <span>Help / Getting Started</span>
+                <span>Getting Started</span>
               </button>
             </div>
           </Popover.Content>
