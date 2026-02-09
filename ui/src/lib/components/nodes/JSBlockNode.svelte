@@ -3,7 +3,8 @@
   import { onMount, onDestroy } from 'svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { JSRunner } from '$lib/js-runner/JSRunner';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { jsMessages } from '$lib/objects/schemas';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import CodeBlockBase from './CodeBlockBase.svelte';
@@ -50,13 +51,13 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
+        .with(jsMessages.setCode, ({ code }) => {
           updateNodeData(nodeId, { code });
         })
-        .with({ type: 'run' }, () => {
+        .with(jsMessages.run, () => {
           executeCode();
         })
-        .with({ type: 'stop' }, () => {
+        .with(jsMessages.stop, () => {
           cleanupRunningTasks();
         });
     } catch (error) {
