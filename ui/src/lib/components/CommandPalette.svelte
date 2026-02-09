@@ -40,6 +40,7 @@
     onBrowseObjects?: () => void;
     onSavePatch?: () => void;
     onLoadPatch?: () => void;
+    onGeneratePrompt?: () => void;
   }
 
   let {
@@ -57,7 +58,8 @@
     onShowHelp,
     onBrowseObjects,
     onSavePatch,
-    onLoadPatch
+    onLoadPatch,
+    onGeneratePrompt
   }: Props = $props();
 
   // Get the first selected node (for save as preset)
@@ -203,6 +205,11 @@
       id: 'clear-cache',
       name: 'Clear Cache',
       description: 'Fix stale app issues by clearing all caches and unregistering service workers'
+    },
+    {
+      id: 'generate-prompt',
+      name: 'Generate Implementation Prompt',
+      description: 'Create an LLM-friendly spec from your patch for Claude Code or other AI tools'
     }
   ];
 
@@ -420,6 +427,10 @@
       .with('clear-cache', async () => {
         onCancel();
         await clearCacheAndServiceWorker();
+      })
+      .with('generate-prompt', () => {
+        onCancel();
+        onGeneratePrompt?.();
       })
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);

@@ -64,6 +64,7 @@
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
   import SavePatchModal from './dialogs/SavePatchModal.svelte';
   import LoadSharedPatchDialog from './dialogs/LoadSharedPatchDialog.svelte';
+  import PatchToPromptDialog from './dialogs/PatchToPromptDialog.svelte';
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
@@ -123,6 +124,9 @@
   // Dialog state for loading shared patch from URL
   let showLoadSharedPatchDialog = $state(false);
   let pendingSharedPatch = $state<PatchSaveFormat | null>(null);
+
+  // Dialog state for patch-to-prompt generator
+  let showPatchToPromptDialog = $state(false);
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
@@ -1318,6 +1322,7 @@
             $isSidebarOpen = true;
             $sidebarView = 'saves';
           }}
+          onGeneratePrompt={() => (showPatchToPromptDialog = true)}
         />
       {/if}
     </div>
@@ -1408,6 +1413,14 @@
       isReadOnly={isReadOnlyMode}
       onConfirm={confirmLoadSharedPatch}
       onCancel={cancelLoadSharedPatch}
+    />
+
+    <!-- Patch-to-Prompt Generator Dialog -->
+    <PatchToPromptDialog
+      bind:open={showPatchToPromptDialog}
+      {nodes}
+      {edges}
+      patchName={$currentPatchName ?? undefined}
     />
   </div>
 </div>

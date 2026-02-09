@@ -165,7 +165,7 @@ If total prompt exceeds threshold (e.g., 50KB):
 ### File Structure
 
 ```
-src/lib/ai/prompt-generator/
+src/lib/ai/patch-to-prompt/
   patch-transformer.ts     # Clean patch JSON
   context-injector.ts      # Gather object descriptions
   template-builder.ts      # Assemble direct template
