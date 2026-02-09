@@ -51,7 +51,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | expr-eval                         | ^2.0.2       | MIT                    |
 | fuse.js                           | ^7.1.0       | Apache-2.0             |
 | highlight.js                      | ^11.11.1     | BSD-3-Clause           |
-| hydra-ts                          | ^1.0.0       | MIT                    |
+| hydra (local fork)                | -            | **AGPL-3.0**           |
 | json5                             | ^2.2.3       | MIT                    |
 | lezer-glsl                        | ^0.6.0       | MIT                    |
 | lodash                            | ^4.17.21     | MIT                    |
@@ -80,6 +80,8 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | tone                              | ^15.1.22     | MIT                    |
 | ts-pattern                        | ^5.8.0       | MIT                    |
 | uxn.wasm                          | ^0.9.0       | MIT                    |
+| vite-plugin-pwa                   | ^0.21.1      | MIT                    |
+| @vite-pwa/sveltekit               | ^1.1.0       | MIT                    |
 | vite-plugin-static-copy           | ^3.1.1       | MIT                    |
 | webchuck                          | ^1.2.10      | Apache-2.0             |
 | webmidi                           | ^3.1.12      | Apache-2.0             |
@@ -114,6 +116,20 @@ The Uxn node in Patchies contains a port of the [uxn5 emulator](https://git.sr.h
 - **Copyright**: © 2020 Devine Lu Linvega
 
 The emulator was ported to work within the Patchies patcher environment with integration for video chaining and message passing. The original MIT license is preserved in the source files.
+
+#### Hydra
+
+The Hydra node in Patchies contains a local fork of [hydra-ts](https://github.com/folz/hydra-ts), which is itself a TypeScript port of [Hydra](https://github.com/ojack/hydra-synth) by [Olivia Jack](https://ojack.xyz).
+
+- **Original Project**: Hydra - Live coding networked visuals
+- **Original Author**: Olivia Jack
+- **TypeScript Port**: folz/hydra-ts
+- **Original Repository**: <https://github.com/ojack/hydra-synth>
+- **TypeScript Port Repository**: <https://github.com/folz/hydra-ts>
+- **License**: AGPL-3.0
+- **Local Fork**: `ui/src/lib/hydra/`
+
+The local fork modifies the error handling to integrate with Patchies' error reporting system instead of using console.log. The AGPL-3.0 license is preserved in the source files.
 
 #### Superdough (Package Patch)
 

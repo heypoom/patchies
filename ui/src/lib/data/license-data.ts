@@ -278,12 +278,6 @@ export const dependencies: ProjectLicense[] = [
     license: 'BSD-3-Clause',
     url: 'https://npmjs.com/package/highlight.js'
   },
-  {
-    name: 'hydra-ts',
-    version: '^1.0.0',
-    license: 'MIT',
-    url: 'https://npmjs.com/package/hydra-ts'
-  },
   { name: 'json5', version: '^2.2.3', license: 'MIT', url: 'https://npmjs.com/package/json5' },
   {
     name: 'lezer-glsl',
@@ -383,6 +377,18 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/uxn.wasm'
   },
   {
+    name: 'vite-plugin-pwa',
+    version: '^0.21.1',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/vite-plugin-pwa'
+  },
+  {
+    name: '@vite-pwa/sveltekit',
+    version: '^1.1.0',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/@vite-pwa/sveltekit'
+  },
+  {
     name: 'vite-plugin-static-copy',
     version: '^3.1.1',
     license: 'MIT',
@@ -430,6 +436,16 @@ export const portedCode: PortedCode[] = [
     copyright: '© 2020 Devine Lu Linvega',
     notes:
       'Ported to work within the Patchies patcher environment with integration for video chaining and message passing.'
+  },
+  {
+    name: 'Hydra (local fork)',
+    description:
+      'The Hydra node contains a local fork of hydra-ts, a TypeScript port of Hydra live coding visuals by Olivia Jack.',
+    authors: 'Olivia Jack (original), folz (TypeScript port)',
+    repository: 'https://github.com/ojack/hydra-synth',
+    license: 'AGPL-3.0',
+    notes:
+      'Local fork at ui/src/lib/hydra/ modifies error handling to integrate with Patchies error reporting instead of console.log.'
   },
   {
     name: 'Superdough (patched)',
@@ -606,7 +622,7 @@ export const supportLinks: SupportLink[] = [
     category: 'tool',
     url: 'https://github.com/sponsors/antfu',
     type: 'github',
-    projects: ['Vitest', 'strip-literal', 'error-stack-parser-es']
+    projects: ['Vitest', 'vite-plugin-pwa', 'strip-literal', 'error-stack-parser-es']
   },
   {
     name: 'Karolis Narkevicius',
