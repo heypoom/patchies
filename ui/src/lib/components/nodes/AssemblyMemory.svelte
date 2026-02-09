@@ -8,6 +8,11 @@
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { AssemblySystem } from '$lib/assembly/AssemblySystem';
+  import {
+    ASM_MEMORY_GRID_COLUMNS,
+    ASM_MEMORY_GRID_LIMIT,
+    ASM_MAX_CELL_VALUE
+  } from '$lib/assembly/constants';
   import type { Action } from 'machine';
 
   let {
@@ -36,10 +41,8 @@
   const format = $derived(data.format ?? 'hex');
   const rows = $derived(data.rows ?? 6);
 
-  const columns = 8;
-  const gridLimit = 2000;
-  const count = $derived(Math.max(columns * rows, values.length));
-  const overGridLimit = $derived(count > gridLimit);
+  const count = $derived(Math.max(ASM_MEMORY_GRID_COLUMNS * rows, values.length));
+  const overGridLimit = $derived(count > ASM_MEMORY_GRID_LIMIT);
   const base = $derived(format === 'hex' ? 16 : 10);
 
   const handleMessage: MessageCallbackFn = async (message, meta) => {
@@ -119,7 +122,7 @@
     updateNodeData(nodeId, { ...data, ...updates });
 
   function setMemoryValue(address: number, value: number) {
-    if (value > 65535) return;
+    if (value > ASM_MAX_CELL_VALUE) return;
 
     const newValues = [...values];
     newValues[address] = value;
@@ -245,7 +248,7 @@
           {#if !isBatch && !overGridLimit}
             <div
               class="grid w-full items-center justify-center gap-y-[2px]"
-              style="grid-template-columns: repeat({columns}, minmax(0, 1fr));"
+              style="grid-template-columns: repeat({ASM_MEMORY_GRID_COLUMNS}, minmax(0, 1fr));"
             >
               {#each Array.from({ length: count }) as _, index}
                 {@const value = values[index]}

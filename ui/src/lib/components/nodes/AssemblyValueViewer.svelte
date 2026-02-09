@@ -8,6 +8,7 @@
   import { match, P } from 'ts-pattern';
   import { AssemblySystem } from '$lib/assembly/AssemblySystem';
   import { regionPalettes, getRegionClassName } from '$lib/assembly/regionColors';
+  import { ASM_VALUE_VIEWER_UPDATE_INTERVAL } from '$lib/assembly/constants';
   import { memoryRegionStore } from '$lib/assembly/memoryRegionStore';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { AsmMachineStateChangedEvent } from '$lib/eventbus/events';
@@ -120,10 +121,6 @@
 
   const eventBus = PatchiesEventBus.getInstance();
 
-  // Throttle to max ~20 updates/sec (50ms min interval)
-  // Conservative for patches with many machines/viewers
-  const MIN_UPDATE_INTERVAL = 50;
-
   let lastUpdateTime = 0;
 
   // Event handler for machine state changes (time-throttled)
@@ -131,7 +128,7 @@
     if (event.machineId !== machineId) return;
 
     const now = performance.now();
-    if (now - lastUpdateTime < MIN_UPDATE_INTERVAL) return;
+    if (now - lastUpdateTime < ASM_VALUE_VIEWER_UPDATE_INTERVAL) return;
 
     lastUpdateTime = now;
     updateValue();
