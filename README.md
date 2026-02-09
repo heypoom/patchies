@@ -37,7 +37,7 @@ This lets you visually see the program's core composition and its in-between res
 
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
-## Get Started
+## Get started
 
 No installation needed. Open [patchies.app](https://patchies.app) and start patching. Use the [demos tab](https://patchies.app/?startup=demos) to get some inspirations.
 
