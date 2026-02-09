@@ -19,10 +19,16 @@ Supports video chaining - connect the video outlet to other visual objects
 
 ## Controls
 
-- **Load ROM**: Drop a `.rom` file, or use the folder icon
-- **Console**: Terminal icon shows program output (also sent as messages)
+- **Load ROM**: Drop a `.rom` file, or use the menu
+- **Console**: Toggle to show program output (also sent as messages)
 - **Pause**: Pauses and resumes program execution
 - **Keyboard/Mouse**: Click on the canvas to focus it for input
+- **Edit Code**: Opens the Uxntal assembly code editor
+
+## Headless Mode
+
+Use Menu → **Hide Screen** to run without visual output (saves ~1.3MB memory).
+ROM reloads when re-enabling the screen.
 
 ## Write Your Own Programs
 
