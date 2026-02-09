@@ -49,6 +49,6 @@ Patchies is open source, [AGPL-licensed](https://github.com/heypoom/patchies/blo
 
 Patchies is only possible because of the generosity of open source library developers who made it possible! If you enjoyed using Patchies, it would make my day if you can go and support them 🧡
 
-Please check out the [thanks tab](https://patchies.app/?startup=thanks) which contains the direct links to support all the amazing people who helped play a part in bringing Patchies to life to their code and support.
+Please check out the [thanks tab](https://patchies.app/?startup=thanks) which contains the direct links to support all the amazing people who helped play a part in bringing Patchies to life through their code and support.
 
 The lists are also available in Markdown format: [complete package license list](https://github.com/heypoom/patchies/blob/main/LICENSES.md) and [links to support open source creators](https://github.com/heypoom/patchies/blob/main/SUPPORT.md).
