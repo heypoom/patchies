@@ -3,14 +3,21 @@ import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg } from './helpers';
 import { Bang, messages } from './common';
+import { P } from 'ts-pattern';
 
 // Uxn-specific message schemas
 const LoadUrl = msg('load', { url: Type.String() });
+const LoadCode = msg('load', { code: Type.String() });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const uxnMessages = {
   ...messages,
-  loadUrl: schema(LoadUrl)
+  loadUrl: schema(LoadUrl),
+  loadCode: schema(LoadCode),
+  // Matchers for primitive types
+  string: P.string,
+  uint8Array: P.instanceOf(Uint8Array),
+  file: P.instanceOf(File)
 };
 
 /**

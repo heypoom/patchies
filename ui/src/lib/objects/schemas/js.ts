@@ -1,21 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { schema } from './types';
-import { msg, sym } from './helpers';
-import { Bang, messages } from './common';
-
-// JS-specific message schemas
-const SetCode = msg('setCode', { code: Type.String() });
-const Run = sym('run');
-const Stop = sym('stop');
-
-/** Pre-wrapped matchers for use with ts-pattern */
-export const jsMessages = {
-  ...messages,
-  setCode: schema(SetCode),
-  run: schema(Run),
-  stop: schema(Stop)
-};
+import { Bang, Run, Stop, SetCode } from './common';
 
 /**
  * Schema for the js (JavaScript code block) object.

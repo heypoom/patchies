@@ -7,7 +7,8 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas/common';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import type {
@@ -156,10 +157,10 @@
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       match(message)
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
-          setCodeAndUpdate(code);
+        .with(messages.setCode, ({ value }) => {
+          setCodeAndUpdate(value);
         })
-        .with({ type: 'run' }, () => {
+        .with(messages.run, () => {
           updateThree();
         })
         .otherwise(() => {

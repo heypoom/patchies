@@ -1,5 +1,20 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
+import { schema } from './types';
+import { msg } from './helpers';
+import { Bang, messages } from './common';
+
+// AI text-specific message schemas
+const Generate = msg('generate', { prompt: Type.String() });
+const SetPrompt = msg('set', { prompt: Type.String() });
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const aiTxtMessages = {
+  ...messages,
+  generate: schema(Generate),
+  setPrompt: schema(SetPrompt),
+  string: schema(Type.String())
+};
 
 /**
  * Schema for the ai.txt (AI text generation) object.
@@ -12,7 +27,12 @@ export const aiTxtSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Text prompts',
-      messages: [{ schema: Type.String(), description: 'Text prompt for generation' }]
+      messages: [
+        { schema: Type.String(), description: 'Text prompt - sets prompt and generates' },
+        { schema: Generate, description: 'Set prompt and generate text' },
+        { schema: SetPrompt, description: 'Set prompt without generating' },
+        { schema: Bang, description: 'Generate text with current prompt' }
+      ]
     }
   ],
   outlets: [

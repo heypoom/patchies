@@ -4,7 +4,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { JSRunner } from '$lib/js-runner/JSRunner';
   import { match } from 'ts-pattern';
-  import { jsMessages } from '$lib/objects/schemas';
+  import { messages } from '$lib/objects/schemas';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import CodeBlockBase from './CodeBlockBase.svelte';
@@ -51,13 +51,13 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with(jsMessages.setCode, ({ code }) => {
-          updateNodeData(nodeId, { code });
+        .with(messages.setCode, ({ value }) => {
+          updateNodeData(nodeId, { code: value });
         })
-        .with(jsMessages.run, () => {
+        .with(messages.run, () => {
           executeCode();
         })
-        .with(jsMessages.stop, () => {
+        .with(messages.stop, () => {
           cleanupRunningTasks();
         });
     } catch (error) {

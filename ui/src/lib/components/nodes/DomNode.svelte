@@ -5,7 +5,8 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -91,13 +92,13 @@
   const handleMessage: MessageCallbackFn = (message, _meta) => {
     try {
       match(message)
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
-          setCodeAndUpdate(code);
+        .with(messages.setCode, ({ value }) => {
+          setCodeAndUpdate(value);
         })
-        .with({ type: 'run' }, () => {
+        .with(messages.run, () => {
           runCode();
         })
-        .with({ type: 'stop' }, () => {
+        .with(messages.stop, () => {
           stopLongRunningTasks();
         })
         .otherwise(() => {

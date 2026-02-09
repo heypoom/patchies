@@ -7,6 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { parseInletCount } from '$lib/utils/expr-parser';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -97,7 +98,7 @@
     const nextInletValues = [...inletValues];
 
     match(message)
-      .with({ type: 'bang' }, () => {})
+      .with(messages.bang, () => {})
       .otherwise((value) => {
         nextInletValues[inlet] = value;
         inletValues = nextInletValues;

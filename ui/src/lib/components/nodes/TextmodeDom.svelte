@@ -6,7 +6,8 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas/common';
   import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { shouldShowHandles } from '../../../stores/ui.store';
@@ -104,11 +105,14 @@
   const handleMessage: MessageCallbackFn = (message, _meta) => {
     try {
       match(message)
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
-          setCodeAndUpdate(code);
+        .with(messages.setCode, ({ value }) => {
+          setCodeAndUpdate(value);
         })
-        .with({ type: 'run' }, () => {
+        .with(messages.run, () => {
           runCode();
+        })
+        .otherwise(() => {
+          // Messages are delivered via recv() callback set by user code
         });
     } catch (error) {
       console.error('Error handling message:', error);

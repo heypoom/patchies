@@ -4,7 +4,8 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { getObjectType } from '$lib/objects/get-type';
 
   let node: {
@@ -49,10 +50,10 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with({ type: 'bang' }, () => {
+      .with(messages.bang, () => {
         messageContext.send(currentLevel);
       })
-      .with({ type: 'reset' }, () => {
+      .with(messages.reset, () => {
         currentLevel = 0;
         peakLevel = 0;
         peakHoldTime = 0;

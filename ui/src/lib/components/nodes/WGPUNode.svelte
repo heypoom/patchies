@@ -7,6 +7,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { match, P } from 'ts-pattern';
+  import { wgpuComputeMessages } from '$lib/objects/schemas/wgpu-compute';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { parseWGSL, serializeStructToBuffer } from '$lib/webgpu/wgsl-parser';
   import { WebGPUComputeSystem } from '$lib/webgpu/WebGPUComputeSystem';
@@ -228,16 +229,16 @@
 
     // setCode / run / settings messages
     match(message)
-      .with({ type: 'setCode', code: P.string }, ({ code }) => {
-        updateNodeData(nodeId, { code });
+      .with(wgpuComputeMessages.setCode, ({ value }) => {
+        updateNodeData(nodeId, { code: value });
       })
-      .with({ type: 'run' }, () => {
+      .with(wgpuComputeMessages.run, () => {
         compileShader();
       })
-      .with({ type: 'setOutputSize', size: P.number }, ({ size }) => {
+      .with(wgpuComputeMessages.setOutputSize, ({ size }) => {
         updateNodeData(nodeId, { outputSize: size });
       })
-      .with({ type: 'setDispatchCount', count: P.array(P.number) }, ({ count }) => {
+      .with(wgpuComputeMessages.setDispatchCount, ({ count }) => {
         if (count.length >= 3) {
           updateNodeData(nodeId, { dispatchCount: [count[0], count[1], count[2]] });
         }

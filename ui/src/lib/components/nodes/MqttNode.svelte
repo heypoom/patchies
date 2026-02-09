@@ -4,7 +4,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { mqttMessages } from '$lib/objects/schemas/mqtt';
   import type { MqttClient } from 'mqtt';
 
   export type MqttNodeData = {
@@ -284,26 +285,26 @@
     if (!isObjectMessage(msg)) return;
 
     match(msg)
-      .with({ type: 'connect', url: P.string }, (m) => {
+      .with(mqttMessages.connect, (m) => {
         url = m.url;
         connect(url, data.topics ?? []);
       })
-      .with({ type: 'subscribe', topic: P.union(P.string, P.array(P.string)) }, (m) => {
+      .with(mqttMessages.subscribe, (m) => {
         const currentTopics = data.topics ?? [];
         const newTopics = Array.isArray(m.topic) ? m.topic.map(String) : [String(m.topic)];
 
         updateTopics([...new Set([...currentTopics, ...newTopics])]);
       })
-      .with({ type: 'unsubscribe', topic: P.union(P.string, P.array(P.string)) }, (m) => {
+      .with(mqttMessages.unsubscribe, (m) => {
         const currentTopics = data.topics ?? [];
         const removeTopics = Array.isArray(m.topic) ? m.topic.map(String) : [String(m.topic)];
 
         updateTopics(currentTopics.filter((t: string) => !removeTopics.includes(t)));
       })
-      .with({ type: 'publish', topic: P.string, message: P.any }, (m) => {
+      .with(mqttMessages.publish, (m) => {
         client?.publish(m.topic, String(m.message));
       })
-      .with({ type: 'disconnect' }, () => {
+      .with(mqttMessages.disconnect, () => {
         disconnect();
       })
       .otherwise(() => {});

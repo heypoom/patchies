@@ -7,7 +7,8 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import CommonExprLayout from './CommonExprLayout.svelte';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { csoundMessages } from '$lib/objects/schemas';
   import type { CsoundNode } from '$lib/audio/v2/nodes/CsoundNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
 
@@ -37,9 +38,16 @@
     const csoundNode = getCsoundNode();
     if (!csoundNode) return;
 
-    match(message).with({ type: P.union('bang', 'run', 'resume') }, () => {
-      isPlaying = true;
-    });
+    match(message)
+      .with(csoundMessages.bang, () => {
+        isPlaying = true;
+      })
+      .with(csoundMessages.run, () => {
+        isPlaying = true;
+      })
+      .with(csoundMessages.resume, () => {
+        isPlaying = true;
+      });
 
     csoundNode.send('messageInlet', { inletIndex: meta.inlet, message, meta });
   };

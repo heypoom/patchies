@@ -1,12 +1,10 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { msg, sym } from './helpers';
-import { Bang, messages } from './common';
+import { msg } from './helpers';
+import { Bang, Run, messages, SetCode } from './common';
 
 // Strudel-specific message schemas
-const Run = sym('run');
-const SetCode = msg('setCode', { code: Type.String() });
 const SetFontSize = msg('setFontSize', { value: Type.Number() });
 const SetFontFamily = msg('setFontFamily', { value: Type.String() });
 const SetStyles = msg('setStyles', {
@@ -16,8 +14,7 @@ const SetStyles = msg('setStyles', {
 /** Pre-wrapped matchers for use with ts-pattern */
 export const strudelMessages = {
   ...messages,
-  run: schema(Run),
-  setCode: schema(SetCode),
+  string: schema(Type.String()),
   setFontSize: schema(SetFontSize),
   setFontFamily: schema(SetFontFamily),
   setStyles: schema(SetStyles)

@@ -85,7 +85,7 @@ Default is 1 instruction. You can set it to higher number of instructions per cy
 ## Input Messages
 
 - `bang`: step the program by one instruction
-- `{type: 'setCode', code: <string>}`: load the assembly code
+- `{type: 'setCode', value: <string>}`: load the assembly code
 - `run`: reload the program and step N times
 - `play`: start automatic clocking
 - `pause`: pause automatic clocking

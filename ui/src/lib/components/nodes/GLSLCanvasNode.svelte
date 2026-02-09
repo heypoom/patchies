@@ -4,8 +4,9 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
@@ -87,10 +88,10 @@
       }
 
       match(message)
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
-          updateNodeData(nodeId, { code });
+        .with(messages.setCode, ({ value }) => {
+          updateNodeData(nodeId, { code: value });
         })
-        .with({ type: 'run' }, () => {
+        .with(messages.run, () => {
           updateShader();
         });
     } catch (error) {

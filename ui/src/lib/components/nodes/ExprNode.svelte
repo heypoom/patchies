@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import {
     parseInletCount,
     createExpressionEvaluator,
@@ -58,7 +59,7 @@
 
     // Store value for this inlet
     match(message)
-      .with({ type: 'bang' }, () => {})
+      .with(messages.bang, () => {})
       .otherwise((value) => {
         nextInletValues[inlet] = value;
         inletValues = nextInletValues;

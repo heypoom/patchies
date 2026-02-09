@@ -5,7 +5,8 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { aiTtsMessages } from '$lib/objects/schemas';
   import * as Popover from '$lib/components/ui/popover';
   import * as Command from '$lib/components/ui/command';
   import { audioUrlCache } from '$lib/stores/audioCache';
@@ -235,11 +236,11 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with(P.string, (t) => {
+        .with(aiTtsMessages.string, (t) => {
           updateNodeData(nodeId, { text: t });
           setTimeout(() => generateSpeech({ playback: true }), 5);
         })
-        .with({ type: P.union('play', 'bang') }, () => {
+        .with(aiTtsMessages.play, () => {
           const cachedUrl = $audioUrlCache[audioCacheKey];
           if (cachedUrl) {
             playAudio(cachedUrl);
@@ -247,27 +248,35 @@
             generateSpeech({ playback: true });
           }
         })
-        .with({ type: 'speak', text: P.string }, (m) => {
+        .with(aiTtsMessages.bang, () => {
+          const cachedUrl = $audioUrlCache[audioCacheKey];
+          if (cachedUrl) {
+            playAudio(cachedUrl);
+          } else {
+            generateSpeech({ playback: true });
+          }
+        })
+        .with(aiTtsMessages.speak, (m) => {
           updateNodeData(nodeId, { text: m.text });
           setTimeout(() => generateSpeech({ playback: true }), 5);
         })
-        .with({ type: 'load', text: P.string }, (m) => {
+        .with(aiTtsMessages.load, (m) => {
           updateNodeData(nodeId, { text: m.text });
           setTimeout(() => generateSpeech({ playback: false }), 5);
         })
-        .with({ type: 'setVoice', value: P.string }, (m) => {
+        .with(aiTtsMessages.setVoice, (m) => {
           updateNodeData(nodeId, { voiceName: m.value });
         })
-        .with({ type: 'setRate', value: P.number }, (m) => {
+        .with(aiTtsMessages.setRate, (m) => {
           updateNodeData(nodeId, { speakingRate: Math.max(0.25, Math.min(4, m.value)) });
         })
-        .with({ type: 'setPitch', value: P.number }, (m) => {
+        .with(aiTtsMessages.setPitch, (m) => {
           updateNodeData(nodeId, { pitch: Math.max(-20, Math.min(20, m.value)) });
         })
-        .with({ type: 'setVolume', value: P.number }, (m) => {
+        .with(aiTtsMessages.setVolume, (m) => {
           updateNodeData(nodeId, { volumeGainDb: Math.max(-96, Math.min(16, m.value)) });
         })
-        .with({ type: 'stop' }, () => {
+        .with(aiTtsMessages.stop, () => {
           audioService.send(nodeId, 'message', { type: 'stop' });
         })
         .otherwise(() => {

@@ -5,6 +5,7 @@ import { msg, sym } from './helpers';
 import { Bang, Play, Pause, Stop, Reset, messages } from './common';
 
 // Csound-specific message schemas
+const Resume = sym('resume');
 const SetChannel = msg('setChannel', {
   channel: Type.String(),
   value: Type.Union([Type.Number(), Type.String()])
@@ -18,6 +19,7 @@ const Eval = msg('eval', { code: Type.String() });
 /** Pre-wrapped matchers for use with ts-pattern */
 export const csoundMessages = {
   ...messages,
+  resume: schema(Resume),
   setChannel: schema(SetChannel),
   setOptions: schema(SetOptions),
   noteOn: schema(NoteOn),
@@ -40,6 +42,7 @@ export const csoundSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Resume or re-eval Csound code' },
         { schema: Play, description: 'Resume playback' },
+        { schema: Resume, description: 'Resume playback' },
         { schema: Pause, description: 'Pause playback' },
         { schema: Stop, description: 'Stop playback' },
         { schema: Reset, description: 'Reset the Csound instance' },

@@ -35,9 +35,14 @@ const ListenOnce = msg('listenOnce', { event: Type.String() });
 const ListenStart = msg('listenStart', { event: Type.String() });
 const ListenStop = msg('listenStop', { event: Type.String() });
 
+// For matching any message with a type field (fallback)
+const AnyTypeMessage = Type.Object({ type: Type.String() }, { additionalProperties: true });
+
 /** Pre-wrapped matchers for use with ts-pattern */
 export const chuckMessages = {
   ...messages,
+  string: schema(Type.String()),
+  anyTypeMessage: schema(AnyTypeMessage),
   replace: schema(Replace),
   run: schema(Run),
   add: schema(Add),

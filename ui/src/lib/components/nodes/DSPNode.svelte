@@ -7,6 +7,7 @@
   import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { parseInletCount } from '$lib/utils/expr-parser';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -85,7 +86,7 @@
     const nextInletValues = [...inletValues];
 
     match(message)
-      .with({ type: P.union('run') }, () => {
+      .with(messages.run, () => {
         runDSP();
       })
       .with(P.any, (value) => {

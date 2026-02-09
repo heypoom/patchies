@@ -8,6 +8,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { midiInputDevices } from '../../../stores/midi.store';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
 
   type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend';
 
@@ -56,7 +57,7 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with({ type: 'bang' }, () => {
+        .with(messages.bang, () => {
           startListening();
         })
         .with(
@@ -69,7 +70,7 @@
             });
           }
         )
-        .with({ type: 'stop' }, () => {
+        .with(messages.stop, () => {
           stopListening();
         });
     } catch (error) {

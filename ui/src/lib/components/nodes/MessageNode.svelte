@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import Json5 from 'json5';
 
   import hljs from 'highlight.js/lib/core';
@@ -87,10 +88,14 @@
 
       // Hot inlet (inlet === 0): check for special messages first (bang, set)
       const handled = match(message)
-        .with(P.union(null, undefined, { type: 'bang' }), () => {
+        .with(P.union(null, undefined), () => {
+          // Null/undefined triggers without storing
+          sendMessage();
+          return true;
+        })
+        .with(messages.bang, () => {
           // Bang triggers without storing
           sendMessage();
-
           return true;
         })
         .with({ type: 'set', value: P.any }, ({ value }) => {

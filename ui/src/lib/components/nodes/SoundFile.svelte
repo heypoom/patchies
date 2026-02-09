@@ -6,7 +6,8 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { MessageSystem } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { soundfileMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import type { SoundfileNode as SoundfileNodeV2 } from '$lib/audio/v2/nodes/SoundfileNode';
   import { logger } from '$lib/utils/logger';
@@ -47,10 +48,10 @@
 
   const handleMessage: MessageCallbackFn = async (message) => {
     match(message)
-      .with(P.string, (url) => vfsMedia.loadFromUrl(url))
-      .with({ type: 'load', url: P.string }, ({ url }) => vfsMedia.loadFromUrl(url))
-      .with({ type: 'load', path: P.string }, ({ path }) => vfsMedia.loadFromPath(path))
-      .with({ type: 'read' }, () => readAudioBuffer())
+      .with(soundfileMessages.string, (url) => vfsMedia.loadFromUrl(url))
+      .with(soundfileMessages.loadUrl, ({ url }) => vfsMedia.loadFromUrl(url))
+      .with(soundfileMessages.loadPath, ({ path }) => vfsMedia.loadFromPath(path))
+      .with(soundfileMessages.read, () => readAudioBuffer())
       .otherwise(() => audioService.send(node.id, 'message', message));
   };
 

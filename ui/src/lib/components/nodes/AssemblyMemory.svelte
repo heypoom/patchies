@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { AssemblySystem } from '$lib/assembly/AssemblySystem';
   import type { Action } from 'machine';
 
@@ -43,12 +44,11 @@
 
   const handleMessage: MessageCallbackFn = async (message, meta) => {
     const isMatchSimpleMessage = match(message)
-      .with({ type: 'bang' }, () => {
+      .with(messages.bang, () => {
         messageContext.send(values, { to: 0 });
-
         return true;
       })
-      .with({ type: 'reset' }, async () => {
+      .with(messages.reset, async () => {
         updateNodeData(nodeId, { values: [] });
         return true;
       })

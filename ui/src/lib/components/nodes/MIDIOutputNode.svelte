@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { AlertCircle, Settings, Volume2, VolumeX, X } from '@lucide/svelte/icons';
+  import { CircleAlert, Settings, Volume2, VolumeX, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { MIDISystem, type MIDIOutputConfig } from '$lib/canvas/MIDISystem';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -36,12 +37,14 @@
     if (errorMessage) return 'border-red-500';
     if (isActive) return 'border-emerald-500';
     if (selected) return 'border-zinc-400';
+
     return 'border-zinc-600';
   });
 
   const statusIcon = $derived.by(() => {
-    if (errorMessage) return AlertCircle;
+    if (errorMessage) return CircleAlert;
     if (isActive) return Volume2;
+
     return VolumeX;
   });
 
@@ -90,7 +93,7 @@
             sendMidiMessage(config as MIDIOutputConfig);
           }
         )
-        .with({ type: 'bang' }, () => {
+        .with(messages.bang, () => {
           sendMidiMessage();
         })
         .with({ type: 'set' }, (md) => {
@@ -248,7 +251,9 @@
       <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
         <div class="space-y-4">
           <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">MIDI Device</label>
+
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={deviceId}
@@ -265,7 +270,9 @@
           </div>
 
           <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Channel</label>
+
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={channel}
@@ -281,7 +288,9 @@
           </div>
 
           <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Message Type</label>
+
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={event}
@@ -296,11 +305,15 @@
           </div>
 
           <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Data</label>
+
             {#if dataFieldType === 'note'}
               <div class="grid grid-cols-2 gap-2">
                 <div>
+                  <!-- svelte-ignore a11y_label_has_associated_control -->
                   <label class="mb-1 block text-[10px] text-zinc-400">Note</label>
+
                   <input
                     type="number"
                     min="0"
@@ -313,8 +326,11 @@
                       })}
                   />
                 </div>
+
                 <div>
+                  <!-- svelte-ignore a11y_label_has_associated_control -->
                   <label class="mb-1 block text-[10px] text-zinc-400">Velocity</label>
+
                   <input
                     type="number"
                     min="0"
@@ -331,7 +347,9 @@
             {:else if dataFieldType === 'control'}
               <div class="grid grid-cols-2 gap-2">
                 <div>
+                  <!-- svelte-ignore a11y_label_has_associated_control -->
                   <label class="mb-1 block text-[10px] text-zinc-400">Control</label>
+
                   <input
                     type="number"
                     min="0"
@@ -344,8 +362,11 @@
                       })}
                   />
                 </div>
+
                 <div>
+                  <!-- svelte-ignore a11y_label_has_associated_control -->
                   <label class="mb-1 block text-[10px] text-zinc-400">Value</label>
+
                   <input
                     type="number"
                     min="0"
@@ -361,7 +382,9 @@
               </div>
             {:else if dataFieldType === 'program'}
               <div>
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="mb-1 block text-[10px] text-zinc-400">Program</label>
+
                 <input
                   type="number"
                   min="0"

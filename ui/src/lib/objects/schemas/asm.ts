@@ -1,16 +1,22 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { msg, sym } from './helpers';
-import { Bang, Run, Stop, Reset, messages } from './common';
+import { sym, msg } from './helpers';
+import { Bang, Play, Pause, Run, Toggle, Reset, messages, SetCode } from './common';
 
+// Asm-specific message schemas
 const Step = sym('step');
-const SetCode = msg('setCode', { code: Type.String() });
+const SetDelayMs = msg('setDelayMs', { value: Type.Number() });
+const SetStepBy = msg('setStepBy', { value: Type.Number() });
 
+/** Pre-wrapped matchers for use with ts-pattern */
 export const asmMessages = {
   ...messages,
   step: schema(Step),
-  setCode: schema(SetCode)
+  setDelayMs: schema(SetDelayMs),
+  setStepBy: schema(SetStepBy),
+  number: schema(Type.Number()),
+  numberArray: schema(Type.Array(Type.Number()))
 };
 
 /**
@@ -25,13 +31,18 @@ export const asmSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages and input data',
       messages: [
-        { schema: Bang, description: 'Execute next instruction' },
-        { schema: Run, description: 'Run program continuously' },
-        { schema: Stop, description: 'Stop execution' },
-        { schema: Reset, description: 'Reset machine state' },
-        { schema: Step, description: 'Execute single instruction' },
-        { schema: SetCode, description: 'Set assembly code' },
-        { schema: Type.Any(), description: 'Push value to stack' }
+        { schema: Bang, description: 'Step machine by configured stepBy amount' },
+        { schema: SetCode, description: 'Set assembly code and reload program' },
+        { schema: Run, description: 'Reload program and execute one step' },
+        { schema: Play, description: 'Start continuous execution' },
+        { schema: Pause, description: 'Pause continuous execution' },
+        { schema: Toggle, description: 'Toggle between play and pause' },
+        { schema: Reset, description: 'Reset machine state and reload program' },
+        { schema: Step, description: 'Execute single step (same as bang)' },
+        { schema: SetDelayMs, description: 'Set delay between steps in milliseconds (10-5000)' },
+        { schema: SetStepBy, description: 'Set number of cycles to execute per step (1-1000)' },
+        { schema: Type.Number(), description: 'Send numeric data to the machine' },
+        { schema: Type.Array(Type.Number()), description: 'Send array of numbers to the machine' }
       ]
     }
   ],

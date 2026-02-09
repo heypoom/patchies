@@ -4,6 +4,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas/common';
   import { shouldShowHandles } from '../../../stores/ui.store';
 
   let { id: nodeId, selected, data }: { id: string; selected: boolean; data: any } = $props();
@@ -28,7 +29,7 @@
 
   const handleMessage = (message: unknown) => {
     match(message)
-      .with({ type: 'bang' }, () => {
+      .with(messages.bang, () => {
         toggleValue();
       })
       .with(P.boolean, (value) => {

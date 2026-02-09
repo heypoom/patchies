@@ -6,7 +6,8 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { P2PManager, type P2PMessageHandler } from '$lib/p2p/P2PManager';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { netrecvMessages } from '$lib/objects/schemas/netrecv';
 
   let {
     id: nodeId,
@@ -71,7 +72,7 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with({ type: 'set-channel', channel: P.union(P.string, P.number) }, ({ channel }) => {
+        .with(netrecvMessages.setChannel, ({ channel }) => {
           updateNodeData(nodeId, { channel: String(channel) });
         })
         .otherwise(() => {});

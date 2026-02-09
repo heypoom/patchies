@@ -22,7 +22,8 @@ export const videoMessages = {
   ...messages,
   loop: schema(Loop),
   loadUrl: schema(LoadUrl),
-  loadPath: schema(LoadPath)
+  loadPath: schema(LoadPath),
+  string: schema(Type.String())
 };
 
 /**
