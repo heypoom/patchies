@@ -1,5 +1,23 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
+import { schema } from './types';
+import { msg, sym } from './helpers';
+import { messages } from './common';
+
+// Orca-specific message schemas
+const SetValue = msg('set', { value: Type.String() });
+const Play = sym('play');
+const Stop = sym('stop');
+const SetBpm = msg('setBpm', { value: Type.Number() });
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const orcaMessages = {
+  ...messages,
+  setValue: schema(SetValue),
+  play: schema(Play),
+  stop: schema(Stop),
+  setBpm: schema(SetBpm)
+};
 
 /**
  * Schema for the orca (Orca livecoding sequencer) object.

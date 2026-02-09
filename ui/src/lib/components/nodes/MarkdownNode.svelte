@@ -8,7 +8,8 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { markdownMessages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
 
   let props: {
@@ -53,9 +54,9 @@
 
   const handleMessage: MessageCallbackFn = (message) =>
     match(message)
-      .with(P.string, (value) => updateMarkdown(value))
-      .with({ type: 'bang' }, () => messageContext.send(props.data.markdown))
-      .with({ type: 'set', value: P.string }, (msg) => updateMarkdown(msg.value))
+      .with(markdownMessages.string, (value) => updateMarkdown(value))
+      .with(markdownMessages.bang, () => messageContext.send(props.data.markdown))
+      .with(markdownMessages.setValue, (msg) => updateMarkdown(msg.value))
       .otherwise(() => {});
 
   onDestroy(() => {

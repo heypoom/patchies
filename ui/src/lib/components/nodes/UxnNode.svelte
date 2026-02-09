@@ -7,7 +7,8 @@
   import CodeEditor from '../CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { uxnMessages } from '$lib/objects/schemas/uxn';
   import * as Tooltip from '../ui/tooltip';
   import { GLSystem } from '$lib/canvas/GLSystem';
 
@@ -74,7 +75,7 @@
 
   const handleMessage: MessageCallbackFn = async (message) => {
     match(message)
-      .with(P.string, async (input) => {
+      .with(uxnMessages.string, async (input) => {
         // Check if input is a URL
         if (input.startsWith('http://') || input.startsWith('https://')) {
           await loadFromUrl(input);
@@ -83,7 +84,7 @@
           await assembleAndLoadCode(input);
         }
       })
-      .with({ type: 'bang' }, async () => {
+      .with(uxnMessages.bang, async () => {
         // On BANG: prioritize code, fallback to URL
         if (code && !data.url) {
           await assembleAndLoadCode(code);
@@ -91,10 +92,10 @@
           await loadFromUrl(data.url);
         }
       })
-      .with({ type: 'load', url: P.string }, ({ url }) => loadFromUrl(url))
-      .with({ type: 'load', code: P.string }, ({ code }) => assembleAndLoadCode(code))
-      .with(P.instanceOf(Uint8Array), (rom) => loadROM(rom))
-      .with(P.instanceOf(File), async (file) => {
+      .with(uxnMessages.loadUrl, ({ url }) => loadFromUrl(url))
+      .with(uxnMessages.loadCode, ({ code }) => assembleAndLoadCode(code))
+      .with(uxnMessages.uint8Array, (rom) => loadROM(rom))
+      .with(uxnMessages.file, async (file) => {
         const arrayBuffer = await file.arrayBuffer();
         loadROM(new Uint8Array(arrayBuffer));
       })

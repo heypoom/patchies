@@ -6,9 +6,13 @@ import { msg, sym } from './helpers';
 // MQTT-specific message schemas
 const Connect = msg('connect', { url: Type.String() });
 const Disconnect = sym('disconnect');
-const Subscribe = msg('subscribe', { topic: Type.String() });
-const Unsubscribe = msg('unsubscribe', { topic: Type.String() });
-const Publish = msg('publish', { topic: Type.String(), message: Type.String() });
+const Subscribe = msg('subscribe', {
+  topic: Type.Union([Type.String(), Type.Array(Type.String())])
+});
+const Unsubscribe = msg('unsubscribe', {
+  topic: Type.Union([Type.String(), Type.Array(Type.String())])
+});
+const Publish = msg('publish', { topic: Type.String(), message: Type.Any() });
 
 // Outlet message schemas
 const Connected = sym('connected');

@@ -19,6 +19,7 @@ export * from './toggle';
 export * from './msg';
 export * from './slider';
 export * from './textbox';
+export * from './keyboard';
 export * from './soundfile';
 export * from './sampler';
 export * from './orca';
@@ -93,6 +94,7 @@ import { toggleSchema } from './toggle';
 import { msgSchema } from './msg';
 import { sliderSchema } from './slider';
 import { textboxSchema } from './textbox';
+import { keyboardSchema } from './keyboard';
 import { soundfileSchema } from './soundfile';
 import { samplerSchema } from './sampler';
 import { orcaSchema } from './orca';
@@ -206,6 +208,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   msg: msgSchema,
   slider: sliderSchema,
   textbox: textboxSchema,
+  keyboard: keyboardSchema,
   'soundfile~': soundfileSchema,
   'sampler~': samplerSchema,
   orca: orcaSchema,

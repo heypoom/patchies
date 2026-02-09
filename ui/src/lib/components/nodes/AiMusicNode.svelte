@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { aiMusicMessages } from '$lib/objects/schemas';
   import type { LiveMusicGenerationConfig, Scale } from '@google/genai';
   import JSON5 from 'json5';
 
@@ -58,22 +59,22 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with({ type: 'bang' }, () => {
+        .with(aiMusicMessages.bang, () => {
           musicManager.playOrPause();
         })
-        .with({ type: 'play' }, () => {
+        .with(aiMusicMessages.play, () => {
           musicManager.play();
         })
-        .with({ type: 'pause' }, () => {
+        .with(aiMusicMessages.pause, () => {
           musicManager.pause();
         })
-        .with({ type: 'addPrompt', prompt: P.string, weight: P.number }, ({ prompt, weight }) => {
+        .with(aiMusicMessages.addPrompt, ({ prompt, weight }) => {
           addPrompt(prompt, weight);
         })
-        .with({ type: 'deletePrompt', prompt: P.string }, ({ prompt }) => {
+        .with(aiMusicMessages.deletePrompt, ({ prompt }) => {
           removePrompt(prompt);
         })
-        .with({ type: 'setPrompts', prompts: P.nonNullable }, (data) => {
+        .with(aiMusicMessages.setPrompts, (data) => {
           musicManager.setPrompts(data.prompts);
           prompts = musicManager.getPrompts();
         })

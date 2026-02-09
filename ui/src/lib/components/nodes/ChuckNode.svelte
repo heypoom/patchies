@@ -5,7 +5,8 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { chuckMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { keymap } from '@codemirror/view';
@@ -34,26 +35,32 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with(P.string, async (nextExpr) => {
+      .with(chuckMessages.string, async (nextExpr) => {
         updateNodeData(nodeId, { expr: nextExpr });
         await send('add', nextExpr);
       })
-      .with({ type: 'replace', code: P.string }, async ({ code }) => {
+      .with(chuckMessages.replaceCode, async ({ code }) => {
         await send('replace', code);
       })
-      .with({ type: P.union('replace', 'bang', 'run') }, async () => {
+      .with(chuckMessages.replace, async () => {
         await send('replace', data.expr);
       })
-      .with({ type: 'add' }, async () => {
+      .with(chuckMessages.bang, async () => {
+        await send('replace', data.expr);
+      })
+      .with(chuckMessages.run, async () => {
+        await send('replace', data.expr);
+      })
+      .with(chuckMessages.add, async () => {
         await send('add', data.expr);
       })
-      .with({ type: 'remove' }, () => {
+      .with(chuckMessages.remove, () => {
         removeChuckCode();
       })
-      .with({ type: 'stop' }, () => {
+      .with(chuckMessages.stop, () => {
         stopChuck();
       })
-      .with({ type: P.string }, async ({ type, ...payload }) => {
+      .with(chuckMessages.anyTypeMessage, async ({ type, ...payload }) => {
         await send(type, payload);
       });
   };

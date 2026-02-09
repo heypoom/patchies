@@ -1,6 +1,11 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { Bang } from './common';
+import { Bang, messages } from './common';
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const buttonMessages = {
+  ...messages
+};
 
 /**
  * Schema for the button object.

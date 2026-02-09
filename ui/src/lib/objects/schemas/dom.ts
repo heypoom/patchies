@@ -1,5 +1,21 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
+import { schema } from './types';
+import { msg, sym } from './helpers';
+import { Bang, messages } from './common';
+
+// DOM-specific message schemas
+const SetCode = msg('setCode', { code: Type.String() });
+const Run = sym('run');
+const Stop = sym('stop');
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const domMessages = {
+  ...messages,
+  setCode: schema(SetCode),
+  run: schema(Run),
+  stop: schema(Stop)
+};
 
 /**
  * Schema for the dom (vanilla JS DOM) object.

@@ -4,7 +4,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { sseMessages } from '$lib/objects/schemas/sse';
 
   export type EventSourceNodeData = {
     url: string;
@@ -59,11 +60,11 @@
     if (typeof msg !== 'object' || msg === null || !('type' in msg)) return;
 
     match(msg)
-      .with({ type: 'connect', url: P.string }, (m) => {
+      .with(sseMessages.connect, (m) => {
         updateNodeData(nodeId, { url: m.url });
         connect(m.url);
       })
-      .with({ type: 'disconnect' }, () => {
+      .with(sseMessages.disconnect, () => {
         disconnect();
       })
       .otherwise(() => {});

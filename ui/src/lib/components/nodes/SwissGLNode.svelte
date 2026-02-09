@@ -5,7 +5,8 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { swglMessages } from '$lib/objects/schemas/swgl';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
 
@@ -35,10 +36,10 @@
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       match(message)
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
+        .with(swglMessages.setCode, ({ code }) => {
           setCodeAndUpdate(code);
         })
-        .with({ type: 'run' }, updateSwissGL)
+        .with(swglMessages.run, updateSwissGL)
         .otherwise(() => {
           glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
         });

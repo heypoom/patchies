@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
 
   let {
@@ -168,18 +169,18 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with({ type: 'bang' }, () => {
+        .with(messages.bang, () => {
           toggleListening();
         })
-        .with({ type: 'start' }, () => {
+        .with(messages.start, () => {
           isListening = true;
           errorMessage = null;
         })
-        .with({ type: 'stop' }, () => {
+        .with(messages.stop, () => {
           isListening = false;
           errorMessage = null;
         })
-        .with({ type: 'toggle' }, () => {
+        .with(messages.toggle, () => {
           toggleListening();
         })
         .with(P.string, (key) => {

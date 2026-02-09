@@ -16,6 +16,7 @@ const SetStyles = msg('setStyles', {
 /** Pre-wrapped matchers for use with ts-pattern */
 export const strudelMessages = {
   ...messages,
+  string: schema(Type.String()),
   run: schema(Run),
   setCode: schema(SetCode),
   setFontSize: schema(SetFontSize),

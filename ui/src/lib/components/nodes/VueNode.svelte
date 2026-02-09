@@ -5,7 +5,8 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { vueMessages } from '$lib/objects/schemas/vue';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -96,13 +97,13 @@
   const handleMessage: MessageCallbackFn = (message, _meta) => {
     try {
       match(message)
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
+        .with(vueMessages.setCode, ({ code }) => {
           setCodeAndUpdate(code);
         })
-        .with({ type: 'run' }, () => {
+        .with(vueMessages.run, () => {
           runCode();
         })
-        .with({ type: 'stop' }, () => {
+        .with(vueMessages.stop, () => {
           stopLongRunningTasks();
         })
         .otherwise(() => {

@@ -1,14 +1,21 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { msg } from './helpers';
+import { msg, sym } from './helpers';
 import { Bang, Run, messages } from './common';
 
+// WebGPU compute-specific message schemas
 const SetCode = msg('setCode', { code: Type.String() });
+const LocalRun = sym('run');
+const SetOutputSize = msg('setOutputSize', { size: Type.Number() });
+const SetDispatchCount = msg('setDispatchCount', { count: Type.Array(Type.Number()) });
 
 export const wgpuComputeMessages = {
   ...messages,
-  setCode: schema(SetCode)
+  setCode: schema(SetCode),
+  run: schema(LocalRun),
+  setOutputSize: schema(SetOutputSize),
+  setDispatchCount: schema(SetDispatchCount)
 };
 
 /**

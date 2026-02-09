@@ -6,12 +6,15 @@ import { Bang, Play, Pause, Stop, messages } from './common';
 
 // Soundfile-specific message schemas
 const LoadUrl = msg('load', { url: Type.String() });
-const Read = Type.Object({ type: Type.Literal('read') });
+const LoadPath = msg('load', { path: Type.String() });
+const Read = msg('read', {});
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const soundfileMessages = {
   ...messages,
+  string: schema(Type.String()),
   loadUrl: schema(LoadUrl),
+  loadPath: schema(LoadPath),
   read: schema(Read)
 };
 

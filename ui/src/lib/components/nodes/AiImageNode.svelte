@@ -10,7 +10,8 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { aiImgMessages } from '$lib/objects/schemas';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
   let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
@@ -40,18 +41,18 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with(P.string, (text) => {
+      .with(aiImgMessages.string, (text) => {
         setPrompt(text);
         setTimeout(() => generateImage());
       })
-      .with({ type: 'generate', prompt: P.string }, ({ prompt }) => {
+      .with(aiImgMessages.generate, ({ prompt }) => {
         setPrompt(prompt);
         setTimeout(() => generateImage());
       })
-      .with({ type: 'set', prompt: P.string }, ({ prompt }) => {
+      .with(aiImgMessages.setPrompt, ({ prompt }) => {
         setPrompt(prompt);
       })
-      .with({ type: 'bang' }, generateImage);
+      .with(aiImgMessages.bang, generateImage);
   };
 
   onMount(() => {

@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
+  import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
 
   let node: {
@@ -49,13 +50,13 @@
 
         if (sliderElement) sliderElement.value = newValue.toString();
       })
-      .with(P.union('reset', { type: 'reset' }), () => {
+      .with(messages.reset, () => {
         updateNodeData(node.id, { ...node.data, value: defaultValue });
         messageContext.send(defaultValue);
 
         if (sliderElement) sliderElement.value = defaultValue.toString();
       })
-      .with({ type: 'bang' }, () => {
+      .with(messages.bang, () => {
         messageContext.send(currentValue);
       });
   };
@@ -222,7 +223,9 @@
   <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
     <div class="space-y-4">
       <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Mode</label>
+
         <div class="flex gap-2">
           <label class="flex items-center">
             <input
@@ -250,7 +253,9 @@
       </div>
 
       <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Minimum</label>
+
         <input
           type="number"
           step={isFloat ? 0.01 : 1}
@@ -264,7 +269,9 @@
       </div>
 
       <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Maximum</label>
+
         <input
           type="number"
           step={isFloat ? 0.01 : 1}
@@ -278,7 +285,9 @@
       </div>
 
       <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Default Value</label>
+
         <input
           type="number"
           step={isFloat ? 0.01 : 1}
@@ -294,7 +303,9 @@
       </div>
 
       <div class="flex gap-x-2">
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Vertical</label>
+
         <input
           type="checkbox"
           checked={node.data.vertical}

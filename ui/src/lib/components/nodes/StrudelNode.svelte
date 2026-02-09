@@ -7,7 +7,8 @@
   import StrudelEditor from '$lib/components/StrudelEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { strudelMessages } from '$lib/objects/schemas';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
 
@@ -48,25 +49,26 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with(P.string, (code) => {
+        .with(strudelMessages.string, (code) => {
           setCode(code);
         })
-        .with({ type: 'setCode', code: P.string }, ({ code }) => {
+        .with(strudelMessages.setCode, ({ code }) => {
           setCode(code);
         })
-        .with(P.union({ type: 'bang' }, { type: 'run' }), evaluate)
-        .with({ type: 'setStyles', value: P.any }, ({ value }) => {
+        .with(strudelMessages.bang, evaluate)
+        .with(strudelMessages.run, evaluate)
+        .with(strudelMessages.setStyles, ({ value }) => {
           updateNodeData(nodeId, { styles: value as Record<string, string> });
         })
-        .with({ type: 'setFontFamily', value: P.string }, ({ value }) => {
+        .with(strudelMessages.setFontFamily, ({ value }) => {
           strudelEditor?.editor?.setFontFamily(value);
           updateNodeData(nodeId, { fontFamily: value });
         })
-        .with({ type: 'setFontSize', value: P.number }, ({ value }) => {
+        .with(strudelMessages.setFontSize, ({ value }) => {
           strudelEditor?.editor?.setFontSize(value);
           updateNodeData(nodeId, { fontSize: value });
         })
-        .with({ type: 'stop' }, stop);
+        .with(strudelMessages.stop, stop);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       customConsole.error(errorMsg);

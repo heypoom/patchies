@@ -1,12 +1,7 @@
 import { Type } from '@sinclair/typebox';
-import type { ObjectSchema } from './types';
-import { schema } from './types';
-import { Bang, messages } from './common';
 
-/** Pre-wrapped matchers for use with ts-pattern */
-export const sliderMessages = {
-  ...messages
-};
+import type { ObjectSchema } from './types';
+import { Bang, Reset } from './common';
 
 /**
  * Schema for the slider (numerical value control) object.
@@ -21,6 +16,7 @@ export const sliderSchema: ObjectSchema = {
       description: 'Control messages',
       messages: [
         { schema: Bang, description: 'Output the current slider value' },
+        { schema: Reset, description: 'Reset the slider value back to its default' },
         { schema: Type.Number(), description: 'Set slider to value and output' }
       ]
     }

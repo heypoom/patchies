@@ -5,7 +5,8 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { hydraMessages } from '$lib/objects/schemas/hydra';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasMouseHandler, type MouseScope } from '$lib/canvas/CanvasMouseHandler';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
@@ -127,10 +128,10 @@
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     match(message)
-      .with({ type: 'setCode', code: P.string }, ({ code }) => {
+      .with(hydraMessages.setCode, ({ code }) => {
         setCodeAndUpdate(code);
       })
-      .with({ type: 'run' }, () => {
+      .with(hydraMessages.run, () => {
         updateHydra();
       })
       .otherwise(() => {

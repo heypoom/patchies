@@ -9,7 +9,8 @@
   import { IO } from '$lib/orca/io/IO';
   import { OrcaRenderer } from '$lib/orca/OrcaRenderer';
   import { library } from '$lib/orca/library';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { orcaMessages } from '$lib/objects/schemas';
 
   import StandardHandle from '../StandardHandle.svelte';
   import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
@@ -143,29 +144,29 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with({ type: 'set', value: P.string }, ({ value }) => {
+        .with(orcaMessages.setValue, ({ value }) => {
           if (orca) {
             orca.replace(value);
             render();
             updateNodeData(nodeId, { grid: orca.s });
           }
         })
-        .with({ type: 'bang' }, () => {
+        .with(orcaMessages.bang, () => {
           togglePlay();
         })
-        .with({ type: 'play' }, () => {
+        .with(orcaMessages.play, () => {
           if (clock && !isPlaying) {
             clock.start();
             isPlaying = true;
           }
         })
-        .with({ type: 'stop' }, () => {
+        .with(orcaMessages.stop, () => {
           if (clock && isPlaying) {
             clock.stop();
             isPlaying = false;
           }
         })
-        .with({ type: 'setBpm', value: P.number }, ({ value }) => {
+        .with(orcaMessages.setBpm, ({ value }) => {
           if (clock) {
             clock.setSpeed(value, value);
             updateNodeData(nodeId, { bpm: value });

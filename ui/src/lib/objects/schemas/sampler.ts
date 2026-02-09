@@ -15,9 +15,17 @@ const LoopWithPoints = msg('loop', {
   start: Type.Number(),
   end: Type.Number()
 });
+const LoopWithOptionalPoints = msg('loop', {
+  start: Type.Optional(Type.Number()),
+  end: Type.Optional(Type.Number())
+});
 const LoopOnWithPoints = msg('loopOn', {
   start: Type.Number(),
   end: Type.Number()
+});
+const LoopOnWithOptionalPoints = msg('loopOn', {
+  start: Type.Optional(Type.Number()),
+  end: Type.Optional(Type.Number())
 });
 const SetStart = msg('setStart', { value: Type.Number() });
 const SetEnd = msg('setEnd', { value: Type.Number() });
@@ -32,8 +40,10 @@ export const samplerMessages = {
   end: schema(End),
   loop: schema(Loop),
   loopWithPoints: schema(LoopWithPoints),
+  loopWithOptionalPoints: schema(LoopWithOptionalPoints),
   loopOn: schema(LoopOn),
   loopOnWithPoints: schema(LoopOnWithPoints),
+  loopOnWithOptionalPoints: schema(LoopOnWithOptionalPoints),
   loopOff: schema(LoopOff),
   setStart: schema(SetStart),
   setEnd: schema(SetEnd),

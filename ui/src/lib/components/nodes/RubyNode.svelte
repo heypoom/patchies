@@ -1,7 +1,8 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { rubyMessages } from '$lib/objects/schemas/ruby';
   import { RubyNodeSystem } from '$lib/ruby/RubyNodeSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -48,13 +49,13 @@
   // Handle incoming messages to this node
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with({ type: 'setCode', code: P.string }, ({ code }) => {
+      .with(rubyMessages.setCode, ({ code }) => {
         updateNodeData(nodeId, { code });
       })
-      .with({ type: 'run' }, () => {
+      .with(rubyMessages.run, () => {
         executeCode();
       })
-      .with({ type: 'stop' }, () => {
+      .with(rubyMessages.stop, () => {
         cleanupRunningTasks();
       })
       .otherwise(() => {});

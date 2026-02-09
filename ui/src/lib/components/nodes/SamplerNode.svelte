@@ -6,7 +6,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { samplerMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
   import { useVfsMedia } from '$lib/vfs';
@@ -100,11 +101,12 @@
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with({ type: 'record' }, () => startRecording())
-      .with({ type: 'end' }, () => stopRecording())
-      .with({ type: P.union('bang', 'play') }, () => playRecording())
-      .with({ type: 'stop' }, () => stopPlayback())
-      .with({ type: 'loop', start: P.optional(P.number), end: P.optional(P.number) }, (msg) => {
+      .with(samplerMessages.record, () => startRecording())
+      .with(samplerMessages.end, () => stopRecording())
+      .with(samplerMessages.bang, () => playRecording())
+      .with(samplerMessages.play, () => playRecording())
+      .with(samplerMessages.stop, () => stopPlayback())
+      .with(samplerMessages.loopWithOptionalPoints, (msg) => {
         updateNodeData(node.id, {
           ...node.data,
           ...(msg.start !== undefined ? { loopStart: msg.start } : {}),
@@ -113,7 +115,7 @@
 
         toggleLoop();
       })
-      .with({ type: 'loopOn', start: P.optional(P.number), end: P.optional(P.number) }, (msg) => {
+      .with(samplerMessages.loopOnWithOptionalPoints, (msg) => {
         updateNodeData(node.id, {
           ...node.data,
           loop: true,
@@ -127,23 +129,23 @@
           ...(msg.end !== undefined ? { end: msg.end } : {})
         });
       })
-      .with({ type: 'loopOff' }, () => {
+      .with(samplerMessages.loopOff, () => {
         updateNodeData(node.id, { ...node.data, loop: false });
         audioService.send(node.id, 'message', { type: 'loopOff' });
       })
-      .with({ type: 'setStart', value: P.number }, (msg) => {
+      .with(samplerMessages.setStart, (msg) => {
         updateNodeData(node.id, { ...node.data, loopStart: msg.value });
         audioService.send(node.id, 'message', { type: 'setStart', value: msg.value });
       })
-      .with({ type: 'setEnd', value: P.number }, (msg) => {
+      .with(samplerMessages.setEnd, (msg) => {
         updateNodeData(node.id, { ...node.data, loopEnd: msg.value });
         audioService.send(node.id, 'message', { type: 'setEnd', value: msg.value });
       })
-      .with({ type: 'setPlaybackRate', value: P.number }, (msg) => {
+      .with(samplerMessages.setPlaybackRate, (msg) => {
         updateNodeData(node.id, { ...node.data, playbackRate: msg.value });
         audioService.send(node.id, 'message', { type: 'setPlaybackRate', value: msg.value });
       })
-      .with({ type: 'setDetune', value: P.number }, (msg) => {
+      .with(samplerMessages.setDetune, (msg) => {
         updateNodeData(node.id, { ...node.data, detune: msg.value });
         audioService.send(node.id, 'message', { type: 'setDetune', value: msg.value });
       })

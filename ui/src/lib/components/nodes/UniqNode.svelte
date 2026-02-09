@@ -7,6 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
+  import { uniqMessages } from '$lib/objects/schemas/uniq';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { JSRunner } from '$lib/js-runner/JSRunner';
@@ -82,7 +83,7 @@
     // Inlet 1: reset state
     if (inlet === 1) {
       match(message)
-        .with({ type: 'bang' }, () => {
+        .with(uniqMessages.bang, () => {
           lastValue = undefined;
           hasReceivedFirstValue = false;
         })
@@ -96,7 +97,7 @@
 
     // Inlet 0: process input
     const currentValue = match(message)
-      .with({ type: 'bang' }, () => lastValue) // bang re-sends last value if any
+      .with(uniqMessages.bang, () => lastValue) // bang re-sends last value if any
       .otherwise((value) => value);
 
     // Handle bang when no value yet

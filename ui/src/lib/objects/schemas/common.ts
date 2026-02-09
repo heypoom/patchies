@@ -17,6 +17,7 @@ export const Stop = sym('stop');
 export const Pause = sym('pause');
 export const Play = sym('play');
 export const Run = sym('run');
+export const Toggle = sym('toggle');
 
 /**
  * Pre-wrapped matchers for use with ts-pattern.
@@ -31,5 +32,6 @@ export const messages = {
   stop: schema(Stop),
   pause: schema(Pause),
   play: schema(Play),
-  run: schema(Run)
+  run: schema(Run),
+  toggle: schema(Toggle)
 };

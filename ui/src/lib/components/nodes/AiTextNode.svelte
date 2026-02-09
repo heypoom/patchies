@@ -9,7 +9,8 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
-  import { match, P } from 'ts-pattern';
+  import { match } from 'ts-pattern';
+  import { aiTxtMessages } from '$lib/objects/schemas';
 
   let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
 
@@ -31,18 +32,18 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with(P.string, (prompt) => {
+        .with(aiTxtMessages.string, (prompt) => {
           setPrompt(prompt);
           setTimeout(() => generateText());
         })
-        .with({ type: 'generate', prompt: P.string }, ({ prompt }) => {
+        .with(aiTxtMessages.generate, ({ prompt }) => {
           setPrompt(prompt);
           setTimeout(() => generateText());
         })
-        .with({ type: 'set', prompt: P.string }, ({ prompt }) => {
+        .with(aiTxtMessages.setPrompt, ({ prompt }) => {
           setPrompt(prompt);
         })
-        .with({ type: 'bang' }, () => {
+        .with(aiTxtMessages.bang, () => {
           generateText();
         });
     } catch (error) {

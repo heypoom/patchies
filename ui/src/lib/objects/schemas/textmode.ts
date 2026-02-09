@@ -1,4 +1,19 @@
+import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
+import { schema } from './types';
+import { msg, sym } from './helpers';
+import { Bang, messages } from './common';
+
+// Textmode-specific message schemas
+const SetCode = msg('setCode', { code: Type.String() });
+const Run = sym('run');
+
+/** Pre-wrapped matchers for use with ts-pattern */
+export const textmodeMessages = {
+  ...messages,
+  setCode: schema(SetCode),
+  run: schema(Run)
+};
 
 /**
  * Schema for the textmode (offscreen ASCII graphics) object.
