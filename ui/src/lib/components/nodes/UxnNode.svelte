@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { Code, FolderOpen, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
+  import { Play, X } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';
-  import StandardHandle from '../StandardHandle.svelte';
   import CodeEditor from '../CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -11,6 +10,8 @@
   import { uxnMessages } from '$lib/objects/schemas/uxn';
   import * as Tooltip from '../ui/tooltip';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import UxnCompactLayout from './uxn/UxnCompactLayout.svelte';
+  import UxnFullLayout from './uxn/UxnFullLayout.svelte';
 
   let {
     id: nodeId,
@@ -26,6 +27,8 @@
       showConsole?: boolean;
       showEditor?: boolean;
       consoleOutput?: string;
+      /** Compact mode hides the screen and disables screen/input devices */
+      compact?: boolean;
     };
     selected: boolean;
   } = $props();
@@ -39,6 +42,7 @@
   let showConsole = $state(data.showConsole ?? false);
   let showEditor = $state(data.showEditor ?? false);
   let isPaused = $state(false);
+  let isCompact = $state(data.compact ?? false);
   let errorMessage = $state<string | null>(null);
   let cleanupEventHandlers: (() => void) | null | undefined = null;
   let messageContext: MessageContext;
@@ -59,8 +63,15 @@
     }
   }
 
+  // Compact mode button width matches CodeBlockBase: 100px
+  const compactWidth = 100;
+
   let editorLeftPos = $derived.by(() => {
-    return (previewContainerWidth ?? 512) + editorGap;
+    if (isCompact) {
+      return compactWidth + editorGap;
+    }
+
+    return (previewContainerWidth || 512) + editorGap;
   });
 
   const handleConsoleOutput = (output: string, isError: boolean) => {
@@ -108,17 +119,18 @@
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
     measureContainerWidth();
-    glSystem.upsertNode(nodeId, 'img', {});
-    startBitmapUpload();
+    if (!isCompact) {
+      glSystem.upsertNode(nodeId, 'img', {});
+      startBitmapUpload();
+    }
 
     (async () => {
-      if (!canvas) return;
-
       try {
         const options: UxnEmulatorOptions = {
           nodeId,
-          canvasElement: canvas,
-          onConsoleOutput: handleConsoleOutput
+          canvasElement: isCompact ? undefined : canvas,
+          onConsoleOutput: handleConsoleOutput,
+          headless: isCompact
         };
 
         emulator = new UxnEmulator(options);
@@ -407,122 +419,68 @@
   async function assembleAndLoad() {
     await assembleAndLoadCode(code);
   }
+
+  function handleToggleConsole() {
+    showConsole = !showConsole;
+    updateNodeData(nodeId, { showConsole });
+  }
+
+  function handleToggleEditor() {
+    showEditor = !showEditor;
+    updateNodeData(nodeId, { showEditor });
+  }
+
+  function toggleCompact() {
+    isCompact = !isCompact;
+    updateNodeData(nodeId, { compact: isCompact });
+
+    if (emulator) {
+      if (isCompact) {
+        // Switching to compact mode - disable screen rendering
+        emulator.setHeadless(true);
+        stopBitmapUpload();
+        glSystem.removeNode(nodeId);
+      } else if (canvas) {
+        emulator.initScreen(canvas);
+        glSystem.upsertNode(nodeId, 'img', {});
+        startBitmapUpload();
+      }
+    }
+  }
 </script>
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
     <div class="flex flex-col gap-2">
-      <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-          <div class="font-mono text-xs font-medium text-zinc-400">uxn</div>
-        </div>
-
-        <div class="flex gap-1">
-          <button
-            title={isPaused ? 'Resume' : 'Pause'}
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={togglePause}
-          >
-            <svelte:component this={isPaused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
-          </button>
-
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={openFileDialog}
-                title="Load ROM file"
-              >
-                <FolderOpen class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>
-              <p>Load ROM</p>
-            </Tooltip.Content>
-          </Tooltip.Root>
-
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={() => {
-                  showConsole = !showConsole;
-                  updateNodeData(nodeId, { showConsole });
-                }}
-                title="Toggle console"
-              >
-                <Terminal class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>
-              <p>Console</p>
-            </Tooltip.Content>
-          </Tooltip.Root>
-
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={() => {
-                  showEditor = !showEditor;
-                  updateNodeData(nodeId, { showEditor });
-                  measureContainerWidth();
-                }}
-                title="Edit code"
-              >
-                <Code class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>
-              <p>Edit Code</p>
-            </Tooltip.Content>
-          </Tooltip.Root>
-        </div>
-      </div>
-
-      <div class="relative">
-        <StandardHandle
-          port="inlet"
-          type="message"
-          id={0}
-          title="ROM input"
-          total={1}
-          index={0}
+      {#if isCompact}
+        <UxnCompactLayout
           {nodeId}
+          {selected}
+          {isPaused}
+          hasError={!!errorMessage}
+          {showConsole}
+          {showEditor}
+          onTogglePause={togglePause}
+          onOpenFileDialog={openFileDialog}
+          onToggleConsole={handleToggleConsole}
+          onToggleEditor={handleToggleEditor}
+          onShowScreen={toggleCompact}
         />
-        <div bind:this={previewContainer}>
-          <canvas
-            bind:this={canvas}
-            class={[
-              'nodrag cursor-default rounded-md border',
-              selected
-                ? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
-                : 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md'
-            ]}
-            width={512}
-            height={320}
-            style="width: 512px; height: 320px; image-rendering: pixelated; image-rendering: crisp-edges;"
-          ></canvas>
-        </div>
-        <StandardHandle
-          port="outlet"
-          type="video"
-          id={0}
-          title="Video output"
-          total={2}
-          index={0}
+      {:else}
+        <UxnFullLayout
           {nodeId}
+          {selected}
+          {isPaused}
+          bind:canvas
+          bind:previewContainer
+          onTogglePause={togglePause}
+          onOpenFileDialog={openFileDialog}
+          onToggleConsole={handleToggleConsole}
+          onToggleEditor={handleToggleEditor}
+          onHideScreen={toggleCompact}
+          onMeasureContainerWidth={measureContainerWidth}
         />
-        <StandardHandle
-          port="outlet"
-          type="message"
-          id={0}
-          title="Console output"
-          total={2}
-          index={1}
-          {nodeId}
-        />
-      </div>
+      {/if}
 
       {#if errorMessage}
         <div class="rounded border border-red-700 bg-red-900/50 p-2 font-mono text-xs text-red-300">

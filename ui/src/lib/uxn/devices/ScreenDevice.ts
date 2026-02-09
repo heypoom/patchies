@@ -76,6 +76,14 @@ export class ScreenDevice {
     this.resize(512, 320, 1);
   }
 
+  /** Initialize for headless mode (no canvas, but layers are still allocated) */
+  initHeadless(): void {
+    this.display = null;
+    this.displayctx = null;
+    this.set_zoom(1);
+    this.resize(512, 320, 1);
+  }
+
   changed(): boolean {
     this.x1 = clamp(this.x1, 0, this.width);
     this.y1 = clamp(this.y1, 0, this.height);

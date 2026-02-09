@@ -15,6 +15,8 @@ export interface UxnEmulatorOptions {
   canvasElement?: HTMLCanvasElement;
   onConsoleOutput?: ConsoleOutputCallback;
   keyctrl?: boolean;
+  /** If true, skip screen device initialization and rendering */
+  headless?: boolean;
 }
 
 export class UxnEmulator {
@@ -29,6 +31,7 @@ export class UxnEmulator {
   private renderLoopId: ReturnType<typeof setInterval> | null = null;
   private isRunning: boolean = false;
   private uxnModule: typeof import('uxn.wasm') | null = null;
+  private headless: boolean = false;
 
   constructor(options: UxnEmulatorOptions) {
     // Initialize devices
@@ -41,6 +44,8 @@ export class UxnEmulator {
   }
 
   async init(options: UxnEmulatorOptions): Promise<void> {
+    this.headless = options.headless ?? false;
+
     // Lazy-load uxn.wasm module
     if (!this.uxnModule) {
       this.uxnModule = await import('uxn.wasm');
@@ -58,7 +63,9 @@ export class UxnEmulator {
 
     // Initialize devices
     this.console.start();
-    if (options.canvasElement) {
+    if (this.headless) {
+      this.screen.initHeadless();
+    } else if (options.canvasElement) {
       this.screen.init(options.canvasElement);
     }
     // Controller doesn't need init (events handled at node level)
@@ -79,10 +86,13 @@ export class UxnEmulator {
       }
 
       window.requestAnimationFrame(() => {
-        // Call screen vector if set
+        // Call screen vector if set (even in headless mode, to keep UXN code running)
         if (this.screen.vector && this.uxn) {
           this.uxn.eval(this.screen.vector);
         }
+
+        // Skip rendering in headless mode
+        if (this.headless) return;
 
         // Handle repaint (full redraw)
         if (this.screen.repaint) {
@@ -91,17 +101,21 @@ export class UxnEmulator {
           this.screen.x2 = this.screen.width;
           this.screen.y2 = this.screen.height;
           this.screen.repaint = 0;
+
           const x = this.screen.x1;
           const y = this.screen.y1;
           const w = this.screen.x2 - x;
           const h = this.screen.y2 - y;
+
           this.screen.redraw();
+
           if (this.screen.displayctx) {
             const imagedata = new ImageData(
               Uint8ClampedArray.from(this.screen.pixels),
               this.screen.width,
               this.screen.height
             );
+
             this.screen.displayctx.putImageData(imagedata, 0, 0, x, y, w, h);
           }
         }
@@ -112,13 +126,16 @@ export class UxnEmulator {
           const y = this.screen.y1;
           const w = this.screen.x2 - x;
           const h = this.screen.y2 - y;
+
           this.screen.redraw();
+
           if (this.screen.displayctx) {
             const imagedata = new ImageData(
               Uint8ClampedArray.from(this.screen.pixels),
               this.screen.width,
               this.screen.height
             );
+
             this.screen.displayctx.putImageData(imagedata, 0, 0, x, y, w, h);
           }
         }
@@ -182,5 +199,21 @@ export class UxnEmulator {
 
   destroy(): void {
     this.stopRenderLoop();
+  }
+
+  /** Set headless mode (disable screen rendering) */
+  setHeadless(headless: boolean): void {
+    this.headless = headless;
+  }
+
+  /** Check if emulator is in headless mode */
+  isHeadless(): boolean {
+    return this.headless;
+  }
+
+  /** Initialize or reinitialize screen with a canvas (when switching from headless to visible) */
+  initScreen(canvas: HTMLCanvasElement): void {
+    this.screen.init(canvas);
+    this.headless = false;
   }
 }
