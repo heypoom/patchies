@@ -12,6 +12,7 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import UxnCompactLayout from './uxn/UxnCompactLayout.svelte';
   import UxnFullLayout from './uxn/UxnFullLayout.svelte';
+  import { VirtualFilesystem } from '$lib/vfs';
 
   let {
     id: nodeId,
@@ -20,15 +21,15 @@
   }: {
     id: string;
     data: {
-      rom?: Uint8Array;
       fileName?: string;
-      url?: string;
       code?: string;
       showConsole?: boolean;
       showEditor?: boolean;
       consoleOutput?: string;
       /** Compact mode hides the screen and disables screen/input devices */
       compact?: boolean;
+      /** VFS path to the ROM file for persistence */
+      vfsPath?: string;
     };
     selected: boolean;
   } = $props();
@@ -51,7 +52,6 @@
   let glSystem = GLSystem.getInstance();
   let bitmapFrameId: number | null = null;
   const fileName = $derived(data.fileName || 'No ROM loaded');
-  const hasROM = $derived(!!data.rom);
   const code = $derived(data.code || '');
 
   const editorGap = 10;
@@ -90,17 +90,20 @@
         // Check if input is a URL
         if (input.startsWith('http://') || input.startsWith('https://')) {
           await loadFromUrl(input);
+        } else if (input.startsWith('user://') || input.startsWith('obj://')) {
+          // VFS path
+          await loadFromVfsPath(input);
         } else {
           // Treat as Uxntal code to assemble
           await assembleAndLoadCode(input);
         }
       })
       .with(uxnMessages.bang, async () => {
-        // On BANG: prioritize code, fallback to URL
-        if (code && !data.url) {
+        // On BANG: prioritize code, fallback to vfsPath
+        if (code && !data.vfsPath) {
           await assembleAndLoadCode(code);
-        } else if (!code && data.url) {
-          await loadFromUrl(data.url);
+        } else if (data.vfsPath) {
+          await loadFromVfsPath(data.vfsPath);
         }
       })
       .with(uxnMessages.loadUrl, ({ url }) => loadFromUrl(url))
@@ -136,16 +139,13 @@
         emulator = new UxnEmulator(options);
         await emulator.init(options);
 
-        // Load ROM based on priority: CODE > URL > ROM
-        if (data.code && !data.url) {
-          // If code exists and no URL, assemble and load the code
+        // Load ROM based on priority: CODE > VFS
+        if (data.code && !data.vfsPath) {
+          // If code exists and no vfsPath, assemble and load the code
           await assembleAndLoadCode(data.code);
-        } else if (data.url && !data.code) {
-          // If URL exists and no Code, load from URL
-          await loadFromUrl(data.url);
-        } else if (data.rom) {
-          // Load the ROM directly
-          emulator.load(data.rom);
+        } else if (data.vfsPath) {
+          // If vfsPath exists, load from VFS (persisted ROM or URL)
+          await loadFromVfsPath(data.vfsPath);
         }
 
         // Set up event handlers
@@ -269,16 +269,64 @@
       isDragging = false;
     };
 
-    const handleCanvasDrop = (event: DragEvent) => {
+    const handleCanvasDrop = async (event: DragEvent) => {
       event.preventDefault();
       event.stopPropagation();
       isDragging = false;
 
-      const files = event.dataTransfer?.files;
-      if (!files || files.length === 0) return;
+      // Check for VFS path drop first
+      const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
+      if (vfsPath) {
+        // Verify it's a ROM file
+        const vfs = VirtualFilesystem.getInstance();
+        const entry = vfs.getEntryOrLinkedFile(vfsPath);
 
-      const file = files[0];
-      loadFile(file);
+        if (entry?.mimeType === 'application/x-uxn-rom') {
+          await loadFromVfsPath(vfsPath);
+          return;
+        } else {
+          console.warn('Only .rom files are supported for UXN, got:', entry?.mimeType);
+          return;
+        }
+      }
+
+      // Handle regular file drops
+      const items = event.dataTransfer?.items;
+      let file: File | null = null;
+      let handle: FileSystemFileHandle | undefined;
+
+      if (items && items.length > 0) {
+        const item = items[0];
+        file = item.getAsFile();
+
+        // Try to get FileSystemFileHandle for persistence
+        if ('getAsFileSystemHandle' in item) {
+          try {
+            const fsHandle = await (
+              item as DataTransferItem & {
+                getAsFileSystemHandle(): Promise<FileSystemHandle | null>;
+              }
+            ).getAsFileSystemHandle();
+            if (fsHandle?.kind === 'file') {
+              handle = fsHandle as FileSystemFileHandle;
+            }
+          } catch {
+            // Not supported - continue without handle
+          }
+        }
+      }
+
+      // Fall back to files API
+      if (!file) {
+        const files = event.dataTransfer?.files;
+        if (files && files.length > 0) {
+          file = files[0];
+        }
+      }
+
+      if (file) {
+        loadFile(file, handle);
+      }
     };
 
     // Attach to canvas
@@ -321,24 +369,43 @@
 
   async function loadFromUrl(url: string) {
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to load ROM: ${response.statusText}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      const rom = new Uint8Array(arrayBuffer);
-      loadROM(rom, url);
+      // Register URL in VFS, then load from vfsPath
+      const vfs = VirtualFilesystem.getInstance();
+      const vfsPath = await vfs.registerUrl(url);
+      await loadFromVfsPath(vfsPath);
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : String(error);
     }
   }
 
-  function loadROM(rom: Uint8Array, url?: string, fileName?: string) {
+  async function loadFromVfsPath(vfsPath: string) {
+    try {
+      const vfs = VirtualFilesystem.getInstance();
+      const fileOrBlob = await vfs.resolve(vfsPath);
+      const arrayBuffer = await fileOrBlob.arrayBuffer();
+      const rom = new Uint8Array(arrayBuffer);
+
+      const fileName =
+        fileOrBlob instanceof File ? fileOrBlob.name : vfsPath.split('/').pop() || 'rom.rom';
+
+      loadROM(rom, { vfsPath, fileName });
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  function loadROM(rom: Uint8Array, options?: { fileName?: string; vfsPath?: string }) {
     if (emulator) {
       emulator.load(rom);
 
-      const name = fileName || (url ? url.split('/').pop() || 'rom.rom' : 'rom.rom');
-      updateNodeData(nodeId, { rom, url, fileName: name });
+      const name = options?.fileName || 'rom.rom';
+
+      // Don't persist `rom` bytes to avoid localStorage size limits
+      // ROM will be loaded from vfsPath on next mount
+      updateNodeData(nodeId, {
+        fileName: name,
+        vfsPath: options?.vfsPath
+      });
 
       errorMessage = null;
     }
@@ -353,11 +420,16 @@
     loadFile(file);
   }
 
-  async function loadFile(file: File) {
+  async function loadFile(file: File, handle?: FileSystemFileHandle) {
     try {
       const arrayBuffer = await file.arrayBuffer();
       const rom = new Uint8Array(arrayBuffer);
-      loadROM(rom, undefined, file.name);
+
+      // Store in VFS for persistence
+      const vfs = VirtualFilesystem.getInstance();
+      const vfsPath = await vfs.storeFile(file, handle);
+
+      loadROM(rom, { fileName: file.name, vfsPath });
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : String(error);
     }
@@ -382,9 +454,14 @@
       // Assemble the code
       const rom = asm(codeToAssemble);
 
-      // Load the assembled ROM
-      loadROM(rom, undefined, 'assembled.rom');
-      updateNodeData(nodeId, { code: codeToAssemble, rom, fileName: 'assembled.rom' });
+      // Load the assembled ROM (no vfsPath for assembled code)
+      // Don't persist rom bytes - code will be re-assembled on mount
+      loadROM(rom, { fileName: 'assembled.rom' });
+      updateNodeData(nodeId, {
+        code: codeToAssemble,
+        fileName: 'assembled.rom',
+        vfsPath: undefined
+      });
 
       measureContainerWidth();
     } catch (error) {

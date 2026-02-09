@@ -155,6 +155,7 @@ export function guessMimeType(filename: string): string | undefined {
     '.svg': 'image/svg+xml',
     '.bmp': 'image/bmp',
     '.ico': 'image/x-icon',
+
     // Videos
     '.mp4': 'video/mp4',
     '.webm': 'video/webm',
@@ -162,6 +163,7 @@ export function guessMimeType(filename: string): string | undefined {
     '.avi': 'video/x-msvideo',
     '.mkv': 'video/x-matroska',
     '.m4v': 'video/x-m4v',
+
     // Audio
     '.mp3': 'audio/mpeg',
     '.wav': 'audio/wav',
@@ -170,8 +172,12 @@ export function guessMimeType(filename: string): string | undefined {
     '.aac': 'audio/aac',
     '.m4a': 'audio/mp4',
     '.aiff': 'audio/aiff',
+
     // Code
-    '.js': 'application/javascript'
+    '.js': 'application/javascript',
+
+    // UXN ROM
+    '.rom': 'application/x-uxn-rom'
   };
 
   return mimeMap[ext];

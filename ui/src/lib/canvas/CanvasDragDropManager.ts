@@ -273,6 +273,10 @@ export class CanvasDragDropManager {
         (t) => t.startsWith('audio/'),
         () => 'soundfile~'
       )
+      .when(
+        (t) => t === 'application/x-uxn-rom',
+        () => 'uxn'
+      )
       .otherwise(() => null);
   }
 
@@ -307,7 +311,7 @@ export class CanvasDragDropManager {
       }
     }
 
-    if (['img', 'video', 'soundfile~'].includes(nodeType)) {
+    if (['img', 'video', 'soundfile~', 'uxn'].includes(nodeType)) {
       return { ...getDefaultNodeData(nodeType), vfsPath };
     }
 
@@ -372,6 +376,15 @@ export class CanvasDragDropManager {
 
         return {
           ...getDefaultNodeData('video'),
+          vfsPath,
+          fileName: file.name
+        };
+      })
+      .with('uxn', async () => {
+        const vfsPath = await vfs.storeFile(file, handle);
+
+        return {
+          ...getDefaultNodeData('uxn'),
           vfsPath,
           fileName: file.name
         };
