@@ -197,6 +197,16 @@
       description: 'Set a custom room ID for P2P communication between patches'
     },
     {
+      id: 'generate-prompt',
+      name: 'Patch to Prompt',
+      description: 'Export your patch as an LLM-friendly specification',
+
+      // It does not really require AI.
+      // The rationale is that people who presses "Toggle AI Features"
+      // Likely doesn't want to see this.
+      requiresAi: true
+    },
+    {
       id: 'prepare-offline',
       name: 'Prepare for Offline',
       description: 'Download heavy assets (Ruby WASM, SuperSonic, Strudel samples) for offline use'
@@ -205,11 +215,6 @@
       id: 'clear-cache',
       name: 'Clear Cache',
       description: 'Fix stale app issues by clearing all caches and unregistering service workers'
-    },
-    {
-      id: 'generate-prompt',
-      name: 'Generate Implementation Prompt',
-      description: 'Create an LLM-friendly spec from your patch for Claude Code or other AI tools'
     }
   ];
 

@@ -91,10 +91,9 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="max-h-[85vh] sm:max-w-3xl">
     <Dialog.Header>
-      <Dialog.Title>Generate Implementation Prompt</Dialog.Title>
+      <Dialog.Title>Patch to Prompt</Dialog.Title>
       <Dialog.Description>
-        Create an LLM-friendly specification from your patch. Copy this to Claude Code or other AI
-        coding assistants.
+        Export your patch as an LLM-friendly specification. Copy this to AI coding assistants.
       </Dialog.Description>
     </Dialog.Header>
 
@@ -104,6 +103,7 @@
         <label for="steering-prompt" class="block text-sm text-zinc-300">
           Describe what you want to build (optional):
         </label>
+
         <div class="flex gap-2">
           <input
             id="steering-prompt"
@@ -113,6 +113,7 @@
             placeholder="e.g., Simple HTML page with sliders, dark theme..."
             class="flex-1 rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
+
           <button
             onclick={rollDice}
             title="Random example prompt"
@@ -127,6 +128,7 @@
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-sm text-zinc-300">Generated Prompt</span>
+
           <button
             onclick={toggleEdit}
             title={isEditing ? 'Lock editing' : 'Unlock editing'}
@@ -141,15 +143,18 @@
             {/if}
           </button>
         </div>
+
         <textarea
           bind:value={generatedPrompt}
           readonly={!isEditing}
-          class="h-80 w-full resize-none rounded border border-zinc-600 bg-zinc-800 px-3 py-2 font-mono text-xs text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none {isEditing
+          class="h-80 min-h-40 w-full resize-y rounded border border-zinc-600 bg-zinc-800 px-3 py-2 font-mono text-xs text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none {isEditing
             ? 'bg-zinc-750'
             : 'cursor-default'}"
         ></textarea>
+
         <div class="flex items-center justify-between text-xs text-zinc-500">
           <span>{generatedPrompt.length.toLocaleString()} characters</span>
+
           {#if isEditing}
             <span class="text-amber-400">Editing enabled - changes won't auto-regenerate</span>
           {/if}
@@ -160,23 +165,25 @@
     <Dialog.Footer class="flex gap-2">
       <button
         onclick={() => (open = false)}
-        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+        class="flex flex-1 cursor-pointer items-center justify-center rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
       >
         Cancel
       </button>
+
       <button
         onclick={downloadFile}
-        class="flex cursor-pointer items-center justify-center gap-2 rounded bg-zinc-600 px-4 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-500"
+        class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded bg-zinc-600 px-3 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-500"
       >
         <Download class="h-4 w-4" />
         Download
       </button>
+
       <button
         onclick={copyToClipboard}
         class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
       >
         <Copy class="h-4 w-4" />
-        Copy to Clipboard
+        Copy
       </button>
     </Dialog.Footer>
   </Dialog.Content>
