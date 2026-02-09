@@ -67,6 +67,7 @@ export * from './waveshaper';
 export * from './convolver';
 export * from './adsr';
 export * from './asm';
+export * from './asm-mem';
 export * from './wgpu-compute';
 export * from './bg-out';
 export * from './send-vdo';
@@ -142,6 +143,7 @@ import { waveshaperSchema } from './waveshaper';
 import { convolverSchema } from './convolver';
 import { adsrSchema } from './adsr';
 import { asmSchema } from './asm';
+import { asmMemSchema } from './asm-mem';
 import { wgpuComputeSchema } from './wgpu-compute';
 import { bgOutSchema } from './bg-out';
 import { sendVdoSchema } from './send-vdo';
@@ -256,6 +258,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'convolver~': convolverSchema,
   adsr: adsrSchema,
   asm: asmSchema,
+  'asm.mem': asmMemSchema,
   'wgpu.compute': wgpuComputeSchema,
   'bg.out': bgOutSchema,
   'send.vdo': sendVdoSchema,
