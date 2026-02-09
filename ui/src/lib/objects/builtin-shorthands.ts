@@ -154,6 +154,24 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     })
   },
   {
+    names: ['send.vdo', 'sv'],
+    nodeType: 'send.vdo',
+    description: 'Send video to a named channel',
+    transform: (expr, name) => ({
+      nodeType: 'send.vdo',
+      data: { channel: expr.replace(name, '').trim() }
+    })
+  },
+  {
+    names: ['recv.vdo', 'rv'],
+    nodeType: 'recv.vdo',
+    description: 'Receive video from a named channel',
+    transform: (expr, name) => ({
+      nodeType: 'recv.vdo',
+      data: { channel: expr.replace(name, '').trim() }
+    })
+  },
+  {
     names: ['slider'],
     nodeType: 'slider',
     description: 'Integer slider. Format: slider <min> <max> [default]',
