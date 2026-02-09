@@ -27,10 +27,7 @@ servers for peer-to-peer mesh discovery.
 
 ## Node.js/Bun Integration
 
-Send and receive messages from your own scripts using Trystero with RTC
-polyfills like `node-datachannel/polyfill`.
-
-See README for OSC bridge and ArtNet DMX bridge examples.
+Send and receive messages from your own scripts using Trystero with RTC polyfills like `node-datachannel/polyfill` and `werift`.
 
 ## See Also
 

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import NetObjectCommonLayout from './NetObjectCommonLayout.svelte';
+  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import ObjectCommonLayout from './ObjectCommonLayout.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { P2PManager, type P2PMessageHandler } from '$lib/p2p/P2PManager';
@@ -17,8 +18,7 @@
   const messageContext = new MessageContext(nodeId);
   const p2pManager = P2PManager.getInstance();
 
-  let channel = $derived(data.channel || '1');
-  let showChannelInput = $state(false);
+  let channel = $derived(data.channel || 'foo');
   let peerCount = $state(0);
   let isConnected = $state(false);
   let messagesReceived = $state(0);
@@ -80,42 +80,33 @@
     }
   };
 
-  const borderColor = $derived.by(() => {
+  function handleChannelChange(newChannel: string) {
+    updateNodeData(nodeId, { channel: newChannel });
+  }
+
+  const borderColorClass = $derived.by(() => {
     if (selected && !isConnected) return 'border-gray-100';
     if (selected) return 'border-blue-400';
     if (!isConnected) return 'border-gray-500';
-
     return 'border-blue-600';
   });
 
-  const textClass = $derived.by(() => {
-    if (!isConnected) return 'text-gray-400';
-
-    return 'text-blue-200';
-  });
-
-  function handleChannelInput(e: Event) {
-    const target = e.currentTarget as HTMLInputElement;
-    updateNodeData(nodeId, { channel: target.value });
-  }
-
-  function handleChannelKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-      showChannelInput = false;
-    }
-  }
+  const labelColorClass = 'text-zinc-200';
 </script>
 
-<NetObjectCommonLayout
-  {nodeId}
-  bind:showChannelInput
-  {peerCount}
-  {channel}
-  {borderColor}
-  {textClass}
-  {selected}
+<ObjectCommonLayout
   nodeLabel="netrecv"
-  onChannelInput={handleChannelInput}
-  onChannelKeydown={handleChannelKeydown}
-  hasOutlet
-/>
+  {channel}
+  {selected}
+  {borderColorClass}
+  {labelColorClass}
+  onChannelChange={handleChannelChange}
+>
+  {#snippet inlets()}
+    <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+  {/snippet}
+
+  {#snippet outlets()}
+    <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
+  {/snippet}
+</ObjectCommonLayout>

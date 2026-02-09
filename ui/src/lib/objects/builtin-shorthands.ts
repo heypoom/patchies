@@ -141,7 +141,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     description: 'Network message sender',
     transform: (expr, name) => ({
       nodeType: 'netsend',
-      data: { channel: expr.replace(name, '').trim() }
+      data: { channel: expr.replace(name, '').trim() || 'foo' }
     })
   },
   {
@@ -150,7 +150,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     description: 'Network message receiver',
     transform: (expr, name) => ({
       nodeType: 'netrecv',
-      data: { channel: expr.replace(name, '').trim() }
+      data: { channel: expr.replace(name, '').trim() || 'foo' }
     })
   },
   {
