@@ -7,7 +7,7 @@
     BUILT_IN_PRESET_PACKS,
     enabledPackIds,
     enabledPresetPackIds,
-    enabledObjects,
+    enabledPrimaryObjects,
     togglePack,
     togglePresetPack,
     enableAllPacks,
@@ -58,7 +58,7 @@
     return allObjects.size;
   });
 
-  const enabledCount = $derived($enabledObjects.size);
+  const enabledCount = $derived($enabledPrimaryObjects.size);
   const allObjectPacksEnabled = $derived($enabledPackIds.length === BUILT_IN_PACKS.length);
   const allPresetPacksEnabled = $derived(
     $enabledPresetPackIds.length === BUILT_IN_PRESET_PACKS.length

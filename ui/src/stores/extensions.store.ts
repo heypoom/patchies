@@ -25,6 +25,7 @@ export { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
 // Import for internal use
 import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
 import { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
+import { getObjectAliases } from '$lib/objects/object-definitions';
 
 // ============================================================================
 // Object Packs Store
@@ -62,9 +63,10 @@ if (typeof localStorage !== 'undefined') {
 }
 
 /**
- * Derived set of all enabled object names
+ * Derived set of all enabled primary object names (excludes aliases).
+ * Used for counting in UI.
  */
-export const enabledObjects = derived(enabledPackIds, ($enabledPackIds) => {
+export const enabledPrimaryObjects = derived(enabledPackIds, ($enabledPackIds) => {
   const objects = new Set<string>();
 
   for (const packId of $enabledPackIds) {
@@ -73,6 +75,22 @@ export const enabledObjects = derived(enabledPackIds, ($enabledPackIds) => {
       for (const obj of pack.objects) {
         objects.add(obj);
       }
+    }
+  }
+
+  return objects;
+});
+
+/**
+ * Derived set of all enabled object names (includes aliases).
+ * Used for autocomplete filtering.
+ */
+export const enabledObjects = derived(enabledPrimaryObjects, ($enabledPrimaryObjects) => {
+  const objects = new Set($enabledPrimaryObjects);
+
+  for (const obj of $enabledPrimaryObjects) {
+    for (const alias of getObjectAliases(obj)) {
+      objects.add(alias);
     }
   }
 

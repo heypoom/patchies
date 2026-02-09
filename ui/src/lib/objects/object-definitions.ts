@@ -17,3 +17,18 @@ export function getObjectNames(): string[] {
 
   return [...shorthandNames, ...v2AudioObjectNames, ...v2TextObjectNames];
 }
+
+/**
+ * Get aliases for an object from ObjectRegistry or AudioRegistry.
+ * @param objectName - The primary object name
+ * @returns Array of aliases, or empty array if none
+ */
+export function getObjectAliases(objectName: string): string[] {
+  const objectClass = ObjectRegistry.getInstance().get(objectName);
+  if (objectClass?.aliases) return objectClass.aliases;
+
+  const audioClass = AudioRegistry.getInstance().get(objectName);
+  if (audioClass?.aliases) return audioClass.aliases;
+
+  return [];
+}
