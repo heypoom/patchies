@@ -23,6 +23,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'manage-saves': 'Saves',
   'message-passing': 'Message Passing',
   'modifying-objects': 'Modifying Objects',
+  'network-p2p': 'P2P Messaging',
   'offline-usage': 'Offline Usage',
   'rendering-pipeline': 'Rendering Pipeline',
   'sharing-links': 'Sharing Links',
