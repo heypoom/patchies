@@ -4,7 +4,7 @@ Use `netsend` and `netrecv` to send and receive messages across the network usin
 
 ## Room Configuration
 
-When you first create a `netsend` or `netrecv` object, a `room` parameter is added to your URL. Users need the same `?room=` parameter to connect to each other.
+When you first create a [netsend](/docs/objects/netsend) or [netrecv](/docs/objects/netrecv) object, a `room` parameter is added to your URL. Users need the same `?room=` parameter to connect to each other.
 
 - **Remove the room parameter** from your URL to generate a different room
 - **Set manually**: Go to `Ctrl/Cmd + K > Set room for netsend/netrecv`
