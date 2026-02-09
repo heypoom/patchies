@@ -1,5 +1,10 @@
 import { match } from 'ts-pattern';
 import type { MachineStatus, Effect, Message, Controller, Port, Action } from 'machine';
+import {
+  ASM_MEMORY_SIZE,
+  ASM_DEFAULT_DELAY_MS,
+  ASM_DEFAULT_STEP_BY
+} from '$lib/assembly/constants';
 
 // Define types that are serialized from Rust but not exported in TypeScript
 export interface InspectedRegister {
@@ -14,6 +19,13 @@ export interface InspectedMachine {
   inbox_size: number;
   outbox_size: number;
   status: MachineStatus;
+}
+
+/** Batched machine state for efficient polling (matches Rust MachineSnapshot) */
+export interface MachineSnapshot {
+  machine: InspectedMachine | null;
+  effects: Effect[];
+  messages: Message[];
 }
 
 export interface MachineConfig {
@@ -46,6 +58,7 @@ export type AssemblyWorkerMessage = { id: string } & (
       inlet: number;
     }
   | { type: 'consumeMessages'; machineId: number }
+  | { type: 'getSnapshot'; machineId: number }
   | { type: 'setMachineConfig'; machineId: number; config: Partial<MachineConfig> }
   | { type: 'getMachineConfig'; machineId: number }
   | { type: 'playMachine'; machineId: number }
@@ -63,6 +76,7 @@ let MPort: typeof Port | null = null;
 
 class AssemblyWorkerController {
   private controller: Controller | null = null;
+  private initPromise: Promise<void> | null = null;
 
   public initialized = false;
   private machineConfigs = new Map<number, MachineConfig>();
@@ -71,11 +85,26 @@ class AssemblyWorkerController {
   async ensureController() {
     if (this.initialized) return;
 
-    const { Controller, Port } = await import('machine');
-    MPort = Port;
+    // Prevent race condition: if already initializing, wait for that to complete
+    if (this.initPromise) {
+      return this.initPromise;
+    }
 
-    this.controller = Controller.create();
-    this.initialized = true;
+    this.initPromise = (async () => {
+      // Import and initialize WASM module
+      const machineModule = await import('machine');
+
+      // Call default export (init) to initialize WASM before using any classes
+      await machineModule.default();
+
+      const { Controller, Port } = machineModule;
+      MPort = Port;
+
+      this.controller = Controller.create();
+      this.initialized = true;
+    })();
+
+    return this.initPromise;
   }
 
   createMachineWithId(id: number): void {
@@ -97,9 +126,9 @@ class AssemblyWorkerController {
 
   machineExists(machineId: number): boolean {
     try {
-      const result = this.controller?.inspect_machine(machineId);
-
-      return result !== null;
+      if (!this.controller) return false;
+      const result = this.controller.inspect_machine(machineId);
+      return result !== null && result !== undefined;
     } catch {
       return false;
     }
@@ -111,22 +140,41 @@ class AssemblyWorkerController {
   }
 
   stepMachine(id: number, cycles: number = 1): void {
-    this.controller?.step_machine(id, cycles);
+    if (!this.controller) return;
+    this.controller.step_machine(id, cycles);
   }
 
   inspectMachine(machineId: number): InspectedMachine | null {
     try {
       const result = this.controller?.inspect_machine(machineId);
-
       return result === null ? null : result;
     } catch {
       return null;
     }
   }
 
+  // Track logged bounds errors to avoid flooding (reset on new machine creation)
+  private loggedBoundsErrors = new Set<string>();
+
   readMemory(machineId: number, address: number, size: number): number[] | null {
+    if (address < 0 || size < 0 || address + size > ASM_MEMORY_SIZE) {
+      // Only log each unique error once
+      const errorKey = `${machineId}:${address}:${size}`;
+
+      if (!this.loggedBoundsErrors.has(errorKey)) {
+        this.loggedBoundsErrors.add(errorKey);
+
+        console.warn(
+          `[assemblyWorker] readMemory bounds error: address=${address}, size=${size}, max=${ASM_MEMORY_SIZE} (further errors suppressed)`
+        );
+      }
+
+      return null;
+    }
+
     try {
       const result = this.controller?.read_mem(machineId, address, size);
+
       return result === null ? null : result;
     } catch {
       return null;
@@ -172,11 +220,20 @@ class AssemblyWorkerController {
     return this.controller?.consume_messages(machineId);
   }
 
+  /** Get a batched snapshot of machine state, effects, and messages in one call */
+  getSnapshot(machineId: number): MachineSnapshot | null {
+    try {
+      return this.controller?.get_snapshot(machineId) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   setMachineConfig(machineId: number, config: Partial<MachineConfig>): void {
     const currentConfig = this.machineConfigs.get(machineId) || {
       isRunning: false,
-      delayMs: 100,
-      stepBy: 1
+      delayMs: ASM_DEFAULT_DELAY_MS,
+      stepBy: ASM_DEFAULT_STEP_BY
     };
 
     const newConfig = { ...currentConfig, ...config };
@@ -227,9 +284,7 @@ class AssemblyWorkerController {
     const intervalId = setInterval(() => {
       try {
         this.stepMachine(machineId, config.stepBy);
-      } catch (error) {
-        console.log(`error during auto step of machine ${machineId}:`, error);
-
+      } catch {
         // If stepping fails, stop the auto execution
         this.pauseMachine(machineId);
       }
@@ -265,12 +320,7 @@ const controller = new AssemblyWorkerController();
 self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
   const { id } = event.data;
 
-  const initialized = controller.initialized;
   await controller.ensureController();
-
-  if (!initialized) {
-    console.log('[assembly worker] controller initialized');
-  }
 
   try {
     const result = await match(event.data)
@@ -301,6 +351,7 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
         controller.sendDataMessage(data.machineId, data.data, data.source, data.inlet)
       )
       .with({ type: 'consumeMessages' }, (data) => controller.consumeMessages(data.machineId))
+      .with({ type: 'getSnapshot' }, (data) => controller.getSnapshot(data.machineId))
       .with({ type: 'setMachineConfig' }, (data) => {
         controller.setMachineConfig(data.machineId, data.config);
       })
@@ -321,6 +372,7 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
 
     self.postMessage({ type: 'success', id, result });
   } catch (error) {
+    console.error(`[assembly worker] error:`, error);
     self.postMessage({ type: 'error', id, error });
   }
 };

@@ -124,7 +124,18 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 - `read <length>` pops the memory address from the stack and read N values from the address onto the stack
 - `load <address>` pushes the value at the memory address onto the stack
 - `store <address>` pops the value from the stack and store it at the memory address
-- Memory space: 65,535 cells of unsigned 16-bit integer
+
+#### Memory Layout (8KB total, 4096 u16 cells)
+
+| Segment | Address Range | Size | Description |
+|---------|---------------|------|-------------|
+| Code | 0x000-0x1FF | 512 | Program instructions (~250 max) |
+| Data | 0x200-0x2FF | 256 | `.string` and `.value` constants |
+| Call Stack | 0x300-0x33F | 64 | Return addresses (~32 call depth) |
+| RAM | 0x340-0xFFF | 3008 | Data stack + user memory |
+| External | 0x1000+ | virtual | Routed to `asm.mem` objects |
+
+**Important**: Use high addresses (e.g., 0xF00+) for `load`/`store` to avoid colliding with the data stack which grows up from 0x340.
 
 ### OTHER
 
@@ -183,9 +194,160 @@ Default is 1 instruction. You can set it to higher number of instructions per cy
 
 - `Shift + Enter` in the code editor auto-runs the program
 
-## Example: Loop
+## Examples
 
-This is a loop from 10 to 50.
+### Echo
+
+Receives input and sends it back. The simplest reactive program.
+
+```asm
+loop:
+receive
+send 0 1
+jump loop
+```
+
+### Double
+
+Multiplies input by 2.
+
+```asm
+loop:
+receive
+push 2
+mul
+send 0 1
+jump loop
+```
+
+### Accumulator
+
+Running sum - adds each input to a total stored at address 100.
+
+```asm
+loop:
+receive
+load 100
+add
+dup
+store 100
+send 0 1
+jump loop
+```
+
+### Counter
+
+Outputs incrementing values (0, 1, 2, ...) on each input. Count stored at address 0.
+
+```asm
+loop:
+load 0
+dup
+send 0 1
+inc
+store 0
+receive
+jump loop
+```
+
+### Threshold Gate
+
+Only outputs values greater than 50.
+
+```asm
+loop:
+receive
+dup
+push 50
+greater_than
+jump_zero skip
+send 0 1
+jump next
+skip:
+pop
+next:
+jump loop
+```
+
+### Running Average
+
+Calculates running average. Sum at address 100, count at 101.
+
+```asm
+loop:
+receive
+load 100
+add
+store 100
+load 101
+push 1
+add
+store 101
+load 100
+load 101
+div
+send 0 1
+jump loop
+```
+
+### Fibonacci
+
+Outputs fibonacci sequence on each input. Previous value at 100, current at 101.
+
+```asm
+push 0
+store 100
+push 1
+store 101
+
+loop:
+load 101
+dup
+send 0 1
+load 100
+add
+load 101
+store 100
+store 101
+receive
+jump loop
+```
+
+### Delta
+
+Outputs difference from previous input. Previous value at address 100.
+
+```asm
+loop:
+receive
+dup
+load 100
+sub
+send 0 1
+store 100
+jump loop
+```
+
+### Modulo Counter
+
+Counts 0 to 9, then wraps around.
+
+```asm
+loop:
+load 0
+dup
+send 0 1
+inc
+push 10
+mod
+store 0
+receive
+jump loop
+```
+
+### Loop (10 to 50)
+
+A simple loop from 10 to 50, demonstrating control flow.
 
 ```asm
 push 10
@@ -203,16 +365,14 @@ end:
 push 0xDDDD
 ```
 
-This would be roughly equivalent to:
+Equivalent C code:
 
 ```c
 int main() {
     int i = 10;
-
     while (i < 50) {
         i++;
     }
-
     return 0xDDDD;
 }
 ```

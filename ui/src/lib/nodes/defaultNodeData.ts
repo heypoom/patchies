@@ -19,7 +19,11 @@ import {
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
-import { DEFAULT_ASSEMBLY_CODE } from '$lib/assembly/constants';
+import {
+  DEFAULT_ASSEMBLY_CODE,
+  ASM_DEFAULT_DELAY_MS,
+  ASM_DEFAULT_STEP_BY
+} from '$lib/assembly/constants';
 import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
 import { DEFAULT_WGSL_CODE } from '$lib/webgpu/constants';
 
@@ -140,8 +144,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       showMemoryViewer: false,
       machineConfig: {
         isRunning: false,
-        delayMs: 100,
-        stepBy: 1
+        delayMs: ASM_DEFAULT_DELAY_MS,
+        stepBy: ASM_DEFAULT_STEP_BY
       }
     }))
     .with('asm.value', () => ({

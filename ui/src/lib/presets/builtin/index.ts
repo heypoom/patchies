@@ -20,6 +20,7 @@ import { STRUDEL_PRESETS } from './strudel.presets';
 import { TEXTMODE_PRESETS } from './textmode.presets';
 import { THREE_PRESETS } from './three.preset';
 import { IFRAME_PRESETS } from './iframe.presets';
+import { ASM_PRESETS } from './asm.presets';
 
 // Re-export individual preset collections
 export {
@@ -41,7 +42,8 @@ export {
   STRUDEL_PRESETS,
   TEXTMODE_PRESETS,
   THREE_PRESETS,
-  IFRAME_PRESETS
+  IFRAME_PRESETS,
+  ASM_PRESETS
 };
 
 /**
@@ -67,5 +69,6 @@ export const BUILTIN_PRESETS: Record<string, { type: string; data: unknown }> = 
   ...STRUDEL_PRESETS,
   ...TEXTMODE_PRESETS,
   ...THREE_PRESETS,
-  ...IFRAME_PRESETS
+  ...IFRAME_PRESETS,
+  ...ASM_PRESETS
 };

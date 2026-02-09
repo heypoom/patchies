@@ -8,7 +8,10 @@
   import { match, P } from 'ts-pattern';
   import { AssemblySystem } from '$lib/assembly/AssemblySystem';
   import { regionPalettes, getRegionClassName } from '$lib/assembly/regionColors';
+  import { ASM_VALUE_VIEWER_UPDATE_INTERVAL } from '$lib/assembly/constants';
   import { memoryRegionStore } from '$lib/assembly/memoryRegionStore';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type { AsmMachineStateChangedEvent } from '$lib/eventbus/events';
 
   let {
     id: nodeId,
@@ -116,6 +119,21 @@
 
   const columns = $derived(Math.min(values.length, 8));
 
+  const eventBus = PatchiesEventBus.getInstance();
+
+  let lastUpdateTime = 0;
+
+  // Event handler for machine state changes (time-throttled)
+  const handleMachineStateChanged = (event: AsmMachineStateChangedEvent) => {
+    if (event.machineId !== machineId) return;
+
+    const now = performance.now();
+    if (now - lastUpdateTime < ASM_VALUE_VIEWER_UPDATE_INTERVAL) return;
+
+    lastUpdateTime = now;
+    updateValue();
+  };
+
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
@@ -123,16 +141,15 @@
     // Initial value update
     updateValue();
 
-    // Periodic refresh
-    const refreshInterval = setInterval(updateValue, 200);
-
-    return () => {
-      clearInterval(refreshInterval);
-    };
+    // Subscribe to machine state changes (event-driven, throttled)
+    eventBus.addEventListener('asmMachineStateChanged', handleMachineStateChanged);
   });
 
   onDestroy(() => {
     messageContext?.destroy();
+
+    // Unsubscribe from machine state changes
+    eventBus.removeEventListener('asmMachineStateChanged', handleMachineStateChanged);
 
     // Clean up memory regions when this viewer is destroyed
     if (values.length > 0) {

@@ -6,6 +6,7 @@ import { migration004 } from './migrations/004-soundfile-vfs-migration';
 import { migration005 } from './migrations/005-chuck-node-audio-inlet';
 import { migration006 } from './migrations/006-dac-to-out';
 import { migration007 } from './migrations/007-trigger-to-visual-node';
+import { migration008 } from './migrations/008-asm-value-address-bounds';
 
 /**
  * All migrations in order. Each migration upgrades from version N-1 to N.
@@ -18,7 +19,8 @@ const migrations: Migration[] = [
   migration004,
   migration005,
   migration006,
-  migration007
+  migration007,
+  migration008
 ];
 
 /**

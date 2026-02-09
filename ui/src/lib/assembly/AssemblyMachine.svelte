@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Binary, Pause, Play, RefreshCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -12,7 +12,12 @@
   import MachineStateViewer from './MachineStateViewer.svelte';
   import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
   import { memoryActions } from './memoryStore';
+  import { ASM_DEFAULT_DELAY_MS, ASM_DEFAULT_STEP_BY } from './constants';
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
+  import { logger } from '$lib/utils/logger';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+
+  const eventBus = PatchiesEventBus.getInstance();
 
   let {
     id: nodeId,
@@ -36,6 +41,8 @@
   let errorMessage = $state<string | null>(null);
   let machineState = $state<InspectedMachine | null>(null);
   let logs = $state<string[]>([]);
+  let lastLoadedCode = $state<string | null>(null);
+  let isOperationInProgress = $state(false); // Guard against concurrent operations
   let dragEnabled = $state(true);
   let showSettings = $state(false);
   let mainContainer: HTMLDivElement;
@@ -48,7 +55,11 @@
 
   // Use node data as single source of truth for machine config
   const machineConfig = $derived(
-    data.machineConfig || { isRunning: false, delayMs: 100, stepBy: 1 }
+    data.machineConfig || {
+      isRunning: false,
+      delayMs: ASM_DEFAULT_DELAY_MS,
+      stepBy: ASM_DEFAULT_STEP_BY
+    }
   );
 
   let previewContainerWidth = $state(0);
@@ -67,6 +78,42 @@
     updateNodeData(nodeId, { showMemoryViewer: !data.showMemoryViewer });
 
   const handleMessage: MessageCallbackFn = async (message, meta) => {
+    const sendDataAndStep = async (m: number | number[]) => {
+      if (meta.inlet === undefined) return;
+
+      const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
+      let source = 0;
+
+      if (parseInt(sourceIdStr) >= 0) {
+        source = parseInt(sourceIdStr);
+      }
+
+      await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
+
+      // Run until the machine blocks (reactive dataflow mode)
+      const MAX_CYCLES = 10_000;
+      let cyclesRun = 0;
+
+      while (cyclesRun < MAX_CYCLES) {
+        await assemblySystem.stepMachine(machineId, 100);
+        cyclesRun += 100;
+
+        const state = await assemblySystem.inspectMachine(machineId);
+        if (!state) break;
+
+        // Stop when machine reaches a blocking state
+        if (
+          state.status === 'Awaiting' ||
+          state.status === 'Halted' ||
+          state.status === 'Sleeping'
+        ) {
+          break;
+        }
+      }
+
+      await syncMachineState();
+    };
+
     try {
       await match(message)
         .with(asmMessages.bang, () => stepMachine())
@@ -79,30 +126,8 @@
         .with(asmMessages.step, () => stepMachine())
         .with(asmMessages.setDelayMs, ({ value }) => updateMachineConfig({ delayMs: value }))
         .with(asmMessages.setStepBy, ({ value }) => updateMachineConfig({ stepBy: value }))
-        .with(asmMessages.numberArray, async (m) => {
-          if (meta.inlet === undefined) return;
-
-          const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
-          let source = 0;
-
-          if (parseInt(sourceIdStr) >= 0) {
-            source = parseInt(sourceIdStr);
-          }
-
-          await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
-        })
-        .with(asmMessages.number, async (m) => {
-          if (meta.inlet === undefined) return;
-
-          const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
-          let source = 0;
-
-          if (parseInt(sourceIdStr) >= 0) {
-            source = parseInt(sourceIdStr);
-          }
-
-          await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
-        })
+        .with(asmMessages.numberArray, sendDataAndStep)
+        .with(asmMessages.number, sendDataAndStep)
         .otherwise(() => {
           // Unknown message type
         });
@@ -112,22 +137,30 @@
   };
 
   async function resetMachine() {
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
     logs = [];
+    errorMessage = null;
 
     try {
       await assemblySystem.resetMachine(machineId);
       await assemblySystem.loadProgram(machineId, data.code);
+      lastLoadedCode = data.code;
 
       await syncMachineState();
 
       memoryActions.refreshMemory(machineId);
-      errorMessage = null;
     } catch (error) {
       displayError(error);
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
   async function stepMachine() {
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
+
     try {
       await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
 
@@ -142,11 +175,14 @@
       ) {
         await assemblySystem.createMachineWithId(machineId);
         await assemblySystem.loadProgram(machineId, data.code);
+        lastLoadedCode = data.code;
         await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
         await pullMachineConfig();
       } else {
         displayError(error);
       }
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
@@ -176,24 +212,34 @@
   }
 
   async function playMachine() {
+    // Guard against concurrent operations
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
+
     try {
       // Ensure machine exists and has a program loaded
-      if (!(await assemblySystem.machineExists(machineId))) {
+      const exists = await assemblySystem.machineExists(machineId);
+
+      if (!exists) {
         await assemblySystem.createMachineWithId(machineId);
       }
 
       // Check if machine has a program loaded by inspecting its state
       const currentState = await assemblySystem.inspectMachine(machineId);
 
-      if (!currentState || currentState.status === 'Halted') {
+      // Reload if code changed, machine is halted, or no state
+      const codeChanged = lastLoadedCode !== null && lastLoadedCode !== data.code;
+      if (!currentState || currentState.status === 'Halted' || codeChanged) {
         await assemblySystem.loadProgram(machineId, data.code);
+        lastLoadedCode = data.code;
       }
 
       await assemblySystem.playMachine(machineId);
-
       await setupPolling();
     } catch (error) {
       displayError(error);
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
@@ -240,13 +286,18 @@
     clearInterval(updateInterval);
 
     await pullMachineConfig();
+    // Wait for Svelte reactive updates to propagate
+    await tick();
 
     if (!machineConfig.isRunning) return;
 
     updateInterval = setInterval(async () => {
       await syncMachineState();
 
-      memoryActions.refreshMemory(machineId);
+      // Only refresh memory if the viewer is open (conditional polling)
+      if (data.showMemoryViewer) {
+        memoryActions.refreshMemory(machineId);
+      }
     }, machineConfig.delayMs);
   }
 
@@ -265,7 +316,10 @@
   });
 
   async function reloadProgram(shouldStep: boolean) {
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
     logs = [];
+    errorMessage = null;
 
     try {
       messageContext.clearTimers();
@@ -275,6 +329,7 @@
       }
 
       await assemblySystem.loadProgram(machineId, data.code);
+      lastLoadedCode = data.code;
 
       if (shouldStep) {
         await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
@@ -284,9 +339,10 @@
 
       // Refresh memory display after execution
       memoryActions.refreshMemory(machineId);
-      errorMessage = null;
     } catch (error) {
       displayError(error);
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
@@ -302,17 +358,24 @@
 
   async function syncMachineState() {
     try {
+      // Use batched snapshot API (4 round trips → 1)
+      const snapshot = await assemblySystem.getSnapshot(machineId);
+      if (!snapshot) {
+        return;
+      }
+
+      const { machine, effects, messages } = snapshot;
+
+      // Update machine state
       const previousPc = machineState?.registers.pc;
-      machineState = await assemblySystem.inspectMachine(machineId);
+      machineState = machine;
 
       // Trigger line highlighting if program counter changed
       if (machineState && machineState.registers.pc !== previousPc) {
-        // Use AssemblySystem to properly map PC to source line
         assemblySystem.highlightLineFromPC(machineId, machineState.registers.pc);
       }
 
-      const effects = await assemblySystem.consumeMachineEffects(machineId);
-
+      // Process print effects
       const printEffects = effects
         .filter((effect) => effect.type === 'Print')
         .map((effect) => effect.text);
@@ -321,21 +384,19 @@
         logs = [...logs, ...printEffects].slice(-10);
       }
 
+      // Process sleep effects
       const combinedSleepMs = effects
         .filter((effect) => effect.type === 'Sleep')
         .map((effect) => effect.ms)
         .reduce((a, b) => a + b, 0);
 
-      // Wake the machine after the combined sleep duration.
       if (combinedSleepMs > 0) {
         setTimeout(() => {
           assemblySystem.send('wakeMachine', { machineId });
         }, combinedSleepMs);
       }
 
-      const messages = await assemblySystem.consumeMessages(machineId);
-
-      // Re-map message format of assembly canvas into patchies.
+      // Re-map message format of assembly canvas into patchies
       messages.forEach((message: Message) => {
         const payload = match(message.action)
           .with({ type: 'Data' }, (action) => {
@@ -355,11 +416,17 @@
         messageContext.send(payload, { to: message.sender.port });
       });
 
-      if (machineState?.status === 'Halted' || machineState?.status === 'Ready') {
-        await updateMachineConfig({ isRunning: false });
+      // Stop when execution has terminated (Halted = finished, Errored = runtime error)
+      if (machineState?.status === 'Halted' || machineState?.status === 'Errored') {
+        clearInterval(updateInterval);
+        updateMachineConfig({ isRunning: false });
       }
+
+      // Notify listeners that machine state has changed
+      eventBus.dispatch({ type: 'asmMachineStateChanged', machineId });
     } catch (error) {
-      // Silently handle state update errors to avoid spam
+      // Log errors for debugging but don't spam the UI
+      logger.warn(`[asm ${machineId}] syncMachineState error:`, error);
     }
   }
 
@@ -465,7 +532,11 @@
         <div class="nodrag">
           <AssemblyEditor
             value={data.code}
-            onchange={(newCode) => {
+            onchange={async (newCode) => {
+              // Pause machine first when code changes to avoid state corruption
+              if (machineConfig.isRunning) {
+                await pauseMachine();
+              }
               updateNodeData(nodeId, { code: newCode });
             }}
             onrun={playMachine}

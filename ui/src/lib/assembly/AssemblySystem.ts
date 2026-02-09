@@ -4,7 +4,8 @@ import type {
   AssemblyWorkerResponse,
   InspectedRegister,
   InspectedMachine,
-  MachineConfig
+  MachineConfig,
+  MachineSnapshot
 } from '../../workers/assembly/assemblyWorker';
 import AssemblyWorker from '../../workers/assembly/assemblyWorker?worker';
 import { memoryRegionStore, type MemoryRegion } from './memoryRegionStore';
@@ -178,6 +179,14 @@ export class AssemblySystem {
    */
   async consumeMessages(machineId: number): Promise<Message[]> {
     return await this.send('consumeMessages', { machineId });
+  }
+
+  /**
+   * Get a batched snapshot of machine state, effects, and messages in one call.
+   * This reduces WASM↔JS round-trip overhead from 4 calls to 1.
+   */
+  async getSnapshot(machineId: number): Promise<MachineSnapshot | null> {
+    return await this.send('getSnapshot', { machineId });
   }
 
   /**
@@ -403,4 +412,12 @@ export function asmValue(
   system.setMemoryValue(machineId, address, value, finalColor);
 }
 
-export type { MachineStatus, Effect, Message, InspectedMachine, InspectedRegister, MachineConfig };
+export type {
+  MachineStatus,
+  Effect,
+  Message,
+  InspectedMachine,
+  InspectedRegister,
+  MachineConfig,
+  MachineSnapshot
+};
