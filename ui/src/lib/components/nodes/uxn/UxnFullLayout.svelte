@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { Code, FolderOpen, Monitor, Pause, Play, Terminal } from '@lucide/svelte/icons';
+  import {
+    Code,
+    EllipsisVertical,
+    FolderOpen,
+    Monitor,
+    Pause,
+    Play,
+    Terminal
+  } from '@lucide/svelte/icons';
+  import * as Popover from '../../ui/popover';
   import * as Tooltip from '../../ui/tooltip';
   import StandardHandle from '../../StandardHandle.svelte';
 
@@ -52,51 +61,6 @@
       <Tooltip.Trigger>
         <button
           class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={onOpenFileDialog}
-        >
-          <FolderOpen class="h-4 w-4 text-zinc-300" />
-        </button>
-      </Tooltip.Trigger>
-
-      <Tooltip.Content>
-        <p>Load ROM</p>
-      </Tooltip.Content>
-    </Tooltip.Root>
-
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={onHideScreen}
-        >
-          <Monitor class="h-4 w-4 text-zinc-300" />
-        </button>
-      </Tooltip.Trigger>
-
-      <Tooltip.Content>
-        <p>Hide Screen</p>
-      </Tooltip.Content>
-    </Tooltip.Root>
-
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={onToggleConsole}
-        >
-          <Terminal class="h-4 w-4 text-zinc-300" />
-        </button>
-      </Tooltip.Trigger>
-
-      <Tooltip.Content>
-        <p>Console</p>
-      </Tooltip.Content>
-    </Tooltip.Root>
-
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
           onclick={() => {
             onToggleEditor();
             onMeasureContainerWidth();
@@ -110,6 +74,44 @@
         <p>Edit Code</p>
       </Tooltip.Content>
     </Tooltip.Root>
+
+    <Popover.Root>
+      <Popover.Trigger>
+        <button
+          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          title="Menu"
+        >
+          <EllipsisVertical class="h-4 w-4 text-zinc-300" />
+        </button>
+      </Popover.Trigger>
+
+      <Popover.Content class="w-48 p-1" align="end">
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
+          onclick={onOpenFileDialog}
+        >
+          <FolderOpen class="h-4 w-4" />
+          Load ROM
+        </button>
+
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
+          onclick={onToggleConsole}
+        >
+          <Terminal class="h-4 w-4" />
+          Toggle Console
+        </button>
+
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-red-900/50"
+          onclick={onHideScreen}
+          title="ROM will be reloaded when shown again"
+        >
+          <Monitor class="h-4 w-4" />
+          Hide Screen
+        </button>
+      </Popover.Content>
+    </Popover.Root>
   </div>
 </div>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Play, X } from '@lucide/svelte/icons';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { UxnEmulator, type UxnEmulatorOptions } from '$lib/uxn/UxnEmulator';
   import CodeEditor from '../CodeEditor.svelte';
@@ -507,7 +507,9 @@
     updateNodeData(nodeId, { showEditor });
   }
 
-  function toggleCompact() {
+  async function toggleCompact() {
+    const wasCompact = isCompact;
+
     isCompact = !isCompact;
     updateNodeData(nodeId, { compact: isCompact });
 
@@ -517,10 +519,22 @@
         emulator.setHeadless(true);
         stopBitmapUpload();
         glSystem.removeNode(nodeId);
-      } else if (canvas) {
-        emulator.initScreen(canvas);
-        glSystem.upsertNode(nodeId, 'img', {});
-        startBitmapUpload();
+      } else if (wasCompact) {
+        // Switching from compact to full mode - wait for canvas to render
+        await tick();
+
+        if (canvas) {
+          emulator.initScreen(canvas);
+          glSystem.upsertNode(nodeId, 'img', {});
+          startBitmapUpload();
+
+          // Reload ROM to force redraw (layers were empty in headless mode)
+          if (data.code && !data.vfsPath) {
+            await assembleAndLoadCode(data.code);
+          } else if (data.vfsPath) {
+            await loadFromVfsPath(data.vfsPath);
+          }
+        }
       }
     }
   }

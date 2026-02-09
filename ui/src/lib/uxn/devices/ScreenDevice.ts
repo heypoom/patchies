@@ -50,6 +50,7 @@ export class ScreenDevice {
 
   public display: HTMLCanvasElement | null = null;
   public displayctx: CanvasRenderingContext2D | null = null;
+  private _headless: boolean = false;
 
   // Register state
   private rX: number = 0;
@@ -67,6 +68,7 @@ export class ScreenDevice {
   }
 
   init(canvas: HTMLCanvasElement): void {
+    this._headless = false;
     this.display = canvas;
     this.displayctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!this.displayctx) {
@@ -76,12 +78,17 @@ export class ScreenDevice {
     this.resize(512, 320, 1);
   }
 
-  /** Initialize for headless mode (no canvas, but layers are still allocated) */
+  /** Initialize for headless mode (no canvas, minimal memory allocation) */
   initHeadless(): void {
+    this._headless = true;
     this.display = null;
     this.displayctx = null;
-    this.set_zoom(1);
-    this.resize(512, 320, 1);
+    this.width = 512;
+    this.height = 320;
+    this.scale = 1;
+    this.zoom = 1;
+    // Skip allocating pixels and layers arrays - saves ~1.3MB per instance
+    // ROMs can still write to screen device, operations just become no-ops
   }
 
   changed(): boolean {
@@ -200,6 +207,7 @@ export class ScreenDevice {
         this.vector = (this.emu.uxn.dev[0x20] << 8) | this.emu.uxn.dev[0x21];
         return;
       case 0x23:
+        if (this._headless) return; // Skip resize in headless mode
         this.resize(
           (this.emu.uxn.dev[0x22] << 8) | this.emu.uxn.dev[0x23],
           this.height,
@@ -207,6 +215,7 @@ export class ScreenDevice {
         );
         return;
       case 0x25:
+        if (this._headless) return; // Skip resize in headless mode
         this.resize(this.width, (this.emu.uxn.dev[0x24] << 8) | this.emu.uxn.dev[0x25], this.scale);
         return;
       case 0x26:
@@ -232,6 +241,7 @@ export class ScreenDevice {
         this.rA = (this.emu.uxn.dev[0x2c] << 8) | this.emu.uxn.dev[0x2d];
         return;
       case 0x2e: {
+        if (this._headless) return; // Skip pixel/fill in headless mode
         const ctrl = this.emu.uxn.dev[0x2e];
         const color = ctrl & 0x3;
         const len = MAR2(this.width);
@@ -277,6 +287,7 @@ export class ScreenDevice {
         return;
       }
       case 0x2f: {
+        if (this._headless) return; // Skip sprite in headless mode
         const ctrl = this.emu.uxn.dev[0x2f];
         const blend = ctrl & 0xf;
         const opaque = blend % 5;
