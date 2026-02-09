@@ -93,6 +93,10 @@
           }
 
           await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
+
+          // Step the machine so it can process the received message
+          await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+          await syncMachineState();
         })
         .with(asmMessages.number, async (m) => {
           if (meta.inlet === undefined) return;
@@ -105,6 +109,10 @@
           }
 
           await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
+
+          // Step the machine so it can process the received message
+          await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
+          await syncMachineState();
         })
         .otherwise(() => {
           // Unknown message type
@@ -118,6 +126,7 @@
     if (isOperationInProgress) return;
     isOperationInProgress = true;
     logs = [];
+    errorMessage = null;
 
     try {
       await assemblySystem.resetMachine(machineId);
@@ -127,7 +136,6 @@
       await syncMachineState();
 
       memoryActions.refreshMemory(machineId);
-      errorMessage = null;
     } catch (error) {
       displayError(error);
     } finally {
@@ -297,6 +305,7 @@
     if (isOperationInProgress) return;
     isOperationInProgress = true;
     logs = [];
+    errorMessage = null;
 
     try {
       messageContext.clearTimers();
@@ -316,7 +325,6 @@
 
       // Refresh memory display after execution
       memoryActions.refreshMemory(machineId);
-      errorMessage = null;
     } catch (error) {
       displayError(error);
     } finally {
