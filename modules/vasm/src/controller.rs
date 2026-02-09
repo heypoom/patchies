@@ -32,6 +32,16 @@ pub struct InspectedMachine {
     pub status: MachineStatus,
 }
 
+/// Batched machine state for efficient polling.
+/// Combines inspect_machine, consume_side_effects, and consume_messages
+/// into a single WASM call to reduce round-trip overhead.
+#[derive(Serialize, Deserialize)]
+pub struct MachineSnapshot {
+    pub machine: Option<InspectedMachine>,
+    pub effects: Vec<Event>,
+    pub messages: Vec<Message>,
+}
+
 type Return = Result<JsValue, JsValue>;
 
 fn returns<T: Serialize>(value: Result<T, crate::sequencer::SequencerError>) -> Return {
@@ -186,6 +196,28 @@ impl Controller {
     pub fn consume_messages(&mut self, machine_id: u16) -> Return {
         let messages = self.seq.consume_messages(machine_id);
         Ok(to_value(&messages)?)
+    }
+
+    /// Get a complete snapshot of the machine state in a single call.
+    /// This batches inspect_machine, consume_side_effects, and consume_messages
+    /// to reduce WASM↔JS round-trip overhead from 4 calls to 1.
+    pub fn get_snapshot(&mut self, id: u16) -> Return {
+        let machine = self.seq.get_mut(id).map(|m| InspectedMachine {
+            effects: m.events.clone(),
+            registers: InspectedRegister {
+                pc: m.reg.get(PC),
+                sp: m.reg.get(SP),
+                fp: m.reg.get(FP),
+            },
+            inbox_size: m.inbox.len(),
+            outbox_size: m.outbox.len(),
+            status: m.status.clone(),
+        });
+
+        let effects = self.seq.consume_side_effects(id);
+        let messages = self.seq.consume_messages(id);
+
+        Ok(to_value(&MachineSnapshot { machine, effects, messages })?)
     }
 }
 

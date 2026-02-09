@@ -16,6 +16,13 @@ export interface InspectedMachine {
   status: MachineStatus;
 }
 
+/** Batched machine state for efficient polling (matches Rust MachineSnapshot) */
+export interface MachineSnapshot {
+  machine: InspectedMachine | null;
+  effects: Effect[];
+  messages: Message[];
+}
+
 export interface MachineConfig {
   isRunning: boolean;
   delayMs: number;
@@ -46,6 +53,7 @@ export type AssemblyWorkerMessage = { id: string } & (
       inlet: number;
     }
   | { type: 'consumeMessages'; machineId: number }
+  | { type: 'getSnapshot'; machineId: number }
   | { type: 'setMachineConfig'; machineId: number; config: Partial<MachineConfig> }
   | { type: 'getMachineConfig'; machineId: number }
   | { type: 'playMachine'; machineId: number }
@@ -170,6 +178,15 @@ class AssemblyWorkerController {
 
   consumeMessages(machineId: number): Message[] {
     return this.controller?.consume_messages(machineId);
+  }
+
+  /** Get a batched snapshot of machine state, effects, and messages in one call */
+  getSnapshot(machineId: number): MachineSnapshot | null {
+    try {
+      return this.controller?.get_snapshot(machineId) ?? null;
+    } catch {
+      return null;
+    }
   }
 
   setMachineConfig(machineId: number, config: Partial<MachineConfig>): void {
@@ -301,6 +318,7 @@ self.onmessage = async (event: MessageEvent<AssemblyWorkerMessage>) => {
         controller.sendDataMessage(data.machineId, data.data, data.source, data.inlet)
       )
       .with({ type: 'consumeMessages' }, (data) => controller.consumeMessages(data.machineId))
+      .with({ type: 'getSnapshot' }, (data) => controller.getSnapshot(data.machineId))
       .with({ type: 'setMachineConfig' }, (data) => {
         controller.setMachineConfig(data.machineId, data.config);
       })

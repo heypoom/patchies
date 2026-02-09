@@ -124,7 +124,8 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 - `read <length>` pops the memory address from the stack and read N values from the address onto the stack
 - `load <address>` pushes the value at the memory address onto the stack
 - `store <address>` pops the value from the stack and store it at the memory address
-- Memory space: 65,535 cells of unsigned 16-bit integer
+- Internal memory: 4,096 cells (0x000-0xFFF) of unsigned 16-bit integer
+- External memory: addresses 0x1000+ are routed to connected `asm.mem` objects
 
 ### OTHER
 

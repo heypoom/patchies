@@ -1,7 +1,8 @@
 import { writable, derived, get } from 'svelte/store';
 import { AssemblySystem } from './AssemblySystem';
 
-export const DEFAULT_PAGE_OFFSET = 0x4100;
+// Default offset is the start of the RAM segment (0x340 in new 8KB layout)
+export const DEFAULT_PAGE_OFFSET = 0x0340;
 export const DEFAULT_PAGE_SIZE = 64;
 
 export interface MemoryPageConfig {

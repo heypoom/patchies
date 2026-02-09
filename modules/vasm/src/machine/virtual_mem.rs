@@ -43,11 +43,17 @@ mod virtual_mem_test {
 
     #[test]
     pub fn addr_mapped_test() {
+        // Internal addresses (below MAPPED_START) should not be mapped
         assert_eq!(is_addr_mapped(MAPPED_START - 1), false);
+        assert_eq!(is_addr_mapped(0x0000), false);
+        assert_eq!(is_addr_mapped(0x0FFF), false);
+
+        // MAPPED addresses (0x1000+) should be mapped
         assert_eq!(is_addr_mapped(MAPPED_START), true);
         assert_eq!(is_addr_mapped(MAPPED_END), true);
-        assert_eq!(is_addr_mapped(MAPPED_END + 1), false);
+        // Note: MAPPED_END is 0xFFFF (max u16), so no test for MAPPED_END + 1
 
+        // Outlet address mapping
         assert_eq!(get_mapped_addr(MAPPED_START), (0, 0));
         assert_eq!(get_mapped_addr(MAPPED_START + SIZE_PER_PORT - 1), (SIZE_PER_PORT - 1, 0));
         assert_eq!(get_mapped_addr(MAPPED_START + SIZE_PER_PORT), (0, 1));

@@ -246,7 +246,10 @@
     updateInterval = setInterval(async () => {
       await syncMachineState();
 
-      memoryActions.refreshMemory(machineId);
+      // Only refresh memory if the viewer is open (conditional polling)
+      if (data.showMemoryViewer) {
+        memoryActions.refreshMemory(machineId);
+      }
     }, machineConfig.delayMs);
   }
 
@@ -302,17 +305,22 @@
 
   async function syncMachineState() {
     try {
+      // Use batched snapshot API (4 round trips → 1)
+      const snapshot = await assemblySystem.getSnapshot(machineId);
+      if (!snapshot) return;
+
+      const { machine, effects, messages } = snapshot;
+
+      // Update machine state
       const previousPc = machineState?.registers.pc;
-      machineState = await assemblySystem.inspectMachine(machineId);
+      machineState = machine;
 
       // Trigger line highlighting if program counter changed
       if (machineState && machineState.registers.pc !== previousPc) {
-        // Use AssemblySystem to properly map PC to source line
         assemblySystem.highlightLineFromPC(machineId, machineState.registers.pc);
       }
 
-      const effects = await assemblySystem.consumeMachineEffects(machineId);
-
+      // Process print effects
       const printEffects = effects
         .filter((effect) => effect.type === 'Print')
         .map((effect) => effect.text);
@@ -321,21 +329,19 @@
         logs = [...logs, ...printEffects].slice(-10);
       }
 
+      // Process sleep effects
       const combinedSleepMs = effects
         .filter((effect) => effect.type === 'Sleep')
         .map((effect) => effect.ms)
         .reduce((a, b) => a + b, 0);
 
-      // Wake the machine after the combined sleep duration.
       if (combinedSleepMs > 0) {
         setTimeout(() => {
           assemblySystem.send('wakeMachine', { machineId });
         }, combinedSleepMs);
       }
 
-      const messages = await assemblySystem.consumeMessages(machineId);
-
-      // Re-map message format of assembly canvas into patchies.
+      // Re-map message format of assembly canvas into patchies
       messages.forEach((message: Message) => {
         const payload = match(message.action)
           .with({ type: 'Data' }, (action) => {
