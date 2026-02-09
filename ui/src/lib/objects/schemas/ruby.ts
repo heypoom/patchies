@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { Run, Stop, SetCodeMessage } from './common';
+import { Run, Stop, SetCode } from './common';
 
 /**
  * Schema for the ruby (Ruby code environment) object.
@@ -14,7 +14,7 @@ export const rubySchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages and data input',
       messages: [
-        { schema: SetCodeMessage, description: 'Update the code' },
+        { schema: SetCode, description: 'Update the code' },
         { schema: Run, description: 'Execute the code' },
         { schema: Stop, description: 'Stop running tasks' },
         { schema: Type.Any(), description: 'Data received via recv block' }

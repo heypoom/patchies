@@ -74,7 +74,7 @@ CONFIGURATION OPTIONS (in data object):
 RUNTIME MESSAGES:
 - { type: 'setOutputSize', size: number } - Dynamically set output buffer size
 - { type: 'setDispatchCount', count: [x, y, z] } - Dynamically set dispatch counts
-- { type: 'setCode', code: string } - Update shader code
+- { type: 'setCode', value: string } - Update shader code
 - { type: 'run' } - Recompile shader
 
 USAGE PATTERN:

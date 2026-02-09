@@ -88,8 +88,8 @@
       }
 
       match(message)
-        .with(messages.setCodeMessage, ({ code }) => {
-          updateNodeData(nodeId, { code });
+        .with(messages.setCode, ({ value }) => {
+          updateNodeData(nodeId, { code: value });
         })
         .with(messages.run, () => {
           updateShader();

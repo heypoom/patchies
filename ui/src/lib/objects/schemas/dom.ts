@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { Run, Stop, SetCodeMessage } from './common';
+import { Run, Stop, SetCode } from './common';
 
 /**
  * Schema for the dom (vanilla JS DOM) object.
@@ -14,7 +14,7 @@ export const domSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages and data input',
       messages: [
-        { schema: SetCodeMessage, description: 'Set the code in the editor' },
+        { schema: SetCode, description: 'Set the code in the editor' },
         { schema: Run, description: 'Execute the code' },
         { schema: Stop, description: 'Stop running code' },
         { schema: Type.Any(), description: 'Data received via recv() callback' }

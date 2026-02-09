@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { sym } from './helpers';
-import { Bang, Run, Stop, Reset, messages, SetCodeMessage } from './common';
+import { Bang, Run, Stop, Reset, messages, SetCode } from './common';
 
 const Step = sym('step');
 
@@ -28,7 +28,7 @@ export const asmSchema: ObjectSchema = {
         { schema: Stop, description: 'Stop execution' },
         { schema: Reset, description: 'Reset machine state' },
         { schema: Step, description: 'Execute single instruction' },
-        { schema: SetCodeMessage, description: 'Set assembly code' },
+        { schema: SetCode, description: 'Set assembly code' },
         { schema: Type.Any(), description: 'Push value to stack' }
       ]
     }

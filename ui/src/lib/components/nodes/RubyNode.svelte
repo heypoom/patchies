@@ -49,8 +49,8 @@
   // Handle incoming messages to this node
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
-      .with(messages.setCodeMessage, ({ code }) => {
-        updateNodeData(nodeId, { code });
+      .with(messages.setCode, ({ value }) => {
+        updateNodeData(nodeId, { code: value });
       })
       .with(messages.run, () => {
         executeCode();

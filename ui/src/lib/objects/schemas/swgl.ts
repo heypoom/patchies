@@ -1,5 +1,5 @@
 import type { ObjectSchema } from './types';
-import { Run, SetCodeMessage } from './common';
+import { Run, SetCode } from './common';
 
 /**
  * Schema for the swgl (SwissGL shader) object.
@@ -13,7 +13,7 @@ export const swglSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages',
       messages: [
-        { schema: SetCodeMessage, description: 'Set the code in the editor' },
+        { schema: SetCode, description: 'Set the code in the editor' },
         { schema: Run, description: 'Evaluate code and update visuals' }
       ]
     }

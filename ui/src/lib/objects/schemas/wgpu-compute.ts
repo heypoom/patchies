@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg } from './helpers';
-import { Bang, Run, messages, SetCodeMessage } from './common';
+import { Bang, Run, messages, SetCode } from './common';
 
 // WebGPU compute-specific message schemas
 const SetOutputSize = msg('setOutputSize', { size: Type.Number() });
@@ -28,7 +28,7 @@ export const wgpuComputeSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Trigger computation' },
         { schema: Run, description: 'Compile the shader' },
-        { schema: SetCodeMessage, description: 'Update shader code' },
+        { schema: SetCode, description: 'Update shader code' },
         { schema: Type.Any(), description: 'Typed array input data' }
       ]
     }

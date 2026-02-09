@@ -128,8 +128,8 @@
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     match(message)
-      .with(messages.setCode, ({ code }) => {
-        setCodeAndUpdate(code);
+      .with(messages.setCode, ({ value }) => {
+        setCodeAndUpdate(value);
       })
       .with(messages.run, () => {
         updateHydra();

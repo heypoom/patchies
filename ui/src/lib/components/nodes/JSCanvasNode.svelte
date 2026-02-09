@@ -139,8 +139,8 @@
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       match(message)
-        .with(messages.setCode, ({ code }) => {
-          setCodeAndUpdate(code);
+        .with(messages.setCode, ({ value }) => {
+          setCodeAndUpdate(value);
         })
         .with(messages.run, () => {
           updateCanvas();
