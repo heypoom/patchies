@@ -69,7 +69,7 @@ export const sidebarView = writable<SidebarView>((storedSidebarView as SidebarVi
 // Sidebar width - persisted to localStorage
 const SIDEBAR_DEFAULT_WIDTH = 256;
 const SIDEBAR_MIN_WIDTH = 180;
-const SIDEBAR_MAX_WIDTH = 400;
+const SIDEBAR_MAX_WIDTH = 600;
 
 function loadSidebarWidth(): number {
   if (typeof localStorage === 'undefined') return SIDEBAR_DEFAULT_WIDTH;
