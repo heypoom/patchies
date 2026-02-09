@@ -52,8 +52,8 @@
         .with(strudelMessages.string, (code) => {
           setCode(code);
         })
-        .with(strudelMessages.setCode, ({ code }) => {
-          setCode(code);
+        .with(strudelMessages.setCode, ({ value }) => {
+          setCode(value);
         })
         .with(strudelMessages.bang, evaluate)
         .with(strudelMessages.run, evaluate)

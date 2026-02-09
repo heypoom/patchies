@@ -229,8 +229,8 @@
 
     // setCode / run / settings messages
     match(message)
-      .with(wgpuComputeMessages.setCode, ({ code }) => {
-        updateNodeData(nodeId, { code });
+      .with(wgpuComputeMessages.setCode, ({ value }) => {
+        updateNodeData(nodeId, { code: value });
       })
       .with(wgpuComputeMessages.run, () => {
         compileShader();
