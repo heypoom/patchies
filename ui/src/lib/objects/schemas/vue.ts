@@ -27,8 +27,13 @@ export const vueSchema: ObjectSchema = {
   inlets: [
     {
       id: 'message',
-      description: 'Data input via recv() callback',
-      messages: [{ schema: Type.Any(), description: 'Data received via recv() callback' }]
+      description: 'Control messages and data input',
+      messages: [
+        { schema: SetCode, description: 'Set the code in the editor' },
+        { schema: Run, description: 'Execute the code' },
+        { schema: Stop, description: 'Stop running code' },
+        { schema: Type.Any(), description: 'Data received via recv() callback' }
+      ]
     }
   ],
   outlets: [
