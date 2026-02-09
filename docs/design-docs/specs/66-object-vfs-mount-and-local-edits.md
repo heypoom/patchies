@@ -28,7 +28,7 @@ What if we let people edit their object code in whatever editor of choice they w
 │  │  File Sync (fsnotify)                            │   │
 │  │  - Watches directory for changes                 │   │
 │  │  - Writes files when browser sends updates       │   │
-│  │  - Generates patchies.d.ts for IDE support       │   │
+│  │  - Writes patchies.d.ts (sent from browser)      │   │
 │  └──────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -51,6 +51,14 @@ The local agent approach gives us:
 - **Extensible** - future plans include OSC, ArtNet/DMX, local code execution, and more
 
 ## Implementation
+
+### Project Structure
+
+The agent lives in the patchies monorepo at `/modules/agent` (alongside `/modules/vasm`).
+
+### Initial Sync
+
+On WebSocket connect, **browser is the source of truth**. Browser sends `sync:full` with all node code, and the agent writes files to disk. This ensures the patcher state is canonical.
 
 ### CLI Usage
 
@@ -94,8 +102,11 @@ The install script detects OS/arch and downloads the correct binary to `/usr/loc
 { type: "node:updated", nodeId: "js-20", code: "...", ext: "ts" }
 { type: "node:deleted", nodeId: "js-20" }
 
-// Initial sync on connect
+// Initial sync on connect (browser → agent, browser is source of truth)
 { type: "sync:full", nodes: [{ id: "js-20", code: "...", ext: "ts" }, ...] }
+
+// Type definitions (browser → agent, keeps IDE support in sync)
+{ type: "types:update", content: "declare function inlet..." }
 ```
 
 ### Conflict Resolution
@@ -135,7 +146,7 @@ obj/
 
 ## Type Definition
 
-We should always write `patchies.d.ts` on initial sync and whenever the node graph changes. This allows LSP and IDEs to have full autocompletion for the [JavaScript Runner](/ui/static/content/topics/javascript-runner.md), as well as individual objects if possible.
+The **browser sends type definitions** to the agent (via `types:update` message), which writes `patchies.d.ts` to disk. This keeps IDE autocompletion in sync as the Patchies API evolves. Types are sent on initial sync and whenever they change.
 
 ```typescript
 // patchies.d.ts (auto-generated)
