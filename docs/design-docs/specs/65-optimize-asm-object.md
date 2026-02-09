@@ -11,13 +11,13 @@ I want to optimize the `asm` object and its Rust-based virtual machine.
 
 ### Current Memory Layout (128KB total)
 
-| Segment | Range | Size (u16) | Size (bytes) |
-|---------|-------|------------|--------------|
-| CODE | 0x0000-0x0FFF | 4096 | 8KB |
-| DATA | 0x1000-0x1FFF | 4096 | 8KB |
-| MAPPED | 0x2000-0x3FFF | 8192 | 16KB |
-| CALL_STACK | 0x4000-0x40FF | 256 | 512B |
-| STACK | 0x4100-0xFFFE | ~48K | **~96KB** |
+| Segment    | Range         | Size (u16) | Size (bytes) |
+| ---------- | ------------- | ---------- | ------------ |
+| CODE       | 0x0000-0x0FFF | 4096       | 8KB          |
+| DATA       | 0x1000-0x1FFF | 4096       | 8KB          |
+| MAPPED     | 0x2000-0x3FFF | 8192       | 16KB         |
+| CALL_STACK | 0x4000-0x40FF | 256        | 512B         |
+| STACK      | 0x4100-0xFFFE | ~48K       | **~96KB**    |
 
 The stack segment alone is 96KB - way oversized for a "small VM" philosophy.
 
@@ -40,12 +40,20 @@ Additionally, `AssemblyValueViewer` polls independently every 200ms, even when n
 
 Reduce from 65535 to **4096 u16** (8KB) - a 16x reduction.
 
-| Segment | Range | Size (u16) | Notes |
-|---------|-------|------------|-------|
-| CODE | 0x000-0x1FF | 512 | ~250 instructions |
-| DATA | 0x200-0x2FF | 256 | .string, .value constants |
-| CALL_STACK | 0x300-0x33F | 64 | ~32 call depth (hard limit) |
-| RAM | 0x340-0xFFF | 3264 | Stack + user memory (shared) |
+| Segment    | Range       | Size (u16) | Notes                        |
+| ---------- | ----------- | ---------- | ---------------------------- |
+| CODE       | 0x000-0x1FF | 512        | ~250 instructions            |
+| DATA       | 0x200-0x2FF | 256        | .string, .value constants    |
+| CALL_STACK | 0x300-0x33F | 64         | ~32 call depth (hard limit)  |
+| RAM        | 0x340-0xFFF | 3264       | Stack + user memory (shared) |
+| MAPPED     | 0x1000+     | virtual    | External memory via asm.mem  |
+
+**MAPPED outlets** (virtual addresses for asm.mem):
+
+- Outlet 0: 0x1000 - 0x1FFF
+- Outlet 1: 0x2000 - 0x2FFF
+- Outlet 2: 0x3000 - 0x3FFF
+- Outlet 3: 0x4000 - 0x4FFF
 
 **Philosophy: "Memory is just memory"** (Forth-style)
 
@@ -107,6 +115,20 @@ Track which memory addresses changed since last read, only return changed cells.
 
 ## Migration Notes
 
-- Existing patches with asm code using addresses > 0xFFF will break
+- Existing patches with asm code using internal addresses > 0xFFF will break
 - Consider adding a console warning for out-of-range addresses during transition
-- The MAPPED segment (0x2000-0x3FFF) is removed - if `asm.mem` relies on this, it needs updating
+
+### External Memory (asm.mem) - Breaking Change
+
+MAPPED addresses now start at **0x1000** (was 0x2000) to eliminate the gap after internal memory.
+
+Old → New outlet mapping:
+
+| Outlet | Old Range     | New Range     |
+| ------ | ------------- | ------------- |
+| 0      | 0x2000-0x2FFF | 0x1000-0x1FFF |
+| 1      | 0x3000-0x3FFF | 0x2000-0x2FFF |
+| 2      | 0x4000-0x4FFF | 0x3000-0x3FFF |
+| 3      | 0x5000-0x5FFF | 0x4000-0x4FFF |
+
+Update `ui/static/content/objects/asm.mem.md` with new addresses.
