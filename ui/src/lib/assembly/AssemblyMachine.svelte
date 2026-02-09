@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Binary, Pause, Play, RefreshCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -13,6 +13,7 @@
   import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
   import { memoryActions } from './memoryStore';
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
+  import { logger } from '$lib/utils/logger';
 
   let {
     id: nodeId,
@@ -36,6 +37,8 @@
   let errorMessage = $state<string | null>(null);
   let machineState = $state<InspectedMachine | null>(null);
   let logs = $state<string[]>([]);
+  let lastLoadedCode = $state<string | null>(null);
+  let isOperationInProgress = $state(false); // Guard against concurrent operations
   let dragEnabled = $state(true);
   let showSettings = $state(false);
   let mainContainer: HTMLDivElement;
@@ -112,11 +115,14 @@
   };
 
   async function resetMachine() {
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
     logs = [];
 
     try {
       await assemblySystem.resetMachine(machineId);
       await assemblySystem.loadProgram(machineId, data.code);
+      lastLoadedCode = data.code;
 
       await syncMachineState();
 
@@ -124,10 +130,15 @@
       errorMessage = null;
     } catch (error) {
       displayError(error);
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
   async function stepMachine() {
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
+
     try {
       await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
 
@@ -142,11 +153,14 @@
       ) {
         await assemblySystem.createMachineWithId(machineId);
         await assemblySystem.loadProgram(machineId, data.code);
+        lastLoadedCode = data.code;
         await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
         await pullMachineConfig();
       } else {
         displayError(error);
       }
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
@@ -176,24 +190,34 @@
   }
 
   async function playMachine() {
+    // Guard against concurrent operations
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
+
     try {
       // Ensure machine exists and has a program loaded
-      if (!(await assemblySystem.machineExists(machineId))) {
+      const exists = await assemblySystem.machineExists(machineId);
+
+      if (!exists) {
         await assemblySystem.createMachineWithId(machineId);
       }
 
       // Check if machine has a program loaded by inspecting its state
       const currentState = await assemblySystem.inspectMachine(machineId);
 
-      if (!currentState || currentState.status === 'Halted') {
+      // Reload if code changed, machine is halted, or no state
+      const codeChanged = lastLoadedCode !== null && lastLoadedCode !== data.code;
+      if (!currentState || currentState.status === 'Halted' || codeChanged) {
         await assemblySystem.loadProgram(machineId, data.code);
+        lastLoadedCode = data.code;
       }
 
       await assemblySystem.playMachine(machineId);
-
       await setupPolling();
     } catch (error) {
       displayError(error);
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
@@ -240,6 +264,8 @@
     clearInterval(updateInterval);
 
     await pullMachineConfig();
+    // Wait for Svelte reactive updates to propagate
+    await tick();
 
     if (!machineConfig.isRunning) return;
 
@@ -268,6 +294,8 @@
   });
 
   async function reloadProgram(shouldStep: boolean) {
+    if (isOperationInProgress) return;
+    isOperationInProgress = true;
     logs = [];
 
     try {
@@ -278,6 +306,7 @@
       }
 
       await assemblySystem.loadProgram(machineId, data.code);
+      lastLoadedCode = data.code;
 
       if (shouldStep) {
         await assemblySystem.stepMachine(machineId, machineConfig.stepBy);
@@ -290,6 +319,8 @@
       errorMessage = null;
     } catch (error) {
       displayError(error);
+    } finally {
+      isOperationInProgress = false;
     }
   }
 
@@ -307,7 +338,9 @@
     try {
       // Use batched snapshot API (4 round trips → 1)
       const snapshot = await assemblySystem.getSnapshot(machineId);
-      if (!snapshot) return;
+      if (!snapshot) {
+        return;
+      }
 
       const { machine, effects, messages } = snapshot;
 
@@ -361,11 +394,14 @@
         messageContext.send(payload, { to: message.sender.port });
       });
 
-      if (machineState?.status === 'Halted' || machineState?.status === 'Ready') {
-        await updateMachineConfig({ isRunning: false });
+      // Stop when execution has terminated (Halted = finished, Errored = runtime error)
+      if (machineState?.status === 'Halted' || machineState?.status === 'Errored') {
+        clearInterval(updateInterval);
+        updateMachineConfig({ isRunning: false });
       }
     } catch (error) {
-      // Silently handle state update errors to avoid spam
+      // Log errors for debugging but don't spam the UI
+      logger.warn(`[asm ${machineId}] syncMachineState error:`, error);
     }
   }
 
@@ -471,7 +507,11 @@
         <div class="nodrag">
           <AssemblyEditor
             value={data.code}
-            onchange={(newCode) => {
+            onchange={async (newCode) => {
+              // Pause machine first when code changes to avoid state corruption
+              if (machineConfig.isRunning) {
+                await pauseMachine();
+              }
               updateNodeData(nodeId, { code: newCode });
             }}
             onrun={playMachine}
