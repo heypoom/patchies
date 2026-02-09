@@ -47,7 +47,7 @@ export async function refineSpec(
   const prompt = buildRefinePrompt(patch, options);
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { abortSignal: signal }
   });

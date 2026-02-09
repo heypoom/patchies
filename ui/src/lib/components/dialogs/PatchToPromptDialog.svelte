@@ -1,6 +1,15 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Dices, Copy, Download, Pencil, Lock, Sparkles, Loader2 } from '@lucide/svelte/icons';
+  import {
+    Dices,
+    Copy,
+    Download,
+    Pencil,
+    Lock,
+    Sparkles,
+    Loader2,
+    Code
+  } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import type { Node, Edge } from '@xyflow/svelte';
   import {
@@ -8,8 +17,11 @@
     buildDirectTemplate,
     getRandomPrompt,
     refineSpec,
+    generateCode,
     hasGeminiApiKey
   } from '$lib/ai/patch-to-prompt';
+  import { appPreviewStore } from '../../../stores/app-preview.store';
+  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
@@ -30,6 +42,7 @@
   let isEditing = $state(false);
   let isRefining = $state(false);
   let isRefined = $state(false);
+  let isGenerating = $state(false);
 
   // Generate prompt whenever inputs change
   $effect(() => {
@@ -123,6 +136,42 @@
     doRefine();
   }
 
+  async function doGenerate() {
+    if (isGenerating) return;
+
+    isGenerating = true;
+
+    try {
+      const html = await generateCode(generatedPrompt);
+
+      // Store the preview
+      appPreviewStore.setPreview(html, patchName ?? undefined);
+
+      // Open sidebar to preview tab
+      isSidebarOpen.set(true);
+      sidebarView.set('preview');
+
+      // Close dialog
+      open = false;
+
+      toast.success('App generated! Check the sidebar preview.');
+    } catch (error) {
+      console.error('Generate failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate app');
+    } finally {
+      isGenerating = false;
+    }
+  }
+
+  function handleGenerate() {
+    if (!hasGeminiApiKey()) {
+      onRequestApiKey?.(() => doGenerate());
+      return;
+    }
+
+    doGenerate();
+  }
+
   // Reset state when dialog opens
   $effect(() => {
     if (open) {
@@ -184,7 +233,7 @@
           <div class="flex items-center gap-1">
             <button
               onclick={handleRefine}
-              disabled={isRefining}
+              disabled={isRefining || isGenerating}
               title="Refine with AI"
               class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-purple-400 transition-colors hover:bg-purple-900/30 hover:text-purple-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -194,6 +243,21 @@
               {:else}
                 <Sparkles class="h-3 w-3" />
                 <span>Refine</span>
+              {/if}
+            </button>
+
+            <button
+              onclick={handleGenerate}
+              disabled={isGenerating || isRefining}
+              title="Generate app from spec"
+              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-emerald-400 transition-colors hover:bg-emerald-900/30 hover:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {#if isGenerating}
+                <Loader2 class="h-3 w-3 animate-spin" />
+                <span>Generating...</span>
+              {:else}
+                <Code class="h-3 w-3" />
+                <span>Generate</span>
               {/if}
             </button>
 

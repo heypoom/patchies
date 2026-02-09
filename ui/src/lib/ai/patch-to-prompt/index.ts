@@ -30,3 +30,5 @@ export {
 export { EXAMPLE_PROMPTS, getRandomPrompt } from './example-prompts';
 
 export { refineSpec, hasGeminiApiKey, type RefineOptions } from './spec-refiner';
+
+export { generateCode, type GenerateOptions } from './code-generator';

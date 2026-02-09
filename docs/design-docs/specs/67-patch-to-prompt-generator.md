@@ -169,12 +169,19 @@ src/lib/ai/patch-to-prompt/
   patch-transformer.ts     # Clean patch JSON
   context-injector.ts      # Gather object descriptions
   template-builder.ts      # Assemble direct template
-  spec-refiner.ts          # LLM refinement (optional) - uses Gemini
+  spec-refiner.ts          # LLM refinement - uses Gemini
+  code-generator.ts        # HTML code generation - uses Gemini
   example-prompts.ts       # Pool for dice button
   index.ts                 # Main exports
 
 src/lib/components/dialogs/
   PatchToPromptDialog.svelte  # Main UI
+
+src/lib/components/sidebar/
+  AppPreviewView.svelte    # Preview iframe in sidebar
+
+src/stores/
+  app-preview.store.ts     # Generated HTML storage
 ```
 
 ## UI Components
@@ -405,6 +412,30 @@ The oscillator produces a sine wave that plays through the speakers.
     - Toast on copy success ✅
     - Filename with patch name if available ✅
     - Keyboard shortcuts (Cmd+C to copy)
+
+### Phase 5: Generate & Preview ✅
+
+11. **code-generator.ts** ✅
+    - `generateCode(spec)` → HTML string
+    - Uses Gemini 2.0 Flash
+    - Extracts HTML from markdown code blocks
+
+12. **app-preview.store.ts** ✅
+    - Stores generated HTML
+    - `hasAppPreview` derived store
+
+13. **AppPreviewView.svelte** ✅
+    - Sidebar view for preview
+    - Uses iframe with srcdoc
+    - Refresh, copy HTML, open in new tab buttons
+
+14. **SidebarPanel updates** ✅
+    - Preview tab icon (AppWindow) appears only when content exists
+    - 'preview' added to SidebarView type
+
+15. **Dialog updates** ✅
+    - Generate button (green, Code icon) next to Refine
+    - Opens sidebar to preview tab on success
 
 ## Example Steering Prompts (for dice button)
 

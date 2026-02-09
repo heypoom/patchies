@@ -1,13 +1,23 @@
 <script lang="ts">
-  import { X, Folder, Bookmark, Package, Save, CircleQuestionMark } from '@lucide/svelte/icons';
+  import {
+    X,
+    Folder,
+    Bookmark,
+    Package,
+    Save,
+    CircleQuestionMark,
+    AppWindow
+  } from '@lucide/svelte/icons';
 
   import FileTreeView from './FileTreeView.svelte';
   import PresetTreeView from './PresetTreeView.svelte';
   import ExtensionsView from './ExtensionsView.svelte';
   import SavesTreeView from './SavesTreeView.svelte';
   import HelpView from './HelpView.svelte';
+  import AppPreviewView from './AppPreviewView.svelte';
 
   import { sidebarWidth, type SidebarView } from '../../../stores/ui.store';
+  import { hasAppPreview } from '../../../stores/app-preview.store';
 
   let {
     open = $bindable(false),
@@ -19,13 +29,20 @@
     onSavePatch?: () => void;
   } = $props();
 
-  const views: { id: SidebarView; icon: typeof Folder; title: string }[] = [
+  // Base views always shown
+  const baseViews: { id: SidebarView; icon: typeof Folder; title: string }[] = [
     { id: 'files', icon: Folder, title: 'Files' },
     { id: 'presets', icon: Bookmark, title: 'Presets' },
     { id: 'saves', icon: Save, title: 'Saves' },
     { id: 'packs', icon: Package, title: 'Packs' },
     { id: 'help', icon: CircleQuestionMark, title: 'Help' }
   ];
+
+  // Preview view - only shown when there's content
+  const previewView = { id: 'preview' as SidebarView, icon: AppWindow, title: 'App Preview' };
+
+  // Combine views based on whether preview is available
+  const views = $derived($hasAppPreview ? [...baseViews, previewView] : baseViews);
 
   const MIN_WIDTH = 180;
   const MAX_WIDTH = 600;
@@ -104,6 +121,8 @@
         <SavesTreeView {onSavePatch} />
       {:else if view === 'help'}
         <HelpView />
+      {:else if view === 'preview'}
+        <AppPreviewView />
       {/if}
     </div>
 
