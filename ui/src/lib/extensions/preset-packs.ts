@@ -111,23 +111,6 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: ['sawtooth-harmonics.js', 'waveshaper-distortion.js']
   },
   {
-    id: 'dsp-presets',
-    name: 'DSP Presets',
-    description: 'Audio DSP utilities and signal processing',
-    icon: 'AudioLines',
-    requiredObjects: ['dsp~', 'elem~', 'expr~'],
-    presets: [
-      'bang~',
-      'noise~',
-      'snapshot~',
-      'lowpass.elem',
-      'phasor.elem',
-      'train.elem',
-      'sine-osc.dsp',
-      'bitcrusher.dsp'
-    ]
-  },
-  {
     id: 'hydra-demos',
     name: 'Hydra Demos',
     description: 'Example video synths made with Hydra',
@@ -147,6 +130,41 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'funk-42.strudel',
       'bell.chuck',
       'orca.hello'
+    ]
+  },
+  {
+    id: 'three-demos',
+    name: 'Three.js Demos',
+    description: '3D graphics with Three.js',
+    icon: 'Box',
+    requiredObjects: ['three'],
+    presets: ['video-cube.three', 'video-torus.three', 'video-sphere.three', 'crate.three']
+  },
+  {
+    id: 'tone-presets',
+    name: 'Tone.js Presets',
+    description: 'Audio synthesis with Tone.js',
+    icon: 'AudioLines',
+    requiredObjects: ['tone~'],
+    presets: ['poly-synth-midi.tone', 'pipe.tone', 'reverb.tone', 'lowpass.tone']
+  },
+  {
+    id: 'asm-examples',
+    name: 'Assembly Demos',
+    description: 'Example programs for asm vm',
+    icon: 'Cpu',
+    requiredObjects: ['asm'],
+    presets: [
+      'echo.asm',
+      'accumulator.asm',
+      'double.asm',
+      'counter.asm',
+      'threshold-gate.asm',
+      'running-average.asm',
+      'fibonacci.asm',
+      'clamp.asm',
+      'modulo-counter.asm',
+      'delta.asm'
     ]
   },
   {
@@ -173,19 +191,20 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
-    id: 'three-demos',
-    name: 'Three.js Demos',
-    description: '3D graphics with Three.js',
-    icon: 'Box',
-    requiredObjects: ['three'],
-    presets: ['video-cube.three', 'video-torus.three', 'video-sphere.three', 'crate.three']
-  },
-  {
-    id: 'tone-presets',
-    name: 'Tone.js Presets',
-    description: 'Audio synthesis with Tone.js',
+    id: 'dsp-presets',
+    name: 'DSP Presets',
+    description: 'Audio DSP utilities and signal processing',
     icon: 'AudioLines',
-    requiredObjects: ['tone~'],
-    presets: ['poly-synth-midi.tone', 'pipe.tone', 'reverb.tone', 'lowpass.tone']
+    requiredObjects: ['dsp~', 'elem~', 'expr~'],
+    presets: [
+      'bang~',
+      'noise~',
+      'snapshot~',
+      'lowpass.elem',
+      'phasor.elem',
+      'train.elem',
+      'sine-osc.dsp',
+      'bitcrusher.dsp'
+    ]
   }
 ];
