@@ -55,9 +55,10 @@
     const name = patchName.trim();
     const currentName = $currentPatchNameStore;
 
-    // If saving to a different name (Save As), generate a new patchId
-    // so the new patch has its own KV storage
-    if (name !== currentName) {
+    // If renaming an existing patch (Save As), generate a new patchId
+    // so the new patch has its own KV storage.
+    // Only treat as rename if currentName is defined (not first save)
+    if (currentName && name !== currentName) {
       generateNewPatchId();
     }
 
