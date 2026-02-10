@@ -135,42 +135,6 @@
       description: 'Open a secondary output screen for live performances.'
     },
     {
-      id: 'toggle-ai-features',
-      name: 'Toggle AI Features',
-      description: 'Show or hide AI-related objects and features'
-    },
-    {
-      id: 'toggle-vim-mode',
-      name: 'Toggle Vim Mode',
-      description: 'Enable or disable Vim keybindings in code editors'
-    },
-    {
-      id: 'toggle-fps-monitor',
-      name: 'Toggle FPS Monitor',
-      description: 'Show or hide the FPS monitor'
-    },
-    {
-      id: 'toggle-video-stats',
-      name: 'Toggle Video Stats Overlay',
-      description: 'Show or hide video/webcam performance stats (FPS, drops, pipeline)'
-    },
-    {
-      id: 'toggle-mediabunny',
-      name: 'Toggle MediaBunny',
-      description: `${$useWebCodecs ? 'Disable' : 'Enable'} MediaBunny for video decoding (currently ${$useWebCodecs ? 'ON' : 'OFF'})`
-    },
-    {
-      id: 'set-gemini-api-key',
-      name: 'Set Gemini AI API Key',
-      description: 'Configure Google Gemini API key for AI features',
-      requiresAi: true
-    },
-    {
-      id: 'toggle-bottom-bar',
-      name: 'Toggle Bottom Bar',
-      description: 'Show or hide the bottom toolbar'
-    },
-    {
       id: 'toggle-sidebar',
       name: 'Toggle Sidebar',
       description: 'Files and presets in the sidebar'
@@ -198,8 +162,8 @@
     },
     {
       id: 'generate-prompt',
-      name: 'Patch to Prompt',
-      description: 'Export your patch as an LLM-friendly specification',
+      name: 'Patch to App',
+      description: 'Generate an app from your patch or export as a specification',
 
       // It does not really require AI.
       // The rationale is that people who presses "Toggle AI Features"
@@ -207,14 +171,50 @@
       requiresAi: true
     },
     {
+      id: 'set-gemini-api-key',
+      name: 'Set Gemini AI API Key',
+      description: 'Configure Google Gemini API key for AI features',
+      requiresAi: true
+    },
+    {
+      id: 'toggle-bottom-bar',
+      name: 'Toggle Bottom Bar',
+      description: 'Show or hide the bottom toolbar'
+    },
+    {
       id: 'prepare-offline',
       name: 'Prepare for Offline',
       description: 'Download heavy assets (Ruby WASM, SuperSonic, Strudel samples) for offline use'
     },
     {
+      id: 'toggle-ai-features',
+      name: 'Toggle AI Features',
+      description: 'Show or hide AI-related objects and features'
+    },
+    {
       id: 'clear-cache',
       name: 'Clear Cache',
       description: 'Fix stale app issues by clearing all caches and unregistering service workers'
+    },
+    {
+      id: 'toggle-vim-mode',
+      name: 'Toggle Vim Mode',
+      description: 'Enable or disable Vim keybindings in code editors'
+    },
+    {
+      id: 'toggle-fps-monitor',
+      name: 'Toggle FPS Monitor',
+      description: 'Show or hide the FPS monitor'
+    },
+    {
+      id: 'toggle-video-stats',
+      name: 'Toggle Video Stats Overlay',
+      description: 'Show or hide video/webcam performance stats (FPS, drops, pipeline)'
+    },
+    {
+      id: 'toggle-mediabunny',
+      name: 'Toggle MediaBunny',
+      description: `${$useWebCodecs ? 'Disable' : 'Enable'} MediaBunny for video decoding (currently ${$useWebCodecs ? 'ON' : 'OFF'})`
     }
   ];
 

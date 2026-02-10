@@ -169,7 +169,7 @@
     <!-- Empty state -->
     <div class="flex h-full flex-col items-center justify-center p-4 text-center">
       <p class="text-sm text-zinc-400">No preview available</p>
-      <p class="mt-1 text-xs text-zinc-500">Use "Patch to Prompt" to generate an app preview</p>
+      <p class="mt-1 text-xs text-zinc-500">Use "Patch to App" to generate an app preview</p>
     </div>
   {/if}
 </div>

@@ -222,9 +222,9 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="max-h-[85vh] sm:max-w-3xl">
     <Dialog.Header>
-      <Dialog.Title>Patch to Prompt</Dialog.Title>
+      <Dialog.Title>Patch to App</Dialog.Title>
       <Dialog.Description>
-        Export your patch as an LLM-friendly specification. Copy this to AI coding assistants.
+        Generate an app from your patch, or export as an LLM-friendly specification.
       </Dialog.Description>
     </Dialog.Header>
 
