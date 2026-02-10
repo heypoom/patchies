@@ -136,6 +136,11 @@
   async function refineAndThen(callback: () => void | Promise<void>) {
     await doRefine();
     await callback();
+
+    // Restore dialog after refine + copy/download completes (but not if callback closed it)
+    if (open) {
+      handleRestore();
+    }
   }
 
   function doDownload() {
