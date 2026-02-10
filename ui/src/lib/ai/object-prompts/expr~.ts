@@ -27,6 +27,12 @@ Available functions (same as expr):
 - Conditionals: condition ? true_val : false_val
 - Constants: PI, E
 - random(): white noise
+- phasor(freq): phase accumulator (0-1 ramp) for click-free variable-frequency oscillators
+
+IMPORTANT - phasor vs t:
+- Use t for FIXED frequencies: sin(t * 440 * PI * 2)
+- Use phasor($1) for VARIABLE frequencies: sin(phasor($1) * PI * 2)
+- Why? Changing $1 in sin(t * $1) causes phase jumps (clicks). phasor() accumulates phase smoothly.
 
 Example - Pass Through:
 \`\`\`json
@@ -38,12 +44,22 @@ Example - Pass Through:
 }
 \`\`\`
 
-Example - Sine Wave Oscillator:
+Example - Fixed Frequency Oscillator:
 \`\`\`json
 {
   "type": "expr~",
   "data": {
-    "expr": "sin(t * $1 * PI * 2)"
+    "expr": "sin(t * 440 * PI * 2)"
+  }
+}
+\`\`\`
+
+Example - Variable Frequency Oscillator (click-free):
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "sin(phasor($1) * PI * 2)"
   }
 }
 \`\`\`

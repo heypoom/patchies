@@ -26,6 +26,10 @@ class ExpressionProcessor extends AudioWorkletProcessor {
   private evaluator: ExprDspFn | null = null;
   private inletValues: number[] = new Array(10).fill(0);
 
+  // Phasor state: up to 10 independent phasors per expression
+  private phasorPhases: number[] = new Array(10).fill(0);
+  private phasorIndex = 0;
+
   constructor() {
     super();
     this.port.onmessage = (event: MessageEvent<ExpressionMessage | InletValuesMessage>) => {
@@ -37,11 +41,37 @@ class ExpressionProcessor extends AudioWorkletProcessor {
     };
   }
 
+  /**
+   * Phasor function: returns a 0-1 ramp at the given frequency.
+   * Each call within an expression uses a separate phase accumulator.
+   * Usage: sin(phasor(440) * 2 * PI) for a 440Hz sine wave
+   */
+  private phasor = (freq: number): number => {
+    const idx = this.phasorIndex++;
+    if (idx >= this.phasorPhases.length) return 0;
+
+    // Accumulate phase
+    this.phasorPhases[idx] += freq / sampleRate;
+
+    // Wrap to 0-1 range
+    this.phasorPhases[idx] %= 1;
+
+    if (this.phasorPhases[idx] < 0) {
+      this.phasorPhases[idx] += 1;
+    }
+
+    return this.phasorPhases[idx];
+  };
+
   private setExpression(expressionString: string): void {
     if (!expressionString || expressionString.trim() === '') {
       this.evaluator = null;
       return;
     }
+
+    // Reset phasor state when expression changes
+    this.phasorPhases.fill(0);
+    this.phasorIndex = 0;
 
     const parser = new Parser({
       operators: {
@@ -60,6 +90,9 @@ class ExpressionProcessor extends AudioWorkletProcessor {
         assignment: true
       }
     });
+
+    // Add phasor as a custom function
+    parser.functions.phasor = this.phasor;
 
     try {
       // Replace $1, $2, etc. with x1, x2, etc. for expr-eval compatibility
@@ -115,13 +148,18 @@ class ExpressionProcessor extends AudioWorkletProcessor {
       // Always process at least one channel, even without input
       const channelCount = Math.max(output.length, 1);
 
-      for (let channel = 0; channel < channelCount; channel++) {
-        const samples = input[channel] || new Float32Array(bufferSize);
-        const outs = output[channel] || new Float32Array(bufferSize);
+      // Sample-first loop so phasor state is consistent across channels
+      for (let i = 0; i < bufferSize; i++) {
+        // Reset phasor index at start of each sample
+        this.phasorIndex = 0;
 
-        for (let i = 0; i < bufferSize; i++) {
+        const t = (currentFrame + i) / sampleRate;
+
+        for (let channel = 0; channel < channelCount; channel++) {
+          const samples = input[channel] || new Float32Array(bufferSize);
+          const outs = output[channel] || new Float32Array(bufferSize);
+
           const s = samples[i] || 0;
-          const t = (currentFrame + i) / sampleRate;
 
           try {
             // Call evaluator with: s, i, t, channel, bufferSize, samples, input, inputs, x1-x9

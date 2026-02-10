@@ -5,6 +5,12 @@ export const EXPR_DSP_PRESETS = {
       expr: 'sin(t * 440 * PI * 2)'
     }
   },
+  'variable-osc.dsp': {
+    type: 'expr~',
+    data: {
+      expr: 'sin(phasor($1) * PI * 2)'
+    }
+  },
   'bitcrusher.dsp': {
     type: 'expr~',
     data: {

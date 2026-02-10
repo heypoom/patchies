@@ -24,11 +24,19 @@ same [expr-eval](https://github.com/silentmatt/expr-eval) library.
 - `inputs`: every connected input audio signal
 - `$1` to `$9`: dynamic control inlets
 
+## DSP Functions
+
+- `phasor(freq)`: phase accumulator (0-1 ramp) at given frequency. Use for
+  click-free oscillators with variable frequency.
+
 ## Examples
 
 ```js
-// Sine wave oscillator at 440Hz
+// Sine wave oscillator at 440Hz (fixed frequency)
 sin(t * 440 * PI * 2)
+
+// Variable frequency oscillator (use phasor for click-free modulation!)
+sin(phasor($1) * PI * 2)
 
 // White noise
 random()
@@ -47,6 +55,29 @@ s ^ 2
 
 Create `$1` to `$9` variables for control inlets. Example: `$1 * 440` creates
 one inlet controlling frequency. Connect a `slider 1 880` to control it.
+
+## phasor vs t
+
+Use `t` for static expressions where frequency doesn't change:
+
+```js
+sin(t * 440 * PI * 2)  // Fixed 440Hz - OK with t
+```
+
+Use `phasor()` when frequency is controlled by an inlet:
+
+```js
+sin(phasor($1) * PI * 2)  // Variable freq - use phasor!
+```
+
+**Why does `sin(t * $1)` click?** When you change `$1` at time t=1.5s from 440 to
+441, the phase jumps from `1.5 * 440 = 660` to `1.5 * 441 = 661.5` cycles - an
+instant 1.5 cycle discontinuity that causes a loud click.
+
+**How phasor fixes it:** Instead of computing phase from absolute time, `phasor`
+accumulates phase incrementally (`phase += freq / sampleRate`). When frequency
+changes, phase doesn't jump - it just starts incrementing faster or slower from
+wherever it currently is.
 
 ## Example Patches
 
