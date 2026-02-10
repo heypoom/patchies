@@ -25,5 +25,11 @@ export const EXPR_DSP_PRESETS = {
   / (2 ^ $1)
 ) * 2 - 1`
     }
+  },
+  'hardsync.dsp': {
+    type: 'expr~',
+    data: {
+      expr: 'sin(phasor($1, phasor($2)) * PI * 2)'
+    }
   }
 };

@@ -26,8 +26,11 @@ same [expr-eval](https://github.com/silentmatt/expr-eval) library.
 
 ## DSP Functions
 
-- `phasor(freq)`: phase accumulator (0-1 ramp) at given frequency. Use for
-  click-free oscillators with variable frequency.
+- `phasor(freq, trigger?, resetPhase?)`: phase accumulator (0-1 ramp) at given
+  frequency. Use for click-free oscillators with variable frequency.
+  - `freq`: frequency in Hz
+  - `trigger`: optional. Resets phase on positive zero-crossing (≤0 → >0)
+  - `resetPhase`: optional. Phase value to reset to (default 0)
 
 ## Examples
 
@@ -49,6 +52,12 @@ s * $1
 
 // Distortion
 s ^ 2
+
+// Hard sync: slave resets when master crosses zero
+sin(phasor(880, phasor(110)) * PI * 2)
+
+// Reset phasor via control inlet ($2 triggers on 0→1)
+phasor($1, $2)
 ```
 
 ## Dynamic Control Inlets
@@ -79,6 +88,26 @@ accumulates phase incrementally (`phase += freq / sampleRate`). When frequency
 changes, phase doesn't jump - it just starts incrementing faster or slower from
 wherever it currently is.
 
+## Phase Sync (Hard Sync)
+
+The `phasor` function supports phase synchronization via an optional trigger
+parameter. When the trigger signal crosses from ≤0 to >0, the phasor resets.
+
+```js
+// Hard sync: 880Hz slave synced to 110Hz master
+sin(phasor(880, phasor(110)) * PI * 2)
+
+// Reset phase via control inlet
+phasor($1, $2)        // $2 going 0→1 resets phase
+
+// Reset to specific phase (0.5 = middle of cycle)
+phasor($1, $2, 0.5)
+```
+
+**Hard sync** creates the classic aggressive synth sound - the slave oscillator
+restarts its cycle every time the master completes one. Lower master frequencies
+create more harmonics.
+
 ## Presets
 
 Enable the **DSP Presets** pack in Extensions to use these. Type in the object
@@ -88,6 +117,7 @@ browser to create pre-configured expr~ nodes:
 - `variable-osc.dsp` - Variable frequency sine oscillator (connect freq to $1)
 - `phasor.dsp` - Sawtooth wave with variable frequency
 - `bitcrusher.dsp` - Bit depth reduction effect (connect bit depth to $1)
+- `hardsync.dsp` - Hard sync oscillator ($1=slave freq, $2=master freq)
 
 ## Example Patches
 

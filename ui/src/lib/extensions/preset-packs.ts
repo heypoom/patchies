@@ -207,7 +207,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'sine-osc.dsp',
       'variable-osc.dsp',
       'phasor.dsp',
-      'bitcrusher.dsp'
+      'bitcrusher.dsp',
+      'hardsync.dsp'
     ]
   }
 ];

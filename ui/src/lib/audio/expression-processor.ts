@@ -28,6 +28,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
   // Phasor state: up to 10 independent phasors per expression
   private phasorPhases: number[] = new Array(10).fill(0);
+  private phasorTriggerPrev: number[] = new Array(10).fill(0);
   private phasorIndex = 0;
 
   constructor() {
@@ -44,11 +45,30 @@ class ExpressionProcessor extends AudioWorkletProcessor {
   /**
    * Phasor function: returns a 0-1 ramp at the given frequency.
    * Each call within an expression uses a separate phase accumulator.
-   * Usage: sin(phasor(440) * 2 * PI) for a 440Hz sine wave
+   *
+   * @param freq - Frequency in Hz
+   * @param trigger - Optional trigger signal. Phase resets on positive zero-crossing (<=0 to >0)
+   * @param resetPhaseValue - Optional phase value to reset to (default 0)
+   *
+   * Usage:
+   *   sin(phasor(440) * 2 * PI)              // basic oscillator
+   *   sin(phasor(880, phasor(110)) * 2 * PI) // hard sync
+   *   phasor($1, $2)                         // reset via control inlet
    */
-  private phasor = (freq: number): number => {
+  private phasor = (freq: number, trigger?: number, resetPhaseValue?: number): number => {
     const idx = this.phasorIndex++;
     if (idx >= this.phasorPhases.length) return 0;
+
+    // Check for trigger reset (positive zero-crossing)
+    if (trigger !== undefined) {
+      const prevTrig = this.phasorTriggerPrev[idx];
+
+      if (prevTrig <= 0 && trigger > 0) {
+        this.phasorPhases[idx] = resetPhaseValue ?? 0;
+      }
+
+      this.phasorTriggerPrev[idx] = trigger;
+    }
 
     // Accumulate phase
     this.phasorPhases[idx] += freq / sampleRate;
@@ -71,6 +91,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
     // Reset phasor state when expression changes
     this.phasorPhases.fill(0);
+    this.phasorTriggerPrev.fill(0);
     this.phasorIndex = 0;
 
     const parser = new Parser({

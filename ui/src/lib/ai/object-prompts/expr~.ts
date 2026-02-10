@@ -27,7 +27,10 @@ Available functions (same as expr):
 - Conditionals: condition ? true_val : false_val
 - Constants: PI, E
 - random(): white noise
-- phasor(freq): phase accumulator (0-1 ramp) for click-free variable-frequency oscillators
+- phasor(freq, trigger?, resetPhase?): phase accumulator (0-1 ramp) for click-free oscillators
+  - freq: frequency in Hz
+  - trigger: optional, resets phase on positive zero-crossing (<=0 to >0)
+  - resetPhase: optional, phase value to reset to (default 0)
 
 IMPORTANT - phasor vs t:
 - Use t for FIXED frequencies: sin(t * 440 * PI * 2)
@@ -100,6 +103,16 @@ Example - FM Synthesis (requires audio input):
   "type": "expr~",
   "data": {
     "expr": "sin(t * 440 * PI * 2 + s * $1)"
+  }
+}
+\`\`\`
+
+Example - Hard Sync (slave synced to master):
+\`\`\`json
+{
+  "type": "expr~",
+  "data": {
+    "expr": "sin(phasor(880, phasor(110)) * PI * 2)"
   }
 }
 \`\`\`
