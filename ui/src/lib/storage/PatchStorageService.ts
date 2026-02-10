@@ -166,8 +166,17 @@ export class PatchStorageService {
     const db = await this.getDb(patchName);
     const fullKey = buildKVKey(storeName, key);
 
-    const existed = (await db.get(KV_STORE, fullKey)) !== undefined;
-    await db.delete(KV_STORE, fullKey);
+    // Use a single transaction to atomically check existence and delete
+    const tx = db.transaction(KV_STORE, 'readwrite');
+    const store = tx.objectStore(KV_STORE);
+
+    const existed = (await store.get(fullKey)) !== undefined;
+
+    if (existed) {
+      await store.delete(fullKey);
+    }
+
+    await tx.done;
 
     return existed;
   }
