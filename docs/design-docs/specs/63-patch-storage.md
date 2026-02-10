@@ -15,6 +15,13 @@ Patch-local persistence system enabling patches to store and retrieve data acros
 - Named stores for shared state within a patch
 - Async-first design
 
+## Deliverables
+
+- `kv` object for key-value store
+- `db` object for document store
+- `kv()` method for key-value store in JS
+- `db()` method for document store in JS
+
 ## Non-Goals (for v1)
 
 - Cross-patch data access
