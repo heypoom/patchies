@@ -179,6 +179,7 @@ import { UniqbyObject } from '$lib/objects/v2/nodes/UniqbyObject';
 import { WebMidiLinkObject } from '$lib/objects/v2/nodes/WebMidiLinkObject';
 import { SendObject } from '$lib/objects/v2/nodes/SendObject';
 import { RecvObject } from '$lib/objects/v2/nodes/RecvObject';
+import { KVObject } from '$lib/objects/v2/nodes/KVObject';
 import { SendAudioNode } from '$lib/audio/v2/nodes/SendAudioNode';
 import { RecvAudioNode } from '$lib/audio/v2/nodes/RecvAudioNode';
 
@@ -295,7 +296,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   uniqby: schemaFromNode(UniqbyObject, 'control'),
   webmidilink: schemaFromNode(WebMidiLinkObject, 'control'),
   send: schemaFromNode(SendObject, 'control'),
-  recv: schemaFromNode(RecvObject, 'control')
+  recv: schemaFromNode(RecvObject, 'control'),
+  kv: schemaFromNode(KVObject, 'control')
 };
 
 /**

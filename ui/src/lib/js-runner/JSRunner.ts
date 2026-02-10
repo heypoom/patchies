@@ -4,6 +4,7 @@ import { createLLMFunction } from '$lib/ai/google';
 import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
+import { createKVStore } from '$lib/storage';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -336,6 +337,7 @@ export class JSRunner {
       'onCleanup',
       'fft',
       'llm',
+      'kv',
       'setPortCount',
       'setRunOnMount',
       'setTitle',
@@ -355,6 +357,7 @@ export class JSRunner {
       messageSystemContext.onCleanup,
       messageSystemContext.fft,
       createLLMFunction(),
+      createKVStore(nodeId),
       setPortCount,
       setRunOnMount,
       setTitle,

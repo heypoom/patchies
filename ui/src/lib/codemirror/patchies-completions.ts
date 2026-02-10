@@ -245,6 +245,57 @@ const patchiesAPICompletions: Completion[] = [
     detail: '() => void',
     info: 'Flash the node border to indicate activity',
     apply: 'flash()'
+  },
+
+  // Storage
+  {
+    label: 'kv',
+    type: 'variable',
+    detail: 'KVStore',
+    info: 'Persistent key-value storage. Methods: get(key), set(key, value), delete(key), keys(), clear(), has(key), store(name)',
+    apply: 'kv'
+  },
+  {
+    label: 'kv.get',
+    type: 'function',
+    detail: '(key: string) => Promise<unknown>',
+    info: 'Get a value from storage by key. Returns undefined if not found.',
+    apply: "await kv.get('')"
+  },
+  {
+    label: 'kv.set',
+    type: 'function',
+    detail: '(key: string, value: unknown) => Promise<void>',
+    info: 'Store a value at the given key. Supports any structured-cloneable value including Blob/ArrayBuffer.',
+    apply: "await kv.set('', )"
+  },
+  {
+    label: 'kv.delete',
+    type: 'function',
+    detail: '(key: string) => Promise<boolean>',
+    info: 'Delete a key from storage. Returns true if the key existed.',
+    apply: "await kv.delete('')"
+  },
+  {
+    label: 'kv.keys',
+    type: 'function',
+    detail: '() => Promise<string[]>',
+    info: 'Get all keys in this store.',
+    apply: 'await kv.keys()'
+  },
+  {
+    label: 'kv.has',
+    type: 'function',
+    detail: '(key: string) => Promise<boolean>',
+    info: 'Check if a key exists in storage.',
+    apply: "await kv.has('')"
+  },
+  {
+    label: 'kv.store',
+    type: 'function',
+    detail: '(name: string) => KVStore',
+    info: 'Get a named store instance. Named stores are shared across nodes.',
+    apply: "kv.store('')"
   }
 ];
 
@@ -347,6 +398,13 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setKeepAlive: ['dsp~'],
   setMouseScope: ['hydra'],
   setRunOnMount: ['js', 'worker'],
+  kv: ['js', 'worker', 'p5'],
+  'kv.get': ['js', 'worker', 'p5'],
+  'kv.set': ['js', 'worker', 'p5'],
+  'kv.delete': ['js', 'worker', 'p5'],
+  'kv.keys': ['js', 'worker', 'p5'],
+  'kv.has': ['js', 'worker', 'p5'],
+  'kv.store': ['js', 'worker', 'p5'],
   setTitle: [
     'js',
     'worker',

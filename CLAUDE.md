@@ -139,11 +139,56 @@ bun run test             # All tests
 
 1. Create class in `src/lib/objects/v2/nodes/` implementing `TextObjectV2`
 2. Register in `src/lib/objects/v2/nodes/index.ts`
-3. Update the documentation
-4. Make sure the node class contains a `messages` field, not just `type` in inlets and outlet definitions.
-5. **MUST** update AI object prompts in `src/lib/ai/`:
+3. **MUST** add to object schemas in `src/lib/objects/schemas/index.ts`:
+   - Import the node class
+   - Add entry like `'kv': schemaFromNode(KVObject, 'control'),`
+4. Add to `src/lib/extensions/object-packs.ts` in the appropriate pack
+5. Update the documentation in `static/content/objects/{nodename}.md`
+6. **MUST** use TypeBox schemas for message types (see pattern below)
+7. **MUST** update AI object prompts in `src/lib/ai/`:
    - Add to `object-descriptions-types.ts` (OBJECT_TYPE_LIST)
    - Create prompt file in `object-prompts/` and register in `object-prompts/index.ts`
+
+**TypeBox Schema Pattern for Text Objects:**
+
+NEVER pattern-match against raw patterns like `P.string` or `P.array()`. Always use TypeBox schemas:
+
+```typescript
+import { Type } from '@sinclair/typebox';
+import { msg } from '$lib/objects/schemas/helpers';
+import { schema } from '$lib/objects/schemas/types';
+
+// 1. Define TypeBox schemas for each message type
+export const MyGet = msg('get', { key: Type.String() });
+export const MySet = msg('set', { key: Type.String(), value: Type.Any() });
+
+// 2. Create pre-wrapped matchers for ts-pattern
+export const myMessages = {
+  get: schema(MyGet),
+  set: schema(MySet)
+};
+
+// 3. Use schemas in inlet definition
+static inlets: ObjectInlet[] = [
+  {
+    name: 'command',
+    type: 'message',
+    description: 'Commands',
+    messages: [
+      { schema: MyGet, description: 'Get value by key' },
+      { schema: MySet, description: 'Set value at key' }
+    ]
+  }
+];
+
+// 4. Match using schema matchers (NOT raw patterns)
+match(data)
+  .with(myMessages.get, ({ key }) => { /* ... */ })
+  .with(myMessages.set, ({ key, value }) => { /* ... */ })
+  .otherwise(() => { /* error */ });
+```
+
+See `KVObject.ts` for a complete example.
 
 ## Audio V2 Migration
 
