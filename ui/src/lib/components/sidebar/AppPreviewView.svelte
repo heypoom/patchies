@@ -222,7 +222,7 @@
                 onclick={downloadSpec}
                 class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
               >
-                <FileText class="h-4 w-4" />
+                <Download class="h-4 w-4" />
                 Download Spec
               </button>
             {/if}
