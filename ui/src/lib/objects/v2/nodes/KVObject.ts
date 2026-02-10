@@ -30,6 +30,57 @@ export const KVClear = msg('clear', {});
 /** Check if key exists */
 export const KVHas = msg('has', { key: Type.String() });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// KV Response Schemas
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Response for get operation */
+export const KVGetResponse = Type.Object({
+  op: Type.Literal('get'),
+  key: Type.String(),
+  value: Type.Union([Type.Any(), Type.Null()]),
+  found: Type.Boolean()
+});
+
+/** Response for set operation */
+export const KVSetResponse = Type.Object({
+  op: Type.Literal('set'),
+  key: Type.String(),
+  ok: Type.Literal(true)
+});
+
+/** Response for delete operation */
+export const KVDeleteResponse = Type.Object({
+  op: Type.Literal('delete'),
+  key: Type.String(),
+  deleted: Type.Boolean()
+});
+
+/** Response for keys operation */
+export const KVKeysResponse = Type.Object({
+  op: Type.Literal('keys'),
+  keys: Type.Array(Type.String())
+});
+
+/** Response for clear operation */
+export const KVClearResponse = Type.Object({
+  op: Type.Literal('clear'),
+  ok: Type.Literal(true)
+});
+
+/** Response for has operation */
+export const KVHasResponse = Type.Object({
+  op: Type.Literal('has'),
+  key: Type.String(),
+  exists: Type.Boolean()
+});
+
+/** Error response */
+export const KVErrorResponse = Type.Object({
+  op: Type.Literal('error'),
+  message: Type.String()
+});
+
 /**
  * Pre-wrapped matchers for use with ts-pattern.
  * Usage: match(msg).with(kvMessages.get, ({ key }) => ...)
@@ -86,7 +137,22 @@ export class KVObject implements TextObjectV2 {
     }
   ];
 
-  static outlets: ObjectOutlet[] = [{ name: 'result', type: 'message' }];
+  static outlets: ObjectOutlet[] = [
+    {
+      name: 'result',
+      type: 'message',
+      description: 'Operation result',
+      messages: [
+        { schema: KVGetResponse, description: 'Get result with value and found flag' },
+        { schema: KVSetResponse, description: 'Set confirmation' },
+        { schema: KVDeleteResponse, description: 'Delete result with deleted flag' },
+        { schema: KVKeysResponse, description: 'List of all keys' },
+        { schema: KVClearResponse, description: 'Clear confirmation' },
+        { schema: KVHasResponse, description: 'Existence check result' },
+        { schema: KVErrorResponse, description: 'Error message' }
+      ]
+    }
+  ];
 
   readonly nodeId: string;
   readonly context: ObjectContext;

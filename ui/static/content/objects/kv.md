@@ -9,33 +9,6 @@ Persistent key-value storage for the patch. Data persists across sessions using 
 [kv mystore]   → Named store, shared across nodes with same name
 ```
 
-## Output Format
-
-All outputs include an `op` field for routing:
-
-```javascript
-// get
-{ op: 'get', key: 'mykey', value: 42, found: true }
-
-// set
-{ op: 'set', key: 'mykey', ok: true }
-
-// delete
-{ op: 'delete', key: 'mykey', deleted: true }
-
-// keys
-{ op: 'keys', keys: ['key1', 'key2'] }
-
-// clear
-{ op: 'clear', ok: true }
-
-// has
-{ op: 'has', key: 'mykey', exists: true }
-
-// error
-{ op: 'error', message: 'Error description' }
-```
-
 ## Examples
 
 ### Counter

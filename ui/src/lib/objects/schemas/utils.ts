@@ -10,6 +10,23 @@ const hl = {
   symbol: 'text-amber-400'
 };
 
+// Discriminator fields used for message routing (type or op)
+const DISCRIMINATOR_FIELDS = ['type', 'op'] as const;
+
+/**
+ * Get the discriminator field and value from a schema.
+ * Supports both `type` and `op` as discriminator fields.
+ */
+function getDiscriminator(props: Record<string, TSchema>): { field: string; value: string } | null {
+  for (const field of DISCRIMINATOR_FIELDS) {
+    if (props[field]?.[Kind] === 'Literal') {
+      return { field, value: String(props[field].const) };
+    }
+  }
+
+  return null;
+}
+
 /**
  * Convert a TypeBox schema to a human-readable string representation.
  * Used for displaying message types in docs and tooltips.
@@ -31,14 +48,16 @@ export function schemaToString(schema: TSchema): string {
     case 'Object': {
       const props = schema.properties as Record<string, TSchema>;
       const keys = Object.keys(props);
+      const disc = getDiscriminator(props);
 
-      // Symbol shorthand: { type: 'bang' } → bang
-      if (keys.length === 1 && keys[0] === 'type' && props.type[Kind] === 'Literal') {
-        return String(props.type.const);
+      // Symbol shorthand: { type: 'bang' } or { op: 'get' } → bang / get
+      if (keys.length === 1 && disc) {
+        return disc.value;
       }
 
       const parts = Object.entries(props).map(([key, value]) => {
         const valueStr = schemaToString(value);
+
         return `${key}: ${valueStr}`;
       });
 
@@ -47,11 +66,13 @@ export function schemaToString(schema: TSchema): string {
 
     case 'Array': {
       const itemSchema = schema.items as TSchema;
+
       return `${schemaToString(itemSchema)}[]`;
     }
 
     case 'Union': {
       const anyOf = schema.anyOf as TSchema[];
+
       return anyOf.map(schemaToString).join(' | ');
     }
 
@@ -71,31 +92,29 @@ interface SchemaToHtmlOptions {
 }
 
 /**
- * Check if a schema is a complex object (has properties beyond just `type`).
+ * Check if a schema is a complex object (has properties beyond just the discriminator).
  */
 export function isComplexSchema(schema: TSchema): boolean {
   if (schema[Kind] !== 'Object') return false;
 
   const props = schema.properties as Record<string, TSchema>;
   const keys = Object.keys(props);
+  const disc = getDiscriminator(props);
 
-  // Symbol shorthand has only `type` field
-  return !(keys.length === 1 && keys[0] === 'type');
+  // Symbol shorthand has only discriminator field (type or op)
+  return !(keys.length === 1 && disc);
 }
 
 /**
- * Get the type name from a message schema (the value of the `type` field).
+ * Get the type name from a message schema (the value of the `type` or `op` field).
  */
 export function getSchemaTypeName(schema: TSchema): string | null {
   if (schema[Kind] !== 'Object') return null;
 
   const props = schema.properties as Record<string, TSchema>;
+  const disc = getDiscriminator(props);
 
-  if (props.type?.[Kind] === 'Literal') {
-    return String(props.type.const);
-  }
-
-  return null;
+  return disc?.value ?? null;
 }
 
 /**
@@ -111,6 +130,7 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
       if (typeof schema.const === 'string') {
         return `<span class="${hl.string}">'${schema.const}'</span>`;
       }
+
       return `<span class="${hl.type}">${String(schema.const)}</span>`;
     }
 
@@ -126,15 +146,16 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
     case 'Object': {
       const props = schema.properties as Record<string, TSchema>;
       const keys = Object.keys(props);
+      const disc = getDiscriminator(props);
 
-      // Symbol shorthand: { type: 'bang' } → bang
-      if (keys.length === 1 && keys[0] === 'type' && props.type[Kind] === 'Literal') {
-        return `<span>${String(props.type.const)}</span>`;
+      // Symbol shorthand: { type: 'bang' } or { op: 'get' } → bang / get
+      if (keys.length === 1 && disc) {
+        return `<span>${disc.value}</span>`;
       }
 
-      // Compact mode: show type name for complex objects
-      if (compact && props.type?.[Kind] === 'Literal') {
-        return `<span>${String(props.type.const)}</span><span class="${hl.punct}">{...}</span>`;
+      // Compact mode: show discriminator name for complex objects
+      if (compact && disc) {
+        return `<span>${disc.value}</span><span class="${hl.punct}">{...}</span>`;
       }
 
       const parts = Object.entries(props).map(([key, value]) => {
@@ -148,11 +169,13 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
 
     case 'Array': {
       const itemSchema = schema.items as TSchema;
+
       return `${schemaToHtml(itemSchema, options)}<span class="${hl.punct}">[]</span>`;
     }
 
     case 'Union': {
       const anyOf = schema.anyOf as TSchema[];
+
       return anyOf
         .map((s) => schemaToHtml(s, options))
         .join(`<span class="${hl.punct}"> | </span>`);
