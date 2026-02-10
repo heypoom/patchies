@@ -347,7 +347,7 @@ Consider adding storage usage indicator in patch settings (future).
 - [ ] KV operations (get, set, delete, keys, clear, has)
 - [ ] Basic IndexedDB setup per patch
 
-### Phase 2: KV Object
+### Phase 2: KV
 
 - [ ] Create `kv` visual object component
 - [ ] Message parsing and dispatch
@@ -355,20 +355,24 @@ Consider adding storage usage indicator in patch settings (future).
 - [ ] Named store support
 - [ ] Binary blob support
 
-### Phase 3: DB Object
+### Phase 3: KV() for JS
+
+- [ ] Expose `kv()` in JSRunner context
+- [ ] Handle async operations
+- [ ] Named store configuration
+
+### Phase 4: DB Object
 
 - [ ] Document store operations
 - [ ] Auto-generated IDs and timestamps
 - [ ] Simple query matching
 - [ ] Create `db` visual object component
 
-### Phase 4: JSRunner Integration
+### Phase 5: DB() for JS
 
-- [ ] Expose `kv` and `db` in JSRunner context
-- [ ] Handle async operations
-- [ ] Named store configuration
+- [ ] Expose `db()` in JSRunner context
 
-### Phase 5: Cleanup & Polish
+### Phase 6: Cleanup & Polish
 
 - [ ] Patch deletion prompt
 - [ ] Error handling and user feedback
