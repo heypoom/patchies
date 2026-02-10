@@ -1,11 +1,20 @@
 <script lang="ts">
-  import { X, ExternalLink, Copy, RefreshCw } from '@lucide/svelte/icons';
+  import { X, ExternalLink, Copy, RefreshCw, Download, Sparkles } from '@lucide/svelte/icons';
   import { appPreviewStore } from '../../../stores/app-preview.store';
+  import { hasGeminiApiKey } from '$lib/ai/patch-to-prompt';
   import { toast } from 'svelte-sonner';
+  import AiPreviewEditDialog from '../dialogs/AiPreviewEditDialog.svelte';
+
+  let {
+    onRequestApiKey
+  }: {
+    onRequestApiKey?: (onKeyReady: () => void) => void;
+  } = $props();
 
   const preview = $derived($appPreviewStore);
 
   let iframeRef = $state<HTMLIFrameElement | null>(null);
+  let showEditDialog = $state(false);
 
   function clearPreview() {
     appPreviewStore.clear();
@@ -29,6 +38,24 @@
     }
   }
 
+  function downloadHtml() {
+    if (!preview.html) return;
+
+    const filename = preview.name
+      ? `${preview.name.toLowerCase().replace(/\s+/g, '-')}.html`
+      : 'preview.html';
+
+    const blob = new Blob([preview.html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast.success(`Downloaded ${filename}`);
+  }
+
   function openInNewTab() {
     if (!preview.html) return;
 
@@ -39,7 +66,33 @@
     // Clean up after a delay
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+
+  function handleAiEdit() {
+    if (!hasGeminiApiKey()) {
+      if (onRequestApiKey) {
+        onRequestApiKey(() => {
+          showEditDialog = true;
+        });
+      } else {
+        toast.error('Please set your Gemini API key first (Cmd+K > "Set Gemini API Key")');
+      }
+      return;
+    }
+
+    showEditDialog = true;
+  }
+
+  function handleEditComplete(newHtml: string) {
+    appPreviewStore.setPreview(newHtml, preview.name ?? undefined);
+  }
 </script>
+
+<AiPreviewEditDialog
+  bind:open={showEditDialog}
+  currentHtml={preview.html ?? ''}
+  onEditComplete={handleEditComplete}
+  {onRequestApiKey}
+/>
 
 <div class="flex h-full flex-col">
   {#if preview.html}
@@ -52,6 +105,14 @@
       </div>
 
       <div class="flex items-center gap-1">
+        <button
+          onclick={handleAiEdit}
+          title="AI Edit preview"
+          class="cursor-pointer rounded p-1 text-purple-400 transition-colors hover:bg-purple-900/30 hover:text-purple-300"
+        >
+          <Sparkles class="h-4 w-4" />
+        </button>
+
         <button
           onclick={refreshPreview}
           title="Refresh preview"
@@ -66,6 +127,14 @@
           class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
         >
           <Copy class="h-4 w-4" />
+        </button>
+
+        <button
+          onclick={downloadHtml}
+          title="Download HTML"
+          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+        >
+          <Download class="h-4 w-4" />
         </button>
 
         <button

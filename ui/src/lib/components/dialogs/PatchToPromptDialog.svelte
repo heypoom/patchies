@@ -8,7 +8,9 @@
     Lock,
     Sparkles,
     Loader2,
-    Code
+    Code,
+    ChevronDown,
+    ChevronUp
   } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -43,6 +45,11 @@
   let isRefining = $state(false);
   let isRefined = $state(false);
   let isGenerating = $state(false);
+  let thinkingLog = $state<string[]>([]);
+  let isPromptCollapsed = $state(false);
+  let isThinkingCollapsed = $state(false);
+
+  const isProcessing = $derived(isRefining || isGenerating);
 
   // Generate prompt whenever inputs change
   $effect(() => {
@@ -106,12 +113,16 @@
     if (isRefining) return;
 
     isRefining = true;
+    thinkingLog = [];
 
     try {
       const cleanedPatch = cleanPatch(nodes, edges);
       const refined = await refineSpec(cleanedPatch, {
         patchName,
-        steeringPrompt
+        steeringPrompt,
+        onThinking: (thought) => {
+          thinkingLog = [...thinkingLog, thought];
+        }
       });
 
       generatedPrompt = refined;
@@ -140,9 +151,14 @@
     if (isGenerating) return;
 
     isGenerating = true;
+    thinkingLog = [];
 
     try {
-      const html = await generateCode(generatedPrompt);
+      const html = await generateCode(generatedPrompt, {
+        onThinking: (thought) => {
+          thinkingLog = [...thinkingLog, thought];
+        }
+      });
 
       // Store the preview
       appPreviewStore.setPreview(html, patchName ?? undefined);
@@ -178,7 +194,28 @@
       steeringPrompt = '';
       isEditing = false;
       isRefined = false;
+      thinkingLog = [];
+      isPromptCollapsed = false;
+      isThinkingCollapsed = false;
     }
+  });
+
+  // Track previous processing state to detect completion
+  let wasProcessing = $state(false);
+
+  // Auto-collapse/expand sections based on processing state
+  $effect(() => {
+    if (isProcessing && !wasProcessing) {
+      // Processing started: collapse prompt, show thinking
+      isPromptCollapsed = true;
+      isThinkingCollapsed = false;
+    } else if (!isProcessing && wasProcessing) {
+      // Processing finished: collapse thinking, show prompt
+      isThinkingCollapsed = true;
+      isPromptCollapsed = false;
+    }
+
+    wasProcessing = isProcessing;
   });
 </script>
 
@@ -218,17 +255,29 @@
         </div>
       </div>
 
-      <!-- Generated prompt preview -->
+      <!-- Generated prompt preview (collapsible) -->
       <div class="space-y-2">
+        <!-- Header row with collapse toggle -->
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
+          <button
+            onclick={() => (isPromptCollapsed = !isPromptCollapsed)}
+            class="flex cursor-pointer items-center gap-2"
+          >
+            {#if isPromptCollapsed}
+              <ChevronDown class="h-4 w-4 text-zinc-400" />
+            {:else}
+              <ChevronUp class="h-4 w-4 text-zinc-400" />
+            {/if}
             <span class="text-sm text-zinc-300">Generated Prompt</span>
             {#if isRefined}
               <span class="rounded bg-purple-600/20 px-1.5 py-0.5 text-xs text-purple-300">
                 AI Refined
               </span>
             {/if}
-          </div>
+            <span class="text-xs text-zinc-500">
+              ({generatedPrompt.length.toLocaleString()} chars)
+            </span>
+          </button>
 
           <div class="flex items-center gap-1">
             <button
@@ -263,8 +312,9 @@
 
             <button
               onclick={toggleEdit}
+              disabled={isPromptCollapsed}
               title={isEditing ? 'Lock editing' : 'Unlock editing'}
-              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {#if isEditing}
                 <Lock class="h-3 w-3" />
@@ -277,22 +327,83 @@
           </div>
         </div>
 
-        <textarea
-          bind:value={generatedPrompt}
-          readonly={!isEditing}
-          class="h-80 min-h-40 w-full resize-y rounded border border-zinc-600 bg-zinc-800 px-3 py-2 font-mono text-xs text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none {isEditing
-            ? 'bg-zinc-750'
-            : 'cursor-default'}"
-        ></textarea>
-
-        <div class="flex items-center justify-between text-xs text-zinc-500">
-          <span>{generatedPrompt.length.toLocaleString()} characters</span>
+        <!-- Collapsible content -->
+        {#if !isPromptCollapsed}
+          <textarea
+            bind:value={generatedPrompt}
+            readonly={!isEditing}
+            class="h-64 min-h-32 w-full resize-y rounded border border-zinc-600 bg-zinc-800 px-3 py-2 font-mono text-xs text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none {isEditing
+              ? 'bg-zinc-750'
+              : 'cursor-default'}"
+          ></textarea>
 
           {#if isEditing}
-            <span class="text-amber-400">Editing enabled - changes won't auto-regenerate</span>
+            <div class="text-xs text-amber-400">
+              Editing enabled - changes won't auto-regenerate
+            </div>
+          {/if}
+        {/if}
+      </div>
+
+      <!-- Thinking logs (shown during AI processing, collapsible) -->
+      {#if isProcessing || thinkingLog.length > 0}
+        <div class="space-y-2">
+          <!-- Header with collapse toggle -->
+          <button
+            onclick={() => (isThinkingCollapsed = !isThinkingCollapsed)}
+            class="flex w-full cursor-pointer items-center gap-2 text-sm"
+          >
+            {#if isThinkingCollapsed}
+              <ChevronDown class="h-4 w-4 text-zinc-400" />
+            {:else}
+              <ChevronUp class="h-4 w-4 text-zinc-400" />
+            {/if}
+
+            {#if isProcessing}
+              <Loader2 class="h-4 w-4 animate-spin text-purple-400" />
+              <span class="text-zinc-300">
+                {#if isRefining}
+                  Refining specification...
+                {:else}
+                  Generating app...
+                {/if}
+              </span>
+            {:else}
+              <span class="text-zinc-400">Thinking Log</span>
+            {/if}
+
+            <span class="text-xs text-zinc-500">
+              ({thinkingLog.length}
+              {thinkingLog.length === 1 ? 'thought' : 'thoughts'})
+            </span>
+          </button>
+
+          <!-- Collapsible content -->
+          {#if !isThinkingCollapsed}
+            {#if thinkingLog.length > 0}
+              <div
+                class="flex max-h-40 flex-col gap-2 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300"
+              >
+                {#each thinkingLog as thought, i}
+                  <div
+                    class="border-l-2 border-zinc-600 pl-2 {i === thinkingLog.length - 1
+                      ? 'text-zinc-200'
+                      : 'text-zinc-500'}"
+                  >
+                    {thought}
+                  </div>
+                {/each}
+              </div>
+            {:else if isProcessing}
+              <div
+                class="flex items-center justify-center rounded border border-zinc-700 bg-zinc-800/50 py-3 text-xs text-zinc-500"
+              >
+                Waiting for thoughts...
+              </div>
+            {/if}
           {/if}
         </div>
-      </div>
+      {/if}
     </div>
 
     <Dialog.Footer class="flex gap-2">

@@ -22,11 +22,13 @@
   let {
     open = $bindable(false),
     view = $bindable<SidebarView>('files'),
-    onSavePatch
+    onSavePatch,
+    onRequestApiKey
   }: {
     open: boolean;
     view?: SidebarView;
     onSavePatch?: () => void;
+    onRequestApiKey?: (onKeyReady: () => void) => void;
   } = $props();
 
   // Base views always shown
@@ -122,7 +124,7 @@
       {:else if view === 'help'}
         <HelpView />
       {:else if view === 'preview'}
-        <AppPreviewView />
+        <AppPreviewView {onRequestApiKey} />
       {/if}
     </div>
 

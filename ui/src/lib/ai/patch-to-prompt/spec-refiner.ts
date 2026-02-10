@@ -13,6 +13,7 @@ export interface RefineOptions {
   patchName?: string;
   steeringPrompt?: string;
   signal?: AbortSignal;
+  onThinking?: (thought: string) => void;
 }
 
 /**
@@ -34,7 +35,7 @@ export async function refineSpec(
     throw new Error('Gemini API key is not set. Please set it in the settings.');
   }
 
-  const { signal } = options;
+  const { signal, onThinking } = options;
 
   // Check for cancellation before starting
   if (signal?.aborted) {
@@ -46,19 +47,41 @@ export async function refineSpec(
 
   const prompt = buildRefinePrompt(patch, options);
 
-  const response = await ai.models.generateContent({
+  // Use streaming with thinking enabled for real-time feedback
+  const response = await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: { abortSignal: signal }
+    config: {
+      thinkingConfig: {
+        includeThoughts: true
+      }
+    }
   });
 
-  const text = response.text;
+  let responseText = '';
 
-  if (!text) {
+  for await (const chunk of response) {
+    // Check for cancellation during streaming
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought && part.text && onThinking) {
+        // Stream thinking updates to UI
+        onThinking(part.text);
+      } else if (part.text) {
+        // Accumulate final response text
+        responseText += part.text;
+      }
+    }
+  }
+
+  if (!responseText.trim()) {
     throw new Error('No response from AI');
   }
 
-  return text.trim();
+  return responseText.trim();
 }
 
 /** Map node types to syntax highlighting language (only for non-JS languages) */

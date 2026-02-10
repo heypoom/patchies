@@ -7,6 +7,12 @@
 
 export interface GenerateOptions {
   signal?: AbortSignal;
+  onThinking?: (thought: string) => void;
+}
+
+export interface EditOptions {
+  signal?: AbortSignal;
+  onThinking?: (thought: string) => void;
 }
 
 /**
@@ -24,7 +30,7 @@ export async function generateCode(
     throw new Error('Gemini API key is not set. Please set it in the settings.');
   }
 
-  const { signal } = options;
+  const { signal, onThinking } = options;
 
   if (signal?.aborted) {
     throw new Error('Request cancelled');
@@ -35,20 +41,108 @@ export async function generateCode(
 
   const prompt = buildGeneratePrompt(specification);
 
-  const response = await ai.models.generateContent({
+  // Use streaming with thinking enabled for real-time feedback
+  const response = await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: { abortSignal: signal }
+    config: {
+      thinkingConfig: {
+        includeThoughts: true
+      }
+    }
   });
 
-  const text = response.text;
+  let responseText = '';
 
-  if (!text) {
+  for await (const chunk of response) {
+    // Check for cancellation during streaming
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought && part.text && onThinking) {
+        // Stream thinking updates to UI
+        onThinking(part.text);
+      } else if (part.text) {
+        // Accumulate final response text
+        responseText += part.text;
+      }
+    }
+  }
+
+  if (!responseText.trim()) {
     throw new Error('No response from AI');
   }
 
   // Extract HTML from response (handle markdown code blocks)
-  return extractHtml(text.trim());
+  return extractHtml(responseText.trim());
+}
+
+/**
+ * Edits an existing HTML file based on a user prompt using Gemini AI.
+ *
+ * Takes the current HTML and a prompt describing what to change,
+ * returns the modified HTML.
+ */
+export async function editCode(
+  currentHtml: string,
+  editPrompt: string,
+  options: EditOptions = {}
+): Promise<string> {
+  const apiKey = localStorage.getItem('gemini-api-key');
+
+  if (!apiKey) {
+    throw new Error('Gemini API key is not set. Please set it in the settings.');
+  }
+
+  const { signal, onThinking } = options;
+
+  if (signal?.aborted) {
+    throw new Error('Request cancelled');
+  }
+
+  const { GoogleGenAI } = await import('@google/genai');
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = buildEditPrompt(currentHtml, editPrompt);
+
+  // Use streaming with thinking enabled for real-time feedback
+  const response = await ai.models.generateContentStream({
+    model: 'gemini-3-flash-preview',
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: {
+      thinkingConfig: {
+        includeThoughts: true
+      }
+    }
+  });
+
+  let responseText = '';
+
+  for await (const chunk of response) {
+    // Check for cancellation during streaming
+    if (signal?.aborted) {
+      throw new Error('Request cancelled');
+    }
+
+    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+      if (part.thought && part.text && onThinking) {
+        // Stream thinking updates to UI
+        onThinking(part.text);
+      } else if (part.text) {
+        // Accumulate final response text
+        responseText += part.text;
+      }
+    }
+  }
+
+  if (!responseText.trim()) {
+    throw new Error('No response from AI');
+  }
+
+  // Extract HTML from response (handle markdown code blocks)
+  return extractHtml(responseText.trim());
 }
 
 /**
@@ -71,6 +165,31 @@ function buildGeneratePrompt(specification: string): string {
 ${specification}
 
 **Output the complete HTML file now:**`;
+}
+
+/**
+ * Builds the prompt for editing existing HTML.
+ */
+function buildEditPrompt(currentHtml: string, editPrompt: string): string {
+  return `You are an expert web developer. Edit the following HTML file based on the user's instructions.
+
+**Requirements:**
+- Output ONLY the complete modified HTML code, no explanations
+- Keep the same structure and style unless asked to change it
+- Preserve existing functionality unless asked to modify it
+- Make minimal changes to achieve the requested result
+
+**Current HTML:**
+
+\`\`\`html
+${currentHtml}
+\`\`\`
+
+**User's edit request:**
+
+${editPrompt}
+
+**Output the complete modified HTML file now:**`;
 }
 
 /**

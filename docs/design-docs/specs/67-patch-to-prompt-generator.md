@@ -175,7 +175,8 @@ src/lib/ai/patch-to-prompt/
   index.ts                 # Main exports
 
 src/lib/components/dialogs/
-  PatchToPromptDialog.svelte  # Main UI
+  PatchToPromptDialog.svelte    # Main UI
+  AiPreviewEditDialog.svelte    # AI edit dialog for preview iteration
 
 src/lib/components/sidebar/
   AppPreviewView.svelte    # Preview iframe in sidebar
@@ -436,6 +437,26 @@ The oscillator produces a sine wave that plays through the speakers.
 15. **Dialog updates** ✅
     - Generate button (green, Code icon) next to Refine
     - Opens sidebar to preview tab on success
+
+### Phase 6: AI Edit & Thinking Logs ✅
+
+16. **Thinking logs** ✅
+    - Added `onThinking` callback to `refineSpec()` and `generateCode()`
+    - Uses Gemini streaming with `thinkingConfig: { includeThoughts: true }`
+    - Real-time display of model's reasoning in PatchToPromptDialog
+    - Thinking log section appears during refine/generate operations
+
+17. **AI Edit feature** ✅
+    - Added `editCode(html, prompt, options)` to code-generator.ts
+    - AiPreviewEditDialog.svelte for editing previews with prompts
+    - Sparkles button in AppPreviewView header to trigger edit
+    - Full thinking log display during edit operation
+    - Updates preview store with edited HTML on success
+
+18. **AppPreviewView enhancements** ✅
+    - Download HTML button added
+    - AI Edit button (Sparkles icon) for iterating on preview
+    - API key flow integrated via onRequestApiKey callback
 
 ## Example Steering Prompts (for dice button)
 

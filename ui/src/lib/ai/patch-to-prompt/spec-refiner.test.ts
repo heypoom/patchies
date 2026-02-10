@@ -85,12 +85,22 @@ describe('refineSpec', () => {
   it('accepts options for patchName and steeringPrompt', async () => {
     localStorageMock.setItem('gemini-api-key', 'AIzaTest123');
 
-    // Mock the GoogleGenAI import
+    // Mock the GoogleGenAI import with streaming support
     vi.mock('@google/genai', () => ({
       GoogleGenAI: vi.fn().mockImplementation(() => ({
         models: {
-          generateContent: vi.fn().mockResolvedValue({
-            text: 'Mocked refined specification'
+          generateContentStream: vi.fn().mockResolvedValue({
+            [Symbol.asyncIterator]: async function* () {
+              yield {
+                candidates: [
+                  {
+                    content: {
+                      parts: [{ text: 'Mocked refined specification' }]
+                    }
+                  }
+                ]
+              };
+            }
           })
         }
       }))
