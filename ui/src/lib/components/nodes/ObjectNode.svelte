@@ -1008,7 +1008,7 @@
                           {/if}
                         </Tooltip.Content>
                       </Tooltip.Root>
-                    {:else if !isUnmodifiableType(inlets[index]?.type)}
+                    {:else if !isUnmodifiableType(inlets[index]?.type) && param !== ''}
                       <Tooltip.Root>
                         <Tooltip.Trigger>
                           <span

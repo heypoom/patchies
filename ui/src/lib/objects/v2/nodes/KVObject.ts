@@ -71,6 +71,18 @@ export class KVObject implements TextObjectV2 {
         { schema: KVClear, description: 'Clear all keys' },
         { schema: KVHas, description: 'Check if key exists' }
       ]
+    },
+    {
+      name: 'store',
+      type: 'string',
+      description: 'Store name (optional)',
+      messages: [
+        {
+          schema: Type.Optional(Type.String()),
+          description:
+            'Shared store when using same store name. If empty, it becomes a local store.'
+        }
+      ]
     }
   ];
 
@@ -80,28 +92,41 @@ export class KVObject implements TextObjectV2 {
   readonly context: ObjectContext;
 
   private store: KVStore | null = null;
-  private storeName: string | null = null;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
     this.context = context;
   }
 
-  create(params: unknown[]): void {
-    // First param is the store name (optional)
-    const name = params[0];
-    this.storeName = typeof name === 'string' ? name : null;
+  private getStoreName(): string {
+    const store = this.context.getParam('store');
+    return typeof store === 'string' && store.length > 0 ? store : this.nodeId;
+  }
 
-    // Create the store - use store name if provided, otherwise use nodeId
-    const storeKey = this.storeName ?? this.nodeId;
-    this.store = new KVStore(storeKey);
+  create(params: unknown[]): void {
+    // Initialize params - first param maps to 'store' inlet (index 1, after 'command')
+    if (params.length > 0 && typeof params[0] === 'string') {
+      this.context.setParam('store', params[0]);
+    }
+
+    // Create the store
+    this.store = new KVStore(this.getStoreName());
   }
 
   onMessage(data: unknown, meta: MessageMeta): void {
-    if (meta.inletName !== 'command') return;
-    if (!this.store) return;
+    match(meta.inletName)
+      .with('command', () => {
+        if (this.store) this.handleCommand(data);
+      })
+      .with('store', () => {
+        if (typeof data === 'string' || typeof data === 'number') {
+          this.context.setParam('store', String(data));
 
-    this.handleCommand(data);
+          // Re-create store with new name
+          this.store = new KVStore(this.getStoreName());
+        }
+      })
+      .otherwise(() => {});
   }
 
   private async handleCommand(data: unknown): Promise<void> {
@@ -112,26 +137,32 @@ export class KVObject implements TextObjectV2 {
         .with(kvMessages.get, async ({ key }) => {
           const value = await this.store!.get(key);
           const found = value !== undefined;
+
           return { op: 'get' as const, key, value: found ? value : null, found };
         })
         .with(kvMessages.set, async ({ key, value }) => {
           await this.store!.set(key, value);
+
           return { op: 'set' as const, key, ok: true };
         })
         .with(kvMessages.delete, async ({ key }) => {
           const deleted = await this.store!.delete(key);
+
           return { op: 'delete' as const, key, deleted };
         })
         .with(kvMessages.keys, async () => {
           const keys = await this.store!.keys();
+
           return { op: 'keys' as const, keys };
         })
         .with(kvMessages.clear, async () => {
           await this.store!.clear();
+
           return { op: 'clear' as const, ok: true };
         })
         .with(kvMessages.has, async ({ key }) => {
           const exists = await this.store!.has(key);
+
           return { op: 'has' as const, key, exists };
         })
         .otherwise(() => {
