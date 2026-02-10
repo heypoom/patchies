@@ -10,12 +10,12 @@ const hl = {
   symbol: 'text-amber-400'
 };
 
-// Discriminator fields used for message routing (type or op)
-const DISCRIMINATOR_FIELDS = ['type', 'op'] as const;
+// Discriminator fields used for message routing.
+const DISCRIMINATOR_FIELDS = ['type'] as const;
 
 /**
  * Get the discriminator field and value from a schema.
- * Supports both `type` and `op` as discriminator fields.
+ * Supports `type` as discriminator field.
  */
 function getDiscriminator(props: Record<string, TSchema>): { field: string; value: string } | null {
   for (const field of DISCRIMINATOR_FIELDS) {

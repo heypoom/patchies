@@ -4,6 +4,23 @@ import { logger } from '$lib/utils/logger';
 const DB_VERSION = 1;
 const KV_STORE = 'kv';
 
+/**
+ * Build an unambiguous composite key using length-prefixing.
+ * Format: `${storeName.length}:${storeName}:${key}`
+ * This prevents collisions when storeName contains `:`.
+ */
+function buildKVKey(storeName: string, key: string): string {
+  return `${storeName.length}:${storeName}:${key}`;
+}
+
+/**
+ * Build the prefix for a store name (for iteration/filtering).
+ * Format: `${storeName.length}:${storeName}:`
+ */
+function buildKVPrefix(storeName: string): string {
+  return `${storeName.length}:${storeName}:`;
+}
+
 // Detect if we're in a worker context
 const isWorker = typeof self !== 'undefined' && typeof (self as any).document === 'undefined';
 
@@ -111,7 +128,7 @@ export class PatchStorageService {
   async kvGet(storeName: string, key: string): Promise<unknown> {
     const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
-    const fullKey = `${storeName}:${key}`;
+    const fullKey = buildKVKey(storeName, key);
 
     return db.get(KV_STORE, fullKey);
   }
@@ -125,7 +142,8 @@ export class PatchStorageService {
   async kvSet(storeName: string, key: string, value: unknown): Promise<void> {
     const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
-    const fullKey = `${storeName}:${key}`;
+    const fullKey = buildKVKey(storeName, key);
+
     await db.put(KV_STORE, value, fullKey);
   }
 
@@ -138,7 +156,7 @@ export class PatchStorageService {
   async kvDelete(storeName: string, key: string): Promise<boolean> {
     const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
-    const fullKey = `${storeName}:${key}`;
+    const fullKey = buildKVKey(storeName, key);
 
     const existed = (await db.get(KV_STORE, fullKey)) !== undefined;
     await db.delete(KV_STORE, fullKey);
@@ -155,7 +173,7 @@ export class PatchStorageService {
     const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const allKeys = await db.getAllKeys(KV_STORE);
-    const prefix = `${storeName}:`;
+    const prefix = buildKVPrefix(storeName);
 
     return allKeys
       .filter((k) => typeof k === 'string' && k.startsWith(prefix))
@@ -173,7 +191,7 @@ export class PatchStorageService {
     const store = tx.objectStore(KV_STORE);
 
     const allKeys = await store.getAllKeys();
-    const prefix = `${storeName}:`;
+    const prefix = buildKVPrefix(storeName);
 
     for (const key of allKeys) {
       if (typeof key === 'string' && key.startsWith(prefix)) {
@@ -192,8 +210,9 @@ export class PatchStorageService {
   async kvHas(storeName: string, key: string): Promise<boolean> {
     const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
-    const fullKey = `${storeName}:${key}`;
+    const fullKey = buildKVKey(storeName, key);
     const value = await db.get(KV_STORE, fullKey);
+
     return value !== undefined;
   }
 

@@ -39,7 +39,7 @@ export const KVSetStore = msg('setStore', { value: Type.String() });
 
 /** Response for get operation */
 export const KVGetResponse = Type.Object({
-  op: Type.Literal('get'),
+  type: Type.Literal('get'),
   key: Type.String(),
   value: Type.Union([Type.Any(), Type.Null()]),
   found: Type.Boolean()
@@ -47,47 +47,47 @@ export const KVGetResponse = Type.Object({
 
 /** Response for set operation */
 export const KVSetResponse = Type.Object({
-  op: Type.Literal('set'),
+  type: Type.Literal('set'),
   key: Type.String(),
   ok: Type.Literal(true)
 });
 
 /** Response for delete operation */
 export const KVDeleteResponse = Type.Object({
-  op: Type.Literal('delete'),
+  type: Type.Literal('delete'),
   key: Type.String(),
   deleted: Type.Boolean()
 });
 
 /** Response for keys operation */
 export const KVKeysResponse = Type.Object({
-  op: Type.Literal('keys'),
+  type: Type.Literal('keys'),
   keys: Type.Array(Type.String())
 });
 
 /** Response for clear operation */
 export const KVClearResponse = Type.Object({
-  op: Type.Literal('clear'),
+  type: Type.Literal('clear'),
   ok: Type.Literal(true)
 });
 
 /** Response for has operation */
 export const KVHasResponse = Type.Object({
-  op: Type.Literal('has'),
+  type: Type.Literal('has'),
   key: Type.String(),
   exists: Type.Boolean()
 });
 
 /** Response for setStore operation */
 export const KVSetStoreResponse = Type.Object({
-  op: Type.Literal('setStore'),
+  type: Type.Literal('setStore'),
   value: Type.String(),
   ok: Type.Literal(true)
 });
 
 /** Error response */
 export const KVErrorResponse = Type.Object({
-  op: Type.Literal('error'),
+  type: Type.Literal('error'),
   message: Type.String()
 });
 
@@ -194,7 +194,13 @@ export class KVObject implements TextObjectV2 {
   onMessage(data: unknown, meta: MessageMeta): void {
     match(meta.inletName)
       .with('command', () => {
-        if (this.store) this.handleCommand(data);
+        if (this.store) {
+          this.handleCommand(data).catch((error) => {
+            const message = error instanceof Error ? error.message : String(error);
+
+            this.context.send({ type: 'error', message });
+          });
+        }
       })
       .with('store', () => {
         if (typeof data === 'string' || typeof data === 'number') {
@@ -216,48 +222,49 @@ export class KVObject implements TextObjectV2 {
           const value = await this.store!.get(key);
           const found = value !== undefined;
 
-          return { op: 'get' as const, key, value: found ? value : null, found };
+          return { type: 'get' as const, key, value: found ? value : null, found };
         })
         .with(kvMessages.set, async ({ key, value }) => {
           await this.store!.set(key, value);
 
-          return { op: 'set' as const, key, ok: true };
+          return { type: 'set' as const, key, ok: true };
         })
         .with(kvMessages.delete, async ({ key }) => {
           const deleted = await this.store!.delete(key);
 
-          return { op: 'delete' as const, key, deleted };
+          return { type: 'delete' as const, key, deleted };
         })
         .with(kvMessages.keys, async () => {
           const keys = await this.store!.keys();
 
-          return { op: 'keys' as const, keys };
+          return { type: 'keys' as const, keys };
         })
         .with(kvMessages.clear, async () => {
           await this.store!.clear();
 
-          return { op: 'clear' as const, ok: true };
+          return { type: 'clear' as const, ok: true };
         })
         .with(kvMessages.has, async ({ key }) => {
           const exists = await this.store!.has(key);
 
-          return { op: 'has' as const, key, exists };
+          return { type: 'has' as const, key, exists };
         })
         .with(kvMessages.setStore, ({ value }) => {
           this.context.setParam('store', value, { notifyUI: true });
 
           this.store = new KVStore(this.getStoreName());
 
-          return { op: 'setStore' as const, value, ok: true };
+          return { type: 'setStore' as const, value, ok: true };
         })
         .otherwise(() => {
-          return { op: 'error' as const, message: `Unknown command: ${JSON.stringify(data)}` };
+          return { type: 'error' as const, message: `Unknown command: ${JSON.stringify(data)}` };
         });
 
       this.context.send(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.context.send({ op: 'error', message });
+
+      this.context.send({ type: 'error', message });
     }
   }
 }
