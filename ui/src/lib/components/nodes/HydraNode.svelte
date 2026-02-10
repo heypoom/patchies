@@ -259,6 +259,8 @@
   paused={isPaused}
   showPauseButton={true}
   nodrag={usesMouseVariable}
+  nopan={usesMouseVariable}
+  nowheel={usesMouseVariable}
   {selected}
   {editorReady}
   bind:previewCanvas

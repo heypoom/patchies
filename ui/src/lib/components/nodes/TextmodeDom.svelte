@@ -62,6 +62,8 @@
   let glSystem = GLSystem.getInstance();
   let canvas = $state<HTMLCanvasElement | undefined>();
   let dragEnabled = $state(true);
+  let panEnabled = $state(true);
+  let wheelEnabled = $state(true);
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
   let bitmapLoopId: number | null = null;
@@ -182,8 +184,10 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
-    // Reset drag state and video output state
+    // Reset interaction state and video output state
     dragEnabled = true;
+    panEnabled = true;
+    wheelEnabled = true;
     videoOutputEnabled = true;
 
     // Stop bitmap loop on re-run
@@ -244,6 +248,17 @@
           height: outputHeight,
           noDrag: () => {
             dragEnabled = false;
+          },
+          noPan: () => {
+            panEnabled = false;
+          },
+          noWheel: () => {
+            wheelEnabled = false;
+          },
+          noInteract: () => {
+            dragEnabled = false;
+            panEnabled = false;
+            wheelEnabled = false;
           },
           noOutput: () => {
             videoOutputEnabled = false;
@@ -322,6 +337,8 @@
   onrun={runCode}
   bind:previewCanvas={canvas}
   nodrag={!dragEnabled}
+  nopan={!panEnabled}
+  nowheel={!wheelEnabled}
   tabindex={0}
   width={outputWidth}
   height={outputHeight}
