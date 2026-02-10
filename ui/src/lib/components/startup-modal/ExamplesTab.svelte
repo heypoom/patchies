@@ -43,7 +43,7 @@
       await onLoadPatch(patchId);
     } else {
       // Fallback to URL navigation if function not provided
-      window.location.href = `/?id=${patchId}`;
+      window.location.href = `/?id=${patchId}&readonly=true`;
     }
   }
 </script>

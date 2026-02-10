@@ -1010,10 +1010,10 @@
 
   // HACK: loading normally is causing artifacts when switching between patches
   //       so we go with this super hacky solution
-  async function loadPatchById(patchId: string) {
+  async function loadDemoPatchById(patchId: string) {
     isLoadingFromUrl = true;
     urlLoadError = null;
-    window.location.href = `/?id=${patchId}`;
+    window.location.href = `/?id=${patchId}&readonly=true`;
   }
 
   // Load patch from URL parameter
@@ -1381,7 +1381,7 @@
         {onAiInsertOrEdit}
         onCommandPalette={triggerCommandPalette}
         onNewPatch={newPatch}
-        onLoadPatch={loadPatchById}
+        onLoadPatch={loadDemoPatchById}
         onToggleLeftSidebar={() => {
           $isSidebarOpen = !$isSidebarOpen;
         }}
