@@ -762,13 +762,21 @@
     if (objectService.isV2ObjectType(data.name)) {
       // Extract raw params from expr for V2 objects
       const rawParams = (data.expr || '').trim().split(' ').slice(1);
-      const parsedParams = parseObjectParamFromString(data.name, rawParams);
+
+      // Use saved data.params if available (may have been updated via messages),
+      // otherwise fall back to parsing from expr.
+      // Only use saved params if they match expected inlet count to avoid type mismatches.
+      const expectedParams = parseObjectParamFromString(data.name, rawParams);
+
+      const parsedParams =
+        data.params && data.params.length === expectedParams.length ? data.params : expectedParams;
 
       objectService
         .createObject(nodeId, data.name, messageContext, parsedParams, rawParams)
         .then(() => {
           // Trigger re-evaluation of outlets after object is created
           objectInstanceVersion++;
+
           updateNodeInternals(nodeId);
         });
     }

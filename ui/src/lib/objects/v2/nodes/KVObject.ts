@@ -180,18 +180,14 @@ export class KVObject implements TextObjectV2 {
 
   private getStoreName(): string {
     const store = this.context.getParam('store');
+
     return typeof store === 'string' && store.length > 0 ? store : this.nodeId;
   }
 
-  create(params: unknown[]): void {
-    // Initialize params - parseObjectParamFromString builds an inlet-indexed array where:
-    // - params[0] = null (for 'command' inlet, type 'message' is unmodifiable)
-    // - params[1] = store name (for 'store' inlet, type 'string')
-    if (params.length > 1 && typeof params[1] === 'string') {
-      this.context.setParam('store', params[1]);
-    }
-
-    // Create the store
+  create(): void {
+    // Note: context.initParams() is called before create() by ObjectService,
+    // so inlet params (including 'store') are already initialized.
+    // See parseObjectParamFromString for how inlet-indexed params are built.
     this.store = new KVStore(this.getStoreName());
   }
 
