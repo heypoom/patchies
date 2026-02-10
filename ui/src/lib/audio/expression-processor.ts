@@ -59,11 +59,14 @@ class ExpressionProcessor extends AudioWorkletProcessor {
     const idx = this.phasorIndex++;
     if (idx >= this.phasorPhases.length) return 0;
 
-    // Check for trigger reset (positive zero-crossing)
+    // Check for trigger reset
+    // Detects: 1) positive zero-crossing (<=0 to >0), 2) phasor wrap (0.9 to 0.1)
     if (trigger !== undefined) {
       const prevTrig = this.phasorTriggerPrev[idx];
+      const isZeroCrossing = prevTrig <= 0 && trigger > 0;
+      const isPhasorWrap = prevTrig - trigger > 0.5; // large decrease = wrap
 
-      if (prevTrig <= 0 && trigger > 0) {
+      if (isZeroCrossing || isPhasorWrap) {
         this.phasorPhases[idx] = resetPhaseValue ?? 0;
       }
 
