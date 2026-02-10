@@ -4,6 +4,9 @@
  */
 
 import type { Node, Edge } from '@xyflow/svelte';
+import type { VFSTree, VFSTreeNode } from '$lib/vfs/types';
+import { isVFSEntry } from '$lib/vfs/types';
+import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
 
 export interface CleanedNode {
   id: string;
@@ -21,6 +24,8 @@ export interface CleanedEdge {
 export interface CleanedPatch {
   nodes: CleanedNode[];
   edges: CleanedEdge[];
+  files?: VFSTree;
+
   metadata: {
     nodeCount: number;
     edgeCount: number;
@@ -64,6 +69,7 @@ const DATA_FIELDS_TO_STRIP = new Set([
   '_lastRender',
   '_frameCount',
   '_initialized',
+
   // UI state
   'isSelected',
   'isFocused',
@@ -130,8 +136,68 @@ function cleanEdge(edge: Edge): CleanedEdge {
 }
 
 /**
+ * Filters a VFS tree node to only include URL provider entries.
+ * Excludes local/local-folder providers which contain filesystem paths.
+ */
+function filterUrlEntries(node: VFSTreeNode): VFSTreeNode | null {
+  if (isVFSEntry(node)) {
+    // Only keep URL provider entries
+    return node.provider === 'url' ? node : null;
+  }
+
+  // It's a directory - recursively filter children
+  const filtered: { [key: string]: VFSTreeNode } = {};
+
+  for (const [key, child] of Object.entries(node)) {
+    const filteredChild = filterUrlEntries(child);
+
+    if (filteredChild !== null) {
+      filtered[key] = filteredChild;
+    }
+  }
+
+  // Only return if there are remaining entries
+  return Object.keys(filtered).length > 0 ? filtered : null;
+}
+
+/**
+ * Filters VFS tree to only include URL provider entries.
+ * This prevents exposing local filesystem paths in the LLM prompt.
+ */
+function filterVfsTreeForUrls(tree: VFSTree): VFSTree | null {
+  const result: VFSTree = {};
+
+  if (tree.user) {
+    const filtered = filterUrlEntries(tree.user);
+
+    if (filtered && !isVFSEntry(filtered)) {
+      result.user = filtered;
+    }
+  }
+
+  if (tree.objects) {
+    const filteredObjects: VFSTree['objects'] = {};
+
+    for (const [nodeId, nodeFiles] of Object.entries(tree.objects)) {
+      const filtered = filterUrlEntries(nodeFiles);
+
+      if (filtered && !isVFSEntry(filtered)) {
+        filteredObjects[nodeId] = filtered;
+      }
+    }
+
+    if (Object.keys(filteredObjects).length > 0) {
+      result.objects = filteredObjects;
+    }
+  }
+
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+/**
  * Transforms a full patch into a cleaned format suitable for LLM prompts.
  * Removes visual/UI fields while preserving semantic structure.
+ * Includes VFS files tree (URL entries only) so LLM can access external URLs.
  */
 export function cleanPatch(nodes: Node[], edges: Edge[]): CleanedPatch {
   const cleanedNodes = nodes.map(cleanNode);
@@ -140,9 +206,16 @@ export function cleanPatch(nodes: Node[], edges: Edge[]): CleanedPatch {
   // Extract unique node types
   const nodeTypes = [...new Set(cleanedNodes.map((n) => n.type))];
 
+  // Get VFS files tree, filtered to only URL provider entries
+  // (excludes local/local-folder to avoid exposing filesystem paths)
+  const vfs = VirtualFilesystem.getInstance();
+  const vfsTree = vfs.serialize();
+  const urlOnlyFiles = filterVfsTreeForUrls(vfsTree);
+
   return {
     nodes: cleanedNodes,
     edges: cleanedEdges,
+    ...(urlOnlyFiles ? { files: urlOnlyFiles } : {}),
     metadata: {
       nodeCount: cleanedNodes.length,
       edgeCount: cleanedEdges.length,

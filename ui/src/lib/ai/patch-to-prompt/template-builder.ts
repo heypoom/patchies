@@ -48,6 +48,18 @@ export function buildDirectTemplate(patch: CleanedPatch, options: TemplateOption
 ${patchJson}
 \`\`\``);
 
+  // Files/assets (if any) - includes URLs that LLM can use
+  if (patch.files) {
+    const filesJson = JSON.stringify(patch.files, null, 2);
+    sections.push(`## Files & Assets
+
+The patch references these files. Entries with \`"provider": "url"\` contain URLs you can use directly.
+
+\`\`\`json
+${filesJson}
+\`\`\``);
+  }
+
   // Node details
   const nodeContext = getContextForTypes(metadata.nodeTypes);
   sections.push(`## Node Details
