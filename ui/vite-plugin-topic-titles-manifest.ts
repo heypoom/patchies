@@ -42,7 +42,13 @@ function generateManifest(root: string): void {
  * Maps topic slugs to their actual titles extracted from markdown files.
  */
 export const TOPIC_TITLES: Record<string, string> = {
-${sortedEntries.map(([slug, title], i) => `  '${slug}': '${title.replace(/'/g, "\\'")}'${i < sortedEntries.length - 1 ? ',' : ''}`).join('\n')}
+${sortedEntries
+  .map(([slug, title], i) => {
+    const needsQuotes = !/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(slug);
+    const key = needsQuotes ? `'${slug}'` : slug;
+    return `  ${key}: '${title.replace(/'/g, "\\'")}'${i < sortedEntries.length - 1 ? ',' : ''}`;
+  })
+  .join('\n')}
 };
 `;
 
