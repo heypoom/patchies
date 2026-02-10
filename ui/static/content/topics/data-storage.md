@@ -1,4 +1,4 @@
-# Storage
+# Data Storage
 
 Patchies provides persistent storage APIs for JavaScript objects. Data is stored per-patch using IndexedDB and persists across sessions.
 
