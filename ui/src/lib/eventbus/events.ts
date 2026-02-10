@@ -28,7 +28,8 @@ export type PatchiesEvent =
   | MediaBunnyTimeUpdateEvent
   | MediaBunnyEndedEvent
   | MediaBunnyErrorEvent
-  | AsmMachineStateChangedEvent;
+  | AsmMachineStateChangedEvent
+  | ObjectParamsChangedEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -250,4 +251,14 @@ export interface MediaBunnyErrorEvent {
 export interface AsmMachineStateChangedEvent {
   type: 'asmMachineStateChanged';
   machineId: number;
+}
+
+// Object system events
+
+export interface ObjectParamsChangedEvent {
+  type: 'objectParamsChanged';
+  nodeId: string;
+  params: unknown[];
+  index: number;
+  value: unknown;
 }

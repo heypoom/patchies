@@ -30,6 +30,9 @@ export const KVClear = msg('clear', {});
 /** Check if key exists */
 export const KVHas = msg('has', { key: Type.String() });
 
+/** Set the store name */
+export const KVSetStore = msg('setStore', { value: Type.String() });
+
 // ─────────────────────────────────────────────────────────────────────────────
 // KV Response Schemas
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,6 +78,13 @@ export const KVHasResponse = Type.Object({
   exists: Type.Boolean()
 });
 
+/** Response for setStore operation */
+export const KVSetStoreResponse = Type.Object({
+  op: Type.Literal('setStore'),
+  value: Type.String(),
+  ok: Type.Literal(true)
+});
+
 /** Error response */
 export const KVErrorResponse = Type.Object({
   op: Type.Literal('error'),
@@ -91,7 +101,8 @@ export const kvMessages = {
   delete: schema(KVDelete),
   keys: schema(KVKeys),
   clear: schema(KVClear),
-  has: schema(KVHas)
+  has: schema(KVHas),
+  setStore: schema(KVSetStore)
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,13 +131,15 @@ export class KVObject implements TextObjectV2 {
         { schema: KVDelete, description: 'Delete key' },
         { schema: KVKeys, description: 'List all keys' },
         { schema: KVClear, description: 'Clear all keys' },
-        { schema: KVHas, description: 'Check if key exists' }
+        { schema: KVHas, description: 'Check if key exists' },
+        { schema: KVSetStore, description: 'Set store name' }
       ]
     },
     {
       name: 'store',
       type: 'string',
       description: 'Store name (optional)',
+      hidden: true,
       messages: [
         {
           schema: Type.Optional(Type.String()),
@@ -149,6 +162,7 @@ export class KVObject implements TextObjectV2 {
         { schema: KVKeysResponse, description: 'List of all keys' },
         { schema: KVClearResponse, description: 'Clear confirmation' },
         { schema: KVHasResponse, description: 'Existence check result' },
+        { schema: KVSetStoreResponse, description: 'Store name change confirmation' },
         { schema: KVErrorResponse, description: 'Error message' }
       ]
     }
@@ -230,6 +244,13 @@ export class KVObject implements TextObjectV2 {
           const exists = await this.store!.has(key);
 
           return { op: 'has' as const, key, exists };
+        })
+        .with(kvMessages.setStore, ({ value }) => {
+          this.context.setParam('store', value);
+
+          this.store = new KVStore(this.getStoreName());
+
+          return { op: 'setStore' as const, value, ok: true };
         })
         .otherwise(() => {
           return { op: 'error' as const, message: `Unknown command: ${JSON.stringify(data)}` };

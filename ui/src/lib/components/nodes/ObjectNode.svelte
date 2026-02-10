@@ -46,6 +46,7 @@
   import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
   import ObjectSuggestionDropdown from './ObjectSuggestionDropdown.svelte';
   import { getIconById } from '$lib/components/icons';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
   // Common objects that should appear first in autocomplete
   // Ordered by general usage frequency
@@ -136,6 +137,7 @@
 
   let audioService = AudioService.getInstance();
   let objectService = ObjectService.getInstance();
+  const eventBus = PatchiesEventBus.getInstance();
   const messageContext = new MessageContext(nodeId);
 
   // Create a lookup map for presets by name (includes library info for disambiguation)
@@ -165,6 +167,7 @@
       priority: 'normal' | 'low';
       description?: string;
     }> = [];
+
     const addedNames = new Set<string>();
 
     // Add regular objects, filtering by AI features and enabled extensions
@@ -266,6 +269,14 @@
     return objectMeta.inlets || [];
   });
 
+  // Visible inlets for rendering handles (excludes hidden inlets)
+  // Preserves original index for param mapping
+  const visibleInlets = $derived.by(() => {
+    return inlets
+      .map((inlet, originalIndex) => ({ inlet, originalIndex }))
+      .filter(({ inlet }) => !inlet.hidden);
+  });
+
   // Update sticky precision when params change (for stable display width)
   $effect(() => {
     data.params.forEach((param, index) => {
@@ -296,6 +307,7 @@
 
     // Check if the object instance has a getOutlets method for dynamic outlets
     const objectInstance = objectService.getObjectById(nodeId);
+
     if (objectInstance?.getOutlets) {
       return objectInstance.getOutlets();
     }
@@ -762,12 +774,23 @@
     }
 
     messageContext.queue.addCallback(handleObjectMessage);
+
+    eventBus.addEventListener('objectParamsChanged', handleObjectParamsChanged);
   });
 
   onDestroy(() => {
     audioService.removeNodeById(nodeId);
     objectService.removeObjectById(nodeId);
+
+    eventBus.removeEventListener('objectParamsChanged', handleObjectParamsChanged);
   });
+
+  /** Handle params changed from within an object (e.g., setStore) */
+  function handleObjectParamsChanged(event: { nodeId: string; params: unknown[] }) {
+    if (event.nodeId !== nodeId) return;
+
+    updateNodeData(nodeId, { params: event.params });
+  }
 
   // Calculate minimum width based on port count (inlets or outlets, whichever is larger)
   const minWidthStyle = $derived.by(() => {
@@ -892,16 +915,16 @@
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="relative">
-        <!-- Dynamic inlets -->
-        {#if inlets}
-          {#each inlets as inlet, index}
+        <!-- Dynamic inlets (excludes hidden inlets) -->
+        {#if visibleInlets.length > 0}
+          {#each visibleInlets as { inlet, originalIndex }, visibleIndex}
             <StandardHandle
               port="inlet"
               type={getPortType(inlet)}
-              id={index}
-              title={inlet.name || `Inlet ${index}`}
-              total={inlets.length}
-              {index}
+              id={originalIndex}
+              title={inlet.name || `Inlet ${originalIndex}`}
+              total={visibleInlets.length}
+              index={visibleIndex}
               class="top-0"
               {nodeId}
               isAudioParam={inlet.isAudioParam}

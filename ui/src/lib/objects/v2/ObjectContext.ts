@@ -1,6 +1,7 @@
 import { MessageContext, type SendMessageOptions } from '$lib/messages/MessageContext';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
 import type { ObjectInlet } from './object-metadata';
+import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
 type ParamsChangeCallback = (params: unknown[], index: number, value: unknown) => void;
 
@@ -65,7 +66,7 @@ export class ObjectContext {
 
   /**
    * Set a parameter value by index or name.
-   * Automatically notifies all subscribers.
+   * Automatically notifies all subscribers and emits event for UI sync.
    */
   setParam(indexOrName: number | string, value: unknown): void {
     const index = typeof indexOrName === 'string' ? this.getInletIndex(indexOrName) : indexOrName;
@@ -83,6 +84,15 @@ export class ObjectContext {
     for (const callback of this.paramsChangeCallbacks) {
       callback([...this.params], index, value);
     }
+
+    // Emit event for UI sync
+    PatchiesEventBus.getInstance().dispatch({
+      type: 'objectParamsChanged',
+      nodeId: this.nodeId,
+      params: [...this.params],
+      index,
+      value
+    });
   }
 
   /**
