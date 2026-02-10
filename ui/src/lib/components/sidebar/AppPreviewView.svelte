@@ -1,14 +1,13 @@
 <script lang="ts">
   import {
-    X,
     ExternalLink,
-    Copy,
     RefreshCw,
     Download,
     Sparkles,
     Code,
     FileText,
-    FileCode
+    FileCode,
+    EllipsisVertical
   } from '@lucide/svelte/icons';
   import * as Popover from '$lib/components/ui/popover';
   import { appPreviewStore } from '../../../stores/app-preview.store';
@@ -28,12 +27,7 @@
 
   let iframeRef = $state<HTMLIFrameElement | null>(null);
   let showEditDialog = $state(false);
-  let copyMenuOpen = $state(false);
-  let downloadMenuOpen = $state(false);
-
-  function clearPreview() {
-    appPreviewStore.clear();
-  }
+  let overflowMenuOpen = $state(false);
 
   function refreshPreview() {
     if (iframeRef && preview.html) {
@@ -48,7 +42,7 @@
     try {
       await navigator.clipboard.writeText(preview.html);
       toast.success('HTML copied to clipboard');
-      copyMenuOpen = false;
+      overflowMenuOpen = false;
     } catch {
       toast.error('Failed to copy HTML');
     }
@@ -60,7 +54,7 @@
     try {
       await navigator.clipboard.writeText(preview.spec);
       toast.success('Spec copied to clipboard');
-      copyMenuOpen = false;
+      overflowMenuOpen = false;
     } catch {
       toast.error('Failed to copy spec');
     }
@@ -82,7 +76,7 @@
     URL.revokeObjectURL(url);
 
     toast.success(`Downloaded ${filename}`);
-    downloadMenuOpen = false;
+    overflowMenuOpen = false;
   }
 
   function downloadSpec() {
@@ -102,7 +96,7 @@
     URL.revokeObjectURL(url);
 
     toast.success(`Downloaded ${filename}`);
-    downloadMenuOpen = false;
+    overflowMenuOpen = false;
   }
 
   function openInNewTab() {
@@ -114,6 +108,7 @@
 
     // Clean up after a delay
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    overflowMenuOpen = false;
   }
 
   function handleAiEdit() {
@@ -171,15 +166,31 @@
           <RefreshCw class="h-4 w-4" />
         </button>
 
-        <!-- Copy dropdown -->
-        <Popover.Root bind:open={copyMenuOpen}>
+        <!-- Overflow menu -->
+        <Popover.Root bind:open={overflowMenuOpen}>
           <Popover.Trigger
-            title="Copy"
+            title="More actions"
             class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
           >
-            <Copy class="h-4 w-4" />
+            <EllipsisVertical class="h-4 w-4" />
           </Popover.Trigger>
-          <Popover.Content class="w-44 border-zinc-700 bg-zinc-900 p-1" align="end" side="bottom">
+
+          <Popover.Content class="w-48 border-zinc-700 bg-zinc-900 p-1" align="end" side="bottom">
+            {#if onOpenPatchToApp}
+              <button
+                onclick={() => {
+                  overflowMenuOpen = false;
+                  onOpenPatchToApp?.();
+                }}
+                class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+              >
+                <Sparkles class="h-4 w-4" />
+                Generate New
+              </button>
+
+              <div class="my-1 border-t border-zinc-700"></div>
+            {/if}
+
             <button
               onclick={copyHtml}
               class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
@@ -187,6 +198,7 @@
               <FileCode class="h-4 w-4" />
               Copy HTML
             </button>
+
             {#if preview.spec}
               <button
                 onclick={copySpec}
@@ -196,25 +208,15 @@
                 Copy Spec
               </button>
             {/if}
-          </Popover.Content>
-        </Popover.Root>
 
-        <!-- Download dropdown -->
-        <Popover.Root bind:open={downloadMenuOpen}>
-          <Popover.Trigger
-            title="Download"
-            class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-          >
-            <Download class="h-4 w-4" />
-          </Popover.Trigger>
-          <Popover.Content class="w-44 border-zinc-700 bg-zinc-900 p-1" align="end" side="bottom">
             <button
               onclick={downloadHtml}
               class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
             >
-              <FileCode class="h-4 w-4" />
+              <Download class="h-4 w-4" />
               Download HTML
             </button>
+
             {#if preview.spec}
               <button
                 onclick={downloadSpec}
@@ -224,24 +226,16 @@
                 Download Spec
               </button>
             {/if}
+
+            <button
+              onclick={openInNewTab}
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+            >
+              <ExternalLink class="h-4 w-4" />
+              Open in New Tab
+            </button>
           </Popover.Content>
         </Popover.Root>
-
-        <button
-          onclick={openInNewTab}
-          title="Open in new tab"
-          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-        >
-          <ExternalLink class="h-4 w-4" />
-        </button>
-
-        <button
-          onclick={clearPreview}
-          title="Close preview"
-          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-red-400"
-        >
-          <X class="h-4 w-4" />
-        </button>
       </div>
     </div>
 

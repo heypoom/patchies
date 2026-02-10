@@ -1,5 +1,4 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
   import * as Popover from '$lib/components/ui/popover';
   import {
     Dices,
@@ -13,7 +12,10 @@
     ChevronDown,
     ChevronUp,
     Check,
-    Square
+    Square,
+    Maximize2,
+    Minus,
+    X
   } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -26,7 +28,7 @@
     hasGeminiApiKey
   } from '$lib/ai/patch-to-prompt';
   import { appPreviewStore } from '../../../stores/app-preview.store';
-  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import { isSidebarOpen, sidebarView, isMobile } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
@@ -53,8 +55,25 @@
   let isThinkingCollapsed = $state(false);
   let refineFirst = $state(false);
   let copyMenuOpen = $state(false);
+  let isMinimized = $state(false);
 
   const isProcessing = $derived(isRefining || isGenerating);
+  const thinkingText = $derived(
+    thinkingLog.length > 0 ? thinkingLog[thinkingLog.length - 1] : null
+  );
+
+  function handleMinimize() {
+    isMinimized = true;
+  }
+
+  function handleRestore() {
+    isMinimized = false;
+  }
+
+  function handleClose() {
+    if (isProcessing) return;
+    open = false;
+  }
 
   // Generate prompt whenever inputs change
   $effect(() => {
@@ -151,6 +170,7 @@
 
     isRefining = true;
     thinkingLog = [];
+    handleMinimize();
 
     try {
       const cleanedPatch = cleanPatch(nodes, edges);
@@ -189,6 +209,7 @@
 
     isGenerating = true;
     thinkingLog = [];
+    handleMinimize();
 
     try {
       const html = await generateCode(generatedPrompt, {
@@ -244,6 +265,7 @@
       isThinkingCollapsed = false;
       refineFirst = false;
       copyMenuOpen = false;
+      isMinimized = false;
     }
   });
 
@@ -264,18 +286,108 @@
 
     wasProcessing = isProcessing;
   });
+
+  function handleClickOutside(event: MouseEvent) {
+    if (isProcessing) return;
+    const target = event.target as HTMLElement;
+    if (!target.closest('.patch-to-app-dialog')) {
+      open = false;
+    }
+  }
+
+  // Handle escape key and click-outside globally when open
+  $effect(() => {
+    if (open) {
+      const keyHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          if (isProcessing) {
+            handleMinimize();
+          } else {
+            open = false;
+          }
+        }
+      };
+      // Defer adding click listener to avoid catching the click that opened the dialog
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+      document.addEventListener('keydown', keyHandler);
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('click', handleClickOutside);
+        document.removeEventListener('keydown', keyHandler);
+      };
+    }
+  });
 </script>
 
-<Dialog.Root bind:open>
-  <Dialog.Content class="max-h-[85vh] sm:max-w-3xl">
-    <Dialog.Header>
-      <Dialog.Title>Patch to App</Dialog.Title>
-      <Dialog.Description>
-        Generate an app from your patch, or export as an LLM-friendly specification.
-      </Dialog.Description>
-    </Dialog.Header>
+{#if open}
+  <!-- Minimized indicator -->
+  {#if isMinimized && isProcessing && !($isSidebarOpen && $isMobile)}
+    <button
+      onclick={handleRestore}
+      class="fixed top-4 right-4 z-50 flex max-w-72 cursor-pointer items-start gap-2 rounded-lg border border-emerald-500 bg-emerald-900/90 px-3 py-2 shadow-lg ring-2 ring-emerald-500/50 transition-all hover:scale-105"
+      title="Click to restore Patch to App dialog"
+    >
+      <div class="min-w-0 flex-1 text-left">
+        <div class="text-xs font-medium text-white">
+          {#if isRefining}
+            Refining spec...
+          {:else}
+            Generating app...
+          {/if}
+        </div>
+        {#if thinkingText}
+          <div
+            class="mt-1 line-clamp-2 text-left font-mono text-[8px] leading-tight text-white/60 italic"
+          >
+            {thinkingText}
+          </div>
+        {/if}
+      </div>
+      <Maximize2 class="mt-0.5 h-3 w-3 shrink-0 text-white/70" />
+    </button>
+  {/if}
 
-    <div class="space-y-4">
+  <!-- Dialog (no backdrop, click-outside to close) -->
+  <div
+    class="patch-to-app-dialog fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl {isMinimized
+      ? 'hidden'
+      : ''}"
+    role="dialog"
+    aria-modal="true"
+  >
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-zinc-700 px-6 py-4">
+      <div>
+        <h2 class="text-lg font-semibold text-zinc-100">Patch to App</h2>
+        <p class="mt-1 text-sm text-zinc-400">
+          Generate an app from your patch, or export as an LLM-friendly specification.
+        </p>
+      </div>
+      <div class="flex items-center gap-1">
+        {#if isProcessing}
+          <button
+            onclick={handleMinimize}
+            class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+            title="Minimize"
+          >
+            <Minus class="h-4 w-4" />
+          </button>
+        {/if}
+        <button
+          onclick={handleClose}
+          disabled={isProcessing}
+          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+          title="Close"
+        >
+          <X class="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Content (scrollable) -->
+    <div class="flex-1 space-y-4 overflow-y-auto px-6 py-4">
       <!-- Steering prompt input -->
       <div class="space-y-2">
         <label for="steering-prompt" class="block text-sm text-zinc-300">
@@ -422,7 +534,7 @@
     </div>
 
     <!-- Refine checkbox -->
-    <div class="border-t border-zinc-700 pt-4">
+    <div class="border-t border-zinc-700 px-6 pt-4">
       <button
         onclick={() => (refineFirst = !refineFirst)}
         disabled={isRefined || isProcessing}
@@ -448,7 +560,8 @@
       {/if}
     </div>
 
-    <Dialog.Footer class="flex gap-2">
+    <!-- Footer -->
+    <div class="flex gap-2 border-t border-zinc-700 px-6 py-4">
       <!-- Copy with dropdown for Download -->
       <Popover.Root bind:open={copyMenuOpen}>
         <Popover.Trigger
@@ -495,6 +608,6 @@
           Generate App
         {/if}
       </button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+    </div>
+  </div>
+{/if}

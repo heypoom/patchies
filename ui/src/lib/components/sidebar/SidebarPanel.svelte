@@ -19,7 +19,12 @@
   import AppPreviewView from './AppPreviewView.svelte';
   import { usePreviewTab } from './usePreviewTab.svelte';
 
-  import { sidebarWidth, type SidebarView } from '../../../stores/ui.store';
+  import {
+    sidebarWidth,
+    type SidebarView,
+    SIDEBAR_MIN_WIDTH,
+    SIDEBAR_MAX_WIDTH
+  } from '../../../stores/ui.store';
   import { hasAppPreview } from '../../../stores/app-preview.store';
 
   let {
@@ -65,9 +70,6 @@
     isExpanded = false;
   }
 
-  const MIN_WIDTH = 180;
-  const MAX_WIDTH = 600;
-
   let isDragging = $state(false);
 
   function handlePointerDown(e: PointerEvent) {
@@ -82,7 +84,7 @@
 
   function handlePointerMove(e: PointerEvent) {
     if (!isDragging) return;
-    const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+    const newWidth = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, e.clientX));
     sidebarWidth.set(newWidth);
   }
 
