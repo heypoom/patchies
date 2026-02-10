@@ -77,6 +77,78 @@ recv((msg, meta) => {
 > **Note**: `dsp~` runs in an AudioWorklet without access to `window`, DOM, or
 > timing functions. This is necessary for real-time audio (~345 calls/sec).
 
+## Recipes
+
+### Wavetable Oscillator (tabread~)
+
+Read from a wavetable at audio rate using a phasor (0-1 ramp) as the index.
+
+**dsp~ code (phasor + table reader combined):**
+
+```js
+setPortCount(1, 0);
+
+let table = new Float32Array(512);
+let phase = 0;
+const freq = 440;
+
+recv((msg) => {
+  table = msg;
+});
+
+function process(inputs, outputs) {
+  const output = outputs[0][0];
+
+  for (let i = 0; i < output.length; i++) {
+    const idx = phase * (table.length - 1);
+    output[i] = table[Math.floor(idx)];
+
+    phase += freq / sampleRate;
+    if (phase >= 1) phase -= 1;
+  }
+}
+```
+
+Use `$1` for frequency control: `phase += $1 / sampleRate;`
+
+For smoother playback, use linear interpolation:
+
+```js
+const i0 = Math.floor(idx);
+const frac = idx - i0;
+output[i] = table[i0] * (1 - frac) + (table[i0 + 1] ?? table[i0]) * frac;
+```
+
+**Generate wavetable in a [js] node:**
+
+```js
+// Additive synthesis with harmonics
+const size = 2048;
+const table = new Float32Array(size);
+const harmonics = [1, 0.5, 0.33, 0.25];
+
+for (let i = 0; i < size; i++) {
+  for (let h = 0; h < harmonics.length; h++) {
+    table[i] += harmonics[h] * Math.sin((i / size) * Math.PI * 2 * (h + 1));
+  }
+}
+
+send(table);
+```
+
+Other waveforms:
+
+```js
+// Sine
+table[i] = Math.sin((i / size) * Math.PI * 2);
+
+// Sawtooth
+table[i] = (i / size) * 2 - 1;
+
+// Square
+table[i] = i < size / 2 ? 1 : -1;
+```
+
 ## Presets
 
 - `snapshot~`: captures incoming audio's first sample
