@@ -12,7 +12,7 @@ by sending `[real: Float32Array, imaginary: Float32Array]` to the type inlet.
 1. Create a `js` object
 2. Connect it to `osc~`'s `type` inlet (second message inlet)
 3. Run the code to send the arrays
-4. The `type` property will show "custom"
+4. The `type` property will show a custom waveform icon
 
 ```js
 setRunOnMount(true);
