@@ -202,14 +202,6 @@ export class KVObject implements TextObjectV2 {
           });
         }
       })
-      .with('store', () => {
-        if (typeof data === 'string' || typeof data === 'number') {
-          this.context.setParam('store', String(data));
-
-          // Re-create store with new name
-          this.store = new KVStore(this.getStoreName());
-        }
-      })
       .otherwise(() => {});
   }
 
