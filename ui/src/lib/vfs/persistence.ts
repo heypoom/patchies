@@ -1,5 +1,7 @@
 // IndexedDB persistence for FileSystemHandles
 
+import { openDB, type IDBPDatabase } from 'idb';
+
 // Extend FileSystemFileHandle with permission methods (File System Access API)
 // These are available in Chrome/Edge but not in TypeScript's lib.dom.d.ts
 interface FileSystemHandlePermissionDescriptor {
@@ -12,7 +14,7 @@ interface FileSystemFileHandleWithPermissions extends FileSystemFileHandle {
 }
 
 const DB_NAME = 'patchies-vfs';
-const DB_VERSION = 3; // Bumped for directory handles store
+const DB_VERSION = 3;
 const HANDLES_STORE = 'handles';
 const FILES_STORE = 'files'; // Fallback store for file data (Firefox, Safari)
 const DIR_HANDLES_STORE = 'dir-handles'; // Store for FileSystemDirectoryHandle
@@ -27,23 +29,34 @@ export interface CachedFileData {
   lastModified: number;
 }
 
+interface VfsDB {
+  [HANDLES_STORE]: {
+    key: string;
+    value: FileSystemFileHandle;
+  };
+  [FILES_STORE]: {
+    key: string;
+    value: CachedFileData;
+  };
+  [DIR_HANDLES_STORE]: {
+    key: string;
+    value: FileSystemDirectoryHandle;
+  };
+}
+
+/** Cached database connection */
+let dbInstance: IDBPDatabase<VfsDB> | null = null;
+
 /**
- * Open the IndexedDB database.
+ * Get or create the database connection.
  */
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+async function getDb(): Promise<IDBPDatabase<VfsDB>> {
+  if (dbInstance) {
+    return dbInstance;
+  }
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-
-    request.onblocked = () => {
-      console.warn('VFS: IndexedDB upgrade blocked. Close other tabs using this app and refresh.');
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-
+  dbInstance = await openDB<VfsDB>(DB_NAME, DB_VERSION, {
+    upgrade(db) {
       if (!db.objectStoreNames.contains(HANDLES_STORE)) {
         db.createObjectStore(HANDLES_STORE);
       }
@@ -55,103 +68,70 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(DIR_HANDLES_STORE)) {
         db.createObjectStore(DIR_HANDLES_STORE);
       }
-    };
+    },
+    blocked() {
+      console.warn('VFS: IndexedDB upgrade blocked. Close other tabs using this app and refresh.');
+    }
   });
+
+  return dbInstance;
 }
+
+// ─────────────────────────────────────────────────────────────────
+// File Handle Storage
+// ─────────────────────────────────────────────────────────────────
 
 /**
  * Store a FileSystemFileHandle for a VFS path.
  */
 export async function storeHandle(path: string, handle: FileSystemFileHandle): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, 'readwrite');
-    const store = tx.objectStore(HANDLES_STORE);
-    const request = store.put(handle, path);
+  const db = await getDb();
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.put(HANDLES_STORE, handle, path);
 }
 
 /**
  * Get a FileSystemFileHandle for a VFS path.
  */
 export async function getHandle(path: string): Promise<FileSystemFileHandle | undefined> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, 'readonly');
-    const store = tx.objectStore(HANDLES_STORE);
-    const request = store.get(path);
+  const db = await getDb();
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result as FileSystemFileHandle | undefined);
-
-    tx.oncomplete = () => db.close();
-  });
+  return db.get(HANDLES_STORE, path);
 }
 
 /**
  * Remove a FileSystemFileHandle for a VFS path.
  */
 export async function removeHandle(path: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, 'readwrite');
-    const store = tx.objectStore(HANDLES_STORE);
-    const request = store.delete(path);
+  const db = await getDb();
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.delete(HANDLES_STORE, path);
 }
 
 /**
  * Get all stored handles.
  */
 export async function getAllHandles(): Promise<Map<string, FileSystemFileHandle>> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, 'readonly');
-    const store = tx.objectStore(HANDLES_STORE);
-    const handles = new Map<string, FileSystemFileHandle>();
+  const db = await getDb();
+  const keys = await db.getAllKeys(HANDLES_STORE);
+  const values = await db.getAll(HANDLES_STORE);
 
-    const cursorRequest = store.openCursor();
+  const handles = new Map<string, FileSystemFileHandle>();
 
-    cursorRequest.onerror = () => reject(cursorRequest.error);
-    cursorRequest.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
-      if (cursor) {
-        handles.set(cursor.key as string, cursor.value as FileSystemFileHandle);
-        cursor.continue();
-      } else {
-        resolve(handles);
-      }
-    };
+  for (let i = 0; i < keys.length; i++) {
+    handles.set(keys[i] as string, values[i]);
+  }
 
-    tx.oncomplete = () => db.close();
-  });
+  return handles;
 }
 
 /**
  * Clear all stored handles.
  */
 export async function clearHandles(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, 'readwrite');
-    const store = tx.objectStore(HANDLES_STORE);
-    const request = store.clear();
+  const db = await getDb();
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.clear(HANDLES_STORE);
 }
 
 /**
@@ -161,6 +141,7 @@ export async function hasPermission(handle: FileSystemFileHandle): Promise<boole
   try {
     const handleWithPerms = handle as FileSystemFileHandleWithPermissions;
     const permission = await handleWithPerms.queryPermission({ mode: 'read' });
+
     return permission === 'granted';
   } catch {
     return false;
@@ -175,6 +156,7 @@ export async function requestHandlePermission(handle: FileSystemFileHandle): Pro
   try {
     const handleWithPerms = handle as FileSystemFileHandleWithPermissions;
     const permission = await handleWithPerms.requestPermission({ mode: 'read' });
+
     return permission === 'granted';
   } catch {
     return false;
@@ -189,7 +171,7 @@ export async function requestHandlePermission(handle: FileSystemFileHandle): Pro
  * Store file data in IndexedDB (for browsers without FileSystemFileHandle support).
  */
 export async function storeFileData(path: string, file: File): Promise<void> {
-  const db = await openDB();
+  const db = await getDb();
   const arrayBuffer = await file.arrayBuffer();
 
   const cachedData: CachedFileData = {
@@ -199,108 +181,56 @@ export async function storeFileData(path: string, file: File): Promise<void> {
     lastModified: file.lastModified
   };
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE, 'readwrite');
-    const store = tx.objectStore(FILES_STORE);
-    const request = store.put(cachedData, path);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.put(FILES_STORE, cachedData, path);
 }
 
 /**
  * Get file data from IndexedDB.
  */
 export async function getFileData(path: string): Promise<File | undefined> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE, 'readonly');
-    const store = tx.objectStore(FILES_STORE);
-    const request = store.get(path);
+  const db = await getDb();
+  const cached = await db.get(FILES_STORE, path);
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      const cached = request.result as CachedFileData | undefined;
-      if (cached) {
-        const file = new File([cached.data], cached.name, {
-          type: cached.type,
-          lastModified: cached.lastModified
-        });
-        resolve(file);
-      } else {
-        resolve(undefined);
-      }
-    };
-
-    tx.oncomplete = () => db.close();
-  });
+  if (cached) {
+    return new File([cached.data], cached.name, {
+      type: cached.type,
+      lastModified: cached.lastModified
+    });
+  }
+  return undefined;
 }
 
 /**
  * Remove file data from IndexedDB.
  */
 export async function removeFileData(path: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE, 'readwrite');
-    const store = tx.objectStore(FILES_STORE);
-    const request = store.delete(path);
+  const db = await getDb();
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.delete(FILES_STORE, path);
 }
 
 /**
  * Clear all stored file data.
  */
 export async function clearFileData(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE, 'readwrite');
-    const store = tx.objectStore(FILES_STORE);
-    const request = store.clear();
+  const db = await getDb();
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.clear(FILES_STORE);
 }
 
 /**
  * Check if file data exists for a path.
  */
 export async function hasFileData(path: string): Promise<boolean> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE, 'readonly');
-    const store = tx.objectStore(FILES_STORE);
-    const request = store.count(path);
+  const db = await getDb();
+  const count = await db.count(FILES_STORE, path);
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result > 0);
-
-    tx.oncomplete = () => db.close();
-  });
+  return count > 0;
 }
 
 // ─────────────────────────────────────────────────────────────────
 // Directory Handle Storage (for linked local folders)
 // ─────────────────────────────────────────────────────────────────
-
-/**
- * Check if the dir-handles store exists in the database.
- * This can be false if the DB upgrade was blocked by another tab.
- */
-function hasDirHandlesStore(db: IDBDatabase): boolean {
-  return db.objectStoreNames.contains(DIR_HANDLES_STORE);
-}
 
 /**
  * Store a FileSystemDirectoryHandle for a VFS path.
@@ -309,106 +239,44 @@ export async function storeDirHandle(
   path: string,
   handle: FileSystemDirectoryHandle
 ): Promise<void> {
-  const db = await openDB();
+  const db = await getDb();
 
-  // Check if store exists (upgrade may have been blocked)
-  if (!hasDirHandlesStore(db)) {
-    db.close();
-    console.warn(
-      'VFS: dir-handles store not available. Close other tabs and refresh to complete database upgrade.'
-    );
-    return;
-  }
-
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DIR_HANDLES_STORE, 'readwrite');
-    const store = tx.objectStore(DIR_HANDLES_STORE);
-    const request = store.put(handle, path);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.put(DIR_HANDLES_STORE, handle, path);
 }
 
 /**
  * Get a FileSystemDirectoryHandle for a VFS path.
  */
 export async function getDirHandle(path: string): Promise<FileSystemDirectoryHandle | undefined> {
-  const db = await openDB();
+  const db = await getDb();
 
-  if (!hasDirHandlesStore(db)) {
-    db.close();
-    return undefined;
-  }
-
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DIR_HANDLES_STORE, 'readonly');
-    const store = tx.objectStore(DIR_HANDLES_STORE);
-    const request = store.get(path);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result as FileSystemDirectoryHandle | undefined);
-
-    tx.oncomplete = () => db.close();
-  });
+  return db.get(DIR_HANDLES_STORE, path);
 }
 
 /**
  * Remove a FileSystemDirectoryHandle for a VFS path.
  */
 export async function removeDirHandle(path: string): Promise<void> {
-  const db = await openDB();
+  const db = await getDb();
 
-  if (!hasDirHandlesStore(db)) {
-    db.close();
-    return;
-  }
-
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DIR_HANDLES_STORE, 'readwrite');
-    const store = tx.objectStore(DIR_HANDLES_STORE);
-    const request = store.delete(path);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-
-    tx.oncomplete = () => db.close();
-  });
+  await db.delete(DIR_HANDLES_STORE, path);
 }
 
 /**
  * Get all stored directory handles.
  */
 export async function getAllDirHandles(): Promise<Map<string, FileSystemDirectoryHandle>> {
-  const db = await openDB();
+  const db = await getDb();
+  const keys = await db.getAllKeys(DIR_HANDLES_STORE);
+  const values = await db.getAll(DIR_HANDLES_STORE);
 
-  if (!hasDirHandlesStore(db)) {
-    db.close();
-    return new Map();
+  const handles = new Map<string, FileSystemDirectoryHandle>();
+
+  for (let i = 0; i < keys.length; i++) {
+    handles.set(keys[i] as string, values[i]);
   }
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DIR_HANDLES_STORE, 'readonly');
-    const store = tx.objectStore(DIR_HANDLES_STORE);
-    const handles = new Map<string, FileSystemDirectoryHandle>();
-
-    const cursorRequest = store.openCursor();
-
-    cursorRequest.onerror = () => reject(cursorRequest.error);
-    cursorRequest.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
-      if (cursor) {
-        handles.set(cursor.key as string, cursor.value as FileSystemDirectoryHandle);
-        cursor.continue();
-      } else {
-        resolve(handles);
-      }
-    };
-
-    tx.oncomplete = () => db.close();
-  });
+  return handles;
 }
 
 /**
@@ -419,7 +287,9 @@ export async function hasDirPermission(handle: FileSystemDirectoryHandle): Promi
     const handleWithPerms = handle as FileSystemDirectoryHandle & {
       queryPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
     };
+
     const permission = await handleWithPerms.queryPermission({ mode: 'read' });
+
     return permission === 'granted';
   } catch {
     return false;
@@ -438,7 +308,9 @@ export async function requestDirHandlePermission(
         descriptor?: FileSystemHandlePermissionDescriptor
       ): Promise<PermissionState>;
     };
+
     const permission = await handleWithPerms.requestPermission({ mode: 'read' });
+
     return permission === 'granted';
   } catch {
     return false;
