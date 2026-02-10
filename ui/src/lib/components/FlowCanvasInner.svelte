@@ -1213,7 +1213,11 @@
 
     <!-- Audio Resume Hint -->
     {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen)}
-      <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+      <div
+        class="absolute left-1/2 z-50 -translate-x-1/2 transform {$helpModeObject || isReadOnlyMode
+          ? 'top-16'
+          : 'top-4'}"
+      >
         <div
           class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
         >
