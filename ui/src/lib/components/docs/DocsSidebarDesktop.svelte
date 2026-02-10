@@ -39,9 +39,22 @@
 
     // Use tick to ensure DOM is updated
     requestAnimationFrame(() => {
-      const activeItem = sidebarContainer?.querySelector('[data-active="true"]');
+      const activeItem = sidebarContainer?.querySelector(
+        '[data-active="true"]'
+      ) as HTMLElement | null;
 
-      activeItem?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (activeItem && sidebarContainer) {
+        // Use scrollTo on the container directly to avoid affecting parent scroll
+        const containerRect = sidebarContainer.getBoundingClientRect();
+        const itemRect = activeItem.getBoundingClientRect();
+        const itemRelativeTop = itemRect.top - containerRect.top + sidebarContainer.scrollTop;
+        const targetScroll = itemRelativeTop - containerRect.height / 2 + itemRect.height / 2;
+
+        sidebarContainer.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: 'smooth'
+        });
+      }
     });
   });
 </script>
