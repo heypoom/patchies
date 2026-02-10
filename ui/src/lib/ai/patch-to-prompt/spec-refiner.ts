@@ -206,6 +206,18 @@ The following code blocks contain the core business logic. Include them in your 
 ${codeSection}`);
   }
 
+  // Files/assets with URLs - preserve these for the LLM to use
+  if (patch.files) {
+    const filesJson = JSON.stringify(patch.files, null, 2);
+    sections.push(`## External Assets (PRESERVE URLs)
+
+The patch references external files via URLs. Include these URLs in your specification so the implementation can use them directly:
+
+\`\`\`json
+${filesJson}
+\`\`\``);
+  }
+
   // Output format instructions
   const outputSections = [
     '1. **Overview** - One paragraph summary of what this software does',
