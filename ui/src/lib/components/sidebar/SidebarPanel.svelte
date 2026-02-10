@@ -6,7 +6,9 @@
     Package,
     Save,
     CircleQuestionMark,
-    AppWindow
+    AppWindow,
+    ChevronDown,
+    ChevronUp
   } from '@lucide/svelte/icons';
 
   import FileTreeView from './FileTreeView.svelte';
@@ -15,6 +17,7 @@
   import SavesTreeView from './SavesTreeView.svelte';
   import HelpView from './HelpView.svelte';
   import AppPreviewView from './AppPreviewView.svelte';
+  import { usePreviewTab } from './usePreviewTab.svelte';
 
   import { sidebarWidth, type SidebarView } from '../../../stores/ui.store';
   import { hasAppPreview } from '../../../stores/app-preview.store';
@@ -42,11 +45,25 @@
     { id: 'help', icon: CircleQuestionMark, title: 'Help' }
   ];
 
-  // Preview view - only shown when there's content
-  const previewView = { id: 'preview' as SidebarView, icon: AppWindow, title: 'App Preview' };
+  // Expandable items (just Patch to App for now)
+  const expandableItems = [
+    { id: 'preview' as SidebarView, icon: AppWindow, title: 'Patch to App' }
+  ];
 
-  // Combine views based on whether preview is available
-  const views = $derived($hasAppPreview ? [...baseViews, previewView] : baseViews);
+  // Preview tab promotion logic
+  const previewTab = usePreviewTab({
+    getView: () => view,
+    setView: (v) => (view = v),
+    getHasPreview: () => $hasAppPreview
+  });
+
+  // State for the expandable section
+  let isExpanded = $state(false);
+
+  function handleExpandableItemClick() {
+    previewTab.handleExpandableItemClick();
+    isExpanded = false;
+  }
 
   const MIN_WIDTH = 180;
   const MAX_WIDTH = 600;
@@ -88,29 +105,78 @@
     data-sidebar
   >
     <!-- Header with view switcher -->
-    <div class="flex items-center justify-between border-b border-zinc-700 px-2 py-1.5">
-      <!-- View switcher icons -->
-      <div class="flex items-center gap-0.5">
-        {#each views as v}
+    <div class="flex flex-col border-b border-zinc-700">
+      <div class="flex items-center justify-between px-2 py-1.5">
+        <!-- View switcher icons -->
+        <div class="flex items-center gap-0.5">
+          {#each baseViews as v}
+            <button
+              class="cursor-pointer rounded p-1.5 transition-colors {view === v.id
+                ? 'bg-zinc-700 text-zinc-200'
+                : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+              onclick={() => previewTab.handleBaseViewClick(v.id)}
+              title={v.title}
+            >
+              <v.icon class="h-4 w-4" />
+            </button>
+          {/each}
+
+          <!-- Promoted preview button (when active) -->
+          {#if previewTab.isPromoted}
+            <button
+              class="cursor-pointer rounded p-1.5 transition-colors {view === 'preview'
+                ? 'bg-zinc-700 text-zinc-200'
+                : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+              onclick={previewTab.handlePromotedClick}
+              title={$hasAppPreview ? 'App Preview' : 'Patch to App'}
+            >
+              <AppWindow class="h-4 w-4" />
+            </button>
+          {/if}
+
+          <!-- Expand/collapse chevron -->
           <button
-            class="cursor-pointer rounded p-1.5 transition-colors {view === v.id
-              ? 'bg-zinc-700 text-zinc-200'
-              : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-            onclick={() => (view = v.id)}
-            title={v.title}
+            class="cursor-pointer rounded p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+            onclick={() => (isExpanded = !isExpanded)}
+            title={isExpanded ? 'Collapse' : 'More options'}
           >
-            <v.icon class="h-4 w-4" />
+            {#if isExpanded}
+              <ChevronUp class="h-4 w-4" />
+            {:else}
+              <ChevronDown class="h-4 w-4" />
+            {/if}
           </button>
-        {/each}
+        </div>
+
+        <button
+          class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+          onclick={() => (open = false)}
+          title="Close sidebar"
+        >
+          <X class="h-4 w-4" />
+        </button>
       </div>
 
-      <button
-        class="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-        onclick={() => (open = false)}
-        title="Close sidebar"
-      >
-        <X class="h-4 w-4" />
-      </button>
+      <!-- Expanded section -->
+      {#if isExpanded}
+        <div class="flex items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
+          {#each expandableItems as item}
+            {#if !previewTab.isPromoted || item.id !== 'preview'}
+              <button
+                class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+                onclick={handleExpandableItemClick}
+                title={item.title}
+              >
+                <item.icon class="h-3.5 w-3.5" />
+                <span>{item.title}</span>
+              </button>
+            {/if}
+          {/each}
+          {#if previewTab.isPromoted && expandableItems.length === 1}
+            <span class="text-xs text-zinc-600 italic">No more items</span>
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <!-- Content -->
