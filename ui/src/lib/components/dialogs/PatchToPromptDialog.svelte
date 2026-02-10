@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
+  import * as Popover from '$lib/components/ui/popover';
   import {
     Dices,
     Copy,
@@ -10,7 +11,9 @@
     Loader2,
     Code,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Check,
+    Square
   } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -48,6 +51,8 @@
   let thinkingLog = $state<string[]>([]);
   let isPromptCollapsed = $state(false);
   let isThinkingCollapsed = $state(false);
+  let refineFirst = $state(false);
+  let copyMenuOpen = $state(false);
 
   const isProcessing = $derived(isRefining || isGenerating);
 
@@ -82,17 +87,36 @@
     isEditing = !isEditing;
   }
 
-  async function copyToClipboard() {
+  async function doCopy() {
     try {
       await navigator.clipboard.writeText(generatedPrompt);
       toast.success('Copied to clipboard!');
+      copyMenuOpen = false;
     } catch (error) {
       toast.error('Failed to copy to clipboard');
       console.error('Copy failed:', error);
     }
   }
 
-  function downloadFile() {
+  async function handleCopy() {
+    if (refineFirst && !isRefined) {
+      // Need to refine first
+      if (!hasGeminiApiKey()) {
+        onRequestApiKey?.(() => refineAndThen(doCopy));
+        return;
+      }
+      await refineAndThen(doCopy);
+    } else {
+      await doCopy();
+    }
+  }
+
+  async function refineAndThen(callback: () => void | Promise<void>) {
+    await doRefine();
+    await callback();
+  }
+
+  function doDownload() {
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = patchName
       ? `${patchName.toLowerCase().replace(/\s+/g, '-')}-spec-${timestamp}.md`
@@ -107,6 +131,19 @@
     URL.revokeObjectURL(url);
 
     toast.success(`Downloaded ${filename}`);
+    copyMenuOpen = false;
+  }
+
+  async function handleDownload() {
+    if (refineFirst && !isRefined) {
+      if (!hasGeminiApiKey()) {
+        onRequestApiKey?.(() => refineAndThen(doDownload));
+        return;
+      }
+      await refineAndThen(doDownload);
+    } else {
+      doDownload();
+    }
   }
 
   async function doRefine() {
@@ -179,13 +216,21 @@
     }
   }
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!hasGeminiApiKey()) {
-      onRequestApiKey?.(() => doGenerate());
+      onRequestApiKey?.(() => executeGenerate());
       return;
     }
 
-    doGenerate();
+    await executeGenerate();
+  }
+
+  async function executeGenerate() {
+    if (refineFirst && !isRefined) {
+      await refineAndThen(doGenerate);
+    } else {
+      await doGenerate();
+    }
   }
 
   // Reset state when dialog opens
@@ -197,6 +242,8 @@
       thinkingLog = [];
       isPromptCollapsed = false;
       isThinkingCollapsed = false;
+      refineFirst = false;
+      copyMenuOpen = false;
     }
   });
 
@@ -279,52 +326,20 @@
             </span>
           </button>
 
-          <div class="flex items-center gap-1">
-            <button
-              onclick={handleRefine}
-              disabled={isRefining || isGenerating}
-              title="Refine with AI"
-              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-purple-400 transition-colors hover:bg-purple-900/30 hover:text-purple-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {#if isRefining}
-                <Loader2 class="h-3 w-3 animate-spin" />
-                <span>Refining...</span>
-              {:else}
-                <Sparkles class="h-3 w-3" />
-                <span>Refine</span>
-              {/if}
-            </button>
-
-            <button
-              onclick={handleGenerate}
-              disabled={isGenerating || isRefining}
-              title="Generate app from spec"
-              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-emerald-400 transition-colors hover:bg-emerald-900/30 hover:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {#if isGenerating}
-                <Loader2 class="h-3 w-3 animate-spin" />
-                <span>Generating...</span>
-              {:else}
-                <Code class="h-3 w-3" />
-                <span>Generate</span>
-              {/if}
-            </button>
-
-            <button
-              onclick={toggleEdit}
-              disabled={isPromptCollapsed}
-              title={isEditing ? 'Lock editing' : 'Unlock editing'}
-              class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {#if isEditing}
-                <Lock class="h-3 w-3" />
-                <span>Lock</span>
-              {:else}
-                <Pencil class="h-3 w-3" />
-                <span>Edit</span>
-              {/if}
-            </button>
-          </div>
+          <button
+            onclick={toggleEdit}
+            disabled={isPromptCollapsed || isProcessing}
+            title={isEditing ? 'Lock editing' : 'Edit spec'}
+            class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {#if isEditing}
+              <Lock class="h-3 w-3" />
+              <span>Lock</span>
+            {:else}
+              <Pencil class="h-3 w-3" />
+              <span>Edit</span>
+            {/if}
+          </button>
         </div>
 
         <!-- Collapsible content -->
@@ -406,28 +421,79 @@
       {/if}
     </div>
 
+    <!-- Refine checkbox -->
+    <div class="border-t border-zinc-700 pt-4">
+      <button
+        onclick={() => (refineFirst = !refineFirst)}
+        disabled={isRefined || isProcessing}
+        class="flex cursor-pointer items-center gap-2 text-sm text-zinc-300 transition-colors hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {#if refineFirst}
+          <div
+            class="flex h-4 w-4 items-center justify-center rounded border border-purple-500 bg-purple-600"
+          >
+            <Check class="h-3 w-3 text-white" />
+          </div>
+        {:else}
+          <Square class="h-4 w-4 text-zinc-500" />
+        {/if}
+        <span>
+          <Sparkles class="mr-1 inline h-3 w-3 text-purple-400" />
+          Refine with AI first
+        </span>
+        <span class="text-xs text-zinc-500">(slower but better results)</span>
+      </button>
+      {#if isRefined}
+        <div class="mt-1 ml-6 text-xs text-purple-400">✓ Already refined</div>
+      {/if}
+    </div>
+
     <Dialog.Footer class="flex gap-2">
-      <button
-        onclick={() => (open = false)}
-        class="flex flex-1 cursor-pointer items-center justify-center rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-      >
-        Cancel
-      </button>
+      <!-- Copy with dropdown for Download -->
+      <Popover.Root bind:open={copyMenuOpen}>
+        <Popover.Trigger
+          disabled={isProcessing}
+          class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Copy class="h-4 w-4" />
+          Copy Spec
+          <ChevronDown class="h-3 w-3" />
+        </Popover.Trigger>
+        <Popover.Content class="w-48 border-zinc-700 bg-zinc-900 p-1" align="start" side="top">
+          <button
+            onclick={handleCopy}
+            class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+          >
+            <Copy class="h-4 w-4" />
+            Copy to clipboard
+          </button>
+          <button
+            onclick={handleDownload}
+            class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+          >
+            <Download class="h-4 w-4" />
+            Download as .md
+          </button>
+        </Popover.Content>
+      </Popover.Root>
 
+      <!-- Generate App -->
       <button
-        onclick={downloadFile}
-        class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded bg-zinc-600 px-3 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-500"
+        onclick={handleGenerate}
+        disabled={isProcessing}
+        class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Download class="h-4 w-4" />
-        Download
-      </button>
-
-      <button
-        onclick={copyToClipboard}
-        class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-      >
-        <Copy class="h-4 w-4" />
-        Copy
+        {#if isProcessing}
+          <Loader2 class="h-4 w-4 animate-spin" />
+          {#if isRefining}
+            Refining...
+          {:else}
+            Generating...
+          {/if}
+        {:else}
+          <Code class="h-4 w-4" />
+          Generate App
+        {/if}
       </button>
     </Dialog.Footer>
   </Dialog.Content>
