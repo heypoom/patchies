@@ -87,5 +87,5 @@ This works both ways - data set via `[kv mystore]` is accessible via `kv.store("
 
 ## See Also
 
-- [kv object](/objects/kv) - Visual object for key-value storage
+- [kv object](/docs/objects/kv) - Visual object for key-value storage
 - [JavaScript Runner](/docs/javascript-runner) - JSRunner features and APIs
