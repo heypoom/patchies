@@ -79,6 +79,16 @@ accumulates phase incrementally (`phase += freq / sampleRate`). When frequency
 changes, phase doesn't jump - it just starts incrementing faster or slower from
 wherever it currently is.
 
+## Presets
+
+Enable the **DSP Presets** pack in Extensions to use these. Type in the object
+browser to create pre-configured expr~ nodes:
+
+- `sine-osc.dsp` - Fixed 440Hz sine wave oscillator
+- `variable-osc.dsp` - Variable frequency sine oscillator (connect freq to $1)
+- `phasor.dsp` - Sawtooth wave with variable frequency
+- `bitcrusher.dsp` - Bit depth reduction effect (connect bit depth to $1)
+
 ## Example Patches
 
 - [scales](/?id=tfjdf019hjyxmeu&readonly=true) by @kijjaz

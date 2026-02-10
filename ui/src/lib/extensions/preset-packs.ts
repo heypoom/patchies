@@ -205,6 +205,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'phasor.elem',
       'train.elem',
       'sine-osc.dsp',
+      'variable-osc.dsp',
+      'phasor.dsp',
       'bitcrusher.dsp'
     ]
   }

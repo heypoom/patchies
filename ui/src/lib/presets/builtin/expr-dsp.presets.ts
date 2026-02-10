@@ -11,6 +11,12 @@ export const EXPR_DSP_PRESETS = {
       expr: 'sin(phasor($1) * PI * 2)'
     }
   },
+  'phasor.dsp': {
+    type: 'expr~',
+    data: {
+      expr: 'phasor($1) * 2 - 1'
+    }
+  },
   'bitcrusher.dsp': {
     type: 'expr~',
     data: {
