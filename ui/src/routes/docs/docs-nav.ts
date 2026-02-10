@@ -2,9 +2,9 @@
 export const categoryOrder = [
   'Getting Started',
   'Connections',
+  'Sidebar',
   'Audio & Video',
   'Scripting',
-  'Sidebar',
   'Other'
 ];
 
