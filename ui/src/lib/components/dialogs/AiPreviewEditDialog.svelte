@@ -113,15 +113,7 @@
     }
   });
 
-  function handleClickOutside(event: MouseEvent) {
-    if (isEditing) return;
-    const target = event.target as HTMLElement;
-    if (!target.closest('.ai-edit-dialog')) {
-      open = false;
-    }
-  }
-
-  // Handle escape key and click-outside globally when open
+  // Handle escape key globally when open
   $effect(() => {
     if (open) {
       const keyHandler = (e: KeyboardEvent) => {
@@ -133,14 +125,8 @@
           }
         }
       };
-      // Defer adding click listener to avoid catching the click that opened the dialog
-      const timeoutId = setTimeout(() => {
-        document.addEventListener('click', handleClickOutside);
-      }, 0);
       document.addEventListener('keydown', keyHandler);
       return () => {
-        clearTimeout(timeoutId);
-        document.removeEventListener('click', handleClickOutside);
         document.removeEventListener('keydown', keyHandler);
       };
     }
