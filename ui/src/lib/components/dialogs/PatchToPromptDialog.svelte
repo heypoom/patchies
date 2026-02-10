@@ -118,6 +118,9 @@
   }
 
   async function handleCopy() {
+    // Close popover immediately to prevent it from detaching when dialog minimizes
+    copyMenuOpen = false;
+
     if (refineFirst && !isRefined) {
       // Need to refine first
       if (!hasGeminiApiKey()) {
@@ -154,6 +157,9 @@
   }
 
   async function handleDownload() {
+    // Close popover immediately to prevent it from detaching when dialog minimizes
+    copyMenuOpen = false;
+
     if (refineFirst && !isRefined) {
       if (!hasGeminiApiKey()) {
         onRequestApiKey?.(() => refineAndThen(doDownload));
