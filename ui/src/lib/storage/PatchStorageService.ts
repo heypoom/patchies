@@ -1,10 +1,21 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import { get } from 'svelte/store';
-import { currentPatchId } from '../../stores/ui.store';
 import { logger } from '$lib/utils/logger';
 
 const DB_VERSION = 1;
 const KV_STORE = 'kv';
+
+// Detect if we're in a worker context
+const isWorker = typeof self !== 'undefined' && typeof (self as any).document === 'undefined';
+
+// Main thread only: Svelte store imports (loaded lazily to avoid worker issues)
+let svelteGet: typeof import('svelte/store').get | null = null;
+let currentPatchIdStore: import('svelte/store').Readable<string> | null = null;
+
+// Initialize Svelte stores in main thread only
+if (!isWorker) {
+  import('svelte/store').then((m) => (svelteGet = m.get));
+  import('../../stores/ui.store').then((m) => (currentPatchIdStore = m.currentPatchId));
+}
 
 interface PatchStorageDB {
   kv: {
@@ -16,12 +27,19 @@ interface PatchStorageDB {
 /**
  * PatchStorageService manages IndexedDB storage per patch.
  * Each patch gets its own database with a kv object store.
+ *
+ * Works in both main thread and workers:
+ * - Main thread: reads patchId from Svelte store
+ * - Workers: uses explicitly set patchId via setPatchId()
  */
 export class PatchStorageService {
   private static instance: PatchStorageService | null = null;
 
   /** Cache of open database connections by patch name */
   private dbCache: Map<string, IDBPDatabase<PatchStorageDB>> = new Map();
+
+  /** Explicitly set patchId (for workers) */
+  private explicitPatchId: string | null = null;
 
   /**
    * Get the database name for a patch.
@@ -55,10 +73,30 @@ export class PatchStorageService {
   }
 
   /**
+   * Set the patch ID explicitly (for use in workers).
+   */
+  setPatchId(patchId: string): void {
+    this.explicitPatchId = patchId;
+  }
+
+  /**
    * Get the current patch ID for storage scoping.
+   * Uses explicit patchId if set, otherwise reads from Svelte store (main thread only).
    */
   private getCurrentPatchId(): string {
-    return get(currentPatchId);
+    if (this.explicitPatchId) {
+      return this.explicitPatchId;
+    }
+
+    if (isWorker) {
+      throw new Error('PatchStorageService: patchId not set. Call setPatchId() in worker context.');
+    }
+
+    if (!svelteGet || !currentPatchIdStore) {
+      throw new Error('PatchStorageService: Svelte stores not yet initialized.');
+    }
+
+    return svelteGet(currentPatchIdStore);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -74,6 +112,7 @@ export class PatchStorageService {
     const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const fullKey = `${storeName}:${key}`;
+
     return db.get(KV_STORE, fullKey);
   }
 

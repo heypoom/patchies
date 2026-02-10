@@ -4,9 +4,7 @@ Patchies provides persistent storage APIs for JavaScript objects. Data is stored
 
 ## Key-Value Storage (kv)
 
-The `kv` API provides simple key-value storage. It's available in `js` and `p5` objects.
-
-> **Note**: `kv` is not yet available in `worker` nodes.
+The `kv` API provides simple persistent key-value storage. It's available in [JavaScript Runner](/docs/javascript-runner) objects (e.g. `js`, `p5`, `worker`, etc.).
 
 ### Node-Scoped Storage (Default)
 

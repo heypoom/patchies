@@ -6,6 +6,7 @@ import * as ohash from 'ohash';
 import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+import { currentPatchId } from '../../stores/ui.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
@@ -76,6 +77,12 @@ export class GLSystem {
     this.renderWorker = new RenderWorker();
     this.renderWorker.addEventListener('message', this.handleRenderWorkerMessage.bind(this));
     this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
+
+    // Send initial patchId and subscribe to changes
+    this.renderWorker.postMessage({ type: 'setPatchId', patchId: get(currentPatchId) });
+    currentPatchId.subscribe((patchId) => {
+      this.renderWorker.postMessage({ type: 'setPatchId', patchId });
+    });
 
     // Listen for video frame requests from WorkerNodeSystem
     this.eventBus.addEventListener(

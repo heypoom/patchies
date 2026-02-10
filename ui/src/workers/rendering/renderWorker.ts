@@ -5,6 +5,7 @@ import { FBORenderer } from './fboRenderer.js';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem.js';
 import { handleVfsUrlResolved } from './vfsWorkerUtils.js';
 import { MediaBunnyService } from './MediaBunnyService.js';
+import { PatchStorageService } from '$lib/storage/PatchStorageService.js';
 
 const fboRenderer: FBORenderer = new FBORenderer();
 
@@ -27,6 +28,9 @@ self.onmessage = (event) => {
   }
 
   match(type)
+    .with('setPatchId', () => {
+      PatchStorageService.getInstance().setPatchId(data.patchId);
+    })
     .with('buildRenderGraph', () => handleBuildRenderGraph(data.graph))
     .with('startAnimation', () => handleStartAnimation())
     .with('stopAnimation', () => handleStopAnimation())
