@@ -534,7 +534,7 @@
     </div>
 
     <!-- Refine checkbox -->
-    <div class="border-t border-zinc-700 px-6 pt-4">
+    <div class="px-6 pb-4">
       <button
         onclick={() => (refineFirst = !refineFirst)}
         disabled={isRefined || isProcessing}
@@ -549,15 +549,19 @@
         {:else}
           <Square class="h-4 w-4 text-zinc-500" />
         {/if}
+
         <span>
-          <Sparkles class="mr-1 inline h-3 w-3 text-purple-400" />
-          Refine with AI first
+          <Sparkles class="mr-1 mb-[4px] inline h-3 w-3 text-purple-400" />
+
+          Refine spec with AI
         </span>
-        <span class="text-xs text-zinc-500">(slower but better results)</span>
+
+        {#if isRefined}
+          <span class="text-xs text-purple-400">(refined)</span>
+        {:else}
+          <span class="text-xs text-zinc-500">(slower but better results)</span>
+        {/if}
       </button>
-      {#if isRefined}
-        <div class="mt-1 ml-6 text-xs text-purple-400">✓ Already refined</div>
-      {/if}
     </div>
 
     <!-- Footer -->
