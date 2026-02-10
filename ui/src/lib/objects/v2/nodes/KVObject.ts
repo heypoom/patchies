@@ -246,7 +246,7 @@ export class KVObject implements TextObjectV2 {
           return { op: 'has' as const, key, exists };
         })
         .with(kvMessages.setStore, ({ value }) => {
-          this.context.setParam('store', value);
+          this.context.setParam('store', value, { notifyUI: true });
 
           this.store = new KVStore(this.getStoreName());
 

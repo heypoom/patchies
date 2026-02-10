@@ -66,9 +66,13 @@ export class ObjectContext {
 
   /**
    * Set a parameter value by index or name.
-   * Automatically notifies all subscribers and emits event for UI sync.
+   * Notifies internal subscribers. Use `notifyUI: true` to also update the UI.
+   *
+   * @param indexOrName - Parameter index or inlet name
+   * @param value - The value to set
+   * @param options.notifyUI - If true, dispatch event to update UI params display
    */
-  setParam(indexOrName: number | string, value: unknown): void {
+  setParam(indexOrName: number | string, value: unknown, options?: { notifyUI?: boolean }): void {
     const index = typeof indexOrName === 'string' ? this.getInletIndex(indexOrName) : indexOrName;
 
     if (index === -1) return;
@@ -85,14 +89,16 @@ export class ObjectContext {
       callback([...this.params], index, value);
     }
 
-    // Emit event for UI sync
-    PatchiesEventBus.getInstance().dispatch({
-      type: 'objectParamsChanged',
-      nodeId: this.nodeId,
-      params: [...this.params],
-      index,
-      value
-    });
+    // Emit event for UI sync (opt-in)
+    if (options?.notifyUI) {
+      PatchiesEventBus.getInstance().dispatch({
+        type: 'objectParamsChanged',
+        nodeId: this.nodeId,
+        params: [...this.params],
+        index,
+        value
+      });
+    }
   }
 
   /**
