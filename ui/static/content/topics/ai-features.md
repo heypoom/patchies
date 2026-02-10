@@ -72,10 +72,10 @@ After generating, the app appears in the sidebar preview tab where you can:
 
 These objects use AI to generate content within your patch:
 
-- [ai.txt](/docs/ai.txt) - Generate text using AI
-- [ai.img](/docs/ai.img) - Generate images using AI
-- [ai.tts](/docs/ai.tts) - Text-to-speech synthesis
-- [ai.music](/docs/ai.music) - Generate music using AI
+- [ai.txt](/docs/objects/ai.txt) - Generate text using AI
+- [ai.img](/docs/objects/ai.img) - Generate images using AI
+- [ai.tts](/docs/objects/ai.tts) - Text-to-speech synthesis
+- [ai.music](/docs/objects/ai.music) - Generate music using AI
 
 ## See Also
 
