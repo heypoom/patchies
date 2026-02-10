@@ -184,9 +184,11 @@ export class KVObject implements TextObjectV2 {
   }
 
   create(params: unknown[]): void {
-    // Initialize params - first param maps to 'store' inlet (index 1, after 'command')
-    if (params.length > 0 && typeof params[0] === 'string') {
-      this.context.setParam('store', params[0]);
+    // Initialize params - parseObjectParamFromString builds an inlet-indexed array where:
+    // - params[0] = null (for 'command' inlet, type 'message' is unmodifiable)
+    // - params[1] = store name (for 'store' inlet, type 'string')
+    if (params.length > 1 && typeof params[1] === 'string') {
+      this.context.setParam('store', params[1]);
     }
 
     // Create the store
