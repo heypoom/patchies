@@ -1133,6 +1133,7 @@
     bind:view={$sidebarView}
     onSavePatch={() => (showSavePatchModal = true)}
     onRequestApiKey={handlePatchToPromptRequestApiKey}
+    onOpenPatchToApp={() => (showPatchToPromptDialog = true)}
   />
 
   <!-- Main content area -->

@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { X, ExternalLink, Copy, RefreshCw, Download, Sparkles } from '@lucide/svelte/icons';
+  import { X, ExternalLink, Copy, RefreshCw, Download, Sparkles, Code } from '@lucide/svelte/icons';
   import { appPreviewStore } from '../../../stores/app-preview.store';
   import { hasGeminiApiKey } from '$lib/ai/patch-to-prompt';
   import { toast } from 'svelte-sonner';
   import AiPreviewEditDialog from '../dialogs/AiPreviewEditDialog.svelte';
 
   let {
-    onRequestApiKey
+    onRequestApiKey,
+    onOpenPatchToApp
   }: {
     onRequestApiKey?: (onKeyReady: () => void) => void;
+    onOpenPatchToApp?: () => void;
   } = $props();
 
   const preview = $derived($appPreviewStore);
@@ -168,8 +170,18 @@
   {:else}
     <!-- Empty state -->
     <div class="flex h-full flex-col items-center justify-center p-4 text-center">
-      <p class="text-sm text-zinc-400">No preview available</p>
-      <p class="mt-1 text-xs text-zinc-500">Use "Patch to App" to generate an app preview</p>
+      <Code class="mb-3 h-10 w-10 text-zinc-600" />
+      <p class="text-sm text-zinc-400">No preview yet</p>
+      <p class="mt-1 text-xs text-zinc-500">Generate an app from your patch</p>
+      {#if onOpenPatchToApp}
+        <button
+          onclick={onOpenPatchToApp}
+          class="mt-4 flex cursor-pointer items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+        >
+          <Sparkles class="h-4 w-4" />
+          Patch to App
+        </button>
+      {/if}
     </div>
   {/if}
 </div>

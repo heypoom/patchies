@@ -64,7 +64,11 @@ export type SidebarView = 'files' | 'presets' | 'packs' | 'saves' | 'help' | 'pr
 const storedSidebarView =
   typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;
 
-export const sidebarView = writable<SidebarView>((storedSidebarView as SidebarView) || 'files');
+// Don't restore 'preview' view on load since preview content doesn't persist
+const initialSidebarView: SidebarView =
+  storedSidebarView === 'preview' ? 'files' : (storedSidebarView as SidebarView) || 'files';
+
+export const sidebarView = writable<SidebarView>(initialSidebarView);
 
 // Sidebar width - persisted to localStorage
 const SIDEBAR_DEFAULT_WIDTH = 256;
