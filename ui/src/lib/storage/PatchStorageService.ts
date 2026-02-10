@@ -1,4 +1,4 @@
-import { openDB, type IDBPDatabase } from 'idb';
+import { openDB, deleteDB, type IDBPDatabase } from 'idb';
 import { logger } from '$lib/utils/logger';
 
 const DB_VERSION = 1;
@@ -265,7 +265,6 @@ export class PatchStorageService {
     // Delete the database
     const dbName = this.getDbName(patchName);
     try {
-      const { deleteDB } = await import('idb');
       await deleteDB(dbName);
 
       logger.info(`Deleted storage for patch: ${patchName}`);
