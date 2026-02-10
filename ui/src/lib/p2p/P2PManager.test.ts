@@ -40,7 +40,7 @@ const mockRoom = {
   leave: vi.fn()
 };
 
-const joinRoomMock = vi.fn(() => mockRoom);
+const joinRoomMock = vi.hoisted(() => vi.fn(() => mockRoom));
 
 vi.mock('trystero', () => ({
   joinRoom: joinRoomMock,

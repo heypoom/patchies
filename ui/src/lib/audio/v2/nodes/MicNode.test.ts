@@ -24,11 +24,11 @@ describe('MicNode', () => {
       getTracks: () => [{ stop: vi.fn() }]
     });
 
-    global.navigator = {
+    vi.stubGlobal('navigator', {
       mediaDevices: {
         getUserMedia: mockGetUserMedia
       }
-    } as unknown as Navigator;
+    });
   });
 
   it('should format deviceId constraint correctly', async () => {
