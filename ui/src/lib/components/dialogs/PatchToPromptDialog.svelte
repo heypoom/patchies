@@ -377,14 +377,16 @@
             <Minus class="h-4 w-4" />
           </button>
         {/if}
-        <button
-          onclick={handleClose}
-          disabled={isProcessing}
-          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-          title="Close"
-        >
-          <X class="h-4 w-4" />
-        </button>
+
+        {#if !isProcessing}
+          <button
+            onclick={handleClose}
+            class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Close"
+          >
+            <X class="h-4 w-4" />
+          </button>
+        {/if}
       </div>
     </div>
 
