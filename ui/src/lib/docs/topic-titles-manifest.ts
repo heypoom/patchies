@@ -29,5 +29,6 @@ export const TOPIC_TITLES: Record<string, string> = {
   'sharing-links': 'Sharing Links',
   storage: 'Storage',
   'supporting-open-source': 'Supporting Open Source',
-  'video-chaining': 'Video Chaining'
+  'video-chaining': 'Video Chaining',
+  'virtual-filesystem': 'Virtual Filesystem'
 };

@@ -113,33 +113,7 @@ const { uniq } = await esm("lodash-es");
 
 ## Virtual Filesystem
 
-![Virtual filesystem with canvas demo](/content/images/canvas-vfs.webp)
-
-Use `await getVfsUrl(path)` to load files from the virtual filesystem. This lets you use images, videos, fonts, 3D models and other assets that you've uploaded to your patch.
-
-**Managing Files**: Use the "Open Sidebar" button on the bottom right, or `Ctrl/Cmd + K > Toggle Sidebar` to:
-
-- Create folders and linked folders
-- Upload files or add files by URL
-- Drag files from the file tree to the canvas or into supported objects
-
-```javascript
-// In p5:
-let img;
-
-async function setup() {
-  let url = await getVfsUrl("user://photo.jpg");
-  img = await loadImage(url);
-}
-
-// In js or canvas.dom:
-const url = await getVfsUrl("user://data.json");
-const data = await fetch(url);
-```
-
-To get the underlying file Blob, use `await fetch(await getVfsUrl(...))`.
-
-VFS paths use the `user://` prefix for user-uploaded files. Object URLs are automatically cleaned up when the object is destroyed.
+Use `await getVfsUrl(path)` to load images, videos, fonts, and other assets from the virtual filesystem. See [Virtual Filesystem](/docs/virtual-filesystem) for full documentation.
 
 ## Shared Libraries
 
@@ -160,7 +134,8 @@ Note: Constants are NOT shared across objects. Each object has its own isolated 
 
 ## See Also
 
-- [Storage](/docs/storage) - Persistent key-value and document storage
+- [Virtual Filesystem](/docs/virtual-filesystem) - Loading files and assets
+- [Storage](/docs/storage) - Persistent key-value storage
 - [Canvas Interaction](/docs/canvas-interaction)
 - [Audio Reactivity](/docs/audio-reactivity)
 - [Message Passing](/docs/message-passing)

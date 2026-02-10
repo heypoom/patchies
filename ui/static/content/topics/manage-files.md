@@ -29,9 +29,10 @@ You can also store URLs as virtual files by using the "add link" button.
 
 ## Using Files in Code
 
-See [JavaScript Runner - Virtual Filesystem](/docs/javascript-runner#virtual-filesystem) for how to use virtual files in your objects with `getVfsUrl()`.
+See [Virtual Filesystem](/docs/virtual-filesystem) for how to load files in your objects with `getVfsUrl()`.
 
 ## See Also
 
+- [Virtual Filesystem](/docs/virtual-filesystem) - Loading files in code
 - [JavaScript Runner](/docs/javascript-runner)
 - [Saves](/docs/manage-saves)
