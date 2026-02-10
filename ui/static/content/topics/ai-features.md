@@ -41,10 +41,10 @@ Convert your patch into a standalone HTML application. This feature analyzes you
 
 ### How to Use
 
-1. Click the **Patch to App** button in the expandable sidebar (bottom-right), or access it from the sidebar's Preview tab
+1. Press `Ctrl/Cmd + K > Patch to App`. Alternatively, use the expand button on the sidebar and select "Patch to App"
 2. Optionally describe what you want to build in the steering prompt (e.g., "Simple HTML page with sliders, dark theme")
 3. Choose one of:
-   - _Copy Spec_ - Copy the specification to use with other AI tools
+   - _Copy Spec_ - Copy the spec to use with other AI tools
    - _Generate App_ - Generate and the app directly in Patchies
 
 ### Refine with AI
