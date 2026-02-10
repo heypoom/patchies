@@ -41,7 +41,7 @@
     edges,
     selectedNodeIds,
     selectedEdgeIds,
-    copiedNodeData,
+    copiedData,
     hasGeminiApiKey,
     showStartupModal = $bindable(false),
     startupInitialTab = 'about' as Tab,
@@ -67,11 +67,20 @@
     edges: Edge[];
     selectedNodeIds: string[];
     selectedEdgeIds: string[];
-    copiedNodeData: Array<{
-      type: string;
-      data: any;
-      relativePosition: { x: number; y: number };
-    }> | null;
+    copiedData: {
+      nodes: Array<{
+        originalId: string;
+        type: string;
+        data: any;
+        relativePosition: { x: number; y: number };
+      }>;
+      edges: Array<{
+        sourceIdx: number;
+        targetIdx: number;
+        sourceHandle?: string;
+        targetHandle?: string;
+      }>;
+    } | null;
     hasGeminiApiKey: boolean;
     showStartupModal: boolean;
     startupInitialTab?: Tab;
@@ -95,7 +104,7 @@
   } = $props();
 
   const hasSelection = $derived(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0);
-  const hasCopiedData = $derived(copiedNodeData && copiedNodeData.length > 0);
+  const hasCopiedData = $derived(copiedData && copiedData.nodes.length > 0);
   const canCopy = $derived(selectedNodeIds.length > 0);
   const canPaste = $derived(selectedNodeIds.length === 0 && hasCopiedData);
   const canSaveAsPreset = $derived(selectedNodeIds.length === 1);

@@ -152,11 +152,20 @@
   let selectedEdgeIds = $state.raw<string[]>([]);
 
   // Clipboard for copy-paste functionality
-  let copiedNodeData = $state<Array<{
-    type: string;
-    data: any;
-    relativePosition: { x: number; y: number };
-  }> | null>(null);
+  let copiedData = $state<{
+    nodes: Array<{
+      originalId: string;
+      type: string;
+      data: any;
+      relativePosition: { x: number; y: number };
+    }>;
+    edges: Array<{
+      sourceIdx: number;
+      targetIdx: number;
+      sourceHandle?: string;
+      targetHandle?: string;
+    }>;
+  } | null>(null);
 
   let isLoadingFromUrl = $state(false);
   let urlLoadError = $state<string | null>(null);
@@ -737,8 +746,8 @@
     getDragDropManager().insertPreset(event.preset, position);
   }
 
-  // Create a new node at the specified position
-  function createNode(type: string, position: { x: number; y: number }, customData?: any) {
+  // Create a new node at the specified position, returns the new node ID
+  function createNode(type: string, position: { x: number; y: number }, customData?: any): string {
     const id = `${type}-${nodeIdCounter++}`;
 
     const newNode: Node = {
@@ -749,6 +758,7 @@
     };
 
     nodes = [...nodes, newNode];
+    return id;
   }
 
   /**
@@ -906,7 +916,7 @@
     return lastNodeId + 1;
   }
 
-  // Copy selected nodes to clipboard
+  // Copy selected nodes and their connecting edges to clipboard
   function copySelectedNodes() {
     if (selectedNodeIds.length === 0) return;
 
@@ -920,8 +930,12 @@
     const centerY =
       selectedNodes.reduce((sum, node) => sum + node.position.y, 0) / selectedNodes.length;
 
+    // Create a map of node ID to index for edge remapping
+    const nodeIdToIdx = new Map(selectedNodes.map((node, idx) => [node.id, idx]));
+
     // Store nodes with their relative positions from the center
-    copiedNodeData = selectedNodes.map((node) => ({
+    const copiedNodes = selectedNodes.map((node) => ({
+      originalId: node.id,
       type: node.type!,
       data: { ...node.data },
       relativePosition: {
@@ -930,12 +944,30 @@
       }
     }));
 
-    toast.success(`Copied ${selectedNodes.length} node${selectedNodes.length === 1 ? '' : 's'}`);
+    // Find edges where both source and target are in the selection
+    const copiedEdges = edges
+      .filter((edge) => nodeIdToIdx.has(edge.source) && nodeIdToIdx.has(edge.target))
+      .map((edge) => ({
+        sourceIdx: nodeIdToIdx.get(edge.source)!,
+        targetIdx: nodeIdToIdx.get(edge.target)!,
+        sourceHandle: edge.sourceHandle ?? undefined,
+        targetHandle: edge.targetHandle ?? undefined
+      }));
+
+    copiedData = { nodes: copiedNodes, edges: copiedEdges };
+
+    const edgeText =
+      copiedEdges.length > 0
+        ? ` and ${copiedEdges.length} edge${copiedEdges.length === 1 ? '' : 's'}`
+        : '';
+    toast.success(
+      `Copied ${selectedNodes.length} node${selectedNodes.length === 1 ? '' : 's'}${edgeText}`
+    );
   }
 
   // Paste copied nodes at current mouse position or center of screen
   function pasteNode(source: 'keyboard' | 'button') {
-    if (!copiedNodeData || copiedNodeData.length === 0) return;
+    if (!copiedData || copiedData.nodes.length === 0) return;
 
     // Get the paste position (where the center of the copied nodes will be placed)
     const pastePosition = match(source)
@@ -948,17 +980,34 @@
       })
       .exhaustive();
 
-    // Create all nodes with their relative positions preserved
-    for (const nodeData of copiedNodeData) {
+    // Create all nodes with their relative positions preserved, tracking new IDs
+    const newNodeIds: string[] = [];
+    for (const nodeData of copiedData.nodes) {
       const position = {
         x: pastePosition.x + nodeData.relativePosition.x,
         y: pastePosition.y + nodeData.relativePosition.y
       };
 
-      createNode(nodeData.type, position, nodeData.data);
+      const newId = createNode(nodeData.type, position, nodeData.data);
+      newNodeIds.push(newId);
     }
 
-    toast.success(`Pasted ${copiedNodeData.length} node${copiedNodeData.length === 1 ? '' : 's'}`);
+    // Recreate edges between pasted nodes
+    for (const edgeData of copiedData.edges) {
+      const newEdge = {
+        id: `edge-${edgeIdCounter++}`,
+        source: newNodeIds[edgeData.sourceIdx],
+        target: newNodeIds[edgeData.targetIdx],
+        sourceHandle: edgeData.sourceHandle,
+        targetHandle: edgeData.targetHandle
+      };
+      edges = [...edges, newEdge];
+    }
+
+    const nodeCount = copiedData.nodes.length;
+    const edgeCount = copiedData.edges.length;
+    const edgeText = edgeCount > 0 ? ` and ${edgeCount} edge${edgeCount === 1 ? '' : 's'}` : '';
+    toast.success(`Pasted ${nodeCount} node${nodeCount === 1 ? '' : 's'}${edgeText}`);
   }
 
   async function restorePatchFromSave(save: PatchSaveFormat) {
@@ -1366,7 +1415,7 @@
         {edges}
         {selectedNodeIds}
         {selectedEdgeIds}
-        {copiedNodeData}
+        {copiedData}
         {hasGeminiApiKey}
         isLeftSidebarOpen={$isSidebarOpen}
         bind:showStartupModal
