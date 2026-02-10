@@ -169,7 +169,12 @@
     </button>
   {/if}
 
-  <!-- Dialog (no backdrop, click-outside to close) -->
+  <!-- Backdrop overlay -->
+  {#if !isMinimized}
+    <div class="fixed inset-0 z-40 bg-black/50" onclick={handleClose} role="presentation"></div>
+  {/if}
+
+  <!-- Dialog -->
   <div
     class="ai-edit-dialog fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl {isMinimized
       ? 'hidden'
@@ -197,15 +202,15 @@
           >
             <Minus class="h-4 w-4" />
           </button>
+        {:else}
+          <button
+            onclick={handleClose}
+            class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+            title="Close"
+          >
+            <X class="h-4 w-4" />
+          </button>
         {/if}
-        <button
-          onclick={handleClose}
-          disabled={isEditing}
-          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-          title="Close"
-        >
-          <X class="h-4 w-4" />
-        </button>
       </div>
     </div>
 

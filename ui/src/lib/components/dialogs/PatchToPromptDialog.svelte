@@ -349,7 +349,12 @@
     </button>
   {/if}
 
-  <!-- Dialog (no backdrop, click-outside to close) -->
+  <!-- Backdrop overlay -->
+  {#if !isMinimized}
+    <div class="fixed inset-0 z-40 bg-black/50" onclick={handleClose} role="presentation"></div>
+  {/if}
+
+  <!-- Dialog -->
   <div
     class="patch-to-app-dialog fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl {isMinimized
       ? 'hidden'
