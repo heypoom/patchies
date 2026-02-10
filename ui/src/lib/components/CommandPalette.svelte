@@ -7,22 +7,23 @@
     isFpsMonitorVisible,
     isConnectionMode,
     isConnecting,
-    connectingFromHandleId
+    connectingFromHandleId,
+    currentPatchId
   } from '../../stores/ui.store';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import type { Node, Edge } from '@xyflow/svelte';
   import { IpcSystem } from '$lib/canvas/IpcSystem';
   import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
   import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { createAndCopyShareLink } from '$lib/save-load/share';
-  import { deleteSearchParam, getSearchParam, setSearchParam } from '$lib/utils/search-params';
+  import { getSearchParam, setSearchParam } from '$lib/utils/search-params';
   import { migratePatch } from '$lib/migration';
   import {
     downloadForOffline,
     type OfflineDownloadProgress
   } from '$lib/offline/download-for-offline';
+  import { PatchStorageService } from '$lib/storage/PatchStorageService';
 
   interface Props {
     position: { x: number; y: number };
@@ -215,6 +216,11 @@
       id: 'toggle-mediabunny',
       name: 'Toggle MediaBunny',
       description: `${$useWebCodecs ? 'Disable' : 'Enable'} MediaBunny for video decoding (currently ${$useWebCodecs ? 'ON' : 'OFF'})`
+    },
+    {
+      id: 'clear-patch-data',
+      name: 'Clear Patch Data',
+      description: 'Delete all kv storage data for the current patch'
     }
   ];
 
@@ -436,6 +442,14 @@
       .with('generate-prompt', () => {
         onCancel();
         onGeneratePrompt?.();
+      })
+      .with('clear-patch-data', async () => {
+        const patchId = $currentPatchId;
+
+        if (confirm(`Clear all kv storage data for this patch?`)) {
+          await PatchStorageService.getInstance().deletePatchData(patchId);
+          onCancel();
+        }
       })
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);
