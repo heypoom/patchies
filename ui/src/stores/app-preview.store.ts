@@ -6,11 +6,15 @@ export interface AppPreviewState {
 
   /** The generated HTML content */
   html: string | null;
+
+  /** The spec used to generate the HTML (preserved for export) */
+  spec: string | null;
 }
 
 const defaultState: AppPreviewState = {
   html: null,
-  name: null
+  name: null,
+  spec: null
 };
 
 function createAppPreviewStore() {
@@ -22,8 +26,8 @@ function createAppPreviewStore() {
     /**
      * Set the preview content.
      */
-    setPreview(html: string, name?: string) {
-      set({ html, name: name ?? null });
+    setPreview(html: string, name?: string, spec?: string) {
+      set({ html, name: name ?? null, spec: spec ?? null });
     },
 
     /**

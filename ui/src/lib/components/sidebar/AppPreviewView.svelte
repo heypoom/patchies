@@ -1,5 +1,16 @@
 <script lang="ts">
-  import { X, ExternalLink, Copy, RefreshCw, Download, Sparkles, Code } from '@lucide/svelte/icons';
+  import {
+    X,
+    ExternalLink,
+    Copy,
+    RefreshCw,
+    Download,
+    Sparkles,
+    Code,
+    FileText,
+    FileCode
+  } from '@lucide/svelte/icons';
+  import * as Popover from '$lib/components/ui/popover';
   import { appPreviewStore } from '../../../stores/app-preview.store';
   import { hasGeminiApiKey } from '$lib/ai/patch-to-prompt';
   import { toast } from 'svelte-sonner';
@@ -17,6 +28,8 @@
 
   let iframeRef = $state<HTMLIFrameElement | null>(null);
   let showEditDialog = $state(false);
+  let copyMenuOpen = $state(false);
+  let downloadMenuOpen = $state(false);
 
   function clearPreview() {
     appPreviewStore.clear();
@@ -35,8 +48,21 @@
     try {
       await navigator.clipboard.writeText(preview.html);
       toast.success('HTML copied to clipboard');
+      copyMenuOpen = false;
     } catch {
       toast.error('Failed to copy HTML');
+    }
+  }
+
+  async function copySpec() {
+    if (!preview.spec) return;
+
+    try {
+      await navigator.clipboard.writeText(preview.spec);
+      toast.success('Spec copied to clipboard');
+      copyMenuOpen = false;
+    } catch {
+      toast.error('Failed to copy spec');
     }
   }
 
@@ -56,6 +82,27 @@
     URL.revokeObjectURL(url);
 
     toast.success(`Downloaded ${filename}`);
+    downloadMenuOpen = false;
+  }
+
+  function downloadSpec() {
+    if (!preview.spec) return;
+
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = preview.name
+      ? `${preview.name.toLowerCase().replace(/\s+/g, '-')}-spec-${timestamp}.md`
+      : `spec-${timestamp}.md`;
+
+    const blob = new Blob([preview.spec], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast.success(`Downloaded ${filename}`);
+    downloadMenuOpen = false;
   }
 
   function openInNewTab() {
@@ -85,7 +132,8 @@
   }
 
   function handleEditComplete(newHtml: string) {
-    appPreviewStore.setPreview(newHtml, preview.name ?? undefined);
+    // Preserve the spec when editing the HTML
+    appPreviewStore.setPreview(newHtml, preview.name ?? undefined, preview.spec ?? undefined);
   }
 </script>
 
@@ -123,21 +171,61 @@
           <RefreshCw class="h-4 w-4" />
         </button>
 
-        <button
-          onclick={copyHtml}
-          title="Copy HTML"
-          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-        >
-          <Copy class="h-4 w-4" />
-        </button>
+        <!-- Copy dropdown -->
+        <Popover.Root bind:open={copyMenuOpen}>
+          <Popover.Trigger
+            title="Copy"
+            class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+          >
+            <Copy class="h-4 w-4" />
+          </Popover.Trigger>
+          <Popover.Content class="w-44 border-zinc-700 bg-zinc-900 p-1" align="end" side="bottom">
+            <button
+              onclick={copyHtml}
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+            >
+              <FileCode class="h-4 w-4" />
+              Copy HTML
+            </button>
+            {#if preview.spec}
+              <button
+                onclick={copySpec}
+                class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+              >
+                <FileText class="h-4 w-4" />
+                Copy Spec
+              </button>
+            {/if}
+          </Popover.Content>
+        </Popover.Root>
 
-        <button
-          onclick={downloadHtml}
-          title="Download HTML"
-          class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-        >
-          <Download class="h-4 w-4" />
-        </button>
+        <!-- Download dropdown -->
+        <Popover.Root bind:open={downloadMenuOpen}>
+          <Popover.Trigger
+            title="Download"
+            class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+          >
+            <Download class="h-4 w-4" />
+          </Popover.Trigger>
+          <Popover.Content class="w-44 border-zinc-700 bg-zinc-900 p-1" align="end" side="bottom">
+            <button
+              onclick={downloadHtml}
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+            >
+              <FileCode class="h-4 w-4" />
+              Download HTML
+            </button>
+            {#if preview.spec}
+              <button
+                onclick={downloadSpec}
+                class="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700"
+              >
+                <FileText class="h-4 w-4" />
+                Download Spec
+              </button>
+            {/if}
+          </Popover.Content>
+        </Popover.Root>
 
         <button
           onclick={openInNewTab}

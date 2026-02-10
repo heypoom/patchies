@@ -197,8 +197,8 @@
         }
       });
 
-      // Store the preview
-      appPreviewStore.setPreview(html, patchName ?? undefined);
+      // Store the preview along with the spec used to generate it
+      appPreviewStore.setPreview(html, patchName ?? undefined, generatedPrompt);
 
       // Open sidebar to preview tab
       isSidebarOpen.set(true);
