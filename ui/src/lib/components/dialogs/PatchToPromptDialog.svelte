@@ -353,7 +353,7 @@
 
   <!-- Dialog -->
   <div
-    class="patch-to-app-dialog fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl {isMinimized
+    class="patch-to-app-dialog fixed inset-0 z-50 flex max-h-full flex-col bg-zinc-900 shadow-2xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[85vh] sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:border-zinc-700 {isMinimized
       ? 'hidden'
       : ''}"
     role="dialog"
