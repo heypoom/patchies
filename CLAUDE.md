@@ -231,6 +231,8 @@ See `KVObject.ts` for a complete example.
 - Stores: `src/stores/`
 - Utilities: `src/lib/[rendering|save-load|objects]/`
 - Specs: `docs/design-docs/specs/`
+- Topic docs: `static/content/topics/` (update `src/routes/docs/docs-nav.ts` when adding new topics)
+- Object docs: `static/content/objects/`
 
 ## Rendering Pipeline
 

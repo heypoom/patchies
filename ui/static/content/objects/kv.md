@@ -1,13 +1,46 @@
 # kv
 
-Persistent key-value storage for the patch. Data persists across sessions using IndexedDB.
+Persistent key-value storage object. Data persists across sessions using IndexedDB.
 
 ## Creation
 
 ```
-[kv]           → Unnamed store, scoped to this node
+[kv]           → Local store, scoped to this node
 [kv mystore]   → Named store, shared across nodes with same name
 ```
+
+## Local vs Named Stores
+
+**Local store** (`[kv]`): Data is scoped to this specific node. Other `[kv]` nodes cannot access it.
+
+**Named store** (`[kv mystore]`): Data is shared across all `[kv mystore]` nodes. Use this when multiple nodes need to read/write the same data.
+
+## Commands
+
+Send messages to the inlet:
+
+| Command | Description |
+|---------|-------------|
+| `{type: "get", key: "..."}` | Get value by key |
+| `{type: "set", key: "...", value: ...}` | Set value at key |
+| `{type: "has", key: "..."}` | Check if key exists |
+| `{type: "delete", key: "..."}` | Delete key |
+| `{type: "keys"}` | List all keys |
+| `{type: "clear"}` | Delete all keys |
+
+## Output
+
+All commands output a result object with an `op` field indicating the operation:
+
+| Response | Fields |
+|----------|--------|
+| get | `{op: "get", key, value, found}` |
+| set | `{op: "set", key, ok: true}` |
+| has | `{op: "has", key, exists}` |
+| delete | `{op: "delete", key, deleted}` |
+| keys | `{op: "keys", keys: [...]}` |
+| clear | `{op: "clear", ok: true}` |
+| error | `{op: "error", message}` |
 
 ## Examples
 
@@ -21,7 +54,7 @@ Persistent key-value storage for the patch. Data persists across sessions using 
 [msg: x => ({type: "set", key: "count", value: x})] → [kv counter]
 ```
 
-### Named Store (shared state)
+### Shared Settings
 
 Multiple `[kv settings]` nodes share the same data:
 
@@ -31,46 +64,10 @@ Multiple `[kv settings]` nodes share the same data:
 [loadbang] → [msg: {type: "get", key: "volume"}] → [kv settings] → [gain~]
 ```
 
-## JSRunner API
-
-In JavaScript nodes, use the `kv` object:
-
-```javascript
-// Get/set values
-const count = (await kv.get("counter")) ?? 0;
-await kv.set("counter", count + 1);
-
-// Check existence
-if (await kv.has("config")) {
-  const config = await kv.get("config");
-}
-
-// List and clear
-const keys = await kv.keys();
-await kv.clear();
-
-// Named stores
-const settings = kv.store("settings");
-await settings.set("theme", "dark");
-```
-
 ## Binary Support
 
-Both the object and JSRunner API support binary data:
+The kv object supports binary data (Blob, ArrayBuffer, Uint8Array).
 
-```javascript
-// Store binary data
-await kv.set("image", blob);        // Blob
-await kv.set("audio", arrayBuffer); // ArrayBuffer
-await kv.set("data", uint8Array);   // Uint8Array
+## JavaScript API
 
-// Retrieve as stored
-const blob = await kv.get("image");
-```
-
-## Notes
-
-- Data is stored per-patch in IndexedDB
-- Unnamed stores use the node ID as the store name
-- Named stores are shared across all nodes with the same name
-- Data persists until explicitly deleted or patch is removed
+For JavaScript objects (`js`, `worker`, `p5`, etc.), use the `kv` runtime API instead. See [Storage](/docs/storage) for details.

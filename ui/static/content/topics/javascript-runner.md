@@ -160,6 +160,7 @@ Note: Constants are NOT shared across objects. Each object has its own isolated 
 
 ## See Also
 
+- [Storage](/docs/storage) - Persistent key-value and document storage
 - [Canvas Interaction](/docs/canvas-interaction)
 - [Audio Reactivity](/docs/audio-reactivity)
 - [Message Passing](/docs/message-passing)
