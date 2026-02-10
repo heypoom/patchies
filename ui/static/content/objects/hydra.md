@@ -2,7 +2,7 @@ The `hydra` object creates a [Hydra](https://hydra.ojack.xyz) live coding video 
 
 ![Random walker with Hydra shader](/content/images/patchies-random-walker.png)
 
-> Try out [this demo](/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
+> Try out [this demo](/?id=ng7a8mcxobde7kv&readonly=true) which uses P5.js with Hydra to create a random walk shader.
 
 ## Getting Started
 

@@ -34,7 +34,7 @@ ROM reloads when re-enabling the screen.
 
 ![Patchies Uxn Compudanzas](/content/images/patchies-uxn-compudanzas.png)
 
-> Try this patch [in the app](/?id=z7rtmujmtvbv0e0)!
+> Try this patch [in the app](/?id=z7rtmujmtvbv0e0&readonly=true)!
 > Code by [Compudanzas' Uxn tutorial](https://compudanzas.net/uxn_tutorial_day_6.html).
 
 - **Edit Code**: Opens the Uxntal assembly code editor

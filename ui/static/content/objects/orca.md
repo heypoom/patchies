@@ -7,7 +7,7 @@ frame.
 Create procedural sequences with 26 letter operators (A-Z) and special symbols
 for MIDI control.
 
-> Try [this demo](/?id=ks1srq082zkp4qb) for a silly little
+> Try [this demo](/?id=ks1srq082zkp4qb&readonly=true) for a silly little
 > procedurally-generated lullaby!
 
 See [the Orca docs](https://github.com/hundredrabbits/Orca/blob/main/README.md)

@@ -2,7 +2,7 @@ The `glsl` object creates a GLSL fragment shader for complex visual effects and 
 
 ![GLSL SDF shader](/content/images/patchies-glsl-sdf.png)
 
-> ✨ [Try this patch](/?id=3k3qnwk022tfj7e) featuring a shader from @dtinth's talk, [the power of signed distance functions](https://dt.in.th/SDFTalk)!
+> ✨ [Try this patch](/?id=3k3qnwk022tfj7e&readonly=true) featuring a shader from @dtinth's talk, [the power of signed distance functions](https://dt.in.th/SDFTalk)!
 
 ## Getting Started
 

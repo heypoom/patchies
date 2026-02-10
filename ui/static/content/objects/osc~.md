@@ -4,7 +4,7 @@ Oscillator for generating audio waveforms (sine, square, sawtooth, triangle).
 
 ![Patchies periodic wave oscillator](/content/images/patchies-periodic-waves.png)
 
-> Try this patch [in the app](/?id=ocj3v2xp790gq8u)!
+> Try this patch [in the app](/?id=ocj3v2xp790gq8u&readonly=true)!
 
 Use [PeriodicWave](https://developer.mozilla.org/en-US/docs/Web/API/PeriodicWave)
 by sending `[real: Float32Array, imaginary: Float32Array]` to the type inlet.
