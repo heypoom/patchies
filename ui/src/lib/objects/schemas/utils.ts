@@ -82,6 +82,16 @@ export function schemaToString(schema: TSchema): string {
     case 'Any':
       return 'any';
 
+    case 'Tuple': {
+      const items = schema.items as TSchema[];
+
+      return `[${items.map(schemaToString).join(', ')}]`;
+    }
+
+    case 'Unsafe':
+      // Type.Unsafe<T>({ type: 'TypeName' }) - use the type property
+      return schema.type ?? 'unknown';
+
     default:
       return 'unknown';
   }
@@ -186,6 +196,19 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
 
     case 'Any':
       return `<span class="${hl.type}">any</span>`;
+
+    case 'Tuple': {
+      const items = schema.items as TSchema[];
+      const itemsHtml = items
+        .map((s) => schemaToHtml(s, options))
+        .join(`<span class="${hl.punct}">, </span>`);
+
+      return `<span class="${hl.punct}">[</span>${itemsHtml}<span class="${hl.punct}">]</span>`;
+    }
+
+    case 'Unsafe':
+      // Type.Unsafe<T>({ type: 'TypeName' }) - use the type property
+      return `<span class="${hl.type}">${schema.type ?? 'unknown'}</span>`;
 
     default:
       return `<span class="${hl.type}">unknown</span>`;

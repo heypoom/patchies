@@ -32,7 +32,10 @@ export const oscSchema: ObjectSchema = {
           description: 'Waveform type'
         },
         {
-          schema: Type.Tuple([Type.Any(), Type.Any()]),
+          schema: Type.Tuple([
+            Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+            Type.Unsafe<Float32Array>({ type: 'Float32Array' })
+          ]),
           description: 'PeriodicWave [real, imag] arrays for custom waveform'
         }
       ]
