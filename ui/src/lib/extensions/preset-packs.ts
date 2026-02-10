@@ -200,6 +200,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'bang~',
       'noise~',
       'snapshot~',
+      'tabosc~',
       'lowpass.elem',
       'phasor.elem',
       'train.elem',

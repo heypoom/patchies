@@ -83,6 +83,8 @@ recv((msg, meta) => {
 
 Read from a wavetable at audio rate using a phasor (0-1 ramp) as the index.
 
+> **Tip**: Use the `tabosc~` preset for a ready-to-use wavetable oscillator.
+
 **dsp~ code (phasor + table reader combined):**
 
 ```js
@@ -151,8 +153,10 @@ table[i] = i < size / 2 ? 1 : -1;
 
 ## Presets
 
-- `snapshot~`: captures incoming audio's first sample
-- `bang~`: emits bang on audio threshold
+- `bang~`: emits bang on every audio block
+- `noise~`: white noise generator
+- `snapshot~`: captures incoming audio's first sample on bang
+- `tabosc~`: wavetable oscillator (send Float32Array for table, number for freq)
 
 ## See Also
 
