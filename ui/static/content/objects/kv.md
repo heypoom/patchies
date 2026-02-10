@@ -9,19 +9,6 @@ Persistent key-value storage for the patch. Data persists across sessions using 
 [kv mystore]   → Named store, shared across nodes with same name
 ```
 
-## Input Messages
-
-Send typed messages to perform storage operations:
-
-| Command | Description |
-|---------|-------------|
-| `{type: "get", key: "..."}` | Retrieve value for key |
-| `{type: "set", key: "...", value: ...}` | Store value at key |
-| `{type: "delete", key: "..."}` | Remove key |
-| `{type: "keys"}` | List all keys in store |
-| `{type: "clear"}` | Remove all keys |
-| `{type: "has", key: "..."}` | Check if key exists |
-
 ## Output Format
 
 All outputs include an `op` field for routing:
