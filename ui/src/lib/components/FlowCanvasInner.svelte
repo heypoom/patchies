@@ -29,6 +29,8 @@
     sidebarView,
     patchObjectTypes,
     currentPatchName,
+    currentPatchId,
+    generateNewPatchId,
     helpModeObject,
     selectedNodeInfo
   } from '../../stores/ui.store';
@@ -994,6 +996,14 @@
       nodeIdCounter = getNodeIdCounterFromSave(migrated.nodes);
     }
 
+    // Restore or generate patchId for KV storage scoping
+    if (migrated.patchId) {
+      currentPatchId.set(migrated.patchId);
+    } else {
+      // Old saves without patchId get a new one
+      generateNewPatchId();
+    }
+
     // Immediately save migrated patch to autosave so reloads don't break
     performAutosave();
   }
@@ -1067,6 +1077,7 @@
     localStorage.removeItem('patchies-patch-autosave');
     isBackgroundOutputCanvasEnabled.set(false);
     currentPatchName.set(null); // Clear current patch name for new patch
+    generateNewPatchId(); // Generate new patchId for KV storage scoping
     deleteSearchParam('id'); // Clear shared patch URL since we're starting fresh
     showNewPatchDialog = false;
   }

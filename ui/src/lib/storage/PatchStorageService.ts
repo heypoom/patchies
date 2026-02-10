@@ -1,6 +1,6 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import { get } from 'svelte/store';
-import { currentPatchName } from '../../stores/ui.store';
+import { currentPatchId } from '../../stores/ui.store';
 import { logger } from '$lib/utils/logger';
 
 const DB_VERSION = 1;
@@ -55,14 +55,10 @@ export class PatchStorageService {
   }
 
   /**
-   * Get the current patch name. Throws if no patch is loaded.
+   * Get the current patch ID for storage scoping.
    */
-  private getCurrentPatchName(): string {
-    const patchName = get(currentPatchName);
-    if (!patchName) {
-      throw new Error('No patch is currently loaded');
-    }
-    return patchName;
+  private getCurrentPatchId(): string {
+    return get(currentPatchId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -75,7 +71,7 @@ export class PatchStorageService {
    * @param key - The key to retrieve
    */
   async kvGet(storeName: string, key: string): Promise<unknown> {
-    const patchName = this.getCurrentPatchName();
+    const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const fullKey = `${storeName}:${key}`;
     return db.get(KV_STORE, fullKey);
@@ -88,7 +84,7 @@ export class PatchStorageService {
    * @param value - The value to store (must be structured-cloneable)
    */
   async kvSet(storeName: string, key: string, value: unknown): Promise<void> {
-    const patchName = this.getCurrentPatchName();
+    const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const fullKey = `${storeName}:${key}`;
     await db.put(KV_STORE, value, fullKey);
@@ -101,12 +97,13 @@ export class PatchStorageService {
    * @returns true if the key existed and was deleted
    */
   async kvDelete(storeName: string, key: string): Promise<boolean> {
-    const patchName = this.getCurrentPatchName();
+    const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const fullKey = `${storeName}:${key}`;
 
     const existed = (await db.get(KV_STORE, fullKey)) !== undefined;
     await db.delete(KV_STORE, fullKey);
+
     return existed;
   }
 
@@ -116,7 +113,7 @@ export class PatchStorageService {
    * @returns Array of keys (without the store prefix)
    */
   async kvKeys(storeName: string): Promise<string[]> {
-    const patchName = this.getCurrentPatchName();
+    const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const allKeys = await db.getAllKeys(KV_STORE);
     const prefix = `${storeName}:`;
@@ -131,7 +128,7 @@ export class PatchStorageService {
    * @param storeName - The store name (or node ID for unnamed stores)
    */
   async kvClear(storeName: string): Promise<void> {
-    const patchName = this.getCurrentPatchName();
+    const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const tx = db.transaction(KV_STORE, 'readwrite');
     const store = tx.objectStore(KV_STORE);
@@ -154,7 +151,7 @@ export class PatchStorageService {
    * @param key - The key to check
    */
   async kvHas(storeName: string, key: string): Promise<boolean> {
-    const patchName = this.getCurrentPatchName();
+    const patchName = this.getCurrentPatchId();
     const db = await this.getDb(patchName);
     const fullKey = `${storeName}:${key}`;
     const value = await db.get(KV_STORE, fullKey);
