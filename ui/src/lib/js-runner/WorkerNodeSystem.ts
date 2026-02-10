@@ -13,6 +13,8 @@ import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { capturePreviewFrame, bitmapToBase64Image } from '$lib/ai/google';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import JsWorker from '../../workers/js/jsWorker?worker';
+import { get } from 'svelte/store';
+import { currentPatchId } from '../../stores/ui.store';
 
 /** Render connection for direct worker→render messaging */
 export interface RenderConnection {
@@ -24,6 +26,7 @@ export interface RenderConnection {
 
 // Message types sent from main thread to worker
 export type WorkerMessage = { nodeId: string } & (
+  | { type: 'setPatchId'; patchId: string }
   | { type: 'executeCode'; code: string; processedCode: string }
   | { type: 'incomingMessage'; data: unknown; meta: Omit<Message, 'data'> }
   | { type: 'updateModule'; moduleName: string; code: string | null }
@@ -123,6 +126,9 @@ export class WorkerNodeSystem {
   constructor() {
     // Subscribe to FFT data updates - forward to all workers that have FFT enabled
     this.setupFFTForwarding();
+
+    // Subscribe to patchId changes and forward to all workers for KV storage scoping
+    this.setupPatchIdForwarding();
   }
 
   private setupFFTForwarding() {
@@ -148,6 +154,18 @@ export class WorkerNodeSystem {
         } satisfies WorkerMessage);
       }
     };
+  }
+
+  private setupPatchIdForwarding() {
+    currentPatchId.subscribe((patchId) => {
+      for (const [nodeId, instance] of this.workers) {
+        instance.worker.postMessage({
+          type: 'setPatchId',
+          nodeId,
+          patchId
+        } satisfies WorkerMessage);
+      }
+    });
   }
 
   private syncModulesToWorker(nodeId: string, worker: Worker) {
@@ -631,6 +649,13 @@ export class WorkerNodeSystem {
     if (this.workers.has(nodeId)) return;
 
     const worker = new JsWorker();
+
+    // Send patchId for KV storage scoping
+    worker.postMessage({
+      type: 'setPatchId',
+      nodeId,
+      patchId: get(currentPatchId)
+    } satisfies WorkerMessage);
 
     // Set up message handler
     worker.addEventListener('message', ({ data }: MessageEvent<WorkerResponse>) => {

@@ -7,6 +7,7 @@ import { DebounceObject } from './DebounceObject';
 import { DelayObject } from './DelayObject';
 import { FloatObject } from './FloatObject';
 import { IntObject } from './IntObject';
+import { KVObject } from './KVObject';
 import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
@@ -28,6 +29,7 @@ const TEXT_OBJECTS = [
   DelayObject,
   FloatObject,
   IntObject,
+  KVObject,
   LoadbangObject,
   MetroObject,
   MtofObject,

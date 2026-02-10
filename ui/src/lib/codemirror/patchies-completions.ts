@@ -245,6 +245,15 @@ const patchiesAPICompletions: Completion[] = [
     detail: '() => void',
     info: 'Flash the node border to indicate activity',
     apply: 'flash()'
+  },
+
+  // Storage
+  {
+    label: 'kv',
+    type: 'variable',
+    detail: 'KVStore',
+    info: 'Persistent key-value storage. Methods: store(name), get(key), set(key, value), delete(key), keys(), clear(), has(key)',
+    apply: 'kv'
   }
 ];
 
@@ -347,6 +356,13 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setKeepAlive: ['dsp~'],
   setMouseScope: ['hydra'],
   setRunOnMount: ['js', 'worker'],
+  kv: ['js', 'worker', 'p5'],
+  'kv.get': ['js', 'worker', 'p5'],
+  'kv.set': ['js', 'worker', 'p5'],
+  'kv.delete': ['js', 'worker', 'p5'],
+  'kv.keys': ['js', 'worker', 'p5'],
+  'kv.has': ['js', 'worker', 'p5'],
+  'kv.store': ['js', 'worker', 'p5'],
   setTitle: [
     'js',
     'worker',

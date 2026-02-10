@@ -36,7 +36,7 @@ Patch-local persistence system enabling patches to store and retrieve data acros
 │                  User-facing                     │
 ├──────────────────┬──────────────────────────────┤
 │   kv object      │   db object                  │
-│   (visual node)  │   (visual node)              │
+│   (text object)  │   (text object)              │
 ├──────────────────┴──────────────────────────────┤
 │              JSRunner API                        │
 │         kv.get() / db.insert()                  │
@@ -97,14 +97,16 @@ Use `idb` by Jake Archibald:
 
 ### Input Messages
 
-| Message             | Description                   |
-| ------------------- | ----------------------------- |
-| `get {key}`         | Retrieve value for key        |
-| `set {key} {value}` | Store value at key            |
-| `delete {key}`      | Remove key                    |
-| `keys`              | List all keys in this store   |
-| `clear`             | Remove all keys in this store |
-| `has {key}`         | Check if key exists           |
+Typed message format using TypeBox schemas:
+
+| Message                                 | Description                   |
+| --------------------------------------- | ----------------------------- |
+| `{type: "get", key: "..."}`             | Retrieve value for key        |
+| `{type: "set", key: "...", value: ...}` | Store value at key            |
+| `{type: "delete", key: "..."}`          | Remove key                    |
+| `{type: "keys"}`                        | List all keys in this store   |
+| `{type: "clear"}`                       | Remove all keys in this store |
+| `{type: "has", key: "..."}`             | Check if key exists           |
 
 ### Output Format (Tagged)
 
@@ -146,7 +148,7 @@ await kv.set("data", uint8Array); // Uint8Array
 const blob = await kv.get("image"); // Returns as stored
 ```
 
-Visual object accepts binary from upstream nodes (e.g., from canvas capture).
+Text object accepts binary from upstream nodes (e.g., from canvas capture).
 
 ## DB Object
 
@@ -342,31 +344,31 @@ Consider adding storage usage indicator in patch settings (future).
 
 ### Phase 1: Core Infrastructure
 
-- [ ] Add `idb` dependency
-- [ ] Implement `PatchStorageService` singleton
-- [ ] KV operations (get, set, delete, keys, clear, has)
-- [ ] Basic IndexedDB setup per patch
+- [x] Add `idb` dependency
+- [x] Implement `PatchStorageService` singleton
+- [x] KV operations (get, set, delete, keys, clear, has)
+- [x] Basic IndexedDB setup per patch
 
 ### Phase 2: KV
 
-- [ ] Create `kv` visual object component
-- [ ] Message parsing and dispatch
-- [ ] Tagged output format
-- [ ] Named store support
-- [ ] Binary blob support
+- [x] Create `kv` text object (TextObjectV2)
+- [x] Message parsing and dispatch
+- [x] Tagged output format
+- [x] Named store support
+- [x] Binary blob support
 
 ### Phase 3: KV() for JS
 
-- [ ] Expose `kv()` in JSRunner context
-- [ ] Handle async operations
-- [ ] Named store configuration
+- [x] Expose `kv()` in JSRunner context
+- [x] Handle async operations
+- [x] Named store configuration
 
 ### Phase 4: DB Object
 
 - [ ] Document store operations
 - [ ] Auto-generated IDs and timestamps
 - [ ] Simple query matching
-- [ ] Create `db` visual object component
+- [ ] Create `db` text object (TextObjectV2)
 
 ### Phase 5: DB() for JS
 

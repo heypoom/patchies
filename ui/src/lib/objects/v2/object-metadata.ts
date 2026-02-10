@@ -49,6 +49,13 @@ export interface ObjectInlet {
   /** Does this inlet represent an audio parameter in the audio node? **/
   isAudioParam?: boolean;
 
+  /**
+   * When true, the inlet is hidden from the UI but still available as a parameter.
+   * Useful for configuration inlets like store names that are set via arguments
+   * but don't need visible handles (e.g., `[kv storename]`).
+   */
+  hidden?: boolean;
+
   /** Floating point precision for displays. */
   precision?: number;
 

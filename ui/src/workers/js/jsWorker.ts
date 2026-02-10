@@ -13,6 +13,8 @@ import {
   type DirectChannelHandler,
   type RenderConnection
 } from '../shared/directChannelHandler';
+import { PatchStorageService } from '$lib/storage/PatchStorageService';
+import { createKVStore } from '$lib/storage/KVStore';
 
 // Module storage (synced from main thread)
 const modules = new Map<string, string>();
@@ -346,6 +348,9 @@ function createWorkerContext(nodeId: string) {
     });
   };
 
+  // Create KV store for this node
+  const kv = createKVStore(nodeId);
+
   return {
     console: customConsole,
     send,
@@ -364,7 +369,8 @@ function createWorkerContext(nodeId: string) {
     flash,
     setVideoCount,
     onVideoFrame,
-    getVideoFrames
+    getVideoFrames,
+    kv
   };
 }
 
@@ -461,7 +467,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     'flash',
     'setVideoCount',
     'onVideoFrame',
-    'getVideoFrames'
+    'getVideoFrames',
+    'kv'
   ];
 
   const functionArgs = [
@@ -482,7 +489,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.flash,
     ctx.setVideoCount,
     ctx.onVideoFrame,
-    ctx.getVideoFrames
+    ctx.getVideoFrames,
+    ctx.kv
   ];
 
   try {
@@ -681,6 +689,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { nodeId } = event.data;
 
   match(event.data)
+    .with({ type: 'setPatchId' }, ({ patchId }) => {
+      PatchStorageService.getInstance().setPatchId(patchId);
+    })
     .with({ type: 'executeCode' }, async ({ processedCode }) => {
       cleanupNode(nodeId);
       await executeCode(nodeId, processedCode);

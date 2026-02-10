@@ -1,4 +1,5 @@
 import { writable, derived, readable } from 'svelte/store';
+import { nanoid } from 'nanoid';
 
 // Mobile detection (768px breakpoint)
 const MOBILE_BREAKPOINT = 768;
@@ -139,10 +140,45 @@ if (typeof localStorage !== 'undefined') {
   });
 }
 
+// Current patch ID - unique identifier for KV storage scoping
+// Generated on first load or when creating a new patch
+// Persists to localStorage for autosave support
+function getOrCreatePatchId(): string {
+  if (typeof localStorage === 'undefined') return nanoid();
+
+  const stored = localStorage.getItem('patchies-current-patch-id');
+  if (stored) return stored;
+
+  const newId = nanoid();
+  localStorage.setItem('patchies-current-patch-id', newId);
+
+  return newId;
+}
+
+export const currentPatchId = writable<string>(getOrCreatePatchId());
+
+// Persist current patch ID to localStorage
+if (typeof localStorage !== 'undefined') {
+  currentPatchId.subscribe((value) => {
+    localStorage.setItem('patchies-current-patch-id', value);
+  });
+}
+
+/**
+ * Generate a new patch ID. Call this when creating a new patch.
+ */
+export function generateNewPatchId(): string {
+  const newId = nanoid();
+  currentPatchId.set(newId);
+
+  return newId;
+}
+
 // Saved patches list - reactive store for sidebar
 // Patches can have paths like "folder/subfolder/patch-name"
 function loadSavedPatchesFromStorage(): string[] {
   if (typeof localStorage === 'undefined') return [];
+
   try {
     const saved = localStorage.getItem('patchies-saved-patches');
     return saved ? JSON.parse(saved) : [];
@@ -154,6 +190,7 @@ function loadSavedPatchesFromStorage(): string[] {
 // Saved folders list - tracks empty folders (folders with patches are implied)
 function loadSavedFoldersFromStorage(): string[] {
   if (typeof localStorage === 'undefined') return [];
+
   try {
     const saved = localStorage.getItem('patchies-saved-folders');
 
@@ -177,8 +214,10 @@ if (typeof localStorage !== 'undefined') {
 export function addSavedPatch(name: string) {
   savedPatches.update((patches) => {
     if (patches.includes(name)) return patches;
+
     const updated = [...patches, name];
     localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+
     return updated;
   });
 }
@@ -187,6 +226,7 @@ export function addSavedPatch(name: string) {
 export function addSavedFolder(path: string) {
   savedFolders.update((folders) => {
     if (folders.includes(path)) return folders;
+
     return [...folders, path];
   });
 }
@@ -196,6 +236,7 @@ export function removeSavedPatch(name: string) {
   savedPatches.update((patches) => {
     const filtered = patches.filter((p) => p !== name);
     localStorage.setItem('patchies-saved-patches', JSON.stringify(filtered));
+
     return filtered;
   });
 }
@@ -213,12 +254,14 @@ export function removeSavedFolder(folderPath: string) {
   savedPatches.update((patches) => {
     const filtered = patches.filter((p) => !p.startsWith(prefix));
     localStorage.setItem('patchies-saved-patches', JSON.stringify(filtered));
+
     return filtered;
   });
 
   // Also remove localStorage entries for those patches
   if (typeof localStorage !== 'undefined') {
     const patches = loadSavedPatchesFromStorage();
+
     for (const p of patches) {
       if (p.startsWith(prefix)) {
         localStorage.removeItem(`patchies-patch-${p}`);
@@ -232,9 +275,12 @@ export function renameSavedPatch(oldName: string, newName: string) {
   savedPatches.update((patches) => {
     const index = patches.indexOf(oldName);
     if (index === -1) return patches;
+
     const updated = [...patches];
     updated[index] = newName;
+
     localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+
     return updated;
   });
 }
@@ -249,6 +295,7 @@ export function renameSavedFolder(oldPath: string, newPath: string) {
     folders.map((f) => {
       if (f === oldPath) return newPath;
       if (f.startsWith(oldPrefix)) return newPrefix + f.slice(oldPrefix.length);
+
       return f;
     })
   );
@@ -258,16 +305,20 @@ export function renameSavedFolder(oldPath: string, newPath: string) {
     const updated = patches.map((p) => {
       if (p.startsWith(oldPrefix)) {
         const newName = newPrefix + p.slice(oldPrefix.length);
+
         // Move localStorage entry
         if (typeof localStorage !== 'undefined') {
           const data = localStorage.getItem(`patchies-patch-${p}`);
+
           if (data) {
             localStorage.setItem(`patchies-patch-${newName}`, data);
             localStorage.removeItem(`patchies-patch-${p}`);
           }
         }
+
         return newName;
       }
+
       return p;
     });
 
@@ -282,6 +333,7 @@ export function moveSavedPatch(oldPath: string, newPath: string) {
   // Move localStorage entry
   if (typeof localStorage !== 'undefined') {
     const data = localStorage.getItem(`patchies-patch-${oldPath}`);
+
     if (data) {
       localStorage.setItem(`patchies-patch-${newPath}`, data);
       localStorage.removeItem(`patchies-patch-${oldPath}`);
@@ -292,6 +344,7 @@ export function moveSavedPatch(oldPath: string, newPath: string) {
   savedPatches.update((patches) => {
     const updated = patches.map((p) => (p === oldPath ? newPath : p));
     localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+
     return updated;
   });
 }
@@ -306,6 +359,7 @@ export function moveSavedFolder(oldPath: string, newPath: string) {
     folders.map((f) => {
       if (f === oldPath) return newPath;
       if (f.startsWith(oldPrefix)) return newPrefix + f.slice(oldPrefix.length);
+
       return f;
     })
   );
@@ -315,19 +369,25 @@ export function moveSavedFolder(oldPath: string, newPath: string) {
     const updated = patches.map((p) => {
       if (p.startsWith(oldPrefix)) {
         const newName = newPrefix + p.slice(oldPrefix.length);
+
         // Move localStorage entry
         if (typeof localStorage !== 'undefined') {
           const data = localStorage.getItem(`patchies-patch-${p}`);
+
           if (data) {
             localStorage.setItem(`patchies-patch-${newName}`, data);
             localStorage.removeItem(`patchies-patch-${p}`);
           }
         }
+
         return newName;
       }
+
       return p;
     });
+
     localStorage.setItem('patchies-saved-patches', JSON.stringify(updated));
+
     return updated;
   });
 }
@@ -335,11 +395,13 @@ export function moveSavedFolder(oldPath: string, newPath: string) {
 // Get the base name from a path (e.g., "folder/patch" -> "patch")
 export function getSaveBaseName(path: string): string {
   const parts = path.split('/');
+
   return parts[parts.length - 1];
 }
 
 // Get the parent folder from a path (e.g., "folder/patch" -> "folder", "patch" -> "")
 export function getSaveParentFolder(path: string): string {
   const lastSlash = path.lastIndexOf('/');
+
   return lastSlash === -1 ? '' : path.slice(0, lastSlash);
 }

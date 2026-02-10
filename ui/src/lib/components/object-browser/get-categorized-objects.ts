@@ -68,6 +68,7 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   netrecv: 'Network message receiver via WebRTC',
   send: 'Send messages to a named channel',
   recv: 'Receive messages from a named channel',
+  kv: 'Persistent key-value storage for the patch',
   mqtt: 'MQTT pub/sub client for IoT messaging',
   sse: 'Server-Sent Events (EventSource) receiver',
   tts: 'Text-to-speech using Web Speech API',

@@ -5,7 +5,10 @@
   import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
   import type { Node, Edge } from '@xyflow/svelte';
   import { deleteSearchParam } from '$lib/utils/search-params';
-  import { currentPatchName as currentPatchNameStore } from '../../../stores/ui.store';
+  import {
+    currentPatchName as currentPatchNameStore,
+    generateNewPatchId
+  } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
@@ -50,6 +53,15 @@
     deleteSearchParam('src');
 
     const name = patchName.trim();
+    const currentName = $currentPatchNameStore;
+
+    // If renaming an existing patch (Save As), generate a new patchId
+    // so the new patch has its own KV storage.
+    // Only treat as rename if currentName is defined (not first save)
+    if (currentName && name !== currentName) {
+      generateNewPatchId();
+    }
+
     savePatchToLocalStorage({ name, nodes, edges });
 
     // Update the current patch name store
@@ -62,6 +74,7 @@
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+
       handleSave();
     }
   }
