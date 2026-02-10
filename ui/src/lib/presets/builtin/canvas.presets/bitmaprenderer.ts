@@ -20,7 +20,7 @@ recv((data) => {
 });`;
 
 export const bitmapRendererPreset = {
-  type: 'canvas.dom' as const,
+  type: 'dom' as const,
   data: {
     code: BITMAPRENDERER_JS,
     inletCount: 1,
