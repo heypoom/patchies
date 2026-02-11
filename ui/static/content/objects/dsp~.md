@@ -62,7 +62,10 @@ const process = (inputs, outputs) => {
 
 ## Multiple Audio Ports
 
-Use `setAudioPortCount(inputs, outputs)` to configure multiple audio ports:
+Use `setAudioPortCount(inputs, outputs)` to configure multiple audio ports.
+
+> **Note**: After changing port count, reconnect your audio sources.
+> The worklet is recreated with the new configuration.
 
 ### Multiple Inputs
 
@@ -98,6 +101,8 @@ function process(inputs, outputs) {
 ```
 
 ### More Examples
+
+These snippets go inside the `for` loop, using variables from examples above:
 
 ```js
 // Ring modulation (2 inputs)

@@ -171,7 +171,8 @@
     messageContext.queue.addCallback(handleMessage);
 
     inletValues = new Array(valueInletCount).fill(0);
-    audioService.createNode(nodeId, 'dsp~', [null, code]);
+    // Pass saved port counts so worklet is created with correct configuration on load
+    audioService.createNode(nodeId, 'dsp~', [null, code, audioInletCount, audioOutletCount]);
     updateAudioInletValues(inletValues);
     updateContentWidth();
     setupWorkletEventHandler();
@@ -209,11 +210,20 @@
             audioInletCount: P.number,
             audioOutletCount: P.number
           },
-          (m) => {
+          async (m) => {
             updateNodeData(nodeId, {
               audioInletCount: m.audioInletCount,
               audioOutletCount: m.audioOutletCount
             });
+
+            // Recreate the worklet with new audio port configuration
+            await audioService.send(nodeId, 'updateAudioPorts', {
+              inlets: m.audioInletCount,
+              outlets: m.audioOutletCount
+            });
+
+            // Re-setup event handler since worklet was recreated
+            setupWorkletEventHandler();
 
             syncPortLayout();
           }

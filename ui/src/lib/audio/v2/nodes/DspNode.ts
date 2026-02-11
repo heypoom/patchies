@@ -39,6 +39,10 @@ export class DspNode implements AudioNodeV2 {
   private audioContext: AudioContext;
 
   private keepAliveGain: GainNode | null = null;
+  private currentCode: string = '';
+  private currentInletValues: unknown[] = [];
+  private audioInletCount: number = 1;
+  private audioOutletCount: number = 1;
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -52,11 +56,34 @@ export class DspNode implements AudioNodeV2 {
   async create(params: unknown[]): Promise<void> {
     await this.ensureModule();
 
-    const [, code] = params as [unknown, string];
+    const [, code, audioInlets, audioOutlets] = params as [
+      unknown,
+      string,
+      number | undefined,
+      number | undefined
+    ];
+    this.currentCode = code || '';
+
+    // Use saved port counts if provided (for loading saved patches)
+    if (typeof audioInlets === 'number' && audioInlets > 0) {
+      this.audioInletCount = audioInlets;
+    }
+    if (typeof audioOutlets === 'number' && audioOutlets > 0) {
+      this.audioOutletCount = audioOutlets;
+    }
 
     try {
-      this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor');
-      this.workletNode.connect(this.audioNode);
+      this.createWorklet();
+
+      // Sync port counts to processor so setAudioPortCount() in user code
+      // doesn't trigger unnecessary reconfiguration
+      if (this.workletNode) {
+        this.workletNode.port.postMessage({
+          type: 'sync-audio-ports',
+          inlets: this.audioInletCount,
+          outlets: this.audioOutletCount
+        });
+      }
 
       if (code) {
         this.send('code', code);
@@ -64,6 +91,26 @@ export class DspNode implements AudioNodeV2 {
     } catch (error) {
       logger.error('Failed to create DSP node:', error);
     }
+  }
+
+  /**
+   * Create or recreate the worklet with current audio port configuration.
+   */
+  private createWorklet(): void {
+    // Disconnect old worklet if exists
+    if (this.workletNode) {
+      this.workletNode.disconnect();
+    }
+
+    // Disable keep-alive before recreating (will be re-enabled if needed)
+    this.disableKeepAlive();
+
+    this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor', {
+      numberOfInputs: this.audioInletCount,
+      numberOfOutputs: this.audioOutletCount
+    });
+
+    this.workletNode.connect(this.audioNode);
   }
 
   async send(key: string, msg: unknown): Promise<void> {
@@ -78,10 +125,12 @@ export class DspNode implements AudioNodeV2 {
 
     match([key, msg])
       .with(['code', P.string], ([, code]) => {
+        this.currentCode = code;
         port.postMessage({ type: 'set-code', code });
       })
       .with(['inletValues', P.array(P.any)], ([, values]) => {
-        port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
+        this.currentInletValues = Array.from(values);
+        port.postMessage({ type: 'set-inlet-values', values: this.currentInletValues });
       })
       .with(['messageInlet', P.any], ([, messageData]) => {
         const data = messageData as { inletIndex: number; message: unknown; meta: unknown };
@@ -102,17 +151,77 @@ export class DspNode implements AudioNodeV2 {
         }
 
         port.postMessage({ type: 'set-keep-alive', enabled });
+      })
+      .with(['updateAudioPorts', P.any], ([, portConfig]) => {
+        const config = portConfig as { inlets: number; outlets: number };
+
+        this.updateAudioPorts(config.inlets, config.outlets);
       });
   }
 
   /**
-   * Handle incoming connections - route to worklet input
+   * Update audio port configuration by recreating the worklet.
    */
-  async connectFrom(source: AudioNodeV2): Promise<void> {
+  private updateAudioPorts(inlets: number, outlets: number): void {
+    // Only recreate if counts actually changed
+    if (inlets === this.audioInletCount && outlets === this.audioOutletCount) {
+      return;
+    }
+
+    this.audioInletCount = inlets;
+    this.audioOutletCount = outlets;
+
+    // Recreate worklet with new port configuration
+    this.createWorklet();
+
+    // Re-send configuration and code to the new worklet
+    if (this.workletNode) {
+      // First, sync the audio port counts so setAudioPortCount() in user code
+      // doesn't trigger another reconfiguration
+      this.workletNode.port.postMessage({
+        type: 'sync-audio-ports',
+        inlets: this.audioInletCount,
+        outlets: this.audioOutletCount
+      });
+
+      if (this.currentCode) {
+        this.workletNode.port.postMessage({ type: 'set-code', code: this.currentCode });
+      }
+
+      if (this.currentInletValues.length > 0) {
+        this.workletNode.port.postMessage({
+          type: 'set-inlet-values',
+          values: this.currentInletValues
+        });
+      }
+    }
+  }
+
+  /**
+   * Handle incoming connections - route to worklet input.
+   * Parses targetHandle to determine which input index to connect to.
+   * For example, "audio-in-2" routes to input index 2.
+   */
+  async connectFrom(
+    source: AudioNodeV2,
+    _paramName?: string,
+    _sourceHandle?: string,
+    targetHandle?: string
+  ): Promise<void> {
     await this.ensureModule();
 
     if (this.workletNode && source.audioNode) {
-      source.audioNode.connect(this.workletNode);
+      let inputIndex = 0;
+
+      // Parse handle like "audio-in-2" to get input index
+      if (targetHandle) {
+        const indexMatch = targetHandle.match(/audio-in-(\d+)/);
+        if (indexMatch) {
+          inputIndex = parseInt(indexMatch[1], 10);
+        }
+      }
+
+      source.audioNode.connect(this.workletNode, 0, inputIndex);
     }
   }
 
@@ -126,7 +235,9 @@ export class DspNode implements AudioNodeV2 {
     if (!this.keepAliveGain) {
       this.keepAliveGain = this.audioContext.createGain();
       this.keepAliveGain.gain.value = 0;
+
       worklet.connect(this.keepAliveGain);
+
       this.keepAliveGain.connect(this.audioContext.destination);
     }
   }
