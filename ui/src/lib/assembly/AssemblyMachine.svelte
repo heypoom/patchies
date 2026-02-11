@@ -291,7 +291,12 @@
   async function pushMachineConfig() {
     try {
       if (data.machineConfig) {
-        await assemblySystem.setMachineConfig(machineId, data.machineConfig);
+        // Don't auto-play on reload - always start stopped
+        const configWithoutAutoPlay = { ...data.machineConfig, isRunning: false };
+
+        await assemblySystem.setMachineConfig(machineId, configWithoutAutoPlay);
+
+        updateNodeData(nodeId, { machineConfig: configWithoutAutoPlay });
       }
     } catch (error) {
       // Use default config if unable to load
