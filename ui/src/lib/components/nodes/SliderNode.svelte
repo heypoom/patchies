@@ -32,8 +32,6 @@
   let messageContext: MessageContext;
   let showSettings = $state(false);
   let sliderElement: HTMLInputElement;
-  let contentContainer: HTMLDivElement | null = null;
-  let contentWidth = $state(0);
 
   // Configuration values with defaults
   const min = $derived(node.data.min ?? 0);
@@ -44,6 +42,8 @@
   const sliderWidth = $derived(node.width ?? 130);
   const sliderHeight = $derived(node.height ?? 140);
   const isResizable = $derived(node.data.resizable ?? false);
+  // Settings panel position: use node width for horizontal, fixed for vertical
+  const settingsLeftOffset = $derived(node.data.vertical ? 40 : sliderWidth + 10);
 
   // For display formatting
   const displayValue = $derived(
@@ -96,23 +96,22 @@
       }
     }
 
-    // Reset node dimensions when switching orientation
+    // Set appropriate default dimensions when switching orientation
     if ('vertical' in updates) {
-      updateNode(node.id, { width: undefined, height: undefined });
+      if (updates.vertical) {
+        // Switching to vertical: narrow width, default height
+        updateNode(node.id, { width: 30, height: 130 });
+      } else {
+        // Switching to horizontal: default width, auto height
+        updateNode(node.id, { width: 130, height: undefined });
+      }
     }
 
     updateNodeData(node.id, newData);
 
     setTimeout(() => {
-      updateContentWidth();
       updateNodeInternals();
     }, 5);
-  }
-
-  function updateContentWidth() {
-    if (contentContainer) {
-      contentWidth = contentContainer.offsetWidth;
-    }
   }
 
   onMount(() => {
@@ -130,8 +129,6 @@
         messageContext.send(currentValue);
       }
     }, 100);
-
-    updateContentWidth();
   });
 
   onDestroy(() => {
@@ -139,14 +136,13 @@
     messageContext?.destroy();
   });
 
-  // Update node internals and content width when size changes
+  // Update node internals when size changes
   $effect(() => {
     sliderWidth;
     sliderHeight;
 
     setTimeout(() => {
       updateNodeInternals();
-      updateContentWidth();
     }, 0);
   });
 
@@ -177,19 +173,18 @@
       maxWidth={node.data.vertical ? 30 : 500}
       minHeight={node.data.vertical ? 80 : 70}
       maxHeight={node.data.vertical ? 500 : 70}
-      onResizeEnd={() => setTimeout(updateContentWidth, 5)}
     />
   {/if}
 
   <div class="group relative">
-    <div class="flex flex-col gap-2" bind:this={contentContainer}>
+    <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div></div>
 
         <button
           class={[
             'z-4 cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0',
-            node.data.vertical && 'absolute top-[30px] right-[25px]'
+            node.data.vertical && 'absolute top-[30px] right-[30px]'
           ]}
           onclick={() => (showSettings = !showSettings)}
           title="Settings"
@@ -254,7 +249,7 @@
   </div>
 
   {#if showSettings}
-    <div class="absolute top-0" style="left: {contentWidth + 10}px">
+    <div class="absolute top-0" style="left: {settingsLeftOffset}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
           <X class="h-4 w-4 text-zinc-300" />
