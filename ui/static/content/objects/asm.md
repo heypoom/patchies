@@ -158,7 +158,7 @@ Send a `bang` message to step the program by one instruction. This is slower tha
 
 ### INSTRUCTIONS PER CYCLE
 
-Default is 1 instruction. You can set it to higher number of instructions per cycle (e.g. 20) to speed up the program significantly. Set this in the settings menu via the `Step By` option, or send a `setStepBy` message.
+Default is 1 instruction. You can set it to higher number of instructions per cycle (e.g. 20) to speed up the program significantly. Set this in the settings menu via the `Instructions per Step` option, or send a `setStepBy` message.
 
 ## Memory Visualizer
 
@@ -189,7 +189,7 @@ Default is 1 instruction. You can set it to higher number of instructions per cy
 - `reset`: reset the program
 - `step`: step the program by one instruction
 - `{type: 'setDelayMs', value: <number>}`: set the delay between automatic clock ticks in milliseconds
-- `{type: 'setStepBy', value: <number>}`: set the number of instructions to step by on each (manual and auto) tick
+- `{type: 'setStepBy', value: <number>}`: set the number of instructions to execute per step
 - `number` or `array of number`: send the number(s) to the program - use the `receive` instruction to tell the machine to wait for one input
 
 ## Shortcuts

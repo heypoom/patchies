@@ -603,6 +603,26 @@
     <div class="space-y-4">
       <div>
         <!-- svelte-ignore a11y_label_has_associated_control -->
+        <label class="mb-2 block text-xs font-medium text-zinc-300">Instructions per Step</label>
+
+        <input
+          type="number"
+          min="1"
+          max="1000"
+          bind:value={stepByInput}
+          oninput={() => {
+            if (!isNaN(stepByInput) && stepByInput >= 1 && stepByInput <= 1000) {
+              updateMachineConfig({ stepBy: stepByInput });
+            }
+          }}
+          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+        />
+
+        <div class="mt-1.5 text-xs text-zinc-500">Cycles to execute per step</div>
+      </div>
+
+      <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Delay (ms)</label>
 
         <input
@@ -623,26 +643,6 @@
         <div class="mt-1.5 text-xs text-zinc-500">
           Delay between instructions for automatic execution
         </div>
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Step By</label>
-
-        <input
-          type="number"
-          min="1"
-          max="1000"
-          bind:value={stepByInput}
-          oninput={() => {
-            if (!isNaN(stepByInput) && stepByInput >= 1 && stepByInput <= 1000) {
-              updateMachineConfig({ stepBy: stepByInput });
-            }
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-
-        <div class="mt-1.5 text-xs text-zinc-500">Cycles to execute per step</div>
       </div>
     </div>
   </div>
