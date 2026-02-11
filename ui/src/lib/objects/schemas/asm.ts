@@ -31,7 +31,7 @@ export const asmSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages and input data',
       messages: [
-        { schema: Bang, description: 'Step machine by configured stepBy amount' },
+        { schema: Bang, description: 'Step machine by configured instructions per step' },
         { schema: SetCode, description: 'Set assembly code and reload program' },
         { schema: Run, description: 'Reload program and execute one step' },
         { schema: Play, description: 'Start continuous execution' },
