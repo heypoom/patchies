@@ -80,10 +80,10 @@ Use `fft()` to get audio frequency data from a connected `fft~` object. See [Aud
 Use `await llm(prompt, options?)` to call Google's Gemini API:
 
 ```javascript
-const response = await llm("Describe this image");
+await llm("Generate a JSON of happy birthday");
 
 // With options
-const response = await llm("What's in this frame?", {
+await llm("What's in this frame?", {
   abortSignal: controller.signal,
   imageNodeId: "glsl-54",  // include visual object output as context
 });
