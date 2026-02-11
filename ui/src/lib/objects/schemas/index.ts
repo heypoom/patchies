@@ -182,6 +182,8 @@ import { RecvObject } from '$lib/objects/v2/nodes/RecvObject';
 import { KVObject } from '$lib/objects/v2/nodes/KVObject';
 import { SendAudioNode } from '$lib/audio/v2/nodes/SendAudioNode';
 import { RecvAudioNode } from '$lib/audio/v2/nodes/RecvAudioNode';
+import { IntObject } from '../v2/nodes/IntObject';
+import { FloatObject } from '../v2/nodes/FloatObject';
 
 /**
  * Registry of all object schemas.
@@ -297,7 +299,13 @@ export const objectSchemas: ObjectSchemaRegistry = {
   webmidilink: schemaFromNode(WebMidiLinkObject, 'control'),
   send: schemaFromNode(SendObject, 'control'),
   recv: schemaFromNode(RecvObject, 'control'),
-  kv: schemaFromNode(KVObject, 'control')
+  s: schemaFromNode(SendObject, 'control'),
+  r: schemaFromNode(RecvObject, 'control'),
+  kv: schemaFromNode(KVObject, 'control'),
+  i: schemaFromNode(IntObject, 'control'),
+  f: schemaFromNode(FloatObject, 'control'),
+  int: schemaFromNode(IntObject, 'control'),
+  float: schemaFromNode(FloatObject, 'control')
 };
 
 /**
