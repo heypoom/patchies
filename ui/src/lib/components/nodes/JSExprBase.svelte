@@ -26,6 +26,7 @@
     placeholder,
     outletTitles = ['Output'],
     requireAllInlets = false,
+    bangAsValue = false,
     onResult
   }: {
     id: string;
@@ -35,6 +36,7 @@
     placeholder: string;
     outletTitles?: string[];
     requireAllInlets?: boolean;
+    bangAsValue?: boolean;
     onResult: ResultHandler;
   } = $props();
 
@@ -98,7 +100,13 @@
     const nextInletValues = [...inletValues];
 
     match(message)
-      .with(messages.bang, () => {})
+      .with(messages.bang, () => {
+        // Bang triggers evaluation but doesn't persist to stored values
+        // If bangAsValue is set (e.g., tap), use bang as $1 for this evaluation
+        if (inlet === 0 && bangAsValue) {
+          nextInletValues[0] = { type: 'bang' };
+        }
+      })
       .otherwise((value) => {
         nextInletValues[inlet] = value;
         inletValues = nextInletValues;

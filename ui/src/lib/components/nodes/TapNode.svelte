@@ -19,6 +19,7 @@
   displayPrefix="tap"
   placeholder="console.log($1)"
   outletTitles={['Output']}
+  bangAsValue
   onResult={(_result, originalMessage, send) => {
     // Tap: execute expression for side effects, always pass through original
     send(originalMessage);
