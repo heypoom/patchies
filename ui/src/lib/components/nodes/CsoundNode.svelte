@@ -148,6 +148,7 @@
           expr={data.expr}
           bind:isEditing
           editorClass="csound-node-code-editor"
+          previewContainerClass="csound-node-preview-container"
           onExpressionChange={handleExpressionChange}
           exitOnRun={false}
           onRun={handleRun}
@@ -160,6 +161,12 @@
 </div>
 
 <style>
+  :global(.csound-node-preview-container) {
+    width: fit-content;
+    max-height: 500px;
+    overflow-y: hidden;
+  }
+
   :global(.csound-node-code-editor .cm-content) {
     padding: 6px 8px 7px 4px !important;
   }
