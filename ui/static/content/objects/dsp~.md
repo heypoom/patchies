@@ -85,17 +85,71 @@ function process(inputs, outputs) {
 
 ### Multiple Outputs
 
+Each output port appears as a **separate blue outlet** on the node. Use this to route
+different signals to different destinations (e.g., dry/wet, parallel processing).
+
 ```js
-setAudioPortCount(1, 2);  // 1 input, 2 outputs
+setAudioPortCount(1, 2);  // 1 input, 2 output ports
 
 function process(inputs, outputs) {
   const input = inputs[0][0];
-  const outL = outputs[0][0];  // first output
-  const outR = outputs[1][0];  // second output
+  const out1 = outputs[0][0];  // output port 1 → first blue outlet
+  const out2 = outputs[1][0];  // output port 2 → second blue outlet
+
+  for (let i = 0; i < out1.length; i++) {
+    out1[i] = input[i];        // dry signal → first outlet
+    out2[i] = input[i] * 0.5;  // attenuated → second outlet
+  }
+}
+```
+
+> **Note**: These are separate output **ports** (blue outlets), not stereo channels.
+> Each port can be connected to a different destination.
+
+### Ports vs Channels
+
+Audio data is accessed as `inputs[port][channel]` and `outputs[port][channel]`:
+
+- **Ports** = separate inlets/outlets on the node (configured via `setAudioPortCount`)
+- **Channels** = stereo/multichannel within a single port (determined by source)
+
+```js
+// Port and channel indexing:
+inputs[0][0]   // port 0, channel 0 (left)
+inputs[0][1]   // port 0, channel 1 (right)
+inputs[1][0]   // port 1, channel 0
+outputs[0][0]  // output port 0, channel 0
+outputs[0][1]  // output port 0, channel 1
+```
+
+**Stereo processing** (single port, two channels):
+
+```js
+function process(inputs, outputs) {
+  const inL = inputs[0][0];   // left channel
+  const inR = inputs[0][1];   // right channel
+  const outL = outputs[0][0];
+  const outR = outputs[0][1];
 
   for (let i = 0; i < outL.length; i++) {
-    outL[i] = input[i];        // dry signal
-    outR[i] = input[i] * 0.5;  // attenuated copy
+    // Swap stereo channels
+    outL[i] = inR[i];
+    outR[i] = inL[i];
+  }
+}
+```
+
+**Mono-to-stereo** (copy mono input to both channels):
+
+```js
+function process(inputs, outputs) {
+  const input = inputs[0][0];
+  const outL = outputs[0][0];
+  const outR = outputs[0][1];
+
+  for (let i = 0; i < outL.length; i++) {
+    outL[i] = input[i];
+    outR[i] = input[i];
   }
 }
 ```
@@ -111,13 +165,13 @@ out[i] = in1[i] * in2[i];
 // Crossfade with $1 control (0-1)
 out[i] = in1[i] * (1 - $1) + in2[i] * $1;
 
-// Stereo panner ($1 = 0 left, 1 right)
-outL[i] = input[i] * (1 - $1);
-outR[i] = input[i] * $1;
+// Panner to 2 output ports ($1 = 0 first outlet, 1 second outlet)
+out1[i] = input[i] * (1 - $1);  // → first blue outlet
+out2[i] = input[i] * $1;        // → second blue outlet
 
-// Mid/side encoder (2 in, 2 out)
-outL[i] = (in1[i] + in2[i]) * 0.5;  // mid
-outR[i] = (in1[i] - in2[i]) * 0.5;  // side
+// Mid/side encoder (2 input ports, 2 output ports)
+out1[i] = (in1[i] + in2[i]) * 0.5;  // mid → first outlet
+out2[i] = (in1[i] - in2[i]) * 0.5;  // side → second outlet
 ```
 
 > **Tip**: For simple mixing/crossfading, consider [expr~](/docs/objects/expr~)
