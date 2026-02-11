@@ -21,7 +21,8 @@ export class FloatObject implements TextObjectV2 {
       type: 'message',
       description: 'Set value and output (or bang to output current)',
       defaultValue: 0,
-      maxPrecision: 4
+      maxPrecision: 4,
+      hot: true
     },
     {
       name: 'cold',

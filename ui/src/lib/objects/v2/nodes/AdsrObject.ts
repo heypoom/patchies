@@ -14,7 +14,8 @@ export class AdsrObject implements TextObjectV2 {
     {
       name: 'trigger',
       type: 'message',
-      description: 'Trigger the ADSR envelope. 0 = release, 1 = attack.'
+      description: 'Trigger the ADSR envelope. 0 = release, 1 = attack.',
+      hot: true
     },
     {
       name: 'peak',

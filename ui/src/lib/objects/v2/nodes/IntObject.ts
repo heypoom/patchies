@@ -20,7 +20,8 @@ export class IntObject implements TextObjectV2 {
       name: 'hot',
       type: 'message',
       description: 'Set value and output (or bang to output current)',
-      defaultValue: 0
+      defaultValue: 0,
+      hot: true
     },
     {
       name: 'cold',

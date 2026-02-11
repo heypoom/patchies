@@ -23,7 +23,8 @@ export class MtofObject implements TextObjectV2 {
           schema: Type.Number({ minimum: 0, maximum: 127 }),
           description: 'MIDI note value (0-127)'
         }
-      ]
+      ],
+      hot: true
     }
   ];
 

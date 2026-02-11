@@ -49,6 +49,9 @@ export interface ObjectInlet {
   /** Does this inlet represent an audio parameter in the audio node? **/
   isAudioParam?: boolean;
 
+  /** Hot inlet indicator (Max/Pd style) - visually highlights the inlet */
+  hot?: boolean;
+
   /**
    * When true, the inlet is hidden from the UI but still available as a parameter.
    * Useful for configuration inlets like store names that are set via arguments

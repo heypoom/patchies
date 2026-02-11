@@ -936,6 +936,7 @@
               class="top-0"
               {nodeId}
               isAudioParam={inlet.isAudioParam}
+              isHot={inlet.hot}
             />
           {/each}
         {:else}
