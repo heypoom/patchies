@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, X } from '@lucide/svelte/icons';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -19,11 +19,14 @@
       value?: number;
       vertical?: boolean;
       runOnMount?: boolean;
+      width?: number;
+      height?: number;
     };
     selected: boolean;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   let messageContext: MessageContext;
   let showSettings = $state(false);
@@ -35,6 +38,8 @@
   const defaultValue = $derived(node.data.defaultValue ?? min);
   const isFloat = $derived(node.data.isFloat ?? false);
   const currentValue = $derived(node.data.value ?? defaultValue);
+  const sliderWidth = $derived(node.data.width ?? 130);
+  const sliderHeight = $derived(node.data.height ?? 140);
 
   // For display formatting
   const displayValue = $derived(
@@ -112,9 +117,16 @@
     messageContext?.destroy();
   });
 
+  // Update node internals when size changes to ensure edges render correctly
+  $effect(() => {
+    sliderWidth;
+    sliderHeight;
+    updateNodeInternals(node.id);
+  });
+
   const sliderClass = $derived.by(() => {
     if (node.data.vertical) {
-      return 'h-28';
+      return '';
     }
 
     return [
@@ -160,10 +172,8 @@
         />
 
         <div
-          class={[
-            'flex w-full flex-col items-center justify-center gap-1 py-1',
-            node.data.vertical ? '' : 'max-w-[130px] min-w-[100px]'
-          ]}
+          class="flex w-full flex-col items-center justify-center gap-1 py-1"
+          style={node.data.vertical ? '' : `width: ${sliderWidth}px;`}
         >
           <div
             class={[
@@ -188,7 +198,7 @@
               (max - min)) *
               100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%); {node
               .data.vertical
-              ? 'writing-mode: vertical-lr; direction: rtl;'
+              ? `writing-mode: vertical-lr; direction: rtl; height: ${sliderHeight}px;`
               : ''};"
             class={['nodrag', sliderClass]}
           />
@@ -311,6 +321,30 @@
           checked={node.data.vertical}
           onchange={(e) => updateConfig({ vertical: (e.target as HTMLInputElement).checked })}
           class="h-4 w-4"
+        />
+      </div>
+
+      <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
+        <label class="mb-2 block text-xs font-medium text-zinc-300">
+          {node.data.vertical ? 'Height' : 'Width'} (px)
+        </label>
+
+        <input
+          type="number"
+          step={10}
+          min={60}
+          max={500}
+          value={node.data.vertical ? sliderHeight : sliderWidth}
+          onchange={(e) => {
+            const value = parseInt((e.target as HTMLInputElement).value);
+            if (node.data.vertical) {
+              updateConfig({ height: value });
+            } else {
+              updateConfig({ width: value });
+            }
+          }}
+          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         />
       </div>
 
