@@ -264,6 +264,7 @@ export class CanvasDragDropManager {
     return match(ext)
       .with('rom', () => 'uxn')
       .with('csd', () => 'csound~')
+      .with('ck', () => 'chuck~')
       .otherwise(() => null);
   }
 
@@ -294,6 +295,10 @@ export class CanvasDragDropManager {
         () => 'csound~'
       )
       .when(
+        (t) => t === 'text/x-chuck',
+        () => 'chuck~'
+      )
+      .when(
         (t) => t.startsWith('text/'),
         () => 'markdown'
       )
@@ -315,7 +320,8 @@ export class CanvasDragDropManager {
     const vfs = VirtualFilesystem.getInstance();
 
     // Refactored: combine common logic for file-based text nodes
-    if (nodeType === 'markdown' || nodeType === 'js' || nodeType === 'csound~') {
+    const textNodeTypes = ['markdown', 'js', 'csound~', 'chuck~'];
+    if (textNodeTypes.includes(nodeType)) {
       try {
         const file = await vfs.resolve(vfsPath);
         const content = await file.text();
@@ -324,19 +330,18 @@ export class CanvasDragDropManager {
           ...getDefaultNodeData(nodeType),
           ...(nodeType === 'markdown' && { markdown: content }),
           ...(nodeType === 'js' && { code: content }),
-          ...(nodeType === 'csound~' && { expr: content })
+          ...((nodeType === 'csound~' || nodeType === 'chuck~') && { expr: content })
         };
       } catch (error) {
-        logger.error(
-          `Failed to read VFS ${nodeType === 'markdown' ? 'markdown' : nodeType === 'js' ? 'JavaScript' : 'Csound'} file:`,
-          error
-        );
+        logger.error(`Failed to read VFS ${nodeType} file:`, error);
 
         return {
           ...getDefaultNodeData(nodeType),
           ...(nodeType === 'markdown' && { markdown: '// Error loading file' }),
           ...(nodeType === 'js' && { code: '// Error loading file' }),
-          ...(nodeType === 'csound~' && { expr: '; Error loading file' })
+          ...((nodeType === 'csound~' || nodeType === 'chuck~') && {
+            expr: '// Error loading file'
+          })
         };
       }
     }
@@ -428,6 +433,17 @@ export class CanvasDragDropManager {
           logger.error('Failed to read Csound file:', error);
 
           return { ...getDefaultNodeData('csound~'), expr: `; Error loading file: ${file.name}` };
+        }
+      })
+      .with('chuck~', async () => {
+        try {
+          const content = await file.text();
+
+          return { ...getDefaultNodeData('chuck~'), expr: content };
+        } catch (error) {
+          logger.error('Failed to read ChucK file:', error);
+
+          return { ...getDefaultNodeData('chuck~'), expr: `// Error loading file: ${file.name}` };
         }
       })
       .otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));

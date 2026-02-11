@@ -179,6 +179,9 @@ export function guessMimeType(filename: string): string | undefined {
     // Csound
     '.csd': 'text/x-csound-csd',
 
+    // ChucK
+    '.ck': 'text/x-chuck',
+
     // UXN ROM
     '.rom': 'application/x-uxn-rom'
   };
