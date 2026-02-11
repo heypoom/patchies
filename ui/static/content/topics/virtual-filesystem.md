@@ -53,4 +53,4 @@ The `getVfsUrl()` function is available in all [JavaScript Runner](/docs/javascr
 
 - [Files](/docs/manage-files) - Managing files in the sidebar
 - [JavaScript Runner](/docs/javascript-runner) - Full JSRunner API reference
-- [Storage](/docs/storage) - Persistent key-value storage
+- [Data Storage](/docs/data-storage) - Persistent key-value storage

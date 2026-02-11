@@ -70,4 +70,6 @@ The kv object supports binary data (Blob, ArrayBuffer, Uint8Array).
 
 ## JavaScript API
 
-For JavaScript objects (`js`, `worker`, `p5`, etc.), use the `kv` runtime API instead. See [Storage](/docs/storage) for details.
+For JavaScript objects (`js`, `worker`, `p5`, etc.), use the `kv` runtime API instead. 
+
+See [Data Storage](/docs/data-storage) for details.

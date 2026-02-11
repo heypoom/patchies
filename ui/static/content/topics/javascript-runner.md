@@ -135,7 +135,7 @@ Note: Constants are NOT shared across objects. Each object has its own isolated 
 ## See Also
 
 - [Virtual Filesystem](/docs/virtual-filesystem) - Loading files and assets
-- [Storage](/docs/storage) - Persistent key-value storage
+- [Data Storage](/docs/data-storage) - Persistent key-value storage
 - [Canvas Interaction](/docs/canvas-interaction)
 - [Audio Reactivity](/docs/audio-reactivity)
 - [Message Passing](/docs/message-passing)
