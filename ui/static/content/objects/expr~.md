@@ -76,6 +76,18 @@ s1 * s2
 
 // Crossfade between two signals ($1 controls mix 0-1)
 s1 * (1 - $1) + s2 * $1
+
+// AM synthesis (amplitude modulation)
+s1 * (1 + s2 * $1) * 0.5  // $1 = modulation depth
+
+// Sidechain ducking (s2 controls s1 volume)
+s1 * (1 - abs(s2))
+
+// Weighted mix of 3 signals
+s1 * 0.5 + s2 * 0.3 + s3 * 0.2
+
+// Difference (phase cancellation effects)
+s1 - s2
 ```
 
 ## Multiple Signal Inputs
@@ -91,6 +103,56 @@ s1 * s2 * s3 // 3 inlets
 
 This enables mixing, ring modulation, crossfading, and other multi-input
 effects without needing separate mixer nodes.
+
+### Multi-Signal Recipes
+
+**Ring Modulation** - Multiply two signals for metallic, inharmonic tones:
+
+```js
+s1 * s2  // Classic ring mod
+```
+
+**AM Synthesis** - Modulate amplitude with a unipolar signal:
+
+```js
+s1 * (1 + s2 * $1) * 0.5  // $1 controls mod depth (0-1)
+```
+
+**Crossfade** - Blend between two sources:
+
+```js
+s1 * (1 - $1) + s2 * $1  // $1 = 0: all s1, $1 = 1: all s2
+```
+
+**Sidechain Ducking** - One signal controls the volume of another:
+
+```js
+s1 * (1 - abs(s2))  // s2 amplitude ducks s1
+```
+
+**Weighted Mixer** - Combine multiple signals with fixed levels:
+
+```js
+s1 * 0.5 + s2 * 0.3 + s3 * 0.2  // 3-channel mixer
+```
+
+**Difference/Phase Cancel** - Subtract signals:
+
+```js
+s1 - s2  // Removes common content, keeps differences
+```
+
+**Gate** - Use one signal to gate another:
+
+```js
+s1 * (abs(s2) > 0.1 ? 1 : 0)  // s2 gates s1 (threshold 0.1)
+```
+
+**Vocoder-style** - Multiply envelope of s2 onto s1:
+
+```js
+s1 * abs(s2)  // s2's envelope shapes s1
+```
 
 ## Dynamic Control Inlets
 
