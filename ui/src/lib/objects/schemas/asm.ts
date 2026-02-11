@@ -40,7 +40,10 @@ export const asmSchema: ObjectSchema = {
         { schema: Reset, description: 'Reset machine state and reload program' },
         { schema: Step, description: 'Execute single step (same as bang)' },
         { schema: SetDelayMs, description: 'Set delay between steps in milliseconds (10-5000)' },
-        { schema: SetStepBy, description: 'Set number of cycles to execute per step (1-1000)' },
+        {
+          schema: SetStepBy,
+          description: 'Set number of instructions to execute per step (1-1000)'
+        },
         { schema: Type.Number(), description: 'Send numeric data to the machine' },
         { schema: Type.Array(Type.Number()), description: 'Send array of numbers to the machine' }
       ]
