@@ -135,6 +135,15 @@ bun run test             # All tests
 3. Add entry to `nodeSpecificFunctions` listing **every node type** that implements this function
 4. Implement the function in each node's runner/context (JSRunner, worker context, hydra context, etc.)
 
+**When adding file drag/drop support** (e.g., `.csd` → csound node):
+
+1. Add MIME type in `src/lib/vfs/path-utils.ts` (e.g., `'.csd': 'text/x-csound-csd'`)
+2. In `src/lib/canvas/CanvasDragDropManager.ts`:
+   - Add extension mapping in `getNodeTypeFromExtension()` (for types browsers don't recognize)
+   - Add MIME type mapping in `getNodeTypeFromMimeType()` (place specific types before generic `text/` catch-all)
+   - Add VFS file handling in `getVfsFileNodeData()` for reading content
+   - Add direct file handling in `getFileNodeData()` for native file drops
+
 **For text control objects (delay, uniqby, etc.):**
 
 1. Create class in `src/lib/objects/v2/nodes/` implementing `TextObjectV2`

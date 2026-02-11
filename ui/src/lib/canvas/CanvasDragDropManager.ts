@@ -263,6 +263,7 @@ export class CanvasDragDropManager {
 
     return match(ext)
       .with('rom', () => 'uxn')
+      .with('csd', () => 'csound~')
       .otherwise(() => null);
   }
 
@@ -289,6 +290,10 @@ export class CanvasDragDropManager {
         () => 'js'
       )
       .when(
+        (t) => t === 'text/x-csound-csd',
+        () => 'csound~'
+      )
+      .when(
         (t) => t.startsWith('text/'),
         () => 'markdown'
       )
@@ -310,7 +315,7 @@ export class CanvasDragDropManager {
     const vfs = VirtualFilesystem.getInstance();
 
     // Refactored: combine common logic for file-based text nodes
-    if (nodeType === 'markdown' || nodeType === 'js') {
+    if (nodeType === 'markdown' || nodeType === 'js' || nodeType === 'csound~') {
       try {
         const file = await vfs.resolve(vfsPath);
         const content = await file.text();
@@ -318,18 +323,20 @@ export class CanvasDragDropManager {
         return {
           ...getDefaultNodeData(nodeType),
           ...(nodeType === 'markdown' && { markdown: content }),
-          ...(nodeType === 'js' && { code: content })
+          ...(nodeType === 'js' && { code: content }),
+          ...(nodeType === 'csound~' && { expr: content })
         };
       } catch (error) {
         logger.error(
-          `Failed to read VFS ${nodeType === 'markdown' ? 'markdown' : 'JavaScript'} file:`,
+          `Failed to read VFS ${nodeType === 'markdown' ? 'markdown' : nodeType === 'js' ? 'JavaScript' : 'Csound'} file:`,
           error
         );
 
         return {
           ...getDefaultNodeData(nodeType),
           ...(nodeType === 'markdown' && { markdown: '// Error loading file' }),
-          ...(nodeType === 'js' && { code: '// Error loading file' })
+          ...(nodeType === 'js' && { code: '// Error loading file' }),
+          ...(nodeType === 'csound~' && { expr: '; Error loading file' })
         };
       }
     }
@@ -411,6 +418,17 @@ export class CanvasDragDropManager {
           vfsPath,
           fileName: file.name
         };
+      })
+      .with('csound~', async () => {
+        try {
+          const content = await file.text();
+
+          return { ...getDefaultNodeData('csound~'), expr: content };
+        } catch (error) {
+          logger.error('Failed to read Csound file:', error);
+
+          return { ...getDefaultNodeData('csound~'), expr: `; Error loading file: ${file.name}` };
+        }
       })
       .otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
   }
