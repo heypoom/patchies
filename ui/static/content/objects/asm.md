@@ -235,21 +235,6 @@ send 0 1
 jump loop
 ```
 
-### Counter
-
-Outputs incrementing values (0, 1, 2, ...) on each input. Count stored at address 0.
-
-```asm
-loop:
-load 0
-dup
-send 0 1
-inc
-store 0
-receive
-jump loop
-```
-
 ### Threshold Gate
 
 Only outputs values greater than 50.

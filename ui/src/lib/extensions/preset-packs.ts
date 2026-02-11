@@ -158,7 +158,6 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'echo.asm',
       'accumulator.asm',
       'double.asm',
-      'counter.asm',
       'threshold-gate.asm',
       'running-average.asm',
       'fibonacci.asm',

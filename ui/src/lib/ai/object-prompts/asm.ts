@@ -59,16 +59,6 @@ Example - Accumulator (running sum):
 }
 \`\`\`
 
-Example - Counter (outputs 0, 1, 2, ... on each bang):
-\`\`\`json
-{
-  "type": "asm",
-  "data": {
-    "code": "loop:\\nload 0\\ndup\\nsend 0 1\\ninc\\nstore 0\\nreceive\\njump loop"
-  }
-}
-\`\`\`
-
 Example - Double input:
 \`\`\`json
 {

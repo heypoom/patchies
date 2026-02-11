@@ -26,17 +26,6 @@ mul
 send 0 1
 jump loop`;
 
-const COUNTER_ASM = `; Counter - outputs incrementing values on each input
-; Count stored at address 0
-loop:
-load 0
-dup
-send 0 1
-inc
-store 0
-receive
-jump loop`;
-
 const THRESHOLD_GATE_ASM = `; Threshold Gate - only outputs if value > 50
 loop:
 receive
@@ -145,10 +134,6 @@ export const ASM_PRESETS: Record<string, { type: string; data: { code: string } 
   'double.asm': {
     type: 'asm',
     data: { code: DOUBLE_ASM.trim() }
-  },
-  'counter.asm': {
-    type: 'asm',
-    data: { code: COUNTER_ASM.trim() }
   },
   'threshold-gate.asm': {
     type: 'asm',
