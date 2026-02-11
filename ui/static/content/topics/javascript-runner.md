@@ -115,6 +115,16 @@ const { uniq } = await esm("lodash-es");
 
 Use `await getVfsUrl(path)` to load images, videos, fonts, and other assets from the virtual filesystem. See [Virtual Filesystem](/docs/virtual-filesystem) for full documentation.
 
+## Persistent Storage
+
+Use `kv` to store data that persists across sessions. See [Data Storage](/docs/data-storage) for details.
+
+```javascript
+await kv.set("counter", 42);
+await kv.store("settings").set("theme", "dark");
+await kv.get("counter"); // 42
+```
+
 ## Shared Libraries
 
 ![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
