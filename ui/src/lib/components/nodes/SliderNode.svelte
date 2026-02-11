@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, X } from '@lucide/svelte/icons';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -19,11 +19,15 @@
       value?: number;
       vertical?: boolean;
       runOnMount?: boolean;
+      resizable?: boolean;
     };
     selected: boolean;
+    width?: number;
+    height?: number;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   let messageContext: MessageContext;
   let showSettings = $state(false);
@@ -35,6 +39,11 @@
   const defaultValue = $derived(node.data.defaultValue ?? min);
   const isFloat = $derived(node.data.isFloat ?? false);
   const currentValue = $derived(node.data.value ?? defaultValue);
+  const sliderWidth = $derived(node.width ?? 130);
+  const sliderHeight = $derived(node.height ?? 140);
+  const isResizable = $derived(node.data.resizable ?? false);
+  // Settings panel position: use node width for horizontal, fixed for vertical
+  const settingsLeftOffset = $derived(node.data.vertical ? 40 : sliderWidth + 10);
 
   // For display formatting
   const displayValue = $derived(
@@ -87,7 +96,22 @@
       }
     }
 
+    // Set appropriate default dimensions when switching orientation
+    if ('vertical' in updates) {
+      if (updates.vertical) {
+        // Switching to vertical: narrow width, default height
+        updateNode(node.id, { width: 30, height: 130 });
+      } else {
+        // Switching to horizontal: default width, auto height
+        updateNode(node.id, { width: 130, height: undefined });
+      }
+    }
+
     updateNodeData(node.id, newData);
+
+    setTimeout(() => {
+      updateNodeInternals();
+    }, 5);
   }
 
   onMount(() => {
@@ -112,9 +136,19 @@
     messageContext?.destroy();
   });
 
+  // Update node internals when size changes
+  $effect(() => {
+    sliderWidth;
+    sliderHeight;
+
+    setTimeout(() => {
+      updateNodeInternals();
+    }, 0);
+  });
+
   const sliderClass = $derived.by(() => {
     if (node.data.vertical) {
-      return 'h-28';
+      return '';
     }
 
     return [
@@ -131,7 +165,17 @@
   });
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative">
+  {#if isResizable}
+    <NodeResizer
+      isVisible={node.selected}
+      minWidth={node.data.vertical ? 30 : 60}
+      maxWidth={node.data.vertical ? 30 : 500}
+      minHeight={node.data.vertical ? 80 : 70}
+      maxHeight={node.data.vertical ? 500 : 70}
+    />
+  {/if}
+
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -139,8 +183,8 @@
 
         <button
           class={[
-            'z-4 rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0',
-            node.data.vertical && 'absolute top-[30px] right-[25px]'
+            'z-4 cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0',
+            node.data.vertical && 'absolute top-[30px] right-[30px]'
           ]}
           onclick={() => (showSettings = !showSettings)}
           title="Settings"
@@ -160,10 +204,8 @@
         />
 
         <div
-          class={[
-            'flex w-full flex-col items-center justify-center gap-1 py-1',
-            node.data.vertical ? '' : 'max-w-[130px] min-w-[100px]'
-          ]}
+          class="flex w-full flex-col items-center justify-center gap-1 py-1"
+          style={node.data.vertical || isResizable ? '' : `width: ${sliderWidth}px;`}
         >
           <div
             class={[
@@ -188,7 +230,7 @@
               (max - min)) *
               100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%); {node
               .data.vertical
-              ? 'writing-mode: vertical-lr; direction: rtl;'
+              ? `writing-mode: vertical-lr; direction: rtl; height: ${sliderHeight}px;`
               : ''};"
             class={['nodrag', sliderClass]}
           />
@@ -207,7 +249,7 @@
   </div>
 
   {#if showSettings}
-    <div class="relative">
+    <div class="absolute top-0" style="left: {settingsLeftOffset}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
           <X class="h-4 w-4 text-zinc-300" />
@@ -302,16 +344,30 @@
         />
       </div>
 
-      <div class="flex gap-x-2">
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Vertical</label>
+      <div class="flex gap-x-4">
+        <div class="flex gap-x-2">
+          <!-- svelte-ignore a11y_label_has_associated_control -->
+          <label class="mb-2 block text-xs font-medium text-zinc-300">Vertical</label>
 
-        <input
-          type="checkbox"
-          checked={node.data.vertical}
-          onchange={(e) => updateConfig({ vertical: (e.target as HTMLInputElement).checked })}
-          class="h-4 w-4"
-        />
+          <input
+            type="checkbox"
+            checked={node.data.vertical}
+            onchange={(e) => updateConfig({ vertical: e.currentTarget.checked })}
+            class="h-4 w-4 cursor-pointer"
+          />
+        </div>
+
+        <div class="flex gap-x-2">
+          <!-- svelte-ignore a11y_label_has_associated_control -->
+          <label class="mb-2 block text-xs font-medium text-zinc-300">Resize</label>
+
+          <input
+            type="checkbox"
+            checked={isResizable}
+            onchange={(e) => updateConfig({ resizable: e.currentTarget.checked })}
+            class="h-4 w-4 cursor-pointer"
+          />
+        </div>
       </div>
 
       <div class="pt-2">
