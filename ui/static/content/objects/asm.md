@@ -148,7 +148,9 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 
 ### AUTOMATIC CLOCK
 
-Use the play and pause buttons (or its messages) to start and stop automatic clocking. The clock speed can be adjusted via `Delay (ms)` in the settings menu, or send a `setDelayMs` message.
+Use the play and pause buttons (or its messages) to start and stop automatic clocking.
+
+The delay between instructions can be adjusted via `Delay (ms)` in the settings menu, or send a `setDelayMs` message.
 
 ### MANUAL CLOCK
 

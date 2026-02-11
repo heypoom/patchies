@@ -602,7 +602,9 @@
   <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
     <div class="space-y-4">
       <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Delay (ms)</label>
+
         <input
           type="number"
           min="10"
@@ -617,11 +619,16 @@
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         />
-        <div class="mt-1 text-xs text-zinc-500">Clock speed for automatic execution</div>
+
+        <div class="mt-1.5 text-xs text-zinc-500">
+          Delay between instructions for automatic execution
+        </div>
       </div>
 
       <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label class="mb-2 block text-xs font-medium text-zinc-300">Step By</label>
+
         <input
           type="number"
           min="1"
@@ -634,7 +641,8 @@
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         />
-        <div class="mt-1 text-xs text-zinc-500">Cycles to execute per step</div>
+
+        <div class="mt-1.5 text-xs text-zinc-500">Cycles to execute per step</div>
       </div>
     </div>
   </div>
