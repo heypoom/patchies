@@ -19,14 +19,14 @@
       value?: number;
       vertical?: boolean;
       runOnMount?: boolean;
-      width?: number;
-      height?: number;
       resizable?: boolean;
     };
     selected: boolean;
+    width?: number;
+    height?: number;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   let messageContext: MessageContext;
@@ -41,8 +41,8 @@
   const defaultValue = $derived(node.data.defaultValue ?? min);
   const isFloat = $derived(node.data.isFloat ?? false);
   const currentValue = $derived(node.data.value ?? defaultValue);
-  const sliderWidth = $derived(node.data.width ?? 130);
-  const sliderHeight = $derived(node.data.height ?? 140);
+  const sliderWidth = $derived(node.width ?? 130);
+  const sliderHeight = $derived(node.height ?? 140);
   const isResizable = $derived(node.data.resizable ?? false);
 
   // For display formatting
@@ -96,16 +96,12 @@
       }
     }
 
-    updateNodeData(node.id, newData);
-    setTimeout(() => updateNodeInternals(), 5);
-  }
-
-  function handleResize(_event: unknown, params: { width: number; height: number }) {
-    if (node.data.vertical) {
-      updateNodeData(node.id, { ...node.data, height: Math.round(params.height) });
-    } else {
-      updateNodeData(node.id, { ...node.data, width: Math.round(params.width) });
+    // Reset node dimensions when switching orientation
+    if ('vertical' in updates) {
+      updateNode(node.id, { width: undefined, height: undefined });
     }
+
+    updateNodeData(node.id, newData);
 
     setTimeout(() => {
       updateContentWidth();
@@ -181,7 +177,7 @@
       maxWidth={node.data.vertical ? 30 : 500}
       minHeight={node.data.vertical ? 80 : 70}
       maxHeight={node.data.vertical ? 500 : 70}
-      onResize={handleResize}
+      onResizeEnd={() => setTimeout(updateContentWidth, 5)}
     />
   {/if}
 
