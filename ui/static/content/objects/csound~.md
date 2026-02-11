@@ -1,9 +1,6 @@
 [Csound](https://csound.com) audio programming language for synthesis and
 processing.
 
-> **Caution**: Only create one `csound~` object per patch for now. Multiple
-> instances will break audio playback.
-
 ## Resources
 
 If you'd like to support Csound's development, check out their
