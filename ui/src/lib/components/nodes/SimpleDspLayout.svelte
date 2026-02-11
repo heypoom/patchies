@@ -55,6 +55,12 @@
   const messageOutletCount = $derived(data.messageOutletCount || 0);
   const displayTitle = $derived(data.title || nodeName);
 
+  // Update content width when title changes
+  $effect(() => {
+    displayTitle;
+    setTimeout(updateContentWidth, 0);
+  });
+
   const containerClass = $derived.by(() => {
     const hasError = lineErrors !== undefined;
     if (hasError) return 'object-container-error';
