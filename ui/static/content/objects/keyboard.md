@@ -23,14 +23,6 @@ up/down mode) when the bound key is pressed.
 | All Keys | Down/Up | `"A"`, `"SPACE"`, etc. |
 | All Keys | Up/Down | `["A", true]` or `["A", false]` |
 
-## Messages
-
-- **bang** → toggle listening on/off
-- **start** → start listening
-- **stop** → stop listening
-- **toggle** → toggle listening state
-- **string** → set keybind (in filtered mode)
-
 ## Options
 
 - **Allow repeated keys** - Enable to receive events while a key is held down
