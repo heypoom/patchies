@@ -1,0 +1,12 @@
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/.dart_tool": true,
+    "**/.ruby-lsp": true,
+    "ui/packages/csound-browser/dist": true,
+    "ui/bun.lock": true,
+    "ui/static/webchuck": true
+  }
+}
