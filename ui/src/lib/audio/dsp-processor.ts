@@ -295,7 +295,9 @@ class DSPProcessor extends AudioWorkletProcessor {
 
   /**
    * Normalize inputs array to ensure all expected inputs have proper channel arrays.
-   * Unconnected inputs get silent (zero-filled) buffers instead of undefined.
+   * - Unconnected inputs get silent (zero-filled) buffers
+   * - Connected inputs with fewer channels get silent buffers for missing channels
+   *   (e.g., mono input expanded to stereo by adding silent second channel)
    */
   private normalizeInputs(inputs: Float32Array[][], outputs: Float32Array[][]): Float32Array[][] {
     // Determine buffer size from first available output or input
@@ -311,13 +313,14 @@ class DSPProcessor extends AudioWorkletProcessor {
     const normalized: Float32Array[][] = [];
 
     for (let i = 0; i < this.audioInletCount; i++) {
-      if (inputs[i] && inputs[i].length > 0) {
-        // Input is connected - use actual data
-        normalized[i] = inputs[i];
-      } else {
-        // Input not connected - provide silent channels
-        normalized[i] = [];
-        for (let ch = 0; ch < channelCount; ch++) {
+      normalized[i] = [];
+
+      for (let ch = 0; ch < channelCount; ch++) {
+        if (inputs[i]?.[ch]?.length > 0) {
+          // Channel exists with data - use it
+          normalized[i][ch] = inputs[i][ch];
+        } else {
+          // Channel missing or empty - provide silence
           normalized[i][ch] = this.silentBuffer;
         }
       }
