@@ -21,8 +21,10 @@ type ExprDspFn = (
   s7: number,
   s8: number,
   s9: number,
+
   // Backwards compat: `s` is alias for s1
   s: number,
+
   // Other parameters
   i: number,
   t: number,
@@ -31,6 +33,7 @@ type ExprDspFn = (
   samples: Float32Array,
   input: Float32Array[],
   inputs: Float32Array[][],
+
   // Inlet values x1-x9
   ...inletValues: number[]
 ) => number;
@@ -144,8 +147,10 @@ class ExpressionProcessor extends AudioWorkletProcessor {
       const parameterNames = [
         // Signal inputs s1-s9 (1-indexed)
         ...Array.from({ length: 9 }, (_, i) => `s${i + 1}`),
+
         // Backwards compat: `s` is alias for s1
         's',
+
         // Other parameters
         'i',
         't',
@@ -154,6 +159,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
         'samples',
         'input',
         'inputs',
+
         // Inlet values x1-x9
         ...Array.from({ length: 9 }, (_, i) => `x${i + 1}`)
       ];
@@ -183,6 +189,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
           output[channel].fill(0);
         }
       }
+
       return true;
     }
 
