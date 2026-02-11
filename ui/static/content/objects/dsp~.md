@@ -60,6 +60,64 @@ const process = (inputs, outputs) => {
 - `setTitle(title)` - custom object title
 - `setKeepAlive(enabled)` - keep worklet active when disconnected
 
+## Multiple Audio Ports
+
+Use `setAudioPortCount(inputs, outputs)` to configure multiple audio ports:
+
+### Multiple Inputs
+
+```js
+setAudioPortCount(2, 1);  // 2 inputs, 1 output
+
+function process(inputs, outputs) {
+  const in1 = inputs[0][0];  // first input
+  const in2 = inputs[1][0];  // second input
+  const out = outputs[0][0];
+
+  for (let i = 0; i < out.length; i++) {
+    out[i] = (in1[i] + in2[i]) * 0.5;  // mix both inputs
+  }
+}
+```
+
+### Multiple Outputs
+
+```js
+setAudioPortCount(1, 2);  // 1 input, 2 outputs
+
+function process(inputs, outputs) {
+  const input = inputs[0][0];
+  const outL = outputs[0][0];  // first output
+  const outR = outputs[1][0];  // second output
+
+  for (let i = 0; i < outL.length; i++) {
+    outL[i] = input[i];        // dry signal
+    outR[i] = input[i] * 0.5;  // attenuated copy
+  }
+}
+```
+
+### More Examples
+
+```js
+// Ring modulation (2 inputs)
+out[i] = in1[i] * in2[i];
+
+// Crossfade with $1 control (0-1)
+out[i] = in1[i] * (1 - $1) + in2[i] * $1;
+
+// Stereo panner ($1 = 0 left, 1 right)
+outL[i] = input[i] * (1 - $1);
+outR[i] = input[i] * $1;
+
+// Mid/side encoder (2 in, 2 out)
+outL[i] = (in1[i] + in2[i]) * 0.5;  // mid
+outR[i] = (in1[i] - in2[i]) * 0.5;  // side
+```
+
+> **Tip**: For simple mixing/crossfading, consider [expr~](/docs/objects/expr~)
+> which automatically creates inlets when you use `s1`, `s2`, etc.
+
 ## Messaging
 
 Use `send` and `recv` for communication. See [Message Passing](/docs/message-passing).
