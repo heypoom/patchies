@@ -65,6 +65,16 @@
   let previewContainerWidth = $state(0);
   let updateInterval: NodeJS.Timeout | number;
 
+  // Local state for settings inputs (synced with machineConfig via $effect)
+  let delayInput = $state(ASM_DEFAULT_DELAY_MS);
+  let stepByInput = $state(ASM_DEFAULT_STEP_BY);
+
+  // Sync local state when machineConfig changes externally
+  $effect(() => {
+    delayInput = machineConfig.delayMs;
+    stepByInput = machineConfig.stepBy;
+  });
+
   // Machine ID is derived from node ID
   const machineId = parseInt(nodeId.replace(/\D/g, '')) || 0;
 
@@ -262,24 +272,25 @@
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
-    pushMachineConfig();
-    setupPolling();
+    initMachine();
     measureContainerWidth();
-    reloadProgram(false);
   });
 
-  async function pushMachineConfig() {
-    async () => {
-      try {
-        if (data.machineConfig) {
-          await assemblySystem.setMachineConfig(machineId, data.machineConfig);
-        }
+  /** Create machine, push saved config, then setup polling. Must be sequential. */
+  async function initMachine() {
+    await reloadProgram(false);
+    await pushMachineConfig();
+    await setupPolling();
+  }
 
-        pullMachineConfig();
-      } catch (error) {
-        // Use default config if unable to load
+  async function pushMachineConfig() {
+    try {
+      if (data.machineConfig) {
+        await assemblySystem.setMachineConfig(machineId, data.machineConfig);
       }
-    };
+    } catch (error) {
+      // Use default config if unable to load
+    }
   }
 
   async function setupPolling() {
@@ -592,13 +603,10 @@
           min="10"
           max="5000"
           step="10"
-          value={machineConfig.delayMs}
-          onchange={(e) => {
-            const newDelay = parseInt((e.target as HTMLInputElement).value);
-
-            if (!isNaN(newDelay) && newDelay >= 10 && newDelay <= 5000) {
-              updateMachineConfig({ delayMs: newDelay });
-
+          bind:value={delayInput}
+          oninput={() => {
+            if (!isNaN(delayInput) && delayInput >= 10 && delayInput <= 5000) {
+              updateMachineConfig({ delayMs: delayInput });
               setTimeout(() => setupPolling(), 5);
             }
           }}
@@ -613,12 +621,10 @@
           type="number"
           min="1"
           max="1000"
-          value={machineConfig.stepBy}
-          onchange={(e) => {
-            const newStepBy = parseInt((e.target as HTMLInputElement).value);
-
-            if (!isNaN(newStepBy) && newStepBy >= 1 && newStepBy <= 1000) {
-              updateMachineConfig({ stepBy: newStepBy });
+          bind:value={stepByInput}
+          oninput={() => {
+            if (!isNaN(stepByInput) && stepByInput >= 1 && stepByInput <= 1000) {
+              updateMachineConfig({ stepBy: stepByInput });
             }
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
