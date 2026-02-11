@@ -17,6 +17,9 @@ to virtual memory addresses starting at `0x1000`:
 - Outlet 2 maps to `0x1400` - `0x15FF`
 - Outlet 3 maps to `0x1600` - `0x17FF`
 
+Each outlet has **512 addressable cells** (0x200). Each cell holds a 16-bit
+value (0-65535).
+
 ## Reading from External Memory
 
 ```asm
