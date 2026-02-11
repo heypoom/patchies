@@ -84,8 +84,8 @@ const response = await llm("Describe this image");
 
 // With options
 const response = await llm("What's in this frame?", {
-  imageobjectId: "object-123",  // include visual object output as context
-  abortSignal: controller.signal
+  abortSignal: controller.signal,
+  imageNodeId: "glsl-54",  // include visual object output as context
 });
 ```
 
