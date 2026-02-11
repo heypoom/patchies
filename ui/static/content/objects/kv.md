@@ -15,33 +15,6 @@ Persistent key-value storage object. Data persists across sessions using Indexed
 
 **Named store** (`[kv mystore]`): Data is shared across all `[kv mystore]` nodes. Use this when multiple nodes need to read/write the same data.
 
-## Commands
-
-Send messages to the inlet:
-
-| Command | Description |
-|---------|-------------|
-| `{type: "get", key: "..."}` | Get value by key |
-| `{type: "set", key: "...", value: ...}` | Set value at key |
-| `{type: "has", key: "..."}` | Check if key exists |
-| `{type: "delete", key: "..."}` | Delete key |
-| `{type: "keys"}` | List all keys |
-| `{type: "clear"}` | Delete all keys |
-
-## Output
-
-All commands output a result object with an `op` field indicating the operation:
-
-| Response | Fields |
-|----------|--------|
-| get | `{op: "get", key, value, found}` |
-| set | `{op: "set", key, ok: true}` |
-| has | `{op: "has", key, exists}` |
-| delete | `{op: "delete", key, deleted}` |
-| keys | `{op: "keys", keys: [...]}` |
-| clear | `{op: "clear", ok: true}` |
-| error | `{op: "error", message}` |
-
 ## Examples
 
 ### Counter
