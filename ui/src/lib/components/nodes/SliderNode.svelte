@@ -189,7 +189,7 @@
         <button
           class={[
             'z-4 cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0',
-            node.data.vertical && 'absolute top-[30px] right-[35px]'
+            node.data.vertical && 'absolute top-[30px] right-[25px]'
           ]}
           onclick={() => (showSettings = !showSettings)}
           title="Settings"
