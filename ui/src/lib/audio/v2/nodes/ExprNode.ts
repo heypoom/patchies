@@ -4,6 +4,8 @@ import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import workletUrl from '../../../audio/expression-processor?worker&url';
 
+const MAX_SIGNAL_INLETS = 9;
+
 /**
  * ExprNode implements the expr~ (expression evaluator) audio node.
  * Evaluates mathematical expressions on audio samples.
@@ -13,17 +15,19 @@ export class ExprNode implements AudioNodeV2 {
   static group: AudioNodeGroup = 'processors';
   static description = 'Evaluates mathematical expressions on audio samples';
 
+  // Note: Signal inlets are dynamically rendered in AudioExprNode.svelte based on expression.
+  // This static definition is for documentation/object browser preview only.
   static inlets: ObjectInlet[] = [
     {
-      name: 'in',
+      name: 's',
       type: 'signal',
-      description: 'Audio signal input'
+      description: 'Audio signal input (use s1-s9 in expression for multiple inputs)'
     },
     {
       name: 'expression',
       type: 'string',
       description:
-        'Mathematical expression (s=sample, i=index, t=time, channel, bufferSize, samples, input, inputs, $1-$9=inlet values)'
+        'Mathematical expression (s1-s9=signal inputs, s=alias for s1, i=index, t=time, $1-$9=control values)'
     }
   ];
 
@@ -53,7 +57,10 @@ export class ExprNode implements AudioNodeV2 {
     const [, expression] = params as [unknown, string];
 
     try {
-      this.workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor');
+      this.workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor', {
+        numberOfInputs: MAX_SIGNAL_INLETS,
+        numberOfOutputs: 1
+      });
       this.workletNode.connect(this.audioNode);
 
       if (expression) {
@@ -84,14 +91,31 @@ export class ExprNode implements AudioNodeV2 {
   }
 
   /**
-   * Handle incoming connections - route to worklet input
+   * Handle incoming connections - route to correct worklet input based on handle.
+   * Handles: audio-in (default to input 0), audio-in-0, audio-in-1, etc.
    */
-  async connectFrom(source: AudioNodeV2): Promise<void> {
+  async connectFrom(
+    source: AudioNodeV2,
+    _paramName?: string,
+    _sourceHandle?: string,
+    targetHandle?: string
+  ): Promise<void> {
     await this.ensureModule();
 
-    if (this.workletNode && source.audioNode) {
-      source.audioNode.connect(this.workletNode);
+    if (!this.workletNode || !source.audioNode) return;
+
+    // Parse input index from target handle (e.g., "audio-in-2" -> 2)
+    let inputIndex = 0;
+    if (targetHandle) {
+      const indexMatch = targetHandle.match(/audio-in-(\d+)/);
+      if (indexMatch) {
+        inputIndex = parseInt(indexMatch[1], 10);
+      }
     }
+
+    // Connect source to the correct worklet input
+    // connect(destination, outputIndex, inputIndex)
+    source.audioNode.connect(this.workletNode, 0, inputIndex);
   }
 
   async ensureModule(): Promise<void> {

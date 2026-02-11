@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { parseInletCount } from '$lib/utils/expr-parser';
+  import { parseInletCount, parseSignalInletCount } from '$lib/utils/expr-parser';
   import CommonExprLayout from './CommonExprLayout.svelte';
 
   let {
@@ -27,11 +27,20 @@
   let layoutRef = $state<any>();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
-  const inletCount = $derived.by(() => {
+  // Control inlet count ($1, $2, etc.)
+  const controlInletCount = $derived.by(() => {
     if (!data.expr.trim()) return 0;
 
     return parseInletCount(data.expr.trim());
+  });
+
+  // Signal inlet count (s1, s2, etc. or bare `s`)
+  const signalInletCount = $derived.by(() => {
+    if (!data.expr.trim()) return 1; // Default to 1 signal inlet
+
+    return Math.max(1, parseSignalInletCount(data.expr.trim()));
   });
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
@@ -66,25 +75,28 @@
   function handleRun() {
     updateAudioExpression(data.expr);
 
-    // Update inlet count when expression changes
-    const newInletCount = parseInletCount(data.expr || '');
+    // Update control inlet count when expression changes
+    const newControlInletCount = parseInletCount(data.expr || '');
 
-    if (newInletCount !== inletValues.length) {
+    if (newControlInletCount !== inletValues.length) {
       const prevValues = Array.from(inletValues);
 
       // Copy old values to the new resized list.
-      inletValues = Array.from({ length: newInletCount }, (_, i) =>
+      inletValues = Array.from({ length: newControlInletCount }, (_, i) =>
         i < prevValues.length ? prevValues[i] : 0
       );
 
       updateAudioInletValues(inletValues);
     }
+
+    // Notify xyflow about handle changes (signal inlets may have changed)
+    updateNodeInternals(nodeId);
   }
 
   onMount(() => {
     messageContext.queue.addCallback(handleMessage);
 
-    inletValues = new Array(inletCount).fill(0);
+    inletValues = new Array(controlInletCount).fill(0);
     audioService.createNode(nodeId, 'expr~', [null, data.expr]);
     updateAudioInletValues(inletValues);
 
@@ -102,30 +114,33 @@
 </script>
 
 {#snippet audioHandles()}
-  <!-- Total inlets = 1 audio inlet + control inlets -->
-  {@const totalInlets = 1 + inletCount}
+  <!-- Total inlets = signal inlets + control inlets -->
+  {@const totalInlets = signalInletCount + controlInletCount}
 
-  <!-- Audio input (always present) -->
-  <StandardHandle
-    port="inlet"
-    type="audio"
-    title="Audio Input"
-    total={totalInlets}
-    index={0}
-    class="top-0"
-    {nodeId}
-  />
+  <!-- Audio signal inputs (s1, s2, etc. - 1-indexed to match $1, $2) -->
+  {#each Array.from({ length: signalInletCount }) as _, index}
+    <StandardHandle
+      port="inlet"
+      type="audio"
+      id={signalInletCount === 1 && index === 0 ? undefined : index}
+      title={signalInletCount > 1 ? `s${index + 1}` : 'Audio Input'}
+      total={totalInlets}
+      {index}
+      class="top-0"
+      {nodeId}
+    />
+  {/each}
 
   <!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
-  {#if inletCount > 0}
-    {#each Array.from({ length: inletCount }) as _, index}
+  {#if controlInletCount > 0}
+    {#each Array.from({ length: controlInletCount }) as _, index}
       <StandardHandle
         port="inlet"
         type="message"
         id={index}
         title={`$${index + 1}`}
         total={totalInlets}
-        index={index + 1}
+        index={signalInletCount + index}
         class="top-0"
         {nodeId}
       />

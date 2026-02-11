@@ -14,7 +14,16 @@ same [expr-eval](https://github.com/silentmatt/expr-eval) library.
 
 ## DSP Variables
 
-- `s`: current sample value (-1 to 1)
+### Signal Inputs
+
+- `s1`, `s2`, `s3`, ... `s9`: sample values from each audio input (-1 to 1)
+- `s`: alias for `s1` (backwards compatible)
+
+Using `s1`, `s2`, etc. automatically creates multiple signal inlets. For example,
+`s1 + s2` creates two audio inlets that you can connect different sources to.
+
+### Other Variables
+
 - `i`: current sample index in buffer
 - `t`: current time in seconds
 - `channel`: current channel index (0 or 1 for stereo)
@@ -58,7 +67,30 @@ sin(phasor(880, phasor(110)) * PI * 2)
 
 // Reset phasor via control inlet ($2 triggers on 0→1)
 phasor($1, $2)
+
+// Mix two audio signals (creates 2 signal inlets)
+(s1 + s2) * 0.5
+
+// Ring modulation (multiply two signals)
+s1 * s2
+
+// Crossfade between two signals ($1 controls mix 0-1)
+s1 * (1 - $1) + s2 * $1
 ```
+
+## Multiple Signal Inputs
+
+Use `s1`, `s2`, `s3`, etc. to reference different audio inputs. The number of
+signal inlets automatically adjusts based on your expression:
+
+```js
+s           // 1 inlet (s is alias for s1)
+s1 + s2     // 2 inlets
+s1 * s2 * s3 // 3 inlets
+```
+
+This enables mixing, ring modulation, crossfading, and other multi-input
+effects without needing separate mixer nodes.
 
 ## Dynamic Control Inlets
 

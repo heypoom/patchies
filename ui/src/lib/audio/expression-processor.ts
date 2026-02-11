@@ -11,7 +11,19 @@ interface InletValuesMessage {
 }
 
 type ExprDspFn = (
+  // s1-s9: samples from each audio input (1-indexed to match $1-$9)
+  s1: number,
+  s2: number,
+  s3: number,
+  s4: number,
+  s5: number,
+  s6: number,
+  s7: number,
+  s8: number,
+  s9: number,
+  // Backwards compat: `s` is alias for s1
   s: number,
+  // Other parameters
   i: number,
   t: number,
   channel: number,
@@ -19,6 +31,7 @@ type ExprDspFn = (
   samples: Float32Array,
   input: Float32Array[],
   inputs: Float32Array[][],
+  // Inlet values x1-x9
   ...inletValues: number[]
 ) => number;
 
@@ -124,10 +137,16 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
       const expr = parser.parse(renamedExpression);
 
-      // Create parameter names: s (sample), i (sample index), t (time in seconds), channel, bufferSize,
+      // Create parameter names:
+      // s1-s9 (samples from each audio input, 1-indexed to match $1-$9), s (backwards compat alias for s1),
+      // i (sample index), t (time in seconds), channel, bufferSize,
       // samples (current channel samples), input (first input), inputs (all inputs), x1-x9 (inlet values)
       const parameterNames = [
+        // Signal inputs s1-s9 (1-indexed)
+        ...Array.from({ length: 9 }, (_, i) => `s${i + 1}`),
+        // Backwards compat: `s` is alias for s1
         's',
+        // Other parameters
         'i',
         't',
         'channel',
@@ -135,6 +154,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
         'samples',
         'input',
         'inputs',
+        // Inlet values x1-x9
         ...Array.from({ length: 9 }, (_, i) => `x${i + 1}`)
       ];
 
@@ -183,12 +203,31 @@ class ExpressionProcessor extends AudioWorkletProcessor {
           const samples = input[channel] || new Float32Array(bufferSize);
           const outs = output[channel] || new Float32Array(bufferSize);
 
-          const s = samples[i] || 0;
+          // Extract sample from each input (s1-s9, 1-indexed)
+          // inputs[n][channel][i] = sample i from channel of input n
+          const s1 = inputs[0]?.[channel]?.[i] ?? 0;
+          const s2 = inputs[1]?.[channel]?.[i] ?? 0;
+          const s3 = inputs[2]?.[channel]?.[i] ?? 0;
+          const s4 = inputs[3]?.[channel]?.[i] ?? 0;
+          const s5 = inputs[4]?.[channel]?.[i] ?? 0;
+          const s6 = inputs[5]?.[channel]?.[i] ?? 0;
+          const s7 = inputs[6]?.[channel]?.[i] ?? 0;
+          const s8 = inputs[7]?.[channel]?.[i] ?? 0;
+          const s9 = inputs[8]?.[channel]?.[i] ?? 0;
 
           try {
-            // Call evaluator with: s, i, t, channel, bufferSize, samples, input, inputs, x1-x9
+            // Call evaluator with: s1-s9, s (alias for s1), i, t, channel, bufferSize, samples, input, inputs, x1-x9
             const result = this.evaluator(
-              s, // current sample value
+              s1,
+              s2,
+              s3,
+              s4,
+              s5,
+              s6,
+              s7,
+              s8,
+              s9, // samples from each input (1-indexed)
+              s1, // backwards compat: `s` = s1
               i, // sample index in buffer
               t, // current time in seconds
               channel, // current channel number
