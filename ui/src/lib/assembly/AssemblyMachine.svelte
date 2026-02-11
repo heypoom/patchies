@@ -262,7 +262,12 @@
   }
 
   function updateMachineConfig(nextConfig: Partial<MachineConfig>) {
-    const mergedConfig = { ...machineConfig, ...nextConfig };
+    // Use local input state to avoid race conditions when updating multiple fields quickly
+    const mergedConfig: MachineConfig = {
+      isRunning: machineConfig.isRunning,
+      delayMs: nextConfig.delayMs ?? delayInput,
+      stepBy: nextConfig.stepBy ?? stepByInput
+    };
 
     assemblySystem.setMachineConfig(machineId, mergedConfig);
     updateNodeData(nodeId, { machineConfig: mergedConfig });
