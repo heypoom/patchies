@@ -31,7 +31,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | @codemirror/state                 | ^6.5.2       | MIT                    |
 | @codemirror/theme-one-dark        | ^6.1.3       | MIT                    |
 | @codemirror/view                  | ^6.38.1      | MIT                    |
-| @csound/browser                   | ^7.0.0-beta8 | LGPL-2.1               |
+| @csound/browser (local fork)      | 7.0.0-beta20 | LGPL-2.1               |
 | @elemaudio/core                   | ^4.0.1       | MIT                    |
 | @elemaudio/web-renderer           | ^4.0.3       | MIT                    |
 | @google/genai                     | ^1.11.0      | Apache-2.0             |
@@ -148,6 +148,25 @@ The package patch makes minor modifications to expose internal audio nodes for i
 - Exposes audio node chains as `window.strudelNodes` and returns them for connectivity with other Patchies audio objects
 
 These modifications enable seamless integration between Strudel's audio engine and Patchies' audio chaining system while maintaining full compatibility with the AGPL-3.0 license.
+
+#### @csound/browser (Local Fork)
+
+The `csound~` node uses a local fork of [@csound/browser](https://github.com/csound/csound) with fixes for multi-instance support.
+
+- **Original Project**: Csound - Sound and Music Computing System
+- **Authors**: Steven Yi, Victor Lazzarini, and Csound contributors
+- **Repository**: <https://github.com/csound/csound>
+- **License**: LGPL-2.1
+- **Local Fork**: `ui/packages/csound-browser/`
+
+The local fork fixes a bug in the upstream library where module-level globals in the AudioWorklet (`libraryCsound`, `combined`, `rtmidiQueue`) get overwritten when multiple Csound instances are created. This caused previously running `csound~` nodes to become non-functional.
+
+Changes made:
+
+- Moved module-level globals to instance properties on `WorkletSinglethreadWorker` class
+- Modified `terminateInstance()` to not close the AudioContext (caller is responsible for its lifecycle)
+
+The LGPL-2.1 license is preserved in the source files.
 
 #### Tailwind CSS Browser Runtime (Adapted)
 

@@ -94,9 +94,9 @@ export const dependencies: ProjectLicense[] = [
   },
   {
     name: '@csound/browser',
-    version: '^7.0.0-beta8',
+    version: 'local fork',
     license: 'LGPL-2.1',
-    url: 'https://npmjs.com/package/@csound/browser'
+    url: 'https://github.com/csound/csound'
   },
   {
     name: '@elemaudio/core',
@@ -467,6 +467,16 @@ export const portedCode: PortedCode[] = [
     copyright: '© Tailwind Labs',
     notes:
       'Adapted from @tailwindcss/browser to work within Shadow DOM for style isolation. The implementation creates a shared Tailwind compiler and per-shadow-root style injection with MutationObserver for class detection.'
+  },
+  {
+    name: '@csound/browser (local fork)',
+    description:
+      'The csound~ node uses a local fork of @csound/browser with fixes for multi-instance support.',
+    authors: 'Steven Yi, Victor Lazzarini, and Csound contributors',
+    repository: 'https://github.com/csound/csound',
+    license: 'LGPL-2.1',
+    notes:
+      'Local fork at ui/packages/csound-browser fixes module-level globals in the AudioWorklet that caused issues when multiple csound~ instances were created. The fix moves shared state to instance properties, allowing independent Csound instances.'
   }
 ];
 
