@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
 
@@ -78,6 +78,8 @@
   }
 
   function handleDoubleClick(e: MouseEvent) {
+    if (locked) return;
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -278,15 +280,20 @@
           </div>
 
           <!-- Lock toggle -->
-          <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
-            <input
-              type="checkbox"
-              checked={locked}
-              onchange={() => updateConfig({ locked: !locked })}
-              class="cursor-pointer"
-            />
-            <span>Lock position</span>
-          </label>
+          <button
+            onclick={() => updateConfig({ locked: !locked })}
+            class={[
+              'flex cursor-pointer items-center gap-1.5 text-xs transition-colors',
+              locked ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
+            ]}
+          >
+            {#if locked}
+              <Lock class="h-3.5 w-3.5" />
+            {:else}
+              <LockOpen class="h-3.5 w-3.5" />
+            {/if}
+            <span>{locked ? 'Locked' : 'Lock'}</span>
+          </button>
         </div>
       </div>
     </div>
