@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { GripHorizontal, Settings, X } from '@lucide/svelte/icons';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -190,7 +190,7 @@
 <div class="relative">
   <div class="group relative">
     <div class="flex flex-col items-center gap-1">
-      <div class="absolute -top-7 right-0">
+      <div class="absolute -top-5 -right-4">
         <button
           class={[
             'z-4 cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0'
@@ -200,6 +200,17 @@
         >
           <Settings class="h-4 w-4 text-zinc-300" />
         </button>
+      </div>
+
+      <!-- Drag handle for moving the node -->
+      <div
+        class={[
+          'absolute -top-9 left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
+          node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        ]}
+        title="Drag to move"
+      >
+        <GripHorizontal class="h-4 w-4 text-zinc-500" />
       </div>
 
       <div class="relative">
