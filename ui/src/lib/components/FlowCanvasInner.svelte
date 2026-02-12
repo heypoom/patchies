@@ -458,6 +458,7 @@
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
+    eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
 
@@ -484,6 +485,7 @@
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
+    eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
 
@@ -588,6 +590,12 @@
       // Record the final node state (after any transformation) to history
       historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
     }
+  }
+
+  // Handle Quick Add cancellation - remove node directly without history
+  function handleQuickAddCancelled(event: { type: 'quickAddCancelled'; nodeId: string }) {
+    // Remove the node directly, bypassing SvelteFlow's onbeforedelete (which records to history)
+    nodes = nodes.filter((n) => n.id !== event.nodeId);
   }
 
   // Note: Don't destructure nodeOps methods - they need `this` binding

@@ -31,6 +31,7 @@ export type PatchiesEvent =
   | AsmMachineStateChangedEvent
   | ObjectParamsChangedEvent
   | QuickAddConfirmedEvent
+  | QuickAddCancelledEvent
   | CodeCommitEvent
   | NodeDataCommitEvent;
 
@@ -278,6 +279,13 @@ export interface QuickAddConfirmedEvent {
    * transformed during quick add.
    **/
   finalNodeId: string;
+}
+
+export interface QuickAddCancelledEvent {
+  type: 'quickAddCancelled';
+
+  /** The node id to remove (was never confirmed, so skip history). */
+  nodeId: string;
 }
 
 // Code editor events - for undo/redo tracking

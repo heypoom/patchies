@@ -461,9 +461,9 @@
       // Restore original name on escape
       expr = originalName;
 
-      // If the original name was empty, delete the node
+      // If the original name was empty (Quick Add that was never confirmed), remove without history
       if (!originalName.trim()) {
-        deleteElements({ nodes: [{ id: nodeId }] });
+        eventBus.dispatch({ type: 'quickAddCancelled', nodeId });
         return;
       }
     }
@@ -739,7 +739,13 @@
     setTimeout(() => {
       // If input is empty, delete the node
       if (!expr.trim()) {
-        deleteElements({ nodes: [{ id: nodeId }] });
+        if (isQuickAdd) {
+          // Quick Add was never confirmed, remove without history
+          eventBus.dispatch({ type: 'quickAddCancelled', nodeId });
+        } else {
+          // Existing node being deleted, record in history
+          deleteElements({ nodes: [{ id: nodeId }] });
+        }
       } else {
         exitEditingMode(true);
       }
