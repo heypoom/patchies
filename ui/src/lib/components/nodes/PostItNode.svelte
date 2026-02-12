@@ -54,6 +54,19 @@
     return '#1f2937';
   });
 
+  // Simple markdown: **bold** and *italic* only
+  function formatText(raw: string): string {
+    // Escape HTML to prevent XSS
+    const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Apply formatting: **bold** then _italic_
+    return escaped
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/_(.+?)_/g, '<em>$1</em>');
+  }
+
+  const formattedText = $derived(formatText(text));
+
   function updateConfig(updates: Partial<typeof node.data>) {
     updateNodeData(node.id, { ...node.data, ...updates });
   }
@@ -71,7 +84,62 @@
     isEditing = false;
   }
 
+  // Toggle wrap: if already wrapped, unwrap; otherwise wrap
+  function toggleWrap(marker: string) {
+    if (!textareaElement) return;
+
+    const start = textareaElement.selectionStart;
+    const end = textareaElement.selectionEnd;
+
+    // Only act if there's a selection
+    if (start === end) return;
+
+    const len = marker.length;
+
+    // Check if selection is already wrapped with this marker
+    const before = text.slice(start - len, start);
+    const after = text.slice(end, end + len);
+    const isWrapped = before === marker && after === marker;
+
+    let newText: string;
+    let newCursorPos: number;
+
+    if (isWrapped) {
+      // Unwrap: remove markers around selection
+      newText = text.slice(0, start - len) + text.slice(start, end) + text.slice(end + len);
+      newCursorPos = end - len;
+    } else {
+      // Wrap: add markers around selection
+      const selected = text.slice(start, end);
+      newText = text.slice(0, start) + marker + selected + marker + text.slice(end);
+      newCursorPos = end + len * 2;
+    }
+
+    updateConfig({ text: newText });
+
+    setTimeout(() => {
+      if (!textareaElement) return;
+      textareaElement.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  }
+
   function handleKeydown(e: KeyboardEvent) {
+    const mod = e.metaKey || e.ctrlKey;
+
+    // Cmd/Ctrl+B for bold
+    if (mod && e.key === 'b') {
+      e.preventDefault();
+      toggleWrap('**');
+      return;
+    }
+
+    // Cmd/Ctrl+I for italic
+    if (mod && e.key === 'i') {
+      e.preventDefault();
+      toggleWrap('_');
+      return;
+    }
+
     match(e.key)
       .with('Escape', () => {
         isEditing = false;
@@ -136,7 +204,7 @@
           style="font-size: {fontSize}px; color: {textColor};"
         >
           {#if text}
-            {text}
+            {@html formattedText}
           {:else}
             <span class="italic opacity-50">Double-click to edit...</span>
           {/if}
