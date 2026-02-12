@@ -473,6 +473,7 @@
     if (!save) {
       // Restore original name on escape
       expr = originalName;
+      objectDataTracker.clear();
 
       // If the original name was empty (Quick Add that was never confirmed), remove without history
       if (!originalName.trim()) {
