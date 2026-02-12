@@ -42,6 +42,7 @@
   import { Search } from '@lucide/svelte/icons';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
+  import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
   import ObjectSuggestionDropdown from './ObjectSuggestionDropdown.svelte';
@@ -308,23 +309,13 @@
   });
 
   // Sync AudioService when data changes externally (e.g., via undo/redo)
-  // This ensures audio node state stays in sync with node data
-  let lastSyncedParams = $state<string | null>(null);
-
-  $effect(() => {
-    if (!getAudioObjectNames().includes(data.name)) return;
-
-    const paramsKey = JSON.stringify(data.params);
-    if (lastSyncedParams === paramsKey) return;
-
-    // Skip initial sync (handled by onMount)
-    if (lastSyncedParams !== null) {
-      syncAudioService(data.name, data.params);
+  useAudioServiceSync(
+    () => ({ name: data.name, params: data.params }),
+    (name, params) => {
+      syncAudioService(name, params);
       objectInstanceVersion++;
     }
-
-    lastSyncedParams = paramsKey;
-  });
+  );
 
   // Dynamic outlets based on object definition
   // Supports objects with dynamic outlet count via instance getOutlets() method
