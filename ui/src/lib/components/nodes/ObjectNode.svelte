@@ -47,6 +47,7 @@
   import ObjectSuggestionDropdown from './ObjectSuggestionDropdown.svelte';
   import { getIconById } from '$lib/components/icons';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { useObjectDataTracker } from '$lib/history';
 
   // Common objects that should appear first in autocomplete
   // Ordered by general usage frequency
@@ -129,8 +130,12 @@
   const isQuickAdd = !data.expr; // True if created via Quick Add (no initial name)
   let finalNodeId = nodeId; // Tracks the final node ID after potential transformation
 
-  // Store old data for undo tracking (captured on edit mode enter)
-  let oldDataSnapshot: { expr: string; name: string; params: unknown[] } | null = null;
+  // Undo tracking for object data changes (only for existing nodes)
+  const objectDataTracker = useObjectDataTracker(nodeId, () => ({
+    expr: data.expr,
+    name: data.name,
+    params: data.params
+  }));
 
   let isAutomated = $state<Record<number, boolean>>({});
 
@@ -435,11 +440,7 @@
   function enterEditingMode() {
     // Capture old data for undo tracking (only for existing nodes, not Quick Add)
     if (!isQuickAdd) {
-      oldDataSnapshot = {
-        expr: data.expr,
-        name: data.name,
-        params: [...data.params]
-      };
+      objectDataTracker.capture();
     }
 
     // For objects with dynamic outlets, use the stored expr directly
@@ -490,27 +491,9 @@
           setTimeout(() => {
             eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId });
           }, 0);
-        } else if (oldDataSnapshot) {
-          // For existing nodes, emit objectDataCommit if data changed
-          // Use setTimeout to ensure data is updated after handleNameChange
-          setTimeout(() => {
-            const newData = { expr: data.expr, name: data.name, params: [...data.params] };
-            const hasChanged =
-              oldDataSnapshot!.expr !== newData.expr ||
-              oldDataSnapshot!.name !== newData.name ||
-              JSON.stringify(oldDataSnapshot!.params) !== JSON.stringify(newData.params);
-
-            if (hasChanged) {
-              eventBus.dispatch({
-                type: 'objectDataCommit',
-                nodeId,
-                oldData: oldDataSnapshot!,
-                newData
-              });
-            }
-
-            oldDataSnapshot = null;
-          }, 0);
+        } else {
+          // For existing nodes, commit undo tracking after data is updated
+          setTimeout(() => objectDataTracker.commitIfChanged(), 0);
         }
       } else {
         // If trying to save with empty name, delete the node
