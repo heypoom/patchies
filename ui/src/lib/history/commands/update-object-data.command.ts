@@ -19,7 +19,7 @@ export class UpdateObjectDataCommand implements Command {
     private newData: ObjectData,
     private accessors: CanvasStateAccessors
   ) {
-    this.description = `Update ${oldData.name} to ${newData.name}`;
+    this.description = `Update ${newData.name}`;
   }
 
   execute(): void {
