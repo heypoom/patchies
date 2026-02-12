@@ -6,12 +6,17 @@ Continuous value control with customizable range.
 - `fslider 0.0 1.0` - float slider
 - `vslider` / `vfslider` - vertical variants
 
-## Messages
+## Settings
 
-- **bang** → outputs current value
-- **number** → sets value and outputs
+- **Mode** - Integer or Float precision
+- **Minimum** - Lower bound of the range
+- **Maximum** - Upper bound of the range
+- **Default Value** - Initial value on reset
+- **Orientation** - Vertical or Horizontal orientation
+- **Resize** - Whether the slider is resizable
 
 ## See Also
 
+- [knob](/docs/objects/knob) - circular encoder knob
 - [toggle](/docs/objects/toggle) - boolean switch
 - [textbox](/docs/objects/textbox) - text input

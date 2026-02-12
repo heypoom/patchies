@@ -41,6 +41,7 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   button: 'Clickable button that sends bang messages',
   toggle: 'Toggle switch for boolean on/off states',
   slider: 'Number slider for parameter control',
+  knob: 'Circular encoder knob for continuous values',
   keyboard: 'Keyboard input capture for key events',
   textbox: 'Text input field for string messages',
   msg: 'Message box for sending fixed messages',

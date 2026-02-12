@@ -50,6 +50,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       defaultValue: 50,
       isFloat: false
     }))
+    .with('knob', () => ({
+      min: 0,
+      max: 1,
+      defaultValue: 0,
+      isFloat: true,
+      size: 50
+    }))
     .with('bchrn', () => ({ currentPreset: DEFAULT_BUTTERCHURN_PRESET }))
     .with('p5', () => ({ code: DEFAULT_P5_CODE }))
     .with('hydra', () => ({
