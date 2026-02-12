@@ -61,7 +61,8 @@
     NodeReplaceEvent,
     VfsPathRenamedEvent,
     CodeCommitEvent,
-    NodeDataCommitEvent
+    NodeDataCommitEvent,
+    ObjectDataCommitEvent
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
@@ -74,6 +75,7 @@
     DeleteNodesCommand,
     MoveNodesCommand,
     UpdateNodeDataCommand,
+    UpdateObjectDataCommand,
     AddEdgeCommand,
     DeleteEdgesCommand,
     BatchCommand,
@@ -459,6 +461,7 @@
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
+    eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
 
@@ -486,6 +489,7 @@
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
+    eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
 
@@ -596,6 +600,13 @@
   function handleQuickAddCancelled(event: { type: 'quickAddCancelled'; nodeId: string }) {
     // Remove the node directly, bypassing SvelteFlow's onbeforedelete (which records to history)
     nodes = nodes.filter((n) => n.id !== event.nodeId);
+  }
+
+  // Handle ObjectNode data commit (undo tracking for expr/name/params changes)
+  function handleObjectDataCommit(event: ObjectDataCommitEvent) {
+    historyManager.record(
+      new UpdateObjectDataCommand(event.nodeId, event.oldData, event.newData, canvasAccessors)
+    );
   }
 
   // Note: Don't destructure nodeOps methods - they need `this` binding

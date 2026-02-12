@@ -129,6 +129,9 @@
   const isQuickAdd = !data.expr; // True if created via Quick Add (no initial name)
   let finalNodeId = nodeId; // Tracks the final node ID after potential transformation
 
+  // Store old data for undo tracking (captured on edit mode enter)
+  let oldDataSnapshot: { expr: string; name: string; params: unknown[] } | null = null;
+
   let isAutomated = $state<Record<number, boolean>>({});
 
   // Track highest precision seen per inlet for stable display width
@@ -430,6 +433,15 @@
   }
 
   function enterEditingMode() {
+    // Capture old data for undo tracking (only for existing nodes, not Quick Add)
+    if (!isQuickAdd) {
+      oldDataSnapshot = {
+        expr: data.expr,
+        name: data.name,
+        params: [...data.params]
+      };
+    }
+
     // For objects with dynamic outlets, use the stored expr directly
     // (their params configure structure, not inlet values)
     if (hasDynamicOutlets && data.expr) {
@@ -477,6 +489,27 @@
         if (isQuickAdd) {
           setTimeout(() => {
             eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId });
+          }, 0);
+        } else if (oldDataSnapshot) {
+          // For existing nodes, emit objectDataCommit if data changed
+          // Use setTimeout to ensure data is updated after handleNameChange
+          setTimeout(() => {
+            const newData = { expr: data.expr, name: data.name, params: [...data.params] };
+            const hasChanged =
+              oldDataSnapshot!.expr !== newData.expr ||
+              oldDataSnapshot!.name !== newData.name ||
+              JSON.stringify(oldDataSnapshot!.params) !== JSON.stringify(newData.params);
+
+            if (hasChanged) {
+              eventBus.dispatch({
+                type: 'objectDataCommit',
+                nodeId,
+                oldData: oldDataSnapshot!,
+                newData
+              });
+            }
+
+            oldDataSnapshot = null;
           }, 0);
         }
       } else {

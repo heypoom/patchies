@@ -33,7 +33,8 @@ export type PatchiesEvent =
   | QuickAddConfirmedEvent
   | QuickAddCancelledEvent
   | CodeCommitEvent
-  | NodeDataCommitEvent;
+  | NodeDataCommitEvent
+  | ObjectDataCommitEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -312,4 +313,15 @@ export interface NodeDataCommitEvent {
   dataKey: string;
   oldValue: unknown;
   newValue: unknown;
+}
+
+/**
+ * ObjectNode data commit event for undo/redo tracking.
+ * Updates expr, name, and params atomically to avoid inconsistent state.
+ */
+export interface ObjectDataCommitEvent {
+  type: 'objectDataCommit';
+  nodeId: string;
+  oldData: { expr: string; name: string; params: unknown[] };
+  newData: { expr: string; name: string; params: unknown[] };
 }
