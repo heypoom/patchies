@@ -38,7 +38,7 @@ export class NodeOperationsService {
   createNode(
     type: string,
     position: { x: number; y: number },
-    customData?: Record<string, unknown>,
+    customData?: unknown,
     options?: CreateNodeOptions
   ): string {
     const id = this.ctx.nextNodeId(type);
@@ -47,7 +47,7 @@ export class NodeOperationsService {
       id,
       type,
       position,
-      data: customData ?? getDefaultNodeData(type)
+      data: (customData as Record<string, unknown>) ?? getDefaultNodeData(type)
     };
 
     if (options?.skipHistory) {

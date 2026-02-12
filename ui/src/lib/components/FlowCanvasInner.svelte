@@ -77,6 +77,7 @@
   import { ClipboardManager } from '$lib/services/ClipboardManager';
   import { PatchManager } from '$lib/services/PatchManager';
   import { NodeOperationsService } from '$lib/services/NodeOperationsService';
+  import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -111,6 +112,13 @@
 
   // Node operations service for creating/deleting/replacing nodes
   const nodeOps = new NodeOperationsService(canvasContext);
+
+  // Event handlers for nodeOps (stored as variables for proper cleanup)
+  const handleNodeReplace = (e: NodeReplaceEvent) => nodeOps.replaceNode(e);
+  const handleVfsPathRenamed = (e: VfsPathRenamedEvent) => nodeOps.handleVfsPathRenamed(e);
+
+  // Keyboard shortcut manager (created lazily in onMount to access component functions)
+  let keyboardManager: KeyboardShortcutManager | null = null;
 
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -150,7 +158,7 @@
   let showPatchToPromptDialog = $state(false);
 
   // Get flow utilities for coordinate transformation
-  const { screenToFlowPosition, deleteElements, fitView, getViewport, getNode } = useSvelteFlow();
+  const { screenToFlowPosition, fitView, getViewport, getNode } = useSvelteFlow();
 
   // Viewport culling for preview rendering optimization
   const viewport = useViewport();
@@ -256,154 +264,7 @@
     viewportCullingManager.updateVisibleNodes(currentViewport, nodes, screenWidth, screenHeight);
   });
 
-  // Handle global keyboard events
-  function handleGlobalKeydown(event: KeyboardEvent) {
-    const target = event.target as HTMLElement;
-
-    const isTyping =
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target.closest('.cm-editor') ||
-      target.closest('.cm-content') ||
-      target.contentEditable === 'true' ||
-      // Allow text selection in virtual console
-      target.closest('[role="log"]') ||
-      // Allow copy in sidebar
-      target.closest('[data-sidebar]');
-
-    const hasNodeSelected = selectedNodeIds.length > 0;
-
-    // Handle CTRL+C for copy
-    // Skip if there's text selected (user wants to copy text, not nodes)
-    const hasTextSelection = window.getSelection()?.toString().trim();
-
-    if (
-      event.key.toLowerCase() === 'c' &&
-      (event.metaKey || event.ctrlKey) &&
-      !isTyping &&
-      hasNodeSelected &&
-      !hasTextSelection
-    ) {
-      event.preventDefault();
-      copySelectedNodes();
-    }
-
-    // Handle CTRL+V for paste
-    else if (event.key.toLowerCase() === 'v' && (event.metaKey || event.ctrlKey) && !isTyping) {
-      event.preventDefault();
-      pasteNode('keyboard');
-    }
-    // Handle CMD+Z for undo
-    else if (
-      event.key.toLowerCase() === 'z' &&
-      (event.metaKey || event.ctrlKey) &&
-      !event.shiftKey &&
-      !isTyping
-    ) {
-      event.preventDefault();
-      const desc = historyManager.undo();
-      if (desc) {
-        toast.success(`Undo: ${desc}`);
-      }
-    }
-    // Handle CMD+Shift+Z for redo
-    else if (
-      event.key.toLowerCase() === 'z' &&
-      (event.metaKey || event.ctrlKey) &&
-      event.shiftKey &&
-      !isTyping
-    ) {
-      event.preventDefault();
-      const desc = historyManager.redo();
-      if (desc) {
-        toast.success(`Redo: ${desc}`);
-      }
-    }
-    // Handle CMD+K for command palette
-    else if (
-      event.key.toLowerCase() === 'k' &&
-      (event.metaKey || event.ctrlKey) &&
-      !showCommandPalette
-    ) {
-      event.preventDefault();
-
-      triggerCommandPalette();
-    }
-    // Handle CMD+B for toggle sidebar
-    else if (event.key.toLowerCase() === 'b' && (event.metaKey || event.ctrlKey) && !isTyping) {
-      event.preventDefault();
-      $isSidebarOpen = !$isSidebarOpen;
-    }
-    // Handle CMD+O for browse objects
-    else if (event.key.toLowerCase() === 'o' && (event.metaKey || event.ctrlKey) && !isTyping) {
-      event.preventDefault();
-      $isObjectBrowserOpen = true;
-    }
-    // Handle CMD+N for new patch
-    else if (event.key.toLowerCase() === 'n' && (event.metaKey || event.ctrlKey) && !isTyping) {
-      event.preventDefault();
-      newPatch();
-    }
-    // Handle CMD+I for AI object insertion/editing
-    else if (event.key.toLowerCase() === 'i' && (event.metaKey || event.ctrlKey) && !isTyping) {
-      event.preventDefault();
-
-      // When AI features are hidden, fallback to browse objects (Ctrl+O behavior)
-      if (!$isAiFeaturesVisible) {
-        $isObjectBrowserOpen = true;
-        return;
-      }
-
-      // Check if Gemini API key is set
-      if (!checkAndHandleGeminiApiKey()) {
-        return;
-      }
-
-      // If a single node is selected, edit it; otherwise create new
-      if (selectedNodeIds.length === 1) {
-        aiEditingNodeId = selectedNodeIds[0];
-      } else {
-        aiEditingNodeId = null;
-      }
-
-      triggerAiPrompt();
-    }
-    // Handle CMD+Shift+S for Save As (always shows modal)
-    else if (
-      event.key.toLowerCase() === 's' &&
-      (event.metaKey || event.ctrlKey) &&
-      event.shiftKey &&
-      !isTyping
-    ) {
-      event.preventDefault();
-
-      // No-op if patch is completely empty
-      if (nodes.length === 0 && edges.length === 0) return;
-
-      showSavePatchModal = true;
-    }
-    // Handle CMD+S for save (quick save if named, otherwise show modal)
-    else if (event.key.toLowerCase() === 's' && (event.metaKey || event.ctrlKey) && !isTyping) {
-      event.preventDefault();
-
-      // No-op if patch is completely empty
-      if (nodes.length === 0 && edges.length === 0) return;
-
-      quickSave();
-    } else if (
-      event.key.toLowerCase() === 'enter' &&
-      !showCommandPalette &&
-      !isTyping &&
-      !hasNodeSelected
-    ) {
-      event.preventDefault();
-
-      const position = screenToFlowPosition(lastMousePosition);
-
-      // Skip history for Quick Add - history will be recorded after user confirms/transforms the node
-      createNode('object', position, undefined, { skipHistory: true });
-    }
-  }
+  // Keyboard shortcuts delegated to KeyboardShortcutManager (created in onMount)
 
   function triggerCommandPalette() {
     const dialogWidth = 320; // w-80
@@ -480,7 +341,8 @@
 
   function handleAiObjectInsert(type: string, data: any) {
     const position = screenToFlowPosition(lastMousePosition);
-    createNode(type, position, data);
+
+    nodeOps.createNode(type, position, data);
   }
 
   async function handleAiMultipleObjectsInsert(
@@ -596,8 +458,37 @@
       }
     }
 
-    document.addEventListener('keydown', handleGlobalKeydown);
-    eventBus.addEventListener('nodeReplace', replaceNode);
+    // Create keyboard shortcut manager with action handlers
+    keyboardManager = new KeyboardShortcutManager({
+      copy: copySelectedNodes,
+      paste: () => pasteNode('keyboard'),
+      undo: () => historyManager.undo(),
+      redo: () => historyManager.redo(),
+      toggleSidebar: () => ($isSidebarOpen = !$isSidebarOpen),
+      openObjectBrowser: () => ($isObjectBrowserOpen = true),
+      openCommandPalette: triggerCommandPalette,
+      newPatch,
+      quickSave,
+      saveAs: () => (showSavePatchModal = true),
+      triggerAiPrompt,
+      checkGeminiApiKey: checkAndHandleGeminiApiKey,
+      quickAddNode: () => {
+        const position = screenToFlowPosition(lastMousePosition);
+
+        nodeOps.createNode('object', position, undefined, { skipHistory: true });
+      },
+      hasNodeSelected: () => selectedNodeIds.length > 0,
+      hasTextSelection: () => !!window.getSelection()?.toString().trim(),
+      isCommandPaletteOpen: () => showCommandPalette,
+      isAiFeaturesVisible: () => $isAiFeaturesVisible,
+      isPatchEmpty: () => nodes.length === 0 && edges.length === 0,
+      setAiEditingNodeId: (nodeId) => (aiEditingNodeId = nodeId),
+      getSelectedNodeId: () => (selectedNodeIds.length === 1 ? selectedNodeIds[0] : null)
+    });
+
+    keyboardManager.attach();
+
+    eventBus.addEventListener('nodeReplace', handleNodeReplace);
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
@@ -606,7 +497,7 @@
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
     return () => {
-      document.removeEventListener('keydown', handleGlobalKeydown);
+      keyboardManager?.detach();
 
       if (autosaveInterval) {
         clearInterval(autosaveInterval);
@@ -621,7 +512,7 @@
       messageSystem.unregisterNode(node.id);
     }
 
-    eventBus.removeEventListener('nodeReplace', replaceNode);
+    eventBus.removeEventListener('nodeReplace', handleNodeReplace);
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
@@ -681,8 +572,8 @@
     if (!dragDropManager) {
       dragDropManager = new CanvasDragDropManager({
         screenToFlowPosition,
-        createNode,
-        createNodeFromName
+        createNode: (...args) => nodeOps.createNode(...args),
+        createNodeFromName: (...args) => nodeOps.createNodeFromName(...args)
       });
     }
 
@@ -730,17 +621,7 @@
     }
   }
 
-  // Node operations delegated to NodeOperationsService
-  function createNode(
-    type: string,
-    position: { x: number; y: number },
-    customData?: Record<string, unknown>,
-    options?: { skipHistory?: boolean }
-  ): string {
-    return nodeOps.createNode(type, position, customData, options);
-  }
-
-  const { replaceNode, handleVfsPathRenamed, createNodeFromName, deleteSelectedElements } = nodeOps;
+  // Note: Don't destructure nodeOps methods - they need `this` binding
 
   function handleCommandPaletteCancel() {
     showCommandPalette = false;
@@ -770,7 +651,7 @@
 
     // Convert to flow coordinates (accounts for pan and zoom)
     const position = screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
-    createNodeFromName(name, position);
+    nodeOps.createNodeFromName(name, position);
   }
 
   const isValidConnection: IsValidConnection = (connection) => {
@@ -807,7 +688,7 @@
     });
 
     setTimeout(() => {
-      createNode('object', position);
+      nodeOps.createNode('object', position);
     }, 50);
   }
 
@@ -1172,7 +1053,7 @@
         isLeftSidebarOpen={$isSidebarOpen}
         bind:showStartupModal
         {startupInitialTab}
-        onDelete={deleteSelectedElements}
+        onDelete={() => nodeOps.deleteSelectedElements(selectedNodeIds, selectedEdgeIds)}
         onInsertObject={insertObjectWithButton}
         onBrowseObjects={() => ($isObjectBrowserOpen = true)}
         onCopy={copySelectedNodes}
