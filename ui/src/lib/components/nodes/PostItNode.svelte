@@ -10,7 +10,11 @@
     { name: 'Blue', value: '#dbeafe' },
     { name: 'Green', value: '#dcfce7' },
     { name: 'Purple', value: '#f3e8ff' },
-    { name: 'Orange', value: '#ffedd5' }
+    { name: 'Orange', value: '#ffedd5' },
+    { name: 'Cyan', value: '#cffafe' },
+    { name: 'Rose', value: '#ffe4e6' },
+    { name: 'Lime', value: '#ecfccb' },
+    { name: 'Slate', value: '#e2e8f0' }
   ] as const;
 
   const FONT_SIZES = [
@@ -230,15 +234,16 @@
           <div>
             <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Color</label>
-            <div class="grid grid-cols-3 gap-2">
+
+            <div class="flex flex-wrap gap-2">
               {#each COLOR_PRESETS as preset}
                 <button
                   onclick={() => updateConfig({ color: preset.value })}
                   class={[
-                    'h-8 w-full rounded border-2 transition-all',
+                    'h-6 w-6 cursor-pointer rounded-full border-2 transition-all',
                     color === preset.value
-                      ? 'border-white shadow-md'
-                      : 'border-transparent hover:border-zinc-400'
+                      ? 'scale-110 border-white shadow-md'
+                      : 'border-transparent hover:scale-105 hover:border-zinc-400'
                   ]}
                   style="background-color: {preset.value};"
                   title={preset.name}
@@ -252,12 +257,13 @@
           <div>
             <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Font Size</label>
+
             <div class="flex flex-wrap gap-1">
               {#each FONT_SIZES as size}
                 <button
                   onclick={() => updateConfig({ fontSize: size.value })}
                   class={[
-                    'rounded px-2 py-1 text-xs transition-colors',
+                    'cursor-pointer rounded px-2 py-1 text-xs transition-colors',
                     fontSize === size.value
                       ? 'bg-zinc-600 text-white'
                       : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
