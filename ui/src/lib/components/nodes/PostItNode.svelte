@@ -167,7 +167,7 @@
 </script>
 
 <div class="relative">
-  <NodeResizer class="z-1" isVisible={node.selected} minWidth={100} minHeight={80} />
+  <NodeResizer class="z-1" isVisible={node.selected && !locked} minWidth={100} minHeight={80} />
 
   <div class="group relative">
     <!-- Settings button (visible on hover or when selected) -->
