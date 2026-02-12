@@ -2,7 +2,7 @@
   import { Save } from '@lucide/svelte/icons';
   import * as Dialog from '$lib/components/ui/dialog';
   import { toast } from 'svelte-sonner';
-  import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
+  import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
   import type { Node, Edge } from '@xyflow/svelte';
   import { deleteSearchParam } from '$lib/utils/search-params';
   import {
@@ -22,6 +22,14 @@
 
   // Form state
   let patchName = $state('');
+
+  // Compute the actual name that will be saved (with auto-increment if collision)
+  let actualSaveName = $derived(
+    patchName.trim() ? getUniquePatchName(patchName.trim(), $currentPatchNameStore) : ''
+  );
+
+  // Show warning when name will be auto-incremented
+  let willAutoIncrement = $derived(patchName.trim() && actualSaveName !== patchName.trim());
 
   // Reset form when dialog opens
   $effect(() => {
@@ -46,16 +54,16 @@
   }
 
   function handleSave() {
-    if (!patchName.trim()) return;
+    if (!actualSaveName) return;
 
     // Remove any URL params related to shared patches
     deleteSearchParam('id');
     deleteSearchParam('src');
 
-    const name = patchName.trim();
+    const name = actualSaveName;
     const currentName = $currentPatchNameStore;
 
-    // If renaming an existing patch (Save As), generate a new patchId
+    // If saving as a different name (including auto-incremented), generate a new patchId
     // so the new patch has its own KV storage.
     // Only treat as rename if currentName is defined (not first save)
     if (currentName && name !== currentName) {
@@ -104,10 +112,20 @@
         />
       </div>
 
-      <!-- Info about existing saves -->
-      <p class="text-xs text-zinc-500">
-        Saving with the same name will overwrite the existing patch.
-      </p>
+      <!-- Auto-increment notice -->
+      {#if willAutoIncrement}
+        <p class="text-xs text-amber-400">
+          "{patchName.trim()}" already exists. Will save as "{actualSaveName}" instead.
+        </p>
+      {:else}
+        <p class="text-xs text-zinc-500">
+          {#if $currentPatchNameStore === patchName.trim()}
+            This will update the current patch.
+          {:else}
+            Enter a unique name for your patch.
+          {/if}
+        </p>
+      {/if}
     </div>
 
     <Dialog.Footer class="flex gap-2">
@@ -119,10 +137,10 @@
       </button>
       <button
         onclick={handleSave}
-        disabled={!patchName.trim()}
+        disabled={!actualSaveName}
         class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Save
+        {willAutoIncrement ? 'Save as Copy' : 'Save'}
       </button>
     </Dialog.Footer>
   </Dialog.Content>
