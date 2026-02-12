@@ -62,22 +62,9 @@ ${this.logs.join('\n\n')}
 
 const logger = new MultiObjectLogger();
 
-export type SimplifiedEdge = {
-  source: number; // Index of source node in nodes array
-  target: number; // Index of target node in nodes array
-  sourceHandle?: string; // e.g., 'message-out', 'audio-out', 'in-0', 'video-in-0'
-  targetHandle?: string; // e.g., 'message-in', 'audio-in', 'in-1', 'audio-in-0'
-};
-
-export type MultiObjectResult = {
-  nodes: Array<{
-    type: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
-    data: any;
-    position?: { x: number; y: number }; // Optional relative positioning
-  }>;
-  edges: SimplifiedEdge[];
-};
+// Import and re-export shared types
+import type { SimplifiedEdge, MultiObjectResult, AiObjectNode } from './types';
+export type { SimplifiedEdge, MultiObjectResult, AiObjectNode };
 
 /**
  * Uses Gemini AI to resolve a natural language prompt to multiple connected objects.

@@ -1,20 +1,13 @@
 import type { Node, Edge } from '@xyflow/svelte';
-import { tick } from 'svelte';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
+import type { AiObjectNode, SimplifiedEdge } from './types';
 
 const DEFAULT_NODE_SPACING = 320; // Horizontal spacing between nodes
 
-export type SimplifiedEdgeInput = {
-  source: number;
-  target: number;
-  sourceHandle?: string;
-  targetHandle?: string;
-};
-
 export type MultiObjectInsertInput = {
-  objectNodes: Array<{ type: string; data: any; position?: { x: number; y: number } }>;
-  simplifiedEdges: SimplifiedEdgeInput[];
+  objectNodes: AiObjectNode[];
+  simplifiedEdges: SimplifiedEdge[];
   basePosition: { x: number; y: number };
   nodeIdCounter: number;
   edgeIdCounter: number;
@@ -59,7 +52,9 @@ export async function handleMultiObjectInsert(
 
     // Pre-parse code to extract setPortCount() calls for nodes that support it
     // This ensures message inlet/outlet handles exist when edges are created
-    let nodeData = objNode.data ?? getDefaultNodeData(objNode.type);
+    let nodeData: Record<string, unknown> = objNode.data ?? getDefaultNodeData(objNode.type);
+
+    const code = typeof nodeData.code === 'string' ? nodeData.code : null;
 
     // Node types that use messageInletCount/messageOutletCount (audio nodes + hydra)
     const usesMessagePorts = ['tone~', 'dsp~', 'elem~', 'sonic~', 'hydra'];
@@ -70,8 +65,8 @@ export async function handleMultiObjectInsert(
     const useDynamicMessagingPorts =
       usesMessagePorts.includes(objNode.type) || usesRegularPorts.includes(objNode.type);
 
-    if (useDynamicMessagingPorts && nodeData.code) {
-      const portCountMatch = nodeData.code.match(/setPortCount\((\d+)(?:,\s*(\d+))?\)/);
+    if (useDynamicMessagingPorts && code) {
+      const portCountMatch = code.match(/setPortCount\((\d+)(?:,\s*(\d+))?\)/);
 
       if (portCountMatch) {
         const inletCount = parseInt(portCountMatch[1] || '0', 10);
@@ -96,8 +91,8 @@ export async function handleMultiObjectInsert(
 
     // Pre-parse GLSL code to extract uniform definitions
     // This ensures GLSL inlet handles exist when edges are created
-    if (objNode.type === 'glsl' && nodeData.code) {
-      const uniformDefs = shaderCodeToUniformDefs(nodeData.code);
+    if (objNode.type === 'glsl' && code) {
+      const uniformDefs = shaderCodeToUniformDefs(code);
       nodeData = {
         ...nodeData,
         glUniformDefs: uniformDefs

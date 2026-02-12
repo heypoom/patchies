@@ -78,6 +78,8 @@
   import { PatchManager } from '$lib/services/PatchManager';
   import { NodeOperationsService } from '$lib/services/NodeOperationsService';
   import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
+  import { AiOperationsService } from '$lib/services/AiOperationsService';
+  import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -112,6 +114,9 @@
 
   // Node operations service for creating/deleting/replacing nodes
   const nodeOps = new NodeOperationsService(canvasContext);
+
+  // AI operations service for AI-related node insertion/editing
+  const aiOps = new AiOperationsService(canvasContext, nodeOps);
 
   // Event handlers for nodeOps (stored as variables for proper cleanup)
   const handleNodeReplace = (e: NodeReplaceEvent) => nodeOps.replaceNode(e);
@@ -292,13 +297,11 @@
    * Returns true if key exists and is valid, false otherwise
    */
   function checkAndHandleGeminiApiKey(): boolean {
-    const hasApiKey = !!localStorage.getItem('gemini-api-key');
-
-    if (!hasApiKey) {
+    if (!aiOps.hasApiKey()) {
       showMissingApiKeyDialog = true;
+      return false;
     }
-
-    return hasApiKey;
+    return true;
   }
 
   function onGeminiApiKeySaved() {
@@ -341,84 +344,26 @@
 
   function handleAiObjectInsert(type: string, data: any) {
     const position = screenToFlowPosition(lastMousePosition);
-
-    nodeOps.createNode(type, position, data);
+    aiOps.insertSingleObject(type, data, position);
   }
 
   async function handleAiMultipleObjectsInsert(
-    objectNodes: Array<{ type: string; data: any; position?: { x: number; y: number } }>,
-    simplifiedEdges: Array<{
-      source: number;
-      target: number;
-      sourceHandle?: string;
-      targetHandle?: string;
-    }>
+    objectNodes: AiObjectNode[],
+    simplifiedEdges: SimplifiedEdge[]
   ) {
-    const { handleMultiObjectInsert } = await import('$lib/ai/handle-multi-object-insert');
-
-    // Get base position (center around mouse position)
     const basePosition = screenToFlowPosition(lastMousePosition);
-
-    // Get current viewport for context
     const viewport = getViewport();
 
-    // Process the multi-object insertion
-    const result = await handleMultiObjectInsert({
-      objectNodes,
-      simplifiedEdges,
+    await aiOps.insertMultipleObjects(
+      { objectNodes, simplifiedEdges },
       basePosition,
-      nodeIdCounter: canvasContext.nodeIdCounter,
-      edgeIdCounter: canvasContext.edgeIdCounter,
-      viewport
-    });
-
-    // Update counters
-    canvasContext.setNodeIdCounter(result.nextNodeIdCounter);
-    canvasContext.setEdgeIdCounter(result.nextEdgeIdCounter);
-
-    // Add all new nodes first
-    nodes = [...nodes, ...result.newNodes];
-
-    // Wait for DOM to update and XYFlow to process the new nodes
-    await tick();
-
-    // Add all new edges after nodes are rendered
-    edges = [...edges, ...result.newEdges];
-
-    // Wait one more tick to ensure edges are rendered
-    await tick();
+      viewport,
+      () => tick()
+    );
   }
 
   function handleAiObjectEdit(nodeId: string, data: any) {
-    nodes = nodes.map((node) => {
-      if (node.id !== nodeId) return node;
-
-      // Define fields that should NOT be overwritten (internal state)
-      // Note: node.data should only contain user data, not node.id (that's at node.id)
-      const preservedFields = new Set([
-        'name', // Internal node name, different from user-facing title
-        'executeCode', // Internal execution trigger flag (timestamp)
-        'initialized' // Internal initialization state
-      ]);
-
-      // Start with existing data
-      const updatedData = { ...node.data };
-
-      // Merge all fields from AI response except preserved ones
-      // Also skip any fields starting with __ (internal convention)
-      for (const [key, value] of Object.entries(data)) {
-        if (!preservedFields.has(key) && !key.startsWith('__')) {
-          updatedData[key] = value;
-        }
-      }
-
-      // Add execution trigger if code was updated
-      if (data.code !== undefined && data.code !== node.data.code) {
-        updatedData.executeCode = Date.now();
-      }
-
-      return { ...node, data: updatedData };
-    });
+    aiOps.editNode(nodeId, data);
   }
 
   onMount(() => {

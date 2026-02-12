@@ -15,9 +15,9 @@
   import {
     resolveObjectFromPrompt,
     editObjectFromPrompt,
-    resolveMultipleObjectsFromPrompt,
-    type SimplifiedEdge
+    resolveMultipleObjectsFromPrompt
   } from '$lib/ai/object-resolver';
+  import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import type { Node } from '@xyflow/svelte';
 
   let {
@@ -31,12 +31,9 @@
     open?: boolean;
     position: { x: number; y: number };
     editingNode?: Node | null;
-    onInsertObject: (type: string, data: any) => void;
-    onInsertMultipleObjects?: (
-      nodes: Array<{ type: string; data: any; position?: { x: number; y: number } }>,
-      edges: SimplifiedEdge[]
-    ) => void;
-    onEditObject?: (nodeId: string, data: any) => void;
+    onInsertObject: (type: string, data: Record<string, unknown>) => void;
+    onInsertMultipleObjects?: (nodes: AiObjectNode[], edges: SimplifiedEdge[]) => void;
+    onEditObject?: (nodeId: string, data: Record<string, unknown>) => void;
   } = $props();
 
   let promptInput: HTMLTextAreaElement | undefined = $state();
