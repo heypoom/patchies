@@ -122,6 +122,8 @@
           language="javascript"
           placeholder="$1.type"
           class="peek-node-code-editor rounded-lg border !border-transparent focus:outline-none"
+          {nodeId}
+          dataKey="expr"
         />
       </div>
     {/if}

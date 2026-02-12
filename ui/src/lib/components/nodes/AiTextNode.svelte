@@ -175,6 +175,8 @@
         onrun={generateText}
         onready={() => (editorReady = true)}
         extraExtensions={[EditorView.lineWrapping]}
+        {nodeId}
+        dataKey="prompt"
       />
 
       {#if errorMessage}

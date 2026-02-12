@@ -331,6 +331,7 @@
       onrun={updateHydra}
       onready={() => (editorReady = true)}
       {lineErrors}
+      {nodeId}
     />
   {/snippet}
 

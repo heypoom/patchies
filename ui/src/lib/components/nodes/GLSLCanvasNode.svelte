@@ -272,6 +272,7 @@
       onrun={updateShader}
       onready={() => (editorReady = true)}
       {lineErrors}
+      {nodeId}
     />
   {/snippet}
 

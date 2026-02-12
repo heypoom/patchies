@@ -38,39 +38,39 @@
         </button>
       </div>
 
-      <div class="relative">
-        <div class="relative">
-          {#if showTextInput}
-            <div
-              class={[
-                'nodrag w-full min-w-[40px] resize-none border font-mono text-zinc-200',
-                containerClass
-              ]}
-            >
-              <CodeEditor
-                value={msgText}
-                onchange={(value) => updateNodeData(nodeId, { message: value })}
-                language="plain"
-                class="message-node-code-editor !border-transparent focus:outline-none"
-              />
-            </div>
-          {:else}
-            <button
-              ondblclick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+      <div class="relative bg-zinc-950">
+        {#if showTextInput}
+          <div
+            class={[
+              'nodrag w-full min-w-[40px] resize-none border font-mono text-zinc-200',
+              containerClass
+            ]}
+          >
+            <CodeEditor
+              value={msgText}
+              onchange={(value) => updateNodeData(nodeId, { message: value })}
+              language="plain"
+              class="message-node-code-editor !border-transparent focus:outline-none"
+              {nodeId}
+              dataKey="message"
+            />
+          </div>
+        {:else}
+          <button
+            ondblclick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
 
-                showTextInput = true;
-              }}
-              class={[
-                'send-message-button border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
-                containerClass
-              ]}
-            >
-              {msgText ? msgText : '<label>'}
-            </button>
-          {/if}
-        </div>
+              showTextInput = true;
+            }}
+            class={[
+              'send-message-button border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+              containerClass
+            ]}
+          >
+            {msgText ? msgText : '<label>'}
+          </button>
+        {/if}
       </div>
     </div>
   </div>

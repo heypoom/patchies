@@ -57,7 +57,11 @@
   import SidebarPanel from './sidebar/SidebarPanel.svelte';
   import { CanvasDragDropManager } from '$lib/canvas/CanvasDragDropManager';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { NodeReplaceEvent, VfsPathRenamedEvent } from '$lib/eventbus/events';
+  import type {
+    NodeReplaceEvent,
+    VfsPathRenamedEvent,
+    CodeCommitEvent
+  } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
 
@@ -68,6 +72,7 @@
     AddNodeCommand,
     DeleteNodesCommand,
     MoveNodesCommand,
+    UpdateNodeDataCommand,
     AddEdgeCommand,
     DeleteEdgesCommand,
     BatchCommand,
@@ -121,6 +126,13 @@
   // Event handlers for nodeOps (stored as variables for proper cleanup)
   const handleNodeReplace = (e: NodeReplaceEvent) => nodeOps.replaceNode(e);
   const handleVfsPathRenamed = (e: VfsPathRenamedEvent) => nodeOps.handleVfsPathRenamed(e);
+
+  // Event handler for code commit (undo tracking)
+  const handleCodeCommit = (e: CodeCommitEvent) => {
+    historyManager.record(
+      new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
+    );
+  };
 
   // Keyboard shortcut manager (created lazily in onMount to access component functions)
   let keyboardManager: KeyboardShortcutManager | null = null;
@@ -438,6 +450,7 @@
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
+    eventBus.addEventListener('codeCommit', handleCodeCommit);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -462,6 +475,7 @@
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
+    eventBus.removeEventListener('codeCommit', handleCodeCommit);
 
     // Clean up autosave interval
     if (autosaveInterval) {

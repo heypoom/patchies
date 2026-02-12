@@ -246,6 +246,7 @@
           class="nodrag h-64 w-full resize-none"
           onrun={onRun}
           {lineErrors}
+          {nodeId}
         />
       </div>
 

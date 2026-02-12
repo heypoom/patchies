@@ -550,6 +550,7 @@
           placeholder="Write your WGSL compute shader here..."
           class="nodrag h-64 w-full resize-none"
           onrun={compileShader}
+          {nodeId}
         />
       </div>
     </div>

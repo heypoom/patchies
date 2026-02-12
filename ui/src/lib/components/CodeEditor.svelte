@@ -19,6 +19,7 @@
   import { indentMore } from '@codemirror/commands';
   import { search, searchKeymap } from '@codemirror/search';
   import type { SupportedLanguage } from '$lib/codemirror/types';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
@@ -109,6 +110,9 @@
     class: className = '',
     onrun = () => {},
     onchange = (code: string) => {},
+    oncommit,
+    nodeId,
+    dataKey = 'code',
     fontSize = '12px',
     extraExtensions = [],
     onready,
@@ -122,6 +126,15 @@
     class?: string;
     onrun?: () => void;
     onchange?: (code: string) => void;
+
+    /** Called on blur if value changed since focus. For undo/redo tracking. */
+    oncommit?: (detail: { oldValue: string; newValue: string }) => void;
+
+    /** Node ID for automatic undo tracking via event bus */
+    nodeId?: string;
+
+    /** Data field name for undo tracking (default: 'code') */
+    dataKey?: string;
     extraExtensions?: Extension[];
     fontSize?: string;
     onready?: () => void;
@@ -132,6 +145,7 @@
   let editorElement: HTMLDivElement;
   let editorView: EditorView | null = $state(null);
   let isInternalUpdate = false; // Flag to prevent loops when user types
+  let valueOnFocus: string | null = null; // Track value at focus for undo commit
 
   onMount(async () => {
     if (editorElement) {
@@ -176,9 +190,36 @@
         errorTooltip,
 
         // Prevent wheel events from bubbling to XYFlow
+        // Track focus/blur for undo commit
         EditorView.domEventHandlers({
           wheel: (event) => {
             event.stopPropagation();
+          },
+          focus: (_event, view) => {
+            valueOnFocus = view.state.doc.toString();
+          },
+          blur: (_event, view) => {
+            if (valueOnFocus !== null) {
+              const currentValue = view.state.doc.toString();
+
+              if (currentValue !== valueOnFocus) {
+                // Call oncommit callback if provided
+                oncommit?.({ oldValue: valueOnFocus, newValue: currentValue });
+
+                // Emit event for undo tracking if nodeId is provided
+                if (nodeId) {
+                  PatchiesEventBus.getInstance().dispatch({
+                    type: 'codeCommit',
+                    nodeId,
+                    dataKey,
+                    oldValue: valueOnFocus,
+                    newValue: currentValue
+                  });
+                }
+              }
+            }
+
+            valueOnFocus = null;
           }
         }),
 

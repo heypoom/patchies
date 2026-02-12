@@ -371,6 +371,7 @@
           class="nodrag h-64 w-full resize-none"
           onrun={executeCode}
           {lineErrors}
+          {nodeId}
         />
       </div>
     </div>

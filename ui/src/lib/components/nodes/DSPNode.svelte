@@ -456,6 +456,7 @@
           class="nodrag h-64 w-full resize-none"
           onrun={runDSP}
           {lineErrors}
+          {nodeId}
         />
       </div>
 

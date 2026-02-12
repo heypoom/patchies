@@ -338,6 +338,7 @@
       }}
       onready={() => (editorReady = true)}
       {lineErrors}
+      {nodeId}
     />
   {/snippet}
 

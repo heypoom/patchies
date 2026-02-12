@@ -150,6 +150,7 @@
       class="nodrag h-64 w-full resize-none"
       onrun={updateSwissGL}
       onready={() => (editorReady = true)}
+      {nodeId}
     />
   {/snippet}
 </CanvasPreviewLayout>

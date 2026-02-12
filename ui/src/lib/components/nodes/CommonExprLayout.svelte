@@ -185,6 +185,8 @@
                   }),
                   ...extraExtensions
                 ]}
+                {nodeId}
+                dataKey="expr"
               />
             </div>
           {:else}

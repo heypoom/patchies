@@ -228,6 +228,8 @@
                 onrun={sendMessage}
                 language={shouldUseJsSyntax ? 'javascript' : 'plain'}
                 class="message-node-code-editor rounded-lg border !border-transparent focus:outline-none"
+                {nodeId}
+                dataKey="message"
               />
             </div>
           {:else}

@@ -30,7 +30,8 @@ export type PatchiesEvent =
   | MediaBunnyErrorEvent
   | AsmMachineStateChangedEvent
   | ObjectParamsChangedEvent
-  | QuickAddConfirmedEvent;
+  | QuickAddConfirmedEvent
+  | CodeCommitEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -276,4 +277,15 @@ export interface QuickAddConfirmedEvent {
    * transformed during quick add.
    **/
   finalNodeId: string;
+}
+
+// Code editor events - for undo/redo tracking
+
+export interface CodeCommitEvent {
+  type: 'codeCommit';
+  nodeId: string;
+  /** The data field being updated (e.g., 'code', 'expr', 'message', 'prompt') */
+  dataKey: string;
+  oldValue: string;
+  newValue: string;
 }

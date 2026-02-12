@@ -238,6 +238,8 @@
         onrun={generateImage}
         onready={() => (editorReady = true)}
         extraExtensions={[EditorView.lineWrapping]}
+        {nodeId}
+        dataKey="prompt"
       />
     </div>
   {/snippet}

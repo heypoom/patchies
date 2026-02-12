@@ -536,27 +536,39 @@ This avoids the complexity of merging two undo systems and matches user expectat
 - Typing in code → Cmd+Z undoes typing (CodeMirror)
 - Clicking away, then Cmd+Z → undoes the entire code edit as one unit
 
-**Implementation:**
+**Implementation:** ✅
 
-- [ ] Track `codeOnFocus` in code editor components
-- [ ] On blur, if code changed, emit event with `{ oldCode, newCode }`
-- [ ] Parent component creates `UpdateNodeDataCommand` for the change
-- [ ] Ensure Cmd+Z while typing doesn't bubble to patch-level undo
+- [x] Track `valueOnFocus` in CodeEditor component
+- [x] On blur, emit `codeCommit` event via PatchiesEventBus (if nodeId provided)
+- [x] Create `UpdateNodeDataCommand` for node data changes
+- [x] Add `handleCodeCommit` listener in FlowCanvasInner
+- [x] Pass `nodeId` and `dataKey` props to all CodeEditor usages
 
 ```typescript
-// In CodeBlockBase.svelte
-let codeOnFocus: string | null = null;
-
-function onFocus() {
-  codeOnFocus = code;
-}
-
-function onBlur() {
-  if (codeOnFocus !== null && codeOnFocus !== code) {
-    dispatch("codeCommit", { oldCode: codeOnFocus, newCode: code });
+// CodeEditor.svelte - emits event on blur if nodeId is provided
+blur: (_event, view) => {
+  if (nodeId && currentValue !== valueOnFocus) {
+    PatchiesEventBus.getInstance().dispatch({
+      type: 'codeCommit',
+      nodeId,
+      dataKey,  // 'code', 'expr', 'message', 'prompt', etc.
+      oldValue: valueOnFocus,
+      newValue: currentValue
+    });
   }
-  codeOnFocus = null;
 }
+
+// FlowCanvasInner.svelte - single listener handles all code commits
+const handleCodeCommit = (e: CodeCommitEvent) => {
+  historyManager.record(
+    new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
+  );
+};
+
+// Usage in nodes - just pass nodeId and optional dataKey
+<CodeEditor value={code} {nodeId} />                    // dataKey defaults to 'code'
+<CodeEditor value={expr} {nodeId} dataKey="expr" />     // for expression nodes
+<CodeEditor value={prompt} {nodeId} dataKey="prompt" /> // for AI nodes
 ```
 
 ## Edge Cases
