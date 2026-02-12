@@ -49,6 +49,7 @@ import SonicNode from '$lib/components/nodes/SonicNode.svelte';
 import ElementaryAudioNode from '$lib/components/nodes/ElementaryAudioNode.svelte';
 import CsoundNode from '$lib/components/nodes/CsoundNode.svelte';
 import ToggleButtonNode from '$lib/components/nodes/ToggleButtonNode.svelte';
+import SwitchNode from '$lib/components/nodes/SwitchNode.svelte';
 import LabelNode from '$lib/components/nodes/LabelNode.svelte';
 import LinkButton from '$lib/components/nodes/LinkButton.svelte';
 import ChannelMergerNode from '$lib/components/nodes/ChannelMergerNode.svelte';
@@ -83,6 +84,7 @@ export const nodeTypes: Record<string, any> = {
   object: ObjectNode,
   button: ButtonNode,
   toggle: ToggleButtonNode,
+  switch: SwitchNode,
   msg: MessageNode,
   p5: P5CanvasNode,
   js: JSBlockNode,

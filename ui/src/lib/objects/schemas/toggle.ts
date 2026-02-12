@@ -20,7 +20,7 @@ export const toggleSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Toggle output',
-      messages: [{ schema: Type.Boolean(), description: 'Current state (true = on, false = off)' }]
+      messages: [{ schema: Type.Boolean(), description: 'Current state' }]
     }
   ],
   tags: ['interface', 'control', 'switch', 'boolean', 'input']

@@ -22,7 +22,7 @@ Persistent key-value storage object. Data persists across sessions using Indexed
 ```
 [loadbang] → [msg: {type: "get", key: "count"}] → [kv counter]
                                                       ↓
-[+ 1] ← [js: x.found ? x.value : 0] ← [route: op=get]
+[+ 1] ← [js: x.found ? x.value : 0] ← [route: type=get]
   ↓
 [msg: x => ({type: "set", key: "count", value: x})] → [kv counter]
 ```

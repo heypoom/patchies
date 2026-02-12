@@ -44,6 +44,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('msg', () => ({ message: '' }))
     .with('button', () => ({}))
     .with('toggle', () => ({ value: false }))
+    .with('switch', () => ({ value: false }))
     .with('slider', () => ({
       min: 0,
       max: 100,

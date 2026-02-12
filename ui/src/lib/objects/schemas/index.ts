@@ -16,6 +16,7 @@ export * from './webcam';
 export * from './iframe';
 export * from './button';
 export * from './toggle';
+export * from './switch';
 export * from './msg';
 export * from './slider';
 export * from './knob';
@@ -94,6 +95,7 @@ import { webcamSchema } from './webcam';
 import { iframeSchema } from './iframe';
 import { buttonSchema } from './button';
 import { toggleSchema } from './toggle';
+import { switchSchema } from './switch';
 import { msgSchema } from './msg';
 import { sliderSchema } from './slider';
 import { knobSchema } from './knob';
@@ -214,6 +216,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   iframe: iframeSchema,
   button: buttonSchema,
   toggle: toggleSchema,
+  switch: switchSchema,
   msg: msgSchema,
   slider: sliderSchema,
   knob: knobSchema,
