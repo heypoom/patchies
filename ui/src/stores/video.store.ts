@@ -1,5 +1,46 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { webCodecsSupport, isFirefox, isSafari } from '$lib/video/feature-detection';
+
+// Video input devices
+export interface VideoDevice {
+  id: string;
+  name: string;
+}
+
+export const videoInputDevices = writable<VideoDevice[]>([]);
+export const hasEnumeratedVideoDevices = writable(false);
+
+/** Enumerate video input devices and populate store */
+export async function enumerateVideoDevices(): Promise<void> {
+  try {
+    // Request permission first to get device labels
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    stream.getTracks().forEach((track) => track.stop());
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const inputs: VideoDevice[] = [];
+
+    for (const device of devices) {
+      if (device.kind === 'videoinput') {
+        inputs.push({
+          id: device.deviceId,
+          name: device.label || `Camera ${inputs.length + 1}`
+        });
+      }
+    }
+
+    videoInputDevices.set(inputs);
+    hasEnumeratedVideoDevices.set(true);
+  } catch (error) {
+    console.error('Failed to enumerate video devices:', error);
+  }
+}
+
+/** Get default video input device ID */
+export function getDefaultVideoDeviceId(): string {
+  const inputs = get(videoInputDevices);
+  return inputs[0]?.id ?? '';
+}
 
 // WebCodecs toggle - can be disabled for testing/comparison
 const storedUseWebCodecs =

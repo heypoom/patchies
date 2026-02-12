@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Camera, Pause, Play, Square } from '@lucide/svelte/icons';
+  import { Camera, Pause, Play, Square, Settings, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -10,8 +10,15 @@
   import { webcamMessages } from '$lib/objects/schemas';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { shouldShowHandles } from '../../../stores/ui.store';
-  import { webCodecsWebcamEnabled, showVideoStats } from '../../../stores/video.store';
+  import {
+    webCodecsWebcamEnabled,
+    showVideoStats,
+    videoInputDevices,
+    enumerateVideoDevices,
+    hasEnumeratedVideoDevices
+  } from '../../../stores/video.store';
   import { WebCodecsCapture, VideoProfiler, type VideoStats } from '$lib/video';
+  import { useNodeDataTracker } from '$lib/history';
 
   // Type definitions for requestVideoFrameCallback (not yet in all TypeScript libs)
   interface VideoFrameCallbackMetadata {
@@ -43,17 +50,25 @@
     selected
   }: {
     id: string;
-    data: { width?: number; height?: number };
+    data: { width?: number; height?: number; deviceId?: string };
     selected: boolean;
   } = $props();
 
   let glSystem = GLSystem.getInstance();
   let messageContext: MessageContext;
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
+
   let videoElement = $state<HTMLVideoElement | undefined>();
   let isCapturing = $state(false);
   let isPaused = $state(false);
   let errorMessage = $state<string | null>(null);
+  let showSettings = $state(false);
+
+  // Local form state for device selection
+  let deviceId = $state(data.deviceId ?? '');
   let bitmapFrameId: number | undefined;
   let videoFrameCallbackId: number | undefined;
   let useVideoFrameCallback = false;
@@ -84,11 +99,19 @@
 
   async function startCapture() {
     try {
+      // Build video constraints with optional deviceId
+      const videoConstraints: MediaTrackConstraints = {
+        width: { ideal: data.width ?? defaultOutputWidth },
+        height: { ideal: data.height ?? defaultOutputHeight }
+      };
+
+      // Use selected device if specified
+      if (deviceId) {
+        videoConstraints.deviceId = { exact: deviceId };
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: data.width ?? defaultOutputWidth },
-          height: { ideal: data.height ?? defaultOutputHeight }
-        },
+        video: videoConstraints,
         audio: false
       });
 
@@ -221,6 +244,19 @@
     }
   }
 
+  async function switchCamera(newDeviceId: string) {
+    const oldDeviceId = deviceId;
+    deviceId = newDeviceId;
+    updateNodeData(nodeId, { deviceId: newDeviceId });
+    tracker.commit('deviceId', oldDeviceId, newDeviceId);
+
+    // If currently capturing, restart with new device
+    if (isCapturing) {
+      await stopCapture();
+      await startCapture();
+    }
+  }
+
   function togglePause() {
     if (!isCapturing) return;
 
@@ -298,7 +334,12 @@
     }
   }
 
-  onMount(() => {
+  onMount(async () => {
+    // Enumerate video devices if not already done
+    if (!$hasEnumeratedVideoDevices) {
+      await enumerateVideoDevices();
+    }
+
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
@@ -346,12 +387,23 @@
   );
 </script>
 
-<div class="relative">
+<div class="relative flex gap-x-3">
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div></div>
         <div class="flex gap-1">
+          <button
+            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            onclick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              showSettings = !showSettings;
+            }}
+            title="Camera settings"
+          >
+            <Settings class="h-4 w-4 text-zinc-300" />
+          </button>
           {#if isCapturing}
             <button
               title={isPaused ? 'Resume webcam' : 'Pause webcam'}
@@ -395,7 +447,7 @@
           <div class="relative">
             <video
               bind:this={videoElement}
-              class="rounded object-cover {isCapturing ? '' : 'hidden'}"
+              class="rounded-lg object-cover {isCapturing ? '' : 'hidden'}"
               muted
               autoplay
               playsinline
@@ -424,7 +476,10 @@
           </div>
 
           {#if !isCapturing}
-            <div class="flex h-32 w-48 items-center justify-center">
+            <div
+              class="flex items-center justify-center rounded-lg"
+              style={`width: ${canvasWidth}px; height: ${canvasHeight}px;`}
+            >
               <div class="flex flex-col items-center gap-2">
                 <Camera class="h-8 w-8 text-zinc-400" />
 
@@ -449,4 +504,35 @@
       </div>
     </div>
   </div>
+
+  {#if showSettings}
+    <div class="absolute top-0 left-full">
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+          <X class="h-4 w-4 text-zinc-300" />
+        </button>
+      </div>
+
+      <div class="nodrag ml-2 w-56 rounded-lg border border-zinc-600 bg-zinc-900 p-3 shadow-xl">
+        <div class="space-y-3">
+          <div>
+            <div class="mb-1 text-[8px] text-zinc-400">Camera</div>
+            <select
+              value={deviceId}
+              onchange={(e) => {
+                const newDeviceId = (e.target as HTMLSelectElement).value;
+                switchCamera(newDeviceId);
+              }}
+              class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:border-zinc-400 focus:outline-none"
+            >
+              <option value="">Default</option>
+              {#each $videoInputDevices as device}
+                <option value={device.id}>{device.name}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
