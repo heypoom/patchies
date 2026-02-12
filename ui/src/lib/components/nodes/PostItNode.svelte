@@ -21,7 +21,7 @@
     { label: 'Small', value: 12 },
     { label: 'Medium', value: 14 },
     { label: 'Large', value: 18 },
-    { label: 'XL', value: 24 }
+    { label: 'Huge', value: 24 }
   ] as const;
 
   let node: {
