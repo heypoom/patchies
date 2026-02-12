@@ -10,7 +10,7 @@ export const categoryOrder = [
 
 // Topic order within each category
 export const topicOrder: Record<string, string[]> = {
-  'Getting Started': ['demos', 'adding-objects', 'modifying-objects', 'keyboard-shortcuts'],
+  'Getting Started': ['demos', 'adding-objects', 'modifying-objects', 'shortcuts'],
   Connections: ['connecting-objects', 'message-passing', 'hot-cold-inlets', 'network-p2p'],
   'Audio & Video': ['audio-chaining', 'video-chaining', 'audio-reactivity', 'connection-rules'],
   Scripting: ['javascript-runner', 'canvas-interaction', 'virtual-filesystem', 'data-storage'],

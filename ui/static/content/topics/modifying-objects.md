@@ -20,4 +20,4 @@
 ## See Also
 
 - [Adding Objects](/docs/adding-objects)
-- [Keyboard Shortcuts](/docs/keyboard-shortcuts)
+- [Shortcuts](/docs/shortcuts)
