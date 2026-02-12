@@ -6,6 +6,7 @@ Perfect for documenting your patches, leaving notes for collaborators, or markin
 - **Customizable colors**: Choose from 6 preset colors (yellow, pink, blue, green, purple, orange)
 - **Adjustable font size**: Small, Medium, Large, or XL
 - **Double-click to edit**: Quickly enter edit mode
+- **Lock notes**: Lock the note to prevent editing or dragging.
 
 ## Usage
 
