@@ -307,6 +307,25 @@
     });
   });
 
+  // Sync AudioService when data changes externally (e.g., via undo/redo)
+  // This ensures audio node state stays in sync with node data
+  let lastSyncedParams = $state<string | null>(null);
+
+  $effect(() => {
+    if (!getAudioObjectNames().includes(data.name)) return;
+
+    const paramsKey = JSON.stringify(data.params);
+    if (lastSyncedParams === paramsKey) return;
+
+    // Skip initial sync (handled by onMount)
+    if (lastSyncedParams !== null) {
+      syncAudioService(data.name, data.params);
+      objectInstanceVersion++;
+    }
+
+    lastSyncedParams = paramsKey;
+  });
+
   // Dynamic outlets based on object definition
   // Supports objects with dynamic outlet count via instance getOutlets() method
   const outlets = $derived.by((): ObjectOutlet[] => {
