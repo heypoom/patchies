@@ -29,8 +29,6 @@
     sidebarView,
     patchObjectTypes,
     currentPatchName,
-    currentPatchId,
-    generateNewPatchId,
     helpModeObject,
     selectedNodeInfo
   } from '../../stores/ui.store';
@@ -41,16 +39,11 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
-  import { savePatchToLocalStorage } from '$lib/save-load/save-local-storage';
-  import { loadPatchFromUrl } from '$lib/save-load/load-patch-from-url';
-  import { cleanupPatch } from '$lib/save-load/cleanup-patch';
   import { match } from 'ts-pattern';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
-  import { migratePatch } from '$lib/migration';
-  import { getSharedPatchData } from '$lib/api/pb';
-  import { isBackgroundOutputCanvasEnabled, hasSomeAudioNode } from '../../stores/canvas.store';
+  import { hasSomeAudioNode } from '../../stores/canvas.store';
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
-  import { deleteSearchParam, getSearchParam } from '$lib/utils/search-params';
+  import { deleteSearchParam } from '$lib/utils/search-params';
   import BackgroundPattern from './BackgroundPattern.svelte';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
   import { AudioRegistry } from '$lib/registry/AudioRegistry';
@@ -76,7 +69,7 @@
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
 
   import { toast } from 'svelte-sonner';
-  import { initializeVFS, VirtualFilesystem } from '$lib/vfs';
+  import { initializeVFS } from '$lib/vfs';
   import {
     HistoryManager,
     AddNodeCommand,
@@ -87,9 +80,11 @@
     AddEdgesCommand,
     DeleteEdgesCommand,
     BatchCommand,
-    type CanvasStateAccessors,
     type Command
   } from '$lib/history';
+  import { CanvasContext } from '$lib/services/CanvasContext';
+  import { ClipboardManager } from '$lib/services/ClipboardManager';
+  import { PatchManager } from '$lib/services/PatchManager';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -97,8 +92,6 @@
   let nodes = $state.raw<Node[]>([]);
   let edges = $state.raw<Edge[]>([]);
 
-  let nodeIdCounter = 0;
-  let edgeIdCounter = 0;
   let messageSystem = MessageSystem.getInstance();
   let glSystem = GLSystem.getInstance();
   let audioService = AudioService.getInstance();
@@ -108,17 +101,21 @@
   let directChannelService = DirectChannelService.getInstance();
   let historyManager = HistoryManager.getInstance();
 
-  // Canvas state accessors for history commands
-  const canvasAccessors: CanvasStateAccessors = {
-    getNodes: () => nodes,
-    setNodes: (newNodes) => {
-      nodes = newNodes;
-    },
-    getEdges: () => edges,
-    setEdges: (newEdges) => {
-      edges = newEdges;
-    }
-  };
+  // Canvas context for shared state and utilities
+  const canvasContext = new CanvasContext(
+    { get: () => nodes, set: (n) => (nodes = n) },
+    { get: () => edges, set: (e) => (edges = e) },
+    historyManager
+  );
+
+  // Alias for convenience (used by history commands)
+  const canvasAccessors = canvasContext.canvasAccessors;
+
+  // Clipboard manager for copy/paste operations
+  const clipboardManager = new ClipboardManager(canvasContext);
+
+  // Patch manager for save/load/restore operations
+  const patchManager = new PatchManager(canvasContext);
 
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -168,30 +165,11 @@
     glSystem.setVisibleNodes(visibleNodes);
   };
 
-  // Track nodes and edges for message routing
-  let previousNodes = new Set<string>();
-
   // Autosave functionality
   let autosaveInterval: ReturnType<typeof setInterval> | null = null;
 
   let selectedNodeIds = $state.raw<string[]>([]);
   let selectedEdgeIds = $state.raw<string[]>([]);
-
-  // Clipboard for copy-paste functionality
-  let copiedData = $state<{
-    nodes: Array<{
-      originalId: string;
-      type: string;
-      data: any;
-      relativePosition: { x: number; y: number };
-    }>;
-    edges: Array<{
-      sourceIdx: number;
-      targetIdx: number;
-      sourceHandle?: string;
-      targetHandle?: string;
-    }>;
-  } | null>(null);
 
   // Track node positions at drag start for undo/redo
   let dragStartPositions: Map<string, { x: number; y: number }> | null = null;
@@ -225,40 +203,20 @@
   });
 
   function performAutosave() {
-    const embedParam = getSearchParam('embed');
-    const isEmbed = embedParam === 'true';
-
-    // do not autosave when in embed mode, help mode, or read-only mode
-    if (isEmbed || $helpModeObject || isReadOnlyMode) {
-      return;
-    }
-
-    // Only autosave when tab is active and focused to prevent conflicts between browser tabs
-    if (document.hidden || !document.hasFocus()) {
-      return;
-    }
-
-    try {
-      savePatchToLocalStorage({ name: 'autosave', nodes, edges });
-    } catch (error) {
-      console.error('Autosave failed:', error);
-    }
+    patchManager.performAutosave(isReadOnlyMode);
   }
 
   // Update message system when nodes or edges change
   $effect(() => {
     // Handle node changes (deletions)
     const currentNodes = new Set(nodes.map((n) => n.id));
+    const deletedNodes = patchManager.updatePreviousNodes(currentNodes);
 
-    // Find deleted nodes
-    for (const prevNodeId of previousNodes) {
-      if (!currentNodes.has(prevNodeId)) {
-        messageSystem.unregisterNode(prevNodeId);
-        audioService.removeNodeById(prevNodeId);
-      }
+    // Cleanup deleted nodes
+    for (const nodeId of deletedNodes) {
+      messageSystem.unregisterNode(nodeId);
+      audioService.removeNodeById(nodeId);
     }
-
-    previousNodes = currentNodes;
   });
 
   $effect(() => {
@@ -467,16 +425,7 @@
    * Quick save: if patch has a name, save directly; otherwise show Save modal
    */
   function quickSave() {
-    const name = $currentPatchName;
-
-    if (name) {
-      // Remove any URL params related to shared patches
-      deleteSearchParam('id');
-      deleteSearchParam('src');
-
-      // Silent save - no toast for quick save to existing name
-      savePatchToLocalStorage({ name, nodes, edges });
-    } else {
+    if (!patchManager.quickSave()) {
       // No current patch name, show the Save modal
       showSavePatchModal = true;
     }
@@ -561,14 +510,14 @@
       objectNodes,
       simplifiedEdges,
       basePosition,
-      nodeIdCounter,
-      edgeIdCounter,
+      nodeIdCounter: canvasContext.nodeIdCounter,
+      edgeIdCounter: canvasContext.edgeIdCounter,
       viewport
     });
 
     // Update counters
-    nodeIdCounter = result.nextNodeIdCounter;
-    edgeIdCounter = result.nextEdgeIdCounter;
+    canvasContext.setNodeIdCounter(result.nextNodeIdCounter);
+    canvasContext.setEdgeIdCounter(result.nextEdgeIdCounter);
 
     // Add all new nodes first
     nodes = [...nodes, ...result.newNodes];
@@ -696,66 +645,37 @@
   });
 
   async function loadPatch() {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') return;
 
+    // Check for ?readonly=true parameter
     const params = new URLSearchParams(window.location.search);
-    const src = params.get('src');
-    const id = params.get('id');
-    const help = params.get('help');
-    const readonly = params.get('readonly');
-
-    // Check for ?readonly=true parameter (enables read-only mode without help context)
-    if (readonly === 'true') {
+    if (params.get('readonly') === 'true') {
       isReadOnlyMode = true;
     }
 
-    // For ?help= parameter, load help patch (read-only mode)
-    if (help) {
-      showStartupModal = false;
-      helpModeObject.set(help);
-      await loadPatchFromUrlParam(`/help-patches/${help}.json`);
-      return;
-    }
+    // Use patchManager for initial loading logic
+    isLoadingFromUrl = true;
 
-    // For ?src= parameter, load directly (external URL - no confirmation for now)
-    if (src) {
-      showStartupModal = false;
-      await loadPatchFromUrlParam(src);
-      deleteSearchParam('src');
-      return;
-    }
-
-    // Always load autosave first (so user has their content if they cancel shared patch load)
     try {
-      const save = localStorage.getItem('patchies-patch-autosave');
+      const result = await patchManager.loadInitialPatch();
 
-      if (save) {
-        const parsed: PatchSaveFormat = JSON.parse(save);
-        if (parsed) await restorePatchFromSave(parsed);
-      }
-    } catch {}
-
-    // For ?id= parameter, fetch shared patch and show confirmation dialog
-    if (id) {
-      showStartupModal = false;
-      isLoadingFromUrl = true;
-
-      try {
-        const save = await getSharedPatchData(id);
-
-        if (save) {
-          // Store pending patch and show confirmation dialog
-          pendingSharedPatch = save;
-          showLoadSharedPatchDialog = true;
-        } else {
-          deleteSearchParam('id');
+      // Handle UI state based on result
+      if (result.mode === 'help' || result.mode === 'src') {
+        showStartupModal = false;
+        if (result.error) {
+          urlLoadError = result.error;
         }
-      } catch (err) {
-        urlLoadError = err instanceof Error ? err.message : 'Unknown error occurred';
-        deleteSearchParam('id');
-      } finally {
-        isLoadingFromUrl = false;
+      } else if (result.mode === 'shared') {
+        showStartupModal = false;
+        if (result.sharedPatch) {
+          pendingSharedPatch = result.sharedPatch;
+          showLoadSharedPatchDialog = true;
+        } else if (result.error) {
+          urlLoadError = result.error;
+        }
       }
+    } finally {
+      isLoadingFromUrl = false;
     }
   }
 
@@ -823,7 +743,7 @@
     customData?: any,
     options?: { skipHistory?: boolean }
   ): string {
-    const id = `${type}-${nodeIdCounter++}`;
+    const id = canvasContext.nextNodeId(type);
 
     const newNode: Node = {
       id,
@@ -853,7 +773,7 @@
     if (!oldNode) return;
 
     // Create new node ID
-    const newId = `${newType}-${nodeIdCounter++}`;
+    const newId = canvasContext.nextNodeId(newType);
 
     // Create the replacement node at the same position
     const newNode: Node = {
@@ -987,208 +907,20 @@
     });
   };
 
-  function getNodeIdCounterFromSave(nodes: Node[]): number {
-    if (nodes.length === 0) return 0 + 1;
-
-    const lastNodeId = parseInt(nodes.at(-1)?.id.match(/.*\-(\d+)$/)?.[1] ?? '');
-    if (isNaN(lastNodeId)) throw new Error('corrupted save - cannot get last node id');
-
-    return lastNodeId + 1;
-  }
-
-  // Copy selected nodes and their connecting edges to clipboard
+  // Copy/paste delegated to ClipboardManager
   function copySelectedNodes() {
-    if (selectedNodeIds.length === 0) return;
-
-    const selectedNodes = nodes.filter((node) => selectedNodeIds.includes(node.id) && node.type);
-    if (selectedNodes.length === 0) return;
-
-    // Calculate the center point of all selected nodes
-    const centerX =
-      selectedNodes.reduce((sum, node) => sum + node.position.x, 0) / selectedNodes.length;
-
-    const centerY =
-      selectedNodes.reduce((sum, node) => sum + node.position.y, 0) / selectedNodes.length;
-
-    // Create a map of node ID to index for edge remapping
-    const nodeIdToIdx = new Map(selectedNodes.map((node, idx) => [node.id, idx]));
-
-    // Store nodes with their relative positions from the center
-    const copiedNodes = selectedNodes.map((node) => ({
-      originalId: node.id,
-      type: node.type!,
-      data: { ...node.data },
-      relativePosition: {
-        x: node.position.x - centerX,
-        y: node.position.y - centerY
-      }
-    }));
-
-    // Find edges where both source and target are in the selection
-    const copiedEdges = edges
-      .filter((edge) => nodeIdToIdx.has(edge.source) && nodeIdToIdx.has(edge.target))
-      .map((edge) => ({
-        sourceIdx: nodeIdToIdx.get(edge.source)!,
-        targetIdx: nodeIdToIdx.get(edge.target)!,
-        sourceHandle: edge.sourceHandle ?? undefined,
-        targetHandle: edge.targetHandle ?? undefined
-      }));
-
-    copiedData = { nodes: copiedNodes, edges: copiedEdges };
-
-    const edgeText =
-      copiedEdges.length > 0
-        ? ` and ${copiedEdges.length} edge${copiedEdges.length === 1 ? '' : 's'}`
-        : '';
-    toast.success(
-      `Copied ${selectedNodes.length} node${selectedNodes.length === 1 ? '' : 's'}${edgeText}`
-    );
+    clipboardManager.copy(selectedNodeIds);
   }
 
-  // Paste copied nodes at current mouse position or center of screen
   function pasteNode(source: 'keyboard' | 'button') {
-    if (!copiedData || copiedData.nodes.length === 0) return;
-
-    // Get the paste position (where the center of the copied nodes will be placed)
-    const pastePosition = match(source)
-      .with('keyboard', () => screenToFlowPosition(lastMousePosition))
-      .with('button', () => {
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-
-        return screenToFlowPosition({ x: centerX, y: centerY });
-      })
-      .exhaustive();
-
-    // Build all new nodes first
-    const newNodes: Node[] = [];
-    const newNodeIds: string[] = [];
-
-    for (const nodeData of copiedData.nodes) {
-      const id = `${nodeData.type}-${nodeIdCounter++}`;
-      const position = {
-        x: pastePosition.x + nodeData.relativePosition.x,
-        y: pastePosition.y + nodeData.relativePosition.y
-      };
-
-      newNodes.push({
-        id,
-        type: nodeData.type,
-        position,
-        data: { ...nodeData.data }
-      });
-      newNodeIds.push(id);
-    }
-
-    // Build all new edges
-    const newEdges: Edge[] = copiedData.edges.map((edgeData) => ({
-      id: `edge-${edgeIdCounter++}`,
-      source: newNodeIds[edgeData.sourceIdx],
-      target: newNodeIds[edgeData.targetIdx],
-      sourceHandle: edgeData.sourceHandle,
-      targetHandle: edgeData.targetHandle
-    }));
-
-    // Execute as a single batch command
-    const commands: Command[] = [];
-    if (newNodes.length > 0) {
-      commands.push(new AddNodesCommand(newNodes, canvasAccessors));
-    }
-    if (newEdges.length > 0) {
-      commands.push(new AddEdgesCommand(newEdges, canvasAccessors));
-    }
-
-    const nodeCount = newNodes.length;
-    const edgeCount = newEdges.length;
-    const description = `Paste ${nodeCount} node${nodeCount === 1 ? '' : 's'}`;
-
-    if (commands.length === 1) {
-      historyManager.execute(commands[0]);
-    } else {
-      historyManager.execute(new BatchCommand(commands, description));
-    }
-
-    const edgeText = edgeCount > 0 ? ` and ${edgeCount} edge${edgeCount === 1 ? '' : 's'}` : '';
-    toast.success(`Pasted ${nodeCount} node${nodeCount === 1 ? '' : 's'}${edgeText}`);
+    clipboardManager.paste(screenToFlowPosition, source, lastMousePosition);
   }
 
-  async function restorePatchFromSave(save: PatchSaveFormat) {
-    // Apply migrations to upgrade old patch formats
-    const migrated = migratePatch(save) as PatchSaveFormat;
-
-    cleanupPatch(nodes);
-    historyManager.clear();
-
-    previousNodes = new Set();
-
-    nodes = [];
-    edges = [];
-
-    // Hydrate VFS from saved files
-    const vfs = VirtualFilesystem.getInstance();
-    vfs.clear();
-
-    if (migrated.files) {
-      await vfs.hydrate(migrated.files);
-
-      // Check for pending permissions and log them
-      const pending = vfs.getPendingPermissions();
-
-      if (pending.length > 0) {
-        console.log('VFS: Some local files need permission:', pending);
-        // Permission will be requested by individual nodes when they try to load
-      }
-    }
-
-    nodes = migrated.nodes;
-    edges = migrated.edges;
-
-    // Update node counter based on loaded nodes
-    if (migrated.nodes.length > 0) {
-      nodeIdCounter = getNodeIdCounterFromSave(migrated.nodes);
-    }
-
-    // Restore or generate patchId for KV storage scoping
-    if (migrated.patchId) {
-      currentPatchId.set(migrated.patchId);
-    } else {
-      // Old saves without patchId get a new one
-      generateNewPatchId();
-    }
-
-    // Immediately save migrated patch to autosave so reloads don't break
-    performAutosave();
-  }
-
-  // HACK: loading normally is causing artifacts when switching between patches
-  //       so we go with this super hacky solution
-  async function loadDemoPatchById(patchId: string) {
+  // Patch lifecycle delegated to PatchManager
+  function loadDemoPatchById(patchId: string) {
     isLoadingFromUrl = true;
     urlLoadError = null;
-    window.location.href = `/?id=${patchId}&readonly=true`;
-  }
-
-  // Load patch from URL parameter
-  async function loadPatchFromUrlParam(url: string) {
-    isLoadingFromUrl = true;
-    urlLoadError = null;
-
-    try {
-      const result = await loadPatchFromUrl(url);
-
-      if (result.success) {
-        const { data } = result;
-        await restorePatchFromSave(data);
-      } else {
-        urlLoadError = result.error;
-        console.error('Failed to load patch from URL:', result.error);
-      }
-    } catch (error) {
-      urlLoadError = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Failed to load patch from URL:', error);
-    } finally {
-      isLoadingFromUrl = false;
-    }
+    patchManager.loadDemoPatchById(patchId);
   }
 
   function insertObjectWithButton() {
@@ -1238,36 +970,14 @@
   }
 
   function confirmNewPatch() {
-    cleanupPatch(nodes);
-    historyManager.clear();
-    previousNodes = new Set();
-
-    nodes = [];
-    edges = [];
-
-    const vfs = VirtualFilesystem.getInstance();
-    vfs.clear();
-    vfs.clearPersistedData();
-
-    localStorage.removeItem('patchies-patch-autosave');
-    isBackgroundOutputCanvasEnabled.set(false);
-    currentPatchName.set(null); // Clear current patch name for new patch
-    generateNewPatchId(); // Generate new patchId for KV storage scoping
-    deleteSearchParam('id'); // Clear shared patch URL since we're starting fresh
+    patchManager.createNewPatch();
     showNewPatchDialog = false;
   }
 
   async function confirmLoadSharedPatch() {
     if (!pendingSharedPatch) return;
 
-    // Keep the ?id= param in URL so users can easily copy/share the link
-
-    // Load the shared patch
-    await restorePatchFromSave(pendingSharedPatch);
-
-    // Clear current patch name to prevent accidentally overwriting user's saved patches
-    currentPatchName.set(null);
-
+    await patchManager.loadSharedPatch(pendingSharedPatch);
     pendingSharedPatch = null;
 
     // Re-focus the view on the new content
@@ -1276,8 +986,6 @@
   }
 
   function cancelLoadSharedPatch() {
-    // Keep the ?id= param in URL so users can easily copy/share the link
-    // Their autosave is already loaded, so they keep their content
     pendingSharedPatch = null;
   }
 
@@ -1566,7 +1274,7 @@
           {edges}
           setNodes={(newNodes) => {
             nodes = newNodes;
-            nodeIdCounter = getNodeIdCounterFromSave(newNodes);
+            canvasContext.setNodeIdCounterFromNodes(newNodes);
           }}
           setEdges={(newEdges) => {
             edges = newEdges;
@@ -1613,7 +1321,7 @@
         {edges}
         {selectedNodeIds}
         {selectedEdgeIds}
-        {copiedData}
+        hasCopiedData={clipboardManager.hasCopiedData()}
         {hasGeminiApiKey}
         isLeftSidebarOpen={$isSidebarOpen}
         bind:showStartupModal
