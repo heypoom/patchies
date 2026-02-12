@@ -72,6 +72,7 @@ export * from './wgpu-compute';
 export * from './bg-out';
 export * from './send-vdo';
 export * from './recv-vdo';
+export * from './note';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
@@ -148,6 +149,7 @@ import { wgpuComputeSchema } from './wgpu-compute';
 import { bgOutSchema } from './bg-out';
 import { sendVdoSchema } from './send-vdo';
 import { recvVdoSchema } from './recv-vdo';
+import { noteSchema } from './note';
 
 // V2 Audio Node imports (source of truth for audio objects)
 import { AddNodeV2 } from '$lib/audio/v2/nodes/AddNode';
@@ -266,6 +268,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'bg.out': bgOutSchema,
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
+  note: noteSchema,
 
   // Audio objects (generated from V2 nodes - single source of truth)
   'gain~': schemaFromNode(GainNodeV2, 'audio'),

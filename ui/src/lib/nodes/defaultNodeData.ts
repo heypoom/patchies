@@ -223,5 +223,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('trigger', () => ({ types: ['b', 'n'], shorthand: false, showHelp: false }))
     .with('send.vdo', () => ({ channel: 'foo' }))
     .with('recv.vdo', () => ({ channel: 'foo' }))
+    .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))
     .otherwise(() => ({}));
 }

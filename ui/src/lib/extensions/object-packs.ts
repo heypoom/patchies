@@ -43,7 +43,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'User Interface',
     description: 'Interface building components',
     icon: 'Layout',
-    objects: ['keyboard', 'markdown', 'iframe', 'link', 'dom', 'vue']
+    objects: ['keyboard', 'markdown', 'iframe', 'link', 'dom', 'vue', 'note']
   },
   {
     id: 'media',

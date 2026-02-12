@@ -75,6 +75,7 @@ import WGPUNode from '$lib/components/nodes/WGPUNode.svelte';
 import TriggerNode from '$lib/components/nodes/TriggerNode.svelte';
 import SendVideoNode from '$lib/components/nodes/SendVideoNode.svelte';
 import RecvVideoNode from '$lib/components/nodes/RecvVideoNode.svelte';
+import PostItNode from '$lib/components/nodes/PostItNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -154,7 +155,8 @@ export const nodeTypes: Record<string, any> = {
   'wgpu.compute': WGPUNode,
   trigger: TriggerNode,
   'send.vdo': SendVideoNode,
-  'recv.vdo': RecvVideoNode
+  'recv.vdo': RecvVideoNode,
+  note: PostItNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

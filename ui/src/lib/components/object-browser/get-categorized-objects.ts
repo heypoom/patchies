@@ -86,7 +86,8 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja',
   wgpu: 'WebGPU compute shaders for parallel data processing',
   'send.vdo': 'Send video frames to a named channel',
-  'recv.vdo': 'Receive video frames from a named channel'
+  'recv.vdo': 'Receive video frames from a named channel',
+  note: 'Post-it note for annotations and comments'
 };
 
 /**
