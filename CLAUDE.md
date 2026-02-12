@@ -113,6 +113,45 @@ bun run test             # All tests
 
 **Auto-positioned**: Uses `getPortPosition()`, no manual styling needed
 
+### Undo/Redo Support for Node Data
+
+**CRITICAL**: When adding ANY new options/settings to a node, you MUST add undo/redo tracking using `useNodeDataTracker`.
+
+**Two patterns based on input type:**
+
+```typescript
+import { useNodeDataTracker } from '$lib/history';
+
+const tracker = useNodeDataTracker(node.id);
+
+// 1. DISCRETE changes (toggles, color pickers, dropdowns, radio buttons)
+// Records immediately when called
+function handleColorChange(newColor: string) {
+  const oldColor = color;
+
+  updateNodeData(node.id, { color: newColor });
+  tracker.commit('color', oldColor, newColor);
+}
+
+// 2. CONTINUOUS changes (text inputs, sliders, number inputs)
+// Records on blur/pointerup if value changed from focus time
+const textTracker = tracker.track('text', () => node.data.text ?? '');
+
+// In template:
+<input onfocus={textTracker.onFocus} onblur={textTracker.onBlur} />
+<input type="range" onpointerdown={valueTracker.onFocus} onpointerup={valueTracker.onBlur} />
+```
+
+**For code editing (CodeMirror)**: CodeEditor handles undo internally via `codeCommit` event. You do NOT need `useNodeDataTracker` for code. Just pass the correct `dataKey` prop:
+
+```svelte
+<CodeEditor value={code} nodeId={node.id} />                    <!-- dataKey defaults to 'code' -->
+<CodeEditor value={expr} nodeId={node.id} dataKey="expr" />     <!-- for expression nodes -->
+<CodeEditor value={prompt} nodeId={node.id} dataKey="prompt" /> <!-- for AI nodes -->
+```
+
+See `PostItNode.svelte` and `SliderNode.svelte` for complete examples. Full spec: `docs/design-docs/specs/68-undo-redo-system.md`
+
 ### New Node Checklist
 
 **For visual/expression nodes (map, filter, uniq, etc.):**
