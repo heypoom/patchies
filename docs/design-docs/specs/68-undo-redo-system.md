@@ -127,13 +127,13 @@ export class HistoryManager {
 ```typescript
 // src/lib/history/commands/node-commands.ts
 
-import type { Node } from '@xyflow/svelte';
+import type { Node } from "@xyflow/svelte";
 
 export class AddNodeCommand implements Command {
   constructor(
     private node: Node,
     private getNodes: () => Node[],
-    private setNodes: (nodes: Node[]) => void
+    private setNodes: (nodes: Node[]) => void,
   ) {}
 
   description = `Add node ${this.node.type}`;
@@ -143,7 +143,7 @@ export class AddNodeCommand implements Command {
   }
 
   undo(): void {
-    this.setNodes(this.getNodes().filter(n => n.id !== this.node.id));
+    this.setNodes(this.getNodes().filter((n) => n.id !== this.node.id));
   }
 }
 
@@ -155,24 +155,26 @@ export class DeleteNodesCommand implements Command {
     private getNodes: () => Node[],
     private setNodes: (nodes: Node[]) => void,
     private getEdges: () => Edge[],
-    private setEdges: (edges: Edge[]) => void
+    private setEdges: (edges: Edge[]) => void,
   ) {}
 
   description = `Delete ${this.nodes.length} node(s)`;
 
   execute(): void {
-    const nodeIds = new Set(this.nodes.map(n => n.id));
+    const nodeIds = new Set(this.nodes.map((n) => n.id));
 
     // Store edges that will be deleted (connected to these nodes)
     this.deletedEdges = this.getEdges().filter(
-      e => nodeIds.has(e.source) || nodeIds.has(e.target)
+      (e) => nodeIds.has(e.source) || nodeIds.has(e.target),
     );
 
     // Remove nodes and their edges
-    this.setNodes(this.getNodes().filter(n => !nodeIds.has(n.id)));
-    this.setEdges(this.getEdges().filter(
-      e => !nodeIds.has(e.source) && !nodeIds.has(e.target)
-    ));
+    this.setNodes(this.getNodes().filter((n) => !nodeIds.has(n.id)));
+    this.setEdges(
+      this.getEdges().filter(
+        (e) => !nodeIds.has(e.source) && !nodeIds.has(e.target),
+      ),
+    );
   }
 
   undo(): void {
@@ -190,23 +192,27 @@ export class MoveNodesCommand implements Command {
     private oldPositions: Map<string, { x: number; y: number }>,
     private newPositions: Map<string, { x: number; y: number }>,
     private getNodes: () => Node[],
-    private setNodes: (nodes: Node[]) => void
+    private setNodes: (nodes: Node[]) => void,
   ) {}
 
   description = `Move ${this.nodeIds.length} node(s)`;
 
   execute(): void {
-    this.setNodes(this.getNodes().map(node => {
-      const newPos = this.newPositions.get(node.id);
-      return newPos ? { ...node, position: newPos } : node;
-    }));
+    this.setNodes(
+      this.getNodes().map((node) => {
+        const newPos = this.newPositions.get(node.id);
+        return newPos ? { ...node, position: newPos } : node;
+      }),
+    );
   }
 
   undo(): void {
-    this.setNodes(this.getNodes().map(node => {
-      const oldPos = this.oldPositions.get(node.id);
-      return oldPos ? { ...node, position: oldPos } : node;
-    }));
+    this.setNodes(
+      this.getNodes().map((node) => {
+        const oldPos = this.oldPositions.get(node.id);
+        return oldPos ? { ...node, position: oldPos } : node;
+      }),
+    );
   }
 }
 
@@ -216,21 +222,25 @@ export class UpdateNodeDataCommand implements Command {
     private oldData: Record<string, unknown>,
     private newData: Record<string, unknown>,
     private getNodes: () => Node[],
-    private setNodes: (nodes: Node[]) => void
+    private setNodes: (nodes: Node[]) => void,
   ) {}
 
   description = `Update node data`;
 
   execute(): void {
-    this.setNodes(this.getNodes().map(node =>
-      node.id === this.nodeId ? { ...node, data: this.newData } : node
-    ));
+    this.setNodes(
+      this.getNodes().map((node) =>
+        node.id === this.nodeId ? { ...node, data: this.newData } : node,
+      ),
+    );
   }
 
   undo(): void {
-    this.setNodes(this.getNodes().map(node =>
-      node.id === this.nodeId ? { ...node, data: this.oldData } : node
-    ));
+    this.setNodes(
+      this.getNodes().map((node) =>
+        node.id === this.nodeId ? { ...node, data: this.oldData } : node,
+      ),
+    );
   }
 }
 ```
@@ -240,13 +250,13 @@ export class UpdateNodeDataCommand implements Command {
 ```typescript
 // src/lib/history/commands/edge-commands.ts
 
-import type { Edge } from '@xyflow/svelte';
+import type { Edge } from "@xyflow/svelte";
 
 export class AddEdgeCommand implements Command {
   constructor(
     private edge: Edge,
     private getEdges: () => Edge[],
-    private setEdges: (edges: Edge[]) => void
+    private setEdges: (edges: Edge[]) => void,
   ) {}
 
   description = `Connect ${this.edge.source} → ${this.edge.target}`;
@@ -256,7 +266,7 @@ export class AddEdgeCommand implements Command {
   }
 
   undo(): void {
-    this.setEdges(this.getEdges().filter(e => e.id !== this.edge.id));
+    this.setEdges(this.getEdges().filter((e) => e.id !== this.edge.id));
   }
 }
 
@@ -264,14 +274,14 @@ export class DeleteEdgesCommand implements Command {
   constructor(
     private edges: Edge[],
     private getEdges: () => Edge[],
-    private setEdges: (edges: Edge[]) => void
+    private setEdges: (edges: Edge[]) => void,
   ) {}
 
   description = `Delete ${this.edges.length} edge(s)`;
 
   execute(): void {
-    const edgeIds = new Set(this.edges.map(e => e.id));
-    this.setEdges(this.getEdges().filter(e => !edgeIds.has(e.id)));
+    const edgeIds = new Set(this.edges.map((e) => e.id));
+    this.setEdges(this.getEdges().filter((e) => !edgeIds.has(e.id)));
   }
 
   undo(): void {
@@ -289,7 +299,7 @@ export class DeleteEdgesCommand implements Command {
 export class BatchCommand implements Command {
   constructor(
     private commands: Command[],
-    public description: string
+    public description: string,
   ) {}
 
   execute(): void {
@@ -320,18 +330,26 @@ let historyManager = HistoryManager.getInstance();
 
 // Accessors for commands
 const getNodes = () => nodes;
-const setNodes = (newNodes: Node[]) => { nodes = newNodes; };
+const setNodes = (newNodes: Node[]) => {
+  nodes = newNodes;
+};
 const getEdges = () => edges;
-const setEdges = (newEdges: Edge[]) => { edges = newEdges; };
+const setEdges = (newEdges: Edge[]) => {
+  edges = newEdges;
+};
 
 // Wrap node creation
-function createNodeWithHistory(type: string, position: { x: number; y: number }, customData?: any): string {
+function createNodeWithHistory(
+  type: string,
+  position: { x: number; y: number },
+  customData?: any,
+): string {
   const id = `${type}-${nodeIdCounter++}`;
   const newNode: Node = {
     id,
     type,
     position,
-    data: customData ?? getDefaultNodeData(type)
+    data: customData ?? getDefaultNodeData(type),
   };
 
   historyManager.execute(new AddNodeCommand(newNode, getNodes, setNodes));
@@ -345,22 +363,29 @@ Add to `handleGlobalKeydown`:
 
 ```typescript
 // Undo: Cmd+Z
-if (event.key === 'z' && (event.metaKey || event.ctrlKey) && !event.shiftKey && !isTyping) {
+if (
+  event.key === "z" &&
+  (event.metaKey || event.ctrlKey) &&
+  !event.shiftKey &&
+  !isTyping
+) {
   event.preventDefault();
+
   if (historyManager.undo()) {
-    toast.success('Undo');
+    toast.success("Undo");
   }
 }
 
 // Redo: Cmd+Shift+Z or Cmd+Y
 if (
-  ((event.key === 'z' && event.shiftKey) || event.key === 'y') &&
+  ((event.key === "z" && event.shiftKey) || event.key === "y") &&
   (event.metaKey || event.ctrlKey) &&
   !isTyping
 ) {
   event.preventDefault();
+
   if (historyManager.redo()) {
-    toast.success('Redo');
+    toast.success("Redo");
   }
 }
 ```
@@ -427,6 +452,7 @@ XYFlow fires `onconnect` when edges are created:
 For code blocks, we want to batch edits rather than undo per-keystroke.
 
 ### Option A: Blur-based (simpler)
+
 Record state on focus, commit on blur:
 
 ```typescript
@@ -440,13 +466,14 @@ function onFocus() {
 function onBlur() {
   if (codeOnFocus !== null && codeOnFocus !== code) {
     // Emit event to parent to record the change
-    dispatch('codeChange', { oldCode: codeOnFocus, newCode: code });
+    dispatch("codeChange", { oldCode: codeOnFocus, newCode: code });
   }
   codeOnFocus = null;
 }
 ```
 
 ### Option B: Debounced (better UX)
+
 Use a debounce timer (e.g., 1 second of inactivity):
 
 ```typescript
@@ -458,7 +485,7 @@ function onCodeChange(newCode: string) {
 
   debounceTimer = setTimeout(() => {
     if (newCode !== lastRecordedCode) {
-      dispatch('codeChange', { oldCode: lastRecordedCode, newCode });
+      dispatch("codeChange", { oldCode: lastRecordedCode, newCode });
       lastRecordedCode = newCode;
     }
   }, 1000);
@@ -487,36 +514,50 @@ function confirmNewPatch() {
 src/lib/history/
 ├── HistoryManager.ts
 ├── types.ts
-├── commands/
-│   ├── index.ts
-│   ├── node-commands.ts
-│   ├── edge-commands.ts
-│   └── batch-command.ts
-└── index.ts
+├── index.ts
+└── commands/
+    ├── index.ts
+    ├── add-node.command.ts
+    ├── add-nodes.command.ts
+    ├── delete-nodes.command.ts
+    ├── move-nodes.command.ts
+    ├── add-edge.command.ts
+    ├── add-edges.command.ts
+    ├── delete-edges.command.ts
+    ├── batch-command.ts
+    ├── node-commands.test.ts
+    └── edge-commands.test.ts
 ```
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure
-- [ ] Create `HistoryManager` singleton
-- [ ] Implement base `Command` interface
-- [ ] Add keyboard shortcuts (Cmd+Z, Cmd+Shift+Z)
+### Phase 1: Core Infrastructure ✅
 
-### Phase 2: Node Operations
-- [ ] `AddNodeCommand` - creating nodes
-- [ ] `DeleteNodesCommand` - deleting nodes (with edge cleanup)
-- [ ] `MoveNodesCommand` - drag position changes
+- [x] Create `HistoryManager` singleton
+- [x] Implement base `Command` interface
+- [x] Add keyboard shortcuts (Cmd+Z, Cmd+Shift+Z)
 
-### Phase 3: Edge Operations
-- [ ] `AddEdgeCommand` - connecting nodes
-- [ ] `DeleteEdgesCommand` - disconnecting nodes
+### Phase 2: Node Operations ✅
 
-### Phase 4: Batch Operations
-- [ ] `BatchCommand` - for paste, AI multi-insert
-- [ ] Update copy/paste to use commands
-- [ ] Update AI insertion to use commands
+- [x] `AddNodeCommand` - creating nodes
+- [x] `AddNodesCommand` - creating multiple nodes at once
+- [x] `DeleteNodesCommand` - deleting nodes (with edge cleanup)
+- [x] `MoveNodesCommand` - drag position changes
+
+### Phase 3: Edge Operations ✅
+
+- [x] `AddEdgeCommand` - connecting nodes
+- [x] `AddEdgesCommand` - connecting multiple edges at once
+- [x] `DeleteEdgesCommand` - disconnecting nodes
+
+### Phase 4: Batch Operations ✅
+
+- [x] `BatchCommand` - for paste, AI multi-insert
+- [x] Update copy/paste to use commands
+- [x] Update AI insertion to use commands
 
 ### Phase 5: Node Data Changes (optional)
+
 - [ ] `UpdateNodeDataCommand` for code/param changes
 - [ ] Debouncing strategy for code edits
 
@@ -530,7 +571,7 @@ src/lib/history/
 
 ## Testing
 
-- Unit tests for each command type
-- Integration test: create nodes → delete → undo → verify restored
-- Integration test: drag node → undo → verify position
-- Integration test: connect → disconnect → undo → verify edge restored
+- [x] Unit tests for each command type (node-commands.test.ts, edge-commands.test.ts)
+- [ ] Integration test: create nodes → delete → undo → verify restored
+- [ ] Integration test: drag node → undo → verify position
+- [ ] Integration test: connect → disconnect → undo → verify edge restored
