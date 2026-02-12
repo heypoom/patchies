@@ -1522,6 +1522,33 @@
             toast.success('Objects connected by tap.');
           }
         }}
+        onbeforedelete={async ({ nodes: nodesToDelete, edges: edgesToDelete }) => {
+          // Record deletions to history before SvelteFlow performs them
+          const commands: Command[] = [];
+
+          if (nodesToDelete.length > 0) {
+            commands.push(new DeleteNodesCommand(nodesToDelete, canvasAccessors));
+          }
+
+          if (edgesToDelete.length > 0) {
+            // Only record edges not already handled by DeleteNodesCommand
+            const nodeIds = new Set(nodesToDelete.map((n) => n.id));
+            const standaloneEdges = edgesToDelete.filter(
+              (e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)
+            );
+            if (standaloneEdges.length > 0) {
+              commands.push(new DeleteEdgesCommand(standaloneEdges, canvasAccessors));
+            }
+          }
+
+          if (commands.length === 1) {
+            historyManager.record(commands[0]);
+          } else if (commands.length > 1) {
+            historyManager.record(new BatchCommand(commands, 'Delete selection'));
+          }
+
+          return true; // Allow the deletion to proceed
+        }}
       >
         <BackgroundPattern />
 
