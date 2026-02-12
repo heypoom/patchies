@@ -16,6 +16,7 @@
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
   import { logger } from '$lib/utils/logger';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { useNodeDataTracker } from '$lib/history';
 
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -49,6 +50,9 @@
   let highlightLineCallback: ((lineNo: number) => void) | null = null;
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 3);
@@ -615,9 +619,12 @@
           min="1"
           max="1000"
           bind:value={stepByInput}
-          oninput={() => {
+          onchange={() => {
             if (!isNaN(stepByInput) && stepByInput >= 1 && stepByInput <= 1000) {
+              const oldStepBy = machineConfig.stepBy;
+
               updateMachineConfig({ stepBy: stepByInput });
+              tracker.commit('machineConfig.stepBy', oldStepBy, stepByInput);
             }
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
@@ -636,9 +643,12 @@
           max="5000"
           step="10"
           bind:value={delayInput}
-          oninput={() => {
+          onchange={() => {
             if (!isNaN(delayInput) && delayInput >= 10 && delayInput <= 5000) {
+              const oldDelayMs = machineConfig.delayMs;
               updateMachineConfig({ delayMs: delayInput });
+
+              tracker.commit('machineConfig.delayMs', oldDelayMs, delayInput);
               setTimeout(() => setupPolling(), 5);
             }
           }}

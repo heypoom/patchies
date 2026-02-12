@@ -631,8 +631,9 @@ Priority 2 - Settings panels with discrete options:
 - [x] `ai.tts` - voice selection
 - [x] `vdo.ninja.push` - room ID, settings
 - [x] `vdo.ninja.pull` - room ID, settings
-- [x] `asm` - viewer settings
+- [x] `asm` - viewer settings (AssemblyValueViewer)
 - [x] `asm.mem` - viewer settings
+- [x] `asm` (machine) - stepBy, delayMs settings (AssemblyMachine)
 - [x] `orca` - orca code, settings
 - [x] `chuck~` - settings (via CodeEditor codeCommit)
 
