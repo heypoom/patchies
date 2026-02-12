@@ -1,4 +1,3 @@
-import type { Node } from '@xyflow/svelte';
 import type { Command, CanvasStateAccessors } from '../types';
 
 /**
@@ -15,7 +14,14 @@ export class UpdateNodeDataCommand implements Command {
     private newValue: unknown,
     private accessors: CanvasStateAccessors
   ) {
-    this.description = `Update ${dataKey}`;
+    const node = accessors.getNodes().find((n) => n.id === nodeId);
+
+    const objectName =
+      node?.type === 'object'
+        ? (node.data?.name ?? node.data?.expr ?? 'object')
+        : (node?.type ?? 'unknown');
+
+    this.description = `Update ${dataKey} on ${objectName}`;
   }
 
   execute(): void {

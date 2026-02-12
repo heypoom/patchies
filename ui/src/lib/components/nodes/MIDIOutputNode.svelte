@@ -9,6 +9,7 @@
   import { MIDISystem, type MIDIOutputConfig } from '$lib/canvas/MIDISystem';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { midiOutputDevices } from '../../../stores/midi.store';
+  import { useNodeDataTracker } from '$lib/history';
 
   let {
     id: nodeId,
@@ -22,6 +23,9 @@
 
   const { updateNodeData } = useSvelteFlow();
   const midiSystem = MIDISystem.getInstance();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let messageContext: MessageContext;
   let showSettings = $state(false);
@@ -158,11 +162,13 @@
   }
 
   function updateMessageType(newMessageType: string) {
+    const oldEvent = event;
     const defaultData = getDefaultDataForMessageType(newMessageType);
     updateNodeData(nodeId, {
       event: newMessageType,
       ...defaultData
     });
+    tracker.commit('event', oldEvent, newMessageType);
   }
 
   onMount(async () => {
@@ -257,10 +263,12 @@
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={deviceId}
-              onchange={(e) =>
-                updateNodeData(nodeId, {
-                  deviceId: (e.target as HTMLSelectElement).value
-                })}
+              onchange={(e) => {
+                const oldDeviceId = deviceId;
+                const newDeviceId = (e.target as HTMLSelectElement).value;
+                updateNodeData(nodeId, { deviceId: newDeviceId });
+                tracker.commit('deviceId', oldDeviceId, newDeviceId);
+              }}
             >
               <option value="">Select device...</option>
               {#each $midiOutputDevices as device}
@@ -276,10 +284,12 @@
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={channel}
-              onchange={(e) =>
-                updateNodeData(nodeId, {
-                  channel: parseInt((e.target as HTMLSelectElement).value)
-                })}
+              onchange={(e) => {
+                const oldChannel = channel;
+                const newChannel = parseInt((e.target as HTMLSelectElement).value);
+                updateNodeData(nodeId, { channel: newChannel });
+                tracker.commit('channel', oldChannel, newChannel);
+              }}
             >
               {#each Array(16) as _, i}
                 <option value={i + 1}>Channel {i + 1}</option>
@@ -320,10 +330,12 @@
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
                     value={(midiData.note as number) || 60}
-                    onchange={(e) =>
-                      updateNodeData(nodeId, {
-                        note: parseInt((e.target as HTMLInputElement).value)
-                      })}
+                    onchange={(e) => {
+                      const oldNote = (midiData.note as number) || 60;
+                      const newNote = parseInt((e.target as HTMLInputElement).value);
+                      updateNodeData(nodeId, { note: newNote });
+                      tracker.commit('note', oldNote, newNote);
+                    }}
                   />
                 </div>
 
@@ -337,10 +349,12 @@
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
                     value={(midiData.velocity as number) || 127}
-                    onchange={(e) =>
-                      updateNodeData(nodeId, {
-                        velocity: parseInt((e.target as HTMLInputElement).value)
-                      })}
+                    onchange={(e) => {
+                      const oldVelocity = (midiData.velocity as number) || 127;
+                      const newVelocity = parseInt((e.target as HTMLInputElement).value);
+                      updateNodeData(nodeId, { velocity: newVelocity });
+                      tracker.commit('velocity', oldVelocity, newVelocity);
+                    }}
                   />
                 </div>
               </div>
@@ -356,10 +370,12 @@
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
                     value={(midiData.control as number) || 1}
-                    onchange={(e) =>
-                      updateNodeData(nodeId, {
-                        control: parseInt((e.target as HTMLInputElement).value)
-                      })}
+                    onchange={(e) => {
+                      const oldControl = (midiData.control as number) || 1;
+                      const newControl = parseInt((e.target as HTMLInputElement).value);
+                      updateNodeData(nodeId, { control: newControl });
+                      tracker.commit('control', oldControl, newControl);
+                    }}
                   />
                 </div>
 
@@ -373,10 +389,12 @@
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
                     value={(midiData.value as number) || 64}
-                    onchange={(e) =>
-                      updateNodeData(nodeId, {
-                        value: parseInt((e.target as HTMLInputElement).value)
-                      })}
+                    onchange={(e) => {
+                      const oldValue = (midiData.value as number) || 64;
+                      const newValue = parseInt((e.target as HTMLInputElement).value);
+                      updateNodeData(nodeId, { value: newValue });
+                      tracker.commit('value', oldValue, newValue);
+                    }}
                   />
                 </div>
               </div>
@@ -391,10 +409,12 @@
                   max="127"
                   class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
                   value={(midiData.program as number) || 1}
-                  onchange={(e) =>
-                    updateNodeData(nodeId, {
-                      program: parseInt((e.target as HTMLInputElement).value)
-                    })}
+                  onchange={(e) => {
+                    const oldProgram = (midiData.program as number) || 1;
+                    const newProgram = parseInt((e.target as HTMLInputElement).value);
+                    updateNodeData(nodeId, { program: newProgram });
+                    tracker.commit('program', oldProgram, newProgram);
+                  }}
                 />
               </div>
             {/if}

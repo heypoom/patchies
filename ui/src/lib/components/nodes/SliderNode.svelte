@@ -32,6 +32,7 @@
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
+  const valueTracker = tracker.track('value', () => node.data.value ?? defaultValue);
 
   let messageContext: MessageContext;
   let showSettings = $state(false);
@@ -229,6 +230,8 @@
             step={isFloat ? 0.01 : 1}
             value={currentValue}
             oninput={handleSliderChange}
+            onpointerdown={valueTracker.onFocus}
+            onpointerup={valueTracker.onBlur}
             style="background: linear-gradient(to right, #3b82f6 0%, #3b82f6 {((currentValue -
               min) /
               (max - min)) *

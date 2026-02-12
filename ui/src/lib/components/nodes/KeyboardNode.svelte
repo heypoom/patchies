@@ -8,6 +8,7 @@
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { useNodeDataTracker } from '$lib/history';
 
   let {
     id: nodeId,
@@ -25,6 +26,9 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let messageContext: MessageContext;
   let showSettings = $state(false);
@@ -295,7 +299,11 @@
                   name="keyboard-mode"
                   value="all"
                   checked={mode === 'all'}
-                  onchange={() => updateConfig({ mode: 'all' })}
+                  onchange={() => {
+                    const oldMode = mode;
+                    updateConfig({ mode: 'all' });
+                    tracker.commit('mode', oldMode, 'all');
+                  }}
                   class="mr-2 h-3 w-3"
                 />
                 <span class="text-xs text-zinc-300">All Keys</span>
@@ -306,7 +314,11 @@
                   name="keyboard-mode"
                   value="filtered"
                   checked={mode === 'filtered'}
-                  onchange={() => updateConfig({ mode: 'filtered' })}
+                  onchange={() => {
+                    const oldMode = mode;
+                    updateConfig({ mode: 'filtered' });
+                    tracker.commit('mode', oldMode, 'filtered');
+                  }}
                   class="mr-2 h-3 w-3"
                 />
                 <span class="text-xs text-zinc-300">Filtered</span>
@@ -323,7 +335,11 @@
                   name="keyboard-trigger"
                   value="keydown"
                   checked={trigger === 'keydown'}
-                  onchange={() => updateConfig({ trigger: 'keydown' })}
+                  onchange={() => {
+                    const oldTrigger = trigger;
+                    updateConfig({ trigger: 'keydown' });
+                    tracker.commit('trigger', oldTrigger, 'keydown');
+                  }}
                   class="mr-2 h-3 w-3"
                 />
                 <span class="text-xs text-zinc-300">Down</span>
@@ -334,7 +350,11 @@
                   name="keyboard-trigger"
                   value="keyup"
                   checked={trigger === 'keyup'}
-                  onchange={() => updateConfig({ trigger: 'keyup' })}
+                  onchange={() => {
+                    const oldTrigger = trigger;
+                    updateConfig({ trigger: 'keyup' });
+                    tracker.commit('trigger', oldTrigger, 'keyup');
+                  }}
                   class="mr-2 h-3 w-3"
                 />
                 <span class="text-xs text-zinc-300">Up</span>
@@ -345,7 +365,11 @@
                   name="keyboard-trigger"
                   value="keyupdown"
                   checked={trigger === 'keyupdown'}
-                  onchange={() => updateConfig({ trigger: 'keyupdown' })}
+                  onchange={() => {
+                    const oldTrigger = trigger;
+                    updateConfig({ trigger: 'keyupdown' });
+                    tracker.commit('trigger', oldTrigger, 'keyupdown');
+                  }}
                   class="mr-2 h-3 w-3"
                 />
                 <span class="text-xs text-zinc-300">Up/Down</span>
@@ -361,10 +385,18 @@
                 type="text"
                 value={keybind}
                 placeholder="Press a key or type here"
-                oninput={(e) => updateConfig({ keybind: (e.target as HTMLInputElement).value })}
+                oninput={(e) => {
+                  const oldKeybind = keybind;
+                  const newKeybind = (e.target as HTMLInputElement).value;
+                  updateConfig({ keybind: newKeybind });
+                  tracker.commit('keybind', oldKeybind, newKeybind);
+                }}
                 onkeydown={(e) => {
                   e.preventDefault();
-                  updateConfig({ keybind: e.key.toUpperCase() });
+                  const oldKeybind = keybind;
+                  const newKeybind = e.key.toUpperCase();
+                  updateConfig({ keybind: newKeybind });
+                  tracker.commit('keybind', oldKeybind, newKeybind);
                 }}
                 class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               />
@@ -378,7 +410,12 @@
               <input
                 type="checkbox"
                 checked={repeat}
-                onchange={(e) => updateConfig({ repeat: (e.target as HTMLInputElement).checked })}
+                onchange={(e) => {
+                  const oldRepeat = repeat;
+                  const newRepeat = (e.target as HTMLInputElement).checked;
+                  updateConfig({ repeat: newRepeat });
+                  tracker.commit('repeat', oldRepeat, newRepeat);
+                }}
                 class="mr-2 h-3 w-3"
               />
               <span class="text-xs text-zinc-300">Allow repeated keys</span>

@@ -9,6 +9,7 @@
   import { midiInputDevices } from '../../../stores/midi.store';
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
+  import { useNodeDataTracker } from '$lib/history';
 
   type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend';
 
@@ -28,6 +29,9 @@
 
   const { updateNodeData } = useSvelteFlow();
   const midiSystem = MIDISystem.getInstance();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let messageContext: MessageContext;
   let isListening = $state(false);
@@ -220,10 +224,12 @@
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={deviceId}
-              onchange={(e) =>
-                updateNodeData(nodeId, {
-                  deviceId: (e.target as HTMLSelectElement).value
-                })}
+              onchange={(e) => {
+                const oldDeviceId = deviceId;
+                const newDeviceId = (e.target as HTMLSelectElement).value;
+                updateNodeData(nodeId, { deviceId: newDeviceId });
+                tracker.commit('deviceId', oldDeviceId, newDeviceId);
+              }}
             >
               <option value="">Select device...</option>
               {#each $midiInputDevices as device}
@@ -237,10 +243,12 @@
             <select
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={channel}
-              onchange={(e) =>
-                updateNodeData(nodeId, {
-                  channel: parseInt((e.target as HTMLSelectElement).value)
-                })}
+              onchange={(e) => {
+                const oldChannel = channel;
+                const newChannel = parseInt((e.target as HTMLSelectElement).value);
+                updateNodeData(nodeId, { channel: newChannel });
+                tracker.commit('channel', oldChannel, newChannel);
+              }}
             >
               <option value={0}>All channels</option>
               {#each Array(16) as _, i}
@@ -263,11 +271,13 @@
                     class="mr-2 h-3 w-3"
                     checked={events.includes(typedMsgType)}
                     onchange={(e) => {
+                      const oldEvents = [...events];
                       const checked = (e.target as HTMLInputElement).checked;
                       const newTypes = checked
                         ? [...events, typedMsgType]
                         : events.filter((t) => t !== typedMsgType);
                       updateNodeData(nodeId, { events: newTypes });
+                      tracker.commit('events', oldEvents, newTypes);
                     }}
                   />
                   <span class="text-xs text-zinc-300">{msgType}</span>

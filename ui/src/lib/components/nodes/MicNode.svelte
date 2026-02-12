@@ -10,6 +10,7 @@
     enumerateAudioDevices,
     hasEnumeratedDevices
   } from '../../../stores/audio-devices.store';
+  import { useNodeDataTracker } from '$lib/history';
 
   let {
     id: nodeId,
@@ -23,6 +24,10 @@
 
   const { updateNodeData } = useSvelteFlow();
   let audioService = AudioService.getInstance();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
+
   let showSettings = $state(false);
   let micNode: MicNode | null = $state(null);
 
@@ -158,8 +163,13 @@
           <div>
             <div class="mb-1 text-[8px] text-zinc-400">Input Device</div>
             <select
-              bind:value={deviceId}
-              onchange={applySettings}
+              value={deviceId}
+              onchange={(e) => {
+                const oldDeviceId = deviceId;
+                deviceId = (e.target as HTMLSelectElement).value;
+                applySettings();
+                tracker.commit('deviceId', oldDeviceId, deviceId);
+              }}
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:border-zinc-400 focus:outline-none"
             >
               <option value="">Default</option>
@@ -176,8 +186,13 @@
             <label class="flex items-center gap-2">
               <input
                 type="checkbox"
-                bind:checked={echoCancellation}
-                onchange={applySettings}
+                checked={echoCancellation}
+                onchange={(e) => {
+                  const oldValue = echoCancellation;
+                  echoCancellation = (e.target as HTMLInputElement).checked;
+                  applySettings();
+                  tracker.commit('echoCancellation', oldValue, echoCancellation);
+                }}
                 class="rounded border-zinc-600 bg-zinc-800"
               />
               <span class="text-xs text-zinc-300">Echo Cancellation</span>
@@ -186,8 +201,13 @@
             <label class="flex items-center gap-2">
               <input
                 type="checkbox"
-                bind:checked={noiseSuppression}
-                onchange={applySettings}
+                checked={noiseSuppression}
+                onchange={(e) => {
+                  const oldValue = noiseSuppression;
+                  noiseSuppression = (e.target as HTMLInputElement).checked;
+                  applySettings();
+                  tracker.commit('noiseSuppression', oldValue, noiseSuppression);
+                }}
                 class="rounded border-zinc-600 bg-zinc-800"
               />
               <span class="text-xs text-zinc-300">Noise Suppression</span>
@@ -196,8 +216,13 @@
             <label class="flex items-center gap-2">
               <input
                 type="checkbox"
-                bind:checked={autoGainControl}
-                onchange={applySettings}
+                checked={autoGainControl}
+                onchange={(e) => {
+                  const oldValue = autoGainControl;
+                  autoGainControl = (e.target as HTMLInputElement).checked;
+                  applySettings();
+                  tracker.commit('autoGainControl', oldValue, autoGainControl);
+                }}
                 class="rounded border-zinc-600 bg-zinc-800"
               />
               <span class="text-xs text-zinc-300">Auto Gain Control</span>

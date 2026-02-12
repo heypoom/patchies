@@ -10,6 +10,7 @@
     enumerateAudioDevices,
     hasEnumeratedDevices
   } from '../../../stores/audio-devices.store';
+  import { useNodeDataTracker } from '$lib/history';
 
   let {
     id: nodeId,
@@ -23,6 +24,10 @@
 
   const { updateNodeData } = useSvelteFlow();
   let audioService = AudioService.getInstance();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
+
   let showSettings = $state(false);
   let audioOutputNode: AudioOutputNode | null = $state(null);
 
@@ -141,8 +146,13 @@
           <div>
             <div class="mb-1 text-[8px] text-zinc-400">Output Device</div>
             <select
-              bind:value={deviceId}
-              onchange={applySettings}
+              value={deviceId}
+              onchange={(e) => {
+                const oldDeviceId = deviceId;
+                deviceId = (e.target as HTMLSelectElement).value;
+                applySettings();
+                tracker.commit('deviceId', oldDeviceId, deviceId);
+              }}
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 focus:border-zinc-400 focus:outline-none"
             >
               <option value="">Default</option>

@@ -618,17 +618,17 @@ Priority 1 - UI Controls (user directly manipulates):
 
 Priority 2 - Settings panels with discrete options:
 
-- [ ] `midi.in` - device, channel
-- [ ] `midi.out` - device, channel
+- [x] `midi.in` - device, channel
+- [x] `midi.out` - device, channel
+- [x] `keyboard` - key mappings
+- [x] `mic~` - device selection
+- [x] `out~` - channel layout
 - [ ] `sampler~` - file, playback settings
 - [ ] `mqtt` - broker URL, topic
 - [ ] `sse` - URL
 - [ ] `tts` - voice selection
 - [ ] `ai.music` - settings
 - [ ] `ai.tts` - voice selection
-- [ ] `keyboard` - key mappings
-- [ ] `mic~` - device selection
-- [ ] `out~` - channel layout
 - [ ] `vdo.ninja.push` - room ID, settings
 - [ ] `vdo.ninja.pull` - room ID, settings
 - [ ] `asm` - viewer settings

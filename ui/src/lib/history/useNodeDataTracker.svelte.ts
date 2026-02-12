@@ -51,9 +51,11 @@ export function useNodeDataTracker(nodeId: string) {
       },
       onBlur: () => {
         const currentValue = getCurrentValue();
+
         if (valueOnFocus !== null && valueOnFocus !== currentValue) {
           commit(dataKey, valueOnFocus, currentValue);
         }
+
         valueOnFocus = null;
       }
     };
