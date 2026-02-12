@@ -188,7 +188,8 @@
     <div
       class={[
         'relative overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-lg',
-        (isEditing || locked) && 'nodrag'
+        (isEditing || locked) && 'nodrag',
+        locked && node.selected && 'ring-2 ring-blue-500'
       ]}
       style="width: {width}px; height: {height}px; background-color: {color};"
       ondblclick={handleDoubleClick}
