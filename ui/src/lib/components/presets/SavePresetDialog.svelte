@@ -5,7 +5,7 @@
   import type { Preset, PresetFolder, PresetPath } from '$lib/presets/types';
   import type { Node } from '@xyflow/svelte';
   import { toast } from 'svelte-sonner';
-  import { isPreset } from '$lib/presets/preset-utils';
+  import { isPreset, getUniquePresetName } from '$lib/presets/preset-utils';
   import FolderPickerDialog, { type FolderNode } from '../sidebar/FolderPickerDialog.svelte';
 
   let {
@@ -22,6 +22,20 @@
   let selectedLibraryId = $state('user');
   let selectedFolderPath = $state<PresetPath>([]);
   let showFolderPicker = $state(false);
+
+  // Compute the actual name that will be saved (with auto-increment if collision)
+  let actualSaveName = $derived.by(() => {
+    const trimmedName = presetName.trim();
+    if (!trimmedName) return '';
+
+    const library = $editableLibraries.find((lib) => lib.id === selectedLibraryId);
+    if (!library) return trimmedName;
+
+    return getUniquePresetName(library, selectedFolderPath, trimmedName);
+  });
+
+  // Show warning when name will be auto-incremented
+  let willAutoIncrement = $derived(presetName.trim() && actualSaveName !== presetName.trim());
 
   // Reset form when dialog opens with a new node
   $effect(() => {
@@ -94,12 +108,12 @@
   }
 
   function handleSave() {
-    if (!node || !node.type || !presetName.trim()) return;
+    if (!node || !node.type || !actualSaveName) return;
 
     const nodeData = node.data as Record<string, unknown>;
 
     const preset: Preset = {
-      name: presetName.trim(),
+      name: actualSaveName,
       description: presetDescription.trim() || undefined,
       type: node.type,
       data: nodeData
@@ -177,6 +191,13 @@
           <ChevronRight class="h-4 w-4 shrink-0 text-zinc-500" />
         </button>
       </div>
+
+      <!-- Auto-increment notice -->
+      {#if willAutoIncrement}
+        <p class="text-xs text-amber-400">
+          "{presetName.trim()}" already exists. Will save as "{actualSaveName}" instead.
+        </p>
+      {/if}
     </div>
 
     <Dialog.Footer class="flex gap-2">
@@ -188,10 +209,10 @@
       </button>
       <button
         onclick={handleSave}
-        disabled={!presetName.trim()}
+        disabled={!actualSaveName}
         class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Save Preset
+        {willAutoIncrement ? 'Save as Copy' : 'Save Preset'}
       </button>
     </Dialog.Footer>
   </Dialog.Content>

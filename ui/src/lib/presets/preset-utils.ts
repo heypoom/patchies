@@ -44,11 +44,14 @@ export function getEntryByPath(
       // Can't traverse into a preset
       return undefined;
     }
+
     const folder = current as PresetFolder;
+
     const next: PresetFolderEntry | undefined = folder[segment];
     if (next === undefined) {
       return undefined;
     }
+
     current = next;
   }
 
@@ -64,10 +67,12 @@ export function getPresetByPath(libraries: PresetLibrary[], path: PresetPath): P
   if (path.length < 2) return undefined;
 
   const [libraryId, ...rest] = path;
+
   const library = libraries.find((lib) => lib.id === libraryId);
   if (!library) return undefined;
 
   const entry = getEntryByPath(library, rest);
+
   return entry && isPreset(entry) ? entry : undefined;
 }
 
@@ -122,6 +127,45 @@ export function generateLibraryId(): string {
 }
 
 /**
+ * Check if a preset name exists at a given path in a library
+ */
+export function presetNameExistsAtPath(
+  library: PresetLibrary,
+  folderPath: PresetPath,
+  presetName: string
+): boolean {
+  const fullPath = [...folderPath, presetName];
+  const entry = getEntryByPath(library, fullPath);
+
+  return entry !== undefined && isPreset(entry);
+}
+
+/**
+ * Generate a unique preset name by appending (1), (2), etc. if the name already exists.
+ */
+export function getUniquePresetName(
+  library: PresetLibrary,
+  folderPath: PresetPath,
+  desiredName: string
+): string {
+  // If name doesn't exist, use it directly
+  if (!presetNameExistsAtPath(library, folderPath, desiredName)) {
+    return desiredName;
+  }
+
+  // Find a unique name with (1), (2), etc.
+  let counter = 1;
+  let uniqueName = `${desiredName} (${counter})`;
+
+  while (presetNameExistsAtPath(library, folderPath, uniqueName)) {
+    counter++;
+    uniqueName = `${desiredName} (${counter})`;
+  }
+
+  return uniqueName;
+}
+
+/**
  * Deep clone a preset folder (for safe mutations)
  */
 export function cloneFolder(folder: PresetFolder): PresetFolder {
@@ -147,10 +191,12 @@ export function setEntryAtPath(
   // Navigate/create to parent folder
   for (let i = 0; i < path.length - 1; i++) {
     const segment = path[i];
+
     if (!(segment in current) || isPreset(current[segment])) {
       // Create folder if it doesn't exist or is a preset
       current[segment] = {};
     }
+
     current = current[segment] as PresetFolder;
   }
 
@@ -176,10 +222,12 @@ export function removeEntryAtPath(root: PresetFolder, path: PresetPath): PresetF
   // Navigate to parent folder
   for (let i = 0; i < path.length - 1; i++) {
     const segment = path[i];
+
     if (!(segment in current) || isPreset(current[segment])) {
       // Path doesn't exist
       return newRoot;
     }
+
     current = current[segment] as PresetFolder;
   }
 
