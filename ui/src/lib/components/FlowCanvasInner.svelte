@@ -32,23 +32,16 @@
     helpModeObject,
     selectedNodeInfo
   } from '../../stores/ui.store';
-  import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
-  import { PRESETS } from '$lib/presets/presets';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
-  import { match } from 'ts-pattern';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { hasSomeAudioNode } from '../../stores/canvas.store';
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import { deleteSearchParam } from '$lib/utils/search-params';
   import BackgroundPattern from './BackgroundPattern.svelte';
-  import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
-  import { AudioRegistry } from '$lib/registry/AudioRegistry';
-  import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
-  import { parseObjectParamFromString } from '$lib/objects/parse-object-param';
   import { Toaster } from '$lib/components/ui/sonner';
   import {
     isAudioParamInlet,
@@ -73,11 +66,9 @@
   import {
     HistoryManager,
     AddNodeCommand,
-    AddNodesCommand,
     DeleteNodesCommand,
     MoveNodesCommand,
     AddEdgeCommand,
-    AddEdgesCommand,
     DeleteEdgesCommand,
     BatchCommand,
     type Command
@@ -85,6 +76,7 @@
   import { CanvasContext } from '$lib/services/CanvasContext';
   import { ClipboardManager } from '$lib/services/ClipboardManager';
   import { PatchManager } from '$lib/services/PatchManager';
+  import { NodeOperationsService } from '$lib/services/NodeOperationsService';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -116,6 +108,9 @@
 
   // Patch manager for save/load/restore operations
   const patchManager = new PatchManager(canvasContext);
+
+  // Node operations service for creating/deleting/replacing nodes
+  const nodeOps = new NodeOperationsService(canvasContext);
 
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -735,135 +730,17 @@
     }
   }
 
-  // Create a new node at the specified position, returns the new node ID
-  // skipHistory: used for Quick Add where the node may transform and we record history later
+  // Node operations delegated to NodeOperationsService
   function createNode(
     type: string,
     position: { x: number; y: number },
-    customData?: any,
+    customData?: Record<string, unknown>,
     options?: { skipHistory?: boolean }
   ): string {
-    const id = canvasContext.nextNodeId(type);
-
-    const newNode: Node = {
-      id,
-      type,
-      position,
-      data: customData ?? getDefaultNodeData(type)
-    };
-
-    if (options?.skipHistory) {
-      nodes = [...nodes, newNode];
-    } else {
-      historyManager.execute(new AddNodeCommand(newNode, canvasAccessors));
-    }
-
-    return id;
+    return nodeOps.createNode(type, position, customData, options);
   }
 
-  /**
-   * Replace a node with a new type while preserving position and updating edges.
-   * Used for converting between compatible node types (e.g., soundfile~ to sampler~).
-   */
-  function replaceNode(event: NodeReplaceEvent) {
-    const { nodeId, newType, newData, handleMapping } = event;
-
-    // Find the old node
-    const oldNode = nodes.find((n) => n.id === nodeId);
-    if (!oldNode) return;
-
-    // Create new node ID
-    const newId = canvasContext.nextNodeId(newType);
-
-    // Create the replacement node at the same position
-    const newNode: Node = {
-      id: newId,
-      type: newType,
-      position: oldNode.position,
-      data: newData
-    };
-
-    // Update edges to point to the new node, mapping handle IDs if provided
-    edges = edges.map((edge) => {
-      if (edge.source === nodeId) {
-        const newSourceHandle = handleMapping?.[edge.sourceHandle ?? ''] ?? edge.sourceHandle;
-
-        return { ...edge, source: newId, sourceHandle: newSourceHandle };
-      }
-
-      if (edge.target === nodeId) {
-        const newTargetHandle = handleMapping?.[edge.targetHandle ?? ''] ?? edge.targetHandle;
-
-        return { ...edge, target: newId, targetHandle: newTargetHandle };
-      }
-
-      return edge;
-    });
-
-    // Replace the old node with the new one
-    nodes = nodes.map((n) => (n.id === nodeId ? newNode : n));
-  }
-
-  /**
-   * Update vfsPath in all nodes when a VFS path is renamed.
-   */
-  function handleVfsPathRenamed(event: VfsPathRenamedEvent) {
-    const { oldPath, newPath } = event;
-
-    nodes = nodes.map((node) => {
-      // Check if this node has a vfsPath that matches the old path
-      if (node.data?.vfsPath === oldPath) {
-        return { ...node, data: { ...node.data, vfsPath: newPath } };
-      }
-
-      return node;
-    });
-  }
-
-  /**
-   * Create a node from an object name (handles both visual nodes and textual objects).
-   * Textual objects (like out~, expr, adsr) are created as 'object' nodes.
-   * Visual nodes (like p5, hydra, glsl) are created with their actual type.
-   */
-  function createNodeFromName(name: string, position: { x: number; y: number }) {
-    // Check if it's a visual node type
-    if (nodeTypes[name as keyof typeof nodeTypes]) {
-      createNode(name, position);
-      return;
-    }
-
-    // Check if it's a preset
-    const preset = PRESETS[name];
-    if (preset) {
-      createNode(preset.type, position, preset.data as Record<string, unknown>);
-      return;
-    }
-
-    // Check if it's a textual object (audio or text object)
-    const audioRegistry = AudioRegistry.getInstance();
-    const objectRegistry = ObjectRegistry.getInstance();
-
-    if (audioRegistry.isDefined(name) || objectRegistry.isDefined(name)) {
-      // Create an 'object' node with the textual object name and default params
-      const defaultParams = parseObjectParamFromString(name, []);
-      createNode('object', position, {
-        expr: name,
-        name: name,
-        params: defaultParams
-      });
-      return;
-    }
-
-    // Fallback: try shorthand transformation
-    const shorthandResult = ObjectShorthandRegistry.getInstance().tryTransform(name);
-    if (shorthandResult) {
-      createNode(shorthandResult.nodeType, position, shorthandResult.data);
-      return;
-    }
-
-    // Last resort: create as-is
-    createNode(name, position);
-  }
+  const { replaceNode, handleVfsPathRenamed, createNodeFromName, deleteSelectedElements } = nodeOps;
 
   function handleCommandPaletteCancel() {
     showCommandPalette = false;
@@ -932,37 +809,6 @@
     setTimeout(() => {
       createNode('object', position);
     }, 50);
-  }
-
-  function deleteSelectedElements() {
-    const nodesToDelete = nodes.filter((n) => selectedNodeIds.includes(n.id));
-    const edgesToDelete = edges.filter((e) => selectedEdgeIds.includes(e.id));
-
-    if (nodesToDelete.length === 0 && edgesToDelete.length === 0) return;
-
-    // Build batch of delete commands
-    const commands: Command[] = [];
-
-    if (nodesToDelete.length > 0) {
-      commands.push(new DeleteNodesCommand(nodesToDelete, canvasAccessors));
-    }
-
-    if (edgesToDelete.length > 0) {
-      // Only delete edges not already handled by DeleteNodesCommand
-      const nodeIds = new Set(nodesToDelete.map((n) => n.id));
-      const standaloneEdges = edgesToDelete.filter(
-        (e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)
-      );
-      if (standaloneEdges.length > 0) {
-        commands.push(new DeleteEdgesCommand(standaloneEdges, canvasAccessors));
-      }
-    }
-
-    if (commands.length === 1) {
-      historyManager.execute(commands[0]);
-    } else if (commands.length > 1) {
-      historyManager.execute(new BatchCommand(commands, 'Delete selection'));
-    }
   }
 
   function newPatch() {
