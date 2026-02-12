@@ -9,6 +9,8 @@ interface CopiedNodeData {
   type: string;
   data: Record<string, unknown>;
   relativePosition: { x: number; y: number };
+  width?: number;
+  height?: number;
 }
 
 interface CopiedEdgeData {
@@ -74,7 +76,9 @@ export class ClipboardManager {
       relativePosition: {
         x: node.position.x - centerX,
         y: node.position.y - centerY
-      }
+      },
+      width: node.width,
+      height: node.height
     }));
 
     // Find edges where both source and target are in the selection
@@ -139,8 +143,11 @@ export class ClipboardManager {
         id,
         type: nodeData.type,
         position,
-        data: { ...nodeData.data }
+        data: { ...nodeData.data },
+        width: nodeData.width,
+        height: nodeData.height
       });
+
       newNodeIds.push(id);
     }
 
