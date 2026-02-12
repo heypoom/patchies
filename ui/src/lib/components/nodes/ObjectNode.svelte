@@ -126,6 +126,8 @@
   let showAutocomplete = $state(false);
   let selectedSuggestion = $state(0);
   let originalName = data.expr || ''; // Store original name for escape functionality
+  const isQuickAdd = !data.expr; // True if created via Quick Add (no initial name)
+  let finalNodeId = nodeId; // Tracks the final node ID after potential transformation
 
   let isAutomated = $state<Record<number, boolean>>({});
 
@@ -469,6 +471,14 @@
     if (save) {
       if (expr.trim()) {
         handleNameChange();
+
+        // For Quick Add nodes, emit event so FlowCanvasInner can record to history
+        // We use setTimeout to ensure the node transformation (if any) is complete
+        if (isQuickAdd) {
+          setTimeout(() => {
+            eventBus.dispatch({ type: 'quickAddConfirmed', finalNodeId });
+          }, 0);
+        }
       } else {
         // If trying to save with empty name, delete the node
         deleteElements({ nodes: [{ id: nodeId }] });
@@ -615,6 +625,9 @@
     );
 
     updateNodeInternals(nextId);
+
+    // Track the final node ID for Quick Add history recording
+    finalNodeId = nextId;
   };
 
   function tryTransformToVisualNode() {

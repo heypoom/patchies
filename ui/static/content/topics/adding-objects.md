@@ -28,6 +28,6 @@ Presets are pre-made objects that help you get started quickly. You can [manage 
 ## See Also
 
 - [Modifying Objects](/docs/modifying-objects)
-- [Keyboard Shortcuts](/docs/keyboard-shortcuts)
+- [Shortcuts](/docs/shortcuts)
 - [Connecting Objects](/docs/connecting-objects)
 - [Packs](/docs/manage-packs)

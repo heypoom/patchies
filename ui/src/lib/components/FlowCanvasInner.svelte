@@ -77,6 +77,19 @@
 
   import { toast } from 'svelte-sonner';
   import { initializeVFS, VirtualFilesystem } from '$lib/vfs';
+  import {
+    HistoryManager,
+    AddNodeCommand,
+    AddNodesCommand,
+    DeleteNodesCommand,
+    MoveNodesCommand,
+    AddEdgeCommand,
+    AddEdgesCommand,
+    DeleteEdgesCommand,
+    BatchCommand,
+    type CanvasStateAccessors,
+    type Command
+  } from '$lib/history';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -93,6 +106,19 @@
   let eventBus = PatchiesEventBus.getInstance();
   let workerNodeSystem = WorkerNodeSystem.getInstance();
   let directChannelService = DirectChannelService.getInstance();
+  let historyManager = HistoryManager.getInstance();
+
+  // Canvas state accessors for history commands
+  const canvasAccessors: CanvasStateAccessors = {
+    getNodes: () => nodes,
+    setNodes: (newNodes) => {
+      nodes = newNodes;
+    },
+    getEdges: () => edges,
+    setEdges: (newEdges) => {
+      edges = newEdges;
+    }
+  };
 
   // Object palette state
   let lastMousePosition = $state.raw({ x: 100, y: 100 });
@@ -166,6 +192,9 @@
       targetHandle?: string;
     }>;
   } | null>(null);
+
+  // Track node positions at drag start for undo/redo
+  let dragStartPositions: Map<string, { x: number; y: number }> | null = null;
 
   let isLoadingFromUrl = $state(false);
   let urlLoadError = $state<string | null>(null);
@@ -311,6 +340,32 @@
       event.preventDefault();
       pasteNode('keyboard');
     }
+    // Handle CMD+Z for undo
+    else if (
+      event.key.toLowerCase() === 'z' &&
+      (event.metaKey || event.ctrlKey) &&
+      !event.shiftKey &&
+      !isTyping
+    ) {
+      event.preventDefault();
+      const desc = historyManager.undo();
+      if (desc) {
+        toast.success(`Undo: ${desc}`);
+      }
+    }
+    // Handle CMD+Shift+Z for redo
+    else if (
+      event.key.toLowerCase() === 'z' &&
+      (event.metaKey || event.ctrlKey) &&
+      event.shiftKey &&
+      !isTyping
+    ) {
+      event.preventDefault();
+      const desc = historyManager.redo();
+      if (desc) {
+        toast.success(`Redo: ${desc}`);
+      }
+    }
     // Handle CMD+K for command palette
     else if (
       event.key.toLowerCase() === 'k' &&
@@ -391,7 +446,9 @@
       event.preventDefault();
 
       const position = screenToFlowPosition(lastMousePosition);
-      createNode('object', position);
+
+      // Skip history for Quick Add - history will be recorded after user confirms/transforms the node
+      createNode('object', position, undefined, { skipHistory: true });
     }
   }
 
@@ -600,6 +657,7 @@
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -623,6 +681,7 @@
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
 
     // Clean up autosave interval
     if (autosaveInterval) {
@@ -746,8 +805,24 @@
     getDragDropManager().insertPreset(event.preset, position);
   }
 
+  // Handle Quick Add confirmation - record the final node to history
+  function handleQuickAddConfirmed(event: { type: 'quickAddConfirmed'; finalNodeId: string }) {
+    const node = nodes.find((n) => n.id === event.finalNodeId);
+
+    if (node) {
+      // Record the final node state (after any transformation) to history
+      historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
+    }
+  }
+
   // Create a new node at the specified position, returns the new node ID
-  function createNode(type: string, position: { x: number; y: number }, customData?: any): string {
+  // skipHistory: used for Quick Add where the node may transform and we record history later
+  function createNode(
+    type: string,
+    position: { x: number; y: number },
+    customData?: any,
+    options?: { skipHistory?: boolean }
+  ): string {
     const id = `${type}-${nodeIdCounter++}`;
 
     const newNode: Node = {
@@ -757,7 +832,12 @@
       data: customData ?? getDefaultNodeData(type)
     };
 
-    nodes = [...nodes, newNode];
+    if (options?.skipHistory) {
+      nodes = [...nodes, newNode];
+    } else {
+      historyManager.execute(new AddNodeCommand(newNode, canvasAccessors));
+    }
+
     return id;
   }
 
@@ -980,32 +1060,54 @@
       })
       .exhaustive();
 
-    // Create all nodes with their relative positions preserved, tracking new IDs
+    // Build all new nodes first
+    const newNodes: Node[] = [];
     const newNodeIds: string[] = [];
+
     for (const nodeData of copiedData.nodes) {
+      const id = `${nodeData.type}-${nodeIdCounter++}`;
       const position = {
         x: pastePosition.x + nodeData.relativePosition.x,
         y: pastePosition.y + nodeData.relativePosition.y
       };
 
-      const newId = createNode(nodeData.type, position, nodeData.data);
-      newNodeIds.push(newId);
+      newNodes.push({
+        id,
+        type: nodeData.type,
+        position,
+        data: { ...nodeData.data }
+      });
+      newNodeIds.push(id);
     }
 
-    // Recreate edges between pasted nodes
-    for (const edgeData of copiedData.edges) {
-      const newEdge = {
-        id: `edge-${edgeIdCounter++}`,
-        source: newNodeIds[edgeData.sourceIdx],
-        target: newNodeIds[edgeData.targetIdx],
-        sourceHandle: edgeData.sourceHandle,
-        targetHandle: edgeData.targetHandle
-      };
-      edges = [...edges, newEdge];
+    // Build all new edges
+    const newEdges: Edge[] = copiedData.edges.map((edgeData) => ({
+      id: `edge-${edgeIdCounter++}`,
+      source: newNodeIds[edgeData.sourceIdx],
+      target: newNodeIds[edgeData.targetIdx],
+      sourceHandle: edgeData.sourceHandle,
+      targetHandle: edgeData.targetHandle
+    }));
+
+    // Execute as a single batch command
+    const commands: Command[] = [];
+    if (newNodes.length > 0) {
+      commands.push(new AddNodesCommand(newNodes, canvasAccessors));
+    }
+    if (newEdges.length > 0) {
+      commands.push(new AddEdgesCommand(newEdges, canvasAccessors));
     }
 
-    const nodeCount = copiedData.nodes.length;
-    const edgeCount = copiedData.edges.length;
+    const nodeCount = newNodes.length;
+    const edgeCount = newEdges.length;
+    const description = `Paste ${nodeCount} node${nodeCount === 1 ? '' : 's'}`;
+
+    if (commands.length === 1) {
+      historyManager.execute(commands[0]);
+    } else {
+      historyManager.execute(new BatchCommand(commands, description));
+    }
+
     const edgeText = edgeCount > 0 ? ` and ${edgeCount} edge${edgeCount === 1 ? '' : 's'}` : '';
     toast.success(`Pasted ${nodeCount} node${nodeCount === 1 ? '' : 's'}${edgeText}`);
   }
@@ -1015,6 +1117,7 @@
     const migrated = migratePatch(save) as PatchSaveFormat;
 
     cleanupPatch(nodes);
+    historyManager.clear();
 
     previousNodes = new Set();
 
@@ -1100,11 +1203,33 @@
   }
 
   function deleteSelectedElements() {
-    const selectedNodes = selectedNodeIds.map((id) => ({ id }));
-    const selectedEdges = selectedEdgeIds.map((id) => ({ id }));
+    const nodesToDelete = nodes.filter((n) => selectedNodeIds.includes(n.id));
+    const edgesToDelete = edges.filter((e) => selectedEdgeIds.includes(e.id));
 
-    if (selectedNodes.length > 0 || selectedEdges.length > 0) {
-      deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+    if (nodesToDelete.length === 0 && edgesToDelete.length === 0) return;
+
+    // Build batch of delete commands
+    const commands: Command[] = [];
+
+    if (nodesToDelete.length > 0) {
+      commands.push(new DeleteNodesCommand(nodesToDelete, canvasAccessors));
+    }
+
+    if (edgesToDelete.length > 0) {
+      // Only delete edges not already handled by DeleteNodesCommand
+      const nodeIds = new Set(nodesToDelete.map((n) => n.id));
+      const standaloneEdges = edgesToDelete.filter(
+        (e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)
+      );
+      if (standaloneEdges.length > 0) {
+        commands.push(new DeleteEdgesCommand(standaloneEdges, canvasAccessors));
+      }
+    }
+
+    if (commands.length === 1) {
+      historyManager.execute(commands[0]);
+    } else if (commands.length > 1) {
+      historyManager.execute(new BatchCommand(commands, 'Delete selection'));
     }
   }
 
@@ -1114,6 +1239,7 @@
 
   function confirmNewPatch() {
     cleanupPatch(nodes);
+    historyManager.clear();
     previousNodes = new Set();
 
     nodes = [];
@@ -1329,6 +1455,41 @@
         proOptions={{ hideAttribution: true }}
         clickConnect={$isConnectionMode}
         {isValidConnection}
+        onnodedragstart={(event) => {
+          // Capture starting positions of all dragged nodes
+          dragStartPositions = new Map(event.nodes.map((n) => [n.id, { ...n.position }]));
+        }}
+        onnodedragstop={(event) => {
+          if (!dragStartPositions) return;
+
+          // Only record if positions actually changed
+          const hasChanged = event.nodes.some((n) => {
+            const start = dragStartPositions?.get(n.id);
+            return start && (start.x !== n.position.x || start.y !== n.position.y);
+          });
+
+          if (hasChanged) {
+            const newPositions = new Map(event.nodes.map((n) => [n.id, { ...n.position }]));
+            historyManager.record(
+              new MoveNodesCommand(dragStartPositions, newPositions, canvasAccessors)
+            );
+          }
+
+          dragStartPositions = null;
+        }}
+        onconnect={(connection) => {
+          // XYFlow already added the edge, we just need to record it for undo
+          const newEdge = edges.find(
+            (e) =>
+              e.source === connection.source &&
+              e.target === connection.target &&
+              e.sourceHandle === connection.sourceHandle &&
+              e.targetHandle === connection.targetHandle
+          );
+          if (newEdge) {
+            historyManager.record(new AddEdgeCommand(newEdge, canvasAccessors));
+          }
+        }}
         onconnectstart={(event, params) => {
           isConnecting.set(true);
           // Construct fully qualified handle identifier (nodeId/handleId)
@@ -1360,6 +1521,33 @@
           if (connectionState?.isValid) {
             toast.success('Objects connected by tap.');
           }
+        }}
+        onbeforedelete={async ({ nodes: nodesToDelete, edges: edgesToDelete }) => {
+          // Record deletions to history before SvelteFlow performs them
+          const commands: Command[] = [];
+
+          if (nodesToDelete.length > 0) {
+            commands.push(new DeleteNodesCommand(nodesToDelete, canvasAccessors));
+          }
+
+          if (edgesToDelete.length > 0) {
+            // Only record edges not already handled by DeleteNodesCommand
+            const nodeIds = new Set(nodesToDelete.map((n) => n.id));
+            const standaloneEdges = edgesToDelete.filter(
+              (e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)
+            );
+            if (standaloneEdges.length > 0) {
+              commands.push(new DeleteEdgesCommand(standaloneEdges, canvasAccessors));
+            }
+          }
+
+          if (commands.length === 1) {
+            historyManager.record(commands[0]);
+          } else if (commands.length > 1) {
+            historyManager.record(new BatchCommand(commands, 'Delete selection'));
+          }
+
+          return true; // Allow the deletion to proceed
         }}
       >
         <BackgroundPattern />
@@ -1404,6 +1592,16 @@
             $sidebarView = 'saves';
           }}
           onGeneratePrompt={() => (showPatchToPromptDialog = true)}
+          onUndo={() => {
+            const desc = historyManager.undo();
+
+            if (desc) toast.success(`Undo: ${desc}`);
+          }}
+          onRedo={() => {
+            const desc = historyManager.redo();
+
+            if (desc) toast.success(`Redo: ${desc}`);
+          }}
         />
       {/if}
     </div>

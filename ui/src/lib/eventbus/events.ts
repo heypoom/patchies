@@ -29,7 +29,8 @@ export type PatchiesEvent =
   | MediaBunnyEndedEvent
   | MediaBunnyErrorEvent
   | AsmMachineStateChangedEvent
-  | ObjectParamsChangedEvent;
+  | ObjectParamsChangedEvent
+  | QuickAddConfirmedEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -261,4 +262,18 @@ export interface ObjectParamsChangedEvent {
   params: unknown[];
   index: number;
   value: unknown;
+}
+
+// Quick Add events - for recording history after Quick Add node is confirmed
+
+export interface QuickAddConfirmedEvent {
+  type: 'quickAddConfirmed';
+
+  /**
+   * The final node id.
+   *
+   * Differs from the original if node was
+   * transformed during quick add.
+   **/
+  finalNodeId: string;
 }

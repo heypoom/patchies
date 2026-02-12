@@ -110,6 +110,16 @@
       keys: ['Ctrl', 'V'],
       description: 'Paste the copied object',
       category: 'keyboard'
+    },
+    {
+      keys: ['Ctrl', 'Z'],
+      description: 'Undo the last action',
+      category: 'keyboard'
+    },
+    {
+      keys: ['Ctrl', 'Shift', 'Z'],
+      description: 'Redo the last undone action',
+      category: 'keyboard'
     }
   ];
 

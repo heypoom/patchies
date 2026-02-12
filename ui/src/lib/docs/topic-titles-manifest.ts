@@ -17,7 +17,6 @@ export const TOPIC_TITLES: Record<string, string> = {
   'hot-cold-inlets': 'Hot and Cold Inlets',
   'in-app-help': 'Help',
   'javascript-runner': 'JavaScript Runner',
-  'keyboard-shortcuts': 'Keyboard Shortcuts',
   'manage-files': 'Files',
   'manage-packs': 'Packs',
   'manage-presets': 'Presets',
@@ -28,6 +27,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'offline-usage': 'Offline Usage',
   'rendering-pipeline': 'Rendering Pipeline',
   'sharing-links': 'Sharing Links',
+  shortcuts: 'Shortcuts',
   'supporting-open-source': 'Supporting Open Source',
   'video-chaining': 'Video Chaining',
   'virtual-filesystem': 'Virtual Filesystem'
