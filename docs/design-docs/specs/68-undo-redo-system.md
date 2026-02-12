@@ -571,6 +571,49 @@ const handleCodeCommit = (e: CodeCommitEvent) => {
 <CodeEditor value={prompt} {nodeId} dataKey="prompt" /> // for AI nodes
 ```
 
+### Phase 6: Generic Node Data Tracking
+
+For non-CodeMirror node data (colors, toggles, text inputs), we provide `useNodeDataTracker` hook:
+
+**Implementation:** ✅
+
+- [x] Create `NodeDataCommitEvent` in eventbus (generic version of `CodeCommitEvent`)
+- [x] Create `useNodeDataTracker` hook with two modes:
+  - `commit(key, oldValue, newValue)` - immediate tracking for discrete changes
+  - `track(key, getCurrentValue)` - blur-based tracking for continuous inputs
+- [x] Add `handleNodeDataCommit` listener in FlowCanvasInner
+- [x] Update PostItNode as reference implementation
+
+```typescript
+// src/lib/history/useNodeDataTracker.svelte.ts
+
+// Usage in any node component:
+import { useNodeDataTracker } from '$lib/history';
+
+const tracker = useNodeDataTracker(node.id);
+
+// For discrete changes (toggles, color pickers, dropdowns)
+// Records immediately when called
+function handleColorChange(newColor: string) {
+  const oldColor = color;
+  updateNodeData(node.id, { color: newColor });
+  tracker.commit('color', oldColor, newColor);
+}
+
+// For continuous changes (text inputs, sliders)
+// Records on blur if value changed
+const textTracker = tracker.track('text', () => node.data.text ?? '');
+
+// In template:
+<input onfocus={textTracker.onFocus} onblur={textTracker.onBlur} />
+```
+
+**Nodes that should use this pattern:**
+
+- `note` (PostItNode) - text, color, fontSize, locked ✅
+- Any node with user-configurable settings
+- Nodes with inline text/number inputs
+
 ## Edge Cases
 
 1. **Undo after autosave**: History should persist, autosave shouldn't clear it

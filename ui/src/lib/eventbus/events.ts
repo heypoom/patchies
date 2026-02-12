@@ -31,7 +31,8 @@ export type PatchiesEvent =
   | AsmMachineStateChangedEvent
   | ObjectParamsChangedEvent
   | QuickAddConfirmedEvent
-  | CodeCommitEvent;
+  | CodeCommitEvent
+  | NodeDataCommitEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -288,4 +289,19 @@ export interface CodeCommitEvent {
   dataKey: string;
   oldValue: string;
   newValue: string;
+}
+
+/**
+ * Generic node data commit event for undo/redo tracking.
+ * Used for any node data field changes (text, color, settings, etc.)
+ *
+ * Unlike CodeCommitEvent (which is string-specific), this supports any value type.
+ */
+export interface NodeDataCommitEvent {
+  type: 'nodeDataCommit';
+  nodeId: string;
+  /** The data field being updated */
+  dataKey: string;
+  oldValue: unknown;
+  newValue: unknown;
 }

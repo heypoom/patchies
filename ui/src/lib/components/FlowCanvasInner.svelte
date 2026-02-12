@@ -60,7 +60,8 @@
   import type {
     NodeReplaceEvent,
     VfsPathRenamedEvent,
-    CodeCommitEvent
+    CodeCommitEvent,
+    NodeDataCommitEvent
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
@@ -129,6 +130,13 @@
 
   // Event handler for code commit (undo tracking)
   const handleCodeCommit = (e: CodeCommitEvent) => {
+    historyManager.record(
+      new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
+    );
+  };
+
+  // Event handler for generic node data commit (undo tracking for non-code fields)
+  const handleNodeDataCommit = (e: NodeDataCommitEvent) => {
     historyManager.record(
       new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
     );
@@ -451,6 +459,7 @@
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
+    eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -476,6 +485,7 @@
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
+    eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
 
     // Clean up autosave interval
     if (autosaveInterval) {

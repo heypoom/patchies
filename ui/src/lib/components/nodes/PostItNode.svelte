@@ -2,6 +2,7 @@
   import { Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
+  import { useNodeDataTracker } from '$lib/history';
 
   // Predefined color palette for post-it notes
   const COLOR_PRESETS = [
@@ -38,6 +39,10 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(node.id);
+  const textTracker = tracker.track('text', () => node.data.text ?? '');
 
   let showSettings = $state(false);
   let isEditing = $state(false);
@@ -84,12 +89,14 @@
     e.stopPropagation();
 
     isEditing = true;
+    textTracker.onFocus();
 
     setTimeout(() => textareaElement?.focus(), 10);
   }
 
   function handleBlur() {
     isEditing = false;
+    textTracker.onBlur();
   }
 
   // Toggle wrap: if already wrapped, unwrap; otherwise wrap
@@ -243,7 +250,11 @@
             <div class="flex flex-wrap gap-2">
               {#each COLOR_PRESETS as preset}
                 <button
-                  onclick={() => updateConfig({ color: preset.value })}
+                  onclick={() => {
+                    const oldColor = color;
+                    updateConfig({ color: preset.value });
+                    tracker.commit('color', oldColor, preset.value);
+                  }}
                   class={[
                     'h-6 w-6 cursor-pointer rounded-full border-2 transition-all',
                     color === preset.value
@@ -266,7 +277,11 @@
             <div class="flex flex-wrap gap-1">
               {#each FONT_SIZES as size}
                 <button
-                  onclick={() => updateConfig({ fontSize: size.value })}
+                  onclick={() => {
+                    const oldFontSize = fontSize;
+                    updateConfig({ fontSize: size.value });
+                    tracker.commit('fontSize', oldFontSize, size.value);
+                  }}
                   class={[
                     'cursor-pointer rounded px-2 py-1 text-xs transition-colors',
                     fontSize === size.value
@@ -282,7 +297,11 @@
 
           <!-- Lock toggle -->
           <button
-            onclick={() => updateConfig({ locked: !locked })}
+            onclick={() => {
+              const oldLocked = locked;
+              updateConfig({ locked: !locked });
+              tracker.commit('locked', oldLocked, !locked);
+            }}
             class={[
               'flex cursor-pointer items-center gap-1.5 text-xs transition-colors',
               locked ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
