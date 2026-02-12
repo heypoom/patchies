@@ -8,6 +8,7 @@
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { useNodeDataTracker } from '$lib/history';
 
   let node: {
     id: string;
@@ -28,6 +29,9 @@
 
   const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(node.id);
 
   let messageContext: MessageContext;
   let showSettings = $state(false);
@@ -275,7 +279,11 @@
               name="mode"
               value="int"
               checked={!isFloat}
-              onchange={() => updateConfig({ isFloat: false })}
+              onchange={() => {
+                const oldValue = isFloat;
+                updateConfig({ isFloat: false });
+                tracker.commit('isFloat', oldValue, false);
+              }}
               class="mr-2 h-3 w-3"
             />
             <span class="text-xs text-zinc-300">Integer</span>
@@ -286,7 +294,11 @@
               name="mode"
               value="float"
               checked={isFloat}
-              onchange={() => updateConfig({ isFloat: true })}
+              onchange={() => {
+                const oldValue = isFloat;
+                updateConfig({ isFloat: true });
+                tracker.commit('isFloat', oldValue, true);
+              }}
               class="mr-2 h-3 w-3"
             />
             <span class="text-xs text-zinc-300">Float</span>
@@ -303,8 +315,10 @@
           step={isFloat ? 0.01 : 1}
           value={min}
           onchange={(e) => {
+            const oldMin = min;
             const newMin = parseFloat((e.target as HTMLInputElement).value);
             updateConfig({ min: newMin });
+            tracker.commit('min', oldMin, newMin);
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         />
@@ -319,8 +333,10 @@
           step={isFloat ? 0.01 : 1}
           value={max}
           onchange={(e) => {
+            const oldMax = max;
             const newMax = parseFloat((e.target as HTMLInputElement).value);
             updateConfig({ max: newMax });
+            tracker.commit('max', oldMax, newMax);
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         />
@@ -337,8 +353,10 @@
           {min}
           {max}
           onchange={(e) => {
+            const oldDefault = defaultValue;
             const newDefault = parseFloat((e.target as HTMLInputElement).value);
             updateConfig({ defaultValue: newDefault });
+            tracker.commit('defaultValue', oldDefault, newDefault);
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         />
@@ -352,7 +370,12 @@
           <input
             type="checkbox"
             checked={node.data.vertical}
-            onchange={(e) => updateConfig({ vertical: e.currentTarget.checked })}
+            onchange={(e) => {
+              const oldVertical = node.data.vertical ?? false;
+              const newVertical = e.currentTarget.checked;
+              updateConfig({ vertical: newVertical });
+              tracker.commit('vertical', oldVertical, newVertical);
+            }}
             class="h-4 w-4 cursor-pointer"
           />
         </div>
@@ -364,7 +387,12 @@
           <input
             type="checkbox"
             checked={isResizable}
-            onchange={(e) => updateConfig({ resizable: e.currentTarget.checked })}
+            onchange={(e) => {
+              const oldResizable = isResizable;
+              const newResizable = e.currentTarget.checked;
+              updateConfig({ resizable: newResizable });
+              tracker.commit('resizable', oldResizable, newResizable);
+            }}
             class="h-4 w-4 cursor-pointer"
           />
         </div>

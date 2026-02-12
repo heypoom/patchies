@@ -11,6 +11,7 @@
   import { match } from 'ts-pattern';
   import { markdownMessages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { useNodeDataTracker } from '$lib/history';
 
   let props: {
     id: string;
@@ -30,6 +31,10 @@
   let overtypeEditor: any;
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for markdown content
+  const tracker = useNodeDataTracker(props.id);
+  const markdownTracker = tracker.track('markdown', () => props.data.markdown ?? '');
 
   const handleClass = $derived.by(() => {
     if (!props.selected && $shouldShowHandles) {
@@ -123,6 +128,8 @@
       bind:this={overtypeElement}
       style="width: {props.width ?? defaultWidth}px; height: {props.height ?? defaultHeight}px"
       class="nodrag overtype-editor rounded-lg bg-zinc-900"
+      onfocusin={markdownTracker.onFocus}
+      onfocusout={markdownTracker.onBlur}
     ></div>
 
     <StandardHandle

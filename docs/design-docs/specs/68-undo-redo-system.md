@@ -613,8 +613,8 @@ const textTracker = tracker.track('text', () => node.data.text ?? '');
 Priority 1 - UI Controls (user directly manipulates):
 
 - [x] `note` - text, color, fontSize, locked
-- [ ] `slider` - min, max, defaultValue, isFloat, vertical, resizable
-- [ ] `markdown` - markdown content (OverType editor)
+- [x] `slider` - min, max, defaultValue, isFloat, vertical, resizable
+- [x] `markdown` - markdown content (OverType editor)
 
 Priority 2 - Settings panels with discrete options:
 
@@ -633,7 +633,7 @@ Priority 2 - Settings panels with discrete options:
 - [ ] `vdo.ninja.pull` - room ID, settings
 - [ ] `asm` - viewer settings
 - [ ] `asm.mem` - viewer settings
-- [ ] `orca` - settings
+- [ ] `orca` - orca code, settings
 - [ ] `chuck~` - settings
 
 Skip/Defer (code-based with codeCommit, or message-only params):
