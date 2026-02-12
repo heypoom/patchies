@@ -30,6 +30,7 @@
       text?: string;
       color?: string;
       fontSize?: number;
+      locked?: boolean;
     };
     selected: boolean;
     width?: number;
@@ -49,6 +50,7 @@
   const text = $derived(node.data.text ?? '');
   const color = $derived(node.data.color ?? '#fef3c7');
   const fontSize = $derived(node.data.fontSize ?? 14);
+  const locked = $derived(node.data.locked ?? false);
   const width = $derived(node.width ?? defaultWidth);
   const height = $derived(node.height ?? defaultHeight);
 
@@ -167,7 +169,7 @@
 
   <div class="group relative">
     <!-- Settings button (visible on hover or when selected) -->
-    <div class="absolute -top-7 right-0 z-10 flex gap-x-1">
+    <div class={['absolute -top-7 right-0 z-10 flex gap-x-1', locked && 'nodrag']}>
       <button
         class={[
           'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
@@ -184,7 +186,7 @@
     <div
       class={[
         'relative overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-lg',
-        isEditing && 'nodrag'
+        (isEditing || locked) && 'nodrag'
       ]}
       style="width: {width}px; height: {height}px; background-color: {color};"
       ondblclick={handleDoubleClick}
@@ -274,6 +276,17 @@
               {/each}
             </div>
           </div>
+
+          <!-- Lock toggle -->
+          <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
+            <input
+              type="checkbox"
+              checked={locked}
+              onchange={() => updateConfig({ locked: !locked })}
+              class="cursor-pointer"
+            />
+            <span>Lock position</span>
+          </label>
         </div>
       </div>
     </div>
