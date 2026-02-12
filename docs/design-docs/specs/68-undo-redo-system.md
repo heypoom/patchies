@@ -447,50 +447,15 @@ XYFlow fires `onconnect` when edges are created:
 />
 ```
 
-## Code Edit Handling
+## Code Edit Handling (Separate Undo Domains)
 
-For code blocks, we want to batch edits rather than undo per-keystroke.
+**Decision**: Use separate undo domains for code editing vs patch structure.
 
-### Option A: Blur-based (simpler)
+- **CodeMirror handles its own undo** while user is typing (Cmd+Z = undo keystrokes)
+- **Patch-level undo** only sees "committed" code changes (on blur)
+- This matches Max/MSP behavior and avoids fighting two undo systems
 
-Record state on focus, commit on blur:
-
-```typescript
-// In CodeBlockBase.svelte
-let codeOnFocus: string | null = null;
-
-function onFocus() {
-  codeOnFocus = code;
-}
-
-function onBlur() {
-  if (codeOnFocus !== null && codeOnFocus !== code) {
-    // Emit event to parent to record the change
-    dispatch("codeChange", { oldCode: codeOnFocus, newCode: code });
-  }
-  codeOnFocus = null;
-}
-```
-
-### Option B: Debounced (better UX)
-
-Use a debounce timer (e.g., 1 second of inactivity):
-
-```typescript
-let lastRecordedCode = code;
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-function onCodeChange(newCode: string) {
-  if (debounceTimer) clearTimeout(debounceTimer);
-
-  debounceTimer = setTimeout(() => {
-    if (newCode !== lastRecordedCode) {
-      dispatch("codeChange", { oldCode: lastRecordedCode, newCode });
-      lastRecordedCode = newCode;
-    }
-  }, 1000);
-}
-```
+See **Phase 5** below for implementation details.
 
 ## Clear History on Patch Load
 
@@ -556,10 +521,43 @@ src/lib/history/
 - [x] Update copy/paste to use commands
 - [x] Update AI insertion to use commands
 
-### Phase 5: Node Data Changes (optional)
+### Phase 5: Node Data Changes (Separate Undo Domains)
 
-- [ ] `UpdateNodeDataCommand` for code/param changes
-- [ ] Debouncing strategy for code edits
+**Strategy: Option A - Separate Undo Domains** (like Max/MSP)
+
+Code editing has its own undo system (CodeMirror), separate from patch-level undo:
+
+- **While focused on code editor**: Cmd+Z uses CodeMirror's internal undo (character-level)
+- **While focused on canvas**: Cmd+Z uses patch-level undo (structural changes)
+- **Committed code changes**: When code editor loses focus (blur), if code changed, record as a single patch-level undo entry
+
+This avoids the complexity of merging two undo systems and matches user expectations:
+
+- Typing in code → Cmd+Z undoes typing (CodeMirror)
+- Clicking away, then Cmd+Z → undoes the entire code edit as one unit
+
+**Implementation:**
+
+- [ ] Track `codeOnFocus` in code editor components
+- [ ] On blur, if code changed, emit event with `{ oldCode, newCode }`
+- [ ] Parent component creates `UpdateNodeDataCommand` for the change
+- [ ] Ensure Cmd+Z while typing doesn't bubble to patch-level undo
+
+```typescript
+// In CodeBlockBase.svelte
+let codeOnFocus: string | null = null;
+
+function onFocus() {
+  codeOnFocus = code;
+}
+
+function onBlur() {
+  if (codeOnFocus !== null && codeOnFocus !== code) {
+    dispatch("codeCommit", { oldCode: codeOnFocus, newCode: code });
+  }
+  codeOnFocus = null;
+}
+```
 
 ## Edge Cases
 
