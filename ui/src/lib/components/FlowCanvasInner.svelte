@@ -446,7 +446,9 @@
       event.preventDefault();
 
       const position = screenToFlowPosition(lastMousePosition);
-      createNode('object', position);
+
+      // Skip history for Quick Add - history will be recorded after user confirms/transforms the node
+      createNode('object', position, undefined, { skipHistory: true });
     }
   }
 
@@ -655,6 +657,7 @@
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -678,6 +681,7 @@
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
 
     // Clean up autosave interval
     if (autosaveInterval) {
@@ -801,8 +805,24 @@
     getDragDropManager().insertPreset(event.preset, position);
   }
 
+  // Handle Quick Add confirmation - record the final node to history
+  function handleQuickAddConfirmed(event: { type: 'quickAddConfirmed'; finalNodeId: string }) {
+    const node = nodes.find((n) => n.id === event.finalNodeId);
+
+    if (node) {
+      // Record the final node state (after any transformation) to history
+      historyManager.record(new AddNodeCommand({ ...node }, canvasAccessors));
+    }
+  }
+
   // Create a new node at the specified position, returns the new node ID
-  function createNode(type: string, position: { x: number; y: number }, customData?: any): string {
+  // skipHistory: used for Quick Add where the node may transform and we record history later
+  function createNode(
+    type: string,
+    position: { x: number; y: number },
+    customData?: any,
+    options?: { skipHistory?: boolean }
+  ): string {
     const id = `${type}-${nodeIdCounter++}`;
 
     const newNode: Node = {
@@ -812,7 +832,12 @@
       data: customData ?? getDefaultNodeData(type)
     };
 
-    historyManager.execute(new AddNodeCommand(newNode, canvasAccessors));
+    if (options?.skipHistory) {
+      nodes = [...nodes, newNode];
+    } else {
+      historyManager.execute(new AddNodeCommand(newNode, canvasAccessors));
+    }
+
     return id;
   }
 
@@ -1540,6 +1565,16 @@
             $sidebarView = 'saves';
           }}
           onGeneratePrompt={() => (showPatchToPromptDialog = true)}
+          onUndo={() => {
+            const desc = historyManager.undo();
+
+            if (desc) toast.success(`Undo: ${desc}`);
+          }}
+          onRedo={() => {
+            const desc = historyManager.redo();
+
+            if (desc) toast.success(`Redo: ${desc}`);
+          }}
         />
       {/if}
     </div>

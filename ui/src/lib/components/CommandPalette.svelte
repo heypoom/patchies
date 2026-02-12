@@ -42,6 +42,8 @@
     onSavePatch?: () => void;
     onLoadPatch?: () => void;
     onGeneratePrompt?: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
   }
 
   let {
@@ -60,7 +62,9 @@
     onBrowseObjects,
     onSavePatch,
     onLoadPatch,
-    onGeneratePrompt
+    onGeneratePrompt,
+    onUndo,
+    onRedo
   }: Props = $props();
 
   // Get the first selected node (for save as preset)
@@ -98,6 +102,16 @@
 
   // Base commands for stage 1
   const commands = [
+    {
+      id: 'undo',
+      name: 'Undo',
+      description: 'Undo the last action (Ctrl+Z)'
+    },
+    {
+      id: 'redo',
+      name: 'Redo',
+      description: 'Redo the last undone action (Ctrl+Shift+Z)'
+    },
     {
       id: 'share-patch',
       name: 'Share Patch Link',
@@ -333,6 +347,14 @@
 
   function executeCommand(commandId: string) {
     match(commandId)
+      .with('undo', () => {
+        onCancel();
+        onUndo?.();
+      })
+      .with('redo', () => {
+        onCancel();
+        onRedo?.();
+      })
       .with('export-patch', () => saveToFile())
       .with('import-patch', () => loadFromFile())
       .with('save-patch', () => {
