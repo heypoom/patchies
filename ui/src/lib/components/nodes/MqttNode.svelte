@@ -7,6 +7,7 @@
   import { match } from 'ts-pattern';
   import { mqttMessages } from '$lib/objects/schemas/mqtt';
   import type { MqttClient } from 'mqtt';
+  import { useNodeDataTracker } from '$lib/history';
 
   export type MqttNodeData = {
     topics: string[];
@@ -28,6 +29,9 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let showSettings = $state(false);
   let connectionStatus = $state<ConnectionStatus>('disconnected');
@@ -225,16 +229,20 @@
   }
 
   function updateTopics(newTopics: string[]) {
-    const oldTopics = new Set(data.topics ?? []);
+    const oldTopics = data.topics ?? [];
+    const oldTopicsSet = new Set(oldTopics);
     const newTopicsSet = new Set(newTopics);
 
     // Update node data
     updateNodeData(nodeId, { topics: newTopics });
 
+    // Track for undo/redo
+    tracker.commit('topics', oldTopics, newTopics);
+
     // Update subscriptions if connected
     if (client && connectionStatus === 'connected') {
-      const toUnsubscribe = [...oldTopics].filter((t) => !newTopicsSet.has(t));
-      const toSubscribe = [...newTopicsSet].filter((t) => !oldTopics.has(t));
+      const toUnsubscribe = [...oldTopicsSet].filter((t) => !newTopicsSet.has(t));
+      const toSubscribe = [...newTopicsSet].filter((t) => !oldTopicsSet.has(t));
 
       if (toUnsubscribe.length > 0) {
         unsubscribeFromTopics(toUnsubscribe);
@@ -247,10 +255,12 @@
 
   function addTopic() {
     if (!newTopic.trim()) return;
+
     const currentTopics = data.topics ?? [];
     if (!currentTopics.includes(newTopic.trim())) {
       updateTopics([...currentTopics, newTopic.trim()]);
     }
+
     newTopic = '';
   }
 
@@ -326,6 +336,7 @@
             onclick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+
               showSettings = !showSettings;
             }}
             title="Configure MQTT"
@@ -503,8 +514,14 @@
             <input
               type="checkbox"
               checked={data.decodeAsString !== false}
-              onchange={() =>
-                updateNodeData(nodeId, { decodeAsString: !(data.decodeAsString !== false) })}
+              onchange={() => {
+                const oldValue = data.decodeAsString !== false;
+                const newValue = !oldValue;
+
+                updateNodeData(nodeId, { decodeAsString: newValue });
+
+                tracker.commit('decodeAsString', oldValue, newValue);
+              }}
               class="h-3 w-3 cursor-pointer accent-green-600"
             />
             <span class="text-[8px] text-zinc-400">Decode messages as string</span>

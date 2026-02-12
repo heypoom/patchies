@@ -9,6 +9,7 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { loadVdoNinjaSdk, createVdoNinjaInstance, type VDONinjaSDK } from '$lib/vdo-ninja/sdk';
   import type { VdoNinjaPullNode } from '$lib/audio/v2/nodes/VdoNinjaNode';
+  import { useNodeDataTracker } from '$lib/history';
 
   export type VdoNinjaPullNodeData = {
     room?: string;
@@ -33,6 +34,9 @@
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let showSettings = $state(false);
   let connectionStatus = $state<ConnectionStatus>('disconnected');
@@ -597,8 +601,10 @@
             <button
               aria-label="Toggle data only mode"
               onclick={() => {
+                const oldDataOnly = dataOnly;
                 dataOnly = !dataOnly;
                 updateNodeData(nodeId, { dataOnly });
+                tracker.commit('dataOnly', oldDataOnly, dataOnly);
               }}
               class={[
                 'relative h-5 w-9 rounded-full transition-colors',

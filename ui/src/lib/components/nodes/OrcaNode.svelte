@@ -14,6 +14,7 @@
 
   import StandardHandle from '../StandardHandle.svelte';
   import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
+  import { useNodeDataTracker } from '$lib/history';
 
   let {
     id: nodeId,
@@ -28,6 +29,9 @@
   const { updateNodeData, screenToFlowPosition } = useSvelteFlow();
   const viewport = useViewport();
   let messageContext = new MessageContext(nodeId);
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   // Orca engine
   let orca: Orca | null = $state(null);
@@ -578,10 +582,12 @@
                   onchange={(e) => {
                     const val = parseInt(e.currentTarget.value);
                     if (orca && !isNaN(val) && val > 0) {
+                      const oldWidth = orca.w;
                       // Preserve existing content when resizing
                       const oldGrid = orca.s;
                       orca.load(val, orca.h, oldGrid, orca.f);
                       updateNodeData(nodeId, { width: val, grid: orca.s });
+                      tracker.commit('width', oldWidth, val);
                       render();
                       measureWidth();
                     }
@@ -599,10 +605,12 @@
                   onchange={(e) => {
                     const val = parseInt(e.currentTarget.value);
                     if (orca && !isNaN(val) && val > 0) {
+                      const oldHeight = orca.h;
                       // Preserve existing content when resizing
                       const oldGrid = orca.s;
                       orca.load(orca.w, val, oldGrid, orca.f);
                       updateNodeData(nodeId, { height: val, grid: orca.s });
+                      tracker.commit('height', oldHeight, val);
                       render();
                       measureWidth();
                     }
@@ -625,8 +633,10 @@
                 onchange={(e) => {
                   const val = parseInt(e.currentTarget.value);
                   if (clock && !isNaN(val)) {
+                    const oldBpm = bpm;
                     clock.setSpeed(val, val);
                     updateNodeData(nodeId, { bpm: val });
+                    tracker.commit('bpm', oldBpm, val);
                   }
                 }}
                 class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white"

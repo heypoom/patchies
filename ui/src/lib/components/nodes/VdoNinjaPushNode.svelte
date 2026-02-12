@@ -12,6 +12,7 @@
   import { capturePreviewFrame } from '$lib/ai/google';
   import { loadVdoNinjaSdk, createVdoNinjaInstance, type VDONinjaSDK } from '$lib/vdo-ninja/sdk';
   import VdoNinjaParamsInput, { parseVdoNinjaParams } from './VdoNinjaParamsInput.svelte';
+  import { useNodeDataTracker } from '$lib/history';
 
   export type VdoNinjaNodeData = {
     room?: string;
@@ -46,6 +47,9 @@
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let showSettings = $state(false);
   let connectionStatus = $state<ConnectionStatus>('disconnected');
@@ -749,8 +753,10 @@
             <button
               aria-label="Toggle data only mode"
               onclick={() => {
+                const oldDataOnly = dataOnly;
                 dataOnly = !dataOnly;
                 updateNodeData(nodeId, { dataOnly });
+                tracker.commit('dataOnly', oldDataOnly, dataOnly);
               }}
               class={[
                 'relative h-5 w-9 rounded-full transition-colors',

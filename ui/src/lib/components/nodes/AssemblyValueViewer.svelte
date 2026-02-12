@@ -12,6 +12,7 @@
   import { memoryRegionStore } from '$lib/assembly/memoryRegionStore';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { AsmMachineStateChangedEvent } from '$lib/eventbus/events';
+  import { useNodeDataTracker } from '$lib/history';
 
   let {
     id: nodeId,
@@ -31,6 +32,9 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let assemblySystem = AssemblySystem.getInstance();
   let messageContext: MessageContext;
@@ -292,8 +296,10 @@
           max="255"
           value={machineId}
           onchange={(e) => {
+            const oldMachineId = machineId;
             const newMachineId = parseInt((e.target as HTMLInputElement).value);
             updateConfig({ machineId: newMachineId });
+            tracker.commit('machineId', oldMachineId, newMachineId);
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         />
@@ -308,7 +314,9 @@
             const hexValue = (e.target as HTMLInputElement).value;
             const newAddress = parseInt(hexValue, 16);
             if (!isNaN(newAddress)) {
+              const oldAddress = address;
               updateConfig({ address: newAddress });
+              tracker.commit('address', oldAddress, newAddress);
             }
           }}
           placeholder="0000"
@@ -326,7 +334,9 @@
           onchange={(e) => {
             const newSize = parseInt((e.target as HTMLInputElement).value);
             if (!isNaN(newSize) && newSize >= 1 && newSize <= 32) {
+              const oldSize = size;
               updateConfig({ size: newSize });
+              tracker.commit('size', oldSize, newSize);
             }
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
@@ -338,8 +348,10 @@
         <select
           value={format}
           onchange={(e) => {
+            const oldFormat = format;
             const newFormat = (e.target as HTMLSelectElement).value as 'hex' | 'decimal' | 'binary';
             updateConfig({ format: newFormat });
+            tracker.commit('format', oldFormat, newFormat);
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
         >
@@ -354,7 +366,12 @@
         <input
           type="checkbox"
           checked={signed}
-          onchange={(e) => updateConfig({ signed: (e.target as HTMLInputElement).checked })}
+          onchange={(e) => {
+            const oldSigned = signed;
+            const newSigned = (e.target as HTMLInputElement).checked;
+            updateConfig({ signed: newSigned });
+            tracker.commit('signed', oldSigned, newSigned);
+          }}
           class="h-4 w-4"
         />
       </div>
@@ -364,7 +381,11 @@
         <div class="flex flex-wrap gap-1">
           {#each regionPalettes as palette, i}
             <button
-              onclick={() => updateConfig({ color: i })}
+              onclick={() => {
+                const oldColor = color;
+                updateConfig({ color: i });
+                tracker.commit('color', oldColor, i);
+              }}
               class={[
                 'h-4 w-4 rounded border transition-all',
                 color === i ? 'border-2 border-white' : 'border-zinc-600 hover:border-zinc-400',

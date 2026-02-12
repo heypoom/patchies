@@ -12,6 +12,7 @@
   import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
+  import { useNodeDataTracker } from '$lib/history';
 
   let node: NodeProps & {
     data: {
@@ -22,12 +23,20 @@
       loop?: boolean;
       playbackRate?: number;
       detune?: number;
+
       // Used when converting from soundfile~
       vfsPath?: string;
     };
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(node.id);
+  const loopStartTracker = tracker.track('loopStart', () => node.data.loopStart ?? 0);
+  const loopEndTracker = tracker.track('loopEnd', () => node.data.loopEnd ?? recordingDuration);
+  const playbackRateTracker = tracker.track('playbackRate', () => node.data.playbackRate ?? 1);
+  const detuneTracker = tracker.track('detune', () => node.data.detune ?? 0);
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
@@ -597,6 +606,8 @@
                 step="0.01"
                 value={loopStart}
                 oninput={(e) => updateLoopStart(parseFloat(e.currentTarget.value))}
+                onpointerdown={loopStartTracker.onFocus}
+                onpointerup={loopStartTracker.onBlur}
                 class="w-full"
               />
             </div>
@@ -614,6 +625,8 @@
                 step="0.01"
                 value={loopEnd}
                 oninput={(e) => updateLoopEnd(parseFloat(e.currentTarget.value))}
+                onpointerdown={loopEndTracker.onFocus}
+                onpointerup={loopEndTracker.onBlur}
                 class="w-full"
               />
             </div>
@@ -622,7 +635,11 @@
             <div class="mb-3 flex items-center justify-between border-t border-zinc-700 pt-3">
               <span class="text-xs text-zinc-400">Loop</span>
               <button
-                onclick={toggleLoop}
+                onclick={() => {
+                  const oldValue = loopEnabled;
+                  toggleLoop();
+                  tracker.commit('loop', oldValue, !oldValue);
+                }}
                 class="rounded px-2 py-1 text-xs {loopEnabled
                   ? 'bg-orange-500 text-white'
                   : 'bg-zinc-700 text-zinc-300'}"
@@ -644,6 +661,8 @@
                 step="0.01"
                 value={playbackRate}
                 oninput={(e) => updatePlaybackRate(parseFloat(e.currentTarget.value))}
+                onpointerdown={playbackRateTracker.onFocus}
+                onpointerup={playbackRateTracker.onBlur}
                 class="w-full"
               />
             </div>
@@ -661,6 +680,8 @@
                 step="1"
                 value={detune}
                 oninput={(e) => updateDetune(parseFloat(e.currentTarget.value))}
+                onpointerdown={detuneTracker.onFocus}
+                onpointerup={detuneTracker.onBlur}
                 class="w-full"
               />
             </div>

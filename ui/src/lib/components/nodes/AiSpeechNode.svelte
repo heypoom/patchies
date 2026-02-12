@@ -16,6 +16,7 @@
     fetchGoogleTtsVoices,
     type GoogleVoice
   } from '$lib/stores/googleTtsVoices';
+  import { useNodeDataTracker } from '$lib/history';
 
   export type AiTtsNodeData = {
     text?: string;
@@ -37,6 +38,12 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
+  const speakingRateTracker = tracker.track('speakingRate', () => data.speakingRate ?? 1);
+  const pitchTracker = tracker.track('pitch', () => data.pitch ?? 0);
+  const volumeGainDbTracker = tracker.track('volumeGainDb', () => data.volumeGainDb ?? 0);
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
@@ -294,10 +301,14 @@
   }
 
   async function selectVoice(voice: GoogleVoice) {
+    const oldVoiceName = data.voiceName;
+    const oldLanguageCode = data.languageCode;
     updateNodeData(nodeId, {
       voiceName: voice.name,
       languageCode: voice.languageCodes[0]
     });
+    tracker.commit('voiceName', oldVoiceName, voice.name);
+    tracker.commit('languageCode', oldLanguageCode, voice.languageCodes[0]);
     voiceSearchOpen = false;
     await tick();
     voiceSearchValue = '';
@@ -486,6 +497,8 @@
               value={speakingRate}
               onchange={(e) =>
                 updateNodeData(nodeId, { speakingRate: parseFloat(e.currentTarget.value) })}
+              onpointerdown={speakingRateTracker.onFocus}
+              onpointerup={speakingRateTracker.onBlur}
               class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-purple-400"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
@@ -507,6 +520,8 @@
               step="0.5"
               value={pitch}
               onchange={(e) => updateNodeData(nodeId, { pitch: parseFloat(e.currentTarget.value) })}
+              onpointerdown={pitchTracker.onFocus}
+              onpointerup={pitchTracker.onBlur}
               class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-purple-400"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
@@ -529,6 +544,8 @@
               value={volumeGainDb}
               onchange={(e) =>
                 updateNodeData(nodeId, { volumeGainDb: parseFloat(e.currentTarget.value) })}
+              onpointerdown={volumeGainDbTracker.onFocus}
+              onpointerup={volumeGainDbTracker.onBlur}
               class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-purple-400"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">

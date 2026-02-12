@@ -623,18 +623,18 @@ Priority 2 - Settings panels with discrete options:
 - [x] `keyboard` - key mappings
 - [x] `mic~` - device selection
 - [x] `out~` - channel layout
-- [ ] `sampler~` - file, playback settings
-- [ ] `mqtt` - broker URL, topic
-- [ ] `sse` - URL
-- [ ] `tts` - voice selection
-- [ ] `ai.music` - settings
-- [ ] `ai.tts` - voice selection
-- [ ] `vdo.ninja.push` - room ID, settings
-- [ ] `vdo.ninja.pull` - room ID, settings
-- [ ] `asm` - viewer settings
-- [ ] `asm.mem` - viewer settings
-- [ ] `orca` - orca code, settings
-- [ ] `chuck~` - settings
+- [x] `sampler~` - file, playback settings
+- [x] `mqtt` - broker URL, topic
+- [x] `sse` - URL
+- [x] `tts` - voice selection
+- [ ] `ai.music` - settings (no persistent UI settings - prompts managed in memory)
+- [x] `ai.tts` - voice selection
+- [x] `vdo.ninja.push` - room ID, settings
+- [x] `vdo.ninja.pull` - room ID, settings
+- [x] `asm` - viewer settings
+- [x] `asm.mem` - viewer settings
+- [x] `orca` - orca code, settings
+- [x] `chuck~` - settings (via CodeEditor codeCommit)
 
 Skip/Defer (code-based with codeCommit, or message-only params):
 

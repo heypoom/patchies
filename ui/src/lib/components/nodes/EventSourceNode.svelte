@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import { match } from 'ts-pattern';
   import { sseMessages } from '$lib/objects/schemas/sse';
+  import { useNodeDataTracker } from '$lib/history';
 
   export type EventSourceNodeData = {
     url: string;
@@ -24,6 +25,9 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let showSettings = $state(false);
   let connectionStatus = $state<ConnectionStatus>('disconnected');
@@ -110,7 +114,9 @@
   }
 
   function handleUrlChange(newUrl: string) {
+    const oldUrl = data.url;
     updateNodeData(nodeId, { url: newUrl });
+    tracker.commit('url', oldUrl, newUrl);
     if (newUrl) {
       connect(newUrl);
     } else {

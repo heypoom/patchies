@@ -8,6 +8,7 @@
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { AssemblySystem } from '$lib/assembly/AssemblySystem';
+  import { useNodeDataTracker } from '$lib/history';
   import {
     ASM_MEMORY_GRID_COLUMNS,
     ASM_MEMORY_GRID_LIMIT,
@@ -30,6 +31,9 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
 
   let assemblySystem = AssemblySystem.getInstance();
   let messageContext: MessageContext;
@@ -137,7 +141,11 @@
   }
 
   function toggleFormat() {
-    updateConfig({ format: format === 'hex' ? 'decimal' : 'hex' });
+    const oldFormat = format;
+    const newFormat = format === 'hex' ? 'decimal' : 'hex';
+
+    updateConfig({ format: newFormat });
+    tracker.commit('format', oldFormat, newFormat);
   }
 
   function updateBatch() {
@@ -326,7 +334,10 @@
                 const value = parseInt((e.target as HTMLInputElement).value);
 
                 if (!isNaN(value) && value > 0) {
+                  const oldRows = rows;
+
                   updateConfig({ rows: value });
+                  tracker.commit('rows', oldRows, value);
                 }
               }}
             />

@@ -8,6 +8,7 @@
   import { ttsMessages } from '$lib/objects/schemas';
   import * as Popover from '$lib/components/ui/popover';
   import * as Command from '$lib/components/ui/command';
+  import { useNodeDataTracker } from '$lib/history';
 
   export type TtsNodeData = {
     voiceName?: string;
@@ -27,6 +28,12 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  // Undo/redo tracking for node data changes
+  const tracker = useNodeDataTracker(nodeId);
+  const rateTracker = tracker.track('rate', () => data.rate ?? 1);
+  const pitchTracker = tracker.track('pitch', () => data.pitch ?? 1);
+  const volumeTracker = tracker.track('volume', () => data.volume ?? 1);
 
   let showSettings = $state(false);
   let voices = $state<SpeechSynthesisVoice[]>([]);
@@ -49,29 +56,37 @@
   // Group voices by language
   const groupedVoices = $derived.by(() => {
     const groups = new Map<string, SpeechSynthesisVoice[]>();
+
     for (const voice of voices) {
       const lang = voice.lang.split('-')[0];
+
       if (!groups.has(lang)) {
         groups.set(lang, []);
       }
+
       groups.get(lang)!.push(voice);
     }
+
     return groups;
   });
 
   // Filter voices based on search
   const filteredVoices = $derived.by(() => {
     if (!voiceSearchValue) return groupedVoices;
+
     const search = voiceSearchValue.toLowerCase();
     const filtered = new Map<string, SpeechSynthesisVoice[]>();
+
     for (const [lang, langVoices] of groupedVoices) {
       const matching = langVoices.filter(
         (v) => v.name.toLowerCase().includes(search) || v.lang.toLowerCase().includes(search)
       );
+
       if (matching.length > 0) {
         filtered.set(lang, matching);
       }
     }
+
     return filtered;
   });
 
@@ -101,6 +116,7 @@
   onDestroy(() => {
     speechSynthesis.removeEventListener('voiceschanged', loadVoices);
     speechSynthesis.cancel(); // Stop any ongoing speech
+
     if (messageContext) {
       messageContext.queue.removeCallback(handleMessage);
       messageContext.destroy();
@@ -135,9 +151,13 @@
 
   function setVoice(voiceName: string) {
     const voice = voices.find((v) => v.name === voiceName);
+
     if (voice) {
+      const oldVoiceName = data.voiceName;
+
       currentVoice = voice;
       updateNodeData(nodeId, { voiceName });
+      tracker.commit('voiceName', oldVoiceName, voiceName);
     }
   }
 
@@ -362,6 +382,8 @@
               step="0.1"
               value={rate}
               onchange={(e) => updateNodeData(nodeId, { rate: parseFloat(e.currentTarget.value) })}
+              onpointerdown={rateTracker.onFocus}
+              onpointerup={rateTracker.onBlur}
               class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
@@ -383,6 +405,8 @@
               step="0.1"
               value={pitch}
               onchange={(e) => updateNodeData(nodeId, { pitch: parseFloat(e.currentTarget.value) })}
+              onpointerdown={pitchTracker.onFocus}
+              onpointerup={pitchTracker.onBlur}
               class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
@@ -405,6 +429,8 @@
               value={volume}
               onchange={(e) =>
                 updateNodeData(nodeId, { volume: parseFloat(e.currentTarget.value) })}
+              onpointerdown={volumeTracker.onFocus}
+              onpointerup={volumeTracker.onBlur}
               class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
