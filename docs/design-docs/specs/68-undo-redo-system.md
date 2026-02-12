@@ -608,11 +608,41 @@ const textTracker = tracker.track('text', () => node.data.text ?? '');
 <input onfocus={textTracker.onFocus} onblur={textTracker.onBlur} />
 ```
 
-**Nodes that should use this pattern:**
+**Nodes that need `useNodeDataTracker`:**
 
-- `note` (PostItNode) - text, color, fontSize, locked ✅
-- Any node with user-configurable settings
-- Nodes with inline text/number inputs
+Priority 1 - UI Controls (user directly manipulates):
+
+- [x] `note` - text, color, fontSize, locked
+- [ ] `slider` - min, max, defaultValue, isFloat, vertical, resizable
+- [ ] `markdown` - markdown content (OverType editor)
+
+Priority 2 - Settings panels with discrete options:
+
+- [ ] `midi.in` - device, channel
+- [ ] `midi.out` - device, channel
+- [ ] `sampler~` - file, playback settings
+- [ ] `mqtt` - broker URL, topic
+- [ ] `sse` - URL
+- [ ] `tts` - voice selection
+- [ ] `ai.music` - settings
+- [ ] `ai.tts` - voice selection
+- [ ] `keyboard` - key mappings
+- [ ] `mic~` - device selection
+- [ ] `out~` - channel layout
+- [ ] `vdo.ninja.push` - room ID, settings
+- [ ] `vdo.ninja.pull` - room ID, settings
+- [ ] `asm` - viewer settings
+- [ ] `asm.mem` - viewer settings
+- [ ] `orca` - settings
+- [ ] `chuck~` - settings
+
+Skip/Defer (code-based with codeCommit, or message-only params):
+
+- Code nodes: `js`, `hydra`, `canvas`, `p5`, `glsl`, `worker`, `dom`, `vue`, etc.
+- Expression nodes: `expr`, `filter`, `map`, `scan`, `tap`, `uniq`
+- Audio V2 nodes: `gain~`, `lowpass~`, etc. (params via messages)
+- Control V2 nodes: `send`, `recv`, `kv`, etc. (no UI settings)
+- `toggle`, `button` - value changes are programmatic, not user settings
 
 ## Edge Cases
 
