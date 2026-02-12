@@ -15,6 +15,8 @@
     onCancel: () => void;
   } = $props();
 
+  let hasApiKey = $derived(open && !!localStorage.getItem('gemini-api-key'));
+
   function handleCancel() {
     onCancel();
     open = false;
@@ -39,13 +41,14 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    {#if !isReadOnly}
-      <div
-        class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
-      >
-        This will replace your current patch. Any unsaved changes will be lost.
-      </div>
-    {/if}
+    <div
+      class="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
+    >
+      <strong>Warning:</strong> Patches run un-sandboxed code. A malicious patch could execute
+      arbitrary code, redirect you, or steal data{#if hasApiKey}
+        &nbsp;including your <em>Gemini API key</em>{/if}.{#if !isReadOnly}
+        &nbsp;This will also replace your current patch.{/if}
+    </div>
 
     <Dialog.Footer class="flex gap-2">
       <button
