@@ -155,6 +155,7 @@ class DSPProcessor extends AudioWorkletProcessor {
         'console',
         `
 			var $1, $2, $3, $4, $5, $6, $7, $8, $9;
+			var counter = 0;
 
 			${code}
 
@@ -162,8 +163,9 @@ class DSPProcessor extends AudioWorkletProcessor {
 				inputs,
 				outputs,
 				inlets,
-				counter
+				_counter
 			) => {
+				counter = _counter;
 				$1 = inlets[0];
 				$2 = inlets[1];
 				$3 = inlets[2];
