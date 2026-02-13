@@ -13,11 +13,13 @@
   let {
     open = $bindable(false),
     nodes,
-    edges
+    edges,
+    onSave
   }: {
     open: boolean;
     nodes: Node[];
     edges: Edge[];
+    onSave?: () => void;
   } = $props();
 
   // Form state
@@ -77,6 +79,9 @@
 
     toast.success(`Saved patch as "${name}"`);
     open = false;
+
+    // Notify parent that save completed (used to exit read-only mode)
+    onSave?.();
   }
 
   function handleKeydown(event: KeyboardEvent) {

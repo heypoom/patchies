@@ -1119,7 +1119,18 @@
     <SavePresetDialog bind:open={showSavePresetDialog} node={nodeToSaveAsPreset} />
 
     <!-- Save Patch Modal -->
-    <SavePatchModal bind:open={showSavePatchModal} {nodes} {edges} />
+    <SavePatchModal
+      bind:open={showSavePatchModal}
+      {nodes}
+      {edges}
+      onSave={() => {
+        // Exit read-only mode after saving (user now owns this patch)
+        if (isReadOnlyMode) {
+          isReadOnlyMode = false;
+          deleteSearchParam('readonly');
+        }
+      }}
+    />
 
     <!-- Load Shared Patch Confirmation Dialog -->
     <LoadSharedPatchDialog
