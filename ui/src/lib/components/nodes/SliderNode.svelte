@@ -280,7 +280,7 @@
                 tracker.commit('locked', oldLocked, !locked);
               }}
               class={[
-                'cursor-pointer rounded p-1 hover:bg-zinc-700',
+                'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
                 locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
               ]}
             >
@@ -297,7 +297,7 @@
         </Tooltip.Root>
         <button
           onclick={() => (showSettings = false)}
-          class="cursor-pointer rounded p-1 text-zinc-300 hover:bg-zinc-700"
+          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
         >
           <X class="h-4 w-4" />
         </button>
