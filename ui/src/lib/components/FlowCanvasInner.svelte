@@ -211,6 +211,7 @@
   let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
   let startupInitialTab = $state<'about' | 'demos' | 'shortcuts' | 'thanks'>('about');
   let isReadOnlyMode = $state(false);
+  let pendingReadOnlyMode = $state(false); // Stores intended readonly state for shared patches until confirmed
 
   // Derived: show read-only banner only when no other banners are shown
   const showReadOnlyBanner = $derived(
@@ -524,8 +525,9 @@
     const readonlyParam = params.get('readonly');
 
     if (hasSharedPatchId) {
-      // Shared patches: default to readonly unless explicitly disabled
-      isReadOnlyMode = readonlyParam !== 'false';
+      // Shared patches: defer setting readonly until user confirms loading
+      // (readonly mode will be set in confirmLoadSharedPatch)
+      pendingReadOnlyMode = readonlyParam !== 'false';
     } else if (readonlyParam === 'true') {
       // Non-shared: only enable readonly if explicitly requested
       isReadOnlyMode = true;
@@ -716,6 +718,10 @@
     await patchManager.loadSharedPatch(pendingSharedPatch);
     pendingSharedPatch = null;
 
+    // Apply the readonly mode now that user has confirmed loading
+    isReadOnlyMode = pendingReadOnlyMode;
+    pendingReadOnlyMode = false;
+
     // Re-focus the view on the new content
     await tick();
     fitView();
@@ -723,6 +729,11 @@
 
   function cancelLoadSharedPatch() {
     pendingSharedPatch = null;
+    pendingReadOnlyMode = false;
+
+    // Clear URL params since user cancelled loading
+    deleteSearchParam('id');
+    deleteSearchParam('readonly');
   }
 
   function resumeAudio() {
@@ -1156,7 +1167,7 @@
     <LoadSharedPatchDialog
       bind:open={showLoadSharedPatchDialog}
       patchName={pendingSharedPatch?.name ?? null}
-      isReadOnly={isReadOnlyMode}
+      isReadOnly={pendingReadOnlyMode}
       onConfirm={confirmLoadSharedPatch}
       onCancel={cancelLoadSharedPatch}
     />
