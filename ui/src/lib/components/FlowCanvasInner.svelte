@@ -804,9 +804,18 @@
             {#if $helpModeObject}
               Help for <strong>{$helpModeObject}</strong>. Changes won't be saved.
             {:else}
-              Read-only mode. Changes won't be saved.
+              Shared patches are read-only.
             {/if}
           </span>
+
+          {#if isReadOnlyMode && !$helpModeObject}
+            <button
+              class="cursor-pointer rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
+              onclick={() => (showSavePatchModal = true)}
+            >
+              Save
+            </button>
+          {/if}
 
           <button
             class="cursor-pointer rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
