@@ -4,11 +4,11 @@ Most JavaScript-based objects in Patchies use the unified JavaScript Runner (JSR
 
 ## Supported objects
 
-Full JSRunner features are available in these objects: `js`, `worker`, `p5`, `canvas`, `canvas.dom`, `textmode`, `textmode.dom`, `three`, `three.dom`, `hydra`, `dom`, `vue`, `sonic~`, `tone~` and `elem~`.
+Full JSRunner features are available in these objects: [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [dom](/docs/objects/dom), [vue](/docs/objects/vue), [sonic~](/docs/objects/sonic~), [tone~](/docs/objects/tone~) and [elem~](/docs/objects/elem~).
 
 ### Expression objects
 
-Some expression-like objects use _single-expression evaluation_ (e.g. `filter`, `map`, `tap`, `scan`) where the expression is evaluated once per message. These cannot use messaging callbacks like `send`, `recv`, `onCleanup`, timers, etc.
+Some expression-like objects use _single-expression evaluation_ (e.g. [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), [scan](/docs/objects/scan)) where the expression is evaluated once per message. These cannot use messaging callbacks like `send`, `recv`, `onCleanup`, timers, etc.
 
 ## Common runtime functions
 
