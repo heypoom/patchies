@@ -443,7 +443,9 @@ function isInsideFunctionBody(text: string): boolean {
  */
 function createPatchiesCompletionSource(patchiesContext?: PatchiesContext) {
   return (context: CMCompletionContext) => {
+    // Skip completions for non-JS nodes (expressions are pure, messages are JSON5)
     if (patchiesContext?.nodeType === 'expr') return null;
+    if (patchiesContext?.nodeType === 'msg') return null;
 
     const word = context.matchBefore(/\w*/);
     if (!word) return null;
