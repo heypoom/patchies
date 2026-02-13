@@ -43,9 +43,9 @@ This is useful for organizing complex video routing or sending video across diff
 
 ## See Also
 
-- [p5](/docs/objects/p5) - P5.js sketches
 - [hydra](/docs/objects/hydra) - Hydra video synthesizer
 - [glsl](/docs/objects/glsl) - GLSL shaders
+- [canvas](/docs/objects/canvas) - HTML5 offscreen canvas
 - [send.vdo](/docs/objects/send.vdo) - Send video to named channel
 - [recv.vdo](/docs/objects/recv.vdo) - Receive video from named channel
 - [Audio Chaining](/docs/audio-chaining)
