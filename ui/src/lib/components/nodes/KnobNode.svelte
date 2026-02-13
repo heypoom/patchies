@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GripHorizontal, Settings, X } from '@lucide/svelte/icons';
+  import { GripHorizontal, Lock, LockOpen, RotateCcw, Settings, X } from '@lucide/svelte/icons';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -9,6 +9,7 @@
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let node: {
     id: string;
@@ -20,6 +21,7 @@
       value?: number;
       runOnMount?: boolean;
       size?: number;
+      locked?: boolean;
     };
     selected: boolean;
   } = $props();
@@ -43,6 +45,7 @@
   const isFloat = $derived(node.data.isFloat ?? false);
   const currentValue = $derived(node.data.value ?? defaultValue);
   const size = $derived(node.data.size ?? 50);
+  const locked = $derived(node.data.locked ?? false);
 
   // SVG arc calculations
   const radius = $derived(size / 2 - 4);
@@ -179,6 +182,9 @@
     messageContext?.destroy();
   });
 
+  // Hide inlet when locked (unless easy connect is enabled)
+  const showInlet = $derived(!locked || $shouldShowHandles);
+
   const handleInletClass = $derived.by(() => {
     if (node.selected || $shouldShowHandles) {
       return '';
@@ -190,7 +196,7 @@
 <div class="relative">
   <div class="group relative">
     <div class="flex flex-col items-center gap-1">
-      <div class="absolute -top-5 -right-4">
+      <div class={['absolute -top-5 -right-4', locked && 'nodrag']}>
         <button
           class={[
             'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
@@ -203,26 +209,30 @@
         </button>
       </div>
 
-      <!-- Drag handle for moving the node -->
-      <div
-        class={[
-          'absolute -top-9 left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
-          node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-        ]}
-        title="Drag to move"
-      >
-        <GripHorizontal class="h-4 w-4 text-zinc-500" />
-      </div>
+      <!-- Drag handle for moving the node (hidden when locked) -->
+      {#if !locked}
+        <div
+          class={[
+            'absolute -top-9 left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
+            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          ]}
+          title="Drag to move"
+        >
+          <GripHorizontal class="h-4 w-4 text-zinc-500" />
+        </div>
+      {/if}
 
       <div class="relative">
-        <StandardHandle
-          port="inlet"
-          type="message"
-          total={1}
-          index={0}
-          class={`!-top-2 ${handleInletClass}`}
-          nodeId={node.id}
-        />
+        {#if showInlet}
+          <StandardHandle
+            port="inlet"
+            type="message"
+            total={1}
+            index={0}
+            class={`!-top-2 ${handleInletClass}`}
+            nodeId={node.id}
+          />
+        {/if}
 
         <!-- Knob SVG -->
         <div
@@ -279,8 +289,38 @@
   {#if showSettings}
     <div class="absolute top-0" style="left: {size + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-          <X class="h-4 w-4 text-zinc-300" />
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => {
+                const oldLocked = locked;
+
+                updateConfig({ locked: !locked });
+                tracker.commit('locked', oldLocked, !locked);
+              }}
+              class={[
+                'cursor-pointer rounded p-1 hover:bg-zinc-700',
+                locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+              ]}
+            >
+              {#if locked}
+                <Lock class="h-4 w-4" />
+              {:else}
+                <LockOpen class="h-4 w-4" />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>
+            <p class="text-xs">Prevent moving and hide inlet</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 text-zinc-300 hover:bg-zinc-700"
+        >
+          <X class="h-4 w-4" />
         </button>
       </div>
 
@@ -310,8 +350,10 @@
               }}
               class="mr-2 h-3 w-3"
             />
+
             <span class="text-xs text-zinc-300">Integer</span>
           </label>
+
           <label class="flex items-center">
             <input
               type="radio"
@@ -320,11 +362,13 @@
               checked={isFloat}
               onchange={() => {
                 const oldValue = isFloat;
+
                 updateConfig({ isFloat: true });
                 tracker.commit('isFloat', oldValue, true);
               }}
               class="mr-2 h-3 w-3"
             />
+
             <span class="text-xs text-zinc-300">Float</span>
           </label>
         </div>
@@ -341,6 +385,7 @@
           onchange={(e) => {
             const oldMin = min;
             const newMin = parseFloat((e.target as HTMLInputElement).value);
+
             updateConfig({ min: newMin });
             tracker.commit('min', oldMin, newMin);
           }}
@@ -359,6 +404,7 @@
           onchange={(e) => {
             const oldMax = max;
             const newMax = parseFloat((e.target as HTMLInputElement).value);
+
             updateConfig({ max: newMax });
             tracker.commit('max', oldMax, newMax);
           }}
@@ -379,6 +425,7 @@
           onchange={(e) => {
             const oldDefault = defaultValue;
             const newDefault = parseFloat((e.target as HTMLInputElement).value);
+
             updateConfig({ defaultValue: newDefault });
             tracker.commit('defaultValue', oldDefault, newDefault);
           }}
@@ -410,10 +457,13 @@
         <button
           onclick={() => {
             updateNodeData(node.id, { ...node.data, value: defaultValue });
+
             messageContext.send(defaultValue);
           }}
-          class="w-full rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
+          class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
         >
+          <RotateCcw class="h-3 w-3" />
+
           Reset to Default
         </button>
       </div>

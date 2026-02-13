@@ -15,6 +15,7 @@ Circular encoder knob for continuous value control.
 - **Maximum** - Upper bound of the range
 - **Default Value** - Initial value on reset
 - **Size** - Knob diameter in pixels
+- **Lock**: Lock the note to prevent moving and hides the inlet.
 
 ## See Also
 

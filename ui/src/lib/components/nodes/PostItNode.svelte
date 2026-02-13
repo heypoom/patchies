@@ -3,6 +3,7 @@
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import { useNodeDataTracker } from '$lib/history';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   // Predefined color palette for post-it notes
   const COLOR_PRESETS = [
@@ -234,9 +235,36 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="absolute top-0 z-20" style="left: {width + 10}px" onclick={handleSettingsClick}>
-      <div class="absolute -top-7 right-0 flex gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-          <X class="h-4 w-4 text-zinc-300" />
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => {
+                const oldLocked = locked;
+                updateConfig({ locked: !locked });
+                tracker.commit('locked', oldLocked, !locked);
+              }}
+              class={[
+                'cursor-pointer rounded p-1 hover:bg-zinc-700',
+                locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+              ]}
+            >
+              {#if locked}
+                <Lock class="h-4 w-4" />
+              {:else}
+                <LockOpen class="h-4 w-4" />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p class="text-xs">Prevent moving, resizing, and editing</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 text-zinc-300 hover:bg-zinc-700"
+        >
+          <X class="h-4 w-4" />
         </button>
       </div>
 
@@ -294,26 +322,6 @@
               {/each}
             </div>
           </div>
-
-          <!-- Lock toggle -->
-          <button
-            onclick={() => {
-              const oldLocked = locked;
-              updateConfig({ locked: !locked });
-              tracker.commit('locked', oldLocked, !locked);
-            }}
-            class={[
-              'flex cursor-pointer items-center gap-1.5 text-xs transition-colors',
-              locked ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
-            ]}
-          >
-            {#if locked}
-              <Lock class="h-3.5 w-3.5" />
-            {:else}
-              <LockOpen class="h-3.5 w-3.5" />
-            {/if}
-            <span>{locked ? 'Locked' : 'Lock'}</span>
-          </button>
         </div>
       </div>
     </div>
