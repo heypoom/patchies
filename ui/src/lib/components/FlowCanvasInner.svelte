@@ -817,7 +817,7 @@
     {#if showReadOnlyBanner}
       <div class="absolute top-4 right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
         <div
-          class="flex items-center justify-between gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100 sm:min-w-[360px] sm:justify-center"
+          class="flex items-center justify-between gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-1.5 text-sm text-blue-100 sm:min-w-[360px]"
         >
           <span>
             {#if $helpModeObject}
@@ -861,7 +861,7 @@
           : 'top-4'}"
       >
         <div
-          class="flex items-center justify-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm sm:min-w-[360px]"
+          class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-1.5 text-sm text-blue-200 backdrop-blur-sm sm:min-w-[360px]"
         >
           <Volume2 class="h-4 w-4 shrink-0" />
           <span>Click anywhere to play sound</span>
