@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { Lock, LockOpen, RotateCcw, Settings, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -9,6 +9,7 @@
   import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let node: {
     id: string;
@@ -21,6 +22,7 @@
       vertical?: boolean;
       runOnMount?: boolean;
       resizable?: boolean;
+      locked?: boolean;
     };
     selected: boolean;
     width?: number;
@@ -47,6 +49,7 @@
   const sliderWidth = $derived(node.width ?? 130);
   const sliderHeight = $derived(node.height ?? 140);
   const isResizable = $derived(node.data.resizable ?? false);
+  const locked = $derived(node.data.locked ?? false);
   // Settings panel position: use node width for horizontal, fixed for vertical
   const settingsLeftOffset = $derived(node.data.vertical ? 40 : sliderWidth + 10);
 
@@ -161,6 +164,9 @@
     ];
   });
 
+  // Hide inlet when locked (unless easy connect is enabled)
+  const showInlet = $derived(!locked || $shouldShowHandles);
+
   const handleInletClass = $derived.by(() => {
     if (node.selected || $shouldShowHandles) {
       return '';
@@ -171,7 +177,7 @@
 </script>
 
 <div class="relative">
-  {#if isResizable}
+  {#if isResizable && !locked}
     <NodeResizer
       isVisible={node.selected}
       minWidth={node.data.vertical ? 30 : 60}
@@ -183,7 +189,12 @@
 
   <div class="group relative">
     <div class="flex flex-col gap-2">
-      <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+      <div
+        class={[
+          'absolute -top-7 left-0 flex w-full items-center justify-between',
+          locked && 'nodrag'
+        ]}
+      >
         <div></div>
 
         <button
@@ -198,15 +209,17 @@
         </button>
       </div>
 
-      <div class="relative">
-        <StandardHandle
-          port="inlet"
-          type="message"
-          total={1}
-          index={0}
-          class={`!-top-2 ${handleInletClass}`}
-          nodeId={node.id}
-        />
+      <div class={['relative', locked && 'nodrag']}>
+        {#if showInlet}
+          <StandardHandle
+            port="inlet"
+            type="message"
+            total={1}
+            index={0}
+            class={`!-top-2 ${handleInletClass}`}
+            nodeId={node.id}
+          />
+        {/if}
 
         <div
           class="flex w-full flex-col items-center justify-center gap-1 py-1"
@@ -258,8 +271,35 @@
   {#if showSettings}
     <div class="absolute top-0" style="left: {settingsLeftOffset}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-          <X class="h-4 w-4 text-zinc-300" />
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => {
+                const oldLocked = locked;
+                updateConfig({ locked: !locked });
+                tracker.commit('locked', oldLocked, !locked);
+              }}
+              class={[
+                'cursor-pointer rounded p-1 hover:bg-zinc-700',
+                locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+              ]}
+            >
+              {#if locked}
+                <Lock class="h-4 w-4" />
+              {:else}
+                <LockOpen class="h-4 w-4" />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p class="text-xs">Prevent moving and hide inlet</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 text-zinc-300 hover:bg-zinc-700"
+        >
+          <X class="h-4 w-4" />
         </button>
       </div>
 
@@ -412,8 +452,9 @@
 
             messageContext.send(defaultValue);
           }}
-          class="w-full rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
+          class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
         >
+          <RotateCcw class="h-3 w-3" />
           Reset to Default
         </button>
       </div>

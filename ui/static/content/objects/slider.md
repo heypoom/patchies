@@ -14,6 +14,7 @@ Continuous value control with customizable range.
 - **Default Value** - Initial value on reset
 - **Orientation** - Vertical or Horizontal orientation
 - **Resize** - Whether the slider is resizable
+- **Lock**: Lock the slider to prevent moving and hide the inlet.
 
 ## See Also
 
