@@ -27,6 +27,10 @@ Some objects have interactive help patches that demonstrate usage. Click **Open 
 
 Enable the **?** help toggle to browse object documentation in the sidebar instead of inserting.
 
+## Guides
+
+The **guides** menu at the top of the help panel lets you browse guides without leaving the app - the same documentation you're reading now.
+
 ## See Also
 
 - [Adding Objects](/docs/adding-objects)
