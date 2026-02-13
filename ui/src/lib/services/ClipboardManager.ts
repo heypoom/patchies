@@ -187,13 +187,6 @@ export class ClipboardManager {
   }
 
   /**
-   * Check if there's data available to paste.
-   */
-  hasCopiedData(): boolean {
-    return this.copiedData !== null && this.copiedData.nodes.length > 0;
-  }
-
-  /**
    * Get the current copied data (for UI display purposes).
    */
   getCopiedData(): CopiedData | null {

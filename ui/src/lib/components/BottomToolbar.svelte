@@ -12,7 +12,6 @@
     Link,
     Loader,
     Save,
-    Search,
     Sparkles,
     Trash2,
     Cable,

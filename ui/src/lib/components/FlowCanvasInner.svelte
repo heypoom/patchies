@@ -116,6 +116,7 @@
 
   // Clipboard manager for copy/paste operations
   const clipboardManager = new ClipboardManager(canvasContext);
+  let hasCopiedData = $state(false);
 
   // Patch manager for save/load/restore operations
   const patchManager = new PatchManager(canvasContext);
@@ -655,7 +656,11 @@
 
   // Copy/paste delegated to ClipboardManager
   function copySelectedNodes() {
-    clipboardManager.copy(selectedNodeIds);
+    const result = clipboardManager.copy(selectedNodeIds);
+
+    if (result) {
+      hasCopiedData = true;
+    }
   }
 
   function pasteNode(source: 'keyboard' | 'button') {
@@ -1036,7 +1041,7 @@
         {edges}
         {selectedNodeIds}
         {selectedEdgeIds}
-        hasCopiedData={clipboardManager.hasCopiedData()}
+        {hasCopiedData}
         {hasGeminiApiKey}
         isLeftSidebarOpen={$isSidebarOpen}
         bind:showStartupModal
