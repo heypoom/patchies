@@ -212,6 +212,14 @@
   let startupInitialTab = $state<'about' | 'demos' | 'shortcuts' | 'thanks'>('about');
   let isReadOnlyMode = $state(false);
 
+  // Derived: show read-only banner only when no other banners are shown
+  const showReadOnlyBanner = $derived(
+    ($helpModeObject || isReadOnlyMode) &&
+      !$isConnectionMode &&
+      !($isMobile && $isSidebarOpen) &&
+      !urlLoadError
+  );
+
   // Mobile connection mode state - simplified to just toggle connection mode
   useOnSelectionChange(({ nodes, edges }) => {
     selectedNodeIds = nodes.map((node) => node.id);
@@ -795,7 +803,7 @@
     {/if}
 
     <!-- Help Mode / Read-Only Mode Banner -->
-    {#if ($helpModeObject || isReadOnlyMode) && !($isMobile && $isSidebarOpen)}
+    {#if showReadOnlyBanner}
       <div class="absolute top-4 right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
         <div
           class="flex items-center justify-between gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100 sm:justify-start"
