@@ -836,14 +836,15 @@
     <!-- Audio Resume Hint -->
     {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen)}
       <div
-        class="absolute left-1/2 z-50 -translate-x-1/2 transform {$helpModeObject || isReadOnlyMode
+        class="absolute right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 {$helpModeObject ||
+        isReadOnlyMode
           ? 'top-16'
           : 'top-4'}"
       >
         <div
           class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm"
         >
-          <Volume2 class="h-4 w-4" />
+          <Volume2 class="h-4 w-4 shrink-0" />
           <span>Click anywhere to play sound</span>
         </div>
       </div>
@@ -851,7 +852,7 @@
 
     <!-- Connection Mode Indicator -->
     {#if $isConnectionMode && !($isMobile && $isSidebarOpen)}
-      <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+      <div class="absolute top-4 right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
         <div
           class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
             $isConnecting
@@ -859,7 +860,7 @@
               : 'border-blue-600 bg-blue-900/80 text-blue-200'
           }`}
         >
-          <Cable class="h-4 w-4" />
+          <Cable class="h-4 w-4 shrink-0" />
           <span>
             {#if $isConnecting}
               Tap or drag to another handle to connect
@@ -868,7 +869,7 @@
             {/if}
           </span>
           <button
-            class={`ml-2 hover:text-blue-100 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
+            class={`ml-auto shrink-0 hover:text-blue-100 sm:ml-2 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
             onclick={cancelConnectionMode}
             title="Cancel"
           >
