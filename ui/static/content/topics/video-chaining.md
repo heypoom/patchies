@@ -41,6 +41,10 @@ Create [`send.vdo <channel>`](/docs/objects/send.vdo) and [`recv.vdo <channel>`]
 
 This is useful for organizing complex video routing or sending video across different parts of a large patch.
 
+## Performance
+
+Objects that runs on the [rendering pipeline](/docs/rendering-pipeline) are much more performant than objects that run on the main thread, as they do not require expensive pixel copy. For example, use [canvas](/docs/objects/canvas) instead of P5.js and canvas.dom for more performant video chaining.
+
 ## See Also
 
 - [hydra](/docs/objects/hydra) - Hydra video synthesizer
