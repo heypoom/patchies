@@ -4,17 +4,17 @@ You can chain visual objects together to create video effects and compositions, 
 
 ![Video chain example](/content/images/patchies-video-chain.png)
 
-The above example creates a `hydra` object and a `glsl` object that produces a pattern, and connects them to a `hydra` object that subtracts the two visuals together using `src(s0).sub(s1).out(o0)`.
+The above example creates a [hydra](/docs/objects/hydra) object and a [glsl](/docs/objects/hydra) object that produces a pattern, and connects them to another hydra object which subtracts the two visuals together using `src(s0).sub(s1).out(o0)`.
 
-This is very similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
+This is similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
 
 ## Getting Started
 
-Try out the presets to get started quickly:
+Try out the presets to get started. Enable them in the [preset packs](/docs/manage-packs) sidebar menu.
 
-- **Pipe presets** (e.g. `pipe.hydra`, `pipe.gl`) simply pass the visual through without any changes. This is the best starting point for chaining.
-- **Hydra presets** perform image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two visual inputs.
-- Check out the docs of each visual object for more fun presets you can use.
+- **Pipe presets** (e.g. `pipe.hydra`, `pipe.gl`) passes the visual through without any changes. This is the best starting point for chaining.
+- **Hydra presets** performs image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two visual inputs.
+- Check out the docs of [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) for more fun presets you can use.
 
 ## How Video Chaining Works
 
@@ -22,9 +22,9 @@ Try out the presets to get started quickly:
   - **Inlets** provide visual input to the object
   - **Outlets** output visual from the object
 
-- In `hydra`, call `setVideoCount(ins = 1, outs = 1)` to specify how many visual inlets and outlets you want
+- In hydra, call `setVideoCount(ins = 1, outs = 1)` to specify how many visual inlets and outlets you want
 
-- For `glsl` objects, dynamically create sampler2D uniforms to add video inputs
+- For glsl objects, dynamically create [sampler2D uniforms](https://thebookofshaders.com/glossary/?search=texture2D) to add video inputs
 
 - Connect the orange outlet of a source object to the orange inlet of a target object
   - Try connecting `p5` → `pipe.hydra` → `pipe.gl` to see visual passthrough in action

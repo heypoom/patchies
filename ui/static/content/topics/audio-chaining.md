@@ -1,6 +1,6 @@
 # Audio Chaining
 
-Similar to video chaining, you can chain many audio objects together to create audio effects and soundscapes.
+You can chain many audio objects together to create audio effects and soundscapes.
 
 ![Audio chain example](/content/images/patchies-audio-chain.png)
 
