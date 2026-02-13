@@ -873,14 +873,14 @@
     {#if $isConnectionMode && !($isMobile && $isSidebarOpen)}
       <div class="absolute top-4 right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
         <div
-          class={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm backdrop-blur-sm ${
+          class={`flex items-center justify-between gap-3 rounded-lg border px-4 py-1.5 text-sm backdrop-blur-sm sm:min-w-[360px] ${
             $isConnecting
               ? 'border-green-600 bg-green-900/80 text-green-200'
               : 'border-blue-600 bg-blue-900/80 text-blue-200'
           }`}
         >
-          <Cable class="h-4 w-4 shrink-0" />
-          <span>
+          <span class="flex items-center gap-2">
+            <Cable class="h-4 w-4 shrink-0" />
             {#if $isConnecting}
               Tap or drag to another handle to connect
             {:else}
@@ -888,7 +888,7 @@
             {/if}
           </span>
           <button
-            class={`ml-auto shrink-0 hover:text-blue-100 sm:ml-2 ${$isConnecting ? 'text-green-300' : 'text-blue-300'}`}
+            class={`shrink-0 cursor-pointer ${$isConnecting ? 'text-green-300 hover:text-green-100' : 'text-blue-300 hover:text-blue-100'}`}
             onclick={cancelConnectionMode}
             title="Cancel"
           >
