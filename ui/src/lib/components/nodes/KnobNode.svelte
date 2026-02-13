@@ -8,7 +8,7 @@
   import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useStore } from '@xyflow/svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   let node: {
@@ -27,6 +27,7 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const store = useStore();
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
@@ -45,7 +46,9 @@
   const isFloat = $derived(node.data.isFloat ?? false);
   const currentValue = $derived(node.data.value ?? defaultValue);
   const size = $derived(node.data.size ?? 50);
-  const locked = $derived(node.data.locked ?? false);
+
+  // Combined lock state: internal lock OR global interactivity disabled
+  const isLocked = $derived((node.data.locked ?? false) || !store.nodesDraggable);
 
   // SVG arc calculations
   const radius = $derived(size / 2 - 4);
@@ -183,7 +186,7 @@
   });
 
   // Hide inlet when locked (unless easy connect is enabled)
-  const showInlet = $derived(!locked || $shouldShowHandles);
+  const showInlet = $derived(!isLocked || $shouldShowHandles);
 
   const handleInletClass = $derived.by(() => {
     if (node.selected || $shouldShowHandles) {
@@ -196,21 +199,23 @@
 <div class="relative">
   <div class="group relative">
     <div class="flex flex-col items-center gap-1">
-      <div class={['absolute -top-5 -right-4', locked && 'nodrag']}>
-        <button
-          class={[
-            'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          ]}
-          onclick={() => (showSettings = !showSettings)}
-          title="Settings"
-        >
-          <Settings class="h-4 w-4 text-zinc-300" />
-        </button>
-      </div>
+      {#if store.nodesDraggable}
+        <div class={['absolute -top-5 -right-4', isLocked && 'nodrag']}>
+          <button
+            class={[
+              'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            ]}
+            onclick={() => (showSettings = !showSettings)}
+            title="Settings"
+          >
+            <Settings class="h-4 w-4 text-zinc-300" />
+          </button>
+        </div>
+      {/if}
 
-      <!-- Drag handle for moving the node (hidden when locked) -->
-      {#if !locked}
+      <!-- Drag handle for moving the node (hidden when locked or interactivity is disabled) -->
+      {#if !isLocked}
         <div
           class={[
             'absolute -top-9 left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
@@ -257,6 +262,7 @@
               stroke-width={strokeWidth}
               stroke-linecap="round"
             />
+
             <!-- Value arc -->
             {#if currentValue > min}
               <path
@@ -267,6 +273,7 @@
                 stroke-linecap="round"
               />
             {/if}
+
             <!-- Center value display -->
             <text
               x={centerX}
@@ -293,17 +300,16 @@
           <Tooltip.Trigger>
             <button
               onclick={() => {
-                const oldLocked = locked;
-
-                updateConfig({ locked: !locked });
-                tracker.commit('locked', oldLocked, !locked);
+                const oldLocked = node.data.locked ?? false;
+                updateNodeData(node.id, { ...node.data, locked: !oldLocked });
+                tracker.commit('locked', oldLocked, !oldLocked);
               }}
               class={[
                 'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
-                locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+                node.data.locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
               ]}
             >
-              {#if locked}
+              {#if node.data.locked}
                 <Lock class="h-4 w-4" />
               {:else}
                 <LockOpen class="h-4 w-4" />

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
-  import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
+  import { NodeResizer, useSvelteFlow, useStore } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import { useNodeDataTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -40,6 +40,7 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const store = useStore();
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
@@ -56,7 +57,8 @@
   const text = $derived(node.data.text ?? '');
   const color = $derived(node.data.color ?? '#fef3c7');
   const fontSize = $derived(node.data.fontSize ?? 14);
-  const locked = $derived(node.data.locked ?? false);
+  // Combined lock state: internal lock OR global interactivity disabled
+  const isLocked = $derived((node.data.locked ?? false) || !store.nodesDraggable);
   const width = $derived(node.width ?? defaultWidth);
   const height = $derived(node.height ?? defaultHeight);
 
@@ -84,7 +86,7 @@
   }
 
   function handleDoubleClick(e: MouseEvent) {
-    if (locked) return;
+    if (isLocked) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -175,29 +177,31 @@
 </script>
 
 <div class="relative">
-  <NodeResizer class="z-1" isVisible={node.selected && !locked} minWidth={100} minHeight={80} />
+  <NodeResizer class="z-1" isVisible={node.selected && !isLocked} minWidth={100} minHeight={80} />
 
   <div class="group relative">
-    <!-- Settings button (visible on hover or when selected) -->
-    <div class={['absolute -top-7 right-0 z-10 flex gap-x-1', locked && 'nodrag']}>
-      <button
-        class={[
-          'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-          node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-        ]}
-        onclick={() => (showSettings = !showSettings)}
-        title="Settings"
-      >
-        <Settings class="h-4 w-4 text-zinc-300" />
-      </button>
-    </div>
+    <!-- Settings button (visible on hover or when selected, hidden when global interactivity disabled) -->
+    {#if store.nodesDraggable}
+      <div class={['absolute -top-7 right-0 z-10 flex gap-x-1', isLocked && 'nodrag']}>
+        <button
+          class={[
+            'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          ]}
+          onclick={() => (showSettings = !showSettings)}
+          title="Settings"
+        >
+          <Settings class="h-4 w-4 text-zinc-300" />
+        </button>
+      </div>
+    {/if}
 
     <!-- Main post-it note area -->
     <div
       class={[
         'relative overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-lg',
-        (isEditing || locked) && 'nodrag',
-        locked && node.selected && 'ring-2 ring-blue-500'
+        (isEditing || isLocked) && 'nodrag',
+        isLocked && node.selected && 'ring-2 ring-blue-500'
       ]}
       style="width: {width}px; height: {height}px; background-color: {color};"
       ondblclick={handleDoubleClick}
@@ -240,16 +244,16 @@
           <Tooltip.Trigger>
             <button
               onclick={() => {
-                const oldLocked = locked;
-                updateConfig({ locked: !locked });
-                tracker.commit('locked', oldLocked, !locked);
+                const oldLocked = node.data.locked ?? false;
+                updateConfig({ locked: !oldLocked });
+                tracker.commit('locked', oldLocked, !oldLocked);
               }}
               class={[
                 'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
-                locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+                node.data.locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
               ]}
             >
-              {#if locked}
+              {#if node.data.locked}
                 <Lock class="h-4 w-4" />
               {:else}
                 <LockOpen class="h-4 w-4" />
