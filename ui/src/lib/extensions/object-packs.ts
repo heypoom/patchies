@@ -9,7 +9,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Starters',
     description: 'Building blocks everyone needs',
     icon: 'Box',
-    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'textbox', 'peek', 'label']
+    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'textbox', 'peek', 'label', 'note', 'knob']
   },
   {
     id: 'control',
@@ -43,7 +43,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'User Interface',
     description: 'Interface building components',
     icon: 'Layout',
-    objects: ['keyboard', 'markdown', 'iframe', 'link', 'dom', 'vue', 'note', 'knob', 'switch']
+    objects: ['keyboard', 'markdown', 'iframe', 'link', 'dom', 'vue', 'switch']
   },
   {
     id: 'media',
