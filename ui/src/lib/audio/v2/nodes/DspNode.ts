@@ -62,6 +62,7 @@ export class DspNode implements AudioNodeV2 {
       number | undefined,
       number | undefined
     ];
+
     this.currentCode = code || '';
 
     // Use saved port counts if provided (for loading saved patches)
@@ -69,6 +70,7 @@ export class DspNode implements AudioNodeV2 {
     if (typeof audioInlets === 'number' && audioInlets >= 0) {
       this.audioInletCount = audioInlets;
     }
+
     if (typeof audioOutlets === 'number' && audioOutlets >= 0) {
       this.audioOutletCount = audioOutlets;
     }
@@ -226,6 +228,7 @@ export class DspNode implements AudioNodeV2 {
       // Parse handle like "audio-in-2" to get input index
       if (targetHandle) {
         const indexMatch = targetHandle.match(/audio-in-(\d+)/);
+
         if (indexMatch) {
           inputIndex = parseInt(indexMatch[1], 10);
         }
@@ -294,6 +297,7 @@ export class DspNode implements AudioNodeV2 {
       try {
         const processorUrl = new URL(workletUrl, import.meta.url);
         await audioContext.audioWorklet.addModule(processorUrl.href);
+
         this.moduleReady = true;
       } catch (error) {
         logger.error('cannot add dsp-processor worklet module:', error);
