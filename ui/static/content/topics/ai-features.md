@@ -12,7 +12,7 @@ AI is 100% optional and _opt-in_ with Patchies. Dislike AI? Hit `Ctrl/Cmd + K` t
 
 ![AI hearts demo](/content/images/patchies-ai-hearts-demo.png)
 
-> ✨ [Try this patch](/?id=rza2o6eoa7338rh&readonly=true) where AI generates a shader graph of starfield with hearts!
+> ✨ [Try this patch](/?id=rza2o6eoa7338rh) where AI generates a shader graph of starfield with hearts!
 
 Press `Ctrl/Cmd + I` to open the object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate or edit the appropriate objects with code for you.
 

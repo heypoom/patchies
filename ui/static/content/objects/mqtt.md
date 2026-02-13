@@ -3,7 +3,7 @@ home automation systems, or other MQTT-enabled services.
 
 ![Patchies MQTT demo](/content/images/mqtt-demo.webp)
 
-> Try this patch [in the app](/?id=oc460hxe5cqgk56&readonly=true)!
+> Try this patch [in the app](/?id=oc460hxe5cqgk56)!
 
 ## Setup
 

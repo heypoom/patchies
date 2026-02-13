@@ -43,7 +43,8 @@
       await onLoadPatch(patchId);
     } else {
       // Fallback to URL navigation if function not provided
-      window.location.href = `/?id=${patchId}&readonly=true`;
+      // readonly=true is now the default for shared patches, no need to add it
+      window.location.href = `/?id=${patchId}`;
     }
   }
 </script>

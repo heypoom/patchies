@@ -2,7 +2,7 @@ ADSR envelope generator for controlling audio parameters like gain.
 
 ![Patchies simple synth keyboard demo](/content/images/simple-synth-keyboard.webp)
 
-> Try this patch [in the app](/?id=geb2h5sc6pf2uj2&readonly=true)!
+> Try this patch [in the app](/?id=geb2h5sc6pf2uj2)!
 > A sampler that changes playback speed based on MIDI notes.
 
 ## Inlets
@@ -46,7 +46,7 @@ send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' });
 Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'`.
 
 Try the `midi-adsr-gain.js` preset. See
-[this patch](/?id=1pvwvmtoo5s3gdz&readonly=true) for usage.
+[this patch](/?id=1pvwvmtoo5s3gdz) for usage.
 
 ## See Also
 

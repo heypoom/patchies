@@ -313,6 +313,6 @@ export class PatchManager {
    * This uses a page reload to avoid rendering artifacts.
    */
   loadDemoPatchById(patchId: string): void {
-    window.location.href = `/?id=${patchId}&readonly=true`;
+    window.location.href = `/?id=${patchId}`;
   }
 }

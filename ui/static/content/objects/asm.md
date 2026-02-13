@@ -364,7 +364,7 @@ int main() {
 }
 ```
 
-Try the [example assembly patch](/?id=6pyirxuw3cqvwhg&readonly=true).
+Try the [example assembly patch](/?id=6pyirxuw3cqvwhg).
 
 ## See Also
 

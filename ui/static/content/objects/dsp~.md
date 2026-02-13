@@ -1,6 +1,6 @@
 Dynamic JavaScript DSP processor that wraps an AudioWorkletProcessor.
 
-Try [INFINITELY DESCENDING CHORD PROGRESSION](/?id=ip0chhw6jzuyo6x&readonly=true)
+Try [INFINITELY DESCENDING CHORD PROGRESSION](/?id=ip0chhw6jzuyo6x)
 by @dtinth ([code explanation](https://notes.dt.in.th/InfinitelyDescendingChord)).
 
 ## Basic Examples

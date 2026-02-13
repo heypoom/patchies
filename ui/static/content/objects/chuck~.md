@@ -3,7 +3,7 @@ real-time sound synthesis and music creation.
 
 ![Patchies ChucK demo](/content/images/chuck-demo.webp)
 
-> Try this patch [in the app](/?id=2nyuznzjgbp2j0a&readonly=true)!
+> Try this patch [in the app](/?id=2nyuznzjgbp2j0a)!
 > From @dtinth's [ChucK experiments](https://dt.in.th/ChucKSong4).
 
 Great for algorithmic composition and sound design. Runs via
@@ -33,7 +33,7 @@ and can emit events and global variables.
 
 ## Global Variables
 
-The [demo patch](/?id=2nyuznzjgbp2j0a&readonly=true) shows how global
+The [demo patch](/?id=2nyuznzjgbp2j0a) shows how global
 variables let you control ChucK programs with Patchies messages.
 
 Declare variables with `global` (e.g. `global int bpm`) and re-compute

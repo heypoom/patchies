@@ -3,7 +3,7 @@ Evaluate expressions and formulas using the
 
 ![Patchies expression plot](/content/images/patchies-expr-plot.png)
 
-> Try this patch out [in the app](/?id=c6adsknw8iix3m2&readonly=true)!
+> Try this patch out [in the app](/?id=c6adsknw8iix3m2)!
 
 ## Dynamic Inlets
 

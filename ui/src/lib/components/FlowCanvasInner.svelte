@@ -509,9 +509,17 @@
   async function loadPatch() {
     if (typeof window === 'undefined') return;
 
-    // Check for ?readonly=true parameter
+    // Check for readonly parameter
+    // For shared patches (?id=), default to read-only unless ?readonly=false is explicit
     const params = new URLSearchParams(window.location.search);
-    if (params.get('readonly') === 'true') {
+    const hasSharedPatchId = params.has('id');
+    const readonlyParam = params.get('readonly');
+
+    if (hasSharedPatchId) {
+      // Shared patches: default to readonly unless explicitly disabled
+      isReadOnlyMode = readonlyParam !== 'false';
+    } else if (readonlyParam === 'true') {
+      // Non-shared: only enable readonly if explicitly requested
       isReadOnlyMode = true;
     }
 

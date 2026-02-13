@@ -4,15 +4,15 @@ Similar to video chaining, you can chain many audio objects together to create a
 
 ![Audio chain example](/content/images/patchies-audio-chain.png)
 
-> ✨ [Try this patch](/?id=b17136cy9rxxebw&readonly=true) - FM synthesis demo using oscillators, expressions, gain control, and frequency analysis.
+> ✨ [Try this patch](/?id=b17136cy9rxxebw) - FM synthesis demo using oscillators, expressions, gain control, and frequency analysis.
 
 ## Fun Examples
 
-Here's [a little patch](/?id=vdqg4fpgxeca8ot&readonly=true) by [@kijjaz](https://www.instagram.com/kijjaz) that uses mathematical expressions to make a beat:
+Here's [a little patch](/?id=vdqg4fpgxeca8ot) by [@kijjaz](https://www.instagram.com/kijjaz) that uses mathematical expressions to make a beat:
 
 ![Beat example](/content/images/patchies-audio-super-fun.png)
 
-Or build your own drum machine! [Try it out](/?id=w46um7gafe7hgle&readonly=true) - use the `W A S D` keys to play some drums.
+Or build your own drum machine! [Try it out](/?id=w46um7gafe7hgle) - use the `W A S D` keys to play some drums.
 
 ![Simple drum machine](/content/images/patchies-simple-drums.png)
 

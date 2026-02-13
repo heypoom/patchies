@@ -2,7 +2,7 @@
 
 ![Audio reactive visualization](/content/images/patchies-audio-reactive.png)
 
-> ✨ [Try this patch](/?id=sgov4pl7f9ku4h7&readonly=true) with audio-reactive visuals!
+> ✨ [Try this patch](/?id=sgov4pl7f9ku4h7) with audio-reactive visuals!
 
 The `fft~` audio object gives you an array of frequency bins that you can use to create visualizations in your patch.
 

@@ -10,7 +10,7 @@ In this example, two `slider` objects sends out their value to a `expr $1 + $2` 
 
 ![Basic examples](/content/images/basic-examples.webp)
 
-> ✨ [Try this patch](/?id=9c5ytrchpoazlez&readonly=true) to see message passing in action!
+> ✨ [Try this patch](/?id=9c5ytrchpoazlez) to see message passing in action!
 
 - Create two `button` objects, and connect the outlet of one to the inlet of another
   - When you click on the first button, it will send a `bang` message to the second button, which will flash
