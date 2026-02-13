@@ -28,7 +28,15 @@ export async function fetchTopicHelp(
   customFetch: FetchFn = fetch
 ): Promise<TopicHelpContent> {
   const markdownRes = await customFetch(`/content/topics/${topicSlug}.md`)
-    .then((res) => (res.ok ? res.text() : null))
+    .then((res) => {
+      if (!res.ok) return null;
+
+      // Check content-type to avoid displaying HTML 404 pages as markdown
+      const contentType = res.headers.get('content-type') ?? '';
+      if (contentType.includes('text/html')) return null;
+
+      return res.text();
+    })
     .catch(() => null);
 
   return {

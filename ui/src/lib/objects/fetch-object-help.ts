@@ -53,7 +53,15 @@ export async function fetchObjectHelp(
   const hasHelpPatch = HELP_PATCHES_AVAILABLE.has(objectType);
 
   const markdownRes = await customFetch(`/content/objects/${objectType}.md`)
-    .then((res) => (res.ok ? res.text() : null))
+    .then((res) => {
+      if (!res.ok) return null;
+
+      // Check content-type to avoid displaying HTML 404 pages as markdown
+      const contentType = res.headers.get('content-type') ?? '';
+      if (contentType.includes('text/html')) return null;
+
+      return res.text();
+    })
     .catch(() => null);
 
   return {
