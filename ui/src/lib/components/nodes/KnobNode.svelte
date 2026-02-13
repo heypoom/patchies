@@ -193,7 +193,8 @@
       <div class="absolute -top-5 -right-4">
         <button
           class={[
-            'z-4 cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0'
+            'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           ]}
           onclick={() => (showSettings = !showSettings)}
           title="Settings"
