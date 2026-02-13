@@ -796,9 +796,9 @@
 
     <!-- Help Mode / Read-Only Mode Banner -->
     {#if ($helpModeObject || isReadOnlyMode) && !($isMobile && $isSidebarOpen)}
-      <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+      <div class="absolute top-4 right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
         <div
-          class="flex items-center gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100"
+          class="flex items-center justify-between gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-2 text-sm text-blue-100 sm:justify-start"
         >
           <span>
             {#if $helpModeObject}
@@ -808,25 +808,27 @@
             {/if}
           </span>
 
-          {#if isReadOnlyMode && !$helpModeObject}
+          <div class="flex shrink-0 gap-2">
+            {#if isReadOnlyMode && !$helpModeObject}
+              <button
+                class="cursor-pointer rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
+                onclick={() => (showSavePatchModal = true)}
+              >
+                Save
+              </button>
+            {/if}
+
             <button
               class="cursor-pointer rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
-              onclick={() => (showSavePatchModal = true)}
+              onclick={() => {
+                helpModeObject.set(null);
+                window.history.pushState({}, '', window.location.pathname);
+                window.location.reload();
+              }}
             >
-              Save
+              {$helpModeObject ? 'Exit Help' : 'Exit'}
             </button>
-          {/if}
-
-          <button
-            class="cursor-pointer rounded bg-blue-700 px-2 py-0.5 text-xs hover:bg-blue-600"
-            onclick={() => {
-              helpModeObject.set(null);
-              window.history.pushState({}, '', window.location.pathname);
-              window.location.reload();
-            }}
-          >
-            {$helpModeObject ? 'Exit Help' : 'Exit'}
-          </button>
+          </div>
         </div>
       </div>
     {/if}
