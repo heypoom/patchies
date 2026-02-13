@@ -65,10 +65,11 @@ export class DspNode implements AudioNodeV2 {
     this.currentCode = code || '';
 
     // Use saved port counts if provided (for loading saved patches)
-    if (typeof audioInlets === 'number' && audioInlets > 0) {
+    // Note: audioOutlets can be 0 for analysis-only DSPs
+    if (typeof audioInlets === 'number' && audioInlets >= 0) {
       this.audioInletCount = audioInlets;
     }
-    if (typeof audioOutlets === 'number' && audioOutlets > 0) {
+    if (typeof audioOutlets === 'number' && audioOutlets >= 0) {
       this.audioOutletCount = audioOutlets;
     }
 
@@ -105,12 +106,21 @@ export class DspNode implements AudioNodeV2 {
     // Disable keep-alive before recreating (will be re-enabled if needed)
     this.disableKeepAlive();
 
+    // Web Audio API requires at least 1 input or 1 output
+    // For analysis-only DSPs with setAudioPortCount(1, 0), we need outputs=1 internally
+    // but simply don't connect it to anything audible
+    const effectiveOutputs = Math.max(1, this.audioOutletCount);
+
     this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor', {
       numberOfInputs: this.audioInletCount,
-      numberOfOutputs: this.audioOutletCount
+      numberOfOutputs: effectiveOutputs
     });
 
-    this.workletNode.connect(this.audioNode);
+    // Only connect to output gain if we actually have audio outputs
+    // Analysis DSPs with 0 outlets don't need to produce audio
+    if (this.audioOutletCount > 0) {
+      this.workletNode.connect(this.audioNode);
+    }
   }
 
   async send(key: string, msg: unknown): Promise<void> {
