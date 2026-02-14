@@ -16,7 +16,12 @@ export const SnapshotNode = createWorkletDspNode({
     {
       name: 'signal',
       type: 'signal',
-      description: 'Signal to sample',
+      description: 'Signal to sample'
+    },
+    {
+      name: 'bang',
+      type: 'message',
+      description: 'Trigger snapshot',
       messages: [{ schema: sym('bang'), description: 'Sample the current value' }]
     }
   ],
