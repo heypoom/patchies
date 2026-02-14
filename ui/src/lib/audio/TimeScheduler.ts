@@ -66,10 +66,12 @@ export class TimeScheduler {
       .with('exponential', () => {
         // Ensure targetValue is not zero for exponential ramp
         const safeTargetValue = targetValue === 0 ? 0.0001 : targetValue;
+
         param.exponentialRampToValueAtTime(safeTargetValue, endTime);
       })
       .with('targetAtTime', () => {
         const timeConstant = config.timeConstant ?? config.time * 0.3;
+
         param.setTargetAtTime(targetValue, startTime, timeConstant);
       });
   }
