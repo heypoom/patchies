@@ -107,12 +107,9 @@
     const sendDataAndStep = async (m: number | number[]) => {
       if (meta.inlet === undefined) return;
 
-      const sourceIdStr = meta.source.match(/\w+-(\d)/)?.[1] ?? '';
-      let source = 0;
-
-      if (parseInt(sourceIdStr) >= 0) {
-        source = parseInt(sourceIdStr);
-      }
+      const sourceIdStr = meta.source.match(/\w+-(\d+)/)?.[1];
+      const parsedSource = sourceIdStr !== undefined ? Number(sourceIdStr) : NaN;
+      const source = !isNaN(parsedSource) && parsedSource >= 0 ? parsedSource : 0;
 
       await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
 
