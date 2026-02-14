@@ -43,7 +43,32 @@ send({ type: 'set', value: 0.5, time: 0.5 });
 send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' });
 ```
 
-Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'`.
+### Curve Types
+
+Each phase config can specify a `curve`:
+
+- `'linear'` (default) — straight-line ramp
+- `'exponential'` — exponential ramp (target must not be 0)
+- `'targetAtTime'` — asymptotic approach, optional `timeConstant`
+- `'valueCurve'` — custom curve from an array of absolute values
+
+```js
+// Custom attack curve using valueCurve
+send({
+  type: 'trigger',
+  values: { start: 0, peak: 1, sustain: 0.7 },
+  attack: {
+    time: 0.1,
+    curve: 'valueCurve',
+    values: [0, 0.05, 0.2, 0.5, 0.8, 0.95, 1.0]
+  },
+  decay: { time: 0.2, curve: 'exponential' }
+});
+```
+
+The `values` array defines the exact shape of the curve over the phase
+duration. Values are absolute (not normalized) — the first element is
+the start value and the last is the end value. Requires at least 2 values.
 
 Try the `midi-adsr-gain.js` preset. See
 [this patch](/?id=4ezt0ne0frsf694) for usage.
