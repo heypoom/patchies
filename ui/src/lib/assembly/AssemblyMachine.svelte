@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Binary, Pause, Play, RefreshCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
+  import { Binary, Pause, Play, RotateCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy, tick } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -503,52 +504,81 @@
       </div>
 
       <div class="flex">
-        <button
-          onclick={() => (showSettings = !showSettings)}
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          title="Machine settings"
-        >
-          <Settings class="h-4 w-4 text-zinc-300" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (showSettings = !showSettings)}
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            >
+              <Settings class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
 
-        <button
-          onclick={toggleMemoryViewer}
-          class="rounded p-1 transition-opacity group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
-          title="Toggle memory viewer"
-          disabled={machineState === null}
-        >
-          <Binary class="h-4 w-4 text-zinc-300" />
-        </button>
+          <Tooltip.Content>Machine settings</Tooltip.Content>
+        </Tooltip.Root>
 
-        <button
-          onclick={resetMachine}
-          class="rounded p-1 transition-opacity group-hover:opacity-100 group-hover:not-disabled:opacity-100 hover:bg-zinc-700 group-hover:disabled:opacity-30 sm:opacity-0"
-          title="Reset machine"
-          disabled={machineState === null}
-        >
-          <RefreshCcw class="h-4 w-4 text-zinc-300" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={toggleMemoryViewer}
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
+              disabled={machineState === null}
+            >
+              <Binary class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
 
-        <button
-          onclick={stepMachine}
-          class="group rounded p-1 transition-opacity group-hover:opacity-100 group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
-          title={`Step ${machineConfig.stepBy} cycle${machineConfig.stepBy > 1 ? 's' : ''}`}
-          disabled={machineState?.status === 'Halted' || errorMessage !== null}
-        >
-          <StepForward class="h-4 w-4 text-zinc-300 group-focus:text-blue-300" />
-        </button>
+          <Tooltip.Content>Toggle memory viewer</Tooltip.Content>
+        </Tooltip.Root>
 
-        <button
-          onclick={togglePlayPause}
-          class="group rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          title={machineConfig.isRunning ? 'Pause machine' : 'Run machine'}
-        >
-          <!-- svelte-ignore svelte_component_deprecated -->
-          <svelte:component
-            this={machineConfig.isRunning ? Pause : Play}
-            class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
-          />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={resetMachine}
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
+              disabled={machineState === null}
+            >
+              <RotateCcw class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>Reset machine</Tooltip.Content>
+        </Tooltip.Root>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={stepMachine}
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
+              disabled={machineState?.status === 'Halted' || errorMessage !== null}
+            >
+              <StepForward class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content
+            >Step {machineConfig.stepBy} cycle{machineConfig.stepBy > 1 ? 's' : ''}</Tooltip.Content
+          >
+        </Tooltip.Root>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={togglePlayPause}
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            >
+              <!-- svelte-ignore svelte_component_deprecated -->
+              <svelte:component
+                this={machineConfig.isRunning ? Pause : Play}
+                class="h-4 w-4 text-zinc-300"
+              />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content
+            >{machineConfig.isRunning ? 'Pause machine' : 'Run machine'}</Tooltip.Content
+          >
+        </Tooltip.Root>
       </div>
     </div>
 
@@ -617,7 +647,10 @@
   {#if showSettings}
     <div class="absolute" style="left: {previewContainerWidth}px;">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        >
           <X class="h-4 w-4 text-zinc-300" />
         </button>
       </div>
