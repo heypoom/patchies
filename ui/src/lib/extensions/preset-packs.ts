@@ -196,9 +196,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     icon: 'AudioLines',
     requiredObjects: ['dsp~', 'elem~', 'expr~'],
     presets: [
-      'bang~',
-      'noise~',
-      'snapshot~',
+      'noise.dsp',
       'tabosc~',
       'lowpass.elem',
       'phasor.elem',

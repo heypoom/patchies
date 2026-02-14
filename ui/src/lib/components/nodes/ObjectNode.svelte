@@ -985,7 +985,7 @@
               isHot={inlet.hot}
             />
           {/each}
-        {:else}
+        {:else if !objectMeta}
           <!-- Fallback generic inlet for objects without definitions -->
           <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
         {/if}

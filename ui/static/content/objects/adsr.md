@@ -16,6 +16,9 @@ ADSR envelope generator for controlling audio parameters like gain.
 
 Connect the output to an audio parameter inlet (e.g., `gain~`'s gain inlet).
 
+Note that `adsr` emits control messages for Web Audio API, it does not emit audio
+signals. For control value-based ADSR, use [line~](/docs/objects/line~) instead.
+
 ## Scheduled Parameter Messages
 
 Under the hood, `adsr` sends **scheduled messages** that automate audio

@@ -7,7 +7,7 @@
 
 import type { AudioNodeGroup, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
-import { MessageContext } from '$lib/messages/MessageContext';
+import { MessageSystem } from '$lib/messages/MessageSystem';
 import { logger } from '$lib/utils/logger';
 
 export interface WorkletDspNodeConfig {
@@ -78,15 +78,15 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     audioNode: AudioWorkletNode | null = null;
 
     private audioContext: AudioContext;
-    private messageContext: MessageContext;
+    private messageSystem: MessageSystem;
 
     constructor(nodeId: string, audioContext: AudioContext) {
       this.nodeId = nodeId;
       this.audioContext = audioContext;
-      this.messageContext = new MessageContext(nodeId);
+      this.messageSystem = MessageSystem.getInstance();
     }
 
-    async create(_params: unknown[]): Promise<void> {
+    async create(params: unknown[]): Promise<void> {
       await ensureModule(config.workletUrl, this.audioContext);
 
       this.audioNode = new AudioWorkletNode(this.audioContext, config.type, {
@@ -97,9 +97,22 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
       // Listen for messages from the worklet (send() calls in process/recv)
       this.audioNode.port.onmessage = (event) => {
         if (event.data.type === 'send-message') {
-          this.messageContext.send(event.data.message, { to: event.data.outlet });
+          this.messageSystem.sendMessage(this.nodeId, event.data.message, {
+            to: event.data.outlet
+          });
         }
       };
+
+      // Forward initial params to the worklet
+      for (let i = 0; i < params.length; i++) {
+        if (params[i] !== undefined && params[i] !== null && i < config.inlets.length) {
+          this.audioNode.port.postMessage({
+            type: 'message-inlet',
+            message: params[i],
+            inlet: i
+          });
+        }
+      }
     }
 
     send(key: string, message: unknown): void {
@@ -117,7 +130,6 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
       this.audioNode?.port.postMessage({ type: 'stop' });
       this.audioNode?.disconnect();
       this.audioNode = null;
-      this.messageContext.destroy();
     }
   };
 }

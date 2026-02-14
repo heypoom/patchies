@@ -37,12 +37,18 @@ defineDSP({
     // Support [value, time] list format or single number
     if (Array.isArray(data)) {
       target = parseFloat(data[0]);
-      if (data.length > 1) time = parseFloat(data[1]);
+
+      if (data.length > 1) {
+        const parsedTime = parseFloat(data[1]);
+
+        if (!isNaN(parsedTime)) time = parsedTime;
+      }
     } else {
       target = parseFloat(data as string);
     }
 
     if (isNaN(target)) return;
+
     state.targetValue = target;
 
     if (time <= 0) {
