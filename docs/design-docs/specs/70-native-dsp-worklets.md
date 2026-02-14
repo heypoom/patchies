@@ -188,6 +188,7 @@ function defineDSP<S>(options: DefineDSPOptions<S>): void {
 ```
 
 Key differences from `dsp-processor.ts`:
+
 - **No `new Function()` compilation** — process/recv are statically compiled
 - **No `$1`-`$9` variable assignments** — not needed
 - **No try/catch in hot path** — errors caught during development, not at runtime
@@ -349,6 +350,7 @@ src/lib/audio/native-dsp/
 ```
 
 Each node = 2 files:
+
 - **`*.processor.ts`** — worklet-side `defineDSP()` call (~20-60 lines of pure DSP logic)
 - **`*.node.ts`** — main-thread `createWorkletDspNode()` call (~20-40 lines of schema config)
 

@@ -139,7 +139,8 @@ export class KVObject implements TextObjectV2 {
       name: 'store',
       type: 'string',
       description: 'Store name (optional)',
-      hidden: true,
+      hideInlet: true,
+      hideTextParam: true,
       messages: [
         {
           schema: Type.Optional(Type.String()),

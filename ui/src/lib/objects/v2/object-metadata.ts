@@ -53,11 +53,18 @@ export interface ObjectInlet {
   hot?: boolean;
 
   /**
-   * When true, the inlet is hidden from the UI but still available as a parameter.
+   * When true, the inlet handle is hidden from the node UI.
+   * The inlet is still available as a parameter.
    * Useful for configuration inlets like store names that are set via arguments
    * but don't need visible handles (e.g., `[kv storename]`).
    */
-  hidden?: boolean;
+  hideInlet?: boolean;
+
+  /**
+   * When true, the text parameter display is hidden from the node label.
+   * The parameter still functions normally and can be set via messages.
+   */
+  hideTextParam?: boolean;
 
   /** Floating point precision for displays. */
   precision?: number;

@@ -95,6 +95,11 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'merge~',
       'send~',
       'recv~',
+      'line~',
+      'noise~',
+      'phasor~',
+      'snapshot~',
+      'bang~',
       'adsr',
       'mtof'
     ]

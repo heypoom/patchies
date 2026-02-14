@@ -177,6 +177,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     description: 'Integer slider. Format: slider <min> <max> [default]',
     transform: (expr, name) => {
       const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
+
       return {
         nodeType: 'slider',
         data: { min, max, defaultValue, isFloat: false }
@@ -189,8 +190,35 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     description: 'Float slider. Format: fslider <min> <max> [default]',
     transform: (expr, name) => {
       const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
+
       return {
         nodeType: 'slider',
+        data: { min, max, defaultValue, isFloat: true }
+      };
+    }
+  },
+  {
+    names: ['knob'],
+    nodeType: 'knob',
+    description: 'Integer knob. Format: knob <min> <max> [default]',
+    transform: (expr, name) => {
+      const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
+
+      return {
+        nodeType: 'knob',
+        data: { min, max, defaultValue, isFloat: false }
+      };
+    }
+  },
+  {
+    names: ['fknob'],
+    nodeType: 'knob',
+    description: 'Float knob. Format: fknob <min> <max> [default]',
+    transform: (expr, name) => {
+      const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
+
+      return {
+        nodeType: 'knob',
         data: { min, max, defaultValue, isFloat: true }
       };
     }

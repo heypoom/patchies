@@ -37,6 +37,11 @@ import { VdoNinjaPushNode } from './VdoNinjaPushNode';
 import { WaveShaperNodeV2 } from './WaveShaperNode';
 import { SendAudioNode } from './SendAudioNode';
 import { RecvAudioNode } from './RecvAudioNode';
+import { LineNode } from '$lib/audio/native-dsp/nodes/line.node';
+import { NoiseNode } from '$lib/audio/native-dsp/nodes/noise.node';
+import { PhasorNode } from '$lib/audio/native-dsp/nodes/phasor.node';
+import { SnapshotNode } from '$lib/audio/native-dsp/nodes/snapshot.node';
+import { BangNode } from '$lib/audio/native-dsp/nodes/bang.node';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -77,7 +82,12 @@ const AUDIO_NODES = [
   VdoNinjaPushNode,
   WaveShaperNodeV2,
   SendAudioNode,
-  RecvAudioNode
+  RecvAudioNode,
+  LineNode,
+  NoiseNode,
+  PhasorNode,
+  SnapshotNode,
+  BangNode
 ] as const satisfies AudioNodeClass[];
 
 /**
