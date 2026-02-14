@@ -15,7 +15,8 @@ export const BangNode = createWorkletDspNode({
     {
       name: 'signal',
       type: 'signal',
-      description: 'Audio input to monitor'
+      description: 'Audio input to monitor',
+      hideInlet: true
     }
   ],
 

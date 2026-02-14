@@ -311,6 +311,11 @@ export class AudioService {
       return;
     }
 
+    // Skip message-only edges — these don't involve audio connections
+    if (edge.sourceHandle?.startsWith('message')) {
+      return;
+    }
+
     const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
     const isAudioParam = !!this.getAudioParamByNode(targetNode, inlet?.name ?? '');
 
