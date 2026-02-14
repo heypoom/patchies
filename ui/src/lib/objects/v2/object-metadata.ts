@@ -99,10 +99,11 @@ export interface ObjectOutlet {
 }
 
 /**
- * Metadata for a node type (inlets, outlets, description, tags).
+ * Metadata for a node type (type, inlets, outlets, description, tags).
  * These are optional static properties on node classes.
  */
 export interface ObjectMetadata {
+  type?: string;
   inlets?: ObjectInlet[];
   outlets?: ObjectOutlet[];
   description?: string;

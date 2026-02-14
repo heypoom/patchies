@@ -78,7 +78,7 @@ export * from './note';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
-import { schemaFromNode } from './from-v2-node';
+import { schemasFromNodes } from './from-v2-node';
 
 // Manual schema imports (for visual/UI objects that don't have V2 classes)
 import { triggerSchema } from './trigger';
@@ -277,44 +277,50 @@ export const objectSchemas: ObjectSchemaRegistry = {
   note: noteSchema,
 
   // Audio objects (generated from V2 nodes - single source of truth)
-  'gain~': schemaFromNode(GainNodeV2, 'audio'),
-  'lowpass~': schemaFromNode(LowpassNode, 'audio'),
-  'highpass~': schemaFromNode(HighpassNode, 'audio'),
-  'bandpass~': schemaFromNode(BandpassNode, 'audio'),
-  'allpass~': schemaFromNode(AllpassNode, 'audio'),
-  'notch~': schemaFromNode(NotchNode, 'audio'),
-  'lowshelf~': schemaFromNode(LowshelfNode, 'audio'),
-  'highshelf~': schemaFromNode(HighshelfNode, 'audio'),
-  'peaking~': schemaFromNode(PeakingNode, 'audio'),
-  'compressor~': schemaFromNode(CompressorNode, 'audio'),
-  'pan~': schemaFromNode(PanNodeV2, 'audio'),
-  'delay~': schemaFromNode(DelayNodeV2, 'audio'),
-  'sig~': schemaFromNode(SigNode, 'audio'),
-  'fft~': schemaFromNode(FFTNode, 'audio'),
-  'mic~': schemaFromNode(MicNode, 'audio'),
-  'out~': schemaFromNode(AudioOutputNode, 'audio'),
-  'split~': schemaFromNode(SplitNode, 'audio'),
-  'merge~': schemaFromNode(MergeNode, 'audio'),
-  '+~': schemaFromNode(AddNodeV2, 'audio'),
-  'send~': schemaFromNode(SendAudioNode, 'audio'),
-  'recv~': schemaFromNode(RecvAudioNode, 'audio'),
+  ...schemasFromNodes(
+    [
+      GainNodeV2,
+      LowpassNode,
+      HighpassNode,
+      BandpassNode,
+      AllpassNode,
+      NotchNode,
+      LowshelfNode,
+      HighshelfNode,
+      PeakingNode,
+      CompressorNode,
+      PanNodeV2,
+      DelayNodeV2,
+      SigNode,
+      FFTNode,
+      MicNode,
+      AudioOutputNode,
+      SplitNode,
+      MergeNode,
+      AddNodeV2,
+      SendAudioNode,
+      RecvAudioNode
+    ],
+    'audio'
+  ),
 
   // Control objects (generated from V2 nodes - single source of truth)
-  mtof: schemaFromNode(MtofObject, 'control'),
-  debounce: schemaFromNode(DebounceObject, 'control'),
-  throttle: schemaFromNode(ThrottleObject, 'control'),
-  spigot: schemaFromNode(SpigotObject, 'control'),
-  uniqby: schemaFromNode(UniqbyObject, 'control'),
-  webmidilink: schemaFromNode(WebMidiLinkObject, 'control'),
-  send: schemaFromNode(SendObject, 'control'),
-  recv: schemaFromNode(RecvObject, 'control'),
-  s: schemaFromNode(SendObject, 'control'),
-  r: schemaFromNode(RecvObject, 'control'),
-  kv: schemaFromNode(KVObject, 'control'),
-  i: schemaFromNode(IntObject, 'control'),
-  f: schemaFromNode(FloatObject, 'control'),
-  int: schemaFromNode(IntObject, 'control'),
-  float: schemaFromNode(FloatObject, 'control')
+  ...schemasFromNodes(
+    [
+      MtofObject,
+      DebounceObject,
+      ThrottleObject,
+      SpigotObject,
+      UniqbyObject,
+      WebMidiLinkObject,
+      SendObject,
+      RecvObject,
+      KVObject,
+      IntObject,
+      FloatObject
+    ],
+    'control'
+  )
 };
 
 /**

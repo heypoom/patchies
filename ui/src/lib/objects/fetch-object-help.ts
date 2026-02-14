@@ -3,7 +3,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import { HELP_PATCHES_AVAILABLE } from './help-patches-manifest';
-import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+import { getCombinedMetadata } from './v2/get-metadata';
 
 // Register only the languages we need for help docs
 hljs.registerLanguage('javascript', javascript);
@@ -51,7 +51,7 @@ export async function fetchObjectHelp(
   customFetch: FetchFn = fetch
 ): Promise<ObjectHelpContent> {
   // Resolve alias to canonical type name for documentation lookup
-  const canonicalType = ObjectRegistry.getInstance().get(objectType)?.type ?? objectType;
+  const canonicalType = getCombinedMetadata(objectType)?.type ?? objectType;
 
   // Check manifest instead of making HEAD request (avoids 404 errors)
   const hasHelpPatch = HELP_PATCHES_AVAILABLE.has(canonicalType);

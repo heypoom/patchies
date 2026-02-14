@@ -97,6 +97,7 @@ function outletToSchema(outlet: ObjectOutlet): OutletSchema {
  */
 interface V2NodeClass {
   type: string;
+  aliases?: string[];
   description?: string;
   group?: string;
   inlets?: ObjectInlet[];
@@ -155,6 +156,7 @@ function generateTags(NodeClass: V2NodeClass): string[] {
 
 /**
  * Generate schemas for multiple V2 node classes.
+ * Automatically registers both the canonical type and any aliases.
  */
 export function schemasFromNodes(
   nodes: V2NodeClass[],
@@ -163,7 +165,15 @@ export function schemasFromNodes(
   const schemas: Record<string, ObjectSchema> = {};
 
   for (const node of nodes) {
-    schemas[node.type] = schemaFromNode(node, category);
+    const schema = schemaFromNode(node, category);
+    schemas[node.type] = schema;
+
+    // Also register aliases pointing to the same schema
+    if (node.aliases) {
+      for (const alias of node.aliases) {
+        schemas[alias] = schema;
+      }
+    }
   }
 
   return schemas;
