@@ -1,20 +1,14 @@
-Emit a bang message when audio input transitions from silence to non-silence. Detects audio onset at block boundaries.
+Outputs a bang message after each DSP block cycle.
 
-## Inlets
-
-1. **signal**: audio signal to monitor
-
-## Outlets
-
-1. **bang**: bang on audio onset
+Useful for sampling outputs of analysis algorithms at audio block rate.
 
 ## Usage
 
-```
-osc~ → bang~ → triggers on first non-zero sample block
+```txt
+bang~ → snapshot~ → sample signal value every block
 ```
 
-Useful for detecting when audio starts playing, triggering events from audio signals, or converting audio-rate events to message-rate.
+In the Web Audio API, each block is 128 samples. At 44100 Hz, this is about every 2.9 ms.
 
 ## See Also
 
