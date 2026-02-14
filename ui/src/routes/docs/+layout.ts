@@ -2,6 +2,7 @@ import type { LayoutLoad } from './$types';
 import { objectSchemas } from '$lib/objects/schemas';
 import { topicOrder } from './docs-nav';
 import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
+import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
 export const prerender = true;
 
@@ -71,8 +72,16 @@ export const load: LayoutLoad = async ({ fetch }) => {
     objects: []
   };
 
-  // Get all object slugs from the schema registry
-  const objectSlugs = Object.keys(objectSchemas);
+  // Get all object slugs from the schema registry, filtering out aliases
+  // (aliases resolve to their canonical type's documentation)
+  const registry = ObjectRegistry.getInstance();
+
+  const objectSlugs = Object.keys(objectSchemas).filter((slug) => {
+    const canonicalType = registry.get(slug)?.type;
+
+    // Keep if not in registry (visual nodes) or if slug is the canonical type
+    return !canonicalType || canonicalType === slug;
+  });
 
   // Fetch topics
   const topicPromises = topicSlugs.map(async (slug) => {
