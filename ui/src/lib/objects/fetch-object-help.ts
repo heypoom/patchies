@@ -3,6 +3,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import { HELP_PATCHES_AVAILABLE } from './help-patches-manifest';
+import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
 // Register only the languages we need for help docs
 hljs.registerLanguage('javascript', javascript);
@@ -17,6 +18,7 @@ export const marked = new Marked(
       if (lang && hljs.getLanguage(lang)) {
         return hljs.highlight(code, { language: lang }).value;
       }
+
       return hljs.highlightAuto(code).value;
     }
   })
@@ -26,9 +28,8 @@ export const marked = new Marked(
  * Post-process HTML to add target="_blank" to all links.
  * Use this for embedded contexts like HelpView sidebar where links should open in new tabs.
  */
-export function addTargetBlankToLinks(html: string): string {
-  return html.replace(/<a\s+href="/g, '<a target="_blank" rel="noopener noreferrer" href="');
-}
+export const addTargetBlankToLinks = (html: string): string =>
+  html.replace(/<a\s+href="/g, '<a target="_blank" rel="noopener noreferrer" href="');
 
 export interface ObjectHelpContent {
   markdown: string | null;
@@ -49,10 +50,13 @@ export async function fetchObjectHelp(
   objectType: string,
   customFetch: FetchFn = fetch
 ): Promise<ObjectHelpContent> {
-  // Check manifest instead of making HEAD request (avoids 404 errors)
-  const hasHelpPatch = HELP_PATCHES_AVAILABLE.has(objectType);
+  // Resolve alias to canonical type name for documentation lookup
+  const canonicalType = ObjectRegistry.getInstance().get(objectType)?.type ?? objectType;
 
-  const markdownRes = await customFetch(`/content/objects/${objectType}.md`)
+  // Check manifest instead of making HEAD request (avoids 404 errors)
+  const hasHelpPatch = HELP_PATCHES_AVAILABLE.has(canonicalType);
+
+  const markdownRes = await customFetch(`/content/objects/${canonicalType}.md`)
     .then((res) => {
       if (!res.ok) return null;
 
