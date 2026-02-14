@@ -8,13 +8,13 @@ receive
 send 0 1
 jump loop`;
 
-const ACCUMULATOR_ASM = `; Accumulator - running sum stored at address 100
+const ACCUMULATOR_ASM = `; Accumulator - running sum stored at address 0xF00
 loop:
 receive
-load 100
+load 0xF00
 add
 dup
-store 100
+store 0xF00
 send 0 1
 jump loop`;
 
@@ -40,38 +40,38 @@ pop
 next:
 jump loop`;
 
-const RUNNING_AVERAGE_ASM = `; Running Average - sum at 100, count at 101
+const RUNNING_AVERAGE_ASM = `; Running Average - sum at 0xF00, count at 0xF01
 loop:
 receive
-load 100
+load 0xF00
 add
-store 100
-load 101
+store 0xF00
+load 0xF01
 push 1
 add
-store 101
-load 100
-load 101
+store 0xF01
+load 0xF00
+load 0xF01
 div
 send 0 1
 jump loop`;
 
 const FIBONACCI_ASM = `; Fibonacci - outputs fibonacci sequence
-; prev at 100, curr at 101
+; prev at 0xF00, curr at 0xF01
 push 0
-store 100
+store 0xF00
 push 1
-store 101
+store 0xF01
 
 loop:
-load 101
+load 0xF01
 dup
 send 0 1
-load 100
+load 0xF00
 add
-load 101
-store 100
-store 101
+load 0xF01
+store 0xF00
+store 0xF01
 receive
 jump loop`;
 
@@ -99,27 +99,27 @@ send 0 1
 jump loop`;
 
 const MODULO_COUNTER_ASM = `; Modulo Counter - counts 0 to 9, wraps around
-; Count stored at address 0
+; Count stored at address 0xF00
 loop:
-load 0
+load 0xF00
 dup
 send 0 1
 inc
 push 10
 mod
-store 0
+store 0xF00
 receive
 jump loop`;
 
 const DELTA_ASM = `; Delta - outputs difference from previous input
-; Previous value at address 100
+; Previous value at address 0xF00
 loop:
 receive
 dup
-load 100
+load 0xF00
 sub
 send 0 1
-store 100
+store 0xF00
 jump loop`;
 
 export const ASM_PRESETS: Record<string, { type: string; data: { code: string } }> = {
