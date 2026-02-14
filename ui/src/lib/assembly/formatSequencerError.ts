@@ -1,27 +1,63 @@
 import { match } from 'ts-pattern';
 import type { RuntimeError, ParseError, SequencerError } from 'machine';
 
+type RuntimeErrorKey = RuntimeError['type'];
+type ParseErrorKey = ParseError['type'];
+type SequencerErrorKey = SequencerError['type'];
+
+const RUNTIME_ERROR_KEYS: RuntimeErrorKey[] = [
+  'StackUnderflow',
+  'StackOverflow',
+  'CallStackExceeded',
+  'MissingReturnAddress',
+  'MissingMessageBody',
+  'CannotReadStringFromBytes',
+  'CannotLoadFromMemory',
+  'CannotDivideByZero',
+  'IntegerOverflow',
+  'IntegerUnderflow',
+  'MissingValueToStore',
+  'NotEnoughValues',
+  'IndexOutOfBounds'
+];
+
+const PARSE_ERROR_KEYS: ParseErrorKey[] = [
+  'InvalidString',
+  'UndefinedSymbols',
+  'InvalidIdentifier',
+  'UndefinedInstruction',
+  'InvalidLabelDescription',
+  'DuplicateLabelDefinition',
+  'DuplicateStringDefinition',
+  'DuplicateSymbolDefinition',
+  'InvalidArgument',
+  'InvalidStringValue',
+  'InvalidByteValue',
+  'InvalidArgToken',
+  'CannotPeekAtToken',
+  'PeekExceedsSourceLength',
+  'InvalidDecimalDigit',
+  'InvalidHexDigit',
+  'ScannerReachedEndOfLine',
+  'EmptyProgram'
+];
+
+const SEQ_ERROR_KEYS: SequencerErrorKey[] = [
+  'CannotParse',
+  'ExecutionFailed',
+  'MachineDoesNotExist',
+  'ReceiveFailed',
+  'MessageNeverReceived',
+  'ExecutionCycleExceeded'
+];
+
 /**
  * Type guard to check if error has the shape of a RuntimeError
  */
 function isRuntimeError(error: unknown): error is RuntimeError {
   if (!error || typeof error !== 'object' || !('type' in error)) return false;
-  const types: RuntimeError['type'][] = [
-    'StackUnderflow',
-    'StackOverflow',
-    'CallStackExceeded',
-    'MissingReturnAddress',
-    'MissingMessageBody',
-    'CannotReadStringFromBytes',
-    'CannotLoadFromMemory',
-    'CannotDivideByZero',
-    'IntegerOverflow',
-    'IntegerUnderflow',
-    'MissingValueToStore',
-    'NotEnoughValues',
-    'IndexOutOfBounds'
-  ];
-  return types.includes((error as { type: string }).type as RuntimeError['type']);
+
+  return RUNTIME_ERROR_KEYS.includes((error as { type: RuntimeErrorKey }).type);
 }
 
 /**
@@ -29,27 +65,8 @@ function isRuntimeError(error: unknown): error is RuntimeError {
  */
 function isParseError(error: unknown): error is ParseError {
   if (!error || typeof error !== 'object' || !('type' in error)) return false;
-  const types: ParseError['type'][] = [
-    'InvalidString',
-    'UndefinedSymbols',
-    'InvalidIdentifier',
-    'UndefinedInstruction',
-    'InvalidLabelDescription',
-    'DuplicateLabelDefinition',
-    'DuplicateStringDefinition',
-    'DuplicateSymbolDefinition',
-    'InvalidArgument',
-    'InvalidStringValue',
-    'InvalidByteValue',
-    'InvalidArgToken',
-    'CannotPeekAtToken',
-    'PeekExceedsSourceLength',
-    'InvalidDecimalDigit',
-    'InvalidHexDigit',
-    'ScannerReachedEndOfLine',
-    'EmptyProgram'
-  ];
-  return types.includes((error as { type: string }).type as ParseError['type']);
+
+  return PARSE_ERROR_KEYS.includes((error as { type: ParseErrorKey }).type);
 }
 
 /**
@@ -57,15 +74,8 @@ function isParseError(error: unknown): error is ParseError {
  */
 function isSequencerError(error: unknown): error is SequencerError {
   if (!error || typeof error !== 'object' || !('type' in error)) return false;
-  const types: SequencerError['type'][] = [
-    'CannotParse',
-    'ExecutionFailed',
-    'MachineDoesNotExist',
-    'ReceiveFailed',
-    'MessageNeverReceived',
-    'ExecutionCycleExceeded'
-  ];
-  return types.includes((error as { type: string }).type as SequencerError['type']);
+
+  return SEQ_ERROR_KEYS.includes((error as { type: SequencerErrorKey }).type);
 }
 
 /**
@@ -170,11 +180,14 @@ export function formatSequencerError(error: unknown): string | null {
   if (isSequencerError(error)) {
     return formatSequencerErrorTyped(error);
   }
+
   if (isRuntimeError(error)) {
     return formatRuntimeError(error);
   }
+
   if (isParseError(error)) {
     return formatParseError(error);
   }
+
   return null;
 }
