@@ -513,7 +513,7 @@
                           }}
                           disabled={noHelpAvailable}
                           class={[
-                            'flex w-full flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
+                            'flex h-full w-full flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
                             noHelpAvailable
                               ? 'cursor-not-allowed border-zinc-800/50 bg-zinc-900/30 opacity-40'
                               : browserMode === 'help'
