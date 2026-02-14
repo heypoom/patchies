@@ -4,4 +4,4 @@
  *
  * Lists all object types that have help patches available in /static/help-patches/
  */
-export const HELP_PATCHES_AVAILABLE: ReadonlySet<string> = new Set([]);
+export const HELP_PATCHES_AVAILABLE: ReadonlySet<string> = new Set(['adsr']);
