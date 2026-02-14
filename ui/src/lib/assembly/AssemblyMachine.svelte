@@ -79,6 +79,7 @@
 
   let previewContainerWidth = $state(0);
   let updateInterval: NodeJS.Timeout | number;
+  let resizeObserver: ResizeObserver | null = null;
 
   // Local state for settings inputs (synced with machineConfig via $effect)
   let delayInput = $state(ASM_DEFAULT_DELAY_MS);
@@ -297,7 +298,14 @@
     messageContext.queue.addCallback(handleMessage);
 
     initMachine();
-    measureContainerWidth();
+
+    // Use ResizeObserver to re-measure container width on code changes
+    if (mainContainer) {
+      resizeObserver = new ResizeObserver(() => {
+        measureContainerWidth();
+      });
+      resizeObserver.observe(mainContainer);
+    }
   });
 
   /** Create machine, push saved config, then setup polling. Must be sequential. */
@@ -343,6 +351,7 @@
 
   onDestroy(async () => {
     clearInterval(updateInterval);
+    resizeObserver?.disconnect();
 
     // Clean up the machine when component is destroyed
     try {

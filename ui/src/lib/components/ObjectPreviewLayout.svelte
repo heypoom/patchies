@@ -73,27 +73,20 @@
     }
   }
 
-  let mutationObserver: MutationObserver | null = null;
+  let resizeObserver: ResizeObserver | null = null;
 
   onMount(() => {
-    measureContainerWidth();
-
-    // If previewWidth is not provided, observe the container for DOM changes
-    // to re-measure width when content changes dynamically
+    // Use ResizeObserver to re-measure width when container size changes
     if (previewWidth === undefined && previewContainer) {
-      mutationObserver = new MutationObserver(() => {
+      resizeObserver = new ResizeObserver(() => {
         measureContainerWidth();
       });
-      mutationObserver.observe(previewContainer, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style', 'class']
-      });
+
+      resizeObserver.observe(previewContainer);
     }
 
     return () => {
-      mutationObserver?.disconnect();
+      resizeObserver?.disconnect();
     };
   });
 
