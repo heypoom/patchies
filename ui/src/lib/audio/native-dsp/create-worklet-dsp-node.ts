@@ -45,6 +45,8 @@ async function ensureModule(workletUrl: string, audioContext: AudioContext): Pro
       await audioContext.audioWorklet.addModule(processorUrl.href);
       state!.ready = true;
     } catch (error) {
+      state!.promise = null;
+      state!.ready = false;
       logger.error('cannot add worklet module:', error);
       throw error;
     }
