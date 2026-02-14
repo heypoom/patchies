@@ -129,9 +129,12 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     }
 
     destroy(): void {
-      this.audioNode?.port.postMessage({ type: 'stop' });
-      this.audioNode?.disconnect();
-      this.audioNode = null;
+      if (this.audioNode) {
+        this.audioNode.port.onmessage = null;
+        this.audioNode.port.postMessage({ type: 'stop' });
+        this.audioNode.disconnect();
+        this.audioNode = null;
+      }
     }
   };
 }
