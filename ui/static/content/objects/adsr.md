@@ -46,7 +46,7 @@ send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' });
 Each phase config can specify `curve: 'linear' | 'exponential' | 'targetAtTime'`.
 
 Try the `midi-adsr-gain.js` preset. See
-[this patch](/?id=1pvwvmtoo5s3gdz) for usage.
+[this patch](/?id=4ezt0ne0frsf694) for usage.
 
 ## See Also
 
