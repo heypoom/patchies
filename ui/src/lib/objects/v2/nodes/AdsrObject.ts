@@ -1,7 +1,9 @@
+import { Type } from '@sinclair/typebox';
+import { match, P } from 'ts-pattern';
+
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
-import { match, P } from 'ts-pattern';
 
 /**
  * AdsrObject generates ADSR envelope messages.
@@ -15,7 +17,17 @@ export class AdsrObject implements TextObjectV2 {
       name: 'trigger',
       type: 'message',
       description: 'Trigger the ADSR envelope. 0 = release, 1 = attack.',
-      hot: true
+      hot: true,
+      messages: [
+        {
+          schema: Type.Union([Type.Literal(1), Type.Literal(true)]),
+          description: 'Trigger attack→decay→sustain'
+        },
+        {
+          schema: Type.Union([Type.Literal(0), Type.Literal(false)]),
+          description: 'Trigger release'
+        }
+      ]
     },
     {
       name: 'peak',
@@ -23,7 +35,8 @@ export class AdsrObject implements TextObjectV2 {
       description: 'Peak value',
       defaultValue: 1,
       minNumber: 0,
-      maxPrecision: 2
+      maxPrecision: 2,
+      messages: [{ schema: Type.Number(), description: 'Peak level (default: 1)' }]
     },
     {
       name: 'attack',
@@ -31,7 +44,8 @@ export class AdsrObject implements TextObjectV2 {
       description: 'Attack time in ms',
       defaultValue: 100,
       minNumber: 0,
-      precision: 0
+      precision: 0,
+      messages: [{ schema: Type.Number(), description: 'Attack time in ms (default: 100)' }]
     },
     {
       name: 'decay',
@@ -39,7 +53,8 @@ export class AdsrObject implements TextObjectV2 {
       description: 'Decay time in ms',
       defaultValue: 200,
       minNumber: 0,
-      precision: 0
+      precision: 0,
+      messages: [{ schema: Type.Number(), description: 'Decay time in ms (default: 200)' }]
     },
     {
       name: 'sustain',
@@ -47,19 +62,26 @@ export class AdsrObject implements TextObjectV2 {
       description: 'Sustain value',
       defaultValue: 0.5,
       minNumber: 0,
-      maxPrecision: 2
+      maxPrecision: 2,
+      messages: [{ schema: Type.Number(), description: 'Sustain level (default: 0.5)' }]
     },
     {
       name: 'release',
       type: 'float',
       description: 'Release time in ms',
       defaultValue: 300,
-      precision: 0
+      precision: 0,
+      messages: [{ schema: Type.Number(), description: 'Release time in ms (default: 300)' }]
     }
   ];
 
   static outlets: ObjectOutlet[] = [
-    { name: 'out', type: 'message', description: 'ADSR envelope message' }
+    {
+      name: 'out',
+      type: 'message',
+      description: 'ADSR envelope message',
+      messages: [{ schema: Type.Any(), description: 'Scheduled parameter messages' }]
+    }
   ];
 
   readonly nodeId: string;

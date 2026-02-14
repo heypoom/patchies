@@ -67,7 +67,6 @@ export * from './expr-audio';
 export * from './osc';
 export * from './waveshaper';
 export * from './convolver';
-export * from './adsr';
 export * from './asm';
 export * from './asm-mem';
 export * from './wgpu-compute';
@@ -146,7 +145,6 @@ import { exprAudioSchema } from './expr-audio';
 import { oscSchema } from './osc';
 import { waveshaperSchema } from './waveshaper';
 import { convolverSchema } from './convolver';
-import { adsrSchema } from './adsr';
 import { asmSchema } from './asm';
 import { asmMemSchema } from './asm-mem';
 import { wgpuComputeSchema } from './wgpu-compute';
@@ -190,6 +188,7 @@ import { SendAudioNode } from '$lib/audio/v2/nodes/SendAudioNode';
 import { RecvAudioNode } from '$lib/audio/v2/nodes/RecvAudioNode';
 import { IntObject } from '../v2/nodes/IntObject';
 import { FloatObject } from '../v2/nodes/FloatObject';
+import { AdsrObject } from '../v2/nodes/AdsrObject';
 
 /**
  * Registry of all object schemas.
@@ -267,7 +266,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'osc~': oscSchema,
   'waveshaper~': waveshaperSchema,
   'convolver~': convolverSchema,
-  adsr: adsrSchema,
   asm: asmSchema,
   'asm.mem': asmMemSchema,
   'wgpu.compute': wgpuComputeSchema,
@@ -317,7 +315,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
       RecvObject,
       KVObject,
       IntObject,
-      FloatObject
+      FloatObject,
+      AdsrObject
     ],
     'control'
   )
