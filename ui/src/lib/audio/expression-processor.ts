@@ -35,7 +35,15 @@ type ExprDspFn = (
   inputs: Float32Array[][],
 
   // Inlet values x1-x9
-  ...inletValues: number[]
+  x1: number,
+  x2: number,
+  x3: number,
+  x4: number,
+  x5: number,
+  x6: number,
+  x7: number,
+  x8: number,
+  x9: number
 ) => number;
 
 class ExpressionProcessor extends AudioWorkletProcessor {
@@ -46,6 +54,14 @@ class ExpressionProcessor extends AudioWorkletProcessor {
   private phasorPhases: number[] = new Array(10).fill(0);
   private phasorTriggerPrev: number[] = new Array(10).fill(0);
   private phasorIndex = 0;
+
+  // Pre-allocated buffers to avoid GC pressure in the audio thread
+  private silentBuffer: Float32Array | null = null;
+
+  // Pre-extracted inlet values array (avoids .slice() + spread per sample)
+  private inletArgs: [number, number, number, number, number, number, number, number, number] = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0
+  ];
 
   constructor() {
     super();
@@ -199,6 +215,17 @@ class ExpressionProcessor extends AudioWorkletProcessor {
       // Always process at least one channel, even without input
       const channelCount = Math.max(output.length, 1);
 
+      // Pre-allocate silent buffer once (reused for missing channels)
+      if (!this.silentBuffer || this.silentBuffer.length !== bufferSize) {
+        this.silentBuffer = new Float32Array(bufferSize);
+      }
+
+      // Snapshot inlet values once per process() call (not per sample)
+      const args = this.inletArgs;
+      for (let k = 0; k < 9; k++) {
+        args[k] = this.inletValues[k];
+      }
+
       // Sample-first loop so phasor state is consistent across channels
       for (let i = 0; i < bufferSize; i++) {
         // Reset phasor index at start of each sample
@@ -207,8 +234,8 @@ class ExpressionProcessor extends AudioWorkletProcessor {
         const t = (currentFrame + i) / sampleRate;
 
         for (let channel = 0; channel < channelCount; channel++) {
-          const samples = input[channel] || new Float32Array(bufferSize);
-          const outs = output[channel] || new Float32Array(bufferSize);
+          const samples = input[channel] || this.silentBuffer;
+          const outs = output[channel] || this.silentBuffer;
 
           // Extract sample from each input (s1-s9, 1-indexed)
           // inputs[n][channel][i] = sample i from channel of input n
@@ -242,7 +269,15 @@ class ExpressionProcessor extends AudioWorkletProcessor {
               samples, // current channel samples array
               input, // first input (all channels)
               inputs, // all inputs
-              ...this.inletValues.slice(0, 9) // inlet values x1-x9
+              args[0],
+              args[1],
+              args[2],
+              args[3],
+              args[4],
+              args[5],
+              args[6],
+              args[7],
+              args[8]
             );
 
             if (typeof result !== 'number' || isNaN(result)) {
