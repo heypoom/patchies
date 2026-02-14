@@ -12,6 +12,7 @@
   import MachineStateViewer from './MachineStateViewer.svelte';
   import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
   import { memoryActions } from './memoryStore';
+  import { formatSequencerError } from './formatSequencerError';
   import { ASM_DEFAULT_DELAY_MS, ASM_DEFAULT_STEP_BY } from './constants';
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
   import { logger } from '$lib/utils/logger';
@@ -377,7 +378,9 @@
     } else if (typeof error === 'string') {
       errorMessage = error;
     } else if (typeof error === 'object' && error !== null) {
-      errorMessage = JSON.stringify(error, null, 2);
+      // Try to format VASM errors to human-readable messages
+      const formatted = formatSequencerError(error);
+      errorMessage = formatted ?? JSON.stringify(error, null, 2);
     }
   }
 
