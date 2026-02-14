@@ -1,3 +1,4 @@
+import { isValidMessageType } from '$lib/messages/message-types';
 import type { Migration } from '../types';
 
 /**
@@ -33,10 +34,10 @@ export const migration007: Migration = {
       const name = data.name.toLowerCase();
       if (name !== 'trigger' && name !== 't') return node;
 
-      // Parse type specifiers from params
-      const types = (data.params || [])
-        .map((p) => String(p).toLowerCase())
-        .filter((t) => isValidTypeSpecifier(t));
+      // Parse type specifiers from expr (e.g. "t b n" → ['b', 'n'])
+      // params aren't pre-parsed, so we split expr and skip the object name
+      const exprParts = (data.expr || '').trim().split(/\s+/).slice(1);
+      const types = exprParts.filter((t) => isValidMessageType(t));
 
       // Default to two bang outlets if no types specified
       const finalTypes = types.length > 0 ? types : ['b', 'b'];
@@ -81,12 +82,3 @@ export const migration007: Migration = {
     };
   }
 };
-
-const VALID_TRIGGER_TYPES = new Set(['b', 'a', 's', 't', 'l', 'n', 'f', 'i', 'o']);
-
-/**
- * Check if a string is a valid type specifier
- */
-function isValidTypeSpecifier(type: string): boolean {
-  return VALID_TRIGGER_TYPES.has(type.toLowerCase());
-}
