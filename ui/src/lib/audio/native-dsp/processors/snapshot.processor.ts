@@ -12,7 +12,6 @@ defineDSP({
   }),
 
   recv(state, data) {
-    // Any message (bang, number, etc.) triggers a snapshot
     if (isMessageType(data, 'bang')) {
       state.shouldSample = true;
     }
