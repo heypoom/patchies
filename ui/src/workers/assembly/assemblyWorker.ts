@@ -14,7 +14,6 @@ export interface InspectedRegister {
 }
 
 export interface InspectedMachine {
-  effects: Effect[];
   registers: InspectedRegister;
   inbox_size: number;
   outbox_size: number;

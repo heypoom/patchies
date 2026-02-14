@@ -24,9 +24,7 @@ pub struct InspectedRegister {
 /// Machine state returned by the inspection function.
 #[derive(Serialize, Deserialize)]
 pub struct InspectedMachine {
-    pub effects: Vec<Event>,
     pub registers: InspectedRegister,
-
     pub inbox_size: usize,
     pub outbox_size: usize,
     pub status: MachineStatus,
@@ -103,7 +101,6 @@ impl Controller {
         };
 
         let state = InspectedMachine {
-            effects: m.events.clone(),
             registers: InspectedRegister {
                 pc: m.reg.get(PC),
                 sp: m.reg.get(SP),
@@ -203,7 +200,6 @@ impl Controller {
     /// to reduce WASM↔JS round-trip overhead from 4 calls to 1.
     pub fn get_snapshot(&mut self, id: u16) -> Return {
         let machine = self.seq.get_mut(id).map(|m| InspectedMachine {
-            effects: m.events.clone(),
             registers: InspectedRegister {
                 pc: m.reg.get(PC),
                 sp: m.reg.get(SP),

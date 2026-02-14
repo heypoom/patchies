@@ -1,12 +1,13 @@
 {
   "name": "machine",
+  "type": "module",
   "version": "0.1.0",
   "files": [
     "machine_bg.wasm",
     "machine.js",
     "machine.d.ts"
   ],
-  "module": "machine.js",
+  "main": "machine.js",
   "types": "machine.d.ts",
   "sideEffects": [
     "./snippets/*"
