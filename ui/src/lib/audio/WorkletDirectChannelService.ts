@@ -108,10 +108,14 @@ export class WorkletDirectChannelService {
       });
     }
 
-    port.postMessage({
-      type: 'update-direct-connections',
-      connections
-    });
+    try {
+      port.postMessage({
+        type: 'update-direct-connections',
+        connections
+      });
+    } catch (err) {
+      console.warn(`[WorkletDirectChannel] Failed to post to ${sourceNodeId}:`, err);
+    }
   }
 
   private parseHandleIndex(handle?: string | null): number {

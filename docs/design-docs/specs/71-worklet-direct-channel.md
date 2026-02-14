@@ -64,6 +64,6 @@ Main thread receives:
 ## Key Design Decisions
 
 - **`globalThis` singleton**: Each processor file is bundled separately by Vite. The first to load creates the registry; others reuse it via `globalThis.__workletChannel`.
-- **`processorOptions`**: Used to pass `nodeId` from main thread to processor constructor. Not currently used by any processor.
+- **`processorOptions`**: Used to pass `nodeId` from main thread into processor constructors. Both `dsp-processor.ts` and `define-dsp.ts` read `processorOptions.nodeId` in their constructors to identify themselves for direct-channel registration.
 - **`excludeTargets`**: Already exists in `SendMessageOptions` and `MessageSystem.sendMessage()`. No changes needed to MessageSystem.
 - **Always send to main thread**: Processors always post to main thread too (for non-worklet targets). The `directTargets` array tells the main thread which targets to skip.
