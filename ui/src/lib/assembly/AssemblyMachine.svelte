@@ -214,7 +214,7 @@
 
       // If machine is stuck in awaiting state, pausing should reset it.
       if (state?.status === 'Awaiting') {
-        resetMachine();
+        await resetMachine();
       }
 
       await pullMachineConfig();
