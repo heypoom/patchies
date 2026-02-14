@@ -292,17 +292,22 @@ class DSPProcessor extends AudioWorkletProcessor {
     };
   }
 
-  // Reusable silent buffer to avoid allocations
+  // Pre-allocated buffers to avoid GC pressure in the audio thread
   private silentBuffer: Float32Array | null = null;
+  private normalizedInputs: Float32Array[][] = [];
+  private normalizedInletCount = 0;
+  private normalizedChannelCount = 0;
 
   /**
    * Normalize inputs array to ensure all expected inputs have proper channel arrays.
    * - Unconnected inputs get silent (zero-filled) buffers
    * - Connected inputs with fewer channels get silent buffers for missing channels
    *   (e.g., mono input expanded to stereo by adding silent second channel)
+   *
+   * Pre-allocates the array structure once, then reuses it — only swapping
+   * Float32Array references each call (zero allocation in steady state).
    */
   private normalizeInputs(inputs: Float32Array[][], outputs: Float32Array[][]): Float32Array[][] {
-    // Determine buffer size from first available output or input
     const bufferSize = outputs[0]?.[0]?.length || inputs[0]?.[0]?.length || 128;
     const channelCount = outputs[0]?.length || 2;
 
@@ -311,24 +316,28 @@ class DSPProcessor extends AudioWorkletProcessor {
       this.silentBuffer = new Float32Array(bufferSize);
     }
 
-    // Create normalized array with proper size
-    const normalized: Float32Array[][] = [];
+    // Re-allocate structure only when inlet/channel count changes
+    if (
+      this.normalizedInletCount !== this.audioInletCount ||
+      this.normalizedChannelCount !== channelCount
+    ) {
+      this.normalizedInputs = new Array(this.audioInletCount);
+      for (let i = 0; i < this.audioInletCount; i++) {
+        this.normalizedInputs[i] = new Array(channelCount);
+      }
+      this.normalizedInletCount = this.audioInletCount;
+      this.normalizedChannelCount = channelCount;
+    }
 
+    // Update references (no allocation — just pointer swaps)
     for (let i = 0; i < this.audioInletCount; i++) {
-      normalized[i] = [];
-
       for (let ch = 0; ch < channelCount; ch++) {
-        if (inputs[i]?.[ch]?.length > 0) {
-          // Channel exists with data - use it
-          normalized[i][ch] = inputs[i][ch];
-        } else {
-          // Channel missing or empty - provide silence
-          normalized[i][ch] = this.silentBuffer;
-        }
+        this.normalizedInputs[i][ch] =
+          inputs[i]?.[ch]?.length > 0 ? inputs[i][ch] : this.silentBuffer;
       }
     }
 
-    return normalized;
+    return this.normalizedInputs;
   }
 
   /**
