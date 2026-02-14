@@ -285,7 +285,7 @@
   const visibleInlets = $derived.by(() => {
     return inlets
       .map((inlet, originalIndex) => ({ inlet, originalIndex }))
-      .filter(({ inlet }) => !inlet.hidden);
+      .filter(({ inlet }) => !inlet.hideInlet);
   });
 
   // Update sticky precision when params change (for stable display width)
@@ -1086,7 +1086,7 @@
                           {/if}
                         </Tooltip.Content>
                       </Tooltip.Root>
-                    {:else if !isUnmodifiableType(inlets[index]?.type) && param !== ''}
+                    {:else if !isUnmodifiableType(inlets[index]?.type) && !inlets[index]?.hideTextParam && param !== ''}
                       <Tooltip.Root>
                         <Tooltip.Trigger>
                           <span

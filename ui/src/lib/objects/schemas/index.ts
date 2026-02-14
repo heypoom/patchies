@@ -186,6 +186,7 @@ import { RecvObject } from '$lib/objects/v2/nodes/RecvObject';
 import { KVObject } from '$lib/objects/v2/nodes/KVObject';
 import { SendAudioNode } from '$lib/audio/v2/nodes/SendAudioNode';
 import { RecvAudioNode } from '$lib/audio/v2/nodes/RecvAudioNode';
+import { LineNode } from '$lib/audio/native-dsp/nodes/line.node';
 import { IntObject } from '../v2/nodes/IntObject';
 import { FloatObject } from '../v2/nodes/FloatObject';
 import { AdsrObject } from '../v2/nodes/AdsrObject';
@@ -297,7 +298,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
       MergeNode,
       AddNodeV2,
       SendAudioNode,
-      RecvAudioNode
+      RecvAudioNode,
+      LineNode
     ],
     'audio'
   ),
