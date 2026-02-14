@@ -45,8 +45,12 @@ function createWorkletChannel(): WorkletChannel {
   /** nodeId → outlet → connections[] */
   const connectionMap = new Map<string, Map<number, WorkletConnection[]>>();
 
-  /** Pre-allocated array to avoid allocation in send() hot path */
-  const deliveredTargets: string[] = [];
+  /**
+   * Pool of reusable arrays indexed by nesting depth, so nested send()
+   * calls (recv → send) each get their own array without allocating.
+   */
+  const targetPool: string[][] = [[]];
+  let sendDepth = 0;
 
   return {
     register(nodeId, recv) {
@@ -74,25 +78,37 @@ function createWorkletChannel(): WorkletChannel {
     },
 
     send(sourceNodeId, message, outlet) {
-      // Reset reusable array (avoid allocation)
-      deliveredTargets.length = 0;
-
-      const outletMap = connectionMap.get(sourceNodeId);
-      if (!outletMap) return deliveredTargets;
-
-      const connections = outletMap.get(outlet);
-      if (!connections) return deliveredTargets;
-
-      for (let i = 0; i < connections.length; i++) {
-        const conn = connections[i];
-        const recv = registry.get(conn.targetNodeId);
-        if (recv) {
-          recv(message, conn.inlet);
-          deliveredTargets.push(conn.targetNodeId);
-        }
+      // Grab a pooled array for this nesting depth (allocates only on first use per depth)
+      if (sendDepth >= targetPool.length) {
+        targetPool.push([]);
       }
 
-      return deliveredTargets;
+      const deliveredTargets = targetPool[sendDepth];
+      deliveredTargets.length = 0;
+      sendDepth++;
+
+      try {
+        const outletMap = connectionMap.get(sourceNodeId);
+        if (!outletMap) return deliveredTargets;
+
+        const connections = outletMap.get(outlet);
+        if (!connections) return deliveredTargets;
+
+        for (let i = 0; i < connections.length; i++) {
+          const conn = connections[i];
+          const recv = registry.get(conn.targetNodeId);
+
+          if (recv) {
+            recv(message, conn.inlet);
+
+            deliveredTargets.push(conn.targetNodeId);
+          }
+        }
+
+        return deliveredTargets;
+      } finally {
+        sendDepth--;
+      }
     }
   };
 }
