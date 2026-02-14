@@ -18,6 +18,7 @@
   import { logger } from '$lib/utils/logger';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useNodeDataTracker } from '$lib/history';
+  import { toast } from 'svelte-sonner';
 
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -49,8 +50,16 @@
   let showSettings = $state(false);
   let mainContainer: HTMLDivElement;
   let highlightLineCallback: ((lineNo: number) => void) | null = null;
+  let hasShownReadonlyToast = false;
 
   const { updateNodeData } = useSvelteFlow();
+
+  function handleReadonlyInput() {
+    if (!hasShownReadonlyToast) {
+      hasShownReadonlyToast = true;
+      toast.info('Pause the machine to edit code');
+    }
+  }
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(nodeId);
@@ -231,6 +240,10 @@
     if (isOperationInProgress) return;
     isOperationInProgress = true;
 
+    // Capture error state before clearing - force reload if retrying after error
+    const hadError = errorMessage !== null;
+    errorMessage = null;
+
     try {
       // Ensure machine exists and has a program loaded
       const exists = await assemblySystem.machineExists(machineId);
@@ -242,9 +255,9 @@
       // Check if machine has a program loaded by inspecting its state
       const currentState = await assemblySystem.inspectMachine(machineId);
 
-      // Reload if code changed, machine is halted, or no state
+      // Reload if code changed, machine is halted, no state, or recovering from error
       const codeChanged = lastLoadedCode !== null && lastLoadedCode !== data.code;
-      if (!currentState || currentState.status === 'Halted' || codeChanged) {
+      if (!currentState || currentState.status === 'Halted' || codeChanged || hadError) {
         await assemblySystem.loadProgram(machineId, data.code);
         lastLoadedCode = data.code;
       }
@@ -373,6 +386,13 @@
   }
 
   function displayError(error: unknown) {
+    // Stop the machine on error - can't continue with invalid/errored state
+    clearInterval(updateInterval);
+
+    if (machineConfig.isRunning) {
+      updateMachineConfig({ isRunning: false });
+    }
+
     if (error instanceof Error) {
       errorMessage = error.message;
     } else if (typeof error === 'string') {
@@ -513,7 +533,7 @@
           onclick={stepMachine}
           class="group rounded p-1 transition-opacity group-hover:opacity-100 group-hover:not-disabled:opacity-100 hover:bg-zinc-700 disabled:cursor-not-allowed group-hover:disabled:opacity-30 sm:opacity-0"
           title={`Step ${machineConfig.stepBy} cycle${machineConfig.stepBy > 1 ? 's' : ''}`}
-          disabled={machineState?.status === 'Halted'}
+          disabled={machineState?.status === 'Halted' || errorMessage !== null}
         >
           <StepForward class="h-4 w-4 text-zinc-300 group-focus:text-blue-300" />
         </button>
@@ -523,6 +543,7 @@
           class="group rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
           title={machineConfig.isRunning ? 'Pause machine' : 'Run machine'}
         >
+          <!-- svelte-ignore svelte_component_deprecated -->
           <svelte:component
             this={machineConfig.isRunning ? Pause : Play}
             class="h-4 w-4 text-zinc-300 group-focus:text-blue-300"
@@ -560,14 +581,10 @@
         <div class="nodrag">
           <AssemblyEditor
             value={data.code}
-            onchange={async (newCode) => {
-              // Pause machine first when code changes to avoid state corruption
-              if (machineConfig.isRunning) {
-                await pauseMachine();
-              }
-              updateNodeData(nodeId, { code: newCode });
-            }}
+            readonly={machineConfig.isRunning}
+            onchange={(newCode) => updateNodeData(nodeId, { code: newCode })}
             onrun={playMachine}
+            onReadonlyInput={handleReadonlyInput}
             placeholder="Enter assembly code..."
             highlightLine={onHighlightLineSetup}
           />

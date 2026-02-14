@@ -1,6 +1,13 @@
 <script lang="ts">
   import { EditorView, keymap, Decoration } from '@codemirror/view';
-  import { EditorState, Prec, type Extension, StateEffect, StateField } from '@codemirror/state';
+  import {
+    EditorState,
+    Prec,
+    type Extension,
+    StateEffect,
+    StateField,
+    Compartment
+  } from '@codemirror/state';
   import { minimalSetup } from 'codemirror';
   import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
   import { loadLanguageExtension } from '$lib/codemirror/language';
@@ -14,6 +21,7 @@
     placeholder?: string;
     readonly?: boolean;
     highlightLine?: (callback: (lineNo: number) => void) => void;
+    onReadonlyInput?: () => void;
   }
 
   let {
@@ -22,12 +30,25 @@
     placeholder = 'Enter assembly code...',
     readonly = false,
     onrun,
-    highlightLine
+    highlightLine,
+    onReadonlyInput
   }: Props = $props();
+
+  function handleKeydown(event: KeyboardEvent) {
+    // Detect typing attempt while readonly (printable character or backspace/delete)
+    if (readonly && onReadonlyInput) {
+      const isPrintable = event.key.length === 1 && !event.ctrlKey && !event.metaKey;
+      const isEditKey = ['Backspace', 'Delete', 'Enter'].includes(event.key);
+      if (isPrintable || isEditKey) {
+        onReadonlyInput();
+      }
+    }
+  }
 
   let editorContainer = $state<HTMLDivElement>();
   let editorView = $state<EditorView | null>(null);
   let currentAssemblyExtension: Extension | null = null;
+  const readonlyCompartment = new Compartment();
 
   // Line highlighter functionality
   const addLineHighlight = StateEffect.define<number>();
@@ -135,7 +156,7 @@
             padding: '0 2px 0 4px'
           }
         }),
-        EditorState.readOnly.of(readonly),
+        readonlyCompartment.of(EditorState.readOnly.of(readonly)),
         assemblyExtension
       ];
 
@@ -162,6 +183,15 @@
     }
   });
 
+  // Update readonly state dynamically
+  $effect(() => {
+    if (editorView) {
+      editorView.dispatch({
+        effects: readonlyCompartment.reconfigure(EditorState.readOnly.of(readonly))
+      });
+    }
+  });
+
   onDestroy(() => {
     editorView?.destroy();
     editorView = null;
@@ -181,7 +211,13 @@
   });
 </script>
 
-<div bind:this={editorContainer} class="assembly-editor nodrag nopan nowheel overflow-hidden">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  bind:this={editorContainer}
+  class="assembly-editor nodrag nopan nowheel overflow-hidden"
+  class:cursor-not-allowed={readonly}
+  onkeydown={handleKeydown}
+>
   {#if !editorContainer}
     <div class="p-4 font-mono text-sm text-zinc-400">
       {placeholder}
