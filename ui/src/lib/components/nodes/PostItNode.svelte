@@ -199,7 +199,7 @@
     <!-- Main post-it note area -->
     <div
       class={[
-        'relative overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-lg',
+        'relative overflow-hidden rounded-md shadow-md transition-shadow hover:shadow-lg',
         (isEditing || isLocked) && 'nodrag',
         isLocked && node.selected && 'ring-2 ring-blue-500'
       ]}
@@ -272,7 +272,7 @@
         </button>
       </div>
 
-      <div class="nodrag w-48 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+      <div class="nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
         <div class="space-y-4">
           <!-- Color picker -->
           <div>
