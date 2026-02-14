@@ -73,6 +73,11 @@ export class TimeScheduler {
         const timeConstant = config.timeConstant ?? config.time * 0.3;
 
         param.setTargetAtTime(targetValue, startTime, timeConstant);
+      })
+      .with('valueCurve', () => {
+        if (config.values && config.values.length >= 2) {
+          param.setValueCurveAtTime(config.values, startTime, config.time);
+        }
       });
   }
 }

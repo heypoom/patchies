@@ -1,10 +1,11 @@
 export type TimeMode = 'relative' | 'absolute';
-export type CurveType = 'linear' | 'exponential' | 'targetAtTime';
+export type CurveType = 'linear' | 'exponential' | 'targetAtTime' | 'valueCurve';
 
 export interface TriggerPhaseConfig {
   time: number;
   curve?: CurveType;
   timeConstant?: number; // For targetAtTime curve
+  values?: number[] | Float32Array; // For valueCurve
 }
 
 export interface SetMessage {
