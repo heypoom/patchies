@@ -7,6 +7,8 @@
  * Zero allocation in steady state (pre-allocated normalizeInputs).
  */
 
+import { workletChannel } from './worklet-channel';
+
 type SendFn = (message: unknown, outlet?: number) => void;
 
 export interface DefineDSPOptions<S> {
@@ -43,6 +45,7 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
   class NativeDSPProcessor extends AudioWorkletProcessor {
     private state: S;
     private shouldStop = false;
+    private nodeId: string;
 
     // Pre-allocated buffers to avoid GC pressure in the audio thread
     private silentBuffer: Float32Array | null = null;
@@ -50,20 +53,40 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
     private normalizedInletCount = 0;
     private normalizedChannelCount = 0;
 
-    // Bound send function (forwards messages to main thread)
+    // Bound send function — delivers directly to worklet targets, then notifies main thread
     private send: SendFn = (message, outlet = 0) => {
-      this.port.postMessage({ type: 'send-message', message, outlet });
+      const directTargets = this.nodeId ? workletChannel.send(this.nodeId, message, outlet) : [];
+
+      this.port.postMessage({
+        type: 'send-message',
+        message,
+        outlet,
+        directTargets: directTargets.length > 0 ? [...directTargets] : undefined
+      });
     };
 
-    constructor() {
+    constructor(nodeOptions?: { processorOptions?: { nodeId?: string } }) {
       super();
+      this.nodeId = nodeOptions?.processorOptions?.nodeId ?? '';
       this.state = options.state();
+
+      // Register with worklet direct channel for receiving direct messages
+      if (this.nodeId) {
+        workletChannel.register(this.nodeId, (data, inlet) => {
+          if (options.recv) {
+            options.recv(this.state, data, inlet, this.send);
+          }
+        });
+      }
 
       this.port.onmessage = (event) => {
         if (event.data.type === 'message-inlet' && options.recv) {
           options.recv(this.state, event.data.message, event.data.inlet, this.send);
+        } else if (event.data.type === 'update-direct-connections') {
+          workletChannel.updateConnections(this.nodeId, event.data.connections);
         } else if (event.data.type === 'stop') {
           this.shouldStop = true;
+          if (this.nodeId) workletChannel.unregister(this.nodeId);
         }
       };
     }

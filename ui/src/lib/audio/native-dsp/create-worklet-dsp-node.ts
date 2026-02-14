@@ -8,6 +8,7 @@
 import type { AudioNodeGroup, AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { MessageSystem } from '$lib/messages/MessageSystem';
+import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
 import { logger } from '$lib/utils/logger';
 
 export interface WorkletDspNodeConfig {
@@ -81,11 +82,13 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
 
     private audioContext: AudioContext;
     private messageSystem: MessageSystem;
+    private directChannelService: WorkletDirectChannelService;
 
     constructor(nodeId: string, audioContext: AudioContext) {
       this.nodeId = nodeId;
       this.audioContext = audioContext;
       this.messageSystem = MessageSystem.getInstance();
+      this.directChannelService = WorkletDirectChannelService.getInstance();
     }
 
     async create(params: unknown[]): Promise<void> {
@@ -93,14 +96,19 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
 
       this.audioNode = new AudioWorkletNode(this.audioContext, config.type, {
         numberOfInputs: config.audioInlets ?? 0,
-        numberOfOutputs: config.audioOutlets ?? 1
+        numberOfOutputs: config.audioOutlets ?? 1,
+        processorOptions: { nodeId: this.nodeId }
       });
+
+      // Register with direct channel service for worklet-to-worklet routing
+      this.directChannelService.registerWorklet(this.nodeId, this.audioNode.port);
 
       // Listen for messages from the worklet (send() calls in process/recv)
       this.audioNode.port.onmessage = (event) => {
         if (event.data.type === 'send-message') {
           this.messageSystem.sendMessage(this.nodeId, event.data.message, {
-            to: event.data.outlet
+            to: event.data.outlet,
+            excludeTargets: event.data.directTargets ?? []
           });
         }
       };
@@ -129,6 +137,8 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     }
 
     destroy(): void {
+      this.directChannelService.unregisterWorklet(this.nodeId);
+
       if (this.audioNode) {
         this.audioNode.port.onmessage = null;
         this.audioNode.port.postMessage({ type: 'stop' });

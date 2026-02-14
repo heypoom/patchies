@@ -3,6 +3,7 @@ import { match, P } from 'ts-pattern';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { DSP_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
+import { workletChannel } from './native-dsp/worklet-channel';
 
 type DspMessage =
   | { type: 'set-code'; code: string }
@@ -10,6 +11,10 @@ type DspMessage =
   | { type: 'set-inlet-values'; values: number[] }
   | { type: 'set-keep-alive'; enabled: boolean }
   | { type: 'sync-audio-ports'; inlets: number; outlets: number }
+  | {
+      type: 'update-direct-connections';
+      connections: Array<{ outlet: number; targetNodeId: string; inlet: number }>;
+    }
   | { type: 'stop' };
 
 type RecvMeta = {
@@ -28,6 +33,7 @@ type ProcessFunction = (
 ) => void;
 
 class DSPProcessor extends AudioWorkletProcessor {
+  private nodeId: string;
   private processFunction: ProcessFunction | null = null;
   private inletValues: unknown[] = new Array(10).fill(0);
   private counter = 0;
@@ -43,8 +49,16 @@ class DSPProcessor extends AudioWorkletProcessor {
   private isInProcess = false; // Track if we're inside process() for throttling
   private pendingAudioReconfiguration = false; // Skip process() during worklet recreation
 
-  constructor() {
+  constructor(nodeOptions?: { processorOptions?: { nodeId?: string } }) {
     super();
+    this.nodeId = nodeOptions?.processorOptions?.nodeId ?? '';
+
+    // Register with worklet direct channel for receiving direct messages
+    if (this.nodeId) {
+      workletChannel.register(this.nodeId, (data, inlet) => {
+        this.handleMessageInlet(data, { source: '', inlet });
+      });
+    }
 
     this.port.onmessage = (event: MessageEvent<DspMessage>) => {
       match(event.data)
@@ -67,8 +81,15 @@ class DSPProcessor extends AudioWorkletProcessor {
             this.pendingAudioReconfiguration = false;
           }
         )
+        .with(
+          { type: 'update-direct-connections', connections: P.array(P.any) },
+          ({ connections }) => {
+            workletChannel.updateConnections(this.nodeId, connections);
+          }
+        )
         .with({ type: 'stop' }, () => {
           this.shouldStop = true;
+          if (this.nodeId) workletChannel.unregister(this.nodeId);
         });
     };
   }
@@ -125,13 +146,18 @@ class DSPProcessor extends AudioWorkletProcessor {
         });
       };
 
-      // Create setPortCount function that will be available in user code
-      const send = (message: unknown, options?: SendMessageOptions) =>
+      // Create send function — delivers directly to worklet targets, then notifies main thread
+      const send = (message: unknown, options?: SendMessageOptions) => {
+        const outlet = typeof options?.to === 'number' ? options.to : 0;
+        const directTargets = this.nodeId ? workletChannel.send(this.nodeId, message, outlet) : [];
+
         this.port.postMessage({
           type: 'send-message',
           message,
-          options
+          options,
+          directTargets: directTargets.length > 0 ? [...directTargets] : undefined
         });
+      };
 
       const setTitle = (value: string) => this.port.postMessage({ type: 'set-title', value });
 
