@@ -4,6 +4,7 @@ defineDSP({
   name: 'min~',
   audioInlets: 2,
   audioOutlets: 1,
+  inletDefaults: { 1: 0 },
   state: () => ({}),
 
   process(_state, inputs, outputs) {

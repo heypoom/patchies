@@ -127,6 +127,13 @@ export const parseObjectParamFromString = (name: string, strValues: string[]) =>
       continue;
     }
 
+    // No more user-provided values — use defaultValue or null
+    if (inputInletIndex >= strValues.length) {
+      params.push(inlet.defaultValue ?? null);
+      inputInletIndex += 1;
+      continue;
+    }
+
     const value = parseStringParamByType(inlet, strValues[inputInletIndex]);
     params.push(value);
 

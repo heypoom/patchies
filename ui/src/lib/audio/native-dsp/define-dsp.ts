@@ -25,6 +25,15 @@ export interface DefineDSPOptions<S> {
   state: () => S;
 
   /**
+   * Default constant values per audio inlet (by inlet index).
+   * When an inlet is disconnected, its buffer is filled with this value instead of silence.
+   * Float messages to these inlets automatically update the constant.
+   *
+   * Example: `{ 1: 0 }` — audio inlet 1 defaults to 0, updatable via messages.
+   */
+  inletDefaults?: Record<number, number>;
+
+  /**
    * Handle incoming messages from message inlets.
    * Called on the audio thread but outside the process() hot path.
    */
@@ -41,6 +50,7 @@ export interface DefineDSPOptions<S> {
 
 export function defineDSP<S>(options: DefineDSPOptions<S>): void {
   const audioInletCount = options.audioInlets ?? 0;
+  const inletDefaults = options.inletDefaults ?? {};
 
   class NativeDSPProcessor extends AudioWorkletProcessor {
     private state: S;
@@ -52,6 +62,10 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
     private normalizedInputs: Float32Array[][] = [];
     private normalizedInletCount = 0;
     private normalizedChannelCount = 0;
+
+    // Constant value buffers for inlets with defaults (filled with constant when disconnected)
+    private inletValues: Map<number, number> = new Map();
+    private inletBuffers: Map<number, Float32Array> = new Map();
 
     // Bound send function — delivers directly to worklet targets, then notifies main thread
     private send: SendFn = (message, outlet = 0) => {
@@ -70,18 +84,21 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
       this.nodeId = nodeOptions?.processorOptions?.nodeId ?? '';
       this.state = options.state();
 
+      // Initialize inlet default values
+      for (const [inlet, value] of Object.entries(inletDefaults)) {
+        this.setInletValue(Number(inlet), value);
+      }
+
       // Register with worklet direct channel for receiving direct messages
       if (this.nodeId) {
         workletChannel.register(this.nodeId, (data, inlet) => {
-          if (options.recv) {
-            options.recv(this.state, data, inlet, this.send);
-          }
+          this.handleMessage(data, inlet);
         });
       }
 
       this.port.onmessage = (event) => {
-        if (event.data.type === 'message-inlet' && options.recv) {
-          options.recv(this.state, event.data.message, event.data.inlet, this.send);
+        if (event.data.type === 'message-inlet') {
+          this.handleMessage(event.data.message, event.data.inlet);
         } else if (event.data.type === 'update-direct-connections') {
           workletChannel.updateConnections(this.nodeId, event.data.connections);
         } else if (event.data.type === 'stop') {
@@ -89,6 +106,29 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
           if (this.nodeId) workletChannel.unregister(this.nodeId);
         }
       };
+    }
+
+    /** Route incoming messages: update inlet constants or forward to user recv */
+    private handleMessage(data: unknown, inlet: number): void {
+      // Auto-update constant for inlets with defaults
+      if (this.inletValues.has(inlet)) {
+        const val = typeof data === 'number' ? data : parseFloat(data as string);
+        if (!isNaN(val)) {
+          this.setInletValue(inlet, val);
+        }
+      }
+
+      // Still call user recv for custom handling
+      if (options.recv) {
+        options.recv(this.state, data, inlet, this.send);
+      }
+    }
+
+    /** Update an inlet's constant value and refill its buffer */
+    private setInletValue(inlet: number, value: number): void {
+      this.inletValues.set(inlet, value);
+      const buf = this.inletBuffers.get(inlet);
+      if (buf) buf.fill(value);
     }
 
     process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
@@ -113,6 +153,16 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
         this.silentBuffer = new Float32Array(bufferSize);
       }
 
+      // Create or resize inlet constant buffers
+      for (const [inlet, value] of this.inletValues) {
+        const existing = this.inletBuffers.get(inlet);
+        if (!existing || existing.length !== bufferSize) {
+          const buf = new Float32Array(bufferSize);
+          buf.fill(value);
+          this.inletBuffers.set(inlet, buf);
+        }
+      }
+
       // Re-allocate structure only when channel count changes
       if (
         this.normalizedInletCount !== audioInletCount ||
@@ -128,9 +178,15 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
 
       // Update references (no allocation — just pointer swaps)
       for (let i = 0; i < audioInletCount; i++) {
+        const hasSignal = inputs[i]?.[0]?.length > 0;
+
         for (let ch = 0; ch < channelCount; ch++) {
-          this.normalizedInputs[i][ch] =
-            inputs[i]?.[ch]?.length > 0 ? inputs[i][ch] : this.silentBuffer;
+          if (hasSignal) {
+            this.normalizedInputs[i][ch] = inputs[i][ch];
+          } else {
+            // Use constant buffer for inlets with defaults, silent buffer otherwise
+            this.normalizedInputs[i][ch] = this.inletBuffers.get(i) ?? this.silentBuffer!;
+          }
         }
       }
 

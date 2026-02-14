@@ -460,8 +460,9 @@
     } else {
       // Transform current name and parameter into editable expr
       const paramString = data.params
-        .map((value, index) => stringifyParamByType(inlets[index], value, index))
-        .filter((value, index) => !isUnmodifiableType(inlets[index]?.type))
+        .map((value, index) => ({ value, index }))
+        .filter(({ value, index }) => !isUnmodifiableType(inlets[index]?.type) && value != null)
+        .map(({ value, index }) => stringifyParamByType(inlets[index], value, index))
         .join(' ');
 
       expr = `${data.name} ${paramString}`.trim();
@@ -848,7 +849,8 @@
 
   // Calculate minimum width based on port count (inlets or outlets, whichever is larger)
   const minWidthStyle = $derived.by(() => {
-    const maxPorts = Math.max(inlets.length, outlets.length);
+    const visibleInlets = inlets.filter((i) => !i.hideInlet).length;
+    const maxPorts = Math.max(visibleInlets, outlets.length);
     if (maxPorts <= 2) return '';
 
     // ~20px per port to ensure handles don't overlap
@@ -1086,7 +1088,7 @@
                           {/if}
                         </Tooltip.Content>
                       </Tooltip.Root>
-                    {:else if !isUnmodifiableType(inlets[index]?.type) && !inlets[index]?.hideTextParam && param !== ''}
+                    {:else if !isUnmodifiableType(inlets[index]?.type) && !inlets[index]?.hideTextParam && param != null && param !== ''}
                       <Tooltip.Root>
                         <Tooltip.Trigger>
                           <span

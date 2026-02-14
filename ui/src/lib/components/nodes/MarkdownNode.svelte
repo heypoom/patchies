@@ -127,7 +127,7 @@
     <div
       bind:this={overtypeElement}
       style="width: {props.width ?? defaultWidth}px; height: {props.height ?? defaultHeight}px"
-      class="nodrag overtype-editor rounded-lg bg-zinc-900"
+      class="nodrag nowheel nopan overtype-editor rounded-lg bg-zinc-900"
       onfocusin={markdownTracker.onFocus}
       onfocusout={markdownTracker.onBlur}
     ></div>

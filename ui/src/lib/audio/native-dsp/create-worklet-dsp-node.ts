@@ -67,6 +67,20 @@ type NativeDspNodeClass = {
   new (nodeId: string, audioContext: AudioContext): AudioNodeV2;
 };
 
+/**
+ * For hidden float inlets (hideInlet: true), find the preceding signal inlet
+ * they control. This lets `*~ 0.5` route the float to audio inlet 1's constant.
+ */
+function resolveWorkletInlet(inlets: ObjectInlet[], configIndex: number): number {
+  const inlet = inlets[configIndex];
+  if (inlet?.hideInlet && inlet.type !== 'signal') {
+    for (let j = configIndex - 1; j >= 0; j--) {
+      if (inlets[j].type === 'signal') return j;
+    }
+  }
+  return configIndex;
+}
+
 export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNodeClass {
   return class NativeDspNode implements AudioNodeV2 {
     static type = config.type;
@@ -113,15 +127,22 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
         }
       };
 
-      // Forward initial params to the worklet
-      for (let i = 0; i < params.length; i++) {
-        if (params[i] !== undefined && params[i] !== null && i < config.inlets.length) {
-          this.audioNode.port.postMessage({
-            type: 'message-inlet',
-            message: params[i],
-            inlet: i
-          });
-        }
+      // Forward initial params to the worklet.
+      // params[i] corresponds to inlets[i] (nulls for unmodifiable signal inlets).
+      // Hidden float inlets are mapped back to their preceding signal inlet
+      // so `*~ 0.5` sends 0.5 to audio inlet 1's constant buffer.
+      for (let i = 0; i < config.inlets.length && i < params.length; i++) {
+        if (params[i] === undefined || params[i] === null) continue;
+
+        const inlet = config.inlets[i];
+        const isSignalOnly = inlet.type === 'signal' && !inlet.messages?.length;
+        if (isSignalOnly) continue;
+
+        this.audioNode.port.postMessage({
+          type: 'message-inlet',
+          message: params[i],
+          inlet: resolveWorkletInlet(config.inlets, i)
+        });
       }
     }
 
@@ -153,7 +174,7 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
       this.audioNode?.port.postMessage({
         type: 'message-inlet',
         message,
-        inlet: inletIndex
+        inlet: resolveWorkletInlet(config.inlets, inletIndex)
       });
     }
 
