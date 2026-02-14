@@ -42,6 +42,17 @@ import { NoiseNode } from '$lib/audio/native-dsp/nodes/noise.node';
 import { PhasorNode } from '$lib/audio/native-dsp/nodes/phasor.node';
 import { SnapshotNode } from '$lib/audio/native-dsp/nodes/snapshot.node';
 import { BangNode } from '$lib/audio/native-dsp/nodes/bang.node';
+import { MultiplyNode } from '$lib/audio/native-dsp/nodes/multiply.node';
+import { SubtractNode } from '$lib/audio/native-dsp/nodes/subtract.node';
+import { DivideNode } from '$lib/audio/native-dsp/nodes/divide.node';
+import { MinNode } from '$lib/audio/native-dsp/nodes/min.node';
+import { MaxNode } from '$lib/audio/native-dsp/nodes/max.node';
+import { ClipNode } from '$lib/audio/native-dsp/nodes/clip.node';
+import { WrapNode } from '$lib/audio/native-dsp/nodes/wrap.node';
+import { AbsNode } from '$lib/audio/native-dsp/nodes/abs.node';
+import { PowNode } from '$lib/audio/native-dsp/nodes/pow.node';
+import { GtNode } from '$lib/audio/native-dsp/nodes/gt.node';
+import { LtNode } from '$lib/audio/native-dsp/nodes/lt.node';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -87,7 +98,18 @@ const AUDIO_NODES = [
   NoiseNode,
   PhasorNode,
   SnapshotNode,
-  BangNode
+  BangNode,
+  MultiplyNode,
+  SubtractNode,
+  DivideNode,
+  MinNode,
+  MaxNode,
+  ClipNode,
+  WrapNode,
+  AbsNode,
+  PowNode,
+  GtNode,
+  LtNode
 ] as const satisfies AudioNodeClass[];
 
 /**

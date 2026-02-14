@@ -125,6 +125,27 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
       }
     }
 
+    connectFrom(
+      source: AudioNodeV2,
+      _paramName?: string,
+      _sourceHandle?: string,
+      targetHandle?: string
+    ): void {
+      if (!this.audioNode || !source.audioNode) return;
+
+      let inputIndex = 0;
+
+      // Parse handle like "audio-in-1" to get input index
+      if (targetHandle) {
+        const indexMatch = targetHandle.match(/audio-in-(\d+)/);
+        if (indexMatch) {
+          inputIndex = parseInt(indexMatch[1], 10);
+        }
+      }
+
+      source.audioNode.connect(this.audioNode, 0, inputIndex);
+    }
+
     send(key: string, message: unknown): void {
       const inletIndex = config.inlets.findIndex((i) => i.name === key);
       if (inletIndex === -1) return;
