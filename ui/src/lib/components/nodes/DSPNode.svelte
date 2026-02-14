@@ -234,9 +234,19 @@
         .with({ type: 'set-keep-alive', enabled: P.boolean }, (m) => {
           node.send('setKeepAlive', m.enabled);
         })
-        .with({ type: 'send-message', message: P.any, options: P.any }, (eventData) => {
-          messageContext.send(eventData.message, eventData.options as SendMessageOptions);
-        })
+        .with(
+          { type: 'send-message', message: P.any, options: P.any },
+          (eventData: { message: unknown; options: unknown; directTargets?: string[] }) => {
+            const options = eventData.options as SendMessageOptions;
+            if (eventData.directTargets?.length) {
+              options.excludeTargets = [
+                ...(options.excludeTargets ?? []),
+                ...eventData.directTargets
+              ];
+            }
+            messageContext.send(eventData.message, options);
+          }
+        )
         .with(
           { type: 'code-error', message: P.string, lineErrors: P.any, context: P.any },
           (errorData) => {

@@ -66,6 +66,7 @@
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
+  import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
 
   import { toast } from 'svelte-sonner';
   import { initializeVFS } from '$lib/vfs';
@@ -102,6 +103,7 @@
   let eventBus = PatchiesEventBus.getInstance();
   let workerNodeSystem = WorkerNodeSystem.getInstance();
   let directChannelService = DirectChannelService.getInstance();
+  let workletDirectChannelService = WorkletDirectChannelService.getInstance();
   let historyManager = HistoryManager.getInstance();
 
   // Canvas context for shared state and utilities
@@ -266,6 +268,7 @@
     audioAnalysisSystem.updateEdges(edges);
     workerNodeSystem.updateVideoConnections(edges);
     directChannelService.updateEdges(edges);
+    workletDirectChannelService.updateEdges(edges);
   });
 
   // Keep DirectChannelService informed of node types for direct messaging

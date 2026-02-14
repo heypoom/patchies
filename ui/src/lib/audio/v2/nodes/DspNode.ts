@@ -1,5 +1,6 @@
 import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import workletUrl from '../../../audio/dsp-processor?worker&url';
@@ -115,8 +116,12 @@ export class DspNode implements AudioNodeV2 {
 
     this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor', {
       numberOfInputs: this.audioInletCount,
-      numberOfOutputs: effectiveOutputs
+      numberOfOutputs: effectiveOutputs,
+      processorOptions: { nodeId: this.nodeId }
     });
+
+    // Register with direct channel service for worklet-to-worklet routing
+    WorkletDirectChannelService.getInstance().registerWorklet(this.nodeId, this.workletNode.port);
 
     // Only connect to output gain if we actually have audio outputs
     // Analysis DSPs with 0 outlets don't need to produce audio
@@ -271,6 +276,8 @@ export class DspNode implements AudioNodeV2 {
   }
 
   destroy(): void {
+    WorkletDirectChannelService.getInstance().unregisterWorklet(this.nodeId);
+
     if (this.workletNode) {
       try {
         // Signal worklet to stop processing
