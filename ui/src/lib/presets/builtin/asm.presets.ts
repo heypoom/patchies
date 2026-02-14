@@ -72,7 +72,6 @@ add
 load 0xF01
 store 0xF00
 store 0xF01
-receive
 jump loop`;
 
 const CLAMP_ASM = `; Clamp - clamps input to range 0-100
@@ -108,7 +107,6 @@ inc
 push 10
 mod
 store 0xF00
-receive
 jump loop`;
 
 const DELTA_ASM = `; Delta - outputs difference from previous input
