@@ -132,8 +132,8 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 | Code | 0x000-0x1FF | 512 | Program instructions (~250 max) |
 | Data | 0x200-0x2FF | 256 | `.string` and `.value` constants |
 | Call Stack | 0x300-0x33F | 64 | Return addresses (~32 call depth) |
-| RAM | 0x340-0xFFF | 3008 | Data stack + user memory |
-| External | 0x1000+ | virtual | Routed to `asm.mem` objects |
+| RAM | 0x340-0xFFF | 3264 | Data stack + user memory |
+| External | 0x1000-0xFFFF | 61440 | Routed to `asm.mem` objects |
 
 **Important**: Use high addresses (e.g., 0xF00+) for `load`/`store` to avoid colliding with the data stack which grows up from 0x340.
 

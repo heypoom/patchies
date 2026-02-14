@@ -29,8 +29,8 @@ MEMORY LAYOUT (8KB total, 4096 u16 cells):
 - Code: 0x000-0x1FF (512 cells, ~250 instructions)
 - Data: 0x200-0x2FF (256 cells, .string/.value constants)
 - Call Stack: 0x300-0x33F (64 cells, ~32 call depth)
-- RAM: 0x340-0xFFF (3008 cells, data stack + user memory)
-- External: 0x1000+ (routed to asm.mem objects)
+- RAM: 0x340-0xFFF (3264 cells, data stack + user memory)
+- External: 0x1000-0xFFFF (61440 cells, routed to asm.mem objects)
 
 IMPORTANT: Use HIGH addresses (0xF00+) for load/store to avoid colliding with the data stack which grows UP from 0x340.
 
