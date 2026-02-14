@@ -6,7 +6,7 @@ Each object can send messages to other objects, and receive messages from other 
 
 In this example, two `slider` objects sends out their value to a `expr $1 + $2` object which adds the number together. The result is sent as a message to the `p5` object which displays it.
 
-> **Note**: Objects like `expr` uses [hot and cold inlets](/docs/hot-cold-inlets). Only the first inlet (`$1`) triggers output. Other inlets store values silently. Use [trigger](/docs/objects/trigger) to control execution order.
+> **Note**: objects like [expr](/docs/objects/expr) uses [hot and cold inlets](/docs/hot-cold-inlets). Only the first inlet (`$1`) triggers output. Other inlets store values silently.
 
 ## Getting Started with Messages
 
