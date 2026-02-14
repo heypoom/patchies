@@ -39,6 +39,16 @@ I/O PATTERN:
 - \`send <port> <count>\` pops count values and sends to outlet port (0-3)
 - Machine auto-wakes when data arrives (reactive dataflow)
 
+Example - Modulo Counter:
+\`\`\`json
+{
+  "type": "asm",
+  "data": {
+    "code": "loop:\\nload 0xF00\\ndup\\nsend 0 1\\ninc\\npush 10\\nmod\\nstore 0xF00\\njump loop"
+  }
+}
+\`\`\`
+
 Example - Echo (receive and send back):
 \`\`\`json
 {
@@ -54,7 +64,7 @@ Example - Accumulator (running sum):
 {
   "type": "asm",
   "data": {
-    "code": "loop:\\nreceive\\nload 100\\nadd\\ndup\\nstore 100\\nsend 0 1\\njump loop"
+    "code": "loop:\\nreceive\\nload 0xF00\\nadd\\ndup\\nstore 0xF00\\nsend 0 1\\njump loop"
   }
 }
 \`\`\`

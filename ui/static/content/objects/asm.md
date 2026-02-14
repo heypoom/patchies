@@ -198,6 +198,63 @@ Default is 1 instruction. You can set it to higher number of instructions per cy
 
 ## Examples
 
+### Loop (10 to 50)
+
+A simple loop from 10 to 50.
+
+```asm
+push 10
+
+loop:
+dup
+send 0 1
+inc
+dup
+push 50
+less_than
+jump_not_zero loop
+
+halt
+```
+
+### Modulo Counter
+
+Counts 0 to 9, then wraps around.
+
+```asm
+loop:
+load 0xF00
+dup
+send 0 1
+inc
+push 10
+mod
+store 0xF00
+jump loop
+```
+
+### Fibonacci
+
+Outputs the fibonacci sequence. Previous value at 0xF00, current at 0xF01.
+
+```asm
+push 0
+store 0xF00
+push 1
+store 0xF01
+
+loop:
+load 0xF01
+dup
+send 0 1
+load 0xF00
+add
+load 0xF01
+store 0xF00
+store 0xF01
+jump loop
+```
+
 ### Echo
 
 Receives input and sends it back. The simplest reactive program.
@@ -224,15 +281,15 @@ jump loop
 
 ### Accumulator
 
-Running sum - adds each input to a total stored at address 100.
+Running sum - adds each input to a total stored at address 0xF00.
 
 ```asm
 loop:
 receive
-load 100
+load 0xF00
 add
 dup
-store 100
+store 0xF00
 send 0 1
 jump loop
 ```
@@ -258,113 +315,39 @@ jump loop
 
 ### Running Average
 
-Calculates running average. Sum at address 100, count at 101.
+Calculates running average. Sum at address 0xF00, count at 0xF01.
 
 ```asm
 loop:
 receive
-load 100
+load 0xF00
 add
-store 100
-load 101
+store 0xF00
+load 0xF01
 push 1
 add
-store 101
-load 100
-load 101
+store 0xF01
+load 0xF00
+load 0xF01
 div
 send 0 1
 jump loop
 ```
 
-### Fibonacci
-
-Outputs fibonacci sequence on each input. Previous value at 100, current at 101.
-
-```asm
-push 0
-store 100
-push 1
-store 101
-
-loop:
-load 101
-dup
-send 0 1
-load 100
-add
-load 101
-store 100
-store 101
-receive
-jump loop
-```
-
 ### Delta
 
-Outputs difference from previous input. Previous value at address 100.
+Outputs difference from previous input. Previous value at address 0xF00.
 
 ```asm
 loop:
 receive
 dup
-load 100
+load 0xF00
 sub
 send 0 1
-store 100
+store 0xF00
 jump loop
 ```
-
-### Modulo Counter
-
-Counts 0 to 9, then wraps around.
-
-```asm
-loop:
-load 0
-dup
-send 0 1
-inc
-push 10
-mod
-store 0
-receive
-jump loop
-```
-
-### Loop (10 to 50)
-
-A simple loop from 10 to 50, demonstrating control flow.
-
-```asm
-push 10
-
-l:
-push 1
-add
-dup
-push 50
-less_than
-jump_zero end
-jump l
-
-end:
-push 0xDDDD
-```
-
-Equivalent C code:
-
-```c
-int main() {
-    int i = 10;
-    while (i < 50) {
-        i++;
-    }
-    return 0xDDDD;
-}
-```
-
-Try the [example assembly patch](/?id=6pyirxuw3cqvwhg).
 
 ## See Also
 
