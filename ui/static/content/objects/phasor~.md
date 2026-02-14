@@ -1,9 +1,5 @@
 Sawtooth ramp oscillator. Outputs a signal that ramps from 0 to 1 at the given frequency.
 
-## Inlets
-
-1. **frequency**: frequency in Hz (default: 0)
-
 ## Usage
 
 ```

@@ -1,13 +1,5 @@
 Sample a signal value and output it as a message. Send a bang to capture the current value of the input signal.
 
-## Inlets
-
-1. **signal**: audio signal to sample (also accepts bang to trigger)
-
-## Outlets
-
-1. **value**: the sampled number
-
 ## Usage
 
 Connect a signal and send bang to read the current value:

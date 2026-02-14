@@ -1,11 +1,6 @@
 Signal ramp generator. Attempt to reach a target value over a specified time,
 outputting a continuous audio-rate signal.
 
-## Inlets
-
-1. **target**: target value, `[value, time]` pair, or `stop`
-2. **time**: ramp duration in ms (used by next target, default: 0)
-
 ## Usage
 
 Send a number to jump immediately:
