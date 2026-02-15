@@ -7,16 +7,7 @@ import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 import { KVStore } from '$lib/storage';
 import { msg } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// KV Message Schemas
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Get a value by key */
-export const KVGet = msg('get', { key: Type.String() });
-
-/** Set a value at key */
-export const KVSet = msg('set', { key: Type.String(), value: Type.Any() });
+import { Get, SetKey } from '$lib/objects/schemas';
 
 /** Delete a key */
 export const KVDelete = msg('delete', { key: Type.String() });
@@ -32,10 +23,6 @@ export const KVHas = msg('has', { key: Type.String() });
 
 /** Set the store name */
 export const KVSetStore = msg('setStore', { value: Type.String() });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// KV Response Schemas
-// ─────────────────────────────────────────────────────────────────────────────
 
 /** Response for get operation */
 export const KVGetResponse = Type.Object({
@@ -96,18 +83,14 @@ export const KVErrorResponse = Type.Object({
  * Usage: match(msg).with(kvMessages.get, ({ key }) => ...)
  */
 export const kvMessages = {
-  get: schema(KVGet),
-  set: schema(KVSet),
+  get: schema(Get),
+  set: schema(SetKey),
   delete: schema(KVDelete),
   keys: schema(KVKeys),
   clear: schema(KVClear),
   has: schema(KVHas),
   setStore: schema(KVSetStore)
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// KVObject
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * KVObject provides persistent key-value storage for patches.
@@ -126,8 +109,8 @@ export class KVObject implements TextObjectV2 {
       type: 'message',
       description: 'Storage commands',
       messages: [
-        { schema: KVGet, description: 'Get value by key' },
-        { schema: KVSet, description: 'Set value at key' },
+        { schema: Get, description: 'Get value by key' },
+        { schema: SetKey, description: 'Set value at key' },
         { schema: KVDelete, description: 'Delete key' },
         { schema: KVKeys, description: 'List all keys' },
         { schema: KVClear, description: 'Clear all keys' },
