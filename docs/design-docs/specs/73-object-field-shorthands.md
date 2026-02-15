@@ -206,10 +206,10 @@ Trace edges from the msg node's outlet to find the target object type. Use the t
 | `set value=1` | `{type: 'set', value: 1}` | Named arg |
 | `set "hello world"` | `{type: 'set', value: "hello world"}` | Quoted string as value |
 
-## Open Questions
+## Resolved Questions
 
-1. **Should symbols with no extra args still go through shorthand?** `set` alone (no args) — should it send `{type: 'set'}` or error because `value` is required? Recommendation: send `{type: 'set'}` and let the receiver validate.
+1. **Symbols with no extra args go through shorthand.** `set` alone sends `{type: 'set'}`. The receiver validates required fields — keeps the syntax layer simple and consistent.
 
-2. **Rest args for the last field?** `setCode console.log('hello')` — should everything after `setCode` be concatenated as a single string value? This would be convenient for code but breaks the general positional model. Recommendation: yes, if the last field is `Type.String()`, join remaining positional tokens with spaces.
+2. **Rest args for the last `Type.String()` field: yes.** If the last positional field is `Type.String()`, remaining tokens are joined with spaces. `setCode console.log('hello')` → `{type: 'setCode', value: "console.log('hello')"}`. Unquoted commas in code (e.g., `console.log(a, b)`) will be split by the sequential message parser since `()` isn't tracked — users must quote: `setCode "console.log(a, b)"`. Quoted commas and spaces are already protected by `splitAtTopLevel`.
 
-3. **Should we support shorthand in sequential messages?** `set 1, bang` → sends `{type: 'set', value: 1}` then `{type: 'bang'}`. This should work naturally since each comma-segment is processed independently.
+3. **Shorthands work in sequential messages.** `set 1, bang` → sends `{type: 'set', value: 1}` then `{type: 'bang'}`. Each comma-segment is processed independently through the full pipeline (step 5 in the resolution order).
