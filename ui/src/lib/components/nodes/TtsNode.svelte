@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { Settings, X, Volume2, Check, ChevronsUpDown, Info } from '@lucide/svelte/icons';
+  import {
+    Settings,
+    X,
+    Volume2,
+    Check,
+    ChevronsUpDown,
+    Info,
+    RotateCcw
+  } from '@lucide/svelte/icons';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy, tick } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
@@ -198,6 +206,10 @@
       });
   }
 
+  function resetSettings() {
+    updateNodeData(nodeId, { rate: 1, pitch: 1, volume: 1 });
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
       showSettings = false;
@@ -279,8 +291,18 @@
   {#if showSettings}
     <div class="absolute left-20">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-          <X class="h-4 w-4 text-zinc-300" />
+        <button
+          onclick={resetSettings}
+          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+          title="Reset to defaults"
+        >
+          <RotateCcw class="h-4 w-4" />
+        </button>
+        <button
+          onclick={() => (showSettings = false)}
+          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+        >
+          <X class="h-4 w-4" />
         </button>
       </div>
 
