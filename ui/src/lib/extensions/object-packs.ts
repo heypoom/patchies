@@ -108,6 +108,10 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'vline~',
       'latch~',
       'threshold~',
+      'table',
+      'tabwrite~',
+      'tabread~',
+      'tabread4~',
       'adsr',
       'mtof'
     ]

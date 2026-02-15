@@ -13,6 +13,7 @@ import { isScheduledMessage } from '../time-scheduling-types';
 import { registerAudioNodes } from './nodes';
 import { getObjectType } from '$lib/objects/get-type';
 import { hasSomeAudioNode } from '../../../stores/canvas.store';
+import { BufferBridgeService } from '$lib/audio/buffer-bridge';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -57,6 +58,11 @@ export class AudioService {
     this.outGain.gain.value = 0.8;
     this.outGain.connect(audioContext.destination);
     this.timeScheduler = new TimeScheduler(audioContext);
+
+    // Initialize buffer bridge (fire-and-forget — non-blocking for audio startup)
+    BufferBridgeService.getInstance()
+      .init(audioContext)
+      .catch((err) => logger.warn('BufferBridge init failed:', err));
   }
 
   /** Removes a node from the graph. */

@@ -330,19 +330,31 @@ export function buildMessageTypeMapForTypes(
   objectTypes: string[],
   baseMap: Map<string, FieldMapping[]>
 ): Map<string, FieldMapping[]> {
-  // Clone the base map (common schemas)
   const map = new Map<string, FieldMapping[]>();
 
-  for (const [typeName, mappings] of baseMap) {
-    map.set(typeName, [...mappings]);
-  }
-
-  // Add schemas from specified object types
+  // Add object-specific schemas FIRST so they take priority over common schemas
+  // when multiple mappings share the same field count (e.g., table's `set index value`
+  // should match before common's `set key value`).
   for (const objectType of objectTypes) {
     const objSchema = registry[objectType];
     if (!objSchema) continue;
 
     addObjectSchemasToMap(objSchema, map);
+  }
+
+  // Then add common schemas (lower priority at same field count)
+  for (const [typeName, mappings] of baseMap) {
+    const existing = map.get(typeName) ?? [];
+
+    for (const mapping of mappings) {
+      const key = mapping.fields.join(',');
+
+      if (!existing.some((m) => m.fields.join(',') === key)) {
+        existing.push(mapping);
+      }
+    }
+
+    map.set(typeName, existing);
   }
 
   return map;

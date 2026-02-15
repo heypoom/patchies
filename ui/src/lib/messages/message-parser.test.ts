@@ -5,7 +5,14 @@ import {
   parseNamedArgs,
   tryResolveShorthand
 } from './message-parser';
-import type { FieldMapping } from '$lib/objects/schemas/utils';
+import { Type } from '@sinclair/typebox';
+import { msg } from '$lib/objects/schemas/helpers';
+import {
+  buildCommonMessageTypeMap,
+  buildMessageTypeMapForTypes,
+  type FieldMapping
+} from '$lib/objects/schemas/utils';
+import type { ObjectSchemaRegistry } from '$lib/objects/schemas/types';
 
 describe('splitSequentialMessages', () => {
   it.each([
@@ -169,5 +176,65 @@ describe('tryResolveShorthand', () => {
     [['bang', '10', '20'], null]
   ] as [string[], Record<string, unknown> | null][])('%j → %j', (tokens, expected) => {
     expect(tryResolveShorthand(tokens, typeMap)).toEqual(expected);
+  });
+});
+
+describe('tryResolveShorthand — object-specific schemas take priority over common', () => {
+  // Simulate common schemas: set {value}, set {key, value}, get {key}
+  const CommonSet = msg('set', { value: Type.Any() });
+  const CommonSetKey = msg('set', { key: Type.String(), value: Type.Any() });
+  const CommonGet = msg('get', { key: Type.String() });
+  const commonSchemas = [CommonSet, CommonSetKey, CommonGet];
+  const commonMap = buildCommonMessageTypeMap(commonSchemas);
+
+  // Simulate table-specific schemas: set {index, value}, get {index}
+  const TableSet = msg('set', { index: Type.Number(), value: Type.Number() });
+  const TableGet = msg('get', { index: Type.Number() });
+
+  const registry: ObjectSchemaRegistry = {
+    table: {
+      type: 'table',
+      category: 'data',
+      description: 'Named audio buffer',
+      inlets: [
+        {
+          id: 'command',
+          description: 'Commands',
+          messages: [
+            { schema: TableSet, description: 'Set sample at index' },
+            { schema: TableGet, description: 'Get sample at index' }
+          ]
+        }
+      ],
+      outlets: []
+    }
+  };
+
+  it('prefers table set {index, value} over common set {key, value}', () => {
+    const map = buildMessageTypeMapForTypes(registry, ['table'], commonMap);
+    const result = tryResolveShorthand(['set', '0', '0.5'], map);
+
+    expect(result).toEqual({ type: 'set', index: 0, value: 0.5 });
+  });
+
+  it('prefers table get {index} over common get {key}', () => {
+    const map = buildMessageTypeMapForTypes(registry, ['table'], commonMap);
+    const result = tryResolveShorthand(['get', '3'], map);
+
+    expect(result).toEqual({ type: 'get', index: 3 });
+  });
+
+  it('still resolves common set {value} (1 arg) when no object-specific 1-field match', () => {
+    const map = buildMessageTypeMapForTypes(registry, ['table'], commonMap);
+    const result = tryResolveShorthand(['set', '42'], map);
+
+    expect(result).toEqual({ type: 'set', value: 42 });
+  });
+
+  it('falls back to common schemas when no object types are connected', () => {
+    const map = buildMessageTypeMapForTypes(registry, [], commonMap);
+    const result = tryResolveShorthand(['set', 'foo', '42'], map);
+
+    expect(result).toEqual({ type: 'set', key: 'foo', value: 42 });
   });
 });

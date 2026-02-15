@@ -568,7 +568,18 @@
 
     if (!isUnmodifiableType(inlet.type) && !isScheduled) {
       // Do not update parameter if it is a unmodifiable type or a scheduled message.
-      updateParamByIndex(meta.inlet, message);
+      // For typed inlets with message schemas (e.g., string inlet that also accepts bang/stop),
+      // only update the displayed param when the value matches the base type.
+      const hasMessages = !!inlet.messages?.length;
+      const matchesBaseType =
+        !hasMessages ||
+        (inlet.type === 'string' && typeof message === 'string') ||
+        (inlet.type === 'float' && typeof message === 'number') ||
+        (inlet.type === 'int' && typeof message === 'number') ||
+        (inlet.type === 'bool' && typeof message === 'boolean') ||
+        !inlet.type;
+
+      if (matchesBaseType) updateParamByIndex(meta.inlet, message);
     } else if (isSetImmediate) {
       // Update parameters for a simple `set` message.
       updateParamByIndex(meta.inlet, message.value);

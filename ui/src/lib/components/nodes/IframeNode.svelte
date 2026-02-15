@@ -115,6 +115,13 @@
     eventBus.removeEventListener('iframePostMessage', handleIframePostMessage);
   });
 
+  // Set credentialless attribute (not in standard HTML typings yet)
+  $effect(() => {
+    if (iframeRef) {
+      iframeRef.setAttribute('credentialless', '');
+    }
+  });
+
   const handleCommonClass = $derived.by(() => {
     if (!node.selected && $shouldShowHandles) {
       return 'z-1 transition-opacity';

@@ -1,4 +1,5 @@
 import { match, P } from 'ts-pattern';
+import { Value } from '@sinclair/typebox/value';
 import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 
 import { ALWAYS_VALID } from './parse-object-param';
@@ -33,7 +34,17 @@ export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boo
     )
     .otherwise(() => false);
 
-  if (!isTypeValid) return false;
+  // If the base type doesn't match, check if it matches any declared message schema.
+  // This allows typed inlets (e.g., 'string') to also accept structured messages
+  // defined in their `messages` array (e.g., bang, stop commands).
+  if (!isTypeValid) {
+    if (inlet.messages?.length) {
+      const matchesSchema = inlet.messages.some((m) => Value.Check(m.schema, value));
+      if (matchesSchema) return true;
+    }
+
+    return false;
+  }
 
   // Message contains an invalid option
   if (inlet.options && !inlet.options.includes(value)) return false;
