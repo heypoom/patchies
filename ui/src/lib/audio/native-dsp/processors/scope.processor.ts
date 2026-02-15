@@ -35,6 +35,7 @@ defineDSP({
 
     if ('fps' in msg) {
       const fps = msg.fps;
+
       // sampleRate is a global in AudioWorkletGlobalScope
       state.cooldownSamples = fps > 0 ? Math.floor(sampleRate / fps) : 0;
     }
@@ -61,6 +62,7 @@ defineDSP({
         if ((state.prevSample <= 0 && sample > 0) || state.samplesSinceLastSend >= state.maxWait) {
           state.phase = 'filling';
           state.writeIndex = 0;
+
           buf[state.writeIndex++] = sample;
         }
       } else {
@@ -68,6 +70,7 @@ defineDSP({
 
         if (state.writeIndex >= state.bufferSize) {
           send(buf, 0);
+
           state.activeBuffer ^= 1;
           state.phase = 'waiting';
           state.samplesSinceLastSend = 0;
