@@ -9,6 +9,7 @@ import { sym, msg } from './helpers';
 
 // Raw TypeBox schemas
 export const Bang = sym('bang');
+export const Set = msg('set', { value: Type.Any() });
 export const SetCode = msg('setCode', { value: Type.String() });
 export const Clear = sym('clear');
 export const Reset = sym('reset');
@@ -25,6 +26,7 @@ export const Toggle = sym('toggle');
  */
 export const messages = {
   bang: schema(Bang),
+  set: schema(Set),
   setCode: schema(SetCode),
   clear: schema(Clear),
   reset: schema(Reset),

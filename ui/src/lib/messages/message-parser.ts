@@ -54,12 +54,14 @@ function splitAtTopLevel(text: string, delimiter: ',' | ' '): string[] {
 
   // Push the final segment
   const lastSegment = text.slice(currentStart).trim();
+
   if (lastSegment || segments.length === 0) {
     segments.push(lastSegment);
   }
 
   // Filter out empty segments (from trailing/leading delimiters or consecutive delimiters)
   const filtered = segments.filter((s) => s.length > 0);
+
   return filtered.length > 0 ? filtered : [''];
 }
 
@@ -67,28 +69,24 @@ function splitAtTopLevel(text: string, delimiter: ',' | ' '): string[] {
  * Splits a message string into sequential segments by top-level commas.
  *
  * Examples:
- *   "bang"                          → ["bang"]
- *   "bang, 100"                     → ["bang", "100"]
- *   "{a: 1, b: 2}, bang"           → ["{a: 1, b: 2}", "bang"]
- *   "[1, 2], [3, 4]"              → ["[1, 2]", "[3, 4]"]
- *   '"hello, world", 42'           → ['"hello, world"', "42"]
+ * - "bang"                          → ["bang"]
+ * - "bang, 100"                     → ["bang", "100"]
+ * - "{a: 1, b: 2}, bang"           → ["{a: 1, b: 2}", "bang"]
+ * - "[1, 2], [3, 4]"              → ["[1, 2]", "[3, 4]"]
+ * - '"hello, world", 42'           → ['"hello, world"', "42"]
  */
-export function splitSequentialMessages(text: string): string[] {
-  return splitAtTopLevel(text, ',');
-}
+export const splitSequentialMessages = (text: string): string[] => splitAtTopLevel(text, ',');
 
 /**
  * Splits a string into tokens by top-level spaces.
  * Spaces inside {}, [], and quotes are preserved.
  *
  * Examples:
- *   "1024 2048"                     → ["1024", "2048"]
- *   "1024 bang {type: 'set'}"       → ["1024", "bang", "{type: 'set'}"]
- *   '"hello world" 42'             → ['"hello world"', "42"]
+ * - "1024 2048"                     → ["1024", "2048"]
+ * - "1024 bang {type: 'set'}"       → ["1024", "bang", "{type: 'set'}"]
+ * - '"hello world" 42'             → ['"hello world"', "42"]
  */
-export function splitByTopLevelSpaces(text: string): string[] {
-  return splitAtTopLevel(text, ' ');
-}
+export const splitByTopLevelSpaces = (text: string): string[] => splitAtTopLevel(text, ' ');
 
 /** Parse a value token: try JSON5, fallback to raw string. */
 function parseTokenValue(token: string): unknown {

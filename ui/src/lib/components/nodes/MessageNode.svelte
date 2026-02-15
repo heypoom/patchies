@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronUp, Edit } from '@lucide/svelte/icons';
+  import { ChevronUp, Edit, SquarePen } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -19,7 +19,7 @@
     splitSequentialMessages,
     splitByTopLevelSpaces,
     tryResolveShorthand
-  } from '$lib/utils/message-parser';
+  } from '$lib/messages/message-parser';
   import { objectSchemas, buildMessageTypeMap } from '$lib/objects/schemas';
 
   hljs.registerLanguage('javascript', javascript);
@@ -102,6 +102,7 @@
         // inlet 1 -> $2 -> index 1, inlet 2 -> $3 -> index 2, etc.
         nextValues[inlet] = message;
         inletValues = nextValues;
+
         return;
       }
 
@@ -110,14 +111,16 @@
         .with(P.union(null, undefined), () => {
           // Null/undefined triggers without storing
           sendMessage();
+
           return true;
         })
         .with(messages.bang, () => {
           // Bang triggers without storing
           sendMessage();
+
           return true;
         })
-        .with({ type: 'set', value: P.any }, ({ value }) => {
+        .with(messages.set, ({ value }) => {
           let newMsgText: string;
 
           if (typeof value === 'string') {
@@ -129,6 +132,7 @@
               newMsgText = String(value);
             }
           }
+
           updateNodeData(nodeId, { message: newMsgText });
 
           return true;
@@ -141,6 +145,7 @@
       if (!handled) {
         if (placeholderCount > 0) {
           const nextValues = [...inletValues];
+
           nextValues[0] = message; // Store as $1
           inletValues = nextValues;
         }
@@ -172,64 +177,65 @@
     }
   }
 
+  /** Resolve a single segment (after placeholder substitution) into a message value. */
+  function resolveSegment(processedMsg: string): unknown {
+    // Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
+    try {
+      return Json5.parse(processedMsg);
+    } catch (e) {}
+
+    // Try space-separated tokens
+    const tokens = splitByTopLevelSpaces(processedMsg);
+
+    if (tokens.length > 1) {
+      // Try shorthand resolution (e.g., `set 1` → {type: 'set', value: 1})
+      const resolved = tryResolveShorthand(tokens, messageTypeMap);
+      if (resolved) return resolved;
+
+      // Fallback: send as array
+      return tokens.map(parseToken);
+    }
+
+    // Single bare string → { type: string }
+    return { type: processedMsg };
+  }
+
   /**
-   * Send the message to connected objects.
+   * Pre-resolved messages, ready to emit on bang.
    *
-   * Supports comma-separated sequential messages (Max/MSP style):
-   * - `{type: 'set', value: 1}, bang, [255, 0, 0]` sends three messages in order
-   *
-   * Supports space-separated tokens as arrays:
-   * - `1024 2048` sends `[1024, 2048]`
-   * - `1024 bang {x: 1}` sends `[1024, {type: 'bang'}, {x: 1}]`
-   *
-   * Per-token format:
-   * - Quoted strings (e.g. `"hello world"`) → string
-   * - JSON objects (e.g. `{ type: 'bang' }`) → object
-   * - Numbers (e.g. `100`) → number
-   * - Bare strings (e.g. `bang`) → `{ type: 'bang' }`
-   * - $1-$9 placeholders are substituted with values from corresponding inlets
+   * Recomputes reactively when the message text or inlet values change.
+   * The hot path (sendMessage) just iterates this cached array.
    */
-  function sendMessage() {
+  let resolvedMessages = $derived.by(() => {
     const segments = splitSequentialMessages(msgText);
+    const messages: unknown[] = [];
 
     for (const segment of segments) {
       let processedMsg = segment;
 
-      // Substitute $1-$9 with inlet values
+      // Substitute $1 - $9 with inlet values
       for (let i = 1; i <= 9; i++) {
         const value = inletValues[i - 1];
+
         if (value !== undefined) {
           const replacement = JSON.stringify(value);
+
           processedMsg = processedMsg.replaceAll(`$${i}`, replacement);
         }
       }
 
-      // Skip this segment if there are still unsubstituted placeholders
+      // Skip segments with unsubstituted placeholders
       if (/\$[1-9]/.test(processedMsg)) continue;
 
-      // Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
-      try {
-        send(Json5.parse(processedMsg));
-        continue;
-      } catch (e) {}
+      messages.push(resolveSegment(processedMsg));
+    }
 
-      // Try space-separated tokens
-      const tokens = splitByTopLevelSpaces(processedMsg);
-      if (tokens.length > 1) {
-        // Try shorthand resolution (e.g., `set 1` → {type: 'set', value: 1})
-        const resolved = tryResolveShorthand(tokens, messageTypeMap);
-        if (resolved) {
-          send(resolved);
-          continue;
-        }
+    return messages;
+  });
 
-        // Fallback: send as array
-        send(tokens.map(parseToken));
-        continue;
-      }
-
-      // Single bare string → { type: string }
-      send({ type: processedMsg });
+  function sendMessage() {
+    for (const msg of resolvedMessages) {
+      send(msg);
     }
   }
 
@@ -248,7 +254,11 @@
           onclick={() => (showTextInput = !showTextInput)}
           title="Toggle Message Input"
         >
-          <svelte:component this={showTextInput ? ChevronUp : Edit} class="h-4 w-4 text-zinc-300" />
+          <!-- svelte-ignore svelte_component_deprecated -->
+          <svelte:component
+            this={showTextInput ? ChevronUp : SquarePen}
+            class="h-4 w-4 text-zinc-300"
+          />
         </button>
       </div>
 
