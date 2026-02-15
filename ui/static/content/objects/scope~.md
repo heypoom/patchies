@@ -7,22 +7,22 @@ its waveform.
 
 The display triggers on rising zero-crossings to keep periodic
 waveforms (sine, saw, square, etc.) visually stable. If no
-trigger is found within 4096 samples, it forces a capture to
+trigger is found within 2048 samples, it forces a capture to
 prevent the display from freezing on noise or DC signals.
 
 ## Parameters
 
-- **Samples** (64–4096): Number of audio samples captured per
+- **Samples** (64 - 2048): Number of audio samples captured per
   frame. Lower values show fewer waveform cycles (zoomed in),
   higher values show more cycles (zoomed out).
-- **X Scale** (0.5x–8x): Horizontal zoom. Higher values
+- **X Scale** (0.5x - 8x): Horizontal zoom. Higher values
   compress the waveform horizontally, showing fewer samples
   across the display width.
-- **Y Scale** (0.1x–10x): Vertical zoom. Amplifies the
+- **Y Scale** (0.1x - 10x): Vertical zoom. Amplifies the
   waveform amplitude for quiet signals, or reduces it for
   loud ones.
-- **Refresh** (0–120 fps): Maximum refresh rate. 0 means no
-  limit (renders as fast as triggers arrive). Lower values
+- **Refresh** (0 - 120 fps): Maximum refresh rate. 0 (max) means
+  no limit (renders as fast as triggers arrive). Lower values
   reduce CPU usage by throttling how often the processor
   sends new buffers.
 
