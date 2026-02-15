@@ -15,6 +15,7 @@
   import 'highlight.js/styles/tokyo-night-dark.css';
   import CodeEditor from '../CodeEditor.svelte';
   import { parseInletCount } from '$lib/utils/expr-parser';
+  import { splitSequentialMessages } from '$lib/utils/message-parser';
 
   hljs.registerLanguage('javascript', javascript);
 
@@ -50,16 +51,20 @@
     }
   });
 
+  let isSequential = $derived(splitSequentialMessages(data.message ?? '').length > 1);
+
   // Fast heuristics to switch syntax highlighting modes.
   let shouldUseJsSyntax = $derived.by(() => {
     const msg = data.message ?? '';
     if (msg.length < 3) return false;
+    if (isSequential) return true;
 
     return msg.startsWith('{') || msg.startsWith('[') || msg.startsWith(`'`) || msg.startsWith(`"`);
   });
 
   let highlightedHtml = $derived.by(() => {
-    if (parsedObject === CANNOT_PARSE_SYMBOL || !msgText) return '';
+    if (!msgText) return '';
+    if (parsedObject === CANNOT_PARSE_SYMBOL && !isSequential) return '';
 
     try {
       return hljs.highlight(msgText, {
@@ -147,7 +152,10 @@
   /**
    * Send the message to connected objects.
    *
-   * Message format:
+   * Supports comma-separated sequential messages (Max/MSP style):
+   * - `{type: 'set', value: 1}, bang, [255, 0, 0]` sends three messages in order
+   *
+   * Per-segment format:
    * - Bare strings (e.g. `hello world`) are sent as objects with type field: `{ type: 'hello world' }`
    * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
    * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
@@ -155,30 +163,32 @@
    * - $1-$9 placeholders are substituted with values from corresponding inlets
    */
   function sendMessage() {
-    let processedMsg = msgText;
+    const segments = splitSequentialMessages(msgText);
 
-    // Substitute $1-$9 with inlet values
-    for (let i = 1; i <= 9; i++) {
-      const value = inletValues[i - 1];
-      if (value !== undefined) {
-        const replacement = JSON.stringify(value);
-        processedMsg = processedMsg.replaceAll(`$${i}`, replacement);
+    for (const segment of segments) {
+      let processedMsg = segment;
+
+      // Substitute $1-$9 with inlet values
+      for (let i = 1; i <= 9; i++) {
+        const value = inletValues[i - 1];
+        if (value !== undefined) {
+          const replacement = JSON.stringify(value);
+          processedMsg = processedMsg.replaceAll(`$${i}`, replacement);
+        }
       }
+
+      // Skip this segment if there are still unsubstituted placeholders
+      if (/\$[1-9]/.test(processedMsg)) continue;
+
+      // Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
+      try {
+        send(Json5.parse(processedMsg));
+        continue;
+      } catch (e) {}
+
+      // Bare strings are treated as symbols: { type: <string> }
+      send({ type: processedMsg });
     }
-
-    // Don't send if there are still unsubstituted placeholders
-    if (/\$[1-9]/.test(processedMsg)) {
-      return;
-    }
-
-    // Try to parse as JSON5 (handles quoted strings, objects, numbers, etc.)
-    try {
-      send(Json5.parse(processedMsg));
-      return;
-    } catch (e) {}
-
-    // Bare strings are treated as symbols: { type: <string> }
-    send({ type: processedMsg });
   }
 
   const containerClass = $derived(
@@ -241,7 +251,7 @@
                 containerClass
               ]}
             >
-              {#if msgText && parsedObject !== CANNOT_PARSE_SYMBOL && typeof parsedObject !== 'number'}
+              {#if msgText && (parsedObject !== CANNOT_PARSE_SYMBOL || isSequential) && typeof parsedObject !== 'number'}
                 <code class="whitespace-pre">
                   {@html highlightedHtml}
                 </code>

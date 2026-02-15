@@ -7,6 +7,18 @@ Store and send predefined messages. Click to send.
 - `100` → sends number `100`
 - `{x: 1}` → sends object `{x: 1}`
 
+## Sequential Messages
+
+Use commas to send multiple messages in sequence:
+
+```text
+{type: 'set', value: 1}, bang, [255, 0, 0]
+```
+
+Sends in order: `{type: 'set', value: 1}`, then `{type: 'bang'}`, then `[255, 0, 0]`.
+
+Commas inside `{}`, `[]`, and quotes are not treated as separators.
+
 ## Placeholders
 
 Use `$1` to `$9` for dynamic values:
