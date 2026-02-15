@@ -466,7 +466,12 @@
       // Transform current name and parameter into editable expr
       const paramString = data.params
         .map((value, index) => ({ value, index }))
-        .filter(({ value, index }) => !isUnmodifiableType(inlets[index]?.type) && value != null)
+        .filter(
+          ({ value, index }) =>
+            !isUnmodifiableType(inlets[index]?.type) &&
+            !inlets[index]?.hideTextParam &&
+            value != null
+        )
         .map(({ value, index }) => stringifyParamByType(inlets[index], value, index))
         .join(' ');
 
