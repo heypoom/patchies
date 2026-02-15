@@ -64,7 +64,7 @@ import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 import type { AudioNodeClass } from '../interfaces/audio-nodes';
 
-const AUDIO_NODES = [
+export const AUDIO_NODES = [
   AddNode,
   AllpassNode,
   BandpassNode,

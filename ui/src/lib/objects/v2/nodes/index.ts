@@ -23,7 +23,7 @@ import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
 import type { TextObjectClass } from '../interfaces/text-objects';
 
-const TEXT_OBJECTS = [
+export const TEXT_OBJECTS = [
   AdsrObject,
   DebounceObject,
   DelayObject,

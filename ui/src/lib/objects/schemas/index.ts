@@ -155,65 +155,9 @@ import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
 import { meterSchema } from './meter';
 
-// V2 Audio Node imports (source of truth for audio objects)
-import { AddNode } from '$lib/audio/native-dsp/nodes/add.node';
-import { AllpassNode } from '$lib/audio/v2/nodes/AllpassNode';
-import { BandpassNode } from '$lib/audio/v2/nodes/BandpassNode';
-import { CompressorNode } from '$lib/audio/v2/nodes/CompressorNode';
-import { DelayNodeV2 } from '$lib/audio/v2/nodes/DelayNode';
-import { FFTNode } from '$lib/audio/v2/nodes/FFTNode';
-import { GainNodeV2 } from '$lib/audio/v2/nodes/GainNode';
-import { HighpassNode } from '$lib/audio/v2/nodes/HighpassNode';
-import { HighshelfNode } from '$lib/audio/v2/nodes/HighshelfNode';
-import { LowpassNode } from '$lib/audio/v2/nodes/LowpassNode';
-import { LowshelfNode } from '$lib/audio/v2/nodes/LowshelfNode';
-import { MergeNode } from '$lib/audio/v2/nodes/MergeNode';
-import { MicNode } from '$lib/audio/v2/nodes/MicNode';
-import { NotchNode } from '$lib/audio/v2/nodes/NotchNode';
-import { AudioOutputNode } from '$lib/audio/v2/nodes/AudioOutputNode';
-import { PanNodeV2 } from '$lib/audio/v2/nodes/PanNode';
-import { PeakingNode } from '$lib/audio/v2/nodes/PeakingNode';
-import { SigNode } from '$lib/audio/v2/nodes/SigNode';
-import { SplitNode } from '$lib/audio/v2/nodes/SplitNode';
-
-// V2 Text Object imports (source of truth for control objects)
-import { DebounceObject } from '$lib/objects/v2/nodes/DebounceObject';
-import { SelectObject } from '$lib/objects/v2/nodes/SelectObject';
-import { MtofObject } from '$lib/objects/v2/nodes/MtofObject';
-import { SpigotObject } from '$lib/objects/v2/nodes/SpigotObject';
-import { ThrottleObject } from '$lib/objects/v2/nodes/ThrottleObject';
-import { UniqbyObject } from '$lib/objects/v2/nodes/UniqbyObject';
-import { WebMidiLinkObject } from '$lib/objects/v2/nodes/WebMidiLinkObject';
-import { SendObject } from '$lib/objects/v2/nodes/SendObject';
-import { RecvObject } from '$lib/objects/v2/nodes/RecvObject';
-import { KVObject } from '$lib/objects/v2/nodes/KVObject';
-import { SendAudioNode } from '$lib/audio/v2/nodes/SendAudioNode';
-import { RecvAudioNode } from '$lib/audio/v2/nodes/RecvAudioNode';
-import { LineNode } from '$lib/audio/native-dsp/nodes/line.node';
-import { NoiseNode } from '$lib/audio/native-dsp/nodes/noise.node';
-import { PhasorNode } from '$lib/audio/native-dsp/nodes/phasor.node';
-import { SnapshotNode } from '$lib/audio/native-dsp/nodes/snapshot.node';
-import { BangNode } from '$lib/audio/native-dsp/nodes/bang.node';
-import { MultiplyNode } from '$lib/audio/native-dsp/nodes/multiply.node';
-import { SubtractNode } from '$lib/audio/native-dsp/nodes/subtract.node';
-import { DivideNode } from '$lib/audio/native-dsp/nodes/divide.node';
-import { MinNode } from '$lib/audio/native-dsp/nodes/min.node';
-import { MaxNode } from '$lib/audio/native-dsp/nodes/max.node';
-import { ClipNode } from '$lib/audio/native-dsp/nodes/clip.node';
-import { WrapNode } from '$lib/audio/native-dsp/nodes/wrap.node';
-import { AbsNode } from '$lib/audio/native-dsp/nodes/abs.node';
-import { PowNode } from '$lib/audio/native-dsp/nodes/pow.node';
-import { GtNode } from '$lib/audio/native-dsp/nodes/gt.node';
-import { LtNode } from '$lib/audio/native-dsp/nodes/lt.node';
-import { SampholdNode } from '$lib/audio/native-dsp/nodes/samphold.node';
-import { AdsrNode } from '$lib/audio/native-dsp/nodes/adsr.node';
-import { EnvNode } from '$lib/audio/native-dsp/nodes/env.node';
-import { VlineNode } from '$lib/audio/native-dsp/nodes/vline.node';
-import { LatchNode } from '$lib/audio/native-dsp/nodes/latch.node';
-import { ScopeAudioNode } from '$lib/audio/v2/nodes/ScopeAudioNode';
-import { IntObject } from '../v2/nodes/IntObject';
-import { FloatObject } from '../v2/nodes/FloatObject';
-import { AdsrObject } from '../v2/nodes/AdsrObject';
+// V2 node arrays (single source of truth for audio + control objects)
+import { AUDIO_NODES } from '$lib/audio/v2/nodes';
+import { TEXT_OBJECTS } from '$lib/objects/v2/nodes';
 
 /**
  * Registry of all object schemas.
@@ -222,7 +166,11 @@ import { AdsrObject } from '../v2/nodes/AdsrObject';
  * V2 node classes are used as source of truth for audio and control objects.
  */
 export const objectSchemas: ObjectSchemaRegistry = {
-  // Visual/UI objects (manual schemas)
+  // Auto-generated from V2 nodes (spread first so manual schemas can override)
+  ...schemasFromNodes(AUDIO_NODES, 'audio'),
+  ...schemasFromNodes(TEXT_OBJECTS, 'control'),
+
+  // Manual schemas (override auto-generated where both exist)
   trigger: triggerSchema,
   p5: p5Schema,
   hydra: hydraSchema,
@@ -298,77 +246,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
   note: noteSchema,
-  'meter~': meterSchema,
-
-  // Audio objects (generated from V2 nodes - single source of truth)
-  ...schemasFromNodes(
-    [
-      GainNodeV2,
-      LowpassNode,
-      HighpassNode,
-      BandpassNode,
-      AllpassNode,
-      NotchNode,
-      LowshelfNode,
-      HighshelfNode,
-      PeakingNode,
-      CompressorNode,
-      PanNodeV2,
-      DelayNodeV2,
-      SigNode,
-      FFTNode,
-      MicNode,
-      AudioOutputNode,
-      SplitNode,
-      MergeNode,
-      AddNode,
-      SendAudioNode,
-      RecvAudioNode,
-      LineNode,
-      NoiseNode,
-      PhasorNode,
-      SnapshotNode,
-      BangNode,
-      MultiplyNode,
-      SubtractNode,
-      DivideNode,
-      MinNode,
-      MaxNode,
-      ClipNode,
-      WrapNode,
-      AbsNode,
-      PowNode,
-      GtNode,
-      LtNode,
-      SampholdNode,
-      AdsrNode,
-      EnvNode,
-      VlineNode,
-      LatchNode,
-      ScopeAudioNode
-    ],
-    'audio'
-  ),
-
-  // Control objects (generated from V2 nodes - single source of truth)
-  ...schemasFromNodes(
-    [
-      MtofObject,
-      DebounceObject,
-      ThrottleObject,
-      SpigotObject,
-      UniqbyObject,
-      WebMidiLinkObject,
-      SendObject,
-      RecvObject,
-      KVObject,
-      IntObject,
-      FloatObject,
-      AdsrObject,
-      SelectObject
-    ],
-    'control'
-  )
+  'meter~': meterSchema
 };
 
 /**

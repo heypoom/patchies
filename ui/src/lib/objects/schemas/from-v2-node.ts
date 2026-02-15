@@ -160,7 +160,7 @@ function generateTags(NodeClass: V2NodeClass): string[] {
  * Automatically registers both the canonical type and any aliases.
  */
 export function schemasFromNodes(
-  nodes: V2NodeClass[],
+  nodes: readonly V2NodeClass[],
   category: string
 ): Record<string, ObjectSchema> {
   const schemas: Record<string, ObjectSchema> = {};
