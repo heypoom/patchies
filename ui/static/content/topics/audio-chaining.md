@@ -16,33 +16,13 @@ Or build your own drum machine! [Try it out](/?id=w46um7gafe7hgle) - use the `W 
 
 ![Simple drum machine](/content/images/patchies-simple-drums.png)
 
-## Audio Sources
+## How It Works
 
-Use these objects as audio sources:
-- `osc~`, `sig~`, `mic~`
-- `strudel`, `chuck~`
-- `ai.tts`, `ai.music`
-- `soundfile~`, `sampler~`
-- `video`
-- `dsp~`, `tone~`, `elem~`, `sonic~`
+Connect audio objects together to build a signal chain — from sources through processors to output. Any object ending with `~` is an audio object.
 
-**Important**: You must connect your audio sources to `out~` to hear the audio output. Audio sources do not output audio unless connected to `out~`. Use `gain~` to control the volume.
+**Important**: You must connect your audio chain to `out~` to hear anything. Use `gain~` to control the volume.
 
-## Audio Processing
-
-Use these objects to process audio:
-- `gain~` - volume control
-- `fft~` - frequency analysis
-- `+~` - signal addition
-- Filters: `lowpass~`, `highpass~`, `bandpass~`, `allpass~`, `notch~`, `lowshelf~`, `highshelf~`, `peaking~`
-- Effects: `compressor~`, `pan~`, `delay~`, `waveshaper~`, `convolver~`
-- Custom: `expr~`, `dsp~`, `tone~`, `elem~`, `sonic~`
-
-## Audio Output
-
-Use `out~` to output audio to your speakers.
-
-Use `fft~` to analyze the frequency spectrum. See [Audio Reactivity](/docs/audio-reactivity) for using FFT with visual objects.
+Browse all available audio objects in the object browser under the **Audio** category.
 
 ## Wireless Audio Routing
 
