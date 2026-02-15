@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { ChevronRight, Settings, X } from '@lucide/svelte/icons';
+  import { ChevronRight, RotateCcw, Settings, X } from '@lucide/svelte/icons';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
@@ -206,6 +206,25 @@
     updateNodeData(node.id, { decay: value });
   }
 
+  function resetSettings() {
+    bufferSize = 512;
+    xScale = 1;
+    yScale = 1;
+    fps = 0;
+    plotType = 'line';
+    decay = 1;
+    updateNodeData(node.id, {
+      bufferSize: 512,
+      xScale: 1,
+      yScale: 1,
+      fps: 0,
+      plotType: 'line',
+      decay: 1
+    });
+    scopeNode?.setBufferSize(512);
+    scopeNode?.setFps(0);
+  }
+
   onMount(async () => {
     const audioNode = await audioService.createNode(node.id, 'scope~', []);
     if (audioNode && audioNode instanceof ScopeAudioNode) {
@@ -284,6 +303,13 @@
       onclick={(e) => e.stopPropagation()}
     >
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+        <button
+          onclick={resetSettings}
+          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+          title="Reset to defaults"
+        >
+          <RotateCcw class="h-4 w-4" />
+        </button>
         <button
           onclick={() => (showSettings = false)}
           class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"

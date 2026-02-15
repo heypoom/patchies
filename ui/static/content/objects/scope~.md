@@ -21,6 +21,17 @@ prevent the display from freezing on noise or DC signals.
 - **Y Scale** (0.1x - 10x): Vertical zoom. Amplifies the
   waveform amplitude for quiet signals, or reduces it for
   loud ones.
+
+### Advanced
+
+- **Plot** (line / point / bezier): Drawing style. Line connects
+  samples with straight segments (default). Point draws a dot
+  at each sample position. Bezier draws smooth curves through
+  sample points using quadratic interpolation.
+- **Decay** (1% - off): Phosphor persistence. When enabled,
+  previous frames fade out gradually instead of clearing
+  instantly, similar to an analog oscilloscope. Lower values
+  produce longer trails. Off (default) clears fully each frame.
 - **Refresh** (0 - 120 fps): Maximum refresh rate. 0 (max) means
   no limit (renders as fast as triggers arrive). Lower values
   reduce CPU usage by throttling how often the processor
