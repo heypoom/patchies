@@ -87,6 +87,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'osc~',
       'sampler~',
       'meter~',
+      'scope~',
       'sig~',
       'pan~',
       '+~',

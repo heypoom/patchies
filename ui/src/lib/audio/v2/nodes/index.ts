@@ -53,6 +53,7 @@ import { AbsNode } from '$lib/audio/native-dsp/nodes/abs.node';
 import { PowNode } from '$lib/audio/native-dsp/nodes/pow.node';
 import { GtNode } from '$lib/audio/native-dsp/nodes/gt.node';
 import { LtNode } from '$lib/audio/native-dsp/nodes/lt.node';
+import { ScopeAudioNode } from './ScopeAudioNode';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -109,7 +110,8 @@ const AUDIO_NODES = [
   AbsNode,
   PowNode,
   GtNode,
-  LtNode
+  LtNode,
+  ScopeAudioNode
 ] as const satisfies AudioNodeClass[];
 
 /**

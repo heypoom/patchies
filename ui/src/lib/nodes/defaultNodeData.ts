@@ -178,6 +178,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     }))
     .with('out~', () => ({ deviceId: '' }))
     .with('meter~', () => ({ smoothing: 0.8, peakHold: true, style: 'bar' }))
+    .with('scope~', () => ({ bufferSize: 512, xScale: 1, yScale: 1, fps: 0 }))
     .with('keyboard', () => ({ keybind: '', mode: 'all', trigger: 'keydown', repeat: false }))
     .with('sampler~', () => ({
       hasRecording: false,

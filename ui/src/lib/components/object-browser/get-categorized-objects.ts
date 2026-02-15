@@ -84,6 +84,7 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   'merge~': 'Audio channel merger (mono to stereo)',
   'split~': 'Audio channel splitter (stereo to mono)',
   'meter~': 'Audio level meter display',
+  'scope~': 'Oscilloscope waveform display',
   'vdo.ninja.push': 'Push video/audio/data to VDO.Ninja',
   'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja',
   wgpu: 'WebGPU compute shaders for parallel data processing',
