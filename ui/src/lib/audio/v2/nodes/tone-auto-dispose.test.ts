@@ -4,11 +4,13 @@ import { extractToneVarNames, injectAutoDispose } from './tone-auto-dispose';
 describe('extractToneVarNames', () => {
   it('extracts const declarations', () => {
     const code = `const synth = new Tone.Synth().connect(outputNode);`;
+
     expect(extractToneVarNames(code)).toEqual(['synth']);
   });
 
   it('extracts let and var declarations', () => {
     const code = `let rev = new Tone.Reverb(0.5);\nvar gain = new Tone.Gain(0.8);`;
+
     expect(extractToneVarNames(code)).toEqual(['rev', 'gain']);
   });
 
@@ -17,6 +19,7 @@ describe('extractToneVarNames', () => {
       `const tom = new Tone.MembraneSynth({ pitchDecay: 0.06 }).connect(outputNode);`,
       `const reverb = new Tone.Reverb(1.5).connect(outputNode);`
     ].join('\n');
+
     expect(extractToneVarNames(code)).toEqual(['tom', 'reverb']);
   });
 
@@ -26,6 +29,7 @@ describe('extractToneVarNames', () => {
   octaves: 3,
   oscillator: { type: 'sine' }
 }).connect(outputNode);`;
+
     expect(extractToneVarNames(code)).toEqual(['tom']);
   });
 
@@ -58,6 +62,7 @@ describe('injectAutoDispose', () => {
     // Original lines preserved
     expect(lines[0]).toBe(`const synth = new Tone.Synth().connect(outputNode);`);
     expect(lines[1]).toBe(`recv((data) => synth.triggerAttackRelease("C3", 0.2));`);
+
     // Tracking appended
     expect(lines[2]).toContain('__toneInstances.push(synth)');
   });
@@ -103,11 +108,13 @@ describe('injectAutoDispose', () => {
 
     expect(result).toContain('__toneInstances.push(synth)');
     expect(result).toContain('__toneInstances.push(reverb)');
+
     // Both tracking lines should be before the return
     const lines = result.split('\n');
     const returnIdx = lines.findIndex((l) => l.includes('return'));
     const synthIdx = lines.findIndex((l) => l.includes('push(synth)'));
     const reverbIdx = lines.findIndex((l) => l.includes('push(reverb)'));
+
     expect(synthIdx).toBeLessThan(returnIdx);
     expect(reverbIdx).toBeLessThan(returnIdx);
   });

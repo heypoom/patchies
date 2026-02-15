@@ -13,10 +13,13 @@
 export function extractToneVarNames(code: string): string[] {
   const regex = /\b(?:const|let|var)\s+(\w+)\s*=\s*new\s+Tone\./g;
   const names: string[] = [];
+
   let m;
+
   while ((m = regex.exec(code)) !== null) {
     names.push(m[1]);
   }
+
   return names;
 }
 
@@ -32,6 +35,7 @@ function findTopLevelReturnLine(lines: string[]): number {
     if (depth === 0 && /^\s*return\b/.test(lines[i])) {
       lastReturn = i;
     }
+
     for (const ch of lines[i]) {
       if (ch === '{') depth++;
       if (ch === '}') depth--;

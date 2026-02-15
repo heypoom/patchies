@@ -95,8 +95,6 @@ synth.connect(outputNode)
 recv(m => {
   synth.frequency.value = m;
 })
-
-return { cleanup: () => synth.dispose() }
 `;
 
 export const DEFAULT_ELEM_CODE = `setPortCount(1)
