@@ -425,7 +425,12 @@
   const suggestedDisabledObject = $derived.by(() => {
     if (!isEditing) return null;
     if (!expr.trim()) return null;
-    if (expr.trim().length < 3) return null; // Minimum 3 chars to reduce noise
+
+    const trimmed = expr.trim();
+
+    // Allow short signal operators like +~, *~, etc. but require 3 chars for general queries
+    if (trimmed.length < 3 && !trimmed.endsWith('~')) return null;
+
     if (expr.includes(' ')) return null; // User is typing parameters
     if (filteredSuggestions.length > 0) return null;
 
