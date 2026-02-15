@@ -8,12 +8,20 @@ const WATCH_DIRS = [
   'src/lib/objects/v2/nodes'
 ];
 
+const GENERATED_FILE = 'src/lib/generated/object-schemas.generated.ts';
+
 function runGenerator(root: string): void {
   try {
     execSync('bun scripts/run-generate-schemas.ts', {
       cwd: root,
       stdio: 'inherit',
       timeout: 30000
+    });
+
+    execSync(`bun run prettier --write ${GENERATED_FILE}`, {
+      cwd: root,
+      stdio: 'inherit',
+      timeout: 10000
     });
   } catch (error) {
     console.error('[object-schemas] Generation failed:', error);
