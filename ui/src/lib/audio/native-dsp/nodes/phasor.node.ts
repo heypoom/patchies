@@ -27,7 +27,8 @@ export const PhasorNode = createWorkletDspNode({
       description: 'Phase reset (0 to 1)',
       defaultValue: 0,
       maxPrecision: 3,
-      messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }]
+      messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }],
+      hideTextParam: true
     }
   ],
 
