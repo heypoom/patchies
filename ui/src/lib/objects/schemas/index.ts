@@ -176,6 +176,7 @@ import { SplitNode } from '$lib/audio/v2/nodes/SplitNode';
 
 // V2 Text Object imports (source of truth for control objects)
 import { DebounceObject } from '$lib/objects/v2/nodes/DebounceObject';
+import { SelectObject } from '$lib/objects/v2/nodes/SelectObject';
 import { MtofObject } from '$lib/objects/v2/nodes/MtofObject';
 import { SpigotObject } from '$lib/objects/v2/nodes/SpigotObject';
 import { ThrottleObject } from '$lib/objects/v2/nodes/ThrottleObject';
@@ -348,7 +349,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
       KVObject,
       IntObject,
       FloatObject,
-      AdsrObject
+      AdsrObject,
+      SelectObject
     ],
     'control'
   )
