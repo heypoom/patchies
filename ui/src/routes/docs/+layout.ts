@@ -3,6 +3,7 @@ import { objectSchemas } from '$lib/objects/schemas';
 import { topicOrder } from './docs-nav';
 import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
+import { objectTypeToSlug, objectSlugToType } from '$lib/docs/object-slug';
 
 export const prerender = true;
 
@@ -101,8 +102,9 @@ export const load: LayoutLoad = async ({ fetch }) => {
     return null;
   });
 
-  // Fetch objects
-  const objectPromises = objectSlugs.map(async (slug) => {
+  // Fetch objects (convert type names to URL-safe slugs for markdown paths and links)
+  const objectPromises = objectSlugs.map(async (type) => {
+    const slug = objectTypeToSlug(type);
     try {
       const res = await fetch(`/content/objects/${slug}.md`);
       if (res.ok) {
@@ -129,8 +131,8 @@ export const load: LayoutLoad = async ({ fetch }) => {
   index.objects = objects
     .filter((o) => o !== null)
     .sort((a, b) => {
-      const aOrder = objectOrderMap.get(a.slug) ?? Infinity;
-      const bOrder = objectOrderMap.get(b.slug) ?? Infinity;
+      const aOrder = objectOrderMap.get(objectSlugToType(a.slug)) ?? Infinity;
+      const bOrder = objectOrderMap.get(objectSlugToType(b.slug)) ?? Infinity;
 
       return aOrder - bOrder;
     });

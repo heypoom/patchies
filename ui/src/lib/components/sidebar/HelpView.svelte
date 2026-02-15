@@ -23,6 +23,7 @@
   import { enabledObjects } from '../../../stores/extensions.store';
   import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
   import { helpViewStore } from '../../../stores/help-view.store';
+  import { objectTypeToSlug } from '$lib/docs/object-slug';
 
   // Build object order map from packs for sorting
   const objectOrderMap = new Map<string, number>();
@@ -321,7 +322,7 @@
         {/if}
 
         <a
-          href="/docs/objects/{currentSchema.type}"
+          href="/docs/objects/{objectTypeToSlug(currentSchema.type)}"
           target="_blank"
           class="rounded p-1 text-zinc-500 transition-colors hover:bg-green-500/20 hover:text-green-300"
           title="Open full documentation (shareable link)"

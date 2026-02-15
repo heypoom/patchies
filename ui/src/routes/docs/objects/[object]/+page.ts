@@ -1,15 +1,16 @@
 import { error } from '@sveltejs/kit';
 import { objectSchemas } from '$lib/objects/schemas';
 import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
+import { objectTypeToSlug, objectSlugToType } from '$lib/docs/object-slug';
 import type { PageLoad, EntryGenerator } from './$types';
 
 // Generate entries for prerendering all object pages
 export const entries: EntryGenerator = () => {
-  return Object.keys(objectSchemas).map((object) => ({ object }));
+  return Object.keys(objectSchemas).map((type) => ({ object: objectTypeToSlug(type) }));
 };
 
 export const load: PageLoad = async ({ params, fetch }) => {
-  const objectType = params.object;
+  const objectType = objectSlugToType(params.object);
 
   // Get schema if available
   const schema = objectSchemas[objectType] ?? null;
