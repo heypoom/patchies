@@ -149,15 +149,28 @@ export function tryResolveShorthand(
 ): Record<string, unknown> | null {
   const [typeName, ...argTokens] = tokens;
 
-  const mappings = typeMap.get(typeName);
-  if (!mappings) return null;
-
   // 0 args → symbol
   if (argTokens.length === 0) {
-    return { type: typeName };
+    // Only resolve symbols for known types (type map lookup)
+    return typeMap.has(typeName) ? { type: typeName } : null;
   }
 
   const { positional, named } = parseNamedArgs(argTokens);
+
+  // All-named args → construct directly, no schema needed.
+  // The user explicitly specified every field, so bypass type map filtering.
+  if (positional.length === 0 && Object.keys(named).length > 0) {
+    const result: Record<string, unknown> = { type: typeName };
+
+    for (const [key, value] of Object.entries(named)) {
+      result[key] = parseTokenValue(value);
+    }
+
+    return result;
+  }
+
+  const mappings = typeMap.get(typeName);
+  if (!mappings) return null;
 
   // Sort by field count ascending for predictable matching
   const sorted = [...mappings].sort((a, b) => a.fields.length - b.fields.length);

@@ -159,6 +159,10 @@ describe('tryResolveShorthand', () => {
     [['setCode', 'console.log(x)', '+', '1'], { type: 'setCode', value: 'console.log(x) + 1' }],
     [['setCode', 'hello', 'world'], { type: 'setCode', value: 'hello world' }],
 
+    // All-named args bypass type map — works even with unknown types
+    [['write', 'address=2', 'data=[1, 5]'], { type: 'write', address: 2, data: [1, 5] }],
+    [['foo', 'bar=1'], { type: 'foo', bar: 1 }],
+
     // No match → null
     [['unknownType', '1'], null],
     [['set', '1', '2', '3'], null],
