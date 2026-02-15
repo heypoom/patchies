@@ -124,14 +124,17 @@ export class AudioService {
     // Handle scheduled messages via TimeScheduler for precise timing
     if (isScheduledMessage(message)) {
       const audioParam = this.getAudioParamByNode(node, key);
+
       if (audioParam && this.timeScheduler) {
         this.timeScheduler.processMessage(audioParam, message);
       }
+
       return;
     }
 
     if (node.send) {
       node.send(key, message);
+
       return;
     }
 
@@ -156,20 +159,14 @@ export class AudioService {
    */
   getInletByHandle(nodeId: string, targetHandle: string | null): ObjectInlet | null {
     const audioNode = this.nodesById.get(nodeId);
-    if (!audioNode || !targetHandle) {
-      return null;
-    }
+    if (!audioNode || !targetHandle) return null;
 
     const inletIndex = handleToPortIndex(targetHandle);
 
-    if (inletIndex === null || isNaN(inletIndex)) {
-      return null;
-    }
+    if (inletIndex === null || isNaN(inletIndex)) return null;
 
     const nodeClass = this.registry.get(getObjectType(audioNode));
-    if (!nodeClass?.inlets) {
-      return null;
-    }
+    if (!nodeClass?.inlets) return null;
 
     return nodeClass.inlets[inletIndex] ?? null;
   }
@@ -271,6 +268,7 @@ export class AudioService {
 
     // Connect destination nodes (out~) to output
     const group = NodeClass.group;
+
     if (this.outGain && group === 'destinations') {
       try {
         node.audioNode?.connect(this.outGain);
