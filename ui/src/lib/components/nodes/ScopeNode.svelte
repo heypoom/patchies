@@ -1,11 +1,15 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { ChevronRight, Settings, X } from '@lucide/svelte/icons';
+  import * as Collapsible from '$lib/components/ui/collapsible';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
+  import { match } from 'ts-pattern';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { ScopeAudioNode } from '$lib/audio/v2/nodes/ScopeAudioNode';
   import { useNodeDataTracker } from '$lib/history';
+
+  type PlotType = 'line' | 'point' | 'bezier';
 
   let node: {
     id: string;
@@ -14,6 +18,8 @@
       xScale?: number;
       yScale?: number;
       fps?: number;
+      plotType?: PlotType;
+      decay?: number;
     };
     selected: boolean;
     width?: number;
@@ -30,10 +36,13 @@
   let scopeNode: ScopeAudioNode | null = null;
 
   let showSettings = $state(false);
+  let advancedOpen = $state(false);
   let bufferSize = $state(node.data.bufferSize ?? 512);
   let xScale = $state(node.data.xScale ?? 1);
   let yScale = $state(node.data.yScale ?? 1);
   let fps = $state(node.data.fps ?? 0);
+  let plotType = $state<PlotType>(node.data.plotType ?? 'line');
+  let decay = $state(node.data.decay ?? 1);
 
   const DEFAULT_WIDTH = 200;
   const DEFAULT_HEIGHT = 120;
@@ -71,15 +80,25 @@
     animationId = requestAnimationFrame(updateScope);
   }
 
+  function sampleToY(sample: number, h: number): number {
+    const normalized = Math.max(-1, Math.min(1, sample * yScale));
+    return ((1 - normalized) / 2) * h;
+  }
+
   function drawWaveform(buffer: Float32Array) {
     if (!ctx) return;
 
     const w = displayWidth;
     const h = displayHeight;
 
-    // Clear canvas
-    ctx.fillStyle = '#080809';
-    ctx.fillRect(0, 0, w, h);
+    // Decay: alpha=1 means full clear (no persistence), lower = more trails
+    if (decay >= 1) {
+      ctx.fillStyle = '#080809';
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      ctx.fillStyle = `rgba(8, 8, 9, ${decay})`;
+      ctx.fillRect(0, 0, w, h);
+    }
 
     // Center reference line
     ctx.strokeStyle = '#27272a';
@@ -93,27 +112,55 @@
     const samplesToShow = Math.max(1, Math.floor(buffer.length / xScale));
     const sliceWidth = w / samplesToShow;
 
-    // Draw waveform
     ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
+    ctx.fillStyle = '#22c55e';
 
-    let x = 0;
-    for (let i = 0; i < samplesToShow; i++) {
-      const sample = buffer[i] * yScale;
-      // Map sample [-1, 1] to canvas y [h, 0], clamped
-      const normalized = Math.max(-1, Math.min(1, sample));
-      const y = ((1 - normalized) / 2) * h;
+    match(plotType)
+      .with('line', () => {
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        let x = 0;
+        for (let i = 0; i < samplesToShow; i++) {
+          const y = sampleToY(buffer[i], h);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          x += sliceWidth;
+        }
+        ctx.stroke();
+      })
+      .with('point', () => {
+        const radius = Math.max(1, Math.min(2, sliceWidth * 0.4));
+        let x = 0;
+        for (let i = 0; i < samplesToShow; i++) {
+          const y = sampleToY(buffer[i], h);
+          ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+          x += sliceWidth;
+        }
+      })
+      .with('bezier', () => {
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        if (samplesToShow < 2) return;
 
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-      x += sliceWidth;
-    }
+        const y0 = sampleToY(buffer[0], h);
+        ctx.moveTo(0, y0);
 
-    ctx.stroke();
+        for (let i = 1; i < samplesToShow; i++) {
+          const prevX = (i - 1) * sliceWidth;
+          const currX = i * sliceWidth;
+          const prevY = sampleToY(buffer[i - 1], h);
+          const currY = sampleToY(buffer[i], h);
+          const midX = (prevX + currX) / 2;
+          ctx.quadraticCurveTo(prevX, prevY, midX, (prevY + currY) / 2);
+        }
+
+        // Final segment to last point
+        const lastX = (samplesToShow - 1) * sliceWidth;
+        const lastY = sampleToY(buffer[samplesToShow - 1], h);
+        ctx.lineTo(lastX, lastY);
+        ctx.stroke();
+      })
+      .exhaustive();
   }
 
   const bufferSizeTracker = tracker.track('bufferSize', () => node.data.bufferSize ?? 512);
@@ -143,6 +190,20 @@
     fps = value;
     updateNodeData(node.id, { fps: value });
     scopeNode?.setFps(value);
+  }
+
+  function handlePlotTypeChange(value: PlotType) {
+    const oldValue = plotType;
+    plotType = value;
+    updateNodeData(node.id, { plotType: value });
+    tracker.commit('plotType', oldValue, value);
+  }
+
+  const decayTracker = tracker.track('decay', () => node.data.decay ?? 1);
+
+  function handleDecayChange(value: number) {
+    decay = value;
+    updateNodeData(node.id, { decay: value });
   }
 
   onMount(async () => {
@@ -292,24 +353,78 @@
             />
           </div>
 
-          <!-- Refresh Rate -->
-          <div>
-            <div class="mb-1 flex items-center justify-between">
-              <span class="text-xs font-medium text-zinc-300">Refresh</span>
-              <span class="text-xs text-zinc-500">{fps === 0 ? 'max' : `${fps} fps`}</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="120"
-              step="1"
-              value={fps}
-              onpointerdown={fpsTracker.onFocus}
-              onpointerup={fpsTracker.onBlur}
-              oninput={(e) => handleFpsChange(parseInt((e.target as HTMLInputElement).value))}
-              class="w-full accent-green-500"
-            />
-          </div>
+          <!-- Advanced accordion -->
+          <Collapsible.Root bind:open={advancedOpen}>
+            <Collapsible.Trigger
+              class="flex w-full cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
+            >
+              <ChevronRight class={['h-3 w-3 transition-transform', advancedOpen && 'rotate-90']} />
+              <span>Advanced</span>
+            </Collapsible.Trigger>
+
+            <Collapsible.Content class="mt-2 space-y-4">
+              <!-- Plot Type -->
+              <div>
+                <span class="mb-1 block text-xs font-medium text-zinc-300">Plot</span>
+                <div class="flex gap-1">
+                  {#each ['line', 'point', 'bezier'] as type (type)}
+                    <button
+                      class={[
+                        'flex-1 cursor-pointer rounded px-2 py-1 text-xs transition-colors',
+                        plotType === type
+                          ? 'bg-green-600 text-white'
+                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      ]}
+                      onclick={() => handlePlotTypeChange(type as PlotType)}
+                    >
+                      {type}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+
+              <!-- Decay -->
+              <div>
+                <div class="mb-1 flex items-center justify-between">
+                  <span class="text-xs font-medium text-zinc-300">Decay</span>
+                  <span class="text-xs text-zinc-500"
+                    >{decay >= 1 ? 'off' : `${(decay * 100).toFixed(0)}%`}</span
+                  >
+                </div>
+                <input
+                  type="range"
+                  min="0.01"
+                  max="1"
+                  step="0.01"
+                  value={decay}
+                  onpointerdown={decayTracker.onFocus}
+                  onpointerup={decayTracker.onBlur}
+                  oninput={(e) =>
+                    handleDecayChange(parseFloat((e.target as HTMLInputElement).value))}
+                  class="w-full accent-green-500"
+                />
+              </div>
+
+              <!-- Refresh Rate -->
+              <div>
+                <div class="mb-1 flex items-center justify-between">
+                  <span class="text-xs font-medium text-zinc-300">Refresh</span>
+                  <span class="text-xs text-zinc-500">{fps === 0 ? 'max' : `${fps} fps`}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="120"
+                  step="1"
+                  value={fps}
+                  onpointerdown={fpsTracker.onFocus}
+                  onpointerup={fpsTracker.onBlur}
+                  oninput={(e) => handleFpsChange(parseInt((e.target as HTMLInputElement).value))}
+                  class="w-full accent-green-500"
+                />
+              </div>
+            </Collapsible.Content>
+          </Collapsible.Root>
         </div>
       </div>
     </div>
