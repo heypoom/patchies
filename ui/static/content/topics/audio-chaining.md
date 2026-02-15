@@ -24,6 +24,16 @@ Connect audio objects together to build a signal chain — from sources through 
 
 Browse all available audio objects in the object browser under the **Audio** category.
 
+## Monitoring Audio
+
+When patching with audio, it's useful to be able to view the audio data.
+
+- [scope~](/docs/objects/scope~) - oscilloscope for viewing waveforms in real time
+- [meter~](/docs/objects/meter~) - visual level meter for monitoring audio loudness
+- [env~](/docs/objects/env~) - envelope follower that outputs the audio loudness as a number
+
+See [Audio Reactivity](/docs/audio-reactivity) for more ways to interact and visualize audio data.
+
 ## Wireless Audio Routing
 
 Connect distant audio objects without cables using named channels.
