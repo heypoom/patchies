@@ -80,7 +80,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'audio',
     name: 'Audio',
-    description: 'Operators for working with audio',
+    description: 'Core audio sources, routing and monitoring',
     icon: 'AudioLines',
     objects: [
       'gain~',
@@ -90,6 +90,25 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'scope~',
       'sig~',
       'pan~',
+      'split~',
+      'merge~',
+      'send~',
+      'recv~',
+      'line~',
+      'noise~',
+      'phasor~',
+      'snapshot~',
+      'bang~',
+      'adsr',
+      'mtof'
+    ]
+  },
+  {
+    id: 'audio-math',
+    name: 'Audio Math',
+    description: 'Signal arithmetic and shaping',
+    icon: 'Calculator',
+    objects: [
       '+~',
       '*~',
       '-~',
@@ -102,18 +121,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'wrap~',
       'abs~',
       'pow~',
-      'fft~',
-      'split~',
-      'merge~',
-      'send~',
-      'recv~',
-      'line~',
-      'noise~',
-      'phasor~',
-      'snapshot~',
-      'bang~',
-      'adsr',
-      'mtof'
+      'fft~'
     ]
   },
   {
