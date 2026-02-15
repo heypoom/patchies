@@ -243,7 +243,7 @@
             <input
               type="range"
               min="64"
-              max="4096"
+              max="2048"
               step="1"
               value={bufferSize}
               onpointerdown={bufferSizeTracker.onFocus}

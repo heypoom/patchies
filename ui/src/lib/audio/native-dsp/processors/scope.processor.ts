@@ -23,7 +23,7 @@ defineDSP({
 
     if ('bufferSize' in msg) {
       const size = msg.bufferSize;
-      if (typeof size === 'number' && size >= 64 && size <= 4096) {
+      if (typeof size === 'number' && size >= 64 && size <= 2048) {
         state.bufferSize = size;
         state.buffer = new Float32Array(size);
         state.writeIndex = 0;
