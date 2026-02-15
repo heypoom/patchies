@@ -499,7 +499,7 @@
                 updateNodeData(nodeId, { speakingRate: parseFloat(e.currentTarget.value) })}
               onpointerdown={speakingRateTracker.onFocus}
               onpointerup={speakingRateTracker.onBlur}
-              class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-purple-400"
+              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>0.25x</span>
@@ -522,7 +522,7 @@
               onchange={(e) => updateNodeData(nodeId, { pitch: parseFloat(e.currentTarget.value) })}
               onpointerdown={pitchTracker.onFocus}
               onpointerup={pitchTracker.onBlur}
-              class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-purple-400"
+              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>-20</span>
@@ -546,7 +546,7 @@
                 updateNodeData(nodeId, { volumeGainDb: parseFloat(e.currentTarget.value) })}
               onpointerdown={volumeGainDbTracker.onFocus}
               onpointerup={volumeGainDbTracker.onBlur}
-              class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-purple-400"
+              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>-10 dB</span>

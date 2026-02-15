@@ -384,7 +384,7 @@
               onchange={(e) => updateNodeData(nodeId, { rate: parseFloat(e.currentTarget.value) })}
               onpointerdown={rateTracker.onFocus}
               onpointerup={rateTracker.onBlur}
-              class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
+              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>0.1x</span>
@@ -407,7 +407,7 @@
               onchange={(e) => updateNodeData(nodeId, { pitch: parseFloat(e.currentTarget.value) })}
               onpointerdown={pitchTracker.onFocus}
               onpointerup={pitchTracker.onBlur}
-              class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
+              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>Low</span>
@@ -431,7 +431,7 @@
                 updateNodeData(nodeId, { volume: parseFloat(e.currentTarget.value) })}
               onpointerdown={volumeTracker.onFocus}
               onpointerup={volumeTracker.onBlur}
-              class="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-zinc-400"
+              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>0%</span>
