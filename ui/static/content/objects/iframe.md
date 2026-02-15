@@ -19,7 +19,10 @@ Or double-click the object to enter a URL when no content is loaded.
 
 ## Security
 
-The iframe is sandboxed for security. Some features may be restricted.
+The iframe is sandboxed and loaded with the `credentialless` attribute
+for security. This means the embedded page runs in an ephemeral context
+without access to the parent page's cookies or storage.
+Some features may be restricted.
 
 ## See Also
 

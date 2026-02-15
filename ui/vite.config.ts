@@ -33,6 +33,18 @@ export function viteStaticCopyPyodide() {
 
 export default defineConfig({
   plugins: [
+    // Cross-origin isolation headers (enables SharedArrayBuffer for BufferBridge).
+    // Must be a Vite middleware plugin so headers are set before SvelteKit handles the request.
+    {
+      name: 'cross-origin-isolation',
+      configureServer(server) {
+        server.middlewares.use((_req, res, next) => {
+          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+          res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+          next();
+        });
+      }
+    },
     helpPatchesManifest(),
     topicTitlesManifest(),
     objectSchemasPlugin(),
