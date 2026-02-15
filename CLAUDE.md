@@ -186,14 +186,11 @@ See `PostItNode.svelte` and `SliderNode.svelte` for complete examples. Full spec
 **For text control objects (delay, uniqby, etc.):**
 
 1. Create class in `src/lib/objects/v2/nodes/` implementing `TextObjectV2`
-2. Register in `src/lib/objects/v2/nodes/index.ts`
-3. **MUST** add to object schemas in `src/lib/objects/schemas/index.ts`:
-   - Import the node class
-   - Add entry like `'kv': schemaFromNode(KVObject, 'control'),`
-4. Add to `src/lib/extensions/object-packs.ts` in the appropriate pack
-5. Update the documentation in `static/content/objects/{nodename}.md`
-6. **MUST** use TypeBox schemas for message types (see pattern below)
-7. **MUST** update AI object prompts in `src/lib/ai/`:
+2. Register in `src/lib/objects/v2/nodes/index.ts` (add to imports AND `TEXT_OBJECTS` array — schema is auto-generated from this)
+3. Add to `src/lib/extensions/object-packs.ts` in the appropriate pack
+4. Update the documentation in `static/content/objects/{nodename}.md`
+5. **MUST** use TypeBox schemas for message types (see pattern below)
+6. **MUST** update AI object prompts in `src/lib/ai/`:
    - Add to `object-descriptions-types.ts` (OBJECT_TYPE_LIST)
    - Create prompt file in `object-prompts/` and register in `object-prompts/index.ts`
 
@@ -257,13 +254,10 @@ See `KVObject.ts` for a complete example.
 **ALWAYS complete ALL these steps when creating a new V2 audio node:**
 
 1. Create node class in `src/lib/audio/v2/nodes/` implementing `AudioNodeV2`
-2. Register in `src/lib/audio/v2/nodes/index.ts` (add to imports AND `AUDIO_NODES` array)
+2. Register in `src/lib/audio/v2/nodes/index.ts` (add to imports AND `AUDIO_NODES` array — schema is auto-generated from this)
 3. **MUST** add documentation in `ui/static/content/objects/{nodename}.md` (e.g., `send~.md`)
-4. **MUST** add to object schemas in `src/lib/objects/schemas/index.ts`:
-   - Import the node class
-   - Add entry like `'send~': schemaFromNode(SendAudioNode, 'audio'),`
-5. Add to `src/lib/extensions/object-packs.ts` in the appropriate pack (usually Audio)
-6. If node has aliases, add `static aliases = ['s~']` to node class
+4. Add to `src/lib/extensions/object-packs.ts` in the appropriate pack (usually Audio)
+5. If node has aliases, add `static aliases = ['s~']` to node class
 
 ### New Native DSP Worklet Node Checklist
 
@@ -309,8 +303,7 @@ export const MyNode = createWorkletDspNode({
 
 **Registration (same as V2 audio nodes):**
 
-1. `ui/src/lib/audio/v2/nodes/index.ts` — import and add to `AUDIO_NODES` array
-1. `ui/src/lib/objects/schemas/index.ts` — import and add to `schemasFromNodes([...], 'audio')`
+1. `ui/src/lib/audio/v2/nodes/index.ts` — import and add to `AUDIO_NODES` array (schema is auto-generated from this)
 1. `ui/src/lib/extensions/object-packs.ts` — add to appropriate pack
 1. `ui/static/content/objects/{nodename}.md` — documentation
 
