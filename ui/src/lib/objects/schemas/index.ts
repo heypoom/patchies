@@ -154,7 +154,7 @@ import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
 
 // V2 Audio Node imports (source of truth for audio objects)
-import { AddNodeV2 } from '$lib/audio/v2/nodes/AddNode';
+import { AddNode } from '$lib/audio/native-dsp/nodes/add.node';
 import { AllpassNode } from '$lib/audio/v2/nodes/AllpassNode';
 import { BandpassNode } from '$lib/audio/v2/nodes/BandpassNode';
 import { CompressorNode } from '$lib/audio/v2/nodes/CompressorNode';
@@ -311,7 +311,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
       AudioOutputNode,
       SplitNode,
       MergeNode,
-      AddNodeV2,
+      AddNode,
       SendAudioNode,
       RecvAudioNode,
       LineNode,
