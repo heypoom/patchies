@@ -1788,12 +1788,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
   table: {
     type: 'table',
     category: 'control',
-    description: 'Named audio buffer for tabwrite~/tabread~',
+    description: 'Named array of floats',
     inlets: [
       {
         id: 'command',
         type: 'message',
-        description: 'Buffer commands',
+        description: 'Table commands',
         messages: [
           {
             schema: Type.Object({
@@ -1801,37 +1801,37 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
               index: Type.Number(),
               value: Type.Number()
             }),
-            description: 'Set sample at index'
+            description: 'Set value at index'
           },
           {
             schema: Type.Object({ type: Type.Literal('get'), index: Type.Number() }),
-            description: 'Get sample at index'
+            description: 'Get value at index'
           },
           {
             schema: Type.Object({ type: Type.Literal('resize'), length: Type.Number() }),
-            description: 'Resize buffer'
+            description: 'Resize table'
           },
           {
             schema: Type.Object({ type: Type.Literal('clear') }),
-            description: 'Clear buffer (fill with zeros)'
+            description: 'Clear table (fill with zeros)'
           },
           {
             schema: Type.Object({ type: Type.Literal('normalize') }),
-            description: 'Normalize buffer to -1..1'
+            description: 'Normalize table to -1..1'
           }
         ]
       },
       {
         id: 'name',
         type: 'string',
-        description: 'Buffer name',
-        messages: [{ schema: Type.String(), description: 'Buffer name' }]
+        description: 'Table name',
+        messages: [{ schema: Type.String(), description: 'Table name' }]
       },
       {
         id: 'size',
         type: 'int',
-        description: 'Buffer size in samples',
-        messages: [{ schema: Type.Integer(), description: 'Buffer size in samples' }]
+        description: 'Table size',
+        messages: [{ schema: Type.Integer(), description: 'Table size' }]
       }
     ],
     outlets: [{ id: 'result', type: 'message', description: 'Response to get commands' }],

@@ -53,6 +53,9 @@ export class BufferBridgeService {
   /** Event listeners for buffer changes */
   private changeListeners = new Set<BufferChangeCallback>();
 
+  /** Queued createBuffer calls made before init() */
+  private pendingCreates: Array<{ name: string; length: number; channels: number }> = [];
+
   private constructor() {
     this.useSAB = canUseSharedArrayBuffer();
   }
@@ -85,6 +88,13 @@ export class BufferBridgeService {
 
       this.initialized = true;
 
+      // Flush any buffer creates that were queued before init
+      for (const pending of this.pendingCreates) {
+        this.createBuffer(pending.name, pending.length, pending.channels);
+      }
+
+      this.pendingCreates = [];
+
       logger.info(`BufferBridge initialized (SAB: ${this.useSAB})`);
     } catch (error) {
       logger.error('Failed to initialize BufferBridgeService:', error);
@@ -95,7 +105,7 @@ export class BufferBridgeService {
   /** Create a named buffer */
   createBuffer(name: string, length: number, channels = 1): void {
     if (!this.bridgeNode) {
-      logger.info('BufferBridgeService not initialized, skipping createBuffer');
+      this.pendingCreates.push({ name, length, channels });
       return;
     }
 

@@ -1,27 +1,20 @@
-The `table` object creates a named audio buffer that can be
-written to by `tabwrite~` and read from by `tabread~` or `tabread4~`.
+The `table` object creates a named array of floats. It can store
+any numerical data — audio samples, lookup tables, sequences,
+envelopes, or arbitrary values.
 
 ## Getting Started
 
-Create a named buffer with a size (in samples):
+Create a named array with a size (default 100):
 
-```
+```txt
 table mybuf 1024
 ```
 
-The buffer name is shared — any `tabwrite~` or `tabread~` using
-the same name will access the same buffer.
-
-## Messages
-
-- `set <index> <value>` — set a sample at the given index
-- `get <index>` — get the sample value (outputs on outlet)
-- `resize <length>` — resize the buffer (preserves existing data)
-- `clear` — fill the buffer with zeros
-- `normalize` — normalize the buffer to -1..1 range
+The name is shared — any `tabwrite~`, `tabread~`, or `tabread4~`
+using the same name will access the same array.
 
 ## See Also
 
-- [tabwrite~](/docs/objects/tabwrite~) — write audio into a buffer
-- [tabread~](/docs/objects/tabread~) — read from a buffer
+- [tabwrite~](/docs/objects/tabwrite~) — write audio into an array
+- [tabread~](/docs/objects/tabread~) — read from an array
 - [tabread4~](/docs/objects/tabread4~) — read with interpolation

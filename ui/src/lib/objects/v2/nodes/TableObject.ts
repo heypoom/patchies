@@ -8,19 +8,19 @@ import { msg, sym } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
 import { BufferBridgeService } from '$lib/audio/buffer-bridge';
 
-/** Set a sample value at index */
+/** Set a value at index */
 const TableSet = msg('set', { index: Type.Number(), value: Type.Number() });
 
-/** Get a sample value at index */
+/** Get a value at index */
 const TableGet = msg('get', { index: Type.Number() });
 
-/** Resize the buffer */
+/** Resize the table */
 const TableResize = msg('resize', { length: Type.Number() });
 
-/** Clear the buffer */
+/** Clear the table */
 const TableClear = sym('clear');
 
-/** Normalize the buffer to -1..1 range */
+/** Normalize the table to -1..1 range */
 const TableNormalize = sym('normalize');
 
 const tableMessages = {
@@ -32,40 +32,40 @@ const tableMessages = {
 };
 
 /**
- * TableObject creates and manages a named audio buffer.
+ * TableObject creates and manages a named array of floats.
  *
  * Creation: [table name size]
- * - name: buffer name (shared across tabwrite~/tabread~ with same name)
- * - size: buffer length in samples (default 512)
+ * - name: array name (shared across tabwrite~/tabread~ with same name)
+ * - size: array length (default 100)
  */
 export class TableObject implements TextObjectV2 {
   static type = 'table';
-  static description = 'Named audio buffer for tabwrite~/tabread~';
+  static description = 'Named array of floats';
 
   static inlets: ObjectInlet[] = [
     {
       name: 'command',
       type: 'message',
-      description: 'Buffer commands',
+      description: 'Table commands',
       messages: [
-        { schema: TableSet, description: 'Set sample at index' },
-        { schema: TableGet, description: 'Get sample at index' },
-        { schema: TableResize, description: 'Resize buffer' },
-        { schema: TableClear, description: 'Clear buffer (fill with zeros)' },
-        { schema: TableNormalize, description: 'Normalize buffer to -1..1' }
+        { schema: TableSet, description: 'Set value at index' },
+        { schema: TableGet, description: 'Get value at index' },
+        { schema: TableResize, description: 'Resize table' },
+        { schema: TableClear, description: 'Clear table (fill with zeros)' },
+        { schema: TableNormalize, description: 'Normalize table to -1..1' }
       ]
     },
     {
       name: 'name',
       type: 'string',
-      description: 'Buffer name',
+      description: 'Table name',
       hideInlet: true
     },
     {
       name: 'size',
       type: 'int',
-      description: 'Buffer size in samples',
-      defaultValue: 512,
+      description: 'Table size',
+      defaultValue: 100,
       minNumber: 1,
       hideInlet: true
     }
@@ -83,7 +83,7 @@ export class TableObject implements TextObjectV2 {
   readonly context: ObjectContext;
 
   private bufferName = '';
-  private bufferSize = 512;
+  private bufferSize = 100;
   private bridge: BufferBridgeService;
 
   constructor(nodeId: string, context: ObjectContext) {
@@ -97,7 +97,7 @@ export class TableObject implements TextObjectV2 {
     const size = this.context.getParam('size');
 
     this.bufferName = typeof name === 'string' && name.length > 0 ? name : this.nodeId;
-    this.bufferSize = typeof size === 'number' && size > 0 ? Math.round(size) : 512;
+    this.bufferSize = typeof size === 'number' && size > 0 ? Math.round(size) : 100;
 
     this.bridge.createBuffer(this.bufferName, this.bufferSize);
   }

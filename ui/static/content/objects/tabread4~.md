@@ -5,7 +5,7 @@ Hermite interpolation for smooth playback.
 
 Read from a buffer with interpolation:
 
-```
+```txt
 tabread4~ mybuf
 ```
 
@@ -14,13 +14,8 @@ between neighboring samples using Hermite cubic interpolation.
 This produces smoother results than `tabread~` when the index
 changes at sub-sample rates.
 
-## Inlets
-
-- **Signal** — index into the buffer (fractional values supported)
-- **Message** — buffer name (string)
-
 ## See Also
 
-- [table](/docs/objects/table) — create a named buffer
+- [table](/docs/objects/table) — create a named array
 - [tabwrite~](/docs/objects/tabwrite~) — write audio into a buffer
 - [tabread~](/docs/objects/tabread~) — read without interpolation
