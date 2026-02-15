@@ -1,3 +1,6 @@
+import type { FieldMapping } from '$lib/objects/schemas/utils';
+import Json5 from 'json5';
+
 /**
  * Splits a string at a delimiter, respecting JSON structure (braces, brackets, quotes).
  * Only delimiters at depth 0 (outside {}, [], and quotes) are treated as separators.
@@ -85,4 +88,126 @@ export function splitSequentialMessages(text: string): string[] {
  */
 export function splitByTopLevelSpaces(text: string): string[] {
   return splitAtTopLevel(text, ' ');
+}
+
+/** Parse a value token: try JSON5, fallback to raw string. */
+function parseTokenValue(token: string): unknown {
+  try {
+    return Json5.parse(token);
+  } catch {
+    return token;
+  }
+}
+
+/**
+ * Separate named (field=value) arguments from positional arguments.
+ * A token is named if it has `identifierName=value` format.
+ */
+export function parseNamedArgs(tokens: string[]): {
+  positional: string[];
+  named: Record<string, string>;
+} {
+  const positional: string[] = [];
+  const named: Record<string, string> = {};
+
+  for (const token of tokens) {
+    const eqIndex = token.indexOf('=');
+
+    if (eqIndex > 0) {
+      const key = token.slice(0, eqIndex);
+
+      if (/^[a-zA-Z_]\w*$/.test(key)) {
+        named[key] = token.slice(eqIndex + 1);
+        continue;
+      }
+    }
+
+    positional.push(token);
+  }
+
+  return { positional, named };
+}
+
+/**
+ * Try to resolve space-separated tokens as a shorthand message.
+ * Returns the resolved message object, or null if no matching schema found.
+ *
+ * Resolution rules:
+ * - First token is the type name, must exist in typeMap
+ * - Argument count selects the schema (positional args fill remaining fields)
+ * - Named args (field=value) override positional assignments
+ * - Rest-args: if last field is Type.String(), extra positional tokens are joined with spaces
+ * - No match → returns null (caller falls back to array)
+ *
+ * Examples:
+ *   ['set', '1']           → {type: 'set', value: 1}
+ *   ['set', 'foo', '42']   → {type: 'set', key: 'foo', value: 42}
+ *   ['set', 'value=1']     → {type: 'set', value: 1}
+ *   ['unknownType', '1']   → null
+ */
+export function tryResolveShorthand(
+  tokens: string[],
+  typeMap: Map<string, FieldMapping[]>
+): Record<string, unknown> | null {
+  const [typeName, ...argTokens] = tokens;
+
+  const mappings = typeMap.get(typeName);
+  if (!mappings) return null;
+
+  // 0 args → symbol
+  if (argTokens.length === 0) {
+    return { type: typeName };
+  }
+
+  const { positional, named } = parseNamedArgs(argTokens);
+
+  // Sort by field count ascending for predictable matching
+  const sorted = [...mappings].sort((a, b) => a.fields.length - b.fields.length);
+
+  for (const mapping of sorted) {
+    // All named keys must exist in this schema's fields
+    if (Object.keys(named).some((k) => !mapping.fields.includes(k))) continue;
+
+    const remainingFields = mapping.fields.filter((f) => !(f in named));
+
+    // Exact match: positional count equals remaining fields
+    const exactMatch = positional.length === remainingFields.length;
+
+    // Rest-args: last field is String, more positional than remaining, at least 1 remaining
+    const lastRemaining = remainingFields[remainingFields.length - 1];
+    const isLastSchemaField = lastRemaining === mapping.fields[mapping.fields.length - 1];
+    const restMatch =
+      mapping.lastFieldIsString &&
+      isLastSchemaField &&
+      positional.length > remainingFields.length &&
+      remainingFields.length > 0;
+
+    if (!exactMatch && !restMatch) continue;
+
+    // Build result
+    const result: Record<string, unknown> = { type: typeName };
+
+    if (restMatch) {
+      // Assign all remaining fields except the last one normally
+      for (let i = 0; i < remainingFields.length - 1; i++) {
+        result[remainingFields[i]] = parseTokenValue(positional[i]);
+      }
+
+      // Join rest into the last field as string
+      result[lastRemaining] = positional.slice(remainingFields.length - 1).join(' ');
+    } else {
+      for (let i = 0; i < remainingFields.length; i++) {
+        result[remainingFields[i]] = parseTokenValue(positional[i]);
+      }
+    }
+
+    // Apply named args (override positional)
+    for (const [key, value] of Object.entries(named)) {
+      result[key] = parseTokenValue(value);
+    }
+
+    return result;
+  }
+
+  return null;
 }

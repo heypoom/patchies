@@ -15,9 +15,17 @@
   import 'highlight.js/styles/tokyo-night-dark.css';
   import CodeEditor from '../CodeEditor.svelte';
   import { parseInletCount } from '$lib/utils/expr-parser';
-  import { splitSequentialMessages, splitByTopLevelSpaces } from '$lib/utils/message-parser';
+  import {
+    splitSequentialMessages,
+    splitByTopLevelSpaces,
+    tryResolveShorthand
+  } from '$lib/utils/message-parser';
+  import { objectSchemas, buildMessageTypeMap } from '$lib/objects/schemas';
 
   hljs.registerLanguage('javascript', javascript);
+
+  // Build message type map once for shorthand resolution (e.g., `set 1` → {type: 'set', value: 1})
+  const messageTypeMap = buildMessageTypeMap(objectSchemas);
 
   let {
     id: nodeId,
@@ -205,9 +213,17 @@
         continue;
       } catch (e) {}
 
-      // Try space-separated tokens → send as array
+      // Try space-separated tokens
       const tokens = splitByTopLevelSpaces(processedMsg);
       if (tokens.length > 1) {
+        // Try shorthand resolution (e.g., `set 1` → {type: 'set', value: 1})
+        const resolved = tryResolveShorthand(tokens, messageTypeMap);
+        if (resolved) {
+          send(resolved);
+          continue;
+        }
+
+        // Fallback: send as array
         send(tokens.map(parseToken));
         continue;
       }

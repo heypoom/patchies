@@ -1,6 +1,8 @@
 import type { TSchema } from '@sinclair/typebox';
 import { Kind } from '@sinclair/typebox';
 
+import type { ObjectSchemaRegistry } from './types';
+
 // Syntax highlighting CSS classes
 const hl = {
   key: 'text-sky-400',
@@ -213,4 +215,75 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
     default:
       return `<span class="${hl.type}">unknown</span>`;
   }
+}
+
+/**
+ * Field mapping for shorthand message resolution.
+ * Maps a message type name to its non-type fields.
+ */
+export interface FieldMapping {
+  /** Field names in canonical order (declaration order) */
+  fields: string[];
+
+  /**
+   * Whether the last field is Type.String().
+   *
+   * When true, extra positional args beyond the field count are joined with
+   * spaces into the last field instead of causing a fallback to array mode.
+   *
+   * Example: `setCode` has one field `{ value: Type.String() }`.
+   * `setCode console.log(x) + 1` has 3 positional tokens but only 1 field.
+   * Because lastFieldIsString is true, they join: `{type: 'setCode', value: 'console.log(x) + 1'}`.
+   * Without this, it would fall through to array: `[{type: 'setCode'}, ...]`.
+   */
+  lastFieldIsString: boolean;
+}
+
+/**
+ * Extract non-type field names from a TObject message schema.
+ */
+export function getMessageFields(schema: TSchema): FieldMapping | null {
+  if (schema[Kind] !== 'Object') return null;
+
+  const props = schema.properties as Record<string, TSchema>;
+  const fields = Object.keys(props).filter((k) => k !== 'type');
+  const lastField = fields[fields.length - 1];
+  const lastFieldIsString = lastField ? props[lastField]?.[Kind] === 'String' : false;
+
+  return { fields, lastFieldIsString };
+}
+
+/**
+ * Build a map from message type name → field mappings.
+ * Used for shorthand resolution (e.g., `set 1` → `{type: 'set', value: 1}`).
+ *
+ * Scans all inlet message schemas across all registered objects.
+ * Deduplicates by field names — same type name with same fields in same order is kept once.
+ */
+export function buildMessageTypeMap(registry: ObjectSchemaRegistry): Map<string, FieldMapping[]> {
+  const map = new Map<string, FieldMapping[]>();
+
+  for (const objSchema of Object.values(registry)) {
+    for (const inlet of objSchema.inlets) {
+      if (!inlet.messages) continue;
+
+      for (const message of inlet.messages) {
+        const typeName = getSchemaTypeName(message.schema);
+        if (!typeName) continue;
+
+        const mapping = getMessageFields(message.schema);
+        if (!mapping) continue;
+
+        const existing = map.get(typeName) ?? [];
+        const key = mapping.fields.join(',');
+
+        if (!existing.some((m) => m.fields.join(',') === key)) {
+          existing.push(mapping);
+          map.set(typeName, existing);
+        }
+      }
+    }
+  }
+
+  return map;
 }
