@@ -1,19 +1,19 @@
-The `tabwrite~` object writes an audio signal into a named buffer
+The `tabwrite~` object writes an audio signal into a named array
 created by `table`.
 
 ## Getting Started
 
-Write audio into a buffer:
+Write audio into an array:
 
 ```txt
 tabwrite~ mybuf
 ```
 
 The object continuously writes incoming audio samples into the
-buffer in a circular fashion.
+array in a circular fashion.
 
 ## See Also
 
 - [table](/docs/objects/table) — create a named array
-- [tabread~](/docs/objects/tabread~) — read from a buffer
+- [tabread~](/docs/objects/tabread~) — read from an array
 - [tabread4~](/docs/objects/tabread4~) — read with interpolation

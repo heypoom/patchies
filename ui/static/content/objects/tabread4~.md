@@ -1,9 +1,9 @@
-The `tabread4~` object reads from a named buffer using 4-point
+The `tabread4~` object reads from a named array using 4-point
 Hermite interpolation for smooth playback.
 
 ## Getting Started
 
-Read from a buffer with interpolation:
+Read from an array with interpolation:
 
 ```txt
 tabread4~ mybuf
@@ -17,5 +17,5 @@ changes at sub-sample rates.
 ## See Also
 
 - [table](/docs/objects/table) — create a named array
-- [tabwrite~](/docs/objects/tabwrite~) — write audio into a buffer
+- [tabwrite~](/docs/objects/tabwrite~) — write audio into an array
 - [tabread~](/docs/objects/tabread~) — read without interpolation
