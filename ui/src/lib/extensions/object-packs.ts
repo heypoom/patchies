@@ -80,7 +80,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'audio',
     name: 'Audio',
-    description: 'Core audio sources, routing and monitoring',
+    description: 'Operators for working with audio',
     icon: 'AudioLines',
     objects: [
       'gain~',
