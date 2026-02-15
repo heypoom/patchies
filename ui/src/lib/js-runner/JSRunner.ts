@@ -299,6 +299,7 @@ export class JSRunner {
     const messageContext = this.getMessageContext(nodeId);
     messageContext.runCleanupCallbacks();
     messageContext.clearTimers();
+    messageContext.messageCallback = null;
 
     return messageContext.getContext();
   }
