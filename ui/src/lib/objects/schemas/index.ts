@@ -206,6 +206,10 @@ import { PowNode } from '$lib/audio/native-dsp/nodes/pow.node';
 import { GtNode } from '$lib/audio/native-dsp/nodes/gt.node';
 import { LtNode } from '$lib/audio/native-dsp/nodes/lt.node';
 import { SampholdNode } from '$lib/audio/native-dsp/nodes/samphold.node';
+import { AdsrNode } from '$lib/audio/native-dsp/nodes/adsr.node';
+import { EnvNode } from '$lib/audio/native-dsp/nodes/env.node';
+import { VlineNode } from '$lib/audio/native-dsp/nodes/vline.node';
+import { LatchNode } from '$lib/audio/native-dsp/nodes/latch.node';
 import { ScopeAudioNode } from '$lib/audio/v2/nodes/ScopeAudioNode';
 import { IntObject } from '../v2/nodes/IntObject';
 import { FloatObject } from '../v2/nodes/FloatObject';
@@ -337,6 +341,10 @@ export const objectSchemas: ObjectSchemaRegistry = {
       GtNode,
       LtNode,
       SampholdNode,
+      AdsrNode,
+      EnvNode,
+      VlineNode,
+      LatchNode,
       ScopeAudioNode
     ],
     'audio'

@@ -700,14 +700,14 @@ For each new node, update these files:
 7. [x] Register all in index, schemas, packs
 8. [x] Add help docs
 
-### Phase 3: Envelopes & Control [ ]
+### Phase 3: Envelopes & Control [x]
 
-1. [ ] `adsr~` — ADSR envelope generator
-2. [ ] `env~` — RMS envelope follower
-3. [ ] `vline~` — sample-accurate scheduled ramps
-4. [ ] `latch~` — sample-and-hold
-5. [ ] Register all in index, schemas, packs
-6. [ ] Add help docs
+1. [x] `adsr~` — ADSR envelope generator
+2. [x] `env~` — RMS envelope follower
+3. [x] `vline~` — sample-accurate scheduled ramps
+4. [x] `latch~` — sample-and-hold
+5. [x] Register all in index, schemas, packs
+6. [x] Add help docs
 
 ### Phase 4: Generators & Utilities [ ]
 

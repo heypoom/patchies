@@ -54,6 +54,10 @@ import { PowNode } from '$lib/audio/native-dsp/nodes/pow.node';
 import { GtNode } from '$lib/audio/native-dsp/nodes/gt.node';
 import { LtNode } from '$lib/audio/native-dsp/nodes/lt.node';
 import { SampholdNode } from '$lib/audio/native-dsp/nodes/samphold.node';
+import { AdsrNode } from '$lib/audio/native-dsp/nodes/adsr.node';
+import { EnvNode } from '$lib/audio/native-dsp/nodes/env.node';
+import { VlineNode } from '$lib/audio/native-dsp/nodes/vline.node';
+import { LatchNode } from '$lib/audio/native-dsp/nodes/latch.node';
 import { ScopeAudioNode } from './ScopeAudioNode';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
@@ -113,6 +117,10 @@ const AUDIO_NODES = [
   GtNode,
   LtNode,
   SampholdNode,
+  AdsrNode,
+  EnvNode,
+  VlineNode,
+  LatchNode,
   ScopeAudioNode
 ] as const satisfies AudioNodeClass[];
 

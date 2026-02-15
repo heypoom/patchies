@@ -100,6 +100,10 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'snapshot~',
       'samphold~',
       'bang~',
+      'adsr~',
+      'env~',
+      'vline~',
+      'latch~',
       'adsr',
       'mtof'
     ]
