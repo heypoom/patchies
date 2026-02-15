@@ -20,7 +20,7 @@ export const Tabread4Node = createWorkletDspNode({
     },
     {
       name: 'name',
-      type: 'message',
+      type: 'string',
       description: 'Buffer name',
       messages: [{ schema: Type.String(), description: 'Set buffer name' }]
     }
