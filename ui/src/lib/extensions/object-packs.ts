@@ -102,6 +102,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'snapshot~',
       'samphold~',
       'bang~',
+      'fft~',
       'adsr~',
       'env~',
       'vline~',
@@ -115,21 +116,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Audio Math',
     description: 'Signal arithmetic and shaping',
     icon: 'Calculator',
-    objects: [
-      '+~',
-      '*~',
-      '-~',
-      '/~',
-      'min~',
-      'max~',
-      '>~',
-      '<~',
-      'clip~',
-      'wrap~',
-      'abs~',
-      'pow~',
-      'fft~'
-    ]
+    objects: ['+~', '*~', '-~', '/~', 'min~', 'max~', '>~', '<~', 'clip~', 'wrap~', 'abs~', 'pow~']
   },
   {
     id: 'audio-filters',
