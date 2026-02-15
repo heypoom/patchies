@@ -5,6 +5,7 @@
  * Replaces the previous `vite-node scripts/generate-object-schemas.ts` approach.
  */
 
+import { execSync } from 'child_process';
 import { createServer } from 'vite';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -30,3 +31,9 @@ try {
 } finally {
   await server.close();
 }
+
+// Format after server is closed and file is fully written
+execSync('bun run prettier --write src/lib/generated/object-schemas.generated.ts', {
+  cwd: root,
+  stdio: 'inherit'
+});
