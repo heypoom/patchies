@@ -33,12 +33,9 @@ Switch modes from the settings panel (gear icon).
 - **Samples** (64 - 2048): Number of audio samples captured per
   frame. Lower values show fewer waveform cycles (zoomed in),
   higher values show more cycles (zoomed out).
-- **X Scale** (0.5x - 8x): Horizontal zoom. Higher values
-  compress the waveform horizontally, showing fewer samples
-  across the display width.
-- **Y Scale** (0.1x - 10x): Vertical zoom. Amplifies the
-  waveform amplitude for quiet signals, or reduces it for
-  loud ones. In XY mode, applies to both axes.
+- **X Scale**: Scales the X axis (horizontal zoom). Resets
+  to 1x when switching modes.
+- **Y Scale** (0.1x - 10x): Scales the Y axis (vertical zoom).
 
 ### Advanced
 

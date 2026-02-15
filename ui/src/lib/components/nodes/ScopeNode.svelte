@@ -142,7 +142,6 @@
     ctx.lineTo(w, h / 2);
     ctx.stroke();
 
-    // Determine how many samples to display based on xScale
     const samplesToShow = Math.max(1, Math.floor(buffer.length / xScale));
     const sliceWidth = w / samplesToShow;
 
@@ -215,10 +214,10 @@
     ctx.lineTo(w / 2, h);
     ctx.stroke();
 
-    const samplesToShow = Math.max(1, Math.floor(bufX.length / xScale));
+    const samplesToShow = bufX.length;
 
     function xyToCanvas(sx: number, sy: number): [number, number] {
-      const nx = Math.max(-1, Math.min(1, sx * yScale));
+      const nx = Math.max(-1, Math.min(1, sx * xScale));
       const ny = Math.max(-1, Math.min(1, sy * yScale));
       return [((nx + 1) / 2) * w, ((1 - ny) / 2) * h];
     }
@@ -270,7 +269,8 @@
   function handleModeChange(value: ScopeMode) {
     const oldValue = mode;
     mode = value;
-    updateNodeData(node.id, { mode: value });
+    xScale = 1;
+    updateNodeData(node.id, { mode: value, xScale: 1 });
     tracker.commit('mode', oldValue, value);
     scopeNode?.setMode(value);
   }
@@ -478,8 +478,8 @@
             </div>
             <input
               type="range"
-              min="0.5"
-              max="8"
+              min={mode === 'xy' ? '0.1' : '0.5'}
+              max={mode === 'xy' ? '10' : '8'}
               step="0.1"
               value={xScale}
               onpointerdown={xScaleTracker.onFocus}
