@@ -8,16 +8,11 @@ Detect when a signal crosses a threshold:
 osc~ → threshold~
 ```
 
-Send a `set` message to configure thresholds and debounce:
+Send a list to configure thresholds and debounce (in ms):
 
 ```
-msg {type: "set", triggerThreshold: 0.5, restThreshold: 0.3} → threshold~
-```
-
-With debounce times (in ms):
-
-```
-msg {type: "set", triggerThreshold: 0.5, triggerDebounce: 100, restThreshold: 0.3, restDebounce: 50} → threshold~
+msg 0.5 0.3 → threshold~
+msg 0.5 100 0.3 50 → threshold~
 ```
 
 Use with an envelope follower for onset detection:
