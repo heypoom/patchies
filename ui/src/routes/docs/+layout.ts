@@ -6,6 +6,7 @@ import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import { objectTypeToSlug, objectSlugToType } from '$lib/docs/object-slug';
 
 export const prerender = true;
+export const ssr = true;
 
 interface DocItem {
   slug: string;
@@ -39,6 +40,7 @@ const topicSlugs = Object.values(topicOrder).flat();
 // Build object order map from packs (pack order -> object order within pack)
 function buildObjectOrderMap(): Map<string, number> {
   const map = new Map<string, number>();
+
   let index = 0;
 
   for (const pack of BUILT_IN_PACKS) {
@@ -57,9 +59,11 @@ const objectOrderMap = buildObjectOrderMap();
  */
 function extractTitle(markdown: string, fallbackSlug: string): string {
   const match = markdown.match(/^#\s+(.+)$/m);
+
   if (match) {
     return match[1].trim();
   }
+
   // Fallback: convert slug to title
   return fallbackSlug
     .split('-')
@@ -88,8 +92,10 @@ export const load: LayoutLoad = async ({ fetch }) => {
   const topicPromises = topicSlugs.map(async (slug) => {
     try {
       const res = await fetch(`/content/topics/${slug}.md`);
+
       if (res.ok) {
         const markdown = await res.text();
+
         return {
           slug,
           title: extractTitle(markdown, slug),
@@ -99,16 +105,20 @@ export const load: LayoutLoad = async ({ fetch }) => {
     } catch {
       // Skip if not found
     }
+
     return null;
   });
 
   // Fetch objects (convert type names to URL-safe slugs for markdown paths and links)
   const objectPromises = objectSlugs.map(async (type) => {
     const slug = objectTypeToSlug(type);
+
     try {
       const res = await fetch(`/content/objects/${slug}.md`);
+
       if (res.ok) {
         const markdown = await res.text();
+
         return {
           slug,
           title: extractTitle(markdown, slug)
@@ -117,6 +127,7 @@ export const load: LayoutLoad = async ({ fetch }) => {
     } catch {
       // Skip if not found
     }
+
     return null;
   });
 

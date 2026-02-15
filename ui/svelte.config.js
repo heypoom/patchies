@@ -8,6 +8,13 @@ const config = {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter({ strict: false }),
+    prerender: {
+      handleHttpError: ({ path, message }) => {
+        // Allow 404s for optional content files (not all objects have markdown docs)
+        if (path.startsWith('/content/')) return;
+        throw new Error(message);
+      }
+    },
     alias: {
       $workers: 'src/workers'
     }
