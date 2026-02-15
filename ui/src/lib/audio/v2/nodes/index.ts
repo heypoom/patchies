@@ -58,6 +58,9 @@ import { AdsrNode } from '$lib/audio/native-dsp/nodes/adsr.node';
 import { EnvNode } from '$lib/audio/native-dsp/nodes/env.node';
 import { VlineNode } from '$lib/audio/native-dsp/nodes/vline.node';
 import { LatchNode } from '$lib/audio/native-dsp/nodes/latch.node';
+import { PinkNode } from '$lib/audio/native-dsp/nodes/pink.node';
+import { PulseNode } from '$lib/audio/native-dsp/nodes/pulse.node';
+import { CombNode } from '$lib/audio/native-dsp/nodes/comb.node';
 import { ScopeAudioNode } from './ScopeAudioNode';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
@@ -121,6 +124,9 @@ export const AUDIO_NODES = [
   EnvNode,
   VlineNode,
   LatchNode,
+  PinkNode,
+  PulseNode,
+  CombNode,
   ScopeAudioNode
 ] as const satisfies AudioNodeClass[];
 

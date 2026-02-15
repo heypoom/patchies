@@ -96,7 +96,9 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'recv~',
       'line~',
       'noise~',
+      'pink~',
       'phasor~',
+      'pulse~',
       'snapshot~',
       'samphold~',
       'bang~',
@@ -146,7 +148,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'delay~',
       'compressor~',
       'waveshaper~',
-      'convolver~'
+      'convolver~',
+      'comb~'
     ]
   },
   {
