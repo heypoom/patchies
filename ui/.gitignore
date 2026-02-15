@@ -24,3 +24,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 dist-embed
+
+# Generated
+src/lib/generated/object-schemas.generated.ts

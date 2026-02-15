@@ -78,7 +78,7 @@ export * from './meter';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
-import { schemasFromNodes } from './from-v2-node';
+import { generatedObjectSchemas } from '$lib/generated/object-schemas.generated';
 
 // Manual schema imports (for visual/UI objects that don't have V2 classes)
 import { triggerSchema } from './trigger';
@@ -155,20 +155,15 @@ import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
 import { meterSchema } from './meter';
 
-// V2 node arrays (single source of truth for audio + control objects)
-import { AUDIO_NODES } from '$lib/audio/v2/nodes';
-import { TEXT_OBJECTS } from '$lib/objects/v2/nodes';
-
 /**
  * Registry of all object schemas.
  *
- * Manual schemas are used for visual/UI objects.
- * V2 node classes are used as source of truth for audio and control objects.
+ * Auto-generated schemas come from the build-time generated file.
+ * Manual schemas are used for visual/UI objects that don't have V2 classes.
  */
 export const objectSchemas: ObjectSchemaRegistry = {
-  // Auto-generated from V2 nodes (spread first so manual schemas can override)
-  ...schemasFromNodes(AUDIO_NODES, 'audio'),
-  ...schemasFromNodes(TEXT_OBJECTS, 'control'),
+  // Auto-generated from V2 nodes at build time (spread first so manual schemas can override)
+  ...generatedObjectSchemas,
 
   // Manual schemas (override auto-generated where both exist)
   trigger: triggerSchema,
