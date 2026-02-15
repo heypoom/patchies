@@ -42,7 +42,13 @@ export const strudelSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output'
+    }
+  ],
   tags: ['audio', 'livecoding', 'tidalcycles', 'pattern', 'music'],
   hasDynamicOutlets: true
 };

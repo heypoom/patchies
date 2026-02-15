@@ -11,6 +11,7 @@ export const waveshaperSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input'
     },
     {
@@ -32,6 +33,7 @@ export const waveshaperSchema: ObjectSchema = {
   outlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio output'
     }
   ],

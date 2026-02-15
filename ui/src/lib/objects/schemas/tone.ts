@@ -11,6 +11,7 @@ export const toneSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input (inputNode)'
     },
     {

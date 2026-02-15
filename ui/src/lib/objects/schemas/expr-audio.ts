@@ -11,6 +11,7 @@ export const exprAudioSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input (s, samples, input variables)'
     },
     {

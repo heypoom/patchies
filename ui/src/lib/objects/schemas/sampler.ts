@@ -61,6 +61,7 @@ export const samplerSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input for recording'
     },
     {

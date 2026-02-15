@@ -77,6 +77,7 @@ export const chuckSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input for processing'
     },
     {

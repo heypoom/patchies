@@ -48,7 +48,13 @@ export const videoSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio track output'
+    }
+  ],
   tags: ['video', 'movie', 'texture', 'visual', 'audio'],
   hasDynamicOutlets: true
 };

@@ -74,12 +74,13 @@ function inletToSchema(inlet: ObjectInlet): InletSchema {
     messages = inlet.messages;
   } else {
     const generated = dataTypeToSchema(inlet.type, inlet);
+
     if (generated) {
       messages = [generated];
     }
   }
 
-  return { id, description, messages };
+  return { id, type: inlet.type, description, messages };
 }
 
 /**
@@ -89,7 +90,7 @@ function outletToSchema(outlet: ObjectOutlet): OutletSchema {
   const id = outlet.name ?? 'out';
   const description = outlet.description ?? '';
 
-  return { id, description, messages: outlet.messages };
+  return { id, type: outlet.type, description, messages: outlet.messages };
 }
 
 /**

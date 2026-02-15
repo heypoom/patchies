@@ -41,6 +41,11 @@ export const vdoNinjaPushSchema: ObjectSchema = {
   description: 'Push audio, video, and messages to a VDO.Ninja room',
   inlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio input to stream'
+    },
+    {
       id: 'message',
       description: 'Control messages and data to send',
       messages: [

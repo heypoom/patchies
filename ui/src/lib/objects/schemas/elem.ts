@@ -11,6 +11,7 @@ export const elemSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input (inputNode)'
     },
     {

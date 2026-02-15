@@ -11,6 +11,7 @@ export const oscSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input for FM modulation'
     },
     {
@@ -44,6 +45,7 @@ export const oscSchema: ObjectSchema = {
   outlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio output'
     }
   ],

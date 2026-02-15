@@ -66,7 +66,13 @@ export const aiMusicSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output'
+    }
+  ],
   tags: ['ai', 'music', 'generation', 'audio', 'lyria'],
   hasDynamicOutlets: true
 };

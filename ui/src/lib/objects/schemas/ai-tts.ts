@@ -51,7 +51,13 @@ export const aiTtsSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output'
+    }
+  ],
   tags: ['ai', 'tts', 'speech', 'voice', 'audio', 'google'],
   hasDynamicOutlets: true
 };

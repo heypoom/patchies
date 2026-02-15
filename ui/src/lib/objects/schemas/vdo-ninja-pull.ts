@@ -55,6 +55,11 @@ export const vdoNinjaPullSchema: ObjectSchema = {
   ],
   outlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output from stream'
+    },
+    {
       id: 'message',
       description: 'Connection events and received data',
       messages: [

@@ -40,8 +40,8 @@
           setPrompt(prompt);
           setTimeout(() => generateText());
         })
-        .with(aiTxtMessages.setPrompt, ({ prompt }) => {
-          setPrompt(prompt);
+        .with(aiTxtMessages.set, ({ value }) => {
+          setPrompt(value);
         })
         .with(aiTxtMessages.bang, () => {
           generateText();

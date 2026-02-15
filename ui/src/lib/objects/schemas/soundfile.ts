@@ -40,7 +40,13 @@ export const soundfileSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output'
+    }
+  ],
   tags: ['audio', 'file', 'player', 'sample', 'music'],
   hasDynamicOutlets: true
 };

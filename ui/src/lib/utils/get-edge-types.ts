@@ -1,35 +1,21 @@
 import { getAudioNodeGroup } from '$lib/audio/audio-node-group';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
+import { objectSchemas } from '$lib/objects/schemas';
 import type { Node } from '@xyflow/svelte';
 
 type PsEdgeType = 'message' | 'video' | 'audio';
 type MinimalNode = Pick<Node, 'id' | 'type' | 'data'>;
 
-/** Visual audio nodes. */
-const AUDIO_NODES = [
-  'ai.music',
-  'ai.tts',
-  'sampler~',
-  'soundfile~',
-  'chuck~',
-  'expr~',
-  'dsp~',
-  'tone~',
-  'strudel',
-  'sonic~',
-  'video',
-  'split~',
-  'merge~',
-  'meter~',
-  'elem~',
-  'csound~',
-  'bchrn',
-  'out~',
-  'mic~',
-  'vdo.ninja.push',
-  'vdo.ninja.pull',
-  'scope~'
-];
+/** Check if an object schema has any signal inlets or outlets. */
+const schemaHasSignal = (nodeType: string): boolean => {
+  const schema = objectSchemas[nodeType];
+  if (!schema) return false;
+
+  return (
+    schema.inlets.some((i) => i.type === 'signal') ||
+    schema.outlets.some((o) => o.type === 'signal')
+  );
+};
 
 const isAudioObject = (node: MinimalNode): boolean => {
   if (!node.type) return false;
@@ -38,7 +24,8 @@ const isAudioObject = (node: MinimalNode): boolean => {
     return !!getAudioNodeGroup(node.data.name as string);
   }
 
-  return AUDIO_NODES.includes(node.type);
+  // Check schema for signal ports, then AudioRegistry as fallback
+  return schemaHasSignal(node.type) || AudioRegistry.getInstance().isDefined(node.type);
 };
 
 export const handleToPortIndex = (handle: string | null): number | null => {

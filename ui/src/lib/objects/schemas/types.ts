@@ -34,6 +34,9 @@ export interface InletSchema {
   /** Unique identifier for this inlet (e.g., 'message', 'data', 'trigger') */
   id: string;
 
+  /** Data type (e.g., 'signal', 'message', 'float') */
+  type?: string;
+
   /** Human-readable description shown in tooltips */
   description: string;
 
@@ -47,6 +50,9 @@ export interface InletSchema {
 export interface OutletSchema {
   /** Unique identifier for this outlet (e.g., '0', '1', 'out') */
   id: string;
+
+  /** Data type (e.g., 'signal', 'message', 'float') */
+  type?: string;
 
   /** Human-readable description shown in tooltips */
   description: string;

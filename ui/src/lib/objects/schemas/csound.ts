@@ -37,6 +37,11 @@ export const csoundSchema: ObjectSchema = {
   description: 'Csound audio programming language for synthesis and processing',
   inlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio input'
+    },
+    {
       id: 'message',
       description: 'Control messages',
       messages: [
@@ -57,7 +62,13 @@ export const csoundSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output'
+    }
+  ],
   tags: ['audio', 'csound', 'synthesis', 'programming', 'dsp'],
   hasDynamicOutlets: true
 };

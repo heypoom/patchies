@@ -11,6 +11,7 @@ export const dspSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input'
     },
     {

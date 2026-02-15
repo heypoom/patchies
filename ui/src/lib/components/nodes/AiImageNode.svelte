@@ -49,8 +49,8 @@
         setPrompt(prompt);
         setTimeout(() => generateImage());
       })
-      .with(aiImgMessages.setPrompt, ({ prompt }) => {
-        setPrompt(prompt);
+      .with(aiImgMessages.set, ({ value }) => {
+        setPrompt(value);
       })
       .with(aiImgMessages.bang, generateImage);
   };

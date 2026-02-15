@@ -21,6 +21,7 @@ export const convolverSchema: ObjectSchema = {
   inlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio input'
     },
     {
@@ -35,6 +36,7 @@ export const convolverSchema: ObjectSchema = {
   outlets: [
     {
       id: 'audio',
+      type: 'signal',
       description: 'Audio output with reverb applied'
     }
   ],
