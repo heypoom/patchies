@@ -44,6 +44,9 @@ export function schemaToString(schema: TSchema): string {
     case 'Number':
       return 'number';
 
+    case 'Integer':
+      return 'integer';
+
     case 'Boolean':
       return 'boolean';
 
@@ -151,6 +154,9 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
 
     case 'Number':
       return `<span class="${hl.type}">number</span>`;
+
+    case 'Integer':
+      return `<span class="${hl.type}">integer</span>`;
 
     case 'Boolean':
       return `<span class="${hl.type}">boolean</span>`;
