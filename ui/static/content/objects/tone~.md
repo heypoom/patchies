@@ -15,14 +15,21 @@ The Tone.js context provides:
 Supports [Patchies JavaScript Runner](/docs/javascript-runner) functions
 (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
-## Cleanup
+## Auto Cleanup
 
 Tone.js objects assigned to variables (`const`, `let`, `var`) with
 `new Tone.XXX(...)` are automatically disposed when the node is
-destroyed or code changes. You don't need to handle cleanup for most cases.
+destroyed or code changes. You don't need to handle cleanup for most
+cases.
 
-Manual cleanup e.g. disconnections is still needed for **non-Tone resources**
-such as `inputNode.disconnect(outputNode)`, `Tone.getTransport().stop()`,
+**Important:** Always use `new Tone.XXX(...)` — do not destructure
+the Tone namespace (e.g. `const { Synth } = Tone`). Destructured
+constructors are not tracked and won't be auto-disposed.
+
+## Manual Cleanup
+
+Manual cleanup is still needed for **non-Tone resources** such as
+`inputNode.disconnect(outputNode)`, `Tone.getTransport().stop()`,
 or Web Audio API nodes created without `new Tone.`.
 
 Use `return { cleanup: () => { ... } }` or `onCleanup(() => { ... })`
