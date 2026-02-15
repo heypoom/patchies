@@ -22,6 +22,23 @@ export const Play = sym('play');
 export const Run = sym('run');
 export const Toggle = sym('toggle');
 
+/** All common schemas as an array, for building the common message type map. */
+export const COMMON_SCHEMAS = [
+  Bang,
+  Get,
+  Set,
+  SetKey,
+  SetCode,
+  Clear,
+  Reset,
+  Start,
+  Stop,
+  Pause,
+  Play,
+  Run,
+  Toggle
+];
+
 /**
  * Pre-wrapped matchers for use with ts-pattern.
  * Usage: match(msg).with(messages.bang, () => ...)

@@ -189,9 +189,15 @@ if (tokens.length > 1) {
 }
 ```
 
-### Phase 4: Context-aware resolution (future)
+### Phase 4: Context-aware resolution
 
-Trace edges from the msg node's outlet to find the target object type. Use the target's specific inlet schemas for resolution. This makes `set 1` unambiguous when connected to a specific object.
+When a msg node has outlet connections, the type map is filtered to only include schemas from the connected downstream objects. Common schemas (`Bang`, `Set`, `SetKey`, `Get`, `SetCode`, `Clear`, `Reset`, `Start`, `Stop`, `Pause`, `Play`, `Run`, `Toggle`) are always available regardless of downstream connections.
+
+When no outlets are connected, the global type map (all objects) is used as a fallback — preserving existing behavior.
+
+**Reactive chain:** `useNodeConnections` tracks outgoing edges. When connections change, the filtered type map is rebuilt from the connected objects' inlet schemas + common schemas. The map is memoized by the sorted set of connected object types to avoid unnecessary rebuilds.
+
+**Known limitation:** If a connected ObjectNode changes its `data.name` (user edits the text object type while connected), the type map doesn't update until the edge is reconnected.
 
 ## Examples
 

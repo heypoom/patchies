@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronUp, Edit, SquarePen } from '@lucide/svelte/icons';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -20,12 +20,21 @@
     splitByTopLevelSpaces,
     tryResolveShorthand
   } from '$lib/messages/message-parser';
-  import { objectSchemas, buildMessageTypeMap } from '$lib/objects/schemas';
+  import {
+    objectSchemas,
+    buildMessageTypeMap,
+    buildCommonMessageTypeMap,
+    buildMessageTypeMapForTypes,
+    COMMON_SCHEMAS
+  } from '$lib/objects/schemas';
 
   hljs.registerLanguage('javascript', javascript);
 
-  // Build message type map once for shorthand resolution (e.g., `set 1` → {type: 'set', value: 1})
-  const messageTypeMap = buildMessageTypeMap(objectSchemas);
+  // Global type map (all objects) — shared fallback when no connections exist
+  const globalMessageTypeMap = buildMessageTypeMap(objectSchemas);
+
+  // Common-only type map — always included in filtered maps
+  const commonMessageTypeMap = buildCommonMessageTypeMap(COMMON_SCHEMAS);
 
   let {
     id: nodeId,
@@ -33,7 +42,46 @@
     selected
   }: { id: string; data: { message: string }; selected: boolean } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getNode } = useSvelteFlow();
+
+  // Track outgoing connections reactively
+  const sourceConnections = useNodeConnections({ id: nodeId, handleType: 'source' });
+
+  // Memoization: avoid rebuilding the filtered map when types haven't changed
+  let cachedTypesKey = '';
+  let cachedMap = globalMessageTypeMap;
+
+  /**
+   * Context-aware message type map.
+   *
+   * When the msg node has outlet connections, filters to only the downstream
+   * objects' inlet schemas + common schemas (bang, set, get, etc.).
+   * When disconnected, falls back to the global map.
+   */
+  let messageTypeMap = $derived.by(() => {
+    const connections = sourceConnections.current;
+    if (connections.length === 0) return globalMessageTypeMap;
+
+    const types = new Set<string>();
+
+    for (const conn of connections) {
+      const node = getNode(conn.target);
+      if (!node) continue;
+
+      const t = node.type === 'object' ? (node.data?.name as string) : node.type!;
+      if (t) types.add(t);
+    }
+
+    if (types.size === 0) return globalMessageTypeMap;
+
+    const key = [...types].sort().join(',');
+    if (key === cachedTypesKey) return cachedMap;
+
+    cachedTypesKey = key;
+    cachedMap = buildMessageTypeMapForTypes(objectSchemas, [...types], commonMessageTypeMap);
+
+    return cachedMap;
+  });
 
   const messageContext = new MessageContext(nodeId);
 

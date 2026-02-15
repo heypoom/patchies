@@ -259,6 +259,37 @@ export function getMessageFields(schema: TSchema): FieldMapping | null {
   return { fields, lastFieldIsString };
 }
 
+/** Add a single schema's field mapping to a type map (with deduplication). */
+function addSchemaToMap(schema: TSchema, map: Map<string, FieldMapping[]>): void {
+  const typeName = getSchemaTypeName(schema);
+  if (!typeName) return;
+
+  const mapping = getMessageFields(schema);
+  if (!mapping) return;
+
+  const existing = map.get(typeName) ?? [];
+  const key = mapping.fields.join(',');
+
+  if (!existing.some((m) => m.fields.join(',') === key)) {
+    existing.push(mapping);
+    map.set(typeName, existing);
+  }
+}
+
+/** Add all inlet message schemas from an ObjectSchema to a type map. */
+function addObjectSchemasToMap(
+  objSchema: { inlets: Array<{ messages?: Array<{ schema: TSchema }> }> },
+  map: Map<string, FieldMapping[]>
+): void {
+  for (const inlet of objSchema.inlets) {
+    if (!inlet.messages) continue;
+
+    for (const message of inlet.messages) {
+      addSchemaToMap(message.schema, map);
+    }
+  }
+}
+
 /**
  * Build a map from message type name → field mappings.
  * Used for shorthand resolution (e.g., `set 1` → `{type: 'set', value: 1}`).
@@ -270,25 +301,48 @@ export function buildMessageTypeMap(registry: ObjectSchemaRegistry): Map<string,
   const map = new Map<string, FieldMapping[]>();
 
   for (const objSchema of Object.values(registry)) {
-    for (const inlet of objSchema.inlets) {
-      if (!inlet.messages) continue;
+    addObjectSchemasToMap(objSchema, map);
+  }
 
-      for (const message of inlet.messages) {
-        const typeName = getSchemaTypeName(message.schema);
-        if (!typeName) continue;
+  return map;
+}
 
-        const mapping = getMessageFields(message.schema);
-        if (!mapping) continue;
+/**
+ * Build a type map from the common schemas only (Bang, Set, Get, etc.).
+ * These are always available for shorthand resolution regardless of downstream connections.
+ */
+export function buildCommonMessageTypeMap(commonSchemas: TSchema[]): Map<string, FieldMapping[]> {
+  const map = new Map<string, FieldMapping[]>();
 
-        const existing = map.get(typeName) ?? [];
-        const key = mapping.fields.join(',');
+  for (const schema of commonSchemas) {
+    addSchemaToMap(schema, map);
+  }
 
-        if (!existing.some((m) => m.fields.join(',') === key)) {
-          existing.push(mapping);
-          map.set(typeName, existing);
-        }
-      }
-    }
+  return map;
+}
+
+/**
+ * Build a type map filtered to specific object types, with a base map (typically common schemas)
+ * always included. Used for context-aware shorthand resolution when a msg node has connections.
+ */
+export function buildMessageTypeMapForTypes(
+  registry: ObjectSchemaRegistry,
+  objectTypes: string[],
+  baseMap: Map<string, FieldMapping[]>
+): Map<string, FieldMapping[]> {
+  // Clone the base map (common schemas)
+  const map = new Map<string, FieldMapping[]>();
+
+  for (const [typeName, mappings] of baseMap) {
+    map.set(typeName, [...mappings]);
+  }
+
+  // Add schemas from specified object types
+  for (const objectType of objectTypes) {
+    const objSchema = registry[objectType];
+    if (!objSchema) continue;
+
+    addObjectSchemasToMap(objSchema, map);
   }
 
   return map;
