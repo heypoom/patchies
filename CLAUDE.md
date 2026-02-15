@@ -6,6 +6,7 @@
 
 - **CRITICAL**: Never start dev server manually. User will start if needed.
 - **CRITICAL**: Never git commit or push for the user unless explicitly asked to do so. Wait for user review.
+- **CRITICAL**: Never batch Read and Edit on the same file in parallel. Always Read a file first, wait for the result, then Edit it. The Edit tool requires the file to have been read in a prior step.
 - Before implementing: update relevant spec files in `docs/design-docs/specs/`. Make sure specs are prefixed with numbers e.g. `50-foo-bar.md` and in the title too `# 50. Foo Bar`
 - If asked explicitly to commit, write clear, short and concise commit messages.
 

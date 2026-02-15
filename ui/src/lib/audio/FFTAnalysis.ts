@@ -1,5 +1,9 @@
 import { match, P } from 'ts-pattern';
-import type { AudioAnalysisFormat, AudioAnalysisValue } from './AudioAnalysisSystem';
+import type {
+  AudioAnalysisFormat,
+  AudioAnalysisType,
+  AudioAnalysisValue
+} from './AudioAnalysisSystem';
 
 const FREQUENCY_RANGES = {
   bass: [20, 140],
@@ -14,12 +18,14 @@ type FrequencyRangeKey = keyof typeof FREQUENCY_RANGES;
 export class FFTAnalysis {
   private bins: AudioAnalysisValue;
   private format: AudioAnalysisFormat;
+  private analysisType: AudioAnalysisType;
   private sampleRate: number;
 
   constructor(
     data: AudioAnalysisValue | null,
     _format: AudioAnalysisFormat | null,
-    sampleRate: number
+    sampleRate: number,
+    analysisType: AudioAnalysisType = 'wave'
   ) {
     const format = match(data)
       .with(P.instanceOf(Uint8Array), () => 'int' as const)
@@ -33,6 +39,7 @@ export class FFTAnalysis {
       .exhaustive();
 
     this.format = format;
+    this.analysisType = analysisType;
     this.sampleRate = sampleRate;
   }
 
@@ -67,6 +74,27 @@ export class FFTAnalysis {
   }
 
   get rms(): number {
+    if (this.bins.length === 0) return 0;
+
+    if (this.analysisType === 'wave') {
+      // Time-domain RMS: signal is centered at 128 (int) or 0 (float)
+      let sumSquares = 0;
+
+      if (this.bins instanceof Uint8Array) {
+        for (let i = 0; i < this.bins.length; i++) {
+          const normalized = (this.bins[i] - 128) / 128;
+          sumSquares += normalized * normalized;
+        }
+      } else {
+        for (let i = 0; i < this.bins.length; i++) {
+          sumSquares += this.bins[i] * this.bins[i];
+        }
+      }
+
+      return Math.sqrt(sumSquares / this.bins.length);
+    }
+
+    // Frequency-domain: RMS of normalized magnitudes (spectral energy)
     const sumSquares = this.f.reduce((sum, magnitude) => sum + magnitude * magnitude, 0);
 
     return Math.sqrt(sumSquares / this.bins.length);

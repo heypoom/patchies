@@ -41,9 +41,9 @@ The `fft()` function returns an `FFTAnalysis` instance:
 
 | Property/Method | Description |
 |-----------------|-------------|
-| `fft().a` | Raw frequency bins (Uint8Array) |
+| `fft().a` | Raw bins (Uint8Array) |
 | `fft().f` | Normalized bins (Float32Array, 0-1) |
-| `fft().rms` | RMS level (float) |
+| `fft().rms` | RMS amplitude (float, 0-1). Uses time-domain signal for `wave` mode, spectral energy for `freq` mode |
 | `fft().avg` | Average level (float) |
 | `fft().centroid` | Spectral centroid (float) |
 | `fft().getEnergy('bass')` | Energy in frequency range (0-255) |

@@ -269,7 +269,7 @@ function createWorkerContext(nodeId: string) {
     const cached = state.fftDataCache.get(cacheKey);
     const bins = cached?.data ?? null;
 
-    return new FFTAnalysis(bins, format, 44000);
+    return new FFTAnalysis(bins, format, 44000, type);
   };
 
   // LLM function - gets credentials from main thread, makes HTTP call in worker

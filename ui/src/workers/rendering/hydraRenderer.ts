@@ -341,7 +341,7 @@ export class HydraRenderer {
       const cached = this.fftDataCache.get(cacheKey);
       const bins = cached?.data ?? null;
 
-      return new FFTAnalysis(bins, format, 44000);
+      return new FFTAnalysis(bins, format, 44000, type);
     };
   }
 

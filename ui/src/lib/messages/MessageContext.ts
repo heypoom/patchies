@@ -291,7 +291,7 @@ export class MessageContext {
       if (!MessageContext.audioAnalysisSystemModule) {
         logger.warn('AudioAnalysisSystem not loaded yet, FFT data unavailable!');
 
-        return new FFTAnalysis(null, options?.format ?? null, 48000);
+        return new FFTAnalysis(null, options?.format ?? null, 48000, options?.type ?? 'wave');
       }
 
       // Use the preloaded AudioAnalysisSystem module loaded in constructor
@@ -301,7 +301,7 @@ export class MessageContext {
       const bins = analysis.getAnalysisForNode(this.nodeId, options);
       const sampleRate = analysis.sampleRate;
 
-      return new FFTAnalysis(bins, options?.format ?? null, sampleRate);
+      return new FFTAnalysis(bins, options?.format ?? null, sampleRate, options?.type ?? 'wave');
     };
   }
 

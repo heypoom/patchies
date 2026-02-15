@@ -318,7 +318,7 @@ export class TextmodeRenderer {
       const cached = this.fftDataCache.get(cacheKey);
       const bins = cached?.data ?? null;
 
-      return new FFTAnalysis(bins, format, this.sampleRate);
+      return new FFTAnalysis(bins, format, this.sampleRate, type);
     };
   }
 
