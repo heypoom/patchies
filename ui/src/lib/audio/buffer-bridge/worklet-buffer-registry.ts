@@ -64,10 +64,20 @@ function createWorkletBufferRegistry(): WorkletBufferRegistry {
 
   return {
     create(name, length, channels = 1, sab?) {
-      const totalSamples = length * channels;
-      const data = sab ? new Float32Array(sab) : new Float32Array(totalSamples);
+      let data: Float32Array;
+      let actualLength: number;
 
-      buffers.set(name, { data, length, channels, writeHead: 0 });
+      if (sab) {
+        data = new Float32Array(sab);
+        // Derive length from the SAB's actual capacity to avoid OOB access
+        actualLength = sab.byteLength / Float32Array.BYTES_PER_ELEMENT / channels;
+      } else {
+        const totalSamples = length * channels;
+        data = new Float32Array(totalSamples);
+        actualLength = length;
+      }
+
+      buffers.set(name, { data, length: actualLength, channels, writeHead: 0 });
     },
 
     delete(name) {
