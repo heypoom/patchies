@@ -20,6 +20,14 @@ export const PhasorNode = createWorkletDspNode({
       defaultValue: 0,
       maxPrecision: 2,
       messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }]
+    },
+    {
+      name: 'phase',
+      type: 'float',
+      description: 'Phase reset (0 to 1)',
+      defaultValue: 0,
+      maxPrecision: 3,
+      messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }]
     }
   ],
 

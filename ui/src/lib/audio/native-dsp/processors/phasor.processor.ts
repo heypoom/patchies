@@ -14,6 +14,10 @@ defineDSP({
       const freq = parseFloat(data as string);
 
       if (!isNaN(freq)) state.frequency = freq;
+    } else if (inlet === 1) {
+      const phase = parseFloat(data as string);
+
+      if (!isNaN(phase)) state.phase = phase % 1;
     }
   },
 
