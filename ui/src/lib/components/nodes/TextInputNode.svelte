@@ -161,7 +161,7 @@
           type="message"
           total={1}
           index={0}
-          class={`!bottom-0.5 ${handleClass}`}
+          class={handleClass}
           nodeId={node.id}
         />
       {/if}
