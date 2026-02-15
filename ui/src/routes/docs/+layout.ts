@@ -63,11 +63,7 @@ function extractTitle(markdown: string, fallbackSlug: string): string {
     return match[1].trim();
   }
 
-  // Fallback: convert slug to title
-  return fallbackSlug
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return fallbackSlug;
 }
 
 export const load: LayoutLoad = async ({ fetch }) => {
@@ -109,11 +105,9 @@ export const load: LayoutLoad = async ({ fetch }) => {
       const res = await fetch(`/content/objects/${slug}.md`);
 
       if (res.ok) {
-        const markdown = await res.text();
-
         return {
           slug,
-          title: extractTitle(markdown, slug)
+          title: type
         };
       }
     } catch {

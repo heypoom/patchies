@@ -148,7 +148,7 @@
                     : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
                 ]}
               >
-                {object.slug}
+                {object.title}
               </a>
             </li>
           {/each}
