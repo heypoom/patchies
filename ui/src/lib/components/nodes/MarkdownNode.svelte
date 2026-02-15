@@ -61,7 +61,7 @@
     match(message)
       .with(markdownMessages.string, (value) => updateMarkdown(value))
       .with(markdownMessages.bang, () => messageContext.send(props.data.markdown))
-      .with(markdownMessages.setValue, (msg) => updateMarkdown(msg.value))
+      .with(markdownMessages.set, ({ value }) => updateMarkdown(value))
       .otherwise(() => {});
 
   onDestroy(() => {

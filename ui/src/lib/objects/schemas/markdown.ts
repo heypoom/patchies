@@ -1,16 +1,11 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { msg } from './helpers';
 import { messages } from './common';
-
-// Markdown-specific message schemas
-const SetValue = msg('set', { value: Type.String() });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const markdownMessages = {
   ...messages,
-  setValue: schema(SetValue),
   string: schema(Type.String())
 };
 

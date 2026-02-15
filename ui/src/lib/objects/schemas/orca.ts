@@ -2,20 +2,15 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, messages } from './common';
+import { Bang, messages, Play, Set } from './common';
 
 // Orca-specific message schemas
-const SetValue = msg('set', { value: Type.String() });
-const Play = sym('play');
 const Stop = sym('stop');
 const SetBpm = msg('setBpm', { value: Type.Number() });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const orcaMessages = {
   ...messages,
-  setValue: schema(SetValue),
-  play: schema(Play),
-  stop: schema(Stop),
   setBpm: schema(SetBpm)
 };
 
@@ -31,7 +26,7 @@ export const orcaSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages',
       messages: [
-        { schema: SetValue, description: 'Set the grid content' },
+        { schema: Set, description: 'Set the grid content' },
         { schema: Bang, description: 'Toggle play/pause' },
         { schema: Play, description: 'Start playback' },
         { schema: Stop, description: 'Stop playback' },

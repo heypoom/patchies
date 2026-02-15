@@ -148,9 +148,10 @@
   const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
-        .with(orcaMessages.setValue, ({ value }) => {
+        .with(orcaMessages.set, ({ value }) => {
           if (orca) {
             orca.replace(value);
+
             render();
             updateNodeData(nodeId, { grid: orca.s });
           }
@@ -161,18 +162,21 @@
         .with(orcaMessages.play, () => {
           if (clock && !isPlaying) {
             clock.start();
+
             isPlaying = true;
           }
         })
         .with(orcaMessages.stop, () => {
           if (clock && isPlaying) {
             clock.stop();
+
             isPlaying = false;
           }
         })
         .with(orcaMessages.setBpm, ({ value }) => {
           if (clock) {
             clock.setSpeed(value, value);
+
             updateNodeData(nodeId, { bpm: value });
           }
         });
@@ -188,6 +192,7 @@
       } else {
         clock.play();
       }
+
       isPlaying = !isPlaying;
     }
   }
@@ -203,6 +208,7 @@
 
     // Trap all keys to prevent Patchies from handling them
     const isHandled = handleOrcaKeyInput(e);
+
     if (isHandled) {
       e.preventDefault();
       e.stopPropagation();
@@ -215,34 +221,44 @@
     // Handle font size shortcuts (Ctrl/Cmd +/-)
     if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
       e.preventDefault();
+
       fontSize = Math.min(3.0, fontSize + 0.1);
       render();
       measureWidth();
+
       return true;
     }
+
     if ((e.ctrlKey || e.metaKey) && e.key === '-') {
       e.preventDefault();
+
       fontSize = Math.max(0.5, fontSize - 0.1);
       render();
       measureWidth();
+
       return true;
     }
 
     // Frame by frame: Ctrl/Cmd+F
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
       e.preventDefault();
+
       if (clock) clock.touch();
+
       return true;
     }
 
     // Reset frame: Ctrl/Cmd+Shift+R
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
       e.preventDefault();
+
       if (orca) {
         orca.f = 0;
+
         updateNodeData(nodeId, { frame: 0 });
         render();
       }
+
       return true;
     }
 
@@ -250,6 +266,7 @@
     if (e.key === '>' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       increaseBpm();
+
       return true;
     }
 
@@ -257,6 +274,7 @@
     if (e.key === '<' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       decreaseBpm();
+
       return true;
     }
 
@@ -276,16 +294,19 @@
 
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
       performCopy();
+
       return true;
     }
 
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
       performCut();
+
       return true;
     }
 
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
       performPaste();
+
       return true;
     }
 
@@ -294,24 +315,30 @@
         cursorX = Math.max(0, cursorX - 1);
         render();
         return true;
+
       case 'ArrowRight':
         cursorX = Math.min(orca.w - 1, cursorX + 1);
         render();
         return true;
+
       case 'ArrowUp':
         cursorY = Math.max(0, cursorY - 1);
         render();
         return true;
+
       case 'ArrowDown':
         cursorY = Math.min(orca.h - 1, cursorY + 1);
         render();
         return true;
+
       case 'Enter':
         if (clock) clock.touch();
         return true;
+
       case ' ':
         togglePlay();
         return true;
+
       case 'Delete':
       case 'Backspace':
         // Erase selection or single cell
@@ -337,6 +364,7 @@
         updateNodeData(nodeId, { grid: orca.s });
         render();
         return true;
+
       default:
         // Type characters into grid
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -355,6 +383,7 @@
 
   function handleCanvasMouseDown(e: MouseEvent): void {
     if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
     const canvasX = (e.clientX - rect.left) / viewport.current.zoom;
     const canvasY = (e.clientY - rect.top) / viewport.current.zoom;
@@ -373,6 +402,7 @@
 
   function handleCanvasMouseMove(e: MouseEvent): void {
     if (!canvas || !mouseFrom) return;
+
     const rect = canvas.getBoundingClientRect();
     const canvasX = (e.clientX - rect.left) / viewport.current.zoom;
     const canvasY = (e.clientY - rect.top) / viewport.current.zoom;
@@ -393,18 +423,22 @@
   // Copy/paste functionality (matching original Orca)
   function getSelection(): string {
     if (!orca) return '';
+
     const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
     const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
     const maxX = cursorX > cursorX + selectionW ? cursorX : cursorX + selectionW;
     const maxY = cursorY > cursorY + selectionH ? cursorY : cursorY + selectionH;
     const w = maxX - minX + 1;
     const h = maxY - minY + 1;
+
     return orca.getBlock(minX, minY, w, h);
   }
 
   function performCopy(): void {
     if (!orca) return;
+
     const selection = getSelection();
+
     navigator.clipboard.writeText(selection).catch((err) => {
       console.error('Failed to copy:', err);
     });
@@ -412,7 +446,9 @@
 
   function performCut(): void {
     if (!orca) return;
+
     const selection = getSelection();
+
     navigator.clipboard.writeText(selection).catch((err) => {
       console.error('Failed to copy:', err);
     });
@@ -428,6 +464,7 @@
         orca.write(x, y, '.');
       }
     }
+
     updateNodeData(nodeId, { grid: orca.s });
     render();
   }
@@ -449,6 +486,7 @@
       const lines = data.trim().split(/\r?\n/);
       selectionW = lines[0].length - 1;
       selectionH = lines.length - 1;
+
       render();
     } catch (err) {
       console.error('Failed to paste:', err);
