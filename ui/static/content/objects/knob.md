@@ -1,5 +1,12 @@
 Circular encoder knob for continuous value control.
 
+## Shorthand Commands
+
+- `knob 880` - integer knob (0 to 880)
+- `knob 20 880` - integer knob with min and max
+- `fknob 5` - float knob (0 to 5)
+- `fknob 2 4` - float knob (2 to 4)
+
 ## Features
 
 - Drag up/down to change value

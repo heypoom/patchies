@@ -2,8 +2,11 @@ Continuous value control with customizable range.
 
 ## Shorthand Commands
 
-- `slider 0 100` - integer slider
-- `fslider 0.0 1.0` - float slider
+- `slider 100` - integer slider (0 to 100)
+- `slider 20 880` - integer slider with min and max
+- `slider 20 880 440` - with explicit default
+- `fslider 1` - float slider (0 to 1)
+- `fslider 2 5` - float slider (2 to 5)
 - `vslider` / `vfslider` - vertical variants
 
 ## Settings
