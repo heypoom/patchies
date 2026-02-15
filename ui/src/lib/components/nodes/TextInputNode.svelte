@@ -95,8 +95,8 @@
 
       <div
         class={[
-          'flex gap-1 transition-opacity',
-          isLocked ? '' : 'group-hover:opacity-100 sm:opacity-0'
+          'flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0',
+          node.selected && 'opacity-100'
         ]}
       >
         <button
@@ -107,7 +107,7 @@
           }}
           class={[
             'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
-            node.data.locked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+            'text-zinc-500 hover:text-zinc-300'
           ]}
           title={node.data.locked ? 'Unlock' : 'Lock'}
         >
