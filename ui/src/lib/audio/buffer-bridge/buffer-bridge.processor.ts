@@ -14,6 +14,7 @@ interface BridgeMessage {
   channels?: number;
   sab?: SharedArrayBuffer;
   index?: number;
+  channel?: number;
   value?: number;
 }
 
@@ -55,9 +56,14 @@ class BufferBridgeProcessor extends AudioWorkletProcessor {
       }
     } else if (type === 'set') {
       const entry = workletBufferRegistry.get(name!);
+
       if (entry && msg.index !== undefined && msg.value !== undefined) {
-        const idx = ((msg.index % entry.length) + entry.length) % entry.length;
-        entry.data[idx] = msg.value;
+        const channel = msg.channel ?? 0;
+        if (channel < 0 || channel >= entry.channels) return;
+
+        const sampleIdx = ((msg.index % entry.length) + entry.length) % entry.length;
+
+        entry.data[sampleIdx * entry.channels + channel] = msg.value;
       }
     } else if (type === 'get-snapshot') {
       const entry = workletBufferRegistry.get(name!);
