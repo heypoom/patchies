@@ -74,6 +74,7 @@ export * from './bg-out';
 export * from './send-vdo';
 export * from './recv-vdo';
 export * from './note';
+export * from './meter';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
@@ -152,6 +153,7 @@ import { bgOutSchema } from './bg-out';
 import { sendVdoSchema } from './send-vdo';
 import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
+import { meterSchema } from './meter';
 
 // V2 Audio Node imports (source of truth for audio objects)
 import { AddNode } from '$lib/audio/native-dsp/nodes/add.node';
@@ -291,6 +293,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
   note: noteSchema,
+  'meter~': meterSchema,
 
   // Audio objects (generated from V2 nodes - single source of truth)
   ...schemasFromNodes(
