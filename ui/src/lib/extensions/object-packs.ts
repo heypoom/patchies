@@ -98,6 +98,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'noise~',
       'phasor~',
       'snapshot~',
+      'samphold~',
       'bang~',
       'adsr',
       'mtof'

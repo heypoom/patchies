@@ -265,6 +265,65 @@ See `KVObject.ts` for a complete example.
 5. Add to `src/lib/extensions/object-packs.ts` in the appropriate pack (usually Audio)
 6. If node has aliases, add `static aliases = ['s~']` to node class
 
+### New Native DSP Worklet Node Checklist
+
+Native DSP nodes run on the audio thread via `AudioWorkletProcessor`. They use `createWorkletDspNode` (main thread) + `defineDSP` (worklet thread).
+
+**Files to create:**
+
+1. Processor in `src/lib/audio/native-dsp/processors/{name}.processor.ts`:
+
+```typescript
+import { defineDSP } from '../define-dsp';
+import { isMessageType } from '../utils';
+
+defineDSP({
+  name: 'mynode~',        // Must match node type
+  audioInlets: 1,         // Number of audio input ports
+  audioOutlets: 1,        // Number of audio output ports
+  inletDefaults: { 1: 0 }, // Optional: constant value when inlet disconnected
+  state: () => ({ /* mutable state */ }),
+  recv(state, data, inlet, send) { /* handle messages */ },
+  process(state, inputs, outputs, send) { /* DSP hot path, 128 samples */ }
+});
+```
+
+1. Node definition in `src/lib/audio/native-dsp/nodes/{name}.node.ts`:
+
+```typescript
+import { createWorkletDspNode } from '../create-worklet-dsp-node';
+import workletUrl from '../processors/{name}.processor?worker&url';
+
+export const MyNode = createWorkletDspNode({
+  type: 'mynode~',
+  group: 'processors',    // 'processors' | 'sources' | 'destinations'
+  description: '...',
+  workletUrl,
+  audioInlets: 1,
+  audioOutlets: 1,
+  inlets: [{ name: 'signal', type: 'signal', description: '...' }],
+  outlets: [{ name: 'out', type: 'signal', description: '...' }],
+  tags: ['audio', ...]
+});
+```
+
+**Registration (same as V2 audio nodes):**
+
+1. `src/lib/audio/v2/nodes/index.ts` — import and add to `AUDIO_NODES` array
+1. `src/lib/objects/schemas/index.ts` — import and add to `schemasFromNodes([...], 'audio')`
+1. `src/lib/extensions/object-packs.ts` — add to appropriate pack
+1. `static/content/objects/{nodename}.md` — documentation
+
+**Inlet types**: `'signal'` | `'message'` | `'float'` | `'bang'` | `'string'`
+
+**Reference nodes**: `wrap~` (simplest), `clip~` (float inlets), `snapshot~` (bang + message output), `line~` (message inlet with commands), `add~` (2 audio inlets + hidden float), `samphold~` (2 audio + message inlet)
+
+**GOTCHAS:**
+
+- **Signal inlets CANNOT receive control messages.** If a node needs both signal input and message commands, add a **separate** message inlet. See `samphold~` which has 2 signal inlets + 1 message inlet.
+- **Don't document messages in markdown files.** Message schemas in the node definition (via TypeBox `msg()`/`sym()`) are the single source of truth. Object docs should only cover usage and see-also.
+- **`hideInlet: true`** on a float inlet routes it to the preceding signal inlet's constant value (e.g., `+~` has a hidden float that sets inlet 1's constant).
+
 ## Testing
 
 - **Unit**: Business logic, utilities, pure functions
