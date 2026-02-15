@@ -4,9 +4,11 @@ import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
 import { objectTypeToSlug, objectSlugToType } from '$lib/docs/object-slug';
 import type { PageLoad, EntryGenerator } from './$types';
 
-// Generate entries for prerendering all object pages
+// Generate entries for prerendering all object pages (canonical types only, not aliases)
 export const entries: EntryGenerator = () => {
-  return Object.keys(objectSchemas).map((type) => ({ object: objectTypeToSlug(type) }));
+  return Object.keys(objectSchemas)
+    .filter((type) => objectSchemas[type].type === type)
+    .map((type) => ({ object: objectTypeToSlug(type) }));
 };
 
 export const load: PageLoad = async ({ params, fetch }) => {

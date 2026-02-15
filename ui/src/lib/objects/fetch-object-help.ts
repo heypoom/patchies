@@ -4,6 +4,8 @@ import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import { HELP_PATCHES_AVAILABLE } from './help-patches-manifest';
 import { getCombinedMetadata } from './v2/get-metadata';
+import { objectSchemas } from './schemas';
+import { objectTypeToSlug } from '$lib/docs/object-slug';
 
 // Register only the languages we need for help docs
 hljs.registerLanguage('javascript', javascript);
@@ -50,13 +52,19 @@ export async function fetchObjectHelp(
   objectType: string,
   customFetch: FetchFn = fetch
 ): Promise<ObjectHelpContent> {
-  // Resolve alias to canonical type name for documentation lookup
-  const canonicalType = getCombinedMetadata(objectType)?.type ?? objectType;
+  // Resolve alias to canonical type name for documentation lookup.
+  // Use objectSchemas as primary source (works during SSR/prerender when registries are empty),
+  // then fall back to runtime registries for types not in the schema registry.
+  const canonicalType =
+    objectSchemas[objectType]?.type ?? getCombinedMetadata(objectType)?.type ?? objectType;
 
   // Check manifest instead of making HEAD request (avoids 404 errors)
   const hasHelpPatch = HELP_PATCHES_AVAILABLE.has(canonicalType);
 
-  const markdownRes = await customFetch(`/content/objects/${canonicalType}.md`)
+  // Use slug mapping for the fetch path (e.g. /~ → div~, since / can't be in a filename)
+  const slug = objectTypeToSlug(canonicalType);
+
+  const markdownRes = await customFetch(`/content/objects/${slug}.md`)
     .then((res) => {
       if (!res.ok) return null;
 
