@@ -6,7 +6,8 @@ defineDSP({
   audioOutlets: 0,
 
   state: () => ({
-    buffer: new Float32Array(512),
+    buffers: [new Float32Array(512), new Float32Array(512)],
+    activeBuffer: 0,
     writeIndex: 0,
     phase: 'waiting' as 'waiting' | 'filling',
     prevSample: 0,
@@ -23,9 +24,10 @@ defineDSP({
 
     if ('bufferSize' in msg) {
       const size = msg.bufferSize;
+
       if (typeof size === 'number' && size >= 64 && size <= 2048) {
         state.bufferSize = size;
-        state.buffer = new Float32Array(size);
+        state.buffers = [new Float32Array(size), new Float32Array(size)];
         state.writeIndex = 0;
         state.phase = 'waiting';
       }
@@ -42,6 +44,8 @@ defineDSP({
     const input = inputs[0]?.[0];
     if (!input) return;
 
+    const buf = state.buffers[state.activeBuffer];
+
     for (let i = 0; i < input.length; i++) {
       const sample = input[i];
       state.samplesSinceLastSend++;
@@ -57,13 +61,14 @@ defineDSP({
         if ((state.prevSample <= 0 && sample > 0) || state.samplesSinceLastSend >= state.maxWait) {
           state.phase = 'filling';
           state.writeIndex = 0;
-          state.buffer[state.writeIndex++] = sample;
+          buf[state.writeIndex++] = sample;
         }
       } else {
-        state.buffer[state.writeIndex++] = sample;
+        buf[state.writeIndex++] = sample;
 
         if (state.writeIndex >= state.bufferSize) {
-          send(state.buffer.slice(0, state.bufferSize), 0);
+          send(buf, 0);
+          state.activeBuffer ^= 1;
           state.phase = 'waiting';
           state.samplesSinceLastSend = 0;
         }
