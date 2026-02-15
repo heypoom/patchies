@@ -37,16 +37,26 @@ class BufferBridgeProcessor extends AudioWorkletProcessor {
       if (!entry) return;
 
       const newLength = msg.length ?? entry.length;
+      const oldChannels = entry.channels;
+      const newChannels = msg.channels ?? oldChannels;
       const oldData = new Float32Array(entry.data);
       const oldLength = entry.length;
 
       workletBufferRegistry.delete(name!);
-      workletBufferRegistry.create(name!, newLength, entry.channels, msg.sab);
+      workletBufferRegistry.create(name!, newLength, newChannels, msg.sab);
 
       const newEntry = workletBufferRegistry.get(name!);
+
       if (newEntry) {
-        const copyLen = Math.min(oldLength * entry.channels, newLength * newEntry.channels);
-        newEntry.data.set(oldData.subarray(0, copyLen));
+        // Copy per-channel samples, handling channel count changes
+        const copySamples = Math.min(oldLength, newLength);
+        const copyChannels = Math.min(oldChannels, newChannels);
+
+        for (let s = 0; s < copySamples; s++) {
+          for (let c = 0; c < copyChannels; c++) {
+            newEntry.data[s * newChannels + c] = oldData[s * oldChannels + c];
+          }
+        }
       }
     } else if (type === 'clear') {
       const entry = workletBufferRegistry.get(name!);
