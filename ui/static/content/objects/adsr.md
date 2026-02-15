@@ -73,7 +73,7 @@ The `values` array defines the exact shape of the curve over the phase
 duration. Values are absolute (not normalized) — the first element is
 the start value and the last is the end value. Requires at least 2 values.
 
-Try the `midi-adsr-gain.js` preset. See
+Try the `midi-adsr.js` preset. See
 [this patch](/?id=4ezt0ne0frsf694) for usage.
 
 ## See Also

@@ -5,7 +5,7 @@
 Built-in presets are currently organized by object type (js, hydra, canvas, etc.), but user interest is organized by **use case** (MIDI, visuals, audio synthesis). This mismatch causes cognitive overload:
 
 - `js` alone has 10 presets spanning MIDI, audio, and utilities
-- Users see `midi-adsr-gain.js` and `waveshaper-distortion.js` even when doing visual-only work
+- Users see `midi-adsr.js` and `waveshaper-distortion.js` even when doing visual-only work
 - Presets bloat 3 UI surfaces: ObjectBrowser, Quick Insert (Enter), and Sidebar Preset Tree
 
 Example: A VJ doing visual work doesn't need to see MIDI or audio-specific presets.
@@ -15,6 +15,7 @@ Example: A VJ doing visual work doesn't need to see MIDI or audio-specific prese
 **Preset Packs** - installable collections of presets grouped by use case, mirroring the Object Packs pattern. Installing a preset pack makes its presets visible in the UI.
 
 Key principles:
+
 - Preset packs are **mutually exclusive** - each preset belongs to one pack
 - Preset packs depend on Object Packs - only visible if required objects are enabled
 - "Starter Presets" enabled by default for new users
@@ -73,7 +74,7 @@ export const enabledPresets = derived(
 | Pack | Description | Required Objects | Presets |
 |------|-------------|------------------|---------|
 | **Starter Presets** | Essential presets for getting started | js, hydra | logger.js, add.hydra, add-fft.hydra |
-| **MIDI Presets** | MIDI routing and control | js, midi.in | midi-adsr-gain.js, midi-control-router.js, virtual-midi-keyboard.canvas |
+| **MIDI Presets** | MIDI routing and control | js, midi.in | midi-adsr.js, midi-control-router.js, virtual-midi-keyboard.canvas |
 | **Audio Synthesis** | Sound design utilities | js, osc~ | sawtooth-harmonics.js, waveshaper-distortion.js |
 | **Animation** | Frame-based animation helpers | js, p5 | bang-every-frame.js, frame-counter.js, interval.js |
 | **Livecoding Examples** | Example patches for livecoding | strudel, hydra, orca | (various strudel/orca presets) |
@@ -82,6 +83,7 @@ export const enabledPresets = derived(
 ### Preset Assignment (Draft)
 
 **Starter Presets:**
+
 - logger.js (debugging)
 - add.hydra (common pattern)
 - add-fft.hydra (audio-reactive)
@@ -89,22 +91,26 @@ export const enabledPresets = derived(
 - delay.js (utility)
 
 **MIDI Presets:**
-- midi-adsr-gain.js
+
+- midi-adsr.js
 - midi-control-router.js
 - virtual-midi-keyboard.canvas
 
 **Audio Synthesis:**
+
 - sawtooth-harmonics.js
 - waveshaper-distortion.js
 - (chuck presets)
 - (elementary presets)
 
 **Animation:**
+
 - bang-every-frame.js
 - frame-counter.js
 - interval.js
 
 **Canvas Widgets:**
+
 - xy-pad.canvas
 - hsla-picker.canvas
 - rgba-picker.canvas
@@ -113,6 +119,7 @@ export const enabledPresets = derived(
 - fft.canvas
 
 **Visual Effects:**
+
 - fractal-tree.canvas
 - various hydra presets
 - various glsl presets

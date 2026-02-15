@@ -62,11 +62,11 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
   },
   {
     id: 'midi',
-    name: 'MIDI Scripts',
-    description: 'JS scripts for automating MIDI',
+    name: 'MIDI Utilities',
+    description: 'Scripts and controls for MIDI',
     icon: 'Music',
-    requiredObjects: ['js', 'slider'],
-    presets: ['midi-adsr-gain.js', 'midi.slider']
+    requiredObjects: ['js', 'slider', 'knob'],
+    presets: ['midi-adsr.js', 'midi.slider', 'midi.knob']
   },
   {
     id: 'timing-demos',

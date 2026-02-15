@@ -103,7 +103,7 @@ export const JS_PRESETS: Record<
     type: 'js',
     data: { code: INTERVAL_JS, showConsole: false, runOnMount: true }
   },
-  'midi-adsr-gain.js': {
+  'midi-adsr.js': {
     type: 'js',
     data: { code: MIDI_ADSR_GAIN_JS, showConsole: false, runOnMount: true }
   },
