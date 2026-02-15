@@ -1,5 +1,9 @@
 Oscilloscope waveform display for real-time audio signal
-visualization.
+visualization, with XY/Lissajous mode.
+
+## Modes
+
+### Waveform (default)
 
 Displays the time-domain audio waveform with automatic trigger
 detection for a stable display. Connect any audio source to see
@@ -9,6 +13,20 @@ The display triggers on rising zero-crossings to keep periodic
 waveforms (sine, saw, square, etc.) visually stable. If no
 trigger is found within 2048 samples, it forces a capture to
 prevent the display from freezing on noise or DC signals.
+
+### XY (Lissajous)
+
+Plots two signals against each other. The first inlet controls
+the X axis and the second inlet (visible in XY mode) controls
+the Y axis. Creates Lissajous figures useful for:
+
+- **Phase comparison** — two sines at the same frequency produce
+  a line (in phase), ellipse, or circle (90° out of phase)
+- **Frequency ratios** — 1:2 produces a figure-8, 2:3 a trefoil
+- **Stereo field** — connect left and right channels to visualize
+  the stereo image
+
+Switch modes from the settings panel (gear icon).
 
 ## Parameters
 
@@ -20,7 +38,7 @@ prevent the display from freezing on noise or DC signals.
   across the display width.
 - **Y Scale** (0.1x - 10x): Vertical zoom. Amplifies the
   waveform amplitude for quiet signals, or reduces it for
-  loud ones.
+  loud ones. In XY mode, applies to both axes.
 
 ### Advanced
 
@@ -47,6 +65,8 @@ and the display appears rock-solid.
 At higher frequencies (e.g. 4400 Hz ~ 10 samples/cycle), each
 sample represents a larger phase offset, so the waveform may
 visibly shift between frames.
+
+In XY mode, the trigger is based on the X channel (first inlet).
 
 ## See Also
 

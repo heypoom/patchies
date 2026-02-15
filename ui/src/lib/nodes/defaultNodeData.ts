@@ -179,6 +179,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('out~', () => ({ deviceId: '' }))
     .with('meter~', () => ({ smoothing: 0.8, peakHold: true, style: 'bar' }))
     .with('scope~', () => ({
+      mode: 'waveform',
       bufferSize: 512,
       xScale: 1,
       yScale: 1,

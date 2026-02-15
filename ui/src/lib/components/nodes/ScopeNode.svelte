@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { ChevronRight, RotateCcw, Settings, X } from '@lucide/svelte/icons';
   import * as Collapsible from '$lib/components/ui/collapsible';
-  import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
+  import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
@@ -10,10 +10,12 @@
   import { useNodeDataTracker } from '$lib/history';
 
   type PlotType = 'line' | 'point' | 'bezier';
+  type ScopeMode = 'waveform' | 'xy';
 
   let node: {
     id: string;
     data: {
+      mode?: ScopeMode;
       bufferSize?: number;
       xScale?: number;
       yScale?: number;
@@ -26,7 +28,8 @@
     height?: number;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const tracker = useNodeDataTracker(node.id);
 
   let canvas: HTMLCanvasElement;
@@ -37,6 +40,7 @@
 
   let showSettings = $state(false);
   let advancedOpen = $state(false);
+  let mode = $state<ScopeMode>(node.data.mode ?? 'waveform');
   let bufferSize = $state(node.data.bufferSize ?? 512);
   let xScale = $state(node.data.xScale ?? 1);
   let yScale = $state(node.data.yScale ?? 1);
@@ -51,6 +55,7 @@
 
   const displayWidth = $derived(node.width ?? DEFAULT_WIDTH);
   const displayHeight = $derived(node.height ?? DEFAULT_HEIGHT);
+  const inletCount = $derived(mode === 'xy' ? 2 : 1);
 
   function setupCanvas() {
     if (!canvas) return;
@@ -72,9 +77,35 @@
     setupCanvas();
   });
 
+  // Clean up edges when hiding the Y inlet
+  let prevInletCount: number | null = null;
+  $effect(() => {
+    const count = inletCount;
+    updateNodeInternals(node.id);
+
+    if (prevInletCount === null) {
+      prevInletCount = count;
+      return;
+    }
+
+    if (count < prevInletCount) {
+      const edges = getEdges();
+      const staleEdges = edges.filter(
+        (e) => e.target === node.id && e.targetHandle === 'audio-in-1'
+      );
+      if (staleEdges.length > 0) {
+        deleteElements({ edges: staleEdges });
+      }
+    }
+
+    prevInletCount = count;
+  });
+
   function updateScope() {
-    if (scopeNode?.latestBuffer) {
-      drawWaveform(scopeNode.latestBuffer);
+    if (mode === 'xy' && scopeNode?.latestXY) {
+      drawLissajous(scopeNode.latestXY.x, scopeNode.latestXY.y);
+    } else if (scopeNode?.latestWaveform) {
+      drawWaveform(scopeNode.latestWaveform);
     }
 
     animationId = requestAnimationFrame(updateScope);
@@ -85,13 +116,7 @@
     return ((1 - normalized) / 2) * h;
   }
 
-  function drawWaveform(buffer: Float32Array) {
-    if (!ctx) return;
-
-    const w = displayWidth;
-    const h = displayHeight;
-
-    // Decay: alpha=1 means full clear (no persistence), lower = more trails
+  function clearCanvas(w: number, h: number) {
     if (decay >= 1) {
       ctx.fillStyle = '#080809';
       ctx.fillRect(0, 0, w, h);
@@ -99,6 +124,15 @@
       ctx.fillStyle = `rgba(8, 8, 9, ${decay})`;
       ctx.fillRect(0, 0, w, h);
     }
+  }
+
+  function drawWaveform(buffer: Float32Array) {
+    if (!ctx) return;
+
+    const w = displayWidth;
+    const h = displayHeight;
+
+    clearCanvas(w, h);
 
     // Center reference line
     ctx.strokeStyle = '#27272a';
@@ -161,6 +195,84 @@
         ctx.stroke();
       })
       .exhaustive();
+  }
+
+  function drawLissajous(bufX: Float32Array, bufY: Float32Array) {
+    if (!ctx) return;
+
+    const w = displayWidth;
+    const h = displayHeight;
+
+    clearCanvas(w, h);
+
+    // Crosshairs
+    ctx.strokeStyle = '#27272a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.moveTo(w / 2, 0);
+    ctx.lineTo(w / 2, h);
+    ctx.stroke();
+
+    const samplesToShow = Math.max(1, Math.floor(bufX.length / xScale));
+
+    function xyToCanvas(sx: number, sy: number): [number, number] {
+      const nx = Math.max(-1, Math.min(1, sx * yScale));
+      const ny = Math.max(-1, Math.min(1, sy * yScale));
+      return [((nx + 1) / 2) * w, ((1 - ny) / 2) * h];
+    }
+
+    ctx.strokeStyle = '#22c55e';
+    ctx.fillStyle = '#22c55e';
+
+    match(plotType)
+      .with('line', () => {
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < samplesToShow; i++) {
+          const [cx, cy] = xyToCanvas(bufX[i], bufY[i]);
+          if (i === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+      })
+      .with('point', () => {
+        const radius = 1.5;
+        for (let i = 0; i < samplesToShow; i++) {
+          const [cx, cy] = xyToCanvas(bufX[i], bufY[i]);
+          ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+        }
+      })
+      .with('bezier', () => {
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        if (samplesToShow < 2) return;
+
+        const [x0, y0] = xyToCanvas(bufX[0], bufY[0]);
+        ctx.moveTo(x0, y0);
+
+        for (let i = 1; i < samplesToShow; i++) {
+          const [prevX, prevY] = xyToCanvas(bufX[i - 1], bufY[i - 1]);
+          const [currX, currY] = xyToCanvas(bufX[i], bufY[i]);
+          const midX = (prevX + currX) / 2;
+          const midY = (prevY + currY) / 2;
+          ctx.quadraticCurveTo(prevX, prevY, midX, midY);
+        }
+
+        const [lastX, lastY] = xyToCanvas(bufX[samplesToShow - 1], bufY[samplesToShow - 1]);
+        ctx.lineTo(lastX, lastY);
+        ctx.stroke();
+      })
+      .exhaustive();
+  }
+
+  function handleModeChange(value: ScopeMode) {
+    const oldValue = mode;
+    mode = value;
+    updateNodeData(node.id, { mode: value });
+    tracker.commit('mode', oldValue, value);
+    scopeNode?.setMode(value);
   }
 
   const bufferSizeTracker = tracker.track('bufferSize', () => node.data.bufferSize ?? 512);
@@ -236,6 +348,9 @@
       if (fps > 0) {
         scopeNode.setFps(fps);
       }
+      if (mode !== 'waveform') {
+        scopeNode.setMode(mode);
+      }
     }
 
     setupCanvas();
@@ -275,12 +390,26 @@
       <StandardHandle
         port="inlet"
         type="audio"
-        total={1}
+        id="0"
+        total={inletCount}
         index={0}
-        title="Audio input"
+        title={mode === 'xy' ? 'X axis' : 'Audio input'}
         class={`${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
         nodeId={node.id}
       />
+
+      {#if mode === 'xy'}
+        <StandardHandle
+          port="inlet"
+          type="audio"
+          id="1"
+          total={inletCount}
+          index={1}
+          title="Y axis"
+          class={`${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+          nodeId={node.id}
+        />
+      {/if}
 
       <canvas
         bind:this={canvas}
@@ -389,6 +518,26 @@
             </Collapsible.Trigger>
 
             <Collapsible.Content class="mt-2 space-y-4">
+              <!-- Mode -->
+              <div>
+                <span class="mb-1 block text-xs font-medium text-zinc-300">Mode</span>
+                <div class="flex gap-1">
+                  {#each ['waveform', 'xy'] as modeOption (modeOption)}
+                    <button
+                      class={[
+                        'flex-1 cursor-pointer rounded px-2 py-1 text-xs transition-colors',
+                        mode === modeOption
+                          ? 'bg-green-600 text-white'
+                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      ]}
+                      onclick={() => handleModeChange(modeOption as ScopeMode)}
+                    >
+                      {modeOption}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+
               <!-- Plot Type -->
               <div>
                 <span class="mb-1 block text-xs font-medium text-zinc-300">Plot</span>
