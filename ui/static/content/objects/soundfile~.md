@@ -4,6 +4,8 @@ Load and play audio files with transport controls.
 
 - Double click or drop a file to load it
 - Dropping an audio file into the patcher creates a `soundfile~` by default
+- Create with a URL to load immediately:
+  `soundfile~ https://stream.japanradio.de/live`
 - Right click to convert to [sampler~](/docs/objects/sampler~) for more
   playback capabilities
 

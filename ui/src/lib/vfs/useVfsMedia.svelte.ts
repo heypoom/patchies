@@ -19,7 +19,9 @@ export interface UseVfsMediaOptions {
   /** MIME type prefix to accept (e.g., 'image/', 'audio/', 'video/') */
   acceptMimePrefix: 'image/' | 'audio/' | 'video/';
 
-  /** Callback when a file is successfully loaded.
+  /**
+   * Callback when a file is successfully loaded.
+   *
    * @param file - The loaded File object
    * @param sourceUrl - If loaded from URL, the original URL for streaming (avoids fetching whole file)
    */
@@ -164,16 +166,25 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 
       // Check if this is a URL entry - if so, pass the URL for streaming
       const entry = vfs.getEntry(vfsPath);
+
       const sourceUrl = entry?.provider === 'url' ? entry.url : undefined;
 
-      const fileOrBlob = await vfs.resolve(vfsPath);
+      if (sourceUrl) {
+        // For URL entries, don't fetch the content (could be an infinite stream).
+        // Pass a metadata-only File and let the consumer stream from sourceUrl.
+        const file = new File([], entry?.filename ?? 'media', { type: entry?.mimeType ?? '' });
 
-      const file =
-        fileOrBlob instanceof File
-          ? fileOrBlob
-          : new File([fileOrBlob], 'media', { type: fileOrBlob.type });
+        await options.onFileLoaded(file, sourceUrl);
+      } else {
+        const fileOrBlob = await vfs.resolve(vfsPath);
 
-      await options.onFileLoaded(file, sourceUrl);
+        const file =
+          fileOrBlob instanceof File
+            ? fileOrBlob
+            : new File([fileOrBlob], 'media', { type: fileOrBlob.type });
+
+        await options.onFileLoaded(file);
+      }
     } catch (err) {
       logger.error('[vfs load error]', err);
 

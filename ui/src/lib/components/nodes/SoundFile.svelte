@@ -22,6 +22,7 @@
     data: {
       vfsPath?: string;
       fileName?: string;
+      _initialUrl?: string;
     };
     selected: boolean;
   } = $props();
@@ -59,12 +60,17 @@
    * Called when VFS successfully loads a file.
    * Sets up the audio system and updates node data.
    */
-  async function handleFileLoaded(file: File) {
+  async function handleFileLoaded(file: File, sourceUrl?: string) {
     // Update filename in node data
     updateNodeData(node.id, { ...node.data, fileName: file.name });
 
-    // Send the file to the audio system
-    audioService.send(node.id, 'file', file);
+    if (sourceUrl) {
+      // For URL sources (streaming), send URL directly to audio node
+      audioService.send(node.id, 'url', sourceUrl);
+    } else {
+      // Send the file to the audio system
+      audioService.send(node.id, 'file', file);
+    }
 
     vfsMedia.markLoaded();
     autoReadIfConnectedToConvolver();
@@ -133,9 +139,12 @@
     // Get the V2 node reference from AudioService
     v2Node = audioService.getNodeById(node.id) as SoundfileNodeV2;
 
-    // If we have a VFS path, try to load from it
     if (node.data.vfsPath) {
+      // If we have a VFS path, try to load from it
       await vfsMedia.loadFromVfsPath(node.data.vfsPath);
+    } else if (node.data._initialUrl) {
+      // Used for shorthands like "soundfile~ https://example.com/audio.mp3"
+      await vfsMedia.loadFromUrl(node.data._initialUrl);
     }
   });
 

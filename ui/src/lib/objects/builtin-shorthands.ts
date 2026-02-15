@@ -293,6 +293,18 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 
       return { nodeType: 'sse', data: { url } };
     }
+  },
+  {
+    names: ['soundfile~'],
+    nodeType: 'soundfile~',
+    description: 'Audio file player. Format: soundfile~ [url]',
+    transform: (expr, name) => {
+      const url = expr.replace(name, '').trim();
+      return {
+        nodeType: 'soundfile~',
+        data: url ? { _initialUrl: url } : {}
+      };
+    }
   }
 ];
 
