@@ -26,6 +26,7 @@
     isObjectBrowserOpen,
     isMobile,
     isSidebarOpen,
+    sidebarWidth,
     sidebarView,
     patchObjectTypes,
     currentPatchName,
@@ -308,8 +309,8 @@
 
   function triggerCommandPalette() {
     const dialogWidth = 320; // w-80
-    const sidebarWidth = $isSidebarOpen && !$isMobile ? 256 : 0; // w-64
-    const availableWidth = window.innerWidth - sidebarWidth;
+    const currentSidebarWidth = $isSidebarOpen && !$isMobile ? $sidebarWidth : 0;
+    const availableWidth = window.innerWidth - currentSidebarWidth;
     const centerX = (availableWidth - dialogWidth) / 2;
     const centerY = window.innerHeight / 2 - 200;
 
@@ -368,8 +369,8 @@
 
   function triggerAiPrompt() {
     const dialogWidth = 384; // w-96
-    const sidebarWidth = $isSidebarOpen && !$isMobile ? 256 : 0; // w-64
-    const availableWidth = window.innerWidth - sidebarWidth;
+    const currentSidebarWidth = $isSidebarOpen && !$isMobile ? $sidebarWidth : 0;
+    const availableWidth = window.innerWidth - currentSidebarWidth;
     const centerX = (availableWidth - dialogWidth) / 2;
     const centerY = window.innerHeight / 2 - 150;
 
