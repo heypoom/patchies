@@ -477,6 +477,17 @@ export const portedCode: PortedCode[] = [
     license: 'LGPL-2.1',
     notes:
       'Local fork at ui/packages/csound-browser fixes module-level globals in the AudioWorklet that caused issues when multiple csound~ instances were created. The fix moves shared state to instance properties, allowing independent Csound instances.'
+  },
+  {
+    name: 'Pure Data (Pd)',
+    description:
+      "Patchies' audio object architecture, naming conventions, and signal processing paradigm are directly inspired by Pure Data. Nearly all native audio DSP objects and textual objects follow Pure Data's design.",
+    authors: 'Miller Puckette and the Pure Data community',
+    repository: 'https://github.com/pure-data/pure-data',
+    license: 'BSD-3-Clause',
+    copyright: '© 1996 Miller Puckette and others',
+    notes:
+      "Patchies reimplements Pd's object designs using Web Audio API and AudioWorklets — no code was directly ported. The tilde (~) naming convention, inlet/outlet paradigm, hot/cold inlet semantics, and message-passing architecture all originate from Miller Puckette's work on Pure Data and its predecessor Max."
   }
 ];
 
@@ -490,6 +501,14 @@ export interface SupportLink {
 }
 
 export const supportLinks: SupportLink[] = [
+  {
+    name: 'Miller Puckette & Pure Data',
+    description: 'Creator of Pure Data and Max.',
+    category: 'library',
+    url: 'https://puredata.info/',
+    type: 'website',
+    projects: ['Pure Data', 'Max (original)']
+  },
   {
     name: 'Sam Aaron',
     description: 'Creator of Sonic Pi and SuperSonic',

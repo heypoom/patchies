@@ -15,6 +15,17 @@ These creators dedicate countless hours of their personal time to building and m
 
 ## Library & Tool Creators
 
+### Miller Puckette & Pure Data
+
+**Projects:** Pure Data, Max (original)
+
+Creator of Pure Data and the original Max. Nearly all of Patchies' audio and textual objects are directly inspired by Pure Data's design. The tilde (~) naming convention, inlet/outlet paradigm, and message-passing architecture all originate from Miller Puckette's work. Patchies reimplements these designs using Web Audio API and AudioWorklets; no code was directly ported.
+
+**Website:** [puredata.info](https://puredata.info/)
+**Repository:** [github.com/pure-data/pure-data](https://github.com/pure-data/pure-data)
+
+---
+
 ### Sam Aaron
 
 **Projects:** Sonic Pi, SuperSonic

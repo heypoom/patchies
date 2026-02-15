@@ -709,10 +709,10 @@ For each new node, update these files:
 5. [x] Register all in index, schemas, packs
 6. [x] Add help docs
 
-### Phase 4: Generators & Utilities [ ]
+### Phase 4: Generators & Utilities [x]
 
-1. [ ] `pink~` — pink noise
-2. [ ] `pulse~` — pulse wave with PWM
-3. [ ] `comb~` — comb filter
-4. [ ] Register all in index, schemas, packs
-5. [ ] Add help docs
+1. [x] `pink~` — pink noise
+2. [x] `pulse~` — pulse wave with PWM
+3. [x] `comb~` — comb filter
+4. [x] Register all in index, schemas, packs
+5. [x] Add help docs
