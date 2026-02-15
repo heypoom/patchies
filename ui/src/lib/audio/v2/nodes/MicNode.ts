@@ -1,5 +1,6 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
+import { Bang } from '$lib/objects/schemas/common';
 
 export interface MicSettings {
   deviceId?: string;
@@ -23,7 +24,8 @@ export class MicNode implements AudioNodeV2 {
     {
       name: 'message',
       type: 'message',
-      description: 'Control messages. Bang to restart microphone input.'
+      description: 'Control messages',
+      messages: [{ schema: Bang, description: 'Restart microphone input' }]
     }
   ];
 
