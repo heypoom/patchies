@@ -143,6 +143,9 @@
   // Track highest precision seen per inlet for stable display width
   let stickyPrecision = $state<Record<number, number>>({});
 
+  // Track whether a negative value has been seen per inlet (for stable sign width)
+  let stickyNegative = $state<Record<number, boolean>>({});
+
   // Track object instance version to trigger re-evaluation of outlets
   let objectInstanceVersion = $state(0);
 
@@ -288,21 +291,24 @@
       .filter(({ inlet }) => !inlet.hideInlet);
   });
 
-  // Update sticky precision when params change (for stable display width)
+  // Update sticky precision and sticky sign when params change (for stable display width)
   $effect(() => {
     data.params.forEach((param, index) => {
       const inlet = inlets[index];
 
-      if (
-        inlet?.type === 'float' &&
-        inlet.maxPrecision !== undefined &&
-        typeof param === 'number'
-      ) {
-        const currentPrecision = getDecimalPrecision(param, inlet.maxPrecision);
-        const existing = stickyPrecision[index] ?? 0;
+      if (typeof param === 'number') {
+        // Track negative sign stickiness for numeric inlets
+        if (param < 0 && !stickyNegative[index]) {
+          stickyNegative[index] = true;
+        }
 
-        if (currentPrecision > existing) {
-          stickyPrecision[index] = currentPrecision;
+        if (inlet?.type === 'float' && inlet.maxPrecision !== undefined) {
+          const currentPrecision = getDecimalPrecision(param, inlet.maxPrecision);
+          const existing = stickyPrecision[index] ?? 0;
+
+          if (currentPrecision > existing) {
+            stickyPrecision[index] = currentPrecision;
+          }
         }
       }
     });
@@ -490,6 +496,7 @@
     isEditing = false;
     showAutocomplete = false;
     stickyPrecision = {};
+    stickyNegative = {};
 
     if (!save) {
       // Restore original name on escape
@@ -1111,7 +1118,8 @@
                               {getShortInletName(index)}
                             {:else}
                               {stringifyParamByType(inlets[index], param, index, {
-                                stickyPrecision: stickyPrecision[index]
+                                stickyPrecision: stickyPrecision[index],
+                                stickyNegative: stickyNegative[index]
                               })}
                             {/if}
                           </span>

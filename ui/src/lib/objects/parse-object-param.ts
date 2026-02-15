@@ -74,11 +74,20 @@ export const stringifyParamByType = (
   inlet: ObjectInlet | undefined,
   value: unknown,
   index: number,
-  { stickyPrecision }: { stickyPrecision?: number } = {}
+  { stickyPrecision, stickyNegative }: { stickyPrecision?: number; stickyNegative?: boolean } = {}
 ) => {
   if (!inlet?.type) return String(value);
 
   if (inlet.formatter) return inlet.formatter(value);
+
+  // Pad positive numbers with a space when negative has been seen, to prevent layout shift
+  const applySignPadding = (str: string) => {
+    if (stickyNegative && typeof value === 'number' && value >= 0) {
+      return '\u2007' + str; // figure space (same width as a digit/minus in monospace)
+    }
+
+    return str;
+  };
 
   return match(inlet.type)
     .with(P.union(...UNMODIFIABLES), () => `$${index}`)
@@ -96,21 +105,22 @@ export const stringifyParamByType = (
     .with('float', () => {
       // always use n floating point
       if (inlet.precision !== undefined) {
-        return (value as number)?.toFixed(inlet.precision);
+        return applySignPadding((value as number)?.toFixed(inlet.precision));
       }
 
       // If sticky precision is set, pad to that precision
       if (stickyPrecision !== undefined && stickyPrecision > 0) {
-        return (value as number)?.toFixed(stickyPrecision);
+        return applySignPadding((value as number)?.toFixed(stickyPrecision));
       }
 
       // allow up to n floating point
       if (inlet.maxPrecision !== undefined) {
-        return formatFloatingPoint(value as number, inlet.maxPrecision);
+        return applySignPadding(String(formatFloatingPoint(value as number, inlet.maxPrecision)));
       }
 
-      return String(value);
+      return applySignPadding(String(value));
     })
+    .with('int', () => applySignPadding(String(value)))
     .otherwise(() => String(value));
 };
 
