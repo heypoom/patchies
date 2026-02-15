@@ -7,6 +7,16 @@ Store and send predefined messages. Click to send.
 - `100` → sends number `100`
 - `{x: 1}` → sends object `{x: 1}`
 
+## Space-Separated Arrays
+
+Space-separated tokens are sent as an array:
+
+- `1024 2048` → sends `[1024, 2048]`
+- `bang 100 {x: 1}` → sends `[{type: 'bang'}, 100, {x: 1}]`
+- `"hello world" 42` → sends `["hello world", 42]`
+
+Each token is parsed individually (JSON5, number, or bare string).
+
 ## Sequential Messages
 
 Use commas to send multiple messages in sequence:

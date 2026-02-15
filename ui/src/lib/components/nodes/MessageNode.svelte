@@ -15,7 +15,7 @@
   import 'highlight.js/styles/tokyo-night-dark.css';
   import CodeEditor from '../CodeEditor.svelte';
   import { parseInletCount } from '$lib/utils/expr-parser';
-  import { splitSequentialMessages } from '$lib/utils/message-parser';
+  import { splitSequentialMessages, splitByTopLevelSpaces } from '$lib/utils/message-parser';
 
   hljs.registerLanguage('javascript', javascript);
 
@@ -149,17 +149,30 @@
 
   const send = (data: unknown) => messageContext.send(data);
 
+  /** Parse a single token: try JSON5, fallback to { type: string } */
+  function parseToken(token: string): unknown {
+    try {
+      return Json5.parse(token);
+    } catch {
+      return { type: token };
+    }
+  }
+
   /**
    * Send the message to connected objects.
    *
    * Supports comma-separated sequential messages (Max/MSP style):
    * - `{type: 'set', value: 1}, bang, [255, 0, 0]` sends three messages in order
    *
-   * Per-segment format:
-   * - Bare strings (e.g. `hello world`) are sent as objects with type field: `{ type: 'hello world' }`
-   * - Quoted strings (e.g. `"hello world"`) are sent as strings: `"hello world"`
-   * - JSON objects (e.g. `{ type: 'bang' }`) are sent as-is
-   * - Numbers (e.g. `100`) are sent as numbers
+   * Supports space-separated tokens as arrays:
+   * - `1024 2048` sends `[1024, 2048]`
+   * - `1024 bang {x: 1}` sends `[1024, {type: 'bang'}, {x: 1}]`
+   *
+   * Per-token format:
+   * - Quoted strings (e.g. `"hello world"`) → string
+   * - JSON objects (e.g. `{ type: 'bang' }`) → object
+   * - Numbers (e.g. `100`) → number
+   * - Bare strings (e.g. `bang`) → `{ type: 'bang' }`
    * - $1-$9 placeholders are substituted with values from corresponding inlets
    */
   function sendMessage() {
@@ -186,7 +199,14 @@
         continue;
       } catch (e) {}
 
-      // Bare strings are treated as symbols: { type: <string> }
+      // Try space-separated tokens → send as array
+      const tokens = splitByTopLevelSpaces(processedMsg);
+      if (tokens.length > 1) {
+        send(tokens.map(parseToken));
+        continue;
+      }
+
+      // Single bare string → { type: string }
       send({ type: processedMsg });
     }
   }

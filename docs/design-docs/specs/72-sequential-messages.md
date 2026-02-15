@@ -59,6 +59,21 @@ If a segment has unsubstituted placeholders, only that segment is skipped (other
 
 Sequential messages use JavaScript syntax highlighting on the button display. An `isSequential` derived flag enables highlighting even when the full string doesn't parse as a single JSON5 value.
 
-## Breaking Change
+## Space-Separated Arrays
 
-Bare strings containing literal commas (e.g., `hello, world`) now split into two messages: `{type: 'hello'}` then `{type: 'world'}`. Previously this sent `{type: 'hello, world'}`. Users can quote to preserve: `"hello, world"`. This matches Max/MSP semantics.
+When a comma-segment fails JSON5 parsing, it is split by top-level spaces. If there are multiple tokens, each is parsed individually and sent as an array:
+
+- `1024 2048` → `[1024, 2048]`
+- `bang 100 {x: 1}` → `[{type: 'bang'}, 100, {x: 1}]`
+- `"hello world" 42` → `["hello world", 42]`
+
+Single tokens still use the bare string fallback: `bang` → `{type: 'bang'}`.
+
+The same depth-aware parser (`splitAtTopLevel`) is reused with space as the delimiter, so spaces inside `{}`, `[]`, and quotes are preserved.
+
+## Breaking Changes
+
+- Bare strings containing literal commas (e.g., `hello, world`) now split into two messages: `{type: 'hello'}` then `{type: 'world'}`. Previously this sent `{type: 'hello, world'}`. Users can quote to preserve: `"hello, world"`.
+- Bare strings containing spaces (e.g., `hello world`) now send as array `[{type: 'hello'}, {type: 'world'}]`. Previously this sent `{type: 'hello world'}`. Users can quote to preserve: `"hello world"`.
+
+Both changes match Max/MSP semantics.

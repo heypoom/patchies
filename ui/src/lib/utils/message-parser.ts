@@ -1,15 +1,8 @@
 /**
- * Splits a message string into sequential segments, respecting JSON structure.
- * Only commas at depth 0 (outside {}, [], and quotes) are treated as separators.
- *
- * Examples:
- *   "bang"                          → ["bang"]
- *   "bang, 100"                     → ["bang", "100"]
- *   "{a: 1, b: 2}, bang"           → ["{a: 1, b: 2}", "bang"]
- *   "[1, 2], [3, 4]"              → ["[1, 2]", "[3, 4]"]
- *   '"hello, world", 42'           → ['"hello, world"', "42"]
+ * Splits a string at a delimiter, respecting JSON structure (braces, brackets, quotes).
+ * Only delimiters at depth 0 (outside {}, [], and quotes) are treated as separators.
  */
-export function splitSequentialMessages(text: string): string[] {
+function splitAtTopLevel(text: string, delimiter: ',' | ' '): string[] {
   let braceDepth = 0;
   let bracketDepth = 0;
   let inDoubleQuote = false;
@@ -50,7 +43,7 @@ export function splitSequentialMessages(text: string): string[] {
     else if (char === '}') braceDepth = Math.max(0, braceDepth - 1);
     else if (char === '[') bracketDepth++;
     else if (char === ']') bracketDepth = Math.max(0, bracketDepth - 1);
-    else if (char === ',' && braceDepth === 0 && bracketDepth === 0) {
+    else if (char === delimiter && braceDepth === 0 && bracketDepth === 0) {
       segments.push(text.slice(currentStart, i).trim());
       currentStart = i + 1;
     }
@@ -62,7 +55,34 @@ export function splitSequentialMessages(text: string): string[] {
     segments.push(lastSegment);
   }
 
-  // Filter out empty segments (from trailing/leading commas)
+  // Filter out empty segments (from trailing/leading delimiters or consecutive delimiters)
   const filtered = segments.filter((s) => s.length > 0);
   return filtered.length > 0 ? filtered : [''];
+}
+
+/**
+ * Splits a message string into sequential segments by top-level commas.
+ *
+ * Examples:
+ *   "bang"                          → ["bang"]
+ *   "bang, 100"                     → ["bang", "100"]
+ *   "{a: 1, b: 2}, bang"           → ["{a: 1, b: 2}", "bang"]
+ *   "[1, 2], [3, 4]"              → ["[1, 2]", "[3, 4]"]
+ *   '"hello, world", 42'           → ['"hello, world"', "42"]
+ */
+export function splitSequentialMessages(text: string): string[] {
+  return splitAtTopLevel(text, ',');
+}
+
+/**
+ * Splits a string into tokens by top-level spaces.
+ * Spaces inside {}, [], and quotes are preserved.
+ *
+ * Examples:
+ *   "1024 2048"                     → ["1024", "2048"]
+ *   "1024 bang {type: 'set'}"       → ["1024", "bang", "{type: 'set'}"]
+ *   '"hello world" 42'             → ['"hello world"', "42"]
+ */
+export function splitByTopLevelSpaces(text: string): string[] {
+  return splitAtTopLevel(text, ' ');
 }
