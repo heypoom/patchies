@@ -679,26 +679,26 @@ For each new node, update these files:
 
 ## Implementation Order
 
-### Phase 1: Signal Arithmetic ✅→[ ]
+### Phase 1: Signal Arithmetic [x]
 
-1. [ ] `*~` — multiply (highest priority — unlocks VCA, ring mod, AM)
-2. [ ] `-~` — subtract
-3. [ ] `/~` — divide
-4. [ ] `min~` — minimum
-5. [ ] `max~` — maximum
-6. [ ] Register all in index, schemas, packs
-7. [ ] Add help docs
+1. [x] `*~` — multiply (highest priority — unlocks VCA, ring mod, AM)
+2. [x] `-~` — subtract
+3. [x] `/~` — divide
+4. [x] `min~` — minimum
+5. [x] `max~` — maximum
+6. [x] Register all in index, schemas, packs
+7. [x] Add help docs
 
-### Phase 2: Signal Math [ ]
+### Phase 2: Signal Math [x]
 
-1. [ ] `clip~` — clamp to range
-2. [ ] `wrap~` — wrap to [0, 1)
-3. [ ] `abs~` — absolute value
-4. [ ] `pow~` — exponentiation
-5. [ ] `>~` — greater than
-6. [ ] `<~` — less than
-7. [ ] Register all in index, schemas, packs
-8. [ ] Add help docs
+1. [x] `clip~` — clamp to range
+2. [x] `wrap~` — wrap to [0, 1)
+3. [x] `abs~` — absolute value
+4. [x] `pow~` — exponentiation
+5. [x] `>~` — greater than
+6. [x] `<~` — less than
+7. [x] Register all in index, schemas, packs
+8. [x] Add help docs
 
 ### Phase 3: Envelopes & Control [ ]
 

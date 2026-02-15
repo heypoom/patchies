@@ -309,10 +309,10 @@ export const MyNode = createWorkletDspNode({
 
 **Registration (same as V2 audio nodes):**
 
-1. `src/lib/audio/v2/nodes/index.ts` — import and add to `AUDIO_NODES` array
-1. `src/lib/objects/schemas/index.ts` — import and add to `schemasFromNodes([...], 'audio')`
-1. `src/lib/extensions/object-packs.ts` — add to appropriate pack
-1. `static/content/objects/{nodename}.md` — documentation
+1. `ui/src/lib/audio/v2/nodes/index.ts` — import and add to `AUDIO_NODES` array
+1. `ui/src/lib/objects/schemas/index.ts` — import and add to `schemasFromNodes([...], 'audio')`
+1. `ui/src/lib/extensions/object-packs.ts` — add to appropriate pack
+1. `ui/static/content/objects/{nodename}.md` — documentation
 
 **Inlet types**: `'signal'` | `'message'` | `'float'` | `'bang'` | `'string'`
 
