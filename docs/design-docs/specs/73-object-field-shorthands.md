@@ -139,14 +139,24 @@ type FieldMapping = {
 function buildMessageFieldMap(): Map<string, FieldMapping[]>
 ```
 
-Multiple objects may define different schemas for the same type name (e.g., `set` means `{value: any}` for msg boxes but `{key: string, value: any}` for kv). The lookup should:
+Multiple objects may define different schemas for the same type name (e.g., `set` means `{value: any}` for msg boxes but `{key: string, value: any}` for kv).
 
-1. **Context-aware (ideal)**: Know the downstream object type and use its specific schema. Requires tracing the edge to the target node.
-2. **Heuristic (simpler)**: When ambiguous, prefer the schema with fewer fields (the simpler interpretation). `set 1` → `{type: 'set', value: 1}` (1 field) wins over `{type: 'set', key: 1}` (also 1 field but missing `value`).
+### Resolution: Argument count selects the schema
+
+When a type name has multiple schemas with different field counts, the number of positional arguments determines which schema is used:
+
+| Input | Args | Matching schema | Result |
+|---|---|---|---|
+| `set` | 0 | — (symbol) | `{type: 'set'}` |
+| `set 20` | 1 | 1-field `{value}` | `{type: 'set', value: 20}` |
+| `set 20 30` | 2 | 2-field `{key, value}` | `{type: 'set', key: '20', value: 30}` |
+| `set 20 30 40` | 3 | no match → array fallback | `[{type: 'set'}, 20, 30, 40]` |
+
+If no schema has a matching field count (and rest-args doesn't apply), fall back to the old array behavior. No silent dropping, no ambiguity.
 
 ### Recommendation: Start context-free, add context later
 
-For v1, build a global map. If a type name has multiple schemas with different field counts, require named arguments for disambiguation. Most common messages (`bang`, `set`, `clear`, `reset`, `get`, `setCode`) have unambiguous schemas.
+For v1, build a global map keyed by `(typeName, fieldCount)`. Most common messages (`bang`, `set`, `clear`, `reset`, `get`, `setCode`) are unambiguous at any given field count. Context-aware resolution (Phase 4) can refine this later.
 
 ## Implementation Plan
 
@@ -196,11 +206,19 @@ Trace edges from the msg node's outlet to find the target object type. Use the t
 | `get foo` | `{type: 'get', key: 'foo'}` | `msg('get', { key })` |
 | `set foo 42` | `{type: 'set', key: 'foo', value: 42}` | `msg('set', { key, value })` |
 
+### Argument count disambiguation
+
+| Shorthand | Args | Resolves to | Schema selected |
+|---|---|---|---|
+| `set` | 0 | `{type: 'set'}` | symbol (no fields) |
+| `set 20` | 1 | `{type: 'set', value: 20}` | 1-field `{value}` |
+| `set 20 30` | 2 | `{type: 'set', key: '20', value: 30}` | 2-field `{key, value}` |
+| `set 20 30 40` | 3 | `[{type: 'set'}, 20, 30, 40]` | no match → array fallback |
+
 ### Edge cases
 
 | Input | Behavior | Reason |
 |---|---|---|
-| `set` | `{type: 'set'}` | Recognized type, no args → symbol |
 | `unknownThing 1 2` | `[{type: 'unknownThing'}, 1, 2]` | Not a recognized type → array fallback |
 | `100 200` | `[100, 200]` | First token is number, not a type name → array |
 | `set value=1` | `{type: 'set', value: 1}` | Named arg |
