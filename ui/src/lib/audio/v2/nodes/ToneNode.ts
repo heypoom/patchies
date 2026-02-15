@@ -6,6 +6,7 @@ import { JSRunner } from '$lib/js-runner/JSRunner';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { TONE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { extractToneVarNames, injectAutoDispose } from './tone-auto-dispose';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 
@@ -47,6 +48,9 @@ export class ToneNode implements AudioNodeV2 {
 
   private cleanupFn: (() => void) | null = null;
   private recvCallback: RecvCallback | null = null;
+
+  // Auto-dispose: tracked Tone.js instances for automatic cleanup
+  private toneInstances: { dispose(): void }[] = [];
 
   // Dynamic port counts for UI
   private messageInletCount = 0;
@@ -177,14 +181,25 @@ export class ToneNode implements AudioNodeV2 {
       const processedCode = await jsRunner.preprocessCode(code, { nodeId: this.nodeId });
       if (processedCode === null) return;
 
-      const extraContext = {
+      // Extract Tone variable names for auto-dispose tracking
+      const toneVarNames = extractToneVarNames(processedCode);
+      const toneInstances: { dispose(): void }[] = [];
+
+      const extraContext: Record<string, unknown> = {
         Tone,
         outputNode: this.audioNode,
         inputNode: this.inputNode
       };
 
+      if (toneVarNames.length > 0) {
+        extraContext.__toneInstances = toneInstances;
+      }
+
+      // Inject auto-dispose tracking if Tone variables found
+      const codeToExecute = injectAutoDispose(processedCode, toneVarNames);
+
       // Execute using JSRunner with Tone.js-specific extra context
-      const result = await jsRunner.executeJavaScript(this.nodeId, processedCode, {
+      const result = await jsRunner.executeJavaScript(this.nodeId, codeToExecute, {
         extraContext,
         customConsole: this.customConsole,
         setPortCount: (inletCount: number = 0, outletCount: number = 0) => {
@@ -196,6 +211,15 @@ export class ToneNode implements AudioNodeV2 {
           this.onSetTitle(title);
         }
       });
+
+      // Store tracked Tone instances for auto-dispose
+      this.toneInstances = toneInstances;
+
+      if (toneVarNames.length > 0) {
+        this.customConsole.log(
+          `objects: ${toneVarNames.join(', ')} (${toneInstances.length}/${toneVarNames.length})`
+        );
+      }
 
       if (result && typeof result.cleanup === 'function') {
         this.cleanupFn = result.cleanup;
@@ -236,8 +260,7 @@ export class ToneNode implements AudioNodeV2 {
   }
 
   private cleanup() {
-    // Call any user-provided cleanup function
-    // User code is responsible for disposing their own Tone objects and transport
+    // Call any user-provided cleanup function first
     if (this.cleanupFn) {
       try {
         this.cleanupFn();
@@ -247,6 +270,19 @@ export class ToneNode implements AudioNodeV2 {
       }
     }
 
+    // Auto-dispose tracked Tone.js instances (safety net for objects user didn't dispose)
+    if (this.toneInstances.length > 0) {
+      this.customConsole.log(`auto-disposing ${this.toneInstances.length} objects`);
+    }
+    for (const instance of this.toneInstances) {
+      try {
+        instance.dispose();
+      } catch {
+        /* already disposed or invalid */
+      }
+    }
+
+    this.toneInstances = [];
     this.cleanupFn = null;
   }
 

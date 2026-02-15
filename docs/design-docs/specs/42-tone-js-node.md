@@ -15,6 +15,26 @@ UI-wise, I think it should look similar to the existing `dsp~` object, with a co
   - Good: `synth.connect(outputNode)` where `outputNode` is the gain node of the `tone~` object.
 - It should support basic message passing functions: `send()`, `recv()` and `setPortCount()` similar to `dsp~`.
 
+## Auto-dispose
+
+Tone.js objects created via `const/let/var X = new Tone.XXX(...)` are automatically detected using a regex and disposed on cleanup. This means user code does **not** need to return a `{ cleanup }` block for basic cases — though explicit cleanup is still supported and runs first.
+
+**How it works:**
+
+1. `extractToneVarNames()` regex-matches variable declarations assigned from `new Tone.` constructors.
+2. `injectAutoDispose()` inserts tracking code (`__toneInstances.push(X)`) before the top-level `return` (or at end if none). A brace-depth counter skips `return` statements inside nested functions/callbacks.
+3. On cleanup, explicit user cleanup runs first, then all tracked instances are `.dispose()`d (double-dispose is safe in Tone.js).
+
+**Example** — no explicit cleanup needed:
+
+```js
+const tom = new Tone.MembraneSynth({ ... }).connect(outputNode);
+recv((data) => {
+  if (data === 'bang') tom.triggerAttackRelease("C3", 0.2);
+});
+// tom is auto-disposed when the node is destroyed or code changes
+```
+
 ## Other nodes of similar nature
 
 Take a look at these to see how they are implemented:

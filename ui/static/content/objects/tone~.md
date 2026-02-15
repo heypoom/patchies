@@ -15,23 +15,51 @@ The Tone.js context provides:
 Supports [Patchies JavaScript Runner](/docs/javascript-runner) functions
 (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
-## Example
+## Cleanup
+
+Tone.js objects assigned to variables (`const`, `let`, `var`) with
+`new Tone.XXX(...)` are automatically disposed when the node is
+destroyed or code changes. You don't need to handle cleanup for most cases.
+
+Manual cleanup e.g. disconnections is still needed for **non-Tone resources**
+such as `inputNode.disconnect(outputNode)`, `Tone.getTransport().stop()`,
+or Web Audio API nodes created without `new Tone.`.
+
+Use `return { cleanup: () => { ... } }` or `onCleanup(() => { ... })`
+for manual cleanup.
+
+## Examples
+
+### Lowpass filter
 
 ```js
-// Process incoming audio through a filter
 const filter = new Tone.Filter(1000, 'lowpass');
 inputNode.connect(filter.input.input);
 filter.connect(outputNode);
 
-// Handle incoming messages to change frequency
 recv((m) => {
   filter.frequency.value = m;
 });
+```
 
-// Cleanup
-return {
-  cleanup: () => filter.dispose()
-};
+### Reverb effect
+
+```js
+const reverb = new Tone.Reverb({ decay: 2, wet: 0.3 });
+inputNode.connect(reverb.input.input);
+reverb.connect(outputNode);
+reverb.generate();
+```
+
+### Passthrough
+
+Passes audio straight through. Needs manual cleanup since
+no `new Tone.` objects are created.
+
+```js
+inputNode.connect(outputNode);
+
+onCleanup(() => inputNode.disconnect(outputNode));
 ```
 
 ## Presets

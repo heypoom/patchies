@@ -26,27 +26,20 @@ recv(m => {
   if (m.type === 'noteOn') {
     const freq = Tone.Frequency(m.note, "midi").toNote();
     const velocity = m.velocity / 127;
-    
+
     synth.triggerAttack(freq, now, velocity);
   } else if (m.type === 'noteOff') {
     const freq = Tone.Frequency(m.note, "midi").toNote();
-    
+
     synth.triggerRelease(freq, now);
   } else if (m.type === 'pitchBend') {
     synth.set({ detune: m.value * 200 });
   }
-})
-
-return { 
-  cleanup: () => {
-    synth.dispose();
-    reverb.dispose();
-  } 
-}`;
+})`;
 
 const PIPE_JS = `inputNode.connect(outputNode)
 
-return { cleanup: () => inputNode.disconnect(outputNode) }`;
+onCleanup(() => inputNode.disconnect(outputNode))`;
 
 const REVERB_JS = `setPortCount(0)
 setTitle('reverb~')
@@ -58,11 +51,7 @@ const reverb = new Tone.Reverb({
 
 inputNode.connect(reverb.input.input)
 reverb.connect(outputNode)
-reverb.generate()
-
-return { 
-  cleanup: () => reverb.dispose()
-}`;
+reverb.generate()`;
 
 const LOWPASS_JS = `setPortCount(1)
 setTitle('lowpass~')
@@ -73,9 +62,7 @@ filter.connect(outputNode)
 
 recv(m => {
   filter.frequency.value = m;
-})
-
-return { cleanup: () => filter.dispose() }`;
+})`;
 
 export const TONE_JS_PRESETS = {
   'poly-synth-midi.tone': {
