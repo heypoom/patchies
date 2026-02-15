@@ -61,6 +61,7 @@ import { LatchNode } from '$lib/audio/native-dsp/nodes/latch.node';
 import { PinkNode } from '$lib/audio/native-dsp/nodes/pink.node';
 import { PulseNode } from '$lib/audio/native-dsp/nodes/pulse.node';
 import { CombNode } from '$lib/audio/native-dsp/nodes/comb.node';
+import { ThresholdNode } from '$lib/audio/native-dsp/nodes/threshold.node';
 import { ScopeAudioNode } from './ScopeAudioNode';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
@@ -127,6 +128,7 @@ export const AUDIO_NODES = [
   PinkNode,
   PulseNode,
   CombNode,
+  ThresholdNode,
   ScopeAudioNode
 ] as const satisfies AudioNodeClass[];
 

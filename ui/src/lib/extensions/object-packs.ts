@@ -107,6 +107,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'env~',
       'vline~',
       'latch~',
+      'threshold~',
       'adsr',
       'mtof'
     ]
