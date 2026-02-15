@@ -1,6 +1,5 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
-import { Bang, Reset } from './common';
 
 /**
  * Schema for the meter~ (audio level meter) object.
@@ -14,14 +13,6 @@ export const meterSchema: ObjectSchema = {
       id: 'audio',
       type: 'signal',
       description: 'Audio signal to measure'
-    },
-    {
-      id: 'message',
-      description: 'Control messages',
-      messages: [
-        { schema: Bang, description: 'Output current level' },
-        { schema: Reset, description: 'Reset level and peak' }
-      ]
     }
   ],
   outlets: [
