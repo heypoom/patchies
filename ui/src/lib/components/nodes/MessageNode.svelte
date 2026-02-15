@@ -52,19 +52,25 @@
   });
 
   let isSequential = $derived(splitSequentialMessages(data.message ?? '').length > 1);
+  let hasSpaceTokens = $derived(
+    parsedObject === CANNOT_PARSE_SYMBOL && splitByTopLevelSpaces(data.message ?? '').length > 1
+  );
+
+  // Whether the message uses advanced syntax (sequential or space-separated)
+  let isAdvancedSyntax = $derived(isSequential || hasSpaceTokens);
 
   // Fast heuristics to switch syntax highlighting modes.
   let shouldUseJsSyntax = $derived.by(() => {
     const msg = data.message ?? '';
     if (msg.length < 3) return false;
-    if (isSequential) return true;
+    if (isAdvancedSyntax) return true;
 
     return msg.startsWith('{') || msg.startsWith('[') || msg.startsWith(`'`) || msg.startsWith(`"`);
   });
 
   let highlightedHtml = $derived.by(() => {
     if (!msgText) return '';
-    if (parsedObject === CANNOT_PARSE_SYMBOL && !isSequential) return '';
+    if (parsedObject === CANNOT_PARSE_SYMBOL && !isAdvancedSyntax) return '';
 
     try {
       return hljs.highlight(msgText, {
@@ -271,7 +277,7 @@
                 containerClass
               ]}
             >
-              {#if msgText && (parsedObject !== CANNOT_PARSE_SYMBOL || isSequential) && typeof parsedObject !== 'number'}
+              {#if msgText && (parsedObject !== CANNOT_PARSE_SYMBOL || isAdvancedSyntax) && typeof parsedObject !== 'number'}
                 <code class="whitespace-pre">
                   {@html highlightedHtml}
                 </code>
