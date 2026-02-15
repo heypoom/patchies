@@ -317,10 +317,15 @@
             port="inlet"
             type="message"
             id={index}
-            title={placeholderCount > 0 ? `$${index + 1}` : 'bang'}
+            title={placeholderCount > 0
+              ? index === 0
+                ? `$${index + 1} (hot)`
+                : `$${index + 1} (cold)`
+              : 'bang'}
             total={Math.max(1, placeholderCount)}
             {index}
             {nodeId}
+            isHot={index === 0}
           />
         {/each}
 
