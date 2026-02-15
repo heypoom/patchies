@@ -35,8 +35,24 @@ export interface LoadUrlResult {
  */
 export class PatchManager {
   private previousNodes = new Set<string>();
+  private _isSharedPatchSession = false;
 
   constructor(private ctx: CanvasContext) {}
+
+  /**
+   * Whether this session is viewing a shared patch (loaded via ?id=).
+   * When true, autosave is disabled to avoid overwriting the user's own patches.
+   */
+  get isSharedSession(): boolean {
+    return this._isSharedPatchSession;
+  }
+
+  /**
+   * Exit shared patch session, re-enabling autosave.
+   */
+  exitSharedSession(): void {
+    this._isSharedPatchSession = false;
+  }
 
   /**
    * Get the previous nodes set (needed for cleanup effects in component).
@@ -79,8 +95,8 @@ export class PatchManager {
     const isEmbed = embedParam === 'true';
     const helpMode = get(helpModeObject);
 
-    // Do not autosave when in embed mode, help mode, or read-only mode
-    if (isEmbed || helpMode || isReadOnlyMode) {
+    // Do not autosave when in embed mode, help mode, read-only mode, or shared patch session
+    if (isEmbed || helpMode || isReadOnlyMode || this._isSharedPatchSession) {
       return false;
     }
 
@@ -110,6 +126,9 @@ export class PatchManager {
       // Remove any URL params related to shared patches
       deleteSearchParam('id');
       deleteSearchParam('src');
+
+      // User explicitly saving means they own this patch now — resume autosave
+      this._isSharedPatchSession = false;
 
       // Silent save - no toast for quick save to existing name
       savePatchToLocalStorage({ name, nodes: this.ctx.nodes, edges: this.ctx.edges });
@@ -150,11 +169,10 @@ export class PatchManager {
       return { mode: 'src', error: result.error };
     }
 
-    // Always load autosave first
-    await this.loadAutosave();
-
-    // For ?id= parameter, fetch shared patch (caller will show confirmation dialog)
+    // For ?id= parameter, skip autosave and start from clean slate
     if (id) {
+      this._isSharedPatchSession = true;
+
       try {
         const save = await getSharedPatchData(id);
 
@@ -162,6 +180,8 @@ export class PatchManager {
           return { mode: 'shared', sharedPatch: save };
         }
 
+        // Shared patch not found — fall back to normal autosave
+        this._isSharedPatchSession = false;
         deleteSearchParam('id');
       } catch (err) {
         deleteSearchParam('id');
@@ -171,6 +191,9 @@ export class PatchManager {
         };
       }
     }
+
+    // Load autosave for normal sessions
+    await this.loadAutosave();
 
     return { mode: 'autosave' };
   }
@@ -223,7 +246,10 @@ export class PatchManager {
   /**
    * Restore patch from save format.
    */
-  async restoreFromSave(save: PatchSaveFormat): Promise<void> {
+  async restoreFromSave(
+    save: PatchSaveFormat,
+    options?: { skipAutosave?: boolean }
+  ): Promise<void> {
     // Apply migrations to upgrade old patch formats
     const migrated = migratePatch(save) as PatchSaveFormat;
 
@@ -267,13 +293,19 @@ export class PatchManager {
     }
 
     // Immediately save migrated patch to autosave so reloads don't break
-    this.performAutosave(false);
+    // (skip for shared patches to avoid overwriting user's own autosave)
+    if (!options?.skipAutosave) {
+      this.performAutosave(false);
+    }
   }
 
   /**
    * Create a new empty patch.
    */
   createNewPatch(): void {
+    // Exit shared patch session so autosave resumes
+    this._isSharedPatchSession = false;
+
     // Cleanup existing state
     cleanupPatch(this.ctx.nodes);
     this.ctx.historyManager.clear();
@@ -302,7 +334,7 @@ export class PatchManager {
    * Load a shared patch (after user confirms).
    */
   async loadSharedPatch(save: PatchSaveFormat): Promise<void> {
-    await this.restoreFromSave(save);
+    await this.restoreFromSave(save, { skipAutosave: true });
 
     // Clear current patch name to prevent accidentally overwriting user's saved patches
     currentPatchName.set(null);

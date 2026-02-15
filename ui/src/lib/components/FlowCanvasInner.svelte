@@ -738,6 +738,10 @@
     // Clear URL params since user cancelled loading
     deleteSearchParam('id');
     deleteSearchParam('readonly');
+
+    // Exit shared patch session so autosave resumes and user's patch loads
+    patchManager.exitSharedSession();
+    patchManager.loadAutosave();
   }
 
   function resumeAudio() {
@@ -1159,7 +1163,9 @@
       {nodes}
       {edges}
       onSave={() => {
-        // Exit read-only mode after saving (user now owns this patch)
+        // User now owns this patch — exit shared/readonly modes, resume autosave
+        patchManager.exitSharedSession();
+
         if (isReadOnlyMode) {
           isReadOnlyMode = false;
           deleteSearchParam('readonly');
