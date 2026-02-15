@@ -26,6 +26,7 @@ Send `stop` to freeze at the current value.
 
 ## See Also
 
+- [vline~](/docs/objects/vline~) - sample-accurate scheduled ramps
 - [adsr](/docs/objects/adsr) - ADSR envelope generator for audio param automation
 - [sig~](/docs/objects/sig~) - constant signal
 - [gain~](/docs/objects/gain~) - audio amplification
