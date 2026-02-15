@@ -20,4 +20,6 @@ Drop an audio file into the sampler to load it.
 ## See Also
 
 - [soundfile~](/docs/objects/soundfile~) - audio file playback
-- [adsr](/docs/objects/adsr) - envelope generator
+- [tabwrite~](/docs/objects/tabwrite~) - write audio sample to array
+- [tabread~](/docs/objects/tabread~) - read audio sample from array
+- [tabread4~](/docs/objects/tabread4~) - interpolated sample read from array
