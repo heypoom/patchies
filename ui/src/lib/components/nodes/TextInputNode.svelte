@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Lock, LockOpen, Play } from '@lucide/svelte/icons';
+  import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useStore } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -80,14 +80,25 @@
     <!-- Floating Header -->
     <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
       {#if !isLocked}
-        <div class="z-10 rounded-lg bg-transparent px-2 py-1">
-          <div class="font-mono text-xs font-medium text-zinc-400">textbox</div>
+        <div
+          class={[
+            'cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
+            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          ]}
+          title="Drag to move"
+        >
+          <GripHorizontal class="h-4 w-4 text-zinc-500" />
         </div>
       {:else}
         <div></div>
       {/if}
 
-      <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+      <div
+        class={[
+          'flex gap-1 transition-opacity',
+          isLocked ? '' : 'group-hover:opacity-100 sm:opacity-0'
+        ]}
+      >
         <button
           onclick={() => {
             const oldLocked = node.data.locked ?? false;
