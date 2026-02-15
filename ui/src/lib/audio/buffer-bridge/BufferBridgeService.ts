@@ -47,8 +47,8 @@ export class BufferBridgeService {
   /** SAB mode: direct Float32Array views keyed by buffer name */
   private bufferViews = new Map<string, BufferView>();
 
-  /** Pending snapshot requests (fallback mode) */
-  private snapshotCallbacks = new Map<string, (data: Float32Array | null) => void>();
+  /** Pending snapshot requests (fallback mode) — supports concurrent reads per name */
+  private snapshotCallbacks = new Map<string, Array<(data: Float32Array | null) => void>>();
 
   /** Event listeners for buffer changes */
   private changeListeners = new Set<BufferChangeCallback>();
@@ -195,8 +195,17 @@ export class BufferBridgeService {
       return Promise.resolve(this.readBuffer(name));
     }
 
+    if (!this.bridgeNode) {
+      return Promise.resolve(null);
+    }
+
     return new Promise((resolve) => {
-      this.snapshotCallbacks.set(name, resolve);
+      const existing = this.snapshotCallbacks.get(name);
+      if (existing) {
+        existing.push(resolve);
+      } else {
+        this.snapshotCallbacks.set(name, [resolve]);
+      }
       this.bridgeNode?.port.postMessage({ type: 'get-snapshot', name });
     });
   }
@@ -239,10 +248,14 @@ export class BufferBridgeService {
 
   private handleWorkletMessage(msg: SnapshotResponse | BufferListResponse): void {
     if (msg.type === 'snapshot') {
-      const cb = this.snapshotCallbacks.get(msg.name);
-      if (cb) {
+      const callbacks = this.snapshotCallbacks.get(msg.name);
+
+      if (callbacks) {
         this.snapshotCallbacks.delete(msg.name);
-        cb(msg.data);
+
+        for (const callback of callbacks) {
+          callback(msg.data);
+        }
       }
     }
   }
