@@ -399,11 +399,10 @@ export class AudioService {
    */
   static getInstance(): AudioService {
     if (AudioService.instance === null) {
+      registerAudioNodes();
       AudioService.instance = new AudioService();
     }
 
     return AudioService.instance;
   }
 }
-
-registerAudioNodes();

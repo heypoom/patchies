@@ -168,11 +168,10 @@ export class ObjectService {
    */
   static getInstance(): ObjectService {
     if (ObjectService.instance === null) {
+      registerTextObjects();
       ObjectService.instance = new ObjectService();
     }
 
     return ObjectService.instance;
   }
 }
-
-registerTextObjects();
