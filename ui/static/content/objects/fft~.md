@@ -9,5 +9,8 @@ and Hydra, presets, and converting existing code.
 
 ## See Also
 
+- [snapshot~](/docs/objects/snapshot~) - sample signal values
+- [scope~](/docs/objects/scope~) - oscilloscope
+- [meter~](/docs/objects/meter~) - level meter
 - [mic~](/docs/objects/mic~) - microphone input
 - [p5](/docs/objects/p5) - P5.js visualization
