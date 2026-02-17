@@ -39,6 +39,9 @@
   const DEFAULT_WIDTH = 400;
   const DEFAULT_HEIGHT = 300;
 
+  // @ts-ignore - credentialless is a valid iframe attribute but not in TS types yet
+  const iframeSecurity = { credentialless: true, anonymous: true };
+
   const hasUrl = $derived(!!node.data.url);
 
   const handleMessage: MessageCallbackFn = (m) => {
@@ -115,13 +118,6 @@
     eventBus.removeEventListener('iframePostMessage', handleIframePostMessage);
   });
 
-  // Set credentialless attribute (not in standard HTML typings yet)
-  $effect(() => {
-    if (iframeRef) {
-      iframeRef.setAttribute('credentialless', '');
-    }
-  });
-
   const handleCommonClass = $derived.by(() => {
     if (!node.selected && $shouldShowHandles) {
       return 'z-1 transition-opacity';
@@ -174,6 +170,7 @@
                   : ''}"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
                 allow="geolocation; microphone; camera; midi; encrypted-media"
+                {...iframeSecurity}
               ></iframe>
 
               <button
