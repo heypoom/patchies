@@ -15,6 +15,7 @@
   import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
+  import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
@@ -42,12 +43,7 @@
   const edges = useEdges();
 
   // Check if handles have connections (for smart auto mode)
-  const hasInletConnection = $derived(
-    edges.current.some((e) => e.target === node.id && e.targetHandle === 'message-in')
-  );
-  const hasOutletConnection = $derived(
-    edges.current.some((e) => e.source === node.id && e.sourceHandle === 'message-out')
-  );
+  const connections = $derived(checkMessageConnections(edges.current, node.id));
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
@@ -183,14 +179,14 @@
   });
 
   // Hide inlet when locked (unless easy connect is enabled or connected)
-  const showInlet = $derived(hasInletConnection || !isLocked || $shouldShowHandles);
+  const showInlet = $derived(connections.hasInlet || !isLocked || $shouldShowHandles);
 
   const handleInletClass = $derived(
-    node.selected || $shouldShowHandles || hasInletConnection ? '' : HIDDEN_HANDLE_CLASS
+    node.selected || $shouldShowHandles || connections.hasInlet ? '' : HIDDEN_HANDLE_CLASS
   );
 
   const handleOutletClass = $derived(
-    node.selected || $shouldShowHandles || hasOutletConnection ? '' : HIDDEN_HANDLE_CLASS
+    node.selected || $shouldShowHandles || connections.hasOutlet ? '' : HIDDEN_HANDLE_CLASS
   );
 </script>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
-  import { NodeResizer, useSvelteFlow, useStore } from '@xyflow/svelte';
+  import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -9,6 +9,8 @@
   import { messages } from '$lib/objects/schemas/common';
   import { useNodeDataTracker } from '$lib/history';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
+  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
     id: string;
@@ -22,6 +24,10 @@
 
   const { updateNodeData } = useSvelteFlow();
   const store = useStore();
+  const edges = useEdges();
+
+  // Check if handles have connections (for smart auto mode)
+  const connections = $derived(checkMessageConnections(edges.current, node.id));
 
   const messageContext = new MessageContext(node.id);
 
@@ -34,11 +40,19 @@
   const width = $derived(node.width ?? defaultWidth);
   const height = $derived(node.height ?? defaultHeight);
   const isLocked = $derived((node.data.locked ?? false) || !store.nodesDraggable);
-  const showHandles = $derived(!isLocked || $shouldShowHandles);
-  const handleClass = $derived.by(() => {
-    if (node.selected || $shouldShowHandles) return '';
-    return 'opacity-30 group-hover:opacity-100 sm:opacity-0';
-  });
+
+  // Show inlet/outlet when connected (smart auto mode), not locked, or easy connect enabled
+  const showInlet = $derived(connections.hasInlet || !isLocked || $shouldShowHandles);
+  const showOutlet = $derived(connections.hasOutlet || !isLocked || $shouldShowHandles);
+
+  const handleInletClass = $derived(
+    node.selected || $shouldShowHandles || connections.hasInlet ? '' : HIDDEN_HANDLE_CLASS
+  );
+
+  const handleOutletClass = $derived(
+    node.selected || $shouldShowHandles || connections.hasOutlet ? '' : HIDDEN_HANDLE_CLASS
+  );
+
   const setText = (text: string) => updateNodeData(node.id, { text });
 
   const handleMessage: MessageCallbackFn = (message) => {
@@ -129,13 +143,13 @@
     </div>
 
     <div class="relative">
-      {#if showHandles}
+      {#if showInlet}
         <StandardHandle
           port="inlet"
           type="message"
           total={1}
           index={0}
-          class={handleClass}
+          class={handleInletClass}
           nodeId={node.id}
         />
       {/if}
@@ -166,13 +180,13 @@
         }}
       ></textarea>
 
-      {#if showHandles}
+      {#if showOutlet}
         <StandardHandle
           port="outlet"
           type="message"
           total={1}
           index={0}
-          class={handleClass}
+          class={handleOutletClass}
           nodeId={node.id}
         />
       {/if}

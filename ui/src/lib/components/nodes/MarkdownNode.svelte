@@ -12,6 +12,7 @@
   import { markdownMessages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
+  import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let props: {
@@ -35,25 +36,20 @@
   const edges = useEdges();
 
   // Check if handles have connections (for smart auto mode)
-  const hasInletConnection = $derived(
-    edges.current.some((e) => e.target === props.id && e.targetHandle === 'message-in')
-  );
-  const hasOutletConnection = $derived(
-    edges.current.some((e) => e.source === props.id && e.sourceHandle === 'message-out')
-  );
+  const connections = $derived(checkMessageConnections(edges.current, props.id));
 
   // Undo/redo tracking for markdown content
   const tracker = useNodeDataTracker(props.id);
   const markdownTracker = tracker.track('markdown', () => props.data.markdown ?? '');
 
   const handleInletClass = $derived(
-    props.selected || $shouldShowHandles || hasInletConnection
+    props.selected || $shouldShowHandles || connections.hasInlet
       ? 'z-1 transition-opacity'
       : `z-1 transition-opacity ${HIDDEN_HANDLE_CLASS}`
   );
 
   const handleOutletClass = $derived(
-    props.selected || $shouldShowHandles || hasOutletConnection
+    props.selected || $shouldShowHandles || connections.hasOutlet
       ? 'z-1 transition-opacity'
       : `z-1 transition-opacity ${HIDDEN_HANDLE_CLASS}`
   );

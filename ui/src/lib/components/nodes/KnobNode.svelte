@@ -10,6 +10,7 @@
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
+  import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
@@ -36,12 +37,7 @@
   const edges = useEdges();
 
   // Check if handles have connections (for smart auto mode)
-  const hasInletConnection = $derived(
-    edges.current.some((e) => e.target === node.id && e.targetHandle === 'message-in')
-  );
-  const hasOutletConnection = $derived(
-    edges.current.some((e) => e.source === node.id && e.sourceHandle === 'message-out')
-  );
+  const connections = $derived(checkMessageConnections(edges.current, node.id));
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
@@ -209,19 +205,19 @@
     if (node.data.showInlet === true) return true;
 
     // Auto: always show if connected, otherwise respect lock
-    return hasInletConnection || !isLocked || $shouldShowHandles;
+    return connections.hasInlet || !isLocked || $shouldShowHandles;
   });
 
   const outletVisible = $derived(node.data.showOutlet !== false);
 
   const handleInletClass = $derived(
-    node.data.showInlet === true || node.selected || $shouldShowHandles || hasInletConnection
+    node.data.showInlet === true || node.selected || $shouldShowHandles || connections.hasInlet
       ? ''
       : HIDDEN_HANDLE_CLASS
   );
 
   const handleOutletClass = $derived(
-    node.data.showOutlet === true || node.selected || $shouldShowHandles || hasOutletConnection
+    node.data.showOutlet === true || node.selected || $shouldShowHandles || connections.hasOutlet
       ? ''
       : HIDDEN_HANDLE_CLASS
   );
