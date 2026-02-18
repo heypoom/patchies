@@ -309,7 +309,8 @@
               y={centerY}
               text-anchor="middle"
               dominant-baseline="central"
-              class="font-mono text-[10px]"
+              class="font-mono"
+              font-size={size * 0.2}
               fill={node.selected ? '#f4f4f5' : '#a1a1aa'}
             >
               {displayValue}
