@@ -215,11 +215,12 @@
                   <TriangleAlert class="h-8 w-8 text-amber-500" />
 
                   <div class="text-center text-sm text-amber-200">
-                    Cross-origin iframes are not supported in this browser.
+                    iframes are not supported in this browser.
                   </div>
 
-                  <div class="text-center text-xs text-amber-300/70">
+                  <div class="text-center text-xs text-zinc-400">
                     Please use <span class="font-semibold">Chrome</span> or
+
                     <span class="font-semibold">Safari</span> for iframe support.
                   </div>
                 </div>
