@@ -74,7 +74,7 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   mqtt: 'MQTT pub/sub client for IoT messaging',
   sse: 'Server-Sent Events (EventSource) receiver',
   tts: 'Text-to-speech using Web Speech API',
-  asm: 'Assembly virtual machine (VASM)',
+  asm: 'Virtual stack machine assembly interpreter',
   'asm.mem': 'External memory buffer for assembly programs',
   orca: 'Orca livecoding environment',
   strudel: 'Strudel live coding for algorithmic patterns',
