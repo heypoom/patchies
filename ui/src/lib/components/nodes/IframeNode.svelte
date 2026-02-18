@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Check, Edit, Globe, X, TriangleAlert, Info } from '@lucide/svelte/icons';
+  import {
+    Check,
+    SquarePen,
+    Globe,
+    X,
+    TriangleAlert,
+    CircleQuestionMark
+  } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -182,9 +189,9 @@
                       <TooltipTrigger>
                         {#snippet children()}
                           <button
-                            class="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+                            class="cursor-help rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
                           >
-                            <Info class="h-4 w-4" />
+                            <CircleQuestionMark class="h-4 w-4" />
                           </button>
                         {/snippet}
                       </TooltipTrigger>
@@ -195,15 +202,18 @@
                         arrowClasses="bg-zinc-800"
                       >
                         <p class="font-semibold text-zinc-100">Why this happens</p>
+
                         <p class="mt-1">
                           Patchies uses COEP (Cross-Origin-Embedder-Policy) to enable
                           SharedArrayBuffer for audio worklets.
                         </p>
+
                         <p class="mt-1">
                           This browser doesn't support the
                           <code class="rounded bg-zinc-700 px-1">credentialless</code> iframe attribute
                           needed for cross-origin iframes under COEP.
                         </p>
+
                         <p class="mt-2 text-zinc-400">
                           Self-hosting without COEP headers allows iframes but disables
                           SharedArrayBuffer features.
@@ -246,7 +256,7 @@
                 class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                 onclick={toggleUrlInput}
               >
-                <Edit class="h-3 w-3 text-zinc-300" />
+                <SquarePen class="h-3 w-3 text-zinc-300" />
               </button>
             </div>
           {:else}
