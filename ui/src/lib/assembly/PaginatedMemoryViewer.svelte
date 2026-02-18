@@ -3,7 +3,6 @@
   import MemoryViewer from './MemoryViewer.svelte';
   import { memoryActions, getMemoryConfig, getMemoryPage, getMemoryRange } from './memoryStore';
   import { memoryRegionStore } from './memoryRegionStore';
-  import { AssemblySystem } from './AssemblySystem';
 
   interface Props {
     machineId: number;
@@ -16,7 +15,7 @@
   let offsetInput = $state('');
 
   const hex = true;
-  const minDigits = 4;
+  const minDigits = 3;
   const base = hex ? 16 : 10;
   const pad = hex ? minDigits : minDigits + 1;
 
@@ -149,7 +148,7 @@
           <div>-</div>
 
           <button onclick={gotoDefaultPage} class="nodrag cursor-pointer hover:text-zinc-200">
-            {show(memEnd)}
+            {show(memEnd - 1)}
           </button>
         </div>
       {:else}
