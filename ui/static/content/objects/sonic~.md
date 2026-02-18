@@ -55,6 +55,7 @@ sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
 - [quickstart for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/QUICKSTART.md)
 - [API reference for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/API.md)
 - [scsynth OSC reference](https://github.com/samaaron/supersonic/blob/main/docs/SCSYNTH_COMMAND_REFERENCE.md)
+- [included synth definitions](https://github.com/samaaron/supersonic/tree/main/packages/supersonic-scsynth-synthdefs)
 - [SuperSonic on GitHub](https://github.com/samaaron/supersonic)
 - [original scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html)
 
