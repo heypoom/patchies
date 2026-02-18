@@ -249,8 +249,9 @@
       {#if !isLocked}
         <div
           class={[
-            'absolute -top-9 left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
-            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            'absolute left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
+            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+            node.data.showInlet === false ? '-top-7' : '-top-9'
           ]}
           title="Drag to move"
         >
