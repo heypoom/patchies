@@ -11,7 +11,7 @@
   import { AssemblySystem } from './AssemblySystem';
   import AssemblyEditor from './AssemblyEditor.svelte';
   import MachineStateViewer from './MachineStateViewer.svelte';
-  import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
+  import type { InspectedMachine, Message, MachineConfig } from './AssemblySystem';
   import { memoryActions } from './memoryStore';
   import { formatSequencerError } from './formatSequencerError';
   import {
@@ -171,6 +171,13 @@
     isOperationInProgress = true;
     logs = [];
     errorMessage = null;
+
+    // Stop playback when resetting
+    clearInterval(updateInterval);
+
+    if (machineConfig.isRunning) {
+      updateMachineConfig({ isRunning: false });
+    }
 
     try {
       await assemblySystem.resetMachine(machineId);
