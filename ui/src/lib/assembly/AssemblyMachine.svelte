@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Binary, Pause, Play, RotateCcw, Settings, StepForward, X } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy, tick } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -61,6 +61,7 @@
   let hasShownReadonlyToast = false;
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   function handleReadonlyInput() {
     if (!hasShownReadonlyToast) {
@@ -738,6 +739,7 @@
               const oldValue = outletCount;
               updateNodeData(nodeId, { outletCount: newValue });
               tracker.commit('outletCount', oldValue, newValue);
+              updateNodeInternals(nodeId);
             }
           }}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
