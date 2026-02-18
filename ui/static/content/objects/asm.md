@@ -166,8 +166,54 @@ Default is 1 instruction. You can set it to higher number of instructions per cy
 - Visualize memory cells in real-time with color-coding
 - Drag your mouse over the memory cells to make a memory region
 - Then, press `Alt` on your keyboard, and drag the memory region onto the canvas
-- This will create the memory visualizer object (`asm.value`) that shows the memory cells in real-time
+- This will create the memory visualizer object (`asm.value`)
+  that shows the memory cells in real-time
 - Click on the settings menu to change the memory region and color scheme
+
+## Virtual Memory Mapping
+
+The program can read and write to virtual memory
+addresses starting at `0x1000`:
+
+- Outlet 0 = `0x1000` to `0x11FF`
+- Outlet 1 = `0x1200` to `0x13FF`
+- Outlet 2 = `0x1400` to `0x15FF`
+- Outlet 3 = `0x1600` to `0x17FF`
+
+Each outlet has **512 addressable cells** (0x200). Each cell
+holds a 16-bit value (0-65535). You can connect objects
+such as [asm.mem](/docs/objects/asm.mem) to the outlets
+to read and write to the memory.
+
+You can have up to 16 outlets in a machine, configurable
+in the settings menu.
+
+## Reading from External Memory
+
+```asm
+; reads 5 values from outlet 0's first memory cell (0x1000)
+push 0x1000
+read 5
+
+; reads 3 values from outlet 0's 5th memory cell (0x1005)
+push 0x1005
+read 3
+```
+
+## Writing to External Memory
+
+```asm
+; writes 1 value (0xCAAC) to outlet 0's first memory cell (0x1000)
+push 0xCAAC
+push 0x1000
+write 1
+
+; writes 2 values (20, 40) to outlet 0's 5th memory cell (0x1005)
+push 20
+push 40
+push 0x1005
+write 2
+```
 
 ## Output Messages
 
@@ -177,20 +223,6 @@ Default is 1 instruction. You can set it to higher number of instructions per cy
 - `{type: 'read', address: number, count: number}` when `read` instruction is ran onto a mapped address (e.g. `0x2000`) - used for `asm.mem`
 - `{type: 'write', address: number, data: number[]}` when `write` instruction is ran onto a mapped address (e.g. `0x2000`) - used for `asm.mem`
 - `{type: 'override', data: number[]}` when override operation is triggered
-
-## Input Messages
-
-- `bang`: step the program by one instruction
-- `{type: 'setCode', value: <string>}`: load the assembly code
-- `run`: reload the program and step N times
-- `play`: start automatic clocking
-- `pause`: pause automatic clocking
-- `toggle`: toggle automatic clocking
-- `reset`: reset the program
-- `step`: step the program by one instruction
-- `{type: 'setDelayMs', value: <number>}`: set the delay between automatic clock ticks in milliseconds
-- `{type: 'setStepBy', value: <number>}`: set the number of instructions to execute per step
-- `number` or `array of number`: send the number(s) to the program - use the `receive` instruction to tell the machine to wait for one input
 
 ## Shortcuts
 
