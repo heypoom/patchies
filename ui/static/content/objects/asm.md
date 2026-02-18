@@ -4,7 +4,7 @@ small assembly programs to interact with hardware and devices.
 
 ![Patchies virtual stack machine assembly](/content/images/vasm-object-demo.webp)
 
-> ✨ [Try this example patch](/?id=4o48rari5in8d58) in the app.
+> ✨ [Try this example patch](/?id=wcpxcm5thb4h1nw) in the app.
 
 Each `asm` object is its own virtual stack machine, where you can write small programs
 using Patchies' own flavor of stack machine assembly. You can use the `send` and
