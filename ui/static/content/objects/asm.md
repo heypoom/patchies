@@ -1,12 +1,12 @@
-# asm
-
-Virtual stack machine assembly interpreter.
-
-Inspired by Zachtronics games like [TIS-100](https://en.wikipedia.org/wiki/TIS-100)
+Heavily inspired by Zachtronics games e.g. [TIS-100](https://en.wikipedia.org/wiki/TIS-100)
 and [Shenzhen I/O](https://en.wikipedia.org/wiki/Shenzhen_I/O), where you write
-small assembly programs to interact with the world.
+small assembly programs to interact with hardware and devices.
 
 ![Patchies virtual stack machine assembly](/content/images/patchies-vasm.png)
+
+Each `asm` object is its own virtual stack machine, where you can write small programs
+using Patchies' own flavor of stack machine assembly. You can use the `send` and
+`receive` instructions to receive data from other objects and machines.
 
 ## Instructions
 
