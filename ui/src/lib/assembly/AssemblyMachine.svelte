@@ -281,7 +281,7 @@
   function updateMachineConfig(nextConfig: Partial<MachineConfig>) {
     // Use local input state to avoid race conditions when updating multiple fields quickly
     const mergedConfig: MachineConfig = {
-      isRunning: machineConfig.isRunning,
+      isRunning: nextConfig.isRunning ?? machineConfig.isRunning,
       delayMs: nextConfig.delayMs ?? delayInput,
       stepBy: nextConfig.stepBy ?? stepByInput
     };
