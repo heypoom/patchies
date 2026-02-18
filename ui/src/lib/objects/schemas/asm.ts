@@ -83,7 +83,7 @@ export const asmSchema: ObjectSchema = {
         },
         {
           schema: MemWrite,
-          description: 'Write memory to asm.mem'
+          description: 'Write to external devices (e.g. asm.mem)'
         }
       ]
     }
