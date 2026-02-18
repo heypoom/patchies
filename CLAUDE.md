@@ -30,21 +30,6 @@ bun run lint             # Lint & format check
 bun run test             # All tests
 ```
 
-## VASM (Assembly VM) Build
-
-After modifying Rust code in `modules/vasm/`, rebuild and link:
-
-```bash
-cd modules/vasm
-rm -rf pkg                                    # Clean old build
-wasm-pack build --target web                  # Build WASM (must be --target web)
-rm -rf ../../ui/src/assets/vasm/*             # Clean assets
-cp pkg/*.js pkg/*.wasm pkg/*.d.ts pkg/package.json ../../ui/src/assets/vasm/
-cd ../../ui && bun install                    # Re-link package
-```
-
-**Note**: Use `--target web` not `bundler` - the code expects `machineModule.default()` init function.
-
 ## Key Architectures
 
 **Event Bus**: Type-safe system events (undo/redo, lifecycle, collaboration)
@@ -284,17 +269,23 @@ Native DSP nodes run on the audio thread via `AudioWorkletProcessor`. They use `
 1. Processor in `src/lib/audio/native-dsp/processors/{name}.processor.ts`:
 
 ```typescript
-import { defineDSP } from '../define-dsp';
-import { isMessageType } from '../utils';
+import { defineDSP } from "../define-dsp";
+import { isMessageType } from "../utils";
 
 defineDSP({
-  name: 'mynode~',        // Must match node type
-  audioInlets: 1,         // Number of audio input ports
-  audioOutlets: 1,        // Number of audio output ports
+  name: "mynode~", // Must match node type
+  audioInlets: 1, // Number of audio input ports
+  audioOutlets: 1, // Number of audio output ports
   inletDefaults: { 1: 0 }, // Optional: constant value when inlet disconnected
-  state: () => ({ /* mutable state */ }),
-  recv(state, data, inlet, send) { /* handle messages */ },
-  process(state, inputs, outputs, send) { /* DSP hot path, 128 samples */ }
+  state: () => ({
+    /* mutable state */
+  }),
+  recv(state, data, inlet, send) {
+    /* handle messages */
+  },
+  process(state, inputs, outputs, send) {
+    /* DSP hot path, 128 samples */
+  },
 });
 ```
 
@@ -357,6 +348,21 @@ The pipeline coordinates across multiple files:
 - `generateImageWithGemini` → `capturePreviewFrame` → `GLSystem` → `renderWorker` → `fboRenderer`
 - Use consistent parameter patterns (e.g., `customSize?: [number, number]`)
 - Changes require updates across 5+ files
+
+## VASM (Assembly VM) Build
+
+After modifying Rust code in `modules/vasm/`, rebuild and link:
+
+```bash
+cd modules/vasm
+rm -rf pkg                                    # Clean old build
+wasm-pack build --target web                  # Build WASM (must be --target web)
+rm -rf ../../ui/src/assets/vasm/*             # Clean assets
+cp pkg/*.js pkg/*.wasm pkg/*.d.ts pkg/package.json ../../ui/src/assets/vasm/
+cd ../../ui && bun install                    # Re-link package
+```
+
+Use `--target web` not `bundler` - the code expects `machineModule.default()` init function.
 
 ## Structured Reflections
 
