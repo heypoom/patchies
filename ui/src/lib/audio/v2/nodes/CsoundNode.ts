@@ -3,6 +3,7 @@ import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata'
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import type { CsoundObj } from '@csound/browser';
+import { canUseSharedArrayBuffer } from '$lib/audio/buffer-bridge';
 
 /**
  * CsoundNode implements the csound~ audio node.
@@ -104,7 +105,8 @@ export class CsoundNode implements AudioNodeV2 {
     try {
       const csound = await Csound({
         audioContext: this.audioContext,
-        autoConnect: false
+        autoConnect: false,
+        useSAB: canUseSharedArrayBuffer()
       });
 
       if (!csound) return;
