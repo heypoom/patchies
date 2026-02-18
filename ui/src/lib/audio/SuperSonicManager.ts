@@ -4,6 +4,8 @@
 
 import { logger } from '$lib/utils/logger';
 
+import { canUseSharedArrayBuffer } from './buffer-bridge';
+
 // Use generic types to avoid importing SuperSonic
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SuperSonicInstance = any; // Will be actual SuperSonic instance
@@ -14,7 +16,7 @@ type SuperSonicClass = any; // Will be actual SuperSonic constructor
 export class SuperSonicManager {
   private static instance: SuperSonicManager | null = null;
   private sonicInstance: SuperSonicInstance | null = null;
-  private SuperSonicClass: SuperSonicClass | null = null;
+  private SuperSonicClass: SuperSonicClass = null;
   private initPromise: Promise<void> | null = null;
   private audioContext: AudioContext | null = null;
 
@@ -48,26 +50,32 @@ export class SuperSonicManager {
     }
 
     // Dynamic import - only loads when first sonic~ node is created
+    // @ts-expect-error -- no typedef
     const SuperSonicModule = await import('supersonic-scsynth');
     this.SuperSonicClass = SuperSonicModule.default || SuperSonicModule.SuperSonic;
 
-    // Configure SuperSonic to use unpkg.com CDN for assets
-    // This is necessary because the npm package only includes the main JS file
-    const version = '0.25.5'; // Match package.json version
     const cdnBase = 'https://unpkg.com/';
+
+    // Configure SuperSonic to use unpkg.com CDN for sampels and synth defs.
+    // This is necessary because the npm package only includes the main JS file.
+    const assetVersion = 'latest';
 
     this.sonicInstance = new this.SuperSonicClass({
       // Use the shared AudioContext from AudioService
       audioContext: this.audioContext,
 
+      // Use shared array buffer when it is available
+      mode: canUseSharedArrayBuffer() ? 'sab' : 'postMessage',
+
       // Disable auto-connect to speakers - we'll connect through SonicNode's gain node
       autoConnect: false,
 
-      // Use unpkg CDN for all assets (WASM, workers, samples, synthdefs)
-      coreBaseURL: `${cdnBase}supersonic-scsynth-core@${version}/`,
-      sampleBaseURL: `${cdnBase}supersonic-scsynth-samples@${version}/samples/`,
-      synthdefBaseURL: `${cdnBase}supersonic-scsynth-synthdefs@${version}/synthdefs/`,
-      mode: 'postMessage' // Use postMessage mode (doesn't require COOP/COEP headers)
+      // Local core (enables SAB mode with proper headers)
+      baseURL: '/supersonic-scsynth-core/',
+
+      // CDN for large assets
+      sampleBaseURL: `${cdnBase}supersonic-scsynth-samples@${assetVersion}/samples/`,
+      synthdefBaseURL: `${cdnBase}supersonic-scsynth-synthdefs@${assetVersion}/synthdefs/`
     });
 
     // Set up event listeners for debugging

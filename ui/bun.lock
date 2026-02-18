@@ -67,7 +67,7 @@
         "pyodide": "^0.28.1",
         "regl": "^2.1.1",
         "stats.js": "^0.17.0",
-        "supersonic-scsynth": "^0.25.5",
+        "supersonic-scsynth": "^0.47.0",
         "textmode.filters.js": "^1.0.1",
         "textmode.js": "^0.8.1",
         "three": "^0.182.0",
@@ -2851,7 +2851,7 @@
 
     "superdough": ["superdough@1.2.6", "", { "dependencies": { "nanostores": "^0.11.3" } }, "sha512-zHEFfG+N4zhxJ9lUDf8p4Oj4sdGGQ5SrOPksdc0cKv5Yn0hzlNlMehEa5TkeIfDCiR27Y4H81ks7S8/CGSByhQ=="],
 
-    "supersonic-scsynth": ["supersonic-scsynth@0.25.5", "", { "dependencies": { "@thi.ng/malloc": "^6.1.128" } }, "sha512-8pF1oaqVwerAR8/es1mw/y6FZt/aqMt3Ta64ekZhDr00YLWdp5LyrWGdsebnlzA34atqbGcWp+IhvSADj84wwg=="],
+    "supersonic-scsynth": ["supersonic-scsynth@0.47.0", "", { "dependencies": { "@thi.ng/malloc": "^6.1.128" } }, "sha512-Lrzy3a08CTm9n+yL3S0ZCRTRQNgTIa788/D5tGzsuuwxr9tuvAT8pojw9rOdWCdbGcrowy98rSMMPDwQe831LQ=="],
 
     "supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
