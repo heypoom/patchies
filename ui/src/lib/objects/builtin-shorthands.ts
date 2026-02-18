@@ -206,7 +206,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 
       return {
         nodeType: 'knob',
-        data: { min, max, defaultValue, isFloat: false }
+        data: { min, max, defaultValue, isFloat: false, showOutlet: true }
       };
     }
   },
@@ -219,7 +219,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 
       return {
         nodeType: 'knob',
-        data: { min, max, defaultValue, isFloat: true }
+        data: { min, max, defaultValue, isFloat: true, showOutlet: true }
       };
     }
   },

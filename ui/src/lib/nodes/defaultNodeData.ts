@@ -58,7 +58,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       max: 1,
       defaultValue: 0,
       isFloat: true,
-      size: 50
+      size: 50,
+      showOutlet: true
     }))
     .with('bchrn', () => ({ currentPreset: DEFAULT_BUTTERCHURN_PRESET }))
     .with('p5', () => ({ code: DEFAULT_P5_CODE }))

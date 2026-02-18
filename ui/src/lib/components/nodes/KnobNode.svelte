@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { GripHorizontal, Lock, LockOpen, RotateCcw, Settings, X } from '@lucide/svelte/icons';
+  import { GripHorizontal, Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import KnobSettings from '$lib/components/settings/KnobSettings.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -22,6 +23,8 @@
       runOnMount?: boolean;
       size?: number;
       locked?: boolean;
+      showInlet?: boolean;
+      showOutlet?: boolean;
     };
     selected: boolean;
   } = $props();
@@ -185,14 +188,40 @@
     messageContext?.destroy();
   });
 
-  // Hide inlet when locked (unless easy connect is enabled)
-  const showInlet = $derived(!isLocked || $shouldShowHandles);
+  // Handle visibility: 3 states
+  // - undefined (auto): show with fade, respects lock
+  // - true (always show): always visible, overrides lock
+  // - false (always hide): never visible
+  const inletVisible = $derived.by(() => {
+    if (node.data.showInlet === false) return false;
+    if (node.data.showInlet === true) return true;
+
+    // Auto: respects lock
+    return !isLocked || $shouldShowHandles;
+  });
+
+  const outletVisible = $derived(node.data.showOutlet !== false);
+
+  const hiddenPortClass = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   const handleInletClass = $derived.by(() => {
-    if (node.selected || $shouldShowHandles) {
+    // Always visible (no fade) if explicitly enabled, selected, or easy connect
+    if (node.data.showInlet === true || node.selected || $shouldShowHandles) {
       return '';
     }
-    return 'opacity-30 group-hover:opacity-100 sm:opacity-0';
+
+    // Auto mode: fade on hover
+    return hiddenPortClass;
+  });
+
+  const handleOutletClass = $derived.by(() => {
+    // Always visible (no fade) if explicitly enabled, selected, or easy connect
+    if (node.data.showOutlet === true || node.selected || $shouldShowHandles) {
+      return '';
+    }
+
+    // Auto mode: fade on hover
+    return hiddenPortClass;
   });
 </script>
 
@@ -228,7 +257,7 @@
       {/if}
 
       <div class="relative">
-        {#if showInlet}
+        {#if inletVisible}
           <StandardHandle
             port="inlet"
             type="message"
@@ -288,7 +317,16 @@
           </svg>
         </div>
 
-        <StandardHandle port="outlet" type="message" total={1} index={0} nodeId={node.id} />
+        {#if outletVisible}
+          <StandardHandle
+            port="outlet"
+            type="message"
+            total={1}
+            index={0}
+            nodeId={node.id}
+            class={handleOutletClass}
+          />
+        {/if}
       </div>
     </div>
   </div>
@@ -330,149 +368,16 @@
         </button>
       </div>
 
-      {@render setting()}
+      <KnobSettings
+        nodeId={node.id}
+        data={node.data}
+        {tracker}
+        onUpdate={updateConfig}
+        onReset={() => {
+          updateNodeData(node.id, { ...node.data, value: defaultValue });
+          messageContext.send(defaultValue);
+        }}
+      />
     </div>
   {/if}
 </div>
-
-{#snippet setting()}
-  <div class="nodrag w-52 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-    <div class="space-y-4">
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Mode</label>
-
-        <div class="flex gap-2">
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="mode-{node.id}"
-              value="int"
-              checked={!isFloat}
-              onchange={() => {
-                const oldValue = isFloat;
-                updateConfig({ isFloat: false });
-                tracker.commit('isFloat', oldValue, false);
-              }}
-              class="mr-2 h-3 w-3"
-            />
-
-            <span class="text-xs text-zinc-300">Integer</span>
-          </label>
-
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="mode-{node.id}"
-              value="float"
-              checked={isFloat}
-              onchange={() => {
-                const oldValue = isFloat;
-
-                updateConfig({ isFloat: true });
-                tracker.commit('isFloat', oldValue, true);
-              }}
-              class="mr-2 h-3 w-3"
-            />
-
-            <span class="text-xs text-zinc-300">Float</span>
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Minimum</label>
-
-        <input
-          type="number"
-          step={isFloat ? 0.01 : 1}
-          value={min}
-          onchange={(e) => {
-            const oldMin = min;
-            const newMin = parseFloat((e.target as HTMLInputElement).value);
-
-            updateConfig({ min: newMin });
-            tracker.commit('min', oldMin, newMin);
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Maximum</label>
-
-        <input
-          type="number"
-          step={isFloat ? 0.01 : 1}
-          value={max}
-          onchange={(e) => {
-            const oldMax = max;
-            const newMax = parseFloat((e.target as HTMLInputElement).value);
-
-            updateConfig({ max: newMax });
-            tracker.commit('max', oldMax, newMax);
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Default Value</label>
-
-        <input
-          type="number"
-          step={isFloat ? 0.01 : 1}
-          value={defaultValue}
-          {min}
-          {max}
-          onchange={(e) => {
-            const oldDefault = defaultValue;
-            const newDefault = parseFloat((e.target as HTMLInputElement).value);
-
-            updateConfig({ defaultValue: newDefault });
-            tracker.commit('defaultValue', oldDefault, newDefault);
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Size (px)</label>
-
-        <input
-          type="number"
-          step={10}
-          min={30}
-          max={100}
-          value={size}
-          onchange={(e) => {
-            const oldSize = size;
-            const newSize = parseInt((e.target as HTMLInputElement).value);
-            updateConfig({ size: newSize });
-            tracker.commit('size', oldSize, newSize);
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-      </div>
-
-      <div class="pt-2">
-        <button
-          onclick={() => {
-            updateNodeData(node.id, { ...node.data, value: defaultValue });
-
-            messageContext.send(defaultValue);
-          }}
-          class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
-        >
-          <RotateCcw class="h-3 w-3" />
-
-          Reset to Default
-        </button>
-      </div>
-    </div>
-  </div>
-{/snippet}

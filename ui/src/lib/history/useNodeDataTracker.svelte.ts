@@ -19,6 +19,8 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
  * <input onfocus={textField.onFocus} onblur={textField.onBlur} />
  * ```
  */
+export type NodeDataTracker = ReturnType<typeof useNodeDataTracker>;
+
 export function useNodeDataTracker(nodeId: string) {
   const eventBus = PatchiesEventBus.getInstance();
 
