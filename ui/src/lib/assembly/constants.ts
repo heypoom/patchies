@@ -43,3 +43,6 @@ export const ASM_MAX_OUTLET_COUNT = 16;
 // Memory-mapped I/O constants (must match vasm segments.rs)
 export const ASM_MAPPED_START = 0x1000;
 export const ASM_MAPPED_CELLS_PER_OUTLET = 0x200; // 512 cells per outlet
+
+// Run until the machine blocks (reactive dataflow mode)
+export const ASM_MAX_CYCLES_ON_MESSAGE_RECEIVED = 10_000;

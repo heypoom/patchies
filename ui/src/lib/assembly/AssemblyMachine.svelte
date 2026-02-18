@@ -19,7 +19,8 @@
     ASM_DEFAULT_STEP_BY,
     ASM_DEFAULT_INLET_COUNT,
     ASM_DEFAULT_OUTLET_COUNT,
-    ASM_MAX_OUTLET_COUNT
+    ASM_MAX_OUTLET_COUNT,
+    ASM_MAX_CYCLES_ON_MESSAGE_RECEIVED
   } from './constants';
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
   import { logger } from '$lib/utils/logger';
@@ -119,11 +120,10 @@
 
       await assemblySystem.sendDataMessage(machineId, m, source, meta.inlet);
 
-      // Run until the machine blocks (reactive dataflow mode)
-      const MAX_CYCLES = 10_000;
+      // Run until the machine blocks (react to messages)
       let cyclesRun = 0;
 
-      while (cyclesRun < MAX_CYCLES) {
+      while (cyclesRun < ASM_MAX_CYCLES_ON_MESSAGE_RECEIVED) {
         await assemblySystem.stepMachine(machineId, 100);
         cyclesRun += 100;
 
