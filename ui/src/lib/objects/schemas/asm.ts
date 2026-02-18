@@ -22,11 +22,6 @@ const MemWrite = Type.Object({
   data: Type.Array(Type.Number())
 });
 
-const Override = Type.Object({
-  type: t('override'),
-  data: Type.Array(Type.Number())
-});
-
 /** Pre-wrapped matchers for use with ts-pattern */
 export const asmMessages = {
   ...messages,
@@ -89,10 +84,6 @@ export const asmSchema: ObjectSchema = {
         {
           schema: MemWrite,
           description: 'Write virtual memory (for asm.mem)'
-        },
-        {
-          schema: Override,
-          description: 'Overwrite all existing data'
         }
       ]
     }

@@ -29,7 +29,4 @@ pub enum Action {
 
     /// Write to the specified address.
     Write { address: u16, data: Vec<u16> },
-
-    /// Override all existing data.
-    Override { data: Vec<u16> },
 }

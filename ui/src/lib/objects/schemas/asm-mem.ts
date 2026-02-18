@@ -8,7 +8,6 @@ import { Bang, Reset, messages } from './common';
 const SetRows = msg('setRows', { value: Type.Number() });
 const WriteMemory = msg('write', { address: Type.Number(), data: Type.Array(Type.Number()) });
 const ReadMemory = msg('read', { address: Type.Number(), count: Type.Number() });
-const OverrideMemory = msg('override', { data: Type.Array(Type.Number()) });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const asmMemMessages = {
@@ -16,7 +15,6 @@ export const asmMemMessages = {
   setRows: schema(SetRows),
   write: schema(WriteMemory),
   read: schema(ReadMemory),
-  override: schema(OverrideMemory),
   number: schema(Type.Number()),
   numberArray: schema(Type.Array(Type.Number()))
 };
@@ -38,7 +36,6 @@ export const asmMemSchema: ObjectSchema = {
         { schema: SetRows, description: 'Set number of display rows (1-100)' },
         { schema: WriteMemory, description: 'Write values at specific address' },
         { schema: ReadMemory, description: 'Read values and send back to asm' },
-        { schema: OverrideMemory, description: 'Replace all memory values' },
         { schema: Type.Number(), description: 'Append single value to memory' },
         { schema: Type.Array(Type.Number()), description: 'Append array of values to memory' }
       ]

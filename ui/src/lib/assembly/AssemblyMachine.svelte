@@ -469,9 +469,6 @@
           .with({ type: 'Write' }, (action) => {
             return { type: 'write', address: action.address, data: action.data };
           })
-          .with({ type: 'Override' }, (action) => {
-            return { type: 'override', data: action.data };
-          })
           .exhaustive();
 
         messageContext.send(payload, { to: message.sender.port });

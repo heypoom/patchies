@@ -78,9 +78,6 @@
 
           updateNodeData(nodeId, { ...data, values: nextValues });
         })
-        .with({ type: 'override', data: P.array(P.number) }, async ({ data: newData }) => {
-          updateNodeData(nodeId, { ...data, values: newData });
-        })
         .with(
           { type: 'write', address: P.number, data: P.array(P.number) },
           async ({ address, data: writeData }) => {

@@ -5,14 +5,12 @@ declare namespace Action {
   export type Data = { type: 'Data'; body: number[] };
   export type Read = { type: 'Read'; address: number; count: number };
   export type Write = { type: 'Write'; address: number; data: number[] };
-  export type Override = { type: 'Override'; data: number[] };
 }
 
 export type Action =
   | { type: 'Data'; body: number[] }
   | { type: 'Read'; address: number; count: number }
-  | { type: 'Write'; address: number; data: number[] }
-  | { type: 'Override'; data: number[] };
+  | { type: 'Write'; address: number; data: number[] };
 
 export interface Message {
   action: Action;
