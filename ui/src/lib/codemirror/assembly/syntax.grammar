@@ -44,7 +44,7 @@ Value {
 }
 
 @tokens {
-  instruction { "noop" | "push" | "pop" | "load_string" | "load" | "store" | "write" | "read" | "dup" | "swap" | "over" | "rotate" | "nip" | "tuck" | "pick" | "inc" | "dec" | "add" | "sub" | "mul" | "div" | "mod" | "jump" | "jump_zero" | "jump_not_zero" | "equal" | "not_equal" | "less_than" | "less_than_or_equal" | "greater_than" | "greater_than_or_equal" | "print" | "call" | "return" | "send" | "receive" | "memory_map" | "and" | "or" | "xor" | "not" | "left_shift" | "right_shift" | "sleep_tick" | "sleep_ms" | "halt" | "eof" }
+  instruction { "noop" | "push" | "pop" | "load_string" | "load" | "store" | "write" | "read" | "dup" | "swap" | "over" | "rotate" | "nip" | "tuck" | "pick" | "inc" | "dec" | "add" | "sub" | "mul" | "div" | "mod" | "jump" | "jump_zero" | "jump_not_zero" | "equal" | "not_equal" | "less_than" | "less_than_or_equal" | "greater_than" | "greater_than_or_equal" | "print" | "call" | "return" | "send" | "recv" | "memory_map" | "and" | "or" | "xor" | "not" | "left_shift" | "right_shift" | "sleep_tick" | "sleep_ms" | "halt" | "eof" }
 
   eol { $[\n\r] }
   space { "\s" }

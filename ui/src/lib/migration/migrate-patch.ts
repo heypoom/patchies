@@ -7,6 +7,7 @@ import { migration005 } from './migrations/005-chuck-node-audio-inlet';
 import { migration006 } from './migrations/006-dac-to-out';
 import { migration007 } from './migrations/007-trigger-to-visual-node';
 import { migration008 } from './migrations/008-asm-value-address-bounds';
+import { migration009 } from './migrations/009-asm-receive-to-recv';
 
 /**
  * All migrations in order. Each migration upgrades from version N-1 to N.
@@ -20,7 +21,8 @@ const migrations: Migration[] = [
   migration005,
   migration006,
   migration007,
-  migration008
+  migration008,
+  migration009
 ];
 
 /**

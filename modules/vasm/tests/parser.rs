@@ -66,11 +66,11 @@ mod parser_tests {
         // Regression: the parser was not parsing instructions after the `push 0` instruction.
         let mut p = Parser::new(r"
             push 0
-            receive
+            recv
         ");
 
         p.parse()?;
-        assert_eq!(p.ops, [Op::Push(0), Op::Receive]);
+        assert_eq!(p.ops, [Op::Push(0), Op::Recv]);
         Ok(())
     }
 

@@ -232,7 +232,7 @@ impl Execute for Machine {
                 self.send_message_to_port(port, Action::Data { body });
             }
 
-            Op::Receive => {
+            Op::Recv => {
                 self.expected_receives += 1;
             }
 

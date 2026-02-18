@@ -57,7 +57,7 @@ mod convert_op_tests {
     #[test]
     fn convert_op() {
         let bytes = vec![
-            Op::Receive.opcode(),
+            Op::Recv.opcode(),
             Op::Push(0).opcode(),
             90,
             Op::Mod.opcode(),
@@ -68,7 +68,7 @@ mod convert_op_tests {
         let result = bytes_to_code(bytes);
 
         let mut lines = result.lines();
-        let expected_ops = vec!["receive", "push 90", "mod", "push 10"];
+        let expected_ops = vec!["recv", "push 90", "mod", "push 10"];
 
         for expected in expected_ops {
             assert_eq!(lines.next().unwrap(), expected);

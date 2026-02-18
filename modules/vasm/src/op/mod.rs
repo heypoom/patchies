@@ -112,7 +112,7 @@ pub enum Op {
     Send(u16, u16),
 
     /// Push the received bytes onto the stack.
-    Receive,
+    Recv,
 
     /// Bitwise AND (&)
     And,

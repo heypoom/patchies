@@ -8,7 +8,7 @@ small assembly programs to interact with hardware and devices.
 
 Each `asm` object is its own virtual stack machine, where you can write small programs
 using Patchies' own flavor of stack machine assembly. You can use the `send` and
-`receive` instructions to receive data from other objects and machines.
+`recv` instructions to receive data from other objects and machines.
 
 ## Instructions
 
@@ -90,7 +90,7 @@ value is the top of the stack.
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
 | `send <port> <n>` | `( v1..vn -- )` | Send n values to outlet port (0-3) |
-| `receive` | `( -- v )` | Wait for input, push received value |
+| `recv` | `( -- v )` | Wait for input, push received value |
 | `print` | `( bytes.. -- )` | Pop string bytes until null, print to console |
 
 ### SLEEP
@@ -114,7 +114,7 @@ value is the top of the stack.
 ### I/O INSTRUCTIONS
 
 - `send <port> <length>` sends top N stack values to the given port (0-3)
-- `receive` waits for one input value from the message inlet and
+- `recv` waits for one input value from the message inlet and
   pushes it onto the stack
 
 ### MEMORY INSTRUCTIONS
@@ -265,7 +265,7 @@ Receives input and sends it back. The simplest reactive program.
 
 ```asm
 loop:
-receive
+recv
 send 0 1
 jump loop
 ```
@@ -276,7 +276,7 @@ Multiplies input by 2.
 
 ```asm
 loop:
-receive
+recv
 push 2
 mul
 send 0 1
@@ -289,7 +289,7 @@ Running sum - adds each input to a total stored at address 0xF00.
 
 ```asm
 loop:
-receive
+recv
 load 0xF00
 add
 dup
@@ -304,7 +304,7 @@ Only outputs values greater than 50.
 
 ```asm
 loop:
-receive
+recv
 dup
 push 50
 greater_than
@@ -323,7 +323,7 @@ Calculates running average. Sum at address 0xF00, count at 0xF01.
 
 ```asm
 loop:
-receive
+recv
 load 0xF00
 add
 store 0xF00
@@ -344,7 +344,7 @@ Outputs difference from previous input. Previous value at address 0xF00.
 
 ```asm
 loop:
-receive
+recv
 dup
 load 0xF00
 sub
