@@ -2,7 +2,7 @@ Heavily inspired by Zachtronics games e.g. [TIS-100](https://en.wikipedia.org/wi
 and [Shenzhen I/O](https://en.wikipedia.org/wiki/Shenzhen_I/O), where you write
 small assembly programs to interact with hardware and devices.
 
-![Patchies virtual stack machine assembly](/content/images/patchies-vasm.png)
+![Patchies virtual stack machine assembly](/content/images/vasm-object-demo.webp)
 
 > ✨ [Try this example patch](/?id=atmpopec2wr3ftm) in the app.
 
