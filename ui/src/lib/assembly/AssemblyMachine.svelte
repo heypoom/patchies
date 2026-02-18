@@ -736,16 +736,18 @@
 
         <input
           type="number"
-          min="1"
+          min="0"
           max={ASM_MAX_OUTLET_COUNT.toString()}
           value={outletCount}
           onchange={(e) => {
             const newValue = parseInt(e.currentTarget.value);
 
-            if (!isNaN(newValue) && newValue >= 1 && newValue <= 16) {
+            if (!isNaN(newValue) && newValue >= 0 && newValue <= ASM_MAX_OUTLET_COUNT) {
               const oldValue = outletCount;
+
               updateNodeData(nodeId, { outletCount: newValue });
               tracker.commit('outletCount', oldValue, newValue);
+
               updateNodeInternals(nodeId);
             }
           }}
