@@ -121,7 +121,7 @@
           }}
           class={[
             'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
-            'text-zinc-500 hover:text-zinc-300'
+            'text-zinc-300'
           ]}
           title={node.data.locked ? 'Unlock' : 'Lock'}
         >
@@ -134,7 +134,7 @@
 
         <button
           onclick={sendText}
-          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
           title="Send (or Shift + Enter)"
         >
           <Play class="h-4 w-4" />
