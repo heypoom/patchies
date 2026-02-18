@@ -1,13 +1,31 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { sym, msg } from './helpers';
+import { sym, msg, t } from './helpers';
 import { Bang, Play, Pause, Run, Toggle, Reset, messages, SetCode } from './common';
 
-// Asm-specific message schemas
+// Asm-specific input message schemas
 const Step = sym('step');
 const SetDelayMs = msg('setDelayMs', { value: Type.Number() });
 const SetStepBy = msg('setStepBy', { value: Type.Number() });
+
+// Asm-specific output message schemas
+const MemRead = Type.Object({
+  type: t('read'),
+  address: Type.Number(),
+  count: Type.Number()
+});
+
+const MemWrite = Type.Object({
+  type: t('write'),
+  address: Type.Number(),
+  data: Type.Array(Type.Number())
+});
+
+const Override = Type.Object({
+  type: t('override'),
+  data: Type.Array(Type.Number())
+});
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const asmMessages = {
@@ -29,6 +47,7 @@ export const asmSchema: ObjectSchema = {
   inlets: [
     {
       id: 'message',
+      type: 'message',
       description: 'Control messages and input data',
       messages: [
         { schema: Bang, description: 'Step machine by configured instructions per step' },
@@ -51,11 +70,32 @@ export const asmSchema: ObjectSchema = {
   ],
   outlets: [
     {
-      id: 'message',
-      description: 'Program output',
-      messages: [{ schema: Type.Any(), description: 'Values from output instructions' }]
+      id: 'output',
+      type: 'message',
+      description: 'Program output and side effects',
+      messages: [
+        {
+          schema: Type.Number(),
+          description: 'Single number from send instruction (e.g. send 0 1)'
+        },
+        {
+          schema: Type.Array(Type.Number()),
+          description: 'Array of numbers from send instruction (e.g. send 1 3)'
+        },
+        {
+          schema: MemRead,
+          description: 'Read virtual memory (for asm.mem)'
+        },
+        {
+          schema: MemWrite,
+          description: 'Write virtual memory (for asm.mem)'
+        },
+        {
+          schema: Override,
+          description: 'Overwrite all existing data'
+        }
+      ]
     }
   ],
-  tags: ['programming', 'assembly', 'stack', 'virtual-machine'],
-  hasDynamicOutlets: true
+  tags: ['programming', 'assembly', 'stack', 'virtual-machine']
 };

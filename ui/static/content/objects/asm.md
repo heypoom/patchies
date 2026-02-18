@@ -154,11 +154,21 @@ The delay between instructions can be adjusted via `Delay (ms)` in the settings 
 
 ### MANUAL CLOCK
 
-Send a `bang` message to step the program by one instruction. This is slower than automatic clocking, but useful for debugging.
+Send a `bang` message to step the program by one instruction. This is
+slower than automatic clocking, but useful for debugging.
 
 ### INSTRUCTIONS PER CYCLE
 
-Default is 1 instruction. You can set it to higher number of instructions per cycle (e.g. 20) to speed up the program significantly. Set this in the settings menu via the `Instructions per Step` option, or send a `setStepBy` message.
+Default is 1 instruction. You can set it to higher number of instructions
+per cycle (e.g. 20) to speed up the program significantly.
+
+Set this in the settings menu via the `Instructions per Step` option,
+or send a `setStepBy` message.
+
+## Shortcuts
+
+`Shift + Enter` in the code editor runs the program
+in automatic clocking mode.
 
 ## Memory Visualizer
 
@@ -214,19 +224,6 @@ push 40
 push 0x1005
 write 2
 ```
-
-## Output Messages
-
-- `number` or `number[]` when the `send` instruction is executed
-  - `send 0 1` will send one number to outlet 0
-  - `send 1 3` will send array of three numbers to outlet 1
-- `{type: 'read', address: number, count: number}` when `read` instruction is ran onto a mapped address (e.g. `0x2000`) - used for `asm.mem`
-- `{type: 'write', address: number, data: number[]}` when `write` instruction is ran onto a mapped address (e.g. `0x2000`) - used for `asm.mem`
-- `{type: 'override', data: number[]}` when override operation is triggered
-
-## Shortcuts
-
-- `Shift + Enter` in the code editor auto-runs the program
 
 ## Examples
 
