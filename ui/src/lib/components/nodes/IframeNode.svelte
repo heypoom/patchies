@@ -52,6 +52,23 @@
   let tempUrl = $state('');
   let isResizing = $state(false);
 
+  // Track if COEP warning overlay should be shown (auto-dismisses on successful iframe load)
+  let showCoepOverlay = $state(showCoepWarning);
+
+  // Reset overlay when URL changes (so new URLs show the warning again)
+  $effect(() => {
+    if (showCoepWarning && node.data.url) {
+      showCoepOverlay = true;
+    }
+  });
+
+  function handleIframeLoad() {
+    // If iframe loads successfully, dismiss the COEP warning overlay
+    if (showCoepOverlay) {
+      showCoepOverlay = false;
+    }
+  }
+
   const eventBus = PatchiesEventBus.getInstance();
 
   const DEFAULT_WIDTH = 400;
@@ -176,14 +193,29 @@
         <div class="flex flex-col gap-2">
           {#if hasUrl}
             <div class="relative">
-              {#if showCoepWarning}
-                <!-- Warning for browsers that don't support credentialless iframes with COEP -->
+              <!-- Always render iframe, overlay will show on top if needed -->
+              <iframe
+                bind:this={iframeRef}
+                src={node.data.url}
+                title="iframe content"
+                class="rounded-md border border-zinc-700 bg-white"
+                style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
+                  DEFAULT_HEIGHT}px;{isResizing || node.dragging || $isConnecting
+                  ? ' pointer-events: none;'
+                  : ''}"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                allow="geolocation; microphone; camera; midi; encrypted-media"
+                onload={handleIframeLoad}
+                {...iframeSecurity}
+              ></iframe>
+
+              {#if showCoepOverlay}
+                <!-- Warning overlay for browsers that don't support credentialless iframes with COEP -->
+                <!-- Auto-dismisses if iframe loads successfully (target site has COEP headers) -->
                 <div
-                  class="relative flex flex-col items-center justify-center gap-3 rounded-md border border-amber-700/50 bg-amber-950/30 p-4"
-                  style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
-                    DEFAULT_HEIGHT}px"
+                  class="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-md border border-zinc-500/50 bg-zinc-950 p-4"
                 >
-                  <!-- Info icon with technical details tooltip - positioned container outside tooltip -->
+                  <!-- Info icon with technical details tooltip -->
                   <div class="absolute top-2 right-2">
                     <Tooltip>
                       <TooltipTrigger>
@@ -222,33 +254,17 @@
                     </Tooltip>
                   </div>
 
-                  <TriangleAlert class="h-8 w-8 text-amber-500" />
+                  <TriangleAlert class="h-8 w-8 text-orange-500" />
 
-                  <div class="text-center text-sm text-amber-200">
-                    iframes are not supported in this browser.
+                  <div class="text-center text-sm text-orange-400">
+                    iframes may not work in this browser.
                   </div>
 
                   <div class="text-center text-xs text-zinc-400">
                     Please use <span class="font-semibold">Chrome</span> or
-
                     <span class="font-semibold">Safari</span> for iframe support.
                   </div>
                 </div>
-              {:else}
-                <!-- we need pointer-events none on resize/drag/connect otherwise the mouse goes into iframe -->
-                <iframe
-                  bind:this={iframeRef}
-                  src={node.data.url}
-                  title="iframe content"
-                  class="rounded-md border border-zinc-700 bg-white"
-                  style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
-                    DEFAULT_HEIGHT}px;{isResizing || node.dragging || $isConnecting
-                    ? ' pointer-events: none;'
-                    : ''}"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-                  allow="geolocation; microphone; camera; midi; encrypted-media"
-                  {...iframeSecurity}
-                ></iframe>
               {/if}
 
               <button
