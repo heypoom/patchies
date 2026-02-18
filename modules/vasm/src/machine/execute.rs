@@ -244,15 +244,17 @@ impl Execute for Machine {
             Op::LeftShift => s.apply_two(|a, b| Ok(a << b))?,
             Op::RightShift => s.apply_two(|a, b| Ok(a >> b))?,
 
-            // Pause the execution of the thread
-            Op::SleepTick(tick) => {
+            // Pause the execution of the thread (pops duration from stack)
+            Op::SleepTick => {
+                let tick = s.pop()?;
                 self.sleeping = true;
                 self.remaining_sleep_ticks = tick;
             },
 
-            Op::SleepMs(ms) => {
+            Op::SleepMs => {
+                let ms = s.pop()?;
                 self.sleeping = true;
-                self.events.push(Event::Sleep {ms})
+                self.events.push(Event::Sleep { ms })
             },
         };
 

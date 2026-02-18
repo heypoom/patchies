@@ -209,10 +209,6 @@ function debugString(val) {
   return className;
 }
 
-export function setup_system() {
-  wasm.setup_system();
-}
-
 function takeFromExternrefTable0(idx) {
   const value = wasm.__wbindgen_export_4.get(idx);
   wasm.__externref_table_dealloc(idx);
@@ -233,6 +229,10 @@ function passArray16ToWasm0(arg, malloc) {
   getUint16ArrayMemory0().set(arg, ptr / 2);
   WASM_VECTOR_LEN = arg.length;
   return ptr;
+}
+
+export function setup_system() {
+  wasm.setup_system();
 }
 
 const ControllerFinalization =
@@ -261,11 +261,16 @@ export class Controller {
     wasm.__wbg_controller_free(ptr, 0);
   }
   /**
-   * @returns {Controller}
+   * @param {number} id
+   * @param {number} size
+   * @returns {any}
    */
-  static create() {
-    const ret = wasm.controller_create();
-    return Controller.__wrap(ret);
+  read_stack(id, size) {
+    const ret = wasm.controller_read_stack(this.__wbg_ptr, id, size);
+    if (ret[2]) {
+      throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
   }
   /**
    * @returns {number}
@@ -278,36 +283,14 @@ export class Controller {
     return ret[0];
   }
   /**
+   * Get a complete snapshot of the machine state in a single call.
+   * This batches inspect_machine, consume_side_effects, and consume_messages
+   * to reduce WASM↔JS round-trip overhead from 4 calls to 1.
    * @param {number} id
    * @returns {any}
    */
-  add_machine_with_id(id) {
-    const ret = wasm.controller_add_machine_with_id(this.__wbg_ptr, id);
-    if (ret[2]) {
-      throw takeFromExternrefTable0(ret[1]);
-    }
-    return takeFromExternrefTable0(ret[0]);
-  }
-  /**
-   * @param {number} id
-   * @returns {any}
-   */
-  remove_machine(id) {
-    const ret = wasm.controller_remove_machine(this.__wbg_ptr, id);
-    if (ret[2]) {
-      throw takeFromExternrefTable0(ret[1]);
-    }
-    return takeFromExternrefTable0(ret[0]);
-  }
-  /**
-   * @param {number} id
-   * @param {string} source
-   * @returns {any}
-   */
-  load(id, source) {
-    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.controller_load(this.__wbg_ptr, id, ptr0, len0);
+  get_snapshot(id) {
+    const ret = wasm.controller_get_snapshot(this.__wbg_ptr, id);
     if (ret[2]) {
       throw takeFromExternrefTable0(ret[1]);
     }
@@ -332,21 +315,15 @@ export class Controller {
     wasm.controller_reset_machine(this.__wbg_ptr, id);
   }
   /**
+   * @param {number} id
    * @returns {any}
    */
-  statuses() {
-    const ret = wasm.controller_statuses(this.__wbg_ptr);
+  remove_machine(id) {
+    const ret = wasm.controller_remove_machine(this.__wbg_ptr, id);
     if (ret[2]) {
       throw takeFromExternrefTable0(ret[1]);
     }
     return takeFromExternrefTable0(ret[0]);
-  }
-  /**
-   * @returns {boolean}
-   */
-  is_halted() {
-    const ret = wasm.controller_is_halted(this.__wbg_ptr);
-    return ret !== 0;
   }
   /**
    * @param {number} id
@@ -360,12 +337,12 @@ export class Controller {
     return takeFromExternrefTable0(ret[0]);
   }
   /**
-   * @param {number} id
-   * @param {number} size
+   * Consume all outgoing messages from a machine
+   * @param {number} machine_id
    * @returns {any}
    */
-  read_code(id, size) {
-    const ret = wasm.controller_read_code(this.__wbg_ptr, id, size);
+  consume_messages(machine_id) {
+    const ret = wasm.controller_consume_messages(this.__wbg_ptr, machine_id);
     if (ret[2]) {
       throw takeFromExternrefTable0(ret[1]);
     }
@@ -373,24 +350,23 @@ export class Controller {
   }
   /**
    * @param {number} id
-   * @param {number} addr
-   * @param {number} size
    * @returns {any}
    */
-  read_mem(id, addr, size) {
-    const ret = wasm.controller_read_mem(this.__wbg_ptr, id, addr, size);
+  add_machine_with_id(id) {
+    const ret = wasm.controller_add_machine_with_id(this.__wbg_ptr, id);
     if (ret[2]) {
       throw takeFromExternrefTable0(ret[1]);
     }
     return takeFromExternrefTable0(ret[0]);
   }
   /**
-   * @param {number} id
-   * @param {number} size
+   * Send a message to a machine's inbox directly
+   * @param {number} machine_id
+   * @param {Message} message
    * @returns {any}
    */
-  read_stack(id, size) {
-    const ret = wasm.controller_read_stack(this.__wbg_ptr, id, size);
+  send_message_to_machine(machine_id, message) {
+    const ret = wasm.controller_send_message_to_machine(this.__wbg_ptr, machine_id, message);
     if (ret[2]) {
       throw takeFromExternrefTable0(ret[1]);
     }
@@ -407,9 +383,6 @@ export class Controller {
       throw takeFromExternrefTable0(ret[1]);
     }
     return takeFromExternrefTable0(ret[0]);
-  }
-  clear() {
-    wasm.controller_clear(this.__wbg_ptr);
   }
   /**
    * Serialize the entire sequencer state - very slow!
@@ -436,6 +409,36 @@ export class Controller {
   }
   /**
    * @param {number} id
+   * @param {string} source
+   * @returns {any}
+   */
+  load(id, source) {
+    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.controller_load(this.__wbg_ptr, id, ptr0, len0);
+    if (ret[2]) {
+      throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+  }
+  /**
+   * @param {number} machine_id
+   */
+  wake(machine_id) {
+    wasm.controller_wake(this.__wbg_ptr, machine_id);
+  }
+  clear() {
+    wasm.controller_clear(this.__wbg_ptr);
+  }
+  /**
+   * @returns {Controller}
+   */
+  static create() {
+    const ret = wasm.controller_create();
+    return Controller.__wrap(ret);
+  }
+  /**
+   * @param {number} id
    * @param {number} address
    * @param {Uint16Array} data
    * @returns {any}
@@ -450,45 +453,42 @@ export class Controller {
     return takeFromExternrefTable0(ret[0]);
   }
   /**
-   * @param {number} machine_id
-   */
-  wake(machine_id) {
-    wasm.controller_wake(this.__wbg_ptr, machine_id);
-  }
-  /**
-   * Send a message to a machine's inbox directly
-   * @param {number} machine_id
-   * @param {Message} message
-   * @returns {any}
-   */
-  send_message_to_machine(machine_id, message) {
-    const ret = wasm.controller_send_message_to_machine(this.__wbg_ptr, machine_id, message);
-    if (ret[2]) {
-      throw takeFromExternrefTable0(ret[1]);
-    }
-    return takeFromExternrefTable0(ret[0]);
-  }
-  /**
-   * Consume all outgoing messages from a machine
-   * @param {number} machine_id
-   * @returns {any}
-   */
-  consume_messages(machine_id) {
-    const ret = wasm.controller_consume_messages(this.__wbg_ptr, machine_id);
-    if (ret[2]) {
-      throw takeFromExternrefTable0(ret[1]);
-    }
-    return takeFromExternrefTable0(ret[0]);
-  }
-  /**
-   * Get a complete snapshot of the machine state in a single call.
-   * This batches inspect_machine, consume_side_effects, and consume_messages
-   * to reduce WASM↔JS round-trip overhead from 4 calls to 1.
    * @param {number} id
+   * @param {number} addr
+   * @param {number} size
    * @returns {any}
    */
-  get_snapshot(id) {
-    const ret = wasm.controller_get_snapshot(this.__wbg_ptr, id);
+  read_mem(id, addr, size) {
+    const ret = wasm.controller_read_mem(this.__wbg_ptr, id, addr, size);
+    if (ret[2]) {
+      throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+  }
+  /**
+   * @returns {any}
+   */
+  statuses() {
+    const ret = wasm.controller_statuses(this.__wbg_ptr);
+    if (ret[2]) {
+      throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+  }
+  /**
+   * @returns {boolean}
+   */
+  is_halted() {
+    const ret = wasm.controller_is_halted(this.__wbg_ptr);
+    return ret !== 0;
+  }
+  /**
+   * @param {number} id
+   * @param {number} size
+   * @returns {any}
+   */
+  read_code(id, size) {
+    const ret = wasm.controller_read_code(this.__wbg_ptr, id, size);
     if (ret[2]) {
       throw takeFromExternrefTable0(ret[1]);
     }

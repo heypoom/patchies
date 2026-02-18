@@ -4,6 +4,8 @@ small assembly programs to interact with hardware and devices.
 
 ![Patchies virtual stack machine assembly](/content/images/patchies-vasm.png)
 
+> ✨ [Try this example patch](/?id=atmpopec2wr3ftm) in the app.
+
 Each `asm` object is its own virtual stack machine, where you can write small programs
 using Patchies' own flavor of stack machine assembly. You can use the `send` and
 `receive` instructions to receive data from other objects and machines.
@@ -115,8 +117,8 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 
 ### TIMING
 
-- `sleep_tick <ticks>` sleeps for N clock ticks
-- `sleep_ms <ms>` sleeps for N milliseconds
+- `sleep_tick` pops N from the stack and sleeps for N clock ticks
+- `sleep_ms` pops N from the stack and sleeps for N milliseconds
 
 ### MEMORY
 
@@ -135,7 +137,8 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 | RAM | 0x340-0xFFF | 3264 | Data stack + user memory |
 | External | 0x1000-0xFFFF | 61440 | Virtual external memory |
 
-**Important**: Use high addresses (e.g., 0xF00+) for `load`/`store` to avoid colliding with the data stack which grows up from 0x340.
+**Important**: Use high addresses (e.g., 0xF00+) for `load`/`store`
+to avoid colliding with the data stack which grows up from 0x340.
 
 ### Virtual Memory (0x1000 - 0xFFFF)
 

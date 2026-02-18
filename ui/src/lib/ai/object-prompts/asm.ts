@@ -23,7 +23,7 @@ Bitwise: and, or, xor, not, left_shift, right_shift
 Control: jump <label>, jump_zero <label>, jump_not_zero <label>, call <label>, return, halt
 Memory: load <addr>, store <addr>, read <n>, write <n>
 I/O: send <port> <count>, receive, print
-Timing: sleep_tick <n>, sleep_ms <n>
+Timing: sleep_tick, sleep_ms (pop duration from stack)
 
 MEMORY LAYOUT (8KB total, 4096 u16 cells):
 - Code: 0x000-0x1FF (512 cells, ~250 instructions)

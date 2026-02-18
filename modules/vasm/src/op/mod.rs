@@ -1,13 +1,25 @@
 extern crate poom_macros;
 
-use strum_macros::{FromRepr, EnumString, Display};
-use poom_macros::{Arity, InsertArgs, FieldValues, VariantIndex};
+use poom_macros::{Arity, FieldValues, InsertArgs, VariantIndex};
+use strum_macros::{Display, EnumString, FromRepr};
 
 pub use crate::compile::compile_to_bytecode;
 
 pub mod convert;
 
-#[derive(Debug, Copy, Clone, PartialEq, FromRepr, EnumString, Arity, InsertArgs, FieldValues, VariantIndex, Display)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    FromRepr,
+    EnumString,
+    Arity,
+    InsertArgs,
+    FieldValues,
+    VariantIndex,
+    Display,
+)]
 #[strum(serialize_all = "snake_case")]
 #[repr(u16)]
 pub enum Op {
@@ -120,11 +132,11 @@ pub enum Op {
     /// Bitwise Right Shift (>>)
     RightShift,
 
-    /// Pause the execution for X milliseconds
-    SleepMs(u16),
-    
-    /// Pause the execution for X ticks
-    SleepTick(u16),
+    /// Pop the sleep duration from the stack and sleep for that amount of milliseconds
+    SleepMs,
+
+    /// Pop the sleep duration from the stack and sleep for that amount of ticks
+    SleepTick,
 
     /// Halt the program.
     Halt,

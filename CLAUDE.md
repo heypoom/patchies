@@ -30,6 +30,21 @@ bun run lint             # Lint & format check
 bun run test             # All tests
 ```
 
+## VASM (Assembly VM) Build
+
+After modifying Rust code in `modules/vasm/`, rebuild and link:
+
+```bash
+cd modules/vasm
+rm -rf pkg                                    # Clean old build
+wasm-pack build --target web                  # Build WASM (must be --target web)
+rm -rf ../../ui/src/assets/vasm/*             # Clean assets
+cp pkg/*.js pkg/*.wasm pkg/*.d.ts pkg/package.json ../../ui/src/assets/vasm/
+cd ../../ui && bun install                    # Re-link package
+```
+
+**Note**: Use `--target web` not `bundler` - the code expects `machineModule.default()` init function.
+
 ## Key Architectures
 
 **Event Bus**: Type-safe system events (undo/redo, lifecycle, collaboration)
