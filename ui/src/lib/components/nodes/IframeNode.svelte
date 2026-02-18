@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Edit, Globe, X } from '@lucide/svelte/icons';
+  import { Check, Edit, Globe, X, TriangleAlert, Info } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -11,6 +11,17 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { IframePostMessageEvent } from '$lib/eventbus/events';
   import { IframePostMessageListener } from '$lib/iframe/IframePostMessageListener';
+  import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+
+  // Feature-detect credentialless iframe support
+  // When COEP is enabled but credentialless iframes aren't supported,
+  // cross-origin iframes will fail to load with a security error
+  const supportsCredentiallessIframes =
+    typeof window !== 'undefined' && 'credentialless' in HTMLIFrameElement.prototype;
+
+  // COEP (Cross-Origin Embedder Policy) is enabled but credentialless iframes aren't supported
+  const showCoepWarning =
+    typeof window !== 'undefined' && window.crossOriginIsolated && !supportsCredentiallessIframes;
 
   let node: {
     id: string;
@@ -158,20 +169,76 @@
         <div class="flex flex-col gap-2">
           {#if hasUrl}
             <div class="relative">
-              <!-- we need pointer-events none on resize/drag/connect otherwise the mouse goes into iframe -->
-              <iframe
-                bind:this={iframeRef}
-                src={node.data.url}
-                title="iframe content"
-                class="rounded-md border border-zinc-700 bg-white"
-                style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
-                  DEFAULT_HEIGHT}px;{isResizing || node.dragging || $isConnecting
-                  ? ' pointer-events: none;'
-                  : ''}"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-                allow="geolocation; microphone; camera; midi; encrypted-media"
-                {...iframeSecurity}
-              ></iframe>
+              {#if showCoepWarning}
+                <!-- Warning for browsers that don't support credentialless iframes with COEP -->
+                <div
+                  class="relative flex flex-col items-center justify-center gap-3 rounded-md border border-amber-700/50 bg-amber-950/30 p-4"
+                  style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
+                    DEFAULT_HEIGHT}px"
+                >
+                  <!-- Info icon with technical details tooltip - positioned container outside tooltip -->
+                  <div class="absolute top-2 right-2">
+                    <Tooltip>
+                      <TooltipTrigger>
+                        {#snippet children()}
+                          <button
+                            class="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+                          >
+                            <Info class="h-4 w-4" />
+                          </button>
+                        {/snippet}
+                      </TooltipTrigger>
+
+                      <TooltipContent
+                        side="left"
+                        class="max-w-xs border-zinc-600 bg-zinc-800 text-xs text-zinc-300"
+                        arrowClasses="bg-zinc-800"
+                      >
+                        <p class="font-semibold text-zinc-100">Why this happens</p>
+                        <p class="mt-1">
+                          Patchies uses COEP (Cross-Origin-Embedder-Policy) to enable
+                          SharedArrayBuffer for audio worklets.
+                        </p>
+                        <p class="mt-1">
+                          This browser doesn't support the
+                          <code class="rounded bg-zinc-700 px-1">credentialless</code> iframe attribute
+                          needed for cross-origin iframes under COEP.
+                        </p>
+                        <p class="mt-2 text-zinc-400">
+                          Self-hosting without COEP headers allows iframes but disables
+                          SharedArrayBuffer features.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <TriangleAlert class="h-8 w-8 text-amber-500" />
+
+                  <div class="text-center text-sm text-amber-200">
+                    Cross-origin iframes are not supported in this browser.
+                  </div>
+
+                  <div class="text-center text-xs text-amber-300/70">
+                    Please use <span class="font-semibold">Chrome</span> or
+                    <span class="font-semibold">Safari</span> for iframe support.
+                  </div>
+                </div>
+              {:else}
+                <!-- we need pointer-events none on resize/drag/connect otherwise the mouse goes into iframe -->
+                <iframe
+                  bind:this={iframeRef}
+                  src={node.data.url}
+                  title="iframe content"
+                  class="rounded-md border border-zinc-700 bg-white"
+                  style="width: {node.width ?? DEFAULT_WIDTH}px; height: {node.height ??
+                    DEFAULT_HEIGHT}px;{isResizing || node.dragging || $isConnecting
+                    ? ' pointer-events: none;'
+                    : ''}"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                  allow="geolocation; microphone; camera; midi; encrypted-media"
+                  {...iframeSecurity}
+                ></iframe>
+              {/if}
 
               <button
                 title="Change URL"
