@@ -32,6 +32,15 @@
   const { updateNodeData } = useSvelteFlow();
   const store = useStore();
 
+  // Check if handles have connections (for smart auto mode)
+  const hasInletConnection = $derived(
+    store.edges.some((e) => e.target === node.id && e.targetHandle === 'message-in')
+  );
+
+  const hasOutletConnection = $derived(
+    store.edges.some((e) => e.source === node.id && e.sourceHandle === 'message-out')
+  );
+
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
   const valueTracker = tracker.track('value', () => node.data.value ?? defaultValue);
@@ -189,15 +198,15 @@
   });
 
   // Handle visibility: 3 states
-  // - undefined (auto): show with fade, respects lock
+  // - undefined (auto): show with fade, respects lock; always show if connected
   // - true (always show): always visible, overrides lock
   // - false (always hide): never visible
   const inletVisible = $derived.by(() => {
     if (node.data.showInlet === false) return false;
     if (node.data.showInlet === true) return true;
 
-    // Auto: respects lock
-    return !isLocked || $shouldShowHandles;
+    // Auto: always show if connected, otherwise respect lock
+    return hasInletConnection || !isLocked || $shouldShowHandles;
   });
 
   const outletVisible = $derived(node.data.showOutlet !== false);
@@ -205,8 +214,8 @@
   const hiddenPortClass = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   const handleInletClass = $derived.by(() => {
-    // Always visible (no fade) if explicitly enabled, selected, or easy connect
-    if (node.data.showInlet === true || node.selected || $shouldShowHandles) {
+    // Always visible (no fade) if explicitly enabled, selected, easy connect, or connected
+    if (node.data.showInlet === true || node.selected || $shouldShowHandles || hasInletConnection) {
       return '';
     }
 
@@ -215,8 +224,13 @@
   });
 
   const handleOutletClass = $derived.by(() => {
-    // Always visible (no fade) if explicitly enabled, selected, or easy connect
-    if (node.data.showOutlet === true || node.selected || $shouldShowHandles) {
+    // Always visible (no fade) if explicitly enabled, selected, easy connect, or connected
+    if (
+      node.data.showOutlet === true ||
+      node.selected ||
+      $shouldShowHandles ||
+      hasOutletConnection
+    ) {
       return '';
     }
 
