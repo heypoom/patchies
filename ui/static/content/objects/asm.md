@@ -12,7 +12,8 @@ using Patchies' own flavor of stack machine assembly. You can use the `send` and
 
 ## Instructions
 
-Stack effects are shown as `( before -- after )` where the rightmost value is the top of the stack.
+Stack effects are shown as `( before -- after )` where the rightmost
+value is the top of the stack.
 
 ### STACK OPERATIONS
 
@@ -94,10 +95,10 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 
 ### TIMING
 
-| Instruction | Stack Effect | Description |
-|-------------|--------------|-------------|
-| `sleep_tick <n>` | `( -- )` | Pause for n clock ticks |
-| `sleep_ms <n>` | `( -- )` | Pause for n milliseconds |
+| Instruction    | Stack Effect | Description                      |
+|----------------|--------------|----------------------------------|
+| `sleep_tick`   | `( n -- )`   | Pop n, pause for n clock ticks   |
+| `sleep_ms`     | `( n -- )`   | Pop n, pause for n milliseconds  |
 
 ## Syntax
 
@@ -110,20 +111,23 @@ Stack effects are shown as `( before -- after )` where the rightmost value is th
 - Define strings with `.string key "value"` and load it with `load_string key`
 - Define const values with `.value key value` and use it e.g. `push key`
 
-### I/O
+### I/O INSTRUCTIONS
 
 - `send <port> <length>` sends top N stack values to the given port (0-3)
-- `receive` waits for one input value from the message inlet, and pushes it onto the stack
+- `receive` waits for one input value from the message inlet and
+  pushes it onto the stack
 
-### TIMING
+### TIMING INSTRUCTIONS
 
 - `sleep_tick` pops N from the stack and sleeps for N clock ticks
 - `sleep_ms` pops N from the stack and sleeps for N milliseconds
 
-### MEMORY
+### MEMORY INSTRUCTIONS
 
-- `write <length>` pops the memory address from the stack and write N values to the address
-- `read <length>` pops the memory address from the stack and read N values from the address onto the stack
+- `write <length>` pops the memory address from the stack and
+  write N values to the address
+- `read <length>` pops the memory address from the stack and
+  read N values from the address onto the stack
 - `load <address>` pushes the value at the memory address onto the stack
 - `store <address>` pops the value from the stack and store it at the memory address
 
