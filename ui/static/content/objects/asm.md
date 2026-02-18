@@ -93,12 +93,12 @@ value is the top of the stack.
 | `receive` | `( -- v )` | Wait for input, push received value |
 | `print` | `( bytes.. -- )` | Pop string bytes until null, print to console |
 
-### TIMING
+### SLEEP
 
 | Instruction    | Stack Effect | Description                      |
 |----------------|--------------|----------------------------------|
-| `sleep_tick`   | `( n -- )`   | Pop n, pause for n clock ticks   |
-| `sleep_ms`     | `( n -- )`   | Pop n, pause for n milliseconds  |
+| `sleep_tick`   | `( n -- )`   | Pop n, sleep for n clock ticks   |
+| `sleep_ms`     | `( n -- )`   | Pop n, sleep for n milliseconds  |
 
 ## Syntax
 
@@ -117,19 +117,14 @@ value is the top of the stack.
 - `receive` waits for one input value from the message inlet and
   pushes it onto the stack
 
-### TIMING INSTRUCTIONS
-
-- `sleep_tick` pops N from the stack and sleeps for N clock ticks
-- `sleep_ms` pops N from the stack and sleeps for N milliseconds
-
 ### MEMORY INSTRUCTIONS
 
-- `write <length>` pops the memory address from the stack and
-  write N values to the address
-- `read <length>` pops the memory address from the stack and
-  read N values from the address onto the stack
-- `load <address>` pushes the value at the memory address onto the stack
-- `store <address>` pops the value from the stack and store it at the memory address
+- `write <length>` pops the address from the stack
+  and write N values to it
+- `read <length>` pops the address from the stack
+  and read N values from it onto the stack
+- `load <address>` pushes the value at the address onto the stack
+- `store <address>` pops the value from the stack and store it at the address
 
 #### Memory Layout (8KB total, 4096 u16 cells)
 
