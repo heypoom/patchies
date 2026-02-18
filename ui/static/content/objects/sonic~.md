@@ -80,6 +80,7 @@ Please consider supporting
 
 ## See Also
 
-- [tone~](/docs/objects/tone~) - Tone.js synthesis
-- [elem~](/docs/objects/elem~) - Elementary Audio synthesis
-- [csound~](/docs/objects/csound~) - Csound synthesis
+- [chuck~](/docs/objects/chuck~) - ChucK real-time synthesis language
+- [tone~](/docs/objects/tone~) - Tone.js library
+- [elem~](/docs/objects/elem~) - Elementary Audio low-level synthesis
+- [csound~](/docs/objects/csound~) - Csound synthesis language
