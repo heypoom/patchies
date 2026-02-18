@@ -193,7 +193,7 @@
         class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
       >
         <RotateCcw class="h-3 w-3" />
-        Reset to Default
+        Reset Value
       </button>
     </div>
   </div>
