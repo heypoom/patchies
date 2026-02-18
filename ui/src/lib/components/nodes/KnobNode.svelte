@@ -11,6 +11,10 @@
   import { useNodeDataTracker } from '$lib/history';
   import { useSvelteFlow, useStore } from '@xyflow/svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import {
+    useHandleVisibility,
+    HIDDEN_HANDLE_CLASS
+  } from '$lib/composables/useHandleVisibility.svelte';
 
   let node: {
     id: string;
@@ -31,15 +35,7 @@
 
   const { updateNodeData } = useSvelteFlow();
   const store = useStore();
-
-  // Check if handles have connections (for smart auto mode)
-  const hasInletConnection = $derived(
-    store.edges.some((e) => e.target === node.id && e.targetHandle === 'message-in')
-  );
-
-  const hasOutletConnection = $derived(
-    store.edges.some((e) => e.source === node.id && e.sourceHandle === 'message-out')
-  );
+  const { hasInletConnection, hasOutletConnection } = useHandleVisibility({ nodeId: node.id });
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
@@ -172,6 +168,7 @@
       const newMin = updates.min ?? min;
       const newMax = updates.max ?? max;
       const clampedValue = Math.min(Math.max(currentValue, newMin), newMax);
+
       if (clampedValue !== currentValue) {
         newData.value = clampedValue;
       }
@@ -211,32 +208,17 @@
 
   const outletVisible = $derived(node.data.showOutlet !== false);
 
-  const hiddenPortClass = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
+  const handleInletClass = $derived(
+    node.data.showInlet === true || node.selected || $shouldShowHandles || hasInletConnection
+      ? ''
+      : HIDDEN_HANDLE_CLASS
+  );
 
-  const handleInletClass = $derived.by(() => {
-    // Always visible (no fade) if explicitly enabled, selected, easy connect, or connected
-    if (node.data.showInlet === true || node.selected || $shouldShowHandles || hasInletConnection) {
-      return '';
-    }
-
-    // Auto mode: fade on hover
-    return hiddenPortClass;
-  });
-
-  const handleOutletClass = $derived.by(() => {
-    // Always visible (no fade) if explicitly enabled, selected, easy connect, or connected
-    if (
-      node.data.showOutlet === true ||
-      node.selected ||
-      $shouldShowHandles ||
-      hasOutletConnection
-    ) {
-      return '';
-    }
-
-    // Auto mode: fade on hover
-    return hiddenPortClass;
-  });
+  const handleOutletClass = $derived(
+    node.data.showOutlet === true || node.selected || $shouldShowHandles || hasOutletConnection
+      ? ''
+      : HIDDEN_HANDLE_CLASS
+  );
 </script>
 
 <div class="relative">

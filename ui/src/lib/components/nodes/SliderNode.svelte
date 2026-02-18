@@ -10,6 +10,10 @@
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import {
+    useHandleVisibility,
+    HIDDEN_HANDLE_CLASS
+  } from '$lib/composables/useHandleVisibility.svelte';
 
   let node: {
     id: string;
@@ -32,6 +36,7 @@
   const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const store = useStore();
+  const { hasInletConnection, hasOutletConnection } = useHandleVisibility({ nodeId: node.id });
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
@@ -166,16 +171,16 @@
     ];
   });
 
-  // Hide inlet when locked (unless easy connect is enabled)
-  const showInlet = $derived(!isLocked || $shouldShowHandles);
+  // Hide inlet when locked (unless easy connect is enabled or connected)
+  const showInlet = $derived(hasInletConnection || !isLocked || $shouldShowHandles);
 
-  const handleInletClass = $derived.by(() => {
-    if (node.selected || $shouldShowHandles) {
-      return '';
-    }
+  const handleInletClass = $derived(
+    node.selected || $shouldShowHandles || hasInletConnection ? '' : HIDDEN_HANDLE_CLASS
+  );
 
-    return 'opacity-30 group-hover:opacity-100 sm:opacity-0';
-  });
+  const handleOutletClass = $derived(
+    node.selected || $shouldShowHandles || hasOutletConnection ? '' : HIDDEN_HANDLE_CLASS
+  );
 </script>
 
 <div class="relative">
@@ -267,7 +272,14 @@
           {/if}
         </div>
 
-        <StandardHandle port="outlet" type="message" total={1} index={0} nodeId={node.id} />
+        <StandardHandle
+          port="outlet"
+          type="message"
+          total={1}
+          index={0}
+          nodeId={node.id}
+          class={handleOutletClass}
+        />
       </div>
     </div>
   </div>
