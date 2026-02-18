@@ -22,7 +22,10 @@ Circular encoder knob for continuous value control.
 - **Maximum** - Upper bound of the range
 - **Default Value** - Initial value on reset
 - **Size** - Knob diameter in pixels
-- **Lock**: Lock the knob to prevent moving and hide the inlet.
+- **Ports** - Inlet/outlet visibility with three states:
+  - Auto (dash) - Hide when not connected, show when connected
+  - Show (checkmark) - Always visible
+  - Hide (X) - Always hidden
 
 ## See Also
 
