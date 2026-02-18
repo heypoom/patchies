@@ -14,7 +14,13 @@
   import type { InspectedMachine, Effect, Message, MachineConfig } from './AssemblySystem';
   import { memoryActions } from './memoryStore';
   import { formatSequencerError } from './formatSequencerError';
-  import { ASM_DEFAULT_DELAY_MS, ASM_DEFAULT_STEP_BY } from './constants';
+  import {
+    ASM_DEFAULT_DELAY_MS,
+    ASM_DEFAULT_STEP_BY,
+    ASM_DEFAULT_INLET_COUNT,
+    ASM_DEFAULT_OUTLET_COUNT,
+    ASM_MAX_OUTLET_COUNT
+  } from './constants';
   import PaginatedMemoryViewer from './PaginatedMemoryViewer.svelte';
   import { logger } from '$lib/utils/logger';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
@@ -65,8 +71,8 @@
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(nodeId);
 
-  let inletCount = $derived(data.inletCount ?? 1);
-  let outletCount = $derived(data.outletCount ?? 3);
+  let inletCount = $derived(data.inletCount ?? ASM_DEFAULT_INLET_COUNT);
+  let outletCount = $derived(data.outletCount ?? ASM_DEFAULT_OUTLET_COUNT);
 
   // Use node data as single source of truth for machine config
   const machineConfig = $derived(
@@ -717,6 +723,30 @@
         <div class="mt-1.5 text-xs text-zinc-500">
           Delay between instructions for automatic execution
         </div>
+      </div>
+
+      <div>
+        <!-- svelte-ignore a11y_label_has_associated_control -->
+        <label class="mb-2 block text-xs font-medium text-zinc-300">Outlets</label>
+
+        <input
+          type="number"
+          min="1"
+          max={ASM_MAX_OUTLET_COUNT.toString()}
+          value={outletCount}
+          onchange={(e) => {
+            const newValue = parseInt(e.currentTarget.value);
+
+            if (!isNaN(newValue) && newValue >= 1 && newValue <= 16) {
+              const oldValue = outletCount;
+              updateNodeData(nodeId, { outletCount: newValue });
+              tracker.commit('outletCount', oldValue, newValue);
+            }
+          }}
+          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+        />
+
+        <div class="mt-1.5 text-xs text-zinc-500">Number of message outlets</div>
       </div>
     </div>
   </div>

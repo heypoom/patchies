@@ -23,3 +23,23 @@ export const ASM_MAX_VALID_PAGE = Math.floor(ASM_MEMORY_SIZE / ASM_DEFAULT_PAGE_
 // Machine execution defaults
 export const ASM_DEFAULT_DELAY_MS = 100;
 export const ASM_DEFAULT_STEP_BY = 1;
+
+// Node port defaults
+export const ASM_DEFAULT_INLET_COUNT = 1;
+export const ASM_DEFAULT_OUTLET_COUNT = 3;
+
+/**
+ * Maximum number of outlets allowed for an asm node.
+ *
+ * Memory-mapped I/O uses addresses 0x1000-0xFFFF, with each outlet
+ * getting 512 cells (0x200). This gives a theoretical max of 120 outlets.
+ * We limit to 16 for practical UI/UX reasons:
+ * - Keeps the node visually manageable
+ * - 16 outlets × 512 cells = 8192 external memory cells is plenty
+ * - Matches typical Max/MSP conventions for port counts
+ */
+export const ASM_MAX_OUTLET_COUNT = 16;
+
+// Memory-mapped I/O constants (must match vasm segments.rs)
+export const ASM_MAPPED_START = 0x1000;
+export const ASM_MAPPED_CELLS_PER_OUTLET = 0x200; // 512 cells per outlet

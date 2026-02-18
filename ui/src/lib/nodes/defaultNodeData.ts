@@ -22,7 +22,9 @@ import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
 import {
   DEFAULT_ASSEMBLY_CODE,
   ASM_DEFAULT_DELAY_MS,
-  ASM_DEFAULT_STEP_BY
+  ASM_DEFAULT_STEP_BY,
+  ASM_DEFAULT_INLET_COUNT,
+  ASM_DEFAULT_OUTLET_COUNT
 } from '$lib/assembly/constants';
 import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
 import { DEFAULT_WGSL_CODE } from '$lib/webgpu/constants';
@@ -147,8 +149,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))
     .with('asm', () => ({
       code: DEFAULT_ASSEMBLY_CODE,
-      inletCount: 1,
-      outletCount: 3,
+      inletCount: ASM_DEFAULT_INLET_COUNT,
+      outletCount: ASM_DEFAULT_OUTLET_COUNT,
       showMemoryViewer: false,
       machineConfig: {
         isRunning: false,
