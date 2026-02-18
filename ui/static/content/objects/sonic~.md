@@ -28,6 +28,19 @@ Available events: `'ready'`, `'loading:start'`, `'loading:complete'`,
 Supports [Patchies JavaScript Runner](/docs/javascript-runner) functions
 (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
+## Command Listener
+
+SuperSonic works by sending OSC (OpenSoundControl) messages to the synth engine.
+
+For example, you can send `'/s_new' 'sonic-pi-beep' -1 0 0 'note' 64 'release' 2`.
+Make sure to load the synth with `loadSynthDef` first
+
+```js
+setPortCount(1)
+
+recv(msg => sonic.send(...msg))
+```
+
 ## Load and Play Synth
 
 ```js
@@ -41,20 +54,9 @@ recv((note) => {
 });
 ```
 
-## Listener Object
-
-You can send messages like `'/s_new' 'sonic-pi-prophet' -1 0 0 'note' 64 'release' 2`
-to this object to communicate with SuperSonic.
-
-```js
-setPortCount(1)
-
-await sonic.loadSynthDef('sonic-pi-prophet')
-
-recv(msg => sonic.send(...msg))
-```
-
 ## Load and Play Samples
+
+This loads the built-in sample from SuperSonic.
 
 ```js
 await sonic.loadSynthDef('sonic-pi-basic_stereo_player');
@@ -63,6 +65,12 @@ await sonic.sync();
 
 sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
   'buf', 0, 'rate', 1);
+```
+
+To use your own sample, use loadVfsUrl from the [Virtual Filesystem](/docs/virtual-filesystem) API.
+
+```js
+await sonic.loadSample(0, await loadVfsUrl('user://loop.wav'));
 ```
 
 ## Resources
