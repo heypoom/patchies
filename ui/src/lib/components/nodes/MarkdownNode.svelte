@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
+  import { NodeResizer, useSvelteFlow, useEdges } from '@xyflow/svelte';
   import { onDestroy, onMount } from 'svelte';
 
   // @ts-expect-error -- no typedef
@@ -12,6 +12,7 @@
   import { markdownMessages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
+  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let props: {
     id: string;
@@ -31,22 +32,31 @@
   let overtypeEditor: any;
 
   const { updateNodeData } = useSvelteFlow();
+  const edges = useEdges();
+
+  // Check if handles have connections (for smart auto mode)
+  const hasInletConnection = $derived(
+    edges.current.some((e) => e.target === props.id && e.targetHandle === 'message-in')
+  );
+  const hasOutletConnection = $derived(
+    edges.current.some((e) => e.source === props.id && e.sourceHandle === 'message-out')
+  );
 
   // Undo/redo tracking for markdown content
   const tracker = useNodeDataTracker(props.id);
   const markdownTracker = tracker.track('markdown', () => props.data.markdown ?? '');
 
-  const handleClass = $derived.by(() => {
-    if (!props.selected && $shouldShowHandles) {
-      return '';
-    }
+  const handleInletClass = $derived(
+    props.selected || $shouldShowHandles || hasInletConnection
+      ? 'z-1 transition-opacity'
+      : `z-1 transition-opacity ${HIDDEN_HANDLE_CLASS}`
+  );
 
-    if (props.selected) {
-      return 'z-1 transition-opacity';
-    }
-
-    return 'z-1 sm:opacity-0 opacity-30 group-hover:opacity-100 transition-opacity';
-  });
+  const handleOutletClass = $derived(
+    props.selected || $shouldShowHandles || hasOutletConnection
+      ? 'z-1 transition-opacity'
+      : `z-1 transition-opacity ${HIDDEN_HANDLE_CLASS}`
+  );
 
   function handleMarkdownChange(markdown: string) {
     updateNodeData(props.id, { markdown });
@@ -120,7 +130,7 @@
       type="message"
       total={1}
       index={0}
-      class={handleClass}
+      class={handleInletClass}
       nodeId={props.id}
     />
 
@@ -137,7 +147,7 @@
       type="message"
       total={1}
       index={0}
-      class={handleClass}
+      class={handleOutletClass}
       nodeId={props.id}
     />
   </div>

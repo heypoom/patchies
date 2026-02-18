@@ -9,12 +9,10 @@
   import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
-  import { useSvelteFlow, useStore } from '@xyflow/svelte';
+  import { useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import {
-    useHandleVisibility,
-    HIDDEN_HANDLE_CLASS
-  } from '$lib/composables/useHandleVisibility.svelte';
+
+  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
     id: string;
@@ -35,7 +33,15 @@
 
   const { updateNodeData } = useSvelteFlow();
   const store = useStore();
-  const { hasInletConnection, hasOutletConnection } = useHandleVisibility({ nodeId: node.id });
+  const edges = useEdges();
+
+  // Check if handles have connections (for smart auto mode)
+  const hasInletConnection = $derived(
+    edges.current.some((e) => e.target === node.id && e.targetHandle === 'message-in')
+  );
+  const hasOutletConnection = $derived(
+    edges.current.some((e) => e.source === node.id && e.sourceHandle === 'message-out')
+  );
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);

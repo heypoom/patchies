@@ -1,6 +1,12 @@
 <script lang="ts">
   import { Lock, LockOpen, RotateCcw, Settings, X } from '@lucide/svelte/icons';
-  import { NodeResizer, useSvelteFlow, useUpdateNodeInternals, useStore } from '@xyflow/svelte';
+  import {
+    NodeResizer,
+    useSvelteFlow,
+    useUpdateNodeInternals,
+    useStore,
+    useEdges
+  } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -10,10 +16,7 @@
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import {
-    useHandleVisibility,
-    HIDDEN_HANDLE_CLASS
-  } from '$lib/composables/useHandleVisibility.svelte';
+  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
     id: string;
@@ -36,7 +39,15 @@
   const { updateNodeData, updateNode } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const store = useStore();
-  const { hasInletConnection, hasOutletConnection } = useHandleVisibility({ nodeId: node.id });
+  const edges = useEdges();
+
+  // Check if handles have connections (for smart auto mode)
+  const hasInletConnection = $derived(
+    edges.current.some((e) => e.target === node.id && e.targetHandle === 'message-in')
+  );
+  const hasOutletConnection = $derived(
+    edges.current.some((e) => e.source === node.id && e.sourceHandle === 'message-out')
+  );
 
   // Undo/redo tracking for node data changes
   const tracker = useNodeDataTracker(node.id);
