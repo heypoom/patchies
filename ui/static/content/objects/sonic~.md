@@ -1,10 +1,13 @@
-Integrates [SuperSonic](https://sonic-pi.net/supersonic/demo.html), which brings
+Integrates [SuperSonic](https://sonic-pi.net/supersonic), which brings
 SuperCollider's powerful `scsynth` audio engine to the browser via AudioWorklet.
 
-`scsynth` is the synth engine James McCartney created for version 3 of SuperCollider,
-a series of live audio programming environments. Sam Aaron compiled the original
-`scsynth` engine to WebAssembly and made SuperSonic, letting you use OSC API to
-trigger synths with sample-accurate timing. Try out [the SuperSonic demo here](https://sonic-pi.net/supersonic/demo.html#demo).
+`scsynth` is the synth engine James McCartney created for version 3 of [SuperCollider](https://supercollider.github.io/),
+a platform for audio synthesis and algorithmic composition.
+
+Sam Aaron compiled the original `scsynth` engine to WebAssembly and made SuperSonic,
+letting you use OSC messages to trigger synths with sample-accurate timing.
+
+Try out [the SuperSonic demo here](https://sonic-pi.net/supersonic/demo.html#demo).
 
 ## Context
 
@@ -38,6 +41,19 @@ recv((note) => {
 });
 ```
 
+## Listener Object
+
+You can send messages like `'/s_new' 'sonic-pi-prophet' -1 0 0 'note' 64 'release' 2`
+to this object to communicate with SuperSonic.
+
+```js
+setPortCount(1)
+
+await sonic.loadSynthDef('sonic-pi-prophet')
+
+recv(msg => sonic.send(...msg))
+```
+
 ## Load and Play Samples
 
 ```js
@@ -53,11 +69,11 @@ sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
 
 - [welcome docs for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/WELCOME.md)
 - [quickstart for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/QUICKSTART.md)
+- [scsynth OSC command reference](https://github.com/samaaron/supersonic/blob/main/docs/SCSYNTH_COMMAND_REFERENCE.md)
+- [included synthesizer definition list](https://github.com/samaaron/supersonic/tree/main/packages/supersonic-scsynth-synthdefs)
 - [API reference for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/API.md)
-- [scsynth OSC reference](https://github.com/samaaron/supersonic/blob/main/docs/SCSYNTH_COMMAND_REFERENCE.md)
-- [included synth definitions](https://github.com/samaaron/supersonic/tree/main/packages/supersonic-scsynth-synthdefs)
-- [SuperSonic on GitHub](https://github.com/samaaron/supersonic)
-- [original scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html)
+- [SuperSonic code on GitHub](https://github.com/samaaron/supersonic)
+- [original scsynth OSC command reference](http://doc.sccode.org/Reference/Server-Command-Reference.html)
 
 Please consider supporting
 [Sam Aaron on Patreon](https://www.patreon.com/samaaron)!
