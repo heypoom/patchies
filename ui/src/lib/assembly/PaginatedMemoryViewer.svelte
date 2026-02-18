@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowLeft, ArrowRight } from '@lucide/svelte/icons';
   import MemoryViewer from './MemoryViewer.svelte';
-  import { memoryActions, getMemoryConfig, getMemoryPage, getMemoryRange } from './memoryStore';
+  import { memoryActions, getMemoryPage, getMemoryRange } from './memoryStore';
   import { memoryRegionStore } from './memoryRegionStore';
 
   interface Props {
@@ -20,7 +20,6 @@
   const pad = hex ? minDigits : minDigits + 1;
 
   // Get reactive stores for this machine
-  const memoryConfig = getMemoryConfig(machineId);
   const memoryPage = getMemoryPage(machineId);
   const memoryRange = getMemoryRange(machineId);
 

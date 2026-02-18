@@ -179,12 +179,6 @@ export const memoryActions = {
 };
 
 // Derived stores for easier access
-export const getMemoryConfig = (machineId: number) =>
-  derived(
-    memoryPageConfig,
-    ($config) => $config[machineId] || { page: DEFAULT_PAGE, size: ASM_DEFAULT_PAGE_SIZE }
-  );
-
 export const getMemoryPage = (machineId: number) =>
   derived(memoryPages, ($pages) => $pages[machineId] || []);
 
