@@ -1,9 +1,14 @@
 Integrates [SuperSonic](https://sonic-pi.net/supersonic/demo.html), which brings
 SuperCollider's powerful `scsynth` audio engine to the browser via AudioWorklet.
 
+`scsynth` is the synth engine James McCartney created for version 3 of SuperCollider,
+a series of live audio programming environments. Sam Aaron compiled the original
+`scsynth` engine to WebAssembly and made SuperSonic, letting you use OSC API to
+trigger synths with sample-accurate timing. Try out [the SuperSonic demo here](https://sonic-pi.net/supersonic/demo.html#demo).
+
 ## Context
 
-The `sonic~` context provides:
+The `sonic~` JavaScript context provides:
 
 - `sonic`: SuperSonic instance for synthesis control
 - `SuperSonic`: Class for static methods (e.g., `SuperSonic.osc.encode()`)
@@ -46,8 +51,12 @@ sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
 
 ## Resources
 
-- [SuperSonic documentation](https://github.com/samaaron/supersonic)
-- [scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html)
+- [welcome docs for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/WELCOME.md)
+- [quickstart for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/QUICKSTART.md)
+- [API reference for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/API.md)
+- [scsynth OSC reference](https://github.com/samaaron/supersonic/blob/main/docs/SCSYNTH_COMMAND_REFERENCE.md)
+- [SuperSonic on GitHub](https://github.com/samaaron/supersonic)
+- [original scsynth OSC reference](http://doc.sccode.org/Reference/Server-Command-Reference.html)
 
 Please consider supporting
 [Sam Aaron on Patreon](https://www.patreon.com/samaaron)!
