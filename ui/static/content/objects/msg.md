@@ -1,4 +1,6 @@
-Store and send predefined messages. Click to send.
+- Click to send messages.
+- Use the edit button (visible on hover) to enter edit mode.
+- Use `Shift + Enter` while in message editor to send the message.
 
 ## Message Format
 
