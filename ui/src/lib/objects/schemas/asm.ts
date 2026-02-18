@@ -79,11 +79,11 @@ export const asmSchema: ObjectSchema = {
         },
         {
           schema: MemRead,
-          description: 'Read virtual memory (for asm.mem)'
+          description: 'Read memory from asm.mem'
         },
         {
           schema: MemWrite,
-          description: 'Write virtual memory (for asm.mem)'
+          description: 'Write memory to asm.mem'
         }
       ]
     }
