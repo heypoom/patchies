@@ -1,26 +1,27 @@
 import { defineDSP } from '../define-dsp';
+import { ClipPortSchema } from '../schemas/clip.schema';
 
 defineDSP({
   name: 'clip~',
   audioInlets: 1,
   audioOutlets: 1,
-  state: () => ({ min: -1, max: 1 }),
+  schema: ClipPortSchema,
 
-  recv(state, data, inlet) {
-    const val = parseFloat(data as string);
-    if (isNaN(val)) return;
-    if (inlet === 1) state.min = val;
-    if (inlet === 2) state.max = val;
-  },
+  state: () => ({}),
 
-  process(state, inputs, outputs) {
+  process(_state, inputs, outputs, _send, parameters) {
     const out = outputs[0];
     const len = out[0].length;
     const channels = out.length;
+    const minParam = parameters.min;
+    const maxParam = parameters.max;
 
     for (let i = 0; i < len; i++) {
+      const min = minParam[i];
+      const max = maxParam[i];
+
       for (let ch = 0; ch < channels; ch++) {
-        out[ch][i] = Math.max(state.min, Math.min(state.max, inputs[0][ch][i]));
+        out[ch][i] = Math.max(min, Math.min(max, inputs[0][ch][i]));
       }
     }
   }
