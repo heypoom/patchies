@@ -164,10 +164,17 @@ function tokenize(stream: StringStream, state: UiuaState): string | null {
     return 'string';
   }
 
-  // Character literals (@x)
+  // Character literals (@x or @\n for escapes)
   if (stream.match('@')) {
     if (!stream.eol()) {
-      stream.next(); // Consume the character
+      if (stream.peek() === '\\') {
+        stream.next(); // Consume the backslash
+        if (!stream.eol()) {
+          stream.next(); // Consume the escaped character
+        }
+      } else {
+        stream.next(); // Consume a single character
+      }
     }
     state.lastTokenType = 'string';
     return 'string';
@@ -182,11 +189,6 @@ function tokenize(stream: StringStream, state: UiuaState): string | null {
   // Single character tokens
   const char = stream.next();
   if (!char) return null;
-
-  // Subscripts inherit from previous token
-  if (SUBSCRIPTS.includes(char)) {
-    return state.lastTokenType;
-  }
 
   // Negative sign as constant (when not followed by number)
   if (char === '¯') {
@@ -228,6 +230,11 @@ function tokenize(stream: StringStream, state: UiuaState): string | null {
   if (STACK_OPS.has(char)) {
     state.lastTokenType = 'operator';
     return 'operator';
+  }
+
+  // Subscripts inherit from previous token (checked last so function chars like ₑ, ₙ match first)
+  if (SUBSCRIPTS.includes(char)) {
+    return state.lastTokenType;
   }
 
   // Default

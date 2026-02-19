@@ -4,6 +4,8 @@
  * Based on syntax rules from array-box.
  */
 
+import { match } from 'ts-pattern';
+
 // Monadic functions (take 1 array argument) - cyan
 const MONADIC_FUNCTIONS = new Set([
   '¬',
@@ -199,9 +201,19 @@ function tokenize(code: string): Token[] {
       continue;
     }
 
-    // Character literals (@x)
+    // Character literals (@x or @\n for escapes)
     if (char === '@') {
-      const end = i + 2 <= code.length ? i + 2 : code.length;
+      let end = i + 1; // Start after '@'
+      if (end < code.length) {
+        if (code[end] === '\\') {
+          end++; // Skip the backslash
+          if (end < code.length) {
+            end++; // Skip the escaped character
+          }
+        } else {
+          end++; // Skip a single character
+        }
+      }
       tokens.push({ type: 'string', value: code.substring(i, end) });
       lastType = 'string';
       i = end;
@@ -214,13 +226,6 @@ function tokenize(code: string): Token[] {
       tokens.push({ type: 'number', value: numMatch[0] });
       lastType = 'number';
       i += numMatch[0].length;
-      continue;
-    }
-
-    // Subscripts inherit from previous
-    if (SUBSCRIPTS.includes(char)) {
-      tokens.push({ type: lastType, value: char });
-      i++;
       continue;
     }
 
@@ -280,6 +285,13 @@ function tokenize(code: string): Token[] {
       continue;
     }
 
+    // Subscripts inherit from previous (checked last so function chars like ₑ, ₙ match first)
+    if (SUBSCRIPTS.includes(char)) {
+      tokens.push({ type: lastType, value: char });
+      i++;
+      continue;
+    }
+
     // Default
     tokens.push({ type: 'default', value: char });
     i++;
@@ -289,26 +301,17 @@ function tokenize(code: string): Token[] {
 }
 
 function getTokenClass(type: TokenType): string | null {
-  switch (type) {
-    case 'monadic':
-      return 'uiua-monadic';
-    case 'dyadic':
-      return 'uiua-dyadic';
-    case 'mod1':
-      return 'uiua-mod1';
-    case 'mod2':
-      return 'uiua-mod2';
-    case 'number':
-      return 'uiua-number';
-    case 'string':
-      return 'uiua-string';
-    case 'comment':
-      return 'uiua-comment';
-    case 'stack':
-      return 'uiua-stack';
-    default:
-      return null;
-  }
+  return match(type)
+    .with('monadic', () => 'uiua-monadic')
+    .with('dyadic', () => 'uiua-dyadic')
+    .with('mod1', () => 'uiua-mod1')
+    .with('mod2', () => 'uiua-mod2')
+    .with('number', () => 'uiua-number')
+    .with('string', () => 'uiua-string')
+    .with('comment', () => 'uiua-comment')
+    .with('stack', () => 'uiua-stack')
+    .with('default', () => null)
+    .exhaustive();
 }
 
 /**
