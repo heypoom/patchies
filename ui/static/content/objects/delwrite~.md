@@ -3,9 +3,7 @@ Write to a named delay line. Creates a circular buffer that can be read by delre
 ## Usage
 
 ```txt
-osc~ 440 → delwrite~ mydelay
-              ↑
-           1000 (size in ms)
+osc~ 440 → delwrite~ mydelay 1000
 ```
 
 Multiple delread~ or delread4~ objects can tap the same delay line at different times.
