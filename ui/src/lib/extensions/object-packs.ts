@@ -125,34 +125,23 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Signal Generators',
     description: 'Oscillators and signal generators',
     icon: 'AudioLines',
-    objects: ['osc~', 'noise~', 'pink~', 'phasor~', 'pulse~', 'sig~']
-  },
-  {
-    id: 'signal-processors',
-    name: 'Signal Processors',
-    description: 'DSP operators and programs',
-    icon: 'Activity',
     objects: [
-      'elem~',
-      'expr~',
-      'fexpr~',
-      'dsp~',
-      'snapshot~',
-      'samphold~',
-      'bang~',
-      'latch~',
-      'threshold~',
+      'osc~',
+      'noise~',
+      'pink~',
+      'phasor~',
+      'pulse~',
+      'sig~',
       'line~',
       'vline~',
       'adsr~',
-      'env~',
       'adsr'
     ]
   },
   {
-    id: 'audio-filters',
-    name: 'Audio Filters',
-    description: 'Filters and effects processing',
+    id: 'audio-effects',
+    name: 'Filters & Effects',
+    description: 'Signal filters, dynamics, and effects',
     icon: 'SlidersHorizontal',
     objects: [
       'lowpass~',
@@ -170,15 +159,12 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'comb~',
       'vcf~',
       'biquad~',
-      'slop~',
-      'delwrite~',
-      'delread~',
-      'delread4~'
+      'slop~'
     ]
   },
   {
-    id: 'audio-math',
-    name: 'Audio Math',
+    id: 'signal-math',
+    name: 'Signal Math',
     description: 'Signal arithmetic and shaping',
     icon: 'Calculator',
     objects: [
@@ -204,11 +190,39 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     ]
   },
   {
+    id: 'signal-processors',
+    name: 'Signal Processors',
+    description: 'DSP operators and programs',
+    icon: 'Activity',
+    objects: [
+      'elem~',
+      'expr~',
+      'fexpr~',
+      'dsp~',
+      'snapshot~',
+      'samphold~',
+      'bang~',
+      'latch~',
+      'threshold~',
+      'env~'
+    ]
+  },
+  {
     id: 'audio-samples',
-    name: 'Audio Sampling',
-    description: 'Sample playback and tables',
-    icon: 'FileAudio',
-    objects: ['sampler~', 'table', 'tabwrite~', 'tabread~', 'tabread4~', 'tabosc4~']
+    name: 'Buffers & Tables',
+    description: 'Sample playback, tables, and delay lines',
+    icon: 'FileHeadphone',
+    objects: [
+      'sampler~',
+      'table',
+      'tabwrite~',
+      'tabread~',
+      'tabread4~',
+      'tabosc4~',
+      'delwrite~',
+      'delread~',
+      'delread4~'
+    ]
   },
   {
     id: 'ai',
