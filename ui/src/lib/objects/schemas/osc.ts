@@ -17,7 +17,8 @@ export const oscSchema: ObjectSchema = {
     {
       id: 'frequency',
       description: 'Frequency control',
-      messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }]
+      messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }],
+      isAudioParam: true
     },
     {
       id: 'type',

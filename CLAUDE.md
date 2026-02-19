@@ -247,6 +247,15 @@ Object schemas for docs are **generated at build time** via `bun run generate:sc
 
 Without step 3, the field won't appear in the generated schemas even if it's in the source data.
 
+### Manual Schema Override Gotcha
+
+Manual schemas in `src/lib/objects/schemas/*.ts` **override** generated schemas in `objectSchemas` (see `index.ts`). If you add a field like `isAudioParam` to a V2 node class, it won't appear in docs if there's a manual schema override for that object type.
+
+Check `src/lib/objects/schemas/index.ts` for manual overrides like `'osc~': oscSchema`. Either:
+
+1. Remove the manual override to use the generated schema, OR
+2. Add the field to the manual schema file
+
 ## Audio V2 Migration
 
 **Pattern**: V2 nodes are self-contained classes implementing `AudioNodeV2` interface.
