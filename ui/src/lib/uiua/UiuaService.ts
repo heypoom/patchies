@@ -47,8 +47,14 @@ export class UiuaService {
       this.loadPromise = this.loadModule();
     }
 
-    this.module = await this.loadPromise;
-    this._isLoaded = true;
+    try {
+      this.module = await this.loadPromise;
+      this._isLoaded = true;
+    } catch (error) {
+      // Clear the failed promise so future calls will retry
+      this.loadPromise = null;
+      throw error;
+    }
   }
 
   private async loadModule(): Promise<UiuaModule> {
@@ -105,12 +111,15 @@ export class UiuaService {
 
   /**
    * Substitute $N placeholders with values and evaluate
+   * Only supports $1-$9 (single-digit placeholders)
    */
   async evalWithValues(code: string, values: unknown[]): Promise<UiuaResult> {
-    // Replace $1, $2, etc. with actual values
+    // Replace in descending order ($9 first, then $8, etc.) to avoid
+    // prefix collisions (e.g., replacing $1 before $10 would corrupt $10)
     let substituted = code;
+    const maxIndex = Math.min(values.length, 9);
 
-    for (let i = 0; i < values.length; i++) {
+    for (let i = maxIndex - 1; i >= 0; i--) {
       const placeholder = `$${i + 1}`;
       const value = values[i];
 
@@ -150,6 +159,11 @@ export class UiuaService {
       const items = value.map((v) => this.toUiuaValue(v)).join(' ');
 
       return `[${items}]`;
+    }
+
+    // UIUA uses 1/0 for booleans
+    if (typeof value === 'boolean') {
+      return value ? '1' : '0';
     }
 
     // Fallback: convert to string

@@ -35,15 +35,16 @@
   const customConsole = createCustomConsole(nodeId);
   const uiuaService = UiuaService.getInstance();
 
-  // Parse $N placeholders to determine inlet count
+  // Parse $N placeholders to determine inlet count (only $1-$9 supported)
   const inletCount = $derived.by(() => {
     if (!expr.trim()) return 1;
 
-    const dollarVarPattern = /\$(\d+)/g;
+    // Only match single-digit non-zero references ($1 through $9)
+    const dollarVarPattern = /\$([1-9])/g;
     const matches = [...expr.matchAll(dollarVarPattern)];
     const maxIndex = Math.max(0, ...matches.map((m) => parseInt(m[1])));
 
-    return Math.max(1, Math.min(maxIndex, 9));
+    return Math.max(1, maxIndex);
   });
 
   // Handle incoming messages
