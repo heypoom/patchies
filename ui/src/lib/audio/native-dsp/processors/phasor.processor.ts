@@ -11,7 +11,7 @@ defineDSP({
   }),
 
   recv(state, data, inlet) {
-    // Phase reset (inlet 1) - frequency is handled via AudioParam
+    // Phase set (inlet 1) - frequency is handled via AudioParam
     if (inlet === 1) {
       const phase = parseFloat(data as string);
 

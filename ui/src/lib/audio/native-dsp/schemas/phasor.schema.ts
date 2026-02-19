@@ -17,11 +17,11 @@ export const PhasorPortSchema: DspPortSchema = {
     {
       name: 'phase',
       type: 'float',
-      description: 'Phase reset (0 to 1)',
+      description: 'Phase set (0 to 1)',
       defaultValue: 0,
       maxPrecision: 3,
       hideTextParam: true,
-      messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }]
+      messages: [{ schema: Type.Number(), description: 'Phase set value (0 to 1)' }]
     }
   ],
   outlets: [
