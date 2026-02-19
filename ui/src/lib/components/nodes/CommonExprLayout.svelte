@@ -20,6 +20,7 @@
     displayPrefix,
     editorClass = 'common-expr-node-code-editor',
     previewContainerClass = '',
+    class: className = '',
     onExpressionChange = () => {},
     onRun = () => {},
     exitOnRun = true,
@@ -40,6 +41,7 @@
     displayPrefix?: string;
     editorClass?: string;
     previewContainerClass?: string;
+    class?: string;
     onRun?: () => void;
     onExpressionChange?: (expr: string) => void;
     exitOnRun?: boolean;
@@ -128,9 +130,13 @@
   }
 
   const containerClass = $derived.by(() => {
-    if (hasError) return '!border-red-500 object-container';
+    const base = hasError
+      ? '!border-red-500 object-container'
+      : selected
+        ? 'object-container-selected'
+        : 'object-container';
 
-    return selected ? 'object-container-selected' : 'object-container';
+    return className ? `${base} ${className}` : base;
   });
 
   export function focus() {
@@ -205,13 +211,16 @@
                 {#if expr || displayPrefix}
                   <span class="flex max-w-[400px] overflow-hidden">
                     {#if displayPrefix}
-                      <span class={['text-xs', expr ? 'mr-2 text-zinc-400' : 'text-zinc-200']}
-                        >{displayPrefix}</span
+                      <span
+                        class={[
+                          'expr-preview-display-prefix text-xs',
+                          expr ? 'mr-2 text-zinc-400' : 'text-zinc-200'
+                        ]}>{displayPrefix}</span
                       >
                     {/if}
 
                     {#if expr}
-                      <code class="text-xs whitespace-pre">
+                      <code class="expr-preview-code text-xs whitespace-pre">
                         {@html highlightedHtml}
                       </code>
                     {/if}

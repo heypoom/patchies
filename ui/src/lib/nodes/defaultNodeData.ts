@@ -244,5 +244,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('send.vdo', () => ({ channel: 'foo' }))
     .with('recv.vdo', () => ({ channel: 'foo' }))
     .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))
+    .with('uiua', () => ({ expr: '', showConsole: false }))
     .otherwise(() => ({}));
 }

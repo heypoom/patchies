@@ -97,7 +97,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Low Level',
     description: 'Low level virtual machines',
     icon: 'Cpu',
-    objects: ['uxn', 'asm', 'asm.mem']
+    objects: ['uxn', 'asm', 'asm.mem', 'uiua']
   },
   {
     id: 'midi',
