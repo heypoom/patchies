@@ -11,6 +11,8 @@ Alias: `float`
 
 - `f <initial>` - Set initial value (e.g., `f 3.14` starts with value 3.14)
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/float)._
+
 ## See Also
 
 - [i](/docs/objects/i) - integer accumulator

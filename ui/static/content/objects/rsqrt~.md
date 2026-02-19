@@ -14,6 +14,8 @@ Returns 0 for non-positive input values.
 
 Commonly used for vector normalization and distance calculations. More efficient than computing `sqrt~` then dividing, as it's a single operation.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/rsqrt~)._
+
 ## See Also
 
 - [sqrt~](/docs/objects/sqrt~) - square root

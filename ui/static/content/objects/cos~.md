@@ -30,6 +30,8 @@ Essential for frequency/phase modulation synthesis:
            [out~]
 ```
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/cos~)._
+
 ## See Also
 
 - [phasor~](/docs/objects/phasor~) - phase ramp generator

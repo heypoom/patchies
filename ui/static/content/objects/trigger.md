@@ -1,8 +1,12 @@
-The `trigger` object (or `t` for short) is essential for controlling message flow in your patch. It takes any incoming message and outputs it through multiple outlets in **right-to-left order**.
+The `trigger` object (or `t` for short) is essential for controlling
+message flow in your patch. It takes any incoming message and outputs
+it through multiple outlets in **right-to-left order**.
 
 ## Why Right-to-Left?
 
-We need to set up values _before_ triggering an action. Objects with hot-cold inlets like `expr` and `map` require values in cold inlets before the hot inlet triggers.
+We need to set up values _before_ triggering an action. Objects with
+hot-cold inlets like `expr` and `map` require values in cold inlets
+before the hot inlet triggers.
 
 ## Usage
 
@@ -20,14 +24,18 @@ t <type1> <type2> ...
 
 ## Hot/Cold Inlet Pattern
 
-The right-to-left order is crucial for setting up cold inlets before triggering hot inlets:
+The right-to-left order is crucial for setting up cold inlets
+before triggering hot inlets:
 
 ```text
 [slider] ──┬──► [t b a] ──► outlet 0 (bang) ──► expr inlet 0 (hot)
            │           └──► outlet 1 (value) ──► expr inlet 1 (cold)
 ```
 
-The trigger ensures the value reaches the cold inlet (`$2`) before the bang triggers the hot inlet (`$1`).
+The trigger ensures the value reaches the cold inlet (`$2`)
+before the bang triggers the hot inlet (`$1`).
+
+_Inspired by [Pure Data](https://pd.iem.sh/objects/trigger)._
 
 ## See Also
 

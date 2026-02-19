@@ -22,6 +22,8 @@ The frequency inlet accepts a signal, so you can sweep the filter with LFOs, env
 
 Higher Q values create a sharper, more resonant peak. Values above 10 produce strong resonance. The filter can self-oscillate at very high Q.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/vcf~)._
+
 ## See Also
 
 - [bandpass~](/docs/objects/bandpass~) - message-rate bandpass filter

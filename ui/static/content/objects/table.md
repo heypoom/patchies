@@ -13,6 +13,8 @@ table mybuf 1024
 The name is shared — any `tabwrite~`, `tabread~`, or `tabread4~`
 using the same name will access the same array.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/table)._
+
 ## See Also
 
 - [tabwrite~](/docs/objects/tabwrite~) — write audio into an array

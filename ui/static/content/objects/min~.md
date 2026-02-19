@@ -12,6 +12,8 @@ Pairs with `max~` for clamping a signal to a range.
 Pass a number as a creation argument to set a constant
 threshold (e.g. `min~ 0.5`).
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/min~)._
+
 ## See Also
 
 - [max~](/docs/objects/max~) - per-sample maximum

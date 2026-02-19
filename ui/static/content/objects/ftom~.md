@@ -14,6 +14,8 @@ Connect a signal containing frequencies in Hz to get the corresponding MIDI note
 
 Useful for pitch detection, pitch tracking, or analyzing frequency content in terms of musical notes.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/ftom~)._
+
 ## See Also
 
 - [mtof~](/docs/objects/mtof~) - MIDI to frequency (inverse)

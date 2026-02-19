@@ -25,6 +25,8 @@ phasor~ 86 → *~ 512 → tabread~ mybuf → out~
 `phasor~` ramps 0→1 at 86Hz, `*~` scales to 0→512 (the table
 size), and `tabread~` outputs the stored sample at that index.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/tabread~)._
+
 ## See Also
 
 - [table](/docs/objects/table) — create a named array

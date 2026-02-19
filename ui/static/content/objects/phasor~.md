@@ -8,6 +8,8 @@ Sawtooth ramp oscillator. Outputs a signal that ramps from 0 to 1 at the given f
 
 Useful as a phase source for waveshaping, FM synthesis, or driving other signal processors. Positive frequency values generate upwards ramps and negative values generate downwards ramps.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/phasor~)._
+
 ## See Also
 
 - [osc~](/docs/objects/osc~) - standard oscillator with waveform types

@@ -149,3 +149,5 @@ browser to create pre-configured expr~ nodes:
 
 - [dsp~](/docs/objects/dsp~) - JavaScript DSP processor
 - [expr](/docs/objects/expr) - control-rate expression evaluator
+
+_Inspired by [Pure Data](https://pd.iem.sh/objects/expr~)._

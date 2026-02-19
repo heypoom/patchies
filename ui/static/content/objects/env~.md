@@ -14,6 +14,8 @@ The default analysis window is 1024 samples. Set a smaller window for faster res
 
 Useful for amplitude-following effects, ducking, or visualizing signal levels.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/env~)._
+
 ## See Also
 
 - [snapshot~](/docs/objects/snapshot~) - sample signal on bang

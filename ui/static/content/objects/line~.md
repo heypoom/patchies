@@ -24,6 +24,8 @@ Or set ramp time via the right inlet, then send target:
 
 Send `stop` to freeze at the current value.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/line~)._
+
 ## See Also
 
 - [vline~](/docs/objects/vline~) - sample-accurate scheduled ramps

@@ -14,6 +14,8 @@ Returns 0 for negative input values (real square root only).
 
 Useful for amplitude calculations, distance computations, and signal shaping. Often combined with other math operators.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/sqrt~)._
+
 ## See Also
 
 - [pow~](/docs/objects/pow~) - power function

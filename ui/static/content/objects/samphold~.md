@@ -14,6 +14,8 @@ phasor~ → samphold~ → out~
 
 This creates a random stepped signal that updates every phasor cycle.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/samphold~)._
+
 ## See Also
 
 - [snapshot~](/docs/objects/snapshot~) - sample signal on bang

@@ -53,6 +53,8 @@ e.g. `add(a, b) = a + b`.
 Inlet 0 (`$1`) triggers evaluation; other inlets store values silently.
 See [Hot and Cold Inlets](/docs/hot-cold-inlets) for details.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/expr)._
+
 ## See Also
 
 - [filter](/docs/objects/filter) - conditional message passing

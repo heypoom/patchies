@@ -21,6 +21,8 @@ send('foobar', { to: 'foo' });
 
 Both visual objects and JavaScript code can share the same channels. See the [JavaScript Runner](/docs/javascript-runner) page for more on the API.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/receive)._
+
 ## See Also
 
 - [send](/docs/objects/send) - send to named channel

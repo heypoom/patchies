@@ -23,6 +23,8 @@ Send `[target, time, delay]` for delayed ramps:
 
 This queues a ramp to 1 over 100ms starting immediately, then a ramp to 0 over 200ms starting 100ms later.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/vline~)._
+
 ## See Also
 
 - [line~](/docs/objects/line~) - simple signal ramp generator

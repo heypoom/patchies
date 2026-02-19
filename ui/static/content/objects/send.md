@@ -21,6 +21,8 @@ recv((data) => console.log(data), { from: 'foo' });
 
 Both visual objects and JavaScript code can share the same channels. See the [JavaScript Runner](/docs/javascript-runner) page for more on the API.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/send)._
+
 ## See Also
 
 - [recv](/docs/objects/recv) - receive from named channel

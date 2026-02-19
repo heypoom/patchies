@@ -8,6 +8,8 @@ phasor~ 1 → pow~ 3
 
 Useful for shaping curves (exponential envelopes, gamma correction). Squaring a signal creates a parabolic waveshape.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/pow~)._
+
 ## See Also
 
 - [clip~](/docs/objects/clip~) - clamp to range

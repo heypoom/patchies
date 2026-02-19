@@ -14,6 +14,8 @@ between neighboring samples using Hermite cubic interpolation.
 This produces smoother results than `tabread~` when the index
 changes at sub-sample rates.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/tabread4~)._
+
 ## See Also
 
 - [table](/docs/objects/table) — create a named array

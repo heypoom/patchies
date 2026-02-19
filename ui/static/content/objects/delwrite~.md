@@ -13,6 +13,8 @@ Multiple delread~ or delread4~ objects can tap the same delay line at different 
 - **name**: Delay line name (string)
 - **size**: Buffer size in milliseconds (default: 1000)
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/delwrite~)._
+
 ## See Also
 
 - [delread~](/docs/objects/delread~) - read at fixed delay time

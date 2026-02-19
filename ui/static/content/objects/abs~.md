@@ -8,6 +8,8 @@ osc~ 440 → abs~
 
 Useful for envelope following, full-wave rectification, and signal analysis.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/abs~)._
+
 ## See Also
 
 - [clip~](/docs/objects/clip~) - clamp to range

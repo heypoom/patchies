@@ -5,6 +5,8 @@ Message gate that allows or blocks data based on a condition.
 - **Inlet 0**: Data to pass through (when gate is open)
 - **Inlet 1**: Gate control (truthy = open, falsy = closed)
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/spigot)._
+
 ## See Also
 
 - [filter](/docs/objects/filter) - conditional routing

@@ -11,6 +11,8 @@ Alias: `int`
 
 - `i <initial>` - Set initial value (e.g., `i 69` starts with value 69)
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/int)._
+
 ## See Also
 
 - [f](/docs/objects/f) - float accumulator

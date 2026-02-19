@@ -22,6 +22,8 @@ mic~ → env~ → threshold~
 threshold~ (trigger outlet) → your-synth
 ```
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/threshold~)._
+
 ## See Also
 
 - [snapshot~](/docs/objects/snapshot~) - sample signal value on bang

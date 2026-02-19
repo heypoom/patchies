@@ -8,6 +8,8 @@ pink~ → gain~ → out~
 
 Pink noise is useful for testing, masking, and as a modulation source. It has more bass and less treble than white noise.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/pink~)._
+
 ## See Also
 
 - [noise~](/docs/objects/noise~) - white noise generator

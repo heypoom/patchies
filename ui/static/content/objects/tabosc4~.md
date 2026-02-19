@@ -49,6 +49,8 @@ The frequency inlet accepts audio-rate modulation:
  [out~]
 ```
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/tabosc4~)._
+
 ## See Also
 
 - [table](/docs/objects/table) - create/store wavetables

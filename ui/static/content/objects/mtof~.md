@@ -14,6 +14,8 @@ Connect a signal containing MIDI note numbers (0-127) to get the corresponding f
 [osc~]        <- A4 sine wave
 ```
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/mtof~)._
+
 ## See Also
 
 - [ftom~](/docs/objects/ftom~) - frequency to MIDI (inverse)

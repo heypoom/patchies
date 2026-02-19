@@ -8,6 +8,8 @@ phasor~ 440 → *~ 2 → wrap~
 
 Essential companion to `phasor~` for phase distortion synthesis. Doubling a phasor and wrapping creates a frequency doubler.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/wrap~)._
+
 ## See Also
 
 - [phasor~](/docs/objects/phasor~) - ramp oscillator

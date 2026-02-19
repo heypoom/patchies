@@ -15,6 +15,8 @@ delread~ mydelay 100 → gain~ → out~
 
 For variable delay times (chorus, flanger effects), use delread4~ instead.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/delread~)._
+
 ## See Also
 
 - [delwrite~](/docs/objects/delwrite~) - create and write to delay line

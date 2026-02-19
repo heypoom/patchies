@@ -17,6 +17,8 @@ y[n] = ff1*x[n] + ff2*x[n-1] + ff3*x[n-2] - fb1*y[n-1] - fb2*y[n-2]
 
 With defaults (ff1=1, others=0), the filter passes audio unchanged.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/biquad~)._
+
 ## See Also
 
 - [lowpass~](/docs/objects/lowpass~) - preset lowpass filter

@@ -19,6 +19,8 @@ The delay time input is a signal, allowing smooth modulation for chorus, flanger
 - **name**: Delay line name to read from (set via message)
 - **delay**: Delay time signal in milliseconds (inlet)
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/delread4~)._
+
 ## See Also
 
 - [delwrite~](/docs/objects/delwrite~) - create and write to delay line

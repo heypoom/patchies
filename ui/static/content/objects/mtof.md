@@ -5,6 +5,8 @@ Convert MIDI note numbers to frequencies in Hz.
 - MIDI 60 (middle C) → 261.63 Hz
 - MIDI 69 (A4) → 440 Hz
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/mtof)._
+
 ## See Also
 
 - [osc~](/docs/objects/osc~) - oscillator

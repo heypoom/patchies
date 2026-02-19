@@ -12,6 +12,8 @@ tabwrite~ mybuf
 The object continuously writes incoming audio samples into the
 array in a circular fashion.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/tabwrite~)._
+
 ## See Also
 
 - [table](/docs/objects/table) — create a named array

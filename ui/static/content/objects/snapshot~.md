@@ -11,6 +11,8 @@ metro → snapshot~ → peek (shows current amplitude)
 
 Useful for monitoring signal values, creating control signals from audio, or bridging audio-rate to message-rate.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/snapshot~)._
+
 ## See Also
 
 - [bang~](/docs/objects/bang~) - emit bang on audio onset

@@ -14,6 +14,8 @@ Returns 0 for non-positive input values.
 
 Useful for converting exponential curves to linear, decibel calculations, and frequency scaling. Often paired with `exp~` for inverse operations.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/log~)._
+
 ## See Also
 
 - [exp~](/docs/objects/exp~) - exponential (inverse)
