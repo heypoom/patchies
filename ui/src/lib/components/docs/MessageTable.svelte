@@ -73,7 +73,7 @@
 
                 <TooltipContent>
                   <p class="max-w-48 text-xs">
-                    Audio parameter can be modulated at sample rate by connecting a signal
+                    Audio parameter can be modulated at sample rate by connecting a signal or ADSR
                   </p>
                 </TooltipContent>
               </Tooltip>
