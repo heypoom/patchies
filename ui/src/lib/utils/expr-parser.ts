@@ -50,6 +50,7 @@ export function parseSignalInletCount(expression: string): number {
  * Parse fexpr~ expression to find x1, x2, s1, s2, etc. and determine signal inlet count.
  * Supports both x and s prefixes (they are aliased in fexpr~).
  * Handles history access syntax like x1[-1], s1[-2].
+ * Also supports bare `s` as alias for x1 (backwards compat with expr~).
  * Returns the number of signal inlets needed.
  */
 export function parseFExprSignalInletCount(expression: string): number {
@@ -58,12 +59,18 @@ export function parseFExprSignalInletCount(expression: string): number {
   const signalVarPattern = /\b([xs])(\d+)\b/g;
   const matches = [...expression.matchAll(signalVarPattern)];
 
-  if (matches.length === 0) return 0;
+  // Also check for bare `s` (backwards compat) - must be standalone, not part of s1, s2, etc.
+  const hasBareS = /\bs\b(?!\d)/.test(expression);
+
+  if (matches.length === 0 && !hasBareS) return 0;
 
   // Find the max index used (1-indexed, so x2 means we need 2 inlets)
   const maxIndex = Math.max(0, ...matches.map((match) => parseInt(match[2])));
 
-  return Math.min(maxIndex, MAX_SIGNAL_INLETS);
+  // If we have bare `s`, we need at least 1 inlet
+  const count = hasBareS ? Math.max(1, maxIndex) : maxIndex;
+
+  return Math.min(count, MAX_SIGNAL_INLETS);
 }
 
 const parser = new Parser({
