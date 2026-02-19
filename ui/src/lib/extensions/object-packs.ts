@@ -173,9 +173,16 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['worker', 'ruby', 'python', 'wgpu.compute']
   },
   {
+    id: 'low-level',
+    name: 'Low Level',
+    description: 'Low level virtual machines',
+    icon: 'Cpu',
+    objects: ['uxn', 'asm', 'asm.mem']
+  },
+  {
     id: 'dsp',
     name: 'DSP',
-    description: 'Low-level audio signal processing',
+    description: 'Low-level signal processing',
     icon: 'Activity',
     objects: ['elem~', 'expr~', 'dsp~']
   },
@@ -185,13 +192,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'AI-powered generation nodes',
     icon: 'Brain',
     objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'tts']
-  },
-  {
-    id: 'low-level',
-    name: 'Low Level',
-    description: 'Low level virtual machines',
-    icon: 'Cpu',
-    objects: ['uxn', 'asm', 'asm.mem']
   },
   {
     id: 'experimental',
