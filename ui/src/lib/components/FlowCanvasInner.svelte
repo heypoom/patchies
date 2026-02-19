@@ -52,6 +52,7 @@
   import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
   import SavePatchModal from './dialogs/SavePatchModal.svelte';
+  import ExportPatchModal from './dialogs/ExportPatchModal.svelte';
   import LoadSharedPatchDialog from './dialogs/LoadSharedPatchDialog.svelte';
   import PatchToPromptDialog from './dialogs/PatchToPromptDialog.svelte';
   import SavePresetDialog from './presets/SavePresetDialog.svelte';
@@ -180,6 +181,9 @@
 
   // Dialog state for save patch modal
   let showSavePatchModal = $state(false);
+
+  // Dialog state for export patch modal
+  let showExportPatchModal = $state(false);
 
   // Dialog state for loading shared patch from URL
   let showLoadSharedPatchDialog = $state(false);
@@ -1062,6 +1066,7 @@
           onShowHelp={() => (showStartupModal = true)}
           onBrowseObjects={() => ($isObjectBrowserOpen = true)}
           onSavePatch={() => (showSavePatchModal = true)}
+          onExportPatch={() => (showExportPatchModal = true)}
           onLoadPatch={() => {
             $isSidebarOpen = true;
             $sidebarView = 'saves';
@@ -1172,6 +1177,9 @@
         }
       }}
     />
+
+    <!-- Export Patch Modal -->
+    <ExportPatchModal bind:open={showExportPatchModal} {nodes} {edges} />
 
     <!-- Load Shared Patch Confirmation Dialog -->
     <LoadSharedPatchDialog

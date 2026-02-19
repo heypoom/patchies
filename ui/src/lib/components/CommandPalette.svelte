@@ -15,7 +15,7 @@
   import { IpcSystem } from '$lib/canvas/IpcSystem';
   import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { serializePatch, type PatchSaveFormat } from '$lib/save-load/serialize-patch';
+  import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { createAndCopyShareLink } from '$lib/save-load/share';
   import { getSearchParam, setSearchParam } from '$lib/utils/search-params';
   import { migratePatch } from '$lib/migration';
@@ -44,6 +44,7 @@
     onGeneratePrompt?: () => void;
     onUndo?: () => void;
     onRedo?: () => void;
+    onExportPatch?: () => void;
   }
 
   let {
@@ -64,7 +65,8 @@
     onLoadPatch,
     onGeneratePrompt,
     onUndo,
-    onRedo
+    onRedo,
+    onExportPatch
   }: Props = $props();
 
   // Get the first selected node (for save as preset)
@@ -355,7 +357,10 @@
         onCancel();
         onRedo?.();
       })
-      .with('export-patch', () => saveToFile())
+      .with('export-patch', () => {
+        onCancel();
+        onExportPatch?.();
+      })
       .with('import-patch', () => loadFromFile())
       .with('save-patch', () => {
         onCancel();
@@ -476,20 +481,6 @@
       .otherwise(() => {
         console.warn(`Unknown command: ${commandId}`);
       });
-  }
-
-  function saveToFile() {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const patchJson = serializePatch({ name: patchName, nodes, edges });
-
-    const blob = new Blob([patchJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `patch-${timestamp}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    onCancel();
   }
 
   function loadFromFile() {
