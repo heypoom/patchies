@@ -1,4 +1,4 @@
-Executes [UIUA](https://www.uiua.org/) code, a stack-based array programming language.
+Executes [Uiua](https://www.uiua.org/) code, a stack-based array programming language.
 
 Use `$1`, `$2`, etc. as placeholders for inlet values
 that get substituted before evaluation.
@@ -41,9 +41,9 @@ Sum all elements in an array received at `$1`.
 
 Creates an array from 0 to n-1.
 
-## UIUA Syntax
+## Uiua Syntax
 
-UIUA uses Unicode glyphs for operations:
+Uiua uses Unicode glyphs for operations:
 
 - `+` `-` `×` `÷` - arithmetic
 - `⇡` - range (iota)
@@ -58,9 +58,9 @@ Negative numbers use `¯` (not `-`): `¯5` means -5.
 
 ## Auto-formatting
 
-Press Shift+Enter to format your code using UIUA's built-in formatter.
+Press Shift+Enter to format your code using Uiua's built-in formatter.
 
 ## See also
 
-- [UIUA documentation](https://www.uiua.org/docs)
-- [UIUA tutorial](https://www.uiua.org/tutorial/introduction)
+- [Uiua documentation](https://www.uiua.org/docs)
+- [Uiua tutorial](https://www.uiua.org/tutorial/introduction)

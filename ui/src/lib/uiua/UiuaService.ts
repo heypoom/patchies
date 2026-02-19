@@ -1,7 +1,7 @@
 /**
- * UiuaService - Lazy-loading UIUA WASM runtime
+ * UiuaService - Lazy-loading Uiua WASM runtime
  *
- * Provides evaluation and formatting of UIUA code.
+ * Provides evaluation and formatting of Uiua code.
  * The 10MB WASM module is only loaded when first needed.
  */
 
@@ -38,7 +38,7 @@ export class UiuaService {
   }
 
   /**
-   * Lazy-load the UIUA WASM module
+   * Lazy-load the Uiua WASM module
    */
   async ensureModule(): Promise<void> {
     if (this.module) return;
@@ -71,7 +71,7 @@ export class UiuaService {
   }
 
   /**
-   * Get UIUA version string
+   * Get Uiua version string
    */
   async getVersion(): Promise<string> {
     await this.ensureModule();
@@ -80,7 +80,7 @@ export class UiuaService {
   }
 
   /**
-   * Evaluate UIUA code
+   * Evaluate Uiua code
    */
   async eval(code: string): Promise<UiuaResult> {
     await this.ensureModule();
@@ -95,7 +95,7 @@ export class UiuaService {
   }
 
   /**
-   * Format UIUA code using the built-in formatter
+   * Format Uiua code using the built-in formatter
    */
   async format(code: string): Promise<UiuaFormatResult> {
     await this.ensureModule();
@@ -123,7 +123,7 @@ export class UiuaService {
       const placeholder = `$${i + 1}`;
       const value = values[i];
 
-      // Convert value to UIUA-compatible representation
+      // Convert value to Uiua-compatible representation
       const uiuaValue = this.toUiuaValue(value);
 
       substituted = substituted.replaceAll(placeholder, uiuaValue);
@@ -133,7 +133,7 @@ export class UiuaService {
   }
 
   /**
-   * Convert JavaScript value to UIUA literal
+   * Convert JavaScript value to Uiua literal
    */
   private toUiuaValue(value: unknown): string {
     if (value === null || value === undefined) {
@@ -141,7 +141,7 @@ export class UiuaService {
     }
 
     if (typeof value === 'number') {
-      // UIUA uses ¯ for negative numbers
+      // Uiua uses ¯ for negative numbers
       if (value < 0) {
         return `¯${Math.abs(value)}`;
       }
@@ -149,19 +149,19 @@ export class UiuaService {
       return String(value);
     }
 
-    // UIUA strings use double quotes
+    // Uiua strings use double quotes
     if (typeof value === 'string') {
       return `"${value.replace(/"/g, '\\"')}"`;
     }
 
-    // UIUA arrays are space-separated in brackets
+    // Uiua arrays are space-separated in brackets
     if (Array.isArray(value)) {
       const items = value.map((v) => this.toUiuaValue(v)).join(' ');
 
       return `[${items}]`;
     }
 
-    // UIUA uses 1/0 for booleans
+    // Uiua uses 1/0 for booleans
     if (typeof value === 'boolean') {
       return value ? '1' : '0';
     }

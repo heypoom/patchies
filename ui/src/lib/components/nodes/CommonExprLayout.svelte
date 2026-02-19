@@ -300,7 +300,7 @@
     font-family: var(--font-mono);
   }
 
-  /* UIUA syntax highlighting for preview */
+  /* Uiua syntax highlighting for preview */
   :global(.uiua-monadic) {
     color: #7dcfff; /* cyan - monadic functions */
   }

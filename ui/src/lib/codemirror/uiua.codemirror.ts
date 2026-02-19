@@ -1,7 +1,7 @@
 /**
- * UIUA language support for CodeMirror
+ * Uiua language support for CodeMirror
  *
- * Syntax highlighting for UIUA array programming language.
+ * Syntax highlighting for Uiua array programming language.
  * Based on syntax rules from codereport/array-box
  * https://github.com/codereport/array-box
  */

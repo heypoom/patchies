@@ -79,7 +79,7 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   orca: 'Orca livecoding environment',
   strudel: 'Strudel live coding for algorithmic patterns',
   uxn: 'UXN virtual machine',
-  uiua: 'UIUA array language with dynamic inlets',
+  uiua: 'Uiua array language with dynamic inlets',
   iframe: 'Embedded web page in iframe',
   link: 'Clickable hyperlink button',
   'merge~': 'Audio channel merger (mono to stereo)',

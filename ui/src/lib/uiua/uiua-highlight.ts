@@ -1,5 +1,5 @@
 /**
- * UIUA syntax highlighting for preview mode.
+ * Uiua syntax highlighting for preview mode.
  * Generates HTML with spans for syntax highlighting.
  * Based on syntax rules from array-box.
  */
@@ -315,7 +315,7 @@ function getTokenClass(type: TokenType): string | null {
 }
 
 /**
- * Highlight UIUA code and return HTML string.
+ * Highlight Uiua code and return HTML string.
  */
 export function highlightUiua(code: string): string {
   if (!code) return '';

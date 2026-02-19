@@ -80,7 +80,7 @@
     // Only inlet 0 (hot) triggers evaluation
     if (inlet !== 0) return;
 
-    // Evaluate UIUA expression
+    // Evaluate Uiua expression
     evaluateAndSend(nextInletValues);
   };
 
@@ -231,7 +231,7 @@
     <VirtualConsole
       bind:this={consoleRef}
       {nodeId}
-      placeholder="UIUA errors will appear here."
+      placeholder="Uiua errors will appear here."
       shouldAutoShowConsoleOnError
       shouldAutoHideConsoleOnNoError
     />
