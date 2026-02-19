@@ -148,12 +148,23 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
 
     connectFrom(
       source: AudioNodeV2,
-      _paramName?: string,
+      paramName?: string,
       _sourceHandle?: string,
       targetHandle?: string
     ): void {
       if (!this.audioNode || !source.audioNode) return;
 
+      // If connecting to an AudioParam, connect to the param directly
+      if (paramName) {
+        const audioParam = this.getAudioParam(paramName);
+
+        if (audioParam) {
+          source.audioNode.connect(audioParam);
+          return;
+        }
+      }
+
+      // Otherwise connect to audio input port
       let inputIndex = 0;
 
       // Parse handle like "audio-in-1" to get input index
@@ -176,6 +187,10 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
         message,
         inlet: resolveWorkletInlet(config.inlets, inletIndex)
       });
+    }
+
+    getAudioParam(name: string): AudioParam | null {
+      return this.audioNode?.parameters.get(name) ?? null;
     }
 
     destroy(): void {

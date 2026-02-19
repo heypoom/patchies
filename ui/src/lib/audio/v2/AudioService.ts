@@ -321,7 +321,11 @@ export class AudioService {
     }
 
     const inlet = this.getInletByHandle(edge.target, edge.targetHandle ?? null);
-    const isAudioParam = !!this.getAudioParamByNode(targetNode, inlet?.name ?? '');
+
+    // Check inlet metadata for isAudioParam (works even before audioNode exists)
+    // Fall back to checking the actual AudioParam if metadata isn't available
+    const isAudioParam =
+      inlet?.isAudioParam || !!this.getAudioParamByNode(targetNode, inlet?.name ?? '');
 
     const paramName = isAudioParam ? inlet?.name : undefined;
 

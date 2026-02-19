@@ -1,26 +1,25 @@
 import { defineDSP } from '../define-dsp';
+import { PowPortSchema } from '../schemas/pow.schema';
 
 defineDSP({
   name: 'pow~',
   audioInlets: 1,
   audioOutlets: 1,
-  state: () => ({ exponent: 2 }),
+  schema: PowPortSchema,
 
-  recv(state, data, inlet) {
-    if (inlet === 1) {
-      const val = parseFloat(data as string);
-      if (!isNaN(val)) state.exponent = val;
-    }
-  },
+  state: () => ({}),
 
-  process(state, inputs, outputs) {
+  process(_state, inputs, outputs, _send, parameters) {
     const out = outputs[0];
     const len = out[0].length;
     const channels = out.length;
+    const expParam = parameters.exponent;
 
     for (let i = 0; i < len; i++) {
+      const exponent = expParam[i];
+
       for (let ch = 0; ch < channels; ch++) {
-        out[ch][i] = Math.pow(inputs[0][ch][i], state.exponent);
+        out[ch][i] = Math.pow(inputs[0][ch][i], exponent);
       }
     }
   }

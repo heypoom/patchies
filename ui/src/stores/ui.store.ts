@@ -122,6 +122,10 @@ export const shouldShowHandles = derived(
 // This allows components outside the SvelteFlow context to see what objects are in the patch
 export const patchObjectTypes = writable<Set<string>>(new Set());
 
+// Track which inlets are connected to audio sources (for O(1) lookup in StandardHandle)
+// Set contains qualified handle IDs: `${nodeId}/${handleId}` e.g. "object-1/message-in-0"
+export const audioSourceConnections = writable<Set<string>>(new Set());
+
 // Current patch name - tracks which patch is currently being edited
 // null = untitled/new patch, string = named patch
 const storedCurrentPatchName =

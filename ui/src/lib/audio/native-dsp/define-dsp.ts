@@ -8,12 +8,27 @@
  */
 
 import { workletChannel } from './worklet-channel';
+import type { DspPortSchema } from './types';
+import { extractAudioParamDescriptors } from './types';
 
 type SendFn = (message: unknown, outlet?: number) => void;
+
+/**
+ * AudioParam values map passed to process().
+ * For a-rate params: Float32Array with per-sample values.
+ * For k-rate params: Float32Array with single value (length 1).
+ */
+export type AudioParamValues = Record<string, Float32Array>;
 
 export interface DefineDSPOptions<S> {
   /** Node type — used as processor name (e.g. 'line~' → registerProcessor('line~', ...)) */
   name: string;
+
+  /**
+   * Shared port schema with inlet/outlet definitions.
+   * AudioParams are automatically derived from inlets with isAudioParam: true.
+   */
+  schema?: DspPortSchema;
 
   /** Number of audio input ports (default: 0) */
   audioInlets?: number;
@@ -44,15 +59,30 @@ export interface DefineDSPOptions<S> {
    * This is the hot path — runs ~344 times/sec.
    *
    * inputs/outputs are pre-normalized (missing channels get silent buffers).
+   * parameters contains AudioParam values (a-rate: Float32Array[128], k-rate: Float32Array[1]).
    */
-  process: (state: S, inputs: Float32Array[][], outputs: Float32Array[][], send: SendFn) => void;
+  process: (
+    state: S,
+    inputs: Float32Array[][],
+    outputs: Float32Array[][],
+    send: SendFn,
+    parameters: AudioParamValues
+  ) => void;
 }
 
 export function defineDSP<S>(options: DefineDSPOptions<S>): void {
   const audioInletCount = options.audioInlets ?? 0;
   const inletDefaults = options.inletDefaults ?? {};
 
+  const paramDescriptors = options.schema
+    ? extractAudioParamDescriptors(options.schema.inlets)
+    : [];
+
   class NativeDSPProcessor extends AudioWorkletProcessor {
+    static get parameterDescriptors() {
+      return paramDescriptors;
+    }
+
     private state: S;
     private shouldStop = false;
     private nodeId: string;
@@ -131,11 +161,15 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
       if (buf) buf.fill(value);
     }
 
-    process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    process(
+      inputs: Float32Array[][],
+      outputs: Float32Array[][],
+      parameters: Record<string, Float32Array>
+    ): boolean {
       if (this.shouldStop) return false;
 
       const normalized = this.normalizeInputs(inputs, outputs);
-      options.process(this.state, normalized, outputs, this.send);
+      options.process(this.state, normalized, outputs, this.send, parameters);
 
       return true;
     }

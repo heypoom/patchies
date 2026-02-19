@@ -31,7 +31,8 @@
     patchObjectTypes,
     currentPatchName,
     helpModeObject,
-    selectedNodeInfo
+    selectedNodeInfo,
+    audioSourceConnections
   } from '../../stores/ui.store';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -69,6 +70,7 @@
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
+  import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
 
   import { toast } from 'svelte-sonner';
   import { initializeVFS } from '$lib/vfs';
@@ -274,6 +276,7 @@
     workerNodeSystem.updateVideoConnections(edges);
     directChannelService.updateEdges(edges);
     workletDirectChannelService.updateEdges(edges);
+    audioSourceConnections.set(buildAudioSourceConnections(edges));
   });
 
   // Keep DirectChannelService informed of node types for direct messaging
