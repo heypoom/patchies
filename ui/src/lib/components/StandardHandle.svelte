@@ -128,8 +128,9 @@
     const dimClass = shouldDim ? 'handle-dimmed' : '';
     const sourceHighlightClass = isSourceHandle ? 'handle-source' : '';
     const hotClass = isHot ? 'handle-hot' : '';
+    const audioParamClass = isAudioParam ? 'handle-audio-param' : '';
 
-    return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${sourceHighlightClass} ${hotClass} ${className}`;
+    return `!absolute z-1 ${colorClass} ${connectionModeClass} ${dimClass} ${sourceHighlightClass} ${hotClass} ${audioParamClass} ${className}`;
   });
 </script>
 
@@ -139,7 +140,7 @@
   id={handleId}
   class={handleClass}
   style={positionStyle}
-  {title}
+  title={isAudioParam ? `${title} (a-rate)` : title}
 />
 
 <style>
@@ -205,5 +206,10 @@
   /* Hot inlet indicator (Max/Pd style) - subtle hover */
   :global(.svelte-flow__handle.handle-hot:hover) {
     box-shadow: 0 0 0 2px rgba(255, 165, 45, 0.4);
+  }
+
+  /* AudioParam inlet indicator - blue ring on hover */
+  :global(.svelte-flow__handle.handle-audio-param:hover) {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
   }
 </style>
