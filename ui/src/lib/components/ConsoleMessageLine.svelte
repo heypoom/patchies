@@ -85,7 +85,7 @@
   {/if}
 
   <div class="console-content mt-[1px] min-w-0 flex-1">
-    <div class="flex flex-col items-start gap-x-2">
+    <div class="flex flex-wrap items-start gap-x-2">
       {#if styledSegments}
         <!-- Render %c styled message -->
         <span class="break-words whitespace-pre-wrap">
