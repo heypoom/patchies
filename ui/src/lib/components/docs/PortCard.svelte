@@ -27,18 +27,8 @@
       ]}
     >
       <div>
-        <div
-          class={[
-            'flex items-center gap-1.5 font-mono text-zinc-200',
-            compact ? 'text-xs' : 'text-sm'
-          ]}
-        >
+        <div class={['font-mono text-zinc-200', compact ? 'text-xs' : 'text-sm']}>
           {port.id}
-          {#if isAudioParam}
-            <span class="rounded bg-blue-500/20 px-1 text-[10px] font-light text-blue-400"
-              >a-rate</span
-            >
-          {/if}
         </div>
 
         <div class={['text-zinc-400', compact ? 'mt-0.5 text-[11px]' : 'mt-1 text-sm']}>
@@ -55,21 +45,14 @@
           messages={port.messages ?? []}
           class={compact ? 'mt-2 text-[11px]' : 'mt-3'}
           {compact}
+          {isAudioParam}
         />
       </div>
     {/if}
   {:else}
     <div class={compact ? 'p-2' : 'p-3'}>
-      <div
-        class={[
-          'flex items-center gap-1.5 font-mono text-zinc-200',
-          compact ? 'text-xs' : 'text-sm'
-        ]}
-      >
+      <div class={['font-mono text-zinc-200', compact ? 'text-xs' : 'text-sm']}>
         {port.id}
-        {#if isAudioParam}
-          <span class="rounded bg-blue-500/20 px-1 text-[10px] font-medium text-blue-400">~</span>
-        {/if}
       </div>
       <div class={['text-zinc-400', compact ? 'mt-0.5 text-[11px]' : 'mt-1 text-sm']}>
         {port.description}

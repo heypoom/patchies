@@ -1,15 +1,22 @@
 <script lang="ts">
   import { ChevronRight } from '@lucide/svelte/icons';
   import type { MessageSchema } from '$lib/objects/schemas/types';
-  import { schemaToHtml, isComplexSchema, getSchemaTypeName } from '$lib/objects/schemas/utils';
+  import {
+    schemaToHtml,
+    schemaToString,
+    isComplexSchema,
+    getSchemaTypeName
+  } from '$lib/objects/schemas/utils';
+  import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
   interface Props {
     messages: MessageSchema[];
     class?: string;
     compact?: boolean;
+    isAudioParam?: boolean;
   }
 
-  let { messages, class: className = '', compact = false }: Props = $props();
+  let { messages, class: className = '', compact = false, isAudioParam = false }: Props = $props();
 
   // Track which complex messages are expanded (by index)
   let expanded = $state<Set<number>>(new Set());
@@ -54,6 +61,22 @@
                   <span>{typeName}</span>
                 </code>
               </button>
+            {:else if isAudioParam}
+              <Tooltip>
+                <TooltipTrigger>
+                  <code
+                    class="cursor-help rounded bg-blue-500/20 px-1.5 py-0.5 text-xs whitespace-nowrap text-blue-400"
+                  >
+                    {schemaToString(msg.schema)}~
+                  </code>
+                </TooltipTrigger>
+
+                <TooltipContent>
+                  <p class="max-w-48 text-xs">
+                    Audio parameter can be modulated at sample rate by connecting a signal
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             {:else}
               <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs whitespace-nowrap">
                 {@html schemaToHtml(msg.schema)}
