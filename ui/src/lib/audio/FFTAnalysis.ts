@@ -102,7 +102,7 @@ export class FFTAnalysis {
 
   getEnergy(frequency1: number | FrequencyRangeKey = 0, frequency2?: number): number {
     const nyquist = this.sampleRate / 2;
-    const freqDomain = this.a;
+    const freqDomain = this.f; // Normalized to 0-1 range
 
     if (typeof frequency1 === 'string') {
       const range = FREQUENCY_RANGES[frequency1];

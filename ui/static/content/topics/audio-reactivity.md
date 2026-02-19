@@ -46,11 +46,11 @@ The `fft()` function returns an `FFTAnalysis` instance:
 | `fft().rms` | RMS amplitude (float, 0-1). Uses time-domain signal for `wave` mode, spectral energy for `freq` mode |
 | `fft().avg` | Average level (float) |
 | `fft().centroid` | Spectral centroid (float) |
-| `fft().getEnergy('bass')` | Energy in frequency range (0-255) |
+| `fft().getEnergy('bass')` | Energy in frequency range (0-1) |
 
 Frequency ranges: `bass`, `lowMid`, `mid`, `highMid`, `treble`
 
-Custom range: `fft().getEnergy(40, 200) / 255`
+Custom range: `fft().getEnergy(40, 200)`
 
 ## Where to Call fft()
 
@@ -61,7 +61,7 @@ Custom range: `fft().getEnergy(40, 200) / 255`
 
 ```javascript
 // Hydra example
-let a = () => fft().getEnergy("bass") / 255;
+let a = () => fft().getEnergy("bass");
 osc(10, 0, () => a() * 4).out()
 ```
 
@@ -97,7 +97,7 @@ osc(10, 0, () => a() * 4).out()
 | `p5.FFT` | `fft()` |
 | `fft.analyze()` | (not needed) |
 | `fft.waveform()` | `fft({ format: 'float' }).a` |
-| `fft.getEnergy('bass')` | `fft().getEnergy('bass') / 255` |
+| `fft.getEnergy('bass')` | `fft().getEnergy('bass')` |
 | `fft.getCentroid()` | `fft().centroid` |
 
 ## See Also
