@@ -90,7 +90,7 @@
           <li class="flex items-start gap-2">
             <BookOpen class="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
             <span>
-              <a href="/docs" target="_blank" class="text-orange-300 hover:underline"
+              <a href="/docs/adding-objects" target="_blank" class="text-orange-300 hover:underline"
                 >Read the guide</a
               > to learn the basics.
             </span>
@@ -121,7 +121,7 @@
       <h2 class="text-sm font-semibold text-zinc-200">Resources</h2>
       <div class="flex gap-4">
         <a
-          href="/docs"
+          href="/docs/adding-objects"
           target="_blank"
           rel="noopener noreferrer"
           class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
