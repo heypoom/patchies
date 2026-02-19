@@ -6,4 +6,5 @@ export type SupportedLanguage =
   | 'ruby'
   | 'markdown'
   | 'plain'
-  | 'assembly';
+  | 'assembly'
+  | 'uiua';

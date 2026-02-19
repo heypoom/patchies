@@ -78,6 +78,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | textmode.js                       | ^0.8.1       | MIT                    |
 | three                             | ^0.172.0     | MIT                    |
 | tone                              | ^15.1.22     | MIT                    |
+| uiua (WASM)                       | 0.15.0-dev   | MIT                    |
 | ts-pattern                        | ^5.8.0       | MIT                    |
 | uxn.wasm                          | ^0.9.0       | MIT                    |
 | vite-plugin-pwa                   | ^0.21.1      | MIT                    |

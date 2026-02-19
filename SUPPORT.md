@@ -178,6 +178,16 @@ A JavaScript framework for building user interfaces with a focus on developer ex
 
 ---
 
+### Uiua
+
+**Projects:** Uiua
+
+Creator of Uiua, a stack-based array programming language with a rich Unicode syntax designed for expressiveness and beauty.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/uiua-lang)
+
+---
+
 ### Tailwind Labs
 
 **Projects:** Tailwind CSS, @tailwindcss/browser

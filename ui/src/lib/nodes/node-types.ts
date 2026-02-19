@@ -80,6 +80,7 @@ import SendVideoNode from '$lib/components/nodes/SendVideoNode.svelte';
 import RecvVideoNode from '$lib/components/nodes/RecvVideoNode.svelte';
 import PostItNode from '$lib/components/nodes/PostItNode.svelte';
 import ScopeNode from '$lib/components/nodes/ScopeNode.svelte';
+import UiuaNode from '$lib/components/nodes/UiuaNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -164,7 +165,8 @@ export const nodeTypes: Record<string, any> = {
   'send.vdo': SendVideoNode,
   'recv.vdo': RecvVideoNode,
   note: PostItNode,
-  'scope~': ScopeNode
+  'scope~': ScopeNode,
+  uiua: UiuaNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

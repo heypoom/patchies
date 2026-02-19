@@ -45,6 +45,7 @@ export * from './worker';
 export * from './vue';
 export * from './dom';
 export * from './uxn';
+export * from './uiua';
 export * from './ruby';
 export * from './python';
 export * from './expr';
@@ -124,6 +125,7 @@ import { workerSchema } from './worker';
 import { vueSchema } from './vue';
 import { domSchema } from './dom';
 import { uxnSchema } from './uxn';
+import { uiuaSchema } from './uiua';
 import { rubySchema } from './ruby';
 import { pythonSchema } from './python';
 import { exprSchema } from './expr';
@@ -212,6 +214,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   vue: vueSchema,
   dom: domSchema,
   uxn: uxnSchema,
+  uiua: uiuaSchema,
   ruby: rubySchema,
   python: pythonSchema,
   expr: exprSchema,

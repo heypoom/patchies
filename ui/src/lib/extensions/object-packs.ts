@@ -95,9 +95,9 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'low-level',
     name: 'Low Level',
-    description: 'Low level virtual machines',
+    description: 'Low level VMs & languages',
     icon: 'Cpu',
-    objects: ['uxn', 'asm', 'asm.mem']
+    objects: ['uxn', 'asm', 'asm.mem', 'uiua']
   },
   {
     id: 'midi',
@@ -210,7 +210,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'audio-samples',
     name: 'Buffers & Tables',
-    description: 'Sample playback, tables, and delay lines',
+    description: 'Sample playback, tables and delay',
     icon: 'FileHeadphone',
     objects: [
       'sampler~',
