@@ -78,6 +78,9 @@ import { Tabosc4Node } from '$lib/audio/native-dsp/nodes/tabosc4.node';
 import { VcfNode } from '$lib/audio/native-dsp/nodes/vcf.node';
 import { BiquadNode } from '$lib/audio/native-dsp/nodes/biquad.node';
 import { SlopNode } from '$lib/audio/native-dsp/nodes/slop.node';
+import { DelwriteNode } from '$lib/audio/native-dsp/nodes/delwrite.node';
+import { DelreadNode } from '$lib/audio/native-dsp/nodes/delread.node';
+import { Delread4Node } from '$lib/audio/native-dsp/nodes/delread4.node';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -159,7 +162,10 @@ export const AUDIO_NODES = [
   Tabosc4Node,
   VcfNode,
   BiquadNode,
-  SlopNode
+  SlopNode,
+  DelwriteNode,
+  DelreadNode,
+  Delread4Node
 ] as const satisfies AudioNodeClass[];
 
 /**

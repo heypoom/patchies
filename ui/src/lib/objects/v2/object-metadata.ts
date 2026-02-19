@@ -69,6 +69,14 @@ export interface ObjectInlet {
   hideInlet?: boolean;
 
   /**
+   * For hidden float inlets that control a signal inlet's constant value.
+   * Specifies which signal inlet index this float controls.
+   * Example: `*~ 0.5` has a hidden float at index 2 that controls signal inlet 1.
+   * Set to 1 so the float value is sent to the worklet as inlet 1.
+   */
+  controlsSignalInlet?: number;
+
+  /**
    * When true, the text parameter display is hidden from the node label.
    * The parameter still functions normally and can be set via messages.
    */

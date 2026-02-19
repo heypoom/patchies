@@ -18,7 +18,10 @@ import {
   Code,
   Cpu,
   FlaskConical,
-  Package
+  Package,
+  Route,
+  Calculator,
+  FileHeadphone
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 
@@ -47,5 +50,8 @@ export function getPackIcon(iconName: string) {
     .with('Code', () => Code)
     .with('Cpu', () => Cpu)
     .with('FlaskConical', () => FlaskConical)
+    .with('Route', () => Route)
+    .with('Calculator', () => Calculator)
+    .with('FileHeadphone', () => FileHeadphone)
     .otherwise(() => Package);
 }
