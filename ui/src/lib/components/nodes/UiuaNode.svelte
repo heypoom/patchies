@@ -224,6 +224,7 @@
     exitOnRun={false}
     runOnExit
     {hasError}
+    dataKey="expr"
   />
 
   <div class:hidden={!data.showConsole}>
@@ -246,6 +247,6 @@
   :global(.uiua-display .expr-preview .expr-preview-code) {
     --default-mono-font-family: 'Uiua';
     font-family: 'Uiua', 'IBM Plex Mono', monospace !important;
-    line-height: 14px;
+    line-height: 17px;
   }
 </style>

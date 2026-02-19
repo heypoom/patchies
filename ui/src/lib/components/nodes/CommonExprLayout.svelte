@@ -12,6 +12,31 @@
 
   hljs.registerLanguage('javascript', javascript);
 
+  // Track preview element size to avoid layout shift when switching to editor
+  let previewEl: HTMLDivElement | null = $state(null);
+  let capturedSize: { width: number; height: number } | null = $state(null);
+
+  $effect(() => {
+    if (!previewEl) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        // Use borderBoxSize for full dimensions including padding/border
+        const box = entry.borderBoxSize[0];
+        if (box) {
+          capturedSize = {
+            width: box.inlineSize,
+            height: box.blockSize
+          };
+        }
+      }
+    });
+
+    observer.observe(previewEl);
+    return () => observer.disconnect();
+  });
+
   let {
     nodeId,
     data,
@@ -31,6 +56,7 @@
     extraExtensions = [],
     hasError = false,
     allowEmptyExpr = false,
+    dataKey = 'expr',
     children,
     handles,
     outlets
@@ -56,6 +82,7 @@
     children?: any;
     handles?: any;
     outlets?: any;
+    dataKey?: string;
   } = $props();
 
   const { updateNodeData, deleteElements } = useSvelteFlow();
@@ -182,6 +209,9 @@
                 'expr-editor-container nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
                 containerClass
               ]}
+              style={capturedSize
+                ? `min-width: ${capturedSize.width}px; min-height: ${capturedSize.height}px`
+                : undefined}
             >
               <CodeEditor
                 value={expr}
@@ -215,11 +245,12 @@
                   ...extraExtensions
                 ]}
                 {nodeId}
-                dataKey="expr"
+                {dataKey}
               />
             </div>
           {:else}
             <div
+              bind:this={previewEl}
               ondblclick={handleDoubleClick}
               class={[
                 'expr-display cursor-pointer rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
