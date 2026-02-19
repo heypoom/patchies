@@ -1,33 +1,35 @@
 import { defineDSP } from '../define-dsp';
+import { PhasorPortSchema } from '../schemas/phasor.schema';
 
 defineDSP({
   name: 'phasor~',
   audioOutlets: 1,
+  schema: PhasorPortSchema,
 
   state: () => ({
-    phase: 0,
-    frequency: 0
+    phase: 0
   }),
 
   recv(state, data, inlet) {
-    if (inlet === 0) {
-      const freq = parseFloat(data as string);
-
-      if (!isNaN(freq)) state.frequency = freq;
-    } else if (inlet === 1) {
+    // Phase reset (inlet 1) - frequency is handled via AudioParam
+    if (inlet === 1) {
       const phase = parseFloat(data as string);
 
       if (!isNaN(phase)) state.phase = phase % 1;
     }
   },
 
-  process(state, _inputs, outputs) {
+  process(state, _inputs, outputs, _send, parameters) {
     const out = outputs[0];
     const len = out[0].length;
     const channels = out.length;
-    const increment = state.frequency / sampleRate;
+    const freqParam = parameters.frequency;
 
     for (let i = 0; i < len; i++) {
+      // Use per-sample frequency from AudioParam (enables a-rate modulation)
+      const frequency = freqParam[i];
+      const increment = frequency / sampleRate;
+
       for (let ch = 0; ch < channels; ch++) {
         out[ch][i] = state.phase;
       }

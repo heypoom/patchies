@@ -178,6 +178,10 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
       });
     }
 
+    getAudioParam(name: string): AudioParam | null {
+      return this.audioNode?.parameters.get(name) ?? null;
+    }
+
     destroy(): void {
       this.directChannelService.unregisterWorklet(this.nodeId);
 
