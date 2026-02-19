@@ -14,6 +14,7 @@ import { DelayNodeV2 } from './DelayNode';
 import { DspNode } from './DspNode';
 import { ElementaryNode } from './ElementaryNode';
 import { ExprNode } from './ExprNode';
+import { FExprNode } from './FExprNode';
 import { FFTNode } from './FFTNode';
 import { GainNodeV2 } from './GainNode';
 import { HighpassNode } from './HighpassNode';
@@ -89,6 +90,7 @@ export const AUDIO_NODES = [
   DspNode,
   ElementaryNode,
   ExprNode,
+  FExprNode,
   FFTNode,
   GainNodeV2,
   HighpassNode,

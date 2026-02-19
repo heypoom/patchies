@@ -118,6 +118,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('scan', () => ({ expr: '' }))
     .with('uniq', () => ({ expr: '' }))
     .with('expr~', () => ({ expr: 's' }))
+    .with('fexpr~', () => ({ expr: 'x1' }))
     .with('chuck~', () => ({ expr: DEFAULT_CHUCK_CODE }))
     .with('webcam', () => ({}))
     .with('video', () => ({ loop: true }))

@@ -34,6 +34,7 @@ import TapNode from '$lib/components/nodes/TapNode.svelte';
 import ScanNode from '$lib/components/nodes/ScanNode.svelte';
 import UniqNode from '$lib/components/nodes/UniqNode.svelte';
 import AudioExprNode from '$lib/components/nodes/AudioExprNode.svelte';
+import AudioFExprNode from '$lib/components/nodes/AudioFExprNode.svelte';
 import ChuckNode from '$lib/components/nodes/ChuckNode.svelte';
 import SoundFile from '$lib/components/nodes/SoundFile.svelte';
 import SamplerNode from '$lib/components/nodes/SamplerNode.svelte';
@@ -122,6 +123,7 @@ export const nodeTypes: Record<string, any> = {
   scan: ScanNode,
   uniq: UniqNode,
   'expr~': AudioExprNode,
+  'fexpr~': AudioFExprNode,
   'chuck~': ChuckNode,
   'soundfile~': SoundFile,
   'sampler~': SamplerNode,

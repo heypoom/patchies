@@ -135,6 +135,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: [
       'elem~',
       'expr~',
+      'fexpr~',
       'dsp~',
       'snapshot~',
       'samphold~',
