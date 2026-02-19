@@ -10,6 +10,15 @@ defineDSP({
     phase: 0
   }),
 
+  recv(state, data, inlet) {
+    // Phase reset (inlet 2) - frequency and width are handled via AudioParam
+    if (inlet === 2) {
+      const phase = parseFloat(data as string);
+
+      if (!isNaN(phase)) state.phase = phase % 1;
+    }
+  },
+
   process(state, _inputs, outputs, _send, parameters) {
     const out = outputs[0];
     const len = out[0].length;

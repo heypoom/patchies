@@ -1388,6 +1388,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Pulse width (0 = silent, 0.5 = square, 1 = silent)'
           }
         ]
+      },
+      {
+        id: 'phase',
+        type: 'float',
+        description: 'Phase reset (0 to 1)',
+        messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }]
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Pulse wave signal' }],

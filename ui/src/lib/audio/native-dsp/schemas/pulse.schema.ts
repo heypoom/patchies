@@ -26,6 +26,15 @@ export const PulsePortSchema: DspPortSchema = {
       messages: [
         { schema: Type.Number(), description: 'Pulse width (0 = silent, 0.5 = square, 1 = silent)' }
       ]
+    },
+    {
+      name: 'phase',
+      type: 'float',
+      description: 'Phase reset (0 to 1)',
+      defaultValue: 0,
+      maxPrecision: 3,
+      hideTextParam: true,
+      messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }]
     }
   ],
   outlets: [{ name: 'out', type: 'signal', description: 'Pulse wave signal' }]
