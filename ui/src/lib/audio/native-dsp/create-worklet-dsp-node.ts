@@ -138,6 +138,15 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
         const isSignalOnly = inlet.type === 'signal' && !inlet.messages?.length;
         if (isSignalOnly) continue;
 
+        // For AudioParam inlets, set the param value directly
+        if (inlet.isAudioParam && typeof params[i] === 'number' && inlet.name) {
+          const param = this.audioNode.parameters.get(inlet.name);
+          if (param) {
+            param.value = params[i] as number;
+            continue;
+          }
+        }
+
         this.audioNode.port.postMessage({
           type: 'message-inlet',
           message: params[i],
@@ -181,6 +190,18 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     send(key: string, message: unknown): void {
       const inletIndex = config.inlets.findIndex((i) => i.name === key);
       if (inletIndex === -1) return;
+
+      const inlet = config.inlets[inletIndex];
+
+      // For AudioParam inlets, set the param value directly
+      if (inlet.isAudioParam && typeof message === 'number') {
+        const param = this.audioNode?.parameters.get(key);
+
+        if (param) {
+          param.value = message;
+          return;
+        }
+      }
 
       this.audioNode?.port.postMessage({
         type: 'message-inlet',
