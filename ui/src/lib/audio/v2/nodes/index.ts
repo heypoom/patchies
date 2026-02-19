@@ -73,6 +73,7 @@ import { SqrtNode } from '$lib/audio/native-dsp/nodes/sqrt.node';
 import { LogNode } from '$lib/audio/native-dsp/nodes/log.node';
 import { ExpNode } from '$lib/audio/native-dsp/nodes/exp.node';
 import { RsqrtNode } from '$lib/audio/native-dsp/nodes/rsqrt.node';
+import { CosNode } from '$lib/audio/native-dsp/nodes/cos.node';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -149,7 +150,8 @@ export const AUDIO_NODES = [
   SqrtNode,
   LogNode,
   ExpNode,
-  RsqrtNode
+  RsqrtNode,
+  CosNode
 ] as const satisfies AudioNodeClass[];
 
 /**
