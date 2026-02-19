@@ -1,4 +1,4 @@
-const MESSAGE_CONSOLE_JS = `setTitle("logger")
+const MESSAGE_CONSOLE_JS = `setTitle('logger')
 setPortCount(1, 0)
 recv(m => console.log(m))`;
 

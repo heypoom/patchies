@@ -81,7 +81,7 @@ const patchiesAPICompletions: Completion[] = [
     type: 'function',
     detail: '(title: string) => void',
     info: 'Set the display title of this node',
-    apply: 'setTitle("hello")'
+    apply: "setTitle('hello')"
   },
   {
     label: 'setRunOnMount',

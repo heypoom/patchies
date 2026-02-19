@@ -4,7 +4,7 @@ noDrag();
 noOutput();
 setCanvasSize(width, height);
 setPortCount(1, 1);
-setTitle("rgba.picker");
+setTitle('rgba.picker');
 
 let padX = width / 2;
 let padY = height / 2;

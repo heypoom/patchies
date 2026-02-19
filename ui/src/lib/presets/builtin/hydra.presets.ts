@@ -1,19 +1,24 @@
 const PIPE = `setVideoCount(1)
 src(s0).out(o0)`;
 
-const DIFF = `setVideoCount(2)
+const DIFF = `setTitle('diff')
+setVideoCount(2)
 src(s0).diff(s1).out(o0)`;
 
-const BLEND = `setVideoCount(2)
+const BLEND = `setTitle('blend')
+setVideoCount(2)
 src(s0).diff(s1).out(o0)`;
 
-const MASK = `setVideoCount(2)
+const MASK = `setTitle('mask')
+setVideoCount(2)
 src(s0).mask(s1, 0.5).out(o0)`;
 
-const ADD = `setVideoCount(2)
+const ADD = `setTitle('add')
+setVideoCount(2)
 src(s0).add(s1).out(o0)`;
 
-const SUB = `setVideoCount(2)
+const SUB = `setTitle('sub')
+setVideoCount(2)
 src(s0).sub(s1, 0.5).out(o0)`;
 
 const BEANS = `osc(30,0.01,1)

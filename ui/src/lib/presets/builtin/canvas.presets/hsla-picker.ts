@@ -4,7 +4,7 @@ noDrag()
 noOutput()
 setCanvasSize(width, height)
 setPortCount(1, 1)
-setTitle("hsla.picker")
+setTitle('hsla.picker')
 
 let padX = width / 2
 let padY = height / 2
