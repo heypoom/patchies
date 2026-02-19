@@ -210,7 +210,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'audio-samples',
     name: 'Buffers & Tables',
-    description: 'Sample playback, tables and delay',
+    description: 'Samples, tables and delay lines',
     icon: 'FileHeadphone',
     objects: [
       'sampler~',
