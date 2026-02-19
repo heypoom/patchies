@@ -1,8 +1,9 @@
 import type { FuseResult } from 'fuse.js';
+import { BOOSTED_PRESETS } from '$lib/constants/boosted-presets';
 
 /**
  * Sort Fuse.js search results with prefix matches prioritized.
- * Items whose name starts with the query appear first, then sorted by Fuse score.
+ * Items whose name starts with the query appear first, then boosted presets, then sorted by Fuse score.
  *
  * @param results - Fuse.js search results
  * @param query - The search query (will be lowercased)
@@ -26,6 +27,13 @@ export function sortFuseResultsWithPrefixPriority<T>(
     // Prefix matches come first
     if (aStartsWith && !bStartsWith) return -1;
     if (!aStartsWith && bStartsWith) return 1;
+
+    // Boosted presets come before other prefix matches
+    const aBoosted = BOOSTED_PRESETS.has(getName(a.item));
+    const bBoosted = BOOSTED_PRESETS.has(getName(b.item));
+    if (aBoosted !== bBoosted) {
+      return aBoosted ? -1 : 1;
+    }
 
     // Use secondary sort if provided
     if (secondarySort) {
