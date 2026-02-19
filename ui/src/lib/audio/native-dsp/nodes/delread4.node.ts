@@ -14,17 +14,17 @@ export const Delread4Node = createWorkletDspNode({
 
   inlets: [
     {
+      name: 'delay',
+      type: 'signal',
+      description: 'Delay time in ms (signal rate)'
+    },
+    {
       name: 'name',
       type: 'string',
       hideInlet: true,
       description: 'Delay line name',
       defaultValue: 'delay',
       messages: [{ schema: Type.String(), description: 'Set delay line name' }]
-    },
-    {
-      name: 'delay',
-      type: 'signal',
-      description: 'Delay time in ms (signal rate)'
     }
   ],
 

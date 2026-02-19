@@ -12,8 +12,8 @@ import { workletBufferRegistry } from '../../buffer-bridge/worklet-buffer-regist
  * - Pitch shifting
  * - Any effect requiring smooth, variable delay
  *
- * Arguments: name
- * Inlet 1: delay time signal (ms)
+ * Inlet 0: delay time signal (ms)
+ * Inlet 1: name (hidden argument)
  */
 defineDSP({
   name: 'delread4~',
@@ -26,8 +26,8 @@ defineDSP({
   }),
 
   recv(state, data, inlet) {
-    // Inlet 0: name (hidden argument)
-    if (inlet === 0 && typeof data === 'string') {
+    // Inlet 1: name (hidden argument)
+    if (inlet === 1 && typeof data === 'string') {
       state.name = data;
     }
   },

@@ -632,13 +632,13 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Read from delay line with 4-point interpolation for variable delays',
     inlets: [
+      { id: 'delay', type: 'signal', description: 'Delay time in ms (signal rate)' },
       {
         id: 'name',
         type: 'string',
         description: 'Delay line name',
         messages: [{ schema: Type.String(), description: 'Set delay line name' }]
-      },
-      { id: 'delay', type: 'signal', description: 'Delay time in ms (signal rate)' }
+      }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Delayed signal output (interpolated)' }],
     tags: ['audio', 'delay', 'buffer', 'read', 'interpolation', 'chorus', 'flanger', 'effect']
