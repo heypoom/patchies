@@ -68,15 +68,14 @@ type NativeDspNodeClass = {
 };
 
 /**
- * For hidden float inlets (hideInlet: true), find the preceding signal inlet
- * they control. This lets `*~ 0.5` route the float to audio inlet 1's constant.
+ * Resolves which worklet inlet to send a message to.
+ * If the inlet has `controlsSignalInlet` set, routes to that signal inlet's constant buffer.
+ * This lets `*~ 0.5` route the float to audio inlet 1's constant.
  */
 function resolveWorkletInlet(inlets: ObjectInlet[], configIndex: number): number {
   const inlet = inlets[configIndex];
-  if (inlet?.hideInlet && inlet.type !== 'signal') {
-    for (let j = configIndex - 1; j >= 0; j--) {
-      if (inlets[j].type === 'signal') return j;
-    }
+  if (inlet?.controlsSignalInlet !== undefined) {
+    return inlet.controlsSignalInlet;
   }
   return configIndex;
 }

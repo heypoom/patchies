@@ -19,6 +19,7 @@ export const MultiplyNode = createWorkletDspNode({
       name: 'value',
       type: 'float',
       hideInlet: true,
+      controlsSignalInlet: 1,
       description: 'Constant multiplier',
       messages: [{ schema: Type.Number(), description: 'Constant multiplier' }]
     }

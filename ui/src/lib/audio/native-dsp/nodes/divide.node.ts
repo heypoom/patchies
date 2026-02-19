@@ -19,6 +19,7 @@ export const DivideNode = createWorkletDspNode({
       name: 'value',
       type: 'float',
       hideInlet: true,
+      controlsSignalInlet: 1,
       description: 'Constant divisor',
       messages: [{ schema: Type.Number(), description: 'Constant divisor' }]
     }

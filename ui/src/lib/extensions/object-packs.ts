@@ -170,7 +170,10 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'comb~',
       'vcf~',
       'biquad~',
-      'slop~'
+      'slop~',
+      'delwrite~',
+      'delread~',
+      'delread4~'
     ]
   },
   {

@@ -19,6 +19,7 @@ export const LtNode = createWorkletDspNode({
       name: 'value',
       type: 'float',
       hideInlet: true,
+      controlsSignalInlet: 1,
       description: 'Constant threshold',
       messages: [{ schema: Type.Number(), description: 'Constant threshold' }]
     }

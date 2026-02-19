@@ -19,6 +19,7 @@ export const SubtractNode = createWorkletDspNode({
       name: 'value',
       type: 'float',
       hideInlet: true,
+      controlsSignalInlet: 1,
       description: 'Constant to subtract',
       messages: [{ schema: Type.Number(), description: 'Constant to subtract' }]
     }

@@ -19,6 +19,7 @@ export const AddNode = createWorkletDspNode({
       name: 'value',
       type: 'float',
       hideInlet: true,
+      controlsSignalInlet: 1,
       description: 'Constant to add',
       messages: [{ schema: Type.Number(), description: 'Constant to add' }]
     }
