@@ -188,6 +188,9 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'abs~',
       'pow~',
       'sqrt~',
+      'rsqrt~',
+      'log~',
+      'exp~',
       'mtof~',
       'ftom~'
     ]

@@ -69,6 +69,9 @@ import { ScopeAudioNode } from './ScopeAudioNode';
 import { MtofNode } from '$lib/audio/native-dsp/nodes/mtof.node';
 import { FtomNode } from '$lib/audio/native-dsp/nodes/ftom.node';
 import { SqrtNode } from '$lib/audio/native-dsp/nodes/sqrt.node';
+import { LogNode } from '$lib/audio/native-dsp/nodes/log.node';
+import { ExpNode } from '$lib/audio/native-dsp/nodes/exp.node';
+import { RsqrtNode } from '$lib/audio/native-dsp/nodes/rsqrt.node';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -141,7 +144,10 @@ export const AUDIO_NODES = [
   ScopeAudioNode,
   MtofNode,
   FtomNode,
-  SqrtNode
+  SqrtNode,
+  LogNode,
+  ExpNode,
+  RsqrtNode
 ] as const satisfies AudioNodeClass[];
 
 /**
