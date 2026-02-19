@@ -463,7 +463,7 @@
                 <!-- Category header -->
                 <button
                   onclick={() => toggleCategory(category.title)}
-                  class="mb-2 flex w-full items-center justify-between rounded-lg px-2 py-2 text-left transition-colors hover:bg-zinc-900"
+                  class="mb-2 flex w-full cursor-pointer items-center justify-between rounded-lg px-2 py-2 text-left transition-colors hover:bg-zinc-900"
                 >
                   <div class="flex items-center gap-2">
                     <div
