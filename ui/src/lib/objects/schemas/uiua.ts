@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
+import { Bang, SetCode } from './common';
 
 /**
  * Schema for the uiua (UIUA array language) object.
@@ -11,9 +12,14 @@ export const uiuaSchema: ObjectSchema = {
   inlets: [
     {
       id: 'hot',
-      description: 'Hot inlet ($1)',
-      messages: [{ schema: Type.Any(), description: 'Value stored as $1' }]
-    }
+      description: 'Hot inlet ($1) - triggers evaluation',
+      messages: [
+        { schema: Type.Any(), description: 'Value stored as $1, triggers evaluation' },
+        { schema: Bang, description: 'Trigger evaluation with current values' },
+        { schema: SetCode, description: 'Set UIUA expression dynamically' }
+      ]
+    },
+    { id: 'cold', description: 'Cold inlets ($2 - $9) - store values without triggering' }
   ],
   outlets: [
     {

@@ -52,13 +52,29 @@
     const inlet = meta?.inlet ?? 0;
     const nextInletValues = [...inletValues];
 
+    // Handle special messages
+    const handled = match(message)
+      .with(messages.bang, () => {
+        // Bang triggers evaluation without storing a value
+        if (inlet === 0) evaluateAndSend(inletValues);
+
+        return true;
+      })
+      .with(messages.setCode, ({ value }) => {
+        // Update expression without triggering evaluation
+        expr = value;
+        data.expr = value;
+        updateNodeData(nodeId, { expr: value });
+
+        return true;
+      })
+      .otherwise(() => false);
+
+    if (handled) return;
+
     // Store value for this inlet
-    match(message)
-      .with(messages.bang, () => {})
-      .otherwise((value) => {
-        nextInletValues[inlet] = value;
-        inletValues = nextInletValues;
-      });
+    nextInletValues[inlet] = message;
+    inletValues = nextInletValues;
 
     // Only inlet 0 (hot) triggers evaluation
     if (inlet !== 0) return;
@@ -198,7 +214,8 @@
     placeholder="+ $1 $2"
     editorClass="uiua-node-code-editor"
     previewContainerClass="uiua-display"
-    class={isLoading && !uiuaService.isLoaded ? 'animate-pulse !border-amber-500' : ''}
+    language="uiua"
+    class={isLoading && !uiuaService.isLoaded ? '!border-zinc-400' : ''}
     onExpressionChange={handleExpressionChange}
     handles={exprHandles}
     outlets={exprOutlets}

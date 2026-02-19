@@ -5,6 +5,8 @@
   import CodeEditor from '../CodeEditor.svelte';
   import { keymap } from '@codemirror/view';
   import { EditorView } from 'codemirror';
+  import { highlightUiua } from '$lib/uiua/uiua-highlight';
+  import type { SupportedLanguage } from '$lib/codemirror/types';
 
   import 'highlight.js/styles/tokyo-night-dark.css';
 
@@ -21,6 +23,7 @@
     editorClass = 'common-expr-node-code-editor',
     previewContainerClass = '',
     class: className = '',
+    language = 'javascript',
     onExpressionChange = () => {},
     onRun = () => {},
     exitOnRun = true,
@@ -42,6 +45,7 @@
     editorClass?: string;
     previewContainerClass?: string;
     class?: string;
+    language?: SupportedLanguage;
     onRun?: () => void;
     onExpressionChange?: (expr: string) => void;
     exitOnRun?: boolean;
@@ -58,8 +62,27 @@
 
   let originalExpr = expr; // Store original for escape functionality
 
+  // Escape HTML for safe display
+  function escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   let highlightedHtml = $derived.by(() => {
     if (!expr) return '';
+
+    // Use language-specific highlighter
+    if (language === 'uiua') {
+      return highlightUiua(expr);
+    }
+
+    if (language !== 'javascript') {
+      return escapeHtml(expr);
+    }
 
     try {
       return hljs.highlight(expr, {
@@ -168,7 +191,7 @@
 
                   onRun?.();
                 }}
-                language="javascript"
+                {language}
                 class={`${editorClass} rounded-lg border !border-transparent focus:outline-none`}
                 {placeholder}
                 nodeType="expr"
@@ -244,5 +267,31 @@
 
   .expr-display {
     font-family: var(--font-mono);
+  }
+
+  /* UIUA syntax highlighting for preview */
+  :global(.uiua-monadic) {
+    color: #7dcfff; /* cyan - monadic functions */
+  }
+  :global(.uiua-dyadic) {
+    color: #9ece6a; /* green - dyadic functions */
+  }
+  :global(.uiua-mod1) {
+    color: #bb9af7; /* pink/purple - 1-modifiers */
+  }
+  :global(.uiua-mod2) {
+    color: #e0af68; /* yellow - 2-modifiers */
+  }
+  :global(.uiua-number) {
+    color: #ff9e64; /* orange - numbers/constants */
+  }
+  :global(.uiua-string) {
+    color: #9ece6a; /* green - strings */
+  }
+  :global(.uiua-comment) {
+    color: #565f89; /* gray - comments */
+  }
+  :global(.uiua-stack) {
+    color: #c0caf5; /* light - stack ops */
   }
 </style>

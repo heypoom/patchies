@@ -61,6 +61,11 @@ export async function loadLanguageExtension(language: string, context?: Patchies
 
       return markdown();
     })
+    .with('uiua', async () => {
+      const { uiua } = await import('$lib/codemirror/uiua.codemirror');
+
+      return uiua();
+    })
     .otherwise(() => []);
 
   if (shouldCache) {
