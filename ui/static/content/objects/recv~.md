@@ -1,4 +1,5 @@
-Receive audio from a named channel. Works wirelessly with `send~` objects broadcasting on the same channel.
+Receive audio from a named channel. Works wirelessly with `send~` objects
+broadcasting on the same channel.
 
 ## Usage
 
@@ -8,13 +9,26 @@ recv~ <channel>
 
 ## Example
 
-Create `recv~ foo` to receive audio from any `send~ foo` objects in your patch. Audio is delivered without needing visual connections.
+Create `recv~ foo` to receive audio from any `send~ foo` objects in your
+patch. Audio is delivered without needing visual connections.
 
 ```text
 [osc~ 440] → [send~ foo]     ...     [recv~ foo] → [gain~] → [out~]
 ```
 
-Multiple `send~` nodes on the same channel will have their signals summed at the receiver (Web Audio default behavior).
+## Summing Bus
+
+Multiple `send~` nodes on the same channel are automatically summed at the
+receiver. This makes `send~`/`recv~` ideal for effect sends and submixes,
+replacing Pure Data's `throw~`/`catch~` pattern.
+
+```text
+[synth1] → [send~ reverb]
+[synth2] → [send~ reverb]
+[drums]  → [send~ reverb]
+
+[recv~ reverb] → [convolver~] → [out~]
+```
 
 ## Aliases
 
