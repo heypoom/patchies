@@ -202,7 +202,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Audio Sampling',
     description: 'Sample playback and tables',
     icon: 'FileAudio',
-    objects: ['sampler~', 'table', 'tabwrite~', 'tabread~', 'tabread4~']
+    objects: ['sampler~', 'table', 'tabwrite~', 'tabread~', 'tabread4~', 'tabosc4~']
   },
   {
     id: 'ai',
