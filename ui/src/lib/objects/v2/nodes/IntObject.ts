@@ -5,14 +5,14 @@ import { match, P } from 'ts-pattern';
 
 /**
  * IntObject stores and outputs an integer value.
- * Similar to Pure Data's [i] or [int] object.
+ * Similar to Pure Data's [int] or [i] object.
  *
  * - Inlet 0 (hot): Set value and output immediately. Bang outputs current value.
  * - Inlet 1 (cold): Set value without outputting.
  */
 export class IntObject implements TextObjectV2 {
-  static type = 'i';
-  static aliases = ['int'];
+  static type = 'int';
+  static aliases = ['i'];
   static description = 'Integer accumulator (hot inlet sets and outputs, cold inlet sets only)';
 
   static inlets: ObjectInlet[] = [
@@ -41,7 +41,7 @@ export class IntObject implements TextObjectV2 {
   }
 
   create(params: unknown[]): void {
-    // Set initial value from first argument (e.g., "i 69" sets initial value to 69)
+    // Set initial value from first argument (e.g., "int 69" sets initial value to 69)
     if (params.length > 0 && params[0] !== undefined) {
       const num = Number(params[0]);
       if (!isNaN(num)) {

@@ -5,14 +5,14 @@ import { match, P } from 'ts-pattern';
 
 /**
  * FloatObject stores and outputs a float value.
- * Similar to Pure Data's [f] or [float] object.
+ * Similar to Pure Data's [float] or [f] object.
  *
  * - Inlet 0 (hot): Set value and output immediately. Bang outputs current value.
  * - Inlet 1 (cold): Set value without outputting.
  */
 export class FloatObject implements TextObjectV2 {
-  static type = 'f';
-  static aliases = ['float'];
+  static type = 'float';
+  static aliases = ['f'];
   static description = 'Float accumulator (hot inlet sets and outputs, cold inlet sets only)';
 
   static inlets: ObjectInlet[] = [
@@ -43,7 +43,7 @@ export class FloatObject implements TextObjectV2 {
   }
 
   create(params: unknown[]): void {
-    // Set initial value from first argument (e.g., "f 3.14" sets initial value to 3.14)
+    // Set initial value from first argument (e.g., "float 3.14" sets initial value to 3.14)
     if (params.length > 0 && params[0] !== undefined) {
       const num = Number(params[0]);
       if (!isNaN(num)) {

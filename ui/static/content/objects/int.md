@@ -1,6 +1,6 @@
-Float accumulator. Stores and outputs a floating-point value.
+Integer accumulator. Stores and outputs an integer value.
 
-Alias: `float`
+Alias: `i`
 
 ## Inlets
 
@@ -9,12 +9,12 @@ Alias: `float`
 
 ## Arguments
 
-- `f <initial>` - Set initial value (e.g., `f 3.14` starts with value 3.14)
+- `int <initial>` - Set initial value (e.g., `int 69` starts with value 69)
 
-_Inspired by [Pure Data](https://pd.iem.sh/objects/float)._
+_Inspired by [Pure Data](https://pd.iem.sh/objects/int)._
 
 ## See Also
 
-- [i](/docs/objects/i) - integer accumulator
+- [float](/docs/objects/float) - float accumulator
 - [expr](/docs/objects/expr) - expression evaluator
 - [Hot and Cold Inlets](/docs/topics/hot-cold-inlets)

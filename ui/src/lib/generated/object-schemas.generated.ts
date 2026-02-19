@@ -767,7 +767,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
   },
 
   f: {
-    type: 'f',
+    type: 'float',
     category: 'control',
     description: 'Float accumulator (hot inlet sets and outputs, cold inlet sets only)',
     inlets: [
@@ -787,7 +787,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       }
     ],
     outlets: [{ id: 'out', type: 'float', description: 'Float output' }],
-    tags: ['f']
+    tags: ['float']
   },
 
   'fexpr~': {
@@ -828,7 +828,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
   },
 
   float: {
-    type: 'f',
+    type: 'float',
     category: 'control',
     description: 'Float accumulator (hot inlet sets and outputs, cold inlet sets only)',
     inlets: [
@@ -848,7 +848,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       }
     ],
     outlets: [{ id: 'out', type: 'float', description: 'Float output' }],
-    tags: ['f']
+    tags: ['float']
   },
 
   'ftom~': {
@@ -951,7 +951,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
   },
 
   i: {
-    type: 'i',
+    type: 'int',
     category: 'control',
     description: 'Integer accumulator (hot inlet sets and outputs, cold inlet sets only)',
     inlets: [
@@ -971,11 +971,11 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       }
     ],
     outlets: [{ id: 'out', type: 'int', description: 'Integer output' }],
-    tags: ['i']
+    tags: ['int']
   },
 
   int: {
-    type: 'i',
+    type: 'int',
     category: 'control',
     description: 'Integer accumulator (hot inlet sets and outputs, cold inlet sets only)',
     inlets: [
@@ -995,7 +995,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       }
     ],
     outlets: [{ id: 'out', type: 'int', description: 'Integer output' }],
-    tags: ['i']
+    tags: ['int']
   },
 
   kv: {

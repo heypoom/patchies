@@ -24,8 +24,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'delay',
       'throttle',
       'debounce',
-      'f',
-      'i',
+      'float',
+      'int',
       'kv',
       'send',
       'recv'
