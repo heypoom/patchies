@@ -40,7 +40,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   },
   {
     id: 'ui',
-    name: 'User Interface',
+    name: 'User Interfaces',
     description: 'Interface building components',
     icon: 'Layout',
     objects: ['keyboard', 'markdown', 'iframe', 'link', 'dom', 'vue', 'switch']
@@ -48,7 +48,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'media',
     name: 'Media',
-    description: 'Source and sinks for video and audio',
+    description: 'Starter kits for video and audio',
     icon: 'Camera',
     objects: [
       'webcam',
@@ -56,6 +56,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'img',
       'screen',
       'mic~',
+      'gain~',
       'soundfile~',
       'out~',
       'bg.out',
@@ -66,7 +67,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: '2d',
     name: '2D Graphics',
-    description: 'Canvas and text-based drawing',
+    description: 'Interactive 2D canvas objects',
     icon: 'Palette',
     objects: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom']
   },
@@ -78,43 +79,60 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['hydra', 'three', 'three.dom', 'glsl', 'swgl']
   },
   {
-    id: 'audio',
-    name: 'Audio',
-    description: 'Operators for working with audio',
+    id: 'music',
+    name: 'Music',
+    description: 'Composition and audio synthesis',
+    icon: 'Music',
+    objects: ['strudel', 'orca', 'sonic~', 'chuck~', 'csound~', 'tone~']
+  },
+  {
+    id: 'scripting',
+    name: 'Scripting',
+    description: 'Scripting languages and workers',
+    icon: 'Code',
+    objects: ['worker', 'ruby', 'python', 'wgpu.compute']
+  },
+  {
+    id: 'low-level',
+    name: 'Low Level',
+    description: 'Low level virtual machines',
+    icon: 'Cpu',
+    objects: ['uxn', 'asm', 'asm.mem']
+  },
+  {
+    id: 'midi',
+    name: 'MIDI',
+    description: 'MIDI input and output',
+    icon: 'Piano',
+    objects: ['midi.in', 'midi.out', 'webmidilink', 'mtof']
+  },
+  {
+    id: 'networking',
+    name: 'Networking',
+    description: 'External communication and I/O',
+    icon: 'Wifi',
+    objects: ['netsend', 'netrecv', 'mqtt', 'sse', 'vdo.ninja.push', 'vdo.ninja.pull']
+  },
+  {
+    id: 'audio-routing',
+    name: 'Audio Routing',
+    description: 'Mixing, routing and monitoring',
+    icon: 'Route',
+    objects: ['pan~', 'split~', 'merge~', 'send~', 'recv~', 'meter~', 'scope~', 'fft~']
+  },
+  {
+    id: 'signal-generators',
+    name: 'Signal Generators',
+    description: 'Oscillators and signal generators',
     icon: 'AudioLines',
-    objects: [
-      'gain~',
-      'osc~',
-      'sampler~',
-      'meter~',
-      'scope~',
-      'sig~',
-      'pan~',
-      'split~',
-      'merge~',
-      'send~',
-      'recv~',
-      'line~',
-      'noise~',
-      'pink~',
-      'phasor~',
-      'pulse~',
-      'snapshot~',
-      'samphold~',
-      'bang~',
-      'fft~',
-      'adsr~',
-      'env~',
-      'vline~',
-      'latch~',
-      'threshold~',
-      'table',
-      'tabwrite~',
-      'tabread~',
-      'tabread4~',
-      'adsr',
-      'mtof'
-    ]
+    objects: ['osc~', 'noise~', 'pink~', 'phasor~', 'pulse~', 'sig~']
+  },
+  {
+    id: 'audio-samples',
+    name: 'Audio Sampling',
+    description: 'Sample playback and tables',
+    icon: 'FileAudio',
+    objects: ['sampler~', 'table', 'tabwrite~', 'tabread~', 'tabread4~']
   },
   {
     id: 'audio-math',
@@ -145,58 +163,37 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     ]
   },
   {
-    id: 'music',
-    name: 'Music',
-    description: 'Composition and audio synthesis',
-    icon: 'Music',
-    objects: ['strudel', 'orca', 'sonic~', 'chuck~', 'csound~', 'tone~']
-  },
-  {
-    id: 'midi',
-    name: 'MIDI',
-    description: 'MIDI input and output',
-    icon: 'Piano',
-    objects: ['midi.in', 'midi.out', 'webmidilink']
-  },
-  {
-    id: 'networking',
-    name: 'Networking',
-    description: 'External communication and I/O',
-    icon: 'Wifi',
-    objects: ['netsend', 'netrecv', 'mqtt', 'sse', 'vdo.ninja.push', 'vdo.ninja.pull']
-  },
-  {
-    id: 'scripting',
-    name: 'Scripting',
-    description: 'Scripting languages and workers',
-    icon: 'Code',
-    objects: ['worker', 'ruby', 'python', 'wgpu.compute']
-  },
-  {
-    id: 'low-level',
-    name: 'Low Level',
-    description: 'Low level virtual machines',
-    icon: 'Cpu',
-    objects: ['uxn', 'asm', 'asm.mem']
-  },
-  {
     id: 'dsp',
-    name: 'DSP',
-    description: 'Low-level signal processing',
+    name: 'Signal Processors',
+    description: 'DSP operators and programs',
     icon: 'Activity',
-    objects: ['elem~', 'expr~', 'dsp~']
+    objects: [
+      'elem~',
+      'expr~',
+      'dsp~',
+      'snapshot~',
+      'samphold~',
+      'bang~',
+      'latch~',
+      'threshold~',
+      'line~',
+      'vline~',
+      'adsr~',
+      'env~',
+      'adsr'
+    ]
   },
   {
     id: 'ai',
     name: 'AI',
-    description: 'AI-powered generation nodes',
+    description: 'AI-powered generative objects',
     icon: 'Brain',
     objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'tts']
   },
   {
     id: 'experimental',
     name: 'Experimental',
-    description: 'Unstable or work-in-progress nodes',
+    description: 'Unstable or work-in-progress',
     icon: 'FlaskConical',
     objects: ['bchrn']
   }
